@@ -12545,21 +12545,63 @@ sjekk('… og svaret sier fra om at det gjelder alle kursene',
 sjekk('… ellers rettes gjestefeltene paa paameldingen',
     str_contains($pamFil, "\$felt['gjest_epost'] = \$nyEpost;"));
 
-// Feltet staar rett under navnet, ikke nederst i kortet. Eieren, 6.
-// september: «det maa saa klart ligge naar jeg trykker paa navnet til
-// medlemene, og faa redigere». Maalt: 214 px ned i et kort paa 1410 px paa
-// PC, 305 av 2002 paa telefon — foerste blokk etter navnelinja.
-sjekk('e-postfeltet staar rett under navnet i personkortet',
+// ── Alt om personen, i ett skjema ────────────────────────────────────
+//
+// Eieren, 6. september: «Jeg vil kunne gaa inn paa meldemmer og trykke og
+// redigere info og lagre» — «Alt sammen — ett skjema».
+//
+// Skjemaet staar rett under navnet, ikke nederst: «det maa saa klart ligge
+// naar jeg trykker paa navnet til medlemene, og faa redigere». Maalt: 236 px
+// ned i et kort paa 1563 px paa PC, 304 av 2401 paa telefon.
+sjekk('skjemaet staar rett under navnet i personkortet',
     str_contains($byttSida, '</button>
             </div>
-            <!-- E-post og telefon, rettbare.')
+            <!-- Alt om personen, i ett skjema.')
     && str_contains($byttSida, '</button>
               </div>
-              <!-- E-post og telefon, rettbare.'));
-sjekk('personkortet har feltene',
-    str_contains($byttSida, 'onChange="{{ settPersonEpost }}"')
-    && str_contains($byttSida, 'on-click="{{ lagrePersonKontakt }}"')
-    && str_contains($byttSida, "handling: 'kontakt', medlemId: id, epost: e, telefon: t"));
+              <!-- Alt om personen, i ett skjema.'));
+// Én gang per kort, ikke to. Da main ble flettet inn etter at blokka var
+// flyttet, ble den staaende BEGGE steder — og skjemaet sto dobbelt paa
+// skjermen. Maalt i nettleseren: «Om personen» én gang.
+sjekk('… og bare én gang i hvert av de to kortene',
+    substr_count($byttSida, '>Om personen</div>') === 2);
+sjekk('… med alle seks feltene',
+    str_contains($byttSida, 'onChange="{{ settPersonNavnFelt }}"')
+    && str_contains($byttSida, 'onChange="{{ settPersonEpost }}"')
+    && str_contains($byttSida, 'onChange="{{ settPersonTelefon }}"')
+    && str_contains($byttSida, 'onChange="{{ settPersonStartDato }}"')
+    && str_contains($byttSida, 'onChange="{{ settPersonSluttDato }}"')
+    && str_contains($byttSida, 'onChange="{{ settPersonTimer }}"'));
+sjekk('… og datoene og timetallet staar bare paa et medlem',
+    substr_count($byttSida, '<label style="{{ pkEtikett }}">Medlem fra</label>') === 2
+    && str_contains($byttSida, '<sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">'));
+sjekk('… og et felt som ikke er roert sendes med verdien fra basen',
+    str_contains($byttSida, 'const felt = (navn, fra) => {')
+    && str_contains($byttSida, "return String(v === null || v === undefined ? ((p && p[fra]) || '') : v).trim();"));
+sjekk('… og alle seks foelger med i lagringa',
+    str_contains($byttSida, "handling: 'kontakt', medlemId: id,")
+    && str_contains($byttSida, 'navn: n, epost: e, telefon: t,')
+    && str_contains($byttSida, 'startDato: fra, sluttDato: til, timer: timer,'));
+
+// Serveren: navnet kan ikke tommes, datoene kan.
+sjekk('serveren tar imot alle feltene',
+    str_contains($medlFil2, "\$nyNavn    = trim(Foresporsel::tekst('navn'));")
+    && str_contains($medlFil2, "\$start = \$dato(\$les('startDato'), 'Medlem fra');")
+    && str_contains($medlFil2, "\$slutt = \$dato(\$les('sluttDato'), 'Medlem til');"));
+sjekk('… og navn, e-post og telefon kan ikke tommes ved et uhell',
+    str_contains($medlFil2, "if (\$nyNavn !== '')    { \$felt['navn'] = mb_substr(\$nyNavn, 0, 191); }"));
+sjekk('… mens datoene og timetallet kan',
+    str_contains($medlFil2, "'start_dato' => \$start,")
+    && str_contains($medlFil2, "\$felt['timer_per_mnd'] = \$timer;"));
+sjekk('… og en umulig dato eller et umulig timetall avvises',
+    str_contains($medlFil2, "Svar::feil('«' . \$hva . '» må være en dato, som 2026-09-06.');")
+    && str_contains($medlFil2, "Svar::feil('«Medlem til» kan ikke være før «Medlem fra».');")
+    && str_contains($medlFil2, "Svar::feil('Timer per måned må være et tall mellom 0 og 500.');"));
+sjekk('… og skjemaet faar verdiene fra serveren',
+    str_contains($medlFil2, "'startDato'  => (string) (\$m['start_dato'] ?? ''),")
+    && str_contains($medlFil2, "'sluttDato'  => (string) (\$m['slutt_dato'] ?? ''),")
+    && str_contains($medlFil2, "'timer'      => (\$m['timer_per_mnd'] ?? null) === null ? '' : (string) \$m['timer_per_mnd'],"));
+
 sjekk('… og deltakerkortet har dem ogsaa',
     str_contains($byttSida, 'onChange="{{ settKlDEpost }}"')
     && str_contains($byttSida, "handling: 'kontakt', id: dv.bookingId, epost: e2, telefon: t2,"));

@@ -13018,16 +13018,26 @@ window.__resources = {
               </div>
               <button type="button" onClick="{{ lukkPerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 24px; line-height: 1; color: var(--text-muted); padding: 2px 8px;">×</button>
             </div>
-            <!-- E-post og telefon, rettbare.
-                 Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
-                 medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
-                 settes ved innmelding — var den feilskrevet, gikk hver kvittering,
-                 paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
-                 rette den. -->
+            <!-- Alt om personen, i ett skjema.
+                 Eieren, 6. september: «Jeg vil kunne gaa inn paa meldemmer og trykke
+                 og redigere info og lagre», og paa spoersmaal om hva som skulle kunne
+                 rettes: «Alt sammen — ett skjema».
+            
+                 Foer dette kunne bare notatet og medlemskapet rettes. Navnet, adressen,
+                 nummeret, datoene og timetallet ble satt ved innmelding og sto der for
+                 alltid — et feilstavet navn fulgte med paa kursbeviset og i hver
+                 eneste e-post.
+            
+                 Blokka staar rett under navnet, ikke nederst: «det maa saa klart ligge
+                 naar jeg trykker paa navnet til medlemene, og faa redigere». -->
             <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
-              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
-              <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Om personen</div>
+              <p style="margin: 0 0 10px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Rettes her, og gjelder med én gang — også på kursbevis og i e-poster. Blankt navn, e-post eller telefon betyr «la det stå».</p>
               <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1 1 200px; min-width: 0;">
+                  <label style="{{ pkEtikett }}">Navn</label>
+                  <input value="{{ personNavnFelt }}" onChange="{{ settPersonNavnFelt }}" placeholder="Fornavn Etternavn" style="{{ pkFeltStil }}">
+                </div>
                 <div style="flex: 1 1 220px; min-width: 0;">
                   <label style="{{ pkEtikett }}">E-post</label>
                   <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
@@ -13036,6 +13046,24 @@ window.__resources = {
                   <label style="{{ pkEtikett }}">Telefon</label>
                   <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
                 </div>
+              </div>
+              <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; margin-top: var(--space-3);">
+                  <div style="flex: 0 1 170px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Medlem fra</label>
+                    <input type="date" value="{{ personStartDato }}" onChange="{{ settPersonStartDato }}" style="{{ pkFeltStil }}">
+                  </div>
+                  <div style="flex: 0 1 170px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Medlem til</label>
+                    <input type="date" value="{{ personSluttDato }}" onChange="{{ settPersonSluttDato }}" style="{{ pkFeltStil }}">
+                  </div>
+                  <div style="flex: 0 1 150px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Timer per måned</label>
+                    <input value="{{ personTimer }}" onChange="{{ settPersonTimer }}" inputmode="numeric" placeholder="Følger medlemskapet" style="{{ pkFeltStil }}">
+                  </div>
+                </div>
+              </sc-if>
+              <div style="margin-top: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
               </div>
             </div>
@@ -13238,27 +13266,6 @@ window.__resources = {
               </div>
             </sc-if>
             
-            <!-- E-post og telefon, rettbare.
-                 Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
-                 medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
-                 settes ved innmelding — var den feilskrevet, gikk hver kvittering,
-                 paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
-                 rette den. -->
-            <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
-              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
-              <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
-              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
-                <div style="flex: 1 1 220px; min-width: 0;">
-                  <label style="{{ pkEtikett }}">E-post</label>
-                  <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
-                </div>
-                <div style="flex: 0 1 160px; min-width: 0;">
-                  <label style="{{ pkEtikett }}">Telefon</label>
-                  <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
-                </div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
-              </div>
-            </div>
             <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                  innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                  etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -13962,16 +13969,26 @@ window.__resources = {
                 </div>
                 <button type="button" onClick="{{ lukkPerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 24px; line-height: 1; color: var(--text-muted); padding: 2px 8px;">×</button>
               </div>
-              <!-- E-post og telefon, rettbare.
-                   Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
-                   medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
-                   settes ved innmelding — var den feilskrevet, gikk hver kvittering,
-                   paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
-                   rette den. -->
+              <!-- Alt om personen, i ett skjema.
+                   Eieren, 6. september: «Jeg vil kunne gaa inn paa meldemmer og trykke
+                   og redigere info og lagre», og paa spoersmaal om hva som skulle kunne
+                   rettes: «Alt sammen — ett skjema».
+              
+                   Foer dette kunne bare notatet og medlemskapet rettes. Navnet, adressen,
+                   nummeret, datoene og timetallet ble satt ved innmelding og sto der for
+                   alltid — et feilstavet navn fulgte med paa kursbeviset og i hver
+                   eneste e-post.
+              
+                   Blokka staar rett under navnet, ikke nederst: «det maa saa klart ligge
+                   naar jeg trykker paa navnet til medlemene, og faa redigere». -->
               <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
-                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
-                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Om personen</div>
+                <p style="margin: 0 0 10px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Rettes her, og gjelder med én gang — også på kursbevis og i e-poster. Blankt navn, e-post eller telefon betyr «la det stå».</p>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                  <div style="flex: 1 1 200px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Navn</label>
+                    <input value="{{ personNavnFelt }}" onChange="{{ settPersonNavnFelt }}" placeholder="Fornavn Etternavn" style="{{ pkFeltStil }}">
+                  </div>
                   <div style="flex: 1 1 220px; min-width: 0;">
                     <label style="{{ pkEtikett }}">E-post</label>
                     <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
@@ -13980,6 +13997,24 @@ window.__resources = {
                     <label style="{{ pkEtikett }}">Telefon</label>
                     <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
                   </div>
+                </div>
+                <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; margin-top: var(--space-3);">
+                    <div style="flex: 0 1 170px; min-width: 0;">
+                      <label style="{{ pkEtikett }}">Medlem fra</label>
+                      <input type="date" value="{{ personStartDato }}" onChange="{{ settPersonStartDato }}" style="{{ pkFeltStil }}">
+                    </div>
+                    <div style="flex: 0 1 170px; min-width: 0;">
+                      <label style="{{ pkEtikett }}">Medlem til</label>
+                      <input type="date" value="{{ personSluttDato }}" onChange="{{ settPersonSluttDato }}" style="{{ pkFeltStil }}">
+                    </div>
+                    <div style="flex: 0 1 150px; min-width: 0;">
+                      <label style="{{ pkEtikett }}">Timer per måned</label>
+                      <input value="{{ personTimer }}" onChange="{{ settPersonTimer }}" inputmode="numeric" placeholder="Følger medlemskapet" style="{{ pkFeltStil }}">
+                    </div>
+                  </div>
+                </sc-if>
+                <div style="margin-top: var(--space-3);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
                 </div>
               </div>
@@ -14198,27 +14233,6 @@ window.__resources = {
                 </div>
               </sc-if>
               
-              <!-- E-post og telefon, rettbare.
-                   Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
-                   medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
-                   settes ved innmelding — var den feilskrevet, gikk hver kvittering,
-                   paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
-                   rette den. -->
-              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
-                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
-                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
-                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
-                  <div style="flex: 1 1 220px; min-width: 0;">
-                    <label style="{{ pkEtikett }}">E-post</label>
-                    <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
-                  </div>
-                  <div style="flex: 0 1 160px; min-width: 0;">
-                    <label style="{{ pkEtikett }}">Telefon</label>
-                    <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
-                  </div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
-                </div>
-              </div>
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                    etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -26162,12 +26176,20 @@ class Component extends DCLogic {
     if (!id) return;
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     if (this._personKontaktLagrer) return;
-    const e = (this.state.personEpost === null || this.state.personEpost === undefined
-      ? ((p && p.epost) || '') : this.state.personEpost).trim();
-    const t = (this.state.personTelefon === null || this.state.personTelefon === undefined
-      ? ((p && p.telefon) || '') : this.state.personTelefon).trim();
-    if (e === '' && t === '') {
-      this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn e-post eller telefon.' });
+    // Feltet som ikke er roert, sendes med verdien som staar i basen. Da
+    // skriver et lagre-trykk aldri over noe med en tom verdi ved et uhell.
+    const felt = (navn, fra) => {
+      const v = this.state[navn];
+      return String(v === null || v === undefined ? ((p && p[fra]) || '') : v).trim();
+    };
+    const n = felt('personNavnFelt', 'navn');
+    const e = felt('personEpost', 'epost');
+    const t = felt('personTelefon', 'telefon');
+    const fra = felt('personStartDato', 'startDato');
+    const til = felt('personSluttDato', 'sluttDato');
+    const timer = felt('personTimer', 'timer');
+    if (n === '' && e === '' && t === '' && fra === '' && til === '' && timer === '') {
+      this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Alle feltene står tomme.' });
       return;
     }
     this._personKontaktLagrer = true;
@@ -26176,7 +26198,11 @@ class Component extends DCLogic {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handling: 'kontakt', medlemId: id, epost: e, telefon: t }),
+      body: JSON.stringify({
+        handling: 'kontakt', medlemId: id,
+        navn: n, epost: e, telefon: t,
+        startDato: fra, sluttDato: til, timer: timer,
+      }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
       .then(({ ok, d }) => {
@@ -26186,7 +26212,11 @@ class Component extends DCLogic {
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
         });
         // Hentes paa nytt saa feltene viser det som faktisk staar i basen.
-        if (ok) { this.setState({ personEpost: null, personTelefon: null }); this.apnePerson(id, 0); }
+        if (ok) {
+          this.setState({ personNavnFelt: null, personEpost: null, personTelefon: null,
+                          personStartDato: null, personSluttDato: null, personTimer: null });
+          this.apnePerson(id, 0);
+        }
       })
       .catch(() => {
         this._personKontaktLagrer = false;
@@ -34574,7 +34604,8 @@ class Component extends DCLogic {
     const noekkel = id > 0 ? 'm' + id : 'b' + bookingId;
     this.setState({
       personFor: noekkel, personData: null, personNotat: null,
-      personEpost: null, personTelefon: null,
+      personNavnFelt: null, personEpost: null, personTelefon: null,
+      personStartDato: null, personSluttDato: null, personTimer: null,
       personFri: null, personFriGrunn: null, personPlan: null,
       personBetalingApen: !!medBetaling, personBetalingBelop: '',
       // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
@@ -38213,7 +38244,9 @@ class Component extends DCLogic {
           personFornavn: fornavn,
           personDetalj: [p.epost, p.telefon, p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : null]
             .filter(Boolean).join(' · '),
-          lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null, personEpost: null, personTelefon: null }),
+          lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null,
+            personNavnFelt: null, personEpost: null, personTelefon: null,
+            personStartDato: null, personSluttDato: null, personTimer: null }),
           // Annen info om personen. Internt — det staar ikke paa Min side.
           // Feltet er tomt til noe hentes; da faller det tilbake paa basen.
           personNotat: this.state.personNotat === null || this.state.personNotat === undefined
@@ -38226,13 +38259,28 @@ class Component extends DCLogic {
           // settes ved innmelding.
           pkEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
           pkFeltStil: { width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', background: 'var(--surface-card)' },
+          // Feltene staar tomme til noe hentes; da faller de tilbake paa det
+          // som staar i basen. Skriver du i dem, er det ditt som gjelder til
+          // du lagrer eller lukker kortet.
+          personNavnFelt: this.state.personNavnFelt === null || this.state.personNavnFelt === undefined
+            ? (p.navn || '') : this.state.personNavnFelt,
           personEpost: this.state.personEpost === null || this.state.personEpost === undefined
             ? (p.epost || '') : this.state.personEpost,
           personTelefon: this.state.personTelefon === null || this.state.personTelefon === undefined
             ? (p.telefon || '') : this.state.personTelefon,
+          personStartDato: this.state.personStartDato === null || this.state.personStartDato === undefined
+            ? (p.startDato || '') : this.state.personStartDato,
+          personSluttDato: this.state.personSluttDato === null || this.state.personSluttDato === undefined
+            ? (p.sluttDato || '') : this.state.personSluttDato,
+          personTimer: this.state.personTimer === null || this.state.personTimer === undefined
+            ? (p.timer || '') : this.state.personTimer,
+          settPersonNavnFelt: e => this.setState({ personNavnFelt: e.target.value }),
           settPersonEpost: e => this.setState({ personEpost: e.target.value }),
           settPersonTelefon: e => this.setState({ personTelefon: e.target.value }),
-          personKontaktKnapp: this._personKontaktLagrer ? 'Lagrer …' : 'Lagre kontaktinfo',
+          settPersonStartDato: e => this.setState({ personStartDato: e.target.value }),
+          settPersonSluttDato: e => this.setState({ personSluttDato: e.target.value }),
+          settPersonTimer: e => this.setState({ personTimer: e.target.value }),
+          personKontaktKnapp: this._personKontaktLagrer ? 'Lagrer …' : 'Lagre',
           lagrePersonKontakt: () => this.lagrePersonKontakt(p),
           personNotatKnapp: this._personInfoLagrer ? 'Lagrer …' : 'Lagre info',
           lagrePersonNotat: () => this.lagrePersonInfo(),

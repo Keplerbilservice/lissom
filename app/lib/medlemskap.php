@@ -676,6 +676,71 @@ final class Medlemskap
         }
     }
 
+    /**
+     * Adressen verkstedet kan sende — vaar egen, ikke Vipps sin.
+     *
+     * Eieren, 6. september: «men det fungerer ikke, linken virker ikke, saa
+     * noe er feil, du maa gjore dette paa en annen maate».
+     *
+     * Vipps sin egen dokumentasjon: «By default, a user has a total of 10
+     * minutes to accept a payment. If the user doesn't complete the payment
+     * within this time window, the payment request will expire. The EXPIRED
+     * state is a final state.»
+     *
+     * Ti minutter er ingenting naar lenka skal kopieres ut av admin, limes
+     * inn i Messenger, og aapnes av en som er paa jobb. Alt verkstedet har
+     * sendt har vaert doedt for mottakeren rakk aa trykke — og purringa cron
+     * sender dag 1 og dag 3 sendte den samme adressen, over et doegn gammel.
+     *
+     * Denne lenka lever i fjorten dager. Vipps-avtalen lages foerst i det hun
+     * trykker — se api/godkjenn.php — saa adressen hun sendes videre til
+     * alltid er sekunder gammel.
+     *
+     * Samme medlem og samme plan gir den samme noekkelen saa lenge den lever.
+     * Ellers ville hver purring lagt igjen en ny gyldig noekkel.
+     */
+    public static function godkjennLenke(int $medlemId, string $planNavn): string
+    {
+        if (!DB::harTabell('avtale_lenker')) {
+            return Config::nettsted() . '/min-side';
+        }
+
+        $finnes = DB::en(
+            'SELECT token FROM avtale_lenker
+              WHERE member_id = :m AND plan = :p
+                AND brukt_at IS NULL AND utloper > UTC_TIMESTAMP()
+           ORDER BY id DESC LIMIT 1',
+            ['m' => $medlemId, 'p' => $planNavn]
+        );
+        $token = $finnes !== null
+            ? (string) $finnes['token']
+            : bin2hex(random_bytes(16));
+
+        if ($finnes === null) {
+            DB::settInn('avtale_lenker', [
+                'member_id' => $medlemId,
+                'plan'      => $planNavn,
+                'token'     => $token,
+                'utloper'   => gmdate('Y-m-d H:i:s', time() + 14 * 86400),
+            ]);
+        }
+
+        return Config::nettsted() . '/godkjenn/' . $token;
+    }
+
+    /** Setter noekkelen som brukt. Kalles naar avtalen faktisk er godkjent. */
+    public static function godkjennLenkeBrukt(int $medlemId): void
+    {
+        if (!DB::harTabell('avtale_lenker')) {
+            return;
+        }
+        DB::kjor(
+            'UPDATE avtale_lenker SET brukt_at = UTC_TIMESTAMP()
+              WHERE member_id = :m AND brukt_at IS NULL',
+            ['m' => $medlemId]
+        );
+    }
+
     public static function startAvtale(array $medlem, string $planNavn): array
     {
         $plan = self::plan($planNavn);
@@ -999,6 +1064,9 @@ final class Medlemskap
         // Medlemsstatusen folger avtalen. Uten dette ville noen betalt uten aa
         // faa tilgang, eller hatt tilgang uten aa betale.
         if ($ny === 'aktiv' && !$venterSvar) {
+            // Godkjenningslenka har gjort sitt. Trykker hun paa den igjen,
+            // skal hun faa «Alt er i orden» — ikke en avtale til.
+            self::godkjennLenkeBrukt((int) $avtale['member_id']);
             DB::oppdater('members', [
                 'status'          => 'aktiv',
                 'medlemskap_type' => $avtale['plan'],
@@ -1533,35 +1601,48 @@ final class Medlemskap
         //
         // Dagen etter, og én gang til etter tre dager. Mer enn det er mas;
         // mindre er aa gi opp pengene. Kolonnene kom med migrasjon 139.
+        //
+        // ── Purringa foelger godkjenningslenka ──────────────────────────
+        //
+        // Den hentet foer «vipps_url» fra abonnementsraden og sendte den paa
+        // nytt. Den adressen lever i ti minutter hos Vipps; purringa gikk dag
+        // 1 og dag 3, og sendte altsaa en doed lenke to ganger.
+        //
+        // Naa staar det ingen abonnementsrad foer hun har trykt. Telleverket
+        // ligger paa noekkelen i «avtale_lenker», og lenka som sendes er vaar
+        // egen — den lager avtalen i det hun trykker. Se api/godkjenn.php.
         $paaminnet = 0;
-        if (DB::harKolonne('subscriptions', 'paaminnet_at')) {
+        if (DB::harTabell('avtale_lenker')) {
             $vent = DB::alle(
-                "SELECT s.*, m.navn, m.epost, m.telefon
-                   FROM subscriptions s
-                   JOIN members m ON m.id = s.member_id
-                  WHERE s.status = 'venter'
-                    AND s.vipps_url IS NOT NULL AND s.vipps_url <> ''
-                    AND s.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)
-                    AND s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
-                    AND s.paaminnet_antall < 2
-                    AND (s.paaminnet_at IS NULL
-                         OR s.paaminnet_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 DAY))"
+                "SELECT l.*, m.navn, m.epost, m.telefon
+                   FROM avtale_lenker l
+                   JOIN members m ON m.id = l.member_id
+                  WHERE l.brukt_at IS NULL
+                    AND l.utloper > UTC_TIMESTAMP()
+                    AND l.opprettet < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)
+                    AND l.paaminnet_antall < 2
+                    AND (l.paaminnet_at IS NULL
+                         OR l.paaminnet_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 DAY))
+                    AND NOT EXISTS (
+                        SELECT 1 FROM subscriptions s
+                         WHERE s.member_id = l.member_id AND s.status = 'aktiv')"
             );
             foreach ($vent as $a) {
                 if (trim((string) ($a['epost'] ?? '')) === '') {
                     continue;
                 }
+                $plan = self::plan((string) $a['plan']);
                 Varsel::mal('avtale_ikke_godkjent', [
                     'epost'   => (string) $a['epost'],
                     'telefon' => (string) ($a['telefon'] ?? ''),
                 ], [
                     'navn'  => (string) ($a['navn'] ?? ''),
                     'type'  => (string) $a['plan'],
-                    'belop' => Booking::kroner((int) $a['pris_ore']),
-                    'lenke' => (string) $a['vipps_url'],
-                ], 'subscription', (int) $a['id']);
+                    'belop' => Booking::kroner((int) ($plan['pris_ore'] ?? 0)),
+                    'lenke' => Config::nettsted() . '/godkjenn/' . (string) $a['token'],
+                ], 'member', (int) $a['member_id']);
                 DB::kjor(
-                    'UPDATE subscriptions
+                    'UPDATE avtale_lenker
                         SET paaminnet_at = UTC_TIMESTAMP(),
                             paaminnet_antall = paaminnet_antall + 1
                       WHERE id = :i',

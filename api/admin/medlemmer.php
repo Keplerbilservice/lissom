@@ -328,13 +328,24 @@ if (Foresporsel::metode() === 'POST') {
             Svar::feil('Medlemmet har alt en løpende avtale.');
         }
 
-        try {
-            $ut = Medlemskap::kreverFastTrekk($plan)
-                ? Medlemskap::startAvtale($m, $type)
-                : Medlemskap::startEngangs($m, $type);
-        } catch (RuntimeException $e) {
-            Svar::feil($e->getMessage());
-        }
+        // ── Avtalen lages ikke her lenger ────────────────────────────
+        //
+        // Her ble Vipps-avtalen opprettet med det samme, og adressen Vipps
+        // ga oss ble sendt paa e-post og vist i admin.
+        //
+        // Vipps sin egen dokumentasjon: «By default, a user has a total of
+        // 10 minutes to accept a payment. If the user doesn't complete the
+        // payment within this time window, the payment request will expire.
+        // The EXPIRED state is a final state.»
+        //
+        // Eieren sendte den lenka til Eirin paa Messenger, og hun fikk «Vi
+        // kjenner ikke denne QR-koden» i Vipps-appen. Den var doed foer hun
+        // rakk aa trykke. Det samme gjaldt purringene, som sendte den samme
+        // adressen dag 1 og dag 3.
+        //
+        // Naa sender vi vaar egen adresse — lissom.no/godkjenn/… — og
+        // avtalen lages foerst i det hun trykker. Se api/godkjenn.php.
+        $lenke = Medlemskap::godkjennLenke($id, $type);
 
         Varsel::mal(Medlemskap::kreverFastTrekk($plan)
                 ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',
@@ -342,16 +353,14 @@ if (Foresporsel::metode() === 'POST') {
                 'navn'  => (string) ($m['navn'] ?? ''),
                 'type'  => $type,
                 'belop' => Booking::kroner((int) $plan['pris_ore']),
-                'lenke' => (string) ($ut['url'] ?? '') !== ''
-                    ? (string) $ut['url']
-                    : Config::nettsted() . '/min-side',
-            ], 'subscription', (int) $ut['id']);
+                'lenke' => $lenke,
+            ], 'member', $id);
 
         revider('medlem_avtale_sendt', 'member', $id, ['plan' => $type]);
         Svar::ok([
             'beskjed' => 'Lenka er sendt til ' . $m['epost']
                 . '. Medlemskapet starter når hun har godkjent avtalen i Vipps.',
-            'url' => (string) ($ut['url'] ?? ''),
+            'url' => $lenke,
         ]);
     }
 
@@ -1279,47 +1288,31 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // Bare en avtale som staar «venter». Er den godkjent, er lenka
             // brukt opp; er den stoppet, skal den ikke deles ut igjen.
             //
-            // ── Lenka har kort levetid ──────────────────────────────────
+            // ── Lenka gaar ikke ut mens du kopierer den ─────────────────
             //
-            // Foerste utgave, samme dag, delte den ut uten aa se paa alderen.
-            // Eieren sendte den til Eirin timer etter at den ble laget, og
-            // hun fikk «Vi kjenner ikke denne QR-koden» i Vipps-appen.
+            // Her sto Vipps sin egen adresse, foerst uten aldersgrense og
+            // siden med fem minutter. Begge var feil: Vipps gir avtalen ti
+            // minutter, og deretter er den EXPIRED for godt. Ingen rekker aa
+            // kopiere en lenke ut av admin, sende den, og faa den aapnet
+            // innenfor det.
             //
-            // Resten av koden vet dette: paagaaendeForsok() gjenbruker bare
-            // en «vipps_url» som er under fem minutter gammel. Skjermen sto
-            // uten den grensa, og delte derfor ut lenker Vipps hadde glemt.
-            //
-            // Naa foelger de samme fem minuttene. Er lenka eldre, sier
-            // skjermen det, og «Send Vipps-avtale» lager en ny.
+            // Naa staar vaar egen adresse her — lissom.no/godkjenn/… — og
+            // den lever i fjorten dager. Vipps-avtalen lages foerst i det
+            // mottakeren trykker. Se api/godkjenn.php.
             'avtaleLenke' => (static function () use ($m): string {
-                if (!DB::harKolonne('subscriptions', 'vipps_url')) {
+                $type = trim((string) ($m['medlemskap_type'] ?? ''));
+                if ($type === '' || (string) ($m['status'] ?? '') === 'oppsagt') {
                     return '';
                 }
-                return (string) (DB::verdi(
-                    "SELECT vipps_url FROM subscriptions
-                      WHERE member_id = :m AND status = 'venter'
-                        AND vipps_url IS NOT NULL AND vipps_url <> ''
-                        AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)
-                   ORDER BY id DESC LIMIT 1",
-                    ['m' => (int) $m['id']]
-                ) ?? '');
-            })(),
-            // Finnes det en avtale som venter, men lenka er for gammel til aa
-            // deles ut? Da skal skjermen si hvorfor det ikke staar en lenke
-            // der — ikke bare la feltet vaere borte.
-            'avtaleLenkeGammel' => (static function () use ($m): bool {
-                if (!DB::harKolonne('subscriptions', 'vipps_url')) {
-                    return false;
+                $a = Medlemskap::avtale((int) $m['id']);
+                if ($a !== null && (string) $a['status'] === 'aktiv') {
+                    return '';
                 }
-                return DB::en(
-                    "SELECT id FROM subscriptions
-                      WHERE member_id = :m AND status = 'venter'
-                        AND vipps_url IS NOT NULL AND vipps_url <> ''
-                        AND created_at < (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)
-                      LIMIT 1",
-                    ['m' => (int) $m['id']]
-                ) !== null;
+                return Medlemskap::godkjennLenke((int) $m['id'], $type);
             })(),
+            // Sto her for aa forklare at lenka var for gammel til aa deles
+            // ut. Det kan den ikke bli lenger.
+            'avtaleLenkeGammel' => false,
         ] + (static function () use ($m): array {
             if ($m === null || (int) ($m['id'] ?? 0) <= 0) {
                 return ['betaling' => 'ingen', 'betalingTekst' => ''];

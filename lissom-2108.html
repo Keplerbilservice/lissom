@@ -38303,29 +38303,33 @@ class Component extends DCLogic {
           // Naa staar den saa lenge avtalen venter paa godkjenning, ogsaa
           // naar ruta aapnes paa nytt en annen dag.
           //
-          // ── Lenka har kort levetid ────────────────────────────────
+          // ── Lenka gaar ikke ut mens du kopierer den ───────────────
           //
-          // Foerste utgave, samme dag, sto uten en grense paa alderen.
-          // Eieren sendte den til Eirin timer etter at den ble laget, og hun
-          // fikk «Vi kjenner ikke denne QR-koden» i Vipps-appen. Serveren
-          // deler den ikke ut lenger naar den er over fem minutter gammel —
-          // den samme grensa paagaaendeForsok() alt hadde.
+          // Her sto Vipps sin egen adresse. Den lever i ti minutter — Vipps
+          // skriver det selv: «By default, a user has a total of 10 minutes
+          // to accept a payment … The EXPIRED state is a final state.»
+          //
+          // Eieren sendte den til Eirin paa Messenger, og hun fikk «Vi
+          // kjenner ikke denne QR-koden». Den var doed foer hun rakk aa
+          // trykke.
+          //
+          // Naa staar vaar egen adresse her, lissom.no/godkjenn/… Den lever i
+          // fjorten dager, og Vipps-avtalen lages foerst i det hun trykker.
+          // Se api/godkjenn.php.
           personHarAvtaleLenke: !!(p.avtaleLenke || ''),
           personAvtaleLenke: p.avtaleLenke || '',
           personAvtaleLenkeHjelp: 'Send den til ' + fornavn
-            + ' med én gang. Vipps avviser en lenke som har ligget en stund '
-            + '— da får hun «Vi kjenner ikke denne QR-koden». Hun åpner den '
-            + 'på telefonen og sier ja i Vipps-appen.',
-          // Avtalen venter, men lenka er for gammel til aa sendes.
-          personAvtaleLenkeGammel: !(p.avtaleLenke || '') && !!p.avtaleLenkeGammel,
-          personAvtaleLenkeGammelTekst: 'Lenka fra sist er for gammel — Vipps '
-            + 'avviser den nå. Trykk «Send Vipps-avtale» over, så lages det en '
-            + 'ny som du kan sende med én gang.',
+            + ' på den måten som passer — e-post, SMS eller Messenger. Lenka '
+            + 'virker i fjorten dager. Hun åpner den på telefonen, og Vipps '
+            + 'spør om hun vil godkjenne.',
+          // Lenka kan ikke lenger bli for gammel til aa deles ut.
+          personAvtaleLenkeGammel: false,
+          personAvtaleLenkeGammelTekst: '',
           kopierPersonAvtaleLenke: () => this.kopier(p.avtaleLenke || '',
             'Lenka ligger på utklippstavla — lim den inn der du vil sende den.'),
-          personAvtaleHjelp: 'Lager avtalen i Vipps og sender lenka til '
-            + fornavn + ' på e-post. Medlemskapet starter først når hun har '
-            + 'godkjent den i appen.',
+          personAvtaleHjelp: 'Sender lenka til ' + fornavn + ' på e-post. '
+            + 'Avtalen lages i Vipps først når hun trykker, så lenka kan ligge '
+            + 'i fjorten dager uten å bli for gammel.',
           sendPersonAvtale: () => this.medlemKall(
             { handling: 'send-avtale', medlemId: p.id }, true
           ).then(ok => {

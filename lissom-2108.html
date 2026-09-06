@@ -6243,6 +6243,24 @@ window.__resources = {
                ved siden av overskriften. -->
           <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
         </div>
+        <!-- ── Aarskalenderen, sammentrukket ────────────────────────────
+             Eieren, 6. september: «denne kan ogsaa ligge paa kalender siden
+             ledige felt oeverst paa siden». Her staar maaneden man er i, med
+             punktene sine, og ett trykk aapner hele aaret. Ingen redigering
+             herfra — det gjoeres der lista bor. -->
+        <sc-if value="{{ aarStripeVises }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-6); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+            <span style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); font-weight: 700;">{{ aarStripeMnd }}</span>
+            <sc-for list="{{ aarStripePunkter }}" as="sp" hint-placeholder-count="3">
+              <span style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 3px solid var(--terracotta-500); border-radius: var(--radius-sm); padding: 4px 9px; font-size: var(--text-xs);">{{ sp.tekst }}</span>
+            </sc-for>
+            <sc-if value="{{ aarStripeTom }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">Ingenting ennå.</span>
+            </sc-if>
+            <button type="button" onClick="{{ aarStripeApne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; margin-left: auto; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Åpne årskalenderen →</button>
+          </div>
+        </sc-if>
+
         <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
             <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
@@ -7495,6 +7513,174 @@ window.__resources = {
           </div>
         </div>
       </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erAdminArskalender }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – årskalender" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavArskalender }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </aside>
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Årskalender</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Året måned for måned. Skriv inn hva som skjer, så står det her til du endrer det.</p>
+        </div>
+
+        <!-- Aaret, med piler. Ett aar av gangen — «viser kun maaned for
+             maaned». -->
+        <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6);">
+          <button type="button" onClick="{{ aarForrige }}" title="Forrige år" style="{{ aarPilStil }}">‹</button>
+          <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ aarValgt }}</span>
+          <button type="button" onClick="{{ aarNeste }}" title="Neste år" style="{{ aarPilStil }}">›</button>
+        </div>
+
+        <!-- Tolv kort. Inneværende maaned har ramme, saa man ser hvor man
+             er. Punktene staar punktvis, som eieren ba om. -->
+        <div style="{{ aarRutenettStil }}">
+          <sc-for list="{{ aarMaaneder }}" as="m" hint-placeholder-count="12">
+            <div id="{{ m.domId }}" style="{{ m.kortStil }}">
+              <div style="display: flex; align-items: baseline; gap: var(--space-2);">
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ m.navn }}</span>
+                <span style="margin-left: auto; font-size: 11px; font-weight: 700; color: var(--text-muted);">{{ m.antall }}</span>
+              </div>
+
+              <sc-for list="{{ m.punkter }}" as="pk" hint-placeholder-count="2">
+                <div style="{{ pk.radStil }}">
+                  <sc-if value="{{ pk.lukket }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onMouseDown="{{ pk.ned }}" onClick="{{ pk.apne }}" style="{{ pk.knappStil }}"><span style="color: var(--terracotta-500); flex: 0 0 auto;">•</span><span style="{{ pk.tekstStil }}">{{ pk.tekst }}</span></button>
+                  </sc-if>
+                  <sc-if value="{{ pk.apen }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <input value="{{ aarRedTekst }}" onChange="{{ settAarRedTekst }}" style="{{ aarRedFeltStil }}">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ pk.lagre }}" hint-size="auto,32px">Lagre</x-import>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="ghost" on-click="{{ pk.slett }}" hint-size="auto,32px">Slett</x-import>
+                      </div>
+                      <!-- Bytte maaned uten aa dra. Paa telefonen er dette
+                           eneste vei: et trykk er ikke et dra. -->
+                      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <sc-for list="{{ aarFlyttValg }}" as="fm" hint-placeholder-count="12">
+                          <button type="button" onClick="{{ fm.velg }}" style="{{ fm.stil }}">{{ fm.navn }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+
+              <sc-if value="{{ m.tom }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">Ingenting ennå.</div>
+              </sc-if>
+
+              <sc-if value="{{ m.slipp }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 1.5px dashed var(--terracotta-500); background: var(--terracotta-100); color: var(--terracotta-600); border-radius: var(--radius-md); padding: 7px 9px; font-size: var(--text-xs); font-weight: 700; text-align: center;">Slipp her</div>
+              </sc-if>
+
+              <div style="display: flex; gap: 6px;">
+                <input value="{{ m.ny }}" onChange="{{ m.settNy }}" placeholder="Hva skjer denne måneden?" style="{{ aarFeltStil }}">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="plus" on-click="{{ m.leggTil }}" hint-size="auto,32px">Legg til</x-import>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Spoer foer noe forsvinner. Samme kort som i kalenderen, midt paa
+             skjermen. -->
+        <sc-if value="{{ aarSlettVises }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ aarSlettAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 90; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+            <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Årskalender</div>
+              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">Er du sikker?</h2>
+              <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: 6px;">
+                <sc-for list="{{ aarSlettRader }}" as="r" hint-placeholder-count="2">
+                  <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">{{ r.navn }}</span><span style="font-weight: 700; color: var(--text-heading); text-align: right;">{{ r.verdi }}</span></div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ aarSlettBekreft }}" hint-size="auto,44px">Ja, slett punktet</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ aarSlettAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </main>
     </div>
   </sc-if>
 
@@ -19869,6 +20055,7 @@ class Component extends DCLogic {
       { sti: '/admin/videokurs',    side: 'adminvideokurs' },
       { sti: '/admin/referanser',   side: 'adminreferanser' },
       { sti: '/admin/kursvelger',   side: 'adminkursvelger' },
+      { sti: '/admin/arskalender',  side: 'adminarskalender' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
@@ -24273,15 +24460,19 @@ class Component extends DCLogic {
       // Det er ikke en feil vi kan slaa opp: nettleseren nekter aa si hva som
       // skjedde naar unntaket kom fra et skript den regner som et annet
       // nettsted. Da staar meldinga tom, og fil, linje og kolonne likesaa.
-      // Paa lissom.no kan det bare komme to steder fra: Google Analytics —
-      // det eneste skriptet vi henter utenfra, og bare naar en maale-ID er
-      // satt under Markedsforing OG besokende har sagt ja til
-      // informasjonskapsler — eller noe i selve nettleseren, som en
-      // annonseblokker eller en utvidelse.
       //
-      // Rapporten sa ingen av delene, og da leter man etter en feil i egen
-      // kode som ikke finnes. Naa staar det hva det betyr, og om analysen
-      // faktisk kjorte i det oyeblikket — det er forskjellen paa de to.
+      // Her sto det at Google Analytics var «det eneste skriptet vi henter
+      // utenfra». Det stemte ikke. Vipps-knappen hentes ogsaa utenfra, fra
+      // cdn.vippsmobilepay.com, og den lastes paa hver eneste side — ogsaa i
+      // admin, fordi Kassa bruker den.
+      //
+      // Eieren, 6. september, fra /admin paa iPhone: «Script error. —
+      // nettleseren skjuler detaljene». Kilden sa «Analysen kjorte ikke —
+      // trolig en utvidelse i nettleseren», og det pekte ham vekk fra den
+      // mest sannsynlige kilden. Han valgte «Rett forklaringen».
+      //
+      // Naa staar alle tre mulighetene, og om analysen faktisk kjorte i det
+      // oyeblikket — det er det eneste vi vet noe sikkert om.
       const melding = String((e && e.message) || 'Ukjent feil');
       const skjult = melding === 'Script error.' || melding === 'Script error';
       this.meldFeil({
@@ -24290,8 +24481,9 @@ class Component extends DCLogic {
             + 'skript utenfra, ikke fra sida selv.'
           : melding,
         kilde: e && e.filename ? e.filename + ':' + e.lineno + ':' + e.colno
-          : (skjult ? (this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'
-                                    : 'Analysen kjørte ikke — trolig en utvidelse i nettleseren') : ''),
+          : (skjult ? (this._gaSatt
+                ? 'Kan komme fra Vipps-knappen, analysen (Google) eller en utvidelse i nettleseren'
+                : 'Kan komme fra Vipps-knappen eller en utvidelse i nettleseren. Analysen kjørte ikke.') : ''),
       });
     };
     // Ressursfeil bobler ikke — de maa fanges paa vei ned.
@@ -24808,6 +25000,100 @@ class Component extends DCLogic {
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const nyttaar = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     return Math.ceil((((d - nyttaar) / 86400000) + 1) / 7);
+  }
+
+  /**
+   * Aarskalenderen: aaret maaned for maaned.
+   *
+   * Eieren, 6. september: «det er ogsaa oenske om en aarskalender … et felt
+   * der jeg kan skrive inn hva som skjer denne maaneden … lag punktvis
+   * visning inne paa maanedene».
+   *
+   * Punktene er hans egne notater om aaret. Kursene dukker ikke opp av seg
+   * selv — han valgte «Nei, bare det jeg skriver selv», fordi en liste som
+   * fyller seg selv drukner det han ville huske.
+   *
+   * Hentes bare der den vises: paa sin egen skjerm, og paa kalenderen, der
+   * raden staar oeverst.
+   */
+  /**
+   * Dra et punkt fra én maaned til en annen.
+   *
+   * Eieren, 6. september: «vil ogsaa kunne redigere og bytte og slette».
+   * «Bytte» er dette: punktet beholder teksten sin og legger seg bakerst i
+   * den nye maaneden.
+   *
+   * Samme terskel som de andre dra-handlerne — se klDro(). Ett piksel er
+   * ikke et dra, og et trykk uten aa dra aapner punktet for redigering.
+   */
+  aarDragStart(pk, e) {
+    if (e.button !== 0 || !pk || !pk.id) return;
+    this._aarDra = { pk: pk, moved: false };
+    const maanedUnder = mv => {
+      const el = document.elementsFromPoint(mv.clientX, mv.clientY)
+        .find(x => x && x.id && String(x.id).indexOf('aarmnd-') === 0);
+      return el ? parseInt(String(el.id).slice(7), 10) : 0;
+    };
+    const move = mv => {
+      const d = this._aarDra; if (!d) return;
+      if (!d.moved && !this.klDro(e, mv)) return;
+      d.moved = true;
+      const m = maanedUnder(mv);
+      if (m !== this.state.aarOver) this.setState({ aarOver: m });
+    };
+    const opp = mv => {
+      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
+      const d = this._aarDra; this._aarDra = null;
+      this.setState({ aarOver: 0 });
+      // Slapp du uten aa dra, var det et klikk. Raden har sin egen
+      // «onClick» som aapner punktet, som paa deltakerraden i kalenderen.
+      if (!d || !d.moved) return;
+      const m = maanedUnder(mv);
+      if (!m || m === Number(pk.mnd)) return;
+      this.aarKall({ handling: 'flytt', id: pk.id, mnd: m, aar: this.state.aarValgt || (new Date()).getFullYear() });
+    };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
+  }
+
+  hentArskalender(aar) {
+    const a = aar || this.state.aarValgt || (new Date()).getFullYear();
+    if (this._aarHentes === a) return;
+    this._aarHentes = a;
+    fetch('/api/admin/arskalender.php?aar=' + a,
+          { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        this._aarHentes = null;
+        if (d && d.ok !== false && Array.isArray(d.punkter)) {
+          this.setState({ aarData: d.punkter, aarValgt: d.aar || a });
+        }
+      })
+      .catch(() => { this._aarHentes = null; });
+  }
+
+  /** Legge inn, rette, bytte maaned og slette. Svaret baerer hele aaret. */
+  aarKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
+    if (this._aarLagrer) return Promise.resolve(false);
+    this._aarLagrer = true;
+    return fetch('/api/admin/arskalender.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        this._aarLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok && d && Array.isArray(d.punkter)) {
+          this.setState({ aarData: d.punkter, aarValgt: d.aar || this.state.aarValgt });
+        }
+        return ok;
+      })
+      .catch(() => { this._aarLagrer = false; return false; });
   }
 
   hentFerie() {
@@ -29152,6 +29438,12 @@ class Component extends DCLogic {
       // planlegger dagen, og etter fase 6 gjores det meste av det daglige
       // derfra — da skal den ikke ligge midt i lista.
       ['Kalender',  'adminkalender'],
+      // Aarskalenderen: aaret maaned for maaned, med det eieren skriver inn
+      // selv. Eieren, 6. september: «lag en egen meny som heter
+      // aarskalender». Den staar ved siden av kalenderen fordi det er det
+      // samme arbeidet sett paa lang sikt — ikke inne i den, for kalenderen
+      // handler om datoer og denne om maaneder.
+      ['Årskalender', 'adminarskalender'],
       // Kursene og dem som gaar paa dem er det samme arbeidet: hva verkstedet
       // tilbyr, og hvem som kommer. De sto som to punkter og delte allerede
       // to faner — «Paameldte» og «Kurs» sto begge steder — og det var det
@@ -29332,6 +29624,7 @@ class Component extends DCLogic {
       case 'adminferdigbrent':   return p('Oversikt');
       case 'adminvideokurs':     return p('Kurs og deltakere', 'Kurs og deltakere', 'Videokurs');
       case 'adminkalender':      return p('Kalender');
+      case 'adminarskalender':   return p('Årskalender');
       case 'adminventeliste':    return p('Kurs og deltakere', 'Kurs og deltakere', 'Venteliste');
       case 'adminkursholdere':   return p('Oversikt');
       case 'adminnyepameldinger': return p('Oversikt');
@@ -34463,6 +34756,11 @@ class Component extends DCLogic {
     if (this.erAdminSkjerm(side) && !this.state.ferieData) {
       this.hentFerie();
     }
+    // Aarskalenderen. Hentes paa sin egen skjerm, og paa kalenderen — der
+    // staar raden oeverst med maaneden man er i.
+    if ((side === 'adminarskalender' || side === 'adminkalender') && !this.state.aarData) {
+      this.hentArskalender();
+    }
     // Ressursene. Hentes paa alle adminskjermer: kortet paa Oversikt viser
     // tallene, kursoppsettet lar deg velge mellom dem, og skjermen deres
     // redigerer dem. Ett lite kall, og uten det sto brikkene i veiviseren og
@@ -39134,15 +39432,27 @@ class Component extends DCLogic {
             // Ingenting er borte: medlemslista filtrert paa ubetalte naas
             // fra Medlemmer → Alle medlemmer.
 
-            // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
-            // den veien verkstedet er vant til aa gaa naar noen skal meldes
-            // paa — det gaar bare rett inn i kassa naa.
+            // ── Kassa: bare paa PC ──────────────────────────────────
+            //
+            // Eieren, 6. september, med bilde av Oversikt paa telefonen:
+            // «Kasse og nettbutikk vil jeg ikke skal vises paa forsiden, vi
+            // har det allerede paa bunnmenyen» — og, paa spoersmaal: «Bare
+            // paa mobil jeg viste deg. Ingen endring paa pc.»
+            //
+            // Paa telefonen staar Kasse og Nettbutikk i bunnmenyen, alltid
+            // synlige. Da sa kortene det samme en gang til, oeverst der man
+            // skal se hva som haster. Paa PC finnes ingen bunnmeny, og der
+            // staar kortene som for.
+            //
+            // Samme kasse, andre halvdel. Kortet staar fordi det er den veien
+            // verkstedet er vant til aa gaa naar noen skal meldes paa — det
+            // gaar bare rett inn i kassa naa.
             // Kortet sa hva kassa er, ikke hva som har skjedd i den. Dagens
             // tall staar i teksten og ikke i merket: det er kroner, og et
             // beloep i en tallboks ved siden av «3» paa ventelista leses som
             // antall. Summen er den samme som «I dag» i omsetningen lenger
             // nede — ett tall, ett sted det regnes ut.
-            kort('Kasse',
+            ...(this.erSmal() ? [] : [kort('Kasse',
                  (kasseIdag
                     ? 'Solgt for ' + kasseIdag + ' i dag. '
                     : 'Ingen salg over disk i dag ennå. ')
@@ -39152,7 +39462,7 @@ class Component extends DCLogic {
                  () => this.gaaAdmin('adminuttak', {
                    utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
                    utBelop: '', utSalgBeskjed: '',
-                 })),
+                 }))]),
 
             // Tekstene som sendes ut. Eieren, 1. september: «jeg vil ha et
             // eget kort paa oversikt som heter maler».
@@ -39181,10 +39491,11 @@ class Component extends DCLogic {
                  null, 'Se siden',
                  () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
 
-            kort('Nettbutikk',
+            // Nettbutikken: som Kassa, bare paa PC. Se kommentaren over.
+            ...(this.erSmal() ? [] : [kort('Nettbutikk',
                  'Varer, priser, bilder og lager.',
                  varer.length || null, 'Se butikken',
-                 () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' })),
+                 () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' }))]),
 
             kort('Kursholdere',
                  'Hvem som holder kursene, og timene deres.',
@@ -41191,6 +41502,27 @@ class Component extends DCLogic {
         const adr = ((this.state.adminData || {}).kalenderAdresse) || '';
         return {
           kalApent: !!this.state.kalApent,
+          // ── Aarskalenderen, sammentrukket paa kalendersida ──────────
+          //
+          // Eieren, 6. september: «denne kan ogsaa ligge paa kalender siden
+          // ledige felt oeverst paa siden». Bare maaneden man staar i, og
+          // bare til aa se paa — redigeringen bor paa sin egen skjerm.
+          ...(() => {
+            const naa2 = new Date();
+            const aar2 = this.state.aarValgt || naa2.getFullYear();
+            const mine2 = (this.state.aarData || []).filter(x => Number(x.mnd) === (naa2.getMonth() + 1));
+            const MND2 = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni',
+                          'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'];
+            return {
+              // Vises bare naar aaret som staar oppe er det vi er i — ellers
+              // ville raden sagt «September» om en september to aar fram.
+              aarStripeVises: aar2 === naa2.getFullYear(),
+              aarStripeMnd: MND2[naa2.getMonth()],
+              aarStripePunkter: mine2.slice(0, 6).map(x => ({ tekst: x.tekst })),
+              aarStripeTom: mine2.length === 0,
+              aarStripeApne: () => this.gaaAdmin('adminarskalender', {}),
+            };
+          })(),
           kalKnapp: this.state.kalApent ? 'Skjul kalenderadressen' : 'Legg programmet i telefonens kalender →',
           kalVeksle: () => this.setState(st => ({ kalApent: !st.kalApent, kalKopiert: false })),
           kalAdresse: adr,
@@ -43577,6 +43909,110 @@ class Component extends DCLogic {
       erAdminKalender: side === 'adminkalender',
       adminNavKalender: this.adminMeny(),
       ...(side === 'adminkalender' ? this.klVals() : {}),
+      erAdminArskalender: side === 'adminarskalender',
+      adminNavArskalender: this.adminMeny(),
+      // ── Aarskalenderen ────────────────────────────────────────────
+      //
+      // Tolv kort, ett per maaned, med punktene eieren skriver selv. Ingen
+      // datoer og ingen kurs: «Nei, bare det jeg skriver selv».
+      //
+      // Alt bygges her, ett sted, og skjermen leser det. Punktene kommer
+      // fra api/admin/arskalender.php og ligger i «aarData».
+      ...(() => {
+        const MND = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni',
+                     'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'];
+        const naa = new Date();
+        const aar = this.state.aarValgt || naa.getFullYear();
+        const punkter = this.state.aarData || [];
+        const apenId = this.state.aarApen || null;
+        const over = this.state.aarOver || 0;
+        const nye = this.state.aarNy || {};
+        const felt = {
+          boxSizing: 'border-box', flex: '1 1 auto', minWidth: 0,
+          border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+          padding: '7px 10px', font: 'var(--type-body-sm)',
+          background: 'var(--clay-50)', color: 'var(--text-heading)',
+        };
+        return {
+          aarValgt: String(aar),
+          aarForrige: () => { this.setState({ aarValgt: aar - 1, aarData: null, aarApen: null }); this.hentArskalender(aar - 1); },
+          aarNeste: () => { this.setState({ aarValgt: aar + 1, aarData: null, aarApen: null }); this.hentArskalender(aar + 1); },
+          aarPilStil: { appearance: 'none', cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'var(--surface-card)', color: 'var(--text-heading)', borderRadius: 'var(--radius-pill)', width: '32px', height: '32px', fontSize: '16px', lineHeight: 1 },
+          aarRutenettStil: { display: 'grid', gridTemplateColumns: this.erSmal() ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)', alignItems: 'start' },
+          aarFeltStil: felt,
+          aarRedFeltStil: Object.assign({}, felt, { border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)' }),
+          aarRedTekst: this.state.aarRedTekst || '',
+          settAarRedTekst: e => this.setState({ aarRedTekst: e.target.value }),
+          // Maanedene aa bytte til. Uten mus er dette eneste vei: et trykk
+          // er ikke et dra.
+          aarFlyttValg: MND.map((navn, i) => ({
+            navn: navn.slice(0, 3),
+            velg: () => { if (apenId) this.aarKall({ handling: 'flytt', id: apenId, mnd: i + 1, aar: aar }).then(ok => { if (ok) this.setState({ aarApen: null }); }); },
+            stil: { appearance: 'none', cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-muted)', borderRadius: 'var(--radius-pill)', padding: '3px 9px', font: 'var(--type-body-sm)', fontSize: '11px' },
+          })),
+          aarMaaneder: MND.map((navn, i) => {
+            const mnd = i + 1;
+            const mine = punkter.filter(x => Number(x.mnd) === mnd);
+            const naaMnd = aar === naa.getFullYear() && mnd === (naa.getMonth() + 1);
+            return {
+              navn: navn,
+              domId: 'aarmnd-' + mnd,
+              antall: mine.length ? String(mine.length) : '—',
+              tom: mine.length === 0,
+              slipp: over === mnd,
+              kortStil: Object.assign({
+                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+                display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0,
+              }, naaMnd ? { borderColor: 'var(--terracotta-500)', boxShadow: '0 0 0 1px var(--terracotta-500)' } : {}),
+              ny: nye[mnd] || '',
+              settNy: e => { const v = e.target.value; this.setState(st => ({ aarNy: Object.assign({}, st.aarNy, { [mnd]: v }) })); },
+              leggTil: () => {
+                const t = String(nye[mnd] || '').trim();
+                if (t === '') { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Skriv hva som skjer denne måneden.' }); return; }
+                this.aarKall({ handling: 'legg-til', aar: aar, mnd: mnd, tekst: t })
+                  .then(ok => { if (ok) this.setState(st => ({ aarNy: Object.assign({}, st.aarNy, { [mnd]: '' }) })); });
+              },
+              punkter: mine.map(pk => ({
+                tekst: pk.tekst,
+                lukket: apenId !== pk.id,
+                apen: apenId === pk.id,
+                radStil: { minWidth: 0 },
+                knappStil: { appearance: 'none', border: 'none', background: 'transparent', cursor: 'grab', width: '100%', boxSizing: 'border-box', textAlign: 'left', display: 'flex', gap: '7px', alignItems: 'flex-start', padding: '2px 0', font: 'var(--type-body-sm)', color: 'var(--text-body)', userSelect: 'none' },
+                tekstStil: { minWidth: 0, overflowWrap: 'anywhere' },
+                apne: () => this.setState({ aarApen: pk.id, aarRedTekst: pk.tekst }),
+                ned: e => this.aarDragStart(pk, e),
+                lagre: () => {
+                  const t = String(this.state.aarRedTekst || '').trim();
+                  if (t === '') { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Skriv hva som skjer denne måneden.' }); return; }
+                  this.aarKall({ handling: 'endre', id: pk.id, tekst: t })
+                    .then(ok => { if (ok) this.setState({ aarApen: null, aarRedTekst: '' }); });
+                },
+                // Spoer foerst, som overalt ellers der noe forsvinner.
+                slett: () => this.setState({ aarSlett: { id: pk.id, tekst: pk.tekst, mnd: navn } }),
+              })),
+            };
+          }),
+          ...(() => {
+            const sl = this.state.aarSlett;
+            return {
+              aarSlettVises: !!sl,
+              aarSlettRader: sl ? [
+                { navn: 'Punkt', verdi: sl.tekst },
+                { navn: 'Måned', verdi: sl.mnd + ' ' + aar },
+              ] : [],
+              aarSlettAvbryt: () => this.setState({ aarSlett: null }),
+              aarSlettBekreft: () => {
+                const q = sl;
+                this.setState({ aarSlett: null });
+                if (!q) return;
+                this.aarKall({ handling: 'slett', id: q.id })
+                  .then(ok => { if (ok) this.setState({ aarApen: null }); });
+              },
+            };
+          })(),
+        };
+      })(),
       erAdminVenteliste: side === 'adminventeliste',
       adminNavVenteliste: this.adminMeny(),
       erAdminKursholdere: side === 'adminkursholdere',

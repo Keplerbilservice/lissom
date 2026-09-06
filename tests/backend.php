@@ -3956,9 +3956,10 @@ sjekk('et dra maa vaere et dra, ikke et skjelv',
     str_contains($sida2, 'klDro(fra, mv) {')
     && str_contains($sida2, "(Math.abs(mv.clientX - fra.clientX) + Math.abs(mv.clientY - fra.clientY)) > 5"));
 // Alle stedene, ikke bare det ene eieren merket. To kom til med «Bytt dato»
-// 6. september: ut av kurset, og inn paa en ny dato.
-sjekk('… i alle fem dra-handlerne',
-    substr_count($sida2, 'if (!d.moved && !this.klDro(e, mv)) return;') === 5);
+// 6. september (ut av kurset, og inn paa en ny dato), og én med
+// aarskalenderen samme dag (bytt maaned).
+sjekk('… i alle seks dra-handlerne',
+    substr_count($sida2, 'if (!d.moved && !this.klDro(e, mv)) return;') === 6);
 
 // ── Godkjenningslenka til Vipps ────────────────────────────────────────
 //
@@ -7626,10 +7627,20 @@ sjekk('… og skrivemaaten avgjor ikke',
 sjekk('rapporten sier hva «Script error.» betyr',
     str_contains($sida, "const skjult = melding === 'Script error.' || melding === 'Script error';")
     && str_contains($sida, 'nettleseren skjuler detaljene'));
-// Og om analysen kjorte. Det er forskjellen paa «Google» og «en utvidelse i
-// nettleseren» — uten den staar man like langt neste gang.
-sjekk('… og om analysen kjorte da det skjedde',
-    str_contains($sida, "this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'"));
+// Og hvor det kan komme fra. Her sto det at Google Analytics var det eneste
+// skriptet vi henter utenfra — og det stemte ikke: Vipps-knappen hentes ogsaa
+// utenfra, fra cdn.vippsmobilepay.com, og lastes paa hver eneste side, ogsaa i
+// admin (Kassa bruker den).
+//
+// Eieren, 6. september, fra /admin paa iPhone: «Script error. — nettleseren
+// skjuler detaljene». Kilden pekte ham vekk fra den mest sannsynlige kilden.
+// Han valgte «Rett forklaringen».
+sjekk('… og hvor den kan komme fra',
+    str_contains($sida, "'Kan komme fra Vipps-knappen, analysen (Google) eller en utvidelse i nettleseren'")
+    && str_contains($sida, "'Kan komme fra Vipps-knappen eller en utvidelse i nettleseren. Analysen kjørte ikke.'"));
+// Vipps-knappen kan ikke bare droppes i admin: Kassa bruker den.
+sjekk('… og Vipps-knappen staar i Kassa, saa skriptet maa lastes der ogsaa',
+    str_contains($sida, '<vipps-mobilepay-button'));
 
 // ── Har medlemmet betalt? ──────────────────────────────────────────────
 //
@@ -12489,6 +12500,97 @@ sjekk('… og sperreteksten gjelder hele programmet',
     && !str_contains($mobSida, 'Kurset har ingen andre datoer å flytte til.'));
 sjekk('… og brikkene har en overskrift som sier hva de er',
     str_contains($mobSida, '>Flytt til ny dato</div>'));
+
+
+// ── Aarskalenderen ────────────────────────────────────────────────────
+//
+// Eieren, 6. september: «det er ogsaa oenske om en aarskalender, som viser
+// kun maaned for maaned, og et felt der jeg kan skrive inn hva som skjer
+// denne maaneden, vil ogsaa kunne redigere og bytte og slette, lag punktvis
+// visning inne paa maanedene. lag en egen meny som heter aarskalender, denne
+// kan ogsaa ligge paa kalender siden ledige felt oeverst paa siden.»
+//
+// Han saa skissen og svarte «GO — bygg det», og paa spoersmaal om kursene
+// skulle dukke opp av seg selv i maanedene: «Nei, bare det jeg skriver
+// selv».
+//
+// Maalt i nettleseren, 30 av 30: tolv kort, punkt lagt inn, endret, byttet
+// maaned med et trykk, dratt tilbake med musa, bekreftelsen kom midt paa
+// skjermen, «Avbryt» slettet ingenting, og et ja slettet punktet. Raden
+// oeverst paa kalendersida maalt paa 390, 1024 og 1500 px.
+$aarSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('«Årskalender» er et eget menypunkt',
+    str_contains($aarSida, "['Årskalender', 'adminarskalender'],")
+    && str_contains($aarSida, "{ sti: '/admin/arskalender',  side: 'adminarskalender' },")
+    && str_contains($aarSida, "case 'adminarskalender':   return p('Årskalender');"));
+sjekk('… med tolv maaneder og et felt i hver',
+    str_contains($aarSida, "aarMaaneder: MND.map((navn, i) => {")
+    && str_contains($aarSida, "domId: 'aarmnd-' + mnd,")
+    && str_contains($aarSida, 'placeholder="Hva skjer denne måneden?"'));
+sjekk('… og punktvis visning',
+    str_contains($aarSida, '<sc-for list="{{ m.punkter }}" as="pk"')
+    && str_contains($aarSida, 'Ingenting ennå.'));
+// «vil ogsaa kunne redigere og bytte og slette»: alle tre.
+sjekk('… som kan endres, byttes og slettes',
+    str_contains($aarSida, "apne: () => this.setState({ aarApen: pk.id, aarRedTekst: pk.tekst }),")
+    && str_contains($aarSida, "aarFlyttValg: MND.map((navn, i) => ({")
+    && str_contains($aarSida, "aarDragStart(pk, e) {")
+    && str_contains($aarSida, '>Ja, slett punktet</x-import>'));
+// Ett piksel er ikke et dra — samme terskel som de andre handlerne.
+sjekk('… og draget bruker den samme terskelen som de andre',
+    substr_count($aarSida, 'if (!d.moved && !this.klDro(e, mv)) return;') === 6);
+// «denne kan ogsaa ligge paa kalender siden ledige felt oeverst paa siden»
+sjekk('… og staar sammentrukket oeverst paa kalendersida',
+    str_contains($aarSida, '{{ aarStripeVises }}')
+    && str_contains($aarSida, '>Åpne årskalenderen →</button>')
+    && str_contains($aarSida, "aarStripeApne: () => this.gaaAdmin('adminarskalender', {}),"));
+// Kursene fyller den ikke av seg selv.
+sjekk('… og fylles bare av det eieren skriver selv',
+    !str_contains($aarSida, 'aarKurs')
+    && str_contains($aarSida, "const punkter = this.state.aarData || [];"));
+
+$aarApi = @file_get_contents(dirname(__DIR__) . '/api/admin/arskalender.php') ?: '';
+sjekk('serveren tar imot alle fire handlingene',
+    str_contains($aarApi, "if (\$handling === 'legg-til') {")
+    && str_contains($aarApi, "if (\$handling === 'endre') {")
+    && str_contains($aarApi, "if (\$handling === 'flytt') {")
+    && str_contains($aarApi, "if (\$handling === 'slett') {"));
+sjekk('… og krever et aar, en maaned og en tekst',
+    str_contains($aarApi, "Svar::feil('Velg en måned.');")
+    && str_contains($aarApi, "Svar::feil('Skriv hva som skjer denne måneden.');"));
+// Svaret baerer hele aaret, saa skjermen slipper aa hente paa nytt.
+sjekk('… og svarer med hele aaret',
+    substr_count($aarApi, "'punkter' => \$les(\$aar)") >= 3);
+$mig144 = @file_get_contents(dirname(__DIR__) . '/db/migrations/144_arskalender.sql') ?: '';
+sjekk('tabellen ligger i migrasjon 144',
+    str_contains($mig144, 'CREATE TABLE IF NOT EXISTS arskalender')
+    && str_contains($mig144, 'sortering INT NOT NULL DEFAULT 0')
+    && str_contains($mig144, 'KEY aar_mnd (aar, mnd, sortering)'));
+
+
+// ── Kasse og Nettbutikk paa Oversikt: bare paa PC ─────────────────────
+//
+// Eieren, 6. september, med bilde av Oversikt paa telefonen: «Kasse og
+// nettbutikk vil jeg ikke skal vises paa forsiden, vi har det allerede paa
+// bunnmenyen» — og paa spoersmaal: «Bare paa mobil jeg viste deg. Ingen
+// endring paa pc.»
+//
+// Paa telefonen staar begge i bunnmenyen, alltid synlige. Da sa kortene det
+// samme en gang til, oeverst der man skal se hva som haster. Paa PC finnes
+// ingen bunnmeny, og der staar kortene som for.
+//
+// Maalt i nettleseren: paa 390 px er begge kortene borte fra hovedspalta og
+// begge fortsatt i bunnmenyen; paa 1500 px staar begge som for.
+$kortSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('Kasse-kortet paa Oversikt staar bare paa PC',
+    str_contains($kortSida, "...(this.erSmal() ? [] : [kort('Kasse',"));
+sjekk('… og Nettbutikk-kortet likesaa',
+    str_contains($kortSida, "...(this.erSmal() ? [] : [kort('Nettbutikk',"));
+// Ingen vei forsvinner: begge staar i hovedmenyen, som er bunnmenyen paa
+// telefon og sidemenyen paa PC.
+sjekk('… og begge staar fortsatt i hovedmenyen',
+    str_contains($kortSida, "['Kasse',     'adminuttak'],")
+    && str_contains($kortSida, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

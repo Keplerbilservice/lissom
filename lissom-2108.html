@@ -13238,6 +13238,27 @@ window.__resources = {
               </div>
             </sc-if>
             
+            <!-- E-post og telefon, rettbare.
+                 Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+                 medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
+                 settes ved innmelding — var den feilskrevet, gikk hver kvittering,
+                 paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
+                 rette den. -->
+            <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
+              <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1 1 220px; min-width: 0;">
+                  <label style="{{ pkEtikett }}">E-post</label>
+                  <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
+                </div>
+                <div style="flex: 0 1 160px; min-width: 0;">
+                  <label style="{{ pkEtikett }}">Telefon</label>
+                  <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
+                </div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
+              </div>
+            </div>
             <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                  innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                  etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -14177,6 +14198,27 @@ window.__resources = {
                 </div>
               </sc-if>
               
+              <!-- E-post og telefon, rettbare.
+                   Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+                   medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
+                   settes ved innmelding — var den feilskrevet, gikk hver kvittering,
+                   paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
+                   rette den. -->
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
+                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                  <div style="flex: 1 1 220px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">E-post</label>
+                    <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
+                  </div>
+                  <div style="flex: 0 1 160px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Telefon</label>
+                    <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
+                  </div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
+                </div>
+              </div>
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                    etterpaa. Dette er internt — det staar ikke paa Min side. -->

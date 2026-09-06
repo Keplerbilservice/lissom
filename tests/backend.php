@@ -12451,6 +12451,45 @@ sjekk('… og bare det som bade er skjult og ubehandlet roeres',
     str_contains($ryddSida, "if (el.outerHTML.indexOf('{{') < 0) continue;")
     && str_contains($ryddSida, "if (n.nodeType === 1 && getComputedStyle(n).display === 'none') { skjult = true; break; }"));
 
+
+// ── «Bytt dato» paa telefonen ─────────────────────────────────────────
+//
+// Dra og slipp krever mus. Paa telefonen kunne man derfor ikke flytte en
+// deltaker med «Bytt dato» i det hele tatt.
+//
+// Men veien fantes: deltakerkortet har hatt datobrikker og en «Flytt»-knapp
+// hele tiden, og de virker med et trykk. Det eneste som manglet var rekkevidde
+// — lista viste bare andre datoer paa det SAMME kurset, saa et kurs som gaar
+// én gang sa «Kurset har ingen andre datoer aa flytte til».
+//
+// Eieren, 6. september: «GO — bygg det». Ingen ny skjerm, ingen ny knapp for
+// aa dra med fingeren: den lista som fantes fikk hele programmet.
+//
+// Maalt paa en ekte telefonprofil (390 px, beroering, ingen mus), 17 av 17:
+// trykk paa okta, trykk paa deltakeren, 28 datoer i lista, bekreftelsen kom,
+// «Avbryt» sendte ingenting, og et ja flyttet og sendte beskjeden.
+$mobSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('deltakerkortet tilbyr hele programmet, ikke bare kursets egne datoer',
+    str_contains($mobSida, "klDFlyttValg: (dv ? alle.filter(e => e.oktId && e.oktId !== dv.oktId")
+    && str_contains($mobSida, "&& !e.avlyst && e.dato >= idagIso) : [])"));
+// Kursets egne foerst og uten navn — det er underforstaatt. De andre med
+// navnet, ellers ser to datoer like ut og man vet ikke hva man gir bort.
+sjekk('… med kursets egne foerst, og kursnavn paa de andre',
+    str_contains($mobSida, "const eget = !!(dv && e.kursId === dv.kursId);")
+    && str_contains($mobSida, "navn: (eget ? '' : e.tittel + ' · ')"));
+// Samme bekreftelse som naar man drar. Denne veien gikk rett gjennom for.
+sjekk('… og den spoer foer noen flyttes',
+    str_contains($mobSida, "klDFlyttUtfor: () => {")
+    && str_contains($mobSida, "knapp: 'Ja, flytt og send beskjed',")
+    && substr_count($mobSida, "tekst: 'Deltakeren får e-post om den nye datoen.',") === 2);
+// Teksten naar det virkelig ikke finnes en dato: den gamle sa «Kurset», og
+// det er feil naar lista naa gaar paa tvers av kurs.
+sjekk('… og sperreteksten gjelder hele programmet',
+    str_contains($mobSida, 'Det finnes ingen andre datoer å flytte til.')
+    && !str_contains($mobSida, 'Kurset har ingen andre datoer å flytte til.'));
+sjekk('… og brikkene har en overskrift som sier hva de er',
+    str_contains($mobSida, '>Flytt til ny dato</div>'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

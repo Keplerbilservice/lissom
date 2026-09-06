@@ -12540,10 +12540,12 @@ sjekk('… som kan endres, byttes og slettes',
 sjekk('… og draget bruker den samme terskelen som de andre',
     substr_count($aarSida, 'if (!d.moved && !this.klDro(e, mv)) return;') === 6);
 // «denne kan ogsaa ligge paa kalender siden ledige felt oeverst paa siden»
-sjekk('… og staar sammentrukket oeverst paa kalendersida',
-    str_contains($aarSida, '{{ aarStripeVises }}')
-    && str_contains($aarSida, '>Åpne årskalenderen →</button>')
-    && str_contains($aarSida, "aarStripeApne: () => this.gaaAdmin('adminarskalender', {}),"));
+// ble foerst en rad oeverst med en understreket lenke. Eieren, samme dag:
+// «jeg vil ha aarskalenderen som et kort eller pille i samme stil, ingen
+// link ... mellom kasse og synk med mobilen paa kelender». Raden er borte,
+// og pilla staar i sidemenyen — se vakta lenger nede.
+sjekk('… og naas fra kalenderen uten en lenke',
+    str_contains($aarSida, 'on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>'));
 // Kursene fyller den ikke av seg selv.
 sjekk('… og fylles bare av det eieren skriver selv',
     !str_contains($aarSida, 'aarKurs')
@@ -12619,6 +12621,46 @@ sjekk('… og skjermen sier hva som skjedde, og hva man gjor',
     str_contains($lenkeSida, "'Lenka fra sist er for gammel — Vipps '")
     && str_contains($lenkeSida, '{{ personAvtaleLenkeGammelTekst }}')
     && str_contains($lenkeSida, "' med én gang. Vipps avviser en lenke som har ligget en stund '"));
+
+
+// ── Tre veier fra kalenderen ──────────────────────────────────────────
+//
+// Eieren, 6. september:
+//   «jeg vil kunne klikke til legg til person under venteliste» — og paa
+//   spoersmaal om hvor: fra kalenderen.
+//   «jeg vil ha aarskalenderen som et kort eller pille i samme stil, ingen
+//   link. et forslag kan jo vaere mellom kasse og synk med mobilen paa
+//   kelender, og som et eget kort paa oversikten»
+//   «jeg har bedt om et kort eller pille paa kalender som viser ny
+//   paamelsding»
+//
+// Raden oeverst paa kalendersida, med den understrekede lenka «Åpne
+// årskalenderen →», er borte: «ingen link».
+//
+// Ingen ny skjerm og ingen ny liste. «Nye paameldinger» er det samme kortet
+// som staar paa Oversikt, med det samme tallet.
+//
+// Maalt i nettleseren paa 1500 og 390 px, 9 av 9 hver: pillene staar,
+// begge aapner sin skjerm, «Legg til person» gaar til skjemaet, kortet staar
+// paa Oversikt, og raden med lenka er borte.
+$veiSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('«Legg til person →» staar ved Venteliste i kalenderen',
+    str_contains($veiSida, '>Legg til person →</button>')
+    && str_contains($veiSida, "klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),"));
+sjekk('… og aarskalenderen staar som pille mellom Kasse og Synk med mobilen',
+    str_contains($veiSida, 'on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>')
+    && str_contains($veiSida, "klAarApne: () => this.gaaAdmin('adminarskalender', {}),"));
+sjekk('… og nye paameldinger som pille, med tallet',
+    str_contains($veiSida, 'on-click="{{ klNyePamApne }}" hint-size="auto,44px">{{ klNyePamNavn }}</x-import>')
+    && str_contains($veiSida, "klNyePamNavn: 'Nye påmeldinger'"));
+// «ingen link»: raden oeverst er borte.
+sjekk('… og raden med lenka oeverst er borte',
+    !str_contains($veiSida, 'aarStripe')
+    && !str_contains($veiSida, '>Åpne årskalenderen →</button>'));
+// Og kortet paa Oversikt.
+sjekk('… og aarskalenderen har et eget kort paa Oversikt',
+    str_contains($veiSida, "kort('Årskalender',")
+    && str_contains($veiSida, "'Året måned for måned. Skriv inn hva som skjer.',"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

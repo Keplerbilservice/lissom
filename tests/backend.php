@@ -7627,10 +7627,20 @@ sjekk('… og skrivemaaten avgjor ikke',
 sjekk('rapporten sier hva «Script error.» betyr',
     str_contains($sida, "const skjult = melding === 'Script error.' || melding === 'Script error';")
     && str_contains($sida, 'nettleseren skjuler detaljene'));
-// Og om analysen kjorte. Det er forskjellen paa «Google» og «en utvidelse i
-// nettleseren» — uten den staar man like langt neste gang.
-sjekk('… og om analysen kjorte da det skjedde',
-    str_contains($sida, "this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'"));
+// Og hvor det kan komme fra. Her sto det at Google Analytics var det eneste
+// skriptet vi henter utenfra — og det stemte ikke: Vipps-knappen hentes ogsaa
+// utenfra, fra cdn.vippsmobilepay.com, og lastes paa hver eneste side, ogsaa i
+// admin (Kassa bruker den).
+//
+// Eieren, 6. september, fra /admin paa iPhone: «Script error. — nettleseren
+// skjuler detaljene». Kilden pekte ham vekk fra den mest sannsynlige kilden.
+// Han valgte «Rett forklaringen».
+sjekk('… og hvor den kan komme fra',
+    str_contains($sida, "'Kan komme fra Vipps-knappen, analysen (Google) eller en utvidelse i nettleseren'")
+    && str_contains($sida, "'Kan komme fra Vipps-knappen eller en utvidelse i nettleseren. Analysen kjørte ikke.'"));
+// Vipps-knappen kan ikke bare droppes i admin: Kassa bruker den.
+sjekk('… og Vipps-knappen staar i Kassa, saa skriptet maa lastes der ogsaa',
+    str_contains($sida, '<vipps-mobilepay-button'));
 
 // ── Har medlemmet betalt? ──────────────────────────────────────────────
 //

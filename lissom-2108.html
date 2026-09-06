@@ -24460,15 +24460,19 @@ class Component extends DCLogic {
       // Det er ikke en feil vi kan slaa opp: nettleseren nekter aa si hva som
       // skjedde naar unntaket kom fra et skript den regner som et annet
       // nettsted. Da staar meldinga tom, og fil, linje og kolonne likesaa.
-      // Paa lissom.no kan det bare komme to steder fra: Google Analytics —
-      // det eneste skriptet vi henter utenfra, og bare naar en maale-ID er
-      // satt under Markedsforing OG besokende har sagt ja til
-      // informasjonskapsler — eller noe i selve nettleseren, som en
-      // annonseblokker eller en utvidelse.
       //
-      // Rapporten sa ingen av delene, og da leter man etter en feil i egen
-      // kode som ikke finnes. Naa staar det hva det betyr, og om analysen
-      // faktisk kjorte i det oyeblikket — det er forskjellen paa de to.
+      // Her sto det at Google Analytics var «det eneste skriptet vi henter
+      // utenfra». Det stemte ikke. Vipps-knappen hentes ogsaa utenfra, fra
+      // cdn.vippsmobilepay.com, og den lastes paa hver eneste side — ogsaa i
+      // admin, fordi Kassa bruker den.
+      //
+      // Eieren, 6. september, fra /admin paa iPhone: «Script error. —
+      // nettleseren skjuler detaljene». Kilden sa «Analysen kjorte ikke —
+      // trolig en utvidelse i nettleseren», og det pekte ham vekk fra den
+      // mest sannsynlige kilden. Han valgte «Rett forklaringen».
+      //
+      // Naa staar alle tre mulighetene, og om analysen faktisk kjorte i det
+      // oyeblikket — det er det eneste vi vet noe sikkert om.
       const melding = String((e && e.message) || 'Ukjent feil');
       const skjult = melding === 'Script error.' || melding === 'Script error';
       this.meldFeil({
@@ -24477,8 +24481,9 @@ class Component extends DCLogic {
             + 'skript utenfra, ikke fra sida selv.'
           : melding,
         kilde: e && e.filename ? e.filename + ':' + e.lineno + ':' + e.colno
-          : (skjult ? (this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'
-                                    : 'Analysen kjørte ikke — trolig en utvidelse i nettleseren') : ''),
+          : (skjult ? (this._gaSatt
+                ? 'Kan komme fra Vipps-knappen, analysen (Google) eller en utvidelse i nettleseren'
+                : 'Kan komme fra Vipps-knappen eller en utvidelse i nettleseren. Analysen kjørte ikke.') : ''),
       });
     };
     // Ressursfeil bobler ikke — de maa fanges paa vei ned.

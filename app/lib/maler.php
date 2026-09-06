@@ -110,6 +110,17 @@ final class Maler
                 'belop' => 'Beløpet som refunderes',
             ],
         ],
+        'pamelding_flyttet' => [
+            'tittel' => 'Ny dato på kurset',
+            'hvor'   => 'Sendes når du flytter en deltaker til en ny dato med «Bytt dato» i kalenderen.',
+            'felter' => [
+                'navn'  => 'Navnet på deltakeren',
+                'kurs'  => 'Kurset',
+                'fra'   => 'Datoen hun sto på',
+                'til'   => 'Den nye datoen',
+                'lenke' => 'Lenken til Min side',
+            ],
+        ],
         'kurspaaminnelse' => [
             'tittel' => 'Påminnelse dagen før',
             'hvor'   => 'Sendes automatisk kvelden før kurset.',

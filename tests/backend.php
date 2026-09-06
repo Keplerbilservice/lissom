@@ -1952,7 +1952,19 @@ sjekk('«ikke moett» kan endelig settes fra en skjerm',
 // Dra-og-slipp. Konflikten sjekkes der endringen skjer, ikke i nettleseren:
 // en sjekk i skjermen ville sett paa det skjermen tilfeldigvis hadde hentet.
 sjekk('en okt kan dras til et nytt tidspunkt',
-    str_contains($sida, 'klDragStart(evt, e) {') && str_contains($sida, 'klSlippMaal(mv, lengde)'));
+    str_contains($sida, 'klDragStart(evt, e) {') && str_contains($sida, 'klSlippMaal(mv, lengde, grepY)'));
+// Tida regnes av blokkas TOPP, ikke av pekeren. Griper du en tre timers okt
+// paa midten, ligger pekeren halvannen time under toppen — og da landet okta
+// halvannen time for sent. Eieren, 6. september: «jeg kan ikke flytte til f
+// eks kl 17, naar jeg drar og slipper, den faller tilbake paa feil tid».
+sjekk('… og lander der blokkas topp slippes, ikke der pekeren er',
+    str_contains($sida, 'const topp = y - (grepY || 0);')
+    && str_contains($sida, "grepY: r0 ? (e.clientY - r0.top) : 0"));
+// Flyttingen spor foerst. Eieren: «ikke naar jeg endrer tid heller, faar bare
+// en pop upp om at det er gjort, ikke beskjed om aa bekrefte».
+sjekk('… og spoer foer den flytter',
+    str_contains($sida, "emne: 'Flytt økta',")
+    && str_contains($sida, "knapp: 'Ja, flytt økta',"));
 // Maanedsrutenettet har ingen tidsakse. Da flyttes dagen, og klokkeslettet
 // staar — det er det eneste svaret som ikke er en gjetning.
 sjekk('draing i maanedsrutenettet beholder klokkeslettet',
@@ -3896,6 +3908,37 @@ sjekk('deltakerraden sier om det er betalt, ikke om plassen er holdt av',
 sjekk('… og refundert og ikke moett staar for seg',
     str_contains($kalFil, "'refundert' => 'Refundert',")
     && str_contains($kalFil, "'ikke_mott' => 'Møtte ikke opp',"));
+// ── Samme plassholder to ganger ────────────────────────────────────────
+//
+// «:i» sto to ganger i den samme spoerringen i api/admin/ai.php, med én
+// verdi bundet. app/lib/db.php setter «PDO::ATTR_EMULATE_PREPARES => false»,
+// og da maa hvert navn bindes for hver gang det staar. Databasen svarte
+// «SQLSTATE[HY093]: Invalid parameter number», og «Lag markedsfoering»
+// stoppet der hver eneste gang.
+//
+// Eieren, 6. september, med bilde fra Kursmarkedsfoering: «denne virker ikke».
+$aiFil = file_get_contents(dirname(__DIR__) . '/api/admin/ai.php');
+sjekk('kursboost binder hvert plassholdernavn for seg',
+    str_contains($aiFil, "(SELECT kapasitet FROM courses WHERE id = :k)")
+    && str_contains($aiFil, "['i' => \$kursId, 'k' => \$kursId]"));
+// Og at basen faktisk svarer paa spoerringen slik den staar naa.
+$kursIdT = (int) DB::verdi('SELECT id FROM courses LIMIT 1');
+if ($kursIdT > 0) {
+    $gikk = true;
+    try {
+        DB::alle(
+            "SELECT id, start_tid, COALESCE(kapasitet, (SELECT kapasitet FROM courses WHERE id = :k)) AS kapasitet
+               FROM course_sessions
+              WHERE course_id = :i AND status = 'planlagt' AND start_tid > UTC_TIMESTAMP()
+              ORDER BY start_tid LIMIT 6",
+            ['i' => $kursIdT, 'k' => $kursIdT]
+        );
+    } catch (Throwable $e) {
+        $gikk = false;
+    }
+    sjekk('… og spoerringen kjorer mot basen', $gikk);
+}
+
 // ── Ett piksel er ikke et dra ──────────────────────────────────────────
 //
 // Alle tre dra-handlerne satte «moved = true» paa foerste «mousemove», uten
@@ -9330,13 +9373,19 @@ sjekk('menyen staar bare paa smal skjerm',
 // Kvitteringsboksen sto 110 px fra toppen, alltid. Da adminstripa fikk
 // verktoeypillene, la boksen seg midt oppaa dem — og oppaa linja som sier
 // hvor du er. Eieren saa det med én gang han trykket «Alt er oppdatert».
-sjekk('kvitteringen legger seg ikke oppaa adminstripa',
-    str_contains($sidaB, "(this.erAdminSkjerm(this.state.side) && (this.state.vw || 1400) < 980)")
-    && str_contains($sidaB, "? { bottom: 'calc(58px + 12px + env(safe-area-inset-bottom, 0px))' }")
-    && str_contains($sidaB, "          : { top: '110px' },"));
-// Ute paa nettsida finnes ingen bunnmeny aa staa over.
-sjekk('… og ute paa nettsida staar den som for',
-    !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
+// Kvitteringen sto langs en kant — 110 px ned paa PC, rett over bunnmenyen
+// paa telefon — og la seg oppaa noe to ganger. Eieren, 6. september: «naar
+// man legger inn en deltaker, eller endrer saa skal det alltid komme en pop
+// up bekreftelse sentrert i skjermen». Midt paa er det ingenting aa
+// kollidere med.
+sjekk('kvitteringen staar midt paa skjermen',
+    str_contains($sidaB, "{ position: 'fixed', left: '50%', top: '50%',")
+    && str_contains($sidaB, "transform: 'translate(-50%, -50%)',")
+    && !str_contains($sidaB, "? { bottom: 'calc(58px + 12px + env(safe-area-inset-bottom, 0px))' }"));
+// Flata bak demper resten, og ett klikk hvor som helst lukker.
+sjekk('… med en dempet flate bak som lukker ved klikk',
+    str_contains($sidaB, 'kvitteringBakStil:')
+    && str_contains($sidaB, 'onClick="{{ lukkKvittering }}" style="{{ kvitteringBakStil }}"'));
 
 // ── «Til» falt utenfor dialogen på telefon ──────────────────────────────
 //
@@ -10945,9 +10994,11 @@ sjekk('… og staar paa «success» naar ingen tone er satt',
     'samme som for');
 // Ikonet hentes som en SVG-fil over nett. Uteblir den, staar boksen umerket —
 // derfor males ringen i CSS, som ikke henter noe.
+// Ringen staar sammen med skyggen kvitteringen fikk da den flyttet midt paa
+// skjermen — én «boxShadow» kan bare settes én gang.
 sjekk('en feilmelding faar en ring som ikke henter noe',
-    str_contains($kodeI, "boxShadow: '0 0 0 3px var(--danger)'")
-    && str_contains($kodeI, "boxShadow: '0 0 0 3px var(--warning)'"),
+    str_contains($kodeI, "boxShadow: '0 0 0 3px var(--danger), var(--shadow-lg)'")
+    && str_contains($kodeI, "boxShadow: '0 0 0 3px var(--warning), var(--shadow-lg)'"),
     'danger og warning');
 sjekk('… og en vanlig beskjed faar ingen ring',
     (bool) preg_match("/kvitteringStil: Object\.assign\(.*?: \{\}\),/s", $kodeI),

@@ -1,12 +1,17 @@
 <?php
 // Planlagte jobber. Settes opp i cPanel -> Cron Jobs.
 //
-//   */5 * * * *   php ~/lissom-app/bin/cron.php varsler
-//   */5 * * * *   php ~/lissom-app/bin/cron.php betalinger
-//   0 * * * *     php ~/lissom-app/bin/cron.php anmeldelser
-//   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold
-//   0 4 * * *     php ~/lissom-app/bin/cron.php medlemstrekk
-//   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser
+//   */5 * * * *   php ~/lissom-app/bin/cron.php varsler >/dev/null
+//   */5 * * * *   php ~/lissom-app/bin/cron.php betalinger >/dev/null
+//   0 * * * *     php ~/lissom-app/bin/cron.php anmeldelser >/dev/null
+//   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold >/dev/null
+//   0 4 * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
+//   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser >/dev/null
+//
+// «>/dev/null» bakerst, og bare stdout: CGI-utgaven av PHP skriver alltid den
+// tomme linja som avslutter hodeblokka, og cron sender e-post for hvert tegn
+// en jobb skriver. Stderr staar igjen med vilje — en jobb som feiler skal
+// fortsatt sende e-post, med grunnen i. Hele forklaringen i docs/OPPSETT.md.
 //
 // Alle seks staar her, og alle seks staar i docs/OPPSETT.md. Fram til
 // 5. september sto det fem hvert sted — men ikke de samme fem: her manglet

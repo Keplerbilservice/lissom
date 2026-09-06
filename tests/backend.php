@@ -12191,12 +12191,13 @@ $iKoden = $t[1];
 sort($iKoden);
 
 // Toppteksten i bin/cron.php: linjene «php ~/lissom-app/bin/cron.php <jobb>».
-preg_match_all('/cron\.php ([a-z]+)$/m', $cronKilde, $t2);
+// «>/dev/null» staar bakerst paa hver av dem, og skal ikke telle med.
+preg_match_all('/cron\.php ([a-z]+)(?: >\/dev\/null)?$/m', $cronKilde, $t2);
 $iToppteksten = array_values(array_unique($t2[1]));
 sort($iToppteksten);
 
 // Tabellen i docs/OPPSETT.md.
-preg_match_all('/cron\.php ([a-z]+)`/', $oppsett, $t3);
+preg_match_all('/cron\.php ([a-z]+)(?: >\/dev\/null)?`/', $oppsett, $t3);
 $iOppsettet = array_values(array_unique($t3[1]));
 sort($iOppsettet);
 
@@ -12208,8 +12209,22 @@ sjekk('… og toppteksten i cron.php ogsaa',
     'koden: ' . implode(', ', $iKoden) . '  ·  toppteksten: ' . implode(', ', $iToppteksten));
 // Den som faktisk henter inn pengene. Sto den ikke her, ble den ikke satt opp.
 sjekk('… og medlemstrekket staar i oppsettet med klokkeslett',
-    str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk`')
+    str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null`')
     && str_contains($oppsett, '`0 4 * * *`'));
+// «>/dev/null» paa alle seks. Uten den sender cPanel én tom e-post per
+// kjoring: CGI-utgaven av PHP skriver alltid den tomme linja som avslutter
+// hodeblokka, og cron sender e-post for hvert tegn en jobb skriver.
+// Bare stdout — stderr staar igjen, saa en jobb som feiler sier fra.
+// Setninga «bare >/dev/null, ikke 2>&1» staar i oppsettet med vilje, saa det
+// er kommandoen som skal sjekkes: stderr skal aldri kastes bort.
+$alleSeksTie = !str_contains($oppsett, '>/dev/null 2>&1')
+    && !str_contains($cronKilde, '>/dev/null 2>&1');
+foreach ($iKoden as $j) {
+    $alleSeksTie = $alleSeksTie
+        && str_contains($oppsett, "cron.php {$j} >/dev/null`")
+        && str_contains($cronKilde, "cron.php {$j} >/dev/null");
+}
+sjekk('… og alle seks linjene ender med >/dev/null, ikke 2>&1', $alleSeksTie);
 
 echo "\n== «Send Vipps-avtale» lager ikke en avtale nummer to ==\n";
 // Eieren, 5. september: «Saa jeg kan be de sjekke vipps? Eller maa de melde

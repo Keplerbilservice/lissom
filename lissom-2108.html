@@ -17572,6 +17572,11 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ harKvittering }}" hint-placeholder-val="{{ true }}">
+  <!-- Flata bak kvitteringen. Den demper resten av skjermen saa boksen
+       leses som et svar paa det man nettopp gjorde, og ett klikk hvor som
+       helst lukker den med det samme — man skal ikke maatte vente ut de
+       tre sekundene for aa jobbe videre. -->
+  <div onClick="{{ lukkKvittering }}" style="{{ kvitteringBakStil }}"></div>
   <div style="{{ kvitteringStil }}">
     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="{{ kvitteringTone }}" title="{{ kvittering }}" description="{{ kvitteringDetalj }}" on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
   </div>
@@ -34344,28 +34349,32 @@ class Component extends DCLogic {
       // Kommer den ikke fram, staar boksen uten merke, og en feilmelding ser
       // ut som en kvittering. Derfor males en ring rundt hele boksen ogsaa.
       // Den er vanlig CSS og henter ingenting.
+      // Hvor kvitteringen staar.
+      //
+      // Den sto oeverst paa skjermen — 110 px ned paa PC, rett over
+      // bunnmenyen paa telefon. To ganger har den lagt seg oppaa noe, og
+      // begge ganger var det fordi den maatte finne en ledig stripe langs
+      // en kant.
+      //
+      // Eieren, 6. september: «naar man legger inn en deltaker, eller endrer
+      // saa skal det alltid komme en pop up bekreftelse sentrert i skjermen,
+      // saa jeg ser at dette er utfort».
+      //
+      // Midt paa er det ingenting aa kollidere med, og den ses uansett hvor
+      // langt ned man har rullet. Flata bak demper resten; ett klikk hvor
+      // som helst lukker, og de tre sekundene staar som for.
+      kvitteringBakStil: { position: 'fixed', inset: 0, zIndex: 499,
+        background: 'rgba(46,16,2,.32)', backdropFilter: 'blur(2px)' },
       kvitteringStil: Object.assign(
-        { position: 'fixed', left: '50%', transform: 'translateX(-50%)',
+        { position: 'fixed', left: '50%', top: '50%',
+          transform: 'translate(-50%, -50%)',
           zIndex: 500, width: 'min(400px, calc(100vw - 32px))',
-          borderRadius: 'var(--radius-lg)' },
-        // Hvor boksen staar.
-        //
-        // 110 px fra toppen, alltid. Det holdt saa lenge adminstripa paa
-        // telefon var logo og «Meny». Naa staar Stemple inn og Ferie der, og
-        // de fem verktoeypillene under dem — og boksen la seg midt oppaa
-        // andre pillerad og linja som sier hvor du er. Eieren saa det med én
-        // gang han trykket «Alt er oppdatert».
-        //
-        // Under er det fritt: bunnmenyen er 58 px og staar fast, og en boks
-        // rett over den ses uansett hvor langt ned man har rullet. Ute paa
-        // nettsida finnes ingen bunnmeny, og der staar den som for.
-        (this.erAdminSkjerm(this.state.side) && (this.state.vw || 1400) < 980)
-          ? { bottom: 'calc(58px + 12px + env(safe-area-inset-bottom, 0px))' }
-          : { top: '110px' },
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-lg)' },
         this.state.kvitteringTone === 'danger'
-          ? { boxShadow: '0 0 0 3px var(--danger)' }
+          ? { boxShadow: '0 0 0 3px var(--danger), var(--shadow-lg)' }
           : this.state.kvitteringTone === 'warning'
-            ? { boxShadow: '0 0 0 3px var(--warning)' }
+            ? { boxShadow: '0 0 0 3px var(--warning), var(--shadow-lg)' }
             : {}),
       lukkKvittering: () => this.setState({ kvittering: '', kvitteringTone: null }),
       // Dialogen beskrev «PDF eller Excel» og lukket seg igjen naar man

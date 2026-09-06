@@ -12406,6 +12406,36 @@ sjekk('… og deltakerkortet har den samme knappen',
     str_contains($byttSida, 'onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>')
     && str_contains($byttSida, 'klDTilVenteliste: () => {'));
 
+// ── Cron-jobbene svarte 404 og gjorde ingenting ──────────────────────
+//
+// Eieren, 6. september, med en videresendt e-post fra Cron Daemon:
+//
+//     Cron <rbvapxvz@gungnir> php ~/lissom-app/bin/cron.php betalinger
+//     Status: 404 Not Found
+//     Content-type: text/html; charset=UTF-8
+//
+// Vakta sto som «PHP_SAPI !== 'cli'». «php» paa tjeneren er CGI-utgaven, og
+// alle seks jobbene stoppet paa den linja: ingen varsler, ingen betalinger,
+// ingen medlemstrekk. Det er grunnen til at pengene aldri ble trukket.
+//
+// Hele avgjorelsen kjores for alle SAPI-ene i tests/cronvakt.php: 11 av 11.
+$cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+sjekk('cron-vakta spor om det finnes en foresporsel, ikke om SAPI-navnet',
+    str_contains($cronFil, 'function cron_fra_nettet(string $sapi, array $server): bool')
+    && str_contains($cronFil, "return isset(\$server['REQUEST_METHOD']) || isset(\$server['HTTP_HOST']);")
+    && !str_contains($cronFil, "if (PHP_SAPI !== 'cli') {\n    http_response_code(404);"));
+sjekk('… og de tre webtjener-SAPI-ene stoppes uansett',
+    str_contains($cronFil, "if (in_array(\$sapi, ['apache2handler', 'fpm-fcgi', 'litespeed'], true)) {"));
+sjekk('… og vakta staar fortsatt',
+    str_contains($cronFil, 'if (cron_fra_nettet(PHP_SAPI, $_SERVER)) {')
+    && str_contains($cronFil, '    http_response_code(404);'));
+// CGI-utgaven skriver «Content-type» av seg selv, og cPanel sender e-post for
+// hver linje en jobb skriver. Uten dette ville rettelsen gitt én e-post hvert
+// femte minutt fra jobber som gjor akkurat det de skal.
+sjekk('… og CGI-utgaven tier naar alt gaar bra',
+    str_contains($cronFil, "ini_set('default_mimetype', '');")
+    && str_contains($cronFil, 'header_remove();'));
+
 // ── Slippefeltet skal vaere til aa se ────────────────────────────────
 //
 // Eieren, 6. september: «slippefeltet i kallender maa bytte farge naar

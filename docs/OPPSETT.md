@@ -236,6 +236,26 @@ Virker ikke en jobb i det hele tatt, er `php` som regel synderen: cron finner
 ikke alltid samme PHP som nettsiden bruker. Skriv `which php` i Terminal, og
 bytt ut `php` i kommandoen med hele stien den svarer med.
 
+**Dette rammet Lissom fra første dag, og ble først funnet 6. september 2026.**
+Eieren videresendte en e-post fra Cron Daemon:
+
+```
+Cron <rbvapxvz@gungnir> php ~/lissom-app/bin/cron.php betalinger
+Status: 404 Not Found
+Content-type: text/html; charset=UTF-8
+```
+
+`php` på tjeneren er CGI-utgaven, ikke CLI-utgaven. `bin/cron.php` sjekket
+`PHP_SAPI !== 'cli'` og svarte 404 — alle seks jobbene stoppet før første
+linje arbeid. Ingen varsler gikk ut, ingen betalinger ble fulgt opp, og
+medlemstrekket kjørte aldri. Det er grunnen til at ingen medlemmer ble
+trukket.
+
+Vakta spør nå om det finnes en HTTP-forespørsel i det hele tatt, ikke hva
+SAPI-en heter — cron setter aldri `REQUEST_METHOD`, uansett PHP-utgave. Da
+virker jobbene med begge utgavene, og stien i kommandoen spiller ingen rolle.
+Se `tests/cronvakt.php`.
+
 ---
 
 ## 8. Registrer adressene i Vipps-portalen

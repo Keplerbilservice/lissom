@@ -9244,6 +9244,21 @@ window.__resources = {
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-5);">
+                  <!-- Avtaletrekk eller vanlig betaling.
+                       Feltet har alltid ligget i basen og alltid vaert lest av
+                       koden, men det har aldri hatt en knapp. Verkstedet kunne
+                       verken se hva som sto eller endre det — og det er dette
+                       ene feltet som avgjor om medlemmet faar en avtale aa
+                       godkjenne i Vipps-appen, eller en helt vanlig betaling.
+                       Eieren, 6. september: «hun fikk vipps, ingen godkjennelse
+                       i vipps, bare en helt vanlig maate aa betale med vipps»,
+                       og «aarsmedlemskap er eneste veie avtaletrekk, dette er
+                       eneste stedet avtaletrekk skal vaere i bruk». -->
+                  <label style="{{ plAvkryss }}">
+                    <input type="checkbox" checked="{{ plFastTrekk }}" onChange="{{ vekslPlFastTrekk }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Fast trekk i Vipps — medlemmet godkjenner en avtale og trekkes automatisk
+                  </label>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin: -6px 0 0 30px; text-wrap: pretty;">Er denne av, betaler medlemmet én gang som en vanlig Vipps-betaling, og verkstedet må kreve inn hver periode selv.</div>
                   <label style="{{ plAvkryss }}">
                     <input type="checkbox" checked="{{ plEngangs }}" onChange="{{ vekslPlEngangs }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                     Prøveperiode — trekkes én gang og stopper av seg selv
@@ -31221,7 +31236,7 @@ class Component extends DCLogic {
         iso,
         tall: String(d) + (stengtDag ? ' · Stengt' : ''),
         stil: Object.assign({ minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: stengtDag ? 'var(--clay-200)' : (iso === idagIso ? 'var(--clay-100)' : 'var(--surface-card)'), display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, opacity: stengtDag ? .75 : 1 },
-          this.klSlippRamme('dag', 'var(--terracotta-500)')),
+          this.klSlippRamme('dag', 'var(--terracotta-600)')),
         tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: iso === idagIso ? 'var(--terracotta-600)' : 'var(--text-heading)', padding: '2px 4px' },
         hendelser: evts.slice(0, mndMax).map(e => ({
           // Den samlede linja viser hele spennet: «10:00–13:00 Paint on Pots».
@@ -31540,7 +31555,7 @@ class Component extends DCLogic {
         navnStil: { display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: erIdag ? 'var(--lissom-brown)' : 'var(--text-heading)' },
         antallStil: { display: 'block', fontSize: '11px', color: erIdag ? 'var(--brown-500, var(--lissom-brown))' : 'var(--text-muted)' },
         kolStil: Object.assign({ position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)', background: stengtU ? 'var(--clay-200)' : (d.getDay() === 0 || d.getDay() === 6 ? 'var(--clay-50)' : 'var(--surface-card)'), backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxUke - 1) + 'px, var(--clay-100) ' + (pxUke - 1) + 'px, var(--clay-100) ' + pxUke + 'px)' },
-          this.klSlippRamme('dag', 'var(--terracotta-500)')),
+          this.klSlippRamme('dag', 'var(--terracotta-600)')),
         naStil: erIdag && naM >= wStart && naM <= wSlutt ? { position: 'absolute', left: 0, right: 0, top: ((naM - wStart) / 60 * pxUke) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
         hendelser: plas.map(p => {
           const f = farge(p.e);
@@ -31689,7 +31704,7 @@ class Component extends DCLogic {
       klBoardKroppStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden', minWidth: this.erSmal() ? (56 + kolonner.length * 150) + 'px' : 0 },
       klGutterStil: { position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
       klKolonneStil: Object.assign({ position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)', backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxTime - 1) + 'px, var(--clay-100) ' + (pxTime - 1) + 'px, var(--clay-100) ' + pxTime + 'px)' },
-        this.klSlippRamme('dag', 'var(--terracotta-500)')),
+        this.klSlippRamme('dag', 'var(--terracotta-600)')),
       klNaStil: dagIso === idagIso && naM >= bStart && naM <= bSluttMin ? { position: 'absolute', left: '56px', right: 0, top: ((naM - bStart) / 60 * pxTime) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
       klLegende: Object.keys(info).map(t => ({ navn: info[t].navn, prikkStil: { width: '12px', height: '12px', borderRadius: '4px', flex: '0 0 auto', background: info[t].kant ? 'transparent' : info[t].bg, border: info[t].kant || 'none' } })).concat([
         { navn: 'Fullt', prikkStil: { width: '12px', height: '12px', borderRadius: '4px', flex: '0 0 auto', background: 'transparent', border: '2px solid var(--terracotta-600)' } },
@@ -32179,7 +32194,12 @@ class Component extends DCLogic {
                 return {
                   navn: v.navn,
                   kurs: v.kurs,
-                  under: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3),
+                  // Datoen hun kom fra, og hva hun har betalt. Eieren,
+                  // 6. september: «vis meg betalingsstatus paa deltakerne …
+                  // paa byttt dato ogsaa». Uten den kunne man flytte en
+                  // ubetalt plass uten aa vite det.
+                  under: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3)
+                       + (v.status ? ' · ' + v.status : ''),
                   // Tredje pille i den samme spalta. Tallene er de samme som
                   // kurspilla og ventelistepilla staar med; bare den groenne
                   // venstrekanten skiller, saa man ser hvilken liste man er i.
@@ -32208,17 +32228,22 @@ class Component extends DCLogic {
               // Mens et dra paagaar vokser begge rutene til 130 px og lyser
               // opp. Da er det spalta man skal treffe, ikke en linje. De
               // krymper tilbake med det samme du slipper.
+              // Fargen maa vaere til aa ta feil av. Eieren, 6. september:
+              // «slippefeltet i kallender maa bytte farge naar aktivt, naa er
+              // det saa vidt det endret seg, gjor det tydelig». Foer sto den
+              // paa terracotta-100 (#F5DED0) — nesten samme tone som sida.
+              // Naa: terracotta-300 (#DC9A74) og 3 px kant.
               klBdSoneStil: Object.assign(
                 { display: 'flex', flexDirection: 'column', gap: '8px', borderRadius: 'var(--radius-md)', padding: '8px', boxSizing: 'border-box' },
                 this.state.klDrar === 'sone'
-                  ? { border: '2px dashed var(--terracotta-500)', background: 'var(--terracotta-100)', minHeight: '130px', justifyContent: 'center' }
+                  ? { border: '3px dashed var(--terracotta-600)', background: 'var(--terracotta-300)', minHeight: '130px', justifyContent: 'center' }
                   : { border: '1.5px dashed var(--clay-300)', background: 'transparent', minHeight: '46px' }),
               // Ventelista tar imot den samme deltakeren — da gir hun fra seg
               // plassen, og den blir ledig for andre.
               klVlSoneStil: Object.assign(
                 { display: 'flex', flexDirection: 'column', gap: '8px', borderRadius: 'var(--radius-md)', padding: '8px', boxSizing: 'border-box' },
                 this.state.klDrar === 'sone'
-                  ? { border: '2px dashed var(--sage-500)', background: 'var(--sage-100)', minHeight: '130px', justifyContent: 'center' }
+                  ? { border: '3px dashed var(--sage-600)', background: 'var(--sage-300)', minHeight: '130px', justifyContent: 'center' }
                   : { border: 'none', padding: '0', minHeight: '0' }),
             };
           })(),
@@ -33587,7 +33612,8 @@ class Component extends DCLogic {
    */
   klSlippRamme(art, farge) {
     if (this.state.klDrar !== art) return {};
-    return { outline: '2px dashed ' + farge, outlineOffset: '-3px' };
+    // Tre piksler, ikke to. Eieren, 6. september: «gjor det tydelig».
+    return { outline: '3px dashed ' + farge, outlineOffset: '-3px' };
   }
 
   klDragStart(evt, e) {
@@ -35144,6 +35170,11 @@ class Component extends DCLogic {
       kurs: evt.tittel,
       dato: evt.dato,
       tid: evt.tid,
+      // Betalingsstatusen foelger med ut av kurset. Eieren, 6. september:
+      // «vis meg betalingsstatus paa deltakerne … paa byttt dato ogsaa».
+      // Den staar alt paa deltakerraden — «status» fra api/admin/kalender.php
+      // — og maatte bare baeres med.
+      status: p.status || '',
       srcOktId: evt.oktId || 0,
     }, e);
     return rad;
@@ -37993,7 +38024,7 @@ class Component extends DCLogic {
           const nyttMedlemskap = {
             plRed: {
               foer: '', navn: '', pris: '', timer: '', binding: '0',
-              engangs: false, aktiv: true, sortering: '0',
+              engangs: false, aktiv: true, fastTrekk: false, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
             },
@@ -41548,6 +41579,7 @@ class Component extends DCLogic {
                   foer: pl.navn, navn: pl.navn, pris: String(pl.pris),
                   timer: fri ? '' : String(pl.timer),
                   binding: String(pl.binding || 0), engangs: !!pl.engangs, aktiv: !!pl.aktiv,
+                  fastTrekk: !!pl.fastTrekk,
                   sortering: String(pl.sortering || 0),
                   merke: pl.merke || '', undertekst: pl.undertekst || '',
                   beskrivelse: pl.beskrivelse || '', punkter: String(pl.punkter || ''),
@@ -41570,7 +41602,7 @@ class Component extends DCLogic {
           plNy: () => {
             this.setState({ side: 'adminmedlemskap', plRed: {
               foer: '', navn: '', pris: '', timer: '', binding: '0',
-              engangs: false, aktiv: true, sortering: '0',
+              engangs: false, aktiv: true, fastTrekk: false, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
               langtekst: '', viktig: '',
@@ -41622,6 +41654,7 @@ class Component extends DCLogic {
           plFjernBilde: () => this.endrePlan({ bilde: '' }),
 
           plEngangs: !!(red && red.engangs),     vekslPlEngangs: veksle('engangs'),
+          plFastTrekk: !!(red && red.fastTrekk), vekslPlFastTrekk: veksle('fastTrekk'),
           plAktiv: !!(red && red.aktiv),         vekslPlAktiv: veksle('aktiv'),
           plFremhevet: !!(red && red.fremhevet), vekslPlFremhevet: veksle('fremhevet'),
 
@@ -41639,6 +41672,10 @@ class Component extends DCLogic {
               timer: String(d.timer || '').trim(),
               binding: parseInt(d.binding, 10) || 0,
               engangs: !!d.engangs, aktiv: !!d.aktiv,
+              // Serveren skriver «krever_fast_trekk» bare naar feltet er med
+              // i kallet. Sto det ikke her, ville haken sett ut som den
+              // virket og ikke lagret noe.
+              fastTrekk: !!d.fastTrekk,
               sortering: parseInt(d.sortering, 10) || 0,
               merke: d.merke || '', undertekst: d.undertekst || '',
               beskrivelse: d.beskrivelse || '', punkter: d.punkter || '',
@@ -44489,7 +44526,7 @@ class Component extends DCLogic {
                 borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
                 display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0,
               }, naaMnd ? { borderColor: 'var(--terracotta-500)', boxShadow: '0 0 0 1px var(--terracotta-500)' } : {},
-                this.klSlippRamme('aar', 'var(--terracotta-500)')),
+                this.klSlippRamme('aar', 'var(--terracotta-600)')),
               ny: nye[mnd] || '',
               settNy: e => { const v = e.target.value; this.setState(st => ({ aarNy: Object.assign({}, st.aarNy, { [mnd]: v }) })); },
               leggTil: () => this.aarLeggTil(aar, mnd),

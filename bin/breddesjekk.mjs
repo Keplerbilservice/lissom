@@ -405,7 +405,15 @@ const EKSTRA = [
   // Okt-blokkene i kalenderen har ingen fast tekst; de heter det kurset
   // heter. Derfor en velger i stedet: forste synlige «.lx-agenda» er
   // dagens forste okt, og den aapner nettopp den dialogen.
-  { sti: '/admin/kalender',  klikk: [{ velger: '.lx-agenda' }] },
+  //
+  // «Liste» maa trykkes forst. Vakta sto uten det, og feilet hver kjoring
+  // med «fant ingenting aa trykke paa: .lx-agenda» — agendaradene finnes
+  // bare i listevisningen, og kalenderen aapner i Dag siden 6. september:
+  // «naar vi aapner kalender paa mobil i admin, saa vil jeg at dag skal
+  // vaere default». Feilen laa altsaa i vakta, ikke i sida. Maalt: 0 rader
+  // rett etter lasting, 11 etter et trykk paa Liste, og ingenting utenfor
+  // 390 px naar dialogen staar aapen.
+  { sti: '/admin/kalender',  klikk: ['Liste', { velger: '.lx-agenda' }] },
   { sti: '/admin/kalender',  klikk: ['NYTT KURS'] },
   { sti: '/admin/medlemmer', klikk: ['NYTT MEDLEM'] },
   { sti: '/admin/medlemmer', klikk: ['SEND BESKJED'] },

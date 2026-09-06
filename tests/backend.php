@@ -9033,8 +9033,10 @@ sjekk('breddesjekken fanger felt som stikker utenfor dialogen',
 sjekk('… og kortets egen rulling slaar ikke maalingen av',
     str_contains($bredde, 'for (let f = e.parentElement; f && f !== kort; f = f.parentElement) {'));
 // Uten en dialog i lista aapnes ingen, og da maaler den nye vakta aldri noe.
+// Agendaradene ligger i listevisningen, og kalenderen aapner i Dag. Uten et
+// trykk paa «Liste» foerst fant vakta ingenting, og feilet hver kjoering.
 sjekk('… og dialogene aapnes for de maales',
-    str_contains($bredde, "{ sti: '/admin/kalender',  klikk: [{ velger: '.lx-agenda' }] },")
+    str_contains($bredde, "{ sti: '/admin/kalender',  klikk: ['Liste', { velger: '.lx-agenda' }] },")
     && str_contains($bredde, "{ sti: '/admin/medlemmer', klikk: ['NYTT MEDLEM'] },"));
 
 echo "\n== Kassa deler dagen på måten, ikke på refusjonsevnen ==\n";
@@ -12404,6 +12406,76 @@ sjekk('… og deltakerkortet har den samme knappen',
     str_contains($byttSida, 'onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>')
     && str_contains($byttSida, 'klDTilVenteliste: () => {'));
 
+// ── Slippefeltet skal vaere til aa se ────────────────────────────────
+//
+// Eieren, 6. september: «slippefeltet i kallender maa bytte farge naar
+// aktivt, naa er det saa vidt det endret seg, gjor det tydelig».
+//
+// Maalt i nettleseren mens et dra paagaar: «Bytt dato» gaar fra gjennomsiktig
+// til rgb(220, 154, 116) med 3 px kant i rgb(162, 80, 43); ventelista til
+// rgb(179, 185, 164) med 3 px i rgb(110, 116, 96). Begge gaar tilbake naar du
+// slipper.
+sjekk('slippefeltene bytter til en farge som synes',
+    str_contains($byttSida, "border: '3px dashed var(--terracotta-600)', background: 'var(--terracotta-300)'")
+    && str_contains($byttSida, "border: '3px dashed var(--sage-600)', background: 'var(--sage-300)'"));
+sjekk('… og ramma rundt dagene og oektene er 3 px',
+    str_contains($byttSida, "return { outline: '3px dashed ' + farge, outlineOffset: '-3px' };"));
+
+// ── Betalingsstatus paa «Bytt dato» ──────────────────────────────────
+//
+// Eieren, 6. september: «vis meg betalingsstatus paa deltakerne paa venteliste
+// og paa byttt dato ogsaa».
+//
+// Paa BYTT DATO finnes den: deltakerraden baerer «status» fra
+// api/admin/kalender.php, og den baeres naa med ut av kurset.
+//
+// Paa VENTELISTE finnes den ikke, og skal ikke finnes paa: en som staar i koen
+// har ingen paamelding og har ikke betalt noe. Raden baerer «id, navn,
+// posisjon, varslet» — se docblokka i api/admin/kalender.php.
+sjekk('betalingsstatusen foelger deltakeren ut av kurset',
+    str_contains($byttSida, "status: p.status || '',"));
+sjekk('… og staar i pilla under navnet',
+    str_contains($byttSida, "+ (v.status ? ' · ' + v.status : ''),"));
+sjekk('… og ventelista baerer fortsatt bare koeplassen',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php'),
+                 'venteliste: [{ navn, posisjon, varslet }],'));
+
+// ── Avtaletrekk: feltet som aldri hadde en knapp ─────────────────────
+//
+// Eieren, 6. september: «hun fikk vipps, ingen godkjennelse i vipps, bare en
+// helt vanlig maate aa betale med vipps», og «aarsmedlemskap er eneste veie
+// avtaletrekk, dette er eneste stedet avtaletrekk skal vaere i bruk».
+//
+// «krever_fast_trekk» avgjor om medlemmet faar en Vipps-AVTALE aa godkjenne i
+// appen, eller en helt vanlig engangsbetaling. Serveren tok imot feltet naar
+// en plan ble lagret, men sendte det aldri ut igjen — og planskjemaet hadde
+// ingen hake. Verkstedet kunne verken se hva som sto eller endre det.
+//
+// Maalt i nettleseren: 12 av 12. Haken staar, den er paa for Aarsmedlemskap
+// og av for Mini 15, den kan slaas av og paa, og verdien staar etter
+// omlasting begge veier.
+$mig146 = file_get_contents(dirname(__DIR__) . '/db/migrations/146_avtaletrekk_bare_paa_arsmedlemskapet.sql');
+sjekk('migrasjon 146 setter avtaletrekk bare paa aarsmedlemskapet',
+    str_contains($mig146, "SET krever_fast_trekk = CASE WHEN navn = 'Årsmedlemskap' THEN 1 ELSE 0 END;"));
+
+$planFil = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+sjekk('planlista sender feltet ut',
+    str_contains($planFil, "'fastTrekk' => Medlemskap::kreverFastTrekk(\$p),"));
+sjekk('… og skriver det bare naar det er med i kallet',
+    str_contains($planFil, "if (!array_key_exists('fastTrekk', \$kropp)"));
+
+sjekk('planskjemaet har haken',
+    str_contains($byttSida, 'checked="{{ plFastTrekk }}" onChange="{{ vekslPlFastTrekk }}"')
+    && str_contains($byttSida, 'Fast trekk i Vipps — medlemmet godkjenner en avtale og trekkes automatisk'));
+sjekk('… med en linje som sier hva av betyr',
+    str_contains($byttSida, 'Er denne av, betaler medlemmet én gang som en vanlig Vipps-betaling, og verkstedet må kreve inn hver periode selv.'));
+sjekk('… og den fylles fra planen og sendes med ved lagring',
+    str_contains($byttSida, 'plFastTrekk: !!(red && red.fastTrekk), vekslPlFastTrekk: veksle(\'fastTrekk\'),')
+    && str_contains($byttSida, 'fastTrekk: !!pl.fastTrekk,')
+    && str_contains($byttSida, 'fastTrekk: !!d.fastTrekk,'));
+sjekk('… og et nytt medlemskap starter uten avtaletrekk',
+    substr_count($byttSida, "engangs: false, aktiv: true, fastTrekk: false, sortering: '0',") === 2);
+
 // ── Snarveiene, som kort oeverst ─────────────────────────────────────
 //
 // Eieren, 6. september: «disse pillene, kan du tilpasse de, gjor om til smaa
@@ -12634,9 +12706,9 @@ sjekk('ramma er ett sted, ikke ett per slippefelt',
 sjekk('… og oektene lyser naar en person dras',
     str_contains($byttSida, "e.oktId ? this.klSlippRamme('okt', 'var(--sage-600)') : {});"));
 sjekk('… og dagene lyser i alle tre visningene',
-    substr_count($byttSida, "this.klSlippRamme('dag', 'var(--terracotta-500)')") === 3);
+    substr_count($byttSida, "this.klSlippRamme('dag', 'var(--terracotta-600)')") === 3);
 sjekk('… og maanedene i aarskalenderen lyser ogsaa',
-    str_contains($byttSida, "this.klSlippRamme('aar', 'var(--terracotta-500)')"));
+    str_contains($byttSida, "this.klSlippRamme('aar', 'var(--terracotta-600)')"));
 sjekk('… og rutene i sidemenyen vokser mens du drar',
     str_contains($byttSida, "this.state.klDrar === 'sone'")
     && substr_count($byttSida, "minHeight: '130px'") === 2);

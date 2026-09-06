@@ -78,6 +78,15 @@ if (Foresporsel::metode() === 'GET') {
             'timer'     => $p['timer'] !== null ? (int) $p['timer'] : null,
             'binding'   => (int) $p['binding_mnd'],
             'engangs'   => (bool) $p['engangs'],
+            // Avtaletrekk eller vanlig betaling.
+            //
+            // Feltet ble tatt IMOT naar planen ble lagret, men aldri sendt
+            // ut igjen. Skjermen hadde derfor ingen mulighet til aa vise hva
+            // som sto, og haken sto av paa alt — ogsaa paa aarsmedlemskapet,
+            // som krever fast trekk. Eieren, 6. september, om Eirin: «hun
+            // fikk vipps, ingen godkjennelse i vipps, bare en helt vanlig
+            // maate aa betale med vipps».
+            'fastTrekk' => Medlemskap::kreverFastTrekk($p),
             'sortering' => (int) $p['sortering'],
             'aktiv'     => (bool) $p['aktiv'],
             'medlemmer' => $brukt[(string) $p['navn']] ?? 0,

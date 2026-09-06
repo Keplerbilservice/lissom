@@ -4,7 +4,6 @@
  *
  *   GET                      varene som kan selges, og dagens salg
  *   POST handling=salg       { belop, maate, slag, kunde }   ett belop, ett trykk
- *   POST handling=vippskrav  { belop, slag, kunde, telefon }  krav rett i Vipps
  *   POST handling=selg       { linjer: [{id, antall}], maate, kunde }
  *   POST handling=delt       { slag, kunde, gavekortKode, deler: [{maate, belop}] }
  *   POST handling=gavekort   { belop, opprinnelse, maate, mottakerEpost, hilsen }
@@ -515,120 +514,12 @@ if ($handling === 'betalstatus') {
               'betalt' => (string) $rad['status'] === 'betalt']);
 }
 
-// ── Vippskrav ───────────────────────────────────────────────────────────
+// «Vippskrav» sto her til 6. september 2026: et krav rett i Vipps-appen til et
+// mobilnummer. Eieren: «vippskrav skal slettes» — overalt. Salgsenheten hadde
+// uansett aldri lov til aa sende krav; Vipps svarte «ErrorCode 5080».
 //
-// «Registrer et salg» bokforer at noe ER betalt. Den sender ingenting.
-// Eieren: «jeg faar registrert medlemskap, men jeg faar jo ikke sendt ut
-// vippskrav. Jeg faar jo ikke inn penga.»
-//
-// Her sendes kravet rett i Vipps-appen til den vi ber — kunden trenger ikke
-// staa foran skjermen. Salget staar som «venter» til pengene er i havn;
-// webhooken og Booking::markerBetalt() gjor det ferdig, akkurat som en
-// betaling fra nettsida.
-if ($handling === 'vippskrav') {
-    $slag = (string) ($kropp['slag'] ?? 'produkt');
-    if (!isset(SLAG[$slag])) {
-        Svar::feil('Velg om det er kurs, medlemskap eller produkt.');
-    }
-
-    $tlf = normaliser_telefon((string) ($kropp['telefon'] ?? ''));
-    if ($tlf === '') {
-        Svar::feil('Skriv inn mobilnummeret kravet skal til.');
-    }
-
-    $raa = str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) ($kropp['belop'] ?? ''));
-    $raa = str_replace(',', '.', trim($raa));
-    if ($raa === '' || !is_numeric($raa)) {
-        Svar::feil('Skriv inn et beløp.');
-    }
-    $sum = (int) round((float) $raa * 100);
-    if ($sum <= 0) {
-        Svar::feil('Beløpet må være over null.');
-    }
-    if ($sum > 10000000) {
-        Svar::feil('Beløpet må være under 100 000 kroner.');
-    }
-
-    $kunde   = mb_substr(trim((string) ($kropp['kunde'] ?? '')), 0, 191);
-    $ordrenr = 'K-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
-    $formal  = SLAG[$slag]['formal'];
-    $tittel  = SLAG[$slag]['tittel'];
-    $referanse = Vipps::nyReferanse('KRV');
-
-    $ordreId = DB::iTransaksjon(static function () use ($sum, $kunde, $ordrenr, $formal, $tittel, $referanse, $tlf): int {
-        $betalingId = DB::settInn('payments', [
-            'vipps_reference' => $referanse,
-            'type'            => 'epayment',
-            'formal'          => $formal,
-            'belop_ore'       => $sum,
-            'status'          => 'opprettet',
-            'idempotency_key' => Vipps::uuid(),
-        ]);
-        // «ny», ikke «hentet»: ingenting er betalt for kunden har trykket ja i
-        // appen. Sto den som hentet, ville dagsoppgjoret talt penger som aldri
-        // kom. «ny» er den eneste statusen ordretabellen har for «ikke betalt
-        // ennaa» — se enum-et paa orders.status; «venter» finnes ikke der, og
-        // MariaDB kappet den til tom streng.
-        //
-        // Booking::markerBetalt() setter den til «betalt» naar pengene er inne.
-        $id = DB::settInn('orders', [
-            'ordrenr'      => $ordrenr,
-            'kunde_navn'   => $kunde !== '' ? $kunde : $tlf,
-            'sum_ore'      => $sum,
-            'status'       => 'ny',
-            'betalt_maate' => 'Vipps',
-            'payment_id'   => $betalingId,
-        ]);
-
-        // Betalingen peker tilbake paa ordren.
-        //
-        // Raden lages foer ordren — den maa finnes for ordren kan peke paa
-        // den — saa koblingen settes her. «payments.order_id» kom med
-        // migrasjon 134, og skal bety det samme paa alle salg: alle radene
-        // som hoerer til ordren. Sto den bare paa de delte, ville et vanlig
-        // kassesalg vaert usynlig for alt som leser den.
-        if (DB::harKolonne('payments', 'order_id')) {
-            DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
-        }
-        DB::settInn('order_lines', [
-            'order_id' => $id, 'product_id' => null,
-            'tittel' => $tittel, 'antall' => 1, 'pris_ore' => $sum,
-        ]);
-        return $id;
-    });
-
-    try {
-        Vipps::opprettBetaling(
-            $referanse,
-            $sum,
-            $tittel . ' — Lissom Keramikk',
-            Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
-            $tlf,
-            true
-        );
-    } catch (Throwable $e) {
-        // Kravet kom aldri av gaarde. Da skal det ikke ligge igjen en ordre
-        // som ser ut som om noen skylder oss penger.
-        DB::kjor('DELETE FROM order_lines WHERE order_id = :o', ['o' => $ordreId]);
-        $pid = DB::verdi('SELECT payment_id FROM orders WHERE id = :o', ['o' => $ordreId]);
-        DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => $ordreId]);
-        if ($pid) { DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $pid]); }
-        logg_feil('Fikk ikke sendt vippskrav til ' . $tlf, $e);
-        // Grunnen slik Vipps ga den. Sto det bare «prov igjen», var det ingen
-        // vei videre for den som ikke har tilgang til feilloggen paa
-        // webhotellet — og de fleste grunnene loeses ikke ved aa prove igjen.
-        Svar::feil('Fikk ikke sendt kravet. ' . $e->getMessage()
-                 . ' Ingenting er registrert.');
-    }
-
-    DB::oppdater('payments', ['status' => 'venter'], ['vipps_reference' => $referanse]);
-    revider('vippskrav_sendt', 'order', $ordreId, ['belop' => $sum, 'slag' => $slag]);
-
-    Svar::ok([
-        'beskjed' => 'Kravet på ' . Booking::kroner($sum) . ' er sendt til ' . $tlf
-            . '. Salget står som ubetalt til kravet er godtatt.',
-    ]);
-}
+// Veien som er igjen for aa be om penger i kassa er Vipps-QR: en helt vanlig
+// betaling, som kunden skanner. Den staar urort lenger nede.
 
 if ($handling === 'salg') {
     $slag = (string) ($kropp['slag'] ?? 'produkt');

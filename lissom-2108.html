@@ -7085,9 +7085,6 @@ window.__resources = {
                     </sc-for>
                     <button type="button" onClick="{{ klNyDLeggTil }}" style="appearance: none; border: 1.5px solid var(--lissom-brown); background: var(--lissom-brown); cursor: pointer; border-radius: var(--radius-pill); padding: 6px 16px; font: var(--type-body-sm); font-weight: 700; color: var(--clay-50); margin-left: auto; white-space: nowrap;">{{ klNyDKnapp }}</button>
                   </div>
-                  <sc-if value="{{ klNyDErKrav }}" hint-placeholder-val="{{ false }}">
-                    <span style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kravet dukker opp i Vipps-appen. Plassen står som reservert til det er godtatt.</span>
-                  </sc-if>
                 </div>
               </div>
 
@@ -7269,6 +7266,26 @@ window.__resources = {
                   <button type="button" onClick="{{ klDSperrBevis }}" style="{{ klDHandlingStil }}">Sperr kursbeviset</button>
                   <button type="button" onClick="{{ klDAapneBevis }}" style="{{ klDHandlingStil }}">Åpne kursbeviset</button>
                   <button type="button" onClick="{{ klDAvbestill }}" style="{{ klDFareStil }}">Avbestill</button>
+                </div>
+                <!-- Betalingen.
+                     Eieren, 6. september: «jeg maa da ogsaa kunne redigere de
+                     som allerede staar som betalt». Endepunktet kunne det fra
+                     for — «status: reservert» — men ingen knapp noe sted
+                     brukte den, saa en plass som kom inn som betalt ved en
+                     feil kunne ikke rettes noe sted.
+                     Kassa -> Betalinger kan annullere en betaling, men bare
+                     naar det finnes en betalingsrad. En paamelding som ble
+                     ført som «Kontant» ved innlegging har ingen. -->
+                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; margin-top: var(--space-3);">
+                  <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Betaling</span>
+                  <sc-if value="{{ klDErBetalt }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ klDSettUbetalt }}" style="{{ klDHandlingStil }}">Sett som ikke betalt</button>
+                  </sc-if>
+                  <sc-if value="{{ klDErUbetalt }}" hint-placeholder-val="{{ true }}">
+                    <sc-for list="{{ klDBetaltValg }}" as="b" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ b.velg }}" style="{{ klDHandlingStil }}">{{ b.navn }}</button>
+                    </sc-for>
+                  </sc-if>
                 </div>
                 <!-- Antall og beloep. Samme felter som raden under
                      Paameldte, samme kall. -->
@@ -7939,8 +7956,12 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <!-- Hva selger du? Tre ting, og ingen vei innom noe annet. -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 var(--space-6);">
+        <!-- Hva selger du? Tre ting, og ingen vei innom noe annet.
+             Raden hadde luft under, men ingen over: pillene la seg rett
+             inntil kortet «Ikke betalt». Maalt til 0 px over og 24 under, likt
+             paa 1440, 1024 og 390 px. Eieren, 6. september: «for trang over
+             pillene». Naa er det like mye begge veier. -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: var(--space-6) 0;">
           <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="3">
             <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
           </sc-for>
@@ -8169,22 +8190,18 @@ window.__resources = {
                   <label for="ut-salgkunde" style="{{ utEtikett }}">Kunde</label>
                   <input id="ut-salgkunde" value="{{ utKunde }}" onChange="{{ settUtKunde }}" placeholder="Valgfritt — navn på kvitteringen" style="{{ utFeltStil }}">
                 </div>
-                <!-- Mobilnummer, for kravet som sendes i Vipps.
-                     «Registrer et salg» bokforer at noe ER betalt — den sender
-                     ingenting. Skal pengene kreves inn, maa vi vite hvem. -->
-                <div style="margin-top: var(--space-4);">
-                  <label for="ut-salgtlf" style="{{ utEtikett }}">Mobil</label>
-                  <input id="ut-salgtlf" inputmode="tel" value="{{ utTelefon }}" onChange="{{ settUtTelefon }}" placeholder="Bare hvis du skal sende Vipps-krav" style="{{ utFeltStil }}">
-                </div>
+                <!-- Feltet «Mobil» sto her, for kravet som ble sendt i Vipps.
+                     Det gikk ut med vippskravet 6. september 2026 — det var
+                     det eneste som brukte nummeret. Vipps-QR trenger det
+                     ikke: kunden staar foran skjermen og skanner. -->
 
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ utRegistrerSalg }}" hint-size="auto,52px">{{ utSalgKnapp }}</x-import>
-                  <!-- QR-en og kravet leser beloepsfeltet, som staar skjult
-                       naar oppgjoret deles. Da ville de sendt et krav paa
+                  <!-- QR-en leser beloepsfeltet, som staar skjult naar
+                       oppgjoret deles. Da ville den vist en kode paa
                        ingenting. -->
                   <sc-if value="{{ utEnkeltPaa }}" hint-placeholder-val="{{ true }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="qr-code" on-click="{{ utQrLag }}" hint-size="auto,52px">Vis Vipps-QR</x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" icon="send" on-click="{{ utSendKrav }}" hint-size="auto,52px">Send Vipps-krav</x-import>
                   </sc-if>
                   <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utSalgBeskjed }}</span>
                 </div>
@@ -20601,7 +20618,10 @@ class Component extends DCLogic {
   }
 
   static get BETALT_MAATER() {
-    return ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
+    // «Ikke betalt» staar forst, og er derfor standardvalget.
+    // Eieren, 6. september: «jeg valgte ingen betalingsmaaten, men hun kom
+    // inn som betalt, det stemmer ikke! Default maa vaere ikke betalt.»
+    return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
   }
 
   /**
@@ -20616,7 +20636,9 @@ class Component extends DCLogic {
    * valget som er kortet ned.
    */
   static get MAATER_OKT() {
-    return ['Kontant', 'Vipps', 'Gavekort', 'Ikke betalt', 'Gratis'];
+    // «Ikke betalt» staar forst, og er derfor standardvalget — se
+    // BETALT_MAATER.
+    return ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Gratis'];
   }
 
   static get BANNER_STANDARD() {
@@ -30640,7 +30662,7 @@ class Component extends DCLogic {
             ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
             inn: ev => {
               const r = ev.currentTarget.getBoundingClientRect();
-              this.setState({ klHover: { id: p.e.id, over: true, x: Math.max(10, Math.min(window.innerWidth - 340, r.left + r.width / 2 - 160)), y: r.top } });
+              this.setState({ klHover: { id: p.e.id, over: true, x: Math.max(10, Math.min(window.innerWidth - 340, r.left + r.width / 2 - 160)), y: r.top, bunn: r.bottom } });
             },
             ut: () => this.setState({ klHover: null }),
             meny: meny(p.e),
@@ -30764,7 +30786,7 @@ class Component extends DCLogic {
             meny: meny(p.e),
             inn: ev => {
               const r = ev.currentTarget.getBoundingClientRect();
-              this.setState({ klHover: { id: p.e.id, over: true, x: Math.max(10, Math.min(window.innerWidth - 340, r.left + r.width / 2 - 160)), y: r.top } });
+              this.setState({ klHover: { id: p.e.id, over: true, x: Math.max(10, Math.min(window.innerWidth - 340, r.left + r.width / 2 - 160)), y: r.top, bunn: r.bottom } });
             },
             ut: () => this.setState({ klHover: null }),
             harAvatarer: (p.e.deltakere || []).length > 0,
@@ -30933,7 +30955,29 @@ class Component extends DCLogic {
           klMenyVises: !!menyEvt,
           klMenyLukk: () => this.setState({ klMeny: null }),
           klMenyHindre: e => { e.preventDefault(); this.setState({ klMeny: null }); },
-          klMenyStil: menyEvt ? { position: 'fixed', left: Math.min(menyState.x, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 250) + 'px', top: Math.min(menyState.y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 230) + 'px', zIndex: 80, background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', padding: '6px', minWidth: '218px', display: 'flex', flexDirection: 'column' } : { display: 'none' },
+          // Hurtigmenyen aapner seg ned og til hoyre naar det er plass,
+          // ellers opp og til venstre. Den gamle klemma gjettet paa at menyen
+          // var 230 px hoy; den er 294 px med seks valg og 330 med sju, saa et
+          // hoyreklikk 627 px nede paa en 900 px skjerm ga en meny som endte
+          // 21 px UNDER kanten — maalt i nettleseren 6. september. Naa gjettes
+          // det ikke: sida menyen henges opp i avgjor retningen, og
+          // «maxHeight» er det som faktisk er igjen.
+          klMenyStil: menyEvt ? (() => {
+            const mb = typeof window !== 'undefined' ? window.innerWidth : 1200;
+            const mh = typeof window !== 'undefined' ? window.innerHeight : 800;
+            return Object.assign(
+              { position: 'fixed', zIndex: 80, background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', padding: '6px', minWidth: '218px', display: 'flex', flexDirection: 'column', overflowY: 'auto' },
+              menyState.x > mb / 2 ? { right: Math.max(8, mb - menyState.x) + 'px' } : { left: menyState.x + 'px' },
+              // Menyen skal helst ned, slik den alltid har gjort. Den snur
+              // bare naar det ikke er plass under OG det er mer plass over.
+              // 330 px er sju valg — det hoyeste menyen blir. Skulle det
+              // tallet en dag vaere feil, kan den likevel ikke havne utenfor:
+              // «maxHeight» er alltid den plassen som faktisk er igjen.
+              (mh - menyState.y - 16) < 330 && menyState.y > (mh - menyState.y)
+                ? { bottom: Math.max(8, mh - menyState.y) + 'px', maxHeight: Math.max(120, menyState.y - 16) + 'px' }
+                : { top: menyState.y + 'px', maxHeight: Math.max(120, mh - menyState.y - 16) + 'px' }
+            );
+          })() : { display: 'none' },
           klMenyTittel: menyEvt ? menyEvt.tittel : '',
           klMenyValg: menyEvt ? [
             { navn: 'Rediger økten', gjor: () => this.klApneEnkel(menyEvt) },
@@ -31471,15 +31515,14 @@ class Component extends DCLogic {
               // «legg-til»), saa plassen teller i kapasiteten og kommer paa
               // deltakerlista og i beskjedene som alle andre.
               //
-              // «Vippskrav» er den eneste maaten som sender noe: kravet
-              // dukker opp i Vipps-appen til nummeret, og plassen staar som
-              // reservert til det er godtatt. De ovrige bokforer bare at noe
-              // alt ER gjort opp.
+              // Ingen av maatene sender noe. De bokforer at noe alt ER gjort
+              // opp — eller at det ikke er det. «Vippskrav» sto her til 6.
+              // september 2026; eieren ba om at den skulle slettes overalt.
               ...(() => {
                 const u = this.state.kdUtkast || {};
                 const maater = Component.MAATER_OKT;
-                const maate = maater.indexOf(u.maate) >= 0 ? u.maate : maater[0];
-                const krav = maate === 'Vippskrav';
+                // Ingenting er betalt for noen har sagt at det er det.
+                const maate = maater.indexOf(u.maate) >= 0 ? u.maate : 'Ikke betalt';
                 const gave = maate === 'Gavekort';
                 const skylder = maate === 'Ikke betalt';
                 const sett = (n, v) => this.setState(st => ({ kdUtkast: Object.assign({}, st.kdUtkast, { [n]: v }) }));
@@ -31518,7 +31561,7 @@ class Component extends DCLogic {
                     tekst('epost', 'E-post', 'Kan stå tomt'),
                     // Nummeret er ikke pynt naar kravet skal sendes: da er
                     // det adressen kravet gaar til.
-                    tekst('tlf', krav ? 'Mobil (kravet går hit)' : 'Telefon', krav ? '4xx xx xxx' : 'Kan stå tomt'),
+                    tekst('tlf', 'Telefon', 'Kan stå tomt'),
                     tekst('antall', 'Antall plasser', '1'),
                     {
                       erTekst: false, erValg: true, etikett: 'Betaling', verdi: maate,
@@ -31538,15 +31581,13 @@ class Component extends DCLogic {
                       // ikke plass ved siden av et annet felt paa en telefon.
                       boksStil: { gridColumn: '1 / -1' },
                     },
-                    tekst('belop', 'Beløp i kroner', krav ? 'Må fylles ut' : 'Tomt = prisen på datoen'),
+                    tekst('belop', 'Beløp i kroner', 'Tomt = prisen på datoen'),
                     // Koden staar bare der den trengs. Et gavekort uten kode
                     // er ingen betaling — det er en paastand.
                     ...(gave ? [tekst('kode', 'Gavekortkode', 'F.eks. LIS-ABCD-1234')] : []),
                     tekst('notat', 'Internt notat', 'Vises ikke for deltakeren', true),
                   ],
-                  kdForklaring: krav
-                    ? 'Kravet sendes til mobilnummeret over. Plassen står som reservert til det er godtatt — den blir betalt av seg selv når pengene kommer.'
-                    : (gave
+                  kdForklaring: (gave
                         ? 'Beløpet trekkes fra gavekortet. Har kortet for lite igjen, sier vi fra og ingenting blir lagt inn.'
                         : (skylder
                             ? 'Plassen er reservert, men ingenting er betalt. Den dukker opp under «Ikke betalt» på Oversikt, der du kan kreve den inn.'
@@ -31555,7 +31596,7 @@ class Component extends DCLogic {
                                 : 'Føres som gjort opp med det samme. Står beløpet tomt, brukes prisen på denne datoen.'))),
                   // «Legg til» alene sto alt i verktoylinja over kalenderen. To knapper
                   // med samme ord, én skjerm fra hverandre, er én for mye.
-                  kdKnapp: krav ? 'Send vippskrav' : 'Legg inn deltakeren',
+                  kdKnapp: 'Legg inn deltakeren',
                   // Uten adresse er det ingenting aa sende, og da skal ikke
                   // haken staa der og se ut som et valg.
                   kdKanVarsle: (u.epost || '').trim() !== '',
@@ -31569,17 +31610,6 @@ class Component extends DCLogic {
                     const navn = (u.navn || '').trim();
                     if (navn === '') {
                       this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Deltakeren må ha et navn.' });
-                      return;
-                    }
-                    // De to tingene et krav ikke kan sendes uten. Serveren
-                    // sier det samme — men den som staar med kunden foran seg
-                    // skal faa vite det for kallet gaar.
-                    if (krav && (u.tlf || '').trim() === '') {
-                      this.setState({ kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Et vippskrav må ha et mobilnummer å gå til.' });
-                      return;
-                    }
-                    if (krav && !(parseInt(u.belop || '', 10) > 0)) {
-                      this.setState({ kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Et vippskrav må ha et beløp over null.' });
                       return;
                     }
                     if (gave && (u.kode || '').trim() === '') {
@@ -31827,6 +31857,37 @@ class Component extends DCLogic {
                   { handling: 'endre', id: dv.bookingId, antall: antall, belop: belop })
                   .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDAntall: null, klDBelop: '' }); });
               },
+              // ── Betalingen, begge veier ─────────────────────────────
+              //
+              // «status: reservert» fantes i api/admin/pamelding.php fra for,
+              // men ingen knapp noe sted brukte den. En plass som kom inn som
+              // betalt kunne ikke settes tilbake — og med standarden som sto
+              // paa «Vipps» kom mange inn slik uten at noen valgte det.
+              //
+              // Veien tilbake finnes ellers bare i Kassa -> Betalinger, og den
+              // krever en betalingsrad. En paamelding som ble ført som
+              // «Kontant» ved innlegging har ingen rad aa annullere.
+              //
+              // Maaten foelger med naar den settes til betalt: uten den staar
+              // plassen som gjort opp uten at noe sier hvor pengene kom fra,
+              // og dagsoppgjoret vet ikke hvilken motkonto den hoerer til.
+              klDErBetalt: !!(dv && dv.betalt),
+              klDErUbetalt: !!(dv && !dv.betalt),
+              klDSettUbetalt: () => {
+                if (!dv || !dv.bookingId) return;
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'status', id: dv.bookingId, status: 'reservert' })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+              },
+              klDBetaltValg: ['Kontant', 'Vipps'].map(m => ({
+                navn: m,
+                velg: () => {
+                  if (!dv || !dv.bookingId) return;
+                  this.klKall('/api/admin/pamelding.php',
+                    { handling: 'status', id: dv.bookingId, status: 'betalt', maate: m })
+                    .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+                },
+              })),
               klDIkkeMott: () => {
                 if (!dv || !dv.bookingId) return;
                 this.klKall('/api/admin/pamelding.php',
@@ -31975,17 +32036,18 @@ class Component extends DCLogic {
       settKlNyDTlf: e => this.setState({ klNyDTlf: e.target.value }),
       settKlNyDEpost: e => this.setState({ klNyDEpost: e.target.value }),
       // «Vippskrav» staar her ogsaa, ikke bare i den fyldige ruta under
-      // «Rediger okten». Eieren, 29. august: «vi vil ha vipps og betaling
-      // ja». Den raske veien skal kunne be om pengene, ikke bare notere at
-      // de er gjort opp.
-      klNyDBetValg: ['Vipps', 'Kontant', 'Vippskrav'].map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Vipps') === bn) })),
-      klNyDErKrav: (this.state.klNyDBet || 'Vipps') === 'Vippskrav',
-      // Nummeret er ikke pynt naar kravet skal sendes: da er det adressen.
-      klNyDTlfHint: (this.state.klNyDBet || 'Vipps') === 'Vippskrav'
-        ? 'Mobil — kravet går hit' : 'Telefon',
+      // «Rediger okten». Den raske veien noterer hvordan plassen er gjort opp
+      // — eller at den ikke er det. Den sender ingenting: «Vippskrav» sto her
+      // til 6. september 2026, og eieren ba om at den skulle slettes overalt.
+      klNyDBetValg: ['Ikke betalt', 'Vipps', 'Kontant'].map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Ikke betalt') === bn) })),
+      // Beloepsfeltet sto bare framme naar «Vippskrav» var valgt. Maaten er
+      // borte, men feltet blir staaende: naar standarden er «Ikke betalt»,
+      // er nettopp beloepet det som sier hva plassen skylder.
+      klNyDErKrav: true,
+      klNyDTlfHint: 'Telefon',
       klNyDBelop: this.state.klNyDBelop || '',
       settKlNyDBelop: e => this.setState({ klNyDBelop: e.target.value }),
-      klNyDKnapp: (this.state.klNyDBet || 'Vipps') === 'Vippskrav' ? 'Send vippskrav' : 'Legg til',
+      klNyDKnapp: 'Legg til',
       // Samme endepunkt som «Legg til deltaker» under Paameldte: en manuell
       // paamelding er en helt vanlig booking, og skal telle i kapasiteten og
       // komme med paa deltakerlista som alle andre.
@@ -31996,29 +32058,14 @@ class Component extends DCLogic {
           this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv navnet.' });
           return;
         }
-        const bet = this.state.klNyDBet || 'Vipps';
-        const krav = bet === 'Vippskrav';
+        const bet = this.state.klNyDBet || 'Ikke betalt';
         const tlf = (this.state.klNyDTlf || '').trim();
         const belop = (this.state.klNyDBelop || '').trim();
-        // De to tingene et krav ikke kan sendes uten. Serveren sier det samme
-        // — men den som staar med kunden foran seg skal faa vite det for
-        // kallet gaar.
-        if (krav && tlf === '') {
-          this.setState({ kvittering: 'Ble ikke sendt',
-                          kvitteringDetalj: 'Et vippskrav må ha et mobilnummer å gå til.' });
-          return;
-        }
-        if (krav && !(parseInt(belop, 10) > 0)) {
-          this.setState({ kvittering: 'Ble ikke sendt',
-                          kvitteringDetalj: 'Et vippskrav må ha et beløp over null.' });
-          return;
-        }
         this.klKall('/api/admin/pamelding.php', {
           handling: 'legg-til', oktId: valgt.oktId, navn: navn,
           epost: (this.state.klNyDEpost || '').trim(),
           telefon: tlf, antall: 1,
-          betaltMaate: krav ? 'Vippskrav'
-            : (bet === 'Vipps' ? 'Vipps i verkstedet' : 'Kontant'),
+          betaltMaate: bet === 'Vipps' ? 'Vipps i verkstedet' : bet,
           belop: belop,
         }).then(ok => {
           if (ok) this.setState({ klNyDNavn: '', klNyDEpost: '', klNyDTlf: '', klNyDBelop: '' });
@@ -32049,7 +32096,25 @@ class Component extends DCLogic {
         return {
           klHoverVises: true,
           klHover: {
-            stil: { position: 'fixed', left: hv.x + 'px', top: hv.y + 'px', transform: 'translateY(calc(-100% - 10px))', zIndex: 70, width: '320px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '14px', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-5)', pointerEvents: 'none', boxSizing: 'border-box' },
+            // Kortet staar over okta naar det er plass der, ellers under.
+            // Ingen av delene gjetter paa en hoyde: den som staar over henges
+            // opp i «bottom», den som staar under i «top», og begge faar bare
+            // den plassen som faktisk er igjen.
+            //
+            // Foer sto det alltid over, med «translateY(-100%)» og ingen
+            // klemme. En okt 90 px fra toppen ga da et kort som startet 98 px
+            // OVER skjermkanten — maalt i nettleseren 6. september.
+            stil: Object.assign(
+              { position: 'fixed', left: hv.x + 'px', zIndex: 70, width: '320px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '14px', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-5)', pointerEvents: 'none', boxSizing: 'border-box', overflowY: 'auto' },
+              (() => {
+                const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+                const bunn = typeof hv.bunn === 'number' ? hv.bunn : hv.y;
+                const over = hv.y - 22, under = vh - bunn - 22;
+                return over >= under
+                  ? { bottom: Math.max(8, vh - hv.y + 10) + 'px', maxHeight: Math.max(80, over) + 'px' }
+                  : { top: (bunn + 10) + 'px', maxHeight: Math.max(80, under) + 'px' };
+              })()
+            ),
             typeNavn: info[he.type].navn,
             badgeStil: { display: 'inline-flex', alignItems: 'center', borderRadius: 'var(--radius-pill)', padding: '2px 10px', fontSize: '11px', fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', background: info[he.type].bg, color: info[he.type].fg, border: info[he.type].kant || 'none' },
             tittel: he.tittel,
@@ -33725,6 +33790,37 @@ class Component extends DCLogic {
    * Naa staar mappingen her, og begge stedene leser den samme. Ingen ny
    * liste: én liste, to steder.
    */
+  /**
+   * Aapner datolista for ett kurs, og ruller dit den faktisk staar.
+   *
+   * Eieren, 6. september, med bilde fra telefonen: «Proever aa trykke paa
+   * kurset, men det kommer ikke opp. Bare popper opp til toppen av siden.»
+   *
+   * Reprodusert paa 390 px: raden satte «datoerFor» og rullet til toppen —
+   * men under 760 px ligger datolista bak en lenke («.lx-datoliste
+   * [data-apen=false]» i stilarket), og den ble aldri aapnet. Da skjedde det
+   * ingenting synlig. Paa PC sto lista aapen fra for, og feilen viste seg ikke.
+   *
+   * Naa aapnes lista, og sida ruller til den framfor til toppen. Blokka
+   * flyttes ovrst med «order: -1» naar den gjelder ett kurs, saa de to
+   * betyr det samme paa en bred skjerm — men bare den ene virker paa en smal.
+   */
+  apneDatoerFor(navn, ekstra) {
+    this.setState(Object.assign(
+      { datoerFor: navn, kRed: false, oktRediger: null, datoListeApen: true },
+      ekstra || {}
+    ));
+    // Elementet finnes forst etter at skjermen er tegnet paa nytt.
+    setTimeout(() => {
+      const el = document.getElementById('admin-datoer');
+      if (el) {
+        el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 60);
+  }
+
   klDeltakerliste(evt) {
     if (!evt || !Array.isArray(evt.deltakere)) return [];
     return evt.deltakere.map(p => ({
@@ -37850,31 +37946,6 @@ class Component extends DCLogic {
             })),
           utSlagHjelp: SLAGTEKST[slag] || '',
           utSalgBeskjed: st.utSalgBeskjed || '',
-          utTelefon: st.utTelefon || '',
-          settUtTelefon: e => this.setState({ utTelefon: e.target.value, utSalgBeskjed: '' }),
-          // Kravet sendes i Vipps, til mobilen. Salget staar som «venter» til
-          // det er betalt — det er hele forskjellen fra «Registrer salget»,
-          // som sier at pengene alt er inne.
-          utSendKrav: () => {
-            const raa = String(st.utBelop || '').trim();
-            if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
-              this.setState({ utSalgBeskjed: 'Skriv inn et beløp først.' });
-              return;
-            }
-            if (!String(st.utTelefon || '').trim()) {
-              this.setState({ utSalgBeskjed: 'Skriv inn mobilnummeret kravet skal til.' });
-              return;
-            }
-            this.uttakKall({
-              handling: 'vippskrav',
-              belop: raa,
-              slag,
-              kunde: (st.utKunde || '').trim(),
-              telefon: String(st.utTelefon || '').trim(),
-            }).then(ok => {
-              if (ok) this.setState({ utBelop: '', utKunde: '', utTelefon: '', utSalgBeskjed: '' });
-            });
-          },
           // ── Vipps-QR ────────────────────────────────────────────────
           //
           // Salgsenheten har ikke lov til aa sende betalingskrav — Vipps
@@ -39450,10 +39521,7 @@ class Component extends DCLogic {
         // med alle datoene til kurset, «Legg til deltaker» paa hver av dem,
         // og «Rediger» videre inn i oppsettet. Det er den samme veien som et
         // trykk i kurslista under tar.
-        const apneKurset = (o) => () => {
-          this.setState({ datoerFor: o.tittel, kRed: false, oktRediger: null });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+        const apneKurset = (o) => () => this.apneDatoerFor(o.tittel);
 
         // Linja under tittelen. Den samme opplysningen som i kalenderen:
         // hvor mange plasser som er tatt, og hva som er galt med datoen.
@@ -40269,8 +40337,7 @@ class Component extends DCLogic {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
           }
-          this.setState({ datoerFor: k.navn, kRed: false, oktRediger: null });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.apneDatoerFor(k.navn);
         },
         rediger: (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
@@ -40287,11 +40354,9 @@ class Component extends DCLogic {
         leggTil: (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
           const neste = (this.state.adminOkter || []).find(o => o.tittel === k.navn);
-          this.setState({
-            datoerFor: k.navn, kRed: false, oktRediger: null,
+          this.apneDatoerFor(k.navn, {
             mpApen: !!neste, mpOkt: neste ? String(neste.oktId) : '',
           });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         harDato: (this.state.adminOkter || []).some(o => o.tittel === k.navn),
         // «Slett» fjernet bare raden fra skjermbildet. Kurset var tilbake ved

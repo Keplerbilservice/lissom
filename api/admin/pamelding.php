@@ -27,13 +27,17 @@ Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 $admin = krev_admin();
 
-// «Vippskrav» er den eneste som sender noe. De andre bokforer at noe alt ER
-// gjort opp — kravet ber om pengene, og plassen staar som reservert til de er
-// inne. Samme vei som en betaling fra nettsida: webhooken gjor den ferdig.
+// Maatene en paamelding kan foeres med. Alle bokforer at noe alt ER gjort opp,
+// eller at det ikke er det — ingen av dem sender noe.
+//
+// «Vippskrav» sto her til 6. september 2026. Eieren: «vippskrav skal slettes»,
+// og paa spoersmaal om hvor: overalt. Den kan ikke lenger velges. Gamle
+// paameldinger beholder maaten sin i basen — «betalt_maate» er en tekst, og
+// lista her sier bare hva som kan settes NAA.
+//
 // «Vipps» kom i tillegg til «Vipps i verkstedet» da valget paa okta ble kortet
-// ned til fire. Begge staar: gamle paameldinger beholder maaten sin, og
-// dagsoppgjoret foerer dem samme sted uansett.
-const MAATER = ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Vippskrav', 'Gavekort',
+// ned. Begge staar: dagsoppgjoret foerer dem samme sted uansett.
+const MAATER = ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Gavekort',
                 'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
 
 $handling = Foresporsel::tekst('handling', 'legg-til');
@@ -347,7 +351,11 @@ if ($epost !== '' && !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
 
 $maate = Foresporsel::tekst('betaltMaate');
 if (!in_array($maate, MAATER, true)) {
-    $maate = 'Kontant';
+    // Staar det ingenting, er ingenting betalt. Sto paa «Kontant», og da ble
+    // en paamelding uten valgt maate bokfoert som gjort opp. Eieren, 6.
+    // september: «jeg valgte ingen betalingsmaaten, men hun kom inn som
+    // betalt, det stemmer ikke! Default maa vaere ikke betalt.»
+    $maate = 'Ikke betalt';
 }
 
 // Belopet: tomt felt betyr prisen paa datoen. «Gratis» er null kroner,
@@ -361,8 +369,10 @@ if ($belop < 0 || $belop > 10000000) {
     Svar::feil('Beløpet må være mellom 0 og 100 000 kroner.');
 }
 
-// «Betaler ved oppmote» og «Vippskrav» er ikke betalt enda. Resten er gjort
-// opp i det oyeblikket eieren registrerer dem.
+// «Betaler ved oppmote» er ikke betalt enda. Resten er gjort opp i det
+// oyeblikket eieren registrerer dem. «Vippskrav» staar igjen i lista selv om
+// maaten ikke kan velges lenger: gamle rader har den, og de skal fortsatt
+// telle som ubetalt.
 // «Ikke betalt» sier det rett ut: plassen er gitt, pengene er ikke kommet.
 // Den staar som reservert til den er gjort opp, og dukker opp paa kortet
 // «Ikke betalt» paa Oversikt til den er det.
@@ -390,16 +400,6 @@ if ($maate === 'Gavekort') {
         Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
                  . ' igjen, og plassen koster ' . Booking::kroner($belop)
                  . '. Ta resten på en annen måte.');
-    }
-}
-
-// Et krav maa ha et nummer aa gaa til, og et beloep aa be om.
-if ($maate === 'Vippskrav') {
-    if ($telefon === '') {
-        Svar::feil('Et vippskrav må ha et mobilnummer. Skriv inn nummeret kravet skal til.');
-    }
-    if ($belop <= 0) {
-        Svar::feil('Et vippskrav må ha et beløp over null.');
     }
 }
 
@@ -458,76 +458,6 @@ if ($maate === 'Gavekort' && $kort !== null) {
             ['kort' => $kort['id'], 'belop' => $belop]);
 }
 
-// ── Vippskravet ──────────────────────────────────────────────────────
-//
-// Plassen er reservert; naa bes det om pengene. Kravet dukker opp i
-// Vipps-appen til den vi ber — kunden trenger ikke staa foran skjermen.
-//
-// Betalingsraden knyttes til bookingen begge veier, saa betalingspanelet
-// finner den uansett hvilken ende det leter fra. Naar pengene kommer,
-// setter webhooken og Booking::markerBetalt() bookingen til «betalt» — den
-// samme veien som en betaling fra nettsida.
-//
-// Gaar sendingen galt, skal det ikke ligge igjen en plass som ser booket ut
-// og en betaling ingen har bedt om. Da ryddes begge, og eieren faar vite
-// hvorfor.
-$kravSendt = false;
-if ($maate === 'Vippskrav') {
-    $referanse = Vipps::nyReferanse('KRV');
-    $betalingId = DB::settInn('payments', [
-        'vipps_reference' => $referanse,
-        'type'            => 'epayment',
-        'formal'          => 'booking',
-        'belop_ore'       => $belop,
-        'status'          => 'opprettet',
-        'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $bookingId : null,
-        'idempotency_key' => Vipps::uuid(),
-    ]);
-    DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $bookingId]);
-
-    try {
-        Vipps::opprettBetaling(
-            $referanse,
-            $belop,
-            mb_substr((string) $okt['tittel'], 0, 80) . ' — Lissom Keramikk',
-            Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
-            $telefon,
-            true
-        );
-    } catch (Throwable $e) {
-        logg_feil('Fikk ikke sendt vippskrav for booking ' . $bookingId, $e);
-
-        // Ryddingen maa gaa i denne rekkefolgen. «bookings.payment_id» peker
-        // paa «payments» med en fremmednokkel, saa slettes betalingen forst,
-        // avviser basen det — og da satt vi igjen med en reservert plass,
-        // en betaling ingen hadde bedt om, og en 500-feil i stedet for en
-        // forklaring. Bookingen forst, betalingen etter.
-        //
-        // Gaar selve ryddingen galt ogsaa, skal eieren faa vite at plassen
-        // ligger der, ikke at «ingen plass er lagt inn».
-        $ryddet = true;
-        try {
-            DB::kjor('DELETE FROM bookings WHERE id = :b', ['b' => $bookingId]);
-            DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $betalingId]);
-        } catch (Throwable $r) {
-            $ryddet = false;
-            logg_feil('Fikk ikke ryddet booking ' . $bookingId . ' etter mislykket vippskrav', $r);
-        }
-
-        // Grunnen slik Vipps ga den — se Vipps::grunn(). «Prov igjen» hjelper
-        // ikke mot feil nokler eller en salgsenhet uten lov til aa sende krav.
-        Svar::feil($ryddet
-            ? 'Fikk ikke sendt kravet. ' . $e->getMessage() . ' Ingen plass er lagt inn.'
-            : 'Fikk ikke sendt kravet, og plassen ble stående. ' . $navn
-              . ' står nå som reservert på datoen — fjern den fra deltakerlista '
-              . 'før du prøver på nytt.');
-    }
-    DB::oppdater('payments', ['status' => 'venter'], ['id' => $betalingId]);
-    revider('vippskrav_sendt', 'booking', $bookingId,
-            ['belop' => $belop, 'til' => $telefon]);
-    $kravSendt = true;
-}
-
 // Bekreftelse sendes bare naar eieren ber om det, og bare naar vi har en
 // adresse aa sende til. En som melder seg paa i doera venter ikke e-post.
 $varslet = false;
@@ -550,10 +480,7 @@ Svar::ok([
     'id'      => $bookingId,
     'beskjed' => $navn . ' er lagt til på ' . $okt['tittel'] . ' '
                 . Booking::norskDato((string) $okt['start_tid']) . '.'
-                . ($kravSendt
-                    ? ' Vippskrav på ' . Booking::kroner($belop) . ' er sendt til ' . $telefon
-                      . '. Plassen står som reservert til kravet er godtatt.'
-                    : '')
+
                 . ($kort !== null
                     ? ' Betalt med gavekort ' . $kort['kode'] . '. Igjen på kortet: '
                       . Booking::kroner(max(0, $kort['saldo_ore'] - $belop)) . '.'

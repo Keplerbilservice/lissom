@@ -6405,25 +6405,33 @@ window.__resources = {
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,44px">Nytt kurs</x-import>
           <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 6px 2px 0;">
             <span style="font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); white-space: nowrap;">Venteliste</span>
-            <!-- Veien til skjemaet. Eieren, 6. september: «jeg vil kunne
-                 klikke til legg til person under venteliste», og paa
-                 spoersmaal om hvor: fra kalenderen. Skjemaet ligger paa
-                 Venteliste-siden; ingen ny skjerm. -->
-            <button type="button" onClick="{{ klVlLeggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font-size: 12px; font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til person →</button>
           </div>
-          <sc-for list="{{ klVlSide }}" as="v" hint-placeholder-count="3">
-            <div onMouseDown="{{ v.ned }}" style="{{ v.kortStil }}" style-hover="box-shadow: var(--shadow-md);">
-              <div style="{{ v.navnStil }}">{{ v.navn }}</div>
-              <div style="{{ v.metaStil }}">
-                <span style="{{ v.kursStil }}">{{ v.kurs }}</span>
-                <span style="{{ v.underStil }}">{{ v.under }}</span>
+          <!-- ── Ruta tar imot ────────────────────────────────────────
+               Eieren, 6. september: «jeg vil kunne dra deltakere ut av kortet
+               i kalender, og jeg vil legge paa 1. venteliste 2. bytt dato».
+               Da gir hun fra seg plassen, og den blir ledig for andre. Paa
+               spoersmaal om penger: «Tillat, la betalingen staa». -->
+          <div id="klvl-sone" style="{{ klVlSoneStil }}">
+            <sc-for list="{{ klVlSide }}" as="v" hint-placeholder-count="3">
+              <div onMouseDown="{{ v.ned }}" style="{{ v.kortStil }}" style-hover="box-shadow: var(--shadow-md);">
+                <div style="{{ v.navnStil }}">{{ v.navn }}</div>
+                <div style="{{ v.metaStil }}">
+                  <span style="{{ v.kursStil }}">{{ v.kurs }}</span>
+                  <span style="{{ v.underStil }}">{{ v.under }}</span>
+                </div>
               </div>
-            </div>
-          </sc-for>
-          <sc-if value="{{ klVlSideTom }}" hint-placeholder-val="{{ false }}">
-            <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Ingen på venteliste.</div>
-          </sc-if>
+            </sc-for>
+            <sc-if value="{{ klVlSideTom }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Ingen på venteliste.</div>
+            </sc-if>
+          </div>
           <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Dra en person inn på en økt for å gi plass.</div>
+          <!-- Veien til skjemaet. Eieren, 6. september: «jeg vil kunne klikke
+               til legg til person under venteliste» — og samme dag: «jeg vil
+               ha samme pille som resten». Se «Piller, ikke lenker» i
+               CLAUDE.md. Skjemaet ligger paa Venteliste-siden; ingen ny
+               skjerm. -->
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="plus" on-click="{{ klVlLeggTil }}" hint-size="auto,44px">Legg til person</x-import>
 
           <!-- ── Bytt dato ─────────────────────────────────────────────
                Eieren, 6. september: «dersom en deltaker er paameldt et kurs,
@@ -7351,6 +7359,11 @@ window.__resources = {
                   <button type="button" onClick="{{ klDIkkeMott }}" style="{{ klDHandlingStil }}">Møtte ikke opp</button>
                   <button type="button" onClick="{{ klDSperrBevis }}" style="{{ klDHandlingStil }}">Sperr kursbeviset</button>
                   <button type="button" onClick="{{ klDAapneBevis }}" style="{{ klDHandlingStil }}">Åpne kursbeviset</button>
+                  <!-- Ventelista naas ogsaa uten mus. Eieren, 6. september:
+                       «naar jeg klikker inn paa en deltaker, la meg faa
+                       alternativer legg til venteliste». Samme handling som
+                       naar du drar henne ned i ruta i sidemenyen. -->
+                  <button type="button" onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>
                   <button type="button" onClick="{{ klDAvbestill }}" style="{{ klDFareStil }}">Avbestill</button>
                 </div>
                 <!-- Betalingen.
@@ -25042,12 +25055,12 @@ class Component extends DCLogic {
       if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
       const m = maanedUnder(mv);
-      if (m !== this.state.aarOver) this.setState({ aarOver: m });
+      if (m !== this.state.aarOver || this.state.klDrar !== 'aar') this.setState({ aarOver: m, klDrar: 'aar' });
     };
     const opp = mv => {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
       const d = this._aarDra; this._aarDra = null;
-      this.setState({ aarOver: 0 });
+      this.setState({ aarOver: 0, klDrar: null });
       // Slapp du uten aa dra, var det et klikk. Raden har sin egen
       // «onClick» som aapner punktet, som paa deltakerraden i kalenderen.
       if (!d || !d.moved) return;
@@ -30821,7 +30834,10 @@ class Component extends DCLogic {
         background: f.bg, color: f.fg, fontFamily: 'var(--font-ui, inherit)', fontSize: blokk ? '12px' : '11px', fontWeight: 600, lineHeight: 1.35,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: blokk ? 'normal' : 'nowrap',
         opacity: e.avlyst ? .45 : 1, textDecoration: e.avlyst ? 'line-through' : 'none',
-      }, varsel(e), puls(e));
+      }, varsel(e), puls(e),
+      // Drar du en person, er det oektene som tar imot. En gruppe har ingen
+      // oektId og kan ikke ta imot noen.
+      e.oktId ? this.klSlippRamme('okt', 'var(--sage-600)') : {});
     };
     const prikk = e => ({ width: '10px', height: '10px', borderRadius: '3px', flex: '0 0 auto', background: farge(e).kant ? 'transparent' : farge(e).bg, border: farge(e).kant || 'none', opacity: e.avlyst ? .45 : 1 });
     const visDetaljer = e => () => this.setState(s => ({ klValgtId: e.id, klFlyttVis: false, klBekreftAvlys: false, klMeny: null, klSett: Object.assign({}, s.klSett, { [e.id]: true }) }));
@@ -30976,7 +30992,8 @@ class Component extends DCLogic {
       celler.push({
         iso,
         tall: String(d) + (stengtDag ? ' · Stengt' : ''),
-        stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: stengtDag ? 'var(--clay-200)' : (iso === idagIso ? 'var(--clay-100)' : 'var(--surface-card)'), display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, opacity: stengtDag ? .75 : 1 },
+        stil: Object.assign({ minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: stengtDag ? 'var(--clay-200)' : (iso === idagIso ? 'var(--clay-100)' : 'var(--surface-card)'), display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, opacity: stengtDag ? .75 : 1 },
+          this.klSlippRamme('dag', 'var(--terracotta-500)')),
         tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: iso === idagIso ? 'var(--terracotta-600)' : 'var(--text-heading)', padding: '2px 4px' },
         hendelser: evts.slice(0, mndMax).map(e => ({
           // Den samlede linja viser hele spennet: «10:00–13:00 Paint on Pots».
@@ -31294,7 +31311,8 @@ class Component extends DCLogic {
         hodeStil: { appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '10px 10px', borderRight: '1px solid var(--border-subtle)', background: erIdag ? 'var(--lissom-yellow)' : 'transparent', minWidth: 0 },
         navnStil: { display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: erIdag ? 'var(--lissom-brown)' : 'var(--text-heading)' },
         antallStil: { display: 'block', fontSize: '11px', color: erIdag ? 'var(--brown-500, var(--lissom-brown))' : 'var(--text-muted)' },
-        kolStil: { position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)', background: stengtU ? 'var(--clay-200)' : (d.getDay() === 0 || d.getDay() === 6 ? 'var(--clay-50)' : 'var(--surface-card)'), backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxUke - 1) + 'px, var(--clay-100) ' + (pxUke - 1) + 'px, var(--clay-100) ' + pxUke + 'px)' },
+        kolStil: Object.assign({ position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)', background: stengtU ? 'var(--clay-200)' : (d.getDay() === 0 || d.getDay() === 6 ? 'var(--clay-50)' : 'var(--surface-card)'), backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxUke - 1) + 'px, var(--clay-100) ' + (pxUke - 1) + 'px, var(--clay-100) ' + pxUke + 'px)' },
+          this.klSlippRamme('dag', 'var(--terracotta-500)')),
         naStil: erIdag && naM >= wStart && naM <= wSlutt ? { position: 'absolute', left: 0, right: 0, top: ((naM - wStart) / 60 * pxUke) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
         hendelser: plas.map(p => {
           const f = farge(p.e);
@@ -31442,7 +31460,8 @@ class Component extends DCLogic {
       klBoardHodeStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', borderBottom: '1px solid var(--border-subtle)', background: 'var(--clay-100)', minWidth: this.erSmal() ? (56 + kolonner.length * 150) + 'px' : 0 },
       klBoardKroppStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden', minWidth: this.erSmal() ? (56 + kolonner.length * 150) + 'px' : 0 },
       klGutterStil: { position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
-      klKolonneStil: { position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)', backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxTime - 1) + 'px, var(--clay-100) ' + (pxTime - 1) + 'px, var(--clay-100) ' + pxTime + 'px)' },
+      klKolonneStil: Object.assign({ position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)', backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxTime - 1) + 'px, var(--clay-100) ' + (pxTime - 1) + 'px, var(--clay-100) ' + pxTime + 'px)' },
+        this.klSlippRamme('dag', 'var(--terracotta-500)')),
       klNaStil: dagIso === idagIso && naM >= bStart && naM <= bSluttMin ? { position: 'absolute', left: '56px', right: 0, top: ((naM - bStart) / 60 * pxTime) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
       klLegende: Object.keys(info).map(t => ({ navn: info[t].navn, prikkStil: { width: '12px', height: '12px', borderRadius: '4px', flex: '0 0 auto', background: info[t].kant ? 'transparent' : info[t].bg, border: info[t].kant || 'none' } })).concat([
         { navn: 'Fullt', prikkStil: { width: '12px', height: '12px', borderRadius: '4px', flex: '0 0 auto', background: 'transparent', border: '2px solid var(--terracotta-600)' } },
@@ -31500,8 +31519,14 @@ class Component extends DCLogic {
           klMenyTittel: menyEvt ? menyEvt.tittel : '',
           klMenyValg: menyEvt ? [
             { navn: 'Rediger økten', gjor: () => this.klApneEnkel(menyEvt) },
-            { navn: 'Full redigering av kurset', gjor: () => this.klApneKurs(menyEvt) },
-            { navn: 'Deltakere og venteliste', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klFlyttVis: false, klBekreftAvlys: false }) },
+            // «Full redigering av kurset» sto her. Eieren, 6. september:
+            // «fjern full redigerring fra hoeyere klikk». Kursoppsettet naas
+            // fortsatt fra Kurs-sida og fra kortet.
+            //
+            // «Deltakere og venteliste» heter «Deltakere». Eieren, samme dag:
+            // «naar jeg hoeyere klikker saa kommer det deltakere og
+            // venteliste, endre navn til deltakere».
+            { navn: 'Deltakere', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klFlyttVis: false, klBekreftAvlys: false }) },
             { navn: 'Flytt dato…', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klFlyttVis: true, klFlyttDato: menyEvt.dato, klFlyttTid: menyEvt.tid, klBekreftAvlys: false }) },
             { navn: 'Dupliser til neste uke', gjor: () => {
               const d2 = new Date(menyEvt.dato + 'T12:00:00'); d2.setDate(d2.getDate() + 7);
@@ -31509,6 +31534,21 @@ class Component extends DCLogic {
               const ny = { id: 'ny|' + iso2 + '|' + menyEvt.tid + '|' + menyEvt.tittel + '|dup', dato: iso2, tid: menyEvt.tid, slutt: menyEvt.slutt, tittel: menyEvt.tittel, type: menyEvt.type, holder: menyEvt.holder, kap: menyEvt.kap, pameldt: 0, deltakere: [], venteliste: [], nye: 0 };
               this.setState(s => ({ klEkstra: (s.klEkstra || []).concat([ny]), klMeny: null, kvittering: menyEvt.tittel + ' er satt opp ' + dagNavn[d2.getDay()] + ' ' + d2.getDate() + '. ' + mndNavn[d2.getMonth()] + ' kl. ' + menyEvt.tid }));
             } },
+            // «Fullbooket» uten aa avlyse, rett fra menyen. Eieren, 6.
+            // september: «legg til vis som full booket paa hoeyere klikking».
+            // Haken har ligget inne i oektredigereren; dette er den samme
+            // handlingen, med den samme teksten. Grupper har ingen oektId og
+            // kan ikke settes.
+            ...(menyEvt.oktId ? [{
+              navn: menyEvt.visFullt ? 'Ikke vis som fullbooket' : 'Vis som fullbooket',
+              gjor: () => {
+                this.setState({ klMeny: null });
+                this.klKall('/api/admin/kurs.php', {
+                  handling: 'visFullt', oktId: menyEvt.oktId,
+                  paa: menyEvt.visFullt ? 'nei' : 'ja',
+                }).then(ok => { if (ok) this.klFrisk(); });
+              },
+            }] : []),
             ...(menyEvt.venteliste && menyEvt.venteliste.length ? [{ navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn, gjor: () => this.setState(s => ({ klMeny: null, klTildelt: Object.assign({}, s.klTildelt, { [menyEvt.id]: ((s.klTildelt || {})[menyEvt.id] || []).concat([menyEvt.venteliste[0].navn]) }) })) }] : []),
             menyEvt.avlyst
               ? { navn: 'Gjenopprett økten', gjor: () => this.setState(s => ({ klMeny: null, klAvlyst: Object.assign({}, s.klAvlyst, { [menyEvt.id]: false }) })) }
@@ -31930,12 +31970,28 @@ class Component extends DCLogic {
                 };
               }),
               klBdTom: bd.length === 0,
-              // Ruta lyser opp mens du drar, saa du ser hvor den tar imot.
+              // ── Store maal mens du drar ─────────────────────────────
+              //
+              // Eieren, 6. september: «la det bli enklere aa dra ut av
+              // kurset, naa er det neste umulig aa faa henne over paa bytt
+              // dato». Ruta var 46 px hoy og laa langt nede i en lang
+              // sidemeny — man matte treffe en stripe.
+              //
+              // Mens et dra paagaar vokser begge rutene til 130 px og lyser
+              // opp. Da er det spalta man skal treffe, ikke en linje. De
+              // krymper tilbake med det samme du slipper.
               klBdSoneStil: Object.assign(
-                { display: 'flex', flexDirection: 'column', gap: '8px', borderRadius: 'var(--radius-md)', padding: '8px', boxSizing: 'border-box', minHeight: '46px' },
-                this.state.klBdDrar
-                  ? { border: '1.5px dashed var(--terracotta-500)', background: 'var(--terracotta-100)' }
-                  : { border: '1.5px dashed var(--clay-300)', background: 'transparent' }),
+                { display: 'flex', flexDirection: 'column', gap: '8px', borderRadius: 'var(--radius-md)', padding: '8px', boxSizing: 'border-box' },
+                this.state.klDrar === 'sone'
+                  ? { border: '2px dashed var(--terracotta-500)', background: 'var(--terracotta-100)', minHeight: '130px', justifyContent: 'center' }
+                  : { border: '1.5px dashed var(--clay-300)', background: 'transparent', minHeight: '46px' }),
+              // Ventelista tar imot den samme deltakeren — da gir hun fra seg
+              // plassen, og den blir ledig for andre.
+              klVlSoneStil: Object.assign(
+                { display: 'flex', flexDirection: 'column', gap: '8px', borderRadius: 'var(--radius-md)', padding: '8px', boxSizing: 'border-box' },
+                this.state.klDrar === 'sone'
+                  ? { border: '2px dashed var(--sage-500)', background: 'var(--sage-100)', minHeight: '130px', justifyContent: 'center' }
+                  : { border: 'none', padding: '0', minHeight: '0' }),
             };
           })(),
           ...(() => {
@@ -31990,7 +32046,24 @@ class Component extends DCLogic {
               knapp: 'Ja, flytt og send beskjed',
               gjor: () => this.klBdFlytt(bd.p, bdEvt.oktId),
             } : null;
-            const q = this.state.klSporr || bdQ;
+            // Femte bruk: en deltaker som slippes paa ventelista. Da gir
+            // hun fra seg plassen. Eieren, 6. september, paa spoersmaal om
+            // penger: «Tillat, la betalingen staa» — betalingen roeres ikke,
+            // og en refusjon er fortsatt en egen handling.
+            const vs = this.state.klVlSlipp;
+            const vsQ = vs ? {
+              emne: 'Venteliste',
+              rader: [
+                ['Deltaker', vs.navn],
+                ['Kurs', vs.kurs],
+                ['Dato', bdSkriv(vs.dato, vs.tid)],
+                ['Plass i køen', 'Bakerst'],
+              ],
+              tekst: 'Plassen blir ledig for andre. Betalingen står som den er.',
+              knapp: 'Ja, sett på ventelista',
+              gjor: () => this.klVlSettPa(vs),
+            } : null;
+            const q = this.state.klSporr || bdQ || vsQ;
             return {
               klSVises: !!q,
               klSEmne: q ? q.emne : '',
@@ -31998,10 +32071,10 @@ class Component extends DCLogic {
               klSTekst: q ? (q.tekst || '') : '',
               klSHarTekst: !!(q && q.tekst),
               klSKnapp: q ? q.knapp : '',
-              klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null }),
+              klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null, klVlSlipp: null }),
               klSBekreft: () => {
                 const gjor = q && q.gjor;
-                this.setState({ klSporr: null, klBdSlipp: null });
+                this.setState({ klSporr: null, klBdSlipp: null, klVlSlipp: null });
                 if (gjor) { gjor(); }
               },
             };
@@ -32524,6 +32597,25 @@ class Component extends DCLogic {
               // resten, kan slaas av i nettleseren, og sier ingenting om
               // hvilket kurs eller hvilken dato det gjelder. Naa er det den
               // samme ruta som resten — se «klSporr».
+              // Fra kurset og over paa ventelista. Hun gir fra seg stolen,
+              // og staar bakerst i koen paa den samme datoen. Betalingen
+              // staar: eieren, 6. september, «Tillat, la betalingen staa».
+              klDTilVenteliste: () => {
+                if (!dv || !dv.bookingId) return;
+                this.setState({ klSporr: {
+                  emne: 'Venteliste',
+                  rader: [
+                    ['Deltaker', dv.navn],
+                    ['Kurs', dv.okt],
+                    ['Dato', dv.tid],
+                    ['Plass i køen', 'Bakerst'],
+                  ],
+                  tekst: 'Plassen blir ledig for andre. Betalingen står som den er.',
+                  knapp: 'Ja, sett på ventelista',
+                  gjor: () => this.klVlSettPa({ bookingId: dv.bookingId })
+                    .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); }),
+                } });
+              },
               klDAvbestill: () => {
                 if (!dv || !dv.bookingId) return;
                 this.setState({ klSporr: {
@@ -33210,6 +33302,28 @@ class Component extends DCLogic {
     return (Math.abs(mv.clientX - fra.clientX) + Math.abs(mv.clientY - fra.clientY)) > 5;
   }
 
+  /**
+   * Ramma som lyser opp mens du drar.
+   *
+   * Eieren, 6. september: «det maa gjelde alle slippefelt globalt, ogsaa
+   * inne paa kurs etc alle steder som benytter dette». Ett sted aa endre,
+   * saa ser alle slippefeltene like ut — dagene i kalenderen, oektene du
+   * kan slippe en person paa, rutene i sidemenyen og maanedene i
+   * aarskalenderen.
+   *
+   * «klDrar» sier hva som er i lufta: «dag» (en okt eller et nytt kurs paa
+   * vei til en dato), «okt» (en person paa vei inn paa en okt), «sone» (en
+   * deltaker paa vei ut av kurset) eller «aar» (et punkt i aarskalenderen).
+   * Hvert slippefelt spor etter sin egen.
+   *
+   * «outline» og ikke «border»: en ramme som tar plass ville flyttet alt
+   * under seg i det du begynner aa dra.
+   */
+  klSlippRamme(art, farge) {
+    if (this.state.klDrar !== art) return {};
+    return { outline: '2px dashed ' + farge, outlineOffset: '-3px' };
+  }
+
   klDragStart(evt, e) {
     // Dag to og tre av et flerdagerskurs staar fast. De hoerer til den samme
     // paameldingen som startdagen, og rettes der de settes opp — paa kursets
@@ -33236,12 +33350,12 @@ class Component extends DCLogic {
       // Ett piksel er ikke et dra. Se klDro().
       if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
-      this.setState({ klDrag: { id: evt.id, dx: mv.clientX - e.clientX, dy: mv.clientY - e.clientY } });
+      this.setState({ klDrag: { id: evt.id, dx: mv.clientX - e.clientX, dy: mv.clientY - e.clientY }, klDrar: 'dag' });
     };
     const opp = mv => {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
       const d = this._klFlytt; this._klFlytt = null;
-      this.setState({ klDrag: null });
+      this.setState({ klDrag: null, klDrar: null });
       if (!d || !d.moved) return;
 
       const lengde = evt.slutt ? Math.max(0, this.klMin(evt.slutt) - this.klMin(evt.tid)) : 0;
@@ -33369,12 +33483,12 @@ class Component extends DCLogic {
       // Ett piksel er ikke et dra. Se klDro().
       if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
-      this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY } });
+      this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY }, klDrar: 'okt' });
     };
     const opp = mv => {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
       const d = this._klVl; this._klVl = null;
-      this.setState({ klNyDrag: null });
+      this.setState({ klNyDrag: null, klDrar: null });
       // ── Et klikk aapner henne der plassen gis ────────────────────────
       //
       // Pilla kunne bare dras. Ville du gi henne plassen paa en annen dato,
@@ -33452,7 +33566,7 @@ class Component extends DCLogic {
       // gang du drar, lukker det seg — da ligger kalenderen og sidemenyen
       // aapne under, og du ser hvor hun skal.
       this.setState(Object.assign(
-        { klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY }, klBdDrar: true },
+        { klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY }, klDrar: 'sone' },
         forst ? { klValgtId: null, klFlyttVis: false, klBekreftAvlys: false } : {}));
       // Sidemenyen er lang, og «Bytt dato» staar nederst i den. Uten dette
       // drar du mot noe som ligger under skjermkanten — nettleseren ruller
@@ -33468,15 +33582,19 @@ class Component extends DCLogic {
     const opp = mv => {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
       const d = this._klBd; this._klBd = null;
-      this.setState({ klNyDrag: null, klBdDrar: false });
+      this.setState({ klNyDrag: null, klDrar: null });
       if (!d) return;
       // Slapp du uten aa dra, var det et klikk. Raden har fortsatt sin egen
       // «onClick» — den aapner deltakeren, som for. Samme deling som paa
       // brikkene i kalenderen, der «velg» og «ned» sitter side om side.
       if (!d.moved) return;
       const traff = document.elementsFromPoint(mv.clientX, mv.clientY)
-        .some(x => x && x.id === 'klbd-sone');
+        .find(x => x && (x.id === 'klbd-sone' || x.id === 'klvl-sone'));
       if (!traff) return;
+      // Ventelista tar imot den samme deltakeren. Da gir hun fra seg stolen,
+      // og den blir ledig for andre — det er ikke noe man oppdager og retter
+      // etterpaa, saa det spoerres foerst. Se «klVlSlipp» i renderVals.
+      if (traff.id === 'klvl-sone') { this.setState({ klVlSlipp: p }); return; }
       this.setState(st => {
         const liste = (st.klBd || []).slice();
         if (liste.some(x => x.bookingId === p.bookingId)) return null;
@@ -33496,12 +33614,12 @@ class Component extends DCLogic {
       const d = this._klBdFra; if (!d) return;
       if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
-      this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY } });
+      this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY }, klDrar: 'okt' });
     };
     const opp = mv => {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
       const d = this._klBdFra; this._klBdFra = null;
-      this.setState({ klNyDrag: null });
+      this.setState({ klNyDrag: null, klDrar: null });
       if (!d || !d.moved) return;
       const el = document.elementsFromPoint(mv.clientX, mv.clientY)
         .find(x => x && x.id && String(x.id).indexOf('kalevt-') === 0);
@@ -33521,6 +33639,22 @@ class Component extends DCLogic {
       if (!ok) return false;
       this.setState(st => ({ klBd: (st.klBd || []).filter(x => x.bookingId !== p.bookingId) }));
       // Belegget paa begge datoene har endret seg.
+      this.klFrisk();
+      return true;
+    });
+  }
+
+  // Fra kurset og over paa ventelista. Serveren gir fra seg stolen, foerer
+  // det i endringsloggen og setter henne bakerst i koen paa det samme
+  // kurset. Betalingen staar: eieren, 6. september, «Tillat, la betalingen
+  // staa». Er den betalt gjennom Vipps, avviser serveren og ber om refusjon
+  // i stedet — da er det penger, ikke en liste.
+  klVlSettPa(p) {
+    return this.klKall('/api/admin/pamelding.php', {
+      handling: 'til-venteliste', id: p.bookingId,
+    }).then(ok => {
+      if (!ok) return false;
+      // Bade belegget paa okta og ventelista i sidemenyen har endret seg.
       this.klFrisk();
       return true;
     });
@@ -33554,7 +33688,7 @@ class Component extends DCLogic {
       // Ett piksel er ikke et dra. Se klDro().
       if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
-      this.setState({ klNyDrag: { navn: kurs.navn, x: mv.clientX, y: mv.clientY } });
+      this.setState({ klNyDrag: { navn: kurs.navn, x: mv.clientX, y: mv.clientY }, klDrar: 'dag' });
     };
     const opp = mv => {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
@@ -33563,7 +33697,7 @@ class Component extends DCLogic {
       // staar. Kortene kunne bare dras for — ville du rette en pris eller en
       // tekst, matte du ut av kalenderen og inn i kursoppsettet.
       if (!d || !d.moved) {
-        this.setState({ klNyDrag: null });
+        this.setState({ klNyDrag: null, klDrar: null });
         this.klApneKursRed(kurs, mv);
         return;
       }
@@ -33593,9 +33727,9 @@ class Component extends DCLogic {
           fra = this.klFmt(mn2); til = this.klFmt(Math.min(24 * 60, mn2 + dur));
         }
       }
-      if (!dato) { this.setState({ klNyDrag: null }); return; }
+      if (!dato) { this.setState({ klNyDrag: null, klDrar: null }); return; }
       this.setState({
-        klNyDrag: null,
+        klNyDrag: null, klDrar: null,
         klBekreft: { kursNavn: kurs.navn, type: kurs.type === 'Event' ? (kurs.navn === 'Paint on Pots' ? 'pop' : 'event') : 'kurs', kap: parseInt(((kurs.pameldte || '').split('/')[1] || '8'), 10) || 8 },
         klBDato: dato, klBFra: fra, klBTil: til, klBHolder: holder, klBGjenta: 'Én gang', klBAntall: '4',
       });
@@ -43986,7 +44120,8 @@ class Component extends DCLogic {
                 background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
                 display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0,
-              }, naaMnd ? { borderColor: 'var(--terracotta-500)', boxShadow: '0 0 0 1px var(--terracotta-500)' } : {}),
+              }, naaMnd ? { borderColor: 'var(--terracotta-500)', boxShadow: '0 0 0 1px var(--terracotta-500)' } : {},
+                this.klSlippRamme('aar', 'var(--terracotta-500)')),
               ny: nye[mnd] || '',
               settNy: e => { const v = e.target.value; this.setState(st => ({ aarNy: Object.assign({}, st.aarNy, { [mnd]: v }) })); },
               leggTil: () => {

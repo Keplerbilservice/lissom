@@ -12352,10 +12352,85 @@ sjekk('… og bekreftelsen spor foer noe skjer',
     && str_contains($byttSida, 'gjor: () => this.klBdFlytt(bd.p, bdEvt.oktId),'));
 // «Avbryt» skal ikke sende noe, og skal ikke la ruta bli haengende.
 sjekk('… og «Avbryt» rydder bort slippet',
-    str_contains($byttSida, "klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null }),"));
+    str_contains($byttSida, "klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null, klVlSlipp: null }),"));
 // Flyttingen gaar til den som fantes fra for.
 sjekk('… og flyttingen gaar til pamelding.php',
     str_contains($byttSida, "handling: 'flytt', id: p.bookingId, oktId: oktId,"));
+
+// ── Ut av kurset og over paa ventelista ──────────────────────────────
+//
+// Eieren, 6. september: «jeg vil kunne dra deltakere ut av kortet i kalender,
+// og jeg vil legge paa 1. venteliste 2. bytt dato». Paa spoersmaal om penger:
+// «Tillat, la betalingen staa».
+//
+// Samme rute som «Bytt dato», bare den andre veien: hun gir fra seg stolen,
+// og den blir ledig for andre.
+$pamFil = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+sjekk('«til-venteliste» finnes i pamelding.php',
+    str_contains($pamFil, "if (\$handling === 'til-venteliste') {"));
+sjekk('… og en Vipps-betalt plass avvises, med refusjon som svar',
+    str_contains($pamFil, "Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke ventelista.');"));
+sjekk('… og hun havner bakerst i koen',
+    str_contains($pamFil, "\$posisjon = 1 + (int) DB::verdi(")
+    && str_contains($pamFil, "'posisjon'          => \$posisjon,"));
+sjekk('… og staar hun der alt, blir hun ikke lagt inn to ganger',
+    str_contains($pamFil, "// Staar hun der alt, skal hun ikke havne to ganger i koen."));
+sjekk('… og plassen frigis paa den samme maaten som «fjern»',
+    str_contains($pamFil, "// Plassen frigis. Samme felt som «fjern» setter.")
+    && str_contains($pamFil, "'status'       => 'avbestilt',"));
+sjekk('… og det foeres i endringsloggen',
+    str_contains($pamFil, "revider('pamelding_til_venteliste', 'booking', \$id, ["));
+
+sjekk('ruta i sidemenyen tar imot slippet',
+    str_contains($byttSida, "x.id === 'klbd-sone' || x.id === 'klvl-sone'")
+    && str_contains($byttSida, "if (traff.id === 'klvl-sone') { this.setState({ klVlSlipp: p }); return; }"));
+sjekk('… og bekreftelsen spor foer plassen gis fra seg',
+    str_contains($byttSida, "emne: 'Venteliste',")
+    && str_contains($byttSida, "['Plass i køen', 'Bakerst'],")
+    && str_contains($byttSida, "tekst: 'Plassen blir ledig for andre. Betalingen står som den er.',")
+    && str_contains($byttSida, "knapp: 'Ja, sett på ventelista',"));
+sjekk('… og kallet gaar til til-venteliste',
+    str_contains($byttSida, "handling: 'til-venteliste', id: p.bookingId,"));
+// Uten mus: den samme handlingen som en knapp i deltakerkortet. Eieren,
+// 6. september: «naar jeg klikker inn paa en deltaker, la meg faa
+// alternativer legg til venteliste».
+sjekk('… og deltakerkortet har den samme knappen',
+    str_contains($byttSida, 'onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>')
+    && str_contains($byttSida, 'klDTilVenteliste: () => {'));
+
+// ── Alle slippefelt lyser opp ────────────────────────────────────────
+//
+// Eieren, 6. september: «la det bli enklere aa dra ut av kurset, naa er det
+// neste umulig aa faa henne over paa bytt dato», og rett etter: «det maa
+// gjelde alle slippefelt globalt, ogsaa inne paa kurs etc alle steder som
+// benytter dette».
+sjekk('ramma er ett sted, ikke ett per slippefelt',
+    str_contains($byttSida, '  klSlippRamme(art, farge) {')
+    && str_contains($byttSida, "if (this.state.klDrar !== art) return {};"));
+sjekk('… og oektene lyser naar en person dras',
+    str_contains($byttSida, "e.oktId ? this.klSlippRamme('okt', 'var(--sage-600)') : {});"));
+sjekk('… og dagene lyser i alle tre visningene',
+    substr_count($byttSida, "this.klSlippRamme('dag', 'var(--terracotta-500)')") === 3);
+sjekk('… og maanedene i aarskalenderen lyser ogsaa',
+    str_contains($byttSida, "this.klSlippRamme('aar', 'var(--terracotta-500)')"));
+sjekk('… og rutene i sidemenyen vokser mens du drar',
+    str_contains($byttSida, "this.state.klDrar === 'sone'")
+    && substr_count($byttSida, "minHeight: '130px'") === 2);
+
+// ── Hoyremenyen ──────────────────────────────────────────────────────
+//
+// Eieren, 6. september, tre ting paa rad: «naar jeg hoeyere klikker saa
+// kommer det deltakere og venteliste, endre navn til deltakere», «fjern full
+// redigerring fra hoeyere klikk» og «legg til vis som full booket paa hoeyere
+// klikking».
+sjekk('«Deltakere og venteliste» heter «Deltakere»',
+    str_contains($byttSida, "{ navn: 'Deltakere', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id")
+    && !str_contains($byttSida, "navn: 'Deltakere og venteliste'"));
+sjekk('… og «Full redigering av kurset» er borte',
+    !str_contains($byttSida, "navn: 'Full redigering av kurset'"));
+sjekk('… og «Vis som fullbooket» staar der, med den samme handlingen som haken',
+    str_contains($byttSida, "navn: menyEvt.visFullt ? 'Ikke vis som fullbooket' : 'Vis som fullbooket',")
+    && str_contains($byttSida, "handling: 'visFullt', oktId: menyEvt.oktId,"));
 
 // Serveren: beskjeden som ikke ble sendt for.
 $pmFlytt = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
@@ -12644,8 +12719,12 @@ sjekk('… og skjermen sier hva som skjedde, og hva man gjor',
 // begge aapner sin skjerm, «Legg til person» gaar til skjemaet, kortet staar
 // paa Oversikt, og raden med lenka er borte.
 $veiSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('«Legg til person →» staar ved Venteliste i kalenderen',
-    str_contains($veiSida, '>Legg til person →</button>')
+// Understreket lenke ble til pille. Eieren, 6. september: «jeg vil ha samme
+// pille som resten, kan du ikke lagre dette» — se «Piller, ikke lenker» i
+// CLAUDE.md.
+sjekk('«Legg til person» staar som pille ved Venteliste i kalenderen',
+    str_contains($veiSida, 'on-click="{{ klVlLeggTil }}" hint-size="auto,44px">Legg til person</x-import>')
+    && !str_contains($veiSida, '>Legg til person →</button>')
     && str_contains($veiSida, "klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),"));
 sjekk('… og aarskalenderen staar som pille mellom Kasse og Synk med mobilen',
     str_contains($veiSida, 'on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>')

@@ -3882,6 +3882,23 @@ sjekk('… og alle veiene inn bruker den samme',
 // «status: reservert» fantes i endepunktet, men ingen knapp brukte den.
 // Eieren, 6. september: «jeg maa da ogsaa kunne redigere de som allerede
 // staar som betalt».
+// Deltakerraden sa «Reservert» — at plassen er holdt av, ikke om den er
+// gjort opp. Eieren, 6. september: «i stedet for reservert, saa vil jeg at
+// betalingsstatusen kommer opp, altsaa ikke betalt, betalt».
+$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('deltakerraden sier om det er betalt, ikke om plassen er holdt av',
+    !str_contains($kalFil, "'Betalt' : 'Reservert'")
+    && str_contains($kalFil, "'reservert' => 'Ikke betalt',"));
+// En refundert plass VAR betalt, og en som ikke moette opp sier ingenting om
+// pengene. De skal ikke havne i samme sekk som «Ikke betalt».
+sjekk('… og refundert og ikke moett staar for seg',
+    str_contains($kalFil, "'refundert' => 'Refundert',")
+    && str_contains($kalFil, "'ikke_mott' => 'Møtte ikke opp',"));
+// Faneraden i kassa la seg inntil kortet over. 0 px over, 24 under; etter
+// forste retting 24/24, og eieren: «gi den mer luft».
+sjekk('faneraden i kassa har mer luft over enn under',
+    str_contains($sida2, "flex-wrap: wrap; margin: 40px 0 var(--space-6);"));
+
 sjekk('en plass som staar som betalt kan settes tilbake',
     str_contains($sida2, "{ handling: 'status', id: dv.bookingId, status: 'reservert' }"));
 sjekk('… og en ubetalt kan merkes betalt, med maaten',

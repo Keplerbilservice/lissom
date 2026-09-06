@@ -327,7 +327,24 @@ foreach ($okter as $o) {
         }
         $rader[] = [
             'navn'    => (string) $b['navn'],
-            'status'  => (string) $b['status'] === 'betalt' ? 'Betalt' : 'Reservert',
+            // Betalingen, ikke plassen.
+            //
+            // Her sto «Betalt» eller «Reservert». «Reservert» sier at plassen
+            // er holdt av — ikke om det er gjort opp, som er det verkstedet
+            // staar og lurer paa. Eieren, 6. september: «i stedet for
+            // reservert, saa vil jeg at betalingsstatusen kommer opp, altsaa
+            // ikke betalt, betalt».
+            //
+            // Ordene er de samme som betalingspilla bruker ellers i systemet.
+            // «Refundert» og «Moette ikke opp» staar for seg: en refundert
+            // plass VAR betalt, og en som ikke moette opp sier ikke noe om
+            // pengene.
+            'status'  => [
+                'betalt'    => 'Betalt',
+                'reservert' => 'Ikke betalt',
+                'refundert' => 'Refundert',
+                'ikke_mott' => 'Møtte ikke opp',
+            ][(string) $b['status']] ?? 'Ikke betalt',
             // Det deltakeren selv har oppgitt. Kalenderen viser antallet paa
             // brikka og teksten forst naar okta er aapnet — det er
             // helseopplysninger, og de skal ikke lyse paa en skjerm som staar

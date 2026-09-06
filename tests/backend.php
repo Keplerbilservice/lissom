@@ -12467,6 +12467,51 @@ sjekk('… og CGI-utgaven tier naar alt gaar bra',
     str_contains($cronFil, "ini_set('default_mimetype', '');")
     && str_contains($cronFil, 'header_remove();'));
 
+// ── Betalingsstatus paa ventelista ogsaa ─────────────────────────────
+//
+// Eieren, 6. september, med et bilde av ventelista i kalenderen: «Ba ikke
+// jeg om at betalingsstatus skulle vises paa medlemene her ogsaa?»
+//
+// Jo. Den ble bare lagt paa «Bytt dato». Ventelista sto uten.
+//
+// En ventelisterad har ingen betaling — tabellen har navn, epost, telefon og
+// koeplass. Den som ble dratt ut av et kurs har derimot en avbestilt
+// paamelding, og DEN vet hva som var gjort opp. Vipps-betalte kan ikke havne
+// paa ventelista i det hele tatt; pamelding.php nekter og ber om refusjon.
+//
+// Maalt i nettleseren 6. september, fire paa den samme koen:
+//   Kari Testperson    #1              (meldte seg paa selv — ingen status)
+//   Testperson Bekreft #2              (samme)
+//   Proeve Kontantsen  #3 · Kontant    (dratt ut, foert som Kontant)
+//   Proeve Ubetalt     #4 · Ikke betalt (dratt ut, aldri gjort opp)
+$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('ventelista henter kontaktopplysningene, saa raden kan kobles',
+    str_contains($kalFil, 'w.epost, w.telefon'));
+sjekk('… og serveren sender med hva den avbestilte paameldingen sto med',
+    str_contains($kalFil, "'status'    => \$statusFraAvbestilt(")
+    && str_contains($kalFil, "AND b.status = 'avbestilt'"));
+sjekk('… og maaten gaar foran, med de samme ordene som deltakerraden',
+    str_contains($kalFil, "\$maate = trim((string) (\$treff['betalt_maate'] ?? ''));")
+    && str_contains($kalFil, "] ?? 'Ikke betalt';"));
+sjekk('… og ventelistepilla viser den, som «Bytt dato» gjor',
+    str_contains($sidaKal = file_get_contents(dirname(__DIR__) . '/lissom-2108.html'),
+        "+ ' · #' + v.posisjon\n                + (v.status ? ' · ' + v.status : '')"));
+sjekk('… og den som meldte seg paa koen selv faar ingen status',
+    str_contains($kalFil, "    if (\$treff === null) {\n        return '';"));
+
+// ── «Marked» heter «PR» i bunnmenyen ─────────────────────────────────
+//
+// Eieren, 6. september: «Bytte navn neders menyen fra marked til PR».
+// Bare cella i bunnmenyen paa mobil. Menypunktet i sidemenyen, overskriften
+// paa skjermen og «aria-label» heter fortsatt Markedsforing.
+//
+// Maalt paa 390 px: Kalender | Oversikt | Kurs | PR | Nettbutikk | Kasse
+sjekk('bunnmenyen sier «PR», ikke «Marked»',
+    str_contains($sidaKal, "'Markedsføring': 'PR',")
+    && !str_contains($sidaKal, "'Markedsføring': 'Marked',"));
+sjekk('… og det fulle navnet staar igjen i menyen og i aria-label',
+    str_contains($sidaKal, "'Markedsføring'"));
+
 // ── Slippefeltet skal vaere til aa se ────────────────────────────────
 //
 // Eieren, 6. september: «slippefeltet i kallender maa bytte farge naar

@@ -30347,7 +30347,10 @@ class Component extends DCLogic {
       'Kalender': 'Kalender',
       'Oversikt': 'Oversikt',
       'Kurs og deltakere': 'Kurs',
-      'Markedsføring': 'Marked',
+      // Eieren, 6. september 2026: «Bytte navn neders menyen fra marked
+      // til PR». Bare cella i bunnmenyen. Menypunktet, overskriften paa
+      // skjermen og «aria-label» heter fortsatt Markedsforing.
+      'Markedsføring': 'PR',
       // Navnet folger ADMIN_MENY. Den sto som «Butikk» til 4. september;
       // begge staar her, saa en gammel lagret rekkefolge fortsatt finner
       // seg igjen.
@@ -32151,9 +32154,18 @@ class Component extends DCLogic {
             return {
               navn: v.navn,
               kurs: e.tittel,
+              // Koeplassen, og hva paameldingen hun ble dratt ut av sto med.
+              //
+              // Eieren, 6. september 2026, med et bilde av ventelista: «Ba
+              // ikke jeg om at betalingsstatus skulle vises paa medlemene
+              // her ogsaa?» Jo — det ble bare gjort paa «Bytt dato».
+              //
+              // «status» er tom for den som meldte seg paa koen selv. Hun
+              // har aldri hatt en plass, og da skal det ikke staa noe.
               under: (v.paaKurset
                 ? 'Hele kurset'
-                : uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3)) + ' · #' + v.posisjon,
+                : uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3)) + ' · #' + v.posisjon
+                + (v.status ? ' · ' + v.status : ''),
               // ── Samme pille som kursene over ─────────────────────────
               //
               // Kortet her sto med 16 px display-skrift og 12/14 px luft,

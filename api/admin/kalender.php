@@ -151,7 +151,8 @@ $venter = [];
 if ($oktIder !== []) {
     $inn = implode(',', $oktIder);
     foreach (DB::alle(
-        "SELECT w.id, w.course_session_id, w.navn, w.posisjon, w.status
+        "SELECT w.id, w.course_session_id, w.navn, w.posisjon, w.status,
+                w.epost, w.telefon
            FROM waitlist w
           WHERE w.course_session_id IN ({$inn})
             AND w.status IN ('venter','varslet')
@@ -170,7 +171,8 @@ if ($oktIder !== []) {
     )));
     $utenDato = [];
     foreach (DB::alle(
-        'SELECT w.id, w.course_id, w.navn, w.posisjon, w.status
+        'SELECT w.id, w.course_id, w.navn, w.posisjon, w.status,
+                w.epost, w.telefon
            FROM waitlist w
           WHERE w.course_session_id IS NULL
             AND w.course_id IN (' . implode(',', $kursIder) . ")
@@ -278,6 +280,83 @@ if (DB::harTabell('brenninger')) {
     }
 }
 
+// ── Betalingsstatus for dem som staar i koen ────────────────────────────
+//
+// Eieren, 6. september 2026, med et bilde av ventelista i kalenderen: «Ba
+// ikke jeg om at betalingsstatus skulle vises paa medlemene her ogsaa?»
+//
+// Jo — men det ble bare gjort paa «Bytt dato». Ventelista sto uten.
+//
+// En ventelisterad har ingen betaling. Tabellen «waitlist» har navn, epost,
+// telefon og koeplass, og ingenting mer. To slag folk staar der:
+//
+//   1. De som meldte seg paa ventelista selv. De har aldri hatt en plass,
+//      og det finnes ingen betaling aa vise.
+//   2. De som ble dratt ut av et kurs. Da settes paameldingen deres til
+//      «avbestilt» (se handling=til-venteliste i api/admin/pamelding.php),
+//      og DEN raden vet hva som var gjort opp.
+//
+// Her hentes nummer to fram igjen. Vipps-betalte kan ikke havne paa
+// ventelista i det hele tatt — pamelding.php nekter det og ber om refusjon —
+// saa det som kan staa her er maaten en manuell paamelding ble foert med,
+// eller «Ikke betalt» for en reservasjon som aldri ble gjort opp.
+//
+// Ordene er de samme som deltakerraden bruker. Ingen nye.
+$avbestilt = [];
+if ($oktIder !== []) {
+    $inn = implode(',', $oktIder);
+    foreach (DB::alle(
+        "SELECT b.course_session_id, b.status, b.betalt_maate, p.status AS betaling,
+                COALESCE(m.epost, b.gjest_epost) AS epost,
+                COALESCE(m.telefon, b.gjest_telefon) AS telefon
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+      LEFT JOIN payments p ON p.id = b.payment_id
+          WHERE b.course_session_id IN ({$inn})
+            AND b.status = 'avbestilt'
+       ORDER BY b.avbestilt_at, b.id"
+    ) as $b) {
+        // Siste rad vinner: dro man samme person ut to ganger, er det den
+        // ferskeste avbestillingen som forteller hvordan det sto.
+        $avbestilt[(int) $b['course_session_id']][] = $b;
+    }
+}
+
+/**
+ * Hva sto det paa paameldingen personen ble dratt ut av?
+ *
+ * Tom tekst betyr «vi vet ingenting» — da skal pilla vise koeplassen alene,
+ * ikke finne paa en status.
+ *
+ * @param list<array<string,mixed>> $rader
+ */
+$statusFraAvbestilt = static function (array $rader, string $epost, string $telefon): string {
+    $treff = null;
+    foreach ($rader as $b) {
+        $e = trim((string) ($b['epost'] ?? ''));
+        $t = trim((string) ($b['telefon'] ?? ''));
+        if (($epost !== '' && $e !== '' && mb_strtolower($e) === mb_strtolower($epost))
+            || ($telefon !== '' && $t !== '' && $t === $telefon)) {
+            $treff = $b;
+        }
+    }
+    if ($treff === null) {
+        return '';
+    }
+    // Maaten en manuell paamelding ble foert med staar i klartekst.
+    $maate = trim((string) ($treff['betalt_maate'] ?? ''));
+    if ($maate !== '') {
+        return $maate;
+    }
+    // Ellers gaar vi paa betalingen, med de samme ordene som deltakerraden.
+    return [
+        'betalt'           => 'Betalt',
+        'autorisert'       => 'Betalt',
+        'delvis_refundert' => 'Betalt',
+        'refundert'        => 'Refundert',
+    ][(string) ($treff['betaling'] ?? '')] ?? 'Ikke betalt';
+};
+
 // ── Stengte dager ───────────────────────────────────────────────────────
 //
 // «apningstider» er den manuelle overstyringen fra for: en rad for dagen
@@ -384,6 +463,13 @@ foreach ($okter as $o) {
             // Venter hun paa kurset og ikke paa denne kvelden? Da staar hun
             // paa alle de kommende datoene, og skjermen skal si hvorfor.
             'paaKurset' => !empty($w['paa_kurset']),
+            // Hva paameldingen hun ble dratt ut av sto med. Tom for den som
+            // meldte seg paa koen selv — hun har aldri hatt en plass.
+            'status'    => $statusFraAvbestilt(
+                $avbestilt[$id] ?? [],
+                trim((string) ($w['epost'] ?? '')),
+                trim((string) ($w['telefon'] ?? ''))
+            ),
         ];
     }
 

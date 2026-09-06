@@ -3896,6 +3896,26 @@ sjekk('deltakerraden sier om det er betalt, ikke om plassen er holdt av',
 sjekk('… og refundert og ikke moett staar for seg',
     str_contains($kalFil, "'refundert' => 'Refundert',")
     && str_contains($kalFil, "'ikke_mott' => 'Møtte ikke opp',"));
+// ── Ett piksel er ikke et dra ──────────────────────────────────────────
+//
+// Alle tre dra-handlerne satte «moved = true» paa foerste «mousemove», uten
+// avstand. Ett piksel mellom nedtrykk og slipp — som skjer paa hvert eneste
+// klikk med mus, og alltid paa en styreflate — talte som et dra. For okter i
+// kalenderen betyr det at klokkeslettet ble endret av et vanlig klikk.
+//
+// Eieren, 6. september: «ALVORLIG FEIL, naar vi er inne aa jobber i kurset,
+// saa endrer det klokkeslett, helt av seg selv uten at vi trykker paa noe».
+//
+// Maalt i nettleseren, klikk med 2 px skjelv paa en okt:
+//   med feilen inne:  ett «endredato»-kall, start flyttet til 16:00
+//   uten:             null kall — og et ekte dra paa 150 px flytter fortsatt
+sjekk('et dra maa vaere et dra, ikke et skjelv',
+    str_contains($sida2, 'klDro(fra, mv) {')
+    && str_contains($sida2, "(Math.abs(mv.clientX - fra.clientX) + Math.abs(mv.clientY - fra.clientY)) > 5"));
+// Alle tre stedene, ikke bare det ene eieren merket.
+sjekk('… i alle tre dra-handlerne',
+    substr_count($sida2, 'if (!d.moved && !this.klDro(e, mv)) return;') === 3);
+
 // ── Godkjenningslenka til Vipps ────────────────────────────────────────
 //
 // «Send Vipps-avtale» ga lenka tilbake i svaret sitt, og skjermen kastet

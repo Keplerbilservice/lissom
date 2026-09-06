@@ -6991,12 +6991,20 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-if>
-            <sc-if value="{{ klRKanKurs }}" hint-placeholder-val="{{ true }}">
+            <!-- Beskrivelsen og bunnraden hoerer til okta, ikke til
+                 deltakeren. Staar de framme mens noen legges inn, ser
+                 «Lagre» ut som knappen som legger henne inn — og teksten
+                 om nettsida har ingenting der aa gjore. Eieren, 6.
+                 september: «naar jeg skal legge til deltaker, ser det
+                 unoedvendig at lagre knappen og beskrivelsen kommer fram,
+                 fjern dette». Begge kommer tilbake naar panelet lukkes. -->
+            <sc-if value="{{ klRVisBeskrivelse }}" hint-placeholder-val="{{ true }}">
               <div style="margin-bottom: var(--space-5);">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
                 <textarea value="{{ klRBeskrivelse }}" onChange="{{ settKlRBeskrivelse }}" rows="3" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
               </div>
             </sc-if>
+            <sc-if value="{{ klRVisBunn }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klRLagre }}" hint-size="auto,44px">Lagre</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klRAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
@@ -7007,6 +7015,7 @@ window.__resources = {
                 </sc-if>
               </div>
             </div>
+            </sc-if>
           </div>
         </div>
       </sc-if>
@@ -31712,6 +31721,11 @@ class Component extends DCLogic {
                 });
               },
               klRKanKurs: redEvt ? this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]) : false,
+              // Mens deltakeren legges inn staar bare det som gjelder henne.
+              // Se kommentaren i markupen.
+              klRVisBeskrivelse: (redEvt ? this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]) : false)
+                && !(redEvt && redEvt.oktId && this.state.kdApen),
+              klRVisBunn: !(redEvt && redEvt.oktId && this.state.kdApen),
               klRNavn: this.state.klRNavn || '',
               settKlRNavn: e => this.setState({ klRNavn: e.target.value }),
               klRDato: this.state.klRDato || '',
@@ -32525,6 +32539,26 @@ class Component extends DCLogic {
    * Angre er en ekte flytting tilbake, ikke et lag over skjermen. Ellers
    * ville «Angre» sett ut som den virket mens datoen ble staaende flyttet.
    */
+  /**
+   * Naar er et trykk blitt til et dra?
+   *
+   * Alle tre dra-handlerne satte «moved = true» paa foerste «mousemove»,
+   * uten avstand. Én piksel mellom nedtrykk og slipp — som skjer paa hvert
+   * eneste klikk med mus, og alltid paa en styreflate — talte da som et
+   * dra. For okter i kalenderen betyr det at klokkeslettet ble endret av et
+   * vanlig klikk.
+   *
+   * Eieren, 6. september: «ALVORLIG FEIL, naar vi er inne aa jobber i
+   * kurset, saa endrer det klokkeslett, helt av seg selv uten at vi trykker
+   * paa noe!!!!»
+   *
+   * Fem piksler er den vanlige terskelen, og den samme som drag-og-slipp i
+   * kurslista bruker fra for.
+   */
+  klDro(fra, mv) {
+    return (Math.abs(mv.clientX - fra.clientX) + Math.abs(mv.clientY - fra.clientY)) > 5;
+  }
+
   klDragStart(evt, e) {
     // Dag to og tre av et flerdagerskurs staar fast. De hoerer til den samme
     // paameldingen som startdagen, og rettes der de settes opp — paa kursets
@@ -32534,6 +32568,8 @@ class Component extends DCLogic {
     this._klFlytt = { evt: evt, moved: false };
     const move = mv => {
       const d = this._klFlytt; if (!d) return;
+      // Ett piksel er ikke et dra. Se klDro().
+      if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
       this.setState({ klDrag: { id: evt.id, dx: mv.clientX - e.clientX, dy: mv.clientY - e.clientY } });
     };
@@ -32635,6 +32671,8 @@ class Component extends DCLogic {
     this._klVl = { p: p, moved: false };
     const move = mv => {
       const d = this._klVl; if (!d) return;
+      // Ett piksel er ikke et dra. Se klDro().
+      if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
       this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY } });
     };
@@ -32709,6 +32747,8 @@ class Component extends DCLogic {
     this._klNy = { kurs, moved: false };
     const move = mv => {
       const d = this._klNy; if (!d) return;
+      // Ett piksel er ikke et dra. Se klDro().
+      if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
       this.setState({ klNyDrag: { navn: kurs.navn, x: mv.clientX, y: mv.clientY } });
     };

@@ -2884,10 +2884,12 @@ sjekk('de brede visningene ruller sidelengs paa telefon',
     // Alle fire er flere spalter enn en telefon er bred.
     substr_count($sida, 'class="lx-kalbred"') === 4
     && str_contains($sida, '.lx-kalbred { overflow-x: auto !important;'));
-// Og velger hun Maned eller Dag paa telefon, skal hun faa det. Lista er
-// standardvisningen der, ikke den eneste.
+// Og velger hun Uke, Maaned eller Liste paa telefon, skal hun faa det.
+// Dagen er standardvisningen der fra 6. september, ikke den eneste — se
+// proeven «dagen er standardvisningen ogsaa paa telefon» lenger nede.
 sjekk('visningsknappene virker ogsaa paa telefon',
-    str_contains($sida, "this.state.klVisning || (this.erSmal() ? 'liste' : 'dag')"));
+    str_contains($sida, "let visning = this.state.klVisning || 'dag';")
+    && str_contains($sida, "klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]"));
 sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
     str_contains($sida, "? { minWidth: 0, order: 1 }"));
 
@@ -3894,6 +3896,17 @@ sjekk('deltakerraden sier om det er betalt, ikke om plassen er holdt av',
 sjekk('… og refundert og ikke moett staar for seg',
     str_contains($kalFil, "'refundert' => 'Refundert',")
     && str_contains($kalFil, "'ikke_mott' => 'Møtte ikke opp',"));
+// Kalenderen sto paa «Liste» paa smal skjerm. Begrunnelsen gjaldt
+// maanedsrutenettet — sju spalter paa 390 px — men dagen er én spalte.
+// Eieren, 6. september: «naar vi aapner kalender paa mobil i admin, saa vil
+// jeg at dag skal vaere default».
+sjekk('dagen er standardvisningen ogsaa paa telefon',
+    str_contains($sida2, "let visning = this.state.klVisning || 'dag';")
+    && !str_contains($sida2, "this.erSmal() ? 'liste' : 'dag'"));
+// De fire valgene staar der fortsatt.
+sjekk('… og de andre visningene kan fortsatt velges',
+    str_contains($sida2, "klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]"));
+
 // Faneraden i kassa la seg inntil kortet over. 0 px over, 24 under; etter
 // forste retting 24/24, og eieren: «gi den mer luft».
 sjekk('faneraden i kassa har mer luft over enn under',

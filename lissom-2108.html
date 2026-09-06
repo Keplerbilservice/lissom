@@ -30278,12 +30278,17 @@ class Component extends DCLogic {
     const mndNavn = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
     const dagNavn = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
     const uked = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
-    // Paa telefon er lista standardvisningen: et manedsrutenett er sju
-    // spalter, og sju spalter paa 390 px er ikke til aa lese. Men velger hun
-    // selv Maned eller Dag, skal hun faa det — en knapp som ikke gjor det den
-    // sier, er verre enn ingen knapp. Rutenettet ruller sidelengs i sin egen
-    // ramme, saa resten av sida staar stille.
-    let visning = this.state.klVisning || (this.erSmal() ? 'liste' : 'dag');
+    // Dagen er standardvisningen, ogsaa paa telefon.
+    //
+    // Her sto lista paa smal skjerm. Begrunnelsen den gang gjaldt
+    // maanedsrutenettet — sju spalter paa 390 px er ikke til aa lese — men
+    // dagen er én spalte og har aldri hatt det problemet. Eieren, 6.
+    // september: «naar vi aapner kalender paa mobil i admin, saa vil jeg at
+    // dag skal vaere default».
+    //
+    // Maaned og Liste staar der fortsatt som valg; rutenettet ruller
+    // sidelengs i sin egen ramme, saa resten av sida staar stille.
+    let visning = this.state.klVisning || 'dag';
     const skjulT = this.state.klSkjulType || {}, skjulH = this.state.klSkjulHolder || {};
     const modus = this.state.klFarge || 'type';
     const info = this.klTypeInfo(), hInfo = this.klHolderInfo();

@@ -12398,6 +12398,54 @@ sjekk('… og deltakerkortet har den samme knappen',
     str_contains($byttSida, 'onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>')
     && str_contains($byttSida, 'klDTilVenteliste: () => {'));
 
+// ── Rette e-post og telefon ──────────────────────────────────────────
+//
+// Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer og
+// deltakere, noen legge inn feil». Adressen kunne bare settes ved innmelding.
+$medlFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('«kontakt» finnes i medlemmer.php',
+    str_contains($medlFil2, "if (\$handling === 'kontakt') {"));
+sjekk('… og en ugyldig adresse avvises',
+    str_contains($medlFil2, "Svar::feil('Skriv en gyldig e-postadresse.');"));
+sjekk('… og en adresse som alt staar paa en annen avvises',
+    str_contains($medlFil2, "Svar::feil('Adressen står alt på ' . \$opptatt['navn'] . '.');"));
+sjekk('… og rettelsen foeres i endringsloggen',
+    str_contains($medlFil2, "revider('medlem_kontakt_rettet', 'member', \$id, ["));
+
+sjekk('«kontakt» finnes i pamelding.php',
+    str_contains($pamFil, "if (\$handling === 'kontakt') {"));
+sjekk('… og er deltakeren medlem, rettes den paa medlemmet',
+    str_contains($pamFil, "\$medlemId = (int) (\$b['member_id'] ?? 0);")
+    && str_contains($pamFil, "DB::oppdater('members', \$felt, ['id' => \$medlemId]);"));
+sjekk('… og svaret sier fra om at det gjelder alle kursene',
+    str_contains($pamFil, "er medlem, så rettelsen står nå på medlemmet '"));
+sjekk('… ellers rettes gjestefeltene paa paameldingen',
+    str_contains($pamFil, "\$felt['gjest_epost'] = \$nyEpost;"));
+
+sjekk('personkortet har feltene',
+    str_contains($byttSida, 'onChange="{{ settPersonEpost }}"')
+    && str_contains($byttSida, 'on-click="{{ lagrePersonKontakt }}"')
+    && str_contains($byttSida, "handling: 'kontakt', medlemId: id, epost: e, telefon: t"));
+sjekk('… og deltakerkortet har dem ogsaa',
+    str_contains($byttSida, 'onChange="{{ settKlDEpost }}"')
+    && str_contains($byttSida, "handling: 'kontakt', id: dv.bookingId, epost: e2, telefon: t2,"));
+sjekk('… og hjelpeteksten sier fra naar deltakeren er medlem',
+    str_contains($byttSida, "? dv.navn + ' er medlem, så rettelsen gjelder alle kursene.'"));
+
+// ── Kurset viser at hun er paa vei ut ────────────────────────────────
+//
+// Eieren, 6. september: «naar jeg drar en person ut av et kurs … maa kurset
+// oppdatteres. det gjor det ikke naa, jeg har fortsatt samme deltaker som naa
+// ligger paa bytt dato ogsaa inne i kurset».
+//
+// Hun fjernes ikke fra lista: ingenting er endret foer du har sluppet henne
+// paa en ny dato. Raden bleknes og sier hva som er i gang.
+sjekk('raden i kurset sier «Venter paa ny dato»',
+    str_contains($byttSida, "status: venter ? 'Venter på ny dato'")
+    && str_contains($byttSida, "opacity: venter ? .5 : 1,"));
+sjekk('… og den vet det av «Bytt dato»-lista',
+    str_contains($byttSida, "const paaVei = (this.state.klBd || []).reduce("));
+
 // ── Alle slippefelt lyser opp ────────────────────────────────────────
 //
 // Eieren, 6. september: «la det bli enklere aa dra ut av kurset, naa er det

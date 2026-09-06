@@ -211,6 +211,59 @@ if (Foresporsel::metode() === 'POST') {
         Svar::ok(['beskjed' => $tekst !== '' ? 'Infoen er lagret.' : 'Infoen er fjernet.']);
     }
 
+    // ── Rette e-post og telefon paa et medlem ─────────────────────────
+    //
+    // Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer
+    // og deltakere, noen legge inn feil».
+    //
+    // Adressen kunne bare settes ved innmelding. Var den feilskrevet, gikk
+    // hver eneste kvittering, paaminnelse og godkjenningslenke til ingen —
+    // og ingen skjerm i admin kunne rette den.
+    //
+    // «vipps_sub» roeres ikke: den er Vipps' egen identitet paa personen, og
+    // den foelger ikke e-posten.
+    if ($handling === 'kontakt') {
+        $id = Foresporsel::heltall('medlemId');
+        $m  = DB::en('SELECT id, navn, epost FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+
+        $nyEpost   = trim(Foresporsel::tekst('epost'));
+        $nyTelefon = trim(Foresporsel::tekst('telefon'));
+
+        if ($nyEpost !== '' && !filter_var($nyEpost, FILTER_VALIDATE_EMAIL)) {
+            Svar::feil('Skriv en gyldig e-postadresse.');
+        }
+        if ($nyEpost === '' && $nyTelefon === '') {
+            Svar::feil('Skriv inn e-post eller telefon.');
+        }
+
+        // To personer med samme adresse er to personer som far hverandres
+        // post. Innloggingen paa e-post ville ogsaa truffet feil rad.
+        if ($nyEpost !== '') {
+            $opptatt = DB::en(
+                'SELECT id, navn FROM members
+                  WHERE epost = :e AND id <> :i AND anonymisert_at IS NULL
+                  LIMIT 1',
+                ['e' => $nyEpost, 'i' => $id]
+            );
+            if ($opptatt !== null) {
+                Svar::feil('Adressen står alt på ' . $opptatt['navn'] . '.');
+            }
+        }
+
+        $felt = [];
+        if ($nyEpost !== '')   { $felt['epost'] = $nyEpost; }
+        if ($nyTelefon !== '') { $felt['telefon'] = $nyTelefon; }
+        DB::oppdater('members', $felt, ['id' => $id]);
+        revider('medlem_kontakt_rettet', 'member', $id, [
+            'fra' => (string) ($m['epost'] ?? ''),
+        ]);
+
+        Svar::ok(['beskjed' => 'Kontaktinfoen til ' . $m['navn'] . ' er rettet.']);
+    }
+
     // ── Bytte medlemskap paa et medlem ────────────────────────────────
     //
     // Eieren, 4. september: «jeg vil i admin kunne endre medlemskap for

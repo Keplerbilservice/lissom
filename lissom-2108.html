@@ -7144,7 +7144,7 @@ window.__resources = {
                   <button type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">Åpne Påmeldte →</button>
                 </div>
                 <sc-for list="{{ klValgt.deltakere }}" as="p" hint-placeholder-count="3">
-                  <button type="button" onClick="{{ p.velg }}" onMouseDown="{{ p.ned }}" style="appearance: none; border: none; background: transparent; cursor: grab; width: 100%; box-sizing: border-box; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: 9px var(--space-4); border-top: 1px solid var(--border-subtle); user-select: none;">
+                  <button type="button" onClick="{{ p.velg }}" onMouseDown="{{ p.ned }}" style="{{ p.radStil }}">
                     <span style="display: inline-flex; align-items: center; gap: 8px; min-width: 0;">
                       <span style="font-size: var(--text-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-decoration-color: var(--clay-300); text-underline-offset: 3px;">{{ p.navn }}</span>
                       <sc-if value="{{ p.ny }}" hint-placeholder-val="{{ false }}">
@@ -7417,6 +7417,30 @@ window.__resources = {
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klDFlyttUtfor }}" hint-size="auto,36px">Flytt</x-import>
                   </div>
                 </sc-if>
+              </div>
+            </sc-if>
+            <!-- E-post og telefon, rettbare. Eieren, 6. september: «dessuten
+                 maa jeg kunne endre epost paa medlemmer og deltakere, noen
+                 legge inn feil».
+                 Er deltakeren medlem, staar adressen paa medlemmet, og da
+                 rettes den DER — hjelpeteksten sier fra om det. Skrev vi den
+                 paa gjestefeltene, ville lista fortsatt vist den gamle:
+                 oppslagene leser «COALESCE(m.epost, b.gjest_epost)». -->
+            <sc-if value="{{ klDKanEndre }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);">E-post og telefon</div>
+                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ klDKontaktHjelp }}</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                  <div style="flex: 1 1 220px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">E-post</label>
+                    <input value="{{ klDEpost }}" onChange="{{ settKlDEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
+                  </div>
+                  <div style="flex: 0 1 160px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Telefon</label>
+                    <input value="{{ klDTlf }}" onChange="{{ settKlDTlf }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
+                  </div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ klDKontaktLagre }}" hint-size="auto,36px">Lagre kontaktinfo</x-import>
+                </div>
               </div>
             </sc-if>
             <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
@@ -13162,6 +13186,27 @@ window.__resources = {
               </div>
             </sc-if>
             
+            <!-- E-post og telefon, rettbare.
+                 Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+                 medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
+                 settes ved innmelding — var den feilskrevet, gikk hver kvittering,
+                 paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
+                 rette den. -->
+            <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
+              <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1 1 220px; min-width: 0;">
+                  <label style="{{ pkEtikett }}">E-post</label>
+                  <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
+                </div>
+                <div style="flex: 0 1 160px; min-width: 0;">
+                  <label style="{{ pkEtikett }}">Telefon</label>
+                  <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
+                </div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
+              </div>
+            </div>
             <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                  innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                  etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -14080,6 +14125,27 @@ window.__resources = {
                 </div>
               </sc-if>
               
+              <!-- E-post og telefon, rettbare.
+                   Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+                   medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
+                   settes ved innmelding — var den feilskrevet, gikk hver kvittering,
+                   paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
+                   rette den. -->
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
+                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                  <div style="flex: 1 1 220px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">E-post</label>
+                    <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
+                  </div>
+                  <div style="flex: 0 1 160px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Telefon</label>
+                    <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
+                  </div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
+                </div>
+              </div>
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                    etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -25996,6 +26062,54 @@ class Component extends DCLogic {
    *
    * Det er internt. Det staar ikke paa Min side.
    */
+  /**
+   * Retter e-posten og telefonnummeret paa personen.
+   *
+   * Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer
+   * og deltakere, noen legge inn feil». Adressen kunne bare settes ved
+   * innmelding — var den feilskrevet, gikk hver kvittering, paaminnelse og
+   * godkjenningslenke til ingen, og ingen skjerm i admin kunne rette den.
+   *
+   * Serveren avviser en adresse som alt staar paa en annen: to personer med
+   * samme adresse er to som faar hverandres post.
+   */
+  lagrePersonKontakt(p) {
+    const id = this.state.personMedlemId;
+    if (!id) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._personKontaktLagrer) return;
+    const e = (this.state.personEpost === null || this.state.personEpost === undefined
+      ? ((p && p.epost) || '') : this.state.personEpost).trim();
+    const t = (this.state.personTelefon === null || this.state.personTelefon === undefined
+      ? ((p && p.telefon) || '') : this.state.personTelefon).trim();
+    if (e === '' && t === '') {
+      this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn e-post eller telefon.' });
+      return;
+    }
+    this._personKontaktLagrer = true;
+
+    fetch('/api/admin/medlemmer.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'kontakt', medlemId: id, epost: e, telefon: t }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._personKontaktLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        // Hentes paa nytt saa feltene viser det som faktisk staar i basen.
+        if (ok) { this.setState({ personEpost: null, personTelefon: null }); this.apnePerson(id, 0); }
+      })
+      .catch(() => {
+        this._personKontaktLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   lagrePersonInfo() {
     // Notatet ligger paa medlemsraden. En gjest har ingen, og da er det
     // ingenting aa lagre — skjermen skjuler feltet, dette er sikringen bak.
@@ -32600,6 +32714,44 @@ class Component extends DCLogic {
               // Fra kurset og over paa ventelista. Hun gir fra seg stolen,
               // og staar bakerst i koen paa den samme datoen. Betalingen
               // staar: eieren, 6. september, «Tillat, la betalingen staa».
+              // ── E-post og telefon, rettbare ──────────────────────────
+              //
+              // Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+              // medlemmer og deltakere, noen legge inn feil».
+              //
+              // Er deltakeren medlem, retter serveren adressen paa MEDLEMMET
+              // — den gjelder da alle kursene hennes. Hjelpeteksten sier fra,
+              // saa det ikke er en overraskelse.
+              klDEpost: this.state.klDEpost === null || this.state.klDEpost === undefined
+                ? (dv ? (dv.epost || '') : '') : this.state.klDEpost,
+              klDTlf: this.state.klDTlf === null || this.state.klDTlf === undefined
+                ? (dv ? (dv.tlf || '') : '') : this.state.klDTlf,
+              settKlDEpost: e => this.setState({ klDEpost: e.target.value }),
+              settKlDTlf: e => this.setState({ klDTlf: e.target.value }),
+              klDKontaktHjelp: dv && dv.medlemId
+                ? dv.navn + ' er medlem, så rettelsen gjelder alle kursene.'
+                : 'Kvitteringer, påminnelser og kursbevis går hit. Er noe skrevet feil, rett det her.',
+              klDKontaktLagre: () => {
+                if (!dv || !dv.bookingId) return;
+                const e2 = (this.state.klDEpost === null || this.state.klDEpost === undefined
+                  ? (dv.epost || '') : this.state.klDEpost).trim();
+                const t2 = (this.state.klDTlf === null || this.state.klDTlf === undefined
+                  ? (dv.tlf || '') : this.state.klDTlf).trim();
+                if (e2 === '' && t2 === '') {
+                  this.setState({ kvittering: 'Ble ikke lagret',
+                                  kvitteringDetalj: 'Skriv inn e-post eller telefon.' });
+                  return;
+                }
+                this.klKall('/api/admin/pamelding.php', {
+                  handling: 'kontakt', id: dv.bookingId, epost: e2, telefon: t2,
+                }).then(ok => {
+                  if (!ok) return;
+                  // Kortet viser adressen fra lista. Uten en frisk henting
+                  // ville den gamle staatt igjen paa skjermen.
+                  this.setState({ klDeltakerVis: null, klDEpost: null, klDTlf: null });
+                  this.klFrisk();
+                });
+              },
               klDTilVenteliste: () => {
                 if (!dv || !dv.bookingId) return;
                 this.setState({ klSporr: {
@@ -34338,6 +34490,7 @@ class Component extends DCLogic {
     const noekkel = id > 0 ? 'm' + id : 'b' + bookingId;
     this.setState({
       personFor: noekkel, personData: null, personNotat: null,
+      personEpost: null, personTelefon: null,
       personFri: null, personFriGrunn: null, personPlan: null,
       personBetalingApen: !!medBetaling, personBetalingBelop: '',
       // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
@@ -34823,11 +34976,34 @@ class Component extends DCLogic {
 
   klDeltakerliste(evt) {
     if (!evt || !Array.isArray(evt.deltakere)) return [];
+    // ── Den som alt er dratt over paa «Bytt dato» ──────────────────────
+    //
+    // Eieren, 6. september: «naar jeg drar en person ut av et kurs … maa
+    // kurset oppdatteres. det gjor det ikke naa, jeg har fortsatt samme
+    // deltaker som naa ligger paa bytt dato ogsaa inne i kurset».
+    //
+    // Hun staar der fordi hun FAKTISK staar der: ingenting er endret foer du
+    // har sluppet henne paa en ny dato og bekreftet. Aa fjerne henne fra
+    // lista ville sagt at plassen er ledig, og den er den ikke.
+    //
+    // Raden bleknes og sier hva som er i gang, saa du ikke drar henne to
+    // ganger. Slipper du henne paa en ny dato, eller trykker «Sett tilbake»,
+    // staar raden som for.
+    const paaVei = (this.state.klBd || []).reduce((m, x) => { m[x.bookingId] = true; return m; }, {});
     return evt.deltakere.map(p => {
+    const venter = !!(p.bookingId && paaVei[p.bookingId]);
     const rad = {
       navn: p.navn,
-      status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status,
-      ny: !!p.ny,
+      status: venter ? 'Venter på ny dato'
+            : (p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status),
+      ny: !!p.ny && !venter,
+      radStil: {
+        appearance: 'none', border: 'none', background: 'transparent', cursor: 'grab',
+        width: '100%', boxSizing: 'border-box', textAlign: 'left', display: 'flex',
+        justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)',
+        padding: '9px var(--space-4)', borderTop: '1px solid var(--border-subtle)',
+        userSelect: 'none', opacity: venter ? .5 : 1,
+      },
       velg: () => this.setState({
         klDeltakerVis: {
           navn: p.navn, status: p.status, merknad: p.merknad || '',
@@ -34840,7 +35016,7 @@ class Component extends DCLogic {
           antall: p.antall || 1,
         },
         klDBeskjed: '', klDFlyttTil: '', klDSendtTil: null,
-        klDAntall: null, klDBelop: '',
+        klDAntall: null, klDBelop: '', klDEpost: null, klDTlf: null,
         // Ruta legger seg over redigeringen. Lukkes redigeringen ikke, staar
         // to dialoger oppaa hverandre.
         klRedId: null,
@@ -37952,12 +38128,27 @@ class Component extends DCLogic {
           personFornavn: fornavn,
           personDetalj: [p.epost, p.telefon, p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : null]
             .filter(Boolean).join(' · '),
-          lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null }),
+          lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null, personEpost: null, personTelefon: null }),
           // Annen info om personen. Internt — det staar ikke paa Min side.
           // Feltet er tomt til noe hentes; da faller det tilbake paa basen.
           personNotat: this.state.personNotat === null || this.state.personNotat === undefined
             ? (p.notat || '') : this.state.personNotat,
           settPersonNotat: e => this.setState({ personNotat: e.target.value }),
+          // ── E-post og telefon, rettbare ────────────────────────────
+          //
+          // Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+          // medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
+          // settes ved innmelding.
+          pkEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
+          pkFeltStil: { width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', background: 'var(--surface-card)' },
+          personEpost: this.state.personEpost === null || this.state.personEpost === undefined
+            ? (p.epost || '') : this.state.personEpost,
+          personTelefon: this.state.personTelefon === null || this.state.personTelefon === undefined
+            ? (p.telefon || '') : this.state.personTelefon,
+          settPersonEpost: e => this.setState({ personEpost: e.target.value }),
+          settPersonTelefon: e => this.setState({ personTelefon: e.target.value }),
+          personKontaktKnapp: this._personKontaktLagrer ? 'Lagrer …' : 'Lagre kontaktinfo',
+          lagrePersonKontakt: () => this.lagrePersonKontakt(p),
           personNotatKnapp: this._personInfoLagrer ? 'Lagrer …' : 'Lagre info',
           lagrePersonNotat: () => this.lagrePersonInfo(),
           personBeskjed: () => this.beskjedTilPerson(p),

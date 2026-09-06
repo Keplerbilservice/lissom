@@ -7,6 +7,7 @@
  *   POST handling=fjern      { id }
  *   POST handling=flytt      { id, oktId }   samme person, ny dato
  *   POST handling=til-venteliste { id }    gir fra seg plassen, staar i koen
+ *   POST handling=kontakt  { id, epost?, telefon? }  retter kontaktinfoen
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
  *   POST handling=endre      { id, antall?, belop? }   retter antall og sum
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
@@ -330,6 +331,61 @@ if ($handling === 'status') {
 // Beloepet foelger antallet naar det ikke tastes inn, og lar seg overstyre
 // naar det gjor det. En plass som er gitt bort staar da paa null uten at
 // antallet maa lyve om hvor mange som kom.
+// ------------------------------------------------------- rett kontaktinfo
+//
+// Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer og
+// deltakere, noen legge inn feil». En feilskrevet e-post er en kvittering
+// som aldri kom fram, en paaminnelse som forsvant, og et kursbevis ingen fikk.
+//
+// Er paameldingen knyttet til et medlem, staar e-posten paa medlemmet — og da
+// rettes den DER. Skrev vi den paa gjestefeltene i stedet, ville lista
+// fortsatt vist den gamle: oppslagene leser «COALESCE(m.epost, b.gjest_epost)»,
+// og medlemmet vinner. Svaret sier fra om hvilken av de to som ble rettet.
+if ($handling === 'kontakt') {
+    $b = DB::en(
+        'SELECT b.id, b.member_id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,
+                COALESCE(m.navn, b.gjest_navn) AS navn
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.id = :i',
+        ['i' => $id]
+    );
+    if ($b === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+
+    $nyEpost   = trim(Foresporsel::tekst('epost'));
+    $nyTelefon = trim(Foresporsel::tekst('telefon'));
+
+    if ($nyEpost !== '' && !filter_var($nyEpost, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Skriv en gyldig e-postadresse.');
+    }
+    if ($nyEpost === '' && $nyTelefon === '') {
+        Svar::feil('Skriv inn e-post eller telefon.');
+    }
+
+    $medlemId = (int) ($b['member_id'] ?? 0);
+    if ($medlemId > 0) {
+        $felt = [];
+        if ($nyEpost !== '')   { $felt['epost'] = $nyEpost; }
+        if ($nyTelefon !== '') { $felt['telefon'] = $nyTelefon; }
+        DB::oppdater('members', $felt, ['id' => $medlemId]);
+        revider('medlem_kontakt_rettet', 'member', $medlemId, [
+            'fra_paamelding' => $id,
+        ]);
+        Svar::ok(['beskjed' => $b['navn'] . ' er medlem, så rettelsen står nå på medlemmet '
+                             . 'og gjelder alle kursene.']);
+    }
+
+    $felt = [];
+    if ($nyEpost !== '')   { $felt['gjest_epost'] = $nyEpost; }
+    if ($nyTelefon !== '') { $felt['gjest_telefon'] = $nyTelefon; }
+    DB::oppdater('bookings', $felt, ['id' => $id]);
+    revider('pamelding_kontakt_rettet', 'booking', $id, []);
+
+    Svar::ok(['beskjed' => 'Kontaktinfoen til ' . $b['navn'] . ' er rettet.']);
+}
+
 if ($handling === 'endre') {
     $rad = DB::en(
         'SELECT b.id, b.antall, b.belop_ore, b.course_session_id, b.status

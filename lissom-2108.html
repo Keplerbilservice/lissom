@@ -45933,8 +45933,14 @@ class Component extends DCLogic {
                 navn: o.kurs + ' · ' + o.naar,
                 velg: () => this.setState({ vlNyOkt: String(o.oktId) }),
                 stil: {
-                  appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-                  padding: '6px 12px', font: 'var(--type-body-sm)', whiteSpace: 'nowrap',
+                  appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)',
+                  padding: '6px 12px', font: 'var(--type-body-sm)', textAlign: 'left',
+                  // Kursnavn og full dato blir langt: «Store former,
+                  // viderekomne · søndag 13. september, 10:00» stakk 27 px
+                  // utenfor kanten paa 390 px, og tre brikker ble klippet av
+                  // kortet. Maalt av breddesjekken. Naa brekker teksten inne
+                  // i brikka i stedet.
+                  whiteSpace: 'normal', maxWidth: '100%', boxSizing: 'border-box',
                   border: '1.5px solid ' + (String(o.oktId) === String(valgtId) ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
                   background: String(o.oktId) === String(valgtId) ? 'var(--lissom-yellow)' : 'transparent',
                   color: String(o.oktId) === String(valgtId) ? 'var(--lissom-brown)' : 'var(--text-muted)',

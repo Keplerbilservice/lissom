@@ -2925,41 +2925,43 @@ sjekk('kursholderne i kalenderen kommer fra registeret',
     && !str_contains($sida, "['Monica', 'Joakim', 'Ekstern'].map(")
     && !str_contains($sida, "holder = 'Monica';"));
 
-// ── Legg til deltaker rett paa okta, med vippskrav ─────────────────────
+// ── Legg til deltaker rett paa okta ────────────────────────────────────
 //
 // Panelet ligger i oktredigereren i kalenderen. Det er ingen ny
 // paameldingsvei: samme endepunkt, samme booking, samme deltakerliste.
-// «Vippskrav» er den eneste maaten som sender noe.
+//
+// «Vippskrav» var den eneste maaten som sendte noe. Eieren, 6. september
+// 2026: «vippskrav skal slettes» — og paa spoersmaal om hvor: overalt.
+// Proevene under er snudd: de sjekker at den er borte, og at ingenting av
+// det den hang i henger igjen. Ryddingen etter et krav som ikke gikk
+// gjennom sto her ogsaa; den gikk ut med kravet.
 $pamFil = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
 $sida2  = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
-sjekk('vippskrav er en godkjent betalingsmaate',
-    str_contains($pamFil, "'Vippskrav'") && str_contains($pamFil, 'const MAATER'));
-sjekk('et krav uten mobilnummer avvises',
-    str_contains($pamFil, 'Et vippskrav må ha et mobilnummer'));
-sjekk('et krav paa null kroner avvises',
-    str_contains($pamFil, 'Et vippskrav må ha et beløp over null'));
-sjekk('plassen staar som reservert til den er gjort opp',
+sjekk('vippskrav kan ikke lenger velges paa en paamelding',
+    !str_contains($pamFil, "'Vipps i verkstedet', 'Vippskrav'")
+    && !str_contains($pamFil, "\$maate === 'Vippskrav'"));
+sjekk('… og ingenting sendes til Vipps fra paameldingen',
+    !str_contains($pamFil, 'Vipps::opprettBetaling(')
+    && !str_contains($pamFil, 'Vipps::nyReferanse('));
+sjekk('… og kvitteringen lover ikke lenger et krav',
+    !str_contains($pamFil, 'Vippskrav på ') && !str_contains($pamFil, '$kravSendt'));
+sjekk('… og heller ikke skjermene tilbyr den',
+    !str_contains($sida2, "'Ikke betalt', 'Vipps', 'Kontant', 'Vippskrav'")
+    && !str_contains($sida2, 'Send vippskrav')
+    && !str_contains($sida2, 'Send Vipps-krav'));
+sjekk('… og kassa har mistet sin egen',
+    !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php'),
+                  "\$handling === 'vippskrav'"));
+// Gamle rader beholder maaten sin: «betalt_maate» er en tekst i basen, og
+// lista i koden sier bare hva som kan settes naa. En plass som ble lagt inn
+// med et vippskrav skal fortsatt telle som ubetalt.
+sjekk('gamle vippskrav teller fortsatt som ubetalt',
     str_contains($pamFil, "in_array(\$maate, ['Betaler ved oppmøte', 'Vippskrav', 'Ikke betalt'], true)"));
-sjekk('kravet gaar som push, ikke som en nettleserbetaling',
-    str_contains($pamFil, 'Vipps::opprettBetaling(') && str_contains($pamFil, "\$telefon,\n            true"));
+// Betalingsraden knyttes fortsatt begge veier — gavekortveien bruker den.
 sjekk('betalingen knyttes til bookingen begge veier',
     str_contains($pamFil, "DB::harKolonne('payments', 'booking_id') ? \$bookingId : null")
     && str_contains($pamFil, "DB::oppdater('bookings', ['payment_id' => \$betalingId]"));
-
-// ── Ryddingen etter et krav som ikke gikk gjennom ──────────────────────
-//
-// «bookings.payment_id» peker paa «payments». Slettes betalingen forst,
-// avviser basen det med en fremmednoekkelfeil — og da sto vi igjen med en
-// reservert plass, en betaling ingen hadde bedt om, og en 500-feil i stedet
-// for en forklaring. Den feilen var ekte; dette er vakten mot at den kommer
-// tilbake.
-$bPos = strpos($pamFil, "DELETE FROM bookings WHERE id = :b");
-$pPos = strpos($pamFil, "DELETE FROM payments WHERE id = :p");
-sjekk('ryddingen sletter bookingen for betalingen',
-    $bPos !== false && $pPos !== false && $bPos < $pPos);
-sjekk('en rydding som selv feiler sier fra at plassen ble staaende',
-    str_contains($pamFil, 'plassen ble stående'));
 
 // Og at basen faktisk oppforer seg slik regelen sier.
 $fkOkt = DB::verdi("SELECT cs.id FROM course_sessions cs
@@ -3008,7 +3010,15 @@ sjekk('panelet bruker det samme endepunktet som resten',
 // Lista hadde vokst til seks. Eieren, 29. august: «folk kan betale kontant,
 // med vipps eller gavekort. Og noen faar gratis.»
 sjekk('valget paa okta er kortet ned til det som brukes',
-    str_contains($sida2, "return ['Kontant', 'Vipps', 'Gavekort', 'Ikke betalt', 'Gratis'];"));
+    str_contains($sida2, "return ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Gratis'];"));
+// Eieren, 6. september: «jeg valgte ingen betalingsmaaten, men hun kom inn
+// som betalt, det stemmer ikke! Default maa vaere ikke betalt.» Standarden
+// er den forste i lista, tre steder paa skjermen — og paa serveren, som var
+// den som faktisk avgjorde det naar feltet ikke fulgte med.
+sjekk('… og standarden er «Ikke betalt», ikke noe som er gjort opp',
+    str_contains($sida2, "const maate = maater.indexOf(u.maate) >= 0 ? u.maate : 'Ikke betalt';")
+    && str_contains($sida2, "(this.state.klNyDBet || 'Ikke betalt')")
+    && str_contains($pamFil, "\$maate = 'Ikke betalt';"));
 
 // ── Ikke betalt ────────────────────────────────────────────────────────
 //
@@ -3057,7 +3067,7 @@ sjekk('maaten foelger med naar den kreves inn fra kortet',
 // De gamle maatene staar igjen i BETALT_MAATER, saa paameldinger som alt er
 // lagt inn med «Faktura» beholder maaten sin.
 sjekk('de gamle maatene finnes fortsatt for det som er lagt inn',
-    str_contains($sida2, "return ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"));
+    str_contains($sida2, "return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"));
 // Et gavekort er penger som alt er betalt inn. Trekkes det ikke fra kortet,
 // kan det brukes om igjen, og gavekortgjelda blir aldri nedskrevet.
 sjekk('gavekortet finnes for plassen legges inn',
@@ -3068,8 +3078,8 @@ sjekk('… og beloepet trekkes fra kortet',
     str_contains($pamFil, 'Booking::trekkGavekort($betalingId);'));
 sjekk('… uten at det telles som penger inn',
     str_contains($pamFil, "'belop_ore'       => 0,\n        'gavekort_id'     => \$kort['id'],"));
-sjekk('knappen sier hva den gjor naar det er et krav',
-    str_contains($sida2, "kdKnapp: krav ? 'Send vippskrav' : 'Legg inn deltakeren'"));
+sjekk('knappen sier hva den legger inn',
+    str_contains($sida2, "kdKnapp: 'Legg inn deltakeren',"));
 // To felter som het «Navn», og to knapper som het «Legg til», sto i samme
 // bilde. Begge er dopt om, og begge navnene skal holde seg unike.
 sjekk('deltakerfeltet heter noe annet enn oktas eget navnefelt',
@@ -3205,11 +3215,12 @@ sjekk('feltet som er galt staar med navn',
 sjekk('feil 5080 sier hva som skal gjores',
     str_contains($vippsFil, "str_contains(\$tekst, 'PUSH_MESSAGE') || str_contains(\$tekst, '5080')")
     && str_contains($vippsFil, 'Be Vipps skru på PUSH_MESSAGE for salgsenheten'));
-sjekk('kassa viser grunnen',
+// De to stedene som viste grunnen ordrett var begge vippskravet, og gikk ut
+// med det 6. september 2026. Grunnen naar fortsatt fram der Vipps brukes:
+// QR-en i kassa og betalingen fra nettsida kaster den samme meldingen.
+sjekk('grunnen naar fortsatt fram der Vipps brukes',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php'),
-                 "'Fikk ikke sendt kravet. ' . \$e->getMessage()"));
-sjekk('paameldingen viser grunnen',
-    str_contains($pamFil, "'Fikk ikke sendt kravet. ' . \$e->getMessage() . ' Ingen plass er lagt inn.'"));
+                 "\$e->getMessage()"));
 
 // ── Vipps-QR i kassa ───────────────────────────────────────────────────
 //
@@ -3341,19 +3352,18 @@ sjekk('kassa kan vise den faste koden',
 sjekk('utskriften tar bare koden, ikke hele kassa',
     str_contains($sida2, "utFastSkrivUt:") && str_contains($sida2, "window.open('', '_blank'"));
 
-// ── Vippskrav i den raske ruta ─────────────────────────────────────────
+// ── Den raske ruta nederst i deltakerlista ─────────────────────────────
 //
-// Den enkle boksen nederst i deltakerlista tok navn, telefon og Vipps/Kontant.
-// Eieren, 29. august: «vi vil ha vipps og betaling ja».
-sjekk('den raske ruta kan sende vippskrav',
-    str_contains($sida2, "klNyDBetValg: ['Vipps', 'Kontant', 'Vippskrav']"));
-sjekk('… og har et belopsfelt naar den skal det',
-    str_contains($sida2, 'klNyDErKrav:') && str_contains($sida2, 'settKlNyDBelop:'));
-sjekk('… og sier at nummeret er adressen kravet gaar til',
-    str_contains($sida2, "'Mobil — kravet går hit' : 'Telefon'"));
-sjekk('… og stopper et krav uten nummer eller belop',
-    str_contains($sida2, "if (krav && tlf === '') {")
-    && str_contains($sida2, 'if (krav && !(parseInt(belop, 10) > 0)) {'));
+// Boksen tok navn, telefon og en betalingsmaate. «Vippskrav» sto her til 6.
+// september 2026; eieren ba om at den skulle slettes overalt.
+sjekk('den raske ruta tilbyr ikke lenger et krav',
+    str_contains($sida2, "klNyDBetValg: ['Ikke betalt', 'Vipps', 'Kontant']")
+    && !str_contains($sida2, "'Mobil — kravet går hit'"));
+// Beloepsfeltet sto bare framme naar kravet var valgt. Naar standarden er
+// «Ikke betalt», er beloepet nettopp det som sier hva plassen skylder — saa
+// feltet blir staaende, framfor aa forsvinne med kravet.
+sjekk('… men beloepsfeltet staar igjen',
+    str_contains($sida2, 'klNyDErKrav: true,') && str_contains($sida2, 'settKlNyDBelop:'));
 
 // ── Klikk paa en hendelse i kalenderen ─────────────────────────────────
 //
@@ -8613,7 +8623,7 @@ sjekk('delt oppgjor nektes naar basen ikke er oppdatert',
 // Alle salg skal ha koblingen, ikke bare de delte. Ellers betyr kolonnen
 // noe forskjellig fra rad til rad.
 sjekk('ogsaa vanlige kassesalg kobler betalingen til ordren',
-    substr_count($utFil, "DB::oppdater('payments', ['order_id' => \$id], ['id' => \$betalingId]);") === 4);
+    substr_count($utFil, "DB::oppdater('payments', ['order_id' => \$id], ['id' => \$betalingId]);") === 3);
 
 // Et kort som gis bort har ingen penger bak seg. En betalingsrad paa null
 // ville sagt at det kom inn noe som aldri kom.

@@ -6991,12 +6991,20 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-if>
-            <sc-if value="{{ klRKanKurs }}" hint-placeholder-val="{{ true }}">
+            <!-- Beskrivelsen og bunnraden hoerer til okta, ikke til
+                 deltakeren. Staar de framme mens noen legges inn, ser
+                 «Lagre» ut som knappen som legger henne inn — og teksten
+                 om nettsida har ingenting der aa gjore. Eieren, 6.
+                 september: «naar jeg skal legge til deltaker, ser det
+                 unoedvendig at lagre knappen og beskrivelsen kommer fram,
+                 fjern dette». Begge kommer tilbake naar panelet lukkes. -->
+            <sc-if value="{{ klRVisBeskrivelse }}" hint-placeholder-val="{{ true }}">
               <div style="margin-bottom: var(--space-5);">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
                 <textarea value="{{ klRBeskrivelse }}" onChange="{{ settKlRBeskrivelse }}" rows="3" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
               </div>
             </sc-if>
+            <sc-if value="{{ klRVisBunn }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klRLagre }}" hint-size="auto,44px">Lagre</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klRAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
@@ -7007,6 +7015,7 @@ window.__resources = {
                 </sc-if>
               </div>
             </div>
+            </sc-if>
           </div>
         </div>
       </sc-if>
@@ -7960,8 +7969,10 @@ window.__resources = {
              Raden hadde luft under, men ingen over: pillene la seg rett
              inntil kortet «Ikke betalt». Maalt til 0 px over og 24 under, likt
              paa 1440, 1024 og 390 px. Eieren, 6. september: «for trang over
-             pillene». Naa er det like mye begge veier. -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: var(--space-6) 0;">
+             pillene» — og etter forste retting: «gi den mer luft». 40 px over,
+             24 under: raden hoerer til det som kommer etter den, ikke til
+             kortet over. -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 40px 0 var(--space-6);">
           <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="3">
             <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
           </sc-for>
@@ -13678,6 +13689,18 @@ window.__resources = {
                       <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
                         <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ personAvtaleHjelp }}</div>
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ sendPersonAvtale }}" hint-size="auto,36px">Send Vipps-avtale</x-import>
+                      </div>
+                    </sc-if>
+                    <!-- Lenka kunden maa aapne for aa godkjenne i Vipps.
+                         Den staar saa lenge avtalen venter — ikke bare rett
+                         etter at den ble laget. Gaar e-posten i soeppelposten,
+                         er dette veien til pengene. -->
+                    <sc-if value="{{ personHarAvtaleLenke }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                        <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Godkjenningslenke</div>
+                        <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ personAvtaleLenkeHjelp }}</div>
+                        <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-body); background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; overflow-x: auto; white-space: nowrap; margin-bottom: 8px;">{{ personAvtaleLenke }}</div>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="copy" on-click="{{ kopierPersonAvtaleLenke }}" hint-size="auto,36px">Kopier lenka</x-import>
                       </div>
                     </sc-if>
                   </div>
@@ -30276,12 +30299,17 @@ class Component extends DCLogic {
     const mndNavn = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
     const dagNavn = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
     const uked = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
-    // Paa telefon er lista standardvisningen: et manedsrutenett er sju
-    // spalter, og sju spalter paa 390 px er ikke til aa lese. Men velger hun
-    // selv Maned eller Dag, skal hun faa det — en knapp som ikke gjor det den
-    // sier, er verre enn ingen knapp. Rutenettet ruller sidelengs i sin egen
-    // ramme, saa resten av sida staar stille.
-    let visning = this.state.klVisning || (this.erSmal() ? 'liste' : 'dag');
+    // Dagen er standardvisningen, ogsaa paa telefon.
+    //
+    // Her sto lista paa smal skjerm. Begrunnelsen den gang gjaldt
+    // maanedsrutenettet — sju spalter paa 390 px er ikke til aa lese — men
+    // dagen er én spalte og har aldri hatt det problemet. Eieren, 6.
+    // september: «naar vi aapner kalender paa mobil i admin, saa vil jeg at
+    // dag skal vaere default».
+    //
+    // Maaned og Liste staar der fortsatt som valg; rutenettet ruller
+    // sidelengs i sin egen ramme, saa resten av sida staar stille.
+    let visning = this.state.klVisning || 'dag';
     const skjulT = this.state.klSkjulType || {}, skjulH = this.state.klSkjulHolder || {};
     const modus = this.state.klFarge || 'type';
     const info = this.klTypeInfo(), hInfo = this.klHolderInfo();
@@ -31693,6 +31721,11 @@ class Component extends DCLogic {
                 });
               },
               klRKanKurs: redEvt ? this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]) : false,
+              // Mens deltakeren legges inn staar bare det som gjelder henne.
+              // Se kommentaren i markupen.
+              klRVisBeskrivelse: (redEvt ? this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]) : false)
+                && !(redEvt && redEvt.oktId && this.state.kdApen),
+              klRVisBunn: !(redEvt && redEvt.oktId && this.state.kdApen),
               klRNavn: this.state.klRNavn || '',
               settKlRNavn: e => this.setState({ klRNavn: e.target.value }),
               klRDato: this.state.klRDato || '',
@@ -32506,6 +32539,26 @@ class Component extends DCLogic {
    * Angre er en ekte flytting tilbake, ikke et lag over skjermen. Ellers
    * ville «Angre» sett ut som den virket mens datoen ble staaende flyttet.
    */
+  /**
+   * Naar er et trykk blitt til et dra?
+   *
+   * Alle tre dra-handlerne satte «moved = true» paa foerste «mousemove»,
+   * uten avstand. Én piksel mellom nedtrykk og slipp — som skjer paa hvert
+   * eneste klikk med mus, og alltid paa en styreflate — talte da som et
+   * dra. For okter i kalenderen betyr det at klokkeslettet ble endret av et
+   * vanlig klikk.
+   *
+   * Eieren, 6. september: «ALVORLIG FEIL, naar vi er inne aa jobber i
+   * kurset, saa endrer det klokkeslett, helt av seg selv uten at vi trykker
+   * paa noe!!!!»
+   *
+   * Fem piksler er den vanlige terskelen, og den samme som drag-og-slipp i
+   * kurslista bruker fra for.
+   */
+  klDro(fra, mv) {
+    return (Math.abs(mv.clientX - fra.clientX) + Math.abs(mv.clientY - fra.clientY)) > 5;
+  }
+
   klDragStart(evt, e) {
     // Dag to og tre av et flerdagerskurs staar fast. De hoerer til den samme
     // paameldingen som startdagen, og rettes der de settes opp — paa kursets
@@ -32515,6 +32568,8 @@ class Component extends DCLogic {
     this._klFlytt = { evt: evt, moved: false };
     const move = mv => {
       const d = this._klFlytt; if (!d) return;
+      // Ett piksel er ikke et dra. Se klDro().
+      if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
       this.setState({ klDrag: { id: evt.id, dx: mv.clientX - e.clientX, dy: mv.clientY - e.clientY } });
     };
@@ -32616,6 +32671,8 @@ class Component extends DCLogic {
     this._klVl = { p: p, moved: false };
     const move = mv => {
       const d = this._klVl; if (!d) return;
+      // Ett piksel er ikke et dra. Se klDro().
+      if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
       this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY } });
     };
@@ -32690,6 +32747,8 @@ class Component extends DCLogic {
     this._klNy = { kurs, moved: false };
     const move = mv => {
       const d = this._klNy; if (!d) return;
+      // Ett piksel er ikke et dra. Se klDro().
+      if (!d.moved && !this.klDro(e, mv)) return;
       d.moved = true;
       this.setState({ klNyDrag: { navn: kurs.navn, x: mv.clientX, y: mv.clientY } });
     };
@@ -37066,6 +37125,21 @@ class Component extends DCLogic {
           // paa en plan, og ingen avtale loeper.
           personKanSendeAvtale: !!p.id && !!(p.medlemskap || '')
             && (p.avtale || 'ingen') !== 'aktiv' && !!(p.epost || ''),
+          // ── Godkjenningslenka ──────────────────────────────────────
+          //
+          // Serveren ga den tilbake i svaret paa «Send Vipps-avtale», og
+          // skjermen kastet den. Da var e-posten eneste vei til kunden.
+          // Eieren, 6. september: «jeg maa ha pengene mine».
+          //
+          // Naa staar den saa lenge avtalen venter paa godkjenning, ogsaa
+          // naar ruta aapnes paa nytt en annen dag.
+          personHarAvtaleLenke: !!(p.avtaleLenke || ''),
+          personAvtaleLenke: p.avtaleLenke || '',
+          personAvtaleLenkeHjelp: 'Send den til ' + fornavn
+            + ' hvis e-posten ikke kom fram. Hun åpner den på telefonen og '
+            + 'sier ja i Vipps-appen.',
+          kopierPersonAvtaleLenke: () => this.kopier(p.avtaleLenke || '',
+            'Lenka ligger på utklippstavla — lim den inn der du vil sende den.'),
           personAvtaleHjelp: 'Lager avtalen i Vipps og sender lenka til '
             + fornavn + ' på e-post. Medlemskapet starter først når hun har '
             + 'godkjent den i appen.',

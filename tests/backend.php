@@ -2884,10 +2884,12 @@ sjekk('de brede visningene ruller sidelengs paa telefon',
     // Alle fire er flere spalter enn en telefon er bred.
     substr_count($sida, 'class="lx-kalbred"') === 4
     && str_contains($sida, '.lx-kalbred { overflow-x: auto !important;'));
-// Og velger hun Maned eller Dag paa telefon, skal hun faa det. Lista er
-// standardvisningen der, ikke den eneste.
+// Og velger hun Uke, Maaned eller Liste paa telefon, skal hun faa det.
+// Dagen er standardvisningen der fra 6. september, ikke den eneste — se
+// proeven «dagen er standardvisningen ogsaa paa telefon» lenger nede.
 sjekk('visningsknappene virker ogsaa paa telefon',
-    str_contains($sida, "this.state.klVisning || (this.erSmal() ? 'liste' : 'dag')"));
+    str_contains($sida, "let visning = this.state.klVisning || 'dag';")
+    && str_contains($sida, "klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]"));
 sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
     str_contains($sida, "? { minWidth: 0, order: 1 }"));
 
@@ -3882,6 +3884,75 @@ sjekk('… og alle veiene inn bruker den samme',
 // «status: reservert» fantes i endepunktet, men ingen knapp brukte den.
 // Eieren, 6. september: «jeg maa da ogsaa kunne redigere de som allerede
 // staar som betalt».
+// Deltakerraden sa «Reservert» — at plassen er holdt av, ikke om den er
+// gjort opp. Eieren, 6. september: «i stedet for reservert, saa vil jeg at
+// betalingsstatusen kommer opp, altsaa ikke betalt, betalt».
+$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('deltakerraden sier om det er betalt, ikke om plassen er holdt av',
+    !str_contains($kalFil, "'Betalt' : 'Reservert'")
+    && str_contains($kalFil, "'reservert' => 'Ikke betalt',"));
+// En refundert plass VAR betalt, og en som ikke moette opp sier ingenting om
+// pengene. De skal ikke havne i samme sekk som «Ikke betalt».
+sjekk('… og refundert og ikke moett staar for seg',
+    str_contains($kalFil, "'refundert' => 'Refundert',")
+    && str_contains($kalFil, "'ikke_mott' => 'Møtte ikke opp',"));
+// ── Ett piksel er ikke et dra ──────────────────────────────────────────
+//
+// Alle tre dra-handlerne satte «moved = true» paa foerste «mousemove», uten
+// avstand. Ett piksel mellom nedtrykk og slipp — som skjer paa hvert eneste
+// klikk med mus, og alltid paa en styreflate — talte som et dra. For okter i
+// kalenderen betyr det at klokkeslettet ble endret av et vanlig klikk.
+//
+// Eieren, 6. september: «ALVORLIG FEIL, naar vi er inne aa jobber i kurset,
+// saa endrer det klokkeslett, helt av seg selv uten at vi trykker paa noe».
+//
+// Maalt i nettleseren, klikk med 2 px skjelv paa en okt:
+//   med feilen inne:  ett «endredato»-kall, start flyttet til 16:00
+//   uten:             null kall — og et ekte dra paa 150 px flytter fortsatt
+sjekk('et dra maa vaere et dra, ikke et skjelv',
+    str_contains($sida2, 'klDro(fra, mv) {')
+    && str_contains($sida2, "(Math.abs(mv.clientX - fra.clientX) + Math.abs(mv.clientY - fra.clientY)) > 5"));
+// Alle tre stedene, ikke bare det ene eieren merket.
+sjekk('… i alle tre dra-handlerne',
+    substr_count($sida2, 'if (!d.moved && !this.klDro(e, mv)) return;') === 3);
+
+// ── Godkjenningslenka til Vipps ────────────────────────────────────────
+//
+// «Send Vipps-avtale» ga lenka tilbake i svaret sitt, og skjermen kastet
+// den. Da var e-posten eneste vei til kunden — gikk den i soeppelposten,
+// hadde verkstedet ingenting aa gi henne. Eieren, 6. september: «jeg maa ha
+// pengene mine», og paa spoersmaal om hvordan: vis den alltid.
+$medlFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('personruta faar godkjenningslenka fra serveren',
+    str_contains($medlFil, "'avtaleLenke' => (static function () use (\$m): string {"));
+// Bare en avtale som venter. Er den godkjent, er lenka brukt opp; er den
+// stoppet, skal den ikke deles ut igjen.
+sjekk('… bare naar avtalen faktisk venter paa godkjenning',
+    str_contains($medlFil, "WHERE member_id = :m AND status = 'venter'\n                        AND vipps_url IS NOT NULL AND vipps_url <> ''"));
+sjekk('… og skjermen viser den med en kopiknapp',
+    str_contains($sida2, 'personHarAvtaleLenke:')
+    && str_contains($sida2, 'kopierPersonAvtaleLenke:')
+    && str_contains($sida2, '>Kopier lenka</x-import>'));
+// Uten kolonnen finnes ingen lenke. Da skal svaret vaere tomt, ikke en feil.
+sjekk('… og taaler en base uten kolonnen',
+    str_contains($medlFil, "if (!DB::harKolonne('subscriptions', 'vipps_url')) {"));
+
+// Kalenderen sto paa «Liste» paa smal skjerm. Begrunnelsen gjaldt
+// maanedsrutenettet — sju spalter paa 390 px — men dagen er én spalte.
+// Eieren, 6. september: «naar vi aapner kalender paa mobil i admin, saa vil
+// jeg at dag skal vaere default».
+sjekk('dagen er standardvisningen ogsaa paa telefon',
+    str_contains($sida2, "let visning = this.state.klVisning || 'dag';")
+    && !str_contains($sida2, "this.erSmal() ? 'liste' : 'dag'"));
+// De fire valgene staar der fortsatt.
+sjekk('… og de andre visningene kan fortsatt velges',
+    str_contains($sida2, "klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]"));
+
+// Faneraden i kassa la seg inntil kortet over. 0 px over, 24 under; etter
+// forste retting 24/24, og eieren: «gi den mer luft».
+sjekk('faneraden i kassa har mer luft over enn under',
+    str_contains($sida2, "flex-wrap: wrap; margin: 40px 0 var(--space-6);"));
+
 sjekk('en plass som staar som betalt kan settes tilbake',
     str_contains($sida2, "{ handling: 'status', id: dv.bookingId, status: 'reservert' }"));
 sjekk('… og en ubetalt kan merkes betalt, med maaten',

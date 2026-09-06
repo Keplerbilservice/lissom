@@ -1216,6 +1216,27 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                     . Booking::norskDato((string) $r['vilkaar_godtatt_at'])
                     . ' (utgave ' . (string) $r['vilkaar_versjon'] . ')';
             })(),
+            // Godkjenningslenka til Vipps, saa lenge avtalen venter paa den.
+            //
+            // «Send Vipps-avtale» gir lenka tilbake i svaret sitt, men den ble
+            // kastet: eneste vei til kunden var e-posten. Gikk den i
+            // soeppelposten, hadde verkstedet ingen maate aa gi henne lenka
+            // paa. Eieren, 6. september: «jeg maa ha pengene mine».
+            //
+            // Bare en avtale som staar «venter». Er den godkjent, er lenka
+            // brukt opp; er den stoppet, skal den ikke deles ut igjen.
+            'avtaleLenke' => (static function () use ($m): string {
+                if (!DB::harKolonne('subscriptions', 'vipps_url')) {
+                    return '';
+                }
+                return (string) (DB::verdi(
+                    "SELECT vipps_url FROM subscriptions
+                      WHERE member_id = :m AND status = 'venter'
+                        AND vipps_url IS NOT NULL AND vipps_url <> ''
+                   ORDER BY id DESC LIMIT 1",
+                    ['m' => (int) $m['id']]
+                ) ?? '');
+            })(),
         ] + (static function () use ($m): array {
             if ($m === null || (int) ($m['id'] ?? 0) <= 0) {
                 return ['betaling' => 'ingen', 'betalingTekst' => ''];

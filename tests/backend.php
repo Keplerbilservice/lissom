@@ -3866,7 +3866,27 @@ sjekk('… og ukevisningen viser ogsaa de tomme dagene',
 // Eieren, 30. august: «naar jeg trykker paa planlagte kurs saa kommer jeg
 // ikke til kurset». Raden sendte deg til Paameldte-skjermen med et filter paa.
 sjekk('et trykk paa en dato aapner kurset',
-    str_contains($sida2, "this.setState({ datoerFor: o.tittel, kRed: false, oktRediger: null });"));
+    str_contains($sida2, 'const apneKurset = (o) => () => this.apneDatoerFor(o.tittel);'));
+// Eieren, 6. september, med bilde fra telefonen: «Proever aa trykke paa
+// kurset, men det kommer ikke opp. Bare popper opp til toppen av siden.»
+// Under 760 px ligger datolista bak en lenke, og raden aapnet den aldri.
+sjekk('… og aapner lista, saa den ogsaa kommer fram paa telefon',
+    str_contains($sida2, 'apneDatoerFor(navn, ekstra) {')
+    && str_contains($sida2, 'datoListeApen: true'));
+sjekk('… og ruller til lista, ikke til toppen av sida',
+    str_contains($sida2, "document.getElementById('admin-datoer')"));
+// Alle tre veiene inn til datolista gaar samme sted, saa de oppfoerer seg
+// likt: raden i lista, raden i kurslista, og «Legg til deltaker».
+sjekk('… og alle veiene inn bruker den samme',
+    substr_count($sida2, 'this.apneDatoerFor(') === 3);
+// «status: reservert» fantes i endepunktet, men ingen knapp brukte den.
+// Eieren, 6. september: «jeg maa da ogsaa kunne redigere de som allerede
+// staar som betalt».
+sjekk('en plass som staar som betalt kan settes tilbake',
+    str_contains($sida2, "{ handling: 'status', id: dv.bookingId, status: 'reservert' }"));
+sjekk('… og en ubetalt kan merkes betalt, med maaten',
+    str_contains($sida2, "{ handling: 'status', id: dv.bookingId, status: 'betalt', maate: m }")
+    && str_contains($sida2, "klDBetaltValg: ['Kontant', 'Vipps']"));
 // Aapningstida klippes i plasser paa halvannen time. Uten sammenslaaingen sto
 // det samme tilbudet i seks like linjer, slik den gjorde i kalenderen for.
 sjekk('planlagte kurs samler tidene som foelger en regel',

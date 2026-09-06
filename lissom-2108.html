@@ -7267,6 +7267,26 @@ window.__resources = {
                   <button type="button" onClick="{{ klDAapneBevis }}" style="{{ klDHandlingStil }}">Åpne kursbeviset</button>
                   <button type="button" onClick="{{ klDAvbestill }}" style="{{ klDFareStil }}">Avbestill</button>
                 </div>
+                <!-- Betalingen.
+                     Eieren, 6. september: «jeg maa da ogsaa kunne redigere de
+                     som allerede staar som betalt». Endepunktet kunne det fra
+                     for — «status: reservert» — men ingen knapp noe sted
+                     brukte den, saa en plass som kom inn som betalt ved en
+                     feil kunne ikke rettes noe sted.
+                     Kassa -> Betalinger kan annullere en betaling, men bare
+                     naar det finnes en betalingsrad. En paamelding som ble
+                     ført som «Kontant» ved innlegging har ingen. -->
+                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; margin-top: var(--space-3);">
+                  <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Betaling</span>
+                  <sc-if value="{{ klDErBetalt }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ klDSettUbetalt }}" style="{{ klDHandlingStil }}">Sett som ikke betalt</button>
+                  </sc-if>
+                  <sc-if value="{{ klDErUbetalt }}" hint-placeholder-val="{{ true }}">
+                    <sc-for list="{{ klDBetaltValg }}" as="b" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ b.velg }}" style="{{ klDHandlingStil }}">{{ b.navn }}</button>
+                    </sc-for>
+                  </sc-if>
+                </div>
                 <!-- Antall og beloep. Samme felter som raden under
                      Paameldte, samme kall. -->
                 <div style="display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; margin-top: var(--space-4);">
@@ -7936,8 +7956,12 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <!-- Hva selger du? Tre ting, og ingen vei innom noe annet. -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 var(--space-6);">
+        <!-- Hva selger du? Tre ting, og ingen vei innom noe annet.
+             Raden hadde luft under, men ingen over: pillene la seg rett
+             inntil kortet «Ikke betalt». Maalt til 0 px over og 24 under, likt
+             paa 1440, 1024 og 390 px. Eieren, 6. september: «for trang over
+             pillene». Naa er det like mye begge veier. -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: var(--space-6) 0;">
           <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="3">
             <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
           </sc-for>
@@ -31833,6 +31857,37 @@ class Component extends DCLogic {
                   { handling: 'endre', id: dv.bookingId, antall: antall, belop: belop })
                   .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDAntall: null, klDBelop: '' }); });
               },
+              // ── Betalingen, begge veier ─────────────────────────────
+              //
+              // «status: reservert» fantes i api/admin/pamelding.php fra for,
+              // men ingen knapp noe sted brukte den. En plass som kom inn som
+              // betalt kunne ikke settes tilbake — og med standarden som sto
+              // paa «Vipps» kom mange inn slik uten at noen valgte det.
+              //
+              // Veien tilbake finnes ellers bare i Kassa -> Betalinger, og den
+              // krever en betalingsrad. En paamelding som ble ført som
+              // «Kontant» ved innlegging har ingen rad aa annullere.
+              //
+              // Maaten foelger med naar den settes til betalt: uten den staar
+              // plassen som gjort opp uten at noe sier hvor pengene kom fra,
+              // og dagsoppgjoret vet ikke hvilken motkonto den hoerer til.
+              klDErBetalt: !!(dv && dv.betalt),
+              klDErUbetalt: !!(dv && !dv.betalt),
+              klDSettUbetalt: () => {
+                if (!dv || !dv.bookingId) return;
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'status', id: dv.bookingId, status: 'reservert' })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+              },
+              klDBetaltValg: ['Kontant', 'Vipps'].map(m => ({
+                navn: m,
+                velg: () => {
+                  if (!dv || !dv.bookingId) return;
+                  this.klKall('/api/admin/pamelding.php',
+                    { handling: 'status', id: dv.bookingId, status: 'betalt', maate: m })
+                    .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+                },
+              })),
               klDIkkeMott: () => {
                 if (!dv || !dv.bookingId) return;
                 this.klKall('/api/admin/pamelding.php',
@@ -33735,6 +33790,37 @@ class Component extends DCLogic {
    * Naa staar mappingen her, og begge stedene leser den samme. Ingen ny
    * liste: én liste, to steder.
    */
+  /**
+   * Aapner datolista for ett kurs, og ruller dit den faktisk staar.
+   *
+   * Eieren, 6. september, med bilde fra telefonen: «Proever aa trykke paa
+   * kurset, men det kommer ikke opp. Bare popper opp til toppen av siden.»
+   *
+   * Reprodusert paa 390 px: raden satte «datoerFor» og rullet til toppen —
+   * men under 760 px ligger datolista bak en lenke («.lx-datoliste
+   * [data-apen=false]» i stilarket), og den ble aldri aapnet. Da skjedde det
+   * ingenting synlig. Paa PC sto lista aapen fra for, og feilen viste seg ikke.
+   *
+   * Naa aapnes lista, og sida ruller til den framfor til toppen. Blokka
+   * flyttes ovrst med «order: -1» naar den gjelder ett kurs, saa de to
+   * betyr det samme paa en bred skjerm — men bare den ene virker paa en smal.
+   */
+  apneDatoerFor(navn, ekstra) {
+    this.setState(Object.assign(
+      { datoerFor: navn, kRed: false, oktRediger: null, datoListeApen: true },
+      ekstra || {}
+    ));
+    // Elementet finnes forst etter at skjermen er tegnet paa nytt.
+    setTimeout(() => {
+      const el = document.getElementById('admin-datoer');
+      if (el) {
+        el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 60);
+  }
+
   klDeltakerliste(evt) {
     if (!evt || !Array.isArray(evt.deltakere)) return [];
     return evt.deltakere.map(p => ({
@@ -39435,10 +39521,7 @@ class Component extends DCLogic {
         // med alle datoene til kurset, «Legg til deltaker» paa hver av dem,
         // og «Rediger» videre inn i oppsettet. Det er den samme veien som et
         // trykk i kurslista under tar.
-        const apneKurset = (o) => () => {
-          this.setState({ datoerFor: o.tittel, kRed: false, oktRediger: null });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+        const apneKurset = (o) => () => this.apneDatoerFor(o.tittel);
 
         // Linja under tittelen. Den samme opplysningen som i kalenderen:
         // hvor mange plasser som er tatt, og hva som er galt med datoen.
@@ -40254,8 +40337,7 @@ class Component extends DCLogic {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
           }
-          this.setState({ datoerFor: k.navn, kRed: false, oktRediger: null });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.apneDatoerFor(k.navn);
         },
         rediger: (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
@@ -40272,11 +40354,9 @@ class Component extends DCLogic {
         leggTil: (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
           const neste = (this.state.adminOkter || []).find(o => o.tittel === k.navn);
-          this.setState({
-            datoerFor: k.navn, kRed: false, oktRediger: null,
+          this.apneDatoerFor(k.navn, {
             mpApen: !!neste, mpOkt: neste ? String(neste.oktId) : '',
           });
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         harDato: (this.state.adminOkter || []).some(o => o.tittel === k.navn),
         // «Slett» fjernet bare raden fra skjermbildet. Kurset var tilbake ved

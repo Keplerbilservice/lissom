@@ -229,14 +229,54 @@ if (Foresporsel::metode() === 'POST') {
             Svar::feil('Fant ikke personen.', 404);
         }
 
+        $nyNavn    = trim(Foresporsel::tekst('navn'));
         $nyEpost   = trim(Foresporsel::tekst('epost'));
         $nyTelefon = trim(Foresporsel::tekst('telefon'));
 
         if ($nyEpost !== '' && !filter_var($nyEpost, FILTER_VALIDATE_EMAIL)) {
             Svar::feil('Skriv en gyldig e-postadresse.');
         }
-        if ($nyEpost === '' && $nyTelefon === '') {
-            Svar::feil('Skriv inn e-post eller telefon.');
+
+        // ── Datoene og timetallet ────────────────────────────────────
+        //
+        // Eieren, 6. september: «Jeg vil kunne gaa inn paa meldemmer og trykke
+        // og redigere info og lagre», og paa spoersmaal om hva: «Alt sammen —
+        // ett skjema».
+        //
+        // Navn, e-post og telefon kan ikke tommes: et medlem uten navn er
+        // ingen, og en tom adresse er hver kvittering som ikke naar fram. Er
+        // feltet blankt, staar det som staar.
+        //
+        // Datoene og timetallet KAN tommes. Et blankt timetall betyr «foelg
+        // medlemskapet» — se timerFor() — og en blank sluttdato betyr at
+        // medlemskapet loeper.
+        $les = static function (string $felt): ?string {
+            $v = trim(Foresporsel::tekst($felt));
+            return $v === '' ? null : $v;
+        };
+        $dato = static function (?string $v, string $hva): ?string {
+            if ($v === null) {
+                return null;
+            }
+            $d = DateTimeImmutable::createFromFormat('!Y-m-d', $v);
+            if ($d === false || $d->format('Y-m-d') !== $v) {
+                Svar::feil('«' . $hva . '» må være en dato, som 2026-09-06.');
+            }
+            return $v;
+        };
+        $start = $dato($les('startDato'), 'Medlem fra');
+        $slutt = $dato($les('sluttDato'), 'Medlem til');
+        if ($start !== null && $slutt !== null && $slutt < $start) {
+            Svar::feil('«Medlem til» kan ikke være før «Medlem fra».');
+        }
+
+        $timerRaa = trim(Foresporsel::tekst('timer'));
+        $timer = null;
+        if ($timerRaa !== '') {
+            if (!ctype_digit($timerRaa) || (int) $timerRaa > 500) {
+                Svar::feil('Timer per måned må være et tall mellom 0 og 500.');
+            }
+            $timer = (int) $timerRaa;
         }
 
         // To personer med samme adresse er to personer som far hverandres
@@ -253,7 +293,14 @@ if (Foresporsel::metode() === 'POST') {
             }
         }
 
-        $felt = [];
+        $felt = [
+            'start_dato' => $start,
+            'slutt_dato' => $slutt,
+        ];
+        if (DB::harKolonne('members', 'timer_per_mnd')) {
+            $felt['timer_per_mnd'] = $timer;
+        }
+        if ($nyNavn !== '')    { $felt['navn'] = mb_substr($nyNavn, 0, 191); }
         if ($nyEpost !== '')   { $felt['epost'] = $nyEpost; }
         if ($nyTelefon !== '') { $felt['telefon'] = $nyTelefon; }
         DB::oppdater('members', $felt, ['id' => $id]);
@@ -261,7 +308,7 @@ if (Foresporsel::metode() === 'POST') {
             'fra' => (string) ($m['epost'] ?? ''),
         ]);
 
-        Svar::ok(['beskjed' => 'Kontaktinfoen til ' . $m['navn'] . ' er rettet.']);
+        Svar::ok(['beskjed' => 'Endringene på ' . ($nyNavn !== '' ? $nyNavn : $m['navn']) . ' er lagret.']);
     }
 
     // ── Bytte medlemskap paa et medlem ────────────────────────────────
@@ -1224,6 +1271,15 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'gjest'      => $erGjest,
             // Det verkstedet selv har notert. Internt, og bare her.
             'notat'      => (string) ($m['notat'] ?? ''),
+            // ── Feltene skjemaet retter ────────────────────────────────
+            //
+            // Eieren, 6. september: «Jeg vil kunne gaa inn paa meldemmer og
+            // trykke og redigere info og lagre» — «Alt sammen — ett skjema».
+            // Uten disse tre sto skjemaet tomt paa datoene og timetallet, og
+            // en lagring ville tommet dem.
+            'startDato'  => (string) ($m['start_dato'] ?? ''),
+            'sluttDato'  => (string) ($m['slutt_dato'] ?? ''),
+            'timer'      => ($m['timer_per_mnd'] ?? null) === null ? '' : (string) $m['timer_per_mnd'],
             // ── Har hun betalt? ────────────────────────────────────────
             //
             // Samme regel som lista og kortet paa Oversikt bruker, saa de tre

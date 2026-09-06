@@ -1225,6 +1225,19 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             //
             // Bare en avtale som staar «venter». Er den godkjent, er lenka
             // brukt opp; er den stoppet, skal den ikke deles ut igjen.
+            //
+            // ── Lenka har kort levetid ──────────────────────────────────
+            //
+            // Foerste utgave, samme dag, delte den ut uten aa se paa alderen.
+            // Eieren sendte den til Eirin timer etter at den ble laget, og
+            // hun fikk «Vi kjenner ikke denne QR-koden» i Vipps-appen.
+            //
+            // Resten av koden vet dette: paagaaendeForsok() gjenbruker bare
+            // en «vipps_url» som er under fem minutter gammel. Skjermen sto
+            // uten den grensa, og delte derfor ut lenker Vipps hadde glemt.
+            //
+            // Naa foelger de samme fem minuttene. Er lenka eldre, sier
+            // skjermen det, og «Send Vipps-avtale» lager en ny.
             'avtaleLenke' => (static function () use ($m): string {
                 if (!DB::harKolonne('subscriptions', 'vipps_url')) {
                     return '';
@@ -1233,9 +1246,26 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                     "SELECT vipps_url FROM subscriptions
                       WHERE member_id = :m AND status = 'venter'
                         AND vipps_url IS NOT NULL AND vipps_url <> ''
+                        AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)
                    ORDER BY id DESC LIMIT 1",
                     ['m' => (int) $m['id']]
                 ) ?? '');
+            })(),
+            // Finnes det en avtale som venter, men lenka er for gammel til aa
+            // deles ut? Da skal skjermen si hvorfor det ikke staar en lenke
+            // der — ikke bare la feltet vaere borte.
+            'avtaleLenkeGammel' => (static function () use ($m): bool {
+                if (!DB::harKolonne('subscriptions', 'vipps_url')) {
+                    return false;
+                }
+                return DB::en(
+                    "SELECT id FROM subscriptions
+                      WHERE member_id = :m AND status = 'venter'
+                        AND vipps_url IS NOT NULL AND vipps_url <> ''
+                        AND created_at < (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)
+                      LIMIT 1",
+                    ['m' => (int) $m['id']]
+                ) !== null;
             })(),
         ] + (static function () use ($m): array {
             if ($m === null || (int) ($m['id'] ?? 0) <= 0) {

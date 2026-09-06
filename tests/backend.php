@@ -12592,6 +12592,34 @@ sjekk('… og begge staar fortsatt i hovedmenyen',
     str_contains($kortSida, "['Kasse',     'adminuttak'],")
     && str_contains($kortSida, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],"));
 
+
+// ── Godkjenningslenka har kort levetid ────────────────────────────────
+//
+// Lenka ble surfet i admin 6. september saa eieren kunne sende den selv:
+// «jeg maa ha pengene mine». Foerste utgave delte den ut uten aa se paa
+// alderen. Han sendte den til Eirin timer etter at den ble laget, og hun
+// fikk «Vi kjenner ikke denne QR-koden» i Vipps-appen.
+//
+// Resten av koden visste dette hele tiden: paagaaendeForsok() gjenbruker
+// bare en «vipps_url» som er under fem minutter gammel. Skjermen sto uten
+// den grensa. Naa foelger den de samme fem minuttene, og sier fra naar lenka
+// er for gammel i stedet for aa la feltet vaere borte.
+$lenkeApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('godkjenningslenka deles ikke ut naar den er for gammel',
+    str_contains($lenkeApi, "AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)\n                   ORDER BY id DESC LIMIT 1"));
+sjekk('… og skjermen faar vite at det finnes en for gammel',
+    str_contains($lenkeApi, "'avtaleLenkeGammel' => (static function () use (\$m): bool {")
+    && str_contains($lenkeApi, "AND created_at < (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)"));
+// Den samme grensa som resten av koden bruker — ikke et nytt tall.
+sjekk('… og det er den samme grensa som gjenbruket bruker',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+                 'AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)'));
+$lenkeSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('… og skjermen sier hva som skjedde, og hva man gjor',
+    str_contains($lenkeSida, "'Lenka fra sist er for gammel — Vipps '")
+    && str_contains($lenkeSida, '{{ personAvtaleLenkeGammelTekst }}')
+    && str_contains($lenkeSida, "' med én gang. Vipps avviser en lenke som har ligget en stund '"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

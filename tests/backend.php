@@ -3896,6 +3896,27 @@ sjekk('deltakerraden sier om det er betalt, ikke om plassen er holdt av',
 sjekk('… og refundert og ikke moett staar for seg',
     str_contains($kalFil, "'refundert' => 'Refundert',")
     && str_contains($kalFil, "'ikke_mott' => 'Møtte ikke opp',"));
+// ── Godkjenningslenka til Vipps ────────────────────────────────────────
+//
+// «Send Vipps-avtale» ga lenka tilbake i svaret sitt, og skjermen kastet
+// den. Da var e-posten eneste vei til kunden — gikk den i soeppelposten,
+// hadde verkstedet ingenting aa gi henne. Eieren, 6. september: «jeg maa ha
+// pengene mine», og paa spoersmaal om hvordan: vis den alltid.
+$medlFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('personruta faar godkjenningslenka fra serveren',
+    str_contains($medlFil, "'avtaleLenke' => (static function () use (\$m): string {"));
+// Bare en avtale som venter. Er den godkjent, er lenka brukt opp; er den
+// stoppet, skal den ikke deles ut igjen.
+sjekk('… bare naar avtalen faktisk venter paa godkjenning',
+    str_contains($medlFil, "WHERE member_id = :m AND status = 'venter'\n                        AND vipps_url IS NOT NULL AND vipps_url <> ''"));
+sjekk('… og skjermen viser den med en kopiknapp',
+    str_contains($sida2, 'personHarAvtaleLenke:')
+    && str_contains($sida2, 'kopierPersonAvtaleLenke:')
+    && str_contains($sida2, '>Kopier lenka</x-import>'));
+// Uten kolonnen finnes ingen lenke. Da skal svaret vaere tomt, ikke en feil.
+sjekk('… og taaler en base uten kolonnen',
+    str_contains($medlFil, "if (!DB::harKolonne('subscriptions', 'vipps_url')) {"));
+
 // Kalenderen sto paa «Liste» paa smal skjerm. Begrunnelsen gjaldt
 // maanedsrutenettet — sju spalter paa 390 px — men dagen er én spalte.
 // Eieren, 6. september: «naar vi aapner kalender paa mobil i admin, saa vil

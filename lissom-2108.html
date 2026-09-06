@@ -13682,6 +13682,18 @@ window.__resources = {
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ sendPersonAvtale }}" hint-size="auto,36px">Send Vipps-avtale</x-import>
                       </div>
                     </sc-if>
+                    <!-- Lenka kunden maa aapne for aa godkjenne i Vipps.
+                         Den staar saa lenge avtalen venter — ikke bare rett
+                         etter at den ble laget. Gaar e-posten i soeppelposten,
+                         er dette veien til pengene. -->
+                    <sc-if value="{{ personHarAvtaleLenke }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                        <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Godkjenningslenke</div>
+                        <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ personAvtaleLenkeHjelp }}</div>
+                        <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-body); background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; overflow-x: auto; white-space: nowrap; margin-bottom: 8px;">{{ personAvtaleLenke }}</div>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="copy" on-click="{{ kopierPersonAvtaleLenke }}" hint-size="auto,36px">Kopier lenka</x-import>
+                      </div>
+                    </sc-if>
                   </div>
                   <label style="{{ personFriEtikett }}">
                     <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
@@ -37073,6 +37085,21 @@ class Component extends DCLogic {
           // paa en plan, og ingen avtale loeper.
           personKanSendeAvtale: !!p.id && !!(p.medlemskap || '')
             && (p.avtale || 'ingen') !== 'aktiv' && !!(p.epost || ''),
+          // ── Godkjenningslenka ──────────────────────────────────────
+          //
+          // Serveren ga den tilbake i svaret paa «Send Vipps-avtale», og
+          // skjermen kastet den. Da var e-posten eneste vei til kunden.
+          // Eieren, 6. september: «jeg maa ha pengene mine».
+          //
+          // Naa staar den saa lenge avtalen venter paa godkjenning, ogsaa
+          // naar ruta aapnes paa nytt en annen dag.
+          personHarAvtaleLenke: !!(p.avtaleLenke || ''),
+          personAvtaleLenke: p.avtaleLenke || '',
+          personAvtaleLenkeHjelp: 'Send den til ' + fornavn
+            + ' hvis e-posten ikke kom fram. Hun åpner den på telefonen og '
+            + 'sier ja i Vipps-appen.',
+          kopierPersonAvtaleLenke: () => this.kopier(p.avtaleLenke || '',
+            'Lenka ligger på utklippstavla — lim den inn der du vil sende den.'),
           personAvtaleHjelp: 'Lager avtalen i Vipps og sender lenka til '
             + fornavn + ' på e-post. Medlemskapet starter først når hun har '
             + 'godkjent den i appen.',

@@ -218,14 +218,21 @@ final class Maler
         ],
         'innmelding_ordner_selv' => [
             'tittel' => 'Innmelding — ordner selv',
-            'hvor'   => 'Sendes når noen melder seg inn og betaler hver periode selv.'
-                        . ' Den går når betalingen STARTES, så den sier hva som gjenstår —'
-                        . ' kvitteringen kommer i «Medlemskapet er i gang».',
+            // «lenke» sto her til 6. september. Innmeldingen sender soekeren
+            // rett til Vipps, saa brevet ba om en betaling som nettopp var
+            // gjort — og lenka var en betaling til paa det samme
+            // medlemskapet. Eieren: «de maa betale naar de booker!!»
+            //
+            // Feltet kan fortsatt settes inn i teksten under Beskjeder, men
+            // det staar ikke lenger som noe malen skal ha.
+            'hvor'   => 'Sendes når noen melder seg inn på et medlemskap uten fast trekk.'
+                        . ' Betalingen skjer ved innmeldingen, i Vipps — brevet sier'
+                        . ' derfor ingenting om penger. Kvitteringen kommer i'
+                        . ' «Medlemskapet er i gang».',
             'felter' => [
                 'navn'  => 'Navnet på det nye medlemmet',
                 'type'  => 'Medlemskapet de valgte',
                 'belop' => 'Prisen for perioden',
-                'lenke' => 'Adressen til Vipps, der betalingen fullføres',
             ],
         ],
         'medlemskap_betalt' => [

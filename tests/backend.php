@@ -12052,13 +12052,30 @@ $mlB    = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 $ordner = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_ordner_selv'"
 );
-sjekk('velkomsten sier hva som gjenstaar',
-    str_contains($ordner, 'FULLFØR BETALINGEN I VIPPS'), mb_substr($ordner, 0, 40));
-sjekk('… og paastaar ikke at det alt er betalt',
-    !str_contains($ordner, 'Du har betalt for denne perioden'),
-    'brevet gikk foer kunden hadde vaert i Vipps');
-sjekk('… og lenka staar i den',
-    str_contains($ordner, '{lenke}') && str_contains($ordner, '{belop}'));
+// Migrasjon 142 tok lenka ut igjen. Innmeldingen sender soekeren rett til
+// Vipps — brevet ba altsaa om en betaling som nettopp var gjort, og lenka
+// var en betaling til paa det samme medlemskapet. Eieren, 6. september:
+// «de andre medlemskapene, skal vel ikke ha noen link, de maa betale naar de
+// booker!!», og paa spoersmaal om admin-knappen som bruker samme mal:
+// «Én tekst — fjern lenka helt».
+sjekk('velkomsten ber ikke om en betaling som alt er gjort',
+    !str_contains($ordner, 'FULLFØR BETALINGEN I VIPPS')
+    && !str_contains($ordner, 'Har du ikke betalt ennå'), mb_substr($ordner, 0, 40));
+sjekk('… og har ingen lenke',
+    !str_contains($ordner, '{lenke}'));
+sjekk('… og paastaar heller ikke at det ER betalt',
+    !str_contains($ordner, 'Du har betalt for denne perioden')
+    && !str_contains($ordner, 'Betalingen er registrert'),
+    'brevet gaar foer vi vet hvordan det gikk i Vipps');
+sjekk('… men sier hvilket medlemskap og hva det koster',
+    str_contains($ordner, '{type}') && str_contains($ordner, '{belop}'));
+// Fast trekk er ikke roert: der ER lenka poenget, for avtalen maa godkjennes
+// i appen foer det finnes noe aa trekke paa.
+$fast = (string) DB::verdi(
+    "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
+);
+sjekk('fast trekk beholder godkjenningslenka',
+    str_contains($fast, '{lenke}') && str_contains($fast, 'GODKJENNE AVTALEN I VIPPS'));
 
 // 2. Kvitteringen fantes ikke. Betalingen gikk gjennom, medlemskapet ble
 //    slaatt paa, og kunden fikk aldri et ord fra oss.

@@ -12370,6 +12370,58 @@ sjekk('… og den kan redigeres under E-postmaler',
     && str_contains($malerFlytt, "'fra'   => 'Datoen hun sto på',")
     && str_contains($malerFlytt, "'til'   => 'Den nye datoen',"));
 
+
+// ── Legg noen paa venteliste for haand ────────────────────────────────
+//
+// Lista kunne bare fylles av kunden selv, fra nettsiden. Ringer noen og
+// kurset er fullt, sto verkstedet uten en vei inn.
+//
+// Eieren, 6. september: «Jeg maa ogsaa ha mulighet til aa opprette person
+// paa venteliste», paa spoersmaal om hvor: «Paa Venteliste-siden», og paa
+// spoersmaal om beskjeden: «GO — og send e-posten».
+//
+// Maalt i nettleseren, 18 av 18: skjemaet staar der, «Legg til» uten dato
+// sender ingenting og sier hva som mangler, bekreftelsen kommer midt paa
+// skjermen, «Avbryt» sender ingenting, og et ja legger raden inn, tommer
+// feltene og legger e-posten i koen. Dobbeltforing stoppes.
+$vlSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('«Legg til på venteliste» staar paa Venteliste-siden',
+    str_contains($vlSida, '>Legg til på venteliste</span>')
+    && str_contains($vlSida, '>Velg kurs og dato</div>')
+    && str_contains($vlSida, 'placeholder="Navn"')
+    && str_contains($vlSida, 'on-click="{{ vlNyLeggTil }}"'));
+// Datoene som brikker, ikke som nedtrekk: en loekke inne i <select>
+// forsvinner i Safari, og det er telefonen verkstedet staar med.
+sjekk('… og datoene staar som brikker, ikke i et nedtrekk',
+    str_contains($vlSida, '<sc-for list="{{ vlNyDatoer }}" as="d"')
+    && !str_contains($vlSida, '{{ vlNyDatoer }}" as="d" hint-placeholder-count="4">' . "\n" . '                <option'));
+sjekk('… og den spoer foer noen legges inn',
+    str_contains($vlSida, '{{ vlNyBVises }}')
+    && str_contains($vlSida, '>Ja, sett på lista</x-import>')
+    && str_contains($vlSida, "{ navn: 'Plass i køen', verdi: 'Bakerst' },"));
+sjekk('… og kallet gaar til den ventelista som finnes',
+    str_contains($vlSida, "handling: 'legg-til', oktId: q.oktId, navn: q.navn,"));
+
+$vlApi = file_get_contents(dirname(__DIR__) . '/api/admin/venteliste.php');
+sjekk('serveren tar imot «legg-til»',
+    str_contains($vlApi, "if (Foresporsel::tekst('handling') === 'legg-til') {")
+    && str_contains($vlApi, "Svar::feil('Fant ikke datoen.');"));
+// E-posten er hele poenget: det er dit beskjeden om ledig plass gaar.
+sjekk('… og krever navn og en gyldig e-postadresse',
+    str_contains($vlApi, "Svar::feil('Vi trenger et navn.');")
+    && str_contains($vlApi, "!filter_var(\$epost, FILTER_VALIDATE_EMAIL)"));
+// Samme mal som naar kunden setter seg paa lista selv. Ingen ny tekst.
+sjekk('… og sender den bekreftelsen som alt finnes',
+    str_contains($vlApi, "Varsel::mal('venteliste_satt', ['epost' => \$epost], [")
+    && str_contains($vlApi, "'posisjon' => (string) \$posisjon,"));
+sjekk('… og lar ingen staa to ganger i samme ko',
+    str_contains($vlApi, 'står allerede på ventelisten for denne datoen'));
+// Kveldene skjemaet kan velge blant. Ogsaa de fulle — det er nettopp de
+// fulle man staar paa venteliste til.
+sjekk('… og gir skjermen kveldene aa velge blant',
+    str_contains($vlApi, "Svar::json(['okter' => \$okter, 'venteliste' =>")
+    && str_contains($vlSida, 'ny.adminVlOkter = venteliste.okter;'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

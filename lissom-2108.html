@@ -7595,6 +7595,63 @@ window.__resources = {
           </div>
         </sc-if>
 
+        <!-- ── Legg til paa venteliste ──────────────────────────────────
+             Lista kunne bare fylles av kunden selv, fra nettsiden. Ringer
+             noen og kurset er fullt, sto verkstedet uten en vei inn.
+
+             Eieren, 6. september: «Jeg maa ogsaa ha mulighet til aa
+             opprette person paa venteliste», og paa spoersmaal om hvor:
+             paa Venteliste-siden.
+
+             Datoene staar som brikker, ikke som et nedtrekk — se
+             Component.NEDTREKK. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px; margin-bottom: var(--space-6);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100);">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Legg til på venteliste</span>
+          </div>
+          <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-3);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Velg kurs og dato</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <sc-for list="{{ vlNyDatoer }}" as="d" hint-placeholder-count="4">
+                <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.navn }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ vlNyIngenDatoer }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-sm); color: var(--text-muted);">Ingen planlagte datoer i programmet nå.</div>
+            </sc-if>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <input value="{{ vlNyNavn }}" onChange="{{ settVlNyNavn }}" placeholder="Navn" style="{{ vlNyFeltStil }}">
+              <input value="{{ vlNyEpost }}" onChange="{{ settVlNyEpost }}" placeholder="E-post" style="{{ vlNyFeltStil }}">
+              <input value="{{ vlNyTlf }}" onChange="{{ settVlNyTlf }}" placeholder="Telefon" style="{{ vlNyFeltStil }}">
+            </div>
+            <div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="plus" on-click="{{ vlNyLeggTil }}" hint-size="auto,40px">Legg til</x-import>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bekreftelsen. Samme kort som i kalenderen, midt paa skjermen:
+             eieren, 6. september, «naar jeg legger inn en deltaker, eller
+             endrer saa skal det alltid komme en pop up bekreftelse sentrert
+             i skjerne». -->
+        <sc-if value="{{ vlNyBVises }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ vlNyBAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 90; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+            <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Legg til på venteliste</div>
+              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">Er du sikker?</h2>
+              <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: 6px;">
+                <sc-for list="{{ vlNyBRader }}" as="r" hint-placeholder-count="4">
+                  <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">{{ r.navn }}</span><span style="font-weight: 700; color: var(--text-heading); text-align: right;">{{ r.verdi }}</span></div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ vlNyBBekreft }}" hint-size="auto,44px">Ja, sett på lista</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ vlNyBAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
         <div id="ov-venteliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px; scroll-margin-top: 90px;">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
@@ -33638,6 +33695,9 @@ class Component extends DCLogic {
         // Kurskatalogen. Uten den falt admin tilbake paa to oppdiktede kurs,
         // og «Ny kursdato» tilbod datoer paa kurs som ikke fantes.
         if (venteliste && venteliste.venteliste) ny.adminVenteliste = venteliste.venteliste;
+        // Kveldene du kan sette noen paa ventelista til. Alle planlagte,
+        // ogsaa de fulle — det er nettopp de fulle man venter paa.
+        if (venteliste && venteliste.okter) ny.adminVlOkter = venteliste.okter;
         if (produkter && produkter.varer) ny.adminProdukter = produkter.varer;
         if (produkter && produkter.internkjop) ny.adminInternkjop = produkter.internkjop;
         if (kurs && kurs.kurs) {
@@ -45772,6 +45832,83 @@ class Component extends DCLogic {
           settVlEmne: (e) => this.setState({ vlEmne: e.target.value }),
           vlMelding: this.state.vlMelding || '',
           settVlMelding: (e) => this.setState({ vlMelding: e.target.value }),
+          // ── Legg til paa venteliste ──────────────────────────────────
+          //
+          // Lista kunne bare fylles av kunden selv, fra nettsiden. Ringer
+          // noen og kurset er fullt, sto verkstedet uten en vei inn.
+          //
+          // Eieren, 6. september: «Jeg maa ogsaa ha mulighet til aa
+          // opprette person paa venteliste», og paa spoersmaal om hvor:
+          // paa Venteliste-siden.
+          //
+          // Datoene staar som brikker, ikke som et nedtrekk: se
+          // Component.NEDTREKK — en loekke inne i <select> forsvinner i
+          // Safari, og det er telefonen verkstedet staar med.
+          ...(() => {
+            const okter = (this.state.adminVlOkter || []).slice(0, 24);
+            const valgtId = this.state.vlNyOkt || '';
+            const valgt = okter.find(o => String(o.oktId) === String(valgtId)) || null;
+            const navn = (this.state.vlNyNavn || '').trim();
+            const epost = (this.state.vlNyEpost || '').trim();
+            const b = this.state.vlNyBekreft;
+            const felt = {
+              boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)', padding: '9px 12px',
+              font: 'var(--type-body-sm)', background: 'var(--clay-50)',
+              color: 'var(--text-heading)', flex: '1 1 180px', minWidth: 0,
+            };
+            return {
+              vlNyDatoer: okter.map(o => ({
+                navn: o.kurs + ' · ' + o.naar,
+                velg: () => this.setState({ vlNyOkt: String(o.oktId) }),
+                stil: {
+                  appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                  padding: '6px 12px', font: 'var(--type-body-sm)', whiteSpace: 'nowrap',
+                  border: '1.5px solid ' + (String(o.oktId) === String(valgtId) ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                  background: String(o.oktId) === String(valgtId) ? 'var(--lissom-yellow)' : 'transparent',
+                  color: String(o.oktId) === String(valgtId) ? 'var(--lissom-brown)' : 'var(--text-muted)',
+                  fontWeight: String(o.oktId) === String(valgtId) ? 700 : 500,
+                },
+              })),
+              vlNyIngenDatoer: this.erPublisert() && okter.length === 0,
+              vlNyFeltStil: felt,
+              vlNyNavn: this.state.vlNyNavn || '',
+              settVlNyNavn: (e) => this.setState({ vlNyNavn: e.target.value }),
+              vlNyEpost: this.state.vlNyEpost || '',
+              settVlNyEpost: (e) => this.setState({ vlNyEpost: e.target.value }),
+              vlNyTlf: this.state.vlNyTlf || '',
+              settVlNyTlf: (e) => this.setState({ vlNyTlf: e.target.value }),
+              // Spoer foerst, som overalt ellers der noe legges inn.
+              vlNyLeggTil: () => {
+                if (!valgt) { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Velg kurs og dato først.' }); return; }
+                if (navn === '') { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Vi trenger et navn.' }); return; }
+                if (epost.indexOf('@') < 0) { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Vi trenger en gyldig e-postadresse — det er dit vi gir beskjed.' }); return; }
+                this.setState({ vlNyBekreft: {
+                  navn: navn, kurs: valgt.kurs, naar: valgt.naar, oktId: valgt.oktId,
+                  epost: epost, telefon: (this.state.vlNyTlf || '').trim(),
+                } });
+              },
+              vlNyBVises: !!b,
+              vlNyBRader: b ? [
+                { navn: 'Person', verdi: b.navn },
+                { navn: 'Kurs', verdi: b.kurs },
+                { navn: 'Dato', verdi: b.naar },
+                { navn: 'Plass i køen', verdi: 'Bakerst' },
+              ] : [],
+              vlNyBAvbryt: () => this.setState({ vlNyBekreft: null }),
+              vlNyBBekreft: () => {
+                const q = b;
+                this.setState({ vlNyBekreft: null });
+                if (!q) return;
+                this.ventelisteKall({
+                  handling: 'legg-til', oktId: q.oktId, navn: q.navn,
+                  epost: q.epost, telefon: q.telefon,
+                }).then(ok => {
+                  if (ok) this.setState({ vlNyNavn: '', vlNyEpost: '', vlNyTlf: '' });
+                });
+              },
+            };
+          })(),
           ovVentelisteAntall: liste.length === 0 ? '' : liste.length + ' venter',
           // ── Ferdig glassert ────────────────────────────────────────────
           //

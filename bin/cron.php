@@ -71,9 +71,52 @@ if (PHP_SAPI !== 'cli') {
     header_remove();
 }
 
+// ---------------------------------------------------------------------------
+// Utstroemmene. STDOUT og STDERR finnes BARE i CLI-utgaven av PHP.
+//
+// Eieren, 6. september 2026, videresendt e-post fra Cron Daemon klokka 22:10
+// — etter at 404-en over var rettet, samme kveld:
+//
+//     Cron <rbvapxvz@gungnir> php ~/lissom-app/bin/cron.php varsler
+//     Status: 500 Internal Server Error
+//     Content-Type: application/json; charset=utf-8
+//     {"feil":"Noe gikk galt. Proev igjen, eller ta kontakt med oss."}
+//
+// Jobben kom altsaa forbi vakta og inn i koden — og stoppet paa neste linje.
+// Der sto det «stream_isatty(STDOUT)». CGI-utgaven definerer ikke den
+// konstanten, og i PHP 8 er et ukjent konstantnavn en Error som velter alt.
+// Feilhandtereren i app/bootstrap.php tok imot den og svarte slik den svarer
+// nettet: 500 og en JSON-linje. Ingen varsler ble sendt.
+//
+// php://stdout og php://stderr finnes i alle utgaver av PHP.
+$ut  = fopen('php://stdout', 'wb');
+$err = fopen('php://stderr', 'wb');
+
 require dirname(__DIR__) . '/app/bootstrap.php';
 
-$jobb = $argv[1] ?? '';
+// ---------------------------------------------------------------------------
+// En jobb som feiler skal si det som en jobb, ikke som en nettside.
+//
+// Handtereren i app/bootstrap.php svarer med HTTP-status og JSON. Det er
+// riktig for /api — men for en cron-jobb ble det bare «Status: 500» i en
+// e-post, uten et ord om hva som var galt. Denne overtar for jobbene og
+// skriver grunnen til stderr, som er nettopp det cPanel sender videre.
+set_exception_handler(static function (Throwable $e) use ($err): void {
+    logg_feil('Cron-jobben stoppet', $e);
+    if ($err !== false) {
+        fwrite($err, 'Cron-jobben stoppet: ' . $e::class . ': ' . $e->getMessage()
+            . ' @ ' . $e->getFile() . ':' . $e->getLine() . "\n");
+    }
+    exit(1);
+});
+
+// Navnet paa jobben staar bak kommandoen: «php bin/cron.php varsler».
+//
+// $argv fylles bare naar register_argc_argv staar paa. CLI-utgaven har den
+// paa uansett; CGI-utgaven foelger php.ini, og der er den slaatt av i PHPs
+// egen produksjonsmal. $_SERVER['argv'] er samme liste, og den ene finnes
+// noen ganger naar den andre ikke gjoer det.
+$jobb = (string) ($argv[1] ?? $_SERVER['argv'][1] ?? '');
 $start = microtime(true);
 
 /**
@@ -90,10 +133,10 @@ $start = microtime(true);
  *
  * Kjorer du kommandoen selv i et terminalvindu, skriver den som for.
  */
-$tilSkjerm = stream_isatty(STDOUT);
-$si = static function (string $t) use ($tilSkjerm): void {
-    if ($tilSkjerm) {
-        echo $t . "\n";
+$tilSkjerm = $ut !== false && stream_isatty($ut);
+$si = static function (string $t) use ($tilSkjerm, $ut): void {
+    if ($tilSkjerm && $ut !== false) {
+        fwrite($ut, $t . "\n");
     }
 };
 
@@ -363,7 +406,18 @@ switch ($jobb) {
 
     // -----------------------------------------------------------------------
     default:
-        fwrite(STDERR, "Bruk: php bin/cron.php <jobb>\n\n"
+        $skriv = $err === false ? fopen('php://output', 'wb') : $err;
+        // Staar det ingenting bak kommandoen, er det sjelden fordi noen glemte
+        // det: da har PHP-utgaven latt vaere aa fylle $argv. Det skal e-posten
+        // si rett ut, ikke bare vise bruksanvisningen paa nytt.
+        if ($jobb === '') {
+            fwrite($skriv, "Fikk ikke med navnet paa jobben.\n"
+                . 'PHP-utgave: ' . PHP_SAPI
+                . '. register_argc_argv: ' . (ini_get('register_argc_argv') ? 'paa' : 'av')
+                . ".\n\n");
+        }
+        fwrite($skriv,
+            "Bruk: php bin/cron.php <jobb>\n\n"
             . "  varsler        Sender det som ligger i varselkøen\n"
             . "  betalinger     Henter status fra Vipps for betalinger som henger\n"
             . "  paaminnelser   Kurspåminnelser og ventelistevarsler\n"

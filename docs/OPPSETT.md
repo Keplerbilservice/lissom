@@ -256,6 +256,39 @@ SAPI-en heter — cron setter aldri `REQUEST_METHOD`, uansett PHP-utgave. Da
 virker jobbene med begge utgavene, og stien i kommandoen spiller ingen rolle.
 Se `tests/cronvakt.php`.
 
+### Og så kom 500-en
+
+Samme kveld, 22:10 og 22:20 — etter at 404-en var rettet:
+
+```
+Cron <rbvapxvz@gungnir> php ~/lissom-app/bin/cron.php varsler
+Status: 500 Internal Server Error
+Content-Type: application/json; charset=utf-8
+{"feil":"Noe gikk galt. Prøv igjen, eller ta kontakt med oss."}
+```
+
+Jobben kom altså forbi vakta og inn i koden. To ting sto igjen:
+
+1. `STDOUT` og `STDERR` settes bare av CLI-utgaven av PHP. CGI-utgaven har
+   dem ikke, og et ukjent konstantnavn er en `Error` i PHP 8. Linja
+   `stream_isatty(STDOUT)` veltet derfor hele jobben. Den bruker nå
+   `php://stdout`, som finnes i alle utgaver.
+2. Feilhåndtereren i `app/bootstrap.php` svarer slik den svarer nettet:
+   HTTP-status og en JSON-linje. Det er riktig for `/api`, men for en jobb
+   ble det bare «Status: 500» i en e-post uten et ord om hva som var galt —
+   og sluttkoden ble `0`, så cron trodde alt gikk bra. `bin/cron.php` setter
+   nå sin egen: grunnen skrives til stderr, og jobben avslutter med `1`.
+
+Målt før og etter, med en database som ikke finnes:
+
+| | Gammel | Ny |
+|---|---|---|
+| stdout | `{"feil":"SQLSTATE[HY000] …"}` | *(tomt)* |
+| stderr | logglinja | logglinja + `Cron-jobben stoppet: …` |
+| sluttkode | `0` | `1` |
+
+Er det noe annet som feiler i produksjon, står grunnen nå i e-posten.
+
 ---
 
 ## 8. Registrer adressene i Vipps-portalen

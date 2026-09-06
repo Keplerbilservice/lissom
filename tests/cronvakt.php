@@ -65,6 +65,72 @@ $sjekk('… og en med bare vertsnavn',
 $sjekk('Apache stoppes selv uten foresporsel i miljoet',
     cron_fra_nettet('apache2handler', []) === true);
 
+// ── Konstanter som bare finnes i CLI-utgaven ─────────────────────────
+//
+// Eieren, 6. september 2026, e-post fra Cron Daemon 22:10 og 22:20 — etter
+// at 404-en var rettet:
+//
+//     Status: 500 Internal Server Error
+//     Content-Type: application/json; charset=utf-8
+//     {"feil":"Noe gikk galt. Proev igjen, eller ta kontakt med oss."}
+//
+// Jobben kom forbi vakta og stoppet paa «stream_isatty(STDOUT)». STDOUT,
+// STDERR og STDIN settes av CLI-utgaven av PHP. CGI-utgaven — den tjeneren
+// bruker — har dem ikke, og et ukjent konstantnavn er en Error i PHP 8.
+//
+// Kommentarene faar nevne dem; koden skal ikke roere dem. Derfor leses fila
+// som PHP-tegn, ikke som tekst.
+$navn = [];
+foreach (token_get_all($kilde) as $t) {
+    if (is_array($t) && $t[0] === T_STRING) {
+        $navn[] = $t[1];
+    }
+}
+foreach (['STDOUT', 'STDERR', 'STDIN'] as $k) {
+    $sjekk("bin/cron.php roerer ikke {$k} — den finnes ikke i CGI-utgaven",
+        !in_array($k, $navn, true));
+}
+
+// Et ukjent konstantnavn er en Error. Det er selve mekanismen som veltet
+// jobben, og den maales her i stedet for aa antas.
+$kastet = '';
+try {
+    /** @phpstan-ignore-next-line */
+    stream_isatty(EN_KONSTANT_SOM_IKKE_FINNES);
+} catch (Throwable $e) {
+    $kastet = $e::class;
+}
+$sjekk('et ukjent konstantnavn kaster Error', $kastet === 'Error');
+
+// ── Jobben skal svare som en jobb, ikke som en nettside ──────────────
+//
+// Handtereren i app/bootstrap.php svarer med HTTP-status og JSON. Faar den
+// en cron-jobb i fanget, blir det «Status: 500» i en e-post uten et ord om
+// hva som var galt — og sluttkoden blir 0, saa cron tror alt gikk bra.
+$php = PHP_BINARY;
+$cron = escapeshellarg(dirname(__DIR__) . '/bin/cron.php');
+
+$kjor = static function (string $arg) use ($php, $cron): array {
+    $p = proc_open(
+        escapeshellarg($php) . ' ' . $cron . ' ' . escapeshellarg($arg),
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $r
+    );
+    if (!is_resource($p)) { return ['', '', -1]; }
+    $ut = (string) stream_get_contents($r[1]);
+    $feil = (string) stream_get_contents($r[2]);
+    fclose($r[1]);
+    fclose($r[2]);
+    return [$ut, $feil, proc_close($p)];
+};
+
+[$ut, $stderr, $kode] = $kjor('finnes-ikke');
+$sjekk('ukjent jobbnavn: ingenting paa stdout', trim($ut) === '');
+$sjekk('ukjent jobbnavn: bruksanvisningen paa stderr', str_contains($stderr, 'Bruk: php bin/cron.php'));
+$sjekk('ukjent jobbnavn: sluttkode 1', $kode === 1);
+$sjekk('ingen HTTP-status ut av en jobb', !str_contains($ut . $stderr, 'Status: 500'));
+$sjekk('ingen JSON-linje ut av en jobb', !str_contains($ut . $stderr, '{"feil"'));
+
 echo "\n──────────────────────────────────────────────\n";
 echo ($ok + $feil) . " sjekker, $ok gikk gjennom" . ($feil ? ", $feil feilet" : '') . "\n";
 exit($feil > 0 ? 1 : 0);

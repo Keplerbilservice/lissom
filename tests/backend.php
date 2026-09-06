@@ -3970,17 +3970,21 @@ sjekk('… i alle seks dra-handlerne',
 $medlFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('personruta faar godkjenningslenka fra serveren',
     str_contains($medlFil, "'avtaleLenke' => (static function () use (\$m): string {"));
-// Bare en avtale som venter. Er den godkjent, er lenka brukt opp; er den
-// stoppet, skal den ikke deles ut igjen.
+// Bare naar det faktisk mangler en avtale. Er den godkjent, skal det ikke
+// staa en lenke der som kan lage en til.
 sjekk('… bare naar avtalen faktisk venter paa godkjenning',
-    str_contains($medlFil, "WHERE member_id = :m AND status = 'venter'\n                        AND vipps_url IS NOT NULL AND vipps_url <> ''"));
+    str_contains($medlFil, "if (\$a !== null && (string) \$a['status'] === 'aktiv') {
+                    return '';"));
 sjekk('… og skjermen viser den med en kopiknapp',
     str_contains($sida2, 'personHarAvtaleLenke:')
     && str_contains($sida2, 'kopierPersonAvtaleLenke:')
     && str_contains($sida2, '>Kopier lenka</x-import>'));
-// Uten kolonnen finnes ingen lenke. Da skal svaret vaere tomt, ikke en feil.
-sjekk('… og taaler en base uten kolonnen',
-    str_contains($medlFil, "if (!DB::harKolonne('subscriptions', 'vipps_url')) {"));
+// Uten tabellen finnes ingen noekkel. Da skal svaret vaere Min side, ikke en
+// feil — se Medlemskap::godkjennLenke().
+sjekk('… og taaler en base uten tabellen',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+                 "if (!DB::harTabell('avtale_lenker')) {
+            return Config::nettsted() . '/min-side';"));
 
 // Kalenderen sto paa «Liste» paa smal skjerm. Begrunnelsen gjaldt
 // maanedsrutenettet — sju spalter paa 390 px — men dagen er én spalte.
@@ -11966,10 +11970,12 @@ sjekk('… og den teller som forfalt, ikke som «venter»',
 // Admin kan naa lage avtalen selv, med «Send Vipps-avtale». Foer dette gikk
 // det bare fra nettsida og innmeldingsskjemaet, og et medlem meldt inn
 // herfra sto uten noe aa trekke paa.
+// Admin lager den ikke lenger selv: der sendes godkjenningslenka, og avtalen
+// lages naar mottakeren trykker. Se api/godkjenn.php.
 sjekk('avtaler kan opprettes fra alle tre stedene',
     substr_count(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'), 'Medlemskap::startAvtale(') === 1
     && substr_count(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'), 'Medlemskap::startAvtale(') === 1
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'Medlemskap::startAvtale('));
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/godkjenn.php'), 'Medlemskap::startAvtale('));
 
 // ── «Forny» skal fornye DIN plan ───────────────────────────────────
 //
@@ -12027,7 +12033,7 @@ sjekk('… og serveren sier fra om at det maa godkjennes',
 sjekk('en ugodkjent avtale blir purret paa',
     str_contains($mig, "'avtale_ikke_godkjent',")
     && str_contains($runden, "Varsel::mal('avtale_ikke_godkjent', [")
-    && str_contains($runden, 'AND s.paaminnet_antall < 2'),
+    && str_contains($runden, 'AND l.paaminnet_antall < 2'),
     'maalt: paaminnet_antall gikk 0 → 1, og ikke videre samme natt');
 // Sju dager sto paa AVTALENE. Godkjente kunden i uke to, ble raden aldri
 // sett paa igjen, og trekket startet aldri. (De sju dagene paa hengende
@@ -12039,7 +12045,7 @@ sjekk('… og vi slutter ikke aa se etter avtalen etter sju dager',
 // 4. Knappen i admin.
 sjekk('verkstedet kan sende avtalen selv',
     str_contains($admV, "if (\$handling === 'send-avtale') {")
-    && str_contains($admV, "? Medlemskap::startAvtale(\$m, \$type)")
+    && str_contains($admV, '$lenke = Medlemskap::godkjennLenke($id, $type);')
     && str_contains($sidaV, 'Send Vipps-avtale'),
     'maalt: knappen staar i personruta med hjelpetekst');
 sjekk('… og den staar bare naar det faktisk mangler noe',
@@ -12352,10 +12358,219 @@ sjekk('… og bekreftelsen spor foer noe skjer',
     && str_contains($byttSida, 'gjor: () => this.klBdFlytt(bd.p, bdEvt.oktId),'));
 // «Avbryt» skal ikke sende noe, og skal ikke la ruta bli haengende.
 sjekk('… og «Avbryt» rydder bort slippet',
-    str_contains($byttSida, "klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null }),"));
+    str_contains($byttSida, "klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null, klVlSlipp: null }),"));
 // Flyttingen gaar til den som fantes fra for.
 sjekk('… og flyttingen gaar til pamelding.php',
     str_contains($byttSida, "handling: 'flytt', id: p.bookingId, oktId: oktId,"));
+
+// ── Ut av kurset og over paa ventelista ──────────────────────────────
+//
+// Eieren, 6. september: «jeg vil kunne dra deltakere ut av kortet i kalender,
+// og jeg vil legge paa 1. venteliste 2. bytt dato». Paa spoersmaal om penger:
+// «Tillat, la betalingen staa».
+//
+// Samme rute som «Bytt dato», bare den andre veien: hun gir fra seg stolen,
+// og den blir ledig for andre.
+$pamFil = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+sjekk('«til-venteliste» finnes i pamelding.php',
+    str_contains($pamFil, "if (\$handling === 'til-venteliste') {"));
+sjekk('… og en Vipps-betalt plass avvises, med refusjon som svar',
+    str_contains($pamFil, "Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke ventelista.');"));
+sjekk('… og hun havner bakerst i koen',
+    str_contains($pamFil, "\$posisjon = 1 + (int) DB::verdi(")
+    && str_contains($pamFil, "'posisjon'          => \$posisjon,"));
+sjekk('… og staar hun der alt, blir hun ikke lagt inn to ganger',
+    str_contains($pamFil, "// Staar hun der alt, skal hun ikke havne to ganger i koen."));
+sjekk('… og plassen frigis paa den samme maaten som «fjern»',
+    str_contains($pamFil, "// Plassen frigis. Samme felt som «fjern» setter.")
+    && str_contains($pamFil, "'status'       => 'avbestilt',"));
+sjekk('… og det foeres i endringsloggen',
+    str_contains($pamFil, "revider('pamelding_til_venteliste', 'booking', \$id, ["));
+
+sjekk('ruta i sidemenyen tar imot slippet',
+    str_contains($byttSida, "x.id === 'klbd-sone' || x.id === 'klvl-sone'")
+    && str_contains($byttSida, "if (traff.id === 'klvl-sone') { this.setState({ klVlSlipp: p }); return; }"));
+sjekk('… og bekreftelsen spor foer plassen gis fra seg',
+    str_contains($byttSida, "emne: 'Venteliste',")
+    && str_contains($byttSida, "['Plass i køen', 'Bakerst'],")
+    && str_contains($byttSida, "tekst: 'Plassen blir ledig for andre. Betalingen står som den er.',")
+    && str_contains($byttSida, "knapp: 'Ja, sett på ventelista',"));
+sjekk('… og kallet gaar til til-venteliste',
+    str_contains($byttSida, "handling: 'til-venteliste', id: p.bookingId,"));
+// Uten mus: den samme handlingen som en knapp i deltakerkortet. Eieren,
+// 6. september: «naar jeg klikker inn paa en deltaker, la meg faa
+// alternativer legg til venteliste».
+sjekk('… og deltakerkortet har den samme knappen',
+    str_contains($byttSida, 'onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>')
+    && str_contains($byttSida, 'klDTilVenteliste: () => {'));
+
+// ── Godkjenningslenka lages naar hun trykker ─────────────────────────
+//
+// Eieren, 6. september: «men det fungerer ikke, linken virker ikke, saa noe er
+// feil, du maa gjore dette paa en annen maate».
+//
+// Vipps sin egen dokumentasjon: «By default, a user has a total of 10 minutes
+// to accept a payment … The EXPIRED state is a final state.» Alt verkstedet
+// sendte var doedt for mottakeren rakk aa trykke.
+//
+// Hele veien er malt ende til ende mot den falske Vippsen i
+// tests/godkjennlenke.php: 17 av 17.
+sjekk('tabellen for godkjenningslenker finnes',
+    DB::harTabell('avtale_lenker'));
+$mig145 = file_get_contents(dirname(__DIR__) . '/db/migrations/145_lenka_lages_nar_hun_trykker.sql');
+sjekk('… og noekkelen har utloep og et brukt-merke',
+    str_contains($mig145, 'utloper    DATETIME    NOT NULL')
+    && str_contains($mig145, 'brukt_at   DATETIME    NULL DEFAULT NULL'));
+sjekk('… og purringa teller paa noekkelen, ikke paa abonnementsraden',
+    str_contains($mig145, 'paaminnet_antall TINYINT  NOT NULL DEFAULT 0'));
+
+$medlLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('lenka lages av Medlemskap::godkjennLenke',
+    str_contains($medlLib, 'public static function godkjennLenke(int $medlemId, string $planNavn): string'));
+sjekk('… og lever i fjorten dager',
+    str_contains($medlLib, "'utloper'   => gmdate('Y-m-d H:i:s', time() + 14 * 86400),"));
+sjekk('… og samme medlem og plan gir samme noekkel saa lenge den lever',
+    str_contains($medlLib, "WHERE member_id = :m AND plan = :p
+                AND brukt_at IS NULL AND utloper > UTC_TIMESTAMP()"));
+sjekk('… og den settes som brukt naar avtalen blir aktiv',
+    str_contains($medlLib, 'self::godkjennLenkeBrukt((int) $avtale[\'member_id\']);'));
+sjekk('purringa sender vaar egen lenke, ikke Vipps sin',
+    str_contains($medlLib, "'lenke' => Config::nettsted() . '/godkjenn/' . (string) \$a['token'],")
+    && !str_contains($medlLib, "'lenke' => (string) \$a['vipps_url'],"));
+
+$gjFil = file_get_contents(dirname(__DIR__) . '/api/godkjenn.php');
+sjekk('api/godkjenn.php lager avtalen i det hun trykker',
+    str_contains($gjFil, 'Medlemskap::kreverFastTrekk($plan)')
+    && str_contains($gjFil, 'header(\'Location: \' . $adresse, true, 302);'));
+sjekk('… og noekkelen maa vaere 32 tegn',
+    str_contains($gjFil, "strlen(\$token) !== 32"));
+sjekk('… og en fremmed kan ikke hamre paa den',
+    str_contains($gjFil, "Rate::sjekk('godkjenn-lenke', maks: 30, vindu: 600);"));
+sjekk('… og sida sier ifra naar avtalen alt er godkjent',
+    str_contains($gjFil, "'Alt er i orden',"));
+sjekk('… naar lenka har gaatt ut',
+    str_contains($gjFil, "'Lenka har gått ut',"));
+sjekk('… og naar Vipps ikke svarer',
+    str_contains($gjFil, "'Vipps svarte ikke akkurat nå',"));
+sjekk('… og sida holdes ute av soket',
+    str_contains($gjFil, "header('X-Robots-Tag: noindex, nofollow');"));
+
+$htFil = file_get_contents(dirname(__DIR__) . '/.htaccess');
+sjekk('/godkjenn/<noekkel> peker paa fila',
+    str_contains($htFil, 'RewriteRule ^godkjenn/([a-fA-F0-9]{32})/?$ /api/godkjenn.php?t=$1 [L,QSA]'));
+sjekk('… og den staar foer regelen som sender alt til side.php',
+    strpos($htFil, 'RewriteRule ^godkjenn/') < strpos($htFil, 'RewriteRule ^$ /side.php [L]'));
+
+$admFil145 = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('«Send Vipps-avtale» lager ikke avtalen lenger',
+    str_contains($admFil145, '$lenke = Medlemskap::godkjennLenke($id, $type);')
+    && !str_contains($admFil145, '? Medlemskap::startAvtale($m, $type)'));
+sjekk('… og admin viser den samme lenka, uten aldersgrense',
+    str_contains($admFil145, "return Medlemskap::godkjennLenke((int) \$m['id'], \$type);")
+    && str_contains($admFil145, "'avtaleLenkeGammel' => false,"));
+sjekk('… og skjermen sier at den virker i fjorten dager',
+    str_contains($byttSida, "+ ' på den måten som passer — e-post, SMS eller Messenger. Lenka '"));
+
+// ── Enter legger til i aarskalenderen ────────────────────────────────
+//
+// Eieren, 6. september: «naar jeg trykker enter maa det legges til, naa maa
+// jeg klikke med musa paa legg til».
+sjekk('Enter legger til punktet',
+    str_contains($byttSida, 'onKeyDown="{{ m.tast }}"')
+    && str_contains($byttSida, "tast: e => { if (e && e.key === 'Enter') { e.preventDefault(); this.aarLeggTil(aar, mnd); } },"));
+sjekk('… og knappen og tasten deler den samme handlingen',
+    str_contains($byttSida, 'leggTil: () => this.aarLeggTil(aar, mnd),')
+    && str_contains($byttSida, '  aarLeggTil(aar, mnd) {'));
+
+// ── Kvitteringen staar i to sekunder ─────────────────────────────────
+//
+// Eieren, 6. september: «pop opp som kommer, maa lukkes etter 2 sekunder».
+// Begge klokkene: den i varselAutolukk() og den i renderVals().
+sjekk('kvitteringen lukker seg etter to sekunder',
+    substr_count($byttSida, '}, 2000);') >= 2
+    && !str_contains($byttSida, "den faa sine egne tre sekunder"));
+
+// ── Rette e-post og telefon ──────────────────────────────────────────
+//
+// Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer og
+// deltakere, noen legge inn feil». Adressen kunne bare settes ved innmelding.
+$medlFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('«kontakt» finnes i medlemmer.php',
+    str_contains($medlFil2, "if (\$handling === 'kontakt') {"));
+sjekk('… og en ugyldig adresse avvises',
+    str_contains($medlFil2, "Svar::feil('Skriv en gyldig e-postadresse.');"));
+sjekk('… og en adresse som alt staar paa en annen avvises',
+    str_contains($medlFil2, "Svar::feil('Adressen står alt på ' . \$opptatt['navn'] . '.');"));
+sjekk('… og rettelsen foeres i endringsloggen',
+    str_contains($medlFil2, "revider('medlem_kontakt_rettet', 'member', \$id, ["));
+
+sjekk('«kontakt» finnes i pamelding.php',
+    str_contains($pamFil, "if (\$handling === 'kontakt') {"));
+sjekk('… og er deltakeren medlem, rettes den paa medlemmet',
+    str_contains($pamFil, "\$medlemId = (int) (\$b['member_id'] ?? 0);")
+    && str_contains($pamFil, "DB::oppdater('members', \$felt, ['id' => \$medlemId]);"));
+sjekk('… og svaret sier fra om at det gjelder alle kursene',
+    str_contains($pamFil, "er medlem, så rettelsen står nå på medlemmet '"));
+sjekk('… ellers rettes gjestefeltene paa paameldingen',
+    str_contains($pamFil, "\$felt['gjest_epost'] = \$nyEpost;"));
+
+sjekk('personkortet har feltene',
+    str_contains($byttSida, 'onChange="{{ settPersonEpost }}"')
+    && str_contains($byttSida, 'on-click="{{ lagrePersonKontakt }}"')
+    && str_contains($byttSida, "handling: 'kontakt', medlemId: id, epost: e, telefon: t"));
+sjekk('… og deltakerkortet har dem ogsaa',
+    str_contains($byttSida, 'onChange="{{ settKlDEpost }}"')
+    && str_contains($byttSida, "handling: 'kontakt', id: dv.bookingId, epost: e2, telefon: t2,"));
+sjekk('… og hjelpeteksten sier fra naar deltakeren er medlem',
+    str_contains($byttSida, "? dv.navn + ' er medlem, så rettelsen gjelder alle kursene.'"));
+
+// ── Kurset viser at hun er paa vei ut ────────────────────────────────
+//
+// Eieren, 6. september: «naar jeg drar en person ut av et kurs … maa kurset
+// oppdatteres. det gjor det ikke naa, jeg har fortsatt samme deltaker som naa
+// ligger paa bytt dato ogsaa inne i kurset».
+//
+// Hun fjernes ikke fra lista: ingenting er endret foer du har sluppet henne
+// paa en ny dato. Raden bleknes og sier hva som er i gang.
+sjekk('raden i kurset sier «Venter paa ny dato»',
+    str_contains($byttSida, "status: venter ? 'Venter på ny dato'")
+    && str_contains($byttSida, "opacity: venter ? .5 : 1,"));
+sjekk('… og den vet det av «Bytt dato»-lista',
+    str_contains($byttSida, "const paaVei = (this.state.klBd || []).reduce("));
+
+// ── Alle slippefelt lyser opp ────────────────────────────────────────
+//
+// Eieren, 6. september: «la det bli enklere aa dra ut av kurset, naa er det
+// neste umulig aa faa henne over paa bytt dato», og rett etter: «det maa
+// gjelde alle slippefelt globalt, ogsaa inne paa kurs etc alle steder som
+// benytter dette».
+sjekk('ramma er ett sted, ikke ett per slippefelt',
+    str_contains($byttSida, '  klSlippRamme(art, farge) {')
+    && str_contains($byttSida, "if (this.state.klDrar !== art) return {};"));
+sjekk('… og oektene lyser naar en person dras',
+    str_contains($byttSida, "e.oktId ? this.klSlippRamme('okt', 'var(--sage-600)') : {});"));
+sjekk('… og dagene lyser i alle tre visningene',
+    substr_count($byttSida, "this.klSlippRamme('dag', 'var(--terracotta-500)')") === 3);
+sjekk('… og maanedene i aarskalenderen lyser ogsaa',
+    str_contains($byttSida, "this.klSlippRamme('aar', 'var(--terracotta-500)')"));
+sjekk('… og rutene i sidemenyen vokser mens du drar',
+    str_contains($byttSida, "this.state.klDrar === 'sone'")
+    && substr_count($byttSida, "minHeight: '130px'") === 2);
+
+// ── Hoyremenyen ──────────────────────────────────────────────────────
+//
+// Eieren, 6. september, tre ting paa rad: «naar jeg hoeyere klikker saa
+// kommer det deltakere og venteliste, endre navn til deltakere», «fjern full
+// redigerring fra hoeyere klikk» og «legg til vis som full booket paa hoeyere
+// klikking».
+sjekk('«Deltakere og venteliste» heter «Deltakere»',
+    str_contains($byttSida, "{ navn: 'Deltakere', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id")
+    && !str_contains($byttSida, "navn: 'Deltakere og venteliste'"));
+sjekk('… og «Full redigering av kurset» er borte',
+    !str_contains($byttSida, "navn: 'Full redigering av kurset'"));
+sjekk('… og «Vis som fullbooket» staar der, med den samme handlingen som haken',
+    str_contains($byttSida, "navn: menyEvt.visFullt ? 'Ikke vis som fullbooket' : 'Vis som fullbooket',")
+    && str_contains($byttSida, "handling: 'visFullt', oktId: menyEvt.oktId,"));
 
 // Serveren: beskjeden som ikke ble sendt for.
 $pmFlytt = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
@@ -12606,21 +12821,21 @@ sjekk('… og begge staar fortsatt i hovedmenyen',
 // bare en «vipps_url» som er under fem minutter gammel. Skjermen sto uten
 // den grensa. Naa foelger den de samme fem minuttene, og sier fra naar lenka
 // er for gammel i stedet for aa la feltet vaere borte.
+// Fem minutter var ogsaa feil. Vipps gir avtalen TI minutter, og deretter er
+// den EXPIRED for godt — ingen rekker aa kopiere en lenke ut av admin, sende
+// den, og faa den aapnet innenfor det. Naa deles Vipps sin adresse ikke ut i
+// det hele tatt.
 $lenkeApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
-sjekk('godkjenningslenka deles ikke ut naar den er for gammel',
-    str_contains($lenkeApi, "AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)\n                   ORDER BY id DESC LIMIT 1"));
-sjekk('… og skjermen faar vite at det finnes en for gammel',
-    str_contains($lenkeApi, "'avtaleLenkeGammel' => (static function () use (\$m): bool {")
-    && str_contains($lenkeApi, "AND created_at < (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)"));
-// Den samme grensa som resten av koden bruker — ikke et nytt tall.
-sjekk('… og det er den samme grensa som gjenbruket bruker',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
-                 'AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)'));
+sjekk('Vipps sin egen adresse deles ikke ut lenger',
+    !str_contains($lenkeApi, 'SELECT vipps_url FROM subscriptions')
+    && !str_contains($lenkeApi, 'INTERVAL 5 MINUTE'));
+sjekk('… og skjermen har ingen «for gammel»-tilstand aa vise',
+    str_contains($lenkeApi, "'avtaleLenkeGammel' => false,"));
 $lenkeSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('… og skjermen sier hva som skjedde, og hva man gjor',
-    str_contains($lenkeSida, "'Lenka fra sist er for gammel — Vipps '")
-    && str_contains($lenkeSida, '{{ personAvtaleLenkeGammelTekst }}')
-    && str_contains($lenkeSida, "' med én gang. Vipps avviser en lenke som har ligget en stund '"));
+sjekk('… og skjermen sier at lenka virker i fjorten dager',
+    str_contains($lenkeSida, "personAvtaleLenkeGammel: false,")
+    && str_contains($lenkeSida, "+ 'virker i fjorten dager. Hun åpner den på telefonen, og Vipps '")
+    && !str_contains($lenkeSida, "'Lenka fra sist er for gammel — Vipps '"));
 
 
 // ── Tre veier fra kalenderen ──────────────────────────────────────────
@@ -12644,8 +12859,12 @@ sjekk('… og skjermen sier hva som skjedde, og hva man gjor',
 // begge aapner sin skjerm, «Legg til person» gaar til skjemaet, kortet staar
 // paa Oversikt, og raden med lenka er borte.
 $veiSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('«Legg til person →» staar ved Venteliste i kalenderen',
-    str_contains($veiSida, '>Legg til person →</button>')
+// Understreket lenke ble til pille. Eieren, 6. september: «jeg vil ha samme
+// pille som resten, kan du ikke lagre dette» — se «Piller, ikke lenker» i
+// CLAUDE.md.
+sjekk('«Legg til person» staar som pille ved Venteliste i kalenderen',
+    str_contains($veiSida, 'on-click="{{ klVlLeggTil }}" hint-size="auto,44px">Legg til person</x-import>')
+    && !str_contains($veiSida, '>Legg til person →</button>')
     && str_contains($veiSida, "klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),"));
 sjekk('… og aarskalenderen staar som pille mellom Kasse og Synk med mobilen',
     str_contains($veiSida, 'on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>')

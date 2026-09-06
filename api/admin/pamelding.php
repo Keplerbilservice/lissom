@@ -6,6 +6,8 @@
  *                              betaltMaate, belop, notat, varsle }
  *   POST handling=fjern      { id }
  *   POST handling=flytt      { id, oktId }   samme person, ny dato
+ *   POST handling=til-venteliste { id }    gir fra seg plassen, staar i koen
+ *   POST handling=kontakt  { id, epost?, telefon? }  retter kontaktinfoen
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
  *   POST handling=endre      { id, antall?, belop? }   retter antall og sum
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
@@ -81,6 +83,100 @@ if ($handling === 'fjern') {
     revider('pamelding_fjernet', 'booking', $id,
             ['navn' => $b['gjest_navn'], 'betaling' => (string) ($b['betalingsstatus'] ?? 'ingen')]);
     Svar::ok(['beskjed' => 'Plassen er frigitt.']);
+}
+
+// -------------------------------------------------- fra kurset til koen
+//
+// Eieren, 6. september: «jeg vil kunne dra deltakere ut av kortet i kalender,
+// og jeg vil legge paa 1. venteliste 2. bytt dato».
+//
+// Hun gir fra seg plassen — den blir ledig for andre — og staar i koen til
+// den samme kvelden. Notatet og betalingen roeres ikke: paa spoersmaal om
+// penger valgte eieren «Tillat, la betalingen staa».
+//
+// Ett unntak, og det er det samme som «fjern» alt har: er pengene trukket
+// gjennom Vipps, skal plassen refunderes, ikke slettes. Da staar det ekte
+// penger bak, og de skal ikke bli liggende uten en plass.
+if ($handling === 'til-venteliste') {
+    $b = DB::en(
+        'SELECT b.id, b.course_id, b.course_session_id, b.status, b.payment_id,
+                p.status AS betalingsstatus,
+                COALESCE(m.navn, b.gjest_navn) AS navn,
+                COALESCE(m.epost, b.gjest_epost) AS epost,
+                COALESCE(m.telefon, b.gjest_telefon) AS telefon,
+                cs.start_tid, c.tittel
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+      LEFT JOIN payments p ON p.id = b.payment_id
+      LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+      LEFT JOIN courses c ON c.id = b.course_id
+          WHERE b.id = :i',
+        ['i' => $id]
+    );
+    if ($b === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+    if ((string) $b['status'] === 'avbestilt') {
+        Svar::feil('Denne er alt avbestilt.');
+    }
+    if ((int) ($b['course_session_id'] ?? 0) <= 0) {
+        Svar::feil('Påmeldingen står ikke på en dato.');
+    }
+    $BETALT_VIPPS = ['autorisert', 'betalt', 'delvis_refundert'];
+    if ($b['payment_id'] !== null && in_array((string) $b['betalingsstatus'], $BETALT_VIPPS, true)) {
+        Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke ventelista.');
+    }
+    if (trim((string) ($b['navn'] ?? '')) === '') {
+        Svar::feil('Påmeldingen har ikke noe navn å sette på lista.');
+    }
+
+    $kursId = (int) $b['course_id'];
+    $oktId  = (int) $b['course_session_id'];
+
+    // Staar hun der alt, skal hun ikke havne to ganger i koen.
+    $finnes = DB::en(
+        "SELECT id FROM waitlist
+          WHERE course_id = :k AND course_session_id = :o
+            AND status IN ('venter','varslet')
+            AND (epost = :e OR (telefon IS NOT NULL AND telefon = :t))
+          LIMIT 1",
+        ['k' => $kursId, 'o' => $oktId,
+         'e' => (string) ($b['epost'] ?? ''),
+         't' => ($b['telefon'] ?? '') !== '' ? $b['telefon'] : null]
+    );
+
+    if ($finnes === null) {
+        $posisjon = 1 + (int) DB::verdi(
+            "SELECT COUNT(*) FROM waitlist
+              WHERE course_id = :k AND course_session_id = :o
+                AND status IN ('venter','varslet')",
+            ['k' => $kursId, 'o' => $oktId]
+        );
+        DB::settInn('waitlist', [
+            'course_id'         => $kursId,
+            'course_session_id' => $oktId,
+            'navn'              => (string) $b['navn'],
+            'epost'             => ($b['epost'] ?? '') !== '' ? $b['epost'] : null,
+            'telefon'           => ($b['telefon'] ?? '') !== '' ? $b['telefon'] : null,
+            'posisjon'          => $posisjon,
+        ]);
+    }
+
+    // Plassen frigis. Samme felt som «fjern» setter.
+    DB::oppdater('bookings', [
+        'status'       => 'avbestilt',
+        'avbestilt_at' => gmdate('Y-m-d H:i:s'),
+    ], ['id' => $id]);
+
+    revider('pamelding_til_venteliste', 'booking', $id, [
+        'okt'  => $oktId,
+        'kurs' => (string) ($b['tittel'] ?? ''),
+    ]);
+
+    Svar::ok(['beskjed' => $b['navn'] . ' står nå på ventelista for '
+                        . $b['tittel'] . ' '
+                        . Booking::norskDato((string) $b['start_tid'])
+                        . '. Plassen er ledig igjen.']);
 }
 
 // ------------------------------------------------------------ flytt plass
@@ -235,6 +331,61 @@ if ($handling === 'status') {
 // Beloepet foelger antallet naar det ikke tastes inn, og lar seg overstyre
 // naar det gjor det. En plass som er gitt bort staar da paa null uten at
 // antallet maa lyve om hvor mange som kom.
+// ------------------------------------------------------- rett kontaktinfo
+//
+// Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer og
+// deltakere, noen legge inn feil». En feilskrevet e-post er en kvittering
+// som aldri kom fram, en paaminnelse som forsvant, og et kursbevis ingen fikk.
+//
+// Er paameldingen knyttet til et medlem, staar e-posten paa medlemmet — og da
+// rettes den DER. Skrev vi den paa gjestefeltene i stedet, ville lista
+// fortsatt vist den gamle: oppslagene leser «COALESCE(m.epost, b.gjest_epost)»,
+// og medlemmet vinner. Svaret sier fra om hvilken av de to som ble rettet.
+if ($handling === 'kontakt') {
+    $b = DB::en(
+        'SELECT b.id, b.member_id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,
+                COALESCE(m.navn, b.gjest_navn) AS navn
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.id = :i',
+        ['i' => $id]
+    );
+    if ($b === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+
+    $nyEpost   = trim(Foresporsel::tekst('epost'));
+    $nyTelefon = trim(Foresporsel::tekst('telefon'));
+
+    if ($nyEpost !== '' && !filter_var($nyEpost, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Skriv en gyldig e-postadresse.');
+    }
+    if ($nyEpost === '' && $nyTelefon === '') {
+        Svar::feil('Skriv inn e-post eller telefon.');
+    }
+
+    $medlemId = (int) ($b['member_id'] ?? 0);
+    if ($medlemId > 0) {
+        $felt = [];
+        if ($nyEpost !== '')   { $felt['epost'] = $nyEpost; }
+        if ($nyTelefon !== '') { $felt['telefon'] = $nyTelefon; }
+        DB::oppdater('members', $felt, ['id' => $medlemId]);
+        revider('medlem_kontakt_rettet', 'member', $medlemId, [
+            'fra_paamelding' => $id,
+        ]);
+        Svar::ok(['beskjed' => $b['navn'] . ' er medlem, så rettelsen står nå på medlemmet '
+                             . 'og gjelder alle kursene.']);
+    }
+
+    $felt = [];
+    if ($nyEpost !== '')   { $felt['gjest_epost'] = $nyEpost; }
+    if ($nyTelefon !== '') { $felt['gjest_telefon'] = $nyTelefon; }
+    DB::oppdater('bookings', $felt, ['id' => $id]);
+    revider('pamelding_kontakt_rettet', 'booking', $id, []);
+
+    Svar::ok(['beskjed' => 'Kontaktinfoen til ' . $b['navn'] . ' er rettet.']);
+}
+
 if ($handling === 'endre') {
     $rad = DB::en(
         'SELECT b.id, b.antall, b.belop_ore, b.course_session_id, b.status

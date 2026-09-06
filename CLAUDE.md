@@ -44,6 +44,10 @@ de ble sagt i.
 - Større endringer skal vises visuelt og godkjennes med «GO» før de bygges.
 - Godkjente endringer gjøres globalt, på alle relevante steder — ikke bare
   der feilen ble oppdaget.
+- **Piller, ikke lenker.** Skal noe kunne trykkes på, skal det være en
+  pille eller et kort i samme stil som resten — ikke en understreket
+  lenke. Sagt to ganger 6. september 2026: «ingen link», og «jeg vil ha
+  samme pille som resten, kan du ikke lagre dette». (Eieren.)
 
 ## Kontroll
 

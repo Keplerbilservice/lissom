@@ -12514,6 +12514,17 @@ sjekk('… og svaret sier fra om at det gjelder alle kursene',
 sjekk('… ellers rettes gjestefeltene paa paameldingen',
     str_contains($pamFil, "\$felt['gjest_epost'] = \$nyEpost;"));
 
+// Feltet staar rett under navnet, ikke nederst i kortet. Eieren, 6.
+// september: «det maa saa klart ligge naar jeg trykker paa navnet til
+// medlemene, og faa redigere». Maalt: 214 px ned i et kort paa 1410 px paa
+// PC, 305 av 2002 paa telefon — foerste blokk etter navnelinja.
+sjekk('e-postfeltet staar rett under navnet i personkortet',
+    str_contains($byttSida, '</button>
+            </div>
+            <!-- E-post og telefon, rettbare.')
+    && str_contains($byttSida, '</button>
+              </div>
+              <!-- E-post og telefon, rettbare.'));
 sjekk('personkortet har feltene',
     str_contains($byttSida, 'onChange="{{ settPersonEpost }}"')
     && str_contains($byttSida, 'on-click="{{ lagrePersonKontakt }}"')

@@ -7372,10 +7372,14 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ klDEndreUtfor }}" hint-size="auto,36px">Lagre</x-import>
                 </div>
                 <sc-if value="{{ klDIngenFlytt }}" hint-placeholder-val="{{ false }}">
-                  <div style="margin-top: var(--space-4); font-size: var(--text-sm); color: var(--text-muted);">Kurset har ingen andre datoer å flytte til.</div>
+                  <div style="margin-top: var(--space-4); font-size: var(--text-sm); color: var(--text-muted);">Det finnes ingen andre datoer å flytte til.</div>
                 </sc-if>
                 <sc-if value="{{ klDKanFlytte }}" hint-placeholder-val="{{ true }}">
-                  <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-top: var(--space-4);">
+                  <!-- Overskrift, saa man ser hva brikkene er. Uten den sto
+                       de rett under betalingsfeltene uten et ord om hva de
+                       gjor. Eieren godkjente teksten 6. september. -->
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-top: var(--space-4);">Flytt til ny dato</div>
+                  <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-top: var(--space-2);">
                     <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                       <sc-for list="{{ klDFlyttValg }}" as="br" hint-placeholder-count="3">
@@ -32242,20 +32246,37 @@ class Component extends DCLogic {
                     .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); }),
                 } });
               },
-              // De andre datoene paa det samme kurset.
-              klDFlyttValg: (dv ? alle.filter(e => e.kursId === dv.kursId && e.oktId
-                                                 && e.oktId !== dv.oktId && !e.avlyst
-                                                 && e.dato >= idagIso) : [])
-                .sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid))
+              // ── Datoene hun kan flyttes til ─────────────────────────
+              //
+              // Sto med kursets egne datoer alene. Da sa kortet «Kurset har
+              // ingen andre datoer aa flytte til» paa et kurs som gaar én
+              // gang — og paa telefonen var det eneste vei ut: dra og slipp
+              // krever mus, og «Bytt dato» i sidemenyen kan ikke naas med et
+              // trykk.
+              //
+              // Eieren, 6. september, om «Bytt dato» paa mobil: «GO — bygg
+              // det». Naa staar hele programmet her, som naar du drar.
+              // Kursets egne foerst og uten navn — det er underforstaatt —
+              // og de andre med kursnavnet, ellers ser to datoer like ut.
+              klDFlyttValg: (dv ? alle.filter(e => e.oktId && e.oktId !== dv.oktId
+                                                 && !e.avlyst && e.dato >= idagIso) : [])
+                .sort((a, b) => ((a.kursId === (dv || {}).kursId ? 0 : 1) - (b.kursId === (dv || {}).kursId ? 0 : 1))
+                              || (a.dato + a.tid).localeCompare(b.dato + b.tid))
+                .slice(0, 40)
                 .map(e => {
                   const d2 = new Date(e.dato + 'T12:00:00');
+                  const eget = !!(dv && e.kursId === dv.kursId);
                   return { verdi: String(e.oktId),
-                           navn: uked[(d2.getDay() + 6) % 7] + ' ' + d2.getDate() + '. '
+                           navn: (eget ? '' : e.tittel + ' · ')
+                                 + uked[(d2.getDay() + 6) % 7] + ' ' + d2.getDate() + '. '
                                  + mndNavn[d2.getMonth()] + ' · ' + e.tid
                                  + (e.kap ? ' · ' + Math.max(0, e.kap - e.pameldt) + ' ledige' : '') };
                 }),
               klDFlyttTil: this.state.klDFlyttTil || '',
               settKlDFlyttTil: e => this.setState({ klDFlyttTil: e.target.value }),
+              // Spoer foerst, som naar du drar. Denne veien gikk rett
+              // gjennom — og naa som flyttingen sender en e-post, er det
+              // enda mindre som skal til for at feil person faar beskjed.
               klDFlyttUtfor: () => {
                 const til = parseInt(this.state.klDFlyttTil || '0', 10);
                 if (!dv || !dv.bookingId || !til) {
@@ -32263,14 +32284,31 @@ class Component extends DCLogic {
                                   kvitteringDetalj: 'Velg datoen ' + (dv ? dv.navn : 'personen') + ' skal flyttes til.' });
                   return;
                 }
-                this.klKall('/api/admin/pamelding.php',
-                  { handling: 'flytt', id: dv.bookingId, oktId: til })
-                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDFlyttTil: '' }); });
+                const mal = alle.find(e => Number(e.oktId) === til);
+                const skriv = e => {
+                  const dd = new Date(e.dato + 'T12:00:00');
+                  return e.tittel + ' · ' + dagNavn[dd.getDay()] + ' ' + dd.getDate() + '. '
+                       + mndNavn[dd.getMonth()] + ' kl. ' + e.tid;
+                };
+                const fraEvt = alle.find(e => Number(e.oktId) === Number(dv.oktId));
+                this.setState({ klSporr: {
+                  emne: 'Bytt dato',
+                  rader: [
+                    ['Deltaker', dv.navn],
+                    ['Fra', fraEvt ? skriv(fraEvt) : (dv.okt + ' · ' + dv.tid)],
+                    ['Til', mal ? skriv(mal) : ''],
+                    ['Plasser', mal && mal.kap ? ((mal.pameldt || 0) + ' av ' + mal.kap + ' plasser er tatt') : ''],
+                  ],
+                  tekst: 'Deltakeren får e-post om den nye datoen.',
+                  knapp: 'Ja, flytt og send beskjed',
+                  gjor: () => this.klKall('/api/admin/pamelding.php',
+                    { handling: 'flytt', id: dv.bookingId, oktId: til })
+                    .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDFlyttTil: '' }); }),
+                } });
               },
-              klDKanFlytte: !!(dv && alle.filter(e => e.kursId === dv.kursId && e.oktId && e.oktId !== dv.oktId && !e.avlyst && e.dato >= idagIso).length > 0),
-              klDIngenFlytt: !!(dv && alle.filter(e => e.kursId === dv.kursId && e.oktId
-                                                     && e.oktId !== dv.oktId && !e.avlyst
-                                                     && e.dato >= idagIso).length === 0),
+              klDKanFlytte: !!(dv && alle.some(e => e.oktId && e.oktId !== dv.oktId && !e.avlyst && e.dato >= idagIso)),
+              klDIngenFlytt: !!(dv && !alle.some(e => e.oktId && e.oktId !== dv.oktId
+                                                    && !e.avlyst && e.dato >= idagIso)),
               // Kursbeviset. Det tegnes naar noen ber om det — her sperres
               // det, for den som gikk hjem etter en halv time.
               klDSperrBevis: () => {

@@ -12398,6 +12398,25 @@ sjekk('… og deltakerkortet har den samme knappen',
     str_contains($byttSida, 'onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>')
     && str_contains($byttSida, 'klDTilVenteliste: () => {'));
 
+// ── Enter legger til i aarskalenderen ────────────────────────────────
+//
+// Eieren, 6. september: «naar jeg trykker enter maa det legges til, naa maa
+// jeg klikke med musa paa legg til».
+sjekk('Enter legger til punktet',
+    str_contains($byttSida, 'onKeyDown="{{ m.tast }}"')
+    && str_contains($byttSida, "tast: e => { if (e && e.key === 'Enter') { e.preventDefault(); this.aarLeggTil(aar, mnd); } },"));
+sjekk('… og knappen og tasten deler den samme handlingen',
+    str_contains($byttSida, 'leggTil: () => this.aarLeggTil(aar, mnd),')
+    && str_contains($byttSida, '  aarLeggTil(aar, mnd) {'));
+
+// ── Kvitteringen staar i to sekunder ─────────────────────────────────
+//
+// Eieren, 6. september: «pop opp som kommer, maa lukkes etter 2 sekunder».
+// Begge klokkene: den i varselAutolukk() og den i renderVals().
+sjekk('kvitteringen lukker seg etter to sekunder',
+    substr_count($byttSida, '}, 2000);') >= 2
+    && !str_contains($byttSida, "den faa sine egne tre sekunder"));
+
 // ── Rette e-post og telefon ──────────────────────────────────────────
 //
 // Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer og

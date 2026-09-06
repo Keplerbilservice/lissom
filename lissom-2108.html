@@ -7688,7 +7688,7 @@ window.__resources = {
               </sc-if>
 
               <div style="display: flex; gap: 6px;">
-                <input value="{{ m.ny }}" onChange="{{ m.settNy }}" placeholder="Hva skjer denne måneden?" style="{{ aarFeltStil }}">
+                <input value="{{ m.ny }}" onChange="{{ m.settNy }}" onKeyDown="{{ m.tast }}" placeholder="Hva skjer denne måneden?" style="{{ aarFeltStil }}">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="plus" on-click="{{ m.leggTil }}" hint-size="auto,32px">Legg til</x-import>
               </div>
             </div>
@@ -25137,6 +25137,17 @@ class Component extends DCLogic {
     window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
   }
 
+  /** Legger et punkt inn i en maaned. Knappen og Enter-tasten deler den. */
+  aarLeggTil(aar, mnd) {
+    const t = String((this.state.aarNy || {})[mnd] || '').trim();
+    if (t === '') {
+      this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Skriv hva som skjer denne måneden.' });
+      return;
+    }
+    this.aarKall({ handling: 'legg-til', aar: aar, mnd: mnd, tekst: t })
+      .then(ok => { if (ok) this.setState(st => ({ aarNy: Object.assign({}, st.aarNy, { [mnd]: '' }) })); });
+  }
+
   hentArskalender(aar) {
     const a = aar || this.state.aarValgt || (new Date()).getFullYear();
     if (this._aarHentes === a) return;
@@ -27681,9 +27692,9 @@ class Component extends DCLogic {
     this._kvittTimer = setTimeout(() => {
       this._kvittTimer = null;
       // Bare den beskjeden vi startet klokka for. Kom det en ny imens, skal
-      // den faa sine egne tre sekunder.
+      // den faa sine egne to sekunder.
       this.setState(s => (s.kvittering === tekst ? { kvittering: '', kvitteringDetalj: '', kvitteringTone: null } : {}));
-    }, 3000);
+    }, 2000);
   }
 
   seoSlug(t) {
@@ -35041,7 +35052,7 @@ class Component extends DCLogic {
     // Tittel og metatagger folger siden man staar paa.
     this.seoTilHodet(side);
 
-    // Kvitteringer i admin lukker seg selv etter tre sekunder.
+    // Kvitteringer i admin lukker seg selv etter to sekunder.
     this.varselAutolukk();
 
     // Malrestene runtimen legger igjen under det som er skjult. Se
@@ -35255,15 +35266,16 @@ class Component extends DCLogic {
     this.synkAdresse();
 
 
-    // Kvitteringsboksen lukker seg selv etter tre sekunder. Den ble tidligere
-    // staaende til noen trykket paa krysset.
+    // Kvitteringsboksen lukker seg selv etter to sekunder. Den ble tidligere
+    // staaende til noen trykket paa krysset. Eieren, 6. september: «pop opp
+    // som kommer, maa lukkes etter 2 sekunder».
     if (this.state.kvittering && this._sisteKvittering !== this.state.kvittering) {
       this._sisteKvittering = this.state.kvittering;
       clearTimeout(this._kvitteringTimer);
       this._kvitteringTimer = setTimeout(() => {
         this._sisteKvittering = null;
         this.setState({ kvittering: '', kvitteringDetalj: '' });
-      }, 3000);
+      }, 2000);
     }
 
     const sider = [
@@ -44315,12 +44327,11 @@ class Component extends DCLogic {
                 this.klSlippRamme('aar', 'var(--terracotta-500)')),
               ny: nye[mnd] || '',
               settNy: e => { const v = e.target.value; this.setState(st => ({ aarNy: Object.assign({}, st.aarNy, { [mnd]: v }) })); },
-              leggTil: () => {
-                const t = String(nye[mnd] || '').trim();
-                if (t === '') { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Skriv hva som skjer denne måneden.' }); return; }
-                this.aarKall({ handling: 'legg-til', aar: aar, mnd: mnd, tekst: t })
-                  .then(ok => { if (ok) this.setState(st => ({ aarNy: Object.assign({}, st.aarNy, { [mnd]: '' }) })); });
-              },
+              leggTil: () => this.aarLeggTil(aar, mnd),
+              // Enter legger til, som i alle de andre skrivefeltene i admin.
+              // Eieren, 6. september: «naar jeg trykker enter maa det legges
+              // til, naa maa jeg klikke med musa paa legg til».
+              tast: e => { if (e && e.key === 'Enter') { e.preventDefault(); this.aarLeggTil(aar, mnd); } },
               punkter: mine.map(pk => ({
                 tekst: pk.tekst,
                 lukket: apenId !== pk.id,

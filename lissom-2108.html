@@ -14004,6 +14004,12 @@ window.__resources = {
                          Den staar saa lenge avtalen venter — ikke bare rett
                          etter at den ble laget. Gaar e-posten i soeppelposten,
                          er dette veien til pengene. -->
+                    <sc-if value="{{ personAvtaleLenkeGammel }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                        <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Godkjenningslenke</div>
+                        <div style="font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ personAvtaleLenkeGammelTekst }}</div>
+                      </div>
+                    </sc-if>
                     <sc-if value="{{ personHarAvtaleLenke }}" hint-placeholder-val="{{ false }}">
                       <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
                         <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Godkjenningslenke</div>
@@ -37962,11 +37968,25 @@ class Component extends DCLogic {
           //
           // Naa staar den saa lenge avtalen venter paa godkjenning, ogsaa
           // naar ruta aapnes paa nytt en annen dag.
+          //
+          // ── Lenka har kort levetid ────────────────────────────────
+          //
+          // Foerste utgave, samme dag, sto uten en grense paa alderen.
+          // Eieren sendte den til Eirin timer etter at den ble laget, og hun
+          // fikk «Vi kjenner ikke denne QR-koden» i Vipps-appen. Serveren
+          // deler den ikke ut lenger naar den er over fem minutter gammel —
+          // den samme grensa paagaaendeForsok() alt hadde.
           personHarAvtaleLenke: !!(p.avtaleLenke || ''),
           personAvtaleLenke: p.avtaleLenke || '',
           personAvtaleLenkeHjelp: 'Send den til ' + fornavn
-            + ' hvis e-posten ikke kom fram. Hun åpner den på telefonen og '
-            + 'sier ja i Vipps-appen.',
+            + ' med én gang. Vipps avviser en lenke som har ligget en stund '
+            + '— da får hun «Vi kjenner ikke denne QR-koden». Hun åpner den '
+            + 'på telefonen og sier ja i Vipps-appen.',
+          // Avtalen venter, men lenka er for gammel til aa sendes.
+          personAvtaleLenkeGammel: !(p.avtaleLenke || '') && !!p.avtaleLenkeGammel,
+          personAvtaleLenkeGammelTekst: 'Lenka fra sist er for gammel — Vipps '
+            + 'avviser den nå. Trykk «Send Vipps-avtale» over, så lages det en '
+            + 'ny som du kan sende med én gang.',
           kopierPersonAvtaleLenke: () => this.kopier(p.avtaleLenke || '',
             'Lenka ligger på utklippstavla — lim den inn der du vil sende den.'),
           personAvtaleHjelp: 'Lager avtalen i Vipps og sender lenka til '

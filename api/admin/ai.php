@@ -137,12 +137,21 @@ $kursMedDatoer = static function (int $kursId): array {
     if ($k === null) {
         Svar::feil('Fant ikke kurset.');
     }
+    // To navn, ikke ett.
+    //
+    // «:i» sto to ganger i den samme spoerringen, med én verdi bundet. Med
+    // «PDO::ATTR_EMULATE_PREPARES => false» — som app/lib/db.php setter —
+    // maa hvert navn bindes for hver gang det staar, og databasen svarer
+    // «SQLSTATE[HY093]: Invalid parameter number».
+    //
+    // Eieren, 6. september, med bilde fra Kursmarkedsfoering: «denne virker
+    // ikke». Knappen «Lag markedsfoering» stoppet paa dette hver gang.
     $okter = DB::alle(
-        "SELECT id, start_tid, COALESCE(kapasitet, (SELECT kapasitet FROM courses WHERE id = :i)) AS kapasitet
+        "SELECT id, start_tid, COALESCE(kapasitet, (SELECT kapasitet FROM courses WHERE id = :k)) AS kapasitet
            FROM course_sessions
           WHERE course_id = :i AND status = 'planlagt' AND start_tid > UTC_TIMESTAMP()
           ORDER BY start_tid LIMIT 6",
-        ['i' => $kursId]
+        ['i' => $kursId, 'k' => $kursId]
     );
     $linjer = [];
     foreach ($okter as $o) {

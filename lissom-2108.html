@@ -6243,24 +6243,6 @@ window.__resources = {
                ved siden av overskriften. -->
           <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
         </div>
-        <!-- ── Aarskalenderen, sammentrukket ────────────────────────────
-             Eieren, 6. september: «denne kan ogsaa ligge paa kalender siden
-             ledige felt oeverst paa siden». Her staar maaneden man er i, med
-             punktene sine, og ett trykk aapner hele aaret. Ingen redigering
-             herfra — det gjoeres der lista bor. -->
-        <sc-if value="{{ aarStripeVises }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-6); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-            <span style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); font-weight: 700;">{{ aarStripeMnd }}</span>
-            <sc-for list="{{ aarStripePunkter }}" as="sp" hint-placeholder-count="3">
-              <span style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 3px solid var(--terracotta-500); border-radius: var(--radius-sm); padding: 4px 9px; font-size: var(--text-xs);">{{ sp.tekst }}</span>
-            </sc-for>
-            <sc-if value="{{ aarStripeTom }}" hint-placeholder-val="{{ false }}">
-              <span style="font-size: var(--text-xs); color: var(--text-muted);">Ingenting ennå.</span>
-            </sc-if>
-            <button type="button" onClick="{{ aarStripeApne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; margin-left: auto; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Åpne årskalenderen →</button>
-          </div>
-        </sc-if>
-
         <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
             <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
@@ -6423,6 +6405,11 @@ window.__resources = {
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,44px">Nytt kurs</x-import>
           <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 6px 2px 0;">
             <span style="font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); white-space: nowrap;">Venteliste</span>
+            <!-- Veien til skjemaet. Eieren, 6. september: «jeg vil kunne
+                 klikke til legg til person under venteliste», og paa
+                 spoersmaal om hvor: fra kalenderen. Skjemaet ligger paa
+                 Venteliste-siden; ingen ny skjerm. -->
+            <button type="button" onClick="{{ klVlLeggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font-size: 12px; font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til person →</button>
           </div>
           <sc-for list="{{ klVlSide }}" as="v" hint-placeholder-count="3">
             <div onMouseDown="{{ v.ned }}" style="{{ v.kortStil }}" style-hover="box-shadow: var(--shadow-md);">
@@ -6470,6 +6457,16 @@ window.__resources = {
           <div style="height: var(--space-2);"></div>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ klRapApne }}" hint-size="auto,44px">Dagsrapport</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="shopping-cart" on-click="{{ klKasse }}" hint-size="auto,44px">Kasse</x-import>
+          <!-- Aarskalenderen og nye paameldinger, i samme stil som resten.
+               Eieren, 6. september: «jeg vil ha aarskalenderen som et kort
+               eller pille i samme stil, ingen link. et forslag kan jo vaere
+               mellom kasse og synk med mobilen paa kelender», og «jeg har
+               bedt om et kort eller pille paa kalender som viser ny
+               paamelding».
+               Raden oeverst paa sida med en understreket lenke er borte:
+               «ingen link». -->
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="calendar" on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="users" on-click="{{ klNyePamApne }}" hint-size="auto,44px">{{ klNyePamNavn }}</x-import>
           <div style="height: var(--space-4);"></div>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="smartphone" on-click="{{ klIcsApne }}" hint-size="auto,44px">Synk med mobilen</x-import>
         </aside>
@@ -39517,6 +39514,13 @@ class Component extends DCLogic {
                  varer.length || null, 'Se butikken',
                  () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' }))]),
 
+            // Aarskalenderen. Eieren, 6. september: «... og som et eget kort
+            // paa oversikten». Samme skjerm som menypunktet aapner.
+            kort('Årskalender',
+                 'Året måned for måned. Skriv inn hva som skjer.',
+                 null, 'Åpne årskalenderen',
+                 () => this.gaaAdmin('adminarskalender', {})),
+
             kort('Kursholdere',
                  'Hvem som holder kursene, og timene deres.',
                  null, 'Se kursholderne',
@@ -41522,27 +41526,25 @@ class Component extends DCLogic {
         const adr = ((this.state.adminData || {}).kalenderAdresse) || '';
         return {
           kalApent: !!this.state.kalApent,
-          // ── Aarskalenderen, sammentrukket paa kalendersida ──────────
+          // ── Pillene nederst i sidemenyen ────────────────────────────
           //
-          // Eieren, 6. september: «denne kan ogsaa ligge paa kalender siden
-          // ledige felt oeverst paa siden». Bare maaneden man staar i, og
-          // bare til aa se paa — redigeringen bor paa sin egen skjerm.
-          ...(() => {
-            const naa2 = new Date();
-            const aar2 = this.state.aarValgt || naa2.getFullYear();
-            const mine2 = (this.state.aarData || []).filter(x => Number(x.mnd) === (naa2.getMonth() + 1));
-            const MND2 = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni',
-                          'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'];
-            return {
-              // Vises bare naar aaret som staar oppe er det vi er i — ellers
-              // ville raden sagt «September» om en september to aar fram.
-              aarStripeVises: aar2 === naa2.getFullYear(),
-              aarStripeMnd: MND2[naa2.getMonth()],
-              aarStripePunkter: mine2.slice(0, 6).map(x => ({ tekst: x.tekst })),
-              aarStripeTom: mine2.length === 0,
-              aarStripeApne: () => this.gaaAdmin('adminarskalender', {}),
-            };
-          })(),
+          // Foerste utgave la aarskalenderen som en rad oeverst paa sida, med
+          // en understreket lenke. Eieren, 6. september: «jeg vil ha
+          // aarskalenderen som et kort eller pille i samme stil, ingen link.
+          // et forslag kan jo vaere mellom kasse og synk med mobilen paa
+          // kelender», og «jeg har bedt om et kort eller pille paa kalender
+          // som viser ny paamelding».
+          //
+          // Ingen ny skjerm og ingen ny liste: begge gaar dit tallene alt
+          // bor. «Nye paameldinger» er det samme kortet som staar paa
+          // Oversikt, med det samme tallet.
+          klAarApne: () => this.gaaAdmin('adminarskalender', {}),
+          klNyePamApne: () => this.gaaAdmin('adminnyepameldinger', {}),
+          klNyePamNavn: 'Nye påmeldinger'
+            + (((this.state.adminData || {}).nyeste || []).length
+                 ? ' · ' + ((this.state.adminData || {}).nyeste || []).length : ''),
+          // Veien til ventelisteskjemaet, fra kalenderen.
+          klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),
           kalKnapp: this.state.kalApent ? 'Skjul kalenderadressen' : 'Legg programmet i telefonens kalender →',
           kalVeksle: () => this.setState(st => ({ kalApent: !st.kalApent, kalKopiert: false })),
           kalAdresse: adr,

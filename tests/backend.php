@@ -9357,6 +9357,42 @@ sjekk('… og den aapner boksen som finnes, ikke en ny',
 sjekk('… og de andre veiene inn aapner den ikke',
     substr_count($sidaM2, 'apnePerson(m.id, 0, true)') === 1);
 
+echo "\n== Hvem som er i huset ==\n";
+// Eieren, 7. september 2026: «jeg onsker at admin skal kunne se hvem som er i
+// verksted, ogsaa de som har valgt aa ikke vise meg for medlemmer, den maa
+// ligge paa oversikt og kalender».
+//
+// Sidemenyen har hatt et tall — «3 medlemmer» — men ingen navn. Navnene laa
+// bare i api/stempling.php, som medlemmene leser, og der er de skjulte tatt
+// bort med vilje.
+$stFil = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');
+$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+
+sjekk('admin faar hele lista, ogsaa de skjulte',
+    str_contains($stFil, 'public static function alleInne(): array')
+    && str_contains($stFil, "'skjult'  => !(int) \$r['vis_innstempling'],")
+    && str_contains($ovFil, "'verkstedet' => Stempling::alleInne(),"));
+// To spoerringer kunne svart hver sitt om den samme kvelden.
+sjekk('… og medlemmenes liste bygger paa den samme spoerringen',
+    str_contains($stFil, '$alle = self::alleInne();')
+    && str_contains($stFil, "if (\$r['skjult']) { \$skjulte++; continue; }"));
+// Medlemmene skal fortsatt ikke se navnene. api/stempling.php gaar om
+// inneNa(), som tar dem bort.
+sjekk('… mens medlemmene fortsatt bare ser de synlige',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                 'Stempling::inneNa()'));
+// Kortet skal staa begge steder. Eieren ba om nettopp de to.
+sjekk('kortet staar paa Oversikt og paa Kalender',
+    substr_count($sida, '<sc-if value="{{ admInneVis }}"') === 2);
+sjekk('… og leser de samme verdiene begge steder',
+    substr_count($sida, '<sc-for list="{{ admInne }}" as="i"') === 2
+    && str_contains($sida, 'admInneVis: true,'));
+// Uten dette merket ville de skjulte sett ut som alle andre, og eieren
+// kunne fortalt et medlem noe hen har valgt bort.
+sjekk('… og de skjulte er merket',
+    str_contains($sida, '<span style="{{ admSkjultStil }}">Skjult for andre</span>')
+    && str_contains($sida, 'erSkjult: !!r.skjult,'));
+
 echo "\n== «Stopp avtalen nå» ==\n";
 // «Send Vipps-avtale» nekter naar det alt loeper en avtale, og «Kopier lenka»
 // er skjult av samme grunn. Staar det en avtale i basen som medlemmet ikke

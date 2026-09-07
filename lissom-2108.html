@@ -6450,6 +6450,34 @@ window.__resources = {
             </sc-if>
             </div>
           </div>
+          <!-- Hvem som er i huset. Samme kort som paa Oversikt — eieren,
+               7. september 2026: «den maa ligge paa oversikt og kalender».
+               Se admInne() og Stempling::alleInne(). -->
+          <sc-if value="{{ admInneVis }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ klBoksNStil }}">
+              <!-- Tallet staar UNDER etiketten, ikke ved siden av. Boksene i
+                   kalenderen er smale, og «I VERKSTEDET NÅ» + «3 medlemmer
+                   inne» brakk til fire linjer ved siden av hverandre. -->
+              <div style="{{ klBoksEtikettStil }}">I verkstedet nå</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin: -6px 0 6px;">{{ admInneAntall }}</div>
+              <sc-for list="{{ admInne }}" as="i" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+                  <span style="{{ i.avatarStil }}">{{ i.initial }}</span>
+                  <span style="flex: 1 1 110px; min-width: 0;">
+                    <span style="display: block; font-size: 13px; font-weight: 700; color: var(--text-heading);">{{ i.navn }}</span>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted);">{{ i.under }}</span>
+                  </span>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <span style="{{ admSkjultStil }}">Skjult for andre</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admInneTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 6px 0 0; border-top: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-muted);">Ingen er innstemplet nå.</div>
+              </sc-if>
+            </div>
+          </sc-if>
+
           <div style="{{ klBoksNStil }}">
             <div style="{{ klBoksEtikettStil }}">Notater til meg selv</div>
             <textarea value="{{ klNotat }}" onChange="{{ settKlNotat }}" rows="3" placeholder="Skriv et notat …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: 14px; padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
@@ -10897,6 +10925,47 @@ window.__resources = {
 
                  Bredden foelger samme regel som ovSkylderRamme: to spalter
                  der det er plass, hele rada paa telefonen. -->
+          <!-- ── Hvem som er i huset ──────────────────────────────────
+               Eieren, 7. september 2026: «jeg onsker at admin skal kunne se
+               hvem som er i verksted, ogsaa de som har valgt aa ikke vise meg
+               for medlemmer, den maa ligge paa oversikt og kalender».
+
+               Sidemenyen har hatt et tall — «3 medlemmer» — men ingen navn.
+               Navnene laa bare i api/stempling.php, som medlemmene leser, og
+               der er de skjulte tatt bort med vilje.
+
+               Haken heter «Vis meg for andre medlemmer». Den er et loefte til
+               de andre MEDLEMMENE, ikke til verkstedet.
+
+               Samme rader som ruta paa Min side, saa de to ser like ut. Se
+               admInne() og Stempling::alleInne(). -->
+          <sc-if value="{{ admInneVis }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ admInneRamme }}">
+              <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ admInneAntall }}</span>
+              </div>
+              <sc-for list="{{ admInne }}" as="i" hint-placeholder-count="3">
+                <div style="padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                  <span style="{{ i.avatarStil }}">{{ i.initial }}</span>
+                  <span style="flex: 1 1 160px; min-width: 0;">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ i.navn }}</span>
+                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ i.under }}</span>
+                  </span>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <span style="{{ admSkjultStil }}">Skjult for andre</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admInneTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen er innstemplet nå.</div>
+              </sc-if>
+              <sc-if value="{{ admInneHarSkjulte }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-3) var(--space-5) var(--space-4); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Du ser alle. Medlemmene ser bare dem som har slått på «Vis meg for andre medlemmer».</div>
+              </sc-if>
+            </div>
+          </sc-if>
+
             <div style="{{ ovPopRamme }}">
               <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
                 <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
@@ -44637,6 +44706,68 @@ class Component extends DCLogic {
         this.setState({ synlig: paa });
         this.stemplingKall({ visMeg: paa ? 'ja' : 'nei' }, false);
       },
+      // ── Hvem som er i huset, for den som driver stedet ──────────────
+      //
+      // Eieren, 7. september 2026: «jeg onsker at admin skal kunne se hvem som
+      // er i verksted, ogsaa de som har valgt aa ikke vise meg for medlemmer,
+      // den maa ligge paa oversikt og kalender».
+      //
+      // Sidemenyen har hatt et tall — «3 medlemmer» — men ingen navn. Navnene
+      // laa bare i api/stempling.php, som medlemmene leser, og der er de
+      // skjulte tatt bort med vilje.
+      //
+      // Haken heter «Vis meg for andre medlemmer». Den er et loefte til de
+      // andre MEDLEMMENE, ikke til verkstedet.
+      //
+      // Ett sted for begge skjermene: Oversikt og Kalender leser de samme
+      // verdiene, saa de to ikke kan komme i utakt.
+      ...(() => {
+        const raa = ((this.state.adminData || {}).verkstedet)
+          || (this.erPublisert() ? [] : [
+            { navn: 'Kari Nordbø', siden: '12:10', type: 'Basis 30', ressurs: 'Dreieskive 2', skjult: false },
+            { navn: 'Jonas Five', siden: '13:42', type: 'Årsmedlemskap', ressurs: '', skjult: true },
+          ]);
+        const forbokstaver = (navn) => String(navn || '').trim().split(/\s+/)
+          .slice(0, 2).map(d => d.charAt(0).toUpperCase()).join('') || '?';
+        const skjulte = raa.filter(r => r.skjult).length;
+        return {
+          // Kortet staar bare i admin. «medlemsvisning» er Min side.
+          admInneVis: true,
+          admInneTom: raa.length === 0,
+          admInneHarSkjulte: skjulte > 0,
+          admInneAntall: raa.length === 0 ? 'Ingen innstemplet'
+            : (raa.length === 1 ? 'Ett medlem inne' : raa.length + ' medlemmer inne'),
+          admInne: raa.map(r => ({
+            navn: r.navn,
+            initial: forbokstaver(r.navn),
+            // Klokkeslettet er det man leter etter; ressursen og typen sier
+            // hva hen gjor. Tomme ledd faller bort.
+            under: ['Innstemplet ' + (r.siden || ''), r.ressurs || '', r.type || '']
+              .filter(x => String(x).trim() !== '').join(' · '),
+            erSkjult: !!r.skjult,
+            avatarStil: {
+              width: 32, height: 32, borderRadius: '50%', background: 'var(--clay-200)',
+              color: 'var(--brown-500)', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 12, fontWeight: 700,
+              letterSpacing: '.02em', flex: '0 0 auto',
+            },
+          })),
+          admSkjultStil: {
+            display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
+            borderRadius: 'var(--radius-pill)', padding: '2px 10px',
+            fontSize: 11, fontWeight: 700, letterSpacing: '.02em',
+            background: 'var(--clay-100)', color: 'var(--text-muted)',
+            border: '1px solid var(--border-subtle)',
+          },
+          // Samme ramme som statistikkortet ved siden av, saa Oversikt ikke
+          // faar to slags kort.
+          admInneRamme: {
+            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
+            background: 'var(--surface-card)', overflow: 'hidden',
+            marginBottom: 'var(--space-6)',
+          },
+        };
+      })(),
       antallInne: this.state.stempling ? this.state.stempling.inne.antall : (this.erPublisert() ? 0 : 5),
       // Sidepanelet i admin sa «5 medlemmer» uansett.
       inneTekst: (() => {

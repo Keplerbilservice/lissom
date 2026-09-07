@@ -447,36 +447,61 @@ final class Stempling
      */
     public static function inneNa(): array
     {
+        $alle = self::alleInne();
+
+        $synlige = [];
+        $skjulte = 0;
+        foreach ($alle as $r) {
+            if ($r['skjult']) { $skjulte++; continue; }
+            unset($r['skjult'], $r['id']);
+            $synlige[] = $r;
+        }
+
+        return ['synlige' => $synlige, 'skjulte' => $skjulte, 'antall' => count($alle)];
+    }
+
+    /**
+     * Hvem som er i verkstedet naa — alle sammen, ogsaa de skjulte.
+     *
+     * Eieren, 7. september 2026: «jeg onsker at admin skal kunne se hvem som
+     * er i verksted, ogsaa de som har valgt aa ikke vise meg for medlemmer».
+     *
+     * Haken paa Min side heter «Vis meg for andre medlemmer». Den er et loefte
+     * til de ANDRE MEDLEMMENE, ikke til verkstedet — den som driver stedet maa
+     * vite hvem som er i huset. Derfor bryter dette ikke det haken sier.
+     *
+     * Bare admin. Kalles fra api/admin/oversikt.php, som krever adminsesjon;
+     * api/stempling.php, som medlemmene leser, gaar fortsatt om inneNa().
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function alleInne(): array
+    {
         $ressurs = DB::harKolonne('check_ins', 'ressurs_id')
             ? ', (SELECT r.navn FROM ressurser r WHERE r.id = c.ressurs_id) AS ressurs'
             : ", '' AS ressurs";
         $rader = DB::alle(
-            "SELECT c.inn_tid, m.navn, m.vis_innstempling, m.medlemskap_type{$ressurs}
+            "SELECT c.member_id, c.inn_tid, m.navn, m.vis_innstempling, m.medlemskap_type{$ressurs}
                FROM check_ins c
                JOIN members m ON m.id = c.member_id
               WHERE c.ut_tid IS NULL
               ORDER BY c.inn_tid"
         );
 
-        $synlige = [];
-        $skjulte = 0;
-
+        $ut = [];
         foreach ($rader as $r) {
-            if (!(int) $r['vis_innstempling']) {
-                $skjulte++;
-                continue;
-            }
             $inn = (new DateTimeImmutable((string) $r['inn_tid'], new DateTimeZone('UTC')))
                 ->setTimezone(self::oslo());
-            $synlige[] = [
+            $ut[] = [
+                'id'      => (int) $r['member_id'],
                 'navn'    => (string) $r['navn'],
                 'siden'   => $inn->format('H:i'),
                 'type'    => (string) ($r['medlemskap_type'] ?? ''),
                 'ressurs' => (string) ($r['ressurs'] ?? ''),
+                'skjult'  => !(int) $r['vis_innstempling'],
             ];
         }
-
-        return ['synlige' => $synlige, 'skjulte' => $skjulte, 'antall' => count($rader)];
+        return $ut;
     }
 
     /**

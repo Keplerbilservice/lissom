@@ -2911,10 +2911,11 @@ sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
 // noe, saa en dag uten kurs ble tre tomme spalter. Eieren spurte hvorfor hun
 // saa seg selv — hun holder sjelden kurs, og «Monica er default».
 // Regelen fikk et ledd til 1. september: spalta for det som ikke er tildelt
-// noen staar aldri fast — se «Kalenderen: to feil som gjemte kurs».
+// noen sto aldri fast. Den spalta er borte fra 7. september, og leddet med
+// den — se «Kalenderen: to feil som gjemte kurs».
 sjekk('den som vanligvis holder kursene staar som spalte',
     str_contains($sida, 'klStandardHolder()')
-    && str_contains($sida, 'const staarFast = kn => kn === stdHolder && kn !== UTEN_HOLDER;'));
+    && str_contains($sida, 'const staarFast = kn => kn === stdHolder;'));
 // Navnet skal ikke staa i koden. Settes en annen som standard, eller slutter
 // hen, foelger kalenderen med av seg selv.
 sjekk('standarden leses av registeret, ikke av et navn i koden',
@@ -4572,18 +4573,46 @@ sjekk('… og kalenderen sender det ogsaa',
 //    okt». Den andre var borte.
 //
 //    Maalt: en okt uten kursholder i dag var usynlig paa 1400 px og synlig
-//    paa 390 px. Etterpaa staar den begge steder.
-sjekk('dagsvisningen har en spalte for det som ikke er tildelt noen',
-    str_contains($sida2, "const UTEN_HOLDER = 'Uten kursholder';")
-    && str_contains($sida2, 'this.klHoldere().concat([UTEN_HOLDER]).map(kn => {'));
-sjekk('… og den henter oktene uten holder',
-    str_contains($sida2, "? dagensAlle.filter(e => !e.holder)"));
-// En tom spalte hver dag ville vaert stoy. Den skal bare staa naar den har noe.
-sjekk('… og staar bare naar den har noe',
-    str_contains($sida2, 'const staarFast = kn => kn === stdHolder && kn !== UTEN_HOLDER;'));
-// Spalta er ingen person: ingen beskjeder aa sende, ingen side aa aapne.
-sjekk('… og er ikke en person',
-    str_contains($sida2, 'erPerson: kn !== UTEN_HOLDER,'));
+//    paa 390 px. Med spalta sto den begge steder.
+//
+//    Spalta er borte igjen fra 7. september. Eieren: «uten kursholder skal
+//    fjernes overalt, det er ikke et tema aa beholde», og «det er jo ingen
+//    okter uten kursholder». Han fikk vite at slike okter da ikke vises i
+//    dagsvisningen, og valgte likevel: «Fjern spalta helt».
+sjekk('dagsvisningen har én spalte per kursholder, og ingen for resten',
+    str_contains($sida2, 'const alleKolonner = this.klHoldere().map(kn => {')
+    && !str_contains($sida2, "UTEN_HOLDER")
+    && !str_contains($sida2, "Uten kursholder'"));
+sjekk('… og hver spalte tar det som hoerer holderen til',
+    str_contains($sida2, "const evs = dagensAlle.filter(e => e.holder === kn);"));
+// Standardholderen staar ogsaa naar dagen er tom; de andre kommer fram naar
+// de har en okt, eller naar de slaas paa.
+sjekk('… og standardholderen staar fast',
+    str_contains($sida2, 'const staarFast = kn => kn === stdHolder;'));
+// Datoer laget FOER regelen kom 1. september kan ligge med tomt felt, og de
+// ville vaert usynlige i dagsvisningen naa. Migrasjon 150 fyller dem etter den
+// samme regelen som koden: den som staar paa kurset om hen er aktiv, ellers
+// verkstedets standard.
+//
+// Bare fra og med i dag. En okt som alt er holdt skal ikke faa et navn den
+// ikke hadde — da ville basen paastaa hvem som sto der en kveld i august.
+$m150 = file_get_contents(dirname(__DIR__) . '/db/migrations/150_kursholder_paa_datoene_som_manglet.sql');
+sjekk('… og gamle datoer uten holder fylles av migrasjon 150',
+    str_contains($m150, 'UPDATE course_sessions cs')
+    && str_contains($m150, 'WHERE k.id = c.kursholder_id AND k.aktiv = 1')
+    && str_contains($m150, 'WHERE k2.standard = 1 AND k2.aktiv = 1 LIMIT 1'));
+sjekk('… bare framover, og bare der feltet er tomt',
+    str_contains($m150, 'WHERE cs.kursholder_id IS NULL')
+    && str_contains($m150, 'AND cs.start_tid >= CURDATE();'));
+// Alle spaltene er personer naa, og alle kan aapnes.
+sjekk('… og hver spalte kan aapnes',
+    str_contains($sida2, 'erPerson: true,')
+    && str_contains($sida2, "apne: () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }),"));
+// Listevisningen tegner alt, uansett holder — den er veien inn til en okt
+// som ikke har faatt noen.
+sjekk('… mens listevisningen tegner alt',
+    str_contains($sida2, "const alle = this.klAlle(y, m)\n"
+        . "      .filter(e => e.type !== 'verksted' && e.type !== 'brenning')"));
 
 // 2) KALENDEREN HENTET HVER MAANED ÉN GANG OG ALDRI MER.
 //    «kalHentet» merker maaneden som hentet, og klHent() gaar rett ut igjen.
@@ -5593,14 +5622,14 @@ sjekk('… og innstemplinga ogsaa',
 // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen» — og,
 // spurt: «hele kolonnen, jeg vil likevel legge til f eks brenning paa min
 // kalender, en kollone».
-// 1. september kom det én spalte tilbake — men ikke «Verkstedet», og ikke
-// som en fast kolonne. «Uten kursholder» staar bare naar den har noe, og
-// finnes fordi en okt uten tildelt holder ellers ikke ble tegnet i det hele
-// tatt. Se «Kalenderen: to feil som gjemte kurs».
+// 1. september kom det én spalte tilbake — «Uten kursholder», som sto naar
+// den hadde noe. Den er borte igjen fra 7. september, etter eierens valg. Naa
+// er det én spalte per kursholder, og ingen andre.
 sjekk('«Verkstedet»-kolonnen er borte, og ingen ny fast kolonne satt i stedet',
-    str_contains($sida, 'this.klHoldere().concat([UTEN_HOLDER]).map(kn => {')
+    str_contains($sida, 'const alleKolonner = this.klHoldere().map(kn => {')
     && !str_contains($sida, "concat(['Verkstedet'])")
-    && !str_contains($sida, "concat(['Brenning'])"));
+    && !str_contains($sida, "concat(['Brenning'])")
+    && !str_contains($sida, 'this.klHoldere().concat('));
 // Brenning og innstempling har ingen kursholder og laa derfor i den gamle
 // kolonnen. Foerst sila jeg dem bort i dagsvisninga alene, og da stod
 // ukesvisninga full av dem. Sila hoerer hjemme der hendelsene hentes, saa
@@ -5609,17 +5638,17 @@ sjekk('brenning og verksted siles bort der hendelsene hentes',
     str_contains($sida, "const alle = this.klAlle(y, m)\n"
         . "      .filter(e => e.type !== 'verksted' && e.type !== 'brenning')"));
 sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
-    str_contains($sida, ": dagensAlle.filter(e => e.holder === kn);"));
+    str_contains($sida, "const evs = dagensAlle.filter(e => e.holder === kn);"));
 // Eieren, gang paa gang: «det hvite feltet under alle kurs skulle staa paa
 // linje med det hvite i kallenderen». Overskriftsrada i kalenderen er ulik
-// hoey i de tre visningene, saa hver visning trenger sitt eget loft.
+// hoey i de tre visningene, saa hver visning hadde sitt eget loft: dag -18 px,
+// uke 17, maaned 21.
 //
-// Dagen laa paa -65 px saa lenge «Viser»-raden med kursholderpillene laa inni
-// kalenderspalta og skjov rutenettet ned. Raden ligger naa i full bredde over
-// begge spaltene, og da holder -18. Maalt paa nytt 1. september: det hvite
-// lander likt paa 1200, 1500 og 1700 px.
-sjekk('det hvite staar paa linje i alle tre visningene',
-    str_contains($sida, "marginTop: visning === 'dag' ? '-18px' : visning === 'uke' ? '17px' : '21px'"));
+// Loftet er borte fra 7. september. Styringen ligger oeverst i spalta naa, og
+// det er den som staar paa linje med «Alle kurs» — rutenettet ligger under
+// den, og kan ikke staa paa linje med noe til venstre lenger.
+sjekk('spalta har ikke loft lenger',
+    !str_contains($sida, "marginTop: visning === 'dag' ?"));
 
 // Ruta som aapnes fra kalenderen var bygget ved aa ramse opp hver kolonne
 // kurset har, og viste derfor ogsaa feltene eieren alt hadde bedt om aa bli
@@ -7162,12 +7191,39 @@ sjekk('pillene ligger i sin egen rad, i full bredde',
     str_contains($sida, "klPilleradStil: this.erSmal()")
     && str_contains($sida, ": { gridColumn: '1 / -1', gridRow: '2', minWidth: 0 },"));
 sjekk('… og kalenderen ligger i rada under',
-    str_contains($sida, ": { minWidth: 0, gridColumn: '2', gridRow: '3',")
+    str_contains($sida, ": { minWidth: 0, gridColumn: '2', gridRow: '3' },")
     && str_contains($sida, "gridColumn: '1', gridRow: '3' },"));
 // Maalt paa den kjorende siden: pilleraden paa 430, kortene slutter paa 410,
 // null kollisjoner, og det hvite likt paa begge sider.
 sjekk('… og raden er ute av loftet',
     !str_contains($sida, "marginTop: visning === 'dag' ? '-65px'"));
+
+// ── Styringen er kalenderens topplinje ─────────────────────────────────
+//
+// Eieren, 7. september 2026: «dato velger, altsaa der man velger dato, uke,
+// maaned, og blar fram og tilbake maa ligge i umiddelbar naerhet til
+// kalenderen». Den sto oeverst paa siden, 439 px over foerste klokkelinje,
+// med beskjeder, notater, paaminnelser, fem snarveiskort og «Viser»-raden
+// imellom. Han saa to skjermbilder og valgte: «b». Maalt etterpaa: 150 px.
+//
+// Baren staar INNE i kalenderspalta, foer visningene. Staar den utenfor
+// igjen, er vi tilbake til 439.
+sjekk('styringen ligger inne i kalenderspalta',
+    str_contains($sida, '<div style="{{ klHovedStil }}">')
+    && strpos($sida, '<div style="{{ klStyringStil }}">') > strpos($sida, '<div style="{{ klHovedStil }}">')
+    && strpos($sida, '<div style="{{ klStyringStil }}">') < strpos($sida, 'klErManed }}" hint-placeholder-val="{{ false }}"'));
+// Uten bunnkant og med runding bare oppe henger baren sammen med rutenettet
+// under, som ett kort. Med full runding ble det to kort oppaa hverandre.
+sjekk('… og henger sammen med rutenettet under',
+    str_contains($sida, "klStyringStil: {")
+    && str_contains($sida, "borderBottom: 'none', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',"));
+// Knappene er de samme, og de skal vaere der alle sammen.
+sjekk('… og alle knappene ble med',
+    substr_count($sida, 'onClick="{{ klForrige }}"') === 1
+    && substr_count($sida, 'onClick="{{ klIdag }}"') === 1
+    && substr_count($sida, 'onClick="{{ klNesteSteg }}"') === 1
+    && substr_count($sida, '<sc-for list="{{ klVisninger }}" as="v"') === 1
+    && substr_count($sida, 'onChange="{{ settKlSok }}"') === 1);
 
 // ── Paint on Pots tar ikke spalta ──────────────────────────────────────
 //

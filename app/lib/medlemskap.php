@@ -1010,17 +1010,39 @@ final class Medlemskap
         // Sperra er borte. Sier Vipps ACTIVE, er medlemskapet aktivt.
         // Verkstedet kan fortsatt si nei — da sies avtalen opp, og da stoppes
         // den ogsaa hos Vipps. Se docs/AVTALETREKK.md, K1.
-        // Forste trekk settes naar avtalen blir aktiv. Vi trekker fra dagen
-        // etter godkjenning, ikke fra den 1. — da slipper vi aa forklare
-        // hvorfor noen betaler full pris for en halv maaned.
+        // ── Foerste trekk er alt gjort naar avtalen blir aktiv ──────────
+        //
+        // Vipps tar det i det kunden sier ja — se «initialCharge» i
+        // Vipps::opprettAvtale(). Her sto «neste_trekk = i dag», fra den gang
+        // vi belastet foerste periode selv. Blir den staaende, plukker
+        // trekkrunden avtalen opp samme natt og ber om ET TREKK TIL.
+        //
+        // Neste trekk er derfor en maaned fram, regnet av samme regel som
+        // resten: dagen huskes, saa den 31. blir 28. i februar og 31. igjen
+        // i mars.
         if ($ny === 'aktiv' && $avtale['neste_trekk'] === null) {
-            $endring['neste_trekk'] = (new DateTimeImmutable('now'))->format('Y-m-d');
+            $endring['neste_trekk'] = self::nesteTrekkdato(
+                (new DateTimeImmutable('now'))->format('Y-m-d'),
+                $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null
+            );
         }
         if ($ny !== 'aktiv') {
             $endring['neste_trekk'] = null;
         }
 
         DB::oppdater('subscriptions', $endring, ['id' => (int) $avtale['id']]);
+
+        // ── Foerste trekk foeres hos oss ────────────────────────────────
+        //
+        // Vipps lager det selv naar kunden godkjenner — vi ber aldri om det,
+        // og kjenner derfor ingen charge-id. Uten dette ville pengene ligget
+        // hos Vipps uten aa staa i Kassa, i regnskapet eller paa medlemmet.
+        //
+        // Kjores runden to ganger, skal raden bare bli til én: noekkelen er
+        // trekkets egen id hos Vipps.
+        if ($ny === 'aktiv' && $avtale['neste_trekk'] === null) {
+            self::foerForsteTrekk($avtale);
+        }
 
         // Medlemsstatusen folger avtalen. Uten dette ville noen betalt uten aa
         // faa tilgang, eller hatt tilgang uten aa betale.
@@ -1048,6 +1070,70 @@ final class Medlemskap
      *
      * @return array{status:string,avtale:?array<string,mixed>}
      */
+    /**
+     * Foerer trekket Vipps tok da kunden godkjente avtalen.
+     *
+     * «initialCharge» gjor at Vipps belaster med det samme — se
+     * Vipps::opprettAvtale(). Trekket er deres, ikke vaart: vi har ingen
+     * referanse og ingen rad. Den hentes her, én gang, naar avtalen gaar fra
+     * «venter» til «aktiv».
+     *
+     * Noekkelen er charge-id-en fra Vipps. Kjorer dette to ganger — to faner,
+     * to runder — blir det likevel én rad.
+     */
+    private static function foerForsteTrekk(array $avtale): void
+    {
+        $avtaleId = (string) ($avtale['vipps_agreement_id'] ?? '');
+        if ($avtaleId === '') {
+            return;
+        }
+
+        $trekk = Vipps::trekkPaaAvtale($avtaleId);
+        if ($trekk === []) {
+            logg_feil('Fant ingen trekk paa avtale ' . $avtaleId
+                . ' da den ble aktiv. Foerste betaling staar ikke fort hos oss.');
+            return;
+        }
+
+        // Det eldste er det Vipps tok ved godkjenning.
+        usort($trekk, static fn(array $a, array $b): int
+            => strcmp((string) ($a['due'] ?? ''), (string) ($b['due'] ?? '')));
+        $forste = $trekk[0];
+
+        $trekkId = trim((string) ($forste['id'] ?? ''));
+        if ($trekkId === '') {
+            logg_feil('Trekket paa avtale ' . $avtaleId . ' kom uten id.');
+            return;
+        }
+
+        $nokkel = substr('init:' . $trekkId, 0, 64);
+        if (DB::en('SELECT id FROM payments WHERE idempotency_key = :k', ['k' => $nokkel]) !== null) {
+            return;
+        }
+
+        // Statusen er Vipps sin. «CHARGED» betyr at pengene er inne;
+        // «PENDING» og «DUE» at de kommer; alt annet er ikke betalt.
+        $status = strtoupper((string) ($forste['status'] ?? ''));
+        $vaar = match ($status) {
+            'CHARGED'                  => 'betalt',
+            'RESERVED', 'DUE', 'PENDING', 'PROCESSING' => 'venter',
+            'FAILED', 'CANCELLED'      => 'feilet',
+            default                    => 'venter',
+        };
+
+        DB::settInn('payments', [
+            'vipps_reference' => Vipps::nyReferanse('MED'),
+            'vipps_psp_ref'   => $trekkId,
+            'type'            => 'recurring_charge',
+            'formal'          => 'medlemskap',
+            'member_id'       => (int) $avtale['member_id'],
+            'subscription_id' => (int) $avtale['id'],
+            'belop_ore'       => (int) ($forste['amount'] ?? $avtale['pris_ore']),
+            'status'          => $vaar,
+            'idempotency_key' => $nokkel,
+        ]);
+    }
+
     public static function slippForsteTrekk(int $medlemId): array
     {
         $a = DB::en(
@@ -1065,12 +1151,10 @@ final class Medlemskap
             return ['status' => $status, 'avtale' => $a];
         }
 
+        // Datoen settes av oppdaterFraVipps() over, en maaned fram — foerste
+        // trekk er alt gjort av Vipps. Sto den til «i dag» her, ville runden
+        // bedt om et trekk til samme natt.
         $a = DB::en('SELECT * FROM subscriptions WHERE id = :id', ['id' => (int) $a['id']]);
-        if ($a !== null && $a['neste_trekk'] === null) {
-            DB::oppdater('subscriptions', [
-                'neste_trekk' => (new DateTimeImmutable('now'))->format('Y-m-d'),
-            ], ['id' => (int) $a['id']]);
-        }
         return ['status' => 'aktiv', 'avtale' => $a];
     }
 

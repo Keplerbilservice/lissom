@@ -91,7 +91,29 @@ http.createServer((req, res) => {
     if (p === '/recurring/v3/agreements' && req.method === 'POST') {
       const id = 'agr_' + Date.now().toString(36) + '_' + (avtaler.size + 1);
       avtaler.set(id, { status: 'PENDING', kropp });
+      // «initialCharge» gjor at Vipps belaster i det kunden sier ja. Trekket
+      // er deres, ikke vaart — vi far aldri en id tilbake her. Den falske
+      // legger det i lista, saa /charges kan svare med det etterpaa, slik den
+      // ekte gjor.
+      if (kropp && kropp.initialCharge) {
+        const iid = 'chg_init_' + (trekk.size + 1);
+        trekk.set(iid, Object.assign({}, kropp.initialCharge, { init: true, agreementId: id }));
+      }
       return svar(res, 201, { agreementId: id, vippsConfirmationUrl: 'https://falsk.vipps/godkjenn/' + id });
+    }
+    // Alle trekkene paa én avtale. Det eldste er det Vipps tok ved
+    // godkjenning. «.init-status» styrer hva det staar som.
+    if (p.endsWith('/charges') && req.method === 'GET') {
+      const id = p.split('/')[4];
+      const ut = [];
+      for (const [tid, t] of trekk) {
+        if (t.agreementId && t.agreementId !== id) continue;
+        ut.push({ id: tid, amount: t.amount ?? 0,
+                  status: t.init ? styrt('.init-status', 'CHARGED') : 'PENDING',
+                  due: t.init ? '2000-01-01' : (t.due || '2099-01-01'),
+                  description: t.description || '' });
+      }
+      return svar(res, 200, ut);
     }
     if (p === '/recurring/v3/agreements' && req.method === 'GET') {
       return svar(res, 200, []);

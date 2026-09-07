@@ -2433,14 +2433,13 @@ sjekk('listene viser hele aaret framover, ikke bare to uker',
 // tomt ut, det ser oedelagt ut: eieren kunne ikke vite om ingen hadde skrevet,
 // eller om lista hadde sluttet aa laste. Sosterkortet «Paaminnelser» har hatt
 // den linja hele tida.
-sjekk('beskjedkortet sier fra naar koen er tom',
-    str_contains($sida, 'klBeskjederTom: (this.state.adminForesporsler || [])')
-    && str_contains($sida, 'Ingen ubesvarte beskjeder.'));
-// Forhaandsvisningen var én linje med «nowrap», saa paa telefon sto det tre
-// ord og en ellipse. Da maatte man aapne hver melding for aa se hva den gjaldt.
-sjekk('forhaandsvisningen viser to linjer av meldingen',
-    str_contains($sida, '-webkit-line-clamp: 2; line-clamp: 2;')
-    && !str_contains($sida, 'text-overflow: ellipsis; white-space: nowrap;">{{ b.tekst }}'));
+// Boksen er borte fra 7. september — eieren: «Jeg vil at alle boksene skal
+// vaere like». Beskjeder er et kort som de andre naa, og tallet paa ubesvarte
+// staar som et merke i hjoernet i stedet for en liste under.
+sjekk('beskjedkortet viser tallet paa ubesvarte',
+    str_contains($sida, 'klBeskjederAntall: String((this.state.adminForesporsler || [])')
+    && str_contains($sida, 'klBeskjederHar: (this.state.adminForesporsler || [])')
+    && str_contains($sida, '<span style="{{ klSnarveiNavnStil }}">Beskjeder</span>'));
 // «Aapne» gikk til Beskjeder — skjermen der man skriver ut til en gruppe.
 // Kortet viser henvendelser som venter paa svar, og det er dit man vil.
 sjekk('«Aapne» gaar til de ubesvarte naar det er noe ubesvart',
@@ -5156,6 +5155,38 @@ sjekk('… og medlemskapet tas ut av kurven naar avtalen startes',
 // Serveren skal fortsatt vaere den som avgjor. Den er den eneste som vet
 // hva som staar i Vipps, og den hindrer to avtaler ved siden av hverandre.
 $mlib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+// ── Foerste trekk gaar ved godkjenning ─────────────────────────────────
+//
+// Avtalen ble opprettet uten «initialCharge»: vi belastet selv, gjennom
+// trekkrunden. Runden gaar én gang i doegnet, og forfallet settes en dag fram
+// fordi Vipps krever at kunden varsles — det ble opptil to doegn.
+//
+// Eieren, 7. september 2026: «ingen betalinger er registrert enda ... Andre
+// slike avtaler jeg har har jeg blitt trukket med en gang». Han valgte «Be
+// Vipps trekke ved godkjenning».
+//
+// Maalt ende til ende mot den falske Vippsen: 41 av 41.
+$vFilInit = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+sjekk('Vipps blir bedt om aa trekke ved godkjenning',
+    str_contains($vFilInit, "'initialCharge'         => [")
+    && str_contains($vFilInit, "'amount'          => \$prisOre,")
+    && str_contains($vFilInit, "'transactionType' => 'DIRECT_CAPTURE',"));
+// Trekket er Vipps sitt: vi ber aldri om det, og faar ingen id tilbake. Uten
+// dette laa pengene der uten aa staa i Kassa eller i regnskapet.
+sjekk('… og trekket hentes og foeres hos oss',
+    str_contains($vFilInit, 'public static function trekkPaaAvtale(string $avtaleId): array')
+    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale): void')
+    && str_contains($mlib, "'vipps_psp_ref'   => \$trekkId,"));
+// Det farligste her: staar «neste_trekk» paa i dag, ber runden om et trekk
+// til samme natt, og hun er trukket to ganger.
+sjekk('… og neste trekk staar en maaned fram, ikke i dag',
+    str_contains($mlib, "\$endring['neste_trekk'] = self::nesteTrekkdato(")
+    && !str_contains($mlib, "\$endring['neste_trekk'] = (new DateTimeImmutable('now'))->format('Y-m-d');"));
+// Noekkelen er trekkets egen id hos Vipps. To runder gir én rad.
+sjekk('… og to runder gir én rad',
+    str_contains($mlib, "\$nokkel = substr('init:' . \$trekkId, 0, 64);")
+    && str_contains($mlib, "DB::en('SELECT id FROM payments WHERE idempotency_key = :k', ['k' => \$nokkel]) !== null"));
 sjekk('serveren nekter to avtaler ved siden av hverandre',
     str_contains($mlib, "throw new RuntimeException('Du har alt et medlemskap."));
 
@@ -7641,16 +7672,30 @@ sjekk('migrasjon 132 retter velkomstmalen',
 $velkomst = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
 );
-// Migrasjon 139 skrev malen om igjen. Den sa fortsatt at avtalen VAR
-// opprettet, og at medlemskapet var aktivt med det samme — begge deler er
-// usant for kunden har godkjent i appen. Eieren, 5. september: «eposten de
-// som bestiller årsmedlemskap får forteller ingenting om at de må godkjenne».
-sjekk('velkomsten sier at avtalen maa godkjennes',
-    str_contains($velkomst, 'DU MÅ GODKJENNE AVTALEN I VIPPS'), mb_substr($velkomst, 0, 40));
-sjekk('… og at medlemskapet ikke starter for det',
-    str_contains($velkomst, 'Medlemskapet starter ikke før du har gjort det'));
-sjekk('… og hvorfor trekket tar tid',
-    str_contains($velkomst, 'Vipps krever at vi varsler deg før hvert'));
+// Migrasjon 139 skrev malen om igjen, med lenka som det viktigste i den.
+//
+// Lenka var Vipps sin egen adresse, og den lever i ti minutter — den var doed
+// for e-posten ble lest. Eieren, 7. september 2026: «Mailen som kommer kan da
+// endres, fjern linken. Fortell at man kan se faste trekk i vipps appen», og
+// spurt om den skulle bli igjen der verkstedet sender avtalen selv: «Fjern
+// lenka overalt». Migrasjon 152.
+sjekk('velkomsten har ingen lenke',
+    !str_contains($velkomst, '{lenke}'),
+    'adressen den pekte paa doer etter ti minutter');
+sjekk('… og sier hvor avtalen staar',
+    str_contains($velkomst, 'under Faste trekk i Vipps-appen'));
+// Vipps tar foerste maaned i det hun sier ja — «initialCharge». Malen maa si
+// det samme som systemet gjor.
+sjekk('… og at foerste maaned trekkes med det samme',
+    str_contains($velkomst, 'Første måned trekkes med det samme'));
+// Godkjenningen staar ikke lenger i teksten. Eieren, 7. september: «Må det stå
+// at avtalen må godkjennes i vipps, er det ikke nettopp dette man gjør når man
+// betaler med vipps da?» Aa si ja i appen ER betalingen, ikke et steg til.
+// Skjermen sier det fortsatt til den som blir avbrutt — ruta «Godkjenn i
+// Vipps» i lissom-2108.html.
+sjekk('… og maser ikke om aa godkjenne',
+    !str_contains($velkomst, 'godkjen') && !str_contains($velkomst, 'sagt ja'),
+    'aa si ja i Vipps ER betalingen');
 // De to gamle setningene lovte noe systemet ikke gjor.
 sjekk('… og lover ikke lenger at medlemskapet venter paa betalingen',
     !str_contains($velkomst, 'aktivt så snart betalingen er registrert'));
@@ -7658,8 +7703,13 @@ sjekk('… og paastaar ikke at det er aktivt med det samme',
     !str_contains($velkomst, 'Medlemskapet er aktivt med det samme'),
     'det er det ikke for avtalen er godkjent');
 // Plassholderne maa staa. Uten dem staar det «Hei {navn}» i e-posten.
-foreach (['{navn}', '{type}', '{lenke}'] as $felt) {
+foreach (['{navn}', '{type}', '{belop}'] as $felt) {
     sjekk('… og «' . $felt . '» staar igjen i malen', str_contains($velkomst, $felt));
+}
+// Ingen av stedene som sender den skal sende en lenke lenger.
+foreach (['api/bli-medlem.php', 'api/medlemskap.php', 'api/admin/medlemmer.php'] as $fil) {
+    sjekk('… og ' . $fil . ' sender ingen lenke til malen',
+        !str_contains(file_get_contents(dirname(__DIR__) . '/' . $fil), "'lenke' =>"));
 }
 
 // ── Rekkefolgen i medlemstrekket ───────────────────────────────────────
@@ -9758,7 +9808,7 @@ sjekk('… og «Ingen innstemplet» naar verkstedet er tomt',
 // Kalenderens sidemeny hadde ikke noe bunnfelt i det hele tatt. Uten dette
 // var det nettopp den skjermen eieren spurte om som sto uten navn.
 sjekk('… ogsaa i kalenderens sidemeny',
-    strpos($sida, '{{ admMenyInne }}') < strpos($sida, '{{ klBoksNStil }}'));
+    strpos($sida, '{{ admMenyInne }}') < strpos($sida, '{{ klSnarveiRadStil }}'));
 
 // ── Telefonen ───────────────────────────────────────────────────────────
 //
@@ -12753,10 +12803,12 @@ sjekk('velkomstmalen sier at avtalen maa godkjennes',
     str_contains($mig, 'DU MÅ GODKJENNE AVTALEN I VIPPS')
     && str_contains($mig, "SET emne  = 'Godkjenn medlemskapet i Vipps',"),
     'den sa «Du har opprettet en fast betalingsavtale» — som om den var ferdig');
-sjekk('… og lenka til Vipps staar i den',
-    str_contains($mig, '{lenke}')
-    && str_contains($bmV, "'lenke' => (string) (\$avtale['url'] ?? '') !== ''"),
-    'uten den naadde adressen aldri fram til noen');
+// Lenka sto her til 7. september. Den var Vipps sin egen adresse — ti minutter
+// levetid — og var doed for e-posten ble lest. Eieren: «Fjern lenka overalt».
+// Migrasjon 152 skrev malen om; 139 staar som den sto, som historikk.
+sjekk('… men lenka er tatt ut igjen',
+    !str_contains($bmV, "'lenke' =>"),
+    'adressen doer etter ti minutter');
 sjekk('… og den gaar ogsaa naar man kjoper fra Min side',
     str_contains($mkV, "Varsel::mal(\$betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',"),
     'herfra gikk det ingen e-post i det hele tatt');
@@ -12829,13 +12881,15 @@ sjekk('… og paastaar heller ikke at det ER betalt',
     'brevet gaar foer vi vet hvordan det gikk i Vipps');
 sjekk('… men sier hvilket medlemskap og hva det koster',
     str_contains($ordner, '{type}') && str_contains($ordner, '{belop}'));
-// Fast trekk er ikke roert: der ER lenka poenget, for avtalen maa godkjennes
-// i appen foer det finnes noe aa trekke paa.
+// Fast trekk hadde lenka som det viktigste i seg. Den er borte fra 7.
+// september — eieren: «Fjern lenka overalt» — og malen sier i stedet hvor
+// avtalen staar.
 $fast = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
 );
-sjekk('fast trekk beholder godkjenningslenka',
-    str_contains($fast, '{lenke}') && str_contains($fast, 'GODKJENNE AVTALEN I VIPPS'));
+sjekk('fast trekk har ingen lenke heller',
+    !str_contains($fast, '{lenke}')
+    && str_contains($fast, 'under Faste trekk i Vipps-appen'));
 
 // 2. Kvitteringen fantes ikke. Betalingen gikk gjennom, medlemskapet ble
 //    slaatt paa, og kunden fikk aldri et ord fra oss.
@@ -13357,12 +13411,34 @@ sjekk('… og et nytt medlemskap starter uten avtaletrekk',
 // med ikon, 80 px hoye, tallet som merke i hjoernet, borte fra sidespalta,
 // og «Aarskalender» aapner aarskalenderen. Én rad paa PC, to paa nettbrett,
 // tre paa telefon.
-sjekk('de fem snarveiene staar som kort',
-    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 5);
+//
+// Fra 7. september er de aatte. Beskjeder, Notater og Paaminnelser sto som
+// tre bokser med innhold i, over de fem. Eieren: «Jeg vil at alle boksene
+// skal vaere like, ikke de fem under eller noe saant, men alle som i alle».
+sjekk('alle aatte snarveiene staar som kort',
+    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 8);
+// Boksene er borte, og med dem stilene deres. Staar én av dem igjen, staar
+// det en boks blant kortene.
+sjekk('… og de tre boksene er borte',
+    !str_contains($byttSida, 'klBoksBStil')
+    && !str_contains($byttSida, 'klBoksNStil')
+    && !str_contains($byttSida, 'klBoksHodeStil')
+    && !str_contains($byttSida, 'klBoksEtikettStil'));
+// Skjemaet er ikke fjernet — det har flyttet inn i hver sin rute.
+sjekk('… og notatet og paaminnelsene aapnes i en rute',
+    str_contains($byttSida, 'klNotatApne: () => this.setState({ klNotatRute: true }),')
+    && str_contains($byttSida, 'klPaminApne: () => this.setState({ klPaminRute: true }),')
+    && str_contains($byttSida, '<sc-if value="{{ klNotatRuteVises }}"')
+    && str_contains($byttSida, '<sc-if value="{{ klPaminRuteVises }}"'));
+sjekk('… og skjemaene er de samme',
+    str_contains($byttSida, 'onChange="{{ settKlNotat }}"')
+    && str_contains($byttSida, 'onClick="{{ klNotatUt }}"')
+    && str_contains($byttSida, '<sc-for list="{{ klPaminListe }}" as="p"')
+    && str_contains($byttSida, 'onClick="{{ klPaminLeggTilKlikk }}"'));
 sjekk('… i sin egen rad, over hele bredden',
     str_contains($byttSida, "klSnarveiRadStil: {")
     && str_contains($byttSida, "gridColumn: '1 / -1',")
-    && str_contains($byttSida, "gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',"));
+    && str_contains($byttSida, "gridTemplateColumns: 'repeat(auto-fit, minmax(124px, 1fr))',"));
 sjekk('… i samme kortstil som boksene over',
     str_contains($byttSida, "borderRadius: '22px', padding: 'var(--space-4)',"));
 sjekk('… og tallet staar som et merke, ikke i navnet',

@@ -210,7 +210,7 @@ function tilstand(string $epost): array
     $a = DB::en('SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1',
                 ['m' => (int) $m['id']]);
     $b = $a === null ? [] : DB::alle(
-        'SELECT status, belop_ore, type FROM payments WHERE subscription_id = :s ORDER BY id',
+        'SELECT status, belop_ore, type, vipps_psp_ref FROM payments WHERE subscription_id = :s ORDER BY id',
         ['s' => (int) $a['id']]);
 
     // Slik KASSA ser det (api/admin/oversikt.php → ubetalte)
@@ -276,6 +276,13 @@ $t = tilstand('kjede.aar@test.local');
 sjekk('avtalen staar «venter» til hun har godkjent',
     ($t['avtale']['status'] ?? '') === 'venter', 'status: ' . ($t['avtale']['status'] ?? '—'));
 sjekk('… og ingen er trukket enda', $t['betalinger'] === []);
+// Vipps skal ta foerste periode i det hun sier ja — «initialCharge». Eieren,
+// 7. september 2026: «Andre slike avtaler jeg har har jeg blitt trukket med
+// en gang». Uten dette gaar det opptil to doegn for pengene er inne.
+sjekk('… og Vipps er bedt om aa trekke ved godkjenning',
+    (int) ($avtaleKall['initialCharge']['amount'] ?? 0) === (int) $planFast['pris_ore']
+    && ($avtaleKall['initialCharge']['transactionType'] ?? '') === 'DIRECT_CAPTURE',
+    'foerste periode skal tas med det samme, ikke av trekkrunden');
 sjekk('… og godkjenningslenka er tatt vare paa',
     trim((string) ($t['avtale']['vipps_url'] ?? '')) !== '',
     'uten den kan ingen purring sende den paa nytt');
@@ -295,21 +302,38 @@ $runde = Medlemskap::kjorTrekkrunde();
 $t = tilstand('kjede.aar@test.local');
 sjekk('trekkrunden oppdager godkjenningen',
     ($t['avtale']['status'] ?? '') === 'aktiv', 'status: ' . ($t['avtale']['status'] ?? '—'));
-sjekk('… og trekker i den samme runden',
+// Trekket Vipps tok ved godkjenning foeres hos oss. Uten dette ville pengene
+// ligget der uten aa staa i Kassa, i regnskapet eller paa medlemmet.
+sjekk('… og foerste trekk staar fort hos oss',
     count($t['betalinger']) === 1,
-    count($t['betalinger']) . ' betalingsrader — hun skal ikke vente et dogn til');
+    count($t['betalinger']) . ' betalingsrader — Vipps tok pengene ved godkjenning');
 sjekk('… paa riktig beloep',
     (int) ($t['betalinger'][0]['belop_ore'] ?? 0) === (int) $planFast['pris_ore']);
+sjekk('… med trekk-id-en fra Vipps',
+    trim((string) ($t['betalinger'][0]['vipps_psp_ref'] ?? '')) !== '',
+    'uten den kan trekket ikke foelges opp');
 
+// Det farligste her: ber runden om ET TREKK TIL samme natt, er hun trukket to
+// ganger for hun har rukket aa se den forste.
 $belast = null;
 foreach (vippsSiden($vFra) as $k) {
     if (str_ends_with((string) ($k['sti'] ?? ''), '/charges') && ($k['metode'] ?? '') === 'POST') {
         $belast = $k['kropp'] ?? [];
     }
 }
-sjekk('… og Vipps faar et forfall fram i tid',
-    $belast !== null && ($belast['due'] ?? '') > gmdate('Y-m-d'),
-    'Vipps krever at kunden varsles for trekket');
+sjekk('… og runden ber IKKE om et trekk til',
+    $belast === null,
+    'foerste periode er alt tatt av Vipps');
+sjekk('… og neste trekk staar en maaned fram',
+    ($t['avtale']['neste_trekk'] ?? '') > gmdate('Y-m-d', strtotime('+20 days')),
+    'neste trekk: ' . ($t['avtale']['neste_trekk'] ?? '—'));
+
+// Kjores runden en gang til samme natt, skal det fortsatt vaere én rad.
+Medlemskap::kjorTrekkrunde();
+$t = tilstand('kjede.aar@test.local');
+sjekk('… og en runde til gir ingen ny rad',
+    count($t['betalinger']) === 1,
+    count($t['betalinger']) . ' rader etter to runder');
 
 // ─────────────────────────────────────────────────────────────────────────
 bolk('3. De to skjermene sier det samme, i hver eneste tilstand');

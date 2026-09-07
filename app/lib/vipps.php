@@ -498,8 +498,27 @@ final class Vipps
             'merchantAgreementUrl'  => Config::nettsted() . '/min-side',
             'productName'           => mb_substr($plan, 0, 45),
             'productDescription'    => mb_substr($beskrivelse, 0, 100),
-            // Ingen kampanje og ingen forste trekk her: vi belaster selv, sa
-            // alle trekk far samme vei gjennom systemet.
+            // ── Foerste trekk gaar med det samme ────────────────────────
+            //
+            // Her sto ingen «initialCharge»: vi belastet selv, gjennom
+            // trekkrunden, saa alle trekk fikk samme vei gjennom systemet.
+            //
+            // Prisen var at pengene kom seint. Runden gaar én gang i doegnet,
+            // og forfallet settes en dag fram fordi Vipps krever at kunden
+            // varsles. Det ble opptil to doegn.
+            //
+            // Eieren, 7. september 2026, etter aa ha meldt seg inn paa nytt:
+            // «ingen betalinger er registrert enda ... Andre slike avtaler
+            // jeg har har jeg blitt trukket med en gang». Han valgte «Be Vipps
+            // trekke ved godkjenning».
+            //
+            // Godkjenningsskjermen i appen ER varselet: hun ser beloepet foer
+            // hun sier ja. Derfor trengs ingen frist paa dette ene trekket.
+            'initialCharge'         => [
+                'amount'          => $prisOre,
+                'description'     => mb_substr($plan, 0, 45),
+                'transactionType' => 'DIRECT_CAPTURE',
+            ],
             'scope'                 => 'name phoneNumber',
         ];
 
@@ -625,6 +644,31 @@ final class Vipps
      *
      * @return string charge-ID-en
      */
+    /**
+     * Alle trekkene paa en avtale.
+     *
+     * Foerste trekk lages av Vipps selv, naar kunden godkjenner avtalen — se
+     * «initialCharge» i opprettAvtale(). Vi ber aldri om det, saa vi kjenner
+     * heller ingen charge-id: den maa hentes her, ellers ville pengene ligget
+     * hos Vipps uten aa staa noe sted hos oss.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function trekkPaaAvtale(string $avtaleId): array
+    {
+        $svar = http_get_json(
+            Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId) . '/charges',
+            self::headere()
+        );
+
+        if ($svar['status'] !== 200 || !is_array($svar['json'])) {
+            logg_feil('Fikk ikke hentet trekkene paa avtale ' . $avtaleId
+                . ': HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            return [];
+        }
+        return array_values(array_filter($svar['json'], 'is_array'));
+    }
+
     public static function belastAvtale(
         string $avtaleId,
         int $belopOre,

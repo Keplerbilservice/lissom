@@ -143,17 +143,32 @@ if (Foresporsel::metode() === 'GET') {
     $fraOslo = (new DateTimeImmutable('today', $oslo))->setTimezone(new DateTimeZone('UTC'));
     $idag = DB::alle(
         "SELECT o.id, o.ordrenr, o.sum_ore, o.status, o.betalt_maate, o.created_at,
+                o.kunde_navn, m.navn AS medlem_navn,
+                (p.type IS NOT NULL AND p.type <> 'manuell') AS fra_nett,
                 (SELECT GROUP_CONCAT(CONCAT(ol.antall, ' × ', ol.tittel) SEPARATOR ', ')
                    FROM order_lines ol WHERE ol.order_id = o.id) AS linjer
            FROM orders o
       LEFT JOIN payments p ON p.id = o.payment_id
+      LEFT JOIN members m ON m.id = o.member_id
           WHERE o.created_at >= :fra
             AND (p.type = 'manuell'
                  -- Et salg foert som «Ikke betalt» har ingen betalingsrad.
                  -- Uten dette leddet sto det ingen steder i kassa, og en
                  -- feilregistrering kunne ikke annulleres. Summen for dagen
                  -- teller det ikke med — se «utDagsum» i nettleseren.
-                 OR (o.payment_id IS NULL AND o.betalt_maate = 'Ikke betalt'))
+                 OR (o.payment_id IS NULL AND o.betalt_maate = 'Ikke betalt')
+                 -- ── Kjopene fra nettbutikken ──────────────────────────
+                 --
+                 -- Eieren, 7. september 2026: «i dag gjorde anniken et kjop i
+                 -- internbutikken, det har kommet penger og det er
+                 -- registrert, men det staar ikke hva hun har kjopt».
+                 --
+                 -- Lista tok bare det som var slaatt inn over disk. Et kjop
+                 -- gjort paa nett og betalt med Vipps sto ingen steder i
+                 -- kassa, selv om pengene var inne — og varenavnene laa i
+                 -- ordrelinjene hele tida. Han valgte at de skal staa i den
+                 -- samme lista, merket hvor de kom fra.
+                 OR p.status IN ('betalt', 'delvis_refundert'))
           ORDER BY o.id DESC",
         ['fra' => $fraOslo->format('Y-m-d H:i:s')]
     );
@@ -200,6 +215,13 @@ if (Foresporsel::metode() === 'GET') {
             'maate'   => (string) ($o['betalt_maate'] ?? ''),
             'linjer'  => (string) ($o['linjer'] ?? ''),
             'tid'     => Booking::norskDatoKort((string) $o['created_at']),
+            // Kom kjopet fra nettbutikken? Da skal raden si det, og den kan
+            // ikke annulleres herfra — pengene gaar tilbake i OEkonomi.
+            'fraNett' => (int) ($o['fra_nett'] ?? 0) === 1,
+            // Navnet staar bare paa nettkjopene. Over disk er kunden den som
+            // staar foran deg, og feltet er «Salg over disk».
+            'kunde'   => (string) ($o['medlem_navn'] ?? '') !== ''
+                ? (string) $o['medlem_navn'] : (string) ($o['kunde_navn'] ?? ''),
         ], $idag),
     ]);
 }

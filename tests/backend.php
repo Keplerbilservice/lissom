@@ -8511,8 +8511,10 @@ sjekk('… paa den kontoen salget hoerer til',
 sjekk('en ubetalt feilregistrering kan annulleres',
     str_contains($utFil, "FROM orders o LEFT JOIN payments p ON p.id = o.payment_id")
     && str_contains($utFil, "\$ubetaltSalg = \$ordre['payment_id'] === null"));
+// Parentesen flyttet 7. september: nettkjopene kom til som et ledd til i
+// den samme OR-en. Leddet er det samme.
 sjekk('… og staar i dagens liste',
-    str_contains($utFil, "OR (o.payment_id IS NULL AND o.betalt_maate = 'Ikke betalt'))"));
+    str_contains($utFil, "OR (o.payment_id IS NULL AND o.betalt_maate = 'Ikke betalt')"));
 // Maalt: det sto kr. 1 410,- i «Solgt i dag» med kr. 450,- i kassa.
 sjekk('… men teller ikke som penger i kassa',
     str_contains($sidaG, "          .filter(s => s.status !== 'kansellert' && s.maate !== 'Ikke betalt')"));
@@ -9506,6 +9508,37 @@ sjekk('… og Vipps faar en ekte sletting',
                  "public static function avlysTrekk(string \$avtaleId, string \$trekkId): void")
     && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/nett.php'),
                     "function http_delete_json(string \$url, array \$headere = []): array"));
+
+// ── Nettkjopene i kassa ─────────────────────────────────────────────────
+//
+// Eieren, 7. september 2026: «i dag gjorde anniken et kjop i internbutikken,
+// det har kommet penger og det er registrert, men det staar ikke hva hun har
+// kjopt».
+//
+// «Solgt i dag» spurte bare etter salg foert for haand. Et kjop gjort paa
+// nett og betalt med Vipps sto ingen steder i kassa, selv om pengene var
+// inne — og varenavnene laa i ordrelinjene hele tida.
+$uttakFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+sjekk('kassa tar med dagens nettkjop',
+    str_contains($uttakFil, "OR p.status IN ('betalt', 'delvis_refundert'))")
+    && str_contains($uttakFil, "(p.type IS NOT NULL AND p.type <> 'manuell') AS fra_nett,"));
+// Varenavnene laa der fra for. De leses allerede paa Oversikt og under
+// «Uttak i internbutikken» — her er det den samme spoerringen.
+sjekk('… med varenavnene fra ordrelinjene',
+    str_contains($uttakFil, "GROUP_CONCAT(CONCAT(ol.antall, ' × ', ol.tittel) SEPARATOR ', ')"));
+// Uten merket saa et nettkjop ut som noe som var slaatt inn over disk.
+sjekk('… merket «Nettbutikken»',
+    str_contains($sida, '<span style="{{ utNettStil }}">Nettbutikken</span>')
+    && str_contains($sida, 'fraNett: !!s.fraNett,'));
+// Pengene kom inn gjennom Vipps og gaar tilbake samme vei — under OEkonomi.
+// «Annuller» her ville lovet noe kassa ikke kan gjore.
+sjekk('… og de kan ikke annulleres fra kassa',
+    str_contains($sida, "kanAnnulleres: s.status !== 'kansellert' && !s.fraNett,"));
+// Navnet staar bare paa nettkjopene: over disk er kunden den som staar foran
+// deg, og feltet er «Salg over disk».
+sjekk('… og kjoeperens navn staar paa nettkjopet',
+    str_contains($sida, 's.fraNett && s.kunde ? s.kunde : \'\',')
+    && str_contains($uttakFil, "'kunde'   => (string) (\$o['medlem_navn'] ?? '') !== ''"));
 
 // ── Naar trekket skal gaa ───────────────────────────────────────────────
 //

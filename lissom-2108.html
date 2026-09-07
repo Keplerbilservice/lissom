@@ -38781,24 +38781,43 @@ class Component extends DCLogic {
         const overskrift = !f.verdi;
         const p = PERSONER[f.navn];
         const mvaStandard = String(f.verdi).indexOf('25') === 0;
+        // ── Naar verdien er en setning, ikke et tall ────────────────────
+        //
+        // Raden er bygget for «Medlemskap → Aarsmedlemskap»: navnet til
+        // venstre, verdien til hoyre, og verdien uten linjeskift saa et beloep
+        // ikke brekker midt i tallet.
+        //
+        // Noen rader har en hel setning som verdi — «Slik gjor du → Trykk
+        // «Aapne Vipps» under, og godkjenn avtalen i appen. Det tar et
+        // minutt.» Uten linjeskift tok den all plassen, navnet ble presset til
+        // ett ord per linje, og slutten av setningen ble klippet av kanten.
+        // Eieren sendte bilde 7. september 2026: «Denne formateringen er ikke
+        // akseptabel».
+        //
+        // Er verdien lang, staar den paa egen linje under navnet og bryter som
+        // vanlig tekst. Korte verdier staar som for.
+        const langVerdi = String(f.verdi || '').trim().length > 34;
         return Object.assign({}, f, {
           vanlig: f.navn !== 'Mva',
           velg: p ? () => this.setState(s2 => ({
             detalj: { tittel: f.navn, undertittel: p.rolle, felter: p.felter, handling: 'Send beskjed', tilbake: s2.detalj },
           })) : undefined,
-          radStil: {
+          radStil: Object.assign({
             display: 'flex', justifyContent: 'space-between', gap: 'var(--space-6)',
             borderTop: (overskrift || f.verdi === ' ') ? 'none' : '1px solid var(--border-subtle)',
             paddingTop: overskrift ? 'var(--space-5)' : 'var(--space-3)',
             paddingBottom: p ? 'var(--space-3)' : 0,
             cursor: p ? 'pointer' : 'default',
-          },
+          }, langVerdi ? { flexDirection: 'column', gap: 4, paddingBottom: 'var(--space-3)' } : {}),
           navnStil: overskrift
             ? { fontSize: 11, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', color: 'var(--terracotta-600)', fontWeight: 700 }
             : f.verdi === ' '
               ? { fontSize: 'var(--text-base)', color: 'var(--text-body)', lineHeight: 1.6, textWrap: 'pretty' }
               : { fontSize: 'var(--text-sm)', color: p ? 'var(--lissom-brown)' : 'var(--text-body)', fontWeight: p ? 600 : 400, textDecoration: p ? 'underline' : 'none', textUnderlineOffset: 3 },
-          verdiStil: { fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', textAlign: 'right', whiteSpace: 'nowrap' },
+          verdiStil: langVerdi
+            ? { fontSize: 'var(--text-sm)', fontWeight: 400, color: 'var(--text-body)',
+                textAlign: 'left', lineHeight: 1.5, textWrap: 'pretty' }
+            : { fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', textAlign: 'right', whiteSpace: 'nowrap' },
         });
       }),
       detaljHandling: (this.state.detalj && this.state.detalj.handling) || 'Lagre',

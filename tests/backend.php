@@ -10352,11 +10352,15 @@ sjekk('… og det samme gjor «Registrer betaling» og «Send Vipps-avtale»',
     // Fire kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
     // medlemskap» og «Send Vipps-avtale». × kaller den ogsaa, men uten
     // semikolon — se «lukkPerson:» over.
-    && substr_count($sidaB, 'this.lukkPersonruta();') === 4);
-// «Nullstill medlemmet» staar igjen med vilje: den river alt og setter
-// personen paa nytt, og da skal du se resultatet der du staar.
-sjekk('… mens «Nullstill» blir staaende, som for',
-    str_contains($sidaB, "this.setState({ personPlan: null, personFri: null, personFriGrunn: null,\n                                personBetalingApen: false, personBetalingBelop: '' });\n                this.apnePerson(this.state.personMedlemId || 0"));
+    // Fem kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
+    // medlemskap», «Send Vipps-avtale» og «Nullstill medlemmet». × kaller den
+    // ogsaa, men uten semikolon — se «lukkPerson:» over.
+    && substr_count($sidaB, 'this.lukkPersonruta();') === 5);
+// «Nullstill medlemmet» sto igjen en runde. Eieren, 7. september 2026, spurt
+// om den skulle staa naar de fire andre gaar tilbake til lista: nei. Lista
+// viser nettopp det nullstillingen endrer — status, plan og betalingspille.
+sjekk('… og «Nullstill» gaar samme vei ut',
+    !str_contains($sidaB, "this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);\n              });\n          },"));
 // Overstyringa maa nullstilles naar en annen person aapnes. Ellers staar
 // forrige valg igjen paa neste medlem.
 sjekk('… og valget nullstilles naar en annen person aapnes',

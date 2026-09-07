@@ -38947,15 +38947,18 @@ class Component extends DCLogic {
                 + 'Navn, telefon og innlogging blir stående'
                 + (personPlanNaa ? ', og hun settes på ' + personPlanNaa : '') + '.\n\n'
                 + 'Dette kan ikke angres.')) { return; }
-            // «behold» — uten den lukker medlemKall ruta, og da ville
-            // oppfriskningen under aapnet den igjen med det samme.
+            // «behold» — gikk det galt, skal ruta bli staaende, saa
+            // beskjeden staar der du var.
             this.medlemKall({ handling: 'nullstill', medlemId: p.id,
                               type: personPlanNaa || '', bekreft: 'NULLSTILL' }, true)
               .then(ok => {
                 if (!ok) { return; }
-                this.setState({ personPlan: null, personFri: null, personFriGrunn: null,
-                                personBetalingApen: false, personBetalingBelop: '' });
-                this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+                // Nullstilt, og ut. Eieren, 7. september 2026, spurt om denne
+                // skulle staa igjen naar de fire andre gaar tilbake til lista:
+                // nei. Lista viser nettopp det nullstillingen endrer — status,
+                // plan og betalingspille — og personen skal ikke bli staaende.
+                // Se lukkPersonruta().
+                this.lukkPersonruta();
               });
           },
           personFriKnapp: 'Lagre',

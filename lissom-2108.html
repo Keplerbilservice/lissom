@@ -6855,23 +6855,7 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
           </div>
-          <!-- Abonnementet paa kalenderen. Laa paa Oversikt i et eget kort;
-               eieren ville ha kortet bort derfra. Programmet hoerer hjemme
-               her, saa lenken staar her — ikke som et kort, men som én linje
-               ved siden av overskriften. -->
-          <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
         </div>
-        <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
-            <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
-            <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
-            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
-              <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
-            </div>
-            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
-          </div>
-        </sc-if>
 
         <div style="{{ klSideGridStil }}">
 
@@ -7089,27 +7073,6 @@ window.__resources = {
                Spalta er dermed bare det som hoerer til dra-og-slipp:
                kursene, ventelista og «Bytt dato». -->
         </aside>
-
-        <!-- Kursholderpillene, i sin egen rad.
-
-             De laa inne i kalenderspalta, og den loftes 65 px for at
-             rutenettet skal staa paa linje med kortet til venstre. Loftet
-             tok hele spalta, saa pillene havnet 45 px inni kortene over —
-             eieren sendte bilde 1. september. Han valgte selv hva som
-             skulle vike: «Flytt pillene, behold linjeringen».
-
-             Naa har de en rad for seg, uten loft. Kalenderen ligger i
-             rada under og beholder sitt. -->
-        <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ true }}">
-          <div style="{{ klPilleradStil }}">
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Viser</span>
-              <sc-for list="{{ klHolderSpalter }}" as="h" hint-placeholder-count="3">
-                <button type="button" onClick="{{ h.velg }}" title="{{ h.tittel }}" style="{{ h.stil }}">{{ h.navn }}</button>
-              </sc-for>
-            </div>
-          </div>
-        </sc-if>
 
         <div style="{{ klHovedStil }}">
 
@@ -8239,7 +8202,17 @@ window.__resources = {
               <span>2. Velg «Legg til konto» → «Annet» → «Legg til abonnementskalender».</span>
               <span>3. Lim inn adressen over, og trykk Neste.</span>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klIcsLukk }}" hint-size="auto,44px">Lukk</x-import>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klIcsLukk }}" hint-size="auto,44px">Lukk</x-import>
+              <!-- «Lag ny adresse» sto i panelet under lenka oeverst paa
+                   kalenderen. Den lenka er borte — eieren, 7. september 2026:
+                   «her har du fortsatt linken legg programmet i telefonens
+                   kalender, og synk med mobilen», og han valgte «Behold kortet
+                   Synk med mobilen». Knappen foelger med hit, saa maaten aa
+                   stoppe en lekket adresse paa ikke forsvinner med lenka. -->
+              <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+            </div>
           </div>
         </div>
       </sc-if>
@@ -34584,14 +34557,16 @@ class Component extends DCLogic {
     // og en dag uten kurs ble tre tomme spalter. Eieren spurte hvorfor hun
     // saa seg selv: hun holder sjelden kurs, og «Monica er default».
     //
-    // Naa staar den som vanligvis holder kursene, og verkstedet. De andre
-    // kommer fram naar de faktisk har en okt den dagen — ingenting skal
-    // kunne gjemme seg — eller naar hun slaar dem paa selv.
+    // Naa staar den som vanligvis holder kursene. De andre kommer fram naar
+    // de faktisk har en okt den dagen — ingenting skal kunne gjemme seg.
+    //
+    // Man kunne ogsaa slaa dem paa selv, med pillene i «Viser»-raden over
+    // kalenderen. Den raden er borte fra 7. september — eieren: «fjern navnet
+    // monica over kalenderen» — og med den valget. Spalta kommer naar hen har
+    // noe den dagen.
     const stdHolder = this.klStandardHolder();
-    const valgteHoldere = this.state.klVisHolder || {};
     const staarFast = kn => kn === stdHolder;
-    const visesNa = k => k.harNoe || (valgteHoldere[k.navn] === undefined
-      ? staarFast(k.navn) : valgteHoldere[k.navn] === true);
+    const visesNa = k => k.harNoe || staarFast(k.navn);
     const valgteKolonner = alleKolonner.filter(visesNa);
     const kolonner = valgteKolonner.length ? valgteKolonner : alleKolonner;
     const naNu = new Date();
@@ -34756,22 +34731,6 @@ class Component extends DCLogic {
       klUkeGutterStil: { position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
       klListe: liste,
       klBoardKolonner: kolonner,
-      // Én brikke per aktiv kursholder, pluss verkstedet. Den som har en okt
-      // denne dagen kan ikke slaas av — da ville okta hennes forsvunnet fra
-      // skjermen, og en kalender som skjuler noe er verre enn ingen.
-      klHolderSpalter: alleKolonner.map(k => ({
-        navn: k.navn,
-        stil: chipStil(visesNa(k), null),
-        tittel: k.harNoe
-          ? k.navn + ' har noe denne dagen og kan ikke skjules'
-          : (visesNa(k) ? 'Skjul ' + k.navn : 'Vis ' + k.navn),
-        velg: () => {
-          if (k.harNoe) return;
-          this.setState(st => ({ klVisHolder: Object.assign({}, st.klVisHolder, {
-            [k.navn]: !visesNa(k),
-          }) }));
-        },
-      })),
       klBoardTimer: (() => { const t = []; for (let h = bStart / 60; h < bSluttMin / 60; h++) t.push({ navn: String(h).padStart(2, '0') + ':00', stil: { position: 'absolute', top: ((h - bStart / 60) * pxTime - 1) + 'px', right: '8px', fontSize: '11px', color: 'var(--text-muted)' } }); return t; })(),
       // Paa telefon faar hver spalte 150 px og rammen ruller sidelengs. Med
       // to spalter faar dagen plass uten aa rulle i det hele tatt; med fire
@@ -34892,21 +34851,6 @@ class Component extends DCLogic {
             // Rad 2 er pilleraden i full bredde; rad 3 er sidemenyen og
             // kalenderen ved siden av hverandre.
             : { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', gridColumn: '1', gridRow: '3' },
-          // Kursholderpillene, i sin egen rad.
-          //
-          // De laa inne i kalenderspalta, og den loftes for at rutenettet
-          // skal staa paa linje med kortet til venstre. Loftet tok hele
-          // spalta, saa pillene havnet 45 px inni kortene over. Eieren valgte
-          // selv hva som skulle vike: «Flytt pillene, behold linjeringen».
-          //
-          // Her er de ute av loftet. Paa mobilen staar de der de sto — der
-          // er alt under hverandre, og det var aldri noen kollisjon.
-          klPilleradStil: this.erSmal()
-            ? { order: 0 }
-            // Full bredde over begge spaltene. Ligger den bare i
-            // kalenderspalta, forskyves den ene og ikke den andre, og
-            // linjeringen ryker.
-            : { gridColumn: '1 / -1', gridRow: '2', minWidth: 0 },
           klHovedStil: this.erSmal()
             ? { minWidth: 0, order: 1 }
             // Loftet er borte. Det lot det hvite rutenettet staa paa linje med
@@ -45499,9 +45443,7 @@ class Component extends DCLogic {
       // adressen, og derfor ligger tilgangen i adressen. Det maa staa der
       // eieren ser det, ikke bare i en kommentar i koden.
       ...(() => {
-        const adr = ((this.state.adminData || {}).kalenderAdresse) || '';
         return {
-          kalApent: !!this.state.kalApent,
           // ── Pillene nederst i sidemenyen ────────────────────────────
           //
           // Foerste utgave la aarskalenderen som en rad oeverst paa sida, med
@@ -45561,34 +45503,9 @@ class Component extends DCLogic {
           },
           // Veien til ventelisteskjemaet, fra kalenderen.
           klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),
-          kalKnapp: this.state.kalApent ? 'Skjul kalenderadressen' : 'Legg programmet i telefonens kalender →',
-          kalVeksle: () => this.setState(st => ({ kalApent: !st.kalApent, kalKopiert: false })),
-          kalAdresse: adr,
-          kalForklaring: 'På iPhone: Innstillinger → Kalender → Kontoer → Legg til konto → Annet → '
-            + 'Legg til abonnementskalender, og lim inn adressen. '
-            // Aerlig om hva dette er: telefonen henter, vi sender ikke. Det
-            // sto «telefonen henter den paa nytt av seg selv», som er sant —
-            // men ikke at det kan ta timer, og at ingen melding kommer i det
-            // oyeblikket noe endres.
-            + 'Telefonen henter den på nytt av seg selv, men bestemmer selv hvor ofte — '
-            + 'det kan gå timer. Endrer du en kursdato, kommer det ingen melding til telefonen; '
-            + 'endringen står der neste gang den henter. Hver kursdato foreslår et varsel dagen før.',
           kalAdvarsel: 'Den som har adressen, ser programmet — den spør ikke om innlogging. '
             + 'Del den bare med dem som skal ha den. «Lag ny adresse» stopper alle gamle på én gang, '
             + 'og da må abonnementene settes opp på nytt.',
-          kalKopiKnapp: this.state.kalKopiert ? 'Kopiert' : 'Kopier adressen',
-          kalKopier: () => {
-            if (!adr) return;
-            const ferdig = () => this.setState({ kalKopiert: true });
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(adr).then(ferdig, ferdig);
-            } else { ferdig(); }
-          },
-          // Feltet er til for aa leses og kopieres. Et readonly-felt uten
-          // onChange faller ut i skjemasjekken, saa den staar her og gjor
-          // ingenting — med vilje.
-          kalIngenting: () => {},
-          kalMerk: (e) => { if (e && e.target && e.target.select) e.target.select(); },
           kalNyNokkel: () => {
             if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
             if (!window.confirm('Lage ny kalenderadresse?\n\n'
@@ -45604,7 +45521,6 @@ class Component extends DCLogic {
                 this.setState({
                   kvittering: ok ? 'Ny adresse laget' : 'Gikk ikke',
                   kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
-                  kalKopiert: false,
                 });
                 if (ok) { this._adminHentes = false; this.hentAdmin(); }
               })

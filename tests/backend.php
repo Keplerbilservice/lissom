@@ -2744,9 +2744,15 @@ sjekk('programlista er ute av Oversikt', !str_contains($sida, '{{ ovProgramValg 
 // fjernet fra Oversikt, men ikke borte.
 sjekk('kortet «Programmet paa telefonen» er ute av Oversikt',
     !str_contains($sida, 'Programmet på telefonen'));
+// Fra 7. september staar det ett sted paa Kalender, ikke to. Eieren: «her har
+// du fortsatt linken legg programmet i telefonens kalender, og synk med
+// mobilen, dette har jeg bedt om fikset for», og han valgte «Behold kortet
+// Synk med mobilen». Lenka oeverst er borte; snarveiskortet staar.
 sjekk('… og kalenderabonnementet staar paa Kalender i stedet',
-    str_contains($sida, '{{ kalKnapp }}')
-    && strpos($sida, '{{ kalKnapp }}') < strpos($sida, 'data-screen-label="Admin – oversikt"'));
+    str_contains($sida, '<span style="{{ klSnarveiNavnStil }}">Synk med mobilen</span>')
+    && str_contains($sida, 'klIcsApne: () => this.setState({ klIcsVis: true }),')
+    && !str_contains($sida, 'kalKnapp')
+    && !str_contains($sida, 'Legg programmet i telefonens kalender'));
 // Kortet skal staa der ogsaa naar ingen skylder — et kort som bare finnes
 // noen dager er ikke et kort man ser etter.
 sjekk('«Ikke betalt» staar alltid, med en tom tilstand',
@@ -2920,12 +2926,15 @@ sjekk('den som vanligvis holder kursene staar som spalte',
 // hen, foelger kalenderen med av seg selv.
 sjekk('standarden leses av registeret, ikke av et navn i koden',
     !str_contains($sida, "stdHolder = 'Monica'"));
-sjekk('de andre kursholderne kan slaas paa og av',
-    str_contains($sida, 'klHolderSpalter:') && str_contains($sida, 'klVisHolder'));
-// En kursholder med en okt den dagen kan ikke skjules. Da ville okta hennes
-// forsvunnet fra skjermen, og en kalender som gjemmer noe er verre enn ingen.
-sjekk('en kursholder med en okt kan ikke skjules bort',
-    str_contains($sida, 'har noe denne dagen og kan ikke skjules'));
+// Pillene i «Viser»-raden kunne slaa de andre kursholderne paa og av. Raden
+// er borte fra 7. september — eieren: «fjern navnet monica over kalenderen» —
+// og med den valget. En spalte kommer naar hen har en okt den dagen.
+sjekk('«Viser»-raden med kursholderne er borte',
+    !str_contains($sida, 'klHolderSpalter')
+    && !str_contains($sida, 'klVisHolder')
+    && !str_contains($sida, 'har noe denne dagen og kan ikke skjules'));
+sjekk('… og en kursholder med en okt faar spalte uansett',
+    str_contains($sida, 'const visesNa = k => k.harNoe || staarFast(k.navn);'));
 $kalFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('kalenderen faar vite hvem som er standard kursholder',
     str_contains($kalFil2, "'standard' => isset(\$h['standard'])"));
@@ -7184,12 +7193,11 @@ sjekk('… og ruller inni seg selv naar den ikke faar plass',
 // var det foerste i den. Eieren valgte selv hva som skulle vike: «Flytt
 // pillene, behold linjeringen».
 //
-// Raden har naa en egen rad i full bredde over begge spaltene. Ligger den
-// bare i kalenderspalta, forskyves den ene og ikke den andre, og linjeringen
-// ryker — det var maalt til 88 px feil for den ble full bredde.
-sjekk('pillene ligger i sin egen rad, i full bredde',
-    str_contains($sida, "klPilleradStil: this.erSmal()")
-    && str_contains($sida, ": { gridColumn: '1 / -1', gridRow: '2', minWidth: 0 },"));
+// Raden fikk en egen rad i full bredde over begge spaltene. Den er borte fra
+// 7. september, og med den bade pillene og rada — kalenderen staar der den
+// sto, i rad 3.
+sjekk('pilleraden er borte',
+    !str_contains($sida, 'klPilleradStil'));
 sjekk('… og kalenderen ligger i rada under',
     str_contains($sida, ": { minWidth: 0, gridColumn: '2', gridRow: '3' },")
     && str_contains($sida, "gridColumn: '1', gridRow: '3' },"));
@@ -9686,10 +9694,17 @@ sjekk('«Synk med mobilen» viser kalenderadressen',
 sjekk('… og lover ikke en paaminnelsesfeed som ikke finnes',
     !str_contains($sida, 'klIcsPaminUrl')
     && !str_contains($sida, 'Påminnelser-appen'));
-// Samme adresse som knappen oeverst paa kalenderen. Ett sted i koden.
-sjekk('… og det er den samme adressen som knappen oeverst',
-    str_contains($sida, "const adr = ((this.state.adminData || {}).kalenderAdresse) || '';")
-    && str_contains($sida, 'kalAdresse: adr,'));
+// Adressen leses ett sted, av serveren. Sto den to steder, kunne de to vise
+// hver sin.
+sjekk('… og adressen leses av det serveren sender',
+    str_contains($sida, "klIcsUrl: ((this.state.adminData || {}).kalenderAdresse) || '',"));
+// «Lag ny adresse» sto i panelet under lenka oeverst. Lenka er borte, og
+// knappen fulgte med hit — ellers var maaten aa stoppe en lekket adresse paa
+// borte sammen med lenka.
+sjekk('… og «Lag ny adresse» staar i ruta',
+    str_contains($sida, '>Lag ny adresse</button>')
+    && strpos($sida, '>Lag ny adresse</button>') > strpos($sida, '{{ klIcsUrl }}')
+    && str_contains($sida, 'kalNyNokkel: () => {'));
 
 // ── Sidemenyen maa vaere hel ────────────────────────────────────────────
 //

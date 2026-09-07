@@ -6536,6 +6536,45 @@ sjekk('… og admin teller fortsatt som medlem paa serveren',
     str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/auth.php'),
                  "if ((string) (\$medlem['rolle'] ?? '') === 'admin') {"));
 
+// ── Bunnmenyen paa Min side var ment for telefonen ────────────────────
+//
+// Eieren, 7. september 2026, med et skjermbilde av PC-visningen: «det er
+// lagt til menyer nederst paa siden, dette var bare ment for mobil, saa
+// dette maa settes tilbake med kort og piller paa siden, men mobil skal
+// ikke roeres».
+//
+// Menyen er festet til bunnen av VINDUET, ikke til bunnen av sida. Paa en
+// hoy PC-skjerm la den seg derfor tvers over «Interne kurs og samlinger».
+//
+// Begge formene staar i markupen; CSS velger. Gjort i CSS og ikke i
+// erSmal(), av samme grunn som kortene: da folger den med naar vinduet
+// endrer stoerrelse, uten at skjermen maa tegnes om.
+//
+// Maalt i nettleseren 7. september:
+//   1440 px  piller synlige, bunnmeny skjult, ingenting stikker ut
+//    820 px  det samme
+//    761 px  sju piller paa én linje, 47 px hoy
+//    390 px  piller skjult, bunnmenyen staar som for
+sjekk('Min side har baade piller og bunnmeny i markupen',
+    str_contains($sida, '<nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">')
+    && str_contains($sida, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">'));
+sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
+    str_contains($sida, '.ms-pillerad { display: none; }')
+    && str_contains($sida, '@media (min-width: 761px) {')
+    && str_contains($sida, '.ms-pillerad { display: flex !important; }'));
+sjekk('… og bunnmenyen og luftputa under den gaar bort paa PC',
+    str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft { display: none !important; }")
+    && str_contains($sida, '<div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>'));
+// Pillene henter valgene fra bunnmenyen, saa de to aldri kan komme i utakt.
+sjekk('… og pillene henter de samme valgene som bunnmenyen',
+    str_contains($sida, 'const b = this.minsideBunnMeny();')
+    && str_contains($sida, 'minsidePiller() {'));
+// Raden setter ikke «display» selv. Gjorde den det, ville inline-stilen
+// vist pillene paa telefonen ogsaa, der bunnmenyen alt staar.
+sjekk('… og raden overlater «display» til CSS',
+    str_contains($sida, "msPlRadStil: {\n            flexWrap: 'wrap', gap: '10px',")
+    && !str_contains($sida, "msPlRadStil: {\n            display:"));
+
 // ── «Maks 12 deltakere» over en kveld for to ──────────────────────────
 //
 // Tallet gjelder én kveld med et bestemt antall plasser. Et kurs som settes
@@ -11815,8 +11854,10 @@ sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
     'sto planen ikke i salgslista, falt prisen tilbake paa Vipps-avtalens');
 
 // ── Bunnmenyen ────────────────────────────────────────────────────
+// Klassenavnet kom 7. september, da menyen ble telefonens alene og PC-en
+// fikk piller i stedet. Se «.ms-pillerad» lenger nede.
 sjekk('Min side har en bunnmeny med sju valg',
-    str_contains($msRen, '<nav style="{{ msBmStil }}" aria-label="Min side">')
+    str_contains($msRen, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">')
     && substr_count($msRen, '{{ msBmTekstStil }}') === 7
     && str_contains($msRen, "gridTemplateColumns: 'repeat(7, 1fr)'"),
     'maalt: alle sju navnene holder seg innenfor cella ned til 360 px');
@@ -11829,9 +11870,9 @@ sjekk('… med de valgene eieren ba om',
 sjekk('… og den staar bare for den som har de fem stedene',
     str_contains($msRen, 'msHarBunnmeny: this.medlemsvisning(),'),
     'en kursdeltaker har to av dem, og faar snarveiene som for');
-sjekk('… og innholdet har plass under den',
+sjekk('… og innholdet har plass under den, paa telefonen',
     str_contains($msRen, "msBunnLuft: { height: 'calc(64px + env(safe-area-inset-bottom, 0px))' },")
-    && str_contains($msRen, '<div style="{{ msBunnLuft }}"></div>'));
+    && str_contains($msRen, '<div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>'));
 
 // ── Ett sted om gangen ────────────────────────────────────────────
 // Snarveispillene rullet deg nedover til seksjoner som sto der uansett.

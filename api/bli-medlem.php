@@ -256,7 +256,7 @@ Svar::ok([
     //
     // Her sto bare «saa er du i gang». Fast trekk i Vipps er en fullmakt, ikke
     // en betaling: trekket bes om av cron, og Vipps krever at kunden varsles
-    // for det skjer — saa forfallet ligger tre dager fram. En som nettopp har
+    // for det skjer — saa forfallet ligger et dogn fram. En som nettopp har
     // vaert gjennom Vipps leser «du er i gang» som «jeg har betalt», sjekker
     // kontoen, og skriver til verkstedet.
     'beskjed' => $betaling === 'trekk'

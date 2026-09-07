@@ -7708,6 +7708,29 @@ $avt = static fn(string $neste, string $sist = ''): array => [
     'vipps_agreement_id' => 'agr-test', 'neste_trekk' => $neste,
     'siste_trekk' => $sist !== '' ? $sist : null, 'status' => 'aktiv'];
 
+// ── Hvor lenge for forfall trekket bes om ──────────────────────────────
+//
+// Eieren, 7. september 2026: «er det ikke om aa gjore aa faa inn pengene saa
+// fort som mulig», og da tallet var nede i to: «minimumskrav ja, ikke maks».
+//
+// Forfallet laa tre dager fram. Vipps ber om minst ett dogn — det er gulvet,
+// ikke taket — saa to av de tre dagene var penger som sto ute uten grunn.
+//
+// Denne vakta finnes for at tallet ikke skal krype opp igjen uten at noen
+// bestemte det.
+$medlemFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('trekket bes om et dogn for forfall, som er Vipps sitt minimum',
+    str_contains($medlemFil, 'private const VARSEL_DAGER = 1;'));
+sjekk('… og forfallet regnes ut av den, ikke av et tall i koden',
+    str_contains($medlemFil,
+        "\$forfall = (new DateTimeImmutable('now'))->modify('+' . self::VARSEL_DAGER . ' days')"));
+// Kunden skal ikke faa et tall aa telle paa. Sier vi «tre dager» i en tekst,
+// blir den loegn i det tallet endres.
+sjekk('… og kunden faar «om noen dager», ikke et tall',
+    str_contains($sidaBli = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'),
+        'Første trekk kommer om noen dager')
+    && !str_contains($sidaBli, 'om tre dager'));
+
 // ── Trekket, slik det faktisk gikk ─────────────────────────────────────
 //
 // Medlemmet Eirin, 2. september: «Jeg betalte med vipps i gaar via siden her.
@@ -7715,7 +7738,7 @@ $avt = static fn(string $neste, string $sist = ''): array => [
 //
 // Hun hadde rett. Fast trekk i Vipps er en fullmakt, ikke en betaling: cron
 // ber om trekket, og Vipps krever at kunden varsles for det skjer — saa
-// forfallet ligger tre dager fram (VARSEL_DAGER).
+// forfallet ligger et dogn fram (VARSEL_DAGER).
 //
 // «subscriptions.siste_trekk» settes i det trekket BES OM. Leste vi bare den,
 // sto det «Betalt» om noe som bare var bestilt, og det ble staaende ogsaa om

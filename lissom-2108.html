@@ -11978,7 +11978,7 @@ window.__resources = {
               <sc-for list="{{ admMedl }}" as="v" hint-placeholder-count="4">
                 <button type="button" onClick="{{ v.apne }}" style="{{ admMedlRadStil }}">
                   <span style="{{ v.avatarStil }}">{{ v.initial }}</span>
-                  <span style="flex: 1 1 80px; min-width: 0;">
+                  <span style="flex: 1 1 40px;">
                     <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ v.navn }}</span>
                     <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ v.under }}</span>
                   </span>
@@ -47737,18 +47737,30 @@ class Component extends DCLogic {
           // er den kortets egen overskrift, og har samme luft som de andre
           // kortene paa Oversikt.
           admMedlSkilleStil: {
-            padding: 'var(--space-5) var(--space-5) var(--space-4)',
+            padding: 'var(--space-5) 16px var(--space-4)',
             display: 'flex', alignItems: 'baseline',
             justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap',
           },
-          // Kortet staar i en smal spalte paa Oversikt — maalt til 290 px.
+          // Kortet staar i en smal spalte paa Oversikt — maalt til 266 px.
           // Med tolv piksler mellom og 160 px grunnbredde paa navnet gikk
           // avatar, navn og pille paa hver sin linje, og kortet ble en
-          // meterlang stripe. Aatte piksler og 80 px holder raden samlet.
+          // meterlang stripe. Aatte piksler holder raden samlet.
+          //
+          // Navnet har 40 px grunnbredde, ikke 80, og raden 16 px sideluft,
+          // ikke 20. Med 80 tok navnet plassen forst, og «Bindingstid» — den
+          // bredeste pilla — falt ned paa egen linje paa fire av aatte rader.
+          // De fire pikslene i sideluft var det som manglet paa raden med
+          // «Aarsmedlemskap» under navnet. Eieren, 7. september 2026, etter aa
+          // ha sett de to skjermbildene: «B — pilla ved siden av».
+          //
+          // Navnet har ingen «min-width: 0». Da kan boksen bli smalere enn
+          // ordet, og teksten legger seg utenfor og under pilla — maalt paa
+          // nettbrett, der kortet er 236 px. Uten den faller pilla heller ned
+          // paa egen linje der det virkelig ikke er plass.
           admMedlRadStil: {
             appearance: 'none', border: 'none', borderTop: '1px solid var(--border-subtle)',
             background: 'transparent', cursor: 'pointer', width: '100%', boxSizing: 'border-box',
-            textAlign: 'left', padding: '10px 20px', display: 'flex', alignItems: 'center',
+            textAlign: 'left', padding: '10px 16px', display: 'flex', alignItems: 'center',
             gap: 8, flexWrap: 'wrap', font: 'inherit', color: 'inherit',
           },
           // Kortet staar bare i admin. «medlemsvisning» er Min side.

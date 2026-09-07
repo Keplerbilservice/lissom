@@ -9432,6 +9432,21 @@ sjekk('… og hver rad er en knapp inn til personen',
     substr_count($sida, 'onClick="{{ v.apne }}"') === 1
     && str_contains($sida, "this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: '' });")
     && str_contains($sida, 'this.apnePerson(m.id, 0);'));
+// Kortet er 266 px paa PC. Med 80 px grunnbredde paa navnet tok navnet
+// plassen forst, og «Bindingstid» — den bredeste pilla — falt ned paa egen
+// linje paa fire av aatte rader. Eieren, 7. september, etter aa ha sett de to
+// skjermbildene: «B — pilla ved siden av». Navnet brytes i stedet.
+//
+// Tre ting maa staa samtidig, ellers kommer pilla ned igjen: 40 px
+// grunnbredde, 16 px sideluft i raden — de fire pikslene var det som manglet
+// paa «Aarsmedlemskap» — og ingen «min-width: 0». Uten det siste kan
+// navneboksen bli smalere enn ordet, og paa nettbrett la teksten seg utenfor
+// boksen og under pilla. Naa faller pilla heller ned paa den skjermen.
+sjekk('… og pilla staar ved siden av navnet, ikke under',
+    str_contains($sida, '<span style="flex: 1 1 40px;">')
+    && !str_contains($sida, '<span style="flex: 1 1 80px; min-width: 0;">')
+    && !str_contains($sida, '<span style="flex: 1 1 40px; min-width: 0;">')
+    && str_contains($sida, "textAlign: 'left', padding: '10px 16px', display: 'flex', alignItems: 'center',"));
 // Radene kommer fra medlemsrader(), den samme som medlemslista bruker.
 // Skrevet opp paa nytt kunne de to svart hver sitt om den samme personen.
 sjekk('… og de leser de samme radene som medlemslista',

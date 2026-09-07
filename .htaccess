@@ -265,6 +265,17 @@ RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
 # side.php og vist nettsida i stedet.
 RewriteRule ^godkjenn/([a-fA-F0-9]{32})/?$ /api/godkjenn.php?t=$1 [L,QSA]
 
+# Innmeldingen. /meld-inn/<noekkel> leser ordren og lager Vipps-avtalen paa
+# DEN planen som staar i raden.
+#
+# Eieren meldte seg inn paa Aarsmedlemskap 7. september 2026 og fikk «Proev
+# Lissom». Valget laa i nettleseren, og forsvant det, ble det forste
+# medlemskapet i lista kjopt. Naa staar planen i en rad paa serveren, og
+# noekkelen her er eneste veien inn til den.
+#
+# Maa staa for regelen under, som ellers ville sendt den til side.php.
+RewriteRule ^meld-inn/([a-fA-F0-9]{32})/?$ /api/meld-inn.php?t=$1 [L,QSA]
+
 RewriteRule ^$ /side.php [L]
 
 # Ekte filer, mapper og /api går uendret gjennom.

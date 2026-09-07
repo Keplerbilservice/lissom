@@ -6495,24 +6495,35 @@ sjekk('… og knappen gaar til startAbonnement, som «Forny»',
 // kort, samme knapp — innmeldingen kalles rett herfra. Eieren valgte selv
 // bort erfaringssporsmaalet 4. september: «ett kort, uten erfaringssporsmaalet».
 sjekk('… og den som aldri har vaert medlem melder seg inn fra kortet',
-    str_contains($sida, "} else {\n              this.sendMedlemssoknad();\n            }"));
+    str_contains($sida, "this.sendMedlemssoknad(navn);"));
 sjekk('… og innmeldingen faar nummeret fra kortet',
     str_contains($sida, "telefon: (this.state.bmTelefon || '').trim(),\n        erfaring:"));
 // ── Den som ikke er innlogget ─────────────────────────────────────────
 //
-// Et medlemskap henger paa en konto, og kontoen faar man ved aa logge inn
-// med Vipps. Det er ikke til aa komme utenom — men hun skal komme tilbake
-// til det SAMME kortet, ikke til et annet skjermbilde. Ellers er det to
-// bilder igjen, bare i rekkefolge.
-sjekk('… og den som ikke er innlogget sendes til Vipps og tilbake hit',
-    str_contains($sida, "sessionStorage.setItem('lissom_medlemsplan', navn);")
-    && str_contains($sida, "sessionStorage.setItem('lissom_medlemskort', '1');")
-    && str_contains($sida, "this.sendTilInnlogging('/medlemskap', 'Medlemskapet ble ikke opprettet.');"));
-// Det hun rakk aa skrive skal ikke vaere borte naar hun kommer tilbake.
-sjekk('… og e-posten og nummeret overlever innloggingen',
-    str_contains($sida, "if (epost) { sessionStorage.setItem('lissom_medlemsepost', epost); }")
-    && str_contains($sida, "if (e) { sessionStorage.removeItem('lissom_medlemsepost'); ny.bmEpost = e; }")
-    && str_contains($sida, "if (t) { sessionStorage.removeItem('lissom_medlemstlf'); ny.bmTelefon = t; }"));
+// Her sto det at hun ble sendt til Vipps for aa logge inn FOERST, og at
+// planen ble lagt i sessionStorage saa den skulle overleve turen.
+//
+// Den overlevde ikke. Eieren meldte seg inn paa Aarsmedlemskap
+// 7. september 2026 og fikk «Proev Lissom, kr 990, 10 timer, 30 dager»:
+// «jeg kom inn med dette medlemskapet til tross for at jeg kjopte aars».
+// Paa mobil kan turen innom Vipps-appen gi en ny fane, og da er ogsaa
+// sessionStorage tomt. Sto valget tomt, kjopte skjermen den forste planen
+// i lista — se bmValgt().
+//
+// Naa lages ordren paa serveren FOER noen forlater sida, og noekkelen staar
+// i adressen resten av veien. Trenger vi aa vite hvem hun er, gaar turen
+// til Vipps fra /meld-inn/<noekkel> — og tilbake dit.
+sjekk('… og den som ikke er innlogget sendes ikke til innlogging foerst',
+    !str_contains($sida, "this.sendTilInnlogging('/medlemskap', 'Medlemskapet ble ikke opprettet.');"));
+sjekk('… men til ordren, som eier planen',
+    str_contains($sida, "fetch('/api/medlemsordre.php'")
+    && str_contains($sida, "if (d.url) { window.location.href = d.url; return; }"));
+// Og naar vi ikke kjenner henne, henter serveren navnet fra Vipps og sender
+// henne rett tilbake til den samme noekkelen.
+sjekk('… og serveren henter navnet fra Vipps og kommer tilbake til noekkelen',
+    str_contains($meldInn = file_get_contents(dirname(__DIR__) . '/api/meld-inn.php'),
+        "header('Location: /api/vipps-login.php?retur='")
+    && str_contains($meldInn, "rawurlencode('/meld-inn/' . \$token)"));
 // Kortet aapner seg selv naar planene er lastet. Uten dette lander hun paa
 // lista over medlemskap og maa finne fram til det samme kortet igjen.
 sjekk('… og kortet aapner seg selv naar hun er tilbake',
@@ -10994,16 +11005,23 @@ sjekk('alle veier til Vipps-innlogging gaar gjennom én metode',
     && str_contains($kodeI, 'sendTilInnlogging(retur, hva) {'),
     'ett hopp, i sendTilInnlogging()');
 // Fem var det da den ble laget; skjermen bak QR-koden ved doera kom som den
-// sjette, og bruker den samme veien.
+// sjette. Innmeldingen var den syvende — den er borte igjen, og det er med
+// vilje: den sendte kunden til innlogging FOER hun fikk melde seg inn, og
+// mellom de to turene laa valget av medlemskap bare i nettleserens minne.
+// Eieren fikk «Proev Lissom» da han kjopte Aarsmedlemskap 7. september 2026.
+// Naa gaar innmeldingen via en ordre paa serveren; trenger vi aa vite hvem
+// hun er, gjor api/meld-inn.php det selv. Se tests/innmelding.php.
 sjekk('… og alle stedene bruker den',
-    substr_count($kodeI, 'this.sendTilInnlogging(') === 6,
+    substr_count($kodeI, 'this.sendTilInnlogging(') === 5,
     substr_count($kodeI, 'this.sendTilInnlogging(') . ' kall');
 // Grunnen legges igjen, saa beskjeden kan si hva som IKKE ble gjort.
+// «Medlemskapet ble ikke opprettet.» sto her til 7. september 2026. Den
+// hoerte til innloggingsturen foran innmeldingen, og den turen finnes ikke
+// lenger — se over.
 foreach ([
     'Du ble ikke meldt på kurset.',
     'Gavekortet ble ikke kjøpt.',
     'Bestillingen ble ikke sendt.',
-    'Medlemskapet ble ikke opprettet.',
 ] as $grunn) {
     sjekk('grunnen «' . $grunn . '» tas vare paa',
         str_contains($kodeI, "'" . $grunn . "'"), 'staar i et kall');

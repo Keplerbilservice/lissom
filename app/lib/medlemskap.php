@@ -17,8 +17,36 @@ declare(strict_types=1);
 
 final class Medlemskap
 {
-    /** Sa mange dager for forfall ber vi Vipps om trekket. */
-    private const VARSEL_DAGER = 3;
+    /**
+     * Saa mange dager for forfall ber vi Vipps om trekket.
+     *
+     * Vipps krever at et trekk paa en avtale opprettes paa forhaand, slik at
+     * kunden ser det komme i appen for pengene gaar. Det er derfor pengene
+     * ikke er inne samme dag som runden kjorer.
+     *
+     * Sto som tre. Eieren, 7. september 2026: «er det ikke om aa gjore aa faa
+     * inn pengene saa fort som mulig», og da tallet var nede i to: «minimumskrav
+     * ja, ikke maks».
+     *
+     * Han har rett: ett dogn er gulvet hos Vipps, ikke taket. Vipps sin egen
+     * dokumentasjon sier at trekket maa opprettes minst én dag for forfall, saa
+     * kunden rekker aa se det komme i appen. Tre var to dager mer enn noen ba
+     * om, og hver av dem var penger som sto ute lenger enn nodvendig.
+     *
+     * TO TING AA VITE OM DEN DAGEN DENNE SKAL OPP IGJEN:
+     *
+     *   1. Dette er lest ut av et soekeresultat, ikke i originalen.
+     *      developer.vippsmobilepay.com er sperret av utgangsfilteret i miljoet
+     *      dette ble skrevet i. Samme kilde nevner at én dag kan kreve at
+     *      salgsenheten staar paa en egen liste hos Vipps.
+     *   2. Med ett dogn er det ingen slingringsmonn. Svikter runden den ene
+     *      natta, er forfallet passert for neste runde rekker aa be om det.
+     *
+     * Avvises et trekk med en klage paa forfallsdatoen, er det denne linja som
+     * skal tilbake til to. Grunnen staar i cron-e-posten — bin/cron.php skriver
+     * den til stderr.
+     */
+    private const VARSEL_DAGER = 1;
 
     /**
      * Hvilken utgave av medlemsvilkaarene som gjelder naa.

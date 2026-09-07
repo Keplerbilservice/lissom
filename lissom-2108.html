@@ -1310,9 +1310,19 @@ window.__resources = {
 
      760 px, det samme knekkpunktet resten av sida bruker. Mobil staar
      noeyaktig som for — «!important» fordi begge har inline-stil. */
-  .ms-pillerad { display: none; }
+  /* Raden staar alltid — men paa telefonen er verkstedspilla det eneste
+     som staar igjen av den. De sju andre er i bunnmenyen der.
+
+     Eieren, 7. september 2026: «kan man lage i verkstedet naa mer diskret
+     som en pille paa linjen sammen min side, medlemskap pillene?» Paa
+     telefonen finnes ikke den linja, og en aattende celle i bunnmenyen ville
+     gjort de sju til 44 px hver. Da staar pilla alene under navnet i
+     stedet. */
+  .ms-pillerad { display: flex; }
+  @media (max-width: 760px) {
+    .ms-pillerad > *:not(.ms-verksted) { display: none !important; }
+  }
   @media (min-width: 761px) {
-    .ms-pillerad { display: flex !important; }
     .ms-bunnmeny,
     .ms-bunnluft { display: none !important; }
   }
@@ -3907,6 +3917,10 @@ window.__resources = {
               <button type="button" onClick="{{ msPlChat.velg }}" aria-label="{{ msPlChat.full }}" style="{{ msPlChat.stil }}">{{ msPlChat.navn }}</button>
               <button type="button" onClick="{{ msPlNyttig.velg }}" aria-label="{{ msPlNyttig.full }}" style="{{ msPlNyttig.stil }}">{{ msPlNyttig.navn }}</button>
               <button type="button" onClick="{{ msPlLoggUt.velg }}" aria-label="{{ msPlLoggUt.full }}" style="{{ msPlLoggUt.stil }}">{{ msPlLoggUt.navn }}</button>
+              <!-- Verkstedspilla. Den er det ENESTE som staar igjen av denne
+                   raden paa telefonen — se «.ms-verksted» i stilarket. De sju
+                   over staar i bunnmenyen der. -->
+              <button type="button" class="ms-verksted" onClick="{{ msPlVerksted.velg }}" aria-label="{{ msPlVerksted.full }}" style="{{ msPlVerksted.stil }}"><span style="{{ msPlVerksted.prikk }}"></span>{{ msPlVerksted.navn }}</button>
             </nav>
           </sc-if>
 
@@ -4705,9 +4719,18 @@ window.__resources = {
 
               <!-- Hvem som er i verkstedet, og hva medlemmene skriver til
                    hverandre, er internt. Det sto uten portvakt: en som hadde
-                   vaert paa ett kurs saa begge deler. -->
+                   vaert paa ett kurs saa begge deler.
+
+                   Kortet sto fast paa forsiden. Eieren, 7. september 2026:
+                   «kan man lage i verkstedet naa mer diskret som en pille paa
+                   linjen sammen min side, medlemskap pillene? med en huke av
+                   funksjon for aa vises i verkstedet».
+
+                   Naa staar tallet som en pille i raden, og dette er ruta som
+                   aapner seg naar du trykker paa den. Samme innhold som for —
+                   hvem som er inne, hvor mange som er skjult, og haken. -->
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ msVerkstedApen }}" hint-placeholder-val="{{ false }}">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</div>
@@ -4744,12 +4767,15 @@ window.__resources = {
 
               </sc-if>
 
-              <!-- Gruppechatten staar paa forsiden.
-                   Den laa bak menyvalget Chat. Eieren, 5. september:
-                   «Gruppechatten må gjerne ligge på forsiden så man ser
-                   den» — en samtale man ikke ser, er en samtale man ikke
-                   svarer paa. Menyvalget staar, og ruller hit. -->
-              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+              <!-- Gruppechatten har sitt eget sted.
+                   Den laa bak menyvalget Chat, saa flyttet den til forsiden —
+                   eieren, 5. september: «Gruppechatten må gjerne ligge på
+                   forsiden så man ser den» — og er tilbake bak valget igjen.
+                   Eieren, 7. september 2026: «paa min side, fjern chat fra
+                   forsiden». Forsiden er det du ser hver gang du kommer inn;
+                   en samtale som ruller nedover der tar plassen fra
+                   verkstedet og timene dine. -->
+              <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
               <div id="minside-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
                   <span style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">
@@ -5566,10 +5592,18 @@ window.__resources = {
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hvaNaar }}</div>
               </div>
               <!-- Betalingspilla, den samme som medlemslista, personruta,
-                   kalenderen og paameldte bruker. Se betalingsPille(). -->
+                   kalenderen og paameldte bruker. Se betalingsPille().
+
+                   Her sto ogsaa naar paameldingen kom inn, ytterst til
+                   hoyre. Eieren, 7. september 2026: «fjern datoen som er
+                   helt til hoyere, den som viser naar de meldte seg paa».
+
+                   To datoer i samme rad — kursdatoen under navnet og denne —
+                   leses som den man leter etter, og det er kursdatoen. Den
+                   staar. Tidspunktet er ikke borte: det staar som «Tidspunkt»
+                   i ruta som aapner seg naar du trykker paa raden. -->
               <div style="display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto;">
                 <span style="{{ n.betalingStil }}">{{ n.betalingMerke }}</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
               </div>
             </div>
           </sc-for>
@@ -7254,6 +7288,13 @@ window.__resources = {
                   <sc-if value="{{ klNyDErKrav }}" hint-placeholder-val="{{ false }}">
                     <input value="{{ klNyDBelop }}" onChange="{{ settKlNyDBelop }}" inputmode="numeric" placeholder="Beløp i kroner" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
                   </sc-if>
+                  <!-- Koden staar bare naar «Gavekort» er valgt. Et gavekort
+                       uten kode er ingen betaling — det er en paastand.
+                       Samme felt som det fyldige skjemaet under «Rediger
+                       okten» har; se kdFelt. -->
+                  <sc-if value="{{ klNyDErGave }}" hint-placeholder-val="{{ false }}">
+                    <input value="{{ klNyDKode }}" onChange="{{ settKlNyDKode }}" placeholder="Gavekortkode" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                  </sc-if>
                   <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ klNyDBetValg }}" as="b" hint-placeholder-count="3">
                       <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
@@ -7463,10 +7504,23 @@ window.__resources = {
                   </sc-if>
                   <sc-if value="{{ klDErUbetalt }}" hint-placeholder-val="{{ true }}">
                     <sc-for list="{{ klDBetaltValg }}" as="b" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ b.velg }}" style="{{ klDHandlingStil }}">{{ b.navn }}</button>
+                      <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
                     </sc-for>
                   </sc-if>
                 </div>
+                <!-- Gavekortet spor etter koden for det trekker.
+                     Maalt 7. september 2026: «Gavekort» merket plassen betalt
+                     uten at noe kort ble roert — booking 6359 gikk fra
+                     reservert til betalt, kortet paa kr 2 000 sto urort, og
+                     «gift_card_uses» fikk ingen rad.
+                     Eieren, samme dag: «Spor etter koden, og trekk kortet». -->
+                <sc-if value="{{ klDGaveApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: var(--space-3);">
+                    <input value="{{ klDGaveKode }}" onChange="{{ settKlDGaveKode }}" placeholder="Gavekortkode" style="box-sizing: border-box; flex: 1 1 180px; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                    <button type="button" onClick="{{ klDGaveTrekk }}" style="{{ klDHandlingStil }}">Trekk fra kortet</button>
+                    <button type="button" onClick="{{ klDGaveAvbryt }}" style="{{ klDHandlingStil }}">Avbryt</button>
+                  </div>
+                </sc-if>
                 <!-- Antall og beloep. Samme felter som raden under
                      Paameldte, samme kall. -->
                 <div style="display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; margin-top: var(--space-4);">
@@ -8376,11 +8430,23 @@ window.__resources = {
                   <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
                 </span>
                 <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
-                <div style="display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto;">
+                <!-- To maater sto over hverandre. Fire i samme stabel ville
+                     gjort raden dobbelt saa hoy, saa de brekker i to og to i
+                     stedet — samme hoyde som for. -->
+                <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: 0 0 auto; max-width: 190px;">
                   <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="2">
                     <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                   </sc-for>
                 </div>
+                <!-- Gavekortet spor etter koden for det trekker. Feltet staar
+                     bare paa den raden du trykket paa. -->
+                <sc-if value="{{ u.gaveApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex: 1 1 100%;">
+                    <input value="{{ u.gaveKode }}" onChange="{{ u.settGaveKode }}" placeholder="Gavekortkode" style="box-sizing: border-box; flex: 1 1 180px; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                    <button type="button" onClick="{{ u.gaveTrekk }}" style="{{ u.gaveKnapp }}">Trekk fra kortet</button>
+                    <button type="button" onClick="{{ u.gaveAvbryt }}" style="{{ u.gaveKnapp }}">Avbryt</button>
+                  </div>
+                </sc-if>
               </div>
             </sc-for>
             <sc-if value="{{ ovSkylderTom }}" hint-placeholder-val="{{ true }}">
@@ -14313,7 +14379,9 @@ window.__resources = {
             </div>
           </sc-if>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+          <!-- «medlemsliste» er ankeret personruta ruller tilbake til naar
+               den lukkes eller lagres. Se lukkPerson og lagrePersonKontakt. -->
+          <div id="medlemsliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
               <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
                 <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
@@ -24277,6 +24345,55 @@ class Component extends DCLogic {
    * naar velg() kjorer. Vi proever noen ganger og gir oss.
    */
   /** Ruller til personruta naar den aapnes, saa den ikke aapner seg usett. */
+  /**
+   * Lukker personruta og setter deg tilbake der lista staar.
+   *
+   * Ruta staar OVER lista, og apnePerson() ruller ned til den. Lukkes den
+   * uten at noe ruller tilbake, blir du staaende der ruta var — og der staar
+   * naa noe helt annet.
+   *
+   * Eieren, 7. september 2026: «naar jeg klikker paa et medlem, og gaar ut,
+   * eller lagrer, saa vil jeg ikke lenger at den enkelte person skal vises,
+   * da vil jeg at [lista] skal vises».
+   *
+   * Ankeret staar bare paa medlemsskjermen. Aapnes ruta fra Paameldte, finnes
+   * det ikke — da ruller vi til toppen i stedet for aa la deg staa igjen midt
+   * i en side som nettopp ble kortere.
+   */
+  lukkPersonruta() {
+    // Alt som ble skrevet inn i ruta ryddes vekk. Overstyringene —
+    // personPlan, personFri — er det du TRODDE du satte; neste gang ruta
+    // aapnes skal brikkene lese det som faktisk staar i basen.
+    this.setState({ personFor: null, personData: null, personNotat: null,
+      personNavnFelt: null, personEpost: null, personTelefon: null,
+      personStartDato: null, personSluttDato: null, personTimer: null,
+      personPlan: null, personFri: null, personFriGrunn: null,
+      personBetalingApen: false, personBetalingBelop: '' });
+    // Vi maa vente til ruta faktisk er borte fra skjermen.
+    //
+    // Maalt 7. september 2026: rullet vi paa forste bilde, sto ruta fortsatt
+    // der — sida var like hoy som for, og vi landet 718 px feil. Ruta tegnes
+    // vekk et bilde eller to etter at state er satt, og forst DA staar lista
+    // der den skal.
+    let forsok = 0;
+    const proev = () => {
+      const ruta = [].slice.call(document.querySelectorAll('#personrute'))
+        .filter(e => e.offsetParent !== null)[0];
+      const el = [].slice.call(document.querySelectorAll('#medlemsliste'))
+        .filter(e => e.offsetParent !== null)[0];
+      if (!ruta && el) {
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        return;
+      }
+      if (++forsok < 30) { window.requestAnimationFrame(proev); return; }
+      // Ankeret staar bare paa medlemsskjermen. Aapnes ruta fra Paameldte,
+      // finnes det ikke — da til toppen, framfor aa la deg staa igjen midt i
+      // en side som nettopp ble kortere.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.requestAnimationFrame(proev);
+  }
+
   rullTilPersonruta() {
     let forsok = 0;
     const proev = () => {
@@ -26318,11 +26435,21 @@ class Component extends DCLogic {
           kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
         });
-        // Hentes paa nytt saa feltene viser det som faktisk staar i basen.
+        // Lagret, og ut.
+        //
+        // Her sto apnePerson(id, 0): ruta ble hentet paa nytt og laa aapen
+        // videre. Eieren, 7. september 2026: «naar jeg klikker paa et medlem,
+        // og gaar ut, eller lagrer, saa vil jeg ikke lenger at den enkelte
+        // person skal vises, da vil jeg at [lista] skal vises».
+        //
+        // Lista henter seg selv, saa det nye navnet staar der med det samme.
+        // Gikk det galt, blir ruta staaende — da er det noe aa rette.
         if (ok) {
-          this.setState({ personNavnFelt: null, personEpost: null, personTelefon: null,
-                          personStartDato: null, personSluttDato: null, personTimer: null });
-          this.apnePerson(id, 0);
+          this.lukkPersonruta();
+          // «_adminHentes» staar igjen som sann mens et kall er ute. Uten
+          // aa nulle den kunne lista blitt staaende med det gamle navnet.
+          this._adminHentes = false;
+          this.hentAdmin();
         }
       })
       .catch(() => {
@@ -30356,6 +30483,9 @@ class Component extends DCLogic {
         : liste.length + (liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')
           + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',- utestående',
       ovSkylder: liste.map(u => {
+        // Noekkelen for raden. Slag og id sammen: en booking og en ordre kan
+        // ha samme id, og da ville kodefeltet aapnet seg paa to rader.
+        const n = String(u.slag || 'kurs') + ':' + String(u.id);
         const erMedlem = u.slag === 'medlem';
         // Butikksalget kom 4. september. Det er hverken en kursplass eller
         // et medlemskap: en vare gikk ut av doera, og pengene kommer senere.
@@ -30411,21 +30541,72 @@ class Component extends DCLogic {
         // paameldingen sin, et medlemskap som en betalingsrad paa medlemmet,
         // og et butikksalg i kassa, der betalingsraden som ikke ble laget
         // over disken lages naa. Samme knapp, tre endepunkt.
-        maater: ['Kontant', 'Vipps'].map(m => ({
+        //
+        // ── Fire maater, ikke to ────────────────────────────────────
+        //
+        // Her sto Kontant og Vipps. Eieren, 7. september 2026, med bilde av
+        // lista: «jeg maa kunne velge gavekort og gratis skal ikke betale her
+        // ogsaa». Bade et kurs, et medlemskap og et butikksalg kan gis bort,
+        // og alle tre kan loeses ut med et gavekort.
+        //
+        // Lista hentes fra MAATER_OKT uten «Ikke betalt» — den er der raden
+        // staar fra for — saa dette stedet og deltakerkortet ikke kan komme i
+        // utakt. Serveren tar imot de samme fire alle tre stedene; se
+        // api/admin/pamelding.php, medlemmer.php og uttak.php.
+        maater: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt').map(m => ({
           navn: m,
           stil: knapp,
-          // Alle tre henter admin paa nytt av seg selv naar det gikk bra,
-          // saa kortet oppdaterer seg.
-          velg: () => (erOrdre
-            ? this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, maate: m })
-            : erMedlem
-              ? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })
-              : this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
-          ).then(() => {}),
+          // Gavekortet gjor ingenting med det samme: det spor etter koden
+          // foerst, paa den raden du trykket paa. Uten en kode er det
+          // ingenting aa trekke fra, og raden ville staatt betalt uten at
+          // noen hadde betalt.
+          velg: m === 'Gavekort'
+            ? () => this.setState({ kaGaveRad: n, kaGaveKode: '' })
+            : () => this.gjorOppRad(u, m).then(() => {}),
         })),
+        // ── Kodefeltet paa raden ────────────────────────────────────
+        //
+        // «gaveApen» er sann bare paa den raden som ble trykket paa. Noekkelen
+        // er slag og id sammen: en booking og en ordre kan ha samme id.
+        gaveApen: this.state.kaGaveRad === n,
+        gaveKode: this.state.kaGaveKode || '',
+        settGaveKode: e => this.setState({ kaGaveKode: e.target.value }),
+        gaveKnapp: knapp,
+        gaveTrekk: () => {
+          const kode = (this.state.kaGaveKode || '').trim();
+          if (kode === '') {
+            this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
+            return;
+          }
+          this.gjorOppRad(u, 'Gavekort', kode)
+            .then(ok => { if (ok) this.setState({ kaGaveRad: null, kaGaveKode: '' }); });
+        },
+        gaveAvbryt: () => this.setState({ kaGaveRad: null, kaGaveKode: '' }),
       };
       }),
     };
+  }
+
+  /**
+   * Gjor opp en rad under «Ikke betalt», uansett hvilket slag den er.
+   *
+   * De tre slagene har hvert sitt endepunkt, og laa som en nostet
+   * treveis inne i knappen. Naa staar valget ett sted, saa gavekortet og de
+   * tre andre maatene gaar den samme veien.
+   *
+   * Alle tre henter admin paa nytt av seg selv naar det gikk bra, saa kortet
+   * oppdaterer seg.
+   */
+  gjorOppRad(u, maate, kode) {
+    const gave = kode ? { kode: kode } : {};
+    if (u.slag === 'ordre') {
+      return this.uttakKall(Object.assign({ handling: 'gjorOpp', ordreId: u.id, maate: maate }, gave));
+    }
+    if (u.slag === 'medlem') {
+      return this.medlemKall(Object.assign({ handling: 'betaling', medlemId: u.id, maate: maate }, gave));
+    }
+    return this.pameldingKall(Object.assign(
+      { handling: 'status', id: u.id, status: 'betalt', maate: maate }, gave));
   }
 
   adminBunnMeny() {
@@ -30554,15 +30735,10 @@ class Component extends DCLogic {
       // Den laa sammen med internbutikken; det er to ulike aerend — det ene
       // er aa kjope leire, det andre aa legge ut noe du har laget.
       selg:       p('Selg', 'Selg produktene dine', 'selg'),
-      // Chatten er ikke lenger et eget sted — den staar paa forsiden.
-      // Valget tar deg dit og ruller ned til den.
-      chat:       this.bunnMenyPunkt('Chat', 'Chat mellom medlemmene', false, () => {
-        this.setState({ msFane: 'hjem' });
-        setTimeout(() => {
-          const el = document.getElementById('minside-chat');
-          if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
-        }, 60);
-      }),
+      // Chatten er sitt eget sted igjen. Eieren, 7. september 2026: «paa min
+      // side, fjern chat fra forsiden». Den laa der og rullet nedover, og
+      // tok plassen fra verkstedet og timene.
+      chat:       p('Chat', 'Chat mellom medlemmene', 'chat'),
       nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),
       // Utloggingen er ikke et sted, men en handling — den lyser aldri.
       //
@@ -30583,10 +30759,13 @@ class Component extends DCLogic {
   // saa siden ikke blir staaende tom.
   msFane() {
     const f = this.state.msFane || 'hjem';
-    // «chat» var et eget sted til gruppechatten flyttet til forsiden. Staar
-    // den lagret fra for, hoerer den hjemme der chatten er naa.
-    if (f === 'chat') return 'hjem';
-    if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'selg' || f === 'nyttig')) return 'hjem';
+    // «chat» var et eget sted, saa laa den paa forsiden, og er naa et eget
+    // sted igjen. Eieren, 7. september 2026: «paa min side, fjern chat fra
+    // forsiden». Forsiden er det du ser hver gang du kommer inn; en samtale
+    // som ruller nedover der tar plassen fra verkstedet og timene dine.
+    if (!this.medlemsvisning()
+        && (f === 'medlemskap' || f === 'butikk' || f === 'selg'
+            || f === 'nyttig' || f === 'chat')) return 'hjem';
     return f;
   }
 
@@ -32992,15 +33171,52 @@ class Component extends DCLogic {
               // komme i utakt. «Ikke betalt» staar ikke som en pille her:
               // den har sin egen knapp, «Sett som ikke betalt», og den
               // gjelder den andre veien.
+              //
+              // Gavekortet gjor ingenting med det samme: det spor etter koden
+              // foerst. Maalt 7. september 2026 sto det slik at «Gavekort»
+              // merket plassen betalt uten at noe kort ble roert — booking
+              // 6359 gikk fra reservert til betalt, kortet paa kr 2 000 sto
+              // urort, og «gift_card_uses» fikk ingen rad. Kortet kunne
+              // brukes om igjen, og gavekortgjelda ble aldri nedskrevet.
               klDBetaltValg: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt').map(m => ({
                 navn: m,
-                velg: () => {
-                  if (!dv || !dv.bookingId) return;
-                  this.klKall('/api/admin/pamelding.php',
-                    { handling: 'status', id: dv.bookingId, status: 'betalt', maate: m })
-                    .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
-                },
+                // Samme pille som de andre handlingene paa kortet — se
+                // klDHandlingStil. Gavekortet lyser mens det staar og venter
+                // paa en kode, saa det er tydelig hvorfor feltet dukket opp.
+                stil: Object.assign({
+                  appearance: 'none', cursor: 'pointer',
+                  border: '1.5px solid var(--border-subtle)',
+                  background: 'var(--surface-card)', color: 'var(--lissom-brown)',
+                  borderRadius: 'var(--radius-pill)', padding: '7px 16px',
+                  font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap',
+                }, m === 'Gavekort' && this.state.klDGaveApen
+                  ? { background: 'var(--lissom-brown)', color: 'var(--clay-50)',
+                      border: '1.5px solid var(--lissom-brown)' }
+                  : {}),
+                velg: m === 'Gavekort'
+                  ? () => this.setState({ klDGaveApen: true, klDGaveKode: '' })
+                  : () => {
+                      if (!dv || !dv.bookingId) return;
+                      this.klKall('/api/admin/pamelding.php',
+                        { handling: 'status', id: dv.bookingId, status: 'betalt', maate: m })
+                        .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+                    },
               })),
+              klDGaveApen: !!this.state.klDGaveApen,
+              klDGaveKode: this.state.klDGaveKode || '',
+              settKlDGaveKode: e => this.setState({ klDGaveKode: e.target.value }),
+              klDGaveAvbryt: () => this.setState({ klDGaveApen: false, klDGaveKode: '' }),
+              klDGaveTrekk: () => {
+                if (!dv || !dv.bookingId) return;
+                const kode = (this.state.klDGaveKode || '').trim();
+                if (kode === '') {
+                  this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
+                  return;
+                }
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'status', id: dv.bookingId, status: 'betalt', maate: 'Gavekort', kode: kode })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDGaveApen: false, klDGaveKode: '' }); });
+              },
               klDIkkeMott: () => {
                 if (!dv || !dv.bookingId) return;
                 this.klKall('/api/admin/pamelding.php',
@@ -33257,7 +33473,22 @@ class Component extends DCLogic {
       // «Rediger okten». Den raske veien noterer hvordan plassen er gjort opp
       // — eller at den ikke er det. Den sender ingenting: «Vippskrav» sto her
       // til 6. september 2026, og eieren ba om at den skulle slettes overalt.
-      klNyDBetValg: ['Ikke betalt', 'Vipps', 'Kontant'].map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Ikke betalt') === bn) })),
+      // ── De samme fem maatene som skjemaet paa okta ────────────────
+      //
+      // Her sto ['Ikke betalt', 'Vipps', 'Kontant']. Eieren, 7. september
+      // 2026, med bilde av dette skjemaet: «Jeg vil ha pillene gratis og
+      // gavekort her ogsaa». En som melder seg paa i doera kan faa plassen
+      // gratis, eller loese den ut med et gavekort — og maatte for legges inn
+      // som ubetalt og rettes etterpaa.
+      //
+      // Lista hentes fra MAATER_OKT, saa dette skjemaet og det fyldige under
+      // «Rediger okten» ikke kan komme i utakt.
+      klNyDBetValg: Component.MAATER_OKT.map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Ikke betalt') === bn) })),
+      // Koden staar bare naar gavekortet er valgt. Et gavekort uten kode er
+      // ingen betaling — det er en paastand.
+      klNyDErGave: (this.state.klNyDBet || 'Ikke betalt') === 'Gavekort',
+      klNyDKode: this.state.klNyDKode || '',
+      settKlNyDKode: e => this.setState({ klNyDKode: e.target.value }),
       // Beloepsfeltet sto bare framme naar «Vippskrav» var valgt. Maaten er
       // borte, men feltet blir staaende: naar standarden er «Ikke betalt»,
       // er nettopp beloepet det som sier hva plassen skylder.
@@ -33279,15 +33510,20 @@ class Component extends DCLogic {
         const bet = this.state.klNyDBet || 'Ikke betalt';
         const tlf = (this.state.klNyDTlf || '').trim();
         const belop = (this.state.klNyDBelop || '').trim();
+        const kode = (this.state.klNyDKode || '').trim();
+        if (bet === 'Gavekort' && kode === '') {
+          this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
+          return;
+        }
         // Spoer foerst. Se «klSporr».
         const leggInn = () => this.klKall('/api/admin/pamelding.php', {
           handling: 'legg-til', oktId: valgt.oktId, navn: navn,
           epost: (this.state.klNyDEpost || '').trim(),
           telefon: tlf, antall: 1,
           betaltMaate: bet === 'Vipps' ? 'Vipps i verkstedet' : bet,
-          belop: belop,
+          belop: belop, kode: kode,
         }).then(ok => {
-          if (ok) this.setState({ klNyDNavn: '', klNyDEpost: '', klNyDTlf: '', klNyDBelop: '' });
+          if (ok) this.setState({ klNyDNavn: '', klNyDEpost: '', klNyDTlf: '', klNyDBelop: '', klNyDKode: '' });
         });
         this.setState({ klSporr: {
           emne: 'Legg til deltaker',
@@ -38444,9 +38680,16 @@ class Component extends DCLogic {
           personFornavn: fornavn,
           personDetalj: [p.epost, p.telefon, p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : null]
             .filter(Boolean).join(' · '),
-          lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null,
-            personNavnFelt: null, personEpost: null, personTelefon: null,
-            personStartDato: null, personSluttDato: null, personTimer: null }),
+          // Ut av personen, og tilbake til lista.
+          //
+          // Ruta staar OVER lista, og apnePerson() ruller ned til den. Lukket
+          // du den etter aa ha lest deg nedover i historikken, ble du staaende
+          // langt nede paa sida — der ruta hadde vaert sto naa noe helt annet.
+          //
+          // Eieren, 7. september 2026: «naar jeg klikker paa et medlem, og
+          // gaar ut, eller lagrer, saa vil jeg ikke lenger at den enkelte
+          // person skal vises, da vil jeg at [lista] skal vises».
+          lukkPerson: () => this.lukkPersonruta(),
           // Annen info om personen. Internt — det staar ikke paa Min side.
           // Feltet er tomt til noe hentes; da faller det tilbake paa basen.
           personNotat: this.state.personNotat === null || this.state.personNotat === undefined
@@ -38536,8 +38779,14 @@ class Component extends DCLogic {
               belop: (this.state.personBetalingBelop || '').trim(),
             }, true).then(ok => {
               if (!ok) { return; }
-              this.setState({ personBetalingApen: false, personBetalingBelop: '' });
-              this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+              // Lagret, og ut. Eieren, 7. september 2026, om de tre knappene
+              // som ble igjen etter at «Lagre» og × begynte aa gaa tilbake
+              // til lista. Se lukkPersonruta().
+              //
+              // «behold» staar fortsatt: gikk det galt, skal ruta bli
+              // staaende, saa beskjeden staar der du var. medlemKall() henter
+              // lista paa nytt av seg selv naar det gikk bra.
+              this.lukkPersonruta();
             }),
           })),
           // Samtykket til vilkaarene, med dato og utgave. En hake som bare
@@ -38594,10 +38843,16 @@ class Component extends DCLogic {
             this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)
               .then(ok => {
                 if (!ok) { return; }
-                // Overstyringa nullstilles, saa brikkene leser det som naa
-                // staar i basen — ikke det vi trodde vi satte.
-                this.setState({ personPlan: null });
-                this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+                // Lagret, og ut. Eieren, 7. september 2026, om de tre
+                // knappene som ble igjen etter at «Lagre» og × begynte aa gaa
+                // tilbake til lista. Se lukkPersonruta().
+                //
+                // «behold» staar fortsatt: gikk det galt, skal ruta bli
+                // staaende, saa beskjeden staar der du var. Overstyringa
+                // nullstilles av lukkingen, saa brikkene leser det som naa
+                // staar i basen neste gang du aapner personen — ikke det vi
+                // trodde vi satte.
+                this.lukkPersonruta();
               });
           },
           // ── «Send Vipps-avtale» ────────────────────────────────────
@@ -38655,7 +38910,13 @@ class Component extends DCLogic {
             { handling: 'send-avtale', medlemId: p.id }, true
           ).then(ok => {
             if (!ok) { return; }
-            this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+            // Sendt, og ut. Eieren, 7. september 2026, om de tre knappene som
+            // ble igjen etter at «Lagre» og × begynte aa gaa tilbake til
+            // lista. Se lukkPersonruta().
+            //
+            // «behold» staar fortsatt: gikk det galt, skal ruta bli staaende,
+            // saa beskjeden staar der du var.
+            this.lukkPersonruta();
           }),
           // ── Begynn paa nytt med den samme personen ─────────────────
           //
@@ -38686,15 +38947,18 @@ class Component extends DCLogic {
                 + 'Navn, telefon og innlogging blir stående'
                 + (personPlanNaa ? ', og hun settes på ' + personPlanNaa : '') + '.\n\n'
                 + 'Dette kan ikke angres.')) { return; }
-            // «behold» — uten den lukker medlemKall ruta, og da ville
-            // oppfriskningen under aapnet den igjen med det samme.
+            // «behold» — gikk det galt, skal ruta bli staaende, saa
+            // beskjeden staar der du var.
             this.medlemKall({ handling: 'nullstill', medlemId: p.id,
                               type: personPlanNaa || '', bekreft: 'NULLSTILL' }, true)
               .then(ok => {
                 if (!ok) { return; }
-                this.setState({ personPlan: null, personFri: null, personFriGrunn: null,
-                                personBetalingApen: false, personBetalingBelop: '' });
-                this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+                // Nullstilt, og ut. Eieren, 7. september 2026, spurt om denne
+                // skulle staa igjen naar de fire andre gaar tilbake til lista:
+                // nei. Lista viser nettopp det nullstillingen endrer — status,
+                // plan og betalingspille — og personen skal ikke bli staaende.
+                // Se lukkPersonruta().
+                this.lukkPersonruta();
               });
           },
           personFriKnapp: 'Lagre',
@@ -43703,6 +43967,7 @@ class Component extends DCLogic {
           msFaneButikk:     f === 'butikk',
           msFaneSelg:       f === 'selg',
           msFaneNyttig:     f === 'nyttig',
+          msFaneChat:       f === 'chat',
           // Bunnmenyen staar bare for den som faktisk har de fem stedene.
           // En kursdeltaker har to av dem, og faar dem paa forsiden som for.
           msHarBunnmeny: this.medlemsvisning(),
@@ -43728,9 +43993,43 @@ class Component extends DCLogic {
             msPlLoggUt: pl.loggUt,
           }; })(),
           msPlRadStil: {
-            flexWrap: 'wrap', gap: '10px',
+            flexWrap: 'wrap', gap: '10px', alignItems: 'center',
             margin: '0 0 var(--space-6)', padding: 0,
           },
+          // ── Verkstedspilla ─────────────────────────────────────────
+          //
+          // Kortet «I verkstedet naa» sto fast paa forsiden. Eieren,
+          // 7. september 2026: «kan man lage i verkstedet naa mer diskret som
+          // en pille paa linjen sammen min side, medlemskap pillene? med en
+          // huke av funksjon for aa vises i verkstedet».
+          //
+          // Tallet staar i pilla; ruta med hvem som er inne og haken aapner
+          // seg naar du trykker. Den lyser naar den er aapen, som de andre.
+          msVerkstedApen: !!this.state.msVerksted,
+          msPlVerksted: (() => {
+            const aapen = !!this.state.msVerksted;
+            const antall = this.state.inne ? this.state.inne.length : 0;
+            return {
+              navn: antall + ' inne',
+              full: 'Hvem som er i verkstedet nå',
+              velg: () => this.setState(st => ({ msVerksted: !st.msVerksted })),
+              stil: {
+                appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                display: 'inline-flex', alignItems: 'center',
+                borderRadius: 'var(--radius-pill)', padding: '10px 20px',
+                font: 'var(--type-body-sm)', fontWeight: 700,
+                border: aapen ? '2px solid var(--lissom-brown)' : '2px solid var(--border-subtle)',
+                background: aapen ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                color: aapen ? 'var(--clay-50)' : 'var(--lissom-brown)',
+              },
+              // Groenn prikk naar noen er inne, blek naar verkstedet er tomt.
+              prikk: {
+                display: 'inline-block', width: '8px', height: '8px',
+                borderRadius: '50%', marginRight: '8px', flex: '0 0 auto',
+                background: antall > 0 ? 'var(--sage-500)' : 'var(--clay-300)',
+              },
+            };
+          })(),
           msBmStil: {
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
             background: 'var(--surface-card)',

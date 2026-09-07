@@ -3371,8 +3371,21 @@ sjekk('utskriften tar bare koden, ikke hele kassa',
 // Boksen tok navn, telefon og en betalingsmaate. «Vippskrav» sto her til 6.
 // september 2026; eieren ba om at den skulle slettes overalt.
 sjekk('den raske ruta tilbyr ikke lenger et krav',
-    str_contains($sida2, "klNyDBetValg: ['Ikke betalt', 'Vipps', 'Kontant']")
-    && !str_contains($sida2, "'Mobil — kravet går hit'"));
+    !str_contains($sida2, "'Mobil — kravet går hit'"));
+// Ruta hadde tre maater: «Ikke betalt», «Vipps» og «Kontant». Eieren,
+// 7. september 2026, med bilde av skjemaet: «Jeg vil ha pillene gratis og
+// gavekort her ogsaa». En som melder seg paa i doera kan faa plassen gratis,
+// eller loese den ut med et gavekort.
+//
+// Lista hentes fra MAATER_OKT, saa denne ruta og det fyldige skjemaet under
+// «Rediger okten» ikke kan komme i utakt.
+sjekk('… og har de samme fem maatene som skjemaet paa okta',
+    str_contains($sida2, 'klNyDBetValg: Component.MAATER_OKT.map(bn => ({'));
+// Et gavekort uten kode er ingen betaling — det er en paastand.
+sjekk('… og gavekortet spor etter koden',
+    str_contains($sida2, "klNyDErGave: (this.state.klNyDBet || 'Ikke betalt') === 'Gavekort',")
+    && str_contains($sida2, '<sc-if value="{{ klNyDErGave }}" hint-placeholder-val="{{ false }}">')
+    && str_contains($sida2, "if (bet === 'Gavekort' && kode === '') {"));
 // Beloepsfeltet sto bare framme naar kravet var valgt. Naar standarden er
 // «Ikke betalt», er beloepet nettopp det som sier hva plassen skylder — saa
 // feltet blir staaende, framfor aa forsvinne med kravet.
@@ -6562,10 +6575,13 @@ sjekk('… og admin teller fortsatt som medlem paa serveren',
 sjekk('Min side har baade piller og bunnmeny i markupen',
     str_contains($sida, '<nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">')
     && str_contains($sida, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">'));
+// Raden staar alltid. Paa telefonen er verkstedspilla det eneste som staar
+// igjen av den — de sju andre er i bunnmenyen der, og en aattende celle
+// ville gjort de sju til 44 px hver.
 sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
-    str_contains($sida, '.ms-pillerad { display: none; }')
+    str_contains($sida, '.ms-pillerad { display: flex; }')
     && str_contains($sida, '@media (min-width: 761px) {')
-    && str_contains($sida, '.ms-pillerad { display: flex !important; }'));
+    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted) { display: none !important; }'));
 sjekk('… og bunnmenyen og luftputa under den gaar bort paa PC',
     str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft { display: none !important; }")
     && str_contains($sida, '<div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>'));
@@ -8347,8 +8363,9 @@ sjekk('bare salget med fritt beloep kan vaere gratis',
     && !str_contains($utFil, "const KURVMAATER = ['Kontant', 'Vipps', 'Gratis'")
     && !str_contains($utFil, "const MAATER = ['Kontant', 'Vipps', 'Gratis'"));
 sjekk('… og varekurven og gavekortet har den ikke',
-    substr_count($utFil, 'in_array($maate, MAATER, true)') === 2
-    && substr_count($utFil, 'in_array($maate, SALGMAATER, true)') === 1);
+    substr_count($utFil, 'in_array($maate, MAATER, true)') === 1
+    && substr_count($utFil, 'in_array($maate, SALGMAATER, true)') === 1
+    && substr_count($utFil, 'in_array($maate, OPPGJORMAATER, true)') === 1);
 // Null er lov naar det ER gratis, og bare da. Uten det andre leddet ville
 // «Kontant, kr. 0,-» gaatt gjennom som et salg ingen betalte for.
 sjekk('null kroner slipper gjennom bare naar maaten er «Gratis»',
@@ -8457,15 +8474,28 @@ sjekk('… og ikke forlatte Vipps-forsoek',
 // laget over disken.
 sjekk('gjelden kan gjores opp fra lista',
     str_contains($utFil, "if (\$handling === 'gjorOpp') {")
-    && str_contains($sidaG, "? this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, maate: m })"));
+    && str_contains($sidaG, "return this.uttakKall(Object.assign({ handling: 'gjorOpp', ordreId: u.id, maate: maate }, gave));"));
 // Betalingsraden er sperren, ikke maaten: har salget en rad, er det gjort
 // opp — eller det venter paa Vipps, og da skal ikke vi roere det.
 sjekk('… bare én gang',
     str_contains($utFil, "if (\$ordre['payment_id'] !== null) {")
     && str_contains($utFil, "Svar::feil('Salget er alt gjort opp.', 409);"));
-// «Gratis» og «Ikke betalt» ville vaert aa gjore opp uten aa gjore opp.
-sjekk('… og bare med noe som faktisk er penger',
-    str_contains($utFil, "\$maate   = (string) (\$kropp['maate'] ?? MAATER[0]);"));
+// Her sto Kontant og Vipps. Eieren, 7. september 2026, med bilde av lista:
+// «jeg maa kunne velge gavekort og gratis skal ikke betale her ogsaa». Ogsaa
+// en vare kan gis bort, og ogsaa den kan loeses ut med et gavekort.
+sjekk('… med de samme fire maatene som en kursplass har',
+    str_contains($utFil, "const OPPGJORMAATER = ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];"));
+// «Gratis» og «Gavekort» foerer ingen penger inn i dag: den forste er gitt
+// bort, den andre er alt betalt inn den gangen kortet ble kjopt. Sto beloepet
+// paa raden, ville det blitt talt to ganger.
+sjekk('… uten aa telle penger som ikke kom inn i dag',
+    str_contains($utFil, "'belop_ore'       => in_array(\$maate, ['Gratis', 'Gavekort'], true) ? 0 : \$sum,"));
+// Et gavekort er ikke en maate aa notere paa. Trekker vi det ikke, staar
+// kortet med full saldo og kan brukes om igjen.
+sjekk('… og gavekortet trekkes, ikke bare noteres',
+    str_contains($utFil, "\$kort = Booking::finnGavekort((string) (\$kropp['kode'] ?? ''));")
+    && str_contains($utFil, "\$felt['gavekort_id']  = (int) \$kort['id'];")
+    && str_contains($utFil, 'Booking::trekkGavekort($betalingId);'));
 // Et fritt beloep kan vaere kurs, medlemskap eller produkt, og det avgjor
 // kontoen i dagsoppgjoret. Uten betalingsrad var det ingen «formal» aa arve.
 sjekk('… paa den kontoen salget hoerer til',
@@ -9326,6 +9356,35 @@ sjekk('… og den aapner boksen som finnes, ikke en ny',
 // og da er «medBetaling» udefinert.
 sjekk('… og de andre veiene inn aapner den ikke',
     substr_count($sidaM2, 'apnePerson(m.id, 0, true)') === 1);
+
+echo "\n== Ut av personen, tilbake til lista ==\n";
+// Personruta staar OVER lista, og apnePerson() ruller ned til den. Lukket du
+// den etter aa ha lest deg nedover i historikken, ble du staaende langt nede
+// paa sida — der ruta hadde vaert sto naa noe helt annet. Og lagring aapnet
+// ruta paa nytt, saa personen ble staaende framme.
+//
+// Eieren, 7. september 2026: «naar jeg klikker paa et medlem, og gaar ut,
+// eller lagrer, saa vil jeg ikke lenger at den enkelte person skal vises, da
+// vil jeg at [lista] skal vises».
+sjekk('lista har et anker aa rulle tilbake til',
+    str_contains($sidaM2, '<div id="medlemsliste" style="background: var(--surface-card);'));
+sjekk('… og baade × og lagring gaar samme vei ut',
+    str_contains($sidaM2, 'lukkPerson: () => this.lukkPersonruta(),')
+    && str_contains($sidaM2, 'lukkPersonruta() {')
+    && str_contains($sidaM2, "if (ok) {\n          this.lukkPersonruta();"));
+// Her sto apnePerson(id, 0): ruta ble hentet paa nytt og laa aapen videre.
+sjekk('… og lagring aapner ikke ruta paa nytt',
+    !str_contains($sidaM2, "personStartDato: null, personSluttDato: null, personTimer: null });\n          this.apnePerson(id, 0);"));
+// Ruta tegnes vekk et bilde eller to etter at state er satt. Rullet vi paa
+// forste bilde, sto den fortsatt der — sida var like hoy som for, og vi
+// landet 718 px feil. Maalt 7. september 2026.
+sjekk('… og vi venter til ruta faktisk er borte for vi ruller',
+    str_contains($sidaM2, "if (!ruta && el) {"));
+// Ankeret staar bare paa medlemsskjermen. Aapnes ruta fra Paameldte, finnes
+// det ikke — da til toppen, framfor aa la deg staa igjen midt i en side som
+// nettopp ble kortere.
+sjekk('… og fra Paameldte, der ankeret ikke finnes, gaar det til toppen',
+    str_contains($sidaM2, "window.scrollTo({ top: 0, behavior: 'smooth' });\n    };\n    window.requestAnimationFrame(proev);"));
 
 // Et gratismedlem har ingenting aa registrere. Da staar pilla som en
 // etikett — den skal ikke love en handling som ikke finnes.
@@ -10278,9 +10337,30 @@ sjekk('… og knappen staar forst naar noe er valgt om',
     && str_contains($sidaB, '<sc-if value="{{ personPlanEndret }}"'));
 sjekk('… og knappen kaller «bytt-plan»',
     str_contains($sidaB, "this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)"));
-// Ruta staar aapen etterpaa, og brikkene leser det som naa staar i basen.
-sjekk('… og ruta hentes paa nytt uten aa lukke seg',
-    str_contains($sidaB, "this.setState({ personPlan: null });\n                this.apnePerson(this.state.personMedlemId || 0"));
+// Her sto ruta aapen etterpaa, og ble hentet paa nytt. Eieren, 7. september
+// 2026, om de tre knappene som ble igjen etter at «Lagre» og × begynte aa gaa
+// tilbake til lista: de skal ut samme vei.
+//
+// «behold» staar fortsatt i kallet over: gikk det galt, skal ruta bli
+// staaende, saa beskjeden staar der du var.
+sjekk('… og ruta lukker seg og gaar tilbake til lista',
+    str_contains($sidaB, "                this.lukkPersonruta();")
+    && !str_contains($sidaB, "this.setState({ personPlan: null });\n                this.apnePerson(this.state.personMedlemId || 0"));
+// De to andre knappene i ruta gaar samme vei ut.
+sjekk('… og det samme gjor «Registrer betaling» og «Send Vipps-avtale»',
+    str_contains($sidaB, "              this.setState({ personBetalingApen: false, personBetalingBelop: '' });\n              this.apnePerson") === false
+    // Fire kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
+    // medlemskap» og «Send Vipps-avtale». × kaller den ogsaa, men uten
+    // semikolon — se «lukkPerson:» over.
+    // Fem kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
+    // medlemskap», «Send Vipps-avtale» og «Nullstill medlemmet». × kaller den
+    // ogsaa, men uten semikolon — se «lukkPerson:» over.
+    && substr_count($sidaB, 'this.lukkPersonruta();') === 5);
+// «Nullstill medlemmet» sto igjen en runde. Eieren, 7. september 2026, spurt
+// om den skulle staa naar de fire andre gaar tilbake til lista: nei. Lista
+// viser nettopp det nullstillingen endrer — status, plan og betalingspille.
+sjekk('… og «Nullstill» gaar samme vei ut',
+    !str_contains($sidaB, "this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);\n              });\n          },"));
 // Overstyringa maa nullstilles naar en annen person aapnes. Ellers staar
 // forrige valg igjen paa neste medlem.
 sjekk('… og valget nullstilles naar en annen person aapnes',
@@ -10384,9 +10464,24 @@ sjekk('… til prisen som ble avtalt',
     str_contains($mFil, "\$ore = (int) \$avtale['pris_ore'];"));
 
 // Skjermen
+// De tre slagene laa som en nostet treveis inne i knappen. Naa staar valget
+// ett sted, saa gavekortet og de tre andre maatene gaar den samme veien.
 sjekk('medlemsrader gjores opp mot medlemmet, kursplasser mot paameldingen',
-    str_contains($sida, "? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })")
-    && str_contains($sida, ": this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })"));
+    str_contains($sida, 'gjorOppRad(u, maate, kode) {')
+    && str_contains($sida, "return this.medlemKall(Object.assign({ handling: 'betaling', medlemId: u.id, maate: maate }, gave));")
+    && str_contains($sida, "return this.pameldingKall(Object.assign(\n      { handling: 'status', id: u.id, status: 'betalt', maate: maate }, gave));"));
+// Her sto Kontant og Vipps. Eieren, 7. september 2026, med bilde av lista i
+// Kassa: «jeg maa kunne velge gavekort og gratis skal ikke betale her ogsaa».
+sjekk('… og alle tre kan gjores opp paa de samme fire maatene',
+    str_contains($sida, "maater: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt').map(m => ({")
+    && str_contains($mFil, "if (!in_array(\$maate, ['Kontant', 'Vipps', 'Gavekort', 'Gratis'], true)) {"));
+// Et gavekort uten kode er ingen betaling. Feltet staar bare paa den raden
+// som ble trykket paa — noekkelen er slag og id sammen, fordi en booking og
+// en ordre kan ha samme id.
+sjekk('… og gavekortet spor etter koden, paa sin egen rad',
+    str_contains($sida, "const n = String(u.slag || 'kurs') + ':' + String(u.id);")
+    && str_contains($sida, 'gaveApen: this.state.kaGaveRad === n,')
+    && str_contains($sida, "? () => this.setState({ kaGaveRad: n, kaGaveKode: '' })"));
 sjekk('… og navnet paa et medlem er en vei inn til medlemmet',
     str_contains($sida, "this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: u.navn })"));
 // «plasser» sto der fra den gang kortet bare hadde kursplasser.
@@ -11493,16 +11588,20 @@ sjekk('… mens gruppechatten mellom medlemmene staar',
     && str_contains($msU, '{{ chatMeldinger }}')
     && str_contains($msU, '{{ sendChat }}'),
     'eieren: «Gruppechatten skal bestå»');
-// Den laa bak menyvalget Chat. Eieren, 5. september: «Gruppechatten må
-// gjerne ligge på forsiden så man ser den» — en samtale man ikke ser, er en
-// samtale man ikke svarer paa. Menyvalget staar, og ruller dit.
-sjekk('… og den staar paa forsiden',
-    (bool) preg_match('/<sc-if value="\{\{ msFaneHjem \}\}"[^>]*>\s*<div id="minside-chat"/s', $msU),
-    'maalt i nettleseren: kortet er der uten aa trykke paa noe');
-sjekk('… og menyvalget ruller til den',
-    str_contains($msU, "chat:       this.bunnMenyPunkt('Chat', 'Chat mellom medlemmene', false, () => {")
-    && str_contains($msU, "const el = document.getElementById('minside-chat');"),
-    'maalt: rullet til 1303 px paa 390, og kortet var synlig');
+// Den laa bak menyvalget Chat, saa flyttet den til forsiden — eieren,
+// 5. september: «Gruppechatten må gjerne ligge på forsiden så man ser den»
+// — og er tilbake bak valget igjen. Eieren, 7. september 2026: «paa min
+// side, fjern chat fra forsiden». Forsiden er det du ser hver gang du kommer
+// inn; en samtale som ruller nedover der tar plassen fra verkstedet og
+// timene dine.
+sjekk('… og den staar bak sitt eget valg, ikke paa forsiden',
+    (bool) preg_match('/<sc-if value="\{\{ msFaneChat \}\}"[^>]*>\s*<div id="minside-chat"/s', $msU)
+    && !preg_match('/<sc-if value="\{\{ msFaneHjem \}\}"[^>]*>\s*<div id="minside-chat"/s', $msU),
+    'maalt i nettleseren paa 1440, 1024 og 390 px: borte fra forsiden, der bak valget');
+sjekk('… og menyvalget gaar dit',
+    str_contains($msU, "chat:       p('Chat', 'Chat mellom medlemmene', 'chat'),")
+    && str_contains($msU, "msFaneChat:       f === 'chat',"),
+    'maalt: ett trykk paa Chat, og rommet staar');
 // Endepunktet staar: det er det samme kontaktskjemaet paa nettsiden bruker,
 // og henvendelsene fra for ligger der de laa.
 sjekk('… og henvendelsene fra for er ikke rort',
@@ -11883,15 +11982,17 @@ sjekk('… og innholdet har plass under den, paa telefonen',
 // Eieren: «Og da fjerner du tingene fra forsiden slik at det blir synlig
 // først når man trykker på menyen?» — ja.
 sjekk('bare det stedet du staar paa tegnes',
-    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 6
+    // Var seks. Chatten fikk sitt eget valg, og verkstedsruta aapnes av
+    // pilla i stedet for aa staa fast paa forsiden — to blokker mindre.
+    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 4
     && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 3
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneSelg }}"') === 1
-    && !str_contains($msRen, 'msFaneChat')
+    && substr_count($msRen, '<sc-if value="{{ msFaneChat }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneNyttig }}"') === 2,
-    'maalt i nettleseren: hvert valg viser bare sitt eget, 390 og 1280 px');
+    'maalt i nettleseren: hvert valg viser bare sitt eget, 390 og 1440 px');
 sjekk('… og en kursdeltaker sendes hjem fra et sted hun ikke har',
-    str_contains($msP, "if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'selg' || f === 'nyttig')) return 'hjem';"));
+    str_contains($msP, "if (!this.medlemsvisning()\n        && (f === 'medlemskap' || f === 'butikk' || f === 'selg'\n            || f === 'nyttig' || f === 'chat')) return 'hjem';"));
 sjekk('… mens snarveipillene staar igjen for henne',
     str_contains($msRen, 'msViserSnarveier: !this.medlemsvisning(),')
     && str_contains($msRen, '<sc-if value="{{ msViserSnarveier }}"'),

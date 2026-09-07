@@ -215,18 +215,6 @@ final class Maler
                 'lenke' => 'Adressen til Vipps, der avtalen godkjennes',
             ],
         ],
-        'avtale_ikke_godkjent' => [
-            'tittel' => 'Avtalen er ikke godkjent',
-            'hvor'   => 'Sendes dagen etter, og igjen etter tre dager, når en'
-                        . ' Vipps-avtale blir liggende uten godkjenning. Uten den når'
-                        . ' lenka aldri fram til noen, og medlemskapet starter ikke.',
-            'felter' => [
-                'navn'  => 'Navnet på medlemmet',
-                'type'  => 'Medlemskapet de valgte',
-                'belop' => 'Prisen i måneden',
-                'lenke' => 'Adressen til Vipps, der avtalen godkjennes',
-            ],
-        ],
         'innmelding_ordner_selv' => [
             'tittel' => 'Innmelding — ordner selv',
             // «lenke» sto her til 6. september. Innmeldingen sender soekeren

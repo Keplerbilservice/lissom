@@ -257,13 +257,6 @@ RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
 # for «/» er katalogen, og «!-d» slaar regelen av. Uten dette ville forsida
 # vaert den ene sida som IKKE fikk sitt eget hode — og den er den viktigste
 # av dem alle.
-# Godkjenningslenka verkstedet sender.
-#
-# Vipps sin egen adresse lever i ti minutter (se api/godkjenn.php). Denne
-# lever i fjorten dager, og lager Vipps-avtalen forst i det mottakeren
-# trykker. Den maa staa for regelen under, som ellers ville sendt den til
-# side.php og vist nettsida i stedet.
-RewriteRule ^godkjenn/([a-fA-F0-9]{32})/?$ /api/godkjenn.php?t=$1 [L,QSA]
 
 # Innmeldingen. /meld-inn/<noekkel> leser ordren og lager Vipps-avtalen paa
 # DEN planen som staar i raden.

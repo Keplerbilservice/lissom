@@ -967,6 +967,28 @@ final class Booking
      * mellomtiden, blir det null rader, og vi trekker ikke mer enn det som
      * faktisk staar der.
      */
+    /**
+     * Kan «gift_card_uses.ref_type» peke paa en betaling?
+     *
+     * Verdien kom med migrasjon 148. Kjores koden mot en base som ikke har
+     * kjort den, skal trekket gaa som for — uten spor — heller enn aa stoppe
+     * med en feil midt i et oppgjor. Eieren kjorer migrasjoner selv, med
+     * «Kjor oppdateringer» i admin, saa de to kan staa fra hverandre en dag.
+     */
+    private static function sporerPaaBetaling(): bool
+    {
+        static $svar = null;
+        if ($svar !== null) {
+            return $svar;
+        }
+        $type = (string) DB::verdi(
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gift_card_uses'
+                AND COLUMN_NAME = 'ref_type'"
+        );
+        return $svar = str_contains($type, "'betaling'");
+    }
+
     public static function trekkGavekort(int $paymentId): void
     {
         if (!DB::harKolonne('payments', 'gavekort_id')) {
@@ -1033,6 +1055,25 @@ final class Booking
                 $refType = 'medlemskap';
                 $refId = (int) $s['id'];
             }
+        }
+
+        // ── Naar ingenting annet peker paa trekket ────────────────────
+        //
+        // Et medlemskap gjort opp for haand har ikke alltid en avtale.
+        // «Prov Lissom» betales én gang og har ingen, og den som staar
+        // «Ingen betaling registrert» i Kassa har det heller ikke.
+        //
+        // Maalt 7. september 2026: gavekortet ble da trukket — saldoen gikk
+        // ned — men ingen rad ble skrevet, fordi refId sto igjen paa 0. Uten
+        // raden er trekket usporbart, og sperren mot aa trekke to ganger
+        // virker ikke: den slaar opp nettopp den raden.
+        //
+        // Betalingsraden finnes alltid. Se migrasjon 148, som la «betaling»
+        // til i enumen; staar den ikke i basen ennaa, lar vi det vaere heller
+        // enn aa krasje midt i et oppgjor.
+        if ($refId === 0 && self::sporerPaaBetaling()) {
+            $refType = 'betaling';
+            $refId = $paymentId;
         }
 
         // Allerede trukket? Da staar bruken der fra for, og vi gjor ingenting.

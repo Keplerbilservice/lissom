@@ -7280,6 +7280,13 @@ window.__resources = {
                   <sc-if value="{{ klNyDErKrav }}" hint-placeholder-val="{{ false }}">
                     <input value="{{ klNyDBelop }}" onChange="{{ settKlNyDBelop }}" inputmode="numeric" placeholder="Beløp i kroner" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
                   </sc-if>
+                  <!-- Koden staar bare naar «Gavekort» er valgt. Et gavekort
+                       uten kode er ingen betaling — det er en paastand.
+                       Samme felt som det fyldige skjemaet under «Rediger
+                       okten» har; se kdFelt. -->
+                  <sc-if value="{{ klNyDErGave }}" hint-placeholder-val="{{ false }}">
+                    <input value="{{ klNyDKode }}" onChange="{{ settKlNyDKode }}" placeholder="Gavekortkode" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                  </sc-if>
                   <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ klNyDBetValg }}" as="b" hint-placeholder-count="3">
                       <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
@@ -7489,10 +7496,23 @@ window.__resources = {
                   </sc-if>
                   <sc-if value="{{ klDErUbetalt }}" hint-placeholder-val="{{ true }}">
                     <sc-for list="{{ klDBetaltValg }}" as="b" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ b.velg }}" style="{{ klDHandlingStil }}">{{ b.navn }}</button>
+                      <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
                     </sc-for>
                   </sc-if>
                 </div>
+                <!-- Gavekortet spor etter koden for det trekker.
+                     Maalt 7. september 2026: «Gavekort» merket plassen betalt
+                     uten at noe kort ble roert — booking 6359 gikk fra
+                     reservert til betalt, kortet paa kr 2 000 sto urort, og
+                     «gift_card_uses» fikk ingen rad.
+                     Eieren, samme dag: «Spor etter koden, og trekk kortet». -->
+                <sc-if value="{{ klDGaveApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: var(--space-3);">
+                    <input value="{{ klDGaveKode }}" onChange="{{ settKlDGaveKode }}" placeholder="Gavekortkode" style="box-sizing: border-box; flex: 1 1 180px; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                    <button type="button" onClick="{{ klDGaveTrekk }}" style="{{ klDHandlingStil }}">Trekk fra kortet</button>
+                    <button type="button" onClick="{{ klDGaveAvbryt }}" style="{{ klDHandlingStil }}">Avbryt</button>
+                  </div>
+                </sc-if>
                 <!-- Antall og beloep. Samme felter som raden under
                      Paameldte, samme kall. -->
                 <div style="display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; margin-top: var(--space-4);">
@@ -8402,11 +8422,23 @@ window.__resources = {
                   <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
                 </span>
                 <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
-                <div style="display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto;">
+                <!-- To maater sto over hverandre. Fire i samme stabel ville
+                     gjort raden dobbelt saa hoy, saa de brekker i to og to i
+                     stedet — samme hoyde som for. -->
+                <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: 0 0 auto; max-width: 190px;">
                   <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="2">
                     <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                   </sc-for>
                 </div>
+                <!-- Gavekortet spor etter koden for det trekker. Feltet staar
+                     bare paa den raden du trykket paa. -->
+                <sc-if value="{{ u.gaveApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex: 1 1 100%;">
+                    <input value="{{ u.gaveKode }}" onChange="{{ u.settGaveKode }}" placeholder="Gavekortkode" style="box-sizing: border-box; flex: 1 1 180px; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                    <button type="button" onClick="{{ u.gaveTrekk }}" style="{{ u.gaveKnapp }}">Trekk fra kortet</button>
+                    <button type="button" onClick="{{ u.gaveAvbryt }}" style="{{ u.gaveKnapp }}">Avbryt</button>
+                  </div>
+                </sc-if>
               </div>
             </sc-for>
             <sc-if value="{{ ovSkylderTom }}" hint-placeholder-val="{{ true }}">
@@ -30382,6 +30414,9 @@ class Component extends DCLogic {
         : liste.length + (liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')
           + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',- utestående',
       ovSkylder: liste.map(u => {
+        // Noekkelen for raden. Slag og id sammen: en booking og en ordre kan
+        // ha samme id, og da ville kodefeltet aapnet seg paa to rader.
+        const n = String(u.slag || 'kurs') + ':' + String(u.id);
         const erMedlem = u.slag === 'medlem';
         // Butikksalget kom 4. september. Det er hverken en kursplass eller
         // et medlemskap: en vare gikk ut av doera, og pengene kommer senere.
@@ -30437,21 +30472,72 @@ class Component extends DCLogic {
         // paameldingen sin, et medlemskap som en betalingsrad paa medlemmet,
         // og et butikksalg i kassa, der betalingsraden som ikke ble laget
         // over disken lages naa. Samme knapp, tre endepunkt.
-        maater: ['Kontant', 'Vipps'].map(m => ({
+        //
+        // ── Fire maater, ikke to ────────────────────────────────────
+        //
+        // Her sto Kontant og Vipps. Eieren, 7. september 2026, med bilde av
+        // lista: «jeg maa kunne velge gavekort og gratis skal ikke betale her
+        // ogsaa». Bade et kurs, et medlemskap og et butikksalg kan gis bort,
+        // og alle tre kan loeses ut med et gavekort.
+        //
+        // Lista hentes fra MAATER_OKT uten «Ikke betalt» — den er der raden
+        // staar fra for — saa dette stedet og deltakerkortet ikke kan komme i
+        // utakt. Serveren tar imot de samme fire alle tre stedene; se
+        // api/admin/pamelding.php, medlemmer.php og uttak.php.
+        maater: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt').map(m => ({
           navn: m,
           stil: knapp,
-          // Alle tre henter admin paa nytt av seg selv naar det gikk bra,
-          // saa kortet oppdaterer seg.
-          velg: () => (erOrdre
-            ? this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, maate: m })
-            : erMedlem
-              ? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })
-              : this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
-          ).then(() => {}),
+          // Gavekortet gjor ingenting med det samme: det spor etter koden
+          // foerst, paa den raden du trykket paa. Uten en kode er det
+          // ingenting aa trekke fra, og raden ville staatt betalt uten at
+          // noen hadde betalt.
+          velg: m === 'Gavekort'
+            ? () => this.setState({ kaGaveRad: n, kaGaveKode: '' })
+            : () => this.gjorOppRad(u, m).then(() => {}),
         })),
+        // ── Kodefeltet paa raden ────────────────────────────────────
+        //
+        // «gaveApen» er sann bare paa den raden som ble trykket paa. Noekkelen
+        // er slag og id sammen: en booking og en ordre kan ha samme id.
+        gaveApen: this.state.kaGaveRad === n,
+        gaveKode: this.state.kaGaveKode || '',
+        settGaveKode: e => this.setState({ kaGaveKode: e.target.value }),
+        gaveKnapp: knapp,
+        gaveTrekk: () => {
+          const kode = (this.state.kaGaveKode || '').trim();
+          if (kode === '') {
+            this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
+            return;
+          }
+          this.gjorOppRad(u, 'Gavekort', kode)
+            .then(ok => { if (ok) this.setState({ kaGaveRad: null, kaGaveKode: '' }); });
+        },
+        gaveAvbryt: () => this.setState({ kaGaveRad: null, kaGaveKode: '' }),
       };
       }),
     };
+  }
+
+  /**
+   * Gjor opp en rad under «Ikke betalt», uansett hvilket slag den er.
+   *
+   * De tre slagene har hvert sitt endepunkt, og laa som en nostet
+   * treveis inne i knappen. Naa staar valget ett sted, saa gavekortet og de
+   * tre andre maatene gaar den samme veien.
+   *
+   * Alle tre henter admin paa nytt av seg selv naar det gikk bra, saa kortet
+   * oppdaterer seg.
+   */
+  gjorOppRad(u, maate, kode) {
+    const gave = kode ? { kode: kode } : {};
+    if (u.slag === 'ordre') {
+      return this.uttakKall(Object.assign({ handling: 'gjorOpp', ordreId: u.id, maate: maate }, gave));
+    }
+    if (u.slag === 'medlem') {
+      return this.medlemKall(Object.assign({ handling: 'betaling', medlemId: u.id, maate: maate }, gave));
+    }
+    return this.pameldingKall(Object.assign(
+      { handling: 'status', id: u.id, status: 'betalt', maate: maate }, gave));
   }
 
   adminBunnMeny() {
@@ -33016,15 +33102,52 @@ class Component extends DCLogic {
               // komme i utakt. «Ikke betalt» staar ikke som en pille her:
               // den har sin egen knapp, «Sett som ikke betalt», og den
               // gjelder den andre veien.
+              //
+              // Gavekortet gjor ingenting med det samme: det spor etter koden
+              // foerst. Maalt 7. september 2026 sto det slik at «Gavekort»
+              // merket plassen betalt uten at noe kort ble roert — booking
+              // 6359 gikk fra reservert til betalt, kortet paa kr 2 000 sto
+              // urort, og «gift_card_uses» fikk ingen rad. Kortet kunne
+              // brukes om igjen, og gavekortgjelda ble aldri nedskrevet.
               klDBetaltValg: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt').map(m => ({
                 navn: m,
-                velg: () => {
-                  if (!dv || !dv.bookingId) return;
-                  this.klKall('/api/admin/pamelding.php',
-                    { handling: 'status', id: dv.bookingId, status: 'betalt', maate: m })
-                    .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
-                },
+                // Samme pille som de andre handlingene paa kortet — se
+                // klDHandlingStil. Gavekortet lyser mens det staar og venter
+                // paa en kode, saa det er tydelig hvorfor feltet dukket opp.
+                stil: Object.assign({
+                  appearance: 'none', cursor: 'pointer',
+                  border: '1.5px solid var(--border-subtle)',
+                  background: 'var(--surface-card)', color: 'var(--lissom-brown)',
+                  borderRadius: 'var(--radius-pill)', padding: '7px 16px',
+                  font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap',
+                }, m === 'Gavekort' && this.state.klDGaveApen
+                  ? { background: 'var(--lissom-brown)', color: 'var(--clay-50)',
+                      border: '1.5px solid var(--lissom-brown)' }
+                  : {}),
+                velg: m === 'Gavekort'
+                  ? () => this.setState({ klDGaveApen: true, klDGaveKode: '' })
+                  : () => {
+                      if (!dv || !dv.bookingId) return;
+                      this.klKall('/api/admin/pamelding.php',
+                        { handling: 'status', id: dv.bookingId, status: 'betalt', maate: m })
+                        .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+                    },
               })),
+              klDGaveApen: !!this.state.klDGaveApen,
+              klDGaveKode: this.state.klDGaveKode || '',
+              settKlDGaveKode: e => this.setState({ klDGaveKode: e.target.value }),
+              klDGaveAvbryt: () => this.setState({ klDGaveApen: false, klDGaveKode: '' }),
+              klDGaveTrekk: () => {
+                if (!dv || !dv.bookingId) return;
+                const kode = (this.state.klDGaveKode || '').trim();
+                if (kode === '') {
+                  this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
+                  return;
+                }
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'status', id: dv.bookingId, status: 'betalt', maate: 'Gavekort', kode: kode })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDGaveApen: false, klDGaveKode: '' }); });
+              },
               klDIkkeMott: () => {
                 if (!dv || !dv.bookingId) return;
                 this.klKall('/api/admin/pamelding.php',
@@ -33281,7 +33404,22 @@ class Component extends DCLogic {
       // «Rediger okten». Den raske veien noterer hvordan plassen er gjort opp
       // — eller at den ikke er det. Den sender ingenting: «Vippskrav» sto her
       // til 6. september 2026, og eieren ba om at den skulle slettes overalt.
-      klNyDBetValg: ['Ikke betalt', 'Vipps', 'Kontant'].map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Ikke betalt') === bn) })),
+      // ── De samme fem maatene som skjemaet paa okta ────────────────
+      //
+      // Her sto ['Ikke betalt', 'Vipps', 'Kontant']. Eieren, 7. september
+      // 2026, med bilde av dette skjemaet: «Jeg vil ha pillene gratis og
+      // gavekort her ogsaa». En som melder seg paa i doera kan faa plassen
+      // gratis, eller loese den ut med et gavekort — og maatte for legges inn
+      // som ubetalt og rettes etterpaa.
+      //
+      // Lista hentes fra MAATER_OKT, saa dette skjemaet og det fyldige under
+      // «Rediger okten» ikke kan komme i utakt.
+      klNyDBetValg: Component.MAATER_OKT.map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Ikke betalt') === bn) })),
+      // Koden staar bare naar gavekortet er valgt. Et gavekort uten kode er
+      // ingen betaling — det er en paastand.
+      klNyDErGave: (this.state.klNyDBet || 'Ikke betalt') === 'Gavekort',
+      klNyDKode: this.state.klNyDKode || '',
+      settKlNyDKode: e => this.setState({ klNyDKode: e.target.value }),
       // Beloepsfeltet sto bare framme naar «Vippskrav» var valgt. Maaten er
       // borte, men feltet blir staaende: naar standarden er «Ikke betalt»,
       // er nettopp beloepet det som sier hva plassen skylder.
@@ -33303,15 +33441,20 @@ class Component extends DCLogic {
         const bet = this.state.klNyDBet || 'Ikke betalt';
         const tlf = (this.state.klNyDTlf || '').trim();
         const belop = (this.state.klNyDBelop || '').trim();
+        const kode = (this.state.klNyDKode || '').trim();
+        if (bet === 'Gavekort' && kode === '') {
+          this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
+          return;
+        }
         // Spoer foerst. Se «klSporr».
         const leggInn = () => this.klKall('/api/admin/pamelding.php', {
           handling: 'legg-til', oktId: valgt.oktId, navn: navn,
           epost: (this.state.klNyDEpost || '').trim(),
           telefon: tlf, antall: 1,
           betaltMaate: bet === 'Vipps' ? 'Vipps i verkstedet' : bet,
-          belop: belop,
+          belop: belop, kode: kode,
         }).then(ok => {
-          if (ok) this.setState({ klNyDNavn: '', klNyDEpost: '', klNyDTlf: '', klNyDBelop: '' });
+          if (ok) this.setState({ klNyDNavn: '', klNyDEpost: '', klNyDTlf: '', klNyDBelop: '', klNyDKode: '' });
         });
         this.setState({ klSporr: {
           emne: 'Legg til deltaker',

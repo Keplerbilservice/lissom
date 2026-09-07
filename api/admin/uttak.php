@@ -82,6 +82,15 @@ const KURVMAATER = ['Kontant', 'Vipps', 'Ikke betalt'];
 const DELMAATER = ['Gavekort', 'Kontant', 'Vipps'];
 
 /**
+ * Maatene et salg som staar ubetalt kan gjores opp med i ettertid.
+ *
+ * De samme fire som en kursplass har, saa de tre radtypene under «Ikke
+ * betalt» ikke er ulike aa gjore opp. «Ikke betalt» staar ikke her: den er
+ * der raden staar fra for.
+ */
+const OPPGJORMAATER = ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];
+
+/**
  * Leser et beloep slik det ble tastet, og gir oere.
  *
  * Kassa tastes paa i en fart, og «690», «690,-», «kr. 690» og «690.50» er
@@ -214,10 +223,21 @@ $handling = Foresporsel::tekst('handling', 'selg');
 if ($handling === 'gjorOpp') {
     $ordreId = (int) ($kropp['ordreId'] ?? 0);
     $maate   = (string) ($kropp['maate'] ?? MAATER[0]);
-    // Bare de to som faktisk foerer penger. «Gratis» og «Ikke betalt» ville
-    // vaert aa gjore opp uten aa gjore opp.
-    if (!in_array($maate, MAATER, true)) {
-        Svar::feil('Velg kontant eller Vipps.');
+    // ── De fire maatene ──────────────────────────────────────────────
+    //
+    // Her sto MAATER — Kontant og Vipps — med begrunnelsen at «Gratis» og
+    // «Ikke betalt» ville vaert aa gjore opp uten aa gjore opp.
+    //
+    // Det holder for «Ikke betalt»: den er der raden staar fra for, og aa
+    // velge den her ville ikke endret noe. «Gratis» er noe annet: den sier at
+    // varen ble gitt bort, og at kravet skal bort fra lista. Eieren,
+    // 7. september 2026: «jeg maa kunne velge gavekort og gratis skal ikke
+    // betale her ogsaa».
+    //
+    // Gavekortet foerer heller ingen penger inn i dag — de kom den gangen
+    // kortet ble kjopt — men det skal trekkes, og det staar under.
+    if (!in_array($maate, OPPGJORMAATER, true)) {
+        Svar::feil('Velg hvordan salget er gjort opp.');
     }
 
     $ordre = DB::en('SELECT id, ordrenr, sum_ore, status, betalt_maate, payment_id
@@ -236,6 +256,27 @@ if ($handling === 'gjorOpp') {
     $sum = (int) $ordre['sum_ore'];
     if ($sum <= 0) {
         Svar::feil('Salget har ingen sum å gjøre opp.');
+    }
+
+    // ── Gavekortet ───────────────────────────────────────────────────
+    //
+    // Et gavekort er ikke en maate aa notere paa — det er penger som alt er
+    // betalt inn, og som skal trekkes fra kortet. Finnes ikke kortet, er det
+    // utgaatt eller har for lite igjen, skjer INGENTING: et salg som ser
+    // gjort opp ut uten at noen har betalt er verre enn ett som staar igjen
+    // i lista.
+    $kort = null;
+    if ($maate === 'Gavekort') {
+        $kort = Booking::finnGavekort((string) ($kropp['kode'] ?? ''));
+        if ($kort === null) {
+            Svar::feil('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp '
+                     . 'eller gått ut på dato.');
+        }
+        if ($kort['saldo_ore'] < $sum) {
+            Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                     . ' igjen, og salget er på ' . Booking::kroner($sum)
+                     . '. Ta resten på en annen måte.');
+        }
     }
 
     // Hvilken konto og mva-kode salget skal foeres paa.
@@ -259,15 +300,23 @@ if ($handling === 'gjorOpp') {
     }
 
     $adminId = (int) ($admin['id'] ?? 0);
-    DB::iTransaksjon(static function () use ($ordre, $sum, $maate, $adminId, $formal): void {
+    $betalingId = 0;
+    DB::iTransaksjon(static function () use ($ordre, $sum, $maate, $adminId, $formal, $kort, &$betalingId): void {
         $felt = [
             'vipps_reference' => 'KASSE-' . $ordre['ordrenr'],
             'type'            => 'manuell',
             'formal'          => $formal,
-            'belop_ore'       => $sum,
+            // Penger inn i dag. «Gratis» og «Gavekort» foerer ingen: den
+            // foerste er gitt bort, den andre er alt betalt inn den gangen
+            // kortet ble kjopt. Da ville beloepet blitt talt to ganger.
+            'belop_ore'       => in_array($maate, ['Gratis', 'Gavekort'], true) ? 0 : $sum,
             'status'          => 'betalt',
             'idempotency_key' => Vipps::uuid(),
         ];
+        if ($kort !== null) {
+            $felt['gavekort_id']  = (int) $kort['id'];
+            $felt['gavekort_ore'] = $sum;
+        }
         if (DB::harKolonne('payments', 'maate')) {
             $felt['maate'] = $maate;
         }
@@ -286,11 +335,21 @@ if ($handling === 'gjorOpp') {
         }
     });
 
+    // Trekket skjer etter transaksjonen, saa sporet i «gift_card_uses» peker
+    // paa en betaling som staar — den samme veien et kjop paa nettsida gaar.
+    if ($kort !== null && $betalingId > 0) {
+        Booking::trekkGavekort($betalingId);
+        revider('gavekort_brukt', 'ordre', $ordreId,
+                ['kort' => (int) $kort['id'], 'belop' => $sum]);
+    }
+
     revider('uttak_gjort_opp', 'ordre', $ordreId,
             ['ordrenr' => $ordre['ordrenr'], 'sum' => $sum, 'maate' => $maate]);
 
-    Svar::ok(['beskjed' => $ordre['ordrenr'] . ' er gjort opp med '
-                         . mb_strtolower($maate) . ' — ' . Booking::kroner($sum) . '.']);
+    Svar::ok(['beskjed' => $maate === 'Gratis'
+        ? $ordre['ordrenr'] . ' står som gjort opp. Ingen sum føres på salget.'
+        : $ordre['ordrenr'] . ' er gjort opp med '
+          . mb_strtolower($maate) . ' — ' . Booking::kroner($sum) . '.']);
 }
 
 if ($handling === 'annuller') {

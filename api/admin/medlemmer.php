@@ -744,9 +744,18 @@ if (Foresporsel::metode() === 'POST') {
             Svar::feil('Fant ikke medlemmet.', 404);
         }
 
+        // ── De fire maatene ──────────────────────────────────────
+        //
+        // Her sto Kontant og Vipps. Eieren, 7. september 2026, med bilde av
+        // «Ikke betalt» i Kassa: «jeg maa kunne velge gavekort og gratis skal
+        // ikke betale her ogsaa». Et medlemskap kan gis bort, og det kan
+        // loeses ut med et gavekort — begge deler skjedde alt paa kurs.
+        //
+        // Samme fire som en kursplass har, saa de tre radtypene i lista ikke
+        // er ulike aa gjore opp.
         $maate = Foresporsel::tekst('maate');
-        if (!in_array($maate, ['Kontant', 'Vipps'], true)) {
-            Svar::feil('Velg kontant eller Vipps.');
+        if (!in_array($maate, ['Kontant', 'Vipps', 'Gavekort', 'Gratis'], true)) {
+            Svar::feil('Velg hvordan medlemskapet er gjort opp.');
         }
 
         // Nyeste avtale, om det finnes en. Prisen er den som ble avtalt —
@@ -781,11 +790,38 @@ if (Foresporsel::metode() === 'POST') {
                 'SELECT pris_ore FROM membership_plans WHERE navn = :n', ['n' => $plan]
             );
         }
-        if ($ore <= 0) {
+        // «Gratis» er null kroner med vilje. Beloepet staar likevel paa raden
+        // — det sier hva medlemskapet var verdt — men den foerer ingen penger:
+        // se belop_ore under. Samme regel som «Gratis» har i kassa, der den
+        // staar i SALGMAATER og ikke i MAATER.
+        if ($ore <= 0 && $maate !== 'Gratis') {
             Svar::feil('Fant ingen pris på medlemskapet. Skriv inn beløpet.');
         }
         if ($ore > 10000000) {
             Svar::feil('Beløpet må være under 100 000 kroner.');
+        }
+
+        // ── Gavekortet ───────────────────────────────────────────────
+        //
+        // Et gavekort er ikke en maate aa notere paa — det er penger som alt
+        // er betalt inn, og som skal trekkes fra kortet. Gjor vi ikke det,
+        // staar kortet med full saldo og kan brukes om igjen.
+        //
+        // Finnes ikke kortet, er det utgaatt eller har for lite igjen, skjer
+        // INGENTING. Et medlemskap som ser betalt ut uten at noen har betalt
+        // er verre enn ett som staar ubetalt.
+        $kort = null;
+        if ($maate === 'Gavekort') {
+            $kort = Booking::finnGavekort(Foresporsel::tekst('kode'));
+            if ($kort === null) {
+                Svar::feil('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp '
+                         . 'eller gått ut på dato.');
+            }
+            if ($kort['saldo_ore'] < $ore) {
+                Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                         . ' igjen, og medlemskapet koster ' . Booking::kroner($ore)
+                         . '. Ta resten på en annen måte.');
+            }
         }
 
         $felt = [
@@ -797,10 +833,17 @@ if (Foresporsel::metode() === 'POST') {
             'type'            => 'manuell',
             'formal'          => 'medlemskap',
             'member_id'       => $id,
-            'belop_ore'       => $ore,
+            // Penger inn i dag. «Gratis» og «Gavekort» foerer ingen: den
+            // foerste er gitt bort, den andre er alt betalt inn den gangen
+            // kortet ble kjopt. Da ville beloepet blitt talt to ganger.
+            'belop_ore'       => in_array($maate, ['Gratis', 'Gavekort'], true) ? 0 : $ore,
             'status'          => 'betalt',
             'idempotency_key' => Vipps::uuid(),
         ];
+        if ($kort !== null) {
+            $felt['gavekort_id']  = (int) $kort['id'];
+            $felt['gavekort_ore'] = $ore;
+        }
         if ($avtale !== null) {
             $felt['subscription_id'] = (int) $avtale['id'];
         }
@@ -812,6 +855,14 @@ if (Foresporsel::metode() === 'POST') {
         }
         $betalingId = DB::settInn('payments', $felt);
 
+        // Trekket skjer etter at raden finnes, saa sporet i «gift_card_uses»
+        // peker paa en betaling — den samme veien et kjop paa nettsida gaar.
+        if ($kort !== null) {
+            Booking::trekkGavekort($betalingId);
+            revider('gavekort_brukt', 'member', $id,
+                    ['kort' => (int) $kort['id'], 'belop' => $ore]);
+        }
+
         revider('medlem_betaling_registrert', 'member', $id, [
             'betaling' => $betalingId,
             'belop'    => $ore,
@@ -819,9 +870,11 @@ if (Foresporsel::metode() === 'POST') {
         ]);
 
         Svar::ok([
-            'beskjed' => $medlem['navn'] . ' er registrert betalt '
-                       . Booking::kroner($ore) . ' med ' . mb_strtolower($maate)
-                       . '. Det er med i regnskapet.',
+            'beskjed' => $maate === 'Gratis'
+                ? $medlem['navn'] . ' står som gjort opp. Ingen sum føres på medlemskapet.'
+                : $medlem['navn'] . ' er registrert betalt '
+                  . Booking::kroner($ore) . ' med ' . mb_strtolower($maate)
+                  . '. Det er med i regnskapet.',
         ]);
     }
 

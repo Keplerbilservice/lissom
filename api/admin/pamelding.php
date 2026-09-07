@@ -280,7 +280,8 @@ if ($handling === 'status') {
     if (!in_array($status, ['betalt', 'reservert', 'ikke_mott'], true)) {
         Svar::feil('Ukjent status.');
     }
-    if (DB::en('SELECT id FROM bookings WHERE id = :i', ['i' => $id]) === null) {
+    $bok = DB::en('SELECT id, belop_ore, payment_id FROM bookings WHERE id = :i', ['i' => $id]);
+    if ($bok === null) {
         Svar::feil('Fant ikke påmeldingen.');
     }
 
@@ -303,7 +304,68 @@ if ($handling === 'status') {
         $felt['betalt_maate'] = $nyMaate;
     }
 
+    // ── Gavekortet, ogsaa naar det trykkes etterpaa ───────────────────
+    //
+    // «Gavekort» kunne velges her uten at noe ble trukket. Maalt 7. september
+    // 2026: booking 6359 gikk fra reservert til betalt med «Gavekort», kortet
+    // paa kr 2 000 sto urort, og «gift_card_uses» fikk ingen rad. Kortet
+    // kunne brukes om igjen, og gavekortgjelda ble aldri nedskrevet.
+    //
+    // Et gavekort er ikke en maate aa notere paa — det er penger som alt er
+    // betalt inn, og som skal trekkes fra kortet. Samme regel som ved
+    // innlegging lenger nede i fila: finnes ikke kortet, er det utgaatt eller
+    // har for lite igjen, skjer INGENTING. En plass som ser betalt ut uten at
+    // noen har betalt er verre enn en som staar ubetalt.
+    //
+    // Eieren, 7. september 2026, om valget: «Spor etter koden, og trekk
+    // kortet».
+    $kort = null;
+    if ($status === 'betalt' && $nyMaate === 'Gavekort') {
+        $skyldig = (int) $bok['belop_ore'];
+        $kort = Booking::finnGavekort(Foresporsel::tekst('kode'));
+        if ($kort === null) {
+            Svar::feil('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp '
+                     . 'eller gått ut på dato.');
+        }
+        if ($skyldig <= 0) {
+            Svar::feil('Plassen står uten beløp, så det er ingenting å trekke fra kortet.');
+        }
+        if ($kort['saldo_ore'] < $skyldig) {
+            Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                     . ' igjen, og plassen koster ' . Booking::kroner($skyldig)
+                     . '. Ta resten på en annen måte.');
+        }
+        // Den som alt har en betaling skal ikke faa en til. Da ville
+        // gavekortet blitt trukket for noe som er gjort opp.
+        if ((int) ($bok['payment_id'] ?? 0) > 0) {
+            Svar::feil('Plassen har alt en betaling. Fjern den først, eller ta den på en annen måte.');
+        }
+    }
+
     DB::oppdater('bookings', $felt, ['id' => $id]);
+
+    // Beloepet henges paa en betalingsrad slik en nettbetaling gjor, saa
+    // Booking::trekkGavekort() kan gjore jobben sin — den samme som ved et
+    // kjop paa nettsida, med det samme sporet i «gift_card_uses». Raden er
+    // «manuell» og null kroner i penger: det kom ingen penger inn i dag,
+    // kortet ble brukt.
+    if ($kort !== null) {
+        $betalingId = DB::settInn('payments', [
+            'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
+            'type'            => 'manuell',
+            'formal'          => 'booking',
+            'belop_ore'       => 0,
+            'gavekort_id'     => $kort['id'],
+            'gavekort_ore'    => (int) $bok['belop_ore'],
+            'status'          => 'betalt',
+            'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $id : null,
+            'idempotency_key' => Vipps::uuid(),
+        ]);
+        DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $id]);
+        Booking::trekkGavekort($betalingId);
+        revider('gavekort_brukt', 'booking', $id,
+                ['kort' => $kort['id'], 'belop' => (int) $bok['belop_ore']]);
+    }
 
     revider('pamelding_status', 'booking', $id,
             ['status' => $status] + ($nyMaate !== '' ? ['maate' => $nyMaate] : []));

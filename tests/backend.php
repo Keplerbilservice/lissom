@@ -10552,6 +10552,45 @@ sjekk('… og alle tre kan gjores opp paa de samme fire maatene',
 // Et gavekort uten kode er ingen betaling. Feltet staar bare paa den raden
 // som ble trykket paa — noekkelen er slag og id sammen, fordi en booking og
 // en ordre kan ha samme id.
+// ── Kassa paa bred skjerm ────────────────────────────────────────────
+//
+// Eieren, 7. september 2026, med bilde: «her er det store rom for opprydding
+// og et penere oppsett med like kort og piller, naa er det store ubrukte felt
+// inne i et kort».
+//
+// Maalt paa 1600 px foer: hver rad i «Ikke betalt» var 1272 px bred mens
+// navnet sluttet ved 470, og «Utsted gavekort» laa i venstre spalte mens
+// hoyre spalte sluttet etter Dagsrapporten — rundt 550 x 700 px tomt.
+//
+// Maalt etter: to rader per linje over 1200 px, gavekortet i hoyre spalte,
+// sida 2048 px hoy mot 2669.
+sjekk('«Ikke betalt» viser to rader per linje paa bred skjerm',
+    str_contains($sida, '<div class="ka-gjeldrader">')
+    && str_contains($sida, '  @media (min-width: 1200px) {' . "\n" . '    .ka-gjeldrader {'));
+// Under 1200 blir en halv rad for trang til navn, beloep og fire brikker.
+sjekk('… og staar under hverandre paa smalere skjermer',
+    str_contains($sida, '  .ka-gjeldrader > * { border-top: 1px solid var(--border-subtle); }'));
+// Streken sto paa hver rad. Staar de side ved side, maa den skilles.
+sjekk('… med en strek mellom de to spaltene',
+    str_contains($sida, '.ka-gjeldrader > *:nth-child(odd) { border-right: 1px solid var(--border-subtle); }'));
+// Kortet laa i VENSTRE spalte, under «Registrer et salg».
+// Hoeyre spalte kjennes paa Dagsrapporten. Staar gavekortet etter den i
+// fila, staar det i den spalten — venstre spalte er ferdig lenge for.
+sjekk('gavekortkortet staar i hoeyre spalte',
+    strpos($sida, 'Gavekortet staar i HOEYRE spalte')
+        > strpos($sida, 'Dagsrapport · {{ utRapDato }}')
+    && strpos($sida, '>Utsted gavekort</div>')
+        > strpos($sida, 'Dagsrapport · {{ utRapDato }}'));
+// «Registrer et salg» og «Dette salget» hadde 2 px brun ramme mens naboene
+// har 1 px lys.
+sjekk('kortene i Kassa har den samme ramma',
+    !str_contains($sida, 'border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">' . "\n" . '              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Registrer et salg')
+    && str_contains($sida, 'Samme ramme som de andre kortene i Kassa.'));
+// Med «flex-wrap» fikk hver brikke bredden til ordet sitt.
+sjekk('og brikkene i et valg er like brede',
+    substr_count($sida, 'class="ut-piller ut-piller-') === 4
+    && str_contains($sida, '  .ut-piller > button { width: 100%; box-sizing: border-box; text-align: center; }'));
+
 // Fire brikker med hver sin ordbredde sto ujevnt i to rader — «Vipps» smal,
 // «Gavekort» bred. Eieren, 7. september 2026, med bilde: «se paa pillene paa
 // hoyere siden, de maa ha samme stoerrelse».

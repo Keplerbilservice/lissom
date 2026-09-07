@@ -1318,6 +1318,40 @@ window.__resources = {
      telefonen finnes ikke den linja, og en aattende celle i bunnmenyen ville
      gjort de sju til 44 px hver. Da staar pilla alene under navnet i
      stedet. */
+  /* Kassa: like brikker, og «Ikke betalt» to rader per linje.
+     -------------------------------------------------------------
+     Eieren, 7. september 2026, om Kassa paa PC: «her er det store rom for
+     opprydding og et penere oppsett med like kort og piller, naa er det
+     store ubrukte felt inne i et kort».
+
+     Maalt paa 1600 px: hver rad i «Ikke betalt» var 1272 px bred mens
+     navnet sluttet ved 470 — et doedt felt paa ~480 px i hver rad. To rader
+     per linje bruker bredden og halverer hoyden.
+
+     1200 px, ikke 760: under det blir en halv rad for trang til navn,
+     beloep og fire brikker ved siden av hverandre. */
+  .ka-gjeldrader > * { border-top: 1px solid var(--border-subtle); }
+  @media (min-width: 1200px) {
+    .ka-gjeldrader {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* Streken mellom de to spaltene. «nth-child(odd)» er venstre rad. */
+    .ka-gjeldrader > *:nth-child(odd) { border-right: 1px solid var(--border-subtle); }
+  }
+
+  /* Brikkene i et valg er like brede, uansett hvor langt ordet er.
+     Med «flex-wrap» fikk hver av dem bredden til ordet sitt, og «Vipps»
+     ble smalere enn «Gavekort». Samme regel som de fire i «Ikke betalt». */
+  .ut-piller { display: grid; gap: 8px; max-width: 520px; }
+  .ut-piller-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 300px; }
+  .ut-piller-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 420px; }
+  .ut-piller-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ut-piller > button { width: 100%; box-sizing: border-box; text-align: center; }
+  @media (max-width: 600px) {
+    .ut-piller-3, .ut-piller-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 300px; }
+  }
+
   .ms-pillerad { display: flex; }
   @media (max-width: 760px) {
     .ms-pillerad > *:not(.ms-verksted) { display: none !important; }

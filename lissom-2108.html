@@ -14294,6 +14294,21 @@ window.__resources = {
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ sendPersonAvtale }}" hint-size="auto,36px">Send Vipps-avtale</x-import>
                       </div>
                     </sc-if>
+                    <!-- Avtalen som ikke stemmer.
+                         «Send Vipps-avtale» nekter naar det alt loeper en
+                         avtale, og «Kopier lenka» er skjult av samme grunn.
+                         Staar det en avtale i basen som medlemmet ikke
+                         kjenner igjen i Vipps, var det ingen vei ut: «Avslutt»
+                         setter bare en sluttdato fram i tid, og «Nullstill»
+                         river historikken uten aa roere Vipps.
+
+                         Se «stopp-avtale» i api/admin/medlemmer.php. -->
+                    <sc-if value="{{ personKanStoppeAvtale }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                        <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ personStoppHjelp }}</div>
+                        <button type="button" onClick="{{ stoppPersonAvtale }}" style="{{ personStoppStil }}">Stopp avtalen nå</button>
+                      </div>
+                    </sc-if>
                     <!-- Lenka kunden maa aapne for aa godkjenne i Vipps.
                          Den staar saa lenge avtalen venter — ikke bare rett
                          etter at den ble laget. Gaar e-posten i soeppelposten,
@@ -38906,6 +38921,44 @@ class Component extends DCLogic {
           personAvtaleHjelp: 'Sender lenka til ' + fornavn + ' på e-post. '
             + 'Avtalen lages i Vipps først når hun trykker, så lenka kan ligge '
             + 'i fjorten dager uten å bli for gammel.',
+          // ── «Stopp avtalen naa» ────────────────────────────────────
+          //
+          // Staar det en avtale i basen som medlemmet ikke kjenner igjen i
+          // Vipps, var det ingen vei ut: «Send Vipps-avtale» nekter, og
+          // «Kopier lenka» er skjult. Eieren, 7. september 2026, om Eirin og
+          // Lene: «de har ingen avtale aa godkjenne … det er ingen slik info
+          // i vipps hos de to».
+          //
+          // Staar bare naar det FINNES en avtale aa stoppe — «venter» eller
+          // «aktiv». Begge har en avtale-id hos Vipps.
+          personKanStoppeAvtale: !!p.id
+            && ['venter', 'aktiv'].indexOf(p.avtale || 'ingen') >= 0,
+          personStoppHjelp: 'Kjenner ' + fornavn + ' ikke igjen avtalen i Vipps, '
+            + 'stopper du den her. Da kan du sende en ny lenke. Medlemskapet og '
+            + 'historikken står — det er bare avtalen som stoppes.',
+          personStoppStil: {
+            appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+            border: '1.5px solid var(--terracotta-500)', background: 'transparent',
+            color: 'var(--terracotta-600)', borderRadius: 'var(--radius-pill)',
+            padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700,
+          },
+          stoppPersonAvtale: () => {
+            // Den sier fra til Vipps, og det kan ikke angres derfra.
+            if (!window.confirm('Stoppe Vipps-avtalen til ' + (p.navn || 'medlemmet') + '?\n\n'
+                + 'Avtalen stoppes hos Vipps, og det blir ingen flere trekk på den.\n\n'
+                + 'Medlemskapet, timene og historikken står. Etterpå kan du sende '
+                + 'en ny godkjenningslenke.')) { return; }
+            // «behold» — gikk det galt, skal ruta bli staaende, saa beskjeden
+            // staar der du var.
+            this.medlemKall({ handling: 'stopp-avtale', medlemId: p.id }, true)
+              .then(ok => {
+                if (!ok) { return; }
+                // Stoppet, og ut — som de andre knappene i ruta. Se
+                // lukkPersonruta(). Aapner du personen igjen, staar «Send
+                // Vipps-avtale» der.
+                this.lukkPersonruta();
+              });
+          },
           sendPersonAvtale: () => this.medlemKall(
             { handling: 'send-avtale', medlemId: p.id }, true
           ).then(ok => {

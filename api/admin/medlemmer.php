@@ -349,6 +349,86 @@ if (Foresporsel::metode() === 'POST') {
     //
     // Her lages avtalen, og lenka gaar til medlemmet paa e-post og SMS.
     // Verkstedet trenger ikke aa be henne melde seg inn paa nytt.
+    // ── «Stopp avtalen naa» ────────────────────────────────────────
+    //
+    // «Send Vipps-avtale» nekter naar medlemmet alt har en loepende avtale,
+    // og «Kopier lenke» er skjult av samme grunn — det er ingenting aa
+    // godkjenne. Det er riktig naar avtalen ER ekte.
+    //
+    // Men staar det en avtale i basen som medlemmet ikke kjenner igjen i
+    // Vipps, var det ingen vei ut. Eieren, 7. september 2026, om Eirin og
+    // Lene: «de har ingen avtale aa godkjenne, de faar aldri beskjed om aa
+    // godkjenne noe, det er ingen slik info i vipps hos de to».
+    //
+    // «Avslutt» loeser det ikke: den setter en sluttdato fram i tid og lar
+    // avtalen loepe til da. «Nullstill» river paameldinger, betalinger og
+    // hele endringsloggen, og roerer ikke Vipps i det hele tatt.
+    //
+    // Denne gjor én ting: sier fra til Vipps at avtalen skal stoppe, og
+    // merker raden «stoppet». Medlemmet beholder planen sin og staar ikke
+    // som oppsagt — hun er midt i en innmelding, ikke paa vei ut. Etterpaa
+    // slipper «Send Vipps-avtale» gjennom, og hun faar en ny lenke.
+    if ($handling === 'stopp-avtale') {
+        $id = Foresporsel::heltall('medlemId');
+        $m = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        // Baade «venter» og «aktiv». Et forsoek som aldri ble godkjent har
+        // ogsaa en avtale hos Vipps, og den skal ryddes bort paa samme maate.
+        $a = Medlemskap::avtale($id);
+        if ($a === null) {
+            Svar::feil('Det er ingen avtale å stoppe.');
+        }
+
+        $avtaleId = trim((string) ($a['vipps_agreement_id'] ?? ''));
+        if ($avtaleId !== '') {
+            // Gaar det ikke gjennom hos Vipps, endrer vi ingenting her heller.
+            // En rad som staar «stoppet» mens Vipps fortsatt trekker er verre
+            // enn ingen endring.
+            try {
+                Vipps::stoppAvtale($avtaleId);
+            } catch (Throwable $e) {
+                logg_feil('Fikk ikke stoppet avtale ' . $a['id'] . ' i Vipps', $e);
+                Svar::feil('Vipps stoppet ikke avtalen. Prøv igjen om et par minutter.');
+            }
+        }
+
+        DB::oppdater('subscriptions', [
+            'status'      => 'stoppet',
+            'neste_trekk' => null,
+        ], ['id' => (int) $a['id']]);
+
+        // Medlemsstatusen roeres IKKE.
+        //
+        // Medlemskap::avslutt() setter «oppsagt» her — den brukes naar noen
+        // slutter. Denne brukes naar avtalen var feil, og medlemmet skal ha
+        // en ny lenke. Settes hun «oppsagt», forsvinner ogsaa «Kopier lenke»
+        // fra personruta; se «avtaleLenke» lenger nede i fila.
+
+        // Et bestilt trekk lar vi staa, og lar nattjobben spoerre Vipps om
+        // hvordan det gikk — se Medlemskap::sjekkTrekk(). Merket vi det
+        // «avbrutt» herfra, ville vi paastaatt noe vi ikke har spurt om.
+        $bestilt = (int) DB::verdi(
+            "SELECT COUNT(*) FROM payments
+              WHERE subscription_id = :s AND type = 'recurring_charge'
+                AND status IN ('opprettet', 'venter', 'autorisert')",
+            ['s' => (int) $a['id']]
+        );
+
+        revider('medlem_avtale_stoppet', 'member', $id,
+                ['avtale' => (int) $a['id'], 'vipps' => $avtaleId, 'bestilte_trekk' => $bestilt]);
+
+        Svar::ok([
+            'beskjed' => 'Avtalen til ' . ($m['navn'] ?: 'medlemmet') . ' er stoppet i Vipps. '
+                . 'Nå kan du sende en ny lenke.'
+                . ($bestilt > 0
+                    ? ' Merk: et trekk var alt bestilt. Nattjobben spør Vipps hvordan det gikk.'
+                    : ''),
+        ]);
+    }
+
     if ($handling === 'send-avtale') {
         $id = Foresporsel::heltall('medlemId');
         $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
@@ -1397,6 +1477,21 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // Bare en avtale som staar «venter». Er den godkjent, er lenka
             // brukt opp; er den stoppet, skal den ikke deles ut igjen.
             //
+            // ── Hvilken avtale personen staar paa ───────────────────────
+            //
+            // Lista bar dette fra for, ruta ikke. Da visste personruta aldri
+            // om det loep en avtale, og «Send Vipps-avtale» sto framme ogsaa
+            // naar den gjorde det — serveren avviste forst naar man trykket.
+            //
+            // Eieren, 7. september 2026: «jeg kan sende avtale paa nytt. Men
+            // da faar jeg beskjed om at medlemer har en avtale allerede».
+            //
+            // Samme rad som Medlemskap::avtale() leser: den nyeste som enten
+            // venter paa godkjenning eller loeper.
+            'avtale' => (static function () use ($m): string {
+                $a = Medlemskap::avtale((int) $m['id']);
+                return $a === null ? 'ingen' : (string) $a['status'];
+            })(),
             // ── Lenka gaar ikke ut mens du kopierer den ─────────────────
             //
             // Her sto Vipps sin egen adresse, foerst uten aldersgrense og

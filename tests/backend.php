@@ -9357,6 +9357,57 @@ sjekk('… og den aapner boksen som finnes, ikke en ny',
 sjekk('… og de andre veiene inn aapner den ikke',
     substr_count($sidaM2, 'apnePerson(m.id, 0, true)') === 1);
 
+echo "\n== «Stopp avtalen nå» ==\n";
+// «Send Vipps-avtale» nekter naar det alt loeper en avtale, og «Kopier lenka»
+// er skjult av samme grunn. Staar det en avtale i basen som medlemmet ikke
+// kjenner igjen i Vipps, var det ingen vei ut.
+//
+// Eieren, 7. september 2026, om Eirin og Lene: «de har ingen avtale aa
+// godkjenne, de faar aldri beskjed om aa godkjenne noe, det er ingen slik
+// info i vipps hos de to».
+$mFilS = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('avtalen kan stoppes med det samme',
+    str_contains($mFilS, "if (\$handling === 'stopp-avtale') {"));
+// Baade «venter» og «aktiv»: et forsoek som aldri ble godkjent har ogsaa en
+// avtale hos Vipps, og den skal ryddes bort paa samme maate.
+sjekk('… for baade et forsoek og en loepende avtale',
+    str_contains($mFilS, "\$a = Medlemskap::avtale(\$id);")
+    && str_contains($sidaM2, "&& ['venter', 'aktiv'].indexOf(p.avtale || 'ingen') >= 0,"));
+// En rad som staar «stoppet» mens Vipps fortsatt trekker er verre enn ingen
+// endring.
+sjekk('… og gaar det ikke gjennom hos Vipps, endres ingenting her heller',
+    str_contains($mFilS, "Vipps::stoppAvtale(\$avtaleId);")
+    && str_contains($mFilS, "Svar::feil('Vipps stoppet ikke avtalen. Prøv igjen om et par minutter.');"));
+// «Avslutt» setter bare en sluttdato fram i tid, og lar avtalen loepe til da.
+// Denne stopper den naa.
+sjekk('… og raden merkes stoppet, uten trekkdato',
+    str_contains($mFilS, "'status'      => 'stoppet',\n            'neste_trekk' => null,\n        ], ['id' => (int) \$a['id']]);"));
+// Medlemskap::avslutt() setter «oppsagt» paa medlemmet. Gjor vi det her,
+// forsvinner «Kopier lenka» fra personruta — se «avtaleLenke».
+sjekk('… mens medlemmet ikke settes som oppsagt',
+    str_contains($mFilS, '// Medlemsstatusen roeres IKKE.'));
+// Merket vi trekket «avbrutt» herfra, ville vi paastaatt noe vi ikke har
+// spurt Vipps om. Nattjobben spor — se Medlemskap::sjekkTrekk().
+sjekk('… og et bestilt trekk paastaas ikke avbrutt',
+    str_contains($mFilS, "AND status IN ('opprettet', 'venter', 'autorisert')")
+    && !str_contains($mFilS, "revider('medlem_avtale_stoppet', 'member', \$id,\n                ['avtale' => (int) \$a['id'], 'vipps' => \$avtaleId, 'bestilte_trekk' => \$bestilt]);\n\n        DB::oppdater('payments'"));
+// Den sier fra til Vipps, og det kan ikke angres derfra.
+sjekk('… og skjermen spor foerst',
+    str_contains($sidaM2, "if (!window.confirm('Stoppe Vipps-avtalen til '"));
+// ── Ruta maa vite om det loeper en avtale ─────────────────────────────
+//
+// Lista bar dette fra for, ruta ikke. Da sto «Send Vipps-avtale» framme ogsaa
+// naar avtalen loep, og serveren avviste forst naar man trykket. Eieren,
+// 7. september 2026: «jeg kan sende avtale paa nytt. Men da faar jeg beskjed
+// om at medlemer har en avtale allerede».
+//
+// Maalt i nettleseren: uten dette feltet var «Stopp avtalen naa» usynlig paa
+// et medlem med loepende avtale, og «Send Vipps-avtale» sto der den ikke
+// skulle.
+sjekk('personruta faar vite hvilken avtale som staar',
+    str_contains($mFilS, "'avtale' => (static function () use (\$m): string {")
+    && str_contains($mFilS, "\$a = Medlemskap::avtale((int) \$m['id']);\n                return \$a === null ? 'ingen' : (string) \$a['status'];"));
+
 echo "\n== Ut av personen, tilbake til lista ==\n";
 // Personruta staar OVER lista, og apnePerson() ruller ned til den. Lukket du
 // den etter aa ha lest deg nedover i historikken, ble du staaende langt nede
@@ -10352,10 +10403,11 @@ sjekk('… og det samme gjor «Registrer betaling» og «Send Vipps-avtale»',
     // Fire kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
     // medlemskap» og «Send Vipps-avtale». × kaller den ogsaa, men uten
     // semikolon — se «lukkPerson:» over.
-    // Fem kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
-    // medlemskap», «Send Vipps-avtale» og «Nullstill medlemmet». × kaller den
-    // ogsaa, men uten semikolon — se «lukkPerson:» over.
-    && substr_count($sidaB, 'this.lukkPersonruta();') === 5);
+    // Seks kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
+    // medlemskap», «Send Vipps-avtale», «Nullstill medlemmet» og «Stopp
+    // avtalen naa». × kaller den ogsaa, men uten semikolon — se
+    // «lukkPerson:» over.
+    && substr_count($sidaB, 'this.lukkPersonruta();') === 6);
 // «Nullstill medlemmet» sto igjen en runde. Eieren, 7. september 2026, spurt
 // om den skulle staa naar de fire andre gaar tilbake til lista: nei. Lista
 // viser nettopp det nullstillingen endrer — status, plan og betalingspille.

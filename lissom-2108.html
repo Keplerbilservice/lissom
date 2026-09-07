@@ -1318,6 +1318,40 @@ window.__resources = {
      telefonen finnes ikke den linja, og en aattende celle i bunnmenyen ville
      gjort de sju til 44 px hver. Da staar pilla alene under navnet i
      stedet. */
+  /* Kassa: like brikker, og «Ikke betalt» to rader per linje.
+     -------------------------------------------------------------
+     Eieren, 7. september 2026, om Kassa paa PC: «her er det store rom for
+     opprydding og et penere oppsett med like kort og piller, naa er det
+     store ubrukte felt inne i et kort».
+
+     Maalt paa 1600 px: hver rad i «Ikke betalt» var 1272 px bred mens
+     navnet sluttet ved 470 — et doedt felt paa ~480 px i hver rad. To rader
+     per linje bruker bredden og halverer hoyden.
+
+     1200 px, ikke 760: under det blir en halv rad for trang til navn,
+     beloep og fire brikker ved siden av hverandre. */
+  .ka-gjeldrader > * { border-top: 1px solid var(--border-subtle); }
+  @media (min-width: 1200px) {
+    .ka-gjeldrader {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* Streken mellom de to spaltene. «nth-child(odd)» er venstre rad. */
+    .ka-gjeldrader > *:nth-child(odd) { border-right: 1px solid var(--border-subtle); }
+  }
+
+  /* Brikkene i et valg er like brede, uansett hvor langt ordet er.
+     Med «flex-wrap» fikk hver av dem bredden til ordet sitt, og «Vipps»
+     ble smalere enn «Gavekort». Samme regel som de fire i «Ikke betalt». */
+  .ut-piller { display: grid; gap: 8px; max-width: 520px; }
+  .ut-piller-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 300px; }
+  .ut-piller-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 420px; }
+  .ut-piller-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ut-piller > button { width: 100%; box-sizing: border-box; text-align: center; }
+  @media (max-width: 600px) {
+    .ut-piller-3, .ut-piller-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 300px; }
+  }
+
   .ms-pillerad { display: flex; }
   @media (max-width: 760px) {
     .ms-pillerad > *:not(.ms-verksted) { display: none !important; }
@@ -8423,8 +8457,12 @@ window.__resources = {
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Ikke betalt</span>
               <span style="font: var(--type-body-sm); opacity: .9;">{{ ovSkylderSum }}</span>
             </div>
+            <!-- To rader per linje over 1200 px — se «.ka-gjeldrader» i
+                 stilarket. Streken mellom radene staar der ogsaa, saa den
+                 ikke tegnes to ganger naar de staar side ved side. -->
+            <div class="ka-gjeldrader">
             <sc-for list="{{ ovSkylder }}" as="u" hint-placeholder-count="3">
-              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5);">
                 <span style="min-width: 0; flex: 1 1 220px;">
                   <button type="button" onClick="{{ u.aapne }}" style="{{ u.navnStil }}"><span style="display: block; font-size: var(--text-sm);">{{ u.navn }}</span></button>
                   <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
@@ -8455,6 +8493,7 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
+            </div>
             <sc-if value="{{ ovSkylderTom }}" hint-placeholder-val="{{ true }}">
               <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Alle har gjort opp for seg.</div>
             </sc-if>
@@ -8613,7 +8652,11 @@ window.__resources = {
                staar under OEkonomi, og er de samme som for det samme salget
                gjort paa nett. -->
           <sc-if value="{{ utSalgVis }}" hint-placeholder-val="{{ true }}">
-            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
+            <!-- Samme ramme som de andre kortene i Kassa. Den sto med
+                 2 px brun mens naboene har 1 px lys, og da leste sida seg
+                 ujevn selv der den var full. Eieren, 7. september 2026: «et
+                 penere oppsett med like kort og piller». -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Registrer et salg</div>
 
               <div style="display: flex; flex-direction: column; gap: var(--space-6); max-width: 520px;">
@@ -8627,7 +8670,7 @@ window.__resources = {
 
                 <div>
                   <div style="{{ utEtikett }}">Betalt med</div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <div class="ut-piller ut-piller-4">
                     <sc-for list="{{ utSalgMaater }}" as="m" hint-placeholder-count="3">
                       <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                     </sc-for>
@@ -8685,7 +8728,7 @@ window.__resources = {
 
                 <div>
                   <div style="{{ utEtikett }}">Hva var det?</div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <div class="ut-piller ut-piller-3">
                     <sc-for list="{{ utSlagValg }}" as="sl" hint-placeholder-count="3">
                       <button type="button" onClick="{{ sl.velg }}" style="{{ sl.stil }}">{{ sl.navn }}</button>
                     </sc-for>
@@ -8755,73 +8798,6 @@ window.__resources = {
             </div>
           </sc-if>
 
-          <!-- Utsted gavekort.
-               Eieren: «jeg vil ha to typer gavekort, et som er ting vi gir ut
-               som ikke skal skatteberegnes og et som faktisk er kjopt av oss,
-               da maa det vaere online og det maa vaere nummerert.»
-
-               Begge er det samme kortet: samme nummererte kode, samme saldo,
-               og begge virker i kassa og paa nettsida. Forskjellen er hva som
-               skjer i regnskapet — gjeld naar det er solgt, kostnad naar det
-               er gitt bort. Kontoene staar under Okonomi. -->
-          <sc-if value="{{ utKanUtstede }}" hint-placeholder-val="{{ true }}">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Utsted gavekort</div>
-
-            <div style="display: flex; flex-direction: column; gap: var(--space-5); max-width: 520px;">
-              <div>
-                <label for="ut-gv-belop" style="{{ utEtikett }}">Beløp</label>
-                <input id="ut-gv-belop" inputmode="decimal" value="{{ utGvBelop }}" onChange="{{ settUtGvBelop }}" placeholder="F.eks. 1000" style="{{ utFeltStil }}">
-              </div>
-
-              <div>
-                <div style="{{ utEtikett }}">Solgt eller gitt bort?</div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <sc-for list="{{ utGvTypeValg }}" as="gt" hint-placeholder-count="2">
-                    <button type="button" onClick="{{ gt.velg }}" style="{{ gt.stil }}">{{ gt.navn }}</button>
-                  </sc-for>
-                </div>
-                <p style="margin: 8px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utGvHva }}</p>
-              </div>
-
-              <sc-if value="{{ utGvSolgt }}" hint-placeholder-val="{{ true }}">
-                <div>
-                  <div style="{{ utEtikett }}">Betalt med</div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <sc-for list="{{ utGvMaater }}" as="gm" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ gm.velg }}" style="{{ gm.stil }}">{{ gm.navn }}</button>
-                    </sc-for>
-                  </div>
-                </div>
-              </sc-if>
-
-              <div>
-                <label for="ut-gv-epost" style="{{ utEtikett }}">E-post til mottakeren</label>
-                <input id="ut-gv-epost" inputmode="email" value="{{ utGvEpost }}" onChange="{{ settUtGvEpost }}" placeholder="Valgfritt" style="{{ utFeltStil }}">
-                <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utGvEpostHjelp }}</p>
-              </div>
-
-              <div>
-                <label for="ut-gv-hilsen" style="{{ utEtikett }}">Hilsen</label>
-                <input id="ut-gv-hilsen" value="{{ utGvHilsen }}" onChange="{{ settUtGvHilsen }}" placeholder="Valgfritt — f.eks. «Gratulerer med dagen!»" style="{{ utFeltStil }}">
-              </div>
-
-              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="gift" on-click="{{ utGvUtsted }}" hint-size="auto,48px">Lag gavekortet</x-import>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utGvBeskjed }}</span>
-              </div>
-
-              <!-- Koden blir staaende til neste kort lages. Den skal kunne
-                   leses av og skrives ned i ro. -->
-              <sc-if value="{{ utGvHarKode }}" hint-placeholder-val="{{ false }}">
-                <div style="border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); background: var(--clay-50); padding: var(--space-5); text-align: center;">
-                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Koden på kortet</div>
-                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); letter-spacing: 0.06em;">{{ utGvKode }}</div>
-                </div>
-              </sc-if>
-            </div>
-          </div>
-          </sc-if>
 
           <!-- Varene. Soekefeltet er der fordi 21 varer er for mange aa lete
                gjennom med oynene mens noen staar og venter. -->
@@ -8853,7 +8829,7 @@ window.__resources = {
                — et hurtigsalg har ingen kurv. -->
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
             <sc-if value="{{ utVarerVis }}" hint-placeholder-val="{{ false }}">
-            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg);">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
               <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">Dette salget</div>
 
               <sc-for list="{{ utLinjer }}" as="l" hint-placeholder-count="3">
@@ -8884,7 +8860,7 @@ window.__resources = {
               <div style="padding: 0 var(--space-6) var(--space-5); display: flex; flex-direction: column; gap: var(--space-4);">
                 <div>
                   <label style="{{ utEtikett }}">Betalt med</label>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <div class="ut-piller ut-piller-2">
                     <sc-for list="{{ utMaater }}" as="m" hint-placeholder-count="2">
                       <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                     </sc-for>
@@ -8964,6 +8940,85 @@ window.__resources = {
                 <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">{{ utRapAnnullert }} · ikke med i summen</div>
               </sc-if>
             </div>
+
+          <!-- Gavekortet staar i HOEYRE spalte.
+               Det laa under «Registrer et salg» i venstre spalte, mens hoyre
+               spalte sluttet etter Dagsrapporten. Maalt paa 1600 px: rundt
+               550 x 700 px sto tomt nederst til hoyre.
+
+               Eieren, 7. september 2026: «her er det store rom for
+               opprydding og et penere oppsett med like kort og piller, naa
+               er det store ubrukte felt inne i et kort».
+
+               Naa fylles begge spaltene like langt ned. -->
+          <!-- Utsted gavekort.
+               Eieren: «jeg vil ha to typer gavekort, et som er ting vi gir ut
+               som ikke skal skatteberegnes og et som faktisk er kjopt av oss,
+               da maa det vaere online og det maa vaere nummerert.»
+
+               Begge er det samme kortet: samme nummererte kode, samme saldo,
+               og begge virker i kassa og paa nettsida. Forskjellen er hva som
+               skjer i regnskapet — gjeld naar det er solgt, kostnad naar det
+               er gitt bort. Kontoene staar under Okonomi. -->
+          <sc-if value="{{ utKanUtstede }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Utsted gavekort</div>
+
+            <div style="display: flex; flex-direction: column; gap: var(--space-5); max-width: 520px;">
+              <div>
+                <label for="ut-gv-belop" style="{{ utEtikett }}">Beløp</label>
+                <input id="ut-gv-belop" inputmode="decimal" value="{{ utGvBelop }}" onChange="{{ settUtGvBelop }}" placeholder="F.eks. 1000" style="{{ utFeltStil }}">
+              </div>
+
+              <div>
+                <div style="{{ utEtikett }}">Solgt eller gitt bort?</div>
+                <div class="ut-piller ut-piller-2">
+                  <sc-for list="{{ utGvTypeValg }}" as="gt" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ gt.velg }}" style="{{ gt.stil }}">{{ gt.navn }}</button>
+                  </sc-for>
+                </div>
+                <p style="margin: 8px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utGvHva }}</p>
+              </div>
+
+              <sc-if value="{{ utGvSolgt }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="{{ utEtikett }}">Betalt med</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ utGvMaater }}" as="gm" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ gm.velg }}" style="{{ gm.stil }}">{{ gm.navn }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div>
+                <label for="ut-gv-epost" style="{{ utEtikett }}">E-post til mottakeren</label>
+                <input id="ut-gv-epost" inputmode="email" value="{{ utGvEpost }}" onChange="{{ settUtGvEpost }}" placeholder="Valgfritt" style="{{ utFeltStil }}">
+                <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utGvEpostHjelp }}</p>
+              </div>
+
+              <div>
+                <label for="ut-gv-hilsen" style="{{ utEtikett }}">Hilsen</label>
+                <input id="ut-gv-hilsen" value="{{ utGvHilsen }}" onChange="{{ settUtGvHilsen }}" placeholder="Valgfritt — f.eks. «Gratulerer med dagen!»" style="{{ utFeltStil }}">
+              </div>
+
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="gift" on-click="{{ utGvUtsted }}" hint-size="auto,48px">Lag gavekortet</x-import>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utGvBeskjed }}</span>
+              </div>
+
+              <!-- Koden blir staaende til neste kort lages. Den skal kunne
+                   leses av og skrives ned i ro. -->
+              <sc-if value="{{ utGvHarKode }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); background: var(--clay-50); padding: var(--space-5); text-align: center;">
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Koden på kortet</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); letter-spacing: 0.06em;">{{ utGvKode }}</div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          </sc-if>
+
           </div>
         </div>
       </main>
@@ -24381,15 +24436,28 @@ class Component extends DCLogic {
    * det ikke — da ruller vi til toppen i stedet for aa la deg staa igjen midt
    * i en side som nettopp ble kortere.
    */
-  lukkPersonruta() {
-    // Alt som ble skrevet inn i ruta ryddes vekk. Overstyringene —
-    // personPlan, personFri — er det du TRODDE du satte; neste gang ruta
-    // aapnes skal brikkene lese det som faktisk staar i basen.
-    this.setState({ personFor: null, personData: null, personNotat: null,
+  /**
+   * Hva «ingen person aapen» betyr, som state.
+   *
+   * Staar ett sted fordi to veier bruker den: × og knappene i ruta
+   * (lukkPersonruta), og det aa forlate skjermen (gaaAdmin). Sto lista to
+   * steder, ville de drevet fra hverandre neste gang et felt kom til.
+   *
+   * Overstyringene — personPlan, personFri — er det du TRODDE du satte;
+   * neste gang ruta aapnes skal brikkene lese det som faktisk staar i basen.
+   *
+   * @return {object}
+   */
+  personRutaTom() {
+    return { personFor: null, personData: null, personNotat: null,
       personNavnFelt: null, personEpost: null, personTelefon: null,
       personStartDato: null, personSluttDato: null, personTimer: null,
       personPlan: null, personFri: null, personFriGrunn: null,
-      personBetalingApen: false, personBetalingBelop: '' });
+      personBetalingApen: false, personBetalingBelop: '' };
+  }
+
+  lukkPersonruta() {
+    this.setState(this.personRutaTom());
     // Vi maa vente til ruta faktisk er borte fra skjermen.
     //
     // Maalt 7. september 2026: rullet vi paa forste bilde, sto ruta fortsatt
@@ -30195,7 +30263,23 @@ class Component extends DCLogic {
       rute = 'adminokonomi';
       forvalg = { okonomiFor: '' };
     }
-    this.setState(Object.assign({ side: rute, fhRolle: '', fhFra: '' }, forvalg || {}));
+    // ── Personruta foelger deg ikke ut av skjermen ───────────────
+    //
+    // «personFor» laa igjen i minnet naar man byttet skjerm. Gikk du til
+    // Kalender og tilbake til Medlemmer, sto den samme personen aapen som da
+    // du gikk — og lista laa under, utenfor skjermen.
+    //
+    // Eieren, 7. september 2026: «medlemmet jeg klikker inn paa skal lukkes
+    // naar jeg forlater siden, slik at jeg ser alle medlemmer neste gang jeg
+    // klikker inn, dette har jeg bedt om mange ganger uten at det er fikset».
+    //
+    // «forvalg» faar siste ord: en vei inn som med vilje aapner noe skal
+    // fortsatt kunne gjore det.
+    this.setState(Object.assign(
+      { side: rute, fhRolle: '', fhFra: '' },
+      this.personRutaTom(),
+      forvalg || {}
+    ));
     window.scrollTo(0, 0);
   }
 

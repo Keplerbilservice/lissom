@@ -4002,12 +4002,11 @@ sjekk('… og skjermen viser den med en kopiknapp',
     str_contains($sida2, 'personHarAvtaleLenke:')
     && str_contains($sida2, 'kopierPersonAvtaleLenke:')
     && str_contains($sida2, '>Kopier lenka</x-import>'));
-// Uten tabellen finnes ingen noekkel. Da skal svaret vaere Min side, ikke en
-// feil — se Medlemskap::godkjennLenke().
-sjekk('… og taaler en base uten tabellen',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
-                 "if (!DB::harTabell('avtale_lenker')) {
-            return Config::nettsted() . '/min-side';"));
+// Lenka er innmeldingsordren naa. Finner vi ikke planen, staar det ingen
+// lenke — framfor en som peker paa noe som ikke finnes.
+sjekk('… og staar tom naar planen er borte',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
+                 "if (Medlemskap::plan(\$type) === null) {\n                    return '';\n                }"));
 
 // Kalenderen sto paa «Liste» paa smal skjerm. Begrunnelsen gjaldt
 // maanedsrutenettet — sju spalter paa 390 px — men dagen er én spalte.
@@ -12711,12 +12710,13 @@ sjekk('… og den teller som forfalt, ikke som «venter»',
 // Admin kan naa lage avtalen selv, med «Send Vipps-avtale». Foer dette gikk
 // det bare fra nettsida og innmeldingsskjemaet, og et medlem meldt inn
 // herfra sto uten noe aa trekke paa.
-// Admin lager den ikke lenger selv: der sendes godkjenningslenka, og avtalen
-// lages naar mottakeren trykker. Se api/godkjenn.php.
-sjekk('avtaler kan opprettes fra alle tre stedene',
+// Admin lager den ikke selv: der sendes innmeldingslenka, og avtalen lages
+// naar mottakeren trykker. Se docs/AVTALETREKK.md.
+sjekk('avtaler opprettes de tre stedene, og bare der',
     substr_count(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'), 'Medlemskap::startAvtale(') === 1
     && substr_count(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'), 'Medlemskap::startAvtale(') === 1
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/godkjenn.php'), 'Medlemskap::startAvtale('));
+    && substr_count(file_get_contents(dirname(__DIR__) . '/api/meld-inn.php'), 'Medlemskap::startAvtale(') === 1
+    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'Medlemskap::startAvtale('));
 
 // ── «Forny» skal fornye DIN plan ───────────────────────────────────
 //
@@ -12770,12 +12770,12 @@ sjekk('skjermen sier det foer den sender deg til Vipps',
 sjekk('… og serveren sier fra om at det maa godkjennes',
     str_contains($mkV, "'maaGodkjennes' => \$betaling === 'trekk',"));
 
-// 3. Purringen.
-sjekk('en ugodkjent avtale blir purret paa',
-    str_contains($mig, "'avtale_ikke_godkjent',")
-    && str_contains($runden, "Varsel::mal('avtale_ikke_godkjent', [")
-    && str_contains($runden, 'AND l.paaminnet_antall < 2'),
-    'maalt: paaminnet_antall gikk 0 → 1, og ikke videre samme natt');
+// 3. Purringen sto her. Den fulgte godkjenningslenka, og den lenka er revet
+// ut 7. september — er det ingen lenke som ligger ute, er det ingenting aa
+// purre paa. Se docs/AVTALETREKK.md.
+sjekk('purringa paa godkjenningslenka er borte',
+    !str_contains($runden, 'avtale_ikke_godkjent')
+    && str_contains($runden, '$paaminnet = 0;'));
 // Sju dager sto paa AVTALENE. Godkjente kunden i uke to, ble raden aldri
 // sett paa igjen, og trekket startet aldri. (De sju dagene paa hengende
 // BETALINGER lenger nede er noe annet og staar som for.)
@@ -12786,7 +12786,7 @@ sjekk('… og vi slutter ikke aa se etter avtalen etter sju dager',
 // 4. Knappen i admin.
 sjekk('verkstedet kan sende avtalen selv',
     str_contains($admV, "if (\$handling === 'send-avtale') {")
-    && str_contains($admV, '$lenke = Medlemskap::godkjennLenke($id, $type);')
+    && str_contains($admV, "Medlemsordre::forMedlem(\$id, \$type, [")
     && str_contains($sidaV, 'Send Vipps-avtale'),
     'maalt: knappen staar i personruta med hjelpetekst');
 sjekk('… og den staar bare naar det faktisk mangler noe',
@@ -13379,70 +13379,51 @@ sjekk('… men de gjoer det samme som for',
     && str_contains($byttSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"')
     && str_contains($byttSida, 'onClick="{{ klIcsApne }}" style="{{ klSnarveiStil }}"'));
 
-// ── Godkjenningslenka lages naar hun trykker ─────────────────────────
+// ── Én lenke inn til avtalen, ikke to ────────────────────────────────
 //
-// Eieren, 6. september: «men det fungerer ikke, linken virker ikke, saa noe er
-// feil, du maa gjore dette paa en annen maate».
+// Det fantes to: innmeldingsordren (/meld-inn/<noekkel>) og
+// godkjenningslenka (/godkjenn/<noekkel>, tabellen «avtale_lenker»). Begge
+// laget Vipps-avtalen i det mottakeren trykket, og begge fantes fordi Vipps
+// sin egen adresse doer etter ti minutter.
 //
-// Vipps sin egen dokumentasjon: «By default, a user has a total of 10 minutes
-// to accept a payment … The EXPIRED state is a final state.» Alt verkstedet
-// sendte var doedt for mottakeren rakk aa trykke.
+// Eieren fikk «Vi kjenner ikke denne QR-koden» paa en lenke som var over et
+// doegn gammel (Eirin, 6. september) OG paa en som var sekunder gammel (ham
+// selv, 7. september). Da var lenkealderen utelukket, og han valgte: «du skal
+// rive ut og bygge avtale vipssen paa nytt».
 //
-// Hele veien er malt ende til ende mot den falske Vippsen i
-// tests/godkjennlenke.php: 17 av 17.
-sjekk('tabellen for godkjenningslenker finnes',
-    DB::harTabell('avtale_lenker'));
-$mig145 = file_get_contents(dirname(__DIR__) . '/db/migrations/145_lenka_lages_nar_hun_trykker.sql');
-sjekk('… og noekkelen har utloep og et brukt-merke',
-    str_contains($mig145, 'utloper    DATETIME    NOT NULL')
-    && str_contains($mig145, 'brukt_at   DATETIME    NULL DEFAULT NULL'));
-sjekk('… og purringa teller paa noekkelen, ikke paa abonnementsraden',
-    str_contains($mig145, 'paaminnet_antall TINYINT  NOT NULL DEFAULT 0'));
-
-$medlLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
-sjekk('lenka lages av Medlemskap::godkjennLenke',
-    str_contains($medlLib, 'public static function godkjennLenke(int $medlemId, string $planNavn): string'));
-sjekk('… og lever i fjorten dager',
-    str_contains($medlLib, "'utloper'   => gmdate('Y-m-d H:i:s', time() + 14 * 86400),"));
-sjekk('… og samme medlem og plan gir samme noekkel saa lenge den lever',
-    str_contains($medlLib, "WHERE member_id = :m AND plan = :p
-                AND brukt_at IS NULL AND utloper > UTC_TIMESTAMP()"));
-sjekk('… og den settes som brukt naar avtalen blir aktiv',
-    str_contains($medlLib, 'self::godkjennLenkeBrukt((int) $avtale[\'member_id\']);'));
-sjekk('purringa sender vaar egen lenke, ikke Vipps sin',
-    str_contains($medlLib, "'lenke' => Config::nettsted() . '/godkjenn/' . (string) \$a['token'],")
-    && !str_contains($medlLib, "'lenke' => (string) \$a['vipps_url'],"));
-
-$gjFil = file_get_contents(dirname(__DIR__) . '/api/godkjenn.php');
-sjekk('api/godkjenn.php lager avtalen i det hun trykker',
-    str_contains($gjFil, 'Medlemskap::kreverFastTrekk($plan)')
-    && str_contains($gjFil, 'header(\'Location: \' . $adresse, true, 302);'));
-sjekk('… og noekkelen maa vaere 32 tegn',
-    str_contains($gjFil, "strlen(\$token) !== 32"));
-sjekk('… og en fremmed kan ikke hamre paa den',
-    str_contains($gjFil, "Rate::sjekk('godkjenn-lenke', maks: 30, vindu: 600);"));
-sjekk('… og sida sier ifra naar avtalen alt er godkjent',
-    str_contains($gjFil, "'Alt er i orden',"));
-sjekk('… naar lenka har gaatt ut',
-    str_contains($gjFil, "'Lenka har gått ut',"));
-sjekk('… og naar Vipps ikke svarer',
-    str_contains($gjFil, "'Vipps svarte ikke akkurat nå',"));
-sjekk('… og sida holdes ute av soket',
-    str_contains($gjFil, "header('X-Robots-Tag: noindex, nofollow');"));
-
-$htFil = file_get_contents(dirname(__DIR__) . '/.htaccess');
-sjekk('/godkjenn/<noekkel> peker paa fila',
-    str_contains($htFil, 'RewriteRule ^godkjenn/([a-fA-F0-9]{32})/?$ /api/godkjenn.php?t=$1 [L,QSA]'));
-sjekk('… og den staar foer regelen som sender alt til side.php',
-    strpos($htFil, 'RewriteRule ^godkjenn/') < strpos($htFil, 'RewriteRule ^$ /side.php [L]'));
-
-$admFil145 = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
-sjekk('«Send Vipps-avtale» lager ikke avtalen lenger',
-    str_contains($admFil145, '$lenke = Medlemskap::godkjennLenke($id, $type);')
-    && !str_contains($admFil145, '? Medlemskap::startAvtale($m, $type)'));
-sjekk('… og admin viser den samme lenka, uten aldersgrense',
-    str_contains($admFil145, "return Medlemskap::godkjennLenke((int) \$m['id'], \$type);")
-    && str_contains($admFil145, "'avtaleLenkeGammel' => false,"));
+// Godkjenningslenka er revet ut. Innmeldingsordren staar igjen — den brukes
+// av medlemskapssida ogsaa, og planen ligger i raden. Se docs/AVTALETREKK.md.
+sjekk('godkjenningslenka er borte',
+    !DB::harTabell('avtale_lenker')
+    && !file_exists(dirname(__DIR__) . '/api/godkjenn.php')
+    && !str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'), 'godkjenn'));
+$mig151 = file_get_contents(dirname(__DIR__) . '/db/migrations/151_avtalelenka_er_borte.sql');
+sjekk('… og migrasjon 151 tar tabellen og malen',
+    str_contains($mig151, 'DROP TABLE IF EXISTS avtale_lenker;')
+    && str_contains($mig151, "DELETE FROM notification_templates WHERE navn = 'avtale_ikke_godkjent';"));
+$mlLenke = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('… og koden kjenner den ikke lenger',
+    !str_contains($mlLenke, 'godkjennLenke')
+    && !str_contains($mlLenke, 'avtale_lenker')
+    && !str_contains($mlLenke, 'avtale_ikke_godkjent'));
+sjekk('… og malen er ute av malregisteret',
+    !str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), 'avtale_ikke_godkjent'));
+// Verkstedet skal fortsatt kunne sende en lenke. Den er innmeldingsordren naa,
+// og den lever i fjorten dager naar admin lager den — ett doegn er for kort
+// for noe som skal ut i en e-post.
+$admFil151 = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('«Send Vipps-avtale» sender innmeldingslenka',
+    str_contains($admFil151, "\$lenke = Config::nettsted() . '/meld-inn/' . Medlemsordre::forMedlem(\$id, \$type, [")
+    && str_contains($admFil151, '], 14 * 24);'));
+sjekk('… og «Kopier lenka» viser den samme',
+    str_contains($admFil151, "return Config::nettsted() . '/meld-inn/'\n                     . Medlemsordre::forMedlem((int) \$m['id'], \$type, ["));
+// Personruta tegnes hver gang den aapnes. Lages ordren der, ville hver visning
+// lagt igjen en ny rad og en ny gyldig lenke.
+$moFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemsordre.php');
+sjekk('… og lenka lages ikke paa nytt hver gang ruta aapnes',
+    str_contains($moFil, 'public static function forMedlem(int $medlemId, string $planNavn, array $felter,')
+    && str_contains($moFil, "WHERE medlem_id = :m AND plan = :p AND status = 'ny'")
+    && str_contains($moFil, 'AND utloper > UTC_TIMESTAMP()'));
 sjekk('… og skjermen sier at den virker i fjorten dager',
     str_contains($byttSida, "+ ' på den måten som passer — e-post, SMS eller Messenger. Lenka '"));
 

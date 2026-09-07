@@ -44,7 +44,13 @@ final class Medlemsordre
      * @param array<string,mixed> $felter navn, epost, telefon, erfaring, melding, vilkaar
      * @throws RuntimeException naar planen mangler eller ikke finnes
      */
-    public static function opprett(string $planNavn, string $betaling, array $felter): string
+    public static function opprett(
+        string $planNavn,
+        string $betaling,
+        array $felter,
+        ?int $levetidTimer = null,
+        ?int $medlemId = null
+    ): string
     {
         $planNavn = trim($planNavn);
         if ($planNavn === '') {
@@ -78,10 +84,49 @@ final class Medlemsordre
             'erfaring' => self::ellerNull($felter['erfaring'] ?? '', 1000),
             'melding'  => self::ellerNull($felter['melding'] ?? '', 1000),
             'vilkaar'  => self::ellerNull($felter['vilkaar'] ?? '', 32),
-            'utloper'  => gmdate('Y-m-d H:i:s', time() + self::LEVETID_TIMER * 3600),
+            // Lages lenka av verkstedet, vet vi hvem den gjelder fra for.
+            // Da kan den samme lenka finnes igjen i stedet for aa lages paa
+            // nytt hver gang personruta aapnes — se forMedlem().
+            'medlem_id' => $medlemId,
+            // Et doegn naar hun sitter i innmeldingen selv. Sender
+            // verkstedet lenka til noen, maa den leve lenger — den skal ut i
+            // en e-post og kanskje videre i en melding.
+            'utloper'  => gmdate('Y-m-d H:i:s',
+                time() + max(1, $levetidTimer ?? self::LEVETID_TIMER) * 3600),
         ]);
 
         return $token;
+    }
+
+    /**
+     * Lenka verkstedet sender til ett medlem — den samme hver gang.
+     *
+     * «Kopier lenka» staar i personruta, og ruta tegnes hver gang den aapnes.
+     * Lages ordren der, ville hver visning lagt igjen en ny rad og en ny
+     * gyldig lenke. Her finnes en levende ordre paa samme medlem og samme
+     * plan igjen; bare naar det ikke finnes noen, lages den.
+     */
+    public static function forMedlem(int $medlemId, string $planNavn, array $felter,
+                                     int $levetidTimer): string
+    {
+        $finnes = DB::en(
+            "SELECT token FROM medlemsordrer
+              WHERE medlem_id = :m AND plan = :p AND status = 'ny'
+                AND utloper > UTC_TIMESTAMP()
+           ORDER BY id DESC LIMIT 1",
+            ['m' => $medlemId, 'p' => $planNavn]
+        );
+        if ($finnes !== null) {
+            return (string) $finnes['token'];
+        }
+        $plan = Medlemskap::plan($planNavn);
+        return self::opprett(
+            $planNavn,
+            $plan !== null && Medlemskap::kreverFastTrekk($plan) ? 'trekk' : 'engang',
+            $felter,
+            $levetidTimer,
+            $medlemId
+        );
     }
 
     /** Ordren bak noekkelen, eller null. @return array<string,mixed>|null */

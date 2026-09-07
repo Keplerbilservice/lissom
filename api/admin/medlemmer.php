@@ -585,25 +585,24 @@ if (Foresporsel::metode() === 'POST') {
         if ($fra !== null && (string) $fra['status'] === 'aktiv') {
             Svar::feil('Medlemmet har alt en løpende avtale.');
         }
-
-        // ── Avtalen lages ikke her lenger ────────────────────────────
+        // ── Lenka verkstedet sender ────────────────────────────────
         //
-        // Her ble Vipps-avtalen opprettet med det samme, og adressen Vipps
-        // ga oss ble sendt paa e-post og vist i admin.
+        // Eieren sendte Vipps sin egen adresse til Eirin paa Messenger, og
+        // hun fikk «Vi kjenner ikke denne QR-koden». Den lever i ti minutter.
+        // Saa fikk vi vaar egen lenke, /godkjenn/<noekkel>, som laget avtalen
+        // i det hun trykket. Eieren fikk den SAMME feilmeldingen 7. september
+        // paa en lenke som var sekunder gammel — og da var lenkealderen
+        // utelukket. Han valgte: «du skal rive ut og bygge avtale vipssen paa
+        // nytt».
         //
-        // Vipps sin egen dokumentasjon: «By default, a user has a total of
-        // 10 minutes to accept a payment. If the user doesn't complete the
-        // payment within this time window, the payment request will expire.
-        // The EXPIRED state is a final state.»
-        //
-        // Eieren sendte den lenka til Eirin paa Messenger, og hun fikk «Vi
-        // kjenner ikke denne QR-koden» i Vipps-appen. Den var doed foer hun
-        // rakk aa trykke. Det samme gjaldt purringene, som sendte den samme
-        // adressen dag 1 og dag 3.
-        //
-        // Naa sender vi vaar egen adresse — lissom.no/godkjenn/… — og
-        // avtalen lages foerst i det hun trykker. Se api/godkjenn.php.
-        $lenke = Medlemskap::godkjennLenke($id, $type);
+        // Naa finnes det ÉN lenke, ikke to: innmeldingsordren. Den brukes av
+        // medlemskapssida fra for, den lager avtalen i det mottakeren
+        // trykker, og planen ligger i raden — ikke i nettleseren.
+        $lenke = Config::nettsted() . '/meld-inn/' . Medlemsordre::forMedlem($id, $type, [
+            'navn'    => (string) ($m['navn'] ?? ''),
+            'epost'   => (string) ($m['epost'] ?? ''),
+            'telefon' => (string) ($m['telefon'] ?? ''),
+        ], 14 * 24);
 
         Varsel::mal(Medlemskap::kreverFastTrekk($plan)
                 ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',
@@ -1623,17 +1622,9 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 $a = Medlemskap::avtale((int) $m['id']);
                 return $a === null ? 'ingen' : (string) $a['status'];
             })(),
-            // ── Lenka gaar ikke ut mens du kopierer den ─────────────────
-            //
-            // Her sto Vipps sin egen adresse, foerst uten aldersgrense og
-            // siden med fem minutter. Begge var feil: Vipps gir avtalen ti
-            // minutter, og deretter er den EXPIRED for godt. Ingen rekker aa
-            // kopiere en lenke ut av admin, sende den, og faa den aapnet
-            // innenfor det.
-            //
-            // Naa staar vaar egen adresse her — lissom.no/godkjenn/… — og
-            // den lever i fjorten dager. Vipps-avtalen lages foerst i det
-            // mottakeren trykker. Se api/godkjenn.php.
+            // Lenka verkstedet kan kopiere ut. Samme ordre som «Send
+            // Vipps-avtale» lager — ett sted, ikke to. Den staar bare naar
+            // det er noe aa godkjenne.
             'avtaleLenke' => (static function () use ($m): string {
                 $type = trim((string) ($m['medlemskap_type'] ?? ''));
                 if ($type === '' || (string) ($m['status'] ?? '') === 'oppsagt') {
@@ -1643,7 +1634,15 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 if ($a !== null && (string) $a['status'] === 'aktiv') {
                     return '';
                 }
-                return Medlemskap::godkjennLenke((int) $m['id'], $type);
+                if (Medlemskap::plan($type) === null) {
+                    return '';
+                }
+                return Config::nettsted() . '/meld-inn/'
+                     . Medlemsordre::forMedlem((int) $m['id'], $type, [
+                         'navn'    => (string) ($m['navn'] ?? ''),
+                         'epost'   => (string) ($m['epost'] ?? ''),
+                         'telefon' => (string) ($m['telefon'] ?? ''),
+                     ], 14 * 24);
             })(),
             // Sto her for aa forklare at lenka var for gammel til aa deles
             // ut. Det kan den ikke bli lenger.

@@ -610,7 +610,6 @@ if (Foresporsel::metode() === 'POST') {
                 'navn'  => (string) ($m['navn'] ?? ''),
                 'type'  => $type,
                 'belop' => Booking::kroner((int) $plan['pris_ore']),
-                'lenke' => $lenke,
             ], 'member', $id);
 
         revider('medlem_avtale_sendt', 'member', $id, ['plan' => $type]);

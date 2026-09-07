@@ -206,13 +206,17 @@ final class Maler
         // ── Medlemskap ──────────────────────────────────────────────
         'innmelding_fast_trekk' => [
             'tittel' => 'Innmelding — fast trekk',
-            'hvor'   => 'Sendes når noen melder seg inn med fast trekk i Vipps. Avtalen'
-                        . ' er ikke gyldig før medlemmet har godkjent den i appen, så'
-                        . ' lenka er det viktigste i denne.',
+            // Lenka sto her til 7. september. Den var Vipps sin egen adresse,
+            // og den lever i ti minutter — den var doed for e-posten ble
+            // lest. Eieren: «fjern linken. Fortell at man kan se faste trekk
+            // i vipps appen», og «Fjern lenka overalt».
+            'hvor'   => 'Sendes når noen melder seg inn med fast trekk i Vipps, og når'
+                        . ' verkstedet trykker «Send Vipps-avtale». Den sier hvor avtalen'
+                        . ' står — under Faste trekk i Vipps-appen — og har ingen lenke.',
             'felter' => [
                 'navn'  => 'Navnet på det nye medlemmet',
                 'type'  => 'Medlemskapet de valgte',
-                'lenke' => 'Adressen til Vipps, der avtalen godkjennes',
+                'belop' => 'Prisen i måneden',
             ],
         ],
         'innmelding_ordner_selv' => [

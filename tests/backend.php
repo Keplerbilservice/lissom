@@ -7672,16 +7672,27 @@ sjekk('migrasjon 132 retter velkomstmalen',
 $velkomst = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
 );
-// Migrasjon 139 skrev malen om igjen. Den sa fortsatt at avtalen VAR
-// opprettet, og at medlemskapet var aktivt med det samme — begge deler er
-// usant for kunden har godkjent i appen. Eieren, 5. september: «eposten de
-// som bestiller årsmedlemskap får forteller ingenting om at de må godkjenne».
-sjekk('velkomsten sier at avtalen maa godkjennes',
-    str_contains($velkomst, 'DU MÅ GODKJENNE AVTALEN I VIPPS'), mb_substr($velkomst, 0, 40));
-sjekk('… og at medlemskapet ikke starter for det',
-    str_contains($velkomst, 'Medlemskapet starter ikke før du har gjort det'));
-sjekk('… og hvorfor trekket tar tid',
-    str_contains($velkomst, 'Vipps krever at vi varsler deg før hvert'));
+// Migrasjon 139 skrev malen om igjen, med lenka som det viktigste i den.
+//
+// Lenka var Vipps sin egen adresse, og den lever i ti minutter — den var doed
+// for e-posten ble lest. Eieren, 7. september 2026: «Mailen som kommer kan da
+// endres, fjern linken. Fortell at man kan se faste trekk i vipps appen», og
+// spurt om den skulle bli igjen der verkstedet sender avtalen selv: «Fjern
+// lenka overalt». Migrasjon 152.
+sjekk('velkomsten har ingen lenke',
+    !str_contains($velkomst, '{lenke}'),
+    'adressen den pekte paa doer etter ti minutter');
+sjekk('… og sier hvor avtalen staar',
+    str_contains($velkomst, 'under Faste trekk i Vipps-appen'));
+// Vipps tar foerste maaned i det hun sier ja — «initialCharge». Malen maa si
+// det samme som systemet gjor.
+sjekk('… og at foerste maaned trekkes med det samme',
+    str_contains($velkomst, 'trekkes første måned med det samme'));
+// Teksten maa vaere sann to steder: ved selvbetjent innmelding, der hun sendes
+// rett til Vipps, og naar verkstedet trykker «Send Vipps-avtale». Derfor
+// peker den paa Min side framfor aa love en omdirigering.
+sjekk('… og peker paa Min side for den som ikke har godkjent',
+    str_contains($velkomst, 'finner du den under Medlemskap på Min side'));
 // De to gamle setningene lovte noe systemet ikke gjor.
 sjekk('… og lover ikke lenger at medlemskapet venter paa betalingen',
     !str_contains($velkomst, 'aktivt så snart betalingen er registrert'));
@@ -7689,8 +7700,13 @@ sjekk('… og paastaar ikke at det er aktivt med det samme',
     !str_contains($velkomst, 'Medlemskapet er aktivt med det samme'),
     'det er det ikke for avtalen er godkjent');
 // Plassholderne maa staa. Uten dem staar det «Hei {navn}» i e-posten.
-foreach (['{navn}', '{type}', '{lenke}'] as $felt) {
+foreach (['{navn}', '{type}', '{belop}'] as $felt) {
     sjekk('… og «' . $felt . '» staar igjen i malen', str_contains($velkomst, $felt));
+}
+// Ingen av stedene som sender den skal sende en lenke lenger.
+foreach (['api/bli-medlem.php', 'api/medlemskap.php', 'api/admin/medlemmer.php'] as $fil) {
+    sjekk('… og ' . $fil . ' sender ingen lenke til malen',
+        !str_contains(file_get_contents(dirname(__DIR__) . '/' . $fil), "'lenke' =>"));
 }
 
 // ── Rekkefolgen i medlemstrekket ───────────────────────────────────────
@@ -12784,10 +12800,12 @@ sjekk('velkomstmalen sier at avtalen maa godkjennes',
     str_contains($mig, 'DU MÅ GODKJENNE AVTALEN I VIPPS')
     && str_contains($mig, "SET emne  = 'Godkjenn medlemskapet i Vipps',"),
     'den sa «Du har opprettet en fast betalingsavtale» — som om den var ferdig');
-sjekk('… og lenka til Vipps staar i den',
-    str_contains($mig, '{lenke}')
-    && str_contains($bmV, "'lenke' => (string) (\$avtale['url'] ?? '') !== ''"),
-    'uten den naadde adressen aldri fram til noen');
+// Lenka sto her til 7. september. Den var Vipps sin egen adresse — ti minutter
+// levetid — og var doed for e-posten ble lest. Eieren: «Fjern lenka overalt».
+// Migrasjon 152 skrev malen om; 139 staar som den sto, som historikk.
+sjekk('… men lenka er tatt ut igjen',
+    !str_contains($bmV, "'lenke' =>"),
+    'adressen doer etter ti minutter');
 sjekk('… og den gaar ogsaa naar man kjoper fra Min side',
     str_contains($mkV, "Varsel::mal(\$betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',"),
     'herfra gikk det ingen e-post i det hele tatt');
@@ -12860,13 +12878,15 @@ sjekk('… og paastaar heller ikke at det ER betalt',
     'brevet gaar foer vi vet hvordan det gikk i Vipps');
 sjekk('… men sier hvilket medlemskap og hva det koster',
     str_contains($ordner, '{type}') && str_contains($ordner, '{belop}'));
-// Fast trekk er ikke roert: der ER lenka poenget, for avtalen maa godkjennes
-// i appen foer det finnes noe aa trekke paa.
+// Fast trekk hadde lenka som det viktigste i seg. Den er borte fra 7.
+// september — eieren: «Fjern lenka overalt» — og malen sier i stedet hvor
+// avtalen staar.
 $fast = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
 );
-sjekk('fast trekk beholder godkjenningslenka',
-    str_contains($fast, '{lenke}') && str_contains($fast, 'GODKJENNE AVTALEN I VIPPS'));
+sjekk('fast trekk har ingen lenke heller',
+    !str_contains($fast, '{lenke}')
+    && str_contains($fast, 'under Faste trekk i Vipps-appen'));
 
 // 2. Kvitteringen fantes ikke. Betalingen gikk gjennom, medlemskapet ble
 //    slaatt paa, og kunden fikk aldri et ord fra oss.

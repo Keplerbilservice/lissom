@@ -1294,6 +1294,30 @@ window.__resources = {
   }
 
 
+  /* Min side: bunnmeny paa telefonen, piller paa PC.
+     ------------------------------------------------
+     Bunnmenyen var ment for telefonen. Paa en PC er den festet til bunnen
+     av VINDUET, ikke til bunnen av sida — saa paa en hoy skjerm la den seg
+     tvers over innholdet, midt oppaa «Interne kurs og samlinger».
+
+     Eieren, 7. september 2026: «det er lagt til menyer nederst paa siden,
+     dette var bare ment for mobil, saa dette maa settes tilbake med kort og
+     piller paa siden, men mobil skal ikke roeres».
+
+     Begge staar i markupen; her velges hvilken som vises. Gjort i CSS og
+     ikke i erSmal(), av samme grunn som kortene under: da folger den med
+     naar vinduet endrer stoerrelse, uten at skjermen maa tegnes om.
+
+     760 px, det samme knekkpunktet resten av sida bruker. Mobil staar
+     noeyaktig som for — «!important» fordi begge har inline-stil. */
+  .ms-pillerad { display: none; }
+  @media (min-width: 761px) {
+    .ms-pillerad { display: flex !important; }
+    .ms-bunnmeny,
+    .ms-bunnluft { display: none !important; }
+  }
+
+
   /* Kortene paa telefonen: tittel, tall og «Se mer».
      ------------------------------------------------
      Eieren, 4. september: «mobil skal vise mindre direkte, men ikke miste
@@ -3860,6 +3884,32 @@ window.__resources = {
             </sc-if>
           </div>
 
+          <!-- ── De samme sju stedene, som piller ─────────────────────
+               Bunnmenyen var ment for telefonen. Paa en PC er den festet
+               til bunnen av VINDUET, ikke til bunnen av sida — saa paa en
+               hoy skjerm la den seg tvers over innholdet.
+
+               Eieren, 7. september 2026: «det er lagt til menyer nederst
+               paa siden, dette var bare ment for mobil, saa dette maa
+               settes tilbake med kort og piller paa siden, men mobil skal
+               ikke roeres».
+
+               Begge staar i markupen; CSS velger hvilken som vises. Gjort
+               slik og ikke med erSmal(), av samme grunn som kortene lenger
+               oppe: da folger den med naar vinduet endrer stoerrelse,
+               uten at skjermen maa tegnes om. 760 px, som resten av sida. -->
+          <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
+            <nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">
+              <button type="button" onClick="{{ msPlHjem.velg }}" aria-label="{{ msPlHjem.full }}" style="{{ msPlHjem.stil }}">{{ msPlHjem.navn }}</button>
+              <button type="button" onClick="{{ msPlMedlemskap.velg }}" aria-label="{{ msPlMedlemskap.full }}" style="{{ msPlMedlemskap.stil }}">{{ msPlMedlemskap.navn }}</button>
+              <button type="button" onClick="{{ msPlButikk.velg }}" aria-label="{{ msPlButikk.full }}" style="{{ msPlButikk.stil }}">{{ msPlButikk.navn }}</button>
+              <button type="button" onClick="{{ msPlSelg.velg }}" aria-label="{{ msPlSelg.full }}" style="{{ msPlSelg.stil }}">{{ msPlSelg.navn }}</button>
+              <button type="button" onClick="{{ msPlChat.velg }}" aria-label="{{ msPlChat.full }}" style="{{ msPlChat.stil }}">{{ msPlChat.navn }}</button>
+              <button type="button" onClick="{{ msPlNyttig.velg }}" aria-label="{{ msPlNyttig.full }}" style="{{ msPlNyttig.stil }}">{{ msPlNyttig.navn }}</button>
+              <button type="button" onClick="{{ msPlLoggUt.velg }}" aria-label="{{ msPlLoggUt.full }}" style="{{ msPlLoggUt.stil }}">{{ msPlLoggUt.navn }}</button>
+            </nav>
+          </sc-if>
+
           <!-- ── Verkstedet ditt ──────────────────────────────────────
                Ett kort, ikke fire. Eieren, 5. september: «jeg ønsker at den
                infoen er samlet så det er synlig fra et sted — stempling,
@@ -4825,7 +4875,7 @@ window.__resources = {
           <!-- Menyen ligger fast over innholdet. Uten denne luften blir det
                siste kortet liggende bak den. -->
           <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ msBunnLuft }}"></div>
+            <div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>
           </sc-if>
         </div>
       </section>
@@ -4838,7 +4888,7 @@ window.__resources = {
            Samme celle som adminmenyen bruker — se bunnMenyPunkt(). Fem
            steder; bare det du staar paa tegnes. -->
       <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
-        <nav style="{{ msBmStil }}" aria-label="Min side">
+        <nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">
           <button type="button" onClick="{{ msBmHjem.velg }}" aria-label="{{ msBmHjem.full }}" style="{{ msBmHjem.stil }}"><span style="{{ msBmHjem.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg><span style="{{ msBmTekstStil }}">{{ msBmHjem.navn }}</span></button>
           <button type="button" onClick="{{ msBmMedlemskap.velg }}" aria-label="{{ msBmMedlemskap.full }}" style="{{ msBmMedlemskap.stil }}"><span style="{{ msBmMedlemskap.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span style="{{ msBmTekstStil }}">{{ msBmMedlemskap.navn }}</span></button>
           <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
@@ -30445,6 +30495,50 @@ class Component extends DCLogic {
   // det fem steder, og bare ett av dem tegnes om gangen.
   //
   // Cellene deler utseende med adminmenyen gjennom bunnMenyPunkt().
+  /**
+   * De samme sju stedene, som piller. Vises paa PC; bunnmenyen paa telefon.
+   *
+   * Bunnmenyen var ment for telefonen. Paa en PC er den festet til bunnen
+   * av VINDUET, ikke til bunnen av sida, saa paa en hoy skjerm la den seg
+   * tvers over innholdet.
+   *
+   * Eieren, 7. september 2026: «det er lagt til menyer nederst paa siden,
+   * dette var bare ment for mobil, saa dette maa settes tilbake med kort og
+   * piller paa siden, men mobil skal ikke roeres».
+   *
+   * Valgene og handlingene er de SAMME som i bunnmenyen — de hentes derfra,
+   * saa de to aldri kan komme i utakt. Bare formen er ny.
+   */
+  minsidePiller() {
+    const b = this.minsideBunnMeny();
+    const naa = this.msFane();
+    const pille = (p, aktiv) => ({
+      navn: p.navn,
+      full: p.full,
+      velg: p.velg,
+      stil: {
+        appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+        borderRadius: 'var(--radius-pill)', padding: '10px 20px',
+        font: 'var(--type-body-sm)', fontWeight: 700,
+        border: aktiv ? '2px solid var(--lissom-brown)' : '2px solid var(--border-subtle)',
+        background: aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)',
+        color: aktiv ? 'var(--clay-50)' : 'var(--lissom-brown)',
+      },
+    });
+    return {
+      hjem:       pille(b.hjem, naa === 'hjem'),
+      medlemskap: pille(b.medlemskap, naa === 'medlemskap'),
+      butikk:     pille(b.butikk, naa === 'butikk'),
+      selg:       pille(b.selg, naa === 'selg'),
+      // Chatten staar paa forsiden og ruller deg dit. Den lyser aldri, som i
+      // bunnmenyen.
+      chat:       pille(b.chat, false),
+      nyttig:     pille(b.nyttig, naa === 'nyttig'),
+      // Utloggingen er en handling, ikke et sted. Den lyser aldri.
+      loggUt:     pille(b.loggUt, false),
+    };
+  }
+
   minsideBunnMeny() {
     const naa = this.msFane();
     const til = (f) => () => { this.setState({ msFane: f }); window.scrollTo(0, 0); };
@@ -43609,6 +43703,19 @@ class Component extends DCLogic {
             : { display: 'block', maxWidth: 640 },
           msBmHjem: b.hjem, msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
           msBmSelg: b.selg, msBmChat: b.chat, msBmNyttig: b.nyttig, msBmLoggUt: b.loggUt,
+          // De samme sju, som piller. CSS velger hvilken form som vises —
+          // se «.ms-pillerad» i stilarket. Raden setter ikke «display»:
+          // det eier CSS, ellers kunne inline-stilen vist den paa telefonen
+          // ogsaa, der bunnmenyen alt staar.
+          ...(() => { const pl = this.minsidePiller(); return {
+            msPlHjem: pl.hjem, msPlMedlemskap: pl.medlemskap, msPlButikk: pl.butikk,
+            msPlSelg: pl.selg, msPlChat: pl.chat, msPlNyttig: pl.nyttig,
+            msPlLoggUt: pl.loggUt,
+          }; })(),
+          msPlRadStil: {
+            flexWrap: 'wrap', gap: '10px',
+            margin: '0 0 var(--space-6)', padding: 0,
+          },
           msBmStil: {
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
             background: 'var(--surface-card)',

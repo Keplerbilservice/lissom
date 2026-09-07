@@ -14379,7 +14379,9 @@ window.__resources = {
             </div>
           </sc-if>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+          <!-- «medlemsliste» er ankeret personruta ruller tilbake til naar
+               den lukkes eller lagres. Se lukkPerson og lagrePersonKontakt. -->
+          <div id="medlemsliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
               <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
                 <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
@@ -24343,6 +24345,51 @@ class Component extends DCLogic {
    * naar velg() kjorer. Vi proever noen ganger og gir oss.
    */
   /** Ruller til personruta naar den aapnes, saa den ikke aapner seg usett. */
+  /**
+   * Lukker personruta og setter deg tilbake der lista staar.
+   *
+   * Ruta staar OVER lista, og apnePerson() ruller ned til den. Lukkes den
+   * uten at noe ruller tilbake, blir du staaende der ruta var — og der staar
+   * naa noe helt annet.
+   *
+   * Eieren, 7. september 2026: «naar jeg klikker paa et medlem, og gaar ut,
+   * eller lagrer, saa vil jeg ikke lenger at den enkelte person skal vises,
+   * da vil jeg at [lista] skal vises».
+   *
+   * Ankeret staar bare paa medlemsskjermen. Aapnes ruta fra Paameldte, finnes
+   * det ikke — da ruller vi til toppen i stedet for aa la deg staa igjen midt
+   * i en side som nettopp ble kortere.
+   */
+  lukkPersonruta() {
+    this.setState({ personFor: null, personData: null, personNotat: null,
+      personNavnFelt: null, personEpost: null, personTelefon: null,
+      personStartDato: null, personSluttDato: null, personTimer: null,
+      personBetalingApen: false, personBetalingBelop: '' });
+    // Vi maa vente til ruta faktisk er borte fra skjermen.
+    //
+    // Maalt 7. september 2026: rullet vi paa forste bilde, sto ruta fortsatt
+    // der — sida var like hoy som for, og vi landet 718 px feil. Ruta tegnes
+    // vekk et bilde eller to etter at state er satt, og forst DA staar lista
+    // der den skal.
+    let forsok = 0;
+    const proev = () => {
+      const ruta = [].slice.call(document.querySelectorAll('#personrute'))
+        .filter(e => e.offsetParent !== null)[0];
+      const el = [].slice.call(document.querySelectorAll('#medlemsliste'))
+        .filter(e => e.offsetParent !== null)[0];
+      if (!ruta && el) {
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        return;
+      }
+      if (++forsok < 30) { window.requestAnimationFrame(proev); return; }
+      // Ankeret staar bare paa medlemsskjermen. Aapnes ruta fra Paameldte,
+      // finnes det ikke — da til toppen, framfor aa la deg staa igjen midt i
+      // en side som nettopp ble kortere.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.requestAnimationFrame(proev);
+  }
+
   rullTilPersonruta() {
     let forsok = 0;
     const proev = () => {
@@ -26384,11 +26431,21 @@ class Component extends DCLogic {
           kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
         });
-        // Hentes paa nytt saa feltene viser det som faktisk staar i basen.
+        // Lagret, og ut.
+        //
+        // Her sto apnePerson(id, 0): ruta ble hentet paa nytt og laa aapen
+        // videre. Eieren, 7. september 2026: «naar jeg klikker paa et medlem,
+        // og gaar ut, eller lagrer, saa vil jeg ikke lenger at den enkelte
+        // person skal vises, da vil jeg at [lista] skal vises».
+        //
+        // Lista henter seg selv, saa det nye navnet staar der med det samme.
+        // Gikk det galt, blir ruta staaende — da er det noe aa rette.
         if (ok) {
-          this.setState({ personNavnFelt: null, personEpost: null, personTelefon: null,
-                          personStartDato: null, personSluttDato: null, personTimer: null });
-          this.apnePerson(id, 0);
+          this.lukkPersonruta();
+          // «_adminHentes» staar igjen som sann mens et kall er ute. Uten
+          // aa nulle den kunne lista blitt staaende med det gamle navnet.
+          this._adminHentes = false;
+          this.hentAdmin();
         }
       })
       .catch(() => {
@@ -38619,9 +38676,16 @@ class Component extends DCLogic {
           personFornavn: fornavn,
           personDetalj: [p.epost, p.telefon, p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : null]
             .filter(Boolean).join(' · '),
-          lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null,
-            personNavnFelt: null, personEpost: null, personTelefon: null,
-            personStartDato: null, personSluttDato: null, personTimer: null }),
+          // Ut av personen, og tilbake til lista.
+          //
+          // Ruta staar OVER lista, og apnePerson() ruller ned til den. Lukket
+          // du den etter aa ha lest deg nedover i historikken, ble du staaende
+          // langt nede paa sida — der ruta hadde vaert sto naa noe helt annet.
+          //
+          // Eieren, 7. september 2026: «naar jeg klikker paa et medlem, og
+          // gaar ut, eller lagrer, saa vil jeg ikke lenger at den enkelte
+          // person skal vises, da vil jeg at [lista] skal vises».
+          lukkPerson: () => this.lukkPersonruta(),
           // Annen info om personen. Internt — det staar ikke paa Min side.
           // Feltet er tomt til noe hentes; da faller det tilbake paa basen.
           personNotat: this.state.personNotat === null || this.state.personNotat === undefined

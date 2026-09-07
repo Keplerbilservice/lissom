@@ -9357,6 +9357,35 @@ sjekk('… og den aapner boksen som finnes, ikke en ny',
 sjekk('… og de andre veiene inn aapner den ikke',
     substr_count($sidaM2, 'apnePerson(m.id, 0, true)') === 1);
 
+echo "\n== Ut av personen, tilbake til lista ==\n";
+// Personruta staar OVER lista, og apnePerson() ruller ned til den. Lukket du
+// den etter aa ha lest deg nedover i historikken, ble du staaende langt nede
+// paa sida — der ruta hadde vaert sto naa noe helt annet. Og lagring aapnet
+// ruta paa nytt, saa personen ble staaende framme.
+//
+// Eieren, 7. september 2026: «naar jeg klikker paa et medlem, og gaar ut,
+// eller lagrer, saa vil jeg ikke lenger at den enkelte person skal vises, da
+// vil jeg at [lista] skal vises».
+sjekk('lista har et anker aa rulle tilbake til',
+    str_contains($sidaM2, '<div id="medlemsliste" style="background: var(--surface-card);'));
+sjekk('… og baade × og lagring gaar samme vei ut',
+    str_contains($sidaM2, 'lukkPerson: () => this.lukkPersonruta(),')
+    && str_contains($sidaM2, 'lukkPersonruta() {')
+    && str_contains($sidaM2, "if (ok) {\n          this.lukkPersonruta();"));
+// Her sto apnePerson(id, 0): ruta ble hentet paa nytt og laa aapen videre.
+sjekk('… og lagring aapner ikke ruta paa nytt',
+    !str_contains($sidaM2, "personStartDato: null, personSluttDato: null, personTimer: null });\n          this.apnePerson(id, 0);"));
+// Ruta tegnes vekk et bilde eller to etter at state er satt. Rullet vi paa
+// forste bilde, sto den fortsatt der — sida var like hoy som for, og vi
+// landet 718 px feil. Maalt 7. september 2026.
+sjekk('… og vi venter til ruta faktisk er borte for vi ruller',
+    str_contains($sidaM2, "if (!ruta && el) {"));
+// Ankeret staar bare paa medlemsskjermen. Aapnes ruta fra Paameldte, finnes
+// det ikke — da til toppen, framfor aa la deg staa igjen midt i en side som
+// nettopp ble kortere.
+sjekk('… og fra Paameldte, der ankeret ikke finnes, gaar det til toppen',
+    str_contains($sidaM2, "window.scrollTo({ top: 0, behavior: 'smooth' });\n    };\n    window.requestAnimationFrame(proev);"));
+
 // Et gratismedlem har ingenting aa registrere. Da staar pilla som en
 // etikett — den skal ikke love en handling som ikke finnes.
 sjekk('et gratismedlem har ingen knapp',

@@ -2433,14 +2433,13 @@ sjekk('listene viser hele aaret framover, ikke bare to uker',
 // tomt ut, det ser oedelagt ut: eieren kunne ikke vite om ingen hadde skrevet,
 // eller om lista hadde sluttet aa laste. Sosterkortet «Paaminnelser» har hatt
 // den linja hele tida.
-sjekk('beskjedkortet sier fra naar koen er tom',
-    str_contains($sida, 'klBeskjederTom: (this.state.adminForesporsler || [])')
-    && str_contains($sida, 'Ingen ubesvarte beskjeder.'));
-// Forhaandsvisningen var én linje med «nowrap», saa paa telefon sto det tre
-// ord og en ellipse. Da maatte man aapne hver melding for aa se hva den gjaldt.
-sjekk('forhaandsvisningen viser to linjer av meldingen',
-    str_contains($sida, '-webkit-line-clamp: 2; line-clamp: 2;')
-    && !str_contains($sida, 'text-overflow: ellipsis; white-space: nowrap;">{{ b.tekst }}'));
+// Boksen er borte fra 7. september — eieren: «Jeg vil at alle boksene skal
+// vaere like». Beskjeder er et kort som de andre naa, og tallet paa ubesvarte
+// staar som et merke i hjoernet i stedet for en liste under.
+sjekk('beskjedkortet viser tallet paa ubesvarte',
+    str_contains($sida, 'klBeskjederAntall: String((this.state.adminForesporsler || [])')
+    && str_contains($sida, 'klBeskjederHar: (this.state.adminForesporsler || [])')
+    && str_contains($sida, '<span style="{{ klSnarveiNavnStil }}">Beskjeder</span>'));
 // «Aapne» gikk til Beskjeder — skjermen der man skriver ut til en gruppe.
 // Kortet viser henvendelser som venter paa svar, og det er dit man vil.
 sjekk('«Aapne» gaar til de ubesvarte naar det er noe ubesvart',
@@ -9758,7 +9757,7 @@ sjekk('… og «Ingen innstemplet» naar verkstedet er tomt',
 // Kalenderens sidemeny hadde ikke noe bunnfelt i det hele tatt. Uten dette
 // var det nettopp den skjermen eieren spurte om som sto uten navn.
 sjekk('… ogsaa i kalenderens sidemeny',
-    strpos($sida, '{{ admMenyInne }}') < strpos($sida, '{{ klBoksNStil }}'));
+    strpos($sida, '{{ admMenyInne }}') < strpos($sida, '{{ klSnarveiRadStil }}'));
 
 // ── Telefonen ───────────────────────────────────────────────────────────
 //
@@ -13357,12 +13356,34 @@ sjekk('… og et nytt medlemskap starter uten avtaletrekk',
 // med ikon, 80 px hoye, tallet som merke i hjoernet, borte fra sidespalta,
 // og «Aarskalender» aapner aarskalenderen. Én rad paa PC, to paa nettbrett,
 // tre paa telefon.
-sjekk('de fem snarveiene staar som kort',
-    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 5);
+//
+// Fra 7. september er de aatte. Beskjeder, Notater og Paaminnelser sto som
+// tre bokser med innhold i, over de fem. Eieren: «Jeg vil at alle boksene
+// skal vaere like, ikke de fem under eller noe saant, men alle som i alle».
+sjekk('alle aatte snarveiene staar som kort',
+    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 8);
+// Boksene er borte, og med dem stilene deres. Staar én av dem igjen, staar
+// det en boks blant kortene.
+sjekk('… og de tre boksene er borte',
+    !str_contains($byttSida, 'klBoksBStil')
+    && !str_contains($byttSida, 'klBoksNStil')
+    && !str_contains($byttSida, 'klBoksHodeStil')
+    && !str_contains($byttSida, 'klBoksEtikettStil'));
+// Skjemaet er ikke fjernet — det har flyttet inn i hver sin rute.
+sjekk('… og notatet og paaminnelsene aapnes i en rute',
+    str_contains($byttSida, 'klNotatApne: () => this.setState({ klNotatRute: true }),')
+    && str_contains($byttSida, 'klPaminApne: () => this.setState({ klPaminRute: true }),')
+    && str_contains($byttSida, '<sc-if value="{{ klNotatRuteVises }}"')
+    && str_contains($byttSida, '<sc-if value="{{ klPaminRuteVises }}"'));
+sjekk('… og skjemaene er de samme',
+    str_contains($byttSida, 'onChange="{{ settKlNotat }}"')
+    && str_contains($byttSida, 'onClick="{{ klNotatUt }}"')
+    && str_contains($byttSida, '<sc-for list="{{ klPaminListe }}" as="p"')
+    && str_contains($byttSida, 'onClick="{{ klPaminLeggTilKlikk }}"'));
 sjekk('… i sin egen rad, over hele bredden',
     str_contains($byttSida, "klSnarveiRadStil: {")
     && str_contains($byttSida, "gridColumn: '1 / -1',")
-    && str_contains($byttSida, "gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',"));
+    && str_contains($byttSida, "gridTemplateColumns: 'repeat(auto-fit, minmax(124px, 1fr))',"));
 sjekk('… i samme kortstil som boksene over',
     str_contains($byttSida, "borderRadius: '22px', padding: 'var(--space-4)',"));
 sjekk('… og tallet staar som et merke, ikke i navnet',

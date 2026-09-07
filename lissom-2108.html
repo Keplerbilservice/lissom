@@ -1310,9 +1310,19 @@ window.__resources = {
 
      760 px, det samme knekkpunktet resten av sida bruker. Mobil staar
      noeyaktig som for — «!important» fordi begge har inline-stil. */
-  .ms-pillerad { display: none; }
+  /* Raden staar alltid — men paa telefonen er verkstedspilla det eneste
+     som staar igjen av den. De sju andre er i bunnmenyen der.
+
+     Eieren, 7. september 2026: «kan man lage i verkstedet naa mer diskret
+     som en pille paa linjen sammen min side, medlemskap pillene?» Paa
+     telefonen finnes ikke den linja, og en aattende celle i bunnmenyen ville
+     gjort de sju til 44 px hver. Da staar pilla alene under navnet i
+     stedet. */
+  .ms-pillerad { display: flex; }
+  @media (max-width: 760px) {
+    .ms-pillerad > *:not(.ms-verksted) { display: none !important; }
+  }
   @media (min-width: 761px) {
-    .ms-pillerad { display: flex !important; }
     .ms-bunnmeny,
     .ms-bunnluft { display: none !important; }
   }
@@ -3907,6 +3917,10 @@ window.__resources = {
               <button type="button" onClick="{{ msPlChat.velg }}" aria-label="{{ msPlChat.full }}" style="{{ msPlChat.stil }}">{{ msPlChat.navn }}</button>
               <button type="button" onClick="{{ msPlNyttig.velg }}" aria-label="{{ msPlNyttig.full }}" style="{{ msPlNyttig.stil }}">{{ msPlNyttig.navn }}</button>
               <button type="button" onClick="{{ msPlLoggUt.velg }}" aria-label="{{ msPlLoggUt.full }}" style="{{ msPlLoggUt.stil }}">{{ msPlLoggUt.navn }}</button>
+              <!-- Verkstedspilla. Den er det ENESTE som staar igjen av denne
+                   raden paa telefonen — se «.ms-verksted» i stilarket. De sju
+                   over staar i bunnmenyen der. -->
+              <button type="button" class="ms-verksted" onClick="{{ msPlVerksted.velg }}" aria-label="{{ msPlVerksted.full }}" style="{{ msPlVerksted.stil }}"><span style="{{ msPlVerksted.prikk }}"></span>{{ msPlVerksted.navn }}</button>
             </nav>
           </sc-if>
 
@@ -4705,9 +4719,18 @@ window.__resources = {
 
               <!-- Hvem som er i verkstedet, og hva medlemmene skriver til
                    hverandre, er internt. Det sto uten portvakt: en som hadde
-                   vaert paa ett kurs saa begge deler. -->
+                   vaert paa ett kurs saa begge deler.
+
+                   Kortet sto fast paa forsiden. Eieren, 7. september 2026:
+                   «kan man lage i verkstedet naa mer diskret som en pille paa
+                   linjen sammen min side, medlemskap pillene? med en huke av
+                   funksjon for aa vises i verkstedet».
+
+                   Naa staar tallet som en pille i raden, og dette er ruta som
+                   aapner seg naar du trykker paa den. Samme innhold som for —
+                   hvem som er inne, hvor mange som er skjult, og haken. -->
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ msVerkstedApen }}" hint-placeholder-val="{{ false }}">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</div>
@@ -4744,12 +4767,15 @@ window.__resources = {
 
               </sc-if>
 
-              <!-- Gruppechatten staar paa forsiden.
-                   Den laa bak menyvalget Chat. Eieren, 5. september:
-                   «Gruppechatten må gjerne ligge på forsiden så man ser
-                   den» — en samtale man ikke ser, er en samtale man ikke
-                   svarer paa. Menyvalget staar, og ruller hit. -->
-              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+              <!-- Gruppechatten har sitt eget sted.
+                   Den laa bak menyvalget Chat, saa flyttet den til forsiden —
+                   eieren, 5. september: «Gruppechatten må gjerne ligge på
+                   forsiden så man ser den» — og er tilbake bak valget igjen.
+                   Eieren, 7. september 2026: «paa min side, fjern chat fra
+                   forsiden». Forsiden er det du ser hver gang du kommer inn;
+                   en samtale som ruller nedover der tar plassen fra
+                   verkstedet og timene dine. -->
+              <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
               <div id="minside-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
                   <span style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">
@@ -30554,15 +30580,10 @@ class Component extends DCLogic {
       // Den laa sammen med internbutikken; det er to ulike aerend — det ene
       // er aa kjope leire, det andre aa legge ut noe du har laget.
       selg:       p('Selg', 'Selg produktene dine', 'selg'),
-      // Chatten er ikke lenger et eget sted — den staar paa forsiden.
-      // Valget tar deg dit og ruller ned til den.
-      chat:       this.bunnMenyPunkt('Chat', 'Chat mellom medlemmene', false, () => {
-        this.setState({ msFane: 'hjem' });
-        setTimeout(() => {
-          const el = document.getElementById('minside-chat');
-          if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
-        }, 60);
-      }),
+      // Chatten er sitt eget sted igjen. Eieren, 7. september 2026: «paa min
+      // side, fjern chat fra forsiden». Den laa der og rullet nedover, og
+      // tok plassen fra verkstedet og timene.
+      chat:       p('Chat', 'Chat mellom medlemmene', 'chat'),
       nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),
       // Utloggingen er ikke et sted, men en handling — den lyser aldri.
       //
@@ -30583,10 +30604,13 @@ class Component extends DCLogic {
   // saa siden ikke blir staaende tom.
   msFane() {
     const f = this.state.msFane || 'hjem';
-    // «chat» var et eget sted til gruppechatten flyttet til forsiden. Staar
-    // den lagret fra for, hoerer den hjemme der chatten er naa.
-    if (f === 'chat') return 'hjem';
-    if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'selg' || f === 'nyttig')) return 'hjem';
+    // «chat» var et eget sted, saa laa den paa forsiden, og er naa et eget
+    // sted igjen. Eieren, 7. september 2026: «paa min side, fjern chat fra
+    // forsiden». Forsiden er det du ser hver gang du kommer inn; en samtale
+    // som ruller nedover der tar plassen fra verkstedet og timene dine.
+    if (!this.medlemsvisning()
+        && (f === 'medlemskap' || f === 'butikk' || f === 'selg'
+            || f === 'nyttig' || f === 'chat')) return 'hjem';
     return f;
   }
 
@@ -43703,6 +43727,7 @@ class Component extends DCLogic {
           msFaneButikk:     f === 'butikk',
           msFaneSelg:       f === 'selg',
           msFaneNyttig:     f === 'nyttig',
+          msFaneChat:       f === 'chat',
           // Bunnmenyen staar bare for den som faktisk har de fem stedene.
           // En kursdeltaker har to av dem, og faar dem paa forsiden som for.
           msHarBunnmeny: this.medlemsvisning(),
@@ -43728,9 +43753,43 @@ class Component extends DCLogic {
             msPlLoggUt: pl.loggUt,
           }; })(),
           msPlRadStil: {
-            flexWrap: 'wrap', gap: '10px',
+            flexWrap: 'wrap', gap: '10px', alignItems: 'center',
             margin: '0 0 var(--space-6)', padding: 0,
           },
+          // ── Verkstedspilla ─────────────────────────────────────────
+          //
+          // Kortet «I verkstedet naa» sto fast paa forsiden. Eieren,
+          // 7. september 2026: «kan man lage i verkstedet naa mer diskret som
+          // en pille paa linjen sammen min side, medlemskap pillene? med en
+          // huke av funksjon for aa vises i verkstedet».
+          //
+          // Tallet staar i pilla; ruta med hvem som er inne og haken aapner
+          // seg naar du trykker. Den lyser naar den er aapen, som de andre.
+          msVerkstedApen: !!this.state.msVerksted,
+          msPlVerksted: (() => {
+            const aapen = !!this.state.msVerksted;
+            const antall = this.state.inne ? this.state.inne.length : 0;
+            return {
+              navn: antall + ' inne',
+              full: 'Hvem som er i verkstedet nå',
+              velg: () => this.setState(st => ({ msVerksted: !st.msVerksted })),
+              stil: {
+                appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                display: 'inline-flex', alignItems: 'center',
+                borderRadius: 'var(--radius-pill)', padding: '10px 20px',
+                font: 'var(--type-body-sm)', fontWeight: 700,
+                border: aapen ? '2px solid var(--lissom-brown)' : '2px solid var(--border-subtle)',
+                background: aapen ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                color: aapen ? 'var(--clay-50)' : 'var(--lissom-brown)',
+              },
+              // Groenn prikk naar noen er inne, blek naar verkstedet er tomt.
+              prikk: {
+                display: 'inline-block', width: '8px', height: '8px',
+                borderRadius: '50%', marginRight: '8px', flex: '0 0 auto',
+                background: antall > 0 ? 'var(--sage-500)' : 'var(--clay-300)',
+              },
+            };
+          })(),
           msBmStil: {
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
             background: 'var(--surface-card)',

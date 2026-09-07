@@ -6475,6 +6475,25 @@ window.__resources = {
               <sc-if value="{{ admInneTom }}" hint-placeholder-val="{{ false }}">
                 <div style="padding: 6px 0 0; border-top: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-muted);">Ingen er innstemplet nå.</div>
               </sc-if>
+              <!-- Samme liste som paa Oversikt, i den smale boksen. Etiketten
+                   staar over tallet her, som naboboksene i kalenderen. -->
+              <div style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border-subtle);">
+                <div style="{{ klBoksEtikettStil }}">Medlemmer</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin: -6px 0 6px;">{{ admMedlAntall }}</div>
+              </div>
+              <sc-for list="{{ admMedl }}" as="v" hint-placeholder-count="4">
+                <button type="button" onClick="{{ v.apne }}" style="{{ klMedlRadStil }}">
+                  <span style="{{ v.avatarStil }}">{{ v.initial }}</span>
+                  <span style="flex: 1 1 110px; min-width: 0;">
+                    <span style="display: block; font-size: 13px; font-weight: 700; color: var(--text-heading);">{{ v.navn }}</span>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted);">{{ v.under }}</span>
+                  </span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
+                </button>
+              </sc-for>
+              <sc-if value="{{ admMedlTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 6px 0 0; border-top: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-muted);">Ingen andre medlemmer.</div>
+              </sc-if>
             </div>
           </sc-if>
 
@@ -10959,6 +10978,30 @@ window.__resources = {
               </sc-for>
               <sc-if value="{{ admInneTom }}" hint-placeholder-val="{{ false }}">
                 <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen er innstemplet nå.</div>
+              </sc-if>
+              <!-- Resten av medlemmene. De staar her uansett om noen er inne
+                   eller ikke — eieren, 7. september 2026: «men medlemmer maa
+                   vises selv om ingen er i verkstedet».
+
+                   Hver rad er en knapp: ett trykk aapner personen paa
+                   medlemsskjermen. «husk de maa vaere klikkbare saa de gaar
+                   til det riktige stedet». -->
+              <div style="{{ admMedlSkilleStil }}">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemmer</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ admMedlAntall }}</span>
+              </div>
+              <sc-for list="{{ admMedl }}" as="v" hint-placeholder-count="4">
+                <button type="button" onClick="{{ v.apne }}" style="{{ admMedlRadStil }}">
+                  <span style="{{ v.avatarStil }}">{{ v.initial }}</span>
+                  <span style="flex: 1 1 80px; min-width: 0;">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ v.navn }}</span>
+                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ v.under }}</span>
+                  </span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
+                </button>
+              </sc-for>
+              <sc-if value="{{ admMedlTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen andre medlemmer.</div>
               </sc-if>
               <sc-if value="{{ admInneHarSkjulte }}" hint-placeholder-val="{{ false }}">
                 <div style="padding: var(--space-3) var(--space-5) var(--space-4); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Du ser alle. Medlemmene ser bare dem som har slått på «Vis meg for andre medlemmer».</div>
@@ -35465,7 +35508,10 @@ class Component extends DCLogic {
 
   medlemsrader() {
     const tone = { aktiv: 'success', prove: 'warning', pause: 'neutral', oppsagt: 'neutral', ingen: 'neutral' };
-    const tekst = { aktiv: 'Aktiv', prove: 'Proveperiode', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
+    // «Proveperiode» sto uten ø. Ordet staar paa pilla i medlemslista og
+    // i kortet paa Oversikt og Kalender. Eieren, 7. september 2026:
+    // «Publiser, og rett «Proveperiode»».
+    const tekst = { aktiv: 'Aktiv', prove: 'Prøveperiode', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
 
     // Tre grupper, og de er ikke det samme.
     //
@@ -44752,7 +44798,83 @@ class Component extends DCLogic {
         const forbokstaver = (navn) => String(navn || '').trim().split(/\s+/)
           .slice(0, 2).map(d => d.charAt(0).toUpperCase()).join('') || '?';
         const skjulte = raa.filter(r => r.skjult).length;
+        // ── Resten av medlemmene, under dem som er inne ──────────────────
+        //
+        // Eieren, 7. september 2026: «kan jeg faa medlemmer kortet i baade
+        // kalender og oversikt?» — og etter skissen: «endre fra ikke inne naa
+        // til medlemmer, og husk de maa vaere klikkbare saa de gaar til det
+        // riktige stedet», og «men medlemmer maa vises selv om ingen er i
+        // verkstedet».
+        //
+        // Radene kommer fra medlemsrader(), den samme som bygger
+        // medlemslista. Skrev vi dem opp paa nytt her, ville de to kunne
+        // svare hver sitt om den samme personen.
+        //
+        // De som staar inne er tatt bort: de staar alt oeverst i kortet.
+        const medl = ((this.state.adminMedlemmer || this.erPublisert())
+          ? this.medlemsrader()
+          : [
+            { id: 0, navn: 'Anne Berg', initial: 'AB', abonnement: 'Basis 30', timer: '12 / 30',
+              status: 'Aktiv', tone: 'success', erMedlem: true, erAdmin: false, inne: false },
+            { id: 0, navn: 'Marit Lie', initial: 'ML', abonnement: 'Mini 15', timer: '3 / 15',
+              status: 'Pause', tone: 'neutral', erMedlem: true, erAdmin: false, inne: false },
+          ])
+          .filter(m => m.erMedlem && !m.erAdmin && !m.inne)
+          .sort((a, b) => String(a.navn).localeCompare(String(b.navn), 'no'));
+        const avatar = {
+          width: 32, height: 32, borderRadius: '50%', background: 'var(--clay-200)',
+          color: 'var(--brown-500)', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontSize: 12, fontWeight: 700,
+          letterSpacing: '.02em', flex: '0 0 auto',
+        };
         return {
+          admMedlTom: medl.length === 0,
+          admMedlAntall: medl.length === 0 ? 'Ingen'
+            : (medl.length === 1 ? 'Ett medlem' : medl.length + ' medlemmer'),
+          admMedl: medl.map(m => ({
+            navn: m.navn,
+            initial: m.initial,
+            // Samme to opplysningene som i medlemslista: hva hen har, og hvor
+            // mye av tida som er brukt. En strek betyr ingen timer — da staar
+            // det ingenting her heller.
+            under: [m.abonnement, m.timer].filter(x => {
+              const t = String(x === undefined || x === null ? '' : x).trim();
+              return t !== '' && t !== '\u2014';
+            }).join(' \u00b7 '),
+            status: m.status,
+            tone: m.tone,
+            avatarStil: avatar,
+            // Ett trykk aapner personen — samme rute som i medlemslista.
+            // Kortet staar paa Oversikt og Kalender, og der finnes ikke ruta;
+            // derfor gaar vi til medlemsskjermen forst. «Alle» er filteret,
+            // for et medlem som er sagt opp ligger utenfor «Aktive».
+            apne: () => {
+              this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: '' });
+              this.apnePerson(m.id, 0);
+            },
+          })),
+          admMedlSkilleStil: {
+            padding: '12px 20px 10px', borderTop: '1px solid var(--border-subtle)',
+            background: 'var(--clay-50)', display: 'flex', alignItems: 'baseline',
+            justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap',
+          },
+          // Den smale boksen i kalenderen har ingen egen kant og mindre luft.
+          klMedlRadStil: {
+            appearance: 'none', border: 'none', borderTop: '1px solid var(--border-subtle)',
+            background: 'transparent', cursor: 'pointer', width: '100%', boxSizing: 'border-box',
+            textAlign: 'left', padding: '6px 0', display: 'flex', alignItems: 'center',
+            gap: 8, flexWrap: 'wrap', font: 'inherit', color: 'inherit',
+          },
+          // Kortet staar i en smal spalte paa Oversikt — maalt til 290 px.
+          // Med tolv piksler mellom og 160 px grunnbredde paa navnet gikk
+          // avatar, navn og pille paa hver sin linje, og kortet ble en
+          // meterlang stripe. Aatte piksler og 80 px holder raden samlet.
+          admMedlRadStil: {
+            appearance: 'none', border: 'none', borderTop: '1px solid var(--border-subtle)',
+            background: 'transparent', cursor: 'pointer', width: '100%', boxSizing: 'border-box',
+            textAlign: 'left', padding: '10px 20px', display: 'flex', alignItems: 'center',
+            gap: 8, flexWrap: 'wrap', font: 'inherit', color: 'inherit',
+          },
           // Kortet staar bare i admin. «medlemsvisning» er Min side.
           admInneVis: true,
           admInneTom: raa.length === 0,
@@ -44783,7 +44905,14 @@ class Component extends DCLogic {
           },
           // Samme ramme som statistikkortet ved siden av, saa Oversikt ikke
           // faar to slags kort.
+          //
+          // To spalter, som statistikken. Kortet sto i én, og den er 290 px
+          // paa en vanlig skjerm: da fikk ikke statuspilla plass ved siden av
+          // navnet og la seg paa egen linje under. Eieren, 7. september 2026,
+          // etter aa ha sett skjermbildet: «Gjor kortet bredere». Samme regel
+          // som ovPopRamme — hele bredden naar skjermen er smal.
           admInneRamme: {
+            gridColumn: this.erSmal() ? '1 / -1' : 'span 2',
             border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
             background: 'var(--surface-card)', overflow: 'hidden',
             marginBottom: 'var(--space-6)',

@@ -24381,15 +24381,28 @@ class Component extends DCLogic {
    * det ikke — da ruller vi til toppen i stedet for aa la deg staa igjen midt
    * i en side som nettopp ble kortere.
    */
-  lukkPersonruta() {
-    // Alt som ble skrevet inn i ruta ryddes vekk. Overstyringene —
-    // personPlan, personFri — er det du TRODDE du satte; neste gang ruta
-    // aapnes skal brikkene lese det som faktisk staar i basen.
-    this.setState({ personFor: null, personData: null, personNotat: null,
+  /**
+   * Hva «ingen person aapen» betyr, som state.
+   *
+   * Staar ett sted fordi to veier bruker den: × og knappene i ruta
+   * (lukkPersonruta), og det aa forlate skjermen (gaaAdmin). Sto lista to
+   * steder, ville de drevet fra hverandre neste gang et felt kom til.
+   *
+   * Overstyringene — personPlan, personFri — er det du TRODDE du satte;
+   * neste gang ruta aapnes skal brikkene lese det som faktisk staar i basen.
+   *
+   * @return {object}
+   */
+  personRutaTom() {
+    return { personFor: null, personData: null, personNotat: null,
       personNavnFelt: null, personEpost: null, personTelefon: null,
       personStartDato: null, personSluttDato: null, personTimer: null,
       personPlan: null, personFri: null, personFriGrunn: null,
-      personBetalingApen: false, personBetalingBelop: '' });
+      personBetalingApen: false, personBetalingBelop: '' };
+  }
+
+  lukkPersonruta() {
+    this.setState(this.personRutaTom());
     // Vi maa vente til ruta faktisk er borte fra skjermen.
     //
     // Maalt 7. september 2026: rullet vi paa forste bilde, sto ruta fortsatt
@@ -30195,7 +30208,23 @@ class Component extends DCLogic {
       rute = 'adminokonomi';
       forvalg = { okonomiFor: '' };
     }
-    this.setState(Object.assign({ side: rute, fhRolle: '', fhFra: '' }, forvalg || {}));
+    // ── Personruta foelger deg ikke ut av skjermen ───────────────
+    //
+    // «personFor» laa igjen i minnet naar man byttet skjerm. Gikk du til
+    // Kalender og tilbake til Medlemmer, sto den samme personen aapen som da
+    // du gikk — og lista laa under, utenfor skjermen.
+    //
+    // Eieren, 7. september 2026: «medlemmet jeg klikker inn paa skal lukkes
+    // naar jeg forlater siden, slik at jeg ser alle medlemmer neste gang jeg
+    // klikker inn, dette har jeg bedt om mange ganger uten at det er fikset».
+    //
+    // «forvalg» faar siste ord: en vei inn som med vilje aapner noe skal
+    // fortsatt kunne gjore det.
+    this.setState(Object.assign(
+      { side: rute, fhRolle: '', fhFra: '' },
+      this.personRutaTom(),
+      forvalg || {}
+    ));
     window.scrollTo(0, 0);
   }
 

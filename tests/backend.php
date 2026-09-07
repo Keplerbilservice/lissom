@@ -9431,6 +9431,28 @@ sjekk('… og lagring aapner ikke ruta paa nytt',
 // landet 718 px feil. Maalt 7. september 2026.
 sjekk('… og vi venter til ruta faktisk er borte for vi ruller',
     str_contains($sidaM2, "if (!ruta && el) {"));
+// ── Ruta foelger deg ikke ut av skjermen ─────────────────────────────
+//
+// «personFor» laa igjen i minnet naar man byttet skjerm. Gikk du til Kalender
+// og tilbake til Medlemmer, sto den samme personen aapen som da du gikk.
+//
+// Eieren, 7. september 2026: «medlemmet jeg klikker inn paa skal lukkes naar
+// jeg forlater siden, slik at jeg ser alle medlemmer neste gang jeg klikker
+// inn, dette har jeg bedt om mange ganger uten at det er fikset».
+//
+// Maalt i nettleseren paa 1440 og 390 px: aapnet en person, gikk til
+// Kalender, kom tilbake — ruta var lukket og lista sto med alle radene.
+sjekk('personruta lukkes naar du forlater skjermen',
+    str_contains($sidaM2, "      this.personRutaTom(),\n      forvalg || {}\n    ));"));
+// Sto lista over felter to steder, ville de drevet fra hverandre neste gang
+// et felt kom til.
+sjekk('… og de to veiene ut deler den samme lista',
+    str_contains($sidaM2, '  personRutaTom() {')
+    && str_contains($sidaM2, '    this.setState(this.personRutaTom());'));
+// En vei inn som med vilje aapner noe skal fortsatt kunne gjore det.
+sjekk('… mens «forvalg» faar siste ord',
+    (bool) preg_match('/this\.personRutaTom\(\),\s*\n\s*forvalg \|\| \{\}/', $sidaM2));
+
 // Ankeret staar bare paa medlemsskjermen. Aapnes ruta fra Paameldte, finnes
 // det ikke — da til toppen, framfor aa la deg staa igjen midt i en side som
 // nettopp ble kortere.

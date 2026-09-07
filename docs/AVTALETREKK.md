@@ -50,9 +50,21 @@ Verkstedet kan sette hvilken dag i måneden trekket skal gå — noen vil ha den
 15., andre den 1. Dagen huskes, så den 31. blir 28. i februar og 31. igjen i
 mars. (`subscriptions.trekk_dag`, migrasjon 149.)
 
-### K6 · Første trekk
-Trekkes fra dagen etter godkjenning, ikke fra den 1. Ingen skal betale full
-pris for en halv måned.
+### K6 · Første trekk går med det samme
+Vipps tar første periode i det medlemmet sier ja i appen — `initialCharge` på
+avtalen. Godkjenningsskjermen er varselet: hun ser beløpet før hun godkjenner.
+
+Trekket er Vipps sitt, ikke vårt: vi ber aldri om det, og får ingen
+charge-id tilbake. Den hentes fra `GET /agreements/{id}/charges` når avtalen
+går fra «venter» til «aktiv», og føres som en betaling hos oss — ellers ville
+pengene ligget hos Vipps uten å stå i Kassa eller i regnskapet.
+
+Neste trekk settes en måned fram i den samme operasjonen. Står det til «i dag»,
+ber trekkrunden om et trekk til samme natt, og medlemmet er trukket to ganger.
+
+Eieren, 7. september 2026: «ingen betalinger er registrert enda … Andre slike
+avtaler jeg har har jeg blitt trukket med en gang». Han valgte «Be Vipps
+trekke ved godkjenning».
 
 ### K7 · Et bestilt trekk kan stoppes
 Står et trekk som bestilt og ikke gjennomført, skal verkstedet kunne slette
@@ -79,7 +91,7 @@ Feiler et kall mot Vipps, skal det stå i feilloggen med avtale-ID.
 ## Det som ikke kan bevises herfra
 
 Hele kjeden kan kjøres mot en falsk Vipps som viser nøyaktig hva vi ber om og
-hva vi gjør med svaret. Det den **ikke** kan si noe om, er om den ekte Vipps
+hva vi gjør med svaret — 41 av 41 sjekker. Det den **ikke** kan si noe om, er om den ekte Vipps
 godtar avtalen. Eieren fikk «Vi kjenner ikke denne QR-koden» i appen både på
 en lenke som var over et døgn gammel (Eirin, 6. september) og på en som var
 sekunder gammel (ham selv, 7. september). Da er lenkealderen utelukket, og det

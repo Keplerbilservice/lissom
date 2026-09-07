@@ -5155,6 +5155,38 @@ sjekk('… og medlemskapet tas ut av kurven naar avtalen startes',
 // Serveren skal fortsatt vaere den som avgjor. Den er den eneste som vet
 // hva som staar i Vipps, og den hindrer to avtaler ved siden av hverandre.
 $mlib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+// ── Foerste trekk gaar ved godkjenning ─────────────────────────────────
+//
+// Avtalen ble opprettet uten «initialCharge»: vi belastet selv, gjennom
+// trekkrunden. Runden gaar én gang i doegnet, og forfallet settes en dag fram
+// fordi Vipps krever at kunden varsles — det ble opptil to doegn.
+//
+// Eieren, 7. september 2026: «ingen betalinger er registrert enda ... Andre
+// slike avtaler jeg har har jeg blitt trukket med en gang». Han valgte «Be
+// Vipps trekke ved godkjenning».
+//
+// Maalt ende til ende mot den falske Vippsen: 41 av 41.
+$vFilInit = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+sjekk('Vipps blir bedt om aa trekke ved godkjenning',
+    str_contains($vFilInit, "'initialCharge'         => [")
+    && str_contains($vFilInit, "'amount'          => \$prisOre,")
+    && str_contains($vFilInit, "'transactionType' => 'DIRECT_CAPTURE',"));
+// Trekket er Vipps sitt: vi ber aldri om det, og faar ingen id tilbake. Uten
+// dette laa pengene der uten aa staa i Kassa eller i regnskapet.
+sjekk('… og trekket hentes og foeres hos oss',
+    str_contains($vFilInit, 'public static function trekkPaaAvtale(string $avtaleId): array')
+    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale): void')
+    && str_contains($mlib, "'vipps_psp_ref'   => \$trekkId,"));
+// Det farligste her: staar «neste_trekk» paa i dag, ber runden om et trekk
+// til samme natt, og hun er trukket to ganger.
+sjekk('… og neste trekk staar en maaned fram, ikke i dag',
+    str_contains($mlib, "\$endring['neste_trekk'] = self::nesteTrekkdato(")
+    && !str_contains($mlib, "\$endring['neste_trekk'] = (new DateTimeImmutable('now'))->format('Y-m-d');"));
+// Noekkelen er trekkets egen id hos Vipps. To runder gir én rad.
+sjekk('… og to runder gir én rad',
+    str_contains($mlib, "\$nokkel = substr('init:' . \$trekkId, 0, 64);")
+    && str_contains($mlib, "DB::en('SELECT id FROM payments WHERE idempotency_key = :k', ['k' => \$nokkel]) !== null"));
 sjekk('serveren nekter to avtaler ved siden av hverandre',
     str_contains($mlib, "throw new RuntimeException('Du har alt et medlemskap."));
 

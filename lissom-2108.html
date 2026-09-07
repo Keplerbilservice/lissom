@@ -34486,28 +34486,21 @@ class Component extends DCLogic {
       if (klynge.length) lukk();
       return ut;
     };
-    // ── Spalta for det som ikke er tildelt noen ─────────────────────────
+    // ── Én spalte per kursholder ────────────────────────────────────────
     //
-    // Eieren, 1. september: «Kurset lag din egen bolle 3 september. Den vises
-    // paa min admin, men ikke monica sin» — og etterpaa: «Paa monica sin saa
-    // vises det paa mobil admin ikke pc».
+    // Fra 1. september sto det ogsaa en spalte «Uten kursholder». Den kom av
+    // at en okt uten tildelt holder ikke passet i noen spalte og aldri ble
+    // tegnet — eieren, 1. september: «Kurset lag din egen bolle 3 september.
+    // Den vises paa min admin, men ikke monica sin».
     //
-    // Det var ikke synk, og ikke brukerne. Dagsvisningen har én spalte per
-    // KURSHOLDER, og en okt uten tildelt holder passet ingen av dem: den ble
-    // aldri tegnet. Mobilen staar i listevisning, som tegner alt — derfor sto
-    // den der. PC-en staar i dagsvisning.
+    // Eieren, 7. september 2026: «uten kursholder skal fjernes overalt, det
+    // er ikke et tema aa beholde», og «det er jo ingen okter uten
+    // kursholder». Han fikk vite at okter uten holder da ikke vises i
+    // dagsvisningen, og valgte likevel: «Fjern spalta helt».
     //
-    // Skjermbildet hans sier det selv: «· 2 okter · 0 av 20 plasser» oeverst,
-    // og Monica-spalta under med «1 okt». Den andre var borte.
-    //
-    // Naa faar de en spalte. Den staar bare naar den har noe — en tom spalte
-    // hver dag ville vaert stoy — men da staar den, og ingenting kan gjemme
-    // seg lenger.
-    const UTEN_HOLDER = 'Uten kursholder';
-    const alleKolonner = this.klHoldere().concat([UTEN_HOLDER]).map(kn => {
-      const evs = kn === UTEN_HOLDER
-        ? dagensAlle.filter(e => !e.holder)
-        : dagensAlle.filter(e => e.holder === kn);
+    // Listevisningen tegner fortsatt alt, uansett holder.
+    const alleKolonner = this.klHoldere().map(kn => {
+      const evs = dagensAlle.filter(e => e.holder === kn);
       const vakt = evs.find(e => e.type === 'vakt');
       const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
       // ── Paint on Pots tar ikke spalta ──────────────────────────────
@@ -34547,13 +34540,9 @@ class Component extends DCLogic {
       return {
         navn: kn,
         harNoe: evs.length > 0,
-        // Den nye spalta er ingen person: den har ingen beskjeder aa sende og
-        // ingen side aa aapne.
-        erPerson: kn !== UTEN_HOLDER,
-        apne: kn === UTEN_HOLDER
-          ? () => this.setState({ kvittering: 'Ingen kursholder er satt',
-                                  kvitteringDetalj: 'Åpne økta og velg hvem som skal holde den.' })
-          : () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }),
+        // Hver spalte er en kursholder, og alle kan aapnes.
+        erPerson: true,
+        apne: () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }),
         navnStil: true
           ? { appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--lissom-brown)', textDecoration: 'underline', textDecorationColor: 'var(--clay-300)', textUnderlineOffset: '3px' }
           : { appearance: 'none', border: 'none', background: 'transparent', cursor: 'default', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--text-heading)' },
@@ -34638,9 +34627,7 @@ class Component extends DCLogic {
     // kunne gjemme seg — eller naar hun slaar dem paa selv.
     const stdHolder = this.klStandardHolder();
     const valgteHoldere = this.state.klVisHolder || {};
-    // Den uten holder staar aldri fast: den kommer fram naar den har noe, og
-    // er ellers borte.
-    const staarFast = kn => kn === stdHolder && kn !== UTEN_HOLDER;
+    const staarFast = kn => kn === stdHolder;
     const visesNa = k => k.harNoe || (valgteHoldere[k.navn] === undefined
       ? staarFast(k.navn) : valgteHoldere[k.navn] === true);
     const valgteKolonner = alleKolonner.filter(visesNa);

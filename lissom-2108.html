@@ -6855,23 +6855,7 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
           </div>
-          <!-- Abonnementet paa kalenderen. Laa paa Oversikt i et eget kort;
-               eieren ville ha kortet bort derfra. Programmet hoerer hjemme
-               her, saa lenken staar her — ikke som et kort, men som én linje
-               ved siden av overskriften. -->
-          <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
         </div>
-        <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
-            <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
-            <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
-            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
-              <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
-            </div>
-            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
-          </div>
-        </sc-if>
 
         <div style="{{ klSideGridStil }}">
 
@@ -7089,27 +7073,6 @@ window.__resources = {
                Spalta er dermed bare det som hoerer til dra-og-slipp:
                kursene, ventelista og «Bytt dato». -->
         </aside>
-
-        <!-- Kursholderpillene, i sin egen rad.
-
-             De laa inne i kalenderspalta, og den loftes 65 px for at
-             rutenettet skal staa paa linje med kortet til venstre. Loftet
-             tok hele spalta, saa pillene havnet 45 px inni kortene over —
-             eieren sendte bilde 1. september. Han valgte selv hva som
-             skulle vike: «Flytt pillene, behold linjeringen».
-
-             Naa har de en rad for seg, uten loft. Kalenderen ligger i
-             rada under og beholder sitt. -->
-        <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ true }}">
-          <div style="{{ klPilleradStil }}">
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Viser</span>
-              <sc-for list="{{ klHolderSpalter }}" as="h" hint-placeholder-count="3">
-                <button type="button" onClick="{{ h.velg }}" title="{{ h.tittel }}" style="{{ h.stil }}">{{ h.navn }}</button>
-              </sc-for>
-            </div>
-          </div>
-        </sc-if>
 
         <div style="{{ klHovedStil }}">
 
@@ -8239,7 +8202,17 @@ window.__resources = {
               <span>2. Velg «Legg til konto» → «Annet» → «Legg til abonnementskalender».</span>
               <span>3. Lim inn adressen over, og trykk Neste.</span>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klIcsLukk }}" hint-size="auto,44px">Lukk</x-import>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klIcsLukk }}" hint-size="auto,44px">Lukk</x-import>
+              <!-- «Lag ny adresse» sto i panelet under lenka oeverst paa
+                   kalenderen. Den lenka er borte — eieren, 7. september 2026:
+                   «her har du fortsatt linken legg programmet i telefonens
+                   kalender, og synk med mobilen», og han valgte «Behold kortet
+                   Synk med mobilen». Knappen foelger med hit, saa maaten aa
+                   stoppe en lekket adresse paa ikke forsvinner med lenka. -->
+              <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+            </div>
           </div>
         </div>
       </sc-if>
@@ -11958,7 +11931,6 @@ window.__resources = {
                kort som i dag, jeg vil at kortene skal vaere like som de andre
                kortene paa denne siden». De staar naa inne i rutenettet, med
                den samme ramma som resten. Se ovSkylderRamme og ovPopRamme. -->
-          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
           <!-- Statistikk.
                Eieren 30. august: «her vil jeg se mine mest populaere kurs».
                Regnet av plassene som faktisk er solgt siste tolv maaneder —
@@ -11974,44 +11946,6 @@ window.__resources = {
 
                  Bredden foelger samme regel som ovSkylderRamme: to spalter
                  der det er plass, hele rada paa telefonen. -->
-          <!-- ── Medlemmene ─────────────────────────────────────────
-               Eieren, 7. september 2026: «paa oversikt, saa staar ogsaa i
-               verkstedet paa forsiden, den kan fjernes da den staar i
-               sidemenyen» — og «medlemmer blir staaende, men som et lite kort
-               som er like de andre paa siden».
-
-               De innstemplede sto oeverst i dette kortet fram til naa. De
-               staar i sidemenyen paa hver eneste adminside, og i skuffen paa
-               telefonen, saa lista sto to steder paa den samme skjermen.
-
-               Igjen staar medlemmene. Hver rad er en knapp: ett trykk aapner
-               personen paa medlemsskjermen — «husk de maa vaere klikkbare saa
-               de gaar til det riktige stedet».
-
-               De som er inne staar med i lista naa. De var tatt bort fordi de
-               sto oeverst i det samme kortet; det gjor de ikke lenger. -->
-          <sc-if value="{{ admInneVis }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admInneRamme }}">
-              <div style="{{ admMedlSkilleStil }}">
-                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemmer</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ admMedlAntall }}</span>
-              </div>
-              <sc-for list="{{ admMedl }}" as="v" hint-placeholder-count="4">
-                <button type="button" onClick="{{ v.apne }}" style="{{ admMedlRadStil }}">
-                  <span style="{{ v.avatarStil }}">{{ v.initial }}</span>
-                  <span style="flex: 1 1 40px;">
-                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ v.navn }}</span>
-                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ v.under }}</span>
-                  </span>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
-                </button>
-              </sc-for>
-              <sc-if value="{{ admMedlTom }}" hint-placeholder-val="{{ false }}">
-                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen andre medlemmer.</div>
-              </sc-if>
-            </div>
-          </sc-if>
-
             <div style="{{ ovPopRamme }}">
               <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
                 <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
@@ -12031,6 +11965,7 @@ window.__resources = {
               </sc-if>
             </div>
           </sc-if>
+          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
 
             <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
               <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
@@ -34622,14 +34557,16 @@ class Component extends DCLogic {
     // og en dag uten kurs ble tre tomme spalter. Eieren spurte hvorfor hun
     // saa seg selv: hun holder sjelden kurs, og «Monica er default».
     //
-    // Naa staar den som vanligvis holder kursene, og verkstedet. De andre
-    // kommer fram naar de faktisk har en okt den dagen — ingenting skal
-    // kunne gjemme seg — eller naar hun slaar dem paa selv.
+    // Naa staar den som vanligvis holder kursene. De andre kommer fram naar
+    // de faktisk har en okt den dagen — ingenting skal kunne gjemme seg.
+    //
+    // Man kunne ogsaa slaa dem paa selv, med pillene i «Viser»-raden over
+    // kalenderen. Den raden er borte fra 7. september — eieren: «fjern navnet
+    // monica over kalenderen» — og med den valget. Spalta kommer naar hen har
+    // noe den dagen.
     const stdHolder = this.klStandardHolder();
-    const valgteHoldere = this.state.klVisHolder || {};
     const staarFast = kn => kn === stdHolder;
-    const visesNa = k => k.harNoe || (valgteHoldere[k.navn] === undefined
-      ? staarFast(k.navn) : valgteHoldere[k.navn] === true);
+    const visesNa = k => k.harNoe || staarFast(k.navn);
     const valgteKolonner = alleKolonner.filter(visesNa);
     const kolonner = valgteKolonner.length ? valgteKolonner : alleKolonner;
     const naNu = new Date();
@@ -34794,22 +34731,6 @@ class Component extends DCLogic {
       klUkeGutterStil: { position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
       klListe: liste,
       klBoardKolonner: kolonner,
-      // Én brikke per aktiv kursholder, pluss verkstedet. Den som har en okt
-      // denne dagen kan ikke slaas av — da ville okta hennes forsvunnet fra
-      // skjermen, og en kalender som skjuler noe er verre enn ingen.
-      klHolderSpalter: alleKolonner.map(k => ({
-        navn: k.navn,
-        stil: chipStil(visesNa(k), null),
-        tittel: k.harNoe
-          ? k.navn + ' har noe denne dagen og kan ikke skjules'
-          : (visesNa(k) ? 'Skjul ' + k.navn : 'Vis ' + k.navn),
-        velg: () => {
-          if (k.harNoe) return;
-          this.setState(st => ({ klVisHolder: Object.assign({}, st.klVisHolder, {
-            [k.navn]: !visesNa(k),
-          }) }));
-        },
-      })),
       klBoardTimer: (() => { const t = []; for (let h = bStart / 60; h < bSluttMin / 60; h++) t.push({ navn: String(h).padStart(2, '0') + ':00', stil: { position: 'absolute', top: ((h - bStart / 60) * pxTime - 1) + 'px', right: '8px', fontSize: '11px', color: 'var(--text-muted)' } }); return t; })(),
       // Paa telefon faar hver spalte 150 px og rammen ruller sidelengs. Med
       // to spalter faar dagen plass uten aa rulle i det hele tatt; med fire
@@ -34930,21 +34851,6 @@ class Component extends DCLogic {
             // Rad 2 er pilleraden i full bredde; rad 3 er sidemenyen og
             // kalenderen ved siden av hverandre.
             : { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', gridColumn: '1', gridRow: '3' },
-          // Kursholderpillene, i sin egen rad.
-          //
-          // De laa inne i kalenderspalta, og den loftes for at rutenettet
-          // skal staa paa linje med kortet til venstre. Loftet tok hele
-          // spalta, saa pillene havnet 45 px inni kortene over. Eieren valgte
-          // selv hva som skulle vike: «Flytt pillene, behold linjeringen».
-          //
-          // Her er de ute av loftet. Paa mobilen staar de der de sto — der
-          // er alt under hverandre, og det var aldri noen kollisjon.
-          klPilleradStil: this.erSmal()
-            ? { order: 0 }
-            // Full bredde over begge spaltene. Ligger den bare i
-            // kalenderspalta, forskyves den ene og ikke den andre, og
-            // linjeringen ryker.
-            : { gridColumn: '1 / -1', gridRow: '2', minWidth: 0 },
           klHovedStil: this.erSmal()
             ? { minWidth: 0, order: 1 }
             // Loftet er borte. Det lot det hvite rutenettet staa paa linje med
@@ -38875,24 +38781,43 @@ class Component extends DCLogic {
         const overskrift = !f.verdi;
         const p = PERSONER[f.navn];
         const mvaStandard = String(f.verdi).indexOf('25') === 0;
+        // ── Naar verdien er en setning, ikke et tall ────────────────────
+        //
+        // Raden er bygget for «Medlemskap → Aarsmedlemskap»: navnet til
+        // venstre, verdien til hoyre, og verdien uten linjeskift saa et beloep
+        // ikke brekker midt i tallet.
+        //
+        // Noen rader har en hel setning som verdi — «Slik gjor du → Trykk
+        // «Aapne Vipps» under, og godkjenn avtalen i appen. Det tar et
+        // minutt.» Uten linjeskift tok den all plassen, navnet ble presset til
+        // ett ord per linje, og slutten av setningen ble klippet av kanten.
+        // Eieren sendte bilde 7. september 2026: «Denne formateringen er ikke
+        // akseptabel».
+        //
+        // Er verdien lang, staar den paa egen linje under navnet og bryter som
+        // vanlig tekst. Korte verdier staar som for.
+        const langVerdi = String(f.verdi || '').trim().length > 34;
         return Object.assign({}, f, {
           vanlig: f.navn !== 'Mva',
           velg: p ? () => this.setState(s2 => ({
             detalj: { tittel: f.navn, undertittel: p.rolle, felter: p.felter, handling: 'Send beskjed', tilbake: s2.detalj },
           })) : undefined,
-          radStil: {
+          radStil: Object.assign({
             display: 'flex', justifyContent: 'space-between', gap: 'var(--space-6)',
             borderTop: (overskrift || f.verdi === ' ') ? 'none' : '1px solid var(--border-subtle)',
             paddingTop: overskrift ? 'var(--space-5)' : 'var(--space-3)',
             paddingBottom: p ? 'var(--space-3)' : 0,
             cursor: p ? 'pointer' : 'default',
-          },
+          }, langVerdi ? { flexDirection: 'column', gap: 4, paddingBottom: 'var(--space-3)' } : {}),
           navnStil: overskrift
             ? { fontSize: 11, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', color: 'var(--terracotta-600)', fontWeight: 700 }
             : f.verdi === ' '
               ? { fontSize: 'var(--text-base)', color: 'var(--text-body)', lineHeight: 1.6, textWrap: 'pretty' }
               : { fontSize: 'var(--text-sm)', color: p ? 'var(--lissom-brown)' : 'var(--text-body)', fontWeight: p ? 600 : 400, textDecoration: p ? 'underline' : 'none', textUnderlineOffset: 3 },
-          verdiStil: { fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', textAlign: 'right', whiteSpace: 'nowrap' },
+          verdiStil: langVerdi
+            ? { fontSize: 'var(--text-sm)', fontWeight: 400, color: 'var(--text-body)',
+                textAlign: 'left', lineHeight: 1.5, textWrap: 'pretty' }
+            : { fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', textAlign: 'right', whiteSpace: 'nowrap' },
         });
       }),
       detaljHandling: (this.state.detalj && this.state.detalj.handling) || 'Lagre',
@@ -43364,12 +43289,20 @@ class Component extends DCLogic {
         const storst = liste.reduce((n, k) => Math.max(n, k.plasser || 0), 0) || 1;
         return {
           ovPopVis: true,
-          // Samme regel som ovSkylderRamme: «span 2» der rutenettet har flere
-          // spalter, hele rada paa telefonen der det bare er én.
+          // Panelet sto inne i kortrutenettet og spente over to spalter.
+          // Det er hoeyere enn kortene, og et rutenett gir alle i samme rad
+          // den hoeyeste hoeyden: kortet ved siden av ble dratt opp til 679 px
+          // og fikk en stor tom flate over lenka si. Hos eieren var det «Nye
+          // paameldinger» som laa der; her «Venteliste».
+          //
+          // Eieren, 7. september 2026: «gjor alle kortene paa oversikt like,
+          // altsaa samme som de smaa kortene». Panelet staar naa i rada over
+          // rutenettet, med hele bredden. Da er alle kortene i rutenettet like
+          // hoeye, og stolpene er i behold.
           ovPopRamme: {
-            gridColumn: this.erSmal() ? '1 / -1' : 'span 2',
             background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+            marginBottom: 'var(--space-4)',
           },
           ovPopTom: liste.length === 0,
           ovPopPeriode: 'Siste tolv måneder',
@@ -43488,6 +43421,25 @@ class Component extends DCLogic {
                  'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
                  null, 'Se siden',
                  () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
+
+            // Medlemmene.
+            //
+            // Sto som et hoeyt kort med navnelista i, fra 7. september om
+            // morgenen. Eieren samme kveld: «gjor alle kortene paa oversikt
+            // like, altsaa samme som de smaa kortene». Lista naas fra
+            // menypunktet «Medlemmer», som for.
+            //
+            // Tallet er de som har medlemskap — ikke admin, og ikke de som
+            // bare har vaert paa kurs. Samme rader som medlemslista bruker,
+            // saa de to ikke kan svare hver sitt.
+            (() => {
+              const m = (this.state.adminMedlemmer ? this.medlemsrader() : [])
+                .filter(x => x.erMedlem && !x.erAdmin);
+              return kort('Medlemmer',
+                   'Alle som har medlemskap, og timene de har brukt.',
+                   m.length || null, 'Se medlemmene',
+                   () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive', medlemSok: '' }));
+            })(),
 
             // Nettbutikken: som Kassa, bare paa PC. Se kommentaren over.
             ...(this.erSmal() ? [] : [kort('Nettbutikk',
@@ -45510,9 +45462,7 @@ class Component extends DCLogic {
       // adressen, og derfor ligger tilgangen i adressen. Det maa staa der
       // eieren ser det, ikke bare i en kommentar i koden.
       ...(() => {
-        const adr = ((this.state.adminData || {}).kalenderAdresse) || '';
         return {
-          kalApent: !!this.state.kalApent,
           // ── Pillene nederst i sidemenyen ────────────────────────────
           //
           // Foerste utgave la aarskalenderen som en rad oeverst paa sida, med
@@ -45572,34 +45522,9 @@ class Component extends DCLogic {
           },
           // Veien til ventelisteskjemaet, fra kalenderen.
           klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),
-          kalKnapp: this.state.kalApent ? 'Skjul kalenderadressen' : 'Legg programmet i telefonens kalender →',
-          kalVeksle: () => this.setState(st => ({ kalApent: !st.kalApent, kalKopiert: false })),
-          kalAdresse: adr,
-          kalForklaring: 'På iPhone: Innstillinger → Kalender → Kontoer → Legg til konto → Annet → '
-            + 'Legg til abonnementskalender, og lim inn adressen. '
-            // Aerlig om hva dette er: telefonen henter, vi sender ikke. Det
-            // sto «telefonen henter den paa nytt av seg selv», som er sant —
-            // men ikke at det kan ta timer, og at ingen melding kommer i det
-            // oyeblikket noe endres.
-            + 'Telefonen henter den på nytt av seg selv, men bestemmer selv hvor ofte — '
-            + 'det kan gå timer. Endrer du en kursdato, kommer det ingen melding til telefonen; '
-            + 'endringen står der neste gang den henter. Hver kursdato foreslår et varsel dagen før.',
           kalAdvarsel: 'Den som har adressen, ser programmet — den spør ikke om innlogging. '
             + 'Del den bare med dem som skal ha den. «Lag ny adresse» stopper alle gamle på én gang, '
             + 'og da må abonnementene settes opp på nytt.',
-          kalKopiKnapp: this.state.kalKopiert ? 'Kopiert' : 'Kopier adressen',
-          kalKopier: () => {
-            if (!adr) return;
-            const ferdig = () => this.setState({ kalKopiert: true });
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(adr).then(ferdig, ferdig);
-            } else { ferdig(); }
-          },
-          // Feltet er til for aa leses og kopieres. Et readonly-felt uten
-          // onChange faller ut i skjemasjekken, saa den staar her og gjor
-          // ingenting — med vilje.
-          kalIngenting: () => {},
-          kalMerk: (e) => { if (e && e.target && e.target.select) e.target.select(); },
           kalNyNokkel: () => {
             if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
             if (!window.confirm('Lage ny kalenderadresse?\n\n'
@@ -45615,7 +45540,6 @@ class Component extends DCLogic {
                 this.setState({
                   kvittering: ok ? 'Ny adresse laget' : 'Gikk ikke',
                   kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
-                  kalKopiert: false,
                 });
                 if (ok) { this._adminHentes = false; this.hentAdmin(); }
               })
@@ -47566,37 +47490,6 @@ class Component extends DCLogic {
             { navn: 'Kari Nordbø', siden: '12:10', type: 'Basis 30', ressurs: 'Dreieskive 2', skjult: false },
             { navn: 'Jonas Five', siden: '13:42', type: 'Årsmedlemskap', ressurs: '', skjult: true },
           ]);
-        // ── Medlemmene i kortet paa Oversikt ────────────────────────────
-        //
-        // Eieren, 7. september 2026: «kan jeg faa medlemmer kortet i baade
-        // kalender og oversikt?» — og etter skissen: «endre fra ikke inne naa
-        // til medlemmer, og husk de maa vaere klikkbare saa de gaar til det
-        // riktige stedet», og «men medlemmer maa vises selv om ingen er i
-        // verkstedet».
-        //
-        // Radene kommer fra medlemsrader(), den samme som bygger
-        // medlemslista. Skrev vi dem opp paa nytt her, ville de to kunne
-        // svare hver sitt om den samme personen.
-        //
-        // Alle medlemmene staar her. Fram til 7. september var de som var
-        // innstemplet tatt bort, fordi de sto oeverst i det samme kortet.
-        // Den avdelingen er borte, og da manglet de som var i verkstedet.
-        const medl = ((this.state.adminMedlemmer || this.erPublisert())
-          ? this.medlemsrader()
-          : [
-            { id: 0, navn: 'Anne Berg', initial: 'AB', abonnement: 'Basis 30', timer: '12 / 30',
-              status: 'Aktiv', tone: 'success', erMedlem: true, erAdmin: false, inne: false },
-            { id: 0, navn: 'Marit Lie', initial: 'ML', abonnement: 'Mini 15', timer: '3 / 15',
-              status: 'Pause', tone: 'neutral', erMedlem: true, erAdmin: false, inne: false },
-          ])
-          .filter(m => m.erMedlem && !m.erAdmin)
-          .sort((a, b) => String(a.navn).localeCompare(String(b.navn), 'no'));
-        const avatar = {
-          width: 32, height: 32, borderRadius: '50%', background: 'var(--clay-200)',
-          color: 'var(--brown-500)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 12, fontWeight: 700,
-          letterSpacing: '.02em', flex: '0 0 auto',
-        };
         return {
           // ── Navnene nederst i sidemenyen ────────────────────────────
           //
@@ -47697,95 +47590,6 @@ class Component extends DCLogic {
             marginBottom: 7, paddingLeft: 2,
           },
           admMenyMerStil: { fontSize: 12, color: 'var(--clay-400)', paddingTop: 4 },
-          admMedlTom: medl.length === 0,
-          admMedlAntall: medl.length === 0 ? 'Ingen'
-            : (medl.length === 1 ? 'Ett medlem' : medl.length + ' medlemmer'),
-          admMedl: medl.map(m => ({
-            navn: m.navn,
-            initial: m.initial,
-            // Samme to opplysningene som i medlemslista: hva hen har, og hvor
-            // mye av tida som er brukt. En strek betyr ingen timer — da staar
-            // det ingenting her heller.
-            under: [m.abonnement, m.timer].filter(x => {
-              const t = String(x === undefined || x === null ? '' : x).trim();
-              return t !== '' && t !== '\u2014';
-            }).join(' \u00b7 '),
-            // ── Hva pilla sier ──────────────────────────────────────
-            //
-            // Eieren, 7. september 2026: «paa medlemene, saa vil jeg fjerne
-            // pillen, proeveperiode. vi kan godt ha en pille som heter
-            // Bindingstid og ikke bundet».
-            //
-            // Bindingstida er det man lurer paa naar noen vil slutte, og den
-            // staar ingen andre steder enn i medlemslista. Proeveperioden sa
-            // bare det samme som medlemskapet under — «Proev Lissom» — én
-            // gang til.
-            //
-            // Bindingstida gaar foran. Loeper en oppsigelse, er det den som
-            // gjelder; ellers staar statusen som for. Et proevemedlem uten
-            // binding staar som aktivt, som de andre aktive.
-            status: m.erBundet ? 'Bindingstid'
-              : (m.iOppsigelse ? 'Sagt opp'
-              : (m.status === 'Prøveperiode' ? 'Aktiv' : m.status)),
-            tone: m.erBundet ? 'warning'
-              : (m.iOppsigelse ? 'warning'
-              : (m.status === 'Prøveperiode' ? 'success' : m.tone)),
-            avatarStil: avatar,
-            // Ett trykk aapner personen — samme rute som i medlemslista.
-            // Kortet staar paa Oversikt og Kalender, og der finnes ikke ruta;
-            // derfor gaar vi til medlemsskjermen forst. «Alle» er filteret,
-            // for et medlem som er sagt opp ligger utenfor «Aktive».
-            apne: () => {
-              this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: '' });
-              this.apnePerson(m.id, 0);
-            },
-          })),
-          // Overskrifta i kortet. Den sto som en avdeling midt i kortet, med
-          // strek over og egen bakgrunn, fordi de innstemplede sto over. Naa
-          // er den kortets egen overskrift, og har samme luft som de andre
-          // kortene paa Oversikt.
-          admMedlSkilleStil: {
-            padding: 'var(--space-5) 16px var(--space-4)',
-            display: 'flex', alignItems: 'baseline',
-            justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap',
-          },
-          // Kortet staar i en smal spalte paa Oversikt — maalt til 266 px.
-          // Med tolv piksler mellom og 160 px grunnbredde paa navnet gikk
-          // avatar, navn og pille paa hver sin linje, og kortet ble en
-          // meterlang stripe. Aatte piksler holder raden samlet.
-          //
-          // Navnet har 40 px grunnbredde, ikke 80, og raden 16 px sideluft,
-          // ikke 20. Med 80 tok navnet plassen forst, og «Bindingstid» — den
-          // bredeste pilla — falt ned paa egen linje paa fire av aatte rader.
-          // De fire pikslene i sideluft var det som manglet paa raden med
-          // «Aarsmedlemskap» under navnet. Eieren, 7. september 2026, etter aa
-          // ha sett de to skjermbildene: «B — pilla ved siden av».
-          //
-          // Navnet har ingen «min-width: 0». Da kan boksen bli smalere enn
-          // ordet, og teksten legger seg utenfor og under pilla — maalt paa
-          // nettbrett, der kortet er 236 px. Uten den faller pilla heller ned
-          // paa egen linje der det virkelig ikke er plass.
-          admMedlRadStil: {
-            appearance: 'none', border: 'none', borderTop: '1px solid var(--border-subtle)',
-            background: 'transparent', cursor: 'pointer', width: '100%', boxSizing: 'border-box',
-            textAlign: 'left', padding: '10px 16px', display: 'flex', alignItems: 'center',
-            gap: 8, flexWrap: 'wrap', font: 'inherit', color: 'inherit',
-          },
-          // Kortet staar bare i admin. «medlemsvisning» er Min side.
-          admInneVis: true,
-          // Samme ramme som statistikkortet ved siden av, saa Oversikt ikke
-          // faar to slags kort.
-          //
-          // Kortet gikk over to spalter da de innstemplede sto oeverst, fordi
-          // radene der ikke fikk plass i én. De radene er borte, og eieren,
-          // 7. september 2026: «medlemmer blir staaende, men som et lite kort
-          // som er like de andre paa siden». Da foelger det rutenettet, som
-          // kortene rundt.
-          admInneRamme: {
-            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
-            background: 'var(--surface-card)', overflow: 'hidden',
-            marginBottom: 'var(--space-6)',
-          },
         };
       })(),
       antallInne: this.state.stempling ? this.state.stempling.inne.antall : (this.erPublisert() ? 0 : 5),

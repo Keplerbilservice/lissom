@@ -22504,14 +22504,56 @@ class Component extends DCLogic {
     return pl.fastTrekk ? 'trekk' : 'selv';
   }
 
-  /** Valgt medlemskap — det forste hvis ingen er valgt ennaa. */
+  /**
+   * Valgt medlemskap — tomt hvis ingen er valgt.
+   *
+   * ── Her sto det «det forste hvis ingen er valgt» ──────────────────
+   *
+   * Eieren meldte seg inn paa Aarsmedlemskap 7. september 2026 og fikk
+   * «Proev Lissom, kr 990, 10 timer, 30 dager». Linja var denne:
+   *
+   *     return p.some(x => x.navn === v) ? v : (p[0] ? p[0].navn : '');
+   *
+   * Var valget borte, ble det FOERSTE medlemskapet i lista kjopt i stedet
+   * for at noen stoppet. Foerste plan er «Proev Lissom», og den har ikke
+   * fast trekk — derfor kom det ingen avtale aa godkjenne, bare en vanlig
+   * betaling. Det er det samme som skjedde med Eirin.
+   *
+   * Et medlemskap er en avtale om penger hver maaned. Det skal ikke kunne
+   * bli til ved et uhell. Er valget borte, sier vi fra.
+   */
   bmValgt() {
     const p = this.medlemsplaner();
     const v = this.state.bmType || '';
-    return p.some(x => x.navn === v) ? v : (p[0] ? p[0].navn : '');
+    return p.some(x => x.navn === v) ? v : '';
   }
 
-  sendMedlemssoknad() {
+  /**
+   * Innmeldingen. Bestiller ordren paa serveren, og gaar dit den peker.
+   *
+   * ── Hvorfor det gaar via en ordre naa ─────────────────────────────
+   *
+   * Foer laa valget av medlemskap i minnet her, og innmeldingen krevde at
+   * du var logget inn. Da ble du sendt til Vipps for aa logge inn foerst,
+   * og alt som laa i minnet var borte naar du kom tilbake. Paa mobil kan
+   * turen innom Vipps-appen gi en ny fane, der ogsaa sessionStorage er
+   * tomt. Sto valget tomt, kjopte skjermen det foerste medlemskapet i
+   * lista. Se bmValgt() over.
+   *
+   * Naa lages raden paa serveren FOER noen forlater sida, og noekkelen
+   * staar i adressen resten av veien. Se api/medlemsordre.php.
+   *
+   * @param {string} [valgt] Planen, naar den kommer fra et kort og ikke
+   *                         har rukket aa staa i state enda.
+   */
+  sendMedlemssoknad(valgt) {
+    const type = (valgt || this.bmValgt() || '').trim();
+    // Ingen plan, ingen ordre. Serveren nekter ogsaa — se
+    // Medlemsordre::opprett() — men skjermen skal si det foer turen.
+    if (!type) {
+      this.setState({ bmFeil: 'Velg hvilket medlemskap du vil ha.' });
+      return;
+    }
     const epost = (this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost).trim();
     if (!epost || epost.indexOf('@') < 1) {
       this.setState({ bmFeil: 'Vi trenger en e-postadresse vi kan svare på.' });
@@ -22524,12 +22566,12 @@ class Component extends DCLogic {
     if (this._soknadPagaar) return;
     this._soknadPagaar = true;
 
-    fetch('/api/bli-medlem.php', {
+    fetch('/api/medlemsordre.php', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: this.bmValgt(),
+        type: type,
         betaling: this.bmBetalingsvalgt(),
         epost: epost,
         // Nummeret staar paa medlemskapskortet, ikke i skjemaet paa Min
@@ -36927,16 +36969,19 @@ class Component extends DCLogic {
             // componentDidUpdate aapner kortet naar planene er lastet.
             //
             // Samme vei som gavekortet bruker — se kjopGavekort().
-            if (!this.state.innlogget) {
-              try {
-                sessionStorage.setItem('lissom_medlemsplan', navn);
-                sessionStorage.setItem('lissom_medlemskort', '1');
-                if (epost) { sessionStorage.setItem('lissom_medlemsepost', epost); }
-                if (telefon) { sessionStorage.setItem('lissom_medlemstlf', telefon); }
-              } catch (_) { /* privat modus */ }
-              this.sendTilInnlogging('/medlemskap', 'Medlemskapet ble ikke opprettet.');
-              return;
-            }
+            // ── Ingen innloggingstur foerst ──────────────────────
+            //
+            // Her sto det at den som ikke var innlogget ble sendt til Vipps
+            // for aa logge inn, og at planen ble lagt i sessionStorage saa
+            // den skulle overleve turen. Den overlevde ikke: eieren meldte
+            // seg inn paa Aarsmedlemskap 7. september 2026 og fikk «Proev
+            // Lissom». Paa mobil kan turen innom Vipps-appen gi en ny fane,
+            // og da er sessionStorage tomt.
+            //
+            // Naa lages ordren paa serveren foerst, og noekkelen staar i
+            // adressen resten av veien. Trenger vi aa vite hvem du er, gaar
+            // turen til Vipps FRA /meld-inn/<noekkel> — og tilbake dit.
+            // Se api/medlemsordre.php og api/meld-inn.php.
             if (!epost || epost.indexOf('@') < 1) {
               this.setState({ bmFeil: 'Vi trenger en gyldig e-postadresse.' });
               return;
@@ -36957,7 +37002,10 @@ class Component extends DCLogic {
               this.startAbonnement(navn, this.bmBetalingsvalgt(),
                 { epost: epost, telefon: telefon });
             } else {
-              this.sendMedlemssoknad();
+              // Planen sendes med. «bmType» er nettopp satt, men setState er
+              // ikke ferdig i samme oyeblikk — og det var akkurat et slikt
+              // hull valget forsvant i sist.
+              this.sendMedlemssoknad(navn);
             }
           },
         };

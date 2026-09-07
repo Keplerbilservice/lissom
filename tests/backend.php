@@ -7687,12 +7687,15 @@ sjekk('… og sier hvor avtalen staar',
 // Vipps tar foerste maaned i det hun sier ja — «initialCharge». Malen maa si
 // det samme som systemet gjor.
 sjekk('… og at foerste maaned trekkes med det samme',
-    str_contains($velkomst, 'trekkes første måned med det samme'));
-// Teksten maa vaere sann to steder: ved selvbetjent innmelding, der hun sendes
-// rett til Vipps, og naar verkstedet trykker «Send Vipps-avtale». Derfor
-// peker den paa Min side framfor aa love en omdirigering.
-sjekk('… og peker paa Min side for den som ikke har godkjent',
-    str_contains($velkomst, 'finner du den under Medlemskap på Min side'));
+    str_contains($velkomst, 'Første måned trekkes med det samme'));
+// Godkjenningen staar ikke lenger i teksten. Eieren, 7. september: «Må det stå
+// at avtalen må godkjennes i vipps, er det ikke nettopp dette man gjør når man
+// betaler med vipps da?» Aa si ja i appen ER betalingen, ikke et steg til.
+// Skjermen sier det fortsatt til den som blir avbrutt — ruta «Godkjenn i
+// Vipps» i lissom-2108.html.
+sjekk('… og maser ikke om aa godkjenne',
+    !str_contains($velkomst, 'godkjen') && !str_contains($velkomst, 'sagt ja'),
+    'aa si ja i Vipps ER betalingen');
 // De to gamle setningene lovte noe systemet ikke gjor.
 sjekk('… og lover ikke lenger at medlemskapet venter paa betalingen',
     !str_contains($velkomst, 'aktivt så snart betalingen er registrert'));

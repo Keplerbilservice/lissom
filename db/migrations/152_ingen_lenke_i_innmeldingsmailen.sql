@@ -8,10 +8,12 @@
 -- minutter, og e-posten leses sjelden innen da — den var altså død når hun
 -- åpnet den. Nå er den borte.
 --
--- Teksten må være sann to steder: ved selvbetjent innmelding, der hun sendes
--- rett til Vipps i det hun trykker, og når verkstedet trykker «Send
--- Vipps-avtale». Derfor peker den på Min side framfor å love en omdirigering
--- som ikke skjer i det ene tilfellet.
+-- Godkjenningen står heller ikke lenger i teksten. Eieren, samme dag: «Må det
+-- stå at avtalen må godkjennes i vipps, er det ikke nettopp dette man gjør når
+-- man betaler med vipps da?» Det er det: å si ja til avtalen i appen ER
+-- betalingen, ikke et steg til. For alle som fullførte var setningen støy.
+-- Skjermen sier det fortsatt til den som blir avbrutt — ruta «Godkjenn i
+-- Vipps» i lissom-2108.html.
 --
 -- Vipps tar første måned i det hun sier ja — se «initialCharge» i
 -- app/lib/vipps.php. Derfor står det at trekket går med det samme.
@@ -23,10 +25,7 @@ Takk for at du melder deg inn hos Lissom.
 
 Medlemskap: {type} — {belop} i måneden
 
-Medlemskapet starter når du har sagt ja til avtalen i Vipps. Har du ikke
-gjort det ennå, finner du den under Medlemskap på Min side.
-
-Når du har sagt ja, trekkes første måned med det samme. Avtalen finner du
+Første måned trekkes med det samme. Avtalen finner du
 under Faste trekk i Vipps-appen — der ser du beløpet, når neste trekk går,
 og du kan stoppe den når du vil.
 

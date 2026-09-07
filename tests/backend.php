@@ -5612,14 +5612,14 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
     str_contains($sida, ": dagensAlle.filter(e => e.holder === kn);"));
 // Eieren, gang paa gang: «det hvite feltet under alle kurs skulle staa paa
 // linje med det hvite i kallenderen». Overskriftsrada i kalenderen er ulik
-// hoey i de tre visningene, saa hver visning trenger sitt eget loft.
+// hoey i de tre visningene, saa hver visning hadde sitt eget loft: dag -18 px,
+// uke 17, maaned 21.
 //
-// Dagen laa paa -65 px saa lenge «Viser»-raden med kursholderpillene laa inni
-// kalenderspalta og skjov rutenettet ned. Raden ligger naa i full bredde over
-// begge spaltene, og da holder -18. Maalt paa nytt 1. september: det hvite
-// lander likt paa 1200, 1500 og 1700 px.
-sjekk('det hvite staar paa linje i alle tre visningene',
-    str_contains($sida, "marginTop: visning === 'dag' ? '-18px' : visning === 'uke' ? '17px' : '21px'"));
+// Loftet er borte fra 7. september. Styringen ligger oeverst i spalta naa, og
+// det er den som staar paa linje med «Alle kurs» — rutenettet ligger under
+// den, og kan ikke staa paa linje med noe til venstre lenger.
+sjekk('spalta har ikke loft lenger',
+    !str_contains($sida, "marginTop: visning === 'dag' ?"));
 
 // Ruta som aapnes fra kalenderen var bygget ved aa ramse opp hver kolonne
 // kurset har, og viste derfor ogsaa feltene eieren alt hadde bedt om aa bli
@@ -7162,12 +7162,39 @@ sjekk('pillene ligger i sin egen rad, i full bredde',
     str_contains($sida, "klPilleradStil: this.erSmal()")
     && str_contains($sida, ": { gridColumn: '1 / -1', gridRow: '2', minWidth: 0 },"));
 sjekk('… og kalenderen ligger i rada under',
-    str_contains($sida, ": { minWidth: 0, gridColumn: '2', gridRow: '3',")
+    str_contains($sida, ": { minWidth: 0, gridColumn: '2', gridRow: '3' },")
     && str_contains($sida, "gridColumn: '1', gridRow: '3' },"));
 // Maalt paa den kjorende siden: pilleraden paa 430, kortene slutter paa 410,
 // null kollisjoner, og det hvite likt paa begge sider.
 sjekk('… og raden er ute av loftet',
     !str_contains($sida, "marginTop: visning === 'dag' ? '-65px'"));
+
+// ── Styringen er kalenderens topplinje ─────────────────────────────────
+//
+// Eieren, 7. september 2026: «dato velger, altsaa der man velger dato, uke,
+// maaned, og blar fram og tilbake maa ligge i umiddelbar naerhet til
+// kalenderen». Den sto oeverst paa siden, 439 px over foerste klokkelinje,
+// med beskjeder, notater, paaminnelser, fem snarveiskort og «Viser»-raden
+// imellom. Han saa to skjermbilder og valgte: «b». Maalt etterpaa: 150 px.
+//
+// Baren staar INNE i kalenderspalta, foer visningene. Staar den utenfor
+// igjen, er vi tilbake til 439.
+sjekk('styringen ligger inne i kalenderspalta',
+    str_contains($sida, '<div style="{{ klHovedStil }}">')
+    && strpos($sida, '<div style="{{ klStyringStil }}">') > strpos($sida, '<div style="{{ klHovedStil }}">')
+    && strpos($sida, '<div style="{{ klStyringStil }}">') < strpos($sida, 'klErManed }}" hint-placeholder-val="{{ false }}"'));
+// Uten bunnkant og med runding bare oppe henger baren sammen med rutenettet
+// under, som ett kort. Med full runding ble det to kort oppaa hverandre.
+sjekk('… og henger sammen med rutenettet under',
+    str_contains($sida, "klStyringStil: {")
+    && str_contains($sida, "borderBottom: 'none', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',"));
+// Knappene er de samme, og de skal vaere der alle sammen.
+sjekk('… og alle knappene ble med',
+    substr_count($sida, 'onClick="{{ klForrige }}"') === 1
+    && substr_count($sida, 'onClick="{{ klIdag }}"') === 1
+    && substr_count($sida, 'onClick="{{ klNesteSteg }}"') === 1
+    && substr_count($sida, '<sc-for list="{{ klVisninger }}" as="v"') === 1
+    && substr_count($sida, 'onChange="{{ settKlSok }}"') === 1);
 
 // ── Paint on Pots tar ikke spalta ──────────────────────────────────────
 //

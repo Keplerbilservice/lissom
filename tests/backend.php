@@ -9533,6 +9533,49 @@ sjekk('… og sier fra naar datoen er passert',
     str_contains($sida, 'Datoen er passert. Trekket går ved neste runde i natt.')
     && str_contains($sida, 'Gjelder fra og med neste trekk. Vipps varsler medlemmet dagen før.'));
 
+// ── Trekkdagen ligger fast, ogsaa i februar ─────────────────────────────
+//
+// «+1 month» regner ikke slik en kalender gjor. Maalt 7. september 2026:
+// 31. januar + 1 maaned = 3. mars, ikke 28. februar. Deretter 3. april,
+// 3. mai — datoen vandrer, og et medlem satt til den 31. ender paa en helt
+// annen dag. Eieren valgte «Siste dag i maaneden: 31. januar → 28. februar →
+// 31. mars. Ligger fast.»
+$mFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('trekkdatoen flyttes ikke med «+1 month» lenger',
+    str_contains($mFil, 'public static function nesteTrekkdato(string $fra, ?int $dag = null): string')
+    && !str_contains($mFil, "->modify('+1 month')->format('Y-m-d'),"));
+// Foerste i maaneden foerst. Legger vi en maaned til den 31., renner den over.
+sjekk('… og regner fra foerste i maaneden',
+    str_contains($mFil, "\$maaned = \$d->modify('first day of this month')->modify('+1 month');")
+    && str_contains($mFil, 'min($onsket, $sisteDag)'));
+// Dagen maa huskes. Klipper vi bare til 28., er den 31. tapt for godt.
+sjekk('… og dagen huskes, saa den 31. kommer tilbake',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/149_trekkdagen_ligger_fast.sql'),
+                 'ADD COLUMN trekk_dag TINYINT NULL')
+    && str_contains($medlFil, "\$endring['trekk_dag'] = (int) \$d->format('j');"));
+// Regnestykket, slik det faktisk gaar. Samme utregning som i medlemskap.php.
+$nesteDato = static function (string $fra, ?int $dag = null): string {
+    $d = new DateTimeImmutable($fra, new DateTimeZone('UTC'));
+    $onsket = $dag !== null && $dag >= 1 && $dag <= 31 ? $dag : (int) $d->format('j');
+    $m = $d->modify('first day of this month')->modify('+1 month');
+    return $m->setDate((int) $m->format('Y'), (int) $m->format('n'),
+                       min($onsket, (int) $m->format('t')))->format('Y-m-d');
+};
+sjekk('31. januar blir 28. februar, ikke 3. mars',
+    $nesteDato('2026-01-31', 31) === '2026-02-28', $nesteDato('2026-01-31', 31));
+sjekk('… og 28. februar blir 31. mars igjen',
+    $nesteDato('2026-02-28', 31) === '2026-03-31', $nesteDato('2026-02-28', 31));
+sjekk('… og 31. mars blir 30. april',
+    $nesteDato('2026-03-31', 31) === '2026-04-30', $nesteDato('2026-03-31', 31));
+sjekk('… mens den 15. blir staaende den 15.',
+    $nesteDato('2026-11-15', 15) === '2026-12-15'
+    && $nesteDato('2026-12-15', 15) === '2027-01-15');
+// En avtale fra for migrasjon 149 har ingen dag lagret. Da brukes dagen i
+// datoen som staar — den klippes én gang og blir saa staaende.
+sjekk('… og en gammel avtale uten dag vandrer ikke',
+    $nesteDato('2026-01-31', null) === '2026-02-28'
+    && $nesteDato('2026-02-28', null) === '2026-03-28');
+
 // ── «Synk med mobilen» viser den ekte adressen ──────────────────────────
 //
 // Ruta viste to oppdiktede adresser: «webcal://lissom.no/api/kalender.ics

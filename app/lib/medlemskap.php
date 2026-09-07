@@ -1355,6 +1355,40 @@ final class Medlemskap
     }
 
     /**
+     * Neste trekkdato, én maaned fram, med dagen i behold.
+     *
+     * «+1 month» regner ikke slik en kalender gjor. Maalt 7. september 2026:
+     * 31. januar + 1 maaned = 3. mars, ikke 28. februar. Deretter 3. april,
+     * 3. mai — datoen vandrer nedover aaret, og et medlem satt til den 31.
+     * ender paa en helt annen dag.
+     *
+     * Eieren valgte «Siste dag i maaneden: 31. januar → 28. februar →
+     * 31. mars. Ligger fast.» Derfor huskes dagen i «trekk_dag», og den
+     * klippes bare der maaneden er for kort. Neste maaned staar den igjen
+     * der den hoerer hjemme.
+     *
+     * Er «trekk_dag» tom — en avtale fra for migrasjon 149 — brukes dagen i
+     * datoen som staar. Da oppfoerer den seg som den alltid har gjort, bare
+     * uten aa vandre.
+     */
+    public static function nesteTrekkdato(string $fra, ?int $dag = null): string
+    {
+        $d = new DateTimeImmutable($fra, new DateTimeZone('UTC'));
+        $onsket = $dag !== null && $dag >= 1 && $dag <= 31 ? $dag : (int) $d->format('j');
+
+        // Foerste i maaneden foerst. Legger vi en maaned til den 31., renner
+        // den over i maaneden etter — det er nettopp feilen vi retter.
+        $maaned = $d->modify('first day of this month')->modify('+1 month');
+        $sisteDag = (int) $maaned->format('t');
+
+        return $maaned->setDate(
+            (int) $maaned->format('Y'),
+            (int) $maaned->format('n'),
+            min($onsket, $sisteDag)
+        )->format('Y-m-d');
+    }
+
+    /**
      * Avtaler som skal belastes naa. Kjores av cron.
      *
      * @return list<array<string,mixed>>
@@ -1458,8 +1492,11 @@ final class Medlemskap
 
         DB::oppdater('subscriptions', [
             'siste_trekk' => (string) $avtale['neste_trekk'],
-            'neste_trekk' => $engangs ? null
-                : (new DateTimeImmutable((string) $avtale['neste_trekk']))->modify('+1 month')->format('Y-m-d'),
+            'neste_trekk' => $engangs ? null : self::nesteTrekkdato(
+                (string) $avtale['neste_trekk'],
+                isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null
+                    ? (int) $avtale['trekk_dag'] : null
+            ),
         ], ['id' => (int) $avtale['id']]);
 
         // Vipps krever at kunden vet om trekket for det skjer.

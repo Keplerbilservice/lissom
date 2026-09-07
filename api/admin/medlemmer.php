@@ -538,7 +538,18 @@ if (Foresporsel::metode() === 'POST') {
             Svar::feil('Datoen kan ikke være mer enn ett år fram.');
         }
 
-        DB::oppdater('subscriptions', ['neste_trekk' => $dato], ['id' => (int) $a['id']]);
+        // Dagen huskes, ikke bare datoen.
+        //
+        // «+1 month» regner ikke slik en kalender gjor: 31. januar + 1 maaned
+        // er 3. mars, ikke 28. februar. Eieren valgte «Siste dag i maaneden:
+        // 31. januar → 28. februar → 31. mars. Ligger fast.» Da maa dagen
+        // staa et sted — klipper vi bare til 28., er den 31. tapt for godt.
+        // Se Medlemskap::nesteTrekkdato() og migrasjon 149.
+        $endring = ['neste_trekk' => $dato];
+        if (DB::harKolonne('subscriptions', 'trekk_dag')) {
+            $endring['trekk_dag'] = (int) $d->format('j');
+        }
+        DB::oppdater('subscriptions', $endring, ['id' => (int) $a['id']]);
 
         revider('medlem_trekkdato', 'member', $id,
                 ['avtale' => (int) $a['id'], 'fra' => (string) ($a['neste_trekk'] ?? ''), 'til' => $dato]);

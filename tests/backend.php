@@ -9384,11 +9384,14 @@ sjekk('… og medlemmenes liste bygger paa den samme spoerringen',
 sjekk('… mens medlemmene fortsatt bare ser de synlige',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
                  'Stempling::inneNa()'));
-// Kortet skal staa begge steder. Eieren ba om nettopp de to.
-sjekk('kortet staar paa Oversikt og paa Kalender',
-    substr_count($sida, '<sc-if value="{{ admInneVis }}"') === 2);
-sjekk('… og leser de samme verdiene begge steder',
-    substr_count($sida, '<sc-for list="{{ admInne }}" as="i"') === 2
+// Kortet sto begge steder til 7. september. Da flyttet navnene til
+// sidemenyen, og boksen i kalenderen ble tatt bort — eieren: «i kalender maa
+// vi lage en annen visning ... Ta boksen helt bort». Kortet staar paa
+// Oversikt, navnene i menyen paa hver adminside.
+sjekk('kortet staar paa Oversikt',
+    substr_count($sida, '<sc-if value="{{ admInneVis }}"') === 1);
+sjekk('… og leser de samme verdiene som menyen',
+    substr_count($sida, '<sc-for list="{{ admInne }}" as="i"') === 1
     && str_contains($sida, 'admInneVis: true,'));
 // Uten dette merket ville de skjulte sett ut som alle andre, og eieren
 // kunne fortalt et medlem noe hen har valgt bort.
@@ -9402,9 +9405,9 @@ sjekk('… og de skjulte er merket',
 // oversikt?», og etter skissen «endre fra ikke inne naa til medlemmer, og
 // husk de maa vaere klikkbare saa de gaar til det riktige stedet», og «men
 // medlemmer maa vises selv om ingen er i verkstedet».
-sjekk('medlemmene staar under, begge steder',
-    substr_count($sida, '<sc-for list="{{ admMedl }}" as="v"') === 2
-    && substr_count($sida, '{{ admMedlAntall }}') === 2);
+sjekk('medlemmene staar under, paa Oversikt',
+    substr_count($sida, '<sc-for list="{{ admMedl }}" as="v"') === 1
+    && substr_count($sida, '{{ admMedlAntall }}') === 1);
 // Lista staar utenfor «admInneTom», saa den vises ogsaa naar verkstedet er
 // tomt. Sto den inni, forsvant medlemmene sammen med de innstemplede.
 sjekk('… ogsaa naar ingen er innstemplet',
@@ -9415,7 +9418,7 @@ sjekk('… ogsaa naar ingen er innstemplet',
                        . "\n" . '                <div style="{{ admMedlSkilleStil }}">'));
 // Raden er en knapp, ikke en etikett. «husk de maa vaere klikkbare».
 sjekk('… og hver rad er en knapp inn til personen',
-    substr_count($sida, 'onClick="{{ v.apne }}"') === 2
+    substr_count($sida, 'onClick="{{ v.apne }}"') === 1
     && str_contains($sida, "this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: '' });")
     && str_contains($sida, 'this.apnePerson(m.id, 0);'));
 // Radene kommer fra medlemsrader(), den samme som medlemslista bruker.
@@ -9432,6 +9435,64 @@ sjekk('… og ingen staar to ganger i det samme kortet',
 sjekk('«Prøveperiode» staar med ø',
     str_contains($sida, "prove: 'Prøveperiode',")
     && !str_contains($sida, "prove: 'Proveperiode',"));
+// ── Navnene i sidemenyen ────────────────────────────────────────────────
+//
+// Eieren, 7. september: «i kalender maa vi lage en annen visning. kan du
+// legge hvem er i verkstedet paa sidemenyen?» Feltet nederst i menyen sa
+// «I verkstedet naa» og et tall; tallet svarer ikke paa hvem.
+sjekk('navnene staar i sidemenyen',
+    substr_count($sida, '<sc-for list="{{ admMenyInne }}" as="i"') === 36
+    && str_contains($sida, 'admMenyInne: raa.slice(0, 6).map(r => ({'));
+// Eieren, 7. september: «paa pc, flytt i verkstedet naa til rett under meld
+// inn feil, saa log ut nedenfor der». Blokka sto nederst i menyen, utenfor
+// skjermbildet. «Logg ut» er derfor tatt ut av menylista og tegnes for seg,
+// etter blokka — pillene oeverst paa telefon leser fortsatt hele lista.
+sjekk('… mellom «Meld inn feil» og «Logg ut»',
+    substr_count($sida, '<sc-for list="{{ adminNavUt }}" as="a"') === 36
+    && str_contains($sida, 'return this.adminMeny().filter(r => r.navn !== Component.ADMIN_LOGG_UT);')
+    && str_contains($sida, 'return this.adminMeny().filter(r => r.navn === Component.ADMIN_LOGG_UT);'));
+sjekk('… og utlogginga er ikke borte fra pillene paa telefon',
+    str_contains($sida, 'const ekstra = this.adminMeny()')
+    && !str_contains($sida, 'const ekstra = this.adminSideMeny()'));
+// Samme kilde som kortet — ogsaa de som er skjult for andre medlemmer.
+sjekk('… fra den samme lista som kortet',
+    str_contains($sida, 'erSkjult: !!r.skjult,')
+    && str_contains($sida, "klokke: r.siden || '',"));
+// Menyen er smal. Seks navn, og resten telles opp — samme form som
+// kalenderen bruker naar en dag har flere kurs enn det er plass til.
+sjekk('… og seks av gangen, med resten talt opp',
+    str_contains($sida, "admMenyHarMer: raa.length > 6,")
+    && str_contains($sida, "admMenyMer: raa.length > 6 ? '+ ' + (raa.length - 6) + ' til' : '',"));
+// Er ingen inne, staar den samme setningen som for.
+sjekk('… og «Ingen innstemplet» naar verkstedet er tomt',
+    str_contains($sida, 'admMenyTom: raa.length === 0,')
+    && str_contains($sida, '<span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}'));
+// Kalenderens sidemeny hadde ikke noe bunnfelt i det hele tatt. Uten dette
+// var det nettopp den skjermen eieren spurte om som sto uten navn.
+sjekk('… ogsaa i kalenderens sidemeny',
+    strpos($sida, '{{ admMenyInne }}') < strpos($sida, '{{ klBoksNStil }}'));
+
+// ── Telefonen ───────────────────────────────────────────────────────────
+//
+// Bunnfeltet i sidemenyen er skjult paa telefon, og bunnraden er seks faste
+// ikoner uten plass til navn. Eieren, 7. september: «paa mobil, boer dette
+// legges i bunnmenyen» — og av de tre veiene: «A — oeverst i skuffen».
+sjekk('navnene staar oeverst i menyskuffen paa telefon',
+    substr_count($sida, '<div style="{{ admMobVerkStil }}">') === 36
+    && str_contains($sida, '<div style="{{ admMobVerkEtikettStil }}">I verkstedet nå</div>'));
+// Eieren, 7. september: «paa mobil, i verkstedet naa vis 2 stk og trykk for
+// fler om det er fler». Skuffen skal aapne paa menyen, ikke paa en liste.
+sjekk('… to av gangen, med en knapp for resten',
+    str_contains($sida, 'const vist = apen ? raa : raa.slice(0, 2);')
+    && str_contains($sida, "admMobMer: raa.length > 2 ? '+ ' + (raa.length - 2) + ' til' : '',")
+    && substr_count($sida, 'onClick="{{ admMobMerVelg }}"') === 36);
+// Lukker du skuffen, legger lista seg sammen igjen. Ellers sto den utslaatt
+// neste gang du aapnet, uten at du ba om det.
+sjekk('… og lista legger seg sammen naar skuffen lukkes',
+    str_contains($sida, 'admMobVeksle: () => this.setState(s => ({ admMobApen: !s.admMobApen, menyInneApen: false })),'));
+sjekk('… over de elleve stedene, ikke under',
+    strpos($sida, '{{ admMobVerkStil }}') < strpos($sida, '<sc-for list="{{ admMobPunkter }}"'));
+
 // Kortet sto i én spalte i rutenettet paa Oversikt — maalt til 290 px — og
 // da fikk ikke statuspilla plass ved siden av navnet. Eieren, 7. september,
 // etter aa ha sett skjermbildet: «Gjor kortet bredere».
@@ -12051,14 +12112,18 @@ sjekk('pillene har ett felles maal',
 sjekk('… og ingen piller staar igjen med det gamle maalet',
     !str_contains($utenKomm, "padding: '7px 14px'"),
     'alle 14 stedene er endret');
+// Tolv naa: «+ N til» i menyskuffen paa telefon kom til 7. september, og
+// bruker det samme maalet som resten.
 sjekk('… og de som har skrift bruker pillemaalet',
-    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 11);
+    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 12);
 
 // 3. Bindingspilla sa hele setningen i versaler og ble en gul flate over to
 //    linjer. Naboene sier ett ord — «BETALT», «AKTIV» — og datoen under.
+// Ordet ble «Bindingstid» 7. september. Eieren: «vi kan godt ha en pille som
+// heter Bindingstid og ikke bundet». Ett ord fortsatt, og maalt paa nytt.
 sjekk('bindingspilla sier ett ord',
-    str_contains($utenKomm, "bindingTekst: m.slutter ? 'Sagt opp' : (m.bundet ? 'Bundet' : (m.bundetTil ? 'Fri' : '')),"),
-    'maalt i nettleseren: 69 x 24 px, én linje');
+    str_contains($utenKomm, "bindingTekst: m.slutter ? 'Sagt opp' : (m.bundet ? 'Bindingstid' : (m.bundetTil ? 'Fri' : '')),"),
+    'maalt i nettleseren: én linje');
 sjekk('… og datoen staar i den graa linja under',
     str_contains($utenKomm, "bindingDetalj: (m.slutter")
     && str_contains($utenKomm, "(m.bundet ? 'Til ' + m.bundetTil : ''))"));

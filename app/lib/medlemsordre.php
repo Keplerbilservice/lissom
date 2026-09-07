@@ -72,7 +72,9 @@ final class Medlemsordre
             'betaling' => $betaling,
             'navn'     => mb_substr(trim((string) ($felter['navn'] ?? '')), 0, 191),
             'epost'    => self::ellerNull($felter['epost'] ?? '', 191),
-            'telefon'  => self::ellerNull($felter['telefon'] ?? '', 32),
+            // Normalisert med det samme. Folk skriver «+47 900 00 000»,
+            // «90000000» og «0047 90000000» om det samme nummeret.
+            'telefon'  => self::ellerNull(normaliser_telefon((string) ($felter['telefon'] ?? '')), 32),
             'erfaring' => self::ellerNull($felter['erfaring'] ?? '', 1000),
             'melding'  => self::ellerNull($felter['melding'] ?? '', 1000),
             'vilkaar'  => self::ellerNull($felter['vilkaar'] ?? '', 32),
@@ -111,10 +113,26 @@ final class Medlemsordre
         $epost = trim((string) ($ordre['epost'] ?? ''));
 
         $m = null;
-        if ($tlf !== '') {
+        // ── De aatte siste sifrene, ikke tegnene ─────────────────────
+        //
+        // Her sto «telefon = :t». Nummeret ligger i basen paa flere former —
+        // «+4790000000» fra oss, «4790000000» fra Vipps — og kunden skriver
+        // det med mellomrom. Sammenligningen traff derfor aldri, og ALLE ble
+        // sendt til Vipps for aa bekrefte hvem de var.
+        //
+        // Eieren, 7. september 2026, foerste forsoek etter omleggingen: «maa
+        // fortsatt taste teleefonnummeret da, saa det lover ikke bra».
+        //
+        // De aatte siste sifrene er nummeret. Resten er skrivemaate.
+        $siffer = preg_replace('/[^0-9]/', '', $tlf) ?? '';
+        if (strlen($siffer) >= 8) {
             $m = DB::en(
-                'SELECT * FROM members WHERE telefon = :t AND anonymisert_at IS NULL LIMIT 1',
-                ['t' => $tlf]
+                "SELECT * FROM members
+                  WHERE anonymisert_at IS NULL
+                    AND telefon IS NOT NULL
+                    AND RIGHT(REGEXP_REPLACE(telefon, '[^0-9]', ''), 8) = :t
+               ORDER BY id LIMIT 1",
+                ['t' => substr($siffer, -8)]
             );
         }
         if ($m === null && $epost !== '') {

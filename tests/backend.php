@@ -10530,6 +10530,15 @@ sjekk('… og alle tre kan gjores opp paa de samme fire maatene',
 // Et gavekort uten kode er ingen betaling. Feltet staar bare paa den raden
 // som ble trykket paa — noekkelen er slag og id sammen, fordi en booking og
 // en ordre kan ha samme id.
+// Fire brikker med hver sin ordbredde sto ujevnt i to rader — «Vipps» smal,
+// «Gavekort» bred. Eieren, 7. september 2026, med bilde: «se paa pillene paa
+// hoyere siden, de maa ha samme stoerrelse».
+//
+// Rutenett med to like spalter, og brikka fyller cella si. Maalt i
+// nettleseren paa 1440, 1024 og 390 px: alle fire 92 x 37 px.
+sjekk('… og de fire brikkene er like store',
+    str_contains($sida, 'grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; flex: 0 0 auto; width: 190px;')
+    && str_contains($sida, "      width: '100%', boxSizing: 'border-box', textAlign: 'center',"));
 sjekk('… og gavekortet spor etter koden, paa sin egen rad',
     str_contains($sida, "const n = String(u.slag || 'kurs') + ':' + String(u.id);")
     && str_contains($sida, 'gaveApen: this.state.kaGaveRad === n,')

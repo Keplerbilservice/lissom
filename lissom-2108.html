@@ -8432,8 +8432,14 @@ window.__resources = {
                 <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
                 <!-- To maater sto over hverandre. Fire i samme stabel ville
                      gjort raden dobbelt saa hoy, saa de brekker i to og to i
-                     stedet — samme hoyde som for. -->
-                <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: 0 0 auto; max-width: 190px;">
+                     stedet — samme hoyde som for.
+
+                     Rutenett, ikke «flex-wrap». Med flex fikk hver pille
+                     bredden til ordet sitt: «Vipps» ble smal, «Gavekort» bred,
+                     og de fire sto ujevnt i to rader. Eieren, 7. september
+                     2026: «se paa pillene paa hoyere siden, de maa ha samme
+                     stoerrelse». To like spalter gir fire like brikker. -->
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; flex: 0 0 auto; width: 190px;">
                   <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="2">
                     <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                   </sc-for>
@@ -30450,11 +30456,15 @@ class Component extends DCLogic {
    */
   skylderKort() {
     const liste = (this.state.adminData || {}).ubetalte || [];
+    // Brikka fyller cella si og midtstiller ordet. Uten «width: 100%» ville
+    // den krympet til ordet sitt inne i rutenettet, og «Vipps» blitt smalere
+    // enn «Gavekort» igjen.
     const knapp = {
       appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-      padding: '6px 14px', font: 'var(--type-body-sm)', fontWeight: 700,
+      padding: '6px 10px', font: 'var(--type-body-sm)', fontWeight: 700,
       border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)',
       color: 'var(--lissom-brown)', whiteSpace: 'nowrap',
+      width: '100%', boxSizing: 'border-box', textAlign: 'center',
     };
     const sum = liste.reduce((n, u) => n + (parseInt(String(u.belop).replace(/[^\d]/g, ''), 10) || 0), 0);
     return {

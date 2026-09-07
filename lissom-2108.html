@@ -11953,48 +11953,24 @@ window.__resources = {
 
                  Bredden foelger samme regel som ovSkylderRamme: to spalter
                  der det er plass, hele rada paa telefonen. -->
-          <!-- ── Hvem som er i huset ──────────────────────────────────
-               Eieren, 7. september 2026: «jeg onsker at admin skal kunne se
-               hvem som er i verksted, ogsaa de som har valgt aa ikke vise meg
-               for medlemmer, den maa ligge paa oversikt og kalender».
+          <!-- ── Medlemmene ─────────────────────────────────────────
+               Eieren, 7. september 2026: «paa oversikt, saa staar ogsaa i
+               verkstedet paa forsiden, den kan fjernes da den staar i
+               sidemenyen» — og «medlemmer blir staaende, men som et lite kort
+               som er like de andre paa siden».
 
-               Sidemenyen har hatt et tall — «3 medlemmer» — men ingen navn.
-               Navnene laa bare i api/stempling.php, som medlemmene leser, og
-               der er de skjulte tatt bort med vilje.
+               De innstemplede sto oeverst i dette kortet fram til naa. De
+               staar i sidemenyen paa hver eneste adminside, og i skuffen paa
+               telefonen, saa lista sto to steder paa den samme skjermen.
 
-               Haken heter «Vis meg for andre medlemmer». Den er et loefte til
-               de andre MEDLEMMENE, ikke til verkstedet.
+               Igjen staar medlemmene. Hver rad er en knapp: ett trykk aapner
+               personen paa medlemsskjermen — «husk de maa vaere klikkbare saa
+               de gaar til det riktige stedet».
 
-               Samme rader som ruta paa Min side, saa de to ser like ut. Se
-               admInne() og Stempling::alleInne(). -->
+               De som er inne staar med i lista naa. De var tatt bort fordi de
+               sto oeverst i det samme kortet; det gjor de ikke lenger. -->
           <sc-if value="{{ admInneVis }}" hint-placeholder-val="{{ true }}">
             <div style="{{ admInneRamme }}">
-              <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
-                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ admInneAntall }}</span>
-              </div>
-              <sc-for list="{{ admInne }}" as="i" hint-placeholder-count="3">
-                <div style="padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-                  <span style="{{ i.avatarStil }}">{{ i.initial }}</span>
-                  <span style="flex: 1 1 160px; min-width: 0;">
-                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ i.navn }}</span>
-                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ i.under }}</span>
-                  </span>
-                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                    <span style="{{ admSkjultStil }}">Skjult for andre</span>
-                  </sc-if>
-                </div>
-              </sc-for>
-              <sc-if value="{{ admInneTom }}" hint-placeholder-val="{{ false }}">
-                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen er innstemplet nå.</div>
-              </sc-if>
-              <!-- Resten av medlemmene. De staar her uansett om noen er inne
-                   eller ikke — eieren, 7. september 2026: «men medlemmer maa
-                   vises selv om ingen er i verkstedet».
-
-                   Hver rad er en knapp: ett trykk aapner personen paa
-                   medlemsskjermen. «husk de maa vaere klikkbare saa de gaar
-                   til det riktige stedet». -->
               <div style="{{ admMedlSkilleStil }}">
                 <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemmer</span>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ admMedlAntall }}</span>
@@ -12011,9 +11987,6 @@ window.__resources = {
               </sc-for>
               <sc-if value="{{ admMedlTom }}" hint-placeholder-val="{{ false }}">
                 <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen andre medlemmer.</div>
-              </sc-if>
-              <sc-if value="{{ admInneHarSkjulte }}" hint-placeholder-val="{{ false }}">
-                <div style="padding: var(--space-3) var(--space-5) var(--space-4); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Du ser alle. Medlemmene ser bare dem som har slått på «Vis meg for andre medlemmer».</div>
               </sc-if>
             </div>
           </sc-if>
@@ -47585,10 +47558,7 @@ class Component extends DCLogic {
             { navn: 'Kari Nordbø', siden: '12:10', type: 'Basis 30', ressurs: 'Dreieskive 2', skjult: false },
             { navn: 'Jonas Five', siden: '13:42', type: 'Årsmedlemskap', ressurs: '', skjult: true },
           ]);
-        const forbokstaver = (navn) => String(navn || '').trim().split(/\s+/)
-          .slice(0, 2).map(d => d.charAt(0).toUpperCase()).join('') || '?';
-        const skjulte = raa.filter(r => r.skjult).length;
-        // ── Resten av medlemmene, under dem som er inne ──────────────────
+        // ── Medlemmene i kortet paa Oversikt ────────────────────────────
         //
         // Eieren, 7. september 2026: «kan jeg faa medlemmer kortet i baade
         // kalender og oversikt?» — og etter skissen: «endre fra ikke inne naa
@@ -47600,7 +47570,9 @@ class Component extends DCLogic {
         // medlemslista. Skrev vi dem opp paa nytt her, ville de to kunne
         // svare hver sitt om den samme personen.
         //
-        // De som staar inne er tatt bort: de staar alt oeverst i kortet.
+        // Alle medlemmene staar her. Fram til 7. september var de som var
+        // innstemplet tatt bort, fordi de sto oeverst i det samme kortet.
+        // Den avdelingen er borte, og da manglet de som var i verkstedet.
         const medl = ((this.state.adminMedlemmer || this.erPublisert())
           ? this.medlemsrader()
           : [
@@ -47609,7 +47581,7 @@ class Component extends DCLogic {
             { id: 0, navn: 'Marit Lie', initial: 'ML', abonnement: 'Mini 15', timer: '3 / 15',
               status: 'Pause', tone: 'neutral', erMedlem: true, erAdmin: false, inne: false },
           ])
-          .filter(m => m.erMedlem && !m.erAdmin && !m.inne)
+          .filter(m => m.erMedlem && !m.erAdmin)
           .sort((a, b) => String(a.navn).localeCompare(String(b.navn), 'no'));
         const avatar = {
           width: 32, height: 32, borderRadius: '50%', background: 'var(--clay-200)',
@@ -47760,9 +47732,13 @@ class Component extends DCLogic {
               this.apnePerson(m.id, 0);
             },
           })),
+          // Overskrifta i kortet. Den sto som en avdeling midt i kortet, med
+          // strek over og egen bakgrunn, fordi de innstemplede sto over. Naa
+          // er den kortets egen overskrift, og har samme luft som de andre
+          // kortene paa Oversikt.
           admMedlSkilleStil: {
-            padding: '12px 20px 10px', borderTop: '1px solid var(--border-subtle)',
-            background: 'var(--clay-50)', display: 'flex', alignItems: 'baseline',
+            padding: 'var(--space-5) var(--space-5) var(--space-4)',
+            display: 'flex', alignItems: 'baseline',
             justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap',
           },
           // Kortet staar i en smal spalte paa Oversikt — maalt til 290 px.
@@ -47777,42 +47753,15 @@ class Component extends DCLogic {
           },
           // Kortet staar bare i admin. «medlemsvisning» er Min side.
           admInneVis: true,
-          admInneTom: raa.length === 0,
-          admInneHarSkjulte: skjulte > 0,
-          admInneAntall: raa.length === 0 ? 'Ingen innstemplet'
-            : (raa.length === 1 ? 'Ett medlem inne' : raa.length + ' medlemmer inne'),
-          admInne: raa.map(r => ({
-            navn: r.navn,
-            initial: forbokstaver(r.navn),
-            // Klokkeslettet er det man leter etter; ressursen og typen sier
-            // hva hen gjor. Tomme ledd faller bort.
-            under: ['Innstemplet ' + (r.siden || ''), r.ressurs || '', r.type || '']
-              .filter(x => String(x).trim() !== '').join(' · '),
-            erSkjult: !!r.skjult,
-            avatarStil: {
-              width: 32, height: 32, borderRadius: '50%', background: 'var(--clay-200)',
-              color: 'var(--brown-500)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 12, fontWeight: 700,
-              letterSpacing: '.02em', flex: '0 0 auto',
-            },
-          })),
-          admSkjultStil: {
-            display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
-            borderRadius: 'var(--radius-pill)', padding: '2px 10px',
-            fontSize: 11, fontWeight: 700, letterSpacing: '.02em',
-            background: 'var(--clay-100)', color: 'var(--text-muted)',
-            border: '1px solid var(--border-subtle)',
-          },
           // Samme ramme som statistikkortet ved siden av, saa Oversikt ikke
           // faar to slags kort.
           //
-          // To spalter, som statistikken. Kortet sto i én, og den er 290 px
-          // paa en vanlig skjerm: da fikk ikke statuspilla plass ved siden av
-          // navnet og la seg paa egen linje under. Eieren, 7. september 2026,
-          // etter aa ha sett skjermbildet: «Gjor kortet bredere». Samme regel
-          // som ovPopRamme — hele bredden naar skjermen er smal.
+          // Kortet gikk over to spalter da de innstemplede sto oeverst, fordi
+          // radene der ikke fikk plass i én. De radene er borte, og eieren,
+          // 7. september 2026: «medlemmer blir staaende, men som et lite kort
+          // som er like de andre paa siden». Da foelger det rutenettet, som
+          // kortene rundt.
           admInneRamme: {
-            gridColumn: this.erSmal() ? '1 / -1' : 'span 2',
             border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
             background: 'var(--surface-card)', overflow: 'hidden',
             marginBottom: 'var(--space-6)',

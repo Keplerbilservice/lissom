@@ -7214,11 +7214,13 @@ sjekk('… med samme ramme som resten',
 // lager da en spalte til: panelet ble 413 piksler paa en skjerm som er 390,
 // og hele Oversikt maatte dras sidelengs. Under 760 piksler skal det spenne
 // over hele rada, over 760 over to spalter som for.
-// To brede paneler naa: statistikken og verkstedkortet. Begge foelger den
-// samme regelen — hele rada under 760, to spalter over. Tallet staar her
-// saa et tredje panel ikke kan snike inn en «span 2» uten den samme vakta.
+// Verkstedkortet fulgte den samme regelen til 7. september. Da gikk de
+// innstemplede ut av det, og kortet ble like bredt som de andre — eieren:
+// «medlemmer blir staaende, men som et lite kort som er like de andre paa
+// siden». Statistikken er det ene brede panelet igjen. Tallet staar her saa
+// et nytt panel ikke kan snike inn en «span 2» uten den samme vakta.
 sjekk('… og sprenger ikke telefonskjermen',
-    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 2
+    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 1
     && !str_contains($sida2, 'grid-column: span 2;'));
 
 // ── Dra-kortene i kalenderen ───────────────────────────────────────────
@@ -9388,18 +9390,25 @@ sjekk('… mens medlemmene fortsatt bare ser de synlige',
                  'Stempling::inneNa()'));
 // Kortet sto begge steder til 7. september. Da flyttet navnene til
 // sidemenyen, og boksen i kalenderen ble tatt bort — eieren: «i kalender maa
-// vi lage en annen visning ... Ta boksen helt bort». Kortet staar paa
-// Oversikt, navnene i menyen paa hver adminside.
+// vi lage en annen visning ... Ta boksen helt bort».
+//
+// Samme kveld gikk de innstemplede ut av kortet paa Oversikt ogsaa — eieren:
+// «paa oversikt, saa staar ogsaa i verkstedet paa forsiden, den kan fjernes
+// da den staar i sidemenyen». Navnene staar naa ett sted: i menyen, paa hver
+// eneste adminside.
 sjekk('kortet staar paa Oversikt',
     substr_count($sida, '<sc-if value="{{ admInneVis }}"') === 1);
-sjekk('… og leser de samme verdiene som menyen',
-    substr_count($sida, '<sc-for list="{{ admInne }}" as="i"') === 1
+sjekk('… og de innstemplede staar ikke i det',
+    !str_contains($sida, '{{ admInne }}')
+    && !str_contains($sida, 'admInneAntall')
+    && !str_contains($sida, 'admInneTom')
     && str_contains($sida, 'admInneVis: true,'));
 // Uten dette merket ville de skjulte sett ut som alle andre, og eieren
-// kunne fortalt et medlem noe hen har valgt bort.
-sjekk('… og de skjulte er merket',
-    str_contains($sida, '<span style="{{ admSkjultStil }}">Skjult for andre</span>')
-    && str_contains($sida, 'erSkjult: !!r.skjult,'));
+// kunne fortalt et medlem noe hen har valgt bort. Merket staar i menyen naa.
+sjekk('… og de skjulte er merket i menyen',
+    str_contains($sida, '<div style="{{ admMenySkjultStil }}">Skjult for andre</div>')
+    && str_contains($sida, 'erSkjult: !!r.skjult,')
+    && !str_contains($sida, 'admSkjultStil'));
 
 // ── Medlemmene under, i det samme kortet ────────────────────────────────
 //
@@ -9410,14 +9419,14 @@ sjekk('… og de skjulte er merket',
 sjekk('medlemmene staar under, paa Oversikt',
     substr_count($sida, '<sc-for list="{{ admMedl }}" as="v"') === 1
     && substr_count($sida, '{{ admMedlAntall }}') === 1);
-// Lista staar utenfor «admInneTom», saa den vises ogsaa naar verkstedet er
-// tomt. Sto den inni, forsvant medlemmene sammen med de innstemplede.
-sjekk('… ogsaa naar ingen er innstemplet',
-    !str_contains($sida, '{{ admInneTom }}" hint-placeholder-val="{{ false }}">'
-                       . "\n" . '                <div style="padding: var(--space-4) var(--space-5); '
-                       . 'border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); '
-                       . 'color: var(--text-muted);">Ingen er innstemplet nå.</div>'
-                       . "\n" . '                <div style="{{ admMedlSkilleStil }}">'));
+// «Medlemmer» er kortets egen overskrift naa, og den staar oeverst i ramma.
+// Var den fortsatt en avdeling midt i kortet, ville kortet aapnet med en tom
+// strek der de innstemplede sto.
+sjekk('… med «Medlemmer» som overskrift oeverst',
+    str_contains($sida, '<div style="{{ admInneRamme }}">' . "\n"
+                      . '              <div style="{{ admMedlSkilleStil }}">')
+    && !str_contains($sida, "borderTop: '1px solid var(--border-subtle)',\n"
+                          . "            background: 'var(--clay-50)', display: 'flex', alignItems: 'baseline',"));
 // Raden er en knapp, ikke en etikett. «husk de maa vaere klikkbare».
 sjekk('… og hver rad er en knapp inn til personen',
     substr_count($sida, 'onClick="{{ v.apne }}"') === 1
@@ -9427,10 +9436,12 @@ sjekk('… og hver rad er en knapp inn til personen',
 // Skrevet opp paa nytt kunne de to svart hver sitt om den samme personen.
 sjekk('… og de leser de samme radene som medlemslista',
     str_contains($sida, '? this.medlemsrader()')
-    && str_contains($sida, '.filter(m => m.erMedlem && !m.erAdmin && !m.inne)'));
-// De innstemplede staar alt oeverst. Uten filteret sto de to ganger.
-sjekk('… og ingen staar to ganger i det samme kortet',
-    str_contains($sida, '&& !m.inne)'));
+    && str_contains($sida, '.filter(m => m.erMedlem && !m.erAdmin)'));
+// Fram til 7. september sto de innstemplede oeverst i det samme kortet, og
+// var filtrert bort her for ikke aa staa to ganger. Den avdelingen er borte;
+// filteret ville naa tatt bort nettopp dem som er i verkstedet.
+sjekk('… og de som er inne staar med i lista',
+    !str_contains($sida, '&& !m.inne)'));
 // Ordet paa statuspilla sto uten oe. Det staar baade i medlemslista og i
 // kortet paa Oversikt og Kalender — ett sted i koden, saa det ikke kan bli
 // riktig det ene stedet og feil det andre.
@@ -9705,12 +9716,15 @@ sjekk('… og lista legger seg sammen naar skuffen lukkes',
 sjekk('… over de elleve stedene, ikke under',
     strpos($sida, '{{ admMobVerkStil }}') < strpos($sida, '<sc-for list="{{ admMobPunkter }}"'));
 
-// Kortet sto i én spalte i rutenettet paa Oversikt — maalt til 290 px — og
-// da fikk ikke statuspilla plass ved siden av navnet. Eieren, 7. september,
-// etter aa ha sett skjermbildet: «Gjor kortet bredere».
-sjekk('… og kortet er to spalter bredt paa Oversikt',
-    str_contains($sida, "admInneRamme: {\n            gridColumn: \$this->erSmal()")
-    || str_contains($sida, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',\n            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',\n            background: 'var(--surface-card)', overflow: 'hidden',\n            marginBottom: 'var(--space-6)',"));
+// Kortet gikk over to spalter fordi radene med innstemplede ikke fikk plass
+// i én — 290 px, og statuspilla la seg paa egen linje. De radene er borte, og
+// eieren, 7. september: «medlemmer blir staaende, men som et lite kort som er
+// like de andre paa siden». Da foelger det rutenettet, uten gridColumn.
+sjekk('… og kortet er like bredt som de andre paa Oversikt',
+    str_contains($sida, "admInneRamme: {\n"
+                      . "            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',\n"
+                      . "            background: 'var(--surface-card)', overflow: 'hidden',\n"
+                      . "            marginBottom: 'var(--space-6)',"));
 
 echo "\n== «Stopp avtalen nå» ==\n";
 // «Send Vipps-avtale» nekter naar det alt loeper en avtale, og «Kopier lenka»

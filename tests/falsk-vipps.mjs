@@ -105,6 +105,17 @@ http.createServer((req, res) => {
         agreementId: id,
       });
     }
+    // Avlyser et bestilt trekk. Vipps svarer 204 naar det gikk, og en feil
+    // naar trekket alt er gjennomfoert. «.trekk-slett-nei» tvinger fram det
+    // siste, saa «da maa det refunderes i stedet» kan maales.
+    if (p.includes('/charges/') && req.method === 'DELETE') {
+      const tid = p.split('/')[6];
+      if (styrt('.trekk-slett-nei', '') === 'ja') {
+        return svar(res, 400, { detail: 'Charge already processed' });
+      }
+      trekk.delete(tid);
+      return svar(res, 204, {});
+    }
     if (p.endsWith('/charges') && req.method === 'POST') {
       const tid = 'chg_' + Date.now().toString(36) + '_' + (trekk.size + 1);
       trekk.set(tid, kropp);

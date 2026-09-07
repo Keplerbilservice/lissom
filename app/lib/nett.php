@@ -52,6 +52,23 @@ function http_patch_json(string $url, array $data, array $headere = []): array
 }
 
 /**
+ * DELETE. Vipps bruker den til aa avlyse et bestilt trekk.
+ *
+ * Trekket lever hos Vipps fra det bes om til forfallsdagen. I det vinduet
+ * kan det slettes, og da flytter ingen penger seg. Er det gjennomfort,
+ * svarer Vipps nei — og da er refusjon eneste vei.
+ *
+ * @param list<string> $headere
+ * @return array{status:int,kropp:string,json:mixed}
+ */
+function http_delete_json(string $url, array $headere = []): array
+{
+    $svar = http_kall($url, 'DELETE', null, array_merge(['Accept: application/json'], $headere));
+    $svar['json'] = json_decode($svar['kropp'], true);
+    return $svar;
+}
+
+/**
  * @param list<string> $headere
  * @return array{status:int,kropp:string,json:mixed}
  */

@@ -164,6 +164,35 @@ $r = hent($BASE . $url);
 sjekk('en utloept innmelding sier fra', str_contains($r['kropp'], 'Innmeldingen har gått ut'));
 sjekk('… og peker tilbake til medlemskapene', str_contains($r['kropp'], '/medlemskap'));
 
+// ── Nummeret er de aatte siste sifrene, ikke skrivemaaten ────────────
+//
+// Eieren, 7. september 2026, foerste forsoek etter omleggingen: «maa
+// fortsatt taste teleefonnummeret da, saa det lover ikke bra».
+//
+// Oppslaget sammenlignet «telefon = :t». Nummeret ligger i basen paa flere
+// former — «+4790000000» fra oss, «4790000000» fra Vipps — og kunden
+// skriver det med mellomrom. Det traff aldri, og ALLE ble derfor sendt til
+// Vipps for aa bekrefte hvem de var, og maatte taste nummeret om igjen.
+DB::kjor("DELETE FROM members WHERE epost = 'nummer@lissom.test'");
+$mid = DB::settInn('members', [
+    'navn' => 'Nummer Testperson', 'epost' => 'nummer@lissom.test',
+    'telefon' => '+4790112244', 'rolle' => 'medlem',
+]);
+$treff = 0;
+$maater = ['+4790112244', '4790112244', '90112244', '+47 901 12 244',
+           '0047 90112244', '90 11 22 44'];
+foreach ($maater as $skrevet) {
+    $m = Medlemsordre::finnMedlem(['id' => 0, 'telefon' => $skrevet, 'epost' => ''], null);
+    if ($m !== null && (int) $m['id'] === $mid) { $treff++; }
+}
+sjekk('nummeret finnes igjen uansett hvordan det er skrevet',
+    $treff === count($maater), $treff . ' av ' . count($maater));
+// Og et nummer som ikke finnes skal fortsatt ikke treffe noen.
+sjekk('… men et ukjent nummer treffer ingen',
+    Medlemsordre::finnMedlem(['id' => 0, 'telefon' => '99887766', 'epost' => ''], null) === null
+    || (int) Medlemsordre::finnMedlem(['id' => 0, 'telefon' => '99887766', 'epost' => ''], null)['id'] !== $mid);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $mid]);
+
 // ── Skjermen skal ikke gjette heller ─────────────────────────────────
 $sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // Den gamle linja staar igjen i kommentaren over metoden, med vilje — den

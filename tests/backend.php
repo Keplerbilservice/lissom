@@ -4589,6 +4589,21 @@ sjekk('… og hver spalte tar det som hoerer holderen til',
 // de har en okt, eller naar de slaas paa.
 sjekk('… og standardholderen staar fast',
     str_contains($sida2, 'const staarFast = kn => kn === stdHolder;'));
+// Datoer laget FOER regelen kom 1. september kan ligge med tomt felt, og de
+// ville vaert usynlige i dagsvisningen naa. Migrasjon 150 fyller dem etter den
+// samme regelen som koden: den som staar paa kurset om hen er aktiv, ellers
+// verkstedets standard.
+//
+// Bare fra og med i dag. En okt som alt er holdt skal ikke faa et navn den
+// ikke hadde — da ville basen paastaa hvem som sto der en kveld i august.
+$m150 = file_get_contents(dirname(__DIR__) . '/db/migrations/150_kursholder_paa_datoene_som_manglet.sql');
+sjekk('… og gamle datoer uten holder fylles av migrasjon 150',
+    str_contains($m150, 'UPDATE course_sessions cs')
+    && str_contains($m150, 'WHERE k.id = c.kursholder_id AND k.aktiv = 1')
+    && str_contains($m150, 'WHERE k2.standard = 1 AND k2.aktiv = 1 LIMIT 1'));
+sjekk('… bare framover, og bare der feltet er tomt',
+    str_contains($m150, 'WHERE cs.kursholder_id IS NULL')
+    && str_contains($m150, 'AND cs.start_tid >= CURDATE();'));
 // Alle spaltene er personer naa, og alle kan aapnes.
 sjekk('… og hver spalte kan aapnes',
     str_contains($sida2, 'erPerson: true,')

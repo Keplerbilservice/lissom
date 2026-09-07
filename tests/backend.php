@@ -12191,12 +12191,13 @@ $iKoden = $t[1];
 sort($iKoden);
 
 // Toppteksten i bin/cron.php: linjene «php ~/lissom-app/bin/cron.php <jobb>».
-preg_match_all('/cron\.php ([a-z]+)$/m', $cronKilde, $t2);
+// «>/dev/null» staar bakerst paa hver av dem, og skal ikke telle med.
+preg_match_all('/cron\.php ([a-z]+)(?: >\/dev\/null)?$/m', $cronKilde, $t2);
 $iToppteksten = array_values(array_unique($t2[1]));
 sort($iToppteksten);
 
 // Tabellen i docs/OPPSETT.md.
-preg_match_all('/cron\.php ([a-z]+)`/', $oppsett, $t3);
+preg_match_all('/cron\.php ([a-z]+)(?: >\/dev\/null)?`/', $oppsett, $t3);
 $iOppsettet = array_values(array_unique($t3[1]));
 sort($iOppsettet);
 
@@ -12208,8 +12209,22 @@ sjekk('… og toppteksten i cron.php ogsaa',
     'koden: ' . implode(', ', $iKoden) . '  ·  toppteksten: ' . implode(', ', $iToppteksten));
 // Den som faktisk henter inn pengene. Sto den ikke her, ble den ikke satt opp.
 sjekk('… og medlemstrekket staar i oppsettet med klokkeslett',
-    str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk`')
+    str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null`')
     && str_contains($oppsett, '`0 4 * * *`'));
+// «>/dev/null» paa alle seks. Uten den sender cPanel én tom e-post per
+// kjoring: CGI-utgaven av PHP skriver alltid den tomme linja som avslutter
+// hodeblokka, og cron sender e-post for hvert tegn en jobb skriver.
+// Bare stdout — stderr staar igjen, saa en jobb som feiler sier fra.
+// Setninga «bare >/dev/null, ikke 2>&1» staar i oppsettet med vilje, saa det
+// er kommandoen som skal sjekkes: stderr skal aldri kastes bort.
+$alleSeksTie = !str_contains($oppsett, '>/dev/null 2>&1')
+    && !str_contains($cronKilde, '>/dev/null 2>&1');
+foreach ($iKoden as $j) {
+    $alleSeksTie = $alleSeksTie
+        && str_contains($oppsett, "cron.php {$j} >/dev/null`")
+        && str_contains($cronKilde, "cron.php {$j} >/dev/null");
+}
+sjekk('… og alle seks linjene ender med >/dev/null, ikke 2>&1', $alleSeksTie);
 
 echo "\n== «Send Vipps-avtale» lager ikke en avtale nummer to ==\n";
 // Eieren, 5. september: «Saa jeg kan be de sjekke vipps? Eller maa de melde
@@ -12451,6 +12466,51 @@ sjekk('… og en jobb som feiler svarer som en jobb, ikke som en nettside',
 sjekk('… og CGI-utgaven tier naar alt gaar bra',
     str_contains($cronFil, "ini_set('default_mimetype', '');")
     && str_contains($cronFil, 'header_remove();'));
+
+// ── Betalingsstatus paa ventelista ogsaa ─────────────────────────────
+//
+// Eieren, 6. september, med et bilde av ventelista i kalenderen: «Ba ikke
+// jeg om at betalingsstatus skulle vises paa medlemene her ogsaa?»
+//
+// Jo. Den ble bare lagt paa «Bytt dato». Ventelista sto uten.
+//
+// En ventelisterad har ingen betaling — tabellen har navn, epost, telefon og
+// koeplass. Den som ble dratt ut av et kurs har derimot en avbestilt
+// paamelding, og DEN vet hva som var gjort opp. Vipps-betalte kan ikke havne
+// paa ventelista i det hele tatt; pamelding.php nekter og ber om refusjon.
+//
+// Maalt i nettleseren 6. september, fire paa den samme koen:
+//   Kari Testperson    #1              (meldte seg paa selv — ingen status)
+//   Testperson Bekreft #2              (samme)
+//   Proeve Kontantsen  #3 · Kontant    (dratt ut, foert som Kontant)
+//   Proeve Ubetalt     #4 · Ikke betalt (dratt ut, aldri gjort opp)
+$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('ventelista henter kontaktopplysningene, saa raden kan kobles',
+    str_contains($kalFil, 'w.epost, w.telefon'));
+sjekk('… og serveren sender med hva den avbestilte paameldingen sto med',
+    str_contains($kalFil, "'status'    => \$statusFraAvbestilt(")
+    && str_contains($kalFil, "AND b.status = 'avbestilt'"));
+sjekk('… og maaten gaar foran, med de samme ordene som deltakerraden',
+    str_contains($kalFil, "\$maate = trim((string) (\$treff['betalt_maate'] ?? ''));")
+    && str_contains($kalFil, "] ?? 'Ikke betalt';"));
+sjekk('… og ventelistepilla viser den, som «Bytt dato» gjor',
+    str_contains($sidaKal = file_get_contents(dirname(__DIR__) . '/lissom-2108.html'),
+        "+ ' · #' + v.posisjon\n                + (v.status ? ' · ' + v.status : '')"));
+sjekk('… og den som meldte seg paa koen selv faar ingen status',
+    str_contains($kalFil, "    if (\$treff === null) {\n        return '';"));
+
+// ── «Marked» heter «PR» i bunnmenyen ─────────────────────────────────
+//
+// Eieren, 6. september: «Bytte navn neders menyen fra marked til PR».
+// Bare cella i bunnmenyen paa mobil. Menypunktet i sidemenyen, overskriften
+// paa skjermen og «aria-label» heter fortsatt Markedsforing.
+//
+// Maalt paa 390 px: Kalender | Oversikt | Kurs | PR | Nettbutikk | Kasse
+sjekk('bunnmenyen sier «PR», ikke «Marked»',
+    str_contains($sidaKal, "'Markedsføring': 'PR',")
+    && !str_contains($sidaKal, "'Markedsføring': 'Marked',"));
+sjekk('… og det fulle navnet staar igjen i menyen og i aria-label',
+    str_contains($sidaKal, "'Markedsføring'"));
 
 // ── Slippefeltet skal vaere til aa se ────────────────────────────────
 //

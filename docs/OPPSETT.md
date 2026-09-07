@@ -192,16 +192,34 @@ jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 
 | Jobb | Common Settings | Feltene blir | Kommando |
 |---|---|---|---|
-| Varselkøen | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php varsler` |
-| Betalinger som henger | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php betalinger` |
-| «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser` |
-| **Medlemstrekket** | *(ingen — sett Minute `0`, Hour `4`)* | `0 4 * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk` |
-| Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser` |
-| Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold` |
+| Varselkøen | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php varsler >/dev/null` |
+| Betalinger som henger | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php betalinger >/dev/null` |
+| «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser >/dev/null` |
+| **Medlemstrekket** | *(ingen — sett Minute `0`, Hour `4`)* | `0 4 * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null` |
+| Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser >/dev/null` |
+| Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold >/dev/null` |
 
 For de tre siste: velg **Once Per Day** i menyen først, og rett så Hour fra `0`
 til `4`, `7` og `1`. Resten av feltene skal stå med stjerne — en stjerne betyr
 «hver».
+
+### Hvorfor `>/dev/null` står bakerst
+
+cPanel sender e-post hver gang en cron-jobb skriver noe som helst, og
+CGI-utgaven av PHP skriver alltid to tegn til slutt: den tomme linja som
+avslutter hodeblokka. Det er den samme blokka som viste `Status: 404` og
+`Status: 500` i e-postene 6. september. Skriptet kan ikke stoppe den — i PHPs
+egen kildekode (`sapi/cgi/cgi_main.c`) står `PHPWRITE_H("\r\n", 2)` etter at
+hodene er skrevet, og flagget som slår den av kan bare settes med `-q`, `-i`,
+`-v` eller `-l` på kommandolinja. Ingen ini-innstilling, ingen miljøvariabel.
+
+Uten `>/dev/null` gir det én tom e-post per kjøring — rundt tre hundre i
+døgnet fra seks jobber som gjør akkurat det de skal.
+
+Og bare `>/dev/null`, **ikke** `2>&1`. Det er med vilje: stdout tier, men
+stderr går fortsatt til e-post. En jobb som virkelig feiler sier fortsatt fra,
+med grunnen i klartekst — se `bin/cron.php`, som skriver den dit og avslutter
+med `1`.
 
 **Medlemstrekket sto ikke i denne lista fram til 5. september 2026.** Da ble
 den heller aldri satt opp, og ingen medlemmer ble noen gang trukket. Eieren

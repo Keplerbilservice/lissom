@@ -7214,8 +7214,11 @@ sjekk('… med samme ramme som resten',
 // lager da en spalte til: panelet ble 413 piksler paa en skjerm som er 390,
 // og hele Oversikt maatte dras sidelengs. Under 760 piksler skal det spenne
 // over hele rada, over 760 over to spalter som for.
+// To brede paneler naa: statistikken og verkstedkortet. Begge foelger den
+// samme regelen — hele rada under 760, to spalter over. Tallet staar her
+// saa et tredje panel ikke kan snike inn en «span 2» uten den samme vakta.
 sjekk('… og sprenger ikke telefonskjermen',
-    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 1
+    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 2
     && !str_contains($sida2, 'grid-column: span 2;'));
 
 // ── Dra-kortene i kalenderen ───────────────────────────────────────────
@@ -9392,6 +9395,49 @@ sjekk('… og leser de samme verdiene begge steder',
 sjekk('… og de skjulte er merket',
     str_contains($sida, '<span style="{{ admSkjultStil }}">Skjult for andre</span>')
     && str_contains($sida, 'erSkjult: !!r.skjult,'));
+
+// ── Medlemmene under, i det samme kortet ────────────────────────────────
+//
+// Eieren, 7. september: «kan jeg faa medlemmer kortet i baade kalender og
+// oversikt?», og etter skissen «endre fra ikke inne naa til medlemmer, og
+// husk de maa vaere klikkbare saa de gaar til det riktige stedet», og «men
+// medlemmer maa vises selv om ingen er i verkstedet».
+sjekk('medlemmene staar under, begge steder',
+    substr_count($sida, '<sc-for list="{{ admMedl }}" as="v"') === 2
+    && substr_count($sida, '{{ admMedlAntall }}') === 2);
+// Lista staar utenfor «admInneTom», saa den vises ogsaa naar verkstedet er
+// tomt. Sto den inni, forsvant medlemmene sammen med de innstemplede.
+sjekk('… ogsaa naar ingen er innstemplet',
+    !str_contains($sida, '{{ admInneTom }}" hint-placeholder-val="{{ false }}">'
+                       . "\n" . '                <div style="padding: var(--space-4) var(--space-5); '
+                       . 'border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); '
+                       . 'color: var(--text-muted);">Ingen er innstemplet nå.</div>'
+                       . "\n" . '                <div style="{{ admMedlSkilleStil }}">'));
+// Raden er en knapp, ikke en etikett. «husk de maa vaere klikkbare».
+sjekk('… og hver rad er en knapp inn til personen',
+    substr_count($sida, 'onClick="{{ v.apne }}"') === 2
+    && str_contains($sida, "this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: '' });")
+    && str_contains($sida, 'this.apnePerson(m.id, 0);'));
+// Radene kommer fra medlemsrader(), den samme som medlemslista bruker.
+// Skrevet opp paa nytt kunne de to svart hver sitt om den samme personen.
+sjekk('… og de leser de samme radene som medlemslista',
+    str_contains($sida, '? this.medlemsrader()')
+    && str_contains($sida, '.filter(m => m.erMedlem && !m.erAdmin && !m.inne)'));
+// De innstemplede staar alt oeverst. Uten filteret sto de to ganger.
+sjekk('… og ingen staar to ganger i det samme kortet',
+    str_contains($sida, '&& !m.inne)'));
+// Ordet paa statuspilla sto uten oe. Det staar baade i medlemslista og i
+// kortet paa Oversikt og Kalender — ett sted i koden, saa det ikke kan bli
+// riktig det ene stedet og feil det andre.
+sjekk('«Prøveperiode» staar med ø',
+    str_contains($sida, "prove: 'Prøveperiode',")
+    && !str_contains($sida, "prove: 'Proveperiode',"));
+// Kortet sto i én spalte i rutenettet paa Oversikt — maalt til 290 px — og
+// da fikk ikke statuspilla plass ved siden av navnet. Eieren, 7. september,
+// etter aa ha sett skjermbildet: «Gjor kortet bredere».
+sjekk('… og kortet er to spalter bredt paa Oversikt',
+    str_contains($sida, "admInneRamme: {\n            gridColumn: \$this->erSmal()")
+    || str_contains($sida, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',\n            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',\n            background: 'var(--surface-card)', overflow: 'hidden',\n            marginBottom: 'var(--space-6)',"));
 
 echo "\n== «Stopp avtalen nå» ==\n";
 // «Send Vipps-avtale» nekter naar det alt loeper en avtale, og «Kopier lenka»

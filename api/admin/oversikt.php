@@ -476,6 +476,23 @@ Svar::json([
         'linjerIdag' => $linjer($dagStart),
         'linjerMnd'  => $linjer($mndStart),
     ],
+    // ── Hvem som er i huset ───────────────────────────────────────────
+    //
+    // Eieren, 7. september 2026: «jeg onsker at admin skal kunne se hvem som
+    // er i verksted, ogsaa de som har valgt aa ikke vise meg for medlemmer».
+    //
+    // Sidemenyen i admin har hatt et tall — «3 medlemmer» — men ingen navn.
+    // Navnene laa bare i api/stempling.php, som medlemmene leser, og der er
+    // de skjulte tatt bort med vilje.
+    //
+    // Haken heter «Vis meg for andre medlemmer». Den er et loefte til de andre
+    // MEDLEMMENE, ikke til verkstedet — den som driver stedet maa vite hvem
+    // som er i huset, av samme grunn som en brannliste finnes.
+    //
+    // Samme spoerring som medlemmene leser; se Stempling::alleInne(), som
+    // inneNa() ogsaa bygger paa. To spoerringer kunne svart hver sitt om den
+    // samme kvelden.
+    'verkstedet' => Stempling::alleInne(),
     'bookinger' => [
         'sisteUke' => $nyeBookinger,
         'ubetalte' => $ubetalte,

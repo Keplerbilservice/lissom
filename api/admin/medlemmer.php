@@ -429,6 +429,126 @@ if (Foresporsel::metode() === 'POST') {
         ]);
     }
 
+    // ── Stopp et bestilt trekk ─────────────────────────────────────────
+    //
+    // Eieren, 7. september 2026: «kan det vaere sendt et feil trekk til lene,
+    // naa mister jeg kunder paa grunn av rot altsaa».
+    //
+    // Et trekk bes om én dag foer forfall (Medlemskap::VARSEL_DAGER). I det
+    // vinduet kan det slettes hos Vipps, og ingen penger flytter seg. Fram
+    // til naa fantes ingen vei ut av det fra admin — det maatte gjores i
+    // Vipps-portalen, og da haster det.
+    //
+    // Er trekket alt gjennomfoert, svarer Vipps med en feil. Da endrer vi
+    // ingenting her heller: en rad som staar «avbrutt» mens pengene er
+    // trukket, er verre enn ingen endring.
+    if ($handling === 'stopp-trekk') {
+        $id       = Foresporsel::heltall('medlemId');
+        $trekkRad = Foresporsel::heltall('trekkId');
+        $m = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        // Betalingen maa hoere til dette medlemmet, vaere et avtaletrekk, og
+        // ikke vaere gjort opp. Uten alle tre kunne en id herfra pekt paa en
+        // hvilken som helst rad i payments.
+        $p = DB::en(
+            "SELECT p.id, p.belop_ore, p.vipps_psp_ref, s.vipps_agreement_id, s.id AS avtale_id
+               FROM payments p
+               JOIN subscriptions s ON s.id = p.subscription_id
+              WHERE p.id = :p AND p.member_id = :m
+                AND p.type = 'recurring_charge'
+                AND p.status IN ('opprettet', 'venter')
+                AND p.vipps_psp_ref IS NOT NULL",
+            ['p' => $trekkRad, 'm' => $id]
+        );
+        if ($p === null) {
+            Svar::feil('Fant ikke et bestilt trekk å stoppe.', 404);
+        }
+
+        $avtaleId = trim((string) ($p['vipps_agreement_id'] ?? ''));
+        if ($avtaleId === '') {
+            Svar::feil('Trekket hører ikke til en avtale i Vipps.');
+        }
+
+        try {
+            Vipps::avlysTrekk($avtaleId, (string) $p['vipps_psp_ref']);
+        } catch (Throwable $e) {
+            logg_feil('Fikk ikke avlyst trekk ' . $p['id'] . ' i Vipps', $e);
+            Svar::feil('Vipps stoppet ikke trekket. Er det alt gjennomført, må det refunderes i stedet.');
+        }
+
+        DB::oppdater('payments', ['status' => 'avbrutt'], ['id' => (int) $p['id']]);
+
+        revider('medlem_trekk_stoppet', 'member', $id,
+                ['betaling' => (int) $p['id'], 'avtale' => (int) $p['avtale_id'],
+                 'belop_ore' => (int) $p['belop_ore']]);
+
+        Svar::ok([
+            'beskjed' => 'Trekket på ' . Booking::kroner((int) $p['belop_ore'])
+                . ' for ' . ($m['navn'] ?: 'medlemmet') . ' er slettet hos Vipps.',
+        ]);
+    }
+
+    // ── Naar trekket skal gaa ───────────────────────────────────────────
+    //
+    // Eieren, 7. september 2026: «er det mulig at jeg kan redigere naar
+    // trekkene skal vaere? noen vil for eksempel ha 15 og andre 1.»
+    //
+    // «neste_trekk» har vaert systemets egen: satt til dagen avtalen ble
+    // aktiv, og flyttet én periode fram etter hvert trekk. Ingen kunne endre
+    // den, og da maatte alle foelge den dagen de tilfeldigvis meldte seg inn.
+    //
+    // Trekkrunden tar alt med dato i dag eller for — se Medlemskap::tilTrekk().
+    // Derfor tas bare datoer fra i dag og ett aar fram: en dato langt bak i
+    // tid ville satt i gang et trekk med det samme, og en langt fram ville
+    // gitt gratis medlemskap uten at noen la merke til det.
+    if ($handling === 'trekkdato') {
+        $id       = Foresporsel::heltall('medlemId');
+        $avtaleId = Foresporsel::heltall('avtaleId');
+        $dato     = trim(Foresporsel::tekst('dato'));
+
+        $m = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        // Avtalen maa hoere til medlemmet, loepe, og faktisk ha et trekk aa
+        // flytte paa. En rad uten avtale-id trekker ingenting.
+        $a = DB::en(
+            "SELECT id, plan, neste_trekk FROM subscriptions
+              WHERE id = :a AND member_id = :m AND status = 'aktiv'
+                AND vipps_agreement_id IS NOT NULL AND vipps_agreement_id <> ''",
+            ['a' => $avtaleId, 'm' => $id]
+        );
+        if ($a === null) {
+            Svar::feil('Fant ingen løpende avtale med fast trekk.', 404);
+        }
+
+        $d = DateTimeImmutable::createFromFormat('!Y-m-d', $dato, new DateTimeZone('UTC'));
+        if ($d === false || $d->format('Y-m-d') !== $dato) {
+            Svar::feil('Datoen ser ikke riktig ut.');
+        }
+        $idag = new DateTimeImmutable(gmdate('Y-m-d'), new DateTimeZone('UTC'));
+        if ($d < $idag) {
+            Svar::feil('Datoen kan ikke være før i dag.');
+        }
+        if ($d > $idag->modify('+1 year')) {
+            Svar::feil('Datoen kan ikke være mer enn ett år fram.');
+        }
+
+        DB::oppdater('subscriptions', ['neste_trekk' => $dato], ['id' => (int) $a['id']]);
+
+        revider('medlem_trekkdato', 'member', $id,
+                ['avtale' => (int) $a['id'], 'fra' => (string) ($a['neste_trekk'] ?? ''), 'til' => $dato]);
+
+        Svar::ok([
+            'beskjed' => 'Neste trekk for ' . ($m['navn'] ?: 'medlemmet') . ' er satt til '
+                . Booking::norskDatoKort($dato . ' 12:00:00') . '.',
+        ]);
+    }
+
     if ($handling === 'send-avtale') {
         $id = Foresporsel::heltall('medlemId');
         $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
@@ -1517,6 +1637,65 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // Sto her for aa forklare at lenka var for gammel til aa deles
             // ut. Det kan den ikke bli lenger.
             'avtaleLenkeGammel' => false,
+            // ── Alle radene, ikke bare den nyeste ───────────────────────
+            //
+            // Eieren, 7. september 2026: «kan det vaere sendt et feil trekk
+            // til lene, naa mister jeg kunder paa grunn av rot altsaa».
+            //
+            // Medlemskap::avtale() leser den NYESTE raden. Ligger det en
+            // gammel rad igjen paa «aktiv», sees den ingen steder — men
+            // Medlemskap::tilTrekk() plukker den opp, for den tar ALLE
+            // aktive avtaler. Da trekkes medlemmet to ganger, og ingenting i
+            // admin viser hvorfor.
+            //
+            // Her staar hele tabellen for medlemmet. Radene er to slag:
+            // «Fast trekk» har en avtale-id hos Vipps (bare aarsmedlemskapet
+            // kan ha det — se migrasjon 146), og «Gjoer opp selv» er en
+            // engangsbetaling som ogsaa faar en rad her.
+            'avtaler' => (static function () use ($m): array {
+                if ($m === null || (int) ($m['id'] ?? 0) <= 0) {
+                    return [];
+                }
+                $rader = DB::alle(
+                    'SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC',
+                    ['m' => (int) $m['id']]
+                );
+                $dato = static fn(?string $d): string
+                    => $d ? Booking::norskDatoKort(substr((string) $d, 0, 10) . ' 12:00:00') : '';
+                return array_map(static function (array $a) use ($dato): array {
+                    $avtaleId = trim((string) ($a['vipps_agreement_id'] ?? ''));
+                    // Trekket som er bedt om og ikke gjort opp. Bare et slikt
+                    // trekk kan stoppes — er det gjennomfoert, er refusjon
+                    // eneste vei, og da skal knappen ikke staa der.
+                    $bestilt = $avtaleId === '' ? null : DB::en(
+                        "SELECT id, belop_ore, created_at, vipps_psp_ref
+                           FROM payments
+                          WHERE subscription_id = :s
+                            AND status IN ('opprettet', 'venter')
+                            AND vipps_psp_ref IS NOT NULL
+                          ORDER BY id DESC LIMIT 1",
+                        ['s' => (int) $a['id']]
+                    );
+                    return [
+                        'id'        => (int) $a['id'],
+                        'plan'      => (string) $a['plan'],
+                        'status'    => (string) $a['status'],
+                        'fastTrekk' => $avtaleId !== '',
+                        'belop'     => Booking::kroner((int) $a['pris_ore']),
+                        'opprettet' => $dato($a['created_at'] ?? null),
+                        'neste'     => $dato($a['neste_trekk'] ?? null),
+                        // Datofeltet i nettleseren leser bare ISO-form.
+                        'nesteIso'  => $a['neste_trekk'] ? substr((string) $a['neste_trekk'], 0, 10) : '',
+                        // Datoen kan bare settes paa en avtale som loeper og
+                        // faktisk trekker. Ellers er det ingenting aa flytte.
+                        'kanDato'   => $avtaleId !== '' && (string) $a['status'] === 'aktiv',
+                        'siste'     => $dato($a['siste_trekk'] ?? null),
+                        'trekkId'   => $bestilt === null ? 0 : (int) $bestilt['id'],
+                        'trekkBelop'=> $bestilt === null ? '' : Booking::kroner((int) $bestilt['belop_ore']),
+                        'trekkDato' => $bestilt === null ? '' : $dato((string) $bestilt['created_at']),
+                    ];
+                }, $rader);
+            })(),
         ] + (static function () use ($m): array {
             if ($m === null || (int) ($m['id'] ?? 0) <= 0) {
                 return ['betaling' => 'ingen', 'betalingTekst' => ''];

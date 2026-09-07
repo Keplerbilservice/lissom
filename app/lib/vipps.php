@@ -559,6 +559,36 @@ final class Vipps
     }
 
     /**
+     * Avlyser et bestilt trekk.
+     *
+     * Trekket lever hos Vipps fra det bes om til forfallsdagen — se
+     * belastAvtale(), der «due» settes en dag fram. I det vinduet kan det
+     * slettes, og ingen penger flytter seg.
+     *
+     * Er trekket alt gjennomfort, svarer Vipps med en feil. Da er refusjon
+     * eneste vei, og det sier vi i klartekst i stedet for aa la det se ut som
+     * om noe ble stoppet.
+     *
+     * Eieren, 7. september 2026: «kan det vaere sendt et feil trekk til lene,
+     * naa mister jeg kunder paa grunn av rot altsaa». Fram til naa fantes det
+     * ingen vei ut av et bestilt trekk fra admin — det maatte gjores i
+     * Vipps-portalen, og forfallet er dagen etter.
+     */
+    public static function avlysTrekk(string $avtaleId, string $trekkId): void
+    {
+        $svar = http_delete_json(
+            Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId)
+                . '/charges/' . rawurlencode($trekkId),
+            self::headere(self::uuid())
+        );
+
+        if ($svar['status'] !== 200 && $svar['status'] !== 204) {
+            logg_feil('Kunne ikke avlyse Vipps-trekk: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            throw new RuntimeException('Vipps stoppet ikke trekket.');
+        }
+    }
+
+    /**
      * Status pa ett trekk.
      *
      * Et trekk er ikke en ePayment og kan ikke slas opp med hentBetaling() —

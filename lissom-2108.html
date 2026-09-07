@@ -8208,10 +8208,11 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kalenderabonnement</div>
             <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">Synk med kalenderen på mobilen</h2>
             <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Abonner, så dukker alt opp på iPhone og oppdateres automatisk når noe endres her.</p>
+            <!-- Feltet for paaminnelser sto her, med en adresse til en feed
+                 som ikke finnes i koden. Det er tatt bort — eieren valgte
+                 «Vis den ekte adressen». Kalenderen er det som finnes. -->
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kalenderen — kurs og events</label>
-            <input readOnly="{{ true }}" value="{{ klIcsUrl }}" onFocus="{{ klIcsMarker }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-4);">
-            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Påminnelser og notater — vises i Påminnelser-appen</label>
-            <input readOnly="{{ true }}" value="{{ klIcsPaminUrl }}" onFocus="{{ klIcsMarker }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-5);">
+            <input readOnly="{{ true }}" value="{{ klIcsUrl }}" onFocus="{{ klIcsMarker }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-5);">
             <div style="display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-body); margin-bottom: var(--space-6);">
               <span>1. Åpne Innstillinger → Kalender → Kontoer på iPhone.</span>
               <span>2. Velg «Legg til konto» → «Annet» → «Legg til abonnementskalender».</span>
@@ -16342,6 +16343,69 @@ window.__resources = {
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="copy" on-click="{{ kopierPersonAvtaleLenke }}" hint-size="auto,36px">Kopier lenka</x-import>
                       </div>
                     </sc-if>
+                    <!-- ── Alle radene, ikke bare den nyeste ──────────
+                         Eieren, 7. september 2026: «kan det vaere sendt et
+                         feil trekk til lene, naa mister jeg kunder paa grunn
+                         av rot altsaa».
+
+                         Medlemskap::avtale() leser den NYESTE raden. Ligger
+                         det en gammel igjen paa «aktiv», sees den ingen
+                         steder — men trekkrunden tar alle aktive, og da
+                         trekkes medlemmet to ganger. Her staar hele tabellen.
+
+                         To slag rader: «Fast trekk» har en avtale hos Vipps
+                         (bare aarsmedlemskapet kan ha det, se migrasjon 146),
+                         og «Gjoer opp selv» er en engangsbetaling som ogsaa
+                         faar en rad. -->
+                    <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Avtaler og betalinger</div>
+                      <sc-if value="{{ personAvtDobbel }}" hint-placeholder-val="{{ false }}">
+                        <div style="{{ personAvtVarselStil }}">To løper samtidig. Da trekkes medlemmet to ganger.</div>
+                      </sc-if>
+                      <sc-for list="{{ personAvtaler }}" as="av" hint-placeholder-count="2">
+                        <div style="{{ av.stil }}">
+                          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 5px;">
+                            <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ av.plan }}</span>
+                            <span style="display: inline-flex; gap: 6px; flex-wrap: wrap;">
+                              <span style="{{ av.maateStil }}">{{ av.maate }}</span>
+                              <span style="{{ av.statusStil }}">{{ av.status }}</span>
+                            </span>
+                          </div>
+                          <div style="font-size: var(--text-xs); color: var(--text-muted); overflow-wrap: anywhere;">{{ av.detalj }}</div>
+                          <sc-if value="{{ av.harTrekk }}" hint-placeholder-val="{{ false }}">
+                            <div style="{{ personAvtTrekkStil }}">
+                              <span style="font-size: var(--text-xs); color: var(--text-body); flex: 1 1 150px; min-width: 0; overflow-wrap: anywhere;">{{ av.bestiltTekst }}</span>
+                              <button type="button" onClick="{{ av.stopp }}" style="{{ personAvtStoppStil }}">Stopp trekket</button>
+                            </div>
+                          </sc-if>
+                          <!-- Naar trekket skal gaa.
+                               Eieren, 7. september 2026: «er det mulig at jeg
+                               kan redigere naar trekkene skal vaere? noen vil
+                               for eksempel ha 15 og andre 1.»
+                               Datoen har vaert systemets egen: satt til dagen
+                               avtalen ble aktiv, og flyttet én periode fram
+                               etter hvert trekk. Feltet kommer bare paa en
+                               avtale som loeper med fast trekk — de andre
+                               radene trekker ingenting. -->
+                          <sc-if value="{{ av.kanDato }}" hint-placeholder-val="{{ false }}">
+                            <div style="{{ personAvtTrekkStil }}">
+                              <span style="font-size: var(--text-xs); color: var(--text-muted);">Neste trekk</span>
+                              <input type="date" value="{{ av.dato }}" onChange="{{ av.settDato }}" style="{{ personAvtDatoStil }}">
+                              <button type="button" onClick="{{ av.lagreDato }}" style="{{ personAvtStoppStil }}">Lagre datoen</button>
+                            </div>
+                            <sc-if value="{{ av.datoPassert }}" hint-placeholder-val="{{ false }}">
+                              <div style="font-size: var(--text-xs); color: var(--terracotta-600); margin-top: 6px; text-wrap: pretty;">Datoen er passert. Trekket går ved neste runde i natt.</div>
+                            </sc-if>
+                            <sc-if value="{{ av.datoFram }}" hint-placeholder-val="{{ true }}">
+                              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 6px; text-wrap: pretty;">Gjelder fra og med neste trekk. Vipps varsler medlemmet dagen før.</div>
+                            </sc-if>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ personAvtTom }}" hint-placeholder-val="{{ true }}">
+                        <div style="font-size: var(--text-xs); color: var(--text-muted);">Ingen registrert.</div>
+                      </sc-if>
+                    </div>
                   </div>
                   <label style="{{ personFriEtikett }}">
                     <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
@@ -36462,8 +36526,20 @@ class Component extends DCLogic {
       klIcsApne: () => this.setState({ klIcsVis: true }),
       klIcsLukk: () => this.setState({ klIcsVis: false }),
       klIcsMarker: e => e.target.select(),
-      klIcsUrl: 'webcal://lissom.no/api/kalender.ics?nokkel=•••',
-      klIcsPaminUrl: 'webcal://lissom.no/api/paminnelser.ics?nokkel=•••',
+      // ── Adressen ruta viser ─────────────────────────────────────────
+      //
+      // Her sto to oppdiktede adresser: «webcal://lissom.no/api/kalender.ics
+      // ?nokkel=•••» og en til for paaminnelser. Ingen av stiene finnes —
+      // feeden heter «/api/kalender-abonnement.php» — og noekkelen sto som
+      // tre prikker. Limte man dem inn paa iPhone, skjedde ingenting.
+      //
+      // Eieren, 7. september 2026, om «Synk med mobilen» og «Legg programmet
+      // i telefonens kalender»: han spurte om de virket. Den ene gjorde det.
+      // Denne gjorde det ikke. Han valgte «Vis den ekte adressen».
+      //
+      // Det er den samme adressen knappen oeverst paa kalenderen viser — ett
+      // sted i koden, saa de to ikke kan vise hver sin.
+      klIcsUrl: ((this.state.adminData || {}).kalenderAdresse) || '',
       // «Kasse» aapnet en rute som sa at kassa «kobles paa her».
       //
       // Eieren, 1. september, med et skjermbilde av den: «Kasse fra kalender
@@ -37823,6 +37899,65 @@ class Component extends DCLogic {
         this.setState(st => (st.personFor === noekkel ? { personData: d || { historikk: [] } } : {}));
       })
       .catch(() => this.setState(st => (st.personFor === noekkel ? { personData: { historikk: [] } } : {})));
+  }
+
+  /**
+   * Setter datoen for neste Vipps-trekk.
+   *
+   * Eieren, 7. september 2026: «er det mulig at jeg kan redigere naar
+   * trekkene skal vaere? noen vil for eksempel ha 15 og andre 1.»
+   *
+   * Datoen har vaert systemets egen: satt til dagen avtalen ble aktiv, og
+   * flyttet én periode fram etter hvert trekk. Serveren tar bare datoer fra
+   * i dag og ett aar fram — se «trekkdato» i api/admin/medlemmer.php.
+   *
+   * Ruta blir staaende og hentes paa nytt, saa feltet viser det som faktisk
+   * er lagret og ikke det du nettopp skrev.
+   */
+  lagreTrekkdato(avtaleId, dato) {
+    const id = this.state.personMedlemId || 0;
+    if (!avtaleId || !id || !dato) { return; }
+    this.medlemKall({ handling: 'trekkdato', medlemId: id, avtaleId: avtaleId, dato: dato }, true)
+      .then(ok => {
+        this.setState({
+          kvittering: ok ? 'Trekkdatoen er endret' : 'Fikk ikke endret trekkdatoen',
+          avtDatoId: null, avtDato: null,
+        });
+        if (ok) { this.apnePerson(id, 0); }
+      });
+  }
+
+  /**
+   * Stopper et bestilt trekk hos Vipps.
+   *
+   * Eieren, 7. september 2026: «kan det vaere sendt et feil trekk til lene,
+   * naa mister jeg kunder paa grunn av rot altsaa».
+   *
+   * Trekket bes om én dag foer forfall. I det vinduet kan det slettes hos
+   * Vipps, og ingen penger flytter seg. Fram til naa fantes ingen vei ut fra
+   * admin — det maatte gjores i Vipps-portalen.
+   *
+   * Ruta blir staaende: gikk det galt, skal beskjeden staa der du var. Er
+   * trekket alt gjennomfoert, sier serveren fra at det maa refunderes i
+   * stedet. Se «stopp-trekk» i api/admin/medlemmer.php.
+   */
+  stoppPersonTrekk(trekkId, belop, navn) {
+    // «personMedlemId» er den ruta faktisk ble aapnet av — se apnePerson().
+    // «personData» er svaret fra serveren, og det bruker andre navn paa
+    // feltene; leser man id-en derfra, blir den «undefined» og kallet gaar
+    // til ingen.
+    const id = this.state.personMedlemId || 0;
+    if (!trekkId || !id) { return; }
+    if (!window.confirm('Stoppe trekket på ' + (belop || '') + ' for '
+        + (navn || 'medlemmet') + '?\n\n'
+        + 'Trekket slettes hos Vipps, og ingen penger flyttes. Er det allerede '
+        + 'gjennomført, sier Vipps nei — da må det refunderes i stedet.')) { return; }
+    this.medlemKall({ handling: 'stopp-trekk', medlemId: id, trekkId: trekkId }, true)
+      .then(ok => {
+        this.setState({ kvittering: ok ? 'Trekket er stoppet' : 'Fikk ikke stoppet trekket' });
+        // Ruta hentes paa nytt, saa lista viser det som faktisk staar.
+        if (ok) { this.apnePerson(id, 0); }
+      });
   }
 
   /**
@@ -41671,6 +41806,103 @@ class Component extends DCLogic {
           // Naa staar vaar egen adresse her, lissom.no/godkjenn/… Den lever i
           // fjorten dager, og Vipps-avtalen lages foerst i det hun trykker.
           // Se api/godkjenn.php.
+          // ── Alle radene i avtaletabellen ──────────────────────────
+          //
+          // Eieren, 7. september 2026: «kan det vaere sendt et feil trekk til
+          // lene, naa mister jeg kunder paa grunn av rot altsaa».
+          //
+          // Personruta viste bare den nyeste avtalen. Ligger det en gammel
+          // igjen paa «aktiv», sto den ingen steder — men trekkrunden tar
+          // alle aktive, og da trekkes medlemmet to ganger.
+          //
+          // «Fast trekk» og «Gjoer opp selv» er de samme to ordene
+          // medlemslista bruker, ikke nye.
+          ...(() => {
+            const rader = Array.isArray(p.avtaler) ? p.avtaler : [];
+            // I dag, paa ISO-form. Brukes til aa se om en dato er passert.
+            const idagIso = () => {
+              const d = new Date();
+              return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+                + '-' + String(d.getDate()).padStart(2, '0');
+            };
+            const aktive = rader.filter(a => a.status === 'aktiv').length;
+            const merke = (bg, farge) => ({
+              display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
+              borderRadius: 'var(--radius-pill)', padding: '2px 9px',
+              fontSize: 11, fontWeight: 700, letterSpacing: '.02em',
+              background: bg, color: farge,
+            });
+            const STATUS = {
+              aktiv:   ['rgba(90,140,80,.16)', '#3E6B36', 'Aktiv'],
+              venter:  ['rgba(255,207,56,.28)', 'var(--lissom-brown)', 'Venter'],
+              stoppet: ['var(--clay-100)', 'var(--text-muted)', 'Stoppet'],
+            };
+            return {
+              personAvtaler: rader.map(a => {
+                const st = STATUS[a.status] || ['var(--clay-100)', 'var(--text-muted)', a.status];
+                return {
+                  plan: a.plan || '',
+                  maate: a.fastTrekk ? 'Fast trekk' : 'Gjør opp selv',
+                  maateStil: merke('var(--clay-100)', 'var(--text-muted)'),
+                  status: st[2],
+                  statusStil: merke(st[0], st[1]),
+                  // Bare det som finnes. Et tomt ledd skal ikke etterlate
+                  // seg et punktum som staar alene.
+                  detalj: [
+                    a.opprettet ? 'Opprettet ' + a.opprettet : '',
+                    a.belop ? 'Beløp ' + a.belop : '',
+                    a.neste ? 'Neste trekk ' + a.neste : '',
+                    a.siste ? 'Siste trekk ' + a.siste : '',
+                  ].filter(x => x !== '').join(' · '),
+                  // Datoen for neste trekk. Feltet skriver til «avtDato», som
+                  // er én dato av gangen — det staar bare ett felt aapent.
+                  kanDato: !!a.kanDato,
+                  dato: (this.state.avtDatoId === a.id && this.state.avtDato !== undefined
+                          && this.state.avtDato !== null)
+                    ? this.state.avtDato : (a.nesteIso || ''),
+                  settDato: e => this.setState({ avtDatoId: a.id, avtDato: e.target.value }),
+                  lagreDato: () => this.lagreTrekkdato(a.id,
+                    (this.state.avtDatoId === a.id && this.state.avtDato) || a.nesteIso || ''),
+                  // Er datoen passert, gaar trekket i natt. Det skal staa.
+                  datoPassert: !!(a.nesteIso && a.nesteIso < idagIso()),
+                  datoFram: !(a.nesteIso && a.nesteIso < idagIso()),
+                  harTrekk: (a.trekkId || 0) > 0,
+                  bestiltTekst: 'Trekket er bestilt ' + (a.trekkDato || '')
+                    + ' · venter på Vipps · ' + (a.trekkBelop || ''),
+                  stopp: () => this.stoppPersonTrekk(a.trekkId, a.trekkBelop, p.navn || ''),
+                  stil: {
+                    border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+                    padding: '11px 13px', marginBottom: 8,
+                    background: a.status === 'aktiv' ? 'var(--surface-card)' : 'transparent',
+                  },
+                };
+              }),
+              personAvtTom: rader.length === 0,
+              personAvtDobbel: aktive > 1,
+              personAvtVarselStil: {
+                background: 'var(--terracotta-100)', color: 'var(--text-heading)',
+                borderRadius: 'var(--radius-md)', padding: '10px 13px',
+                fontSize: 'var(--text-xs)', marginBottom: 10, textWrap: 'pretty',
+              },
+              personAvtTrekkStil: {
+                marginTop: 9, paddingTop: 9, borderTop: '1px dashed var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 10, flexWrap: 'wrap',
+              },
+              personAvtDatoStil: {
+                border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+                padding: '7px 10px', background: 'var(--clay-50)', color: 'var(--text-heading)',
+                font: 'var(--type-body-sm)', fontVariantNumeric: 'tabular-nums',
+                minWidth: 150, boxSizing: 'border-box',
+              },
+              personAvtStoppStil: {
+                appearance: 'none', border: '1px solid var(--lissom-brown)',
+                background: 'transparent', color: 'var(--lissom-brown)',
+                borderRadius: 'var(--radius-pill)', padding: '6px 12px',
+                font: 'var(--type-chip)', cursor: 'pointer', minHeight: 34,
+              },
+            };
+          })(),
           personHarAvtaleLenke: !!(p.avtaleLenke || ''),
           personAvtaleLenke: p.avtaleLenke || '',
           personAvtaleLenkeHjelp: 'Send den til ' + fornavn

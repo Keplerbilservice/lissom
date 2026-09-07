@@ -9462,6 +9462,97 @@ sjekk('… rett under «Kurs og deltakere»',
 sjekk('… og bare paa PC — telefonen har skuffen',
     str_contains($sidaP, '.lx-adminaside .lx-admstatus { display: none !important; }'));
 
+// ── Alle avtalene, og et bestilt trekk som kan stoppes ──────────────────
+//
+// Eieren, 7. september 2026: «kan det vaere sendt et feil trekk til lene, naa
+// mister jeg kunder paa grunn av rot altsaa».
+//
+// Medlemskap::avtale() leser den NYESTE raden. Ligger det en gammel igjen paa
+// «aktiv», sto den ingen steder i admin — men Medlemskap::tilTrekk() plukker
+// den opp, for den tar ALLE aktive avtaler. Da trekkes medlemmet to ganger.
+$medlFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('personruta faar hele avtaletabellen, ikke bare den nyeste',
+    str_contains($medlFil, "'SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC',")
+    && str_contains($sida, '<sc-for list="{{ personAvtaler }}" as="av"'));
+// «Fast trekk» og «Gjoer opp selv» er de samme to ordene medlemslista bruker.
+// Bare aarsmedlemskapet kan ha et ekte avtaletrekk — se migrasjon 146.
+sjekk('… og hver rad sier hvilket slag den er',
+    str_contains($sida, "maate: a.fastTrekk ? 'Fast trekk' : 'Gjør opp selv',")
+    && str_contains($medlFil, "'fastTrekk' => \$avtaleId !== '',"));
+sjekk('… og varsler naar to loeper samtidig',
+    str_contains($sida, "const aktive = rader.filter(a => a.status === 'aktiv').length;")
+    && str_contains($sida, 'personAvtDobbel: aktive > 1,')
+    && str_contains($sida, 'To løper samtidig. Da trekkes medlemmet to ganger.'));
+// Trekket lever hos Vipps fra det bes om til forfall — én dag. I det vinduet
+// kan det slettes. Fram til naa fantes ingen vei ut fra admin.
+sjekk('et bestilt trekk kan stoppes',
+    str_contains($sida, 'onClick="{{ av.stopp }}"')
+    && str_contains($sida, 'Stopp trekket</button>')
+    && str_contains($medlFil, "if (\$handling === 'stopp-trekk') {"));
+// Id-en kommer fra skjermen. Uten alle tre leddene kunne den pekt paa en
+// hvilken som helst rad i payments.
+sjekk('… og bare et trekk som hoerer til medlemmet og ikke er gjort opp',
+    str_contains($medlFil, 'WHERE p.id = :p AND p.member_id = :m')
+    && str_contains($medlFil, "AND p.type = 'recurring_charge'")
+    && str_contains($medlFil, "AND p.status IN ('opprettet', 'venter')"));
+// Sier Vipps nei, endrer vi ingenting her heller. En rad som staar «avbrutt»
+// mens pengene er trukket, er verre enn ingen endring.
+sjekk('… og raden roeres ikke naar Vipps sier nei',
+    str_contains($medlFil, "Svar::feil('Vipps stoppet ikke trekket. Er det alt gjennomført, må det refunderes i stedet.');")
+    && strpos($medlFil, "Svar::feil('Vipps stoppet ikke trekket")
+       < strpos($medlFil, "DB::oppdater('payments', ['status' => 'avbrutt']"));
+sjekk('… og Vipps faar en ekte sletting',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
+                 "public static function avlysTrekk(string \$avtaleId, string \$trekkId): void")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/nett.php'),
+                    "function http_delete_json(string \$url, array \$headere = []): array"));
+
+// ── Naar trekket skal gaa ───────────────────────────────────────────────
+//
+// Eieren, 7. september 2026: «er det mulig at jeg kan redigere naar trekkene
+// skal vaere? noen vil for eksempel ha 15 og andre 1.»
+//
+// «neste_trekk» har vaert systemets egen: satt til dagen avtalen ble aktiv,
+// og flyttet én periode fram etter hvert trekk.
+sjekk('trekkdatoen kan settes per medlem',
+    str_contains($medlFil, "if (\$handling === 'trekkdato') {")
+    && str_contains($sida, 'onChange="{{ av.settDato }}"')
+    && str_contains($sida, 'Lagre datoen</button>'));
+// Trekkrunden tar alt med dato i dag eller for. En dato langt bak i tid ville
+// satt i gang et trekk med det samme; en langt fram ville gitt gratis tid.
+sjekk('… men bare fra i dag og ett aar fram',
+    str_contains($medlFil, "Svar::feil('Datoen kan ikke være før i dag.');")
+    && str_contains($medlFil, "Svar::feil('Datoen kan ikke være mer enn ett år fram.');"));
+// Feltet hoerer bare hjemme paa en avtale som loeper med fast trekk. De andre
+// radene trekker ingenting.
+sjekk('… og bare paa en loepende avtale med fast trekk',
+    str_contains($medlFil, "AND vipps_agreement_id IS NOT NULL AND vipps_agreement_id <> ''")
+    && str_contains($medlFil, "'kanDato'   => \$avtaleId !== '' && (string) \$a['status'] === 'aktiv',"));
+// Er datoen passert, gaar trekket i natt. Det skal staa paa skjermen.
+sjekk('… og sier fra naar datoen er passert',
+    str_contains($sida, 'Datoen er passert. Trekket går ved neste runde i natt.')
+    && str_contains($sida, 'Gjelder fra og med neste trekk. Vipps varsler medlemmet dagen før.'));
+
+// ── «Synk med mobilen» viser den ekte adressen ──────────────────────────
+//
+// Ruta viste to oppdiktede adresser: «webcal://lissom.no/api/kalender.ics
+// ?nokkel=•••» og en til for paaminnelser. Ingen av stiene finnes — feeden
+// heter «/api/kalender-abonnement.php» — og noekkelen sto som tre prikker.
+// Eieren, 7. september, spurte om de to knappene virket. Den ene gjorde det.
+sjekk('«Synk med mobilen» viser kalenderadressen',
+    str_contains($sida, "klIcsUrl: ((this.state.adminData || {}).kalenderAdresse) || '',")
+    // Adressen staar i kommentaren over ogsaa, som forklaring paa hva som
+    // sto her for. Det er verdien som maa vaere ekte, ikke teksten rundt.
+    && !str_contains($sida, "klIcsUrl: 'webcal://"));
+// Paaminnelsesfeeden finnes ikke i koden. Feltet er tatt bort.
+sjekk('… og lover ikke en paaminnelsesfeed som ikke finnes',
+    !str_contains($sida, 'klIcsPaminUrl')
+    && !str_contains($sida, 'Påminnelser-appen'));
+// Samme adresse som knappen oeverst paa kalenderen. Ett sted i koden.
+sjekk('… og det er den samme adressen som knappen oeverst',
+    str_contains($sida, "const adr = ((this.state.adminData || {}).kalenderAdresse) || '';")
+    && str_contains($sida, 'kalAdresse: adr,'));
+
 // ── Sidemenyen maa vaere hel ────────────────────────────────────────────
 //
 // 7. september ble den gamle bunnblokka fjernet feil: aapningsmerket gikk,

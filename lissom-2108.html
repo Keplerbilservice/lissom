@@ -25633,19 +25633,37 @@ class Component extends DCLogic {
       .catch(() => { this._aarHentes = null; });
   }
 
-  /** Legge inn, rette, bytte maaned og slette. Svaret baerer hele aaret. */
+  /**
+   * Legge inn, rette, bytte maaned og slette. Svaret baerer hele aaret.
+   *
+   * Laasen under maa alltid slippe. Eieren, 7. september: «Proever aa slette
+   * og legge til i aarskalenderen men det gaar ikke» — det virket paa
+   * telefonen hennes, men ikke paa PC-en, og en ny lasting av siden loeste
+   * det. Det er kjennetegnet paa et kall som aldri kom tilbake: «_aarLagrer»
+   * ble staaende, og hver knapp etterpaa gjorde ingenting — uten kvittering,
+   * uten feil, uten noe aa gaa etter.
+   *
+   * Naa avbrytes kallet etter femten sekunder, laasen slipper uansett hvordan
+   * det gikk, og en tur som ikke kom fram sier «Ble ikke lagret» som alle de
+   * andre. En knapp som tier er verre enn en knapp som sier nei.
+   */
   aarKall(kropp) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
     if (this._aarLagrer) return Promise.resolve(false);
     this._aarLagrer = true;
-    return fetch('/api/admin/arskalender.php', {
+    const stopp = typeof AbortController === 'function' ? new AbortController() : null;
+    const klokke = setTimeout(() => { this._aarLagrer = false; if (stopp) stopp.abort(); }, 15000);
+    const slipp = () => { clearTimeout(klokke); this._aarLagrer = false; };
+    const bud = {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(kropp),
-    })
+    };
+    if (stopp) bud.signal = stopp.signal;
+    return fetch('/api/admin/arskalender.php', bud)
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
       .then(({ ok, d }) => {
-        this._aarLagrer = false;
+        slipp();
         this.setState({
           kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
@@ -25655,7 +25673,11 @@ class Component extends DCLogic {
         }
         return ok;
       })
-      .catch(() => { this._aarLagrer = false; return false; });
+      .catch(() => {
+        slipp();
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: '' });
+        return false;
+      });
   }
 
   hentFerie() {

@@ -10337,9 +10337,26 @@ sjekk('… og knappen staar forst naar noe er valgt om',
     && str_contains($sidaB, '<sc-if value="{{ personPlanEndret }}"'));
 sjekk('… og knappen kaller «bytt-plan»',
     str_contains($sidaB, "this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)"));
-// Ruta staar aapen etterpaa, og brikkene leser det som naa staar i basen.
-sjekk('… og ruta hentes paa nytt uten aa lukke seg',
-    str_contains($sidaB, "this.setState({ personPlan: null });\n                this.apnePerson(this.state.personMedlemId || 0"));
+// Her sto ruta aapen etterpaa, og ble hentet paa nytt. Eieren, 7. september
+// 2026, om de tre knappene som ble igjen etter at «Lagre» og × begynte aa gaa
+// tilbake til lista: de skal ut samme vei.
+//
+// «behold» staar fortsatt i kallet over: gikk det galt, skal ruta bli
+// staaende, saa beskjeden staar der du var.
+sjekk('… og ruta lukker seg og gaar tilbake til lista',
+    str_contains($sidaB, "                this.lukkPersonruta();")
+    && !str_contains($sidaB, "this.setState({ personPlan: null });\n                this.apnePerson(this.state.personMedlemId || 0"));
+// De to andre knappene i ruta gaar samme vei ut.
+sjekk('… og det samme gjor «Registrer betaling» og «Send Vipps-avtale»',
+    str_contains($sidaB, "              this.setState({ personBetalingApen: false, personBetalingBelop: '' });\n              this.apnePerson") === false
+    // Fire kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
+    // medlemskap» og «Send Vipps-avtale». × kaller den ogsaa, men uten
+    // semikolon — se «lukkPerson:» over.
+    && substr_count($sidaB, 'this.lukkPersonruta();') === 4);
+// «Nullstill medlemmet» staar igjen med vilje: den river alt og setter
+// personen paa nytt, og da skal du se resultatet der du staar.
+sjekk('… mens «Nullstill» blir staaende, som for',
+    str_contains($sidaB, "this.setState({ personPlan: null, personFri: null, personFriGrunn: null,\n                                personBetalingApen: false, personBetalingBelop: '' });\n                this.apnePerson(this.state.personMedlemId || 0"));
 // Overstyringa maa nullstilles naar en annen person aapnes. Ellers staar
 // forrige valg igjen paa neste medlem.
 sjekk('… og valget nullstilles naar en annen person aapnes',

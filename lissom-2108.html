@@ -24361,9 +24361,13 @@ class Component extends DCLogic {
    * i en side som nettopp ble kortere.
    */
   lukkPersonruta() {
+    // Alt som ble skrevet inn i ruta ryddes vekk. Overstyringene —
+    // personPlan, personFri — er det du TRODDE du satte; neste gang ruta
+    // aapnes skal brikkene lese det som faktisk staar i basen.
     this.setState({ personFor: null, personData: null, personNotat: null,
       personNavnFelt: null, personEpost: null, personTelefon: null,
       personStartDato: null, personSluttDato: null, personTimer: null,
+      personPlan: null, personFri: null, personFriGrunn: null,
       personBetalingApen: false, personBetalingBelop: '' });
     // Vi maa vente til ruta faktisk er borte fra skjermen.
     //
@@ -38775,8 +38779,14 @@ class Component extends DCLogic {
               belop: (this.state.personBetalingBelop || '').trim(),
             }, true).then(ok => {
               if (!ok) { return; }
-              this.setState({ personBetalingApen: false, personBetalingBelop: '' });
-              this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+              // Lagret, og ut. Eieren, 7. september 2026, om de tre knappene
+              // som ble igjen etter at «Lagre» og × begynte aa gaa tilbake
+              // til lista. Se lukkPersonruta().
+              //
+              // «behold» staar fortsatt: gikk det galt, skal ruta bli
+              // staaende, saa beskjeden staar der du var. medlemKall() henter
+              // lista paa nytt av seg selv naar det gikk bra.
+              this.lukkPersonruta();
             }),
           })),
           // Samtykket til vilkaarene, med dato og utgave. En hake som bare
@@ -38833,10 +38843,16 @@ class Component extends DCLogic {
             this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)
               .then(ok => {
                 if (!ok) { return; }
-                // Overstyringa nullstilles, saa brikkene leser det som naa
-                // staar i basen — ikke det vi trodde vi satte.
-                this.setState({ personPlan: null });
-                this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+                // Lagret, og ut. Eieren, 7. september 2026, om de tre
+                // knappene som ble igjen etter at «Lagre» og × begynte aa gaa
+                // tilbake til lista. Se lukkPersonruta().
+                //
+                // «behold» staar fortsatt: gikk det galt, skal ruta bli
+                // staaende, saa beskjeden staar der du var. Overstyringa
+                // nullstilles av lukkingen, saa brikkene leser det som naa
+                // staar i basen neste gang du aapner personen — ikke det vi
+                // trodde vi satte.
+                this.lukkPersonruta();
               });
           },
           // ── «Send Vipps-avtale» ────────────────────────────────────
@@ -38894,7 +38910,13 @@ class Component extends DCLogic {
             { handling: 'send-avtale', medlemId: p.id }, true
           ).then(ok => {
             if (!ok) { return; }
-            this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+            // Sendt, og ut. Eieren, 7. september 2026, om de tre knappene som
+            // ble igjen etter at «Lagre» og × begynte aa gaa tilbake til
+            // lista. Se lukkPersonruta().
+            //
+            // «behold» staar fortsatt: gikk det galt, skal ruta bli staaende,
+            // saa beskjeden staar der du var.
+            this.lukkPersonruta();
           }),
           // ── Begynn paa nytt med den samme personen ─────────────────
           //

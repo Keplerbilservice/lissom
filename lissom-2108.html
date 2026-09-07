@@ -11958,7 +11958,6 @@ window.__resources = {
                kort som i dag, jeg vil at kortene skal vaere like som de andre
                kortene paa denne siden». De staar naa inne i rutenettet, med
                den samme ramma som resten. Se ovSkylderRamme og ovPopRamme. -->
-          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
           <!-- Statistikk.
                Eieren 30. august: «her vil jeg se mine mest populaere kurs».
                Regnet av plassene som faktisk er solgt siste tolv maaneder —
@@ -11974,44 +11973,6 @@ window.__resources = {
 
                  Bredden foelger samme regel som ovSkylderRamme: to spalter
                  der det er plass, hele rada paa telefonen. -->
-          <!-- ── Medlemmene ─────────────────────────────────────────
-               Eieren, 7. september 2026: «paa oversikt, saa staar ogsaa i
-               verkstedet paa forsiden, den kan fjernes da den staar i
-               sidemenyen» — og «medlemmer blir staaende, men som et lite kort
-               som er like de andre paa siden».
-
-               De innstemplede sto oeverst i dette kortet fram til naa. De
-               staar i sidemenyen paa hver eneste adminside, og i skuffen paa
-               telefonen, saa lista sto to steder paa den samme skjermen.
-
-               Igjen staar medlemmene. Hver rad er en knapp: ett trykk aapner
-               personen paa medlemsskjermen — «husk de maa vaere klikkbare saa
-               de gaar til det riktige stedet».
-
-               De som er inne staar med i lista naa. De var tatt bort fordi de
-               sto oeverst i det samme kortet; det gjor de ikke lenger. -->
-          <sc-if value="{{ admInneVis }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admInneRamme }}">
-              <div style="{{ admMedlSkilleStil }}">
-                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemmer</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ admMedlAntall }}</span>
-              </div>
-              <sc-for list="{{ admMedl }}" as="v" hint-placeholder-count="4">
-                <button type="button" onClick="{{ v.apne }}" style="{{ admMedlRadStil }}">
-                  <span style="{{ v.avatarStil }}">{{ v.initial }}</span>
-                  <span style="flex: 1 1 40px;">
-                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ v.navn }}</span>
-                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ v.under }}</span>
-                  </span>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
-                </button>
-              </sc-for>
-              <sc-if value="{{ admMedlTom }}" hint-placeholder-val="{{ false }}">
-                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen andre medlemmer.</div>
-              </sc-if>
-            </div>
-          </sc-if>
-
             <div style="{{ ovPopRamme }}">
               <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
                 <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
@@ -12031,6 +11992,7 @@ window.__resources = {
               </sc-if>
             </div>
           </sc-if>
+          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
 
             <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
               <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
@@ -43364,12 +43326,20 @@ class Component extends DCLogic {
         const storst = liste.reduce((n, k) => Math.max(n, k.plasser || 0), 0) || 1;
         return {
           ovPopVis: true,
-          // Samme regel som ovSkylderRamme: «span 2» der rutenettet har flere
-          // spalter, hele rada paa telefonen der det bare er én.
+          // Panelet sto inne i kortrutenettet og spente over to spalter.
+          // Det er hoeyere enn kortene, og et rutenett gir alle i samme rad
+          // den hoeyeste hoeyden: kortet ved siden av ble dratt opp til 679 px
+          // og fikk en stor tom flate over lenka si. Hos eieren var det «Nye
+          // paameldinger» som laa der; her «Venteliste».
+          //
+          // Eieren, 7. september 2026: «gjor alle kortene paa oversikt like,
+          // altsaa samme som de smaa kortene». Panelet staar naa i rada over
+          // rutenettet, med hele bredden. Da er alle kortene i rutenettet like
+          // hoeye, og stolpene er i behold.
           ovPopRamme: {
-            gridColumn: this.erSmal() ? '1 / -1' : 'span 2',
             background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+            marginBottom: 'var(--space-4)',
           },
           ovPopTom: liste.length === 0,
           ovPopPeriode: 'Siste tolv måneder',
@@ -43488,6 +43458,25 @@ class Component extends DCLogic {
                  'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
                  null, 'Se siden',
                  () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
+
+            // Medlemmene.
+            //
+            // Sto som et hoeyt kort med navnelista i, fra 7. september om
+            // morgenen. Eieren samme kveld: «gjor alle kortene paa oversikt
+            // like, altsaa samme som de smaa kortene». Lista naas fra
+            // menypunktet «Medlemmer», som for.
+            //
+            // Tallet er de som har medlemskap — ikke admin, og ikke de som
+            // bare har vaert paa kurs. Samme rader som medlemslista bruker,
+            // saa de to ikke kan svare hver sitt.
+            (() => {
+              const m = (this.state.adminMedlemmer ? this.medlemsrader() : [])
+                .filter(x => x.erMedlem && !x.erAdmin);
+              return kort('Medlemmer',
+                   'Alle som har medlemskap, og timene de har brukt.',
+                   m.length || null, 'Se medlemmene',
+                   () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive', medlemSok: '' }));
+            })(),
 
             // Nettbutikken: som Kassa, bare paa PC. Se kommentaren over.
             ...(this.erSmal() ? [] : [kort('Nettbutikk',
@@ -47566,37 +47555,6 @@ class Component extends DCLogic {
             { navn: 'Kari Nordbø', siden: '12:10', type: 'Basis 30', ressurs: 'Dreieskive 2', skjult: false },
             { navn: 'Jonas Five', siden: '13:42', type: 'Årsmedlemskap', ressurs: '', skjult: true },
           ]);
-        // ── Medlemmene i kortet paa Oversikt ────────────────────────────
-        //
-        // Eieren, 7. september 2026: «kan jeg faa medlemmer kortet i baade
-        // kalender og oversikt?» — og etter skissen: «endre fra ikke inne naa
-        // til medlemmer, og husk de maa vaere klikkbare saa de gaar til det
-        // riktige stedet», og «men medlemmer maa vises selv om ingen er i
-        // verkstedet».
-        //
-        // Radene kommer fra medlemsrader(), den samme som bygger
-        // medlemslista. Skrev vi dem opp paa nytt her, ville de to kunne
-        // svare hver sitt om den samme personen.
-        //
-        // Alle medlemmene staar her. Fram til 7. september var de som var
-        // innstemplet tatt bort, fordi de sto oeverst i det samme kortet.
-        // Den avdelingen er borte, og da manglet de som var i verkstedet.
-        const medl = ((this.state.adminMedlemmer || this.erPublisert())
-          ? this.medlemsrader()
-          : [
-            { id: 0, navn: 'Anne Berg', initial: 'AB', abonnement: 'Basis 30', timer: '12 / 30',
-              status: 'Aktiv', tone: 'success', erMedlem: true, erAdmin: false, inne: false },
-            { id: 0, navn: 'Marit Lie', initial: 'ML', abonnement: 'Mini 15', timer: '3 / 15',
-              status: 'Pause', tone: 'neutral', erMedlem: true, erAdmin: false, inne: false },
-          ])
-          .filter(m => m.erMedlem && !m.erAdmin)
-          .sort((a, b) => String(a.navn).localeCompare(String(b.navn), 'no'));
-        const avatar = {
-          width: 32, height: 32, borderRadius: '50%', background: 'var(--clay-200)',
-          color: 'var(--brown-500)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 12, fontWeight: 700,
-          letterSpacing: '.02em', flex: '0 0 auto',
-        };
         return {
           // ── Navnene nederst i sidemenyen ────────────────────────────
           //
@@ -47697,95 +47655,6 @@ class Component extends DCLogic {
             marginBottom: 7, paddingLeft: 2,
           },
           admMenyMerStil: { fontSize: 12, color: 'var(--clay-400)', paddingTop: 4 },
-          admMedlTom: medl.length === 0,
-          admMedlAntall: medl.length === 0 ? 'Ingen'
-            : (medl.length === 1 ? 'Ett medlem' : medl.length + ' medlemmer'),
-          admMedl: medl.map(m => ({
-            navn: m.navn,
-            initial: m.initial,
-            // Samme to opplysningene som i medlemslista: hva hen har, og hvor
-            // mye av tida som er brukt. En strek betyr ingen timer — da staar
-            // det ingenting her heller.
-            under: [m.abonnement, m.timer].filter(x => {
-              const t = String(x === undefined || x === null ? '' : x).trim();
-              return t !== '' && t !== '\u2014';
-            }).join(' \u00b7 '),
-            // ── Hva pilla sier ──────────────────────────────────────
-            //
-            // Eieren, 7. september 2026: «paa medlemene, saa vil jeg fjerne
-            // pillen, proeveperiode. vi kan godt ha en pille som heter
-            // Bindingstid og ikke bundet».
-            //
-            // Bindingstida er det man lurer paa naar noen vil slutte, og den
-            // staar ingen andre steder enn i medlemslista. Proeveperioden sa
-            // bare det samme som medlemskapet under — «Proev Lissom» — én
-            // gang til.
-            //
-            // Bindingstida gaar foran. Loeper en oppsigelse, er det den som
-            // gjelder; ellers staar statusen som for. Et proevemedlem uten
-            // binding staar som aktivt, som de andre aktive.
-            status: m.erBundet ? 'Bindingstid'
-              : (m.iOppsigelse ? 'Sagt opp'
-              : (m.status === 'Prøveperiode' ? 'Aktiv' : m.status)),
-            tone: m.erBundet ? 'warning'
-              : (m.iOppsigelse ? 'warning'
-              : (m.status === 'Prøveperiode' ? 'success' : m.tone)),
-            avatarStil: avatar,
-            // Ett trykk aapner personen — samme rute som i medlemslista.
-            // Kortet staar paa Oversikt og Kalender, og der finnes ikke ruta;
-            // derfor gaar vi til medlemsskjermen forst. «Alle» er filteret,
-            // for et medlem som er sagt opp ligger utenfor «Aktive».
-            apne: () => {
-              this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: '' });
-              this.apnePerson(m.id, 0);
-            },
-          })),
-          // Overskrifta i kortet. Den sto som en avdeling midt i kortet, med
-          // strek over og egen bakgrunn, fordi de innstemplede sto over. Naa
-          // er den kortets egen overskrift, og har samme luft som de andre
-          // kortene paa Oversikt.
-          admMedlSkilleStil: {
-            padding: 'var(--space-5) 16px var(--space-4)',
-            display: 'flex', alignItems: 'baseline',
-            justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap',
-          },
-          // Kortet staar i en smal spalte paa Oversikt — maalt til 266 px.
-          // Med tolv piksler mellom og 160 px grunnbredde paa navnet gikk
-          // avatar, navn og pille paa hver sin linje, og kortet ble en
-          // meterlang stripe. Aatte piksler holder raden samlet.
-          //
-          // Navnet har 40 px grunnbredde, ikke 80, og raden 16 px sideluft,
-          // ikke 20. Med 80 tok navnet plassen forst, og «Bindingstid» — den
-          // bredeste pilla — falt ned paa egen linje paa fire av aatte rader.
-          // De fire pikslene i sideluft var det som manglet paa raden med
-          // «Aarsmedlemskap» under navnet. Eieren, 7. september 2026, etter aa
-          // ha sett de to skjermbildene: «B — pilla ved siden av».
-          //
-          // Navnet har ingen «min-width: 0». Da kan boksen bli smalere enn
-          // ordet, og teksten legger seg utenfor og under pilla — maalt paa
-          // nettbrett, der kortet er 236 px. Uten den faller pilla heller ned
-          // paa egen linje der det virkelig ikke er plass.
-          admMedlRadStil: {
-            appearance: 'none', border: 'none', borderTop: '1px solid var(--border-subtle)',
-            background: 'transparent', cursor: 'pointer', width: '100%', boxSizing: 'border-box',
-            textAlign: 'left', padding: '10px 16px', display: 'flex', alignItems: 'center',
-            gap: 8, flexWrap: 'wrap', font: 'inherit', color: 'inherit',
-          },
-          // Kortet staar bare i admin. «medlemsvisning» er Min side.
-          admInneVis: true,
-          // Samme ramme som statistikkortet ved siden av, saa Oversikt ikke
-          // faar to slags kort.
-          //
-          // Kortet gikk over to spalter da de innstemplede sto oeverst, fordi
-          // radene der ikke fikk plass i én. De radene er borte, og eieren,
-          // 7. september 2026: «medlemmer blir staaende, men som et lite kort
-          // som er like de andre paa siden». Da foelger det rutenettet, som
-          // kortene rundt.
-          admInneRamme: {
-            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
-            background: 'var(--surface-card)', overflow: 'hidden',
-            marginBottom: 'var(--space-6)',
-          },
         };
       })(),
       antallInne: this.state.stempling ? this.state.stempling.inne.antall : (this.erPublisert() ? 0 : 5),

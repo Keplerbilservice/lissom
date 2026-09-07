@@ -32977,7 +32977,22 @@ class Component extends DCLogic {
                   { handling: 'status', id: dv.bookingId, status: 'reservert' })
                   .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
               },
-              klDBetaltValg: ['Kontant', 'Vipps'].map(m => ({
+              // ── De samme maatene som ved innlegging ──────────────
+              //
+              // Her sto ['Kontant', 'Vipps']. Eieren, 7. september 2026:
+              // «naar jeg legger inn en deltaker som ikke skal betale,
+              // hvordan kan jeg faa frem det?»
+              //
+              // Svaret var «bare naar du legger henne inn». Skjemaet paa
+              // okta har fem valg — se MAATER_OKT — men kortet hadde to.
+              // Sto hun foerst som «Ikke betalt», maatte hun avbestilles og
+              // legges inn paa nytt for aa bli gratis.
+              //
+              // Lista hentes fra MAATER_OKT, saa de to stedene ikke kan
+              // komme i utakt. «Ikke betalt» staar ikke som en pille her:
+              // den har sin egen knapp, «Sett som ikke betalt», og den
+              // gjelder den andre veien.
+              klDBetaltValg: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt').map(m => ({
                 navn: m,
                 velg: () => {
                   if (!dv || !dv.bookingId) return;

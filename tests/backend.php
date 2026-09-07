@@ -4004,9 +4004,13 @@ sjekk('faneraden i kassa har mer luft over enn under',
 
 sjekk('en plass som staar som betalt kan settes tilbake',
     str_contains($sida2, "{ handling: 'status', id: dv.bookingId, status: 'reservert' }"));
+// Lista sto som ['Kontant', 'Vipps'] til 7. september 2026. Eieren: «naar
+// jeg legger inn en deltaker som ikke skal betale, hvordan kan jeg faa frem
+// det?» — den maaten fantes bare i innleggingsskjemaet. Naa hentes de fra
+// MAATER_OKT, saa de to stedene ikke kan komme i utakt.
 sjekk('… og en ubetalt kan merkes betalt, med maaten',
     str_contains($sida2, "{ handling: 'status', id: dv.bookingId, status: 'betalt', maate: m }")
-    && str_contains($sida2, "klDBetaltValg: ['Kontant', 'Vipps']"));
+    && str_contains($sida2, "klDBetaltValg: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt')"));
 // Aapningstida klippes i plasser paa halvannen time. Uten sammenslaaingen sto
 // det samme tilbudet i seks like linjer, slik den gjorde i kalenderen for.
 sjekk('planlagte kurs samler tidene som foelger en regel',
@@ -12548,6 +12552,33 @@ sjekk('… og en jobb som feiler svarer som en jobb, ikke som en nettside',
 sjekk('… og CGI-utgaven tier naar alt gaar bra',
     str_contains($cronFil, "ini_set('default_mimetype', '');")
     && str_contains($cronFil, 'header_remove();'));
+
+// ── «Gratis» maatte finnes paa deltakerkortet ogsaa ───────────────────
+//
+// Eieren, 7. september 2026, med et bilde av deltakerruta: «naar jeg
+// legger inn en deltaker som ikke skal betale, hvordan kan jeg faa frem
+// det?»
+//
+// Svaret var «bare naar du legger henne inn». Skjemaet paa okta har fem
+// valg — MAATER_OKT — men kortet hadde to: Kontant og Vipps. Sto hun foerst
+// som «Ikke betalt», maatte hun avbestilles og legges inn paa nytt for aa
+// bli gratis.
+//
+// Lista hentes naa fra MAATER_OKT, saa de to stedene ikke kan komme i
+// utakt. «Ikke betalt» staar ikke som pille: den har sin egen knapp, og
+// gjelder den andre veien.
+//
+// Maalt mot serveren med det samme kallet pilla gjor:
+//   {handling: status, status: betalt, maate: Gratis}   -> betalt_maate Gratis
+//   {handling: status, status: betalt, maate: Gavekort} -> betalt_maate Gavekort
+sjekk('deltakerkortet henter maatene fra den samme lista som skjemaet',
+    str_contains($sida, "klDBetaltValg: Component.MAATER_OKT.filter(m => m !== 'Ikke betalt').map(m => ({"));
+sjekk('… saa «Gratis» og «Gavekort» staar der ogsaa',
+    str_contains($sida, "return ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Gratis'];"));
+sjekk('… og serveren tar imot begge to',
+    str_contains($pamP = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'),
+        "'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'")
+    && str_contains($pamP, "'Gavekort'"));
 
 // ── Betalingsstatus paa ventelista ogsaa ─────────────────────────────
 //

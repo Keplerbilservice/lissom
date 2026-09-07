@@ -9443,14 +9443,59 @@ sjekk('«Prøveperiode» staar med ø',
 sjekk('navnene staar i sidemenyen',
     substr_count($sida, '<sc-for list="{{ admMenyInne }}" as="i"') === 36
     && str_contains($sida, 'admMenyInne: raa.slice(0, 6).map(r => ({'));
-// Eieren, 7. september: «paa pc, flytt i verkstedet naa til rett under meld
-// inn feil, saa log ut nedenfor der». Blokka sto nederst i menyen, utenfor
-// skjermbildet. «Logg ut» er derfor tatt ut av menylista og tegnes for seg,
-// etter blokka — pillene oeverst paa telefon leser fortsatt hele lista.
-sjekk('… mellom «Meld inn feil» og «Logg ut»',
-    substr_count($sida, '<sc-for list="{{ adminNavUt }}" as="a"') === 36
-    && str_contains($sida, 'return this.adminMeny().filter(r => r.navn !== Component.ADMIN_LOGG_UT);')
-    && str_contains($sida, 'return this.adminMeny().filter(r => r.navn === Component.ADMIN_LOGG_UT);'));
+// Eieren, 7. september: forst «paa pc, flytt i verkstedet naa til rett under
+// meld inn feil, saa log ut nedenfor der» — men menyen er lengre enn
+// skjermen, og blokka sto paa 997 px paa en skjerm som er 780 hoy. Saa:
+// «flytt i verkstedet naa til under kurs og deltakere, kun pc». Maalt etterpaa:
+// 470 px, synlig uten aa rulle paa 1440x780, 1500x1000 og 1920x1080.
+//
+// Menylista er derfor delt i to — over og under blokka — og «Logg ut» tegnes
+// for seg nederst. Pillene oeverst paa telefon leser fortsatt hele lista.
+sjekk('… rett under «Kurs og deltakere»',
+    substr_count($sida, '<sc-for list="{{ adminNavResten }}" as="a"') === 36
+    && substr_count($sida, '<sc-for list="{{ adminNavUt }}" as="a"') === 36
+    && str_contains($sida, "return 'Kurs og deltakere';")
+    && str_contains($sida, 'const i = uten.findIndex(r => r.navn === Component.ADMIN_VERKSTED_ETTER);')
+    && str_contains($sida, 'return i < 0 ? uten : uten.slice(0, i + 1);')
+    && str_contains($sida, 'return i < 0 ? [] : uten.slice(i + 1);'));
+// «Kun pc»: feltet er skjult paa telefon, der navnene staar i menyskuffen.
+sjekk('… og bare paa PC — telefonen har skuffen',
+    str_contains($sidaP, '.lx-adminaside .lx-admstatus { display: none !important; }'));
+
+// ── Sidemenyen maa vaere hel ────────────────────────────────────────────
+//
+// 7. september ble den gamle bunnblokka fjernet feil: aapningsmerket gikk,
+// resten av blokka ble staaende, og sju sidemenyer fikk to «</div>» for mye.
+// Da lukket nettleseren <aside> for tidlig, og menyen la seg OVER siden i
+// stedet for ved siden av. Eieren: «sidemenyen staar naa over selve siden,
+// og ikke paa siden».
+//
+// Ingen av de andre vaktene fanget det: alle bindinger var koblet, alle
+// lister pekte paa noe, og skjermen tegnet — den tegnet bare feil.
+sjekk('hver sidemeny har like mange aapne og lukkede div-er', (static function () use ($sida): bool {
+    $ute = 0;
+    $pos = 0;
+    while (($start = strpos($sida, '<aside class="lx-adminaside"', $pos)) !== false) {
+        // Finn den tilhoerende </aside> ved aa telle aside-merker.
+        $dybde = 0;
+        $i = $start;
+        $slutt = null;
+        while (preg_match('~</?aside\b~', $sida, $t, PREG_OFFSET_CAPTURE, $i)) {
+            $i = $t[0][1] + strlen($t[0][0]);
+            if ($t[0][0][1] === '/') {
+                $dybde--;
+                if ($dybde === 0) { $slutt = $i; break; }
+            } else {
+                $dybde++;
+            }
+        }
+        if ($slutt === null) { return false; }
+        $inni = substr($sida, $start, $slutt - $start);
+        if (preg_match_all('~<div\b~', $inni) !== preg_match_all('~</div>~', $inni)) { $ute++; }
+        $pos = $slutt;
+    }
+    return $ute === 0;
+})(), 'ellers legger menyen seg over siden');
 sjekk('… og utlogginga er ikke borte fra pillene paa telefon',
     str_contains($sida, 'const ekstra = this.adminMeny()')
     && !str_contains($sida, 'const ekstra = this.adminSideMeny()'));

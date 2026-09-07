@@ -5286,12 +5286,17 @@ window.__resources = {
           <sc-for list="{{ adminNavNyttig }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -5315,6 +5320,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -5642,12 +5650,17 @@ window.__resources = {
           <sc-for list="{{ adminNavNyePameldinger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -5671,6 +5684,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -5825,12 +5841,17 @@ window.__resources = {
           <sc-for list="{{ adminNavMedlemssoknader }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -5854,6 +5875,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -5995,12 +6019,17 @@ window.__resources = {
           <sc-for list="{{ adminNavUbesvarte }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -6024,6 +6053,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -6169,12 +6201,17 @@ window.__resources = {
           <sc-for list="{{ adminNavVideokurs }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -6198,6 +6235,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -6358,12 +6398,17 @@ window.__resources = {
           <sc-for list="{{ adminNavFerdigbrent }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -6387,6 +6432,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -6702,12 +6750,17 @@ window.__resources = {
           <sc-for list="{{ adminNavKalender }}" as="n" hint-placeholder-count="9">
             <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -6731,6 +6784,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -6789,20 +6845,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-              <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
-          </sc-if>
-          <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admMenyLinjeStil }}">
-              <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
-            </div>
-          </sc-if>
-        </div>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
@@ -8235,12 +8277,17 @@ window.__resources = {
           <sc-for list="{{ adminNavArskalender }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -8264,6 +8311,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -8466,12 +8516,17 @@ window.__resources = {
           <sc-for list="{{ adminNavVenteliste }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -8495,6 +8550,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -8757,12 +8815,17 @@ window.__resources = {
           <sc-for list="{{ adminNavKursholdere }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -8786,6 +8849,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -9037,12 +9103,17 @@ window.__resources = {
           <sc-for list="{{ adminNavUttak }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -9066,6 +9137,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -9793,12 +9867,17 @@ window.__resources = {
           <sc-for list="{{ adminNavNyreg }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -9822,6 +9901,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -9882,20 +9964,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-              <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
-          </sc-if>
-          <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admMenyLinjeStil }}">
-              <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
-            </div>
-          </sc-if>
-        </div>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -10104,12 +10172,17 @@ window.__resources = {
           <sc-for list="{{ adminNavMedlemskap }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -10133,6 +10206,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -10193,20 +10269,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-              <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
-          </sc-if>
-          <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admMenyLinjeStil }}">
-              <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
-            </div>
-          </sc-if>
-        </div>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -10505,12 +10567,17 @@ window.__resources = {
           <sc-for list="{{ adminNav }}" as="a" hint-placeholder-count="6">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -10534,6 +10601,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -10594,20 +10664,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-              <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
-          </sc-if>
-          <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admMenyLinjeStil }}">
-              <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
-            </div>
-          </sc-if>
-        </div>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -11684,12 +11740,17 @@ window.__resources = {
           <sc-for list="{{ adminNavOversikt }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -11713,6 +11774,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -11773,20 +11837,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-              <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
-          </sc-if>
-          <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admMenyLinjeStil }}">
-              <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
-            </div>
-          </sc-if>
-        </div>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -12261,12 +12311,17 @@ window.__resources = {
           <sc-for list="{{ adminNavKursvelger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -12290,6 +12345,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -12574,12 +12632,17 @@ window.__resources = {
           <sc-for list="{{ adminNavReferanser }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -12603,6 +12666,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -12856,12 +12922,17 @@ window.__resources = {
           <sc-for list="{{ adminNavVarsler }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -12885,6 +12956,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -13192,12 +13266,17 @@ window.__resources = {
           <sc-for list="{{ adminNavRessurser }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -13221,6 +13300,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -13413,12 +13495,17 @@ window.__resources = {
           <sc-for list="{{ adminNavFerie }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -13442,6 +13529,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -13622,12 +13712,17 @@ window.__resources = {
           <sc-for list="{{ adminNavFeil }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -13651,6 +13746,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -13848,12 +13946,17 @@ window.__resources = {
           <sc-for list="{{ adminNavMobilvis }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -13877,6 +13980,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -14041,12 +14147,17 @@ window.__resources = {
           <sc-for list="{{ adminNavPameldte }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -14070,6 +14181,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -14518,12 +14632,17 @@ window.__resources = {
           <sc-for list="{{ adminNavOmraade }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -14547,6 +14666,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -14607,20 +14729,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-              <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
-          </sc-if>
-          <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admMenyLinjeStil }}">
-              <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
-            </div>
-          </sc-if>
-        </div>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -14717,12 +14825,17 @@ window.__resources = {
           <sc-for list="{{ adminNavKursdeltakere }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -14746,6 +14859,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -15325,12 +15441,17 @@ window.__resources = {
           <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -15354,6 +15475,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -15551,12 +15675,17 @@ window.__resources = {
           <sc-for list="{{ adminNavMedlem }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -15580,6 +15709,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -15640,20 +15772,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-              <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
-          </sc-if>
-          <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
-            <div style="{{ admMenyLinjeStil }}">
-              <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
-            </div>
-          </sc-if>
-        </div>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -16492,12 +16610,17 @@ window.__resources = {
           <sc-for list="{{ adminNavInnhold }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -16521,6 +16644,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -16776,12 +16902,17 @@ window.__resources = {
           <sc-for list="{{ adminNavButikk }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -16805,6 +16936,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -17112,12 +17246,17 @@ window.__resources = {
           <sc-for list="{{ adminNavBeskjeder }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -17141,6 +17280,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -17456,12 +17598,17 @@ window.__resources = {
           <sc-for list="{{ adminNavMaler }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -17485,6 +17632,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -17693,12 +17843,17 @@ window.__resources = {
           <sc-for list="{{ adminNavOppskrifter }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -17722,6 +17877,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -18036,12 +18194,17 @@ window.__resources = {
           <sc-for list="{{ adminNavOkonomi }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -18065,6 +18228,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -18572,12 +18738,17 @@ window.__resources = {
           <sc-for list="{{ adminNavMarked }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -18601,6 +18772,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -19443,12 +19617,17 @@ window.__resources = {
           <sc-for list="{{ adminNavSeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -19472,6 +19651,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -19746,12 +19928,17 @@ window.__resources = {
           <sc-for list="{{ adminNavGeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
-          <!-- Hvem som er i verkstedet, mellom «Meld inn feil» og «Logg ut».
-               Eieren, 7. september 2026: «paa pc, flytt i verkstedet naa til rett
-               under meld inn feil, saa log ut nedenfor der».
-               Feltet sto nederst i menyen. Menyen er lengre enn skjermen — maalt
-               startet blokka paa 1345 px paa en skjerm som er 780 hoy — saa navnene
-               sto utenfor bildet. Se admMenyInne. -->
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
           <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
             <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
             <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
@@ -19775,6 +19962,9 @@ window.__resources = {
               </div>
             </sc-if>
           </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
           <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
@@ -23760,6 +23950,17 @@ class Component extends DCLogic {
    */
   static get ADMIN_LOGG_UT() {
     return '⌁  Logg ut';
+  }
+
+  /**
+   * Raden verkstedblokka legger seg under i sidemenyen.
+   *
+   * Eieren, 7. september 2026: «flytt i verkstedet naa til under kurs og
+   * deltakere, kun pc». Den sto nederst, under «Meld inn feil»; der maatte
+   * man rulle for aa se den, fordi menyen er lengre enn skjermen.
+   */
+  static get ADMIN_VERKSTED_ETTER() {
+    return 'Kurs og deltakere';
   }
 
   static get MAATER_OKT() {
@@ -37264,7 +37465,16 @@ class Component extends DCLogic {
    * er ikke fjernet noe sted, bare tegnet et annet sted i sidemenyen.
    */
   adminSideMeny() {
-    return this.adminMeny().filter(r => r.navn !== Component.ADMIN_LOGG_UT);
+    const uten = this.adminMeny().filter(r => r.navn !== Component.ADMIN_LOGG_UT);
+    const i = uten.findIndex(r => r.navn === Component.ADMIN_VERKSTED_ETTER);
+    return i < 0 ? uten : uten.slice(0, i + 1);
+  }
+
+  /** Resten av menyen — det som staar under verkstedblokka. */
+  adminSideMenyResten() {
+    const uten = this.adminMeny().filter(r => r.navn !== Component.ADMIN_LOGG_UT);
+    const i = uten.findIndex(r => r.navn === Component.ADMIN_VERKSTED_ETTER);
+    return i < 0 ? [] : uten.slice(i + 1);
   }
 
   /** Utlogginga alene, til raden under verkstedblokka. */
@@ -47919,6 +48129,7 @@ class Component extends DCLogic {
       })(),
       // Utlogginga alene. Sidemenyen tegner den etter verkstedblokka, saa
       // rekkefolgen blir «Meld inn feil» — verkstedet — «Logg ut».
+      adminNavResten: this.adminSideMenyResten(),
       adminNavUt: this.adminUtRad(),
       erAdminVenteliste: side === 'adminventeliste',
       adminNavVenteliste: this.adminSideMeny(),

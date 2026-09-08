@@ -2531,6 +2531,26 @@ sjekk('trekkrunden sporr om trekkene som ikke har fatt svar',
     str_contains($runden, 'foreach (self::trekkUtenSvar($maks) as $p) {')
     && str_contains($runden, 'self::sjekkTrekk($p)')
     && str_contains($runden, '$svart = self::sjekkAlleTrekk(50, $skriv);'));
+// ── Gi gave, Send beskjed og Nytt medlem, der man ser dem ────────────
+//
+// De sto oppe til hoyre, paa linje med overskriften — smaa, langt fra der
+// oyet gaar, og paa en smal skjerm klippet den siste i kanten.
+//
+// Eieren, 8. september 2026: «pillene gi gave, send beskjed og nytt medlem
+// maa plassere mer synlig, for eksempel etter interne samlinger». Vist i to
+// utgaver for de ble bygget; han valgte egen rad, uten gul bakgrunn.
+$pilleFil = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('de tre staar i egen rad under Interne samlinger',
+    str_contains($pilleFil, '<div style="max-width: 860px; display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">')
+    && strpos($pilleFil, 'Ny intern samling</x-import>')
+        < strpos($pilleFil, '<div style="max-width: 860px; display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">'));
+// Og ikke oppe i overskriftsraden lenger — ellers stod de to steder.
+sjekk('… og ikke lenger oppe ved overskriften',
+    !str_contains($pilleFil, "<h1 style=\"margin: 0; font-size: var(--text-4xl);\">Medlemmer</h1>\n          </div>\n          <div style=\"display: flex; gap: var(--space-3); flex-wrap: wrap;\">"));
+// Kursdeltakerskjermen har sin egen rad med fire knapper. Den er ikke rort.
+sjekk('… mens deltakerskjermen staar som for',
+    str_contains($pilleFil, '>Legg til på kurs</x-import>'));
+
 // ── En timegave gir timer ────────────────────────────────────────────
 //
 // «Loes inn gaven» skrev bare en rad i «medlemsgave_bruk» og sendte en

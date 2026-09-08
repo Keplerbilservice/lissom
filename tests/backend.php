@@ -5330,8 +5330,24 @@ sjekk('… og slaar opp kursadressene paa tittelen',
 if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     $skive = DB::en("SELECT id, antall FROM ressurser WHERE navn = 'Dreieskive'");
     sjekk('dreieskivene staar i basen, ikke i koden', $skive !== null && (int) $skive['antall'] > 0);
+    // Talte for at MINST TRE kurs pekte paa skiva. Tallet passet
+    // produksjonsbasen, ikke den migrasjon 003 saar — der finnes ett
+    // dreiekurs og Date Night. Vakten sa derfor fra i testbasen uten at noe
+    // var galt, og den ville tiet om et dreiekurs som manglet ressursen saa
+    // lenge tre andre hadde den. Naa spor den om det den skal: peker ALLE
+    // dreiekursene og Date Night paa skiva? Se migrasjon 103, som setter
+    // dem etter tema = 'Dreiing' eller tittel = 'Date Night'.
+    $skiveVilkaar = "(tema = 'Dreiing' OR tittel = 'Date Night')";
+    $utenSkive = (int) DB::verdi(
+        "SELECT COUNT(*) FROM courses
+          WHERE {$skiveVilkaar} AND (ressurs_id IS NULL OR ressurs_id <> :i)",
+        ['i' => (int) $skive['id']]);
+    $medSkive = (int) DB::verdi(
+        "SELECT COUNT(*) FROM courses WHERE {$skiveVilkaar} AND ressurs_id = :i",
+        ['i' => (int) $skive['id']]);
     sjekk('… og dreiekursene og Date Night peker paa dem',
-        (int) DB::verdi('SELECT COUNT(*) FROM courses WHERE ressurs_id = :i', ['i' => (int) $skive['id']]) >= 3);
+        $utenSkive === 0 && $medSkive > 0,
+        $medSkive . ' peker paa skiva, ' . $utenSkive . ' mangler den');
 
     // Selve regnestykket: to ting som gaar samtidig og deler ressursen, skal
     // ikke kunne selge den samme skiva to ganger.
@@ -6306,7 +6322,19 @@ sjekk('kortene i kalenderen har ingen pille for koen',
 sjekk('… mens sveipekortet fortsatt sier hvor mange som venter',
     str_contains($sida, "' · ' + he.venteliste.length + ' på venteliste'"));
 sjekk('… og hoyreklikkmenyen fortsatt kan gi plassen',
-    str_contains($sida, "{ navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn,"));
+    str_contains($sida, "navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn,"));
+// ── Og gir den paa ordentlig ─────────────────────────────────────────
+//
+// Menyvalget la navnet i «klTildelt» — et lokalt lag fra prototypen som ingen
+// tegner (klSkriver er false) og som ingen sender noe sted. Trykket gjorde
+// altsaa ingenting: personen fikk ikke plassen, og skjermen sa det ikke fra
+// heller. Samme feil som «Gjenopprett økten» hadde.
+//
+// Veien fantes fra for: knappen «Tildel plass til førstemann →» i
+// deltakerruta kaller venteliste.php med «gi-plass».
+sjekk('… og kallet gaar til serveren, ikke bare til skjermen',
+    str_contains($sida, "{ handling: 'gi-plass', id: forst.id, oktId: menyEvt.oktId });")
+    && !str_contains($sida, 'klTildelt: Object.assign({}, s.klTildelt,'));
 
 // ── Én person, én rad ─────────────────────────────────────────────────
 //
@@ -10926,8 +10954,8 @@ sjekk('… og forste trykk gir baade dag 1 og dagen etter',
     && str_contains($sidaD, "dag(this.dagenEtter(st.klRDato || ''), null)] };")
     && str_contains($sidaD, "til: (mal && mal.til) || st.klRTil || '',"));
 sjekk('… og Dag 1 staar laast, med datoen fra feltet oeverst',
-    str_contains($sidaD, '<input type="date" value="{{ klRDato }}" disabled="true" style="{{ klRFeltLaastStil }}">')
-    && str_contains($sidaD, '<input type="time" value="{{ klRFra }}" disabled="true" style="{{ klRFeltLaastStil }}">')
+    str_contains($sidaD, '<input type="date" value="{{ klRDato }}" disabled="true" style="{{ klRDagDatoLaastStil }}">')
+    && str_contains($sidaD, '<input type="time" value="{{ klRFra }}" disabled="true" style="{{ klRDagTidLaastStil }}">')
     && str_contains($sidaD, '>Følger datoen øverst</span>'));
 // Sluttida hoerer til dagen, ikke til okta: gaar kurset over to dager, er
 // «Til» oeverst slutten paa siste dag.

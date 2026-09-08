@@ -42,7 +42,7 @@ const UNNTAK = [
     // staar i feltene oeverst i samme rute — raden viser dem laast, saa de
     // to ikke kan sprike. Et «settX» her ville skrevet dem fra hverandre,
     // og det var nettopp det som flyttet kurset fra 9. til 10. september.
-    treff: /disabled="true" style="\{\{ klRFeltLaastStil \}\}"/,
+    treff: /disabled="true" style="\{\{ klRDag(Dato|Tid)LaastStil \}\}"/,
     grunn: 'laast Dag 1 — foelger Dato-feltet oeverst, kan ikke skrives i',
   },
   {

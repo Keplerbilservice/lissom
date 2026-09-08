@@ -7607,12 +7607,12 @@ window.__resources = {
                        faller laasen bort. Maalt i nettleseren — feltet sto
                        graat, men kunne skrives i. -->
                   <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
-                    <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
                       <span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">Dag 1</span>
-                      <input type="date" value="{{ klRDato }}" disabled="true" style="{{ klRFeltLaastStil }}">
-                      <input type="time" value="{{ klRFra }}" disabled="true" style="{{ klRFeltLaastStil }}">
+                      <input type="date" value="{{ klRDato }}" disabled="true" style="{{ klRDagDatoLaastStil }}">
+                      <input type="time" value="{{ klRFra }}" disabled="true" style="{{ klRDagTidLaastStil }}">
                       <span style="color: var(--text-muted);">–</span>
-                      <input type="time" value="{{ klRDag1Til }}" onChange="{{ settKlRDag1Til }}" style="{{ klRFeltStil }}">
+                      <input type="time" value="{{ klRDag1Til }}" onChange="{{ settKlRDag1Til }}" style="{{ klRDagTidStil }}">
                       <span style="font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; white-space: nowrap;">Følger datoen øverst</span>
                     </div>
                     <input value="{{ klRDag1Overskrift }}" onChange="{{ settKlRDag1Overskrift }}" placeholder="Overskrift, f.eks. «Sentrering og dreiing»" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
@@ -7621,12 +7621,12 @@ window.__resources = {
                   </div>
                   <sc-for list="{{ klRSamlingerResten }}" as="sa" hint-placeholder-count="1">
                     <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
-                      <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
                         <span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ sa.merke }}</span>
-                        <input type="date" value="{{ sa.dato }}" onChange="{{ sa.settDato }}" style="{{ klRFeltStil }}">
-                        <input type="time" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" style="{{ klRFeltStil }}">
+                        <input type="date" value="{{ sa.dato }}" onChange="{{ sa.settDato }}" style="{{ klRDagDatoStil }}">
+                        <input type="time" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" style="{{ klRDagTidStil }}">
                         <span style="color: var(--text-muted);">–</span>
-                        <input type="time" value="{{ sa.til }}" onChange="{{ sa.settTil }}" style="{{ klRFeltStil }}">
+                        <input type="time" value="{{ sa.til }}" onChange="{{ sa.settTil }}" style="{{ klRDagTidStil }}">
                         <button type="button" onClick="{{ sa.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
                       </div>
                       <input value="{{ sa.overskrift }}" onChange="{{ sa.settOverskrift }}" placeholder="Overskrift, f.eks. «Sentrering og dreiing»" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
@@ -34938,7 +34938,27 @@ class Component extends DCLogic {
                 }).then(ok => { if (ok) this.klFrisk(); });
               },
             }] : []),
-            ...(menyEvt.venteliste && menyEvt.venteliste.length ? [{ navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn, gjor: () => this.setState(s => ({ klMeny: null, klTildelt: Object.assign({}, s.klTildelt, { [menyEvt.id]: ((s.klTildelt || {})[menyEvt.id] || []).concat([menyEvt.venteliste[0].navn]) }) })) }] : []),
+            // ── Tildel plass, paa ordentlig ────────────────────────────
+            //
+            // Sto og la navnet i «klTildelt» — et lokalt lag fra prototypen
+            // som ingen tegner (klSkriver er false) og som ingen sender noe
+            // sted. Trykket gjorde altsaa ingenting: personen fikk ikke
+            // plassen, og skjermen sa det ikke fra heller. Samme feil som
+            // «Gjenopprett økten» hadde.
+            //
+            // Veien finnes fra for: knappen «Tildel plass til førstemann →»
+            // i deltakerruta kaller venteliste.php med «gi-plass». Her er
+            // det samme kallet, fra hoeyremenyen.
+            ...(menyEvt.venteliste && menyEvt.venteliste.length ? [{
+              navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn,
+              gjor: () => {
+                const forst = menyEvt.venteliste[0];
+                this.setState({ klMeny: null });
+                if (!forst.id || !menyEvt.oktId) return;
+                this.klKall('/api/admin/venteliste.php',
+                  { handling: 'gi-plass', id: forst.id, oktId: menyEvt.oktId });
+              },
+            }] : []),
             // Gjenopprettingen sto her som «klAvlyst[id] = false» — bare i
             // nettleseren. Den saa gjenopprettet ut til sida ble lastet, og
             // saa var okta avlyst igjen. Eieren, 8. september 2026: «Prøvde å
@@ -35574,11 +35594,32 @@ class Component extends DCLogic {
               //
               // Samme liste som hoeyremenyen gir; se klDeltakerliste().
               klRFeltStil: felt,
+              // ── Feltene i en dag-rad ───────────────────────────────
+              //
+              // De arvet «width: 100%» fra feltene oeverst, og i en rad som
+              // brekker ble hver av dem staaende paa sin egen linje: dato,
+              // fra og til under hverandre, tre linjer per dag. Ruta ble hoy,
+              // og dag to laa utenfor skjermen.
+              //
+              // Her staar de side om side og krymper i stedet, med et
+              // minstemaal saa datovelgeren fortsatt faar plass til
+              // «09.09.2026» og ikonet sitt. Er skjermen for smal likevel,
+              // brekker raden som for.
+              klRDagDatoStil: Object.assign({}, felt, {
+                width: 'auto', flex: '1 1 118px', minWidth: '112px', padding: '8px 6px',
+              }),
+              klRDagTidStil: Object.assign({}, felt, {
+                width: 'auto', flex: '1 1 108px', minWidth: '100px', padding: '8px 6px',
+              }),
               // Laast felt: samme form, men graatt, saa det synes at
               // verdien hoerer hjemme et annet sted — i Dato-feltet oeverst.
-              klRFeltLaastStil: Object.assign({}, felt, {
-                background: 'var(--clay-100)', color: 'var(--text-muted)',
-                cursor: 'not-allowed',
+              klRDagDatoLaastStil: Object.assign({}, felt, {
+                width: 'auto', flex: '1 1 118px', minWidth: '112px', padding: '8px 6px',
+                background: 'var(--clay-100)', color: 'var(--text-muted)', cursor: 'not-allowed',
+              }),
+              klRDagTidLaastStil: Object.assign({}, felt, {
+                width: 'auto', flex: '1 1 108px', minWidth: '100px', padding: '8px 6px',
+                background: 'var(--clay-100)', color: 'var(--text-muted)', cursor: 'not-allowed',
               }),
               // ── Legg til deltaker, rett paa okta ──────────────────────
               //

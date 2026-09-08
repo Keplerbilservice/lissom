@@ -15170,6 +15170,16 @@ window.__resources = {
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonPlan }}" hint-size="auto,36px">{{ personPlanKnapp }}</x-import>
                     </div>
                   </sc-if>
+                  <!-- Avslutt medlemskapet, der medlemskapet staar.
+                       Eieren, 8. september 2026: «hvordan kan jeg
+                       deaktivere et medlem, jeg vil ha det inne paa samme
+                       sted som de andre statusene». Samme kall som knappen
+                       paa raden nede i lista. -->
+                  <sc-if value="{{ personKanAvslutte }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ avsluttPerson }}" hint-size="auto,36px">Avslutt medlemskapet</x-import>
+                    </div>
+                  </sc-if>
                 </div>
                 <label style="{{ personFriEtikett }}">
                   <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
@@ -16245,6 +16255,16 @@ window.__resources = {
                     <sc-if value="{{ personPlanEndret }}" hint-placeholder-val="{{ false }}">
                       <div style="margin-top: var(--space-3);">
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonPlan }}" hint-size="auto,36px">{{ personPlanKnapp }}</x-import>
+                      </div>
+                    </sc-if>
+                    <!-- Avslutt medlemskapet, der medlemskapet staar.
+                         Eieren, 8. september 2026: «hvordan kan jeg
+                         deaktivere et medlem, jeg vil ha det inne paa samme
+                         sted som de andre statusene». Samme kall som knappen
+                         paa raden nede i lista. -->
+                    <sc-if value="{{ personKanAvslutte }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ avsluttPerson }}" hint-size="auto,36px">Avslutt medlemskapet</x-import>
                       </div>
                     </sc-if>
                     <!-- Avtalen medlemmet mangler. Se den samme blokka i
@@ -41985,7 +42005,7 @@ class Component extends DCLogic {
           // da kan vi ikke skrive det om herfra.
           personPlanHjelp: 'Byttet endrer hvilket medlemskap ' + fornavn
             + ' står på, og beløpet følger med. Det opprettes ingen Vipps-avtale '
-            + '— og har hun godkjent fast trekk, trekker Vipps fortsatt det gamle '
+            + '— og har hen godkjent fast trekk, trekker Vipps fortsatt det gamle '
             + 'beløpet til avtalen sies opp.',
           lagrePersonPlan: () => {
             if (personPlanNaa === personPlanFra || !personPlanNaa) { return; }
@@ -42005,6 +42025,37 @@ class Component extends DCLogic {
                 // trodde vi satte.
                 this.lukkPersonruta();
               });
+          },
+          // ── Avslutt medlemskapet, der medlemskapet staar ───────────
+          //
+          // Eieren, 8. september 2026: «hvordan kan jeg deaktivere et
+          // medlem, jeg vil ha det inne paa samme sted som de andre
+          // statusene». Veien fantes bare paa raden nede i lista, ved siden
+          // av «Slett» — ikke i ruta man staar i naar man ser paa personen.
+          //
+          // Samme kall som raden: «avslutt» i api/admin/medlemmer.php.
+          // Oppsigelsen faar riktig sluttdato — siste dag i maaneden pluss
+          // oppsigelsestida, samme regel som naar medlemmet sier opp selv —
+          // medlemmet beholder tilgangen ut perioden, og en loepende
+          // Vipps-avtale stoppes av seg selv den dagen.
+          //
+          // Knappen staar bare paa en som faktisk ER medlem, og bare naar
+          // det ikke alt er sagt opp. Personruta vet ikke om raden er en
+          // admin — det feltet sendes ikke hit — saa her gaar den paa
+          // statusen alene. Serveren tillater avslutning ogsaa paa en
+          // adminkonto; det er bare slettingen som er stengt der.
+          personKanAvslutte: !!p.id
+            && ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1
+            && !p.sluttDato,
+          avsluttPerson: () => {
+            // Samme ordlyd som knappen paa raden. Ett spraak for det samme
+            // valget, uansett hvor man staar naar man tar det.
+            if (!window.confirm('Avslutte medlemskapet til ' + (p.navn || 'medlemmet') + '?\n\n'
+                + 'Historikken og kursbevisene blir stående. Personen flyttes til «Sluttet».')) { return; }
+            // «behold» — gikk det galt, skal ruta bli staaende, saa
+            // beskjeden staar der du var.
+            this.medlemKall({ handling: 'avslutt', medlemId: p.id }, true)
+              .then(ok => { if (ok) { this.lukkPersonruta(); } });
           },
           // ── «Send Vipps-avtale» ────────────────────────────────────
           //

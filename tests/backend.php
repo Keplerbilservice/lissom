@@ -10902,19 +10902,46 @@ echo "\n== Flerdagerskurs settes opp der kvelden settes opp ==\n";
 $sidaD = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kalenderruta har feltet for flere dager',
     str_contains($sidaD, '>Går kurset over flere dager?</label>')
-    && str_contains($sidaD, '<sc-for list="{{ klRSamlinger }}" as="sa"')
+    && str_contains($sidaD, '<sc-for list="{{ klRSamlingerResten }}" as="sa"')
     && str_contains($sidaD, '+ Legg til en dag</button>'));
 // Dagene ligger paa den raa kursraden, ikke paa kalenderokta: kalenderen er
 // bygget for aa tegne timeplanen.
 sjekk('… og dagene hentes fram naar ruta aapnes',
     str_contains($sidaD, 'klRSamlinger: samlingerPaa(base, evt.oktId),')
     && str_contains($sidaD, "const raa = (this.state.adminKursRaa || []).find(x => x.tittel === tittel);"));
-// Forste dag foreslaas fra okta selv, andre dag dagen etter med de samme
-// klokkeslettene. Et dreiekurs 17-20 over to dager skal ikke skrives inn
-// fire ganger.
-sjekk('… og dag to foreslaas som dagen etter, med samme klokkeslett',
-    str_contains($sidaD, 'const neste = har.length === 0 ? (st.klRDato || \'\') : this.dagenEtter(grunn);')
-    && str_contains($sidaD, "fra: (forrige && forrige.fra) || st.klRFra || '',"));
+// ── Dag 1 er okta selv, og staar laast ──────────────────────────────
+//
+// Eieren, 8. september 2026: «Proevde aa legge ut dag 2 paa dreiekurset den 9
+// og 10 september, men da flyttet den bare datoen fra 9-10».
+//
+// Slik sto det: forste trykk paa knappen lagde en DAG 1 med samme dato som
+// okta selv. Den raden ser overflodig ut — datoen staar jo oeverst — saa den
+// ble skrevet om til den 10. Da sa lista at kurset gaar bare den 10., og
+// serveren speiler lista over paa okta. Kurset flyttet seg i stedet for aa
+// vare i to dager. Maalt i nettleseren: okta gikk fra 9.-10. til 10.-10.
+//
+// Naa gir forste trykk BEGGE dagene, og Dag 1 foelger Dato-feltet oeverst.
+sjekk('… og forste trykk gir baade dag 1 og dagen etter',
+    str_contains($sidaD, "return { klRSamlinger: [dag(st.klRDato || '', null),")
+    && str_contains($sidaD, "dag(this.dagenEtter(st.klRDato || ''), null)] };")
+    && str_contains($sidaD, "til: (mal && mal.til) || st.klRTil || '',"));
+sjekk('… og Dag 1 staar laast, med datoen fra feltet oeverst',
+    str_contains($sidaD, '<input type="date" value="{{ klRDato }}" disabled="true" style="{{ klRFeltLaastStil }}">')
+    && str_contains($sidaD, '<input type="time" value="{{ klRFra }}" disabled="true" style="{{ klRFeltLaastStil }}">')
+    && str_contains($sidaD, '>Følger datoen øverst</span>'));
+// Sluttida hoerer til dagen, ikke til okta: gaar kurset over to dager, er
+// «Til» oeverst slutten paa siste dag.
+sjekk('… mens sluttida paa dag 1 kan rettes',
+    str_contains($sidaD, '<input type="time" value="{{ klRDag1Til }}" onChange="{{ settKlRDag1Til }}"'));
+// Dag 2 og utover velger man dato paa selv, og de kan fjernes. Blir Dag 1
+// staaende alene, er det ikke et flerdagerskurs lenger — da toemmes lista.
+sjekk('… og fjernes siste ekstra dag, gaar kurset paa én dag igjen',
+    str_contains($sidaD, 'return { klRSamlinger: igjen.length <= 1 ? [] : igjen };'));
+// Dagen etter regnes fra forrige rad, med de samme klokkeslettene. Et
+// dreiekurs 17-20 over to dager skal ikke skrives inn fire ganger.
+sjekk('… og neste dag foreslaas som dagen etter, med samme klokkeslett',
+    str_contains($sidaD, 'return { klRSamlinger: har.concat([dag(this.dagenEtter(grunn), forrige)]) };')
+    && str_contains($sidaD, "fra: (mal && mal.fra) || st.klRFra || '',"));
 // Regnet i UTC: legger man til et doegn og leser det ut lokalt, kan man havne
 // paa samme dag igjen naar sommertida slutter.
 sjekk('… og dagen etter regnes i UTC',
@@ -10932,7 +10959,31 @@ sjekk('… men bare naar noe faktisk er endret',
 // Tomme skjemarader er ikke samlinger. «+ Legg til en dag» trykket ved et
 // uhell skal ikke lagre noe.
 sjekk('… og tomme rader lagres ikke',
-    str_contains($sidaD, "const saml = (st.klRSamlinger || []).filter(sa => sa.dato);"));
+    str_contains($sidaD, '      : sa)).filter(sa => sa.dato);'));
+// Dag 1 hentes fra feltene oeverst, ikke fra raden: de to skal ikke kunne
+// sprike, for det var spriket som flyttet kurset.
+sjekk('… og dag 1 skrives med datoen og starttida fra feltene oeverst',
+    str_contains($sidaD, "    const saml = (st.klRSamlinger || []).map((sa, i) => (i === 0")
+    && str_contains($sidaD, '      ? Object.assign({}, sa, { dato: d, fra: fra })'));
+// Eieren, 8. september 2026: «alle dagene flytter med». Flytter du datoen
+// oeverst fra 9. til 14., skal 10. bli 15. — ikke bli staaende igjen bak i
+// tid. Maalt for dette ble skrevet: dag 2 sto igjen, dagene havnet i feil
+// rekkefolge, og serveren gjorde kurset om til én dag.
+sjekk('… og flyttes datoen oeverst, flytter alle dagene med',
+    str_contains($sidaD, 'const doegn = this.doegnMellom(st.klRDato || \'\', ny);')
+    && str_contains($sidaD, '? Object.assign({}, sa, { dato: this.datoPluss(sa.dato, doegn) })'));
+// Regnet i UTC, av samme grunn som «dagenEtter»: i lokal tid kan et doegn
+// bli null eller to naar sommertida slutter.
+sjekk('… og doegnene regnes i UTC',
+    str_contains($sidaD, "d.setUTCDate(d.getUTCDate() + doegn);")
+    && str_contains($sidaD, "return Math.round((new Date(til + 'T00:00:00Z') - new Date(fra + 'T00:00:00Z')) / 86400000);"));
+// «endredato» setter start og slutt paa den ene dagen. Med samlinger er det
+// dagene som bestemmer spennet, og serveren regner det ut av dem — derfor maa
+// datoen sendes FOER samlingene, ellers kappes dag to.
+sjekk('… og datoen sendes for samlingene, saa spennet ikke kappes',
+    strpos($sidaD, "handling: 'endredato', oktId: redEvt.oktId,")
+        < strpos($sidaD, 'if (rort.length || stilleSamlinger) {')
+    && str_contains($sidaD, '      stilleSamlinger = true;'));
 // Serveren tar imot lista paa den samme handlingen fra for, og roerer bare
 // samlingene naar nokkelen er med.
 $kursApi = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');

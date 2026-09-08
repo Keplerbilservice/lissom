@@ -702,7 +702,7 @@ if (Foresporsel::metode() === 'POST') {
         revider('medlem_avtale_sendt', 'member', $id, ['plan' => $type]);
         Svar::ok([
             'beskjed' => 'Lenka er sendt til ' . $m['epost']
-                . '. Medlemskapet starter når hun har godkjent avtalen i Vipps.',
+                . '. Medlemskapet starter når hen har godkjent avtalen i Vipps.',
             'url' => $lenke,
         ]);
     }

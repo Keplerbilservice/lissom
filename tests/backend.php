@@ -2528,8 +2528,54 @@ $cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
 // kjore den ogsaa — cron-jobben ble aldri satt opp. Samme kode, nytt hjem.
 $runden = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('trekkrunden sporr om trekkene som ikke har fatt svar',
-    str_contains($runden, 'foreach (self::trekkUtenSvar() as $p) {')
-    && str_contains($runden, 'self::sjekkTrekk($p)'));
+    str_contains($runden, 'foreach (self::trekkUtenSvar($maks) as $p) {')
+    && str_contains($runden, 'self::sjekkTrekk($p)')
+    && str_contains($runden, '$svart = self::sjekkAlleTrekk(50, $skriv);'));
+// ── «0 inne» paa Min side ────────────────────────────────────────────
+//
+// Pilla leste «this.state.inne». Det finnes ingen slik state — lista over
+// hvem som er inne er en renderVal bygget av «state.stempling». Uttrykket var
+// alltid undefined, saa pilla sto paa null uansett hvor mange som var i
+// verkstedet.
+//
+// Eieren, 8. september 2026, med Lene innstemplet ved siden av seg: «Står 0
+// inne... på min side vi er to. Det vises riktig på admin, men ikke min
+// side». Maalt i nettleseren: api/stempling.php svarte «antall: 2» mens
+// pilla sto paa null. Etter rettinga sier den «2 inne».
+$msFil = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('verkstedspilla teller dem som faktisk er inne',
+    str_contains($msFil, 'const antall = st && st.inne ? (st.inne.antall || 0) : 0;')
+    && !str_contains($msFil, 'const antall = this.state.inne ? this.state.inne.length : 0;'));
+// «antall», ikke lista: den som har slaatt av «Vis meg for andre medlemmer»
+// staar fortsatt i verkstedet, og kortet sier «x medlemmer er skjult» fra for.
+sjekk('… ogsaa de som har skjult seg for de andre',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php'),
+                 "return ['synlige' => \$synlige, 'skjulte' => \$skjulte, 'antall' => count(\$alle)];")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                    "'antall'  => \$inne['antall'],"));
+
+// ── Sporsmaalet gaar oftere enn trekket ──────────────────────────────
+//
+// Trekket Vipps tar naar kunden godkjenner avtalen fores hos oss med status
+// «venter»: vi har ingen referanse paa det for vi sporr. Sto sporsmaalet
+// inne i dognrunden, kunne linja i admin staa som ubetalt i opptil et dogn
+// etter at pengene var tatt.
+//
+// Eieren, 8. september 2026, med Lene paa traaden: «naa staar det i vipps
+// appen hennes ogsaa, eneste som ikke er oppdatert er paa medlemsiden, staar
+// fortsatt som ubetalt». Han valgte «hvert tiende minutt».
+$tikkFil = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+sjekk('statusen hentes hvert tiende minutt, ikke bare i dognrunden',
+    str_contains($tikkFil, "if (!Rate::tillat('trekkstatus', 1, 600, 'server')) {")
+    && str_contains($tikkFil, 'self::trekkstatus();'));
+// Aa SPORRE er ikke aa TREKKE. Selve trekkingen skal fortsatt gaa hoyst én
+// gang i dognet — ellers kunne noen blitt belastet seks ganger i timen.
+sjekk('… mens selve trekkingen fortsatt gaar én gang i dognet',
+    str_contains($tikkFil, "if (!Rate::tillat('medlemstrekk', 1, 86400, 'server')) {"));
+// Femten om gangen, ikke femti: dognrunden tar resten, og et sideoppslag
+// skal ikke bli staaende og vente paa Vipps.
+sjekk('… og tar femten om gangen',
+    str_contains($tikkFil, 'Medlemskap::sjekkAlleTrekk(15);'));
 // ePayment-oppslaget ga 404 paa hvert eneste maanedstrekk, hvert femte
 // minutt, og skrev en linje i feilloggen hver gang.
 sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
@@ -11124,6 +11170,13 @@ sjekk('… og «Nullstill» gaar samme vei ut',
 sjekk('hjelpelinja under medlemskapet sier «hen»',
     str_contains($sidaB, '— og har hen godkjent fast trekk, trekker Vipps fortsatt det gamle ')
     && !str_contains($sidaB, 'har hun godkjent fast trekk'));
+// To til sto igjen: hjelpelinja under godkjenningslenka, og beskjeden
+// serveren svarer med naar lenka er sendt. Jeg sa at den forste var den
+// eneste — den var ikke det.
+sjekk('… og det samme gjor lenkehjelpen og svaret fra serveren',
+    str_contains($sidaB, 'virker i fjorten dager. Hen åpner den på telefonen, og Vipps ')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
+                    '. Medlemskapet starter når hen har godkjent avtalen i Vipps.'));
 sjekk('«Avslutt medlemskapet» staar i personruta',
     substr_count($sidaB, '>Avslutt medlemskapet</x-import>') === 2
     && substr_count($sidaB, '<sc-if value="{{ personKanAvslutte }}"') === 2);
@@ -14169,7 +14222,7 @@ sjekk('… og skjermen har ingen «for gammel»-tilstand aa vise',
 $lenkeSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('… og skjermen sier at lenka virker i fjorten dager',
     str_contains($lenkeSida, "personAvtaleLenkeGammel: false,")
-    && str_contains($lenkeSida, "+ 'virker i fjorten dager. Hun åpner den på telefonen, og Vipps '")
+    && str_contains($lenkeSida, "+ 'virker i fjorten dager. Hen åpner den på telefonen, og Vipps '")
     && !str_contains($lenkeSida, "'Lenka fra sist er for gammel — Vipps '"));
 
 

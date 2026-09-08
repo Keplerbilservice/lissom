@@ -345,6 +345,18 @@ bolk('3. De to skjermene sier det samme, i hver eneste tilstand');
 
 $avtaleId = (int) ($t['avtale']['id'] ?? 0);
 
+// ── Statusen skal staa stille mens skjermene leses ──────────────────────
+//
+// Radene under settes for haand, og saa leses de to skjermene over HTTP.
+// Hvert oppslag drar i gang bakgrunnsarbeidet (Tikk::kjor), og der ligger
+// statusrunden som sporr Vipps hvordan trekkene gikk — hvert tiende minutt
+// siden 8. september 2026. Svarte den falske Vipps «CHARGED», ble raden
+// gjort betalt FOER skjermene rakk aa lese den, og «venter» ble aldri malt.
+//
+// «PENDING» er et ekte svar fra Vipps: pengene er underveis. Da lar
+// sjekkTrekk() statusen staa, og det er raden vi satte som testes.
+vippsSvarer('.trekk-status', 'PENDING');
+
 foreach ([
     ['venter', 'bestilt', true,  'trekket er bestilt, pengene er ikke inne'],
     ['feilet', 'forfalt', true,  'trekket gikk ikke'],

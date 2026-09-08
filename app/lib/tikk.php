@@ -109,6 +109,46 @@ final class Tikk
         // opp senere, gjor det ingen skade: nokkelen i trekk() er avtale pluss
         // maaned, og den andre runden finner «alt fort».
         self::medlemstrekk();
+
+        // Hvordan gikk trekkene? Sporsmaalet er ikke det samme som trekket,
+        // og trenger ikke vente paa dognrunden — se trekkstatus() under.
+        self::trekkstatus();
+    }
+
+    /**
+     * Hvordan gikk trekkene vi ba om? Hvert tiende minutt.
+     *
+     * Trekket Vipps tar naar kunden godkjenner avtalen fores hos oss med
+     * status «venter»: vi har ingen referanse paa det for vi sporr (se
+     * Medlemskap::foerForsteTrekk). Sto sporsmaalet inne i dognrunden, kunne
+     * linja i admin staa som ubetalt i opptil et dogn etter at pengene var
+     * tatt.
+     *
+     * Eieren, 8. september 2026, med Lene paa traaden: «naa staar det i vipps
+     * appen hennes ogsaa, eneste som ikke er oppdatert er paa medlemsiden,
+     * staar fortsatt som ubetalt». Han valgte «hvert tiende minutt».
+     *
+     * Aa SPORRE er ikke aa TREKKE. Ingen blir belastet oftere — det ligger
+     * fortsatt i medlemstrekk() over, én gang i dognet. Her hentes bare
+     * status, og radene faller ut av lista i det Vipps svarer, saa den er
+     * normalt tom.
+     *
+     * Femten om gangen, ikke femti: dognrunden tar resten, og et sideoppslag
+     * skal ikke bli staaende og vente paa Vipps.
+     */
+    private static function trekkstatus(): void
+    {
+        if (!Rate::tillat('trekkstatus', 1, 600, 'server')) {
+            return;
+        }
+        try {
+            $svart = Medlemskap::sjekkAlleTrekk(15);
+            if ($svart > 0) {
+                logg('Trekkstatus hentet av trafikk', ['gjort_opp' => $svart]);
+            }
+        } catch (Throwable $e) {
+            logg_feil('Statusrunden feilet', $e);
+        }
     }
 
     /**

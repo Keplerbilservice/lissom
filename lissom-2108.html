@@ -16314,6 +16314,22 @@ window.__resources = {
                               <button type="button" onClick="{{ av.stopp }}" style="{{ personAvtStoppStil }}">Stopp trekket</button>
                             </div>
                           </sc-if>
+                          <!-- ── Trekkene som har gaatt ────────────────
+                               Eieren, 8. september 2026: «Refusjon fra
+                               admin». Fram til naa sto de gjennomfoerte
+                               trekkene bare som «Siste trekk 7. sep» i
+                               detaljlinja over — ett datostempel, uten en vei
+                               til det enkelte trekket. Var pengene foerst
+                               trukket, matte det gjores i Vipps-portalen.
+                               Pilla staar bare saa lenge det er noe igjen. -->
+                          <sc-for list="{{ av.trekk }}" as="t" hint-placeholder-count="2">
+                            <div style="{{ personAvtTrekkStil }}">
+                              <span style="font-size: var(--text-xs); color: var(--text-body); flex: 1 1 150px; min-width: 0; overflow-wrap: anywhere;">{{ t.tekst }}</span>
+                              <sc-if value="{{ t.kanTilbake }}" hint-placeholder-val="{{ true }}">
+                                <button type="button" onClick="{{ t.tilbake }}" style="{{ personAvtStoppStil }}">Betal tilbake</button>
+                              </sc-if>
+                            </div>
+                          </sc-for>
                           <!-- Naar trekket skal gaa.
                                Eieren, 7. september 2026: «er det mulig at jeg
                                kan redigere naar trekkene skal vaere? noen vil
@@ -20879,6 +20895,18 @@ window.__resources = {
         </sc-for>
       </div>
     </sc-if>
+    <!-- ── Beloepet, naar ruta ber om et ────────────────────────────
+         «Betal tilbake» er den eneste ruta som ber om et tall. Eieren,
+         8. september 2026, spurt om hele eller deler: «Hele og deler».
+         Feltet staar bare naar ruta ber om det, saa ingen andre ruter
+         endres. -->
+    <sc-if value="{{ detaljBelopVises }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <label style="{{ detaljBelopMerkeStil }}">Beløp</label>
+        <input type="number" min="1" step="1" value="{{ detaljBelop }}" onInput="{{ detaljBelopEndre }}" style="{{ detaljBelopFeltStil }}">
+        <p style="{{ detaljBelopHjelpStil }}">{{ detaljBelopHjelp }}</p>
+      </div>
+    </sc-if>
     <!-- Her sto en skjemautgave av dialogen: tomme bildefelter, et
          fokuspunkt-rutenett og en tekstboks — fra designet, ikke koblet til
          noe. «Nytt produkt» og «Legg til vare» aapnet den, og «Opprett
@@ -22373,7 +22401,11 @@ class Component extends DCLogic {
   // naar varene ikke kommer.
   pengeHandling(h) {
     if (!h) return null;
-    if (h.indexOf('Betal') === 0) return 'betaling';
+    // «Betal tilbake» i personruta ER koblet — den gaar mot
+    // «betal-tilbake» i api/admin/medlemmer.php. Uten unntaket fanges den
+    // her, og eieren ville faatt «Betaling kommer snart» i stedet for at
+    // pengene gikk tilbake. Samme unntak som de to under.
+    if (h.indexOf('Betal') === 0 && !(this.state.detalj || {}).gjor) return 'betaling';
     // Avtalen gaar naa mot Vipps gjennom bekreftBooking(). Bare knapper uten
     // en slik kobling fanges her.
     if (h.indexOf('Opprett avtale') === 0 && !(this.state.detalj || {}).gjor) return 'avtale';
@@ -22398,7 +22430,7 @@ class Component extends DCLogic {
       return;
     }
 
-    const tekst = (h) => h && h.indexOf('Betal') === 0 ? 'Betalingen er gjennomført' : h && h.indexOf('Opprett avtale') === 0 ? 'Avtalen er opprettet i Vipps' : h && h.indexOf('Avbestill') === 0 ? 'Avbestilt — pengene tilbakeføres til Vipps' : h === 'Legg i handlekurven' ? 'Lagt i handlekurven' : h;
+    const tekst = (h) => h === 'Betal tilbake' ? '' : h && h.indexOf('Betal') === 0 ? 'Betalingen er gjennomført' : h && h.indexOf('Opprett avtale') === 0 ? 'Avtalen er opprettet i Vipps' : h && h.indexOf('Avbestill') === 0 ? 'Avbestilt — pengene tilbakeføres til Vipps' : h === 'Legg i handlekurven' ? 'Lagt i handlekurven' : h;
     if (d && d.gjor) { d.gjor(); this.setState({ detalj: null, kvittering: tekst(d.handling) }); return; }
     if (d && d.maal) { this.setState({ side: d.maal, detalj: null }); window.scrollTo(0, 0); }
     else this.setState({ detalj: null, kvittering: d ? tekst(d.handling) : '' });
@@ -37875,6 +37907,66 @@ class Component extends DCLogic {
   }
 
   /**
+   * Betaler tilbake et trekk som alt har gaatt.
+   *
+   * Eieren, 8. september 2026, etter aa ha spurt hva mer Vipps kan:
+   * «Refusjon fra admin». Paa spoersmaal om hele eller deler: «Hele og
+   * deler». Paa spoersmaal om e-post til medlemmet: «Dropp e-posten» —
+   * hun ser det selv i Vipps.
+   *
+   * «Stopp trekket» over virker bare til forfallsdagen. Etter den fantes
+   * ingen vei ut herfra: skjermen sa «maa refunderes i stedet», uten aa si
+   * hvor, og det maatte gjores i Vipps-portalen.
+   *
+   * Beloepet staar ferdig utfylt med det som er igjen paa trekket. Taket
+   * settes ogsaa paa serveren — se «betal-tilbake» i
+   * api/admin/medlemmer.php. Et felt i nettleseren er ingen grense.
+   */
+  betalTilbakeTrekk(trekkId, igjenOre, igjenTekst, dato, navn) {
+    // «personMedlemId» er den ruta faktisk ble aapnet av — se apnePerson().
+    // «personData» bruker andre navn paa feltene; leser man id-en derfra,
+    // blir den «undefined» og kallet gaar til ingen.
+    const id = this.state.personMedlemId || 0;
+    if (!trekkId || !id || !(igjenOre > 0)) { return; }
+    const kroner = Math.round(igjenOre) / 100;
+    this.setState({
+      detaljBelop: String(kroner),
+      detalj: {
+        tittel: 'Betal tilbake',
+        undertittel: 'Pengene går tilbake til ' + (navn || 'medlemmet')
+          + ' i Vipps. Det kan ikke angres.',
+        felter: [
+          { navn: 'Medlem', verdi: String(navn || '') },
+          { navn: 'Trukket', verdi: String(dato || '') },
+          { navn: 'Igjen på trekket', verdi: String(igjenTekst || '') },
+        ],
+        belopFelt: { hjelp: 'Det som er igjen står her. Skriv et lavere tall for å betale tilbake bare deler.' },
+        handling: 'Betal tilbake',
+        maal: null, skjema: false, aboValg: null,
+        gjor: () => {
+          // Kroner inn, oere ut. Serveren regner i oere, og et komma her
+          // skal ikke bli et beloep hundre ganger for stort.
+          const skrevet = String(this.state.detaljBelop || '').replace(',', '.');
+          const ore = Math.round(parseFloat(skrevet) * 100);
+          if (!(ore > 0)) {
+            this.setState({ kvittering: 'Skriv et beløp' });
+            return;
+          }
+          this.medlemKall({ handling: 'betal-tilbake', medlemId: id,
+                            trekkId: trekkId, belopOre: ore }, true)
+            .then(ok => {
+              this.setState({ kvittering: ok ? 'Pengene er betalt tilbake'
+                                             : 'Fikk ikke betalt tilbake' });
+              // Ruta hentes paa nytt, saa linja viser det som faktisk staar.
+              if (ok) { this.apnePerson(id, 0); }
+            });
+        },
+      },
+      detaljMva: null,
+    });
+  }
+
+  /**
    * Alle som har vaert paa kurs, én rad per person.
    *
    * To kilder, fordi ingen av dem er hele bildet: paameldingene viser hvem
@@ -38844,6 +38936,31 @@ class Component extends DCLogic {
       detaljHandling: (this.state.detalj && this.state.detalj.handling) || 'Lagre',
       detaljHarHandling: ((this.state.detalj && this.state.detalj.handling) || 'Lagre') !== 'Lukk',
       detaljLese: !(this.state.detalj && this.state.detalj.skjema),
+      // ── Beloepsfeltet i detaljruta ──────────────────────────────
+      //
+      // Bare «Betal tilbake» ber om et tall. «belopFelt» settes av ruta som
+      // aapner den, og staar med hele trekket ferdig utfylt — eieren skriver
+      // et lavere tall hvis bare deler skal tilbake.
+      detaljBelopVises: !!(this.state.detalj && this.state.detalj.belopFelt),
+      detaljBelop: this.state.detaljBelop === undefined || this.state.detaljBelop === null
+        ? '' : String(this.state.detaljBelop),
+      detaljBelopHjelp: (this.state.detalj && this.state.detalj.belopFelt
+        && this.state.detalj.belopFelt.hjelp) || '',
+      detaljBelopEndre: e => this.setState({ detaljBelop: e.target.value }),
+      detaljBelopMerkeStil: {
+        display: 'block', font: 'var(--type-label)', letterSpacing: 'var(--tracking-caps)',
+        textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6,
+      },
+      detaljBelopFeltStil: {
+        width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-md)', padding: '10px 12px', background: 'var(--clay-50)',
+        color: 'var(--text-heading)', font: 'var(--type-body)', fontWeight: 700,
+        fontVariantNumeric: 'tabular-nums',
+      },
+      detaljBelopHjelpStil: {
+        margin: '6px 0 0', fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
+        textWrap: 'pretty',
+      },
       lukkDetalj: () => this.setState({ detalj: null, kvittering: '' }),
       // Kursbevis fra detaljdialogen. Verkstedet skal kunne skrive ut for
       // noen som ikke faar det til selv.
@@ -41804,6 +41921,19 @@ class Component extends DCLogic {
                   bestiltTekst: 'Trekket er bestilt ' + (a.trekkDato || '')
                     + ' · venter på Vipps · ' + (a.trekkBelop || ''),
                   stopp: () => this.stoppPersonTrekk(a.trekkId, a.trekkBelop, p.navn || ''),
+                  // ── Trekkene som har gaatt ──────────────────────────
+                  //
+                  // Eieren, 8. september 2026: «Refusjon fra admin». Ett
+                  // trekk per linje, nyeste foerst. Er noe alt betalt
+                  // tilbake, staar summen i samme linje — ellers ville det
+                  // sett ut som om hele beloepet fortsatt laa der.
+                  trekk: (Array.isArray(a.trekk) ? a.trekk : []).map(t => ({
+                    tekst: 'Trukket ' + (t.dato || '') + ' · ' + (t.belop || '')
+                      + (t.refundert ? ' · betalt tilbake ' + t.refundert : ''),
+                    kanTilbake: !!t.kanTilbake,
+                    tilbake: () => this.betalTilbakeTrekk(
+                      t.id, t.igjenOre, t.igjen, t.dato, p.navn || ''),
+                  })),
                   stil: {
                     border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
                     padding: '11px 13px', marginBottom: 8,

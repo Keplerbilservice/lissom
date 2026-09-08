@@ -491,6 +491,93 @@ if (Foresporsel::metode() === 'POST') {
         ]);
     }
 
+    // ── Betal tilbake et trekk som alt har gaatt ────────────────────────
+    //
+    // Eieren, 8. september 2026, etter aa ha spurt hva mer Vipps kan:
+    // «Refusjon fra admin». Han valgte «Hele og deler», og «Dropp e-posten»
+    // — medlemmet ser det selv i Vipps.
+    //
+    // «Stopp trekket» over virker bare til forfallsdagen. Etter den sa
+    // skjermen bare at det «maa refunderes i stedet», uten aa si hvor, og da
+    // maatte eieren inn i Vipps-portalen.
+    //
+    // Et avtaletrekk ligger under avtalen sin, ikke som en ePayment. Derfor
+    // Vipps::refunderTrekk() og ikke Vipps::refunder() — se app/lib/vipps.php.
+    //
+    // Samme regel som «Stopp trekket» foelger: gaar det ikke gjennom hos
+    // Vipps, endres INGENTING her. En rad som staar «refundert» mens pengene
+    // ligger hos oss, er verre enn ingen endring.
+    if ($handling === 'betal-tilbake') {
+        $id       = Foresporsel::heltall('medlemId');
+        $trekkRad = Foresporsel::heltall('trekkId');
+        $belop    = Foresporsel::heltall('belopOre');
+        $m = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        // Trekket maa hoere til dette medlemmet, vaere et avtaletrekk, og
+        // vaere gjennomfoert. Uten alle tre kunne en id herfra pekt paa en
+        // hvilken som helst rad i payments.
+        $p = DB::en(
+            "SELECT p.id, p.belop_ore, p.refundert_ore, p.vipps_psp_ref,
+                    s.vipps_agreement_id, s.id AS avtale_id
+               FROM payments p
+               JOIN subscriptions s ON s.id = p.subscription_id
+              WHERE p.id = :p AND p.member_id = :m
+                AND p.type = 'recurring_charge'
+                AND p.status IN ('betalt', 'delvis_refundert')
+                AND p.vipps_psp_ref IS NOT NULL",
+            ['p' => $trekkRad, 'm' => $id]
+        );
+        if ($p === null) {
+            Svar::feil('Fant ikke et gjennomført trekk å betale tilbake.', 404);
+        }
+
+        $avtaleId = trim((string) ($p['vipps_agreement_id'] ?? ''));
+        if ($avtaleId === '') {
+            Svar::feil('Trekket hører ikke til en avtale i Vipps.');
+        }
+
+        // Taket er det som staar igjen, ikke hele trekket. Er kr 500 alt
+        // betalt tilbake av kr 1 990, kan bare kr 1 490 gaa. Uten dette kunne
+        // det samme trekket betales tilbake om og om igjen.
+        $igjen = (int) $p['belop_ore'] - (int) ($p['refundert_ore'] ?? 0);
+        if ($igjen <= 0) {
+            Svar::feil('Hele trekket er alt betalt tilbake.');
+        }
+        if ($belop <= 0) {
+            Svar::feil('Skriv et beløp.');
+        }
+        if ($belop > $igjen) {
+            Svar::feil('Det er bare ' . Booking::kroner($igjen) . ' igjen på trekket.');
+        }
+
+        try {
+            Vipps::refunderTrekk($avtaleId, (string) $p['vipps_psp_ref'], $belop);
+        } catch (Throwable $e) {
+            logg_feil('Fikk ikke betalt tilbake trekk ' . $p['id'] . ' i Vipps', $e);
+            Svar::feil('Vipps betalte ikke tilbake. Prøv igjen, eller gjør det i Vipps-portalen.');
+        }
+
+        $nyRefundert = (int) ($p['refundert_ore'] ?? 0) + $belop;
+        DB::oppdater('payments', [
+            'refundert_ore' => $nyRefundert,
+            // Dagsoppgjoret leser «refundert_ore» fra for og trekker det fra.
+            // Statusen er for oss: «refundert» naar ingenting staar igjen.
+            'status'        => $nyRefundert >= (int) $p['belop_ore'] ? 'refundert' : 'delvis_refundert',
+        ], ['id' => (int) $p['id']]);
+
+        revider('medlem_betalt_tilbake', 'member', $id,
+                ['betaling' => (int) $p['id'], 'avtale' => (int) $p['avtale_id'],
+                 'belop_ore' => $belop, 'refundert_ore' => $nyRefundert]);
+
+        Svar::ok([
+            'beskjed' => Booking::kroner($belop) . ' er betalt tilbake til '
+                . ($m['navn'] ?: 'medlemmet') . '.',
+        ]);
+    }
+
     // ── Naar trekket skal gaa ───────────────────────────────────────────
     //
     // Eieren, 7. september 2026: «er det mulig at jeg kan redigere naar
@@ -1702,6 +1789,45 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                         'trekkId'   => $bestilt === null ? 0 : (int) $bestilt['id'],
                         'trekkBelop'=> $bestilt === null ? '' : Booking::kroner((int) $bestilt['belop_ore']),
                         'trekkDato' => $bestilt === null ? '' : $dato((string) $bestilt['created_at']),
+                        // ── Trekkene som har gaatt ──────────────────────
+                        //
+                        // Bare «Siste trekk 7. sep» sto her for, i detaljlinja
+                        // — ett datostempel, uten beloep og uten en vei til
+                        // det enkelte trekket. Da fantes ingen vei ut av et
+                        // trekk som alt var gjennomfoert: skjermen sa «maa
+                        // refunderes i stedet», og eieren maatte inn i
+                        // Vipps-portalen.
+                        //
+                        // Her staar hvert av dem, nyeste foerst, med det som
+                        // alt er betalt tilbake. «igjenOre» er taket for hvor
+                        // mye som kan betales tilbake — se «betal-tilbake».
+                        'trekk'     => $avtaleId === '' ? [] : array_map(
+                            static function (array $t) use ($dato): array {
+                                $igjen = (int) $t['belop_ore'] - (int) ($t['refundert_ore'] ?? 0);
+                                return [
+                                    'id'         => (int) $t['id'],
+                                    'dato'       => $dato((string) $t['created_at']),
+                                    'belop'      => Booking::kroner((int) $t['belop_ore']),
+                                    'refundert'  => (int) ($t['refundert_ore'] ?? 0) > 0
+                                        ? Booking::kroner((int) $t['refundert_ore']) : '',
+                                    'igjenOre'   => max(0, $igjen),
+                                    // Samme formatering som linja over, saa
+                                    // ruta og raden ikke skriver beloepet paa
+                                    // to maater.
+                                    'igjen'      => Booking::kroner(max(0, $igjen)),
+                                    'kanTilbake' => $igjen > 0,
+                                ];
+                            },
+                            DB::alle(
+                                "SELECT id, belop_ore, refundert_ore, created_at
+                                   FROM payments
+                                  WHERE subscription_id = :s
+                                    AND status IN ('betalt', 'delvis_refundert', 'refundert')
+                                    AND vipps_psp_ref IS NOT NULL
+                                  ORDER BY id DESC",
+                                ['s' => (int) $a['id']]
+                            )
+                        ),
                     ];
                 }, $rader);
             })(),

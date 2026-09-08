@@ -9628,6 +9628,65 @@ sjekk('… og Vipps faar en ekte sletting',
     && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/nett.php'),
                     "function http_delete_json(string \$url, array \$headere = []): array"));
 
+// ── Betal tilbake et trekk som alt har gaatt ────────────────────────────
+//
+// Eieren, 8. september 2026, etter aa ha spurt hva mer Vipps kan: «Refusjon
+// fra admin». Paa spoersmaal om hele eller deler: «Hele og deler». Paa
+// spoersmaal om e-post til medlemmet: «Dropp e-posten».
+//
+// «Stopp trekket» over virker bare til forfallsdagen. Etter den sa skjermen
+// bare at det «maa refunderes i stedet», uten aa si hvor — og da maatte det
+// gjores i Vipps-portalen.
+$vippsFil = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+sjekk('et gjennomfoert trekk kan betales tilbake',
+    str_contains($sida, 'onClick="{{ t.tilbake }}"')
+    && str_contains($sida, 'Betal tilbake</button>')
+    && str_contains($medlFil, "if (\$handling === 'betal-tilbake') {"));
+// Et avtaletrekk ligger under avtalen sin, ikke som en ePayment. Gikk det paa
+// «/epayment/v1», ville Vipps ikke funnet trekket i det hele tatt.
+sjekk('… og gaar mot avtalen sitt eget endepunkt',
+    str_contains($vippsFil, "public static function refunderTrekk(string \$avtaleId, string \$trekkId, int \$belopOre): array")
+    && str_contains($vippsFil, "'/recurring/v3/agreements/' . rawurlencode(\$avtaleId)
+                . '/charges/' . rawurlencode(\$trekkId) . '/refund'"),
+    'et trekk er ikke en ePayment');
+// Id-en kommer fra skjermen. Samme tre ledd som «Stopp trekket» krever, men
+// paa gjennomfoerte rader i stedet for ventende.
+sjekk('… og bare et trekk som hoerer til medlemmet og ER gjort opp',
+    str_contains($medlFil, "AND p.status IN ('betalt', 'delvis_refundert')"));
+// Taket er det som staar igjen, ikke hele trekket. Uten dette kunne det samme
+// trekket betales tilbake om og om igjen.
+sjekk('… og aldri mer enn det som staar igjen',
+    str_contains($medlFil, "\$igjen = (int) \$p['belop_ore'] - (int) (\$p['refundert_ore'] ?? 0);")
+    && str_contains($medlFil, "Svar::feil('Det er bare ' . Booking::kroner(\$igjen) . ' igjen på trekket.');"));
+// Sier Vipps nei, endres ingenting her. En rad som staar «refundert» mens
+// pengene ligger hos oss, er verre enn ingen endring.
+sjekk('… og raden roeres ikke naar Vipps sier nei',
+    strpos($medlFil, "Svar::feil('Vipps betalte ikke tilbake.")
+       < strpos($medlFil, "'refundert_ore' => \$nyRefundert,"));
+// Dagsoppgjoret leser «refundert_ore» fra for og trekker det fra. Statusen er
+// vaar egen: «refundert» naar ingenting staar igjen, ellers «delvis».
+sjekk('… og beloepet foeres saa regnskapet ser det',
+    str_contains($medlFil, "'status'        => \$nyRefundert >= (int) \$p['belop_ore'] ? 'refundert' : 'delvis_refundert',")
+    && str_contains($medlFil, "revider('medlem_betalt_tilbake', 'member', \$id,"));
+// «Betal tilbake» begynner paa «Betal». Uten unntaket fanger pengeHandling()
+// den paa den publiserte sida, og eieren faar «Betaling kommer snart» i
+// stedet for at pengene gaar tilbake.
+sjekk('… og knappen fanges ikke som en kjopsknapp',
+    str_contains($sida, "if (h.indexOf('Betal') === 0 && !(this.state.detalj || {}).gjor) return 'betaling';"),
+    'den ER koblet, og skal ikke stoppes');
+// Kroner inn, oere ut. Et komma skal ikke bli et beloep hundre ganger stoerre.
+sjekk('… og kroner regnes om til oere foer de sendes',
+    str_contains($sida, "const skrevet = String(this.state.detaljBelop || '').replace(',', '.');")
+    && str_contains($sida, 'const ore = Math.round(parseFloat(skrevet) * 100);'));
+// Feltet staar bare naar ruta ber om det. Ellers ville hver eneste detaljrute
+// faatt et beloepsfelt den ikke har bruk for.
+sjekk('… og beloepsfeltet staar bare i denne ruta',
+    str_contains($sida, 'detaljBelopVises: !!(this.state.detalj && this.state.detalj.belopFelt),'));
+// Ingen e-post. Eieren, 8. september: «Dropp e-posten» — hun ser det i Vipps.
+sjekk('… og medlemmet faar ingen e-post om det',
+    !str_contains(substr($medlFil, (int) strpos($medlFil, "if (\$handling === 'betal-tilbake') {"), 3000),
+                  'Varsel::mal'));
+
 // ── Nettkjopene i kassa ─────────────────────────────────────────────────
 //
 // Eieren, 7. september 2026: «i dag gjorde anniken et kjop i internbutikken,

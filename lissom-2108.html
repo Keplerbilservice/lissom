@@ -34120,16 +34120,33 @@ class Component extends DCLogic {
         evts.push(e);
       });
     }
+    // ── Avlyste oekter staar ikke i kalenderen ────────────────────────
+    //
+    // De sto med strek over og halvt gjennomsiktige, saa man kunne se at de
+    // hadde vaert der. Eieren, 8. september 2026: «Når jeg avlyser et kurs,
+    // så vil jeg at dette kurset forsvinner fra kalenderen».
+    //
+    // Han fikk sagt at veien tilbake gaar med: «Gjenopprett økten» naas ved
+    // aa hoyreklikke brikka, og finnes ikke brikka, finnes ikke veien. Han
+    // valgte «Skjul, punktum» — en avlysning er endelig, og datoen maa lages
+    // paa nytt om den var feil.
+    //
+    // Datoen roeres ikke i basen. Den staar som «avlyst» og er lesbar i
+    // dagsrapporten og under kurset; det er kalenderen den er ute av.
+    const skjulAvlyste = liste => liste.filter(e => !e.avlyst);
+
     // Fase 5: bare det som staar i basen tegnes. Lagene under blir staaende
     // i koden fordi de er det optimistiske svaret fase 6 skal bruke — men de
     // skal ikke vises for endringen faktisk lagres et sted.
-    if (!this.klSkriver) return evts;
+    if (!this.klSkriver) return skjulAvlyste(evts);
 
     const slett = this.state.klSlettede || {};
     evts = evts.concat(this.state.klEkstra || []).filter(e => !slett[e.id]);
     const endr = this.state.klEndringer || {}, avl = this.state.klAvlyst || {}, hold = this.state.klHolder || {}, tild = this.state.klTildelt || {};
     const sett = this.state.klSett || {};
-    return evts.map(e => {
+    // Avlyste er ute ogsaa naar avlysningen ligger i «klAvlyst» og ikke er
+    // lagret enda — ellers ville brikka blitt staaende til neste henting.
+    return skjulAvlyste(evts.map(e => {
       const e2 = Object.assign({}, e, endr[e.id] || {}, { avlyst: !!avl[e.id] || !!e.avlyst, holder: hold[e.id] || e.holder, nye: sett[e.id] ? 0 : (e.nye || 0) });
       const t = tild[e.id] || [];
       const bort = (this.state.klVlBort || {})[e.id] || [];
@@ -34144,7 +34161,7 @@ class Component extends DCLogic {
         e2.pameldt = (e2.pameldt || 0) + man.length;
       }
       return e2;
-    });
+    }));
   }
 
   klVals() {
@@ -34880,8 +34897,22 @@ class Component extends DCLogic {
               },
             }] : []),
             ...(menyEvt.venteliste && menyEvt.venteliste.length ? [{ navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn, gjor: () => this.setState(s => ({ klMeny: null, klTildelt: Object.assign({}, s.klTildelt, { [menyEvt.id]: ((s.klTildelt || {})[menyEvt.id] || []).concat([menyEvt.venteliste[0].navn]) }) })) }] : []),
+            // Gjenopprettingen sto her som «klAvlyst[id] = false» — bare i
+            // nettleseren. Den saa gjenopprettet ut til sida ble lastet, og
+            // saa var okta avlyst igjen. Eieren, 8. september 2026: «Prøvde å
+            // gjenopprette det, men det gikk ikke».
+            //
+            // Serveren har «gjenopprett» fra for — knappen i panelet til
+            // hoyre kaller den. Det var bare denne veien inn som ikke gjorde
+            // det. Naa gaar begge samme vei, og kalenderen hentes paa nytt.
             menyEvt.avlyst
-              ? { navn: 'Gjenopprett økten', gjor: () => this.setState(s => ({ klMeny: null, klAvlyst: Object.assign({}, s.klAvlyst, { [menyEvt.id]: false }) })) }
+              ? { navn: 'Gjenopprett økten', gjor: () => {
+                  this.setState({ klMeny: null });
+                  if (!menyEvt.oktId) return;
+                  this.klKall('/api/admin/kurs.php',
+                              { handling: 'gjenopprett', oktId: menyEvt.oktId })
+                    .then(ok => { if (ok) this.klFrisk(); });
+                } }
               : { navn: 'Avlys økten…', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klBekreftAvlys: true, klFlyttVis: false }) },
           ].map(v => ({ navn: v.navn, gjor: v.gjor, stil: knappStil })) : [],
           // Paa telefon staar kalenderen oeverst, saa kortene, saa
@@ -35767,7 +35798,7 @@ class Component extends DCLogic {
                 };
               }),
               klRSamlingerHjelp: (this.state.klRSamlinger || []).length > 0
-                ? 'Deltakeren melder seg på hele kurset, én gang — og ser alle dagene før hun betaler.'
+                ? 'Deltakeren melder seg på hele kurset, én gang — og ser alle dagene før hen betaler.'
                 : 'Går kurset over flere dager, legger du inn hver dag her. Deltakeren melder seg på hele kurset, én gang.',
               klRFull: () => redEvt && this.klApneKurs(redEvt),
               klRDeltakere: () => redEvt && this.setState({ klRedId: null, klValgtId: redEvt.id, klFlyttVis: false, klBekreftAvlys: false }),
@@ -41961,14 +41992,14 @@ class Component extends DCLogic {
           personAvtaleLenkeHjelp: 'Send den til ' + fornavn
             + ' på den måten som passer — e-post, SMS eller Messenger. Lenka '
             + 'virker i fjorten dager. Hun åpner den på telefonen, og Vipps '
-            + 'spør om hun vil godkjenne.',
+            + 'spør om hen vil godkjenne.',
           // Lenka kan ikke lenger bli for gammel til aa deles ut.
           personAvtaleLenkeGammel: false,
           personAvtaleLenkeGammelTekst: '',
           kopierPersonAvtaleLenke: () => this.kopier(p.avtaleLenke || '',
             'Lenka ligger på utklippstavla — lim den inn der du vil sende den.'),
           personAvtaleHjelp: 'Sender lenka til ' + fornavn + ' på e-post. '
-            + 'Avtalen lages i Vipps først når hun trykker, så lenka kan ligge '
+            + 'Avtalen lages i Vipps først når hen trykker, så lenka kan ligge '
             + 'i fjorten dager uten å bli for gammel.',
           // ── «Stopp avtalen naa» ────────────────────────────────────
           //
@@ -42029,8 +42060,12 @@ class Component extends DCLogic {
           // med seg, «Avslutt» beholder alt, og sammenslaaingen av dubletter
           // flytter historikk sammen framfor aa fjerne den.
           //
-          // Medlemskapet som staar valgt over er det hun havner paa. Slik er
+          // Medlemskapet som staar valgt over er det hen havner paa. Slik er
           // det ett valg og én knapp, ikke to runder.
+          //
+          // «hen», ikke «hun»: raden kan vaere hvem som helst. Eieren, 8.
+          // september 2026: «hun er kvinne, joakim er mann, du må omtale som
+          // hen der du ikke vet».
           //
           // Serveren nekter uansett paa en admin-rad og paa din egen konto —
           // knappen staar ikke der, saa ingen prover.
@@ -42040,14 +42075,14 @@ class Component extends DCLogic {
             + ': påmeldinger, betalinger, avtaler, timer, ventelister og '
             + 'endringsloggen. Navn, telefon og innlogging blir stående, så det '
             + 'er den samme brukeren'
-            + (personPlanNaa ? ' — og hun settes på ' + personPlanNaa + '.' : '.')
+            + (personPlanNaa ? ' — og hen settes på ' + personPlanNaa + '.' : '.')
             + ' Dette kan ikke angres.',
           nullstillPerson: () => {
             if (!window.confirm('Nullstille ' + (p.navn || 'medlemmet') + '?\n\n'
                 + 'Alt som henger på personen fjernes: påmeldinger, betalinger, '
                 + 'avtaler, timer, ventelister og endringsloggen.\n\n'
                 + 'Navn, telefon og innlogging blir stående'
-                + (personPlanNaa ? ', og hun settes på ' + personPlanNaa : '') + '.\n\n'
+                + (personPlanNaa ? ', og hen settes på ' + personPlanNaa : '') + '.\n\n'
                 + 'Dette kan ikke angres.')) { return; }
             // «behold» — gikk det galt, skal ruta bli staaende, saa
             // beskjeden staar der du var.

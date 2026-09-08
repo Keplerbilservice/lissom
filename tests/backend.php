@@ -1871,7 +1871,23 @@ $sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kalenderen henter fra basen, ikke fra en generator',
     str_contains($sida, "fetch('/api/admin/kalender.php?fra=") && !str_contains($sida, 'klGen(y, m) {'));
 sjekk('fase 5 skriver ikke — laget med lokale endringer tegnes ikke',
-    str_contains($sida, 'if (!this.klSkriver) return evts;'));
+    str_contains($sida, 'if (!this.klSkriver) return skjulAvlyste(evts);'));
+// Avlyste oekter sto med strek over. Eieren, 8. september 2026: «Når jeg
+// avlyser et kurs, så vil jeg at dette kurset forsvinner fra kalenderen».
+// Han fikk sagt at veien tilbake gaar med — «Gjenopprett økten» naas ved aa
+// hoyreklikke brikka — og valgte «Skjul, punktum».
+sjekk('en avlyst oekt staar ikke i kalenderen',
+    str_contains($sida, 'const skjulAvlyste = liste => liste.filter(e => !e.avlyst);')
+    && str_contains($sida, 'return skjulAvlyste(evts.map(e => {')
+    && str_contains($sida, 'if (!this.klSkriver) return skjulAvlyste(evts);'),
+    'begge veiene ut av klHendelser maa filtreres');
+// Menyens «Gjenopprett økten» satte bare «klAvlyst[id] = false» i
+// nettleseren. Den saa gjenopprettet ut til sida ble lastet. Eieren, 8.
+// september: «Prøvde å gjenopprette det, men det gikk ikke».
+sjekk('gjenoppretting fra menyen gaar mot serveren',
+    str_contains($sida, "{ handling: 'gjenopprett', oktId: menyEvt.oktId })")
+    && !str_contains($sida, "klAvlyst: Object.assign({}, s.klAvlyst, { [menyEvt.id]: false })"),
+    'ellers er den borte igjen ved neste lasting');
 // Fase 6: alle tolv er koblet, og hjelperen som sa «ikke koblet ennaa» er
 // borte. Staar den igjen, er det fordi noe fortsatt ikke virker.
 sjekk('ingen knapp i kalenderen sier lenger «ikke koblet ennaa»',
@@ -13801,7 +13817,9 @@ sjekk('malen «Ny dato på kurset» ligger i migrasjon 143',
 $malerFlytt = file_get_contents(dirname(__DIR__) . '/app/lib/maler.php');
 sjekk('… og den kan redigeres under E-postmaler',
     str_contains($malerFlytt, "'pamelding_flyttet' => [")
-    && str_contains($malerFlytt, "'fra'   => 'Datoen hun sto på',")
+    // «hen», ikke «hun»: raden kan vaere hvem som helst. Eieren, 8.
+    // september 2026: «du må omtale som hen der du ikke vet».
+    && str_contains($malerFlytt, "'fra'   => 'Datoen hen sto på',")
     && str_contains($malerFlytt, "'til'   => 'Den nye datoen',"));
 
 

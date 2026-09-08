@@ -11124,6 +11124,13 @@ sjekk('… og «Nullstill» gaar samme vei ut',
 sjekk('hjelpelinja under medlemskapet sier «hen»',
     str_contains($sidaB, '— og har hen godkjent fast trekk, trekker Vipps fortsatt det gamle ')
     && !str_contains($sidaB, 'har hun godkjent fast trekk'));
+// To til sto igjen: hjelpelinja under godkjenningslenka, og beskjeden
+// serveren svarer med naar lenka er sendt. Jeg sa at den forste var den
+// eneste — den var ikke det.
+sjekk('… og det samme gjor lenkehjelpen og svaret fra serveren',
+    str_contains($sidaB, 'virker i fjorten dager. Hen åpner den på telefonen, og Vipps ')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
+                    '. Medlemskapet starter når hen har godkjent avtalen i Vipps.'));
 sjekk('«Avslutt medlemskapet» staar i personruta',
     substr_count($sidaB, '>Avslutt medlemskapet</x-import>') === 2
     && substr_count($sidaB, '<sc-if value="{{ personKanAvslutte }}"') === 2);
@@ -14169,7 +14176,7 @@ sjekk('… og skjermen har ingen «for gammel»-tilstand aa vise',
 $lenkeSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('… og skjermen sier at lenka virker i fjorten dager',
     str_contains($lenkeSida, "personAvtaleLenkeGammel: false,")
-    && str_contains($lenkeSida, "+ 'virker i fjorten dager. Hun åpner den på telefonen, og Vipps '")
+    && str_contains($lenkeSida, "+ 'virker i fjorten dager. Hen åpner den på telefonen, og Vipps '")
     && !str_contains($lenkeSida, "'Lenka fra sist er for gammel — Vipps '"));
 
 

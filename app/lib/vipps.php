@@ -608,6 +608,39 @@ final class Vipps
     }
 
     /**
+     * Betaler tilbake et trekk som alt har gaatt.
+     *
+     * Et avtaletrekk er ikke en ePayment: refunder() over gaar mot
+     * «/epayment/v1», og treffer ikke et trekk som ligger under en avtale.
+     * Derfor dette.
+     *
+     * Fram til naa fantes ingen vei ut av et gjennomfoert trekk fra admin.
+     * «Stopp trekket» virker bare til forfallsdagen, og etter den sa skjermen
+     * bare at det «maa refunderes i stedet» — uten aa si hvor. Da matte
+     * eieren inn i Vipps-portalen.
+     *
+     * Vipps tar delvis refusjon: beloepet er hvor mye som skal tilbake, ikke
+     * hele trekket. Vi sender aldri mer enn det som staar igjen — se
+     * «betal-tilbake» i api/admin/medlemmer.php.
+     */
+    public static function refunderTrekk(string $avtaleId, string $trekkId, int $belopOre): array
+    {
+        $svar = http_post_json(
+            Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId)
+                . '/charges/' . rawurlencode($trekkId) . '/refund',
+            ['amount' => $belopOre, 'description' => 'Tilbakebetaling'],
+            self::headere(self::uuid())
+        );
+
+        if ($svar['status'] >= 300) {
+            logg_feil('Kunne ikke betale tilbake trekk ' . $trekkId . ' paa avtale ' . $avtaleId
+                . ': HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            throw new RuntimeException('Vipps betalte ikke tilbake.');
+        }
+        return is_array($svar['json']) ? $svar['json'] : [];
+    }
+
+    /**
      * Status pa ett trekk.
      *
      * Et trekk er ikke en ePayment og kan ikke slas opp med hentBetaling() —

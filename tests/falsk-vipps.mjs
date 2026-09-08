@@ -118,6 +118,17 @@ http.createServer((req, res) => {
     if (p === '/recurring/v3/agreements' && req.method === 'GET') {
       return svar(res, 200, []);
     }
+    // Betaler tilbake et trekk som alt har gaatt. Ligger under avtalen, ikke
+    // paa «/epayment/v1» — et avtaletrekk er ikke en ePayment.
+    // «.trekk-refusjon-nei» tvinger fram et nei, saa vi kan maale at raden
+    // hos oss staar urort naar Vipps ikke betalte tilbake.
+    if (p.includes('/charges/') && p.endsWith('/refund') && req.method === 'POST') {
+      if (styrt('.trekk-refusjon-nei', '') === 'ja') {
+        return svar(res, 400, { detail: 'Refund exceeds charge amount' });
+      }
+      const tid = p.split('/')[6];
+      return svar(res, 200, { chargeId: tid, amount: kropp?.amount ?? 0 });
+    }
     if (p.includes('/charges/') && req.method === 'GET') {
       const id = p.split('/')[4];
       const tid = p.split('/')[6];

@@ -6911,10 +6911,12 @@ window.__resources = {
                 <span style="{{ klSnarveiMerkeStil }}">{{ klNyePamAntall }}</span>
               </sc-if>
             </button>
-            <button type="button" onClick="{{ klIcsApne }}" style="{{ klSnarveiStil }}" style-hover="box-shadow: var(--shadow-md);">
-              <span style="{{ klSnarveiIkonStil }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></span>
-              <span style="{{ klSnarveiNavnStil }}">Synk med mobilen</span>
-            </button>
+            <!-- «Synk med mobilen» sto her som et kort. Eieren, 8.
+                 september 2026: «pillen synk med mobilen kan fjernes, legg
+                 heller til en link i sidemenyen under meld inn feil». Det er
+                 en adresse man setter opp én gang, ikke noe man trykker paa
+                 i det daglige — den hoerer hjemme blant verktoeyene. Ruta
+                 er den samme, se «⌸  Synk med mobilen» i adminMeny(). -->
           </div>
         </div>
 
@@ -7164,15 +7166,14 @@ window.__resources = {
 
         <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ true }}">
           <div class="lx-kalbred" style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="{{ klBoardHodeStil }}">
-              <div style="border-right: 1px solid var(--border-subtle);"></div>
-              <sc-for list="{{ klBoardKolonner }}" as="k" hint-placeholder-count="3">
-                <div style="padding: var(--space-4) var(--space-5); border-right: 1px solid var(--border-subtle); min-width: 0;">
-                  <button type="button" onClick="{{ k.apne }}" style="{{ k.navnStil }}">{{ k.navn }}</button>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ k.under }}</div>
-                </div>
-              </sc-for>
-            </div>
+            <!-- Her sto en hoderad med kursholderens navn og «Ingenting
+                 planlagt» under. Eieren, 8. september 2026: «feltet med
+                 Monica vil jeg du skal fjerne». Spurt om den skulle bli
+                 staaende naar det er flere kursholdere: «Bort alltid».
+                 Navnet var ogsaa eneste vei inn til kursholderruta
+                 («klHolderVis»), der man kunne sende henne en beskjed. Den
+                 ruta staar igjen i koden, men naas ikke lenger herfra.
+                 Eieren fikk det sagt for han valgte. -->
             <div style="{{ klBoardKroppStil }}">
               <div style="{{ klGutterStil }}">
                 <sc-for list="{{ klBoardTimer }}" as="t" hint-placeholder-count="15">
@@ -37388,6 +37389,21 @@ class Component extends DCLogic {
         navn: '⚑  Meld inn feil',
         kort: '⚑ Meld feil',
         velg: () => this.setState({ fmDialog: true, fmFeil: '' }),
+        stil: this.adminBunnStil(),
+      },
+      // Kalenderadressen til telefonen. Sto som et kort over kalenderen,
+      // ved siden av Beskjeder og Notater — men det er noe man setter opp
+      // én gang, ikke noe man trykker paa hver dag. Eieren, 8. september
+      // 2026: «pillen synk med mobilen kan fjernes, legg heller til en link
+      // i sidemenyen under meld inn feil». Samme rute som for.
+      {
+        navn: '⌸  Synk med mobilen',
+        kort: '⌸ Synk',
+        // Ruta tegnes bare paa kalendersiden. Sto det bare «klIcsVis: true»
+        // her, gjorde valget ingenting fra Oversikt eller noen annen skjerm —
+        // maalt i nettleseren. Derfor gaar vi til kalenderen og aapner den i
+        // samme trykk; «forvalg» faar siste ord i gaaAdmin().
+        velg: () => this.gaaAdmin('adminkalender', { klIcsVis: true }),
         stil: this.adminBunnStil(),
       },
       {

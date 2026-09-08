@@ -116,7 +116,7 @@ final class Maler
             'felter' => [
                 'navn'  => 'Navnet på deltakeren',
                 'kurs'  => 'Kurset',
-                'fra'   => 'Datoen hun sto på',
+                'fra'   => 'Datoen hen sto på',
                 'til'   => 'Den nye datoen',
                 'lenke' => 'Lenken til Min side',
             ],

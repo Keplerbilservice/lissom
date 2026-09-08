@@ -1871,7 +1871,23 @@ $sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kalenderen henter fra basen, ikke fra en generator',
     str_contains($sida, "fetch('/api/admin/kalender.php?fra=") && !str_contains($sida, 'klGen(y, m) {'));
 sjekk('fase 5 skriver ikke — laget med lokale endringer tegnes ikke',
-    str_contains($sida, 'if (!this.klSkriver) return evts;'));
+    str_contains($sida, 'if (!this.klSkriver) return skjulAvlyste(evts);'));
+// Avlyste oekter sto med strek over. Eieren, 8. september 2026: «Når jeg
+// avlyser et kurs, så vil jeg at dette kurset forsvinner fra kalenderen».
+// Han fikk sagt at veien tilbake gaar med — «Gjenopprett økten» naas ved aa
+// hoyreklikke brikka — og valgte «Skjul, punktum».
+sjekk('en avlyst oekt staar ikke i kalenderen',
+    str_contains($sida, 'const skjulAvlyste = liste => liste.filter(e => !e.avlyst);')
+    && str_contains($sida, 'return skjulAvlyste(evts.map(e => {')
+    && str_contains($sida, 'if (!this.klSkriver) return skjulAvlyste(evts);'),
+    'begge veiene ut av klHendelser maa filtreres');
+// Menyens «Gjenopprett økten» satte bare «klAvlyst[id] = false» i
+// nettleseren. Den saa gjenopprettet ut til sida ble lastet. Eieren, 8.
+// september: «Prøvde å gjenopprette det, men det gikk ikke».
+sjekk('gjenoppretting fra menyen gaar mot serveren',
+    str_contains($sida, "{ handling: 'gjenopprett', oktId: menyEvt.oktId })")
+    && !str_contains($sida, "klAvlyst: Object.assign({}, s.klAvlyst, { [menyEvt.id]: false })"),
+    'ellers er den borte igjen ved neste lasting');
 // Fase 6: alle tolv er koblet, og hjelperen som sa «ikke koblet ennaa» er
 // borte. Staar den igjen, er det fordi noe fortsatt ikke virker.
 sjekk('ingen knapp i kalenderen sier lenger «ikke koblet ennaa»',
@@ -4186,9 +4202,25 @@ sjekk('… og de tre arrangementene havner under Events',
 sjekk('… og workshop og plateteknikk under Haandbygging',
     str_contains($sida2, "'Workshop': 'Håndbygging', 'Plateteknikk': 'Håndbygging',"));
 // Kategorien maa kunne velges der kurs faktisk legges ut — hurtigskjemaet.
+// Fra 8. september staar «Kun medlemmer» der ogsaa. Eieren: «i knappen på
+// kalender over internt kurs, burde jeg ikke kunne velge internt kurs her?»
 sjekk('Haandbygging kan velges naar et kurs legges ut',
-    str_contains($sida2, "nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay']")
+    str_contains($sida2, "nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay', 'Kun medlemmer']")
     && str_contains($sida2, "'Håndbygging':   { type: 'Kurs',          tema: 'Håndbygging' , plasser: 12 },"));
+// Uten kategorien utledes temaet av typen, og «Kun medlemmer» finnes ikke
+// der — kurset ville havnet under «Kurs» og blitt liggende ute.
+sjekk('… og et internt kurs lagres med temaet sitt',
+    str_contains($sida2, "kategori: s.nkType === 'Kun medlemmer' ? 'Kun medlemmer' : '',")
+    && str_contains($sida2, "'Kun medlemmer': { type: 'Kun medlemmer', tema: 'Kun for medlemmer' , plasser: 12 },"));
+// Joakim sto skrevet inn i valget av kursholder. Eieren, 8. september 2026:
+// «joakim står som alternativ kursholder, fjern det fra hele systemet».
+// Migrasjon 093 satte ham til «Sluttet» i registeret alt — det var bare denne
+// lista som ikke leste registeret.
+sjekk('kursholderne i hurtigskjemaet kommer fra registeret',
+    str_contains($sida2, 'nkHolderValg: (this.klHoldere().length ? this.klHoldere() : [this.klStandardHolder()])')
+    && !str_contains($sida2, "['Monica', 'Joakim']"));
+sjekk('… og navnet staar ikke igjen i fargekartet heller',
+    !str_contains($sida2, "Joakim: { bg:"));
 sjekk('… og lagres som tema «Håndbygging»',
     str_contains($sida2, "'Håndbygging': 'Håndbygging', 'Workshop': 'Håndbygging',"));
 // Gamle rader skal foelge med, ellers faller et kurs ut av sin egen kategori.
@@ -5298,8 +5330,24 @@ sjekk('… og slaar opp kursadressene paa tittelen',
 if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     $skive = DB::en("SELECT id, antall FROM ressurser WHERE navn = 'Dreieskive'");
     sjekk('dreieskivene staar i basen, ikke i koden', $skive !== null && (int) $skive['antall'] > 0);
+    // Talte for at MINST TRE kurs pekte paa skiva. Tallet passet
+    // produksjonsbasen, ikke den migrasjon 003 saar — der finnes ett
+    // dreiekurs og Date Night. Vakten sa derfor fra i testbasen uten at noe
+    // var galt, og den ville tiet om et dreiekurs som manglet ressursen saa
+    // lenge tre andre hadde den. Naa spor den om det den skal: peker ALLE
+    // dreiekursene og Date Night paa skiva? Se migrasjon 103, som setter
+    // dem etter tema = 'Dreiing' eller tittel = 'Date Night'.
+    $skiveVilkaar = "(tema = 'Dreiing' OR tittel = 'Date Night')";
+    $utenSkive = (int) DB::verdi(
+        "SELECT COUNT(*) FROM courses
+          WHERE {$skiveVilkaar} AND (ressurs_id IS NULL OR ressurs_id <> :i)",
+        ['i' => (int) $skive['id']]);
+    $medSkive = (int) DB::verdi(
+        "SELECT COUNT(*) FROM courses WHERE {$skiveVilkaar} AND ressurs_id = :i",
+        ['i' => (int) $skive['id']]);
     sjekk('… og dreiekursene og Date Night peker paa dem',
-        (int) DB::verdi('SELECT COUNT(*) FROM courses WHERE ressurs_id = :i', ['i' => (int) $skive['id']]) >= 3);
+        $utenSkive === 0 && $medSkive > 0,
+        $medSkive . ' peker paa skiva, ' . $utenSkive . ' mangler den');
 
     // Selve regnestykket: to ting som gaar samtidig og deler ressursen, skal
     // ikke kunne selge den samme skiva to ganger.
@@ -6274,7 +6322,19 @@ sjekk('kortene i kalenderen har ingen pille for koen',
 sjekk('… mens sveipekortet fortsatt sier hvor mange som venter',
     str_contains($sida, "' · ' + he.venteliste.length + ' på venteliste'"));
 sjekk('… og hoyreklikkmenyen fortsatt kan gi plassen',
-    str_contains($sida, "{ navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn,"));
+    str_contains($sida, "navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn,"));
+// ── Og gir den paa ordentlig ─────────────────────────────────────────
+//
+// Menyvalget la navnet i «klTildelt» — et lokalt lag fra prototypen som ingen
+// tegner (klSkriver er false) og som ingen sender noe sted. Trykket gjorde
+// altsaa ingenting: personen fikk ikke plassen, og skjermen sa det ikke fra
+// heller. Samme feil som «Gjenopprett økten» hadde.
+//
+// Veien fantes fra for: knappen «Tildel plass til førstemann →» i
+// deltakerruta kaller venteliste.php med «gi-plass».
+sjekk('… og kallet gaar til serveren, ikke bare til skjermen',
+    str_contains($sida, "{ handling: 'gi-plass', id: forst.id, oktId: menyEvt.oktId });")
+    && !str_contains($sida, 'klTildelt: Object.assign({}, s.klTildelt,'));
 
 // ── Én person, én rad ─────────────────────────────────────────────────
 //
@@ -10870,19 +10930,46 @@ echo "\n== Flerdagerskurs settes opp der kvelden settes opp ==\n";
 $sidaD = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kalenderruta har feltet for flere dager',
     str_contains($sidaD, '>Går kurset over flere dager?</label>')
-    && str_contains($sidaD, '<sc-for list="{{ klRSamlinger }}" as="sa"')
+    && str_contains($sidaD, '<sc-for list="{{ klRSamlingerResten }}" as="sa"')
     && str_contains($sidaD, '+ Legg til en dag</button>'));
 // Dagene ligger paa den raa kursraden, ikke paa kalenderokta: kalenderen er
 // bygget for aa tegne timeplanen.
 sjekk('… og dagene hentes fram naar ruta aapnes',
     str_contains($sidaD, 'klRSamlinger: samlingerPaa(base, evt.oktId),')
     && str_contains($sidaD, "const raa = (this.state.adminKursRaa || []).find(x => x.tittel === tittel);"));
-// Forste dag foreslaas fra okta selv, andre dag dagen etter med de samme
-// klokkeslettene. Et dreiekurs 17-20 over to dager skal ikke skrives inn
-// fire ganger.
-sjekk('… og dag to foreslaas som dagen etter, med samme klokkeslett',
-    str_contains($sidaD, 'const neste = har.length === 0 ? (st.klRDato || \'\') : this.dagenEtter(grunn);')
-    && str_contains($sidaD, "fra: (forrige && forrige.fra) || st.klRFra || '',"));
+// ── Dag 1 er okta selv, og staar laast ──────────────────────────────
+//
+// Eieren, 8. september 2026: «Proevde aa legge ut dag 2 paa dreiekurset den 9
+// og 10 september, men da flyttet den bare datoen fra 9-10».
+//
+// Slik sto det: forste trykk paa knappen lagde en DAG 1 med samme dato som
+// okta selv. Den raden ser overflodig ut — datoen staar jo oeverst — saa den
+// ble skrevet om til den 10. Da sa lista at kurset gaar bare den 10., og
+// serveren speiler lista over paa okta. Kurset flyttet seg i stedet for aa
+// vare i to dager. Maalt i nettleseren: okta gikk fra 9.-10. til 10.-10.
+//
+// Naa gir forste trykk BEGGE dagene, og Dag 1 foelger Dato-feltet oeverst.
+sjekk('… og forste trykk gir baade dag 1 og dagen etter',
+    str_contains($sidaD, "return { klRSamlinger: [dag(st.klRDato || '', null),")
+    && str_contains($sidaD, "dag(this.dagenEtter(st.klRDato || ''), null)] };")
+    && str_contains($sidaD, "til: (mal && mal.til) || st.klRTil || '',"));
+sjekk('… og Dag 1 staar laast, med datoen fra feltet oeverst',
+    str_contains($sidaD, '<input type="date" value="{{ klRDato }}" disabled="true" style="{{ klRDagDatoLaastStil }}">')
+    && str_contains($sidaD, '<input type="time" value="{{ klRFra }}" disabled="true" style="{{ klRDagTidLaastStil }}">')
+    && str_contains($sidaD, '>Følger datoen øverst</span>'));
+// Sluttida hoerer til dagen, ikke til okta: gaar kurset over to dager, er
+// «Til» oeverst slutten paa siste dag.
+sjekk('… mens sluttida paa dag 1 kan rettes',
+    str_contains($sidaD, '<input type="time" value="{{ klRDag1Til }}" onChange="{{ settKlRDag1Til }}"'));
+// Dag 2 og utover velger man dato paa selv, og de kan fjernes. Blir Dag 1
+// staaende alene, er det ikke et flerdagerskurs lenger — da toemmes lista.
+sjekk('… og fjernes siste ekstra dag, gaar kurset paa én dag igjen',
+    str_contains($sidaD, 'return { klRSamlinger: igjen.length <= 1 ? [] : igjen };'));
+// Dagen etter regnes fra forrige rad, med de samme klokkeslettene. Et
+// dreiekurs 17-20 over to dager skal ikke skrives inn fire ganger.
+sjekk('… og neste dag foreslaas som dagen etter, med samme klokkeslett',
+    str_contains($sidaD, 'return { klRSamlinger: har.concat([dag(this.dagenEtter(grunn), forrige)]) };')
+    && str_contains($sidaD, "fra: (mal && mal.fra) || st.klRFra || '',"));
 // Regnet i UTC: legger man til et doegn og leser det ut lokalt, kan man havne
 // paa samme dag igjen naar sommertida slutter.
 sjekk('… og dagen etter regnes i UTC',
@@ -10900,7 +10987,31 @@ sjekk('… men bare naar noe faktisk er endret',
 // Tomme skjemarader er ikke samlinger. «+ Legg til en dag» trykket ved et
 // uhell skal ikke lagre noe.
 sjekk('… og tomme rader lagres ikke',
-    str_contains($sidaD, "const saml = (st.klRSamlinger || []).filter(sa => sa.dato);"));
+    str_contains($sidaD, '      : sa)).filter(sa => sa.dato);'));
+// Dag 1 hentes fra feltene oeverst, ikke fra raden: de to skal ikke kunne
+// sprike, for det var spriket som flyttet kurset.
+sjekk('… og dag 1 skrives med datoen og starttida fra feltene oeverst',
+    str_contains($sidaD, "    const saml = (st.klRSamlinger || []).map((sa, i) => (i === 0")
+    && str_contains($sidaD, '      ? Object.assign({}, sa, { dato: d, fra: fra })'));
+// Eieren, 8. september 2026: «alle dagene flytter med». Flytter du datoen
+// oeverst fra 9. til 14., skal 10. bli 15. — ikke bli staaende igjen bak i
+// tid. Maalt for dette ble skrevet: dag 2 sto igjen, dagene havnet i feil
+// rekkefolge, og serveren gjorde kurset om til én dag.
+sjekk('… og flyttes datoen oeverst, flytter alle dagene med',
+    str_contains($sidaD, 'const doegn = this.doegnMellom(st.klRDato || \'\', ny);')
+    && str_contains($sidaD, '? Object.assign({}, sa, { dato: this.datoPluss(sa.dato, doegn) })'));
+// Regnet i UTC, av samme grunn som «dagenEtter»: i lokal tid kan et doegn
+// bli null eller to naar sommertida slutter.
+sjekk('… og doegnene regnes i UTC',
+    str_contains($sidaD, "d.setUTCDate(d.getUTCDate() + doegn);")
+    && str_contains($sidaD, "return Math.round((new Date(til + 'T00:00:00Z') - new Date(fra + 'T00:00:00Z')) / 86400000);"));
+// «endredato» setter start og slutt paa den ene dagen. Med samlinger er det
+// dagene som bestemmer spennet, og serveren regner det ut av dem — derfor maa
+// datoen sendes FOER samlingene, ellers kappes dag to.
+sjekk('… og datoen sendes for samlingene, saa spennet ikke kappes',
+    strpos($sidaD, "handling: 'endredato', oktId: redEvt.oktId,")
+        < strpos($sidaD, 'if (rort.length || stilleSamlinger) {')
+    && str_contains($sidaD, '      stilleSamlinger = true;'));
 // Serveren tar imot lista paa den samme handlingen fra for, og roerer bare
 // samlingene naar nokkelen er med.
 $kursApi = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
@@ -13785,7 +13896,9 @@ sjekk('malen «Ny dato på kurset» ligger i migrasjon 143',
 $malerFlytt = file_get_contents(dirname(__DIR__) . '/app/lib/maler.php');
 sjekk('… og den kan redigeres under E-postmaler',
     str_contains($malerFlytt, "'pamelding_flyttet' => [")
-    && str_contains($malerFlytt, "'fra'   => 'Datoen hun sto på',")
+    // «hen», ikke «hun»: raden kan vaere hvem som helst. Eieren, 8.
+    // september 2026: «du må omtale som hen der du ikke vet».
+    && str_contains($malerFlytt, "'fra'   => 'Datoen hen sto på',")
     && str_contains($malerFlytt, "'til'   => 'Den nye datoen',"));
 
 

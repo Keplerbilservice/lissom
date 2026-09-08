@@ -38,6 +38,14 @@ const UNNTAK = [
     grunn: 'laast felt — staar der for aa leses og kopieres, ikke skrives i',
   },
   {
+    // Dag 1 i et flerdagerskurs. Datoen og starttida er okta selv, og de
+    // staar i feltene oeverst i samme rute — raden viser dem laast, saa de
+    // to ikke kan sprike. Et «settX» her ville skrevet dem fra hverandre,
+    // og det var nettopp det som flyttet kurset fra 9. til 10. september.
+    treff: /disabled="true" style="\{\{ klRDag(Dato|Tid)LaastStil \}\}"/,
+    grunn: 'laast Dag 1 — foelger Dato-feltet oeverst, kan ikke skrives i',
+  },
+  {
     treff: /Jeg godtar vilkårene for medlemskap/,
     grunn: 'staar paa skjermen «Vipps-flyt», som ingenting lenker til. Eneste '
          + 'vei inn er aa skrive /betaling manuelt. Skjermen viser hvordan '

@@ -8358,11 +8358,11 @@ sjekk('… og teller ikke dem som er fritatt',
 // to kopier. Naa er den en knapp — eieren: «jeg vil ha den klikkbar som jeg
 // ber om» — og kartet staar ett sted, i betalingsPille().
 sjekk('medlemsraden viser om det er betalt',
-    str_contains($sida, '<button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>')
+    str_contains($sida, '<button type="button" class="lx-medlpille" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>')
     && str_contains($sida, 'betalingMerke: this.betalingsPille(m.betaling).merke,'));
 // Et gratismedlem har ingenting aa registrere, og staar som en etikett.
 sjekk('… og et gratismedlem staar som en etikett',
-    str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
+    str_contains($sida, '<span class="lx-medlpille" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
 sjekk('… og timer igjen',
     str_contains($sida, "timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',"));
 // Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt
@@ -9683,7 +9683,7 @@ echo "\n== Pilla i medlemslista er klikkbar ==\n";
 $sidaM2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('pilla i medlemslista er en knapp',
-    str_contains($sidaM2, '<button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>'));
+    str_contains($sidaM2, '<button type="button" class="lx-medlpille" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>'));
 // Ingen ny betalingsboks i lista. Det ville staatt to av dem, og de kunne
 // svart hver sitt. Pilla aapner personen med den boksen som finnes.
 sjekk('… og den aapner boksen som finnes, ikke en ny',
@@ -9760,9 +9760,41 @@ sjekk('… og gaar til medlemsskjermen',
 // Ordet paa statuspilla sto uten oe. Det staar baade i medlemslista og i
 // kortet paa Oversikt og Kalender — ett sted i koden, saa det ikke kan bli
 // riktig det ene stedet og feil det andre.
-sjekk('«Prøveperiode» staar med ø',
-    str_contains($sida, "prove: 'Prøveperiode',")
-    && !str_contains($sida, "prove: 'Proveperiode',"));
+// ── Pillene i medlemslista ──────────────────────────────────────────
+//
+// «Prøveperiode» het pilla til 8. september 2026. Eieren: «jeg vil at pillne
+// også er lijke store, så vi kan korte ned noen tekster, prøveperiode kan nå
+// hete test også lager du pillene litt større, så ser det ryddig ut».
+//
+// Ordet skrives fortsatt uten aa miste bokstaver — det var feilen som ble
+// rettet 7. september, da det sto «Proveperiode».
+sjekk('statuspilla heter «Test»',
+    str_contains($sida, "prove: 'Test',")
+    && !str_contains($sida, "prove: 'Proveperiode',")
+    && !str_contains($sida, "prove: 'Prøveperiode',"));
+// Like brede piller: bindingen, betalingen og statusen deler én regel.
+// «display: inline» tar ikke imot min-width — betalingspilla sto uten
+// display i stilen sin og ble 43 px mens de andre ble 112. Maalt i
+// nettleseren; derfor staar «display: inline-block» i regelen.
+sjekk('… og alle pillene i lista er like brede',
+    str_contains($sida, '.lx-medlpille, .lx-medlstatus .sc-host-x > span {')
+    && str_contains($sida, '    min-width: 112px !important;')
+    && str_contains($sida, '    display: inline-block !important;'));
+// Statuspilla kommer fra designsystemet og ligger i en «sc-host-x» med
+// «display: contents». Uten klassen paa cella naar regelen aldri fram.
+sjekk('… ogsaa statuspilla fra designsystemet',
+    str_contains($sida, '<div class="lx-medlstatus" style="margin-left: auto; flex: 0 0 120px;">'));
+// Kolonnene skal staa i flukt fra rad til rad. Sto bindingen og betalingen
+// inne i hver sin sc-if, forsvant hele kolonnen naar raden ikke hadde noe
+// der — og alt til hoyre gled til venstre. Naa staar cella alltid, og det
+// er innholdet som kommer og gaar.
+sjekk('… og kolonnene staar der selv naar de er tomme',
+    str_contains($sida, '<div style="flex: 0 1 145px; min-width: 0;">' . "\n" . '                  <sc-if value="{{ m.harBinding }}"')
+    && str_contains($sida, '<div style="flex: 0 1 170px; min-width: 0;">' . "\n" . '                  <sc-if value="{{ m.harBetaling }}"'));
+// Radene starter fra toppen. Midtstilt sto pillene i ulik hoyde fra rad til
+// rad, fordi cellene er ulikt hoye.
+sjekk('… og radene starter fra toppen',
+    str_contains($sida, 'border-top: 1px solid var(--border-subtle); align-items: flex-start; cursor: pointer;'));
 // ── Navnene i sidemenyen ────────────────────────────────────────────────
 //
 // Eieren, 7. september: «i kalender maa vi lage en annen visning. kan du
@@ -10205,7 +10237,7 @@ sjekk('… og fra Paameldte, der ankeret ikke finnes, gaar det til toppen',
 sjekk('et gratismedlem har ingen knapp',
     str_contains($sidaM2, "kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen',")
     && str_contains($sidaM2, "kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen',")
-    && str_contains($sidaM2, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
+    && str_contains($sidaM2, '<span class="lx-medlpille" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
 // Begge greinene maa finnes som verdier. Mangler én, tegnes hele skjermen
 // som «{{ }}».
 sjekk('… og begge greinene har en verdi aa lese',

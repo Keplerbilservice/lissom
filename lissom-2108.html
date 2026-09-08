@@ -15736,11 +15736,6 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Medlemmer</h1>
           </div>
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="gift" on-click="{{ aGiGave }}" hint-size="auto,44px">Gi gave</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ miApne }}" hint-size="auto,44px">Nytt medlem</x-import>
-          </div>
         </div>
 
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
@@ -15782,6 +15777,20 @@ window.__resources = {
           </div>
         </div>
 
+        </div>
+
+        <!-- Gi gave, Send beskjed og Nytt medlem.
+             Sto oppe til hoyre, paa linje med overskriften — smaa, langt fra
+             der oyet gaar, og paa en smal skjerm klippet den siste i kanten.
+             Eieren, 8. september 2026: «pillene gi gave, send beskjed og nytt
+             medlem maa plassere mer synlig, for eksempel etter interne
+             samlinger». Vist i to utgaver for de ble bygget; han valgte denne
+             — egen rad, uten gul bakgrunn.
+             Samme bredde som kortene over, saa raden staar i flukt med dem. -->
+        <div style="max-width: 860px; display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="gift" on-click="{{ aGiGave }}" hint-size="auto,44px">Gi gave</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ miApne }}" hint-size="auto,44px">Nytt medlem</x-import>
         </div>
 
         <!-- Ikke fornyet.

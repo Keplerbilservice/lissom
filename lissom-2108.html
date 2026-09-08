@@ -1201,6 +1201,28 @@ window.__resources = {
       font-size: 11px !important;
     }
   }
+  /* Pillene i medlemslista.
+     Eieren, 8. september 2026: «jeg vil at pillne også er lijke store ...
+     også lager du pillene litt større, så ser det ryddig ut».
+     De var like brede som ordet i seg: «Fri» 39 px, «Prøveperiode» 110.
+     Naa har alle tre samme minstebredde, samme luft og samme tekststoerrelse
+     — bindingen, betalingen og statusen. Teksten staar midtstilt, saa et
+     kort ord ikke henger i venstre kant av en bred pille. */
+  /* Statuspilla kommer fra designsystemet og ligger inne i en «sc-host-x»
+     med «display: contents» — den ytre boksen har ingen bredde aa sette, saa
+     regelen maa naa selve pilla. */
+  .lx-medlpille, .lx-medlstatus .sc-host-x > span {
+    /* «display: inline» tar ikke imot min-width. Betalingspilla sto uten
+       display i stilen sin, og ble derfor staaende 43 px bred mens de andre
+       ble 112 — maalt i nettleseren. */
+    display: inline-block !important;
+    min-width: 112px !important;
+    padding: 5px 12px !important;
+    font-size: 11px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
   a { color: var(--lissom-brown); text-decoration: none; }
   a:hover { color: var(--terracotta-500); }
   .lx-kortgrid img { object-position: center 32%; }
@@ -16475,8 +16497,8 @@ window.__resources = {
               <button type="button" onClick="{{ sorterNavn }}" style="{{ sortKnappStil }}">Medlem {{ sortNavnPil }}</button><button type="button" onClick="{{ sorterTimer }}" style="{{ sortKnappStil }}">Timer brukt {{ sortTimerPil }}</button>
             </div>
             <sc-for list="{{ medlemmer }}" as="m" hint-placeholder-count="6">
-              <div onClick="{{ m.velg }}" style="display: flex; flex-wrap: wrap; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center; cursor: pointer;">
-                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 180px;">
+              <div onClick="{{ m.velg }}" style="display: flex; flex-wrap: wrap; gap: 12px; row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: flex-start; cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 0 1 145px;">
                   <div style="position: relative; flex: 0 0 auto;">
                     <div style="{{ m.avatarStil }}">{{ m.initial }}</div>
                     <span style="{{ m.prikkStil }}"></span>
@@ -16486,7 +16508,7 @@ window.__resources = {
                     <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.epost }}</div>
                   </div>
                 </div>
-                <div style="flex: 0 1 130px; min-width: 0;">
+                <div style="flex: 0 1 115px; min-width: 0;">
                   <div style="font-size: var(--text-sm); color: var(--text-body);">{{ m.abonnement }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ m.undertekst }}</div>
                 </div>
@@ -16494,12 +16516,12 @@ window.__resources = {
                      rod mens en oppsigelse loper, gronn naar det staar fritt.
                      Sto ingen steder for — verkstedet hadde ingen maate aa se
                      hvem som var bundet til naar. -->
-                <sc-if value="{{ m.harBinding }}" hint-placeholder-val="{{ true }}">
-                  <div style="flex: 0 1 190px; min-width: 0;">
-                    <span style="{{ m.bindingStil }}">{{ m.bindingTekst }}</span>
+                <div style="flex: 0 1 145px; min-width: 0;">
+                  <sc-if value="{{ m.harBinding }}" hint-placeholder-val="{{ true }}">
+                    <span class="lx-medlpille" style="{{ m.bindingStil }}">{{ m.bindingTekst }}</span>
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.bindingDetalj }}</div>
-                  </div>
-                </sc-if>
+                  </sc-if>
+                </div>
                 <!-- Har hun betalt?
                      Her sto bare «Fast trekk» eller «Gjor opp selv» — det er
                      betalingsMAATEN, og den sier ingenting om penger. Eieren,
@@ -16507,18 +16529,18 @@ window.__resources = {
                      om det er betalt for medlemskapet eller ikke».
                      Roedt fra den dagen betalingen skulle kommet, slik eieren
                      valgte. Et medlem som er fritatt staar graat, aldri roedt. -->
-                <sc-if value="{{ m.harBetaling }}" hint-placeholder-val="{{ true }}">
-                  <div style="flex: 0 1 200px; min-width: 0;">
+                <div style="flex: 0 1 170px; min-width: 0;">
+                  <sc-if value="{{ m.harBetaling }}" hint-placeholder-val="{{ true }}">
                     <sc-if value="{{ m.kanRegistrere }}" hint-placeholder-val="{{ true }}">
-                      <button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>
+                      <button type="button" class="lx-medlpille" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>
                     </sc-if>
                     <sc-if value="{{ m.kanIkkeRegistrere }}" hint-placeholder-val="{{ false }}">
-                      <span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>
+                      <span class="lx-medlpille" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>
                     </sc-if>
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.betalingTekst }}</div>
-                  </div>
-                </sc-if>
-                <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 130px; min-width: 105px;">
+                  </sc-if>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 115px; min-width: 100px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
                     <div style="{{ m.barStil }}"></div>
                   </div>
@@ -16529,10 +16551,10 @@ window.__resources = {
                     </sc-if>
                   </div>
                 </div>
-                <div style="margin-left: auto; flex: 0 0 auto;">
+                <div class="lx-medlstatus" style="margin-left: auto; flex: 0 0 120px;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
                 </div>
-                <div style="display: flex; gap: var(--space-3); flex: 0 0 auto;">
+                <div style="display: flex; gap: 10px; flex: 0 0 108px;">
                   <sc-if value="{{ m.kanAvslutte }}" hint-placeholder-val="{{ true }}">
                     <button type="button" onClick="{{ m.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Avslutt</button>
                   </sc-if>
@@ -38407,7 +38429,10 @@ class Component extends DCLogic {
     // «Proveperiode» sto uten ø. Ordet staar paa pilla i medlemslista og
     // i kortet paa Oversikt og Kalender. Eieren, 7. september 2026:
     // «Publiser, og rett «Proveperiode»».
-    const tekst = { aktiv: 'Aktiv', prove: 'Prøveperiode', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
+    // «Test» og ikke «Prøveperiode». Eieren, 8. september 2026: «jeg vil at
+    // pillne også er lijke store, så vi kan korte ned noen tekster,
+    // prøveperiode kan nå hete test».
+    const tekst = { aktiv: 'Aktiv', prove: 'Test', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
 
     // Tre grupper, og de er ikke det samme.
     //

@@ -31,7 +31,9 @@ $idag = (new DateTimeImmutable('now', $oslo))->format('Y-m-d');
 function gave_tittel(array $g): string
 {
     return match ($g['type']) {
-        'timer'    => ((int) $g['timer']) . ' ekstra timer',
+        // Én time er ikke «1 ekstra timer». Samme regel paa Min side, se
+        // $tittel i api/gave.php.
+        'timer'    => ((int) $g['timer']) . ' ekstra time' . (((int) $g['timer']) === 1 ? '' : 'r'),
         'gavekort' => 'Gavekort på ' . Booking::kroner((int) $g['belop_ore']),
         default    => 'Ta med en venn',
     };

@@ -2531,6 +2531,58 @@ sjekk('trekkrunden sporr om trekkene som ikke har fatt svar',
     str_contains($runden, 'foreach (self::trekkUtenSvar($maks) as $p) {')
     && str_contains($runden, 'self::sjekkTrekk($p)')
     && str_contains($runden, '$svart = self::sjekkAlleTrekk(50, $skriv);'));
+// ── En timegave gir timer ────────────────────────────────────────────
+//
+// «Loes inn gaven» skrev bare en rad i «medlemsgave_bruk» og sendte en
+// beskjed til verkstedet. Ingen timer ble lagt til noe sted.
+//
+// Eieren, 8. september 2026: «jeg trykte paa loes inn gaven, saa fikk jeg en
+// pop upp, verkstedet har faatt beskjed, ta med gaven din neste gang. jeg vil
+// jo at den skal legges paa antall timer de har igjen paa medlemskapet sitt»
+// — og «de faar jo ikke noe fysisk».
+//
+// Maalt i nettleseren: 30 timer for, 31 etter, og admin sier det samme.
+echo "\n== En timegave gir timer ==\n";
+$msFil0 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$medlFil2 = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('gavetimer telles opp fra de innloeste gavene',
+    str_contains($medlFil2, 'public static function gavetimer(int $medlemId): int')
+    && str_contains($medlFil2, 'FROM medlemsgave_bruk b')
+    && str_contains($medlFil2, "AND g.type = 'timer'"));
+// En trukket gave gir ingen timer, og en utloept heller ikke.
+sjekk('… men bare fra gaver som fortsatt staar',
+    str_contains($medlFil2, "AND g.status = 'aktiv'")
+    && str_contains($medlFil2, 'AND g.gyldig_til >= :idag'));
+// Ett sted, ikke to: Min side og medlemslista leser den samme regelen.
+sjekk('… og Min side og admin leser den samme regelen',
+    str_contains($medlFil2, 'public static function timerMedGaver(array $medlem): ?int')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                    '$perMnd = Medlemskap::timerMedGaver($medlem);')
+    && substr_count(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
+                    'Medlemskap::timerMedGaver($m)') === 2);
+// Fri tilgang blir staaende fri — har planen ingen grense, er det ingenting
+// aa legge timer til.
+sjekk('… mens fri tilgang blir staaende fri',
+    str_contains($medlFil2, "        \$tak = self::timerFor(\$medlem);
+        if (\$tak === null) {
+            return null;
+        }"));
+// Kvitteringen lovet noe fysisk. Det gjor en timegave ikke.
+$gaveFil = file_get_contents(dirname(__DIR__) . '/api/gave.php');
+sjekk('kvitteringen sier at timene er lagt til',
+    str_contains($gaveFil, "'timer' => 'Timene er lagt til. Du ser dem på Min side nå.',"));
+sjekk('… og ruta sier det samme for du trykker',
+    str_contains($msFil0, "? 'Trykk under, så legges timene til med det samme.'"));
+// Tallet paa skjermen maa flytte seg med det samme. Uten dette sto «av 30
+// timer» igjen mens kvitteringen sa at de var lagt til — maalt i nettleseren.
+sjekk('… og timetallet hentes paa nytt naar gaven er loest inn',
+    str_contains($msFil0, "          this._stemplingHentes = false; this.hentStempling();"));
+// Én time er ikke «1 ekstra timer».
+sjekk('én time heter «1 ekstra time»',
+    str_contains($gaveFil, "' ekstra time' . (((int) \$g['timer']) === 1 ? '' : 'r')")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/gaver.php'),
+                    "' ekstra time' . (((int) \$g['timer']) === 1 ? '' : 'r')"));
+
 // ── «0 inne» paa Min side ────────────────────────────────────────────
 //
 // Pilla leste «this.state.inne». Det finnes ingen slik state — lista over

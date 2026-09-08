@@ -49,7 +49,9 @@ $minGave = static function () use ($megId, $idag): ?array {
 
 /** Teksten paa kortet. Samme regel som i admin. */
 $tittel = static fn(array $g): string => match ($g['type']) {
-    'timer'    => ((int) $g['timer']) . ' ekstra timer',
+    // Én time er ikke «1 ekstra timer». Samme regel i admin, se
+    // gave_tittel() i api/admin/gaver.php.
+    'timer'    => ((int) $g['timer']) . ' ekstra time' . (((int) $g['timer']) === 1 ? '' : 'r'),
     'gavekort' => 'Gavekort på ' . Booking::kroner((int) $g['belop_ore']),
     default    => 'Ta med en venn',
 };
@@ -111,6 +113,14 @@ try {
 
 revider('gave_brukt', 'medlemsgave', (int) $g['id']);
 
-Svar::ok(['beskjed' => $g['type'] === 'venn'
-    ? 'Invitasjonen er sendt til verkstedet. Vi tar kontakt for å avtale dato.'
-    : 'Verkstedet har fått beskjed. Ta gaven med neste gang du er innom.']);
+// ── Hva som faktisk skjedde ──────────────────────────────────────────
+//
+// «Ta gaven med neste gang du er innom» sto paa alle tre. Eieren, 8.
+// september 2026: «de faar jo ikke noe fysisk» — en timegave er timer paa
+// medlemskapet, og de ligger der i det man trykker. Se
+// Medlemskap::gavetimer(), som medlemslista og Min side begge leser.
+Svar::ok(['beskjed' => match ((string) $g['type']) {
+    'venn'  => 'Invitasjonen er sendt til verkstedet. Vi tar kontakt for å avtale dato.',
+    'timer' => 'Timene er lagt til. Du ser dem på Min side nå.',
+    default => 'Verkstedet har fått beskjed. Ta gaven med neste gang du er innom.',
+}]);

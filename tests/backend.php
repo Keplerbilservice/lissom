@@ -3874,7 +3874,14 @@ sjekk('… og pillen staar under logoen, paa alle adminsidene',
     str_contains($sida2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),")
     && str_contains($sida2, '{{ admFerieNavn }}')
     && substr_count($sida2, '{{ admFerieNavn }}')
-       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til oversikten"'));
+       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til kalenderen"'));
+// Logoen gikk til Oversikt. Eieren, 8. september 2026: «når jeg trykker på
+// lissom logoen vil jeg at vi skal gå tilbake til kalender». Da maatte
+// teksten paa knappen foelge med — ellers sto det «Til oversikten» paa noe
+// som gikk et annet sted.
+sjekk('logoen gaar til kalenderen',
+    str_contains($sida2, "adminHjem: () => this.gaaAdmin('adminkalender', {}),")
+    && !str_contains($sida2, 'title="Til oversikten"'));
 // Eieren, 30. august: «stemple inn og ferie maa flyttes til oversikt».
 sjekk('… og de staar ikke lenger i menyen',
     str_contains($sida2, 'const stempling = [];'));
@@ -5972,14 +5979,23 @@ sjekk('… og datofeltet har sin egen, lavere stil',
 // evnt kan du teste med en bredde men lavere hoyde paa pillene. I allefall
 // paa mobil maa det vaere slik». Spurt om pc-en ogsaa skulle ha den: «bare
 // mobil». Saa pc beholder to i bredden, mobilen faar én lav pille.
-sjekk('sidemenyen har to i bredden paa pc og én paa mobil',
-    str_contains($sida, "klSideRutenett: this.erSmal()")
-    && str_contains($sida, "? { display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }")
-    && str_contains($sida, ": { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' },"));
-sjekk('… og kurspilla er én linje paa mobilen',
-    str_contains($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }")
-    && str_contains($sida, ": { padding: '6px 8px' }),")
-    && str_contains($sida, "this.erSmal() ? { marginLeft: 'auto', flex: '0 0 auto' } : {}),"));
+// Fra 8. september staar de én i bredden overalt. Eieren: «det er veldig
+// bredt og tar unødvendig plass ... beholde som nå, men gjøre de mindre og
+// penere». Spalta gikk fra 476 px i Dag og 272 px i de andre til 250 px i
+// alle tre — maalt i nettleseren. Med 250 px ble navnene kuttet paa midten
+// naar de laa to i bredden.
+sjekk('sidemenyen har én i bredden, i alle visninger',
+    str_contains($sida, "klSideRutenett: { display: 'grid', gridTemplateColumns: '1fr', gap: '3px' },")
+    && !str_contains($sida, "gridTemplateColumns: '1fr 1fr', gap: '6px'"));
+sjekk('… og spalta er 250 px, ikke 476',
+    str_contains($sida, "gridTemplateColumns: '250px minmax(0, 1fr)'")
+    && !str_contains($sida, "(visning === 'dag' ? '476px' : '272px')"));
+// Kortet sto med navnet paa én linje og typen under paa PC, og som én linje
+// paa mobil. Naa er det den samme lave pilla begge steder — 27 px mot 46.
+sjekk('… og kurspilla er én linje ogsaa paa pc',
+    str_contains($sida, "display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }),")
+    && !str_contains($sida, ": { padding: '6px 8px' }),")
+    && str_contains($sida, "marginLeft: 'auto', flex: '0 0 auto' },"));
 // ── Ventelistepilla er like stor som kurspilla ────────────────────────
 //
 // Ventelistekortet sto med 16 px display-skrift og 12/14 px luft, mens
@@ -5995,13 +6011,14 @@ sjekk('… og kurspilla er én linje paa mobilen',
 // blekt), ventelistepilla har ikke det. Alt foran er likt, og det er formen.
 $kurspille = "borderRadius: 'var(--radius-sm)', cursor: 'grab', userSelect: 'none', minWidth: 0";
 // Tre fra 6. september: «Bytt dato» la en pille til i den samme spalta.
+// Fra 8. september er alle tre den samme lave pilla, ogsaa paa pc — den
+// delen som sa «paa mobil slik, paa pc slik» er borte.
 sjekk('… og ventelistepilla er like stor som kurspilla',
     substr_count($sida, $kurspille) === 3
-    && substr_count($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }") === 3
-    && substr_count($sida, ": { padding: '6px 8px' }),") === 3);
+    && substr_count($sida, "display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }),") === 3);
 sjekk('… med den samme skrifta i navnet og i det under',
-    substr_count($sida, "navnStil: Object.assign({ fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },") === 3
-    && substr_count($sida, "fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap' },") === 3);
+    substr_count($sida, "navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },") === 3
+    && substr_count($sida, "fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },") === 3);
 // Bare venstrekanten skiller dem, saa man ser hvilken liste man er i.
 sjekk('… men ventelista beholder den terrakotta venstrekanten',
     str_contains($sida, "borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)'"));
@@ -7345,11 +7362,12 @@ sjekk('… og har luft ned til kortene',
 // mye mindre, og det kan ligge to piller i bredden, slik at de som kommer paa
 // venteliste bli synlig». Seksten kort á nitti piksler er fjorten hundre
 // piksler dra-liste for aa naa ventelista under.
-sjekk('dra-kortene ligger to i bredden',
-    str_contains($sida, ": { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' },"));
+// Fra 8. september staar de under hverandre i den smalere spalta.
+sjekk('dra-kortene ligger under hverandre',
+    str_contains($sida, "klSideRutenett: { display: 'grid', gridTemplateColumns: '1fr', gap: '3px' },"));
 sjekk('… og er mye mindre',
     str_contains($sida, "borderRadius: 'var(--radius-sm)', cursor: 'grab'")
-    && str_contains($sida, ": { padding: '6px 8px' }),"));
+    && str_contains($sida, "gap: '8px', padding: '4px 8px' }),"));
 // Prisen hoerer til kurset og staar i kursoppsettet ett klikk unna. Her skal
 // man finne kurset og dra det.
 sjekk('… uten prisen paa kortet',
@@ -10091,7 +10109,7 @@ echo "\n== Bunnmeny på telefon, seks valg ==\n";
 $sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Menyen staar i hver adminskjerm, som logoen og stemplingspillene.
-$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til oversikten"');
+$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til kalenderen"');
 sjekk('bunnmenyen staar i alle adminskjermene',
     substr_count($sidaB, 'class="lx-bunnmeny"') === $logoerB, $logoerB . ' skjermer');
 sjekk('… med seks valg i hver',
@@ -10413,7 +10431,7 @@ $sidaP2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // Sidemenyen staar i hver eneste adminskjerm. Tallet er ikke poenget —
 // poenget er at pillene staar like mange steder som logoen gjor, saa ingen
 // skjerm er glemt.
-$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til oversikten"');
+$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til kalenderen"');
 $stempler = substr_count($sidaP2, '{{ admStemplingStil }}');
 sjekk('pillene staar like mange steder som logoen',
     $logoer > 20 && $stempler === $logoer, $logoer . ' logoer, ' . $stempler . ' pillepar');
@@ -10434,7 +10452,7 @@ sjekk('… og Ferie aapner den eksisterende ferieskjermen',
 // og en verdi som mangler ett sted tegner hele skjermen som «{{ }}».
 $foerAdminHjem = substr($sidaP2, 0, (int) strpos($sidaP2, 'admStemplingStil:'));
 sjekk('verdiene staar paa toppnivaa, ikke bak en side-sjekk',
-    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminoversikt', {}),"));
+    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminkalender', {}),"));
 
 // Stripa paa Oversikt er borte — bade markupen og verdiene den brukte.
 sjekk('stripa paa Oversikt er borte',

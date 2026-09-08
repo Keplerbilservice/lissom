@@ -2743,15 +2743,25 @@ sjekk('programlista er ute av Oversikt', !str_contains($sida, '{{ ovProgramValg 
 // fjernet fra Oversikt, men ikke borte.
 sjekk('kortet «Programmet paa telefonen» er ute av Oversikt',
     !str_contains($sida, 'Programmet på telefonen'));
-// Fra 7. september staar det ett sted paa Kalender, ikke to. Eieren: «her har
-// du fortsatt linken legg programmet i telefonens kalender, og synk med
-// mobilen, dette har jeg bedt om fikset for», og han valgte «Behold kortet
-// Synk med mobilen». Lenka oeverst er borte; snarveiskortet staar.
-sjekk('… og kalenderabonnementet staar paa Kalender i stedet',
-    str_contains($sida, '<span style="{{ klSnarveiNavnStil }}">Synk med mobilen</span>')
-    && str_contains($sida, 'klIcsApne: () => this.setState({ klIcsVis: true }),')
+// Fra 7. september sto det ett sted paa Kalender, som et snarveiskort. Fra 8.
+// september staar det i sidemenyen i stedet — eieren: «pillen synk med
+// mobilen kan fjernes, legg heller til en link i sidemenyen under meld inn
+// feil». Det er en adresse man setter opp én gang, ikke noe man trykker paa
+// hver dag.
+sjekk('… og kalenderabonnementet staar i sidemenyen',
+    str_contains($sida, "navn: '⌸  Synk med mobilen',")
+    && !str_contains($sida, '<span style="{{ klSnarveiNavnStil }}">Synk med mobilen</span>')
     && !str_contains($sida, 'kalKnapp')
     && !str_contains($sida, 'Legg programmet i telefonens kalender'));
+// Raden staar rett under «Meld inn feil», slik eieren ba om.
+sjekk('… rett under «Meld inn feil»',
+    strpos($sida, "navn: '⚑  Meld inn feil',") < strpos($sida, "navn: '⌸  Synk med mobilen',")
+    && strpos($sida, "navn: '⌸  Synk med mobilen',") < strpos($sida, 'navn: Component.ADMIN_LOGG_UT,'));
+// Ruta tegnes bare paa kalendersiden. Sto det bare «klIcsVis: true» i valget,
+// gjorde det ingenting fra Oversikt — maalt i nettleseren 8. september.
+sjekk('… og valget tar deg til kalenderen, saa ruta finnes',
+    str_contains($sida, "velg: () => this.gaaAdmin('adminkalender', { klIcsVis: true }),"),
+    'ellers gjor valget ingenting utenfor Kalender');
 // Kortet skal staa der ogsaa naar ingen skylder — et kort som bare finnes
 // noen dager er ikke et kort man ser etter.
 sjekk('«Ikke betalt» staar alltid, med en tom tilstand',
@@ -13474,8 +13484,12 @@ sjekk('… og et nytt medlemskap starter uten avtaletrekk',
 // Fra 7. september er de aatte. Beskjeder, Notater og Paaminnelser sto som
 // tre bokser med innhold i, over de fem. Eieren: «Jeg vil at alle boksene
 // skal vaere like, ikke de fem under eller noe saant, men alle som i alle».
-sjekk('alle aatte snarveiene staar som kort',
-    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 8);
+//
+// Fra 8. september er de sju: «Synk med mobilen» flyttet til sidemenyen —
+// eieren: «pillen synk med mobilen kan fjernes, legg heller til en link i
+// sidemenyen under meld inn feil».
+sjekk('alle sju snarveiene staar som kort',
+    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 7);
 // Boksene er borte, og med dem stilene deres. Staar én av dem igjen, staar
 // det en boks blant kortene.
 sjekk('… og de tre boksene er borte',
@@ -13511,8 +13525,11 @@ sjekk('… men de gjoer det samme som for',
     str_contains($byttSida, 'onClick="{{ klRapApne }}" style="{{ klSnarveiStil }}"')
     && str_contains($byttSida, 'onClick="{{ klKasse }}" style="{{ klSnarveiStil }}"')
     && str_contains($byttSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
-    && str_contains($byttSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"')
-    && str_contains($byttSida, 'onClick="{{ klIcsApne }}" style="{{ klSnarveiStil }}"'));
+    && str_contains($byttSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"'));
+// «Synk med mobilen» er ikke lenger et kort. Den staar i sidemenyen, og maa
+// ikke ligge igjen begge steder.
+sjekk('… og «Synk med mobilen» er ute av kortraden',
+    !str_contains($byttSida, 'onClick="{{ klIcsApne }}" style="{{ klSnarveiStil }}"'));
 
 // ── Én lenke inn til avtalen, ikke to ────────────────────────────────
 //

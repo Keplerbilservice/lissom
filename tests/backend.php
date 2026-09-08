@@ -11099,16 +11099,44 @@ sjekk('… og det samme gjor «Registrer betaling» og «Send Vipps-avtale»',
     // Fire kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
     // medlemskap» og «Send Vipps-avtale». × kaller den ogsaa, men uten
     // semikolon — se «lukkPerson:» over.
-    // Seks kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
-    // medlemskap», «Send Vipps-avtale», «Nullstill medlemmet» og «Stopp
-    // avtalen naa». × kaller den ogsaa, men uten semikolon — se
-    // «lukkPerson:» over.
-    && substr_count($sidaB, 'this.lukkPersonruta();') === 6);
+    // Sju kall: «Lagre» i «Om personen», «Registrer betaling», «Bytt
+    // medlemskap», «Send Vipps-avtale», «Nullstill medlemmet», «Stopp
+    // avtalen naa» og «Avslutt medlemskapet». × kaller den ogsaa, men uten
+    // semikolon — se «lukkPerson:» over.
+    && substr_count($sidaB, 'this.lukkPersonruta();') === 7);
 // «Nullstill medlemmet» sto igjen en runde. Eieren, 7. september 2026, spurt
 // om den skulle staa naar de fire andre gaar tilbake til lista: nei. Lista
 // viser nettopp det nullstillingen endrer — status, plan og betalingspille.
 sjekk('… og «Nullstill» gaar samme vei ut',
     !str_contains($sidaB, "this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);\n              });\n          },"));
+// ── Avslutt medlemskapet, der medlemskapet staar ─────────────────────
+//
+// Eieren, 8. september 2026: «hvordan kan jeg deaktivere et medlem, jeg vil
+// ha det inne paa samme sted som de andre statusene». Veien fantes bare paa
+// raden nede i lista, ved siden av «Slett».
+//
+// Samme kall som raden, og den staar i BEGGE personrutene — medlemsruta og
+// personruta viser det samme medlemskapet.
+// «hen», ikke «hun». Eieren, 8. september 2026: «hun er kvinne, joakim er
+// mann, du må omtale som hen der du ikke vet». Denne sto igjen i hjelpelinja
+// under medlemskapspillene — den eneste som var igjen i noe man kan lese paa
+// skjermen.
+sjekk('hjelpelinja under medlemskapet sier «hen»',
+    str_contains($sidaB, '— og har hen godkjent fast trekk, trekker Vipps fortsatt det gamle ')
+    && !str_contains($sidaB, 'har hun godkjent fast trekk'));
+sjekk('«Avslutt medlemskapet» staar i personruta',
+    substr_count($sidaB, '>Avslutt medlemskapet</x-import>') === 2
+    && substr_count($sidaB, '<sc-if value="{{ personKanAvslutte }}"') === 2);
+sjekk('… og kaller «avslutt», samme vei som knappen paa raden',
+    str_contains($sidaB, "this.medlemKall({ handling: 'avslutt', medlemId: p.id }, true)"));
+// Bare paa en som faktisk ER medlem, og bare naar det ikke alt er sagt opp.
+sjekk('… og staar bare paa et loepende medlemskap',
+    str_contains($sidaB, "&& ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1")
+    && str_contains($sidaB, '&& !p.sluttDato,'));
+// Samme ordlyd som knappen paa raden. Ett spraak for det samme valget.
+sjekk('… og spor med de samme ordene som raden',
+    substr_count($sidaB, "'Historikken og kursbevisene blir stående. Personen flyttes til «Sluttet».'") === 2);
+
 // Overstyringa maa nullstilles naar en annen person aapnes. Ellers staar
 // forrige valg igjen paa neste medlem.
 sjekk('… og valget nullstilles naar en annen person aapnes',

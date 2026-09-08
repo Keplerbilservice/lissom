@@ -4186,9 +4186,25 @@ sjekk('… og de tre arrangementene havner under Events',
 sjekk('… og workshop og plateteknikk under Haandbygging',
     str_contains($sida2, "'Workshop': 'Håndbygging', 'Plateteknikk': 'Håndbygging',"));
 // Kategorien maa kunne velges der kurs faktisk legges ut — hurtigskjemaet.
+// Fra 8. september staar «Kun medlemmer» der ogsaa. Eieren: «i knappen på
+// kalender over internt kurs, burde jeg ikke kunne velge internt kurs her?»
 sjekk('Haandbygging kan velges naar et kurs legges ut',
-    str_contains($sida2, "nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay']")
+    str_contains($sida2, "nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay', 'Kun medlemmer']")
     && str_contains($sida2, "'Håndbygging':   { type: 'Kurs',          tema: 'Håndbygging' , plasser: 12 },"));
+// Uten kategorien utledes temaet av typen, og «Kun medlemmer» finnes ikke
+// der — kurset ville havnet under «Kurs» og blitt liggende ute.
+sjekk('… og et internt kurs lagres med temaet sitt',
+    str_contains($sida2, "kategori: s.nkType === 'Kun medlemmer' ? 'Kun medlemmer' : '',")
+    && str_contains($sida2, "'Kun medlemmer': { type: 'Kun medlemmer', tema: 'Kun for medlemmer' , plasser: 12 },"));
+// Joakim sto skrevet inn i valget av kursholder. Eieren, 8. september 2026:
+// «joakim står som alternativ kursholder, fjern det fra hele systemet».
+// Migrasjon 093 satte ham til «Sluttet» i registeret alt — det var bare denne
+// lista som ikke leste registeret.
+sjekk('kursholderne i hurtigskjemaet kommer fra registeret',
+    str_contains($sida2, 'nkHolderValg: (this.klHoldere().length ? this.klHoldere() : [this.klStandardHolder()])')
+    && !str_contains($sida2, "['Monica', 'Joakim']"));
+sjekk('… og navnet staar ikke igjen i fargekartet heller',
+    !str_contains($sida2, "Joakim: { bg:"));
 sjekk('… og lagres som tema «Håndbygging»',
     str_contains($sida2, "'Håndbygging': 'Håndbygging', 'Workshop': 'Håndbygging',"));
 // Gamle rader skal foelge med, ellers faller et kurs ut av sin egen kategori.

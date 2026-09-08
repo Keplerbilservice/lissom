@@ -34028,7 +34028,9 @@ class Component extends DCLogic {
   klHolderInfo() {
     return {
       Monica: { bg: 'var(--lissom-yellow)', fg: 'var(--lissom-brown)' },
-      Joakim: { bg: 'var(--terracotta-500)', fg: 'var(--clay-50)' },
+      // «Joakim» sto her. Eieren, 8. september 2026: «fjern det fra hele
+      // systemet». Et navn som ikke staar her faar verkstedsfargen — se
+      // «hInfo[e.holder] || info.verksted» under.
       Ekstern: { bg: 'var(--sage-500)', fg: 'var(--clay-50)' },
     };
   }
@@ -46016,7 +46018,14 @@ class Component extends DCLogic {
         },
         stil: { appearance: 'none', cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left', border: 'none', borderTop: '1px solid var(--border-subtle)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', background: n === (this.state.nkMal || 'Nytt fra bunnen') ? 'var(--clay-100)' : 'var(--surface-card)' },
       })),
-      nkHolderValg: ['Monica', 'Joakim'].map(t => ({
+      // Sto som to navn skrevet inn her. Eieren, 8. september
+      // 2026: «joakim står som alternativ kursholder, fjern det fra hele
+      // systemet». Migrasjon 093 satte ham til «Sluttet» i registeret alt —
+      // det var bare denne lista som ikke leste registeret. Naa gjor den det,
+      // saa den foelger med av seg selv naar noen slutter eller begynner.
+      // Er registeret ikke hentet enda, staar standard kursholder alene.
+      nkHolderValg: (this.klHoldere().length ? this.klHoldere() : [this.klStandardHolder()])
+        .filter(Boolean).map(t => ({
         navn: t,
         velg: () => this.setState({ nkHolder: t }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkHolder || 'Monica') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkHolder || 'Monica') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkHolder || 'Monica') ? 'var(--clay-50)' : 'var(--text-heading)' },
@@ -46024,7 +46033,12 @@ class Component extends DCLogic {
       // «Workshop» heter «Haandbygging» naa, som pilla ute. Eieren, 30.
       // august: «jeg vil ha mulighet aa velge haandbygging naar jeg legger ut
       // nye kurs» — og det er dette skjemaet han legger dem ut fra.
-      nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay'].map(t => ({
+      // «Kun medlemmer» manglet. Eieren, 8. september 2026: «i knappen på
+      // kalender over internt kurs, burde jeg ikke kunne velge internt kurs
+      // her?» Kategorien finnes i KATEGORI_BETYR fra for og styrer bade
+      // temaet og at kurset ikke legges ut offentlig — den var bare ikke
+      // koblet inn i hurtigskjemaet.
+      nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay', 'Kun medlemmer'].map(t => ({
         navn: t,
         velg: () => this.setState({ nkType: t }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkType || 'Kurs') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkType || 'Kurs') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkType || 'Kurs') ? 'var(--clay-50)' : 'var(--text-heading)' },
@@ -46043,6 +46057,10 @@ class Component extends DCLogic {
         if (!s.nkNavn || !s.nkPris) return;
         const rad = {
           navn: s.nkNavn, type: s.nkType || 'Kurs',
+          // Bare for «Kun medlemmer»: da slaar KATEGORI_BETYR inn i
+          // lagreKurs() og setter temaet «Kun for medlemmer». De fire andre
+          // utledes av typen som for — de roeres ikke.
+          kategori: s.nkType === 'Kun medlemmer' ? 'Kun medlemmer' : '',
           pris: 'kr.' + ' ' + s.nkPris.replace(/[^\d ]/g, '').trim() + ',-',
           gjentas: 'Engangs', pameldte: '0 / ' + (s.nkPlasser || '8'), andel: 0,
           neste: 'Ikke satt', beskrivelse: s.nkBeskrivelse || '',

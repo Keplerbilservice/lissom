@@ -2108,7 +2108,10 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'startDato'  => $m['start_dato'],
     // Planen bestemmer timetallet, medlemsraden overstyrer. «timer_per_mnd»
     // alene sto tom for alle — se Medlemskap::timerFor().
-    'timer'      => Medlemskap::timerFor($m),
+    //
+    // Innloeste gavetimer legges til: en time gitt bort er en time medlemmet
+    // har, og lista skal si det samme som Min side.
+    'timer'      => Medlemskap::timerMedGaver($m),
     'bruktTimer' => Stempling::timer($brukt[(int) $m['id']] ?? 0),
     'bruktMin'   => $brukt[(int) $m['id']] ?? 0,
     'erInne'     => isset($inne[(int) $m['id']]),
@@ -2116,7 +2119,7 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     // Timer igjen, ikke bare brukt. «22 av 30» er det man vil vite naar noen
     // ringer og spor om hen har tid igjen denne maaneden.
     'timerIgjen' => (static function () use ($m, $brukt): ?string {
-        $tak = Medlemskap::timerFor($m);
+        $tak = Medlemskap::timerMedGaver($m);
         if ($tak === null) {
             return null;
         }

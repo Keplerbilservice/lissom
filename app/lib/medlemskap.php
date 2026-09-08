@@ -204,6 +204,60 @@ final class Medlemskap
     }
 
     /**
+     * Gavetimer medlemmet har loest inn, og som fortsatt gjelder.
+     *
+     * En timegave gjor ingenting av seg selv: den skriver en rad i
+     * «medlemsgave_bruk» og sender en beskjed til verkstedet. Eieren, 8.
+     * september 2026: «jeg trykte paa loes inn gaven, saa fikk jeg en pop upp,
+     * verkstedet har faatt beskjed, ta med gaven din neste gang. jeg vil jo at
+     * den skal legges paa antall timer de har igjen paa medlemskapet sitt» —
+     * og «de faar jo ikke noe fysisk».
+     *
+     * Bare gaver som fortsatt staar: en trukket gave gir ingen timer, og en
+     * utloept heller ikke. Gaven gjelder ut maaneden, saa timene gjor det
+     * ogsaa — som resten av timene.
+     *
+     * Datoen leses av gaven, ikke av innloesningen: «gyldig_til» settes av
+     * oss i norsk tid, mens «created_at» paa bruken er databasens egen klokke.
+     * En gave kan bare loeses inn mens den gjelder, saa de to sier det samme.
+     */
+    public static function gavetimer(int $medlemId): int
+    {
+        if (!DB::harTabell('medlemsgaver') || !DB::harTabell('medlemsgave_bruk')) {
+            return 0;
+        }
+        return (int) DB::verdi(
+            "SELECT COALESCE(SUM(g.timer), 0)
+               FROM medlemsgave_bruk b
+               JOIN medlemsgaver g ON g.id = b.gave_id
+              WHERE b.member_id = :m
+                AND g.type = 'timer'
+                AND g.status = 'aktiv'
+                AND g.gyldig_til >= :idag",
+            ['m' => $medlemId,
+             'idag' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d')]
+        );
+    }
+
+    /**
+     * Timetaket denne maaneden, med innloeste gavetimer lagt til.
+     *
+     * Ett sted, ikke to: Min side og medlemslista i admin leser den samme
+     * regelen, saa de aldri kan si hver sitt om den samme personen.
+     *
+     * Fri tilgang blir staaende fri: har planen ingen grense, er det
+     * ingenting aa legge timer til.
+     */
+    public static function timerMedGaver(array $medlem): ?int
+    {
+        $tak = self::timerFor($medlem);
+        if ($tak === null) {
+            return null;
+        }
+        return $tak + self::gavetimer((int) ($medlem['id'] ?? 0));
+    }
+
+    /**
      * Har medlemmet betalt for medlemskapet sitt?
      *
      * Skjermen viste «Fast trekk» eller «Gjor opp selv» — det er

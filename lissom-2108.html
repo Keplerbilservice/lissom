@@ -24822,7 +24822,15 @@ class Component extends DCLogic {
           kvittering: ok ? 'Verkstedet har fått beskjed' : 'Gikk ikke',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
         });
-        if (ok) { this._gaveHentes = false; this.hentGave(); }
+        // Timene med. En innloest timegave legger timer paa maaneden — se
+        // Medlemskap::gavetimer() — og teller ikke skjermen dem paa nytt,
+        // staar «av 30 timer» igjen mens kvitteringen sier at de er lagt til.
+        // Maalt i nettleseren for dette ble skrevet: kortet forsvant, men
+        // tallet sto stille til sida ble lastet paa nytt.
+        if (ok) {
+          this._gaveHentes = false; this.hentGave();
+          this._stemplingHentes = false; this.hentStempling();
+        }
       })
       .catch(() => {
         this._gaveBrukes = false;
@@ -47796,9 +47804,15 @@ class Component extends DCLogic {
             [
               { navn: 'Hilsen', verdi: (g && g.hilsen) || this.innh('Min side/0/Tekst') },
               { navn: 'Gyldig', verdi: gyldig },
+              // «Ta gaven med neste gang du er innom» sto paa alle tre.
+              // Eieren, 8. september 2026: «de faar jo ikke noe fysisk» — en
+              // timegave er timer paa medlemskapet, og de ligger der i det
+              // man trykker. Se Medlemskap::gavetimer().
               { navn: 'Slik løser du den inn', verdi: g && g.harSkjema
                   ? 'Trykk «Send invitasjon», så tar vi kontakt for å avtale dato for vennen din.'
-                  : 'Trykk under, så får verkstedet beskjed. Ta gaven med neste gang du er innom.' },
+                  : (g && g.type === 'timer'
+                      ? 'Trykk under, så legges timene til med det samme.'
+                      : 'Trykk under, så får verkstedet beskjed. Ta gaven med neste gang du er innom.') },
             ],
             (g && g.harSkjema) ? 'Send invitasjon' : 'Løs inn gaven',
             null, false,

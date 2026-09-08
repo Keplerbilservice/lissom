@@ -99,7 +99,9 @@ $medlem = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]) ?? $medlem
 $apen = Stempling::apenOkt($id);
 $siste = Stempling::sisteOkt($id);
 $brukt = Stempling::minutterDenneManeden($id);
-$perMnd = Medlemskap::timerFor($medlem);
+// Timetaket med innloeste gavetimer lagt til. Se Medlemskap::timerMedGaver()
+// — samme regel som medlemslista i admin, saa de to ikke kan sprike.
+$perMnd = Medlemskap::timerMedGaver($medlem);
 $inne = Stempling::inneNa();
 
 // Ressursene medlemmet kan velge mellom, og hva det valgte sist. Lista

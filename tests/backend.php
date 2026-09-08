@@ -2433,13 +2433,14 @@ sjekk('listene viser hele aaret framover, ikke bare to uker',
 // tomt ut, det ser oedelagt ut: eieren kunne ikke vite om ingen hadde skrevet,
 // eller om lista hadde sluttet aa laste. Sosterkortet «Paaminnelser» har hatt
 // den linja hele tida.
-// Boksen er borte fra 7. september — eieren: «Jeg vil at alle boksene skal
-// vaere like». Beskjeder er et kort som de andre naa, og tallet paa ubesvarte
-// staar som et merke i hjoernet i stedet for en liste under.
-sjekk('beskjedkortet viser tallet paa ubesvarte',
-    str_contains($sida, 'klBeskjederAntall: String((this.state.adminForesporsler || [])')
-    && str_contains($sida, 'klBeskjederHar: (this.state.adminForesporsler || [])')
-    && str_contains($sida, '<span style="{{ klSnarveiNavnStil }}">Beskjeder</span>'));
+// Boksen ble et kort 7. september. Fra 8. september staar Beskjeder ikke paa
+// kalenderen i det hele tatt — eieren: «jeg trenger ikke disse i kalender,
+// Beskjeder, notater og påminnelser», og de tre er byttet med Medlemmer,
+// Paameldte og Chat. Skjermen bak Beskjeder staar som for; det var bare
+// snarveien som gikk.
+sjekk('beskjedkortet staar ikke lenger paa kalenderen',
+    !str_contains($sida, '<span style="{{ klSnarveiNavnStil }}">Beskjeder</span>')
+    && !str_contains($sida, 'klBeskjederAntall:'));
 // «Aapne» gikk til Beskjeder — skjermen der man skriver ut til en gruppe.
 // Kortet viser henvendelser som venter paa svar, og det er dit man vil.
 sjekk('«Aapne» gaar til de ubesvarte naar det er noe ubesvart',
@@ -13497,17 +13498,29 @@ sjekk('… og de tre boksene er borte',
     && !str_contains($byttSida, 'klBoksNStil')
     && !str_contains($byttSida, 'klBoksHodeStil')
     && !str_contains($byttSida, 'klBoksEtikettStil'));
-// Skjemaet er ikke fjernet — det har flyttet inn i hver sin rute.
-sjekk('… og notatet og paaminnelsene aapnes i en rute',
-    str_contains($byttSida, 'klNotatApne: () => this.setState({ klNotatRute: true }),')
-    && str_contains($byttSida, 'klPaminApne: () => this.setState({ klPaminRute: true }),')
-    && str_contains($byttSida, '<sc-if value="{{ klNotatRuteVises }}"')
-    && str_contains($byttSida, '<sc-if value="{{ klPaminRuteVises }}"'));
-sjekk('… og skjemaene er de samme',
-    str_contains($byttSida, 'onChange="{{ settKlNotat }}"')
-    && str_contains($byttSida, 'onClick="{{ klNotatUt }}"')
-    && str_contains($byttSida, '<sc-for list="{{ klPaminListe }}" as="p"')
-    && str_contains($byttSida, 'onClick="{{ klPaminLeggTilKlikk }}"'));
+// Rutene sto her til 8. september. Eieren: «jeg trenger ikke disse i
+// kalender», og spurt om notatet og paaminnelsene skulle flyttes framfor aa
+// forsvinne: «Fjern dem helt». De fantes bare bak sine to kort, saa da gikk
+// hele skjemaet med — ogsaa koden bak, ellers ville det ligget dodt.
+sjekk('… og notatet og paaminnelsene er borte',
+    !str_contains($byttSida, 'klNotatRuteVises')
+    && !str_contains($byttSida, 'klPaminRuteVises')
+    && !str_contains($byttSida, 'settKlNotat')
+    && !str_contains($byttSida, 'klPaminListe'));
+// De tre nye. Medlemmer og Paameldte gaar til skjermer som alt finnes; Chat
+// er tom med vilje — eieren: «en tom pille som heter Chat som vi skal komme
+// til bakre til».
+sjekk('… og Medlemmer, Paameldte og Chat staar i stedet',
+    str_contains($byttSida, '<span style="{{ klSnarveiNavnStil }}">Medlemmer</span>')
+    && str_contains($byttSida, '<span style="{{ klSnarveiNavnStil }}">Påmeldte</span>')
+    && str_contains($byttSida, '<span style="{{ klSnarveiNavnStil }}">Chat</span>'));
+sjekk('… og de to foerste gaar til skjermene som finnes',
+    str_contains($byttSida, "klGaMedlemmer: () => this.gaaAdmin('adminmedlem',")
+    && str_contains($byttSida, "klGaPameldte: () => this.gaaAdmin('adminpameldte', {}),"));
+// En knapp som ikke gjor noe ser i stykker ut. Chat sier fra i klartekst.
+sjekk('… og Chat sier at den ikke er bygget',
+    str_contains($byttSida, "kvittering: 'Chat er ikke bygget ennå',"),
+    'ellers ser kortet ut som noe som er i stykker');
 sjekk('… i sin egen rad, over hele bredden',
     str_contains($byttSida, "klSnarveiRadStil: {")
     && str_contains($byttSida, "gridColumn: '1 / -1',")

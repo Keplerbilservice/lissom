@@ -36658,10 +36658,24 @@ class Component extends DCLogic {
       // ligge naar den kommer — eieren: «en tom pille som heter Chat som vi
       // skal komme til bakre til». Trykker man, sier den fra i klartekst i
       // stedet for aa gjore ingenting.
-      klChat: () => this.setState({
-        kvittering: 'Chat er ikke bygget ennå',
-        kvitteringDetalj: 'Kortet står her fordi det er her chatten skal ligge når den kommer.',
-      }),
+      // ── Chat-pilla gaar til medlemschatten ─────────────────────────
+      //
+      // Kortet sa «Chat er ikke bygget ennå». Det stemte ikke: chatten
+      // finnes — api/chat.php, egen tabell, alle med aktivt medlemskap
+      // leser det samme rommet. Den var bare ikke naadd herfra.
+      //
+      // Eieren, 8. september 2026, etter at vi hadde slaatt fast at
+      // gruppechatten paa Facebook ikke kan hentes inn: «Ok, koble den til
+      // pilla».
+      //
+      // Samme vei som nabopillene: «Medlemmer» og «Påmeldte» gaar ogsaa til
+      // skjermen sin. Ingen ny chat bygges ved siden av den som finnes.
+      // Henting og oppfrisking starter av seg selv naar Min side staar
+      // aapen — se startChat() og componentDidUpdate.
+      klChat: () => {
+        this.setState({ side: 'minside', msFane: 'chat', fhRolle: '', fhFra: '' });
+        window.scrollTo(0, 0);
+      },
       // Statusen sto i en egen «klInne» som ingenting satte: knappen viste
       // «Stemple inn» ogsaa naar man var innstemplet. Naa er det den samme
       // kilden som knappen i sidemenyen og paa Min side.

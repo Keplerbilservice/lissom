@@ -47401,7 +47401,25 @@ class Component extends DCLogic {
           msVerkstedApen: !!this.state.msVerksted,
           msPlVerksted: (() => {
             const aapen = !!this.state.msVerksted;
-            const antall = this.state.inne ? this.state.inne.length : 0;
+            // ── Tallet i pilla ─────────────────────────────────────
+            //
+            // Sto «this.state.inne». Det finnes ingen slik state — lista
+            // over hvem som er inne er en renderVal som bygges av
+            // «state.stempling» (se «inne:» lenger nede). Uttrykket var
+            // derfor alltid undefined, og pilla sa «0 inne» uansett hvor
+            // mange som sto i verkstedet.
+            //
+            // Eieren, 8. september 2026, med Lene innstemplet ved siden av
+            // seg: «Står 0 inne... på min side vi er to. Det vises riktig på
+            // admin, men ikke min side». Maalt: api/stempling.php svarte
+            // «antall: 2» mens pilla sto paa null.
+            //
+            // «antall» og ikke lista: den som har slaatt av «Vis meg for
+            // andre medlemmer» staar fortsatt i verkstedet. Kortet under
+            // sier «x medlemmer er skjult» fra for, saa tallet forteller
+            // ikke noe nytt om hvem — bare hvor mange som er der.
+            const st = this.state.stempling;
+            const antall = st && st.inne ? (st.inne.antall || 0) : 0;
             return {
               navn: antall + ' inne',
               full: 'Hvem som er i verkstedet nå',

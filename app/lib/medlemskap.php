@@ -1621,6 +1621,47 @@ final class Medlemskap
     }
 
     /**
+     * Spor Vipps hvordan trekkene vi ba om gikk.
+     *
+     * Stod inne i trekkrunden, og gikk derfor bare én gang i dognet. Trekket
+     * Vipps tar naar kunden godkjenner avtalen fores hos oss med status
+     * «venter» — vi har ingen referanse paa det for vi sporr (se
+     * foerForsteTrekk). Linja i admin sto dermed som ubetalt i opptil et
+     * dogn etter at pengene faktisk var tatt.
+     *
+     * Eieren, 8. september 2026, med Lene paa traaden: «naa staar det i vipps
+     * appen hennes ogsaa, eneste som ikke er oppdatert er paa medlemsiden,
+     * staar fortsatt som ubetalt». Han valgte «hvert tiende minutt».
+     *
+     * Aa SPORRE er ikke aa TREKKE. Denne henter bare status, og radene faller
+     * ut av «trekkUtenSvar» i det Vipps svarer — saa lista er normalt tom.
+     * Selve trekkingen ligger fortsatt i runden, én gang i dognet.
+     *
+     * @return int hvor mange som fikk et endelig svar
+     */
+    public static function sjekkAlleTrekk(int $maks = 50, ?callable $skriv = null): int
+    {
+        $svart = 0;
+        foreach (self::trekkUtenSvar($maks) as $p) {
+            try {
+                $utfall = self::sjekkTrekk($p);
+                if ($skriv !== null) {
+                    $skriv('  trekk ' . $p['id'] . ' (' . ($p['navn'] ?? '') . '): ' . $utfall);
+                }
+                if ($utfall === 'betalt' || $utfall === 'failed' || $utfall === 'cancelled') {
+                    $svart++;
+                }
+            } catch (Throwable $e) {
+                logg_feil('Statusoppslag feilet for trekk ' . $p['id'], $e);
+            }
+            // Ett halvt sekund per oppslag, som resten av runden: Vipps skal
+            // ikke merke at vi sporr oftere.
+            usleep(300_000);
+        }
+        return $svart;
+    }
+
+    /**
      * Hele trekkrunden: godkjenninger, purringer, trekk, avslutninger, svar.
      *
      * Denne stod som en «case» i bin/cron.php, og bin/cron.php var det eneste
@@ -1715,19 +1756,7 @@ final class Medlemskap
         // dette ble hver eneste rad staaende paa «venter» for alltid — og de
         // to malene «Medlemskapet ditt er fornyet» og «Vi fikk ikke trukket
         // betalingen» ble aldri sendt til noen.
-        $svart = 0;
-        foreach (self::trekkUtenSvar() as $p) {
-            try {
-                $utfall = self::sjekkTrekk($p);
-                $skriv('  trekk ' . $p['id'] . ' (' . ($p['navn'] ?? '') . '): ' . $utfall);
-                if ($utfall === 'betalt' || $utfall === 'failed' || $utfall === 'cancelled') {
-                    $svart++;
-                }
-            } catch (Throwable $e) {
-                logg_feil('Statusoppslag feilet for trekk ' . $p['id'], $e);
-            }
-            usleep(300_000);
-        }
+        $svart = self::sjekkAlleTrekk(50, $skriv);
 
         if ($gjort > 0 || $feilet > 0 || $avsluttet > 0 || $svart > 0) {
             logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet,

@@ -274,7 +274,22 @@ if ($hengende > 0) {
           . ' — og ' . ($hengende - 1) . ' til';
 }
 
-$venteliste = (int) DB::verdi("SELECT COUNT(*) FROM waitlist WHERE status = 'venter'");
+// ── Hvor mange som venter ──────────────────────────────────────────────
+//
+// «venter» OG «varslet». Her sto bare «venter», og da var dette det eneste
+// stedet i systemet som talte annerledes: kalenderen, Venteliste-skjermen,
+// Min side og medlemsruta bruker alle IN ('venter','varslet'). Hadde du
+// varslet noen om en ledig plass, sto hun i kalenderen, men var ute av
+// tallet her.
+//
+// Eieren, 9. september 2026, da det ble meldt: «fiks det».
+//
+// «varslet» betyr at beskjeden er sendt og plassen holdes til fristen —
+// personen staar fortsatt i koen og har ikke faatt plassen. Hun venter, og
+// skal telles.
+$venteliste = (int) DB::verdi(
+    "SELECT COUNT(*) FROM waitlist WHERE status IN ('venter', 'varslet')"
+);
 
 // --- Siste paameldinger ---------------------------------------------------
 $nyeste = DB::alle(
@@ -620,9 +635,30 @@ Svar::json([
     // faatt plassen, men pengene er ikke kommet. Eieren, 29. august: han vil
     // ha et kort som varsler om dem, saa han kan kreve dem inn derfra.
     //
-    // Bare det som er lagt inn for haand. En nettbestilling som staar som
-    // reservert venter paa Vipps og ordner seg selv — eller faller bort naar
-    // reservasjonen gaar ut.
+    // Lagt inn for haand, eller en nettbestilling der fristen er ute.
+    //
+    // Her sto det bare «lagt inn for haand», med den begrunnelsen at en
+    // nettbestilling «venter paa Vipps og ordner seg selv — eller faller bort
+    // naar reservasjonen gaar ut». Den siste halvdelen stemte ikke: raden
+    // faller ikke bort. Den beholder status «reservert» for alltid, og
+    // Paameldte lister den — den skjermen spor ikke etter «reservert_til» —
+    // mens dette kortet med vilje saa bort fra den.
+    //
+    // Eieren, 9. september 2026: «gina boerjsenson ligger under paamelte, her
+    // staar hun som ubetalt ... hun dukker ikke opp i kassen som ubetalt,
+    // hvorfor?» Han valgte «Vis dem i Kassa naar reservasjonen er utloept».
+    //
+    // De ferske staar fortsatt utenfor: en bestilling som ble lagt inn for
+    // fem minutter siden venter faktisk paa Vipps, og skal ikke kreves inn.
+    //
+    // En nettbestilling UTEN frist er med paa samme vilkaar. Den var det
+    // verste tilfellet: den holder plassen sin for alltid — se
+    // Booking::ledigeRegnet(), der «reservert_til IS NULL» teller som en
+    // levende reservasjon — og den ville aldri gaa ut paa tid heller. Uten
+    // dette var den usynlig i det ene kortet som skulle fange den opp.
+    //
+    // Eieren, 9. september 2026, spurt om nettopp den: «Ta dem med i "Ikke
+    // betalt"».
     //
     // Medlemskapene staar her ogsaa. Eieren spurte om dem to ganger — forst
     // «dverken hun eller eiriin kommer opp i kortet ikke betalt paa
@@ -658,10 +694,28 @@ Svar::json([
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
       LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+      LEFT JOIN payments p2 ON p2.id = b.payment_id
           WHERE b.status = 'reservert'
-            AND b.payment_id IS NULL
-            AND b.lagt_inn_av IS NOT NULL
+            -- Ikke «har ingen betalingsrad», men «har ingen betaling».
+            --
+            -- Her sto «b.payment_id IS NULL». En kursbooking fra nettsiden
+            -- faar ALLTID en betalingsrad naar kunden sendes til Vipps — se
+            -- Booking, der raden lages med status «opprettet» for bookingen
+            -- settes inn. Raden blir liggende ogsaa naar kunden avbroet
+            -- eller aldri kom tilbake. Med den gamle betingelsen kom derfor
+            -- ingen vanlig nettpaamelding med, uansett hvor lenge den hadde
+            -- staatt ubetalt.
+            --
+            -- De tre som betyr at pengene er i orden er de samme som
+            -- api/admin/pamelding.php bruker naar den nekter aa sette en
+            -- betalt paamelding paa venteliste. Staar de to ulikt, sier
+            -- systemet to ting om den samme betalingen.
+            AND (b.payment_id IS NULL
+                 OR p2.status NOT IN ('autorisert', 'betalt', 'delvis_refundert'))
             AND b.belop_ore > 0
+            AND (b.lagt_inn_av IS NOT NULL
+                 OR b.reservert_til IS NULL
+                 OR b.reservert_til <= UTC_TIMESTAMP())
        ORDER BY b.created_at"
     )), array_map(static function (array $m): array {
         return [

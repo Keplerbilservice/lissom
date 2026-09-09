@@ -3220,10 +3220,14 @@ sjekk('Oversikt vet om de ubetalte',
     // Kursplassene som for, men slaatt sammen med medlemskapene: kortet
     // holder begge slag siden eieren spurte om dem 2. september.
     str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
-// En nettbestilling som staar som reservert venter paa Vipps og ordner seg
-// selv. Bare det som er lagt inn for haand skal staa paa kortet.
-sjekk('… og bare de som er lagt inn for haand',
-    str_contains($ovFil, 'AND b.lagt_inn_av IS NOT NULL'));
+// En FERSK nettbestilling som staar som reservert venter paa Vipps og skal
+// ikke kreves inn. Regelen sto som «bare det som er lagt inn for haand», med
+// den begrunnelsen at nettbestillingen «faller bort naar reservasjonen gaar
+// ut» — og det gjor den ikke. Eieren, 9. september 2026, valgte «Vis dem i
+// Kassa naar reservasjonen er utloept». Vakta foelger den nye regelen; det
+// er de ferske som fortsatt skal holdes utenfor.
+sjekk('… og de som er lagt inn for haand, eller gikk ut paa tid',
+    str_contains($ovFil, 'AND (b.lagt_inn_av IS NOT NULL'));
 sjekk('kortet staar paa Oversikt', str_contains($sida2, '{{ ovSkylderSum }}')
     && str_contains($sida2, '<sc-for list="{{ ovSkylder }}" as="u"'));
 // «ovUbetalte» var et tall fra for. renderVals gir ett flatt objekt, saa det
@@ -5708,13 +5712,24 @@ sjekk('«Inne naa» staar i kalenderen',
 sjekk('… og tallet kommer fra den tellingen som alt finnes',
     str_contains($sida, "klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
         ? this.state.stempling.inne.antall : 0),"));
-// «i samme stoerrelse som» pilla «Dag»: 7px 20px, 17px. «lineHeight: normal»
-// er det som gjor en <span> like hoy som en <button> — maalt til 44 mot 36
-// uten den.
-sjekk('… i samme stoerrelse som visningspillene',
-    str_contains($sida, "borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }"));
-sjekk('… og stemple-pilla har de samme maalene',
-    str_contains($sida, "klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)'"));
+// Stoerrelsen. Eieren ba forst om «i samme stoerrelse som» pilla «Dag», og
+// de ble det — maalt til 36 px begge to. Samme dag, etter aa ha sett dem:
+// «pillene inne naa og stemple inn / ut maa gjoere mindre, samme som de andre
+// pillene». Spurt om hvilke, svarte han: «det er kun to piller som heter
+// dette paa kalender siden, det er de jeg mener».
+//
+// De staar derfor ett hakk under visningspillene naa: 14 px skrift mot 17.
+// Maalt til 29 px mot Dags 36.
+//
+// «lineHeight: normal» maa staa: en <span> arver linjehoyden fra sida, en
+// <button> faar «normal» av nettleseren. Uten den sto «Inne naa» hoyere enn
+// stemple-pilla ved siden av.
+sjekk('… mindre enn visningspillene',
+    str_contains($sida, "padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }"));
+// Og fortsatt like store som hverandre — det var hele poenget med aa sette
+// dem side om side.
+sjekk('… og de to er fortsatt like store som hverandre',
+    substr_count($sida, "borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }") === 2);
 // Prikken maa vaere hvit paa den groenne pilla. «sage» paa «sage» er ingen
 // prikk — den forsvant da pilla ble fylt.
 sjekk('… og prikken synes naar pilla er groenn',
@@ -5732,6 +5747,218 @@ sjekk('«Steng dagen» staar ikke lenger i kalenderen',
 // muligheten borte og ikke flyttet.
 sjekk('… men dager kan fortsatt stenges under Ferie',
     str_contains($sida, "this.ferieKall({ handling: stengt ? 'aapne' : 'steng', dato: nokkel });"));
+
+// ── Fargekartet i kalenderen ───────────────────────────────────────────
+//
+// Eieren, 9. september 2026, om kortet med Kurs, Event, Paint on Pots,
+// Brenning, Verksted, Vakt, Fullt og de to merkene: «ja, denne skal jeg ikke
+// ha, fjern den fra systemet».
+//
+// Bruksanvisningen sto i det samme kortet og gikk med. Han ble spurt, og
+// valgte «Fjern hele kortet».
+sjekk('fargekartet staar ikke lenger i kalenderen',
+    !str_contains($sida, '{{ klLegende }}') && !str_contains($sida, 'klLegende:'));
+sjekk('… og heller ikke de to merkene under det',
+    !str_contains($sida, 'Ingen påmeldte, under 3 dager til')
+    && !str_contains($sida, 'Nye påmeldinger siden sist'));
+sjekk('… og bruksanvisningen som sto i samme kort',
+    !str_contains($sida, 'Klikk åpner kurset · Høyreklikk for meny'));
+// Fargene paa selve kortene i kalenderen er urort. Det var forklaringen han
+// ville bort fra, ikke fargene.
+sjekk('men fargene paa kortene i kalenderen staar som for',
+    str_contains($sida, "klSlippRamme('dag', 'var(--terracotta-600)')"));
+// Og alt kortet fortalte om virker fortsatt.
+sjekk('… og hoyreklikkmenyen virker fortsatt',
+    str_contains($sida, 'onContextMenu="{{ h.meny }}"'));
+
+// ── Ubetalte nettbestillinger som gikk ut paa tid ──────────────────────
+//
+// Eieren, 9. september 2026: «gina boerjsenson ligger under paamelte, her
+// staar hun som ubetalt ... hun dukker ikke opp i kassen som ubetalt,
+// hvorfor?»
+//
+// Kortet tok bare med det som var lagt inn for haand, med den begrunnelsen at
+// en nettbestilling «faller bort naar reservasjonen gaar ut». Den gjor ikke
+// det: raden beholder status «reservert», og Paameldte lister den — den
+// skjermen spor ikke etter «reservert_til». De to skjermene svarte ulikt om
+// samme rad. Han valgte «Vis dem i Kassa naar reservasjonen er utloept».
+if (DB::harKolonne('bookings', 'reservert_til')) {
+    $ovKode2 = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+    sjekk('utloepte nettbestillinger kommer med i «Ikke betalt»',
+        str_contains($ovKode2, "AND (b.lagt_inn_av IS NOT NULL
+                 OR b.reservert_til IS NULL
+                 OR b.reservert_til <= UTC_TIMESTAMP())"));
+    // ── Betalingens status, ikke om raden finnes ───────────────────────
+    //
+    // Her sto «b.payment_id IS NULL». En kursbooking fra nettsiden faar
+    // ALLTID en betalingsrad naar kunden sendes til Vipps, og den blir
+    // liggende naar hun aldri kom tilbake. Med den gamle betingelsen kom
+    // ingen vanlig nettpaamelding med — uansett hvor lenge den sto ubetalt.
+    //
+    // Eieren, 9. september 2026: «Ja, rett den ogsaa».
+    sjekk('… og kortet ser paa betalingens status, ikke om raden finnes',
+        str_contains($ovKode2, "AND (b.payment_id IS NULL
+                 OR p2.status NOT IN ('autorisert', 'betalt', 'delvis_refundert'))"));
+    // De tre ordene maa vaere de samme som pamelding.php bruker naar den
+    // nekter aa sette en betalt paamelding paa venteliste. Staar de ulikt,
+    // sier systemet to ting om den samme betalingen.
+    sjekk('… med de samme tre ordene som resten av systemet bruker',
+        str_contains(file_get_contents(__DIR__ . '/../api/admin/pamelding.php'),
+                     "\$BETALT_VIPPS = ['autorisert', 'betalt', 'delvis_refundert'];"));
+
+    // Maalt, ikke bare lest: en fersk nettbestilling venter faktisk paa
+    // Vipps og skal IKKE kreves inn. En utloept skal.
+    $oktProeve = DB::en("SELECT id, course_id FROM course_sessions
+                          WHERE status = 'planlagt' AND start_tid > UTC_TIMESTAMP()
+                       ORDER BY start_tid LIMIT 1");
+    if ($oktProeve !== null) {
+        DB::kjor("DELETE FROM bookings WHERE gjest_navn LIKE 'Nettvakt%'");
+        $lag = static function (string $navn, string $frist) use ($oktProeve): int {
+            return DB::settInn('bookings', [
+                'course_id' => (int) $oktProeve['course_id'],
+                'course_session_id' => (int) $oktProeve['id'],
+                'gjest_navn' => $navn, 'gjest_epost' => 'nettvakt@lissom.test',
+                'antall' => 1, 'belop_ore' => 69000, 'status' => 'reservert',
+                'reservert_til' => $frist, 'lagt_inn_av' => null,
+            ]);
+        };
+        $fersk  = $lag('Nettvakt fersk',  gmdate('Y-m-d H:i:s', time() + 1200));
+        $utloept = $lag('Nettvakt utløpt', gmdate('Y-m-d H:i:s', time() - 259200));
+        // Verste tilfellet: ingen frist i det hele tatt. Den gaar aldri ut
+        // paa tid, og holder plassen sin for alltid.
+        DB::settInn('bookings', [
+            'course_id' => (int) $oktProeve['course_id'],
+            'course_session_id' => (int) $oktProeve['id'],
+            'gjest_navn' => 'Nettvakt uten frist', 'gjest_epost' => 'nettvakt@lissom.test',
+            'antall' => 1, 'belop_ore' => 69000, 'status' => 'reservert',
+            'reservert_til' => null, 'lagt_inn_av' => null,
+        ]);
+
+        $hvem = static function (): array {
+            return array_column(DB::alle(
+                "SELECT b.gjest_navn AS navn FROM bookings b
+                  WHERE b.status = 'reservert'
+                    AND b.belop_ore > 0
+                    AND (b.payment_id IS NULL
+                         OR (SELECT p3.status FROM payments p3 WHERE p3.id = b.payment_id)
+                            NOT IN ('autorisert','betalt','delvis_refundert'))
+                    AND (b.lagt_inn_av IS NOT NULL
+                         OR b.reservert_til IS NULL
+                         OR b.reservert_til <= UTC_TIMESTAMP())"
+            ), 'navn');
+        };
+        // En nettpaamelding der Vipps ble startet, men aldri fullfoert.
+        // Dette er tilfellet eieren meldte: raden finnes, pengene gjor ikke.
+        $betId = DB::settInn('payments', [
+            'vipps_reference' => 'NETTVAKT-' . bin2hex(random_bytes(3)),
+            'type' => 'epayment', 'formal' => 'booking', 'belop_ore' => 69000,
+            'status' => 'opprettet', 'idempotency_key' => Vipps::uuid(),
+        ]);
+        DB::settInn('bookings', [
+            'course_id' => (int) $oktProeve['course_id'],
+            'course_session_id' => (int) $oktProeve['id'],
+            'gjest_navn' => 'Nettvakt avbrutt Vipps', 'gjest_epost' => 'nettvakt@lissom.test',
+            'antall' => 1, 'belop_ore' => 69000, 'status' => 'reservert',
+            'reservert_til' => gmdate('Y-m-d H:i:s', time() - 259200),
+            'lagt_inn_av' => null, 'payment_id' => $betId,
+        ]);
+
+        $liste = $hvem();
+        sjekk('… en utloept nettbestilling staar i kortet',
+            in_array('Nettvakt utløpt', $liste, true));
+        sjekk('… og en fersk gjor det ikke — den venter paa Vipps',
+            !in_array('Nettvakt fersk', $liste, true));
+        // Eieren, 9. september 2026: «Ta dem med i "Ikke betalt"».
+        sjekk('… og en uten frist i det hele tatt staar der ogsaa',
+            in_array('Nettvakt uten frist', $liste, true));
+        sjekk('… og en der Vipps ble startet men aldri fullfoert',
+            in_array('Nettvakt avbrutt Vipps', $liste, true));
+
+        // Og den faller ut igjen naar pengene kommer. Eieren spurte om
+        // nettopp det: «men den endrer seg naar betalingen gaar igjennom?»
+        DB::oppdater('payments', ['status' => 'betalt'], ['id' => $betId]);
+        sjekk('… men ikke naar betalingen har gaatt gjennom',
+            !in_array('Nettvakt avbrutt Vipps', $hvem(), true));
+
+        DB::kjor("DELETE FROM bookings WHERE gjest_navn LIKE 'Nettvakt%'");
+        DB::kjor('DELETE FROM payments WHERE id = :i', ['i' => $betId]);
+    }
+}
+
+// ── Én venteliste, ikke flere ──────────────────────────────────────────
+//
+// Eieren, 9. september 2026: «jeg vil ha bekreftet at alle steder som er
+// venteliste faktisk henter fra samme sted, saa vi ikke opererer med flere
+// ventelister».
+//
+// Det gjor de: tabellen «waitlist» er den eneste, og alle ni stedene leser
+// den. Vakta holder det slik — lages en tabell til, faller den her.
+$vFiler = ['api/admin/kalender.php', 'api/admin/kurs.php', 'api/admin/medlemmer.php',
+           'api/admin/oversikt.php', 'api/admin/pamelding.php', 'api/admin/venteliste.php',
+           'api/mine-plasser.php', 'api/venteliste.php'];
+$vAndre = [];
+foreach ($vFiler as $f) {
+    $kode = file_get_contents(__DIR__ . '/../' . $f);
+    // Enhver tabell som ser ut som en venteliste ved siden av «waitlist».
+    if (preg_match('/FROM\s+(vente\w*|wait(?!list)\w*|ko_\w*)/i', $kode, $m)) {
+        $vAndre[] = $f . ': ' . $m[1];
+    }
+}
+sjekk('ventelista finnes bare ett sted', $vAndre === [], implode(', ', $vAndre));
+
+// ── … og alle teller det samme ─────────────────────────────────────────
+//
+// Én tabell er ikke nok hvis stedene filtrerer ulikt. Oversikt-kortet talte
+// bare «venter»; kalenderen, Venteliste-skjermen, Min side og medlemsruta
+// teller «venter» OG «varslet». Hadde du varslet noen om en ledig plass, sto
+// hun i kalenderen, men var ute av tallet paa Oversikt.
+//
+// Eieren, 9. september 2026, da det ble meldt: «fiks det».
+//
+// «varslet» betyr at beskjeden er sendt og plassen holdes til fristen —
+// personen staar fortsatt i koen. Hun venter, og skal telles.
+$vUlike = [];
+foreach ($vFiler as $f) {
+    $kode = file_get_contents(__DIR__ . '/../' . $f);
+    // Et sted som spor etter «venter» alene, uten «varslet» ved siden av.
+    if (preg_match("/status\s*=\s*'venter'/", $kode)) {
+        $vUlike[] = $f;
+    }
+}
+sjekk('… og ingen av dem teller «venter» uten «varslet»',
+    $vUlike === [], implode(', ', $vUlike));
+sjekk('… kortet paa Oversikt teller begge',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'),
+                 "SELECT COUNT(*) FROM waitlist WHERE status IN ('venter', 'varslet')"));
+sjekk('… og alle stedene leser «waitlist»',
+    count(array_filter($vFiler, static fn(string $f): bool
+        => str_contains(file_get_contents(__DIR__ . '/../' . $f), 'waitlist'))) === count($vFiler));
+
+// ── Gamle rader paa avlyste oekter ─────────────────────────────────────
+//
+// Eieren, 9. september 2026: «venteliste paa oversikt kortet venteliste, er
+// det to paa venteliste, men paa sidden i kalenderen, er det kun en paa
+// venteliste?????????????»
+//
+// Den ene sto paa en kveld som var avlyst. api/admin/kurs.php loesner dem naa
+// av seg selv naar en oekt avlyses; migrasjon 153 tar igjen dem som ble
+// avlyst for den rettelsen gikk ut.
+$mig153 = __DIR__ . '/../db/migrations/153_ventelista_loesnes_fra_avlyste_okter.sql';
+sjekk('migrasjon 153 loesner de gamle radene', file_exists($mig153));
+if (file_exists($mig153)) {
+    $sql153 = file_get_contents($mig153);
+    sjekk('… bare for dem som fortsatt venter',
+        str_contains($sql153, "AND w.status IN ('venter', 'varslet')"));
+    // «booket», «utloept» og «fjernet» er ferdige, og skal ikke vekkes.
+    sjekk('… og ingen rad slettes',
+        !preg_match('/\bDELETE\b/i', $sql153));
+    // Maalt: den skal ha gjort jobben sin i denne basen alt.
+    sjekk('… og ingen rad henger igjen paa en avlyst oekt',
+        (int) DB::verdi("SELECT COUNT(*) FROM waitlist w
+                           JOIN course_sessions cs ON cs.id = w.course_session_id
+                          WHERE cs.status = 'avlyst'
+                            AND w.status IN ('venter','varslet')") === 0);
+}
 
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers

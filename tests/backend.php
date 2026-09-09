@@ -5712,13 +5712,24 @@ sjekk('«Inne naa» staar i kalenderen',
 sjekk('… og tallet kommer fra den tellingen som alt finnes',
     str_contains($sida, "klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
         ? this.state.stempling.inne.antall : 0),"));
-// «i samme stoerrelse som» pilla «Dag»: 7px 20px, 17px. «lineHeight: normal»
-// er det som gjor en <span> like hoy som en <button> — maalt til 44 mot 36
-// uten den.
-sjekk('… i samme stoerrelse som visningspillene',
-    str_contains($sida, "borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }"));
-sjekk('… og stemple-pilla har de samme maalene',
-    str_contains($sida, "klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)'"));
+// Stoerrelsen. Eieren ba forst om «i samme stoerrelse som» pilla «Dag», og
+// de ble det — maalt til 36 px begge to. Samme dag, etter aa ha sett dem:
+// «pillene inne naa og stemple inn / ut maa gjoere mindre, samme som de andre
+// pillene». Spurt om hvilke, svarte han: «det er kun to piller som heter
+// dette paa kalender siden, det er de jeg mener».
+//
+// De staar derfor ett hakk under visningspillene naa: 14 px skrift mot 17.
+// Maalt til 29 px mot Dags 36.
+//
+// «lineHeight: normal» maa staa: en <span> arver linjehoyden fra sida, en
+// <button> faar «normal» av nettleseren. Uten den sto «Inne naa» hoyere enn
+// stemple-pilla ved siden av.
+sjekk('… mindre enn visningspillene',
+    str_contains($sida, "padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }"));
+// Og fortsatt like store som hverandre — det var hele poenget med aa sette
+// dem side om side.
+sjekk('… og de to er fortsatt like store som hverandre',
+    substr_count($sida, "borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }") === 2);
 // Prikken maa vaere hvit paa den groenne pilla. «sage» paa «sage» er ingen
 // prikk — den forsvant da pilla ble fylt.
 sjekk('… og prikken synes naar pilla er groenn',
@@ -5872,6 +5883,56 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
         DB::kjor("DELETE FROM bookings WHERE gjest_navn LIKE 'Nettvakt%'");
         DB::kjor('DELETE FROM payments WHERE id = :i', ['i' => $betId]);
     }
+}
+
+// ── Én venteliste, ikke flere ──────────────────────────────────────────
+//
+// Eieren, 9. september 2026: «jeg vil ha bekreftet at alle steder som er
+// venteliste faktisk henter fra samme sted, saa vi ikke opererer med flere
+// ventelister».
+//
+// Det gjor de: tabellen «waitlist» er den eneste, og alle ni stedene leser
+// den. Vakta holder det slik — lages en tabell til, faller den her.
+$vFiler = ['api/admin/kalender.php', 'api/admin/kurs.php', 'api/admin/medlemmer.php',
+           'api/admin/oversikt.php', 'api/admin/pamelding.php', 'api/admin/venteliste.php',
+           'api/mine-plasser.php', 'api/venteliste.php'];
+$vAndre = [];
+foreach ($vFiler as $f) {
+    $kode = file_get_contents(__DIR__ . '/../' . $f);
+    // Enhver tabell som ser ut som en venteliste ved siden av «waitlist».
+    if (preg_match('/FROM\s+(vente\w*|wait(?!list)\w*|ko_\w*)/i', $kode, $m)) {
+        $vAndre[] = $f . ': ' . $m[1];
+    }
+}
+sjekk('ventelista finnes bare ett sted', $vAndre === [], implode(', ', $vAndre));
+sjekk('… og alle stedene leser «waitlist»',
+    count(array_filter($vFiler, static fn(string $f): bool
+        => str_contains(file_get_contents(__DIR__ . '/../' . $f), 'waitlist'))) === count($vFiler));
+
+// ── Gamle rader paa avlyste oekter ─────────────────────────────────────
+//
+// Eieren, 9. september 2026: «venteliste paa oversikt kortet venteliste, er
+// det to paa venteliste, men paa sidden i kalenderen, er det kun en paa
+// venteliste?????????????»
+//
+// Den ene sto paa en kveld som var avlyst. api/admin/kurs.php loesner dem naa
+// av seg selv naar en oekt avlyses; migrasjon 153 tar igjen dem som ble
+// avlyst for den rettelsen gikk ut.
+$mig153 = __DIR__ . '/../db/migrations/153_ventelista_loesnes_fra_avlyste_okter.sql';
+sjekk('migrasjon 153 loesner de gamle radene', file_exists($mig153));
+if (file_exists($mig153)) {
+    $sql153 = file_get_contents($mig153);
+    sjekk('… bare for dem som fortsatt venter',
+        str_contains($sql153, "AND w.status IN ('venter', 'varslet')"));
+    // «booket», «utloept» og «fjernet» er ferdige, og skal ikke vekkes.
+    sjekk('… og ingen rad slettes',
+        !preg_match('/\bDELETE\b/i', $sql153));
+    // Maalt: den skal ha gjort jobben sin i denne basen alt.
+    sjekk('… og ingen rad henger igjen paa en avlyst oekt',
+        (int) DB::verdi("SELECT COUNT(*) FROM waitlist w
+                           JOIN course_sessions cs ON cs.id = w.course_session_id
+                          WHERE cs.status = 'avlyst'
+                            AND w.status IN ('venter','varslet')") === 0);
 }
 
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');

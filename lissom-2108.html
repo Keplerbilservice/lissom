@@ -36729,10 +36729,16 @@ class Component extends DCLogic {
       klInneVal: this.erInne(),
       klUteVal: !this.erInne(),
       klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',
-      // Eieren, 9. september 2026: «i samme stoerrelse som» pilla «Dag».
-      // Maalene er derfor de samme som klVisninger bruker — 7px 20px og
-      // 17px — og ikke «type-body-sm», som gjorde den lavere enn naboene.
-      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)' : 'var(--surface-card)', color: this.erInne() ? '#fff' : 'var(--lissom-brown)', borderColor: this.erInne() ? 'var(--sage-500)' : 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', fontWeight: 700, whiteSpace: 'nowrap' },
+      // Eieren ba forst om «i samme stoerrelse som» pilla «Dag», og de ble
+      // det — maalt til 36 px begge to. Samme dag, etter aa ha sett dem:
+      // «pillene inne naa og stemple inn / ut maa gjoere mindre, samme som
+      // de andre pillene». Spurt om hvilke, svarte han: «det er kun to
+      // piller som heter dette paa kalender siden, det er de jeg mener».
+      //
+      // De to staar derfor ett hakk under visningspillene naa: 14 px skrift
+      // mot 17, og strammere luft. De er fortsatt like store som hverandre —
+      // det var hele poenget med aa sette dem side om side.
+      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '7px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)' : 'var(--surface-card)', color: this.erInne() ? '#fff' : 'var(--lissom-brown)', borderColor: this.erInne() ? 'var(--sage-500)' : 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' },
       // ── «Inne naa» ────────────────────────────────────────────────────
       //
       // Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa kalender
@@ -36747,16 +36753,16 @@ class Component extends DCLogic {
       // <span> arver linjehoyden fra sida (44 px maalt), mens en <button>
       // faar «normal» av nettleseren (36 px). Uten den sto «Inne naa» aatte
       // piksler hoyere enn «Dag», stikk i strid med «i samme stoerrelse som».
-      klInneNaaStil: { display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' },
+      klInneNaaStil: { display: 'inline-flex', alignItems: 'center', gap: '7px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' },
       // Groenn prikk naar noen faktisk er der. Er rommet tomt, skal prikken
       // si det ogsaa — et tall alene leses fort som «alt i orden».
-      klInneNaaPrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: (this.state.stempling && this.state.stempling.inne.antall > 0) ? 'var(--sage-500)' : 'var(--clay-300)' },
+      klInneNaaPrikk: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', background: (this.state.stempling && this.state.stempling.inne.antall > 0) ? 'var(--sage-500)' : 'var(--clay-300)' },
       klStempleStatus: this.erInne()
         ? 'Innstemplet ' + (((this.state.stempling || {}).siden) || '') : 'Ikke innstemplet',
       // Hvit prikk naar pilla er groenn. For var den «sage» paa «sage» —
       // usynlig — fordi pilla ble fylt da den fikk samme stoerrelse som
       // «Dag». Samme grep som stemplingPiller() i sidemenyen bruker.
-      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? '#fff' : 'var(--clay-300)' },
+      klStemplePrikk: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? '#fff' : 'var(--clay-300)' },
       klStemple: () => {
         this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true);
         // Aapningstida regnes av innstemplingene ogsaa, saa den hentes paa

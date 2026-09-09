@@ -5512,6 +5512,77 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
         DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Ressursproeve'");
     }
 }
+// ── Kurs holder solgte plasser, ikke plasstallet ───────────────────────
+//
+// Regelen fra 30. august er snudd: en oekt holder det den har solgt, i den
+// tida den varer — ikke kapasiteten sin. Se kommentaren i
+// Booking::ledigeRegnet().
+//
+// Egen ressurs og egne kurs, slik at proven ikke henger paa hva som
+// tilfeldigvis ligger i basen fra for.
+if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
+    $ryddSkive = static function (): void {
+        DB::kjor("DELETE b FROM bookings b
+                    JOIN course_sessions cs ON cs.id = b.course_session_id
+                    JOIN courses c ON c.id = cs.course_id
+                   WHERE c.slug IN ('testskivea', 'testskiveb')");
+        DB::kjor("DELETE cs FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+                   WHERE c.slug IN ('testskivea', 'testskiveb')");
+        DB::kjor("DELETE FROM courses WHERE slug IN ('testskivea', 'testskiveb')");
+        DB::kjor("DELETE FROM ressurser WHERE navn = 'Testskive'");
+    };
+    $ryddSkive();
+
+    $tsId = DB::settInn('ressurser', ['navn' => 'Testskive', 'antall' => 8, 'aktiv' => 1]);
+    Booking::glemTak();
+
+    $dag = gmdate('Y-m-d', time() + 864000);
+    $lagSkiveKurs = static function (string $slug, int $rid, string $dag): array {
+        $k = DB::settInn('courses', [
+            'slug' => $slug, 'tittel' => 'Test ' . $slug, 'type' => 'kurs',
+            'pris_ore' => 69000, 'kapasitet' => 8, 'status' => 'publisert',
+            'ressurs_id' => $rid,
+        ]);
+        $o = DB::settInn('course_sessions', [
+            'course_id' => $k, 'start_tid' => $dag . ' 17:00:00',
+            'slutt_tid' => $dag . ' 20:00:00', 'kapasitet' => 8,
+        ]);
+        return [$k, $o];
+    };
+    [$kA, $oA] = $lagSkiveKurs('testskivea', $tsId, $dag);
+    [$kB, $oB] = $lagSkiveKurs('testskiveb', $tsId, $dag);
+
+    // Kjernen i endringen: to planlagte oekter uten en eneste booking
+    // sperrer ikke lenger hverandre. For 30.-august-regelen ble snudd holdt
+    // hver av dem alle aatte skivene, og begge sto med null.
+    $tomt = Booking::ledigePlasserFlere([$oA, $oB]);
+    sjekk('to tomme okter paa samme ressurs sperrer ikke hverandre',
+        $tomt[$oA] === 8 && $tomt[$oB] === 8,
+        'A: ' . $tomt[$oA] . ', B: ' . $tomt[$oB]);
+
+    // Tre solgte paa A tar tre skiver fra B — ikke aatte.
+    DB::settInn('bookings', [
+        'course_id' => $kA, 'course_session_id' => $oA,
+        'gjest_navn' => 'Skiveproeve', 'gjest_epost' => 'skive@lissom.test',
+        'antall' => 3, 'belop_ore' => 0, 'status' => 'betalt',
+    ]);
+    $solgt = Booking::ledigePlasserFlere([$oA, $oB]);
+    sjekk('tre solgte paa det ene kurset lar fem skiver staa ledige',
+        $solgt[$oB] === 5, 'B fikk ' . $solgt[$oB]);
+    sjekk('… og kurset selv har fem igjen av sine egne aatte',
+        $solgt[$oA] === 5, 'A fikk ' . $solgt[$oA]);
+
+    // manuelt_opptatt er verktoeyet for aa holde av skiver likevel. Tre
+    // solgte pluss fem holdt er aatte, og da er det ingenting igjen til B.
+    DB::oppdater('course_sessions', ['manuelt_opptatt' => 5], ['id' => $oA]);
+    $holdt = Booking::ledigePlasserFlere([$oA, $oB]);
+    sjekk('manuelt opptatt holder skivene som for',
+        $holdt[$oB] === 0, 'B fikk ' . $holdt[$oB]);
+
+    $ryddSkive();
+    Booking::glemTak();
+}
+
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte

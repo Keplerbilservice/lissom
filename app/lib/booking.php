@@ -301,31 +301,37 @@ final class Booking
                     -- samtidig. Aatte skiver er aatte skiver enten de sitter
                     -- paa et dreiekurs eller en Date Night.
                     --
-                    -- Et planlagt kurs holder plasstallet sitt, ikke bare de
-                    -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
-                    -- mulig aa booke en plass eller dreieskive paa forhaand for
-                    -- medlemmer naar det er planlagt kurs. Da er de ressursene
-                    -- booket og opptatt med kurs.» Et dreiekurs med aatte
-                    -- plasser tar alle aatte skivene i den tida det gaar, ogsaa
-                    -- for noen har meldt seg paa — skivene staar dekket til
-                    -- kurset.
+                    -- En oekt holder det den har solgt, i den tida den varer —
+                    -- ikke plasstallet sitt. Et dreiekurs med aatte plasser og
+                    -- tre paameldte holder tre skiver; de fem andre staar
+                    -- ledige til noen tar dem.
                     --
-                    -- Med ett unntak, og det er avgjorende: de aapne plassene
-                    -- (fra_apningstid = 1 — Paint on Pots) holder
-                    -- bare det som faktisk er booket. De er et tilbud, ikke en
-                    -- plan. Holdt de plasstallet sitt ogsaa, ville en tom
-                    -- aapen plass paa aatte sperret dreiekurset ved siden av,
-                    -- og de to hadde tatt livet av hverandre.
+                    -- Dette snur regelen fra 30. august, der et planlagt kurs
+                    -- holdt hele kapasiteten sin for at ingen skulle booke en
+                    -- skive foran kurset. Grunnlaget for den regelen er ikke
+                    -- lenger til stede: det finnes ingen vei inn til skivene
+                    -- utenom kursene selv. Medlemmer forhaandsbooker ikke — de
+                    -- stempler inn naar de kommer, og teller bare paa en oekt
+                    -- som gaar akkurat da (se inneNaa() nedenfor). De aapne
+                    -- plassene, Paint on Pots og Sip & Clay sitter paa
+                    -- Bordplass, ikke paa skivene (migrasjon 103), og drop-in
+                    -- ble tatt ned i migrasjon 110. Igjen paa Dreieskive staar
+                    -- bare dreiekursene og Date Night.
+                    --
+                    -- fra_apningstid trengs derfor ikke lenger som unntak: de
+                    -- aapne plassene holdt alt bare det som var booket, og naa
+                    -- gjor alle det samme.
+                    --
+                    -- manuelt_opptatt staar igjen: plasser tatt utenfor
+                    -- nettsiden teller som for. Det er ogsaa verktoeyet for aa
+                    -- holde av skiver til et kurs som ennaa ikke har solgt.
                     COALESCE((
                         SELECT SUM(
-                            GREATEST(
-                                CASE WHEN cs2.fra_apningstid = 1 THEN 0
-                                     ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
-                                COALESCE(cs2.manuelt_opptatt, 0)
-                                + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
-                                             WHERE b2.course_session_id = cs2.id
-                                               AND {$aktiv2}), 0)
-                            ))
+                            COALESCE(cs2.manuelt_opptatt, 0)
+                            + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
+                                         WHERE b2.course_session_id = cs2.id
+                                           AND {$aktiv2}), 0)
+                        )
                           FROM course_sessions cs2
                           JOIN courses c2 ON c2.id = cs2.course_id
                          WHERE cs2.status = 'planlagt'

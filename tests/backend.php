@@ -5775,8 +5775,8 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
     $ovKode2 = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
     sjekk('utloepte nettbestillinger kommer med i «Ikke betalt»',
         str_contains($ovKode2, "AND (b.lagt_inn_av IS NOT NULL
-                 OR (b.reservert_til IS NOT NULL
-                     AND b.reservert_til <= UTC_TIMESTAMP()))"));
+                 OR b.reservert_til IS NULL
+                 OR b.reservert_til <= UTC_TIMESTAMP())"));
 
     // Maalt, ikke bare lest: en fersk nettbestilling venter faktisk paa
     // Vipps og skal IKKE kreves inn. En utloept skal.
@@ -5796,6 +5796,15 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
         };
         $fersk  = $lag('Nettvakt fersk',  gmdate('Y-m-d H:i:s', time() + 1200));
         $utloept = $lag('Nettvakt utløpt', gmdate('Y-m-d H:i:s', time() - 259200));
+        // Verste tilfellet: ingen frist i det hele tatt. Den gaar aldri ut
+        // paa tid, og holder plassen sin for alltid.
+        DB::settInn('bookings', [
+            'course_id' => (int) $oktProeve['course_id'],
+            'course_session_id' => (int) $oktProeve['id'],
+            'gjest_navn' => 'Nettvakt uten frist', 'gjest_epost' => 'nettvakt@lissom.test',
+            'antall' => 1, 'belop_ore' => 69000, 'status' => 'reservert',
+            'reservert_til' => null, 'lagt_inn_av' => null,
+        ]);
 
         $hvem = static function (): array {
             return array_column(DB::alle(
@@ -5803,8 +5812,8 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
                   WHERE b.status = 'reservert' AND b.payment_id IS NULL
                     AND b.belop_ore > 0
                     AND (b.lagt_inn_av IS NOT NULL
-                         OR (b.reservert_til IS NOT NULL
-                             AND b.reservert_til <= UTC_TIMESTAMP()))"
+                         OR b.reservert_til IS NULL
+                         OR b.reservert_til <= UTC_TIMESTAMP())"
             ), 'navn');
         };
         $liste = $hvem();
@@ -5812,8 +5821,11 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
             in_array('Nettvakt utløpt', $liste, true));
         sjekk('… og en fersk gjor det ikke — den venter paa Vipps',
             !in_array('Nettvakt fersk', $liste, true));
+        // Eieren, 9. september 2026: «Ta dem med i "Ikke betalt"».
+        sjekk('… og en uten frist i det hele tatt staar der ogsaa',
+            in_array('Nettvakt uten frist', $liste, true));
 
-        DB::kjor("DELETE FROM bookings WHERE id IN (:a, :b)", ['a' => $fersk, 'b' => $utloept]);
+        DB::kjor("DELETE FROM bookings WHERE gjest_navn LIKE 'Nettvakt%'");
     }
 }
 

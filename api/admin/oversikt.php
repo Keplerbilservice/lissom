@@ -636,9 +636,14 @@ Svar::json([
     // De ferske staar fortsatt utenfor: en bestilling som ble lagt inn for
     // fem minutter siden venter faktisk paa Vipps, og skal ikke kreves inn.
     //
-    // Merk: en nettbestilling UTEN frist («reservert_til» er tom) kommer
-    // fortsatt ikke med. Den holder ogsaa plassen sin for alltid — se
-    // Booking::ledigeRegnet() — og er en egen sak.
+    // En nettbestilling UTEN frist er med paa samme vilkaar. Den var det
+    // verste tilfellet: den holder plassen sin for alltid — se
+    // Booking::ledigeRegnet(), der «reservert_til IS NULL» teller som en
+    // levende reservasjon — og den ville aldri gaa ut paa tid heller. Uten
+    // dette var den usynlig i det ene kortet som skulle fange den opp.
+    //
+    // Eieren, 9. september 2026, spurt om nettopp den: «Ta dem med i "Ikke
+    // betalt"».
     //
     // Medlemskapene staar her ogsaa. Eieren spurte om dem to ganger — forst
     // «dverken hun eller eiriin kommer opp i kortet ikke betalt paa
@@ -678,8 +683,8 @@ Svar::json([
             AND b.payment_id IS NULL
             AND b.belop_ore > 0
             AND (b.lagt_inn_av IS NOT NULL
-                 OR (b.reservert_til IS NOT NULL
-                     AND b.reservert_til <= UTC_TIMESTAMP()))
+                 OR b.reservert_til IS NULL
+                 OR b.reservert_til <= UTC_TIMESTAMP())
        ORDER BY b.created_at"
     )), array_map(static function (array $m): array {
         return [

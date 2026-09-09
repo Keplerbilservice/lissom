@@ -679,8 +679,24 @@ Svar::json([
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
       LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+      LEFT JOIN payments p2 ON p2.id = b.payment_id
           WHERE b.status = 'reservert'
-            AND b.payment_id IS NULL
+            -- Ikke «har ingen betalingsrad», men «har ingen betaling».
+            --
+            -- Her sto «b.payment_id IS NULL». En kursbooking fra nettsiden
+            -- faar ALLTID en betalingsrad naar kunden sendes til Vipps — se
+            -- Booking, der raden lages med status «opprettet» for bookingen
+            -- settes inn. Raden blir liggende ogsaa naar kunden avbroet
+            -- eller aldri kom tilbake. Med den gamle betingelsen kom derfor
+            -- ingen vanlig nettpaamelding med, uansett hvor lenge den hadde
+            -- staatt ubetalt.
+            --
+            -- De tre som betyr at pengene er i orden er de samme som
+            -- api/admin/pamelding.php bruker naar den nekter aa sette en
+            -- betalt paamelding paa venteliste. Staar de to ulikt, sier
+            -- systemet to ting om den samme betalingen.
+            AND (b.payment_id IS NULL
+                 OR p2.status NOT IN ('autorisert', 'betalt', 'delvis_refundert'))
             AND b.belop_ore > 0
             AND (b.lagt_inn_av IS NOT NULL
                  OR b.reservert_til IS NULL

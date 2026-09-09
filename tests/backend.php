@@ -5777,6 +5777,23 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
         str_contains($ovKode2, "AND (b.lagt_inn_av IS NOT NULL
                  OR b.reservert_til IS NULL
                  OR b.reservert_til <= UTC_TIMESTAMP())"));
+    // ── Betalingens status, ikke om raden finnes ───────────────────────
+    //
+    // Her sto «b.payment_id IS NULL». En kursbooking fra nettsiden faar
+    // ALLTID en betalingsrad naar kunden sendes til Vipps, og den blir
+    // liggende naar hun aldri kom tilbake. Med den gamle betingelsen kom
+    // ingen vanlig nettpaamelding med — uansett hvor lenge den sto ubetalt.
+    //
+    // Eieren, 9. september 2026: «Ja, rett den ogsaa».
+    sjekk('… og kortet ser paa betalingens status, ikke om raden finnes',
+        str_contains($ovKode2, "AND (b.payment_id IS NULL
+                 OR p2.status NOT IN ('autorisert', 'betalt', 'delvis_refundert'))"));
+    // De tre ordene maa vaere de samme som pamelding.php bruker naar den
+    // nekter aa sette en betalt paamelding paa venteliste. Staar de ulikt,
+    // sier systemet to ting om den samme betalingen.
+    sjekk('… med de samme tre ordene som resten av systemet bruker',
+        str_contains(file_get_contents(__DIR__ . '/../api/admin/pamelding.php'),
+                     "\$BETALT_VIPPS = ['autorisert', 'betalt', 'delvis_refundert'];"));
 
     // Maalt, ikke bare lest: en fersk nettbestilling venter faktisk paa
     // Vipps og skal IKKE kreves inn. En utloept skal.
@@ -5809,13 +5826,32 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
         $hvem = static function (): array {
             return array_column(DB::alle(
                 "SELECT b.gjest_navn AS navn FROM bookings b
-                  WHERE b.status = 'reservert' AND b.payment_id IS NULL
+                  WHERE b.status = 'reservert'
                     AND b.belop_ore > 0
+                    AND (b.payment_id IS NULL
+                         OR (SELECT p3.status FROM payments p3 WHERE p3.id = b.payment_id)
+                            NOT IN ('autorisert','betalt','delvis_refundert'))
                     AND (b.lagt_inn_av IS NOT NULL
                          OR b.reservert_til IS NULL
                          OR b.reservert_til <= UTC_TIMESTAMP())"
             ), 'navn');
         };
+        // En nettpaamelding der Vipps ble startet, men aldri fullfoert.
+        // Dette er tilfellet eieren meldte: raden finnes, pengene gjor ikke.
+        $betId = DB::settInn('payments', [
+            'vipps_reference' => 'NETTVAKT-' . bin2hex(random_bytes(3)),
+            'type' => 'epayment', 'formal' => 'booking', 'belop_ore' => 69000,
+            'status' => 'opprettet', 'idempotency_key' => Vipps::uuid(),
+        ]);
+        DB::settInn('bookings', [
+            'course_id' => (int) $oktProeve['course_id'],
+            'course_session_id' => (int) $oktProeve['id'],
+            'gjest_navn' => 'Nettvakt avbrutt Vipps', 'gjest_epost' => 'nettvakt@lissom.test',
+            'antall' => 1, 'belop_ore' => 69000, 'status' => 'reservert',
+            'reservert_til' => gmdate('Y-m-d H:i:s', time() - 259200),
+            'lagt_inn_av' => null, 'payment_id' => $betId,
+        ]);
+
         $liste = $hvem();
         sjekk('… en utloept nettbestilling staar i kortet',
             in_array('Nettvakt utløpt', $liste, true));
@@ -5824,8 +5860,17 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
         // Eieren, 9. september 2026: «Ta dem med i "Ikke betalt"».
         sjekk('… og en uten frist i det hele tatt staar der ogsaa',
             in_array('Nettvakt uten frist', $liste, true));
+        sjekk('… og en der Vipps ble startet men aldri fullfoert',
+            in_array('Nettvakt avbrutt Vipps', $liste, true));
+
+        // Og den faller ut igjen naar pengene kommer. Eieren spurte om
+        // nettopp det: «men den endrer seg naar betalingen gaar igjennom?»
+        DB::oppdater('payments', ['status' => 'betalt'], ['id' => $betId]);
+        sjekk('… men ikke naar betalingen har gaatt gjennom',
+            !in_array('Nettvakt avbrutt Vipps', $hvem(), true));
 
         DB::kjor("DELETE FROM bookings WHERE gjest_navn LIKE 'Nettvakt%'");
+        DB::kjor('DELETE FROM payments WHERE id = :i', ['i' => $betId]);
     }
 }
 

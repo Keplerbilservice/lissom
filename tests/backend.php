@@ -13831,10 +13831,24 @@ sjekk('… og Medlemmer, Paameldte og Chat staar i stedet',
 sjekk('… og de to foerste gaar til skjermene som finnes',
     str_contains($byttSida, "klGaMedlemmer: () => this.gaaAdmin('adminmedlem',")
     && str_contains($byttSida, "klGaPameldte: () => this.gaaAdmin('adminpameldte', {}),"));
-// En knapp som ikke gjor noe ser i stykker ut. Chat sier fra i klartekst.
-sjekk('… og Chat sier at den ikke er bygget',
-    str_contains($byttSida, "kvittering: 'Chat er ikke bygget ennå',"),
-    'ellers ser kortet ut som noe som er i stykker');
+// ── Chat gaar til medlemschatten ────────────────────────────────────
+//
+// Kortet sa «Chat er ikke bygget ennå». Det stemte ikke: chatten finnes —
+// api/chat.php, egen tabell, alle med aktivt medlemskap leser det samme
+// rommet. Den var bare ikke naadd fra kalenderen.
+//
+// Eieren, 8. september 2026, etter at vi hadde slaatt fast at gruppechatten
+// paa Facebook ikke kan hentes inn: «Ok, koble den til pilla».
+//
+// Samme vei som nabopillene, og ingen ny chat ved siden av den som finnes.
+sjekk('… og Chat gaar til medlemschatten',
+    str_contains($byttSida, "this.setState({ side: 'minside', msFane: 'chat', fhRolle: '', fhFra: '' });")
+    && !str_contains($byttSida, "kvittering: 'Chat er ikke bygget ennå',"));
+// Fanen finnes paa Min side, og henting og oppfrisking starter av seg selv
+// naar sida staar aapen.
+sjekk('… og fanen den peker paa finnes',
+    str_contains($byttSida, "msFaneChat:       f === 'chat',")
+    && str_contains($byttSida, "if (side === 'minside' && this.state.innlogget) {"));
 sjekk('… i sin egen rad, over hele bredden',
     str_contains($byttSida, "klSnarveiRadStil: {")
     && str_contains($byttSida, "gridColumn: '1 / -1',")

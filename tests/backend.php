@@ -5694,6 +5694,45 @@ sjekk('/admin aapner kalenderen',
 sjekk('… og Oversikt har fortsatt en adresse',
     str_contains($sida, "{ sti: '/admin/oversikt',     side: 'adminoversikt' },"));
 
+// ── Pilleraden i kalenderen ────────────────────────────────────────────
+//
+// Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa kalender under
+// pillen "dag", i samme stoerrelse som», «jeg vil at pillene stemple inn og
+// steng dagen skal gjoeres om til en pille, stemple inn, naar jeg er inne saa
+// endrer den funksjon til aa stemple ut», og «jeg vil at den nye stemple inn
+// og ut pillen legges ved siden av pillen "inne naa"».
+sjekk('«Inne naa» staar i kalenderen',
+    str_contains($sida, '{{ klInneNaaTekst }}') && str_contains($sida, "klInneNaaTekst: 'Inne nå · '"));
+// Tallet er det samme som sidemenyen viser. To tellinger av det samme rommet
+// ville for eller siden svart hver sitt.
+sjekk('… og tallet kommer fra den tellingen som alt finnes',
+    str_contains($sida, "klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
+        ? this.state.stempling.inne.antall : 0),"));
+// «i samme stoerrelse som» pilla «Dag»: 7px 20px, 17px. «lineHeight: normal»
+// er det som gjor en <span> like hoy som en <button> — maalt til 44 mot 36
+// uten den.
+sjekk('… i samme stoerrelse som visningspillene',
+    str_contains($sida, "borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }"));
+sjekk('… og stemple-pilla har de samme maalene',
+    str_contains($sida, "klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)'"));
+// Prikken maa vaere hvit paa den groenne pilla. «sage» paa «sage» er ingen
+// prikk — den forsvant da pilla ble fylt.
+sjekk('… og prikken synes naar pilla er groenn',
+    str_contains($sida, "background: this.erInne() ? '#fff' : 'var(--clay-300)' },"));
+// Én pille, som bytter funksjon. Den fantes fra for; det som er nytt er at
+// den staar alene.
+sjekk('stemple-pilla bytter mellom inn og ut',
+    str_contains($sida, "klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',"));
+// «Steng dagen» er borte fra kalenderen. Han: «stemple ut vil vaere samme som
+// steng dagen, saa jeg trrenger den ikke», og etter maalingen av Ferie:
+// «Fjern pilla, la grunnen gaa».
+sjekk('«Steng dagen» staar ikke lenger i kalenderen',
+    !str_contains($sida, '{{ klStengTekst }}'));
+// Dager stenges under Ferie i stedet. Den veien maa finnes, ellers er
+// muligheten borte og ikke flyttet.
+sjekk('… men dager kan fortsatt stenges under Ferie',
+    str_contains($sida, "this.ferieKall({ handling: stengt ? 'aapne' : 'steng', dato: nokkel });"));
+
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte

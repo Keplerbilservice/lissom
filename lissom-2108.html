@@ -7131,19 +7131,24 @@ window.__resources = {
             </div>
           </div>
 
+          <!-- To rader.
+               Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa
+               kalender under pillen "dag", i samme stoerrelse som», og «jeg
+               vil at den nye stemple inn og ut pillen legges ved siden av
+               pillen "inne naa"».
+               «Steng dagen» sto her og er borte. Han, spurt om hva som skulle
+               skje med den: «stemple ut vil vaere samme som steng dagen, saa
+               jeg trrenger den ikke» — og etter at det var maalt at Ferie kan
+               stenge en enkeltdag, men ikke spoer om grunn: «Fjern pilla, la
+               grunnen gaa». Dager stenges under Ferie, som naas fra pilla
+               under logoen paa hver adminskjerm. -->
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
           <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <sc-for list="{{ klVisninger }}" as="v" hint-placeholder-count="4">
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
               </sc-for>
             </div>
-            <button type="button" onClick="{{ klStemple }}" style="{{ klStempleStil }}">
-              <span style="{{ klStemplePrikk }}"></span>
-              {{ klStempleTekst }}
-            </button>
-            <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ klStengVeksle }}" style="appearance: none; border: 1.5px solid var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 8px 18px; font: var(--type-body-sm); font-weight: 700; color: var(--text-muted); white-space: nowrap;">{{ klStengTekst }}</button>
-            </sc-if>
             <div style="position: relative; margin-left: auto; flex: 0 1 240px; min-width: 170px;">
               <input value="{{ klSok }}" onChange="{{ settKlSok }}" placeholder="Søk person eller kurs …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
               <sc-if value="{{ klSokVises }}" hint-placeholder-val="{{ false }}">
@@ -7160,6 +7165,19 @@ window.__resources = {
                 </div>
               </sc-if>
             </div>
+          </div>
+          <!-- Rad to: hvor mange som er i verkstedet, og knappen som setter
+               deg inn eller ut. Samme stoerrelse som pillene over — se
+               «klInneNaaStil» og «klStempleStil» i renderVals(). -->
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="{{ klInneNaaStil }}">
+              <span style="{{ klInneNaaPrikk }}"></span>
+              {{ klInneNaaTekst }}
+            </span>
+            <button type="button" onClick="{{ klStemple }}" style="{{ klStempleStil }}">
+              <span style="{{ klStemplePrikk }}"></span>
+              {{ klStempleTekst }}
+            </button>
           </div>
           </div>
 
@@ -36714,10 +36732,34 @@ class Component extends DCLogic {
       klInneVal: this.erInne(),
       klUteVal: !this.erInne(),
       klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',
-      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '8px 18px', font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap' },
+      // Eieren, 9. september 2026: «i samme stoerrelse som» pilla «Dag».
+      // Maalene er derfor de samme som klVisninger bruker — 7px 20px og
+      // 17px — og ikke «type-body-sm», som gjorde den lavere enn naboene.
+      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)' : 'var(--surface-card)', color: this.erInne() ? '#fff' : 'var(--lissom-brown)', borderColor: this.erInne() ? 'var(--sage-500)' : 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', fontWeight: 700, whiteSpace: 'nowrap' },
+      // ── «Inne naa» ────────────────────────────────────────────────────
+      //
+      // Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa kalender
+      // under pillen "dag", i samme stoerrelse som».
+      //
+      // Tallet er det samme som sidemenyen viser — this.state.stempling —
+      // saa de to aldri kan si hver sitt om det samme rommet. Ingen ny
+      // telling ved siden av den som finnes.
+      klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
+        ? this.state.stempling.inne.antall : 0),
+      // «lineHeight: normal» er det som gjor den like hoy som naboene. En
+      // <span> arver linjehoyden fra sida (44 px maalt), mens en <button>
+      // faar «normal» av nettleseren (36 px). Uten den sto «Inne naa» aatte
+      // piksler hoyere enn «Dag», stikk i strid med «i samme stoerrelse som».
+      klInneNaaStil: { display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' },
+      // Groenn prikk naar noen faktisk er der. Er rommet tomt, skal prikken
+      // si det ogsaa — et tall alene leses fort som «alt i orden».
+      klInneNaaPrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: (this.state.stempling && this.state.stempling.inne.antall > 0) ? 'var(--sage-500)' : 'var(--clay-300)' },
       klStempleStatus: this.erInne()
         ? 'Innstemplet ' + (((this.state.stempling || {}).siden) || '') : 'Ikke innstemplet',
-      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? 'var(--sage-500)' : 'var(--clay-300)' },
+      // Hvit prikk naar pilla er groenn. For var den «sage» paa «sage» —
+      // usynlig — fordi pilla ble fylt da den fikk samme stoerrelse som
+      // «Dag». Samme grep som stemplingPiller() i sidemenyen bruker.
+      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? '#fff' : 'var(--clay-300)' },
       klStemple: () => {
         this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true);
         // Aapningstida regnes av innstemplingene ogsaa, saa den hentes paa

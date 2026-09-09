@@ -538,6 +538,56 @@ final class Booking
      * @param list<int> $oktIder
      * @return array<int, bool>
      */
+    /**
+     * Hvor mange plasser hver oekt faktisk legger beslag paa.
+     *
+     * Eieren, 9. september 2026: «er det 3 paameldte saa vises det 3 opptatte
+     * skiver i kursets varighet». «Dreieskivene denne uka» paa Min side sa
+     * for at skivene var opptatt under kurs — alle sammen — uten aa vite hva
+     * som var solgt. Naa staar tallet der.
+     *
+     * Dette er IKKE det samme som ledigePlasserFlere(). Den svarer «hvor
+     * mange flere kan meldes paa», og trekker fra alt annet som deler
+     * ressursen. Denne svarer «hvor mange staar opptatt her», og ser bare paa
+     * oekta selv.
+     *
+     * manuelt_opptatt teller med: plasser tatt utenfor nettsiden staar like
+     * mye i veien for et medlem som en betalt paamelding gjor. Det er ogsaa
+     * verktoeyet verkstedet bruker for aa holde av skiver til et kurs som
+     * ennaa ikke har solgt.
+     *
+     * @param list<int> $oktIder
+     * @return array<int, int> oektId => antall opptatt
+     */
+    public static function solgtePlasserFlere(array $oktIder): array
+    {
+        $ider = array_values(array_unique(array_map('intval', $oktIder)));
+        if ($ider === []) {
+            return [];
+        }
+        $inn = implode(',', $ider);
+
+        // Samme definisjon av «aktiv booking» som ledigeRegnet() bruker:
+        // betalt, eller reservert og ikke gaatt ut paa tid. Svarte de to
+        // ulikt, ville kortet og bookingen sagt hver sitt om samme oekt.
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT cs.id,
+                    COALESCE(cs.manuelt_opptatt, 0)
+                    + COALESCE((SELECT SUM(b.antall) FROM bookings b
+                                 WHERE b.course_session_id = cs.id
+                                   AND (b.status = 'betalt'
+                                        OR (b.status = 'reservert'
+                                            AND (b.reservert_til IS NULL
+                                                 OR b.reservert_til > UTC_TIMESTAMP())))), 0) AS opptatt
+               FROM course_sessions cs
+              WHERE cs.id IN ({$inn})"
+        ) as $r) {
+            $ut[(int) $r['id']] = max(0, (int) $r['opptatt']);
+        }
+        return $ut;
+    }
+
     public static function sperretAvAnnet(array $oktIder): array
     {
         $ut = [];

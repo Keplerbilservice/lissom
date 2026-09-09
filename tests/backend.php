@@ -5534,6 +5534,108 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
         DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Ressursproeve'");
     }
 }
+// ── Tallet paa «Dreieskivene denne uka» ────────────────────────────────
+//
+// Eieren, 9. september 2026: «i dag saa vises paa min side for medlemmer at
+// alle dreieskivene er opptatt naar det er kurs, men jeg oensker at det kun
+// viser antall opptatte dreieskiver ... er det 3 paameldte saa vises det 3
+// opptatte skiver i kursets varighet. i tillegg saa vises saa klart skiven
+// som opptatt naar et medlem er innstemplet.»
+//
+// Spurt om «Naa»-tallet var totalen eller bare kursene: «Alt — medlemmer og
+// kurs».
+if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
+    $skiveTest = DB::en("SELECT id FROM ressurser WHERE navn = 'Dreieskive' AND aktiv = 1");
+    if ($skiveTest !== null) {
+        $sid = (int) $skiveTest['id'];
+        $rydd = static function (): void {
+            DB::kjor("DELETE b FROM bookings b JOIN course_sessions cs ON cs.id = b.course_session_id
+                       WHERE cs.info = 'skiveproeve'");
+            DB::kjor("DELETE FROM course_sessions WHERE info = 'skiveproeve'");
+            DB::kjor("DELETE FROM courses WHERE slug IN ('testskivetall', 'testskivetall-b')");
+        };
+        $rydd();
+
+        $kid = DB::settInn('courses', [
+            'slug' => 'testskivetall', 'tittel' => 'Test skivetall', 'type' => 'kurs',
+            'pris_ore' => 50000, 'kapasitet' => 8, 'status' => 'publisert', 'ressurs_id' => $sid,
+        ]);
+        $dag = gmdate('Y-m-d', time() + 1728000);
+        $oid = DB::settInn('course_sessions', [
+            'course_id' => $kid, 'start_tid' => $dag . ' 17:00:00',
+            'slutt_tid' => $dag . ' 20:00:00', 'kapasitet' => 8, 'info' => 'skiveproeve',
+        ]);
+        DB::settInn('bookings', [
+            'course_id' => $kid, 'course_session_id' => $oid,
+            'gjest_navn' => 'Skivetall', 'gjest_epost' => 'skivetall@lissom.test',
+            'antall' => 3, 'belop_ore' => 0, 'status' => 'betalt',
+        ]);
+
+        // Kjernen: tallet er det oekta selv har tatt — ikke plasstallet, og
+        // ikke det som blir igjen naar alt annet paa skivene er trukket fra.
+        $solgt = Booking::solgtePlasserFlere([$oid]);
+        sjekk('tre paameldte gir tre opptatte skiver',
+            ($solgt[$oid] ?? -1) === 3, 'fikk ' . ($solgt[$oid] ?? -1));
+
+        // Et nabokurs paa samme ressurs, til samme tid, skal ikke endre
+        // tallet. «ledige» trekkes ned av naboen; dette tallet gjor det ikke.
+        $kid2 = DB::settInn('courses', [
+            'slug' => 'testskivetall-b', 'tittel' => 'Test skivetall B', 'type' => 'kurs',
+            'pris_ore' => 50000, 'kapasitet' => 8, 'status' => 'publisert', 'ressurs_id' => $sid,
+        ]);
+        $oid2 = DB::settInn('course_sessions', [
+            'course_id' => $kid2, 'start_tid' => $dag . ' 17:00:00',
+            'slutt_tid' => $dag . ' 20:00:00', 'kapasitet' => 8, 'info' => 'skiveproeve',
+        ]);
+        DB::settInn('bookings', [
+            'course_id' => $kid2, 'course_session_id' => $oid2,
+            'gjest_navn' => 'Skivetall', 'gjest_epost' => 'skivetall@lissom.test',
+            'antall' => 4, 'belop_ore' => 0, 'status' => 'betalt',
+        ]);
+        $solgt = Booking::solgtePlasserFlere([$oid, $oid2]);
+        sjekk('… og naboen paa samme ressurs endrer det ikke',
+            ($solgt[$oid] ?? -1) === 3 && ($solgt[$oid2] ?? -1) === 4,
+            'fikk ' . ($solgt[$oid] ?? -1) . ' og ' . ($solgt[$oid2] ?? -1));
+
+        // Plasser holdt av utenfor nettsiden staar like mye i veien for et
+        // medlem som en betalt paamelding gjor.
+        DB::oppdater('course_sessions', ['manuelt_opptatt' => 2], ['id' => $oid]);
+        $solgt = Booking::solgtePlasserFlere([$oid]);
+        sjekk('… og manuelt opptatt teller med',
+            ($solgt[$oid] ?? -1) === 5, 'fikk ' . ($solgt[$oid] ?? -1));
+
+        $rydd();
+    }
+}
+
+// Tallet maa naa fram til kortet. Uten disse to staar regnestykket der uten
+// at noen ser det.
+$kursFil = file_get_contents(__DIR__ . '/../api/kurs.php');
+sjekk('katalogen sender antall opptatte plasser per dato',
+    str_contains($kursFil, "'solgt'    => \$solgtKart[(int) \$o['id']] ?? 0,"));
+$stempFil = file_get_contents(__DIR__ . '/../api/stempling.php');
+sjekk('stemplingen sender hvor mye av ressursen som er i bruk naa',
+    str_contains($stempFil, "'iBruk'  => min("));
+// «Alt — medlemmer og kurs»: begge halvdelene maa staa der.
+sjekk('… og teller baade innstemplede og kurs som gaar',
+    str_contains($stempFil, 'FROM check_ins WHERE ut_tid IS NULL GROUP BY r')
+    && str_contains($stempFil, "AND DATE(cs.start_tid) <= UTC_DATE()"));
+// Katalogen sender bare oekter som ikke har startet. Derfor kan ikke tallet
+// regnes i nettsida — det var feilen jeg selv gikk i foerst.
+sjekk('… og tallet regnes paa serveren, ikke av katalogen',
+    str_contains($kursFil, 'AND start_tid > UTC_TIMESTAMP()')
+    && str_contains($sida, 'const iBruk = skiva ? (skiva.iBruk || 0) : 0;'));
+
+// Kortet selv: pille, «Naa»-linje og den nye setningen.
+sjekk('kortet viser tallet som pille, ikke som loes tekst',
+    str_contains($sida, '<sc-if value="{{ o.harTall }}"')
+    && str_contains($sida, 'border-radius: 999px; padding: 2px 7px; white-space: nowrap;">{{ o.tall }}'));
+sjekk('… og «Naa»-linja staar over lista',
+    str_contains($sida, '{{ skiveNaa }}') && str_contains($sida, '<sc-if value="{{ skiveNaaVis }}"'));
+sjekk('… og setningen som paasto at alle skivene var opptatt er borte',
+    !str_contains($sida, 'Under kurs og events er dreieskivene opptatt')
+    && str_contains($sida, 'Under kurs er noen av skivene opptatt. Tallet viser hvor mange som er tatt.'));
+
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte

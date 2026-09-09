@@ -4158,7 +4158,16 @@ window.__resources = {
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dreieskivene denne uka</div>
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ skiveUke }}</span>
               </div>
-              <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs er noen av skivene opptatt. Tallet viser hvor mange som er tatt.</p>
+              <!-- Hvor mange skiver som staar opptatt i dette oeyeblikket:
+                   innstemplede medlemmer pluss et kurs som gaar naa. Se
+                   «skiveNaa» i renderVals(). -->
+              <sc-if value="{{ skiveNaaVis }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: baseline; gap: var(--space-2); margin: 0 0 var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-subtle);">
+                  <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Nå:</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-body);">{{ skiveNaa }}</span>
+                </div>
+              </sc-if>
               <!-- Ingen kurs paa skivene er ogsaa et svar. Kortet sto med
                    overskrift og forklaring, og ingen linjer under — da kan man
                    like gjerne tro at det er i stykker. -->
@@ -4167,13 +4176,20 @@ window.__resources = {
               </sc-if>
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <sc-for list="{{ skiveOpptatt }}" as="o" hint-placeholder-count="3">
-                  <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px var(--space-3); font-size: var(--text-sm);">
+                  <div style="display: flex; align-items: baseline; flex-wrap: nowrap; gap: var(--space-2); font-size: var(--text-sm);">
                     <span style="font-weight: 700; color: var(--text-heading); flex: 0 0 auto; min-width: 52px;">{{ o.dag }}</span>
-                    <!-- min-width: 0 er det som lar teksten bryte i stedet for
+                    <!-- min-width: 0 er det som lar navnet krympe i stedet for
                          aa presse raden bredere enn kortet. Uten den nekter et
-                         flex-element aa bli smalere enn innholdet sitt. -->
-                    <span style="color: var(--text-body); flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;">{{ o.hva }}</span>
-                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap; margin-left: auto;">{{ o.tid }}</span>
+                         flex-element aa bli smalere enn innholdet sitt. Lange
+                         kursnavn faar tre prikker framfor aa dytte tallet og
+                         klokkeslettet ned paa hver sin linje. -->
+                    <span style="color: var(--text-body); flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ o.hva }}</span>
+                    <!-- Pille, ikke loes tekst: den skal leses som ett tall,
+                         og den staar i samme stil som resten av verkstedet. -->
+                    <sc-if value="{{ o.harTall }}" hint-placeholder-val="{{ true }}">
+                      <span style="flex: 0 0 auto; font-size: var(--text-2xs); font-weight: 700; color: var(--terracotta-600); background: var(--terracotta-100); border-radius: 999px; padding: 2px 7px; white-space: nowrap;">{{ o.tall }}</span>
+                    </sc-if>
+                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap; flex: 0 0 auto;">{{ o.tid }}</span>
                   </div>
                 </sc-for>
               </div>
@@ -47257,20 +47273,52 @@ class Component extends DCLogic {
           return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
         })();
         const katalog = this.state.katalog || [];
+        // Hvor mange skiver verkstedet har. Staar paa ressursen i basen.
+        const antallSkiver = skiva ? (skiva.antall || 0) : 0;
         const ut = [];
         this.ukeData(uke).forEach(d => (d.poster || []).forEach(p => {
           const navn = (p.tekst || '').split(' · ')[0];
-          const k = katalog.find(x => (x.tittel || '') === navn);
+          // Kurset finnes paa id-en oppforingen baerer med seg. For sto det
+          // et navneoppslag her — tittelen klippet ut av etiketten igjen —
+          // og to kurs med samme navn kunne ikke skilles.
+          const k = katalog.find(x => x.id === p.katId)
+                 || katalog.find(x => (x.tittel || '') === navn);
           // Uten ressurs paa kurset vet vi ikke, og da paastaar vi ingenting.
           if (!k || !skiva || k.ressursId !== skiva.id) return;
+          const okt = (k.datoer || []).find(o => o.oktId === p.oktId);
           ut.push({
             dag: d.dag + ' ' + d.dato + '.',
             hva: navn,
             tid: (p.tekst || '').split(' · ')[1] || '',
+            // Eieren, 9. september 2026: «er det 3 paameldte saa vises det 3
+            // opptatte skiver i kursets varighet». For sto det ingen tall
+            // her, og setningen over lista paasto at alle skivene var tatt.
+            //
+            // Uten oekt eller uten skivetall staar det ingenting — et tall vi
+            // ikke kan staa for er verre enn ingen tall.
+            tall: (okt && antallSkiver > 0)
+              ? (okt.solgt || 0) + ' av ' + antallSkiver : '',
+            harTall: !!(okt && antallSkiver > 0),
           });
         }));
+
+        // ── «Naa: N av M skiver i bruk» ─────────────────────────────────
+        //
+        // Eieren, 9. september 2026, spurt om tallet var totalen eller bare
+        // kursene: «Alt — medlemmer og kurs». Bare det ene ville loeyet naar
+        // det andre sto i rommet.
+        //
+        // Tallet regnes paa serveren, ikke her. Katalogen sender bare oekter
+        // som ikke har startet ennaa, saa et kurs som gaar NAA finnes ikke i
+        // «datoer» — og det er nettopp det kurset dette spoer om. Se «iBruk»
+        // i api/stempling.php.
+        const iBruk = skiva ? (skiva.iBruk || 0) : 0;
         return {
           skiveOpptatt: ut,
+          // Er det ingen skiver registrert, staar linja ikke — da er «av 0»
+          // det eneste den kunne sagt.
+          skiveNaaVis: antallSkiver > 0,
+          skiveNaa: Math.min(iBruk, antallSkiver) + ' av ' + antallSkiver + ' skiver i bruk',
           // Er ingenting satt opp, er skivene ledige hele uka — og det er et
           // svar. For sto kortet med overskrift og en forklaring under, og
           // ingen linjer; da kunne man like gjerne tro at det var i stykker.

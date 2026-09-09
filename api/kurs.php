@@ -104,6 +104,10 @@ $oktIder    = array_map(static fn(array $o): int => (int) $o['id'], $alleOkter);
 $ledigeKart = Booking::ledigePlasserFlere($oktIder);
 // Maa leses etter ledigePlasserFlere: den regner det ut, denne henter svaret.
 $sperretKart = Booking::sperretAvAnnet($oktIder);
+// Hvor mange plasser oekta selv har tatt. «Dreieskivene denne uka» paa Min
+// side viser tallet; «ledige» kan ikke brukes til det, for den er alt
+// trukket ned av alt annet som deler ressursen.
+$solgtKart   = Booking::solgtePlasserFlere($oktIder);
 $samlingKart = Samlinger::forOkter($oktIder);
 
 $ut = [];
@@ -311,6 +315,8 @@ foreach ($kurs as $k) {
             // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
             'startUtc' => $o['start_tid'],
             'ledige'   => $ledigeKart[(int) $o['id']] ?? 0,
+            // Plassene denne oekta har tatt. Se solgtePlasserFlere().
+            'solgt'    => $solgtKart[(int) $o['id']] ?? 0,
             // Full fordi noe annet holder ressursen. En annen oekt midt i
             // et dreiekurs er ikke «fullbooket» — det gaar et kurs, og
             // skivene staar dekket til det.

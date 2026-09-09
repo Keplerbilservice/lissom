@@ -342,7 +342,8 @@ $medlemsstatus = (static function (): array {
             ? ', betaler_ikke, betaler_ikke_grunn'
             : ', 0 AS betaler_ikke, NULL AS betaler_ikke_grunn')
         . " FROM members
-            WHERE status IN ('prove','aktiv','pause') AND anonymisert_at IS NULL"
+            WHERE status IN ('prove','aktiv','pause','oppsagt')
+              AND anonymisert_at IS NULL"
     );
     $ider = array_map(static fn(array $m): int => (int) $m['id'], $aktive);
     $siste = Medlemskap::sisteBetalinger($ider);
@@ -387,7 +388,29 @@ $medlemsstatus = (static function (): array {
             $a === null ? null : ($trekkene[(int) $a['id']] ?? null)
         );
 
-        if ($b['tilstand'] === 'fri') {
+        // ── Den som har sagt opp, men ikke gjort opp ────────────────────
+        //
+        // Eieren, 9. september 2026: «kasse viser to ubetalte, disse er
+        // riktig, men gina boerjeson staar ogsaa som ubetalt, men ikke paa
+        // denne oversikten».
+        //
+        // Grunnen var denne lista: den hentet bare proeve, aktiv og pause.
+        // Et medlem som sa opp mens noe sto ubetalt forsvant fra kortet som
+        // skulle minne om aa kreve det inn — mens pilla paa medlemsraden,
+        // som ikke har en slik sperre, fortsatte aa si «Ubetalt». De to var
+        // uenige om det samme medlemmet.
+        //
+        // Oppsagte er derfor med naa, men BARE i radene. Tallene under —
+        // «fri», «nye» og «nyeUbet» — beskriver de loepende medlemskapene,
+        // og en oppsagt hoerer ikke hjemme i dem. Han valgte «Ja, ta dem
+        // med».
+        $oppsagt = (string) ($m['status'] ?? '') === 'oppsagt';
+
+        if ($oppsagt) {
+            if (!empty($b['utestaaende'])) {
+                $ut['ubetalte']++;
+            }
+        } elseif ($b['tilstand'] === 'fri') {
             $ut['fri']++;
         } elseif (!empty($b['utestaaende'])) {
             // «utestaaende», ikke «forfalt». Eieren, 2. september: de skal
@@ -425,10 +448,13 @@ $medlemsstatus = (static function (): array {
                 'hvorfor'   => (string) $b['tekst'],
                 'forfalt'   => !empty($b['forfalt']),
                 'startDato' => (string) ($m['start_dato'] ?? ''),
+                // Slik at raden sier hvorfor den staar der naar medlemskapet
+                // ikke loeper lenger. Uten den ser den ut som alle de andre.
+                'oppsagt'   => $oppsagt,
             ];
         }
 
-        if ((string) ($m['start_dato'] ?? '') >= $mndStart) {
+        if (!$oppsagt && (string) ($m['start_dato'] ?? '') >= $mndStart) {
             $ut['nye']++;
             if (!empty($b['utestaaende'])) {
                 $ut['nyeUbet']++;
@@ -662,6 +688,10 @@ Svar::json([
                     ->diff(new DateTimeImmutable($m['startDato']))->days))
                 : 0,
             'forfalt' => $m['forfalt'],
+            // Medlemskapet loeper ikke lenger, men pengene staar ute. Uten
+            // dette ser raden ut som alle de andre, og man ringer en som
+            // alt har sagt opp uten aa vite det.
+            'oppsagt' => !empty($m['oppsagt']),
         ];
     }, $medlemsstatus['rader']), array_map(static function (array $o): array {
         return [

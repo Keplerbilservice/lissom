@@ -1523,6 +1523,28 @@ sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(
 sjekk('ingen adresse staar to ganger i adminlista',
     count($forNokler) === count(array_unique(array_map('mb_strtolower', $forNokler))));
 
+// ── Hvem faar de interne e-postene ─────────────────────────────────────
+//
+// Eieren, 9. september 2026: «la oss forholde oss til det som staar i admin,
+// jeg vil at det kun er monica eller post@lissom.no som skal faa eposter,
+// gjelder hele systemet.» Han valgte post@lissom.no.
+//
+// For gikk de til alle med rollen «admin» i basen. Da avgjorde rollelista
+// hvem som fikk e-post, og en ny administrator fikk dem uten at noen hadde
+// bestemt det. Naa er det avsenderoppsettet under Innstillinger → Varsler.
+$varselFil = file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+sjekk('adminvarsler slaar ikke lenger opp rollen i basen',
+    !str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
+sjekk('… de gaar til adressen som staar i admin',
+    $forNokler === [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))],
+    implode(', ', $forNokler));
+// Én adresse, ikke en liste som vokser med hver nye administrator.
+sjekk('… og det er én adresse', count($forNokler) === 1, (string) count($forNokler));
+// Rollen avgjor fortsatt hvem som kommer INN i admin — det er en annen sak,
+// og den skal ikke ryke med her.
+sjekk('rollen avgjor fortsatt adgangen til admin',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/auth.php'), "rolle = 'admin'"));
+
 $betFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
 
 // ── Betaling registrert for haand ────────────────────────────────────────
@@ -5512,6 +5534,205 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
         DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Ressursproeve'");
     }
 }
+// ── Tallet paa «Dreieskivene denne uka» ────────────────────────────────
+//
+// Eieren, 9. september 2026: «i dag saa vises paa min side for medlemmer at
+// alle dreieskivene er opptatt naar det er kurs, men jeg oensker at det kun
+// viser antall opptatte dreieskiver ... er det 3 paameldte saa vises det 3
+// opptatte skiver i kursets varighet. i tillegg saa vises saa klart skiven
+// som opptatt naar et medlem er innstemplet.»
+//
+// Spurt om «Naa»-tallet var totalen eller bare kursene: «Alt — medlemmer og
+// kurs».
+if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
+    $skiveTest = DB::en("SELECT id FROM ressurser WHERE navn = 'Dreieskive' AND aktiv = 1");
+    if ($skiveTest !== null) {
+        $sid = (int) $skiveTest['id'];
+        $rydd = static function (): void {
+            DB::kjor("DELETE b FROM bookings b JOIN course_sessions cs ON cs.id = b.course_session_id
+                       WHERE cs.info = 'skiveproeve'");
+            DB::kjor("DELETE FROM course_sessions WHERE info = 'skiveproeve'");
+            DB::kjor("DELETE FROM courses WHERE slug IN ('testskivetall', 'testskivetall-b')");
+        };
+        $rydd();
+
+        $kid = DB::settInn('courses', [
+            'slug' => 'testskivetall', 'tittel' => 'Test skivetall', 'type' => 'kurs',
+            'pris_ore' => 50000, 'kapasitet' => 8, 'status' => 'publisert', 'ressurs_id' => $sid,
+        ]);
+        $dag = gmdate('Y-m-d', time() + 1728000);
+        $oid = DB::settInn('course_sessions', [
+            'course_id' => $kid, 'start_tid' => $dag . ' 17:00:00',
+            'slutt_tid' => $dag . ' 20:00:00', 'kapasitet' => 8, 'info' => 'skiveproeve',
+        ]);
+        DB::settInn('bookings', [
+            'course_id' => $kid, 'course_session_id' => $oid,
+            'gjest_navn' => 'Skivetall', 'gjest_epost' => 'skivetall@lissom.test',
+            'antall' => 3, 'belop_ore' => 0, 'status' => 'betalt',
+        ]);
+
+        // Kjernen: tallet er det oekta selv har tatt — ikke plasstallet, og
+        // ikke det som blir igjen naar alt annet paa skivene er trukket fra.
+        $solgt = Booking::solgtePlasserFlere([$oid]);
+        sjekk('tre paameldte gir tre opptatte skiver',
+            ($solgt[$oid] ?? -1) === 3, 'fikk ' . ($solgt[$oid] ?? -1));
+
+        // Et nabokurs paa samme ressurs, til samme tid, skal ikke endre
+        // tallet. «ledige» trekkes ned av naboen; dette tallet gjor det ikke.
+        $kid2 = DB::settInn('courses', [
+            'slug' => 'testskivetall-b', 'tittel' => 'Test skivetall B', 'type' => 'kurs',
+            'pris_ore' => 50000, 'kapasitet' => 8, 'status' => 'publisert', 'ressurs_id' => $sid,
+        ]);
+        $oid2 = DB::settInn('course_sessions', [
+            'course_id' => $kid2, 'start_tid' => $dag . ' 17:00:00',
+            'slutt_tid' => $dag . ' 20:00:00', 'kapasitet' => 8, 'info' => 'skiveproeve',
+        ]);
+        DB::settInn('bookings', [
+            'course_id' => $kid2, 'course_session_id' => $oid2,
+            'gjest_navn' => 'Skivetall', 'gjest_epost' => 'skivetall@lissom.test',
+            'antall' => 4, 'belop_ore' => 0, 'status' => 'betalt',
+        ]);
+        $solgt = Booking::solgtePlasserFlere([$oid, $oid2]);
+        sjekk('… og naboen paa samme ressurs endrer det ikke',
+            ($solgt[$oid] ?? -1) === 3 && ($solgt[$oid2] ?? -1) === 4,
+            'fikk ' . ($solgt[$oid] ?? -1) . ' og ' . ($solgt[$oid2] ?? -1));
+
+        // Plasser holdt av utenfor nettsiden staar like mye i veien for et
+        // medlem som en betalt paamelding gjor.
+        DB::oppdater('course_sessions', ['manuelt_opptatt' => 2], ['id' => $oid]);
+        $solgt = Booking::solgtePlasserFlere([$oid]);
+        sjekk('… og manuelt opptatt teller med',
+            ($solgt[$oid] ?? -1) === 5, 'fikk ' . ($solgt[$oid] ?? -1));
+
+        $rydd();
+    }
+}
+
+// Tallet maa naa fram til kortet. Uten disse to staar regnestykket der uten
+// at noen ser det.
+$kursFil = file_get_contents(__DIR__ . '/../api/kurs.php');
+sjekk('katalogen sender antall opptatte plasser per dato',
+    str_contains($kursFil, "'solgt'    => \$solgtKart[(int) \$o['id']] ?? 0,"));
+$stempFil = file_get_contents(__DIR__ . '/../api/stempling.php');
+sjekk('stemplingen sender hvor mye av ressursen som er i bruk naa',
+    str_contains($stempFil, "'iBruk'  => min("));
+// «Alt — medlemmer og kurs»: begge halvdelene maa staa der.
+sjekk('… og teller baade innstemplede og kurs som gaar',
+    str_contains($stempFil, 'FROM check_ins WHERE ut_tid IS NULL GROUP BY r')
+    && str_contains($stempFil, "AND DATE(cs.start_tid) <= UTC_DATE()"));
+// Katalogen sender bare oekter som ikke har startet. Derfor kan ikke tallet
+// regnes i nettsida — det var feilen jeg selv gikk i foerst.
+sjekk('… og tallet regnes paa serveren, ikke av katalogen',
+    str_contains($kursFil, 'AND start_tid > UTC_TIMESTAMP()')
+    && str_contains($sida, 'const iBruk = skiva ? (skiva.iBruk || 0) : 0;'));
+
+// Kortet selv: pille, «Naa»-linje og den nye setningen.
+sjekk('kortet viser tallet som pille, ikke som loes tekst',
+    str_contains($sida, '<sc-if value="{{ o.harTall }}"')
+    && str_contains($sida, 'border-radius: 999px; padding: 2px 7px; white-space: nowrap;">{{ o.tall }}'));
+sjekk('… og «Naa»-linja staar over lista',
+    str_contains($sida, '{{ skiveNaa }}') && str_contains($sida, '<sc-if value="{{ skiveNaaVis }}"'));
+sjekk('… og setningen som paasto at alle skivene var opptatt er borte',
+    !str_contains($sida, 'Under kurs og events er dreieskivene opptatt')
+    && str_contains($sida, 'Under kurs er noen av skivene opptatt. Tallet viser hvor mange som er tatt.'));
+
+// ── Ventelista overlever en avlysing ───────────────────────────────────
+//
+// Eieren, 9. september 2026: «jeg fjernet en person som stod paa dreiekurs i
+// dag, dro henne til venteliste og hun la seg riktig, saa avlyste jeg oekten,
+// men naa er hun borte fra venteliste».
+//
+// Hun var ikke slettet. Ventelistepanelet i kalenderen filtrerer bort alt som
+// hoerer til en avlyst oekt («!e.avlyst»), og da forsvant hun derfra. Naa
+// loesnes de fra kvelden naar den avlyses: de venter paa kurset i stedet, og
+// den som venter paa kurset staar paa hver kommende dato.
+$kursKode = file_get_contents(__DIR__ . '/../api/admin/kurs.php');
+sjekk('avlysing loesner ventelista fra kvelden',
+    str_contains($kursKode, 'UPDATE waitlist SET course_session_id = NULL'));
+// Bare de som fortsatt venter. En som alt har faatt plass eller er fjernet
+// skal ikke vekkes til live igjen.
+sjekk('… bare for dem som fortsatt venter',
+    str_contains($kursKode, "WHERE course_session_id = :o AND status IN ('venter','varslet')"));
+// Ingen rad slettes. Det var nettopp frykten.
+sjekk('… og ingen ventelisterad slettes ved avlysing',
+    !preg_match('/case \'avlys\':.*?DELETE FROM waitlist/s', $kursKode));
+// Panelet i kalenderen skjuler fortsatt avlyste kvelder — det er riktig, en
+// avlyst kveld har ingen plass aa gi bort. Poenget er at personen ikke lenger
+// henger paa den.
+sjekk('kalenderen viser dem som venter paa kurset paa hver kommende dato',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/kalender.php'),
+                 'WHERE w.course_session_id IS NULL'));
+
+// ── «Ikke betalt» tar med dem som har sagt opp ─────────────────────────
+//
+// Eieren, 9. september 2026: «kasse viser to ubetalte, disse er riktig, men
+// gina boerjeson staar ogsaa som ubetalt, men ikke paa denne oversikten».
+//
+// Kortet hentet bare proeve, aktiv og pause. Et medlem som sa opp mens noe
+// sto ubetalt forsvant fra kortet som skulle minne om aa kreve det inn, mens
+// pilla paa medlemsraden fortsatte aa si «Ubetalt». Han valgte «Ja, ta dem
+// med».
+$ovKode = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+sjekk('«Ikke betalt» henter ogsaa oppsagte',
+    str_contains($ovKode, "WHERE status IN ('prove','aktiv','pause','oppsagt')"));
+sjekk('… og raden sier at medlemskapet er sagt opp',
+    str_contains($ovKode, "'oppsagt' => !empty(\$m['oppsagt']),")
+    && str_contains($sida, "erMedlem && u.oppsagt ? 'Oppsagt' : ''"));
+// Tallene under kortet beskriver de loepende medlemskapene. En oppsagt hoerer
+// ikke hjemme i «nye denne maaneden».
+sjekk('… men en oppsagt teller ikke som nytt medlem',
+    str_contains($ovKode, "if (!\$oppsagt && (string) \$m['start_dato'] ?? '' >= \$mndStart) {")
+    || str_contains($ovKode, "if (!\$oppsagt && (string) (\$m['start_dato'] ?? '') >= \$mndStart) {"));
+
+// ── Kalenderen er startsida i admin ────────────────────────────────────
+//
+// Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
+// kalender skal vaere start siden».
+sjekk('/admin aapner kalenderen',
+    str_contains($sida, "{ sti: '/admin',              side: 'adminkalender' },"));
+// Oversikt er ikke fjernet — den har faatt sin egen adresse.
+sjekk('… og Oversikt har fortsatt en adresse',
+    str_contains($sida, "{ sti: '/admin/oversikt',     side: 'adminoversikt' },"));
+
+// ── Pilleraden i kalenderen ────────────────────────────────────────────
+//
+// Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa kalender under
+// pillen "dag", i samme stoerrelse som», «jeg vil at pillene stemple inn og
+// steng dagen skal gjoeres om til en pille, stemple inn, naar jeg er inne saa
+// endrer den funksjon til aa stemple ut», og «jeg vil at den nye stemple inn
+// og ut pillen legges ved siden av pillen "inne naa"».
+sjekk('«Inne naa» staar i kalenderen',
+    str_contains($sida, '{{ klInneNaaTekst }}') && str_contains($sida, "klInneNaaTekst: 'Inne nå · '"));
+// Tallet er det samme som sidemenyen viser. To tellinger av det samme rommet
+// ville for eller siden svart hver sitt.
+sjekk('… og tallet kommer fra den tellingen som alt finnes',
+    str_contains($sida, "klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
+        ? this.state.stempling.inne.antall : 0),"));
+// «i samme stoerrelse som» pilla «Dag»: 7px 20px, 17px. «lineHeight: normal»
+// er det som gjor en <span> like hoy som en <button> — maalt til 44 mot 36
+// uten den.
+sjekk('… i samme stoerrelse som visningspillene',
+    str_contains($sida, "borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }"));
+sjekk('… og stemple-pilla har de samme maalene',
+    str_contains($sida, "klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)'"));
+// Prikken maa vaere hvit paa den groenne pilla. «sage» paa «sage» er ingen
+// prikk — den forsvant da pilla ble fylt.
+sjekk('… og prikken synes naar pilla er groenn',
+    str_contains($sida, "background: this.erInne() ? '#fff' : 'var(--clay-300)' },"));
+// Én pille, som bytter funksjon. Den fantes fra for; det som er nytt er at
+// den staar alene.
+sjekk('stemple-pilla bytter mellom inn og ut',
+    str_contains($sida, "klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',"));
+// «Steng dagen» er borte fra kalenderen. Han: «stemple ut vil vaere samme som
+// steng dagen, saa jeg trrenger den ikke», og etter maalingen av Ferie:
+// «Fjern pilla, la grunnen gaa».
+sjekk('«Steng dagen» staar ikke lenger i kalenderen',
+    !str_contains($sida, '{{ klStengTekst }}'));
+// Dager stenges under Ferie i stedet. Den veien maa finnes, ellers er
+// muligheten borte og ikke flyttet.
+sjekk('… men dager kan fortsatt stenges under Ferie',
+    str_contains($sida, "this.ferieKall({ handling: stengt ? 'aapne' : 'steng', dato: nokkel });"));
+
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte
@@ -7378,8 +7599,11 @@ sjekk('menyen viser bare OEkonomi for rollen',
     str_contains($sida2, "? Component.ADMIN_MENY.filter(([navn]) => navn === 'Økonomi')"));
 sjekk('… og navigasjonen sender henne tilbake dit',
     str_contains($sida2, "if (this.erBareRegnskap() && Component.REGNSKAP_SKJERMER.indexOf(rute) === -1) {"));
+// Eieren, 9. september 2026, ba om kalenderen som startside i admin. Det
+// endret venstre side av dette valget, ikke hoyre: regnskapsfoereren lander
+// fortsatt paa OEkonomi, og det er det denne vokter.
 sjekk('… og hun lander paa OEkonomi naar hun logger inn',
-    str_contains($sida2, "side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
+    str_contains($sida2, "side: d.erAdmin ? 'adminkalender' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
 
 // Rollen kunne ikke velges i det hele tatt: skjemaet hadde én avkryssingsboks
 // for admin. Eieren, 1. september: «jeg kan ikke velge hva en ny bruker skal

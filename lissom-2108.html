@@ -4158,7 +4158,16 @@ window.__resources = {
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dreieskivene denne uka</div>
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ skiveUke }}</span>
               </div>
-              <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs er noen av skivene opptatt. Tallet viser hvor mange som er tatt.</p>
+              <!-- Hvor mange skiver som staar opptatt i dette oeyeblikket:
+                   innstemplede medlemmer pluss et kurs som gaar naa. Se
+                   «skiveNaa» i renderVals(). -->
+              <sc-if value="{{ skiveNaaVis }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: baseline; gap: var(--space-2); margin: 0 0 var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-subtle);">
+                  <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Nå:</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-body);">{{ skiveNaa }}</span>
+                </div>
+              </sc-if>
               <!-- Ingen kurs paa skivene er ogsaa et svar. Kortet sto med
                    overskrift og forklaring, og ingen linjer under — da kan man
                    like gjerne tro at det er i stykker. -->
@@ -4167,13 +4176,20 @@ window.__resources = {
               </sc-if>
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <sc-for list="{{ skiveOpptatt }}" as="o" hint-placeholder-count="3">
-                  <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px var(--space-3); font-size: var(--text-sm);">
+                  <div style="display: flex; align-items: baseline; flex-wrap: nowrap; gap: var(--space-2); font-size: var(--text-sm);">
                     <span style="font-weight: 700; color: var(--text-heading); flex: 0 0 auto; min-width: 52px;">{{ o.dag }}</span>
-                    <!-- min-width: 0 er det som lar teksten bryte i stedet for
+                    <!-- min-width: 0 er det som lar navnet krympe i stedet for
                          aa presse raden bredere enn kortet. Uten den nekter et
-                         flex-element aa bli smalere enn innholdet sitt. -->
-                    <span style="color: var(--text-body); flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;">{{ o.hva }}</span>
-                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap; margin-left: auto;">{{ o.tid }}</span>
+                         flex-element aa bli smalere enn innholdet sitt. Lange
+                         kursnavn faar tre prikker framfor aa dytte tallet og
+                         klokkeslettet ned paa hver sin linje. -->
+                    <span style="color: var(--text-body); flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ o.hva }}</span>
+                    <!-- Pille, ikke loes tekst: den skal leses som ett tall,
+                         og den staar i samme stil som resten av verkstedet. -->
+                    <sc-if value="{{ o.harTall }}" hint-placeholder-val="{{ true }}">
+                      <span style="flex: 0 0 auto; font-size: var(--text-2xs); font-weight: 700; color: var(--terracotta-600); background: var(--terracotta-100); border-radius: 999px; padding: 2px 7px; white-space: nowrap;">{{ o.tall }}</span>
+                    </sc-if>
+                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap; flex: 0 0 auto;">{{ o.tid }}</span>
                   </div>
                 </sc-for>
               </div>
@@ -7115,19 +7131,24 @@ window.__resources = {
             </div>
           </div>
 
+          <!-- To rader.
+               Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa
+               kalender under pillen "dag", i samme stoerrelse som», og «jeg
+               vil at den nye stemple inn og ut pillen legges ved siden av
+               pillen "inne naa"».
+               «Steng dagen» sto her og er borte. Han, spurt om hva som skulle
+               skje med den: «stemple ut vil vaere samme som steng dagen, saa
+               jeg trrenger den ikke» — og etter at det var maalt at Ferie kan
+               stenge en enkeltdag, men ikke spoer om grunn: «Fjern pilla, la
+               grunnen gaa». Dager stenges under Ferie, som naas fra pilla
+               under logoen paa hver adminskjerm. -->
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
           <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <sc-for list="{{ klVisninger }}" as="v" hint-placeholder-count="4">
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
               </sc-for>
             </div>
-            <button type="button" onClick="{{ klStemple }}" style="{{ klStempleStil }}">
-              <span style="{{ klStemplePrikk }}"></span>
-              {{ klStempleTekst }}
-            </button>
-            <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ klStengVeksle }}" style="appearance: none; border: 1.5px solid var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 8px 18px; font: var(--type-body-sm); font-weight: 700; color: var(--text-muted); white-space: nowrap;">{{ klStengTekst }}</button>
-            </sc-if>
             <div style="position: relative; margin-left: auto; flex: 0 1 240px; min-width: 170px;">
               <input value="{{ klSok }}" onChange="{{ settKlSok }}" placeholder="Søk person eller kurs …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
               <sc-if value="{{ klSokVises }}" hint-placeholder-val="{{ false }}">
@@ -7144,6 +7165,19 @@ window.__resources = {
                 </div>
               </sc-if>
             </div>
+          </div>
+          <!-- Rad to: hvor mange som er i verkstedet, og knappen som setter
+               deg inn eller ut. Samme stoerrelse som pillene over — se
+               «klInneNaaStil» og «klStempleStil» i renderVals(). -->
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="{{ klInneNaaStil }}">
+              <span style="{{ klInneNaaPrikk }}"></span>
+              {{ klInneNaaTekst }}
+            </span>
+            <button type="button" onClick="{{ klStemple }}" style="{{ klStempleStil }}">
+              <span style="{{ klStemplePrikk }}"></span>
+              {{ klStempleTekst }}
+            </button>
           </div>
           </div>
 
@@ -23097,7 +23131,16 @@ class Component extends DCLogic {
       { sti: '/stemple',       side: 'stemple' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
-      { sti: '/admin',              side: 'adminoversikt' },
+      // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
+      // kalender skal vaere start siden». Adressen /admin aapner derfor
+      // kalenderen. Oversikt er ikke fjernet — den har faatt sin egen
+      // adresse rett under, og staar der den sto i menyen.
+      //
+      // Rekkefolgen betyr noe for veien TILBAKE: stiFor() tar det forste
+      // treffet paa skjermnavnet, saa denne maa staa foer /admin/kalender
+      // for at adressefeltet skal vise /admin.
+      { sti: '/admin',              side: 'adminkalender' },
+      { sti: '/admin/oversikt',     side: 'adminoversikt' },
       { sti: '/admin/innhold',      side: 'admininnhold' },
       { sti: '/admin/medlemskap',   side: 'adminmedlemskap' },
       { sti: '/admin/ny-registrering', side: 'adminnyreg' },
@@ -25231,7 +25274,7 @@ class Component extends DCLogic {
     const passord = this.state.liPassord || '';
 
     if (!this.erPublisert()) {
-      this.setState({ innlogget: true, erAdminBruker: true, side: 'adminoversikt', liPassord: '' });
+      this.setState({ innlogget: true, erAdminBruker: true, side: 'adminkalender', liPassord: '' });
       window.scrollTo(0, 0);
       return;
     }
@@ -25276,9 +25319,12 @@ class Component extends DCLogic {
           liPassord: '', liFeil: null,
           innlogget: true, erAdminBruker: !!d.erAdmin, erRegnskapBruker: !!d.erRegnskap,
           vippsNavn: d.navn || '',
-          // Regnskapsfoereren lander paa OEkonomi. Oversikt er stengt for
-          // rollen, og en tom skjerm er ingen velkomst.
-          side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),
+          // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg
+          // at kalender skal vaere start siden». Det er der dagen begynner.
+          //
+          // Regnskapsfoereren lander paa OEkonomi. Kalenderen er ikke hennes
+          // arbeidsdag, og Oversikt er stengt for rollen.
+          side: d.erAdmin ? 'adminkalender' : (d.erRegnskap ? 'adminokonomi' : 'minside'),
           kvittering: 'Du er logget inn',
           kvitteringDetalj: 'Velkommen tilbake, ' + (d.navn || '') + '.',
         });
@@ -33403,8 +33449,12 @@ class Component extends DCLogic {
         // «Skulle vaert trukket 1. september», «Ingen betaling
         // registrert». Dager siden innmelding ville bare gjentatt det
         // teksten alt sier, med et annet tall.
+        // Eieren, 9. september 2026: «gina boerjeson staar ogsaa som
+        // ubetalt, men ikke paa denne oversikten». Hun var oppsagt, og
+        // kortet hentet bare loepende medlemskap. Naa staar de her — og da
+        // maa raden si hvorfor, ellers ringer man en som alt har sagt opp.
         under: erMedlem || erOrdre
-          ? [u.kurs, u.naar,
+          ? [u.kurs, u.naar, erMedlem && u.oppsagt ? 'Oppsagt' : '',
              erOrdre && u.dager > 0
                ? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')
                : ''].filter(Boolean).join(' · ')
@@ -36682,10 +36732,34 @@ class Component extends DCLogic {
       klInneVal: this.erInne(),
       klUteVal: !this.erInne(),
       klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',
-      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '8px 18px', font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap' },
+      // Eieren, 9. september 2026: «i samme stoerrelse som» pilla «Dag».
+      // Maalene er derfor de samme som klVisninger bruker — 7px 20px og
+      // 17px — og ikke «type-body-sm», som gjorde den lavere enn naboene.
+      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)' : 'var(--surface-card)', color: this.erInne() ? '#fff' : 'var(--lissom-brown)', borderColor: this.erInne() ? 'var(--sage-500)' : 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', fontWeight: 700, whiteSpace: 'nowrap' },
+      // ── «Inne naa» ────────────────────────────────────────────────────
+      //
+      // Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa kalender
+      // under pillen "dag", i samme stoerrelse som».
+      //
+      // Tallet er det samme som sidemenyen viser — this.state.stempling —
+      // saa de to aldri kan si hver sitt om det samme rommet. Ingen ny
+      // telling ved siden av den som finnes.
+      klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
+        ? this.state.stempling.inne.antall : 0),
+      // «lineHeight: normal» er det som gjor den like hoy som naboene. En
+      // <span> arver linjehoyden fra sida (44 px maalt), mens en <button>
+      // faar «normal» av nettleseren (36 px). Uten den sto «Inne naa» aatte
+      // piksler hoyere enn «Dag», stikk i strid med «i samme stoerrelse som».
+      klInneNaaStil: { display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' },
+      // Groenn prikk naar noen faktisk er der. Er rommet tomt, skal prikken
+      // si det ogsaa — et tall alene leses fort som «alt i orden».
+      klInneNaaPrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: (this.state.stempling && this.state.stempling.inne.antall > 0) ? 'var(--sage-500)' : 'var(--clay-300)' },
       klStempleStatus: this.erInne()
         ? 'Innstemplet ' + (((this.state.stempling || {}).siden) || '') : 'Ikke innstemplet',
-      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? 'var(--sage-500)' : 'var(--clay-300)' },
+      // Hvit prikk naar pilla er groenn. For var den «sage» paa «sage» —
+      // usynlig — fordi pilla ble fylt da den fikk samme stoerrelse som
+      // «Dag». Samme grep som stemplingPiller() i sidemenyen bruker.
+      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? '#fff' : 'var(--clay-300)' },
       klStemple: () => {
         this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true);
         // Aapningstida regnes av innstemplingene ogsaa, saa den hentes paa
@@ -47257,20 +47331,52 @@ class Component extends DCLogic {
           return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
         })();
         const katalog = this.state.katalog || [];
+        // Hvor mange skiver verkstedet har. Staar paa ressursen i basen.
+        const antallSkiver = skiva ? (skiva.antall || 0) : 0;
         const ut = [];
         this.ukeData(uke).forEach(d => (d.poster || []).forEach(p => {
           const navn = (p.tekst || '').split(' · ')[0];
-          const k = katalog.find(x => (x.tittel || '') === navn);
+          // Kurset finnes paa id-en oppforingen baerer med seg. For sto det
+          // et navneoppslag her — tittelen klippet ut av etiketten igjen —
+          // og to kurs med samme navn kunne ikke skilles.
+          const k = katalog.find(x => x.id === p.katId)
+                 || katalog.find(x => (x.tittel || '') === navn);
           // Uten ressurs paa kurset vet vi ikke, og da paastaar vi ingenting.
           if (!k || !skiva || k.ressursId !== skiva.id) return;
+          const okt = (k.datoer || []).find(o => o.oktId === p.oktId);
           ut.push({
             dag: d.dag + ' ' + d.dato + '.',
             hva: navn,
             tid: (p.tekst || '').split(' · ')[1] || '',
+            // Eieren, 9. september 2026: «er det 3 paameldte saa vises det 3
+            // opptatte skiver i kursets varighet». For sto det ingen tall
+            // her, og setningen over lista paasto at alle skivene var tatt.
+            //
+            // Uten oekt eller uten skivetall staar det ingenting — et tall vi
+            // ikke kan staa for er verre enn ingen tall.
+            tall: (okt && antallSkiver > 0)
+              ? (okt.solgt || 0) + ' av ' + antallSkiver : '',
+            harTall: !!(okt && antallSkiver > 0),
           });
         }));
+
+        // ── «Naa: N av M skiver i bruk» ─────────────────────────────────
+        //
+        // Eieren, 9. september 2026, spurt om tallet var totalen eller bare
+        // kursene: «Alt — medlemmer og kurs». Bare det ene ville loeyet naar
+        // det andre sto i rommet.
+        //
+        // Tallet regnes paa serveren, ikke her. Katalogen sender bare oekter
+        // som ikke har startet ennaa, saa et kurs som gaar NAA finnes ikke i
+        // «datoer» — og det er nettopp det kurset dette spoer om. Se «iBruk»
+        // i api/stempling.php.
+        const iBruk = skiva ? (skiva.iBruk || 0) : 0;
         return {
           skiveOpptatt: ut,
+          // Er det ingen skiver registrert, staar linja ikke — da er «av 0»
+          // det eneste den kunne sagt.
+          skiveNaaVis: antallSkiver > 0,
+          skiveNaa: Math.min(iBruk, antallSkiver) + ' av ' + antallSkiver + ' skiver i bruk',
           // Er ingenting satt opp, er skivene ledige hele uka — og det er et
           // svar. For sto kortet med overskrift og en forklaring under, og
           // ingen linjer; da kunne man like gjerne tro at det var i stykker.
@@ -49417,8 +49523,8 @@ class Component extends DCLogic {
       // alle admin-endepunkter krever admin-sesjon og svarer 404 til andre.
       // Naa er den alltid der, diskret, og sender deg gjennom Vipps forst.
       goAdminFooter: () => {
-        if (!this.erPublisert()) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
-        if (this.state.erAdminBruker) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
+        if (!this.erPublisert()) { this.setState({ side: 'adminkalender' }); window.scrollTo(0, 0); return; }
+        if (this.state.erAdminBruker) { this.setState({ side: 'adminkalender' }); window.scrollTo(0, 0); return; }
         // Ikke admin — av hvilken grunn som helst. Da er innloggingssida for
         // verkstedet det riktige stedet aa havne. Den sendte for til Vipps
         // eller til en beskjed uten vei videre, og Vipps gir uansett ikke

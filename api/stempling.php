@@ -110,10 +110,85 @@ $inne = Stempling::inneNa();
 $ressurser = [];
 $valgtRessurs = 0;
 try {
+    // ── Hvor mye av hver ressurs som staar opptatt akkurat naa ─────────
+    //
+    // Eieren, 9. september 2026, om «Dreieskivene denne uka»: «i tillegg saa
+    // vises saa klart skiven som opptatt naar et medlem er innstemplet». Og
+    // spurt om tallet var totalen eller bare kursene: «Alt — medlemmer og
+    // kurs». Bare det ene ville loeyet naar det andre sto i rommet.
+    //
+    // Regnes her og ikke i nettsida, av én grunn: katalogen sender bare
+    // oekter som ikke har startet ennaa (start_tid > UTC_TIMESTAMP i
+    // api/kurs.php). Et kurs som gaar NAA finnes ikke der — og det er
+    // nettopp det kurset spoersmaalet gjelder.
+    $iBruk = [];
+
+    // 1) De innstemplede. Telles fra check_ins og ikke fra lista under:
+    // «inne.liste» viser bare dem som har sagt ja til aa vises, og et kort
+    // som talte lista ville sagt for faa.
+    //
+    // Rader uten valg — oekter som alt sto aapne da valget ble lagt ut —
+    // teller mot skivene, samme regel som Booking::inneNaa() bruker.
+    if (DB::harKolonne('check_ins', 'ressurs_id')) {
+        $skiveId = (int) (DB::verdi(
+            "SELECT id FROM ressurser WHERE navn = 'Dreieskive' AND aktiv = 1"
+        ) ?? 0);
+        foreach (DB::alle(
+            'SELECT ressurs_id AS r, COUNT(*) AS n FROM check_ins WHERE ut_tid IS NULL GROUP BY r'
+        ) as $rad) {
+            $r = $rad['r'] === null ? $skiveId : (int) $rad['r'];
+            if ($r > 0) {
+                $iBruk[$r] = ($iBruk[$r] ?? 0) + (int) $rad['n'];
+            }
+        }
+    }
+
+    // 2) Kurs som gaar i dette oeyeblikket.
+    //
+    // Tre timer naar sluttiden mangler — samme gjetning som
+    // Booking::ledigeRegnet() bruker, saa de to ikke svarer hver sitt.
+    //
+    // Dato og klokkeslett proeves hver for seg. Et flerdagerskurs ligger som
+    // ÉN rad — 9. september 17:00 til 10. september 20:00 — og det er to
+    // kvelder á tre timer, ikke syvogtyve timer i strekk. Formiddagen den
+    // 10. skal ikke telle. Samme grep som i ledigeRegnet().
+    if (DB::harKolonne('courses', 'ressurs_id')) {
+        $slutt = 'COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 3 HOUR)';
+        foreach (DB::alle(
+            "SELECT c.ressurs_id AS r,
+                    SUM(COALESCE(cs.manuelt_opptatt, 0)
+                        + COALESCE((SELECT SUM(b.antall) FROM bookings b
+                                     WHERE b.course_session_id = cs.id
+                                       AND (b.status = 'betalt'
+                                            OR (b.status = 'reservert'
+                                                AND (b.reservert_til IS NULL
+                                                     OR b.reservert_til > UTC_TIMESTAMP())))), 0)
+                    ) AS n
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt' AND c.status <> 'avlyst'
+                AND c.ressurs_id IS NOT NULL
+                AND DATE(cs.start_tid) <= UTC_DATE() AND UTC_DATE() <= DATE({$slutt})
+                AND IF(TIME({$slutt}) > TIME(cs.start_tid), TIME(cs.start_tid), '00:00:00')
+                    <= TIME(UTC_TIMESTAMP())
+                AND TIME(UTC_TIMESTAMP())
+                    < IF(TIME({$slutt}) > TIME(cs.start_tid), TIME({$slutt}), '23:59:59')
+              GROUP BY r"
+        ) as $rad) {
+            $r = (int) $rad['r'];
+            if ($r > 0) {
+                $iBruk[$r] = ($iBruk[$r] ?? 0) + (int) $rad['n'];
+            }
+        }
+    }
+
     $ressurser = array_map(static fn($r) => [
         'id'     => (int) $r['id'],
         'navn'   => (string) $r['navn'],
         'antall' => (int) $r['antall'],
+        // Opptatt naa: innstemplede pluss kurs som gaar. Se kommentaren over.
+        // Aldri mer enn ressursen har — «9 av 8» er ingen opplysning.
+        'iBruk'  => min($iBruk[(int) $r['id']] ?? 0, (int) $r['antall']),
     ], DB::alle('SELECT id, navn, antall FROM ressurser WHERE aktiv = 1 ORDER BY navn'));
     if (DB::harKolonne('check_ins', 'ressurs_id')) {
         $valgtRessurs = (int) (DB::verdi(

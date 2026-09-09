@@ -1523,6 +1523,28 @@ sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(
 sjekk('ingen adresse staar to ganger i adminlista',
     count($forNokler) === count(array_unique(array_map('mb_strtolower', $forNokler))));
 
+// ── Hvem faar de interne e-postene ─────────────────────────────────────
+//
+// Eieren, 9. september 2026: «la oss forholde oss til det som staar i admin,
+// jeg vil at det kun er monica eller post@lissom.no som skal faa eposter,
+// gjelder hele systemet.» Han valgte post@lissom.no.
+//
+// For gikk de til alle med rollen «admin» i basen. Da avgjorde rollelista
+// hvem som fikk e-post, og en ny administrator fikk dem uten at noen hadde
+// bestemt det. Naa er det avsenderoppsettet under Innstillinger → Varsler.
+$varselFil = file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+sjekk('adminvarsler slaar ikke lenger opp rollen i basen',
+    !str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
+sjekk('… de gaar til adressen som staar i admin',
+    $forNokler === [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))],
+    implode(', ', $forNokler));
+// Én adresse, ikke en liste som vokser med hver nye administrator.
+sjekk('… og det er én adresse', count($forNokler) === 1, (string) count($forNokler));
+// Rollen avgjor fortsatt hvem som kommer INN i admin — det er en annen sak,
+// og den skal ikke ryke med her.
+sjekk('rollen avgjor fortsatt adgangen til admin',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/auth.php'), "rolle = 'admin'"));
+
 $betFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
 
 // ── Betaling registrert for haand ────────────────────────────────────────

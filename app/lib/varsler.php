@@ -69,10 +69,19 @@ final class Varsel
     /**
      * Adressene som skal ha beskjed naar noe krever et menneske.
      *
-     * Rekkefolgen er med vilje: staar det adresser i secrets.php, er det de
-     * som gjelder. Ellers gaar det til dem som faktisk er admin i databasen.
-     * Finnes ingen av delene, gaar det til verkstedets egen adresse — den er
-     * alltid satt, og da forsvinner beskjeden i hvert fall ikke.
+     * Eieren, 9. september 2026: «la oss forholde oss til det som staar i
+     * admin, jeg vil at det kun er monica eller post@lissom.no som skal faa
+     * eposter, gjelder hele systemet.» Han valgte post@lissom.no.
+     *
+     * For gikk de interne varslene til ALLE med rollen «admin» i basen. Da
+     * avgjorde rollelista hvem som fikk e-post, og en ny administrator fikk
+     * dem uten at noen hadde bestemt det. Naa er det avsenderoppsettet under
+     * Innstillinger → Varsler som gjelder: svaradressen om den er fylt ut,
+     * ellers avsenderadressen. Begge to staar i admin og kan endres der.
+     *
+     * Staar «admin_eposter» i secrets.php, er det fortsatt den som gjelder —
+     * den som satte opp serveren beholder kontrollen. Den settes ingen steder
+     * i koden.
      *
      * @return list<string>
      */
@@ -82,26 +91,12 @@ final class Varsel
         $liste = is_array($fra) ? $fra : [];
 
         if ($liste === []) {
-            $liste = array_column(
-                DB::alle("SELECT epost FROM members
-                           WHERE rolle = 'admin' AND epost IS NOT NULL AND epost <> ''
-                             AND anonymisert_at IS NULL"),
-                'epost'
-            );
-        }
-
-        if ($liste === []) {
             $liste = [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))];
         }
 
         // Samme adresse skal telle som én, ogsaa naar den staar med ulik
         // skrivemaate. «Monica@lissom.no» og «monica@lissom.no» er samme
         // postkasse — de sto som to, og da kom hvert varsel dobbelt.
-        //
-        // Merk: er det to ULIKE adresser som begge gaar til samme person,
-        // hjelper ikke dette. Naar «admin_eposter» ikke er satt — og den
-        // settes ingen steder i dag — er lista alle medlemmer med rollen
-        // «admin». Staar noen der to ganger, kommer varselet to ganger.
         $rene = [];
         $sett = [];
         foreach ($liste as $e) {

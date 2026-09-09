@@ -5636,6 +5636,64 @@ sjekk('… og setningen som paasto at alle skivene var opptatt er borte',
     !str_contains($sida, 'Under kurs og events er dreieskivene opptatt')
     && str_contains($sida, 'Under kurs er noen av skivene opptatt. Tallet viser hvor mange som er tatt.'));
 
+// ── Ventelista overlever en avlysing ───────────────────────────────────
+//
+// Eieren, 9. september 2026: «jeg fjernet en person som stod paa dreiekurs i
+// dag, dro henne til venteliste og hun la seg riktig, saa avlyste jeg oekten,
+// men naa er hun borte fra venteliste».
+//
+// Hun var ikke slettet. Ventelistepanelet i kalenderen filtrerer bort alt som
+// hoerer til en avlyst oekt («!e.avlyst»), og da forsvant hun derfra. Naa
+// loesnes de fra kvelden naar den avlyses: de venter paa kurset i stedet, og
+// den som venter paa kurset staar paa hver kommende dato.
+$kursKode = file_get_contents(__DIR__ . '/../api/admin/kurs.php');
+sjekk('avlysing loesner ventelista fra kvelden',
+    str_contains($kursKode, 'UPDATE waitlist SET course_session_id = NULL'));
+// Bare de som fortsatt venter. En som alt har faatt plass eller er fjernet
+// skal ikke vekkes til live igjen.
+sjekk('… bare for dem som fortsatt venter',
+    str_contains($kursKode, "WHERE course_session_id = :o AND status IN ('venter','varslet')"));
+// Ingen rad slettes. Det var nettopp frykten.
+sjekk('… og ingen ventelisterad slettes ved avlysing',
+    !preg_match('/case \'avlys\':.*?DELETE FROM waitlist/s', $kursKode));
+// Panelet i kalenderen skjuler fortsatt avlyste kvelder — det er riktig, en
+// avlyst kveld har ingen plass aa gi bort. Poenget er at personen ikke lenger
+// henger paa den.
+sjekk('kalenderen viser dem som venter paa kurset paa hver kommende dato',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/kalender.php'),
+                 'WHERE w.course_session_id IS NULL'));
+
+// ── «Ikke betalt» tar med dem som har sagt opp ─────────────────────────
+//
+// Eieren, 9. september 2026: «kasse viser to ubetalte, disse er riktig, men
+// gina boerjeson staar ogsaa som ubetalt, men ikke paa denne oversikten».
+//
+// Kortet hentet bare proeve, aktiv og pause. Et medlem som sa opp mens noe
+// sto ubetalt forsvant fra kortet som skulle minne om aa kreve det inn, mens
+// pilla paa medlemsraden fortsatte aa si «Ubetalt». Han valgte «Ja, ta dem
+// med».
+$ovKode = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+sjekk('«Ikke betalt» henter ogsaa oppsagte',
+    str_contains($ovKode, "WHERE status IN ('prove','aktiv','pause','oppsagt')"));
+sjekk('… og raden sier at medlemskapet er sagt opp',
+    str_contains($ovKode, "'oppsagt' => !empty(\$m['oppsagt']),")
+    && str_contains($sida, "erMedlem && u.oppsagt ? 'Oppsagt' : ''"));
+// Tallene under kortet beskriver de loepende medlemskapene. En oppsagt hoerer
+// ikke hjemme i «nye denne maaneden».
+sjekk('… men en oppsagt teller ikke som nytt medlem',
+    str_contains($ovKode, "if (!\$oppsagt && (string) \$m['start_dato'] ?? '' >= \$mndStart) {")
+    || str_contains($ovKode, "if (!\$oppsagt && (string) (\$m['start_dato'] ?? '') >= \$mndStart) {"));
+
+// ── Kalenderen er startsida i admin ────────────────────────────────────
+//
+// Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
+// kalender skal vaere start siden».
+sjekk('/admin aapner kalenderen',
+    str_contains($sida, "{ sti: '/admin',              side: 'adminkalender' },"));
+// Oversikt er ikke fjernet — den har faatt sin egen adresse.
+sjekk('… og Oversikt har fortsatt en adresse',
+    str_contains($sida, "{ sti: '/admin/oversikt',     side: 'adminoversikt' },"));
+
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte
@@ -7502,8 +7560,11 @@ sjekk('menyen viser bare OEkonomi for rollen',
     str_contains($sida2, "? Component.ADMIN_MENY.filter(([navn]) => navn === 'Økonomi')"));
 sjekk('… og navigasjonen sender henne tilbake dit',
     str_contains($sida2, "if (this.erBareRegnskap() && Component.REGNSKAP_SKJERMER.indexOf(rute) === -1) {"));
+// Eieren, 9. september 2026, ba om kalenderen som startside i admin. Det
+// endret venstre side av dette valget, ikke hoyre: regnskapsfoereren lander
+// fortsatt paa OEkonomi, og det er det denne vokter.
 sjekk('… og hun lander paa OEkonomi naar hun logger inn',
-    str_contains($sida2, "side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
+    str_contains($sida2, "side: d.erAdmin ? 'adminkalender' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
 
 // Rollen kunne ikke velges i det hele tatt: skjemaet hadde én avkryssingsboks
 // for admin. Eieren, 1. september: «jeg kan ikke velge hva en ny bruker skal

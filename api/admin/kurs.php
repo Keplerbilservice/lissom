@@ -884,13 +884,50 @@ switch ($handling) {
         );
 
         DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $oktId]);
-        revider('dato_avlyst', 'course_session', $oktId, ['betalte_bookinger' => $antall]);
+
+        // ── De som ventet paa denne kvelden ─────────────────────────────
+        //
+        // Eieren, 9. september 2026: «jeg fjernet en person som stod paa
+        // dreiekurs i dag, dro henne til venteliste og hun la seg riktig, saa
+        // avlyste jeg oekten, men naa er hun borte fra venteliste».
+        //
+        // Hun var ikke slettet. Ventelistepanelet i kalenderen filtrerer bort
+        // alt som hoerer til en avlyst oekt, og da forsvant hun derfra — mens
+        // raden sto som for i basen og paa Venteliste-skjermen.
+        //
+        // Naa loesnes de fra kvelden i stedet: de venter paa KURSET, og en
+        // som venter paa kurset staar paa hver kommende dato (se
+        // api/admin/kalender.php). Da er hun synlig igjen, og kan gis en av
+        // de andre datoene. Ingen rad slettes, og ingen status endres.
+        $flyttet = 0;
+        if (DB::harTabell('waitlist')) {
+            $flyttet = (int) DB::verdi(
+                "SELECT COUNT(*) FROM waitlist
+                  WHERE course_session_id = :o AND status IN ('venter','varslet')",
+                ['o' => $oktId]
+            );
+            if ($flyttet > 0) {
+                DB::kjor(
+                    "UPDATE waitlist SET course_session_id = NULL
+                      WHERE course_session_id = :o AND status IN ('venter','varslet')",
+                    ['o' => $oktId]
+                );
+            }
+        }
+
+        revider('dato_avlyst', 'course_session', $oktId,
+                ['betalte_bookinger' => $antall, 'venteliste_loesnet' => $flyttet]);
 
         Svar::ok([
             'betalte' => $antall,
-            'beskjed' => $antall > 0
+            'venteliste' => $flyttet,
+            'beskjed' => ($antall > 0
                 ? "Datoen er avlyst. {$antall} har betalt og må refunderes manuelt under Økonomi."
-                : 'Datoen er avlyst.',
+                : 'Datoen er avlyst.')
+                . ($flyttet > 0
+                    ? ' ' . $flyttet . ' på venteliste venter nå på kurset i stedet,'
+                      . ' og står på de andre datoene.'
+                    : ''),
         ]);
 
     // ── «Fullbooket», selv om det er plasser igjen ─────────────────────

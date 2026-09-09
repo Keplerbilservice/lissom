@@ -23113,7 +23113,16 @@ class Component extends DCLogic {
       { sti: '/stemple',       side: 'stemple' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
-      { sti: '/admin',              side: 'adminoversikt' },
+      // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
+      // kalender skal vaere start siden». Adressen /admin aapner derfor
+      // kalenderen. Oversikt er ikke fjernet — den har faatt sin egen
+      // adresse rett under, og staar der den sto i menyen.
+      //
+      // Rekkefolgen betyr noe for veien TILBAKE: stiFor() tar det forste
+      // treffet paa skjermnavnet, saa denne maa staa foer /admin/kalender
+      // for at adressefeltet skal vise /admin.
+      { sti: '/admin',              side: 'adminkalender' },
+      { sti: '/admin/oversikt',     side: 'adminoversikt' },
       { sti: '/admin/innhold',      side: 'admininnhold' },
       { sti: '/admin/medlemskap',   side: 'adminmedlemskap' },
       { sti: '/admin/ny-registrering', side: 'adminnyreg' },
@@ -25247,7 +25256,7 @@ class Component extends DCLogic {
     const passord = this.state.liPassord || '';
 
     if (!this.erPublisert()) {
-      this.setState({ innlogget: true, erAdminBruker: true, side: 'adminoversikt', liPassord: '' });
+      this.setState({ innlogget: true, erAdminBruker: true, side: 'adminkalender', liPassord: '' });
       window.scrollTo(0, 0);
       return;
     }
@@ -25292,9 +25301,12 @@ class Component extends DCLogic {
           liPassord: '', liFeil: null,
           innlogget: true, erAdminBruker: !!d.erAdmin, erRegnskapBruker: !!d.erRegnskap,
           vippsNavn: d.navn || '',
-          // Regnskapsfoereren lander paa OEkonomi. Oversikt er stengt for
-          // rollen, og en tom skjerm er ingen velkomst.
-          side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),
+          // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg
+          // at kalender skal vaere start siden». Det er der dagen begynner.
+          //
+          // Regnskapsfoereren lander paa OEkonomi. Kalenderen er ikke hennes
+          // arbeidsdag, og Oversikt er stengt for rollen.
+          side: d.erAdmin ? 'adminkalender' : (d.erRegnskap ? 'adminokonomi' : 'minside'),
           kvittering: 'Du er logget inn',
           kvitteringDetalj: 'Velkommen tilbake, ' + (d.navn || '') + '.',
         });
@@ -33419,8 +33431,12 @@ class Component extends DCLogic {
         // «Skulle vaert trukket 1. september», «Ingen betaling
         // registrert». Dager siden innmelding ville bare gjentatt det
         // teksten alt sier, med et annet tall.
+        // Eieren, 9. september 2026: «gina boerjeson staar ogsaa som
+        // ubetalt, men ikke paa denne oversikten». Hun var oppsagt, og
+        // kortet hentet bare loepende medlemskap. Naa staar de her — og da
+        // maa raden si hvorfor, ellers ringer man en som alt har sagt opp.
         under: erMedlem || erOrdre
-          ? [u.kurs, u.naar,
+          ? [u.kurs, u.naar, erMedlem && u.oppsagt ? 'Oppsagt' : '',
              erOrdre && u.dager > 0
                ? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')
                : ''].filter(Boolean).join(' · ')
@@ -49465,8 +49481,8 @@ class Component extends DCLogic {
       // alle admin-endepunkter krever admin-sesjon og svarer 404 til andre.
       // Naa er den alltid der, diskret, og sender deg gjennom Vipps forst.
       goAdminFooter: () => {
-        if (!this.erPublisert()) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
-        if (this.state.erAdminBruker) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
+        if (!this.erPublisert()) { this.setState({ side: 'adminkalender' }); window.scrollTo(0, 0); return; }
+        if (this.state.erAdminBruker) { this.setState({ side: 'adminkalender' }); window.scrollTo(0, 0); return; }
         // Ikke admin — av hvilken grunn som helst. Da er innloggingssida for
         // verkstedet det riktige stedet aa havne. Den sendte for til Vipps
         // eller til en beskjed uten vei videre, og Vipps gir uansett ikke

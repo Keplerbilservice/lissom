@@ -307,7 +307,7 @@ final class Booking
                     --
                     -- Et planlagt kurs holder plasstallet sitt, ikke bare de
                     -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
-                    -- mulig aa booke drop in eller dreieskive paa forhaand for
+                    -- mulig aa booke en plass eller dreieskive paa forhaand for
                     -- medlemmer naar det er planlagt kurs. Da er de ressursene
                     -- booket og opptatt med kurs.»
                     --
@@ -324,11 +324,11 @@ final class Booking
                     -- er borte akkurat der: det finnes ingen vei inn til
                     -- skivene utenom kursene selv. Medlemmer forhaandsbooker
                     -- ikke — de stempler inn naar de kommer, og teller bare paa
-                    -- en oekt som gaar akkurat da (se inneNaa() nedenfor).
-                    -- Drop-in, som eieren navnga, ble tatt ned i migrasjon 110.
-                    -- Igjen paa Dreieskive staar bare dreiekursene og Date
-                    -- Night, og skal de gaa samtidig, bestemmer verkstedet det
-                    -- selv naar kalenderen legges.
+                    -- en oekt som gaar akkurat da (se inneNaa() nedenfor). Det
+                    -- andre tilbudet eieren navnga den gangen, ble tatt ned i
+                    -- migrasjon 110. Igjen paa Dreieskive staar bare
+                    -- dreiekursene og Date Night, og skal de gaa samtidig,
+                    -- bestemmer verkstedet det selv naar kalenderen legges.
                     --
                     -- Bordene beholder regelen. Der ER det en
                     -- forhaandsbookingsvei: Paint on Pots sitter paa Bordplass

@@ -5733,6 +5733,29 @@ sjekk('«Steng dagen» staar ikke lenger i kalenderen',
 sjekk('… men dager kan fortsatt stenges under Ferie',
     str_contains($sida, "this.ferieKall({ handling: stengt ? 'aapne' : 'steng', dato: nokkel });"));
 
+// ── Fargekartet i kalenderen ───────────────────────────────────────────
+//
+// Eieren, 9. september 2026, om kortet med Kurs, Event, Paint on Pots,
+// Brenning, Verksted, Vakt, Fullt og de to merkene: «ja, denne skal jeg ikke
+// ha, fjern den fra systemet».
+//
+// Bruksanvisningen sto i det samme kortet og gikk med. Han ble spurt, og
+// valgte «Fjern hele kortet».
+sjekk('fargekartet staar ikke lenger i kalenderen',
+    !str_contains($sida, '{{ klLegende }}') && !str_contains($sida, 'klLegende:'));
+sjekk('… og heller ikke de to merkene under det',
+    !str_contains($sida, 'Ingen påmeldte, under 3 dager til')
+    && !str_contains($sida, 'Nye påmeldinger siden sist'));
+sjekk('… og bruksanvisningen som sto i samme kort',
+    !str_contains($sida, 'Klikk åpner kurset · Høyreklikk for meny'));
+// Fargene paa selve kortene i kalenderen er urort. Det var forklaringen han
+// ville bort fra, ikke fargene.
+sjekk('men fargene paa kortene i kalenderen staar som for',
+    str_contains($sida, "klSlippRamme('dag', 'var(--terracotta-600)')"));
+// Og alt kortet fortalte om virker fortsatt.
+sjekk('… og hoyreklikkmenyen virker fortsatt',
+    str_contains($sida, 'onContextMenu="{{ h.meny }}"'));
+
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte

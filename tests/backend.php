@@ -2974,8 +2974,11 @@ sjekk('lagringen sender det som er endret, pluss tittel og status',
 sjekk('svaret sier hvor mange planlagte datoer endringen gjelder',
     str_contains($kursFil6, "'Endringen gjelder også de ' . \$framover . ' planlagte datoene.'"));
 
-sjekk('stemplingen i kalenderen leser den samme kilden som resten',
-    str_contains($sida, "klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',")
+// Stemple-pilla sto i kalenderen; den staar i sidemenyen naa (eieren, 9.
+// september 2026: «Den flyttes ogsaa»). Kilden er den samme som for —
+// erInne(), som leser this.state.stempling.
+sjekk('stemplingen leser den samme kilden som resten',
+    str_contains($sida, "stempleNavn: inne ? '●  Stemple ut' : '○  Stemple inn',")
     && !str_contains($sida, 'klInneTid'));
 // En avlyst dato kunne ikke settes tilbake. Da matte den settes opp paa nytt,
 // og de paameldte fulgte ikke med.
@@ -5705,39 +5708,34 @@ sjekk('… og Oversikt har fortsatt en adresse',
 // steng dagen skal gjoeres om til en pille, stemple inn, naar jeg er inne saa
 // endrer den funksjon til aa stemple ut», og «jeg vil at den nye stemple inn
 // og ut pillen legges ved siden av pillen "inne naa"».
-sjekk('«Inne naa» staar i kalenderen',
-    str_contains($sida, '{{ klInneNaaTekst }}') && str_contains($sida, "klInneNaaTekst: 'Inne nå · '"));
-// Tallet er det samme som sidemenyen viser. To tellinger av det samme rommet
-// ville for eller siden svart hver sitt.
+// Og de staar i SIDEMENYEN, ikke i kalenderen.
+//
+// Eieren, 9. september 2026: «pillen inne naa, den vbil jeg skal flyttes i
+// det brune sidemenyen og underferie». Spurt om hva som da skulle skje med
+// stemple-pilla: «Den flyttes ogsaa».
+//
+// Stemple-pilla har alltid staatt i sidemenyen — det er «Inne naa» som er ny
+// paa stedet. Gevinsten er at tallet naa staar paa hver eneste adminskjerm,
+// ikke bare paa kalenderen.
+sjekk('«Inne naa» staar under Ferie i sidemenyen',
+    str_contains($sida, '<div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>'));
+// Blokka staar én gang per adminskjerm. Staar pilla bare i noen av dem,
+// forsvinner den naar man bytter side.
+sjekk('… paa alle adminskjermene',
+    substr_count($sida, '{{ admInneNavn }}') === substr_count($sida, '{{ admFerieNavn }}'));
+// Ikke en knapp: den sier hvor mange som er inne, og gjor ingenting.
+sjekk('… og den er ikke noe man trykker paa',
+    str_contains($sida, "{ cursor: 'default' }"));
+// Tallet er det samme som resten av systemet teller.
 sjekk('… og tallet kommer fra den tellingen som alt finnes',
-    str_contains($sida, "klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
-        ? this.state.stempling.inne.antall : 0),"));
-// Stoerrelsen. Eieren ba forst om «i samme stoerrelse som» pilla «Dag», og
-// de ble det — maalt til 36 px begge to. Samme dag, etter aa ha sett dem:
-// «pillene inne naa og stemple inn / ut maa gjoere mindre, samme som de andre
-// pillene». Spurt om hvilke, svarte han: «det er kun to piller som heter
-// dette paa kalender siden, det er de jeg mener».
-//
-// De staar derfor ett hakk under visningspillene naa: 14 px skrift mot 17.
-// Maalt til 29 px mot Dags 36.
-//
-// «lineHeight: normal» maa staa: en <span> arver linjehoyden fra sida, en
-// <button> faar «normal» av nettleseren. Uten den sto «Inne naa» hoyere enn
-// stemple-pilla ved siden av.
-sjekk('… mindre enn visningspillene',
-    str_contains($sida, "padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }"));
-// Og fortsatt like store som hverandre — det var hele poenget med aa sette
-// dem side om side.
-sjekk('… og de to er fortsatt like store som hverandre',
-    substr_count($sida, "borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' }") === 2);
-// Prikken maa vaere hvit paa den groenne pilla. «sage» paa «sage» er ingen
-// prikk — den forsvant da pilla ble fylt.
-sjekk('… og prikken synes naar pilla er groenn',
-    str_contains($sida, "background: this.erInne() ? '#fff' : 'var(--clay-300)' },"));
-// Én pille, som bytter funksjon. Den fantes fra for; det som er nytt er at
-// den staar alene.
+    str_contains($sida, "admInneNavn: 'Inne nå · ' + (this.state.stempling"));
+// Ute av kalenderen, begge to.
+sjekk('… og ingen av dem staar igjen i kalenderen',
+    !str_contains($sida, '{{ klInneNaaTekst }}') && !str_contains($sida, '{{ klStempleTekst }}'));
+// Én pille, som bytter funksjon. Den staar i sidemenyen, og ringen foran
+// sier hvilken tilstand du er i: aapen naar du er ute, fylt naar du er inne.
 sjekk('stemple-pilla bytter mellom inn og ut',
-    str_contains($sida, "klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',"));
+    str_contains($sida, "stempleNavn: inne ? '●  Stemple ut' : '○  Stemple inn',"));
 // «Steng dagen» er borte fra kalenderen. Han: «stemple ut vil vaere samme som
 // steng dagen, saa jeg trrenger den ikke», og etter maalingen av Ferie:
 // «Fjern pilla, la grunnen gaa».
@@ -11039,9 +11037,11 @@ sjekk('verktoeypillene staar paa hver adminskjerm',
     $antTopp > 30 && $antTopp === $antSide);
 sjekk('… og de vises bare paa telefon',
     str_contains($uKode, '.lx-admtopp { display: flex !important; }'));
-sjekk('… og de staar rett under Stemple inn og Ferie',
+// «Inne naa» kom inn mellom Ferie og denne raden 9. september 2026 — se
+// «admInneNavn». Verktoeypillene skal fortsatt komme rett etter blokka.
+sjekk('… og de staar rett under Stemple inn, Ferie og Inne naa',
     (bool) preg_match(
-        '/\{\{ admFerieNavn \}\}<\/button>\s*<\/div>\s*<div class="lx-admtopp" style="\{\{ admToppEkstraStil \}\}">/',
+        '/\{\{ admFerieNavn \}\}<\/button>\s*<div [^>]*\{\{ admInneStil \}\}[^>]*>\{\{ admInneNavn \}\}<\/div>\s*<\/div>\s*<div class="lx-admtopp" style="\{\{ admToppEkstraStil \}\}">/',
         $uKode));
 sjekk('… og de er ikke lenger gjemt nederst i menypanelet',
     !str_contains($uKode, 'admMobEkstra'));

@@ -5958,6 +5958,38 @@ if (file_exists($mig153)) {
                             AND w.status IN ('venter','varslet')") === 0);
 }
 
+// ── «Hvem er inne» aapner seg der du trykker ───────────────────────────
+//
+// Eieren, 9. september 2026, med et bilde av pilla paa Min side: «jeg vil at
+// man skal se hvem som er inne. Kanskje ved aa klikke paa den.»
+//
+// Ruta fantes fra for, og pilla aapnet den alt. Feilen var stedet: maalt paa
+// mobil laa den 1440 px lenger ned — naermere to skjermer. Man trykket, og
+// ingenting synlig skjedde.
+//
+// Vist fire plasseringer. Han valgte A: «under pilla».
+$msPille = strpos($sida, 'class="ms-verksted" onClick="{{ msPlVerksted.velg }}"');
+$msRute  = strpos($sida, '<sc-if value="{{ msVerkstedApen }}"');
+sjekk('ruta med hvem som er inne staar rett etter pilla',
+    $msPille !== false && $msRute !== false && $msRute > $msPille
+    && ($msRute - $msPille) < 2500,
+    'avstand i tegn: ' . ($msPille !== false && $msRute !== false ? $msRute - $msPille : '?'));
+// Den skal fortsatt vaere bak et trykk — ikke staa framme hele tiden.
+sjekk('… og den er fortsatt bak et trykk',
+    str_contains($sida, 'msVerkstedApen: !!this.state.msVerksted,')
+    && str_contains($sida, 'velg: () => this.setState(st => ({ msVerksted: !st.msVerksted })),'));
+// Bare medlemmer. Hvem som er i verkstedet er internt.
+sjekk('… og bare medlemmer ser den',
+    (bool) preg_match('/\{\{ erMedlem \}\}" hint-placeholder-val="\{\{ true \}\}">\s*<sc-if value="\{\{ msVerkstedApen \}\}"/', $sida));
+// Innholdet er urort: navnene, de skjulte og haken.
+sjekk('… og innholdet er det samme som for',
+    str_contains($sida, 'Ingen er innstemplet nå.')
+    && str_contains($sida, '{{ skjulteInneTekst }}')
+    && str_contains($sida, 'label="Vis meg for andre medlemmer"'));
+// Chatten laa i den samme «erMedlem»-sperren og skal ikke ha fulgt med.
+sjekk('… og chatten staar der den sto',
+    str_contains($sida, '<sc-if value="{{ msFaneChat }}"'));
+
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte

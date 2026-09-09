@@ -5905,6 +5905,31 @@ foreach ($vFiler as $f) {
     }
 }
 sjekk('ventelista finnes bare ett sted', $vAndre === [], implode(', ', $vAndre));
+
+// ── … og alle teller det samme ─────────────────────────────────────────
+//
+// Én tabell er ikke nok hvis stedene filtrerer ulikt. Oversikt-kortet talte
+// bare «venter»; kalenderen, Venteliste-skjermen, Min side og medlemsruta
+// teller «venter» OG «varslet». Hadde du varslet noen om en ledig plass, sto
+// hun i kalenderen, men var ute av tallet paa Oversikt.
+//
+// Eieren, 9. september 2026, da det ble meldt: «fiks det».
+//
+// «varslet» betyr at beskjeden er sendt og plassen holdes til fristen —
+// personen staar fortsatt i koen. Hun venter, og skal telles.
+$vUlike = [];
+foreach ($vFiler as $f) {
+    $kode = file_get_contents(__DIR__ . '/../' . $f);
+    // Et sted som spor etter «venter» alene, uten «varslet» ved siden av.
+    if (preg_match("/status\s*=\s*'venter'/", $kode)) {
+        $vUlike[] = $f;
+    }
+}
+sjekk('… og ingen av dem teller «venter» uten «varslet»',
+    $vUlike === [], implode(', ', $vUlike));
+sjekk('… kortet paa Oversikt teller begge',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'),
+                 "SELECT COUNT(*) FROM waitlist WHERE status IN ('venter', 'varslet')"));
 sjekk('… og alle stedene leser «waitlist»',
     count(array_filter($vFiler, static fn(string $f): bool
         => str_contains(file_get_contents(__DIR__ . '/../' . $f), 'waitlist'))) === count($vFiler));

@@ -274,7 +274,22 @@ if ($hengende > 0) {
           . ' — og ' . ($hengende - 1) . ' til';
 }
 
-$venteliste = (int) DB::verdi("SELECT COUNT(*) FROM waitlist WHERE status = 'venter'");
+// ── Hvor mange som venter ──────────────────────────────────────────────
+//
+// «venter» OG «varslet». Her sto bare «venter», og da var dette det eneste
+// stedet i systemet som talte annerledes: kalenderen, Venteliste-skjermen,
+// Min side og medlemsruta bruker alle IN ('venter','varslet'). Hadde du
+// varslet noen om en ledig plass, sto hun i kalenderen, men var ute av
+// tallet her.
+//
+// Eieren, 9. september 2026, da det ble meldt: «fiks det».
+//
+// «varslet» betyr at beskjeden er sendt og plassen holdes til fristen —
+// personen staar fortsatt i koen og har ikke faatt plassen. Hun venter, og
+// skal telles.
+$venteliste = (int) DB::verdi(
+    "SELECT COUNT(*) FROM waitlist WHERE status IN ('venter', 'varslet')"
+);
 
 // --- Siste paameldinger ---------------------------------------------------
 $nyeste = DB::alle(

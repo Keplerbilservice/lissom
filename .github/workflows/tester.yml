@@ -1,0 +1,112 @@
+name: Tester
+
+# Kjorer tests/backend.php paa hver pull request, saa du ser gront eller rodt
+# for du merger — i stedet for aa stole paa at den som jobbet hadde en
+# database tilgjengelig.
+#
+# ── Hvorfor den sammenlikner mot basen ──────────────────────────────────
+#
+# Suiten har feil som staar fra for: teksten paa medlemsplanene fylles av
+# migrasjon 128 med «WHERE navn = 'Basis 30'», mens planen heter «30 timer»
+# i basen migrasjonene bygger. Sju sjekker faller derfor i en fersk base
+# uten at noen har gjort noe galt.
+#
+# En vakt som er rod fra dag én blir ikke lest. Denne kjorer derfor suiten
+# to ganger — én gang paa PR-en, én gang paa grenen den skal inn i — og
+# faller bare naar PR-en INNFORER en feil. Da sier gront «du gjorde ikke
+# noe verre», som er det sporsmalet en PR faktisk stiller.
+#
+# Blir de sju rettet, fortsetter dette aa virke: da er begge listene tomme.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: tests/backend.php
+    runs-on: ubuntu-24.04
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: lissom_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Hent koden, med historikk nok til aa naa basen
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PHP og databaseklient
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends php-cli php-mysql mariadb-client
+          php --version
+
+      - name: Kjor suiten paa PR-en og paa basen, og sammenlikn
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -uo pipefail
+
+          # Hemmelighetene testene trenger. Bare databasen er ekte; resten
+          # staar som i malen, og ingenting her naar utenfor lopet.
+          lag_secrets() {
+            sed -e "s/'db_vert'    => 'localhost'/'db_vert'    => '127.0.0.1'/" \
+                -e "s/'db_navn'    => 'BRUKER_lissom'/'db_navn'    => 'lissom_test'/" \
+                -e "s/'db_bruker'  => 'BRUKER_lissom'/'db_bruker'  => 'root'/" \
+                -e "s/'db_passord' => ''/'db_passord' => 'root'/" \
+                "$1/app/secrets.example.php" > "$1/app/secrets.php"
+          }
+
+          # Fersk base, alle migrasjonene, hele suiten. Skriver navnene paa
+          # det som feilet — uten detaljteksten, som kan variere mellom
+          # kjoringer — til fila som sendes inn.
+          kjor() {
+            tre="$1"; ut="$2"
+            mariadb -h 127.0.0.1 -uroot -proot \
+              -e "DROP DATABASE IF EXISTS lissom_test; CREATE DATABASE lissom_test CHARACTER SET utf8mb4;"
+            lag_secrets "$tre"
+            ( cd "$tre" && php bin/migrate.php >/dev/null )
+            ( cd "$tre" && php tests/backend.php ) > "$ut.log" 2>&1 || true
+            sed -n '/^FEIL:/,$p' "$ut.log" | tail -n +2 | sed 's/ —.*//' | sort -u > "$ut"
+            grep -E 'av [0-9]+ sjekker' "$ut.log" | tail -1
+          }
+
+          echo "── PR-en ─────────────────────────────────────────────"
+          kjor "$PWD" pr.txt
+
+          echo "── Basen ($BASE_SHA) ─────────────────────────────────"
+          git worktree add -q -f /tmp/base "$BASE_SHA"
+          kjor /tmp/base base.txt
+
+          nye=$(comm -13 base.txt pr.txt)
+          borte=$(comm -23 base.txt pr.txt)
+
+          if [ -n "$borte" ]; then
+            echo ""
+            echo "Feil som forsvinner med denne PR-en:"
+            echo "$borte"
+          fi
+
+          if [ -n "$nye" ]; then
+            echo ""
+            echo "NYE FEIL — denne PR-en innforer dem:"
+            echo "$nye"
+            echo ""
+            echo "Hele kjoringa staar i pr.txt.log lenger opp."
+            exit 1
+          fi
+
+          echo ""
+          echo "Ingen nye feil. De som staar igjen finnes paa basen ogsaa."

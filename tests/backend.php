@@ -3220,10 +3220,14 @@ sjekk('Oversikt vet om de ubetalte',
     // Kursplassene som for, men slaatt sammen med medlemskapene: kortet
     // holder begge slag siden eieren spurte om dem 2. september.
     str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
-// En nettbestilling som staar som reservert venter paa Vipps og ordner seg
-// selv. Bare det som er lagt inn for haand skal staa paa kortet.
-sjekk('… og bare de som er lagt inn for haand',
-    str_contains($ovFil, 'AND b.lagt_inn_av IS NOT NULL'));
+// En FERSK nettbestilling som staar som reservert venter paa Vipps og skal
+// ikke kreves inn. Regelen sto som «bare det som er lagt inn for haand», med
+// den begrunnelsen at nettbestillingen «faller bort naar reservasjonen gaar
+// ut» — og det gjor den ikke. Eieren, 9. september 2026, valgte «Vis dem i
+// Kassa naar reservasjonen er utloept». Vakta foelger den nye regelen; det
+// er de ferske som fortsatt skal holdes utenfor.
+sjekk('… og de som er lagt inn for haand, eller gikk ut paa tid',
+    str_contains($ovFil, 'AND (b.lagt_inn_av IS NOT NULL'));
 sjekk('kortet staar paa Oversikt', str_contains($sida2, '{{ ovSkylderSum }}')
     && str_contains($sida2, '<sc-for list="{{ ovSkylder }}" as="u"'));
 // «ovUbetalte» var et tall fra for. renderVals gir ett flatt objekt, saa det
@@ -5755,6 +5759,63 @@ sjekk('men fargene paa kortene i kalenderen staar som for',
 // Og alt kortet fortalte om virker fortsatt.
 sjekk('… og hoyreklikkmenyen virker fortsatt',
     str_contains($sida, 'onContextMenu="{{ h.meny }}"'));
+
+// ── Ubetalte nettbestillinger som gikk ut paa tid ──────────────────────
+//
+// Eieren, 9. september 2026: «gina boerjsenson ligger under paamelte, her
+// staar hun som ubetalt ... hun dukker ikke opp i kassen som ubetalt,
+// hvorfor?»
+//
+// Kortet tok bare med det som var lagt inn for haand, med den begrunnelsen at
+// en nettbestilling «faller bort naar reservasjonen gaar ut». Den gjor ikke
+// det: raden beholder status «reservert», og Paameldte lister den — den
+// skjermen spor ikke etter «reservert_til». De to skjermene svarte ulikt om
+// samme rad. Han valgte «Vis dem i Kassa naar reservasjonen er utloept».
+if (DB::harKolonne('bookings', 'reservert_til')) {
+    $ovKode2 = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+    sjekk('utloepte nettbestillinger kommer med i «Ikke betalt»',
+        str_contains($ovKode2, "AND (b.lagt_inn_av IS NOT NULL
+                 OR (b.reservert_til IS NOT NULL
+                     AND b.reservert_til <= UTC_TIMESTAMP()))"));
+
+    // Maalt, ikke bare lest: en fersk nettbestilling venter faktisk paa
+    // Vipps og skal IKKE kreves inn. En utloept skal.
+    $oktProeve = DB::en("SELECT id, course_id FROM course_sessions
+                          WHERE status = 'planlagt' AND start_tid > UTC_TIMESTAMP()
+                       ORDER BY start_tid LIMIT 1");
+    if ($oktProeve !== null) {
+        DB::kjor("DELETE FROM bookings WHERE gjest_navn LIKE 'Nettvakt%'");
+        $lag = static function (string $navn, string $frist) use ($oktProeve): int {
+            return DB::settInn('bookings', [
+                'course_id' => (int) $oktProeve['course_id'],
+                'course_session_id' => (int) $oktProeve['id'],
+                'gjest_navn' => $navn, 'gjest_epost' => 'nettvakt@lissom.test',
+                'antall' => 1, 'belop_ore' => 69000, 'status' => 'reservert',
+                'reservert_til' => $frist, 'lagt_inn_av' => null,
+            ]);
+        };
+        $fersk  = $lag('Nettvakt fersk',  gmdate('Y-m-d H:i:s', time() + 1200));
+        $utloept = $lag('Nettvakt utløpt', gmdate('Y-m-d H:i:s', time() - 259200));
+
+        $hvem = static function (): array {
+            return array_column(DB::alle(
+                "SELECT b.gjest_navn AS navn FROM bookings b
+                  WHERE b.status = 'reservert' AND b.payment_id IS NULL
+                    AND b.belop_ore > 0
+                    AND (b.lagt_inn_av IS NOT NULL
+                         OR (b.reservert_til IS NOT NULL
+                             AND b.reservert_til <= UTC_TIMESTAMP()))"
+            ), 'navn');
+        };
+        $liste = $hvem();
+        sjekk('… en utloept nettbestilling staar i kortet',
+            in_array('Nettvakt utløpt', $liste, true));
+        sjekk('… og en fersk gjor det ikke — den venter paa Vipps',
+            !in_array('Nettvakt fersk', $liste, true));
+
+        DB::kjor("DELETE FROM bookings WHERE id IN (:a, :b)", ['a' => $fersk, 'b' => $utloept]);
+    }
+}
 
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers

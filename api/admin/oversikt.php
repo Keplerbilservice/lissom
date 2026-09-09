@@ -620,9 +620,25 @@ Svar::json([
     // faatt plassen, men pengene er ikke kommet. Eieren, 29. august: han vil
     // ha et kort som varsler om dem, saa han kan kreve dem inn derfra.
     //
-    // Bare det som er lagt inn for haand. En nettbestilling som staar som
-    // reservert venter paa Vipps og ordner seg selv — eller faller bort naar
-    // reservasjonen gaar ut.
+    // Lagt inn for haand, eller en nettbestilling der fristen er ute.
+    //
+    // Her sto det bare «lagt inn for haand», med den begrunnelsen at en
+    // nettbestilling «venter paa Vipps og ordner seg selv — eller faller bort
+    // naar reservasjonen gaar ut». Den siste halvdelen stemte ikke: raden
+    // faller ikke bort. Den beholder status «reservert» for alltid, og
+    // Paameldte lister den — den skjermen spor ikke etter «reservert_til» —
+    // mens dette kortet med vilje saa bort fra den.
+    //
+    // Eieren, 9. september 2026: «gina boerjsenson ligger under paamelte, her
+    // staar hun som ubetalt ... hun dukker ikke opp i kassen som ubetalt,
+    // hvorfor?» Han valgte «Vis dem i Kassa naar reservasjonen er utloept».
+    //
+    // De ferske staar fortsatt utenfor: en bestilling som ble lagt inn for
+    // fem minutter siden venter faktisk paa Vipps, og skal ikke kreves inn.
+    //
+    // Merk: en nettbestilling UTEN frist («reservert_til» er tom) kommer
+    // fortsatt ikke med. Den holder ogsaa plassen sin for alltid — se
+    // Booking::ledigeRegnet() — og er en egen sak.
     //
     // Medlemskapene staar her ogsaa. Eieren spurte om dem to ganger — forst
     // «dverken hun eller eiriin kommer opp i kortet ikke betalt paa
@@ -660,8 +676,10 @@ Svar::json([
       LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
           WHERE b.status = 'reservert'
             AND b.payment_id IS NULL
-            AND b.lagt_inn_av IS NOT NULL
             AND b.belop_ore > 0
+            AND (b.lagt_inn_av IS NOT NULL
+                 OR (b.reservert_til IS NOT NULL
+                     AND b.reservert_til <= UTC_TIMESTAMP()))
        ORDER BY b.created_at"
     )), array_map(static function (array $m): array {
         return [

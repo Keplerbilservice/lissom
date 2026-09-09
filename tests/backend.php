@@ -5512,75 +5512,86 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
         DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Ressursproeve'");
     }
 }
-// ── Kurs holder solgte plasser, ikke plasstallet ───────────────────────
+// ── Skivene holder solgte plasser, bordene holder plasstallet ──────────
 //
-// Regelen fra 30. august er snudd: en oekt holder det den har solgt, i den
-// tida den varer — ikke kapasiteten sin. Se kommentaren i
-// Booking::ledigeRegnet().
+// Paa Dreieskive holder et kurs bare det det har solgt: det finnes ingen
+// forhaandsbookingsvei dit utenom kursene selv. Paa Bordplass staar regelen
+// fra 30. august, for Paint on Pots selges gjennom aapningstida paa nettopp
+// den ressursen. Se kommentaren i Booking::ledigeRegnet().
 //
-// Egen ressurs og egne kurs, slik at proven ikke henger paa hva som
-// tilfeldigvis ligger i basen fra for.
+// Maalt som ENDRING, ikke mot faste tall: basen kan ha oekter fra for paa
+// samme klokkeslett, og proven skal si noe om hva de nye kursene gjor.
 if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
-    $ryddSkive = static function (): void {
+    $deltSlugger = "'testdelt-a', 'testdelt-b', 'testdelt-c', 'testdelt-d'";
+    $ryddDelt = static function () use ($deltSlugger): void {
         DB::kjor("DELETE b FROM bookings b
                     JOIN course_sessions cs ON cs.id = b.course_session_id
                     JOIN courses c ON c.id = cs.course_id
-                   WHERE c.slug IN ('testskivea', 'testskiveb')");
+                   WHERE c.slug IN ({$deltSlugger})");
         DB::kjor("DELETE cs FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
-                   WHERE c.slug IN ('testskivea', 'testskiveb')");
-        DB::kjor("DELETE FROM courses WHERE slug IN ('testskivea', 'testskiveb')");
-        DB::kjor("DELETE FROM ressurser WHERE navn = 'Testskive'");
+                   WHERE c.slug IN ({$deltSlugger})");
+        DB::kjor("DELETE FROM courses WHERE slug IN ({$deltSlugger})");
     };
-    $ryddSkive();
+    $ryddDelt();
 
-    $tsId = DB::settInn('ressurser', ['navn' => 'Testskive', 'antall' => 8, 'aktiv' => 1]);
-    Booking::glemTak();
-
-    $dag = gmdate('Y-m-d', time() + 864000);
-    $lagSkiveKurs = static function (string $slug, int $rid, string $dag): array {
+    $deltDag = gmdate('Y-m-d', time() + 1728000);
+    $lagDelt = static function (string $slug, int $rid, int $kap, string $dag): array {
         $k = DB::settInn('courses', [
             'slug' => $slug, 'tittel' => 'Test ' . $slug, 'type' => 'kurs',
-            'pris_ore' => 69000, 'kapasitet' => 8, 'status' => 'publisert',
+            'pris_ore' => 69000, 'kapasitet' => $kap, 'status' => 'publisert',
             'ressurs_id' => $rid,
         ]);
         $o = DB::settInn('course_sessions', [
             'course_id' => $k, 'start_tid' => $dag . ' 17:00:00',
-            'slutt_tid' => $dag . ' 20:00:00', 'kapasitet' => 8,
+            'slutt_tid' => $dag . ' 20:00:00', 'kapasitet' => $kap,
         ]);
         return [$k, $o];
     };
-    [$kA, $oA] = $lagSkiveKurs('testskivea', $tsId, $dag);
-    [$kB, $oB] = $lagSkiveKurs('testskiveb', $tsId, $dag);
 
-    // Kjernen i endringen: to planlagte oekter uten en eneste booking
-    // sperrer ikke lenger hverandre. For 30.-august-regelen ble snudd holdt
-    // hver av dem alle aatte skivene, og begge sto med null.
-    $tomt = Booking::ledigePlasserFlere([$oA, $oB]);
-    sjekk('to tomme okter paa samme ressurs sperrer ikke hverandre',
-        $tomt[$oA] === 8 && $tomt[$oB] === 8,
-        'A: ' . $tomt[$oA] . ', B: ' . $tomt[$oB]);
+    $skiveRad = DB::en("SELECT id, antall FROM ressurser WHERE navn = 'Dreieskive' AND aktiv = 1");
+    if ($skiveRad !== null) {
+        // Naboen alene gir utgangspunktet.
+        [, $sB] = $lagDelt('testdelt-b', (int) $skiveRad['id'], 8, $deltDag);
+        $sBase = Booking::ledigePlasser($sB);
 
-    // Tre solgte paa A tar tre skiver fra B — ikke aatte.
-    DB::settInn('bookings', [
-        'course_id' => $kA, 'course_session_id' => $oA,
-        'gjest_navn' => 'Skiveproeve', 'gjest_epost' => 'skive@lissom.test',
-        'antall' => 3, 'belop_ore' => 0, 'status' => 'betalt',
-    ]);
-    $solgt = Booking::ledigePlasserFlere([$oA, $oB]);
-    sjekk('tre solgte paa det ene kurset lar fem skiver staa ledige',
-        $solgt[$oB] === 5, 'B fikk ' . $solgt[$oB]);
-    sjekk('… og kurset selv har fem igjen av sine egne aatte',
-        $solgt[$oA] === 5, 'A fikk ' . $solgt[$oA]);
+        // Kjernen: et planlagt, usolgt kurs ved siden av tar ingen skiver.
+        // For endringen holdt det alle aatte, og naboen sto med null.
+        [$sKA, $sA] = $lagDelt('testdelt-a', (int) $skiveRad['id'], 8, $deltDag);
+        sjekk('et usolgt dreiekurs holder ingen skiver',
+            Booking::ledigePlasser($sB) === $sBase,
+            'naboen gikk fra ' . $sBase . ' til ' . Booking::ledigePlasser($sB));
 
-    // manuelt_opptatt er verktoeyet for aa holde av skiver likevel. Tre
-    // solgte pluss fem holdt er aatte, og da er det ingenting igjen til B.
-    DB::oppdater('course_sessions', ['manuelt_opptatt' => 5], ['id' => $oA]);
-    $holdt = Booking::ledigePlasserFlere([$oA, $oB]);
-    sjekk('manuelt opptatt holder skivene som for',
-        $holdt[$oB] === 0, 'B fikk ' . $holdt[$oB]);
+        DB::settInn('bookings', [
+            'course_id' => $sKA, 'course_session_id' => $sA,
+            'gjest_navn' => 'Skiveproeve', 'gjest_epost' => 'skive@lissom.test',
+            'antall' => 3, 'belop_ore' => 0, 'status' => 'betalt',
+        ]);
+        sjekk('… tre solgte tar tre skiver, ikke aatte',
+            Booking::ledigePlasser($sB) === max(0, $sBase - 3),
+            'naboen sto med ' . Booking::ledigePlasser($sB) . ', ventet ' . max(0, $sBase - 3));
 
-    $ryddSkive();
-    Booking::glemTak();
+        // Verktoeyet for aa skjerme et usolgt kurs likevel.
+        DB::oppdater('course_sessions', ['manuelt_opptatt' => 5], ['id' => $sA]);
+        sjekk('… og manuelt opptatt holder dem som for',
+            Booking::ledigePlasser($sB) === max(0, $sBase - 8),
+            'naboen sto med ' . Booking::ledigePlasser($sB) . ', ventet ' . max(0, $sBase - 8));
+    }
+
+    // Bordene er ikke roert: der holder et usolgt kurs fortsatt plasstallet
+    // sitt, slik at Paint on Pots ikke spiser opp plassene for kurset har
+    // faatt solgt dem.
+    $bordRad = DB::en("SELECT id, antall FROM ressurser WHERE navn = 'Bordplass' AND aktiv = 1");
+    if ($bordRad !== null) {
+        [, $bD] = $lagDelt('testdelt-d', (int) $bordRad['id'], 12, $deltDag);
+        $bBase = Booking::ledigePlasser($bD);
+        $lagDelt('testdelt-c', (int) $bordRad['id'], 12, $deltDag);
+        sjekk('ved bordene holder et usolgt kurs fortsatt plassene sine',
+            Booking::ledigePlasser($bD) === max(0, $bBase - 12),
+            'naboen sto med ' . Booking::ledigePlasser($bD) . ', ventet ' . max(0, $bBase - 12));
+    }
+
+    DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Skiveproeve'");
+    $ryddDelt();
 }
 
 $ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');

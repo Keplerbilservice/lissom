@@ -5291,6 +5291,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -5655,6 +5656,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -5846,6 +5848,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -6024,6 +6027,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -6206,6 +6210,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -6403,6 +6408,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -6755,6 +6761,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -7166,19 +7173,13 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
-          <!-- Rad to: hvor mange som er i verkstedet, og knappen som setter
-               deg inn eller ut. Samme stoerrelse som pillene over — se
-               «klInneNaaStil» og «klStempleStil» i renderVals(). -->
-          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <span style="{{ klInneNaaStil }}">
-              <span style="{{ klInneNaaPrikk }}"></span>
-              {{ klInneNaaTekst }}
-            </span>
-            <button type="button" onClick="{{ klStemple }}" style="{{ klStempleStil }}">
-              <span style="{{ klStemplePrikk }}"></span>
-              {{ klStempleTekst }}
-            </button>
-          </div>
+          <!-- Rad to sto her: «Inne naa» og stemple-pilla.
+               Eieren, 9. september 2026: «pillen inne naa, den vbil jeg skal
+               flyttes i det brune sidemenyen og underferie», og spurt om hva
+               som da skulle skje med stemple-pilla: «Den flyttes ogsaa».
+               Begge staar naa i sidemenyen, under Ferie — og dermed paa hver
+               eneste adminskjerm, ikke bare denne. Stemple-pilla har alltid
+               staatt der; det er «Inne naa» som er ny paa stedet. -->
           </div>
 
         <sc-if value="{{ klErManed }}" hint-placeholder-val="{{ false }}">
@@ -8304,6 +8305,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -8543,6 +8545,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -8842,6 +8845,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -9130,6 +9134,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -9900,6 +9905,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -10205,6 +10211,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -10600,6 +10607,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -11773,6 +11781,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -12279,6 +12288,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -12600,6 +12610,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -12890,6 +12901,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -13234,6 +13246,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -13463,6 +13476,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -13680,6 +13694,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -13914,6 +13929,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -14115,6 +14131,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -14600,6 +14617,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -14793,6 +14811,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -15419,6 +15438,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -15653,6 +15673,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -16686,6 +16707,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -16978,6 +17000,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -17322,6 +17345,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -17674,6 +17698,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -17919,6 +17944,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -18270,6 +18296,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -18814,6 +18841,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -19693,6 +19721,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -20004,6 +20033,7 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -36728,49 +36758,13 @@ class Component extends DCLogic {
       // kilden som knappen i sidemenyen og paa Min side.
       klInneVal: this.erInne(),
       klUteVal: !this.erInne(),
-      klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',
-      // Eieren ba forst om «i samme stoerrelse som» pilla «Dag», og de ble
-      // det — maalt til 36 px begge to. Samme dag, etter aa ha sett dem:
-      // «pillene inne naa og stemple inn / ut maa gjoere mindre, samme som
-      // de andre pillene». Spurt om hvilke, svarte han: «det er kun to
-      // piller som heter dette paa kalender siden, det er de jeg mener».
+      // «klStempleTekst», «klInneNaa…» og «klStemple» sto her.
       //
-      // De to staar derfor ett hakk under visningspillene naa: 14 px skrift
-      // mot 17, og strammere luft. De er fortsatt like store som hverandre —
-      // det var hele poenget med aa sette dem side om side.
-      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '7px', border: '1.5px solid var(--lissom-brown)', background: this.erInne() ? 'var(--sage-500)' : 'var(--surface-card)', color: this.erInne() ? '#fff' : 'var(--lissom-brown)', borderColor: this.erInne() ? 'var(--sage-500)' : 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' },
-      // ── «Inne naa» ────────────────────────────────────────────────────
-      //
-      // Eieren, 9. september 2026: «jeg vil ha pillen "inne naa" paa kalender
-      // under pillen "dag", i samme stoerrelse som».
-      //
-      // Tallet er det samme som sidemenyen viser — this.state.stempling —
-      // saa de to aldri kan si hver sitt om det samme rommet. Ingen ny
-      // telling ved siden av den som finnes.
-      klInneNaaTekst: 'Inne nå · ' + (this.state.stempling
-        ? this.state.stempling.inne.antall : 0),
-      // «lineHeight: normal» er det som gjor den like hoy som naboene. En
-      // <span> arver linjehoyden fra sida (44 px maalt), mens en <button>
-      // faar «normal» av nettleseren (36 px). Uten den sto «Inne naa» aatte
-      // piksler hoyere enn «Dag», stikk i strid med «i samme stoerrelse som».
-      klInneNaaStil: { display: 'inline-flex', alignItems: 'center', gap: '7px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '5px 14px', fontFamily: 'inherit', fontSize: '14px', lineHeight: 'normal', fontWeight: 700, whiteSpace: 'nowrap' },
-      // Groenn prikk naar noen faktisk er der. Er rommet tomt, skal prikken
-      // si det ogsaa — et tall alene leses fort som «alt i orden».
-      klInneNaaPrikk: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', background: (this.state.stempling && this.state.stempling.inne.antall > 0) ? 'var(--sage-500)' : 'var(--clay-300)' },
-      klStempleStatus: this.erInne()
-        ? 'Innstemplet ' + (((this.state.stempling || {}).siden) || '') : 'Ikke innstemplet',
-      // Hvit prikk naar pilla er groenn. For var den «sage» paa «sage» —
-      // usynlig — fordi pilla ble fylt da den fikk samme stoerrelse som
-      // «Dag». Samme grep som stemplingPiller() i sidemenyen bruker.
-      klStemplePrikk: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? '#fff' : 'var(--clay-300)' },
-      klStemple: () => {
-        this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true);
-        // Aapningstida regnes av innstemplingene ogsaa, saa den hentes paa
-        // nytt — ellers viser bunnteksten paa nettsida det gamle.
-        this._apningHentes = false;
-        this.setState({ apningsdager: null });
-        this.klFrisk();
-      },
+      // Eieren, 9. september 2026: «pillen inne naa, den vbil jeg skal
+      // flyttes i det brune sidemenyen og underferie», og om stemple-pilla:
+      // «Den flyttes ogsaa». Begge staar naa i sidemenyen — se
+      // stemplingPiller() og «admInneNavn» — og dermed paa hver eneste
+      // adminskjerm, ikke bare kalenderen.
       klIcsVises: !!this.state.klIcsVis,
       klIcsApne: () => this.setState({ klIcsVis: true }),
       klIcsLukk: () => this.setState({ klIcsVis: false }),
@@ -51969,6 +51963,26 @@ class Component extends DCLogic {
           admFerieNavn: st.ferieNavn,
           admFerieVelg: st.ferieVelg,
           admFerieStil: smal ? kompakt(st.ferieStil) : st.ferieStil,
+          // ── «Inne naa», under Ferie ──────────────────────────────────
+          //
+          // Eieren, 9. september 2026: «pillen inne naa, den vbil jeg skal
+          // flyttes i det brune sidemenyen og underferie». Den sto i
+          // kalenderen; naa staar den her, og dermed paa hver eneste
+          // adminskjerm — ikke bare den ene.
+          //
+          // Ikke en knapp. Den sier hvor mange som er i verkstedet; den
+          // gjor ingenting naar du trykker. Derfor «cursor: default», og
+          // ingen «onClick».
+          //
+          // Tallet er det samme som blokka «I verkstedet naa» lenger nede
+          // teller, og det samme Min side viser — this.state.stempling.
+          // Ingen ny telling ved siden av den som finnes.
+          admInneNavn: 'Inne nå · ' + (this.state.stempling
+            ? this.state.stempling.inne.antall : 0),
+          admInneStil: Object.assign(
+            smal ? kompakt(st.ferieStil) : Object.assign({}, st.ferieStil),
+            { cursor: 'default' }
+          ),
         };
       })(),
 

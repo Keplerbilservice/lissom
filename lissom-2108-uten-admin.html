@@ -3982,6 +3982,64 @@ window.__resources = {
               <button type="button" class="ms-verksted" onClick="{{ msPlVerksted.velg }}" aria-label="{{ msPlVerksted.full }}" style="{{ msPlVerksted.stil }}"><span style="{{ msPlVerksted.prikk }}"></span>{{ msPlVerksted.navn }}</button>
             </nav>
           </sc-if>
+              <!-- Hvem som er i verkstedet, rett under pilla.
+
+                   Eieren, 7. september 2026, om at kortet sto fast paa
+                   forsiden: «kan man lage i verkstedet naa mer diskret som en
+                   pille paa linjen sammen min side, medlemskap pillene? med en
+                   huke av funksjon for aa vises i verkstedet». Tallet ble en
+                   pille, og ruta aapnet seg naar man trykket.
+
+                   Men ruta laa igjen langt nede paa sida. Maalt paa mobil:
+                   1440 px under pilla — naermere to skjermer. Man trykket, og
+                   ingenting synlig skjedde.
+
+                   Eieren, 9. september 2026: «jeg vil at man skal se hvem som
+                   er inne. Kanskje ved aa klikke paa den.» Vist fire
+                   plasseringer, valgte han A: «under pilla».
+
+                   Samme rute, samme innhold, samme tekst — bare der man
+                   trykker. Den staar utenfor rutenettet under, saa den legger
+                   seg mellom pilleraden og «Verkstedet ditt». -->
+              <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ msVerkstedApen }}" hint-placeholder-val="{{ false }}">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</div>
+                  <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ antallInne }} inne</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                  <sc-if value="{{ ingenInne }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size: var(--text-sm); color: var(--text-muted);">Ingen er innstemplet nå.</div>
+                  </sc-if>
+                  <sc-for list="{{ inne }}" as="m" hint-placeholder-count="3">
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                      <div style="position: relative; flex: 0 0 auto;">
+                        <div style="{{ m.avatarStil }}">{{ m.initial }}</div>
+                        <span style="position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--sage-500); border: 2px solid var(--surface-card);"></span>
+                      </div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</div>
+                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.siden }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <!-- Sto som fast tekst utenfor sperren: «2 · to medlemmer er
+                       skjult» dukket opp rett under «Ingen er innstemplet nå». -->
+                  <sc-if value="{{ harSkjulteInne }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; align-items: center; gap: var(--space-3); opacity: .75;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--clay-200); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--text-muted); flex: 0 0 auto;">{{ skjulteInne }}</div>
+                    <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ skjulteInneTekst }}</div>
+                  </div>
+                  </sc-if>
+                </div>
+                <div style="height: 1px; background: var(--border-subtle); margin: var(--space-5) 0 var(--space-4);"></div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vis meg for andre medlemmer" checked="{{ synlig }}" on-change="{{ vekslSynlig }}" hint-size="100%,28px"></x-import>
+              </div>
+
+              </sc-if>
+              </sc-if>
+
 
           <!-- ── Verkstedet ditt ──────────────────────────────────────
                Ett kort, ikke fire. Eieren, 5. september: «jeg ønsker at den
@@ -4792,55 +4850,7 @@ window.__resources = {
 
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
-              <!-- Hvem som er i verkstedet, og hva medlemmene skriver til
-                   hverandre, er internt. Det sto uten portvakt: en som hadde
-                   vaert paa ett kurs saa begge deler.
-
-                   Kortet sto fast paa forsiden. Eieren, 7. september 2026:
-                   «kan man lage i verkstedet naa mer diskret som en pille paa
-                   linjen sammen min side, medlemskap pillene? med en huke av
-                   funksjon for aa vises i verkstedet».
-
-                   Naa staar tallet som en pille i raden, og dette er ruta som
-                   aapner seg naar du trykker paa den. Samme innhold som for —
-                   hvem som er inne, hvor mange som er skjult, og haken. -->
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-              <sc-if value="{{ msVerkstedApen }}" hint-placeholder-val="{{ false }}">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</div>
-                  <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ antallInne }} inne</span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
-                  <sc-if value="{{ ingenInne }}" hint-placeholder-val="{{ false }}">
-                    <div style="font-size: var(--text-sm); color: var(--text-muted);">Ingen er innstemplet nå.</div>
-                  </sc-if>
-                  <sc-for list="{{ inne }}" as="m" hint-placeholder-count="3">
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                      <div style="position: relative; flex: 0 0 auto;">
-                        <div style="{{ m.avatarStil }}">{{ m.initial }}</div>
-                        <span style="position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--sage-500); border: 2px solid var(--surface-card);"></span>
-                      </div>
-                      <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</div>
-                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.siden }}</div>
-                      </div>
-                    </div>
-                  </sc-for>
-                  <!-- Sto som fast tekst utenfor sperren: «2 · to medlemmer er
-                       skjult» dukket opp rett under «Ingen er innstemplet nå». -->
-                  <sc-if value="{{ harSkjulteInne }}" hint-placeholder-val="{{ true }}">
-                  <div style="display: flex; align-items: center; gap: var(--space-3); opacity: .75;">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--clay-200); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--text-muted); flex: 0 0 auto;">{{ skjulteInne }}</div>
-                    <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ skjulteInneTekst }}</div>
-                  </div>
-                  </sc-if>
-                </div>
-                <div style="height: 1px; background: var(--border-subtle); margin: var(--space-5) 0 var(--space-4);"></div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vis meg for andre medlemmer" checked="{{ synlig }}" on-change="{{ vekslSynlig }}" hint-size="100%,28px"></x-import>
-              </div>
-
-              </sc-if>
 
               <!-- Gruppechatten har sitt eget sted.
                    Den laa bak menyvalget Chat, saa flyttet den til forsiden —

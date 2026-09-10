@@ -1379,11 +1379,24 @@ window.__resources = {
 
   .ms-pillerad { display: flex; }
   @media (max-width: 760px) {
-    .ms-pillerad > *:not(.ms-verksted) { display: none !important; }
+    /* Paa telefonen staar bare to av de aatte: «Min side» og «x inne».
+       De seks andre staar i bunnmenyen.
+
+       Eieren, 10. september 2026: «det er for vanskelig aa komme inn paa
+       forsiden min side», og paa spoersmaal om hvor knappen skulle staa:
+       «Kan du flytte min side knappen lenger opp paa siden ved siden av
+       pillen med antall inn.»
+
+       Raden staar over faneinnholdet, ikke inne i det, saa pilla foelger
+       med paa alle fanene — ogsaa Chat og Butikk, der veien hjem var
+       lengst. */
+    .ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }
+    .ms-hjem-langt { display: none !important; }
   }
   @media (min-width: 761px) {
     .ms-bunnmeny,
-    .ms-bunnluft { display: none !important; }
+    .ms-bunnluft,
+    .ms-hjem-kort { display: none !important; }
   }
 
 
@@ -3969,7 +3982,16 @@ window.__resources = {
                uten at skjermen maa tegnes om. 760 px, som resten av sida. -->
           <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
             <nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">
-              <button type="button" onClick="{{ msPlHjem.velg }}" aria-label="{{ msPlHjem.full }}" style="{{ msPlHjem.stil }}">{{ msPlHjem.navn }}</button>
+              <!-- Hjempilla. Den staar igjen paa telefonen sammen med
+                   verkstedspilla — se «.ms-hjem» i stilarket.
+
+                   To navn i samme knapp: «Hjem» paa telefonen, «Min side» paa
+                   PC. Eieren, 10. september 2026: «Kall den hjem» — og paa
+                   spoersmaal om bunnmenyen og PC-pillene skulle folge etter:
+                   nei, bare pilla oeverst. CSS velger hvilket av de to som
+                   staar, som ellers paa denne raden. Skjermleseren leser
+                   «Min side» begge steder, fra «aria-label». -->
+              <button type="button" class="ms-hjem" onClick="{{ msPlHjem.velg }}" aria-label="{{ msPlHjem.full }}" style="{{ msPlHjem.stil }}"><span class="ms-hjem-kort">Hjem</span><span class="ms-hjem-langt">{{ msPlHjem.navn }}</span></button>
               <button type="button" onClick="{{ msPlMedlemskap.velg }}" aria-label="{{ msPlMedlemskap.full }}" style="{{ msPlMedlemskap.stil }}">{{ msPlMedlemskap.navn }}</button>
               <button type="button" onClick="{{ msPlButikk.velg }}" aria-label="{{ msPlButikk.full }}" style="{{ msPlButikk.stil }}">{{ msPlButikk.navn }}</button>
               <button type="button" onClick="{{ msPlSelg.velg }}" aria-label="{{ msPlSelg.full }}" style="{{ msPlSelg.stil }}">{{ msPlSelg.navn }}</button>
@@ -48220,7 +48242,16 @@ class Component extends DCLogic {
             background: 'var(--surface-card)',
             borderTop: '1px solid var(--border-subtle)',
             boxShadow: '0 -2px 12px rgba(77,29,18,.08)',
-            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+            // «minmax(0, 1fr)», ikke «1fr». En rutecelle er som standard minst
+            // saa bred som innholdet sitt, og med stoerre skrift paa
+            // telefonen sprengte «Logg ut» rada ut av skjermen.
+            //
+            // Eieren, 10. september 2026: «bunn menyen maa staa fast, naa
+            // roerer den seg» — og paa spoersmaal: ja, telefonen staar paa
+            // stoerre skrift. Maalt her paa 390 px laa menyen fast og var
+            // noeyaktig saa bred som skjermen; det er den stoerre skrifta som
+            // gjor forskjellen.
+            display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
             // Plass til hjemknappen paa iPhone, som i adminmenyen.
             paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
           },
@@ -48229,7 +48260,12 @@ class Component extends DCLogic {
           // mindre holder det lengste navnet innenfor sin egen celle.
           msBmTekstStil: {
             fontSize: 8.5, lineHeight: 1.15, letterSpacing: '-.01em',
-            whiteSpace: 'nowrap', color: 'inherit', fontWeight: 'inherit',
+            // Sto som «nowrap». Da kunne et langt navn ikke gjore annet enn
+            // aa skyve cella bredere — og med stoerre skrift paa telefonen
+            // ble «Logg ut» klippet av skjermkanten. Naa brekker det heller
+            // over to linjer.
+            whiteSpace: 'normal', overflowWrap: 'anywhere', textAlign: 'center',
+            color: 'inherit', fontWeight: 'inherit',
           },
           // Menyen ligger fast over innholdet. Uten luft under blir det
           // siste kortet liggende bak den.
@@ -48863,11 +48899,23 @@ class Component extends DCLogic {
       ]).map(m => Object.assign({}, m, {
         kanAngre: !!m.egen && !m.slettet,
         angre: () => this.angreChat(m.id),
+        // Myk kant, ikke pille.
+        //
+        // Eieren, 10. september 2026, med et bilde av chatten paa telefonen:
+        // «Her vises ikke hele teksten i det brune feltet fordi denne rund».
+        //
+        // Radiusen var 999 px. Paa én linje er det en pille; paa fem linjer
+        // blir kurven saa stor at forste og siste linje loper inn under den.
+        // Maalt paa 390 px: «Neste» mistet N-en, «sier fra» mistet s-en.
+        //
+        // En kort melding ser ut som for — 14 px radius paa en boble som er
+        // 30 px hoy er nesten den samme runde kanten.
         boble: {
           display: 'inline-block',
           background: m.egen ? 'var(--lissom-brown)' : 'var(--clay-100)',
           color: m.egen ? 'var(--clay-50)' : 'var(--text-heading)',
-          borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 'var(--text-sm)',
+          borderRadius: 'var(--radius-lg)', padding: '8px 14px',
+          fontSize: 'var(--text-sm)', lineHeight: 1.5,
         },
         metaStil: { fontSize: '11px', color: 'var(--text-muted)' },
       })),

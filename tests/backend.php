@@ -7332,15 +7332,35 @@ sjekk('… og admin teller fortsatt som medlem paa serveren',
 sjekk('Min side har baade piller og bunnmeny i markupen',
     str_contains($sida, '<nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">')
     && str_contains($sida, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">'));
-// Raden staar alltid. Paa telefonen er verkstedspilla det eneste som staar
-// igjen av den — de sju andre er i bunnmenyen der, og en aattende celle
-// ville gjort de sju til 44 px hver.
+// Raden staar alltid. Paa telefonen er det to piller som staar igjen av den:
+// «Min side» og «x inne». De seks andre er i bunnmenyen der, og aatte celler
+// ville gjort dem 44 px hver.
 sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
     str_contains($sida, '.ms-pillerad { display: flex; }')
     && str_contains($sida, '@media (min-width: 761px) {')
-    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted) { display: none !important; }'));
+    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }'));
+// Eieren, 10. september 2026: «Kan du flytte min side knappen lenger opp paa
+// siden ved siden av pillen med antall inn.» Foer dette var veien hjem cella
+// lengst til venstre i bunnmenyen — han fant den ikke.
+//
+// Maalt paa 390 px: «Min side» paa x=20 og «0 inne» paa x=125, samme linje,
+// begge 999 px runde. Pilla lyser brunt paa forsiden og staar hvit paa Chat,
+// og et trykk paa den tar deg hjem og opp.
+sjekk('… og hjempilla staar igjen paa telefonen, ved siden av «x inne»',
+    str_contains($sida, '<button type="button" class="ms-hjem" onClick="{{ msPlHjem.velg }}"')
+    && str_contains($sida, '<button type="button" class="ms-verksted" onClick="{{ msPlVerksted.velg }}"'),
+    'maalt paa 390 px: begge pillene paa samme linje, ingenting stikker ut');
+// Eieren, 10. september 2026: «Kall den hjem». Og paa spoersmaalet om
+// bunnmenyen og PC-pillene skulle hete det samme: nei, bare pilla oeverst.
+// Derfor to navn i samme knapp, og CSS velger — som ellers paa denne raden.
+sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
+    str_contains($sida, '<span class="ms-hjem-kort">Hjem</span><span class="ms-hjem-langt">{{ msPlHjem.navn }}</span>')
+    && str_contains($sida, '.ms-hjem-langt { display: none !important; }')
+    && str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
+    && str_contains($sida, 'aria-label="{{ msPlHjem.full }}"'),
+    'skjermleseren leser «Min side» begge steder, fra aria-label');
 sjekk('… og bunnmenyen og luftputa under den gaar bort paa PC',
-    str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft { display: none !important; }")
+    str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, '<div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>'));
 // Pillene henter valgene fra bunnmenyen, saa de to aldri kan komme i utakt.
 sjekk('… og pillene henter de samme valgene som bunnmenyen',
@@ -13435,11 +13455,25 @@ sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
 // ── Bunnmenyen ────────────────────────────────────────────────────
 // Klassenavnet kom 7. september, da menyen ble telefonens alene og PC-en
 // fikk piller i stedet. Se «.ms-pillerad» lenger nede.
+// «minmax(0, 1fr)», ikke «1fr»: en rutecelle er som standard minst saa bred
+// som innholdet sitt. Eieren, 10. september 2026: «bunn menyen maa staa fast,
+// naa roerer den seg» — telefonen hans staar paa stoerre skrift, og da skjov
+// «Logg ut» rada ut av skjermen.
+//
+// Sto som «repeat(7, 1fr)» her. Det staar ogsaa i adminmenyen, og siden
+// $msRen er hele fila var sjekken gronn av feil grunn.
+//
+// Maalt paa 360 px med skrifta 1,4 ganger stoerre: rada noeyaktig 360 px,
+// alle sju cellene 51 px, ingen tekst klippet — navnene brekker over to
+// linjer i stedet.
 sjekk('Min side har en bunnmeny med sju valg',
     str_contains($msRen, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">')
     && substr_count($msRen, '{{ msBmTekstStil }}') === 7
-    && str_contains($msRen, "gridTemplateColumns: 'repeat(7, 1fr)'"),
+    && str_contains($msRen, "display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',"),
     'maalt: alle sju navnene holder seg innenfor cella ned til 360 px');
+sjekk('… og et langt navn brekker i cella i stedet for aa skyve rada bredere',
+    str_contains($msRen, "whiteSpace: 'normal', overflowWrap: 'anywhere', textAlign: 'center',"),
+    'sto som «nowrap»: med stoerre skrift ble «Logg ut» klippet av skjermkanten');
 sjekk('… med de valgene eieren ba om',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")

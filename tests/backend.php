@@ -7398,6 +7398,37 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
 // 1,13): «--vv-bunn» ble -90px og menyen sto noeyaktig paa skjermkanten,
 // 690 av 690 — baade paa Min side og paa admin. Tilbake paa 780 etterpaa.
 // Med 292 px krympet — et tastatur — ble den staaende, som den skal.
+// ── Chatten viser hele teksten, og staar paa den nyeste ───────────
+//
+// Eieren, 10. september 2026, med et bilde fra telefonen: «Hele teksten i
+// chatten kommer ikke med!»
+//
+// To ting sto i veien. Lista var laast til 220 px — maalt paa 390 px var
+// innholdet 297, saa 77 px laa utenfor. Og lista aapnet seg paa toppen, saa
+// det var slutten av den nyeste meldingen som forsvant.
+//
+// De 220 var en rest fra da chatten sto blant kortene paa forsiden.
+//
+// Maalt paa 390x820 etterpaa: lista 297 av 297 px, ingenting klippet. Med
+// ti meldinger: lista 451 px (55dvh), innhold 998, rullet til 547 av 547 —
+// nederst — og den siste helt synlig. Rullet man selv opp til 0, ble den
+// staaende der da det kom en ny.
+sjekk('meldingslista er ikke laast til 220 px lenger',
+    !str_contains($sida, 'max-height: 220px')
+    && str_contains($sida, '<div class="ms-chatliste" style="display: flex;'),
+    'maalt: 297 av 297 px synlig paa 390x820, mot 220 av 297 for');
+sjekk('… og hoyden folger skjermen, med reserve for gamle nettlesere',
+    str_contains($sida, '.ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }')
+    && str_contains($sida, '@media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }'),
+    '«dvh» tar hoyde for adresselinja; «vh» staar som reserve');
+sjekk('… og chatten aapner seg paa den nyeste meldingen',
+    str_contains($sida, 'if (stodNede) l.scrollTop = l.scrollHeight;'),
+    'maalt: rullet til 547 av 547, siste melding helt synlig');
+sjekk('… men staar i ro naar du selv har rullet opp for aa lese noe eldre',
+    str_contains($sida, 'stodNede = l.scrollHeight - l.scrollTop - l.clientHeight < NEDE;')
+    && str_contains($sida, 'var NEDE = 40;'),
+    'maalt: sto paa 0 da det kom en ny melding');
+
 sjekk('bunnmenyene flyttes opp naar det synlige vinduet krymper',
     str_contains($sida, ".ms-bunnmeny,\n  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }")
     && str_contains($sida, "document.documentElement.style.setProperty('--vv-bunn', d + 'px');"),

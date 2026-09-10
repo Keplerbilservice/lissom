@@ -1135,6 +1135,54 @@ window.__resources = {
 })();
 </script>
 
+<script>
+// Chatten staar paa den nyeste meldingen, ikke paa den eldste.
+//
+// Eieren, 10. september 2026, med et bilde fra telefonen: «Hele teksten i
+// chatten kommer ikke med!»
+//
+// To ting sto i veien. Hoyden — lista var laast til 220 px — staar i
+// stilarket, se «.ms-chatliste». Det andre er dette: lista aapnet seg paa
+// toppen. Er det mer tekst enn det er plass til, er det slutten som ligger
+// utenfor, og det er slutten man vil lese. En chat skal aapne seg nederst.
+//
+// Ruller man selv oppover for aa lese noe eldre, skal den staa i ro. Derfor
+// foelges den bare naar den alt staar nede — under 40 px fra bunnen.
+(function () {
+  var NEDE = 40;
+  function lista() {
+    var kort = document.getElementById('minside-chat');
+    if (!kort) return null;
+    for (var i = 0; i < kort.children.length; i++) {
+      if (kort.children[i].className === 'ms-chatliste') return kort.children[i];
+    }
+    return null;
+  }
+  var forrige = null;
+  var stodNede = true;
+  function folg() {
+    var l = lista();
+    if (!l) { forrige = null; return; }
+    if (l !== forrige) {                 // ny liste i DOM-en: begynn nederst.
+      forrige = l;
+      stodNede = true;
+      l.addEventListener('scroll', function () {
+        stodNede = l.scrollHeight - l.scrollTop - l.clientHeight < NEDE;
+      });
+    }
+    if (stodNede) l.scrollTop = l.scrollHeight;
+  }
+  function start() {
+    folg();
+    // Meldingene kommer inn etter at sida er tegnet, og nye kommer til mens
+    // man staar der. Samme verktoy som toppen over bruker.
+    new MutationObserver(folg).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.body) start();
+  else document.addEventListener('DOMContentLoaded', start);
+})();
+</script>
+
 <!-- Sidas egne stiler.
      De sto inne i <helmet> nede i kroppen, og dc-runtime flyttet dem opp
      hit forst naar oppstarten var ferdig. Med den ferdigtegnede toppen ble
@@ -1465,6 +1513,26 @@ window.__resources = {
      i en nettleser uten «visualViewport». */
   .ms-bunnmeny,
   .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }
+
+  /* Meldingslista i chatten.
+     ------------------------
+     Eieren, 10. september 2026, med et bilde fra telefonen: «Hele teksten i
+     chatten kommer ikke med!»
+
+     Lista var laast til 220 px. Maalt paa 390 px: innholdet var 297 px, saa
+     77 px laa utenfor — og siden lista sto oeverst, var det slutten av den
+     nyeste meldingen som forsvant. Under kortet laa en hel tom skjerm.
+
+     De 220 var en rest fra da chatten sto blant de andre kortene paa
+     forsiden. Eieren, 7. september 2026: «paa min side, fjern chat fra
+     forsiden» — naa er den alene paa sin egen fane og skal ha plassen.
+
+     «dvh» og ikke «vh»: paa telefonen regnes «vh» ut fra vinduet med
+     adresselinja borte, og med den framme ville kortet stukket under
+     skjermkanten. Linja over er reserven for nettlesere som ikke kan
+     «dvh». */
+  .ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }
+  @media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }
 
 
   /* Kortene paa telefonen: tittel, tall og «Se mer».
@@ -4964,7 +5032,9 @@ window.__resources = {
                   </span>
                   <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ chatStatus }}</span>
                 </div>
-                <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: var(--space-3); flex: 1; max-height: 220px; overflow-y: auto; align-content: flex-start;">
+                <!-- Hoyden staar i stilarket, se «.ms-chatliste». Den var
+                     220 px her, og klippet den nyeste meldingen. -->
+                <div class="ms-chatliste" style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: var(--space-3); flex: 1; overflow-y: auto; align-content: flex-start;">
                   <sc-for list="{{ chatMeldinger }}" as="c" hint-placeholder-count="2">
                     <span style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
                     <span style="{{ c.boble }}">{{ c.tekst }}</span>

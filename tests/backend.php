@@ -15011,6 +15011,57 @@ sjekk('… og feilmeldingen sier det virkelige tallet',
 sjekk('… og en forespoersel som kommer fram tom sier at fila var for stor',
     str_contains($dokApi, "if (\$_POST === [] && \$_FILES === [] && (int) (\$_SERVER['CONTENT_LENGTH'] ?? 0) > 0)")
     && strpos($dokApi, "CONTENT_LENGTH") < strpos($dokApi, 'Foresporsel::krevSammeOpphav();'));
+// ── Mange filer, og en zippet mappe ──────────────────────────────────────
+//
+// Eieren, 10. september 2026: «hvorfor er det saa vanskelig aa laste opp mange
+// dokumenter?» — og «jeg vil bare slippe en zippet stor mappe her».
+//
+// Ruta tok én fil om gangen. Tjue dokumenter ble tjue runder.
+//
+// Maalt i nettleseren: en zip med fire dokumenter og én tekstfil gir «4 filer
+// er lastet opp. 1 fil ble hoppet over», og tre filer merket samtidig gir «3
+// filer er lastet opp.»
+sjekk('mange filer kan velges paa én gang',
+    substr_count($dokSida, 'type="file" multiple="true"') >= 2
+    && str_contains($dokSida, "filer.forEach(f => skjema.append('dokument[]', f));")
+    && str_contains($dokApi, 'Dokumenter::delOpp($_FILES[\'dokument\'])'));
+// Med «multiple» kommer $_FILES som EN rad med lister, ikke som en liste med
+// rader. Uten delOpp() lagres et dokument som heter «Array».
+sjekk('… og PHP sin flerfil-form deles opp for den brukes',
+    str_contains($dokLib, 'public static function delOpp(array $felt): array')
+    && str_contains($dokLib, "if (!is_array(\$felt['name'] ?? null)) {"));
+sjekk('… og én fil som ikke gaar inn tar ikke med seg de andre',
+    str_contains($dokApi, '} catch (RuntimeException $e) {')
+    && str_contains($dokApi, '$feil[] = $e->getMessage();'));
+sjekk('… og kvitteringen teller riktig i entall og flertall',
+    str_contains($dokApi, "\$lagt === 1 ? 'Filen er lastet opp.' : \$lagt . ' filer er lastet opp.'")
+    && str_contains($dokApi, "' ble hoppet over — bare PDF, Word og bilde tas imot.'"));
+
+sjekk('en zip pakkes ut i kortet',
+    str_contains($dokLib, 'private static function pakkUt(')
+    && str_contains($dokLib, "in_array(\$mime, self::ZIP_TYPER, true)")
+    && str_contains($dokLib, 'Zip-fila inneholdt ingen filer vi kan ta imot.'));
+// Hver fil inne i zip-en gaar gjennom den samme kontrollen som en vanlig
+// opplasting: typen leses ut av innholdet, og navnet paa disken lager vi selv.
+// Det siste er ogsaa det som gjor at «../../app/config.php» inne i en zip
+// ikke kan skrive noe sted — proevd, og begge havnet i dokumentmappa.
+sjekk('… og hver fil inne i den kontrolleres som en vanlig opplasting',
+    str_contains($dokLib, "!isset(self::TYPER[\$mime])")
+    && str_contains($dokLib, "\$navn = bin2hex(random_bytes(16)) . '.' . self::TYPER[\$mime];")
+    && str_contains($dokLib, '$kort = basename(str_replace(\'\\\\\', \'/\', $inne));'));
+sjekk('… og en liten zip kan ikke fylle disken',
+    str_contains($dokLib, 'private const ZIP_MAKS_FILER = 200;')
+    && str_contains($dokLib, 'private const ZIP_MAKS_UT = 500 * 1024 * 1024;')
+    && str_contains($dokLib, '$lagt + $hoppet >= self::ZIP_MAKS_FILER || $sumUt > self::ZIP_MAKS_UT'));
+sjekk('… og det Mac legger ved siden av filene hoppes over',
+    str_contains($dokLib, "str_starts_with(\$inne, '__MACOSX/')"));
+// PHP sin zip-utvidelse er ikke gitt paa et delt webhotell. Mangler den, skal
+// kortet si fra i klartekst — og slipperuta skal ikke love zip.
+sjekk('… og kortet sier fra i klartekst om serveren ikke kan pakke ut',
+    str_contains($dokLib, "return class_exists('ZipArchive');")
+    && str_contains($dokLib, 'Serveren kan ikke pakke ut zip-filer. Last opp dokumentene hver for seg.')
+    && str_contains($dokSida, "(d.zip ? ' eller zip' : '')"));
+
 // Taket heves to steder, fordi webhotellet kan kjore PHP paa to maater.
 // .user.ini leses av PHP-FPM og PHP-CGI; mod_php hoerer bare paa .htaccess.
 $dokIni  = file_get_contents(dirname(__DIR__) . '/.user.ini');

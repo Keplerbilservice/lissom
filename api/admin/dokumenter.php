@@ -37,6 +37,7 @@ $hent = static fn(): array => [
     'faqMedlem'  => Dokumenter::faqForMedlem(),
     'ai'         => AI::status(),
     'maksMb'     => Dokumenter::maksMb(),
+    'zip'        => Dokumenter::zipKlar(),
 ];
 
 if (Foresporsel::metode() === 'GET') {
@@ -70,19 +71,52 @@ switch ($handling) {
         if (!$kategori) {
             Svar::feil('Fant ikke kortet.');
         }
-        if (!isset($_FILES['dokument']) || ($_FILES['dokument']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        if (!isset($_FILES['dokument'])) {
             Svar::feil('Du må velge en fil.');
         }
-        try {
-            $id = Dokumenter::taImot($_FILES['dokument'], $kategoriId, (int) $admin['id']);
-        } catch (RuntimeException $e) {
-            Svar::feil($e->getMessage());
+        // Med «multiple» kommer alle filene i ÉN rad med lister. delOpp()
+        // gjor dem til én rad hver, slik taImotEn() vil ha dem.
+        $valgte = array_filter(
+            Dokumenter::delOpp($_FILES['dokument']),
+            static fn($f) => ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE
+        );
+        if ($valgte === []) {
+            Svar::feil('Du må velge en fil.');
         }
-        revider('dokument_lastet_opp', 'dokument', $id, [
+
+        $lagt = 0;
+        $hoppet = 0;
+        $feil = [];
+        foreach ($valgte as $fil) {
+            try {
+                // En zip pakkes ut her inne; alt annet gaar inn som seg selv.
+                $r = Dokumenter::taImotEn($fil, $kategoriId, (int) $admin['id']);
+                $lagt   += $r['lagt'];
+                $hoppet += $r['hoppet'];
+            } catch (RuntimeException $e) {
+                // Én fil som ikke gaar inn skal ikke ta med seg de nitten
+                // andre. Den telles, og grunnen staar i svaret.
+                $feil[] = $e->getMessage();
+            }
+        }
+
+        if ($lagt === 0) {
+            Svar::feil($feil === [] ? 'Ingen av filene kunne lastes opp.' : $feil[0]);
+        }
+
+        revider('dokument_lastet_opp', 'dokument', null, [
             'kategori' => (string) $kategori['navn'],
-            'navn'     => (string) ($_FILES['dokument']['name'] ?? ''),
+            'antall'   => $lagt,
+            'hoppet'   => $hoppet + count($feil),
         ]);
-        Svar::ok(['beskjed' => 'Filen er lastet opp.'] + $hent());
+
+        $beskjed = $lagt === 1 ? 'Filen er lastet opp.' : $lagt . ' filer er lastet opp.';
+        $over = $hoppet + count($feil);
+        if ($over > 0) {
+            $beskjed .= ' ' . $over . ($over === 1 ? ' fil' : ' filer')
+                      . ' ble hoppet over — bare PDF, Word og bilde tas imot.';
+        }
+        Svar::ok(['beskjed' => $beskjed] + $hent());
 
     // --------------------------------------------------------------- slett
     case 'slett':

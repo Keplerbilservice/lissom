@@ -18303,7 +18303,7 @@ window.__resources = {
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ dokApnetNavn }}</span>
                 </div>
                 <label style="position: relative; display: inline-flex; align-items: center; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 6px 16px; border-radius: var(--radius-pill); border: 1px solid var(--lissom-yellow); background: var(--lissom-yellow); color: var(--lissom-brown); cursor: pointer;">
-                  <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">Last opp</label>
+                  <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">Last opp</label>
               </div>
 
               <div style="padding: 0 var(--space-6);">
@@ -18327,7 +18327,7 @@ window.__resources = {
               </sc-if>
 
               <label style="display: block; margin: var(--space-5) var(--space-6) var(--space-6); border: 2px dashed var(--border-default); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-6); text-align: center; cursor: pointer; position: relative;">
-                <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
                 <span style="display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ dokSlippTittel }}</span>
                 <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ dokSlippUnder }}</span>
               </label>
@@ -51255,16 +51255,23 @@ class Component extends DCLogic {
           dokTomt: !!valgt && radene.length === 0,
           dokTomTekst: 'Ingen dokumenter ennå.',
           dokSlippTittel: 'Slipp filen her',
-          dokSlippUnder: 'eller velg fra maskinen · PDF, Word, bilde · maks '
+          // «eller zip» staar bare naar serveren faktisk kan pakke ut. PHP
+          // sin zip-utvidelse er ikke gitt paa et delt webhotell, og en rute
+          // som lover noe den ikke kan, er verre enn en som ikke lover det.
+          dokSlippUnder: 'eller velg fra maskinen · PDF, Word, bilde'
+                         + (d.zip ? ' eller zip' : '') + ' · maks '
                          + (d.maksMb || 20) + ' MB',
+          // Alle filene, ikke bare den forste. Eieren, 10. september 2026:
+          // «hvorfor er det saa vanskelig aa laste opp mange dokumenter?» —
+          // ruta tok én om gangen, og tjue dokumenter ble tjue runder.
           dokVelgFil: (e) => {
-            const fil = e.target.files && e.target.files[0];
+            const filer = e.target.files ? Array.prototype.slice.call(e.target.files) : [];
             e.target.value = '';
-            if (!fil || !valgt) return;
+            if (!filer.length || !valgt) return;
             const skjema = new FormData();
             skjema.append('handling', 'last-opp');
             skjema.append('kategori', String(valgt.id));
-            skjema.append('dokument', fil);
+            filer.forEach(f => skjema.append('dokument[]', f));
             this.dokKall(skjema);
           },
 

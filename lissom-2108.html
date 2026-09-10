@@ -18434,9 +18434,16 @@ window.__resources = {
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-4);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">Leser fra</div>
-              <div style="display: flex; gap: 7px; flex-wrap: wrap;">
+              <!-- Kort, ikke piller. Eieren, 10. september 2026: «jeg vil ha
+                   samme kort her, disse pillene vil jeg ha som kort».
+                   Er kortet slaatt av, staar det tonet ned med stiplet kant
+                   — da leser AI-en ikke derfra. -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); align-items: stretch;">
                 <sc-for list="{{ faqLeserFra }}" as="k" hint-placeholder-count="6">
-                  <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
+                  <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
+                    <span style="{{ k.navnStil }}">{{ k.navn }}</span>
+                    <span style="{{ k.antallStil }}">{{ k.antall }}</span>
+                  </button>
                 </sc-for>
               </div>
             </div>
@@ -51191,22 +51198,11 @@ class Component extends DCLogic {
         };
         const antallTekst = (n) => n === 1 ? '1 dokument' : n + ' dokumenter';
 
-        const pille = (paa) => ({
-          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-          display: 'inline-flex', alignItems: 'center', gap: '7px',
-          font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
-          padding: '5px 13px', borderRadius: 'var(--radius-pill)',
-          border: '1px solid ' + (paa ? 'var(--sage-500)' : 'var(--border-default)'),
-          background: paa ? 'var(--sage-100)' : 'var(--surface-card)',
-          color: paa ? 'var(--sage-600)' : 'var(--text-muted)',
-        });
-        const knapp = {
-          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-          font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
-          padding: '5px 13px', borderRadius: 'var(--radius-pill)',
-          border: '1px solid var(--border-default)',
-          background: 'var(--surface-card)', color: 'var(--text-heading)',
-        };
+        // Pillene som sto her er borte. Eieren, 10. september 2026: forst
+        // «jeg ba om smaa kort, ikke piller», saa «disse pillene vil jeg ha
+        // som kort». Alt som kan trykkes paa her er kort naa — bortsett fra
+        // fanerada, som han ville ha staaende: «bortsett fra spor
+        // verkstedet, den kan staa fremme saa det er lett aa klikke i den».
 
         const valgtId = this.state.dokValgt || 0;
         const valgt = kort.filter(k => k.id === valgtId)[0] || null;
@@ -51315,12 +51311,43 @@ class Component extends DCLogic {
         }));
 
         // ── Spor verkstedet ──────────────────────────────────────────────
+        //
+        // Eieren, 10. september 2026: «jeg vil ha samme kort her, disse
+        // pillene vil jeg ha som kort».
+        //
+        // «Leser fra» sto som seks piller. Naa er de kort i den samme formen
+        // som resten: navnet i overskriftsskrift og antallet under. Er kortet
+        // slaatt av, staar det tonet ned med stiplet kant — da leser AI-en
+        // ikke derfra. Ingen nye ord: navnet og antallet er de samme som paa
+        // hovedkortene.
         const valgteFaq = this.state.faqKategorier || [];
+        const faqKortStil = (paa) => ({
+          appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+          font: 'inherit', minWidth: 0,
+          display: 'flex', flexDirection: 'column', height: '100%',
+          padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)',
+          background: paa ? 'var(--surface-card)' : 'transparent',
+          border: paa
+            ? '1px solid var(--sage-500)'
+            : '1px dashed var(--border-default)',
+        });
         const faqKort = kort.map(k => {
           const paa = valgteFaq.length === 0 || valgteFaq.indexOf(k.id) !== -1;
           return {
             navn: k.navn,
-            stil: pille(paa),
+            antall: antallTekst(k.antall),
+            stil: faqKortStil(paa),
+            navnStil: {
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: 'var(--text-base)', lineHeight: 1.3,
+              color: paa ? 'var(--text-heading)' : 'var(--text-muted)',
+              textAlign: 'left', overflowWrap: 'break-word',
+            },
+            antallStil: {
+              margin: '4px 0 0', fontSize: 'var(--text-xs)',
+              color: paa ? 'var(--sage-600)' : 'var(--text-faint)',
+              textAlign: 'left',
+            },
             velg: () => this.setState(st => {
               const alle = (st.dok && st.dok.kategorier ? st.dok.kategorier : []).map(x => x.id);
               const naa = (st.faqKategorier && st.faqKategorier.length) ? st.faqKategorier.slice() : alle.slice();
@@ -51392,7 +51419,16 @@ class Component extends DCLogic {
 
           // «Spor verkstedet» som eget kort i gitteret, med sin egen bryter.
           dokFaqNavn: d.faqMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
-          dokFaqStil: pille(!!d.faqMedlem),
+          dokFaqStil: {
+            appearance: 'none', cursor: 'pointer', textAlign: 'left',
+            font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
+            padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)',
+            background: d.faqMedlem ? 'var(--surface-card)' : 'transparent',
+            border: d.faqMedlem
+              ? '1px solid var(--sage-500)'
+              : '1px dashed var(--border-default)',
+            color: d.faqMedlem ? 'var(--sage-600)' : 'var(--text-muted)',
+          },
           dokFaqVeksle: () => this.dokKall({ handling: 'veksle-faq' }),
 
           faqLeserFra: faqKort,

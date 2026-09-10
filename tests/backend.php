@@ -15035,6 +15035,30 @@ sjekk('… og medlemssida har den samme formen',
 sjekk('… og et langt filnavn brekker ikke midt i ordet',
     !str_contains($dokSida, 'line-height: 1.3; overflow-wrap: anywhere;">{{ f.navn }}</span>'));
 
+// ── «Leser fra» er kort, ikke piller ─────────────────────────────────────
+//
+// Eieren, 10. september 2026: «jeg vil ha samme kort her, disse pillene vil
+// jeg ha som kort» — og, om fanerada: «bortsett fra spor verkstedet, den kan
+// staa fremme saa det er lett aa klikke i den».
+//
+// De seks kortene AI-en leser fra sto som piller. Naa er de kort med navnet
+// og antallet, og et kort som er slaatt av staar tonet ned med stiplet kant.
+// Fanerada er urort.
+sjekk('«Leser fra» staar som kort',
+    str_contains($dokSida, '<sc-for list="{{ faqLeserFra }}" as="k" hint-placeholder-count="6">')
+    && str_contains($dokSida, '<span style="{{ k.navnStil }}">{{ k.navn }}</span>')
+    && str_contains($dokSida, '<span style="{{ k.antallStil }}">{{ k.antall }}</span>'));
+sjekk('… og et kort som er av staar med stiplet kant',
+    str_contains($dokSida, "const faqKortStil = (paa) => ({")
+    && str_contains($dokSida, "'1px dashed var(--border-default)'"));
+// Ingen piller igjen paa de to skjermene. Hjelperen som lagde dem er borte.
+sjekk('… og pillehjelperen er borte fra dokumentskjermene',
+    !str_contains($dokSida, "        const pille = (paa) => ({\n          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',\n          display: 'inline-flex', alignItems: 'center', gap: '7px',"));
+// Fanerada skal staa som den er — eieren ville ha den fremme.
+sjekk('… mens fanerada staar som for',
+    str_contains($dokSida, "['Spør verkstedet', 'adminoppskrifter', { vstFane: 'faq' }],")
+    && str_contains($dokSida, '<sc-for list="{{ omrFaner }}" as="f"'));
+
 // ── Hvor stor en opplasting faar vaere ───────────────────────────────────
 //
 // Eieren, 10. september 2026: hev taket «saa langt serveren tillater».

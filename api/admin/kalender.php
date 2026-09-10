@@ -542,7 +542,12 @@ foreach ($okter as $o) {
             'dato'    => (string) $sa['dato'],
             'tid'     => $sa['fra'] !== '' ? (string) $sa['fra']
                                            : $iOslo((string) $o['start_tid'], 'H:i'),
-            'slutt'   => (string) $sa['til'],
+            // Tom sluttid faller tilbake paa oektas egen, slik «fra» over
+            // alt gjorde. En samling lagt inn uten klokkeslett — eller
+            // hentet inn av migrasjon 155 paa en server uten
+            // tidssonetabeller — sto ellers med starttid og ingen slutt.
+            'slutt'   => $sa['til'] !== '' ? (string) $sa['til']
+                       : ($o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : ''),
             'samling'     => 'Samling ' . $sa['nummer'] . ' av ' . $antSaml,
             // Kort form til maanedsbrikka, der det er faa tegn aa ta av.
             'samlingKort' => $sa['nummer'] . ' av ' . $antSaml,

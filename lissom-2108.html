@@ -21142,14 +21142,27 @@ window.__resources = {
           </div>
         </div>
 
-        <!-- Sluttdato.
-             Et dreiekurs gaar over to dager. Her sto bare én dato, og
-             klokkeslettet «til» ble tolket som samme dag — den andre dagen
-             fantes ikke noe sted. Tomt betyr at kurset gaar samme dag. -->
+        <!-- Flere dager.
+             Her sto «Sluttdato». Den lagde én oekt fra 16. kl 15 til 17. kl
+             18 — en kveld paa 27 timer, og bare dag én sto i kalenderen.
+             Eieren, 10. september 2026: «Den kan jo ikke gaa over natten»,
+             og «Dag 1 dato + fra kl - til kl. Dag 2 dato + fra kl - til kl».
+             Dag 2 kommer ferdig utfylt som dagen etter, med de samme
+             klokkeslettene. Alt kan endres. -->
         <div>
-          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Sluttdato</label>
-          <input type="date" value="{{ ndSluttdato }}" onChange="{{ settNdSluttdato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
-          <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndSluttdatoHjelp }}</p>
+          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 2px;">Flere dager</label>
+          <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndDagerHjelp }}</p>
+          <sc-for list="{{ ndDager }}" as="dg" hint-placeholder-count="1">
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+              <span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ dg.merke }}</span>
+              <input type="date" value="{{ dg.dato }}" onChange="{{ dg.settDato }}" style="{{ ndDagFeltStil }}">
+              <input type="time" value="{{ dg.fra }}" onChange="{{ dg.settFra }}" style="{{ ndDagFeltStil }}">
+              <span style="color: var(--text-muted);">–</span>
+              <input type="time" value="{{ dg.til }}" onChange="{{ dg.settTil }}" style="{{ ndDagFeltStil }}">
+              <button type="button" onClick="{{ dg.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
+            </div>
+          </sc-for>
+          <button type="button" onClick="{{ ndLeggTilDag }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Legg til dag</button>
         </div>
         <sc-if value="{{ ndHarLagtTil }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
@@ -24813,7 +24826,7 @@ class Component extends DCLogic {
       ndApen: true, ndVelgerApen: false,
       ndKurs: this.ndKursnavn()[0] || '',
       ndDato: '', ndFra: '18:00', ndTil: '21:00', ndPlasser: '8',
-      ndGjentak: 'Ingen', ndAntall: '', ndSluttdato: '',
+      ndGjentak: 'Ingen', ndAntall: '', ndDager: [],
       ndLagtTil: [],
     });
   }
@@ -24987,9 +25000,12 @@ class Component extends DCLogic {
           handling: 'nydato',
           kursId: kurs.id,
           start: s.ndDato + ' ' + fra,
-          // Slutter kurset en annen dag, er det den datoen som gjelder —
-          // ikke starten. Et dreiekurs over to dager sto som én kveld.
-          slutt: (s.ndSluttdato && s.ndSluttdato >= s.ndDato ? s.ndSluttdato : s.ndDato) + ' ' + til,
+          // Slutten staar paa dag én. Et kurs kan ikke gaa over natta —
+          // eieren, 10. september 2026: «Den kan jo ikke gaa over natten».
+          // Gaar det over flere dager, ligger de i «dager», og serveren
+          // lagrer dem som samlinger.
+          slutt: s.ndDato + ' ' + til,
+          dager: (s.ndDager || []).filter(d => d.dato),
           kapasitet: parseInt(s.ndPlasser, 10) || 0,
         };
 
@@ -32353,6 +32369,13 @@ class Component extends DCLogic {
    * legger man til et doegn og leser den ut lokalt, kan man havne paa
    * samme dag igjen naar sommertida slutter.
    */
+  /** Ett felt paa én av dagene i «Ny kursdato». */
+  ndSettDag(i, felt, verdi) {
+    this.setState(st => ({
+      ndDager: (st.ndDager || []).map((d, j) => (j === i ? Object.assign({}, d, { [felt]: verdi }) : d)),
+    }));
+  }
+
   dagenEtter(dato) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dato || ''))) return '';
     const d = new Date(dato + 'T00:00:00Z');
@@ -39907,18 +39930,48 @@ class Component extends DCLogic {
       settNdFra: e => this.setState({ ndFra: e.target.value }),
       ndTil: this.state.ndTil || '21:00',
       settNdTil: e => this.setState({ ndTil: e.target.value }),
-      ndSluttdato: this.state.ndSluttdato || '',
-      settNdSluttdato: e => this.setState({ ndSluttdato: e.target.value }),
-      ndSluttdatoHjelp: (() => {
-        const a = this.state.ndDato || '';
-        const b = this.state.ndSluttdato || '';
-        if (!b || b === a) return 'Tomt betyr at kurset går samme dag. Går det over to dager — som dreiekurset — setter du siste dagen her.';
-        const d1 = new Date(a + 'T12:00');
-        const d2 = new Date(b + 'T12:00');
-        if (isNaN(d1) || isNaN(d2) || d2 < d1) return 'Sluttdatoen kan ikke være før startdatoen.';
-        const dager = Math.round((d2 - d1) / 86400000) + 1;
-        return 'Kurset går over ' + dager + ' dager, fra ' + a + ' til ' + b + '.';
-      })(),
+      // ── Dagene kurset gaar over ─────────────────────────────────────
+      //
+      // Her sto «Sluttdato», ett datofelt. Den lagde én oekt fra 16. kl 15
+      // til 17. kl 18 — en kveld paa 27 timer, og bare dag én sto i
+      // kalenderen. Eieren, 10. september 2026: «Den kan jo ikke gaa over
+      // natten, den maa jo bare legge slik», og «Dag 1 dato + fra kl - til
+      // kl. Dag 2 dato + fra kl - til kl».
+      //
+      // Dag 1 er datoen og klokkeslettene over. Dag 2 og utover staar her,
+      // ferdig utfylt som dagen etter med de samme klokkeslettene — samme
+      // grep som «+ Legg til en dag» i kalenderen alt bruker.
+      ndDagFeltStil: {
+        boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-md)', padding: '9px 12px',
+        font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+        background: 'var(--surface-card)',
+      },
+      ndDagerHjelp: ((this.state.ndDager || []).length === 0)
+        ? 'Går kurset over flere dager, legger du dem inn her. Hver dag får sin egen dato og klokkeslett.'
+        : 'Kurset går over ' + ((this.state.ndDager || []).length + 1)
+          + ' dager. Én påmelding gjelder alle.',
+      ndDager: (this.state.ndDager || []).map((dg, i) => ({
+        merke: 'Dag ' + (i + 2),
+        dato: dg.dato || '',
+        fra: dg.fra || '',
+        til: dg.til || '',
+        settDato: e => this.ndSettDag(i, 'dato', e.target.value),
+        settFra:  e => this.ndSettDag(i, 'fra', e.target.value),
+        settTil:  e => this.ndSettDag(i, 'til', e.target.value),
+        fjern: () => this.setState(st => ({
+          ndDager: (st.ndDager || []).filter((_, j) => j !== i) })),
+      })),
+      ndLeggTilDag: () => this.setState(st => {
+        const har = st.ndDager || [];
+        const forrige = har.length ? har[har.length - 1] : null;
+        const grunn = forrige && forrige.dato ? forrige.dato : (st.ndDato || '');
+        return { ndDager: har.concat([{
+          dato: this.dagenEtter(grunn),
+          fra: (forrige && forrige.fra) || st.ndFra || '18:00',
+          til: (forrige && forrige.til) || st.ndTil || '21:00',
+        }]) };
+      }),
       ndPlasser: this.state.ndPlasser ?? '8',
       settNdPlasser: e => this.setState({ ndPlasser: e.target.value }),
       ...(() => {
@@ -45974,10 +46027,25 @@ class Component extends DCLogic {
               oktInfoBeskjed: '',
             })),
           })),
-          leggTilSamling: () => this.setState(st => ({
-            oktSamlinger: (st.oktSamlinger || []).concat([{ dato: '', fra: '', til: '', overskrift: '', tekst: '' }]),
-            oktInfoBeskjed: '',
-          })),
+          // Ferdig utfylt som dagen etter, med de samme klokkeslettene.
+          // Knappen i kalenderen har gjort det siden den kom; her lagde den
+          // en tom rad man matte fylle ut selv. Eieren, 10. september 2026:
+          // «jeg vil forovrig at du setter at dag to er default dagen etter
+          // til samme klokkeslett som dag 1, men med mulighet til aa endre».
+          leggTilSamling: () => this.setState(st => {
+            const har = st.oktSamlinger || [];
+            const forrige = har.length ? har[har.length - 1] : null;
+            const grunn = forrige && forrige.dato ? forrige.dato : (st.oktDato || '');
+            return {
+              oktSamlinger: har.concat([{
+                dato: this.dagenEtter(grunn),
+                fra: (forrige && forrige.fra) || st.oktFra || '',
+                til: (forrige && forrige.til) || st.oktTil || '',
+                overskrift: '', tekst: '',
+              }]),
+              oktInfoBeskjed: '',
+            };
+          }),
         };
       })(),
       // ── Medlemskapene som kan kjopes ────────────────────────────────

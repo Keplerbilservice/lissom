@@ -15239,6 +15239,69 @@ sjekk('… og ordrelinja foerer prisen som ble tatt',
 sjekk('… og prisene nullstilles naar salget er ferdig',
     str_contains($kasseSida, "this.setState({ utKurv: {}, utKunde: '', utPris: {} });"));
 
+// ── Kurs over flere dager ────────────────────────────────────────────────
+//
+// Eieren, 10. september 2026: «Dreiekurs, 16 og 17 september, vises kun 16
+// september i kalender?» Og da raden var lest: «Den kan jo ikke gaa over
+// natten» — «Dag 1 dato + fra kl - til kl. Dag 2 dato + fra kl - til kl».
+//
+// Feltet «Sluttdato» lagde én oekt fra 16. kl 15 til 17. kl 18, en kveld paa
+// 27 timer. Kalenderen gir hver oekt én dato, saa dag to fantes ikke.
+//
+// Maalt i nettleseren: veiviseren har «Flere dager», «Sluttdato» er borte, og
+// «+ Legg til dag» fylte ut 19. november 18:00–21:00 etter at 18. november
+// var satt. Maalt over API-et: en dato lagt inn med én ekstra dag ble to
+// samlinger, 15:00–18:00 hver. Maalt mot kalenderen: begge dagene staar, dag
+// to merket «Samling 2 av 2».
+$fdSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$fdKurs = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$fdKal  = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$fdMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/155_flerdagerskurs_far_dagene_sine.sql');
+
+sjekk('«Sluttdato» er byttet ut med dager',
+    !str_contains($fdSida, 'ndSluttdato')
+    && str_contains($fdSida, '<sc-for list="{{ ndDager }}" as="dg"')
+    && str_contains($fdSida, '>+ Legg til dag</button>'));
+// Dag 2 skal komme ferdig utfylt, men kunne endres.
+sjekk('… og dag 2 fylles ut som dagen etter, med samme klokkeslett',
+    str_contains($fdSida, 'dato: this.dagenEtter(grunn),')
+    && str_contains($fdSida, "fra: (forrige && forrige.fra) || st.ndFra || '18:00',"));
+// Selve feilen: slutten skal staa paa dag én.
+sjekk('… og slutten staar paa dag én, ikke dagen etter',
+    str_contains($fdSida, "slutt: s.ndDato + ' ' + til,")
+    && str_contains($fdSida, "dager: (s.ndDager || []).filter(d => d.dato),"));
+// Serveren lagrer dagene som samlinger — husets egen maate.
+sjekk('… og serveren lagrer dagene som samlinger',
+    str_contains($fdKurs, 'Samlinger::lagre($oktId, array_merge([[')
+    && str_contains($fdKurs, "foreach ((array) (Foresporsel::kropp()['dager'] ?? []) as \$d)"));
+// Den samme knappen paa Kurs-skjermen lagde en tom rad.
+sjekk('… og «+ Legg til samling» paa Kurs gjor det samme',
+    str_contains($fdSida, "leggTilSamling: () => this.setState(st => {")
+    && str_contains($fdSida, "dato: this.dagenEtter(grunn),"));
+
+// Migrasjonen tar dem som alt ligger inne.
+sjekk('migrasjon 155 gir de gamle flerdagerskursene dagene sine',
+    str_contains($fdMig, 'INSERT INTO okt_samlinger (session_id, nummer, dato, fra, til)')
+    && str_contains($fdMig, 'DATE(cs.slutt_tid) = DATE(cs.start_tid) + INTERVAL 1 DAY'));
+// En kveld som slutter tidligere paa doegnet enn den begynner — 20:00 til
+// 00:00, eller en nattevakt 22:00 til 02:00 — er én kveld. Den samme regelen
+// staar i Samlinger::speilOkt().
+sjekk('… men lar en kveld som slutter ved midnatt staa',
+    str_contains($fdMig, 'TIME(cs.slutt_tid) > TIME(cs.start_tid)')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/samlinger.php'),
+                    "\$slutt->format('H:i:s') <= \$start->format('H:i:s')"));
+// Oekter som alt har samlinger er riktige, og skal ikke roeres.
+sjekk('… og roerer ikke dem som alt har samlinger',
+    str_contains($fdMig, 'NOT EXISTS (SELECT 1 FROM okt_samlinger s WHERE s.session_id = cs.id)'));
+// start_tid og slutt_tid skal staa: med samlinger SKAL okta spenne fra
+// forste til siste dag — det er slik kunden ser «7.–8. oktober».
+sjekk('… og lar start og slutt staa som de staar',
+    !str_contains($fdMig, 'UPDATE course_sessions'));
+
+// En samling uten klokkeslett skal arve oektas egen, ogsaa for slutten.
+sjekk('en samling uten sluttid arver oektas egen',
+    str_contains($fdKal, "'slutt'   => \$sa['til'] !== '' ? (string) \$sa['til']"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -9744,6 +9744,35 @@ window.__resources = {
           </sc-if>
 
 
+          <!-- Varen aapnet, med bildet.
+               Eieren, 10. september 2026: «jeg maa kunne klikke paa varer og
+               den aapner seg saa jeg ser bilde av produktet».
+               Ingen ny vare og ingen ny liste — det er den samme raden fra
+               varelista, bare med bildet og teksten som alt laa i basen. -->
+          <sc-if value="{{ utVareApen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: fixed; inset: 0; background: rgba(46,16,2,.55); z-index: 90; display: flex; align-items: center; justify-content: center; padding: var(--space-4);">
+              <div style="background: var(--surface-card); border-radius: var(--radius-lg); width: 100%; max-width: 520px; max-height: 90vh; overflow: auto;">
+                <sc-if value="{{ utVareHarBilde }}" hint-placeholder-val="{{ true }}">
+                  <img data-src="{{ utVareBilde }}" alt="{{ utVareTittel }}" style="display: block; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-lg) var(--radius-lg) 0 0; background: var(--clay-100);" loading="lazy" decoding="async">
+                </sc-if>
+                <div style="padding: var(--space-6);">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading);">{{ utVareTittel }}</h3>
+                    <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); white-space: nowrap;">{{ utVarePris }}</span>
+                  </div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ utVareDetalj }}</div>
+                  <sc-if value="{{ utVareHarOm }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-body); line-height: 1.6; text-wrap: pretty;">{{ utVareOm }}</p>
+                  </sc-if>
+                  <div style="display: flex; gap: var(--space-3); margin-top: var(--space-6); flex-wrap: wrap;">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ utVareLeggTil }}" hint-size="auto,44px">Legg til</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ utVareLukk }}" hint-size="auto,44px">Lukk</x-import>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
           <!-- Varene. Soekefeltet er der fordi 21 varer er for mange aa lete
                gjennom med oynene mens noen staar og venter. -->
           <sc-if value="{{ utVarerVis }}" hint-placeholder-val="{{ false }}">
@@ -9754,10 +9783,14 @@ window.__resources = {
             </div>
             <sc-for list="{{ utVarer }}" as="v" hint-placeholder-count="8">
               <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-2); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <div style="flex: 1 1 200px; min-width: 0;">
+                <!-- Navnet aapner varen, med bildet. Eieren, 10. september
+                     2026: «jeg maa kunne klikke paa varer og den aapner seg
+                     saa jeg ser bilde av produktet». «Legg til» staar der
+                     som for, for den som bare skal slaa inn fort. -->
+                <button type="button" onClick="{{ v.apne }}" style="flex: 1 1 200px; min-width: 0; appearance: none; border: none; background: transparent; padding: 0; text-align: left; cursor: pointer; font: inherit;">
                   <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.tittel }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }}</div>
-                </div>
+                </button>
                 <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap;">{{ v.pris }}</span>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" on-click="{{ v.leggTil }}" hint-size="auto,36px">Legg til</x-import>
               </div>
@@ -9781,8 +9814,19 @@ window.__resources = {
                 <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); row-gap: var(--space-2); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
                   <div style="flex: 1 1 130px; min-width: 0;">
                     <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ l.tittel }}</div>
-                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.enhetspris }} per stk</div>
+                    <sc-if value="{{ l.erEndret }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: var(--text-xs); color: var(--terracotta-600);">{{ l.listepris }} per stk</div>
+                    </sc-if>
+                    <sc-if value="{{ l.erListepris }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.enhetspris }} per stk</div>
+                    </sc-if>
                   </div>
+                  <!-- Prisen for dette salget. Varens faste pris staar uroert
+                       — eieren, 10. september 2026, valgte «Bare dette
+                       salget». Er den endret, staar listeprisen over i
+                       terrakotta saa forskjellen synes. -->
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-muted);">Pris
+                    <input value="{{ l.prisFelt }}" onChange="{{ l.settPris }}" inputmode="numeric" style="{{ l.prisStil }}"></label>
                   <div style="display: flex; align-items: center; gap: 4px; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 2px 4px;">
                     <button type="button" onClick="{{ l.faerre }}" title="Én færre" style="{{ l.knappStil }}">−</button>
                     <span style="min-width: 26px; text-align: center; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ l.antall }}</span>
@@ -43291,7 +43335,30 @@ class Component extends DCLogic {
           return v ? { v, antall: kurv[id] } : null;
         }).filter(Boolean);
 
-        const sum = linjer.reduce((n, l) => n + l.v.prisOre * l.antall, 0);
+        // ── Prisen paa linja ─────────────────────────────────────────
+        //
+        // Eieren, 10. september 2026: «jeg maa kunne justere pris». Spurt om
+        // hvordan, valgte han «Bare dette salget» — varens faste pris staar
+        // uroert til neste kunde.
+        //
+        // Overstyringen ligger i «utPris», ett tall per vare, og forsvinner
+        // med kurven. Serveren tar imot den, men bare for dette salget: se
+        // «prisOre» i api/admin/uttak.php.
+        const prisOverstyrt = st.utPris || {};
+        const prisenPaa = (v) => {
+          const p = prisOverstyrt[String(v.id)];
+          return (p === undefined || p === null || p === '') ? v.prisOre : p;
+        };
+        const settPris = (id, tekst) => {
+          const reint = String(tekst).replace(/[^0-9]/g, '');
+          this.setState(s2 => {
+            const pr = Object.assign({}, s2.utPris);
+            if (reint === '') { delete pr[id]; } else { pr[id] = Number(reint) * 100; }
+            return { utPris: pr };
+          });
+        };
+
+        const sum = linjer.reduce((n, l) => n + prisenPaa(l.v) * l.antall, 0);
 
         // Lageret er grensa. Foer kunne man legge fire i kurven av en vare
         // det var én igjen av, taste inn betaling — og forst da faa nei fra
@@ -43982,9 +44049,41 @@ class Component extends DCLogic {
 
           utSok: st.utSok || '',
           settUtSok: e => this.setState({ utSok: e.target.value }),
+          // ── Varen aapnet, med bildet ──────────────────────────────
+          //
+          // Eieren, 10. september 2026: «jeg maa kunne klikke paa varer og
+          // den aapner seg saa jeg ser bilde av produktet».
+          //
+          // Bildet laa i basen hele tida; kassa spurte bare aldri etter det.
+          // «Legg til» virker som for for den som bare vil slaa inn fort.
+          ...(() => {
+            const aapen = st.utVare
+              ? varer.find(x => String(x.id) === String(st.utVare)) || null
+              : null;
+            return {
+              utVareApen: !!aapen,
+              utVareTittel: aapen ? aapen.tittel : '',
+              utVarePris: aapen ? aapen.pris : '',
+              utVareOm: aapen ? (aapen.beskrivelse || '') : '',
+              utVareHarOm: !!(aapen && aapen.beskrivelse),
+              utVareDetalj: aapen ? [
+                aapen.kategori,
+                aapen.lager === null ? 'Ikke lagerstyrt' : (aapen.lager + ' på lager'),
+                aapen.kunMedlemmer ? 'Kun medlemmer' : '',
+              ].filter(Boolean).join(' · ') : '',
+              utVareHarBilde: !!(aapen && aapen.bilde),
+              utVareBilde: aapen ? (aapen.bilde || '') : '',
+              utVareLukk: () => this.setState({ utVare: 0 }),
+              utVareLeggTil: () => {
+                if (aapen) settAntall(String(aapen.id), (kurv[String(aapen.id)] || 0) + 1);
+              },
+            };
+          })(),
+
           utVarer: synlige.map(v => ({
             tittel: v.tittel,
             pris: v.pris,
+            apne: () => this.setState({ utVare: v.id }),
             detalj: [
               v.kategori,
               v.lager === null ? 'Ikke lagerstyrt' : (v.lager + ' på lager'),
@@ -44006,7 +44105,21 @@ class Component extends DCLogic {
             tittel: l.v.tittel,
             antall: String(l.antall),
             enhetspris: l.v.pris,
-            linjesum: kr(l.v.prisOre * l.antall),
+            // Feltet staar i hele kroner. Ingen oerer i kassa.
+            prisFelt: String(Math.round(prisenPaa(l.v) / 100)),
+            settPris: (e) => settPris(String(l.v.id), e.target.value),
+            prisStil: {
+              width: 78, boxSizing: 'border-box', textAlign: 'right',
+              border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+              padding: '6px 8px', font: 'var(--type-body-sm)', fontWeight: 600,
+              background: 'var(--clay-50)', color: 'var(--text-heading)',
+            },
+            // Staar den ikke i listeprisen, skal det synes.
+            erEndret: prisenPaa(l.v) !== l.v.prisOre,
+            // «sc-if» har ingen omvendt utgave; da maa det staa to felter.
+            erListepris: prisenPaa(l.v) === l.v.prisOre,
+            listepris: l.v.pris,
+            linjesum: kr(prisenPaa(l.v) * l.antall),
             knappStil,
             faerre: () => settAntall(String(l.v.id), l.antall - 1),
             flere: () => settAntall(String(l.v.id), l.antall + 1),
@@ -44061,9 +44174,10 @@ class Component extends DCLogic {
               handling: 'selg',
               maate,
               kunde: (st.utKunde || '').trim(),
-              linjer: linjer.map(l => ({ id: l.v.id, antall: l.antall })),
+              linjer: linjer.map(l => ({
+                id: l.v.id, antall: l.antall, prisOre: prisenPaa(l.v) })),
             }).then(ok => {
-              if (ok) this.setState({ utKurv: {}, utKunde: '' });
+              if (ok) this.setState({ utKurv: {}, utKunde: '', utPris: {} });
             });
           },
 

@@ -15004,6 +15004,37 @@ sjekk('… og tekstmalene heter «Tekst maler», saa navnene ikke krasjer',
     && str_contains($dokSida, '>Tekst maler</h1>')
     && !str_contains($dokSida, "['Maler',         'adminmaler'],"));
 
+// ── Hvert dokument som sitt eget kort ────────────────────────────────────
+//
+// Eieren, 10. september 2026: «jeg vil at alle dokumenterne skal faa smaa
+// kort med tydelig navn paa hva det er, dette inni hvert hovedkort».
+//
+// Dokumentene sto som rader i en liste. Naa er hvert av dem et kort i den
+// samme formen som hovedkortene — bade i admin og paa medlemssida.
+sjekk('hvert dokument staar som sitt eget kort',
+    str_contains($dokSida, '<button type="button" onClick="{{ f.apne }}" style="{{ f.innerStil }}">')
+    && str_contains($dokSida, '<span style="{{ f.typeStil }}">{{ f.type }}</span>')
+    // Rada som sto der for. «radStil» finnes fortsatt paa en annen skjerm,
+    // saa det er raden i dokumentpanelet vi ser etter.
+    && !str_contains($dokSida, '<div style="{{ f.radStil }}">'));
+// Hva slags fil det er, staar over navnet — «tydelig navn paa hva det er».
+sjekk('… med filtypen over navnet',
+    str_contains($dokSida, "typeStil: {")
+    && str_contains($dokSida, "color: 'var(--terracotta-600)', marginBottom: '4px',"));
+sjekk('… og de to andre handlingene staar paa en rad nederst',
+    str_contains($dokSida, '<div style="{{ f.bunnStil }}">')
+    && str_contains($dokSida, 'onClick="{{ f.tekstVelg }}" style="{{ f.tekstStil }}"')
+    && str_contains($dokSida, 'onClick="{{ f.slett }}" style="{{ f.slettStil }}"'));
+// Medlemssida skal se ut som admin. Eieren ba om det ett sted; det hoerer
+// hjemme begge steder — se «Godkjente endringer gjoeres globalt» i CLAUDE.md.
+sjekk('… og medlemssida har den samme formen',
+    str_contains($dokSida, '<span style="{{ f.typeStil }}">{{ f.type }}</span>')
+    && substr_count($dokSida, '>Åpne →</span>') >= 3
+    && !str_contains($dokSida, 'onClick="{{ f.apne }}" style="{{ f.stil }}">Åpne</button>'));
+// «anywhere» brakk «Medlemskontrakt» midt i ordet paa et smalt kort.
+sjekk('… og et langt filnavn brekker ikke midt i ordet',
+    !str_contains($dokSida, 'line-height: 1.3; overflow-wrap: anywhere;">{{ f.navn }}</span>'));
+
 // ── Hvor stor en opplasting faar vaere ───────────────────────────────────
 //
 // Eieren, 10. september 2026: hev taket «saa langt serveren tillater».

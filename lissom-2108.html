@@ -18321,8 +18321,28 @@ window.__resources = {
               </div>
             </sc-if>
 
+            <!-- Dokumentkortene forst, rett paa forsida. Eieren, 10.
+                 september 2026: «jeg vil at disse skal ligge paa forsiden paa
+                 verksted, ikke under dokumenter».
+                 Samme kort som inne paa Dokumenter — samme navn, samme
+                 antall, samme bryter. Ett trykk faerre. -->
+            <sc-if value="{{ vstHarForsideDok }}" hint-placeholder-val="{{ true }}">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-6);">
+                <sc-for list="{{ vstForsideDok }}" as="k" hint-placeholder-count="6">
+                  <div style="{{ k.kortStil }}">
+                    <button type="button" onClick="{{ k.apne }}" style="{{ k.innerStil }}">
+                      <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
+                      <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.antall }}</p>
+                      <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                    </button>
+                    <button type="button" onClick="{{ k.veksle }}" style="{{ k.synligStil }}">{{ k.synligNavn }}</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch;">
-              <sc-for list="{{ vstOversiktKort }}" as="v" hint-placeholder-count="9">
+              <sc-for list="{{ vstOversiktKort }}" as="v" hint-placeholder-count="8">
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ v.navn }}</span>
                   <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
@@ -18347,8 +18367,6 @@ window.__resources = {
                   <button type="button" onClick="{{ dokLukk }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 5px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">← Alle kort</button>
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ dokApnetNavn }}</span>
                 </div>
-                <label style="position: relative; display: inline-flex; align-items: center; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 6px 16px; border-radius: var(--radius-pill); border: 1px solid var(--lissom-yellow); background: var(--lissom-yellow); color: var(--lissom-brown); cursor: pointer;">
-                  <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">Last opp</label>
               </div>
 
               <!-- Hvert dokument som sitt eget lille kort.
@@ -18357,7 +18375,7 @@ window.__resources = {
                    inni hvert hovedkort».
                    Samme form som hovedkortene: ramme, knapp inni, «Aapne →»
                    nederst, og de to andre handlingene paa en egen rad. -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-5) var(--space-6) 0;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-5) var(--space-6) var(--space-6);">
                 <sc-for list="{{ dokRader }}" as="f" hint-placeholder-count="3">
                   <div style="{{ f.kortStil }}">
                     <button type="button" onClick="{{ f.apne }}" style="{{ f.innerStil }}">
@@ -18372,17 +18390,24 @@ window.__resources = {
                     </div>
                   </div>
                 </sc-for>
+
+                <!-- Opplastingen som et kort ved siden av dokumentene.
+                     Eieren, 10. september 2026: «jeg vil da ha opp flere
+                     mindre kort som viser de forskjellige dokumentene jeg
+                     laster opp, + en som staar last opp paa».
+                     Stiplet kant, saa det ser ut som det er noe som skal
+                     fylles. Fila kan bade velges og slippes paa kortet. -->
+                <label style="{{ dokLastKortStil }}">
+                  <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">Last opp</span>
+                  <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ dokSlippUnder }}</p>
+                  <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ dokSlippTittel }}</span>
+                </label>
               </div>
 
               <sc-if value="{{ dokTomt }}" hint-placeholder-val="{{ true }}">
-                <div style="padding: var(--space-8) var(--space-6); text-align: center; font-size: var(--text-sm); color: var(--text-muted);">{{ dokTomTekst }}</div>
+                <div style="padding: 0 var(--space-6) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">{{ dokTomTekst }}</div>
               </sc-if>
-
-              <label style="display: block; margin: var(--space-5) var(--space-6) var(--space-6); border: 2px dashed var(--border-default); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-6); text-align: center; cursor: pointer; position: relative;">
-                <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
-                <span style="display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ dokSlippTittel }}</span>
-                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ dokSlippUnder }}</span>
-              </label>
             </div>
           </sc-if>
 
@@ -51398,7 +51423,6 @@ class Component extends DCLogic {
           velg: () => this.gaaAdmin(rute, forvalg),
         });
         const oversiktKort = [
-          sted('Dokumenter',      'adminoppskrifter', { vstFane: 'dokumenter' }),
           sted('Oppskrifter',     'adminoppskrifter', { vstFane: 'oppskrifter' }),
           sted('Vakter',          'adminoppskrifter', { vstFane: 'vakter' }),
           sted('Brenning',        'adminoppskrifter', { vstFane: 'brenning' }),
@@ -51409,18 +51433,35 @@ class Component extends DCLogic {
           sted('Tekst maler',     'adminmaler'),
         ];
 
+        // Dokumentkortene staar paa forsida, ikke bak et kort som heter
+        // «Dokumenter». Eieren, 10. september 2026, med et bilde av dem:
+        // «jeg vil at disse skal ligge paa forsiden paa verksted, ikke under
+        // dokumenter».
+        //
+        // Det er de samme kortene som for — samme navn, samme antall, samme
+        // bryter. Ett trykk faerre for aa komme til dem.
+        const forsideDok = kortene.map(k => Object.assign({}, k, {
+          apne: () => this.gaaAdmin('adminoppskrifter', {
+            vstFane: 'dokumenter', dokValgt: k.id }),
+        }));
+
         return {
           vstErDokumenter: erDok,
           vstErFaq: erFaq,
           vstErOversikt: erOversikt,
           vstOversiktKort: oversiktKort,
+          vstForsideDok: forsideDok,
+          vstHarForsideDok: forsideDok.length > 0,
           // Paa oversikten ville «← Verkstedet» pekt paa seg selv.
           ...(erOversikt ? { harOmrFaner: false } : {}),
           vstTittel: erOversikt ? 'Verkstedet' : erDok ? 'Dokumenter' : 'Spør verkstedet',
           vstUnder: erDok ? 'Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.' : '',
 
           dokKort: kortene,
-          dokHarKort: kortene.length > 0,
+          // Kortene staar paa forsida naa. Naar ett av dem er aapnet, skal
+          // ikke de seks staa under panelet ogsaa — da sto de to ganger paa
+          // den samme skjermen.
+          dokHarKort: kortene.length > 0 && !valgt,
 
           dokErApnet: !!valgt,
           dokApnetNavn: valgt ? valgt.navn : '',
@@ -51428,6 +51469,13 @@ class Component extends DCLogic {
           dokRader: radene,
           dokTomt: !!valgt && radene.length === 0,
           dokTomTekst: 'Ingen dokumenter ennå.',
+          dokLastKortStil: {
+            position: 'relative', cursor: 'pointer', minWidth: 0,
+            display: 'flex', flexDirection: 'column', height: '100%',
+            padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)',
+            border: '2px dashed var(--border-default)',
+            background: 'var(--clay-100)',
+          },
           dokSlippTittel: 'Slipp filen her',
           // «eller zip» staar bare naar serveren faktisk kan pakke ut. PHP
           // sin zip-utvidelse er ikke gitt paa et delt webhotell, og en rute

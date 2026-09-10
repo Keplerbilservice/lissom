@@ -14976,13 +14976,28 @@ sjekk('… og hvert kall koster penger, saa det er et tak per person',
 
 // Skjermen.
 $dokSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-// Dokumentene har sitt eget kort paa oversikten. «Spor verkstedet» har
-// ikke kort: eieren, 10. september 2026, «eneste jeg vil ha utenom kortene
-// er spor verkstedet» — sporrefeltet staar oeverst paa oversikten.
-sjekk('«Dokumenter» staar som kort, og «Spør verkstedet» som felt',
-    str_contains($dokSida, "sted('Dokumenter',      'adminoppskrifter', { vstFane: 'dokumenter' }),")
+// De seks dokumentkortene staar rett paa forsida. Eieren, 10. september
+// 2026: «jeg vil at disse skal ligge paa forsiden paa verksted, ikke under
+// dokumenter» — saa kortet som het «Dokumenter» er borte.
+//
+// «Spor verkstedet» har ikke kort: «eneste jeg vil ha utenom kortene er spor
+// verkstedet» — sporrefeltet staar oeverst paa forsida.
+sjekk('de seks dokumentkortene staar paa forsida, og «Spør verkstedet» som felt',
+    str_contains($dokSida, '<sc-for list="{{ vstForsideDok }}" as="k"')
+    && str_contains($dokSida, 'vstForsideDok: forsideDok,')
+    && !str_contains($dokSida, "sted('Dokumenter',")
     && str_contains($dokSida, '<sc-if value="{{ vstErOversikt }}"')
     && str_contains($dokSida, 'onChange="{{ faqEndre }}" placeholder="Skriv spørsmålet ditt"'));
+// Aapner man ett av dem, skal ikke de seks staa under panelet ogsaa.
+sjekk('… og de staar ikke to ganger naar ett kort er aapnet',
+    str_contains($dokSida, 'dokHarKort: kortene.length > 0 && !valgt,'));
+// Opplastingen er et kort ved siden av dokumentene, ikke en pille i toppen
+// og en stor rute nederst. Eieren: «+ en som staar last opp paa».
+sjekk('… og opplastingen er et kort i den samme rada',
+    str_contains($dokSida, '<label style="{{ dokLastKortStil }}">')
+    && str_contains($dokSida, 'dokLastKortStil: {')
+    && str_contains($dokSida, ">Last opp</span>")
+    && !str_contains($dokSida, 'display: block; margin: var(--space-5) var(--space-6) var(--space-6); border: 2px dashed'));
 sjekk('… og visningen har «Skriv ut», «Last ned» og «Lukk»',
     str_contains($dokSida, 'onClick="{{ dokVisSkrivUt }}"')
     && str_contains($dokSida, 'href="{{ dokVisNedUrl }}"')
@@ -15115,7 +15130,7 @@ sjekk('… og en forespoersel som kommer fram tom sier at fila var for stor',
 // er lastet opp. 1 fil ble hoppet over», og tre filer merket samtidig gir «3
 // filer er lastet opp.»
 sjekk('mange filer kan velges paa én gang',
-    substr_count($dokSida, 'type="file" multiple="true"') >= 2
+    substr_count($dokSida, 'type="file" multiple="true"') >= 1
     && str_contains($dokSida, "filer.forEach(f => skjema.append('dokument[]', f));")
     && str_contains($dokApi, 'Dokumenter::delOpp($_FILES[\'dokument\'])'));
 // Med «multiple» kommer $_FILES som EN rad med lister, ikke som en liste med

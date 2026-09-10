@@ -131,7 +131,8 @@ const SLAG = [
 
 if (Foresporsel::metode() === 'GET') {
     $varer = DB::alle(
-        "SELECT id, tittel, kategori, pris_ore, lager, kun_medlemmer, status
+        "SELECT id, tittel, beskrivelse, bilde, kategori, pris_ore, lager,
+                kun_medlemmer, status
            FROM products
           WHERE status <> 'kladd'
           ORDER BY kategori IS NULL, kategori, tittel"
@@ -197,6 +198,12 @@ if (Foresporsel::metode() === 'GET') {
             'kategori'  => (string) ($v['kategori'] ?? ''),
             'prisOre'   => (int) $v['pris_ore'],
             'pris'      => Booking::kroner((int) $v['pris_ore']),
+            // Bildet og teksten laa i basen hele tida, men kassa spurte
+            // aldri etter dem. Eieren, 10. september 2026: «jeg maa kunne
+            // klikke paa varer og den aapner seg saa jeg ser bilde av
+            // produktet».
+            'bilde'       => (string) ($v['bilde'] ?? ''),
+            'beskrivelse' => (string) ($v['beskrivelse'] ?? ''),
             // NULL betyr «vi teller ikke lager paa denne».
             'lager'     => $v['lager'] === null ? null : (int) $v['lager'],
             'utsolgt'   => (string) $v['status'] === 'utsolgt',
@@ -1079,8 +1086,18 @@ if (!in_array($maate, KURVMAATER, true)) {
     Svar::feil('Ukjent betalingsmåte.');
 }
 
-// Prisen hentes fra basen, aldri fra nettleseren. Ellers kunne summen i
-// regnskapet vaert en annen enn den varen koster.
+// Prisen hentes fra basen. Nettleseren kan overstyre den for DETTE salget,
+// men ikke for varen.
+//
+// Eieren, 10. september 2026: «jeg maa kunne justere pris». Spurt om hvordan,
+// valgte han «Bare dette salget» — varens faste pris staar uroert til neste
+// kunde.
+//
+// Det som foeres er den prisen som faktisk ble tatt: order_lines har pris per
+// linje fra for, saa regnskapet blir riktig uten noen endring i basen. Uten
+// en oppgitt pris er det basens som gjelder, som for.
+//
+// Taket er der for at en tastefeil ikke skal bli et salg paa hundre tusen.
 $rader = [];
 $sum   = 0;
 foreach ($linjerInn as $l) {
@@ -1095,7 +1112,18 @@ foreach ($linjerInn as $l) {
         Svar::feil('Det er bare ' . (int) $vare['lager'] . ' igjen av «' . $vare['tittel'] . '».', 409);
     }
 
-    $sum += (int) $vare['pris_ore'] * $antall;
+    $pris = (int) $vare['pris_ore'];
+    if (array_key_exists('prisOre', $l) && $l['prisOre'] !== null && $l['prisOre'] !== '') {
+        $onsket = (int) $l['prisOre'];
+        if ($onsket < 0 || $onsket > 5_000_000) {
+            Svar::feil('Prisen på «' . $vare['tittel'] . '» er utenfor det vi tar imot.');
+        }
+        $pris = $onsket;
+    }
+    // Raden som foeres skal ha den prisen som ble tatt, ikke listeprisen.
+    $vare['pris_ore'] = $pris;
+
+    $sum += $pris * $antall;
     $rader[] = ['vare' => $vare, 'antall' => $antall];
 }
 

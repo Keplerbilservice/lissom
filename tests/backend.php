@@ -14976,13 +14976,28 @@ sjekk('… og hvert kall koster penger, saa det er et tak per person',
 
 // Skjermen.
 $dokSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-// Dokumentene har sitt eget kort paa oversikten. «Spor verkstedet» har
-// ikke kort: eieren, 10. september 2026, «eneste jeg vil ha utenom kortene
-// er spor verkstedet» — sporrefeltet staar oeverst paa oversikten.
-sjekk('«Dokumenter» staar som kort, og «Spør verkstedet» som felt',
-    str_contains($dokSida, "sted('Dokumenter',      'adminoppskrifter', { vstFane: 'dokumenter' }),")
+// De seks dokumentkortene staar rett paa forsida. Eieren, 10. september
+// 2026: «jeg vil at disse skal ligge paa forsiden paa verksted, ikke under
+// dokumenter» — saa kortet som het «Dokumenter» er borte.
+//
+// «Spor verkstedet» har ikke kort: «eneste jeg vil ha utenom kortene er spor
+// verkstedet» — sporrefeltet staar oeverst paa forsida.
+sjekk('de seks dokumentkortene staar paa forsida, og «Spør verkstedet» som felt',
+    str_contains($dokSida, '<sc-for list="{{ vstForsideDok }}" as="k"')
+    && str_contains($dokSida, 'vstForsideDok: forsideDok,')
+    && !str_contains($dokSida, "sted('Dokumenter',")
     && str_contains($dokSida, '<sc-if value="{{ vstErOversikt }}"')
     && str_contains($dokSida, 'onChange="{{ faqEndre }}" placeholder="Skriv spørsmålet ditt"'));
+// Aapner man ett av dem, skal ikke de seks staa under panelet ogsaa.
+sjekk('… og de staar ikke to ganger naar ett kort er aapnet',
+    str_contains($dokSida, 'dokHarKort: kortene.length > 0 && !valgt,'));
+// Opplastingen er et kort ved siden av dokumentene, ikke en pille i toppen
+// og en stor rute nederst. Eieren: «+ en som staar last opp paa».
+sjekk('… og opplastingen er et kort i den samme rada',
+    str_contains($dokSida, '<label style="{{ dokLastKortStil }}">')
+    && str_contains($dokSida, 'dokLastKortStil: {')
+    && str_contains($dokSida, ">Last opp</span>")
+    && !str_contains($dokSida, 'display: block; margin: var(--space-5) var(--space-6) var(--space-6); border: 2px dashed'));
 sjekk('… og visningen har «Skriv ut», «Last ned» og «Lukk»',
     str_contains($dokSida, 'onClick="{{ dokVisSkrivUt }}"')
     && str_contains($dokSida, 'href="{{ dokVisNedUrl }}"')
@@ -15115,7 +15130,7 @@ sjekk('… og en forespoersel som kommer fram tom sier at fila var for stor',
 // er lastet opp. 1 fil ble hoppet over», og tre filer merket samtidig gir «3
 // filer er lastet opp.»
 sjekk('mange filer kan velges paa én gang',
-    substr_count($dokSida, 'type="file" multiple="true"') >= 2
+    substr_count($dokSida, 'type="file" multiple="true"') >= 1
     && str_contains($dokSida, "filer.forEach(f => skjema.append('dokument[]', f));")
     && str_contains($dokApi, 'Dokumenter::delOpp($_FILES[\'dokument\'])'));
 // Med «multiple» kommer $_FILES som EN rad med lister, ikke som en liste med
@@ -15172,6 +15187,57 @@ sjekk('… og php_value staar bak <IfModule>, saa den ikke tar ned nettstedet',
 sjekk('… og den aapne Nyttig info-veien er urort',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'Aapent med vilje')
     && !str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'verksted_dokumenter'));
+
+// ── Kassa: varen aapnes med bildet, og prisen kan justeres ───────────────
+//
+// Eieren, 10. september 2026: «jeg maa kunne klikke paa varer og den aapner
+// seg saa jeg ser bilde av produktet», og «jeg maa kunne justere pris».
+//
+// Maalt i nettleseren: varen aapner seg med bildet (481x640 px), «Legg til»
+// legger den i salget, og et prisfelt paa linja endret summen fra kr. 380,-
+// til kr. 250,-. Maalt over API-et: ordrelinja fikk 25000 ore, varens faste
+// pris sto igjen paa 38000, og en urimelig pris ble avvist.
+$kasseApi  = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+$kasseSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Bildet laa i basen hele tida; kassa spurte bare aldri etter det.
+sjekk('kassa henter bildet til varen',
+    str_contains($kasseApi, "'bilde'       => (string) (\$v['bilde'] ?? ''),")
+    && str_contains($kasseApi, 'SELECT id, tittel, beskrivelse, bilde, kategori'));
+sjekk('… og varen kan aapnes fra lista',
+    str_contains($kasseSida, 'onClick="{{ v.apne }}"')
+    && str_contains($kasseSida, '<sc-if value="{{ utVareApen }}"')
+    && str_contains($kasseSida, 'src="{{ utVareBilde }}" alt="{{ utVareTittel }}"'));
+// «Legg til» skal fortsatt virke uten aa aapne varen — den som bare skal
+// slaa inn fort, skal ikke maatte gjennom et ekstra trykk.
+sjekk('… mens «Legg til» staar i lista som for',
+    str_contains($kasseSida, 'on-click="{{ v.leggTil }}" hint-size="auto,36px">Legg til</x-import>'));
+
+// Prisen: overstyringen gjelder dette salget, ikke varen.
+sjekk('prisen kan justeres paa linja',
+    str_contains($kasseSida, 'const prisOverstyrt = st.utPris || {};')
+    && str_contains($kasseSida, 'onChange="{{ l.settPris }}"')
+    && str_contains($kasseSida, 'prisOre: prisenPaa(l.v) })),'));
+// Summen skal regnes av den prisen som staar i feltet, ikke av listeprisen.
+sjekk('… og summen regnes av den',
+    str_contains($kasseSida, 'const sum = linjer.reduce((n, l) => n + prisenPaa(l.v) * l.antall, 0);'));
+// Varens faste pris staar uroert — eieren valgte «Bare dette salget».
+sjekk('… men varens faste pris roeres ikke',
+    !str_contains($kasseApi, "UPDATE products SET pris_ore")
+    && str_contains($kasseApi, "\$vare['pris_ore'] = \$pris;"));
+// Uten oppgitt pris er det basens som gjelder, som for.
+sjekk('… og uten oppgitt pris gjelder basens',
+    str_contains($kasseApi, "if (array_key_exists('prisOre', \$l) && \$l['prisOre'] !== null && \$l['prisOre'] !== '')"));
+// En tastefeil skal ikke bli et salg paa hundre tusen.
+sjekk('… og en urimelig pris avvises',
+    str_contains($kasseApi, "\$onsket < 0 || \$onsket > 5_000_000")
+    && str_contains($kasseApi, "er utenfor det vi tar imot."));
+// Raden som foeres skal ha den prisen som ble tatt.
+sjekk('… og ordrelinja foerer prisen som ble tatt',
+    str_contains($kasseApi, "'pris_ore'   => (int) \$r['vare']['pris_ore'],"));
+// Overstyringen skal ikke henge igjen til neste kunde.
+sjekk('… og prisene nullstilles naar salget er ferdig',
+    str_contains($kasseSida, "this.setState({ utKurv: {}, utKunde: '', utPris: {} });"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

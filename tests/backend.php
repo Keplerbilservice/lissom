@@ -2046,6 +2046,30 @@ sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
 // finnes ikke» under — samme fella som /kurs/lag-din-egen-bolle sto i for
 // migrasjon 091 og 092.
 $ht = file_get_contents(dirname(__DIR__) . '/.htaccess');
+// ── Den gamle adressen sender videre ──────────────────────────────
+//
+// Fram til august 2026 laa nettsida i public_html/ny.lissom.no, og Google
+// rakk aa indeksere den under det navnet. Eieren, 10. september 2026, med
+// et bilde av soekeresultatet: «Hvorfor ligger disse ute med ny.lissom.no?»
+//
+// Koden peker aldri dit — canonical, og:url, sitemap, llms.txt og robots.txt
+// sier alle «https://lissom.no», maalt paa den ekte sida. Det som manglet
+// var beskjeden til Google om hvor sida flyttet.
+//
+// Maalt med en ekte Apache og repoet som dokumentrot, for og etter:
+//   for:   ny.lissom.no/kurs  →  https://ny.lissom.no/kurs
+//   etter: ny.lissom.no/kurs  →  https://lissom.no/kurs
+//   lissom.no og www.lissom.no oppforte seg likt begge ganger.
+sjekk('ny.lissom.no sendes videre til lissom.no med 301',
+    str_contains($ht, 'RewriteCond %{HTTP_HOST} ^(www\\.)?ny\\.lissom\\.no$ [NC]')
+    && str_contains($ht, 'RewriteRule ^(.*)$ https://lissom.no/$1 [R=301,L,NE]'),
+    'maalt i Apache: /kurs?a=1 beholdt bade sti og sporsmaalstegn');
+// Over www-regelen, ellers ville www.ny.lissom.no tatt to hopp: forst til
+// ny.lissom.no, saa hit.
+sjekk('… og den staar over www-regelen, saa www.ny tas i ett hopp',
+    strpos($ht, '^(www\\.)?ny\\.lissom\\.no$')
+    < strpos($ht, 'RewriteCond %{HTTP_HOST} ^www\\.(.+)$ [NC]'));
+
 sjekk('den gamle bolleadressen gaar videre med 301',
     str_contains($ht, 'RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]'));
 // Regelen maa staa over den som sender alt annet til side.php, ellers ville

@@ -2,6 +2,27 @@
 
 RewriteEngine On
 
+# Den gamle adressen sender videre.
+#
+# Fram til august 2026 laa nettsida i public_html/ny.lissom.no, og Google
+# rakk aa indeksere den under det navnet. Eieren, 10. september 2026, med et
+# bilde av soekeresultatet: «Hvorfor ligger disse ute med ny.lissom.no?»
+#
+# Koden selv peker aldri dit — canonical, og:url, sitemap, llms.txt og
+# robots.txt sier alle «https://lissom.no», maalt paa den ekte sida. Det som
+# manglet var en beskjed til Google om hvor sida flyttet. Uten den blir de
+# gamle oppforingene staaende til de doer av seg selv.
+#
+# En 301 er den beskjeden: Google bytter dem ut med lissom.no, og gamle
+# lenker slutter aa gaa i staa. Den staar over www-regelen, saa
+# www.ny.lissom.no ogsaa tas her — i ett hopp, ikke to.
+#
+# Merk: regelen kan bare virke hvis ny.lissom.no fortsatt peker paa
+# serveren. Er DNS-en borte, naar ingen fram hit i det hele tatt, og
+# oppsettet maa gjores der domenet driftes.
+RewriteCond %{HTTP_HOST} ^(www\.)?ny\.lissom\.no$ [NC]
+RewriteRule ^(.*)$ https://lissom.no/$1 [R=301,L,NE]
+
 # Én adresse, ikke to.
 #
 # www.lissom.no og lissom.no ville ellers vaert to nettsteder med samme

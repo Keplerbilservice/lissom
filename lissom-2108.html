@@ -17911,7 +17911,7 @@ window.__resources = {
       <main style="padding: var(--space-8); min-width: 0;">
         <div style="margin-bottom: var(--space-6);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Markedsføring</div>
-          <h1 style="margin: 0; font-size: var(--text-3xl);">Maler</h1>
+          <h1 style="margin: 0; font-size: var(--text-3xl);">Tekst maler</h1>
           <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Hver e-post og SMS systemet sender. Endre teksten, slå den av, eller se når den går ut. {{ malAntall }}.</p>
         </div>
         <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
@@ -18338,15 +18338,22 @@ window.__resources = {
             <!-- «stretch», ikke «start»: to av kortnavnene gaar over to
                  linjer, og med «start» sto pillene i ulik hoyde bortover
                  rada. Kortene er like hoye naa, og pillene staar paa linje. -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch; max-width: 1100px; margin-top: var(--space-6);">
+            <!-- Samme rutenett og samme kortform som paa Oversikt.
+                 Eieren, 10. september 2026: «jeg vil ha samme layout som paa
+                 oversikt saa endre dette».
+                 Rammen er kortet, knappen inni er flata man trykker paa — en
+                 knapp kan ikke ligge inni en annen knapp, og bryteren
+                 nederst er sin egen. Samme grep som «en handling til» paa
+                 omraadekortene. -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; max-width: 1100px; margin-top: var(--space-6);">
               <sc-for list="{{ dokKort }}" as="k" hint-placeholder-count="6">
                 <div style="{{ k.kortStil }}">
-                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ k.antall }}</div>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 8px;">
-                    <button type="button" onClick="{{ k.apne }}" style="{{ k.apneStil }}">Åpne</button>
-                    <button type="button" onClick="{{ k.veksle }}" style="{{ k.synligStil }}">{{ k.synligNavn }}</button>
-                  </div>
+                  <button type="button" onClick="{{ k.apne }}" style="{{ k.innerStil }}">
+                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
+                    <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.antall }}</p>
+                    <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                  </button>
+                  <button type="button" onClick="{{ k.veksle }}" style="{{ k.synligStil }}">{{ k.synligNavn }}</button>
                 </div>
               </sc-for>
             </div>
@@ -33212,7 +33219,13 @@ class Component extends DCLogic {
         ['Referansekunder', 'adminreferanser'],
         // Malene sto under Markedsfoering. Tekstene er husets egne ord —
         // det verkstedet sier naar det sender noe fra seg.
-        ['Maler',         'adminmaler'],
+        //
+        // Het «Maler» til 10. september 2026. Da kom dokumentkortet «Keramikk
+        // maler» i den samme menyen, og to punkter som begge het noe med
+        // «maler» sa ingenting om hva som laa hvor. Eieren: «da kan du endre
+        // denne til tekst maler». Adressen /admin/maler staar som for, saa
+        // gamle bokmerker virker.
+        ['Tekst maler',   'adminmaler'],
       ],
       'Nettsiden': [
         // Veien tilbake. Nettsiden er ikke et menypunkt lenger, saa uten
@@ -33326,7 +33339,7 @@ class Component extends DCLogic {
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
       case 'adminressurser':     return p('Verkstedet', 'Verkstedet', 'Ressurser');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
-      case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Maler');
+      case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
@@ -44277,7 +44290,7 @@ class Component extends DCLogic {
 
             // Tekstene som sendes ut. Eieren, 1. september: «jeg vil ha et
             // eget kort paa oversikt som heter maler».
-            kort('Maler',
+            kort('Tekst maler',
                  'Hver e-post og SMS systemet sender. Endre teksten, slå den av, '
                  + 'eller se når den går ut.',
                  null, 'Se malene', () => this.gaaAdmin('adminmaler', {})),
@@ -51178,20 +51191,44 @@ class Component extends DCLogic {
         const vis = this.state.dokVis || null;
 
         // ── Kortene ──────────────────────────────────────────────────────
+        //
+        // Eieren, 10. september 2026: «jeg ba om smaa kort, ikke piller, jeg
+        // vil ha samme layout som paa oversikt».
+        //
+        // Derfor den samme formen som kortene der: ramme med en knapp inni,
+        // navnet i overskriftsskrift, antallet under, og «Aapne →» nederst.
+        // Rammen er kortet og knappen inni er flata man trykker paa — en
+        // knapp kan ikke ligge inni en annen knapp, og bryteren nederst er
+        // sin egen.
+        const kortRamme = {
+          background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+          display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0,
+        };
+        const kortInner = {
+          appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+          textAlign: 'left', cursor: 'pointer', width: '100%', font: 'inherit',
+          display: 'flex', flexDirection: 'column', flex: '1 1 auto',
+        };
+        // Raden nederst: samme form som «en handling til» paa Oversikt, med
+        // en strek over og teksten i husets brune.
+        const kortBunn = (paa) => ({
+          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+          textAlign: 'left', width: '100%', padding: 'var(--space-3) 0 0',
+          marginTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)',
+          font: 'var(--type-body-sm)', fontWeight: 600,
+          color: paa ? 'var(--sage-600)' : 'var(--text-muted)',
+        });
         const kortene = kort.map(k => ({
           id: k.id,
           navn: k.navn,
           antall: antallTekst(k.antall),
           apne: () => this.setState({ dokValgt: k.id }),
           synligNavn: k.visMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
-          synligStil: pille(k.visMedlem),
+          synligStil: kortBunn(k.visMedlem),
           veksle: () => this.dokKall({ handling: 'veksle', id: k.id }),
-          apneStil: knapp,
-          kortStil: {
-            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
-            display: 'flex', flexDirection: 'column', gap: '9px', minWidth: 0,
-          },
+          kortStil: kortRamme,
+          innerStil: kortInner,
         }));
 
         // ── Filene i kortet som er aapnet ────────────────────────────────

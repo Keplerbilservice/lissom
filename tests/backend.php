@@ -4962,7 +4962,9 @@ sjekk('… og det staar i loggen hva som ble slettet',
 sjekk('… og et ukjent felt avvises for det naar kunden',
     str_contains($malApi, "Denne malen kjenner ikke {"));
 sjekk('Maler-skjermen finnes', str_contains($sida2, "erAdminMaler: side === 'adminmaler',"));
-sjekk('… og staar som kort paa Oversikt', str_contains($sida2, "kort('Maler',"));
+// Het «Maler» til 10. september 2026, da dokumentkortet «Keramikk maler»
+// kom i den samme menyen. Eieren: «da kan du endre denne til tekst maler».
+sjekk('… og staar som kort paa Oversikt', str_contains($sida2, "kort('Tekst maler',"));
 sjekk('… med feltene til aa kopiere', str_contains($sida2, 'navigator.clipboard.writeText(t)'));
 
 // ── Hentetiden staar ett sted ──────────────────────────────────────────
@@ -9344,7 +9346,7 @@ sjekk('hovedmenyen er ti punkter',
 sjekk('… og Verkstedet har faatt de tre',
     str_contains($sidaG, "['Nettsiden',     'admininnhold'],")
     && str_contains($sidaG, "['Referansekunder', 'adminreferanser'],\n        // Malene sto under")
-    && str_contains($sidaG, "['Maler',         'adminmaler'],"));
+    && str_contains($sidaG, "['Tekst maler',   'adminmaler'],"));
 // Sto de begge steder, ville to faner gaatt til den samme skjermen og
 // begge villet lyse.
 sjekk('… og staar ikke igjen der de kom fra',
@@ -9368,7 +9370,7 @@ sjekk('… og beholder sin egen fanerad',
 // De to som flyttet helt hoerer til Verkstedets egen rad, ikke Nettsidens.
 sjekk('referansekundene og malene hoerer til Verkstedet',
     str_contains($sidaG, "case 'adminreferanser':    return p('Verkstedet', 'Verkstedet', 'Referansekunder');")
-    && str_contains($sidaG, "case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Maler');"));
+    && str_contains($sidaG, "case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');"));
 // Kortet paa Oversikt skal gaa dit som for. Eieren, 1. september: «jeg vil
 // ha et eget kort paa oversikt som heter maler».
 sjekk('… og kortet paa Oversikt gaar fortsatt til malene',
@@ -14979,6 +14981,29 @@ sjekk('… og medlemsdelen paa Nyttig info staar bare naar noe er slaatt paa',
     str_contains($dokSida, '<sc-if value="{{ mdHarNoe }}"')
     && str_contains($dokSida, '>For medlemmer</h2>')
     && str_contains($dokSida, '>Kun for innloggede</span>'));
+// ── Kortene har samme form som paa Oversikt ──────────────────────────────
+//
+// Eieren, 10. september 2026: «jeg ba om smaa kort, ikke piller, jeg vil ha
+// samme layout som paa oversikt saa endre dette».
+//
+// Rammen er kortet og knappen inni er flata man trykker paa. En knapp kan
+// ikke ligge inni en annen knapp, saa bryteren nederst er sin egen — samme
+// grep som «en handling til» paa omraadekortene.
+sjekk('dokumentkortene har samme form som kortene paa Oversikt',
+    str_contains($dokSida, '<button type="button" onClick="{{ k.apne }}" style="{{ k.innerStil }}">')
+    && str_contains($dokSida, '>Åpne →</span>')
+    && str_contains($dokSida, "grid-template-columns: repeat(auto-fit, minmax(210px, 1fr))"));
+sjekk('… og bryteren staar som en rad nederst, ikke som en pille',
+    str_contains($dokSida, 'const kortBunn = (paa) => ({')
+    && str_contains($dokSida, "borderTop: '1px solid var(--border-subtle)',")
+    && str_contains($dokSida, 'synligStil: kortBunn(k.visMedlem),'));
+// «Maler» i den samme menyen er tekstmalene til e-post og SMS. To punkter
+// som begge het noe med «maler» sa ingenting om hva som laa hvor.
+sjekk('… og tekstmalene heter «Tekst maler», saa navnene ikke krasjer',
+    str_contains($dokSida, "['Tekst maler',   'adminmaler'],")
+    && str_contains($dokSida, '>Tekst maler</h1>')
+    && !str_contains($dokSida, "['Maler',         'adminmaler'],"));
+
 // ── Hvor stor en opplasting faar vaere ───────────────────────────────────
 //
 // Eieren, 10. september 2026: hev taket «saa langt serveren tillater».

@@ -1088,6 +1088,53 @@ window.__resources = {
 })();
 </script>
 
+<script>
+// Bunnmenyene folger det man faktisk ser.
+//
+// Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
+// naar vi scroller opp og ned. Saa sett den fast» — og paa spoersmaal: ja,
+// baade Min side og admin.
+//
+// Menyene er «position: fixed; bottom: 0», og maalt i nettleseren staar de
+// bom stille: 731 px baade for og etter 1200 px rulling, paa Min side og paa
+// admin. Det finnes ingen rullelytter i koden i det hele tatt.
+//
+// Det som flytter seg er adresselinja i telefonens nettleser. «fixed» festes
+// til SIDEVINDUET (layout viewport), og det krymper ikke naar adresselinja
+// kommer fram. Menyen blir da staaende bak den — den ser ut til aa skli ned
+// og bli borte, og komme tilbake naar man ruller andre veien.
+//
+// «visualViewport» er det man faktisk ser. Avstanden fra bunnen av det til
+// bunnen av sidevinduet legges i «--vv-bunn», og stilarket flytter menyene
+// like langt opp. Da staar de i ro mot skjermkanten.
+//
+// Tastaturet: naar det er framme krymper det synlige vinduet med 250-350 px.
+// Da lar vi menyen bli staaende der den er — loftet opp ville den lagt seg
+// oppa skrivefeltet i chatten. Grensa er 160 px: hoyere enn en adresselinje,
+// lavere enn et tastatur.
+(function () {
+  var vv = window.visualViewport;
+  if (!vv) return;                       // ingen stotte: alt staar som for.
+  var TASTATUR = 160;
+  var venter = false;
+  var sist = null;
+  function skriv() {
+    venter = false;
+    var d = Math.round(vv.offsetTop + vv.height - document.documentElement.clientHeight);
+    if (d > 0) d = 0;                    // ser mer enn sidevinduet: ingenting aa gjore.
+    if (d < -TASTATUR) d = 0;            // tastaturet, ikke adresselinja.
+    if (d === sist) return;              // samme tall: ikke ror stilen.
+    sist = d;
+    document.documentElement.style.setProperty('--vv-bunn', d + 'px');
+  }
+  function be() { if (!venter) { venter = true; requestAnimationFrame(skriv); } }
+  vv.addEventListener('resize', be);
+  vv.addEventListener('scroll', be);
+  window.addEventListener('orientationchange', be);
+  skriv();
+})();
+</script>
+
 <!-- Sidas egne stiler.
      De sto inne i <helmet> nede i kroppen, og dc-runtime flyttet dem opp
      hit forst naar oppstarten var ferdig. Med den ferdigtegnede toppen ble
@@ -1398,6 +1445,26 @@ window.__resources = {
     .ms-bunnluft,
     .ms-hjem-kort { display: none !important; }
   }
+
+  /* Bunnmenyene folger det man faktisk ser, ikke sida.
+     --------------------------------------------------
+     Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
+     naar vi scroller opp og ned. Saa sett den fast», og paa spoersmaal:
+     ja, baade Min side og admin.
+
+     Menyene er «fixed» mot bunnen, og maalt i nettleseren staar de bom
+     stille — 731 px baade for og etter 1200 px rulling, begge steder. Det
+     finnes ingen rullelytter i koden.
+
+     Det som flytter seg er adresselinja i telefonens nettleser. «fixed»
+     festes til SIDEVINDUET, som ikke krymper naar adresselinja kommer
+     fram — saa menyen blir staaende bak den og ser ut til aa skli vekk.
+
+     «--vv-bunn» settes av skriptet oeverst i fila og er avstanden fra
+     bunnen av det man ser til bunnen av sidevinduet. Null paa PC, og null
+     i en nettleser uten «visualViewport». */
+  .ms-bunnmeny,
+  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }
 
 
   /* Kortene paa telefonen: tittel, tall og «Se mer».

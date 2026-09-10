@@ -7359,6 +7359,37 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
     && str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, 'aria-label="{{ msPlHjem.full }}"'),
     'skjermleseren leser «Min side» begge steder, fra aria-label');
+// ── Bunnmenyene folger det man faktisk ser ────────────────────────
+//
+// Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
+// naar vi scroller opp og ned. Saa sett den fast» — og paa spoersmaal: ja,
+// baade Min side og admin.
+//
+// Menyene sto allerede «fixed». Maalt i nettleseren: 731 px baade for og
+// etter 1200 px rulling, begge steder, og det finnes ingen rullelytter i
+// koden. Det som flytter seg er adresselinja i telefonens nettleser:
+// «fixed» festes til sidevinduet, som ikke krymper naar den kommer fram.
+//
+// Maalt med det synlige vinduet krympet 90 px (Emulation.setPageScaleFactor
+// 1,13): «--vv-bunn» ble -90px og menyen sto noeyaktig paa skjermkanten,
+// 690 av 690 — baade paa Min side og paa admin. Tilbake paa 780 etterpaa.
+// Med 292 px krympet — et tastatur — ble den staaende, som den skal.
+sjekk('bunnmenyene flyttes opp naar det synlige vinduet krymper',
+    str_contains($sida, ".ms-bunnmeny,\n  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }")
+    && str_contains($sida, "document.documentElement.style.setProperty('--vv-bunn', d + 'px');"),
+    'maalt: menybunn 690 av 690 synlige piksler, begge steder');
+sjekk('… og regnestykket er bunnen av det synlige minus bunnen av sidevinduet',
+    str_contains($sida, 'var d = Math.round(vv.offsetTop + vv.height - document.documentElement.clientHeight);')
+    && str_contains($sida, 'if (d > 0) d = 0;'));
+sjekk('… men tastaturet lar menyen staa, saa den ikke legger seg paa skrivefeltet',
+    str_contains($sida, 'var TASTATUR = 160;')
+    && str_contains($sida, 'if (d < -TASTATUR) d = 0;'),
+    'en adresselinje er under 160 px, et tastatur 250-350');
+sjekk('… og en nettleser uten «visualViewport» staar som for',
+    str_contains($sida, "  var vv = window.visualViewport;\n  if (!vv) return;"));
+sjekk('… og skriptet ligger i begge filene, ogsaa den uten admin',
+    str_contains(file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'), "'--vv-bunn'"),
+    'Min side ligger i den fila');
 sjekk('… og bunnmenyen og luftputa under den gaar bort paa PC',
     str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, '<div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>'));

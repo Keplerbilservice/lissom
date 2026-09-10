@@ -1088,6 +1088,53 @@ window.__resources = {
 })();
 </script>
 
+<script>
+// Bunnmenyene folger det man faktisk ser.
+//
+// Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
+// naar vi scroller opp og ned. Saa sett den fast» — og paa spoersmaal: ja,
+// baade Min side og admin.
+//
+// Menyene er «position: fixed; bottom: 0», og maalt i nettleseren staar de
+// bom stille: 731 px baade for og etter 1200 px rulling, paa Min side og paa
+// admin. Det finnes ingen rullelytter i koden i det hele tatt.
+//
+// Det som flytter seg er adresselinja i telefonens nettleser. «fixed» festes
+// til SIDEVINDUET (layout viewport), og det krymper ikke naar adresselinja
+// kommer fram. Menyen blir da staaende bak den — den ser ut til aa skli ned
+// og bli borte, og komme tilbake naar man ruller andre veien.
+//
+// «visualViewport» er det man faktisk ser. Avstanden fra bunnen av det til
+// bunnen av sidevinduet legges i «--vv-bunn», og stilarket flytter menyene
+// like langt opp. Da staar de i ro mot skjermkanten.
+//
+// Tastaturet: naar det er framme krymper det synlige vinduet med 250-350 px.
+// Da lar vi menyen bli staaende der den er — loftet opp ville den lagt seg
+// oppa skrivefeltet i chatten. Grensa er 160 px: hoyere enn en adresselinje,
+// lavere enn et tastatur.
+(function () {
+  var vv = window.visualViewport;
+  if (!vv) return;                       // ingen stotte: alt staar som for.
+  var TASTATUR = 160;
+  var venter = false;
+  var sist = null;
+  function skriv() {
+    venter = false;
+    var d = Math.round(vv.offsetTop + vv.height - document.documentElement.clientHeight);
+    if (d > 0) d = 0;                    // ser mer enn sidevinduet: ingenting aa gjore.
+    if (d < -TASTATUR) d = 0;            // tastaturet, ikke adresselinja.
+    if (d === sist) return;              // samme tall: ikke ror stilen.
+    sist = d;
+    document.documentElement.style.setProperty('--vv-bunn', d + 'px');
+  }
+  function be() { if (!venter) { venter = true; requestAnimationFrame(skriv); } }
+  vv.addEventListener('resize', be);
+  vv.addEventListener('scroll', be);
+  window.addEventListener('orientationchange', be);
+  skriv();
+})();
+</script>
+
 <!-- Sidas egne stiler.
      De sto inne i <helmet> nede i kroppen, og dc-runtime flyttet dem opp
      hit forst naar oppstarten var ferdig. Med den ferdigtegnede toppen ble
@@ -1379,12 +1426,45 @@ window.__resources = {
 
   .ms-pillerad { display: flex; }
   @media (max-width: 760px) {
-    .ms-pillerad > *:not(.ms-verksted) { display: none !important; }
+    /* Paa telefonen staar bare to av de aatte: «Min side» og «x inne».
+       De seks andre staar i bunnmenyen.
+
+       Eieren, 10. september 2026: «det er for vanskelig aa komme inn paa
+       forsiden min side», og paa spoersmaal om hvor knappen skulle staa:
+       «Kan du flytte min side knappen lenger opp paa siden ved siden av
+       pillen med antall inn.»
+
+       Raden staar over faneinnholdet, ikke inne i det, saa pilla foelger
+       med paa alle fanene — ogsaa Chat og Butikk, der veien hjem var
+       lengst. */
+    .ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }
+    .ms-hjem-langt { display: none !important; }
   }
   @media (min-width: 761px) {
     .ms-bunnmeny,
-    .ms-bunnluft { display: none !important; }
+    .ms-bunnluft,
+    .ms-hjem-kort { display: none !important; }
   }
+
+  /* Bunnmenyene folger det man faktisk ser, ikke sida.
+     --------------------------------------------------
+     Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
+     naar vi scroller opp og ned. Saa sett den fast», og paa spoersmaal:
+     ja, baade Min side og admin.
+
+     Menyene er «fixed» mot bunnen, og maalt i nettleseren staar de bom
+     stille — 731 px baade for og etter 1200 px rulling, begge steder. Det
+     finnes ingen rullelytter i koden.
+
+     Det som flytter seg er adresselinja i telefonens nettleser. «fixed»
+     festes til SIDEVINDUET, som ikke krymper naar adresselinja kommer
+     fram — saa menyen blir staaende bak den og ser ut til aa skli vekk.
+
+     «--vv-bunn» settes av skriptet oeverst i fila og er avstanden fra
+     bunnen av det man ser til bunnen av sidevinduet. Null paa PC, og null
+     i en nettleser uten «visualViewport». */
+  .ms-bunnmeny,
+  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }
 
 
   /* Kortene paa telefonen: tittel, tall og «Se mer».
@@ -3969,7 +4049,16 @@ window.__resources = {
                uten at skjermen maa tegnes om. 760 px, som resten av sida. -->
           <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
             <nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">
-              <button type="button" onClick="{{ msPlHjem.velg }}" aria-label="{{ msPlHjem.full }}" style="{{ msPlHjem.stil }}">{{ msPlHjem.navn }}</button>
+              <!-- Hjempilla. Den staar igjen paa telefonen sammen med
+                   verkstedspilla — se «.ms-hjem» i stilarket.
+
+                   To navn i samme knapp: «Hjem» paa telefonen, «Min side» paa
+                   PC. Eieren, 10. september 2026: «Kall den hjem» — og paa
+                   spoersmaal om bunnmenyen og PC-pillene skulle folge etter:
+                   nei, bare pilla oeverst. CSS velger hvilket av de to som
+                   staar, som ellers paa denne raden. Skjermleseren leser
+                   «Min side» begge steder, fra «aria-label». -->
+              <button type="button" class="ms-hjem" onClick="{{ msPlHjem.velg }}" aria-label="{{ msPlHjem.full }}" style="{{ msPlHjem.stil }}"><span class="ms-hjem-kort">Hjem</span><span class="ms-hjem-langt">{{ msPlHjem.navn }}</span></button>
               <button type="button" onClick="{{ msPlMedlemskap.velg }}" aria-label="{{ msPlMedlemskap.full }}" style="{{ msPlMedlemskap.stil }}">{{ msPlMedlemskap.navn }}</button>
               <button type="button" onClick="{{ msPlButikk.velg }}" aria-label="{{ msPlButikk.full }}" style="{{ msPlButikk.stil }}">{{ msPlButikk.navn }}</button>
               <button type="button" onClick="{{ msPlSelg.velg }}" aria-label="{{ msPlSelg.full }}" style="{{ msPlSelg.stil }}">{{ msPlSelg.navn }}</button>
@@ -21142,14 +21231,27 @@ window.__resources = {
           </div>
         </div>
 
-        <!-- Sluttdato.
-             Et dreiekurs gaar over to dager. Her sto bare én dato, og
-             klokkeslettet «til» ble tolket som samme dag — den andre dagen
-             fantes ikke noe sted. Tomt betyr at kurset gaar samme dag. -->
+        <!-- Flere dager.
+             Her sto «Sluttdato». Den lagde én oekt fra 16. kl 15 til 17. kl
+             18 — en kveld paa 27 timer, og bare dag én sto i kalenderen.
+             Eieren, 10. september 2026: «Den kan jo ikke gaa over natten»,
+             og «Dag 1 dato + fra kl - til kl. Dag 2 dato + fra kl - til kl».
+             Dag 2 kommer ferdig utfylt som dagen etter, med de samme
+             klokkeslettene. Alt kan endres. -->
         <div>
-          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Sluttdato</label>
-          <input type="date" value="{{ ndSluttdato }}" onChange="{{ settNdSluttdato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
-          <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndSluttdatoHjelp }}</p>
+          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 2px;">Flere dager</label>
+          <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndDagerHjelp }}</p>
+          <sc-for list="{{ ndDager }}" as="dg" hint-placeholder-count="1">
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+              <span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ dg.merke }}</span>
+              <input type="date" value="{{ dg.dato }}" onChange="{{ dg.settDato }}" style="{{ ndDagFeltStil }}">
+              <input type="time" value="{{ dg.fra }}" onChange="{{ dg.settFra }}" style="{{ ndDagFeltStil }}">
+              <span style="color: var(--text-muted);">–</span>
+              <input type="time" value="{{ dg.til }}" onChange="{{ dg.settTil }}" style="{{ ndDagFeltStil }}">
+              <button type="button" onClick="{{ dg.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
+            </div>
+          </sc-for>
+          <button type="button" onClick="{{ ndLeggTilDag }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Legg til dag</button>
         </div>
         <sc-if value="{{ ndHarLagtTil }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
@@ -24813,7 +24915,7 @@ class Component extends DCLogic {
       ndApen: true, ndVelgerApen: false,
       ndKurs: this.ndKursnavn()[0] || '',
       ndDato: '', ndFra: '18:00', ndTil: '21:00', ndPlasser: '8',
-      ndGjentak: 'Ingen', ndAntall: '', ndSluttdato: '',
+      ndGjentak: 'Ingen', ndAntall: '', ndDager: [],
       ndLagtTil: [],
     });
   }
@@ -24987,9 +25089,12 @@ class Component extends DCLogic {
           handling: 'nydato',
           kursId: kurs.id,
           start: s.ndDato + ' ' + fra,
-          // Slutter kurset en annen dag, er det den datoen som gjelder —
-          // ikke starten. Et dreiekurs over to dager sto som én kveld.
-          slutt: (s.ndSluttdato && s.ndSluttdato >= s.ndDato ? s.ndSluttdato : s.ndDato) + ' ' + til,
+          // Slutten staar paa dag én. Et kurs kan ikke gaa over natta —
+          // eieren, 10. september 2026: «Den kan jo ikke gaa over natten».
+          // Gaar det over flere dager, ligger de i «dager», og serveren
+          // lagrer dem som samlinger.
+          slutt: s.ndDato + ' ' + til,
+          dager: (s.ndDager || []).filter(d => d.dato),
           kapasitet: parseInt(s.ndPlasser, 10) || 0,
         };
 
@@ -32353,6 +32458,13 @@ class Component extends DCLogic {
    * legger man til et doegn og leser den ut lokalt, kan man havne paa
    * samme dag igjen naar sommertida slutter.
    */
+  /** Ett felt paa én av dagene i «Ny kursdato». */
+  ndSettDag(i, felt, verdi) {
+    this.setState(st => ({
+      ndDager: (st.ndDager || []).map((d, j) => (j === i ? Object.assign({}, d, { [felt]: verdi }) : d)),
+    }));
+  }
+
   dagenEtter(dato) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dato || ''))) return '';
     const d = new Date(dato + 'T00:00:00Z');
@@ -39907,18 +40019,48 @@ class Component extends DCLogic {
       settNdFra: e => this.setState({ ndFra: e.target.value }),
       ndTil: this.state.ndTil || '21:00',
       settNdTil: e => this.setState({ ndTil: e.target.value }),
-      ndSluttdato: this.state.ndSluttdato || '',
-      settNdSluttdato: e => this.setState({ ndSluttdato: e.target.value }),
-      ndSluttdatoHjelp: (() => {
-        const a = this.state.ndDato || '';
-        const b = this.state.ndSluttdato || '';
-        if (!b || b === a) return 'Tomt betyr at kurset går samme dag. Går det over to dager — som dreiekurset — setter du siste dagen her.';
-        const d1 = new Date(a + 'T12:00');
-        const d2 = new Date(b + 'T12:00');
-        if (isNaN(d1) || isNaN(d2) || d2 < d1) return 'Sluttdatoen kan ikke være før startdatoen.';
-        const dager = Math.round((d2 - d1) / 86400000) + 1;
-        return 'Kurset går over ' + dager + ' dager, fra ' + a + ' til ' + b + '.';
-      })(),
+      // ── Dagene kurset gaar over ─────────────────────────────────────
+      //
+      // Her sto «Sluttdato», ett datofelt. Den lagde én oekt fra 16. kl 15
+      // til 17. kl 18 — en kveld paa 27 timer, og bare dag én sto i
+      // kalenderen. Eieren, 10. september 2026: «Den kan jo ikke gaa over
+      // natten, den maa jo bare legge slik», og «Dag 1 dato + fra kl - til
+      // kl. Dag 2 dato + fra kl - til kl».
+      //
+      // Dag 1 er datoen og klokkeslettene over. Dag 2 og utover staar her,
+      // ferdig utfylt som dagen etter med de samme klokkeslettene — samme
+      // grep som «+ Legg til en dag» i kalenderen alt bruker.
+      ndDagFeltStil: {
+        boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-md)', padding: '9px 12px',
+        font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+        background: 'var(--surface-card)',
+      },
+      ndDagerHjelp: ((this.state.ndDager || []).length === 0)
+        ? 'Går kurset over flere dager, legger du dem inn her. Hver dag får sin egen dato og klokkeslett.'
+        : 'Kurset går over ' + ((this.state.ndDager || []).length + 1)
+          + ' dager. Én påmelding gjelder alle.',
+      ndDager: (this.state.ndDager || []).map((dg, i) => ({
+        merke: 'Dag ' + (i + 2),
+        dato: dg.dato || '',
+        fra: dg.fra || '',
+        til: dg.til || '',
+        settDato: e => this.ndSettDag(i, 'dato', e.target.value),
+        settFra:  e => this.ndSettDag(i, 'fra', e.target.value),
+        settTil:  e => this.ndSettDag(i, 'til', e.target.value),
+        fjern: () => this.setState(st => ({
+          ndDager: (st.ndDager || []).filter((_, j) => j !== i) })),
+      })),
+      ndLeggTilDag: () => this.setState(st => {
+        const har = st.ndDager || [];
+        const forrige = har.length ? har[har.length - 1] : null;
+        const grunn = forrige && forrige.dato ? forrige.dato : (st.ndDato || '');
+        return { ndDager: har.concat([{
+          dato: this.dagenEtter(grunn),
+          fra: (forrige && forrige.fra) || st.ndFra || '18:00',
+          til: (forrige && forrige.til) || st.ndTil || '21:00',
+        }]) };
+      }),
       ndPlasser: this.state.ndPlasser ?? '8',
       settNdPlasser: e => this.setState({ ndPlasser: e.target.value }),
       ...(() => {
@@ -45974,10 +46116,25 @@ class Component extends DCLogic {
               oktInfoBeskjed: '',
             })),
           })),
-          leggTilSamling: () => this.setState(st => ({
-            oktSamlinger: (st.oktSamlinger || []).concat([{ dato: '', fra: '', til: '', overskrift: '', tekst: '' }]),
-            oktInfoBeskjed: '',
-          })),
+          // Ferdig utfylt som dagen etter, med de samme klokkeslettene.
+          // Knappen i kalenderen har gjort det siden den kom; her lagde den
+          // en tom rad man matte fylle ut selv. Eieren, 10. september 2026:
+          // «jeg vil forovrig at du setter at dag to er default dagen etter
+          // til samme klokkeslett som dag 1, men med mulighet til aa endre».
+          leggTilSamling: () => this.setState(st => {
+            const har = st.oktSamlinger || [];
+            const forrige = har.length ? har[har.length - 1] : null;
+            const grunn = forrige && forrige.dato ? forrige.dato : (st.oktDato || '');
+            return {
+              oktSamlinger: har.concat([{
+                dato: this.dagenEtter(grunn),
+                fra: (forrige && forrige.fra) || st.oktFra || '',
+                til: (forrige && forrige.til) || st.oktTil || '',
+                overskrift: '', tekst: '',
+              }]),
+              oktInfoBeskjed: '',
+            };
+          }),
         };
       })(),
       // ── Medlemskapene som kan kjopes ────────────────────────────────
@@ -48152,7 +48309,16 @@ class Component extends DCLogic {
             background: 'var(--surface-card)',
             borderTop: '1px solid var(--border-subtle)',
             boxShadow: '0 -2px 12px rgba(77,29,18,.08)',
-            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+            // «minmax(0, 1fr)», ikke «1fr». En rutecelle er som standard minst
+            // saa bred som innholdet sitt, og med stoerre skrift paa
+            // telefonen sprengte «Logg ut» rada ut av skjermen.
+            //
+            // Eieren, 10. september 2026: «bunn menyen maa staa fast, naa
+            // roerer den seg» — og paa spoersmaal: ja, telefonen staar paa
+            // stoerre skrift. Maalt her paa 390 px laa menyen fast og var
+            // noeyaktig saa bred som skjermen; det er den stoerre skrifta som
+            // gjor forskjellen.
+            display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
             // Plass til hjemknappen paa iPhone, som i adminmenyen.
             paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
           },
@@ -48161,7 +48327,12 @@ class Component extends DCLogic {
           // mindre holder det lengste navnet innenfor sin egen celle.
           msBmTekstStil: {
             fontSize: 8.5, lineHeight: 1.15, letterSpacing: '-.01em',
-            whiteSpace: 'nowrap', color: 'inherit', fontWeight: 'inherit',
+            // Sto som «nowrap». Da kunne et langt navn ikke gjore annet enn
+            // aa skyve cella bredere — og med stoerre skrift paa telefonen
+            // ble «Logg ut» klippet av skjermkanten. Naa brekker det heller
+            // over to linjer.
+            whiteSpace: 'normal', overflowWrap: 'anywhere', textAlign: 'center',
+            color: 'inherit', fontWeight: 'inherit',
           },
           // Menyen ligger fast over innholdet. Uten luft under blir det
           // siste kortet liggende bak den.
@@ -48795,11 +48966,23 @@ class Component extends DCLogic {
       ]).map(m => Object.assign({}, m, {
         kanAngre: !!m.egen && !m.slettet,
         angre: () => this.angreChat(m.id),
+        // Myk kant, ikke pille.
+        //
+        // Eieren, 10. september 2026, med et bilde av chatten paa telefonen:
+        // «Her vises ikke hele teksten i det brune feltet fordi denne rund».
+        //
+        // Radiusen var 999 px. Paa én linje er det en pille; paa fem linjer
+        // blir kurven saa stor at forste og siste linje loper inn under den.
+        // Maalt paa 390 px: «Neste» mistet N-en, «sier fra» mistet s-en.
+        //
+        // En kort melding ser ut som for — 14 px radius paa en boble som er
+        // 30 px hoy er nesten den samme runde kanten.
         boble: {
           display: 'inline-block',
           background: m.egen ? 'var(--lissom-brown)' : 'var(--clay-100)',
           color: m.egen ? 'var(--clay-50)' : 'var(--text-heading)',
-          borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: 'var(--text-sm)',
+          borderRadius: 'var(--radius-lg)', padding: '8px 14px',
+          fontSize: 'var(--text-sm)', lineHeight: 1.5,
         },
         metaStil: { fontSize: '11px', color: 'var(--text-muted)' },
       })),

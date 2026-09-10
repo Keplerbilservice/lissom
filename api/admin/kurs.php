@@ -549,6 +549,34 @@ switch ($handling) {
         $start = $tilUtc(Foresporsel::tekst('start'));
         $slutt = $tilUtc(Foresporsel::tekst('slutt'));
 
+        // Dagene kurset gaar over, naar det er mer enn én.
+        //
+        // Eieren, 10. september 2026: «Dag 1 dato + fra kl - til kl. Dag 2
+        // dato + fra kl - til kl», og «Den kan jo ikke gaa over natten».
+        //
+        // Feltet «Sluttdato» lagde én oekt fra 16. kl 15 til 17. kl 18 — en
+        // kveld paa 27 timer. Naa kommer dagene inn hver for seg og lagres
+        // som samlinger, som er husets maate aa gjore flerdagerskurs paa.
+        // Samlinger::lagre() setter deretter oekta fra forste til siste dag.
+        $dagerInn = [];
+        foreach ((array) (Foresporsel::kropp()['dager'] ?? []) as $d) {
+            if (!is_array($d)) {
+                continue;
+            }
+            $dato = trim((string) ($d['dato'] ?? ''));
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dato) !== 1) {
+                continue;
+            }
+            $dagerInn[] = [
+                'dato' => $dato,
+                'fra'  => trim((string) ($d['fra'] ?? '')),
+                'til'  => trim((string) ($d['til'] ?? '')),
+            ];
+        }
+        if (count($dagerInn) > 30) {
+            Svar::feil('For mange dager på ett kurs.');
+        }
+
         if ($kursId <= 0 || DB::en('SELECT id FROM courses WHERE id = :i', ['i' => $kursId]) === null) {
             Svar::feil('Ukjent kurs.');
         }
@@ -584,7 +612,28 @@ switch ($handling) {
         );
 
         $oktId = DB::settInn('course_sessions', $nyOkt);
-        revider('dato_lagt_til', 'course_session', $oktId, ['kurs' => $kursId, 'start' => $start]);
+
+        // Gaar kurset over flere dager, lagres dagene som samlinger — dag én
+        // med, saa rekkefolgen og nummereringen stemmer. Samlinger::lagre()
+        // setter deretter oekta fra forste til siste dag, som er den maaten
+        // kunden ser «7.–8. oktober» paa.
+        if ($dagerInn !== []) {
+            $forste = (new DateTimeImmutable($start, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'));
+            $sisteKl = $slutt !== null
+                ? (new DateTimeImmutable($slutt, new DateTimeZone('UTC')))
+                    ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i')
+                : '';
+            Samlinger::lagre($oktId, array_merge([[
+                'dato' => $forste->format('Y-m-d'),
+                'fra'  => $forste->format('H:i'),
+                'til'  => $sisteKl,
+            ]], $dagerInn));
+        }
+
+        revider('dato_lagt_til', 'course_session', $oktId, [
+            'kurs' => $kursId, 'start' => $start, 'dager' => count($dagerInn) + 1,
+        ]);
         Svar::ok(['oktId' => $oktId, 'naar' => Booking::norskDato($start)]);
 
     // ------------------------------------------------- fast ukedag (serie)

@@ -7332,15 +7332,66 @@ sjekk('… og admin teller fortsatt som medlem paa serveren',
 sjekk('Min side har baade piller og bunnmeny i markupen',
     str_contains($sida, '<nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">')
     && str_contains($sida, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">'));
-// Raden staar alltid. Paa telefonen er verkstedspilla det eneste som staar
-// igjen av den — de sju andre er i bunnmenyen der, og en aattende celle
-// ville gjort de sju til 44 px hver.
+// Raden staar alltid. Paa telefonen er det to piller som staar igjen av den:
+// «Min side» og «x inne». De seks andre er i bunnmenyen der, og aatte celler
+// ville gjort dem 44 px hver.
 sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
     str_contains($sida, '.ms-pillerad { display: flex; }')
     && str_contains($sida, '@media (min-width: 761px) {')
-    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted) { display: none !important; }'));
+    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }'));
+// Eieren, 10. september 2026: «Kan du flytte min side knappen lenger opp paa
+// siden ved siden av pillen med antall inn.» Foer dette var veien hjem cella
+// lengst til venstre i bunnmenyen — han fant den ikke.
+//
+// Maalt paa 390 px: «Min side» paa x=20 og «0 inne» paa x=125, samme linje,
+// begge 999 px runde. Pilla lyser brunt paa forsiden og staar hvit paa Chat,
+// og et trykk paa den tar deg hjem og opp.
+sjekk('… og hjempilla staar igjen paa telefonen, ved siden av «x inne»',
+    str_contains($sida, '<button type="button" class="ms-hjem" onClick="{{ msPlHjem.velg }}"')
+    && str_contains($sida, '<button type="button" class="ms-verksted" onClick="{{ msPlVerksted.velg }}"'),
+    'maalt paa 390 px: begge pillene paa samme linje, ingenting stikker ut');
+// Eieren, 10. september 2026: «Kall den hjem». Og paa spoersmaalet om
+// bunnmenyen og PC-pillene skulle hete det samme: nei, bare pilla oeverst.
+// Derfor to navn i samme knapp, og CSS velger — som ellers paa denne raden.
+sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
+    str_contains($sida, '<span class="ms-hjem-kort">Hjem</span><span class="ms-hjem-langt">{{ msPlHjem.navn }}</span>')
+    && str_contains($sida, '.ms-hjem-langt { display: none !important; }')
+    && str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
+    && str_contains($sida, 'aria-label="{{ msPlHjem.full }}"'),
+    'skjermleseren leser «Min side» begge steder, fra aria-label');
+// ── Bunnmenyene folger det man faktisk ser ────────────────────────
+//
+// Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
+// naar vi scroller opp og ned. Saa sett den fast» — og paa spoersmaal: ja,
+// baade Min side og admin.
+//
+// Menyene sto allerede «fixed». Maalt i nettleseren: 731 px baade for og
+// etter 1200 px rulling, begge steder, og det finnes ingen rullelytter i
+// koden. Det som flytter seg er adresselinja i telefonens nettleser:
+// «fixed» festes til sidevinduet, som ikke krymper naar den kommer fram.
+//
+// Maalt med det synlige vinduet krympet 90 px (Emulation.setPageScaleFactor
+// 1,13): «--vv-bunn» ble -90px og menyen sto noeyaktig paa skjermkanten,
+// 690 av 690 — baade paa Min side og paa admin. Tilbake paa 780 etterpaa.
+// Med 292 px krympet — et tastatur — ble den staaende, som den skal.
+sjekk('bunnmenyene flyttes opp naar det synlige vinduet krymper',
+    str_contains($sida, ".ms-bunnmeny,\n  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }")
+    && str_contains($sida, "document.documentElement.style.setProperty('--vv-bunn', d + 'px');"),
+    'maalt: menybunn 690 av 690 synlige piksler, begge steder');
+sjekk('… og regnestykket er bunnen av det synlige minus bunnen av sidevinduet',
+    str_contains($sida, 'var d = Math.round(vv.offsetTop + vv.height - document.documentElement.clientHeight);')
+    && str_contains($sida, 'if (d > 0) d = 0;'));
+sjekk('… men tastaturet lar menyen staa, saa den ikke legger seg paa skrivefeltet',
+    str_contains($sida, 'var TASTATUR = 160;')
+    && str_contains($sida, 'if (d < -TASTATUR) d = 0;'),
+    'en adresselinje er under 160 px, et tastatur 250-350');
+sjekk('… og en nettleser uten «visualViewport» staar som for',
+    str_contains($sida, "  var vv = window.visualViewport;\n  if (!vv) return;"));
+sjekk('… og skriptet ligger i begge filene, ogsaa den uten admin',
+    str_contains(file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'), "'--vv-bunn'"),
+    'Min side ligger i den fila');
 sjekk('… og bunnmenyen og luftputa under den gaar bort paa PC',
-    str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft { display: none !important; }")
+    str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, '<div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>'));
 // Pillene henter valgene fra bunnmenyen, saa de to aldri kan komme i utakt.
 sjekk('… og pillene henter de samme valgene som bunnmenyen',
@@ -13435,11 +13486,25 @@ sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
 // ── Bunnmenyen ────────────────────────────────────────────────────
 // Klassenavnet kom 7. september, da menyen ble telefonens alene og PC-en
 // fikk piller i stedet. Se «.ms-pillerad» lenger nede.
+// «minmax(0, 1fr)», ikke «1fr»: en rutecelle er som standard minst saa bred
+// som innholdet sitt. Eieren, 10. september 2026: «bunn menyen maa staa fast,
+// naa roerer den seg» — telefonen hans staar paa stoerre skrift, og da skjov
+// «Logg ut» rada ut av skjermen.
+//
+// Sto som «repeat(7, 1fr)» her. Det staar ogsaa i adminmenyen, og siden
+// $msRen er hele fila var sjekken gronn av feil grunn.
+//
+// Maalt paa 360 px med skrifta 1,4 ganger stoerre: rada noeyaktig 360 px,
+// alle sju cellene 51 px, ingen tekst klippet — navnene brekker over to
+// linjer i stedet.
 sjekk('Min side har en bunnmeny med sju valg',
     str_contains($msRen, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">')
     && substr_count($msRen, '{{ msBmTekstStil }}') === 7
-    && str_contains($msRen, "gridTemplateColumns: 'repeat(7, 1fr)'"),
+    && str_contains($msRen, "display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',"),
     'maalt: alle sju navnene holder seg innenfor cella ned til 360 px');
+sjekk('… og et langt navn brekker i cella i stedet for aa skyve rada bredere',
+    str_contains($msRen, "whiteSpace: 'normal', overflowWrap: 'anywhere', textAlign: 'center',"),
+    'sto som «nowrap»: med stoerre skrift ble «Logg ut» klippet av skjermkanten');
 sjekk('… med de valgene eieren ba om',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")
@@ -15238,6 +15303,69 @@ sjekk('… og ordrelinja foerer prisen som ble tatt',
 // Overstyringen skal ikke henge igjen til neste kunde.
 sjekk('… og prisene nullstilles naar salget er ferdig',
     str_contains($kasseSida, "this.setState({ utKurv: {}, utKunde: '', utPris: {} });"));
+
+// ── Kurs over flere dager ────────────────────────────────────────────────
+//
+// Eieren, 10. september 2026: «Dreiekurs, 16 og 17 september, vises kun 16
+// september i kalender?» Og da raden var lest: «Den kan jo ikke gaa over
+// natten» — «Dag 1 dato + fra kl - til kl. Dag 2 dato + fra kl - til kl».
+//
+// Feltet «Sluttdato» lagde én oekt fra 16. kl 15 til 17. kl 18, en kveld paa
+// 27 timer. Kalenderen gir hver oekt én dato, saa dag to fantes ikke.
+//
+// Maalt i nettleseren: veiviseren har «Flere dager», «Sluttdato» er borte, og
+// «+ Legg til dag» fylte ut 19. november 18:00–21:00 etter at 18. november
+// var satt. Maalt over API-et: en dato lagt inn med én ekstra dag ble to
+// samlinger, 15:00–18:00 hver. Maalt mot kalenderen: begge dagene staar, dag
+// to merket «Samling 2 av 2».
+$fdSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$fdKurs = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$fdKal  = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$fdMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/155_flerdagerskurs_far_dagene_sine.sql');
+
+sjekk('«Sluttdato» er byttet ut med dager',
+    !str_contains($fdSida, 'ndSluttdato')
+    && str_contains($fdSida, '<sc-for list="{{ ndDager }}" as="dg"')
+    && str_contains($fdSida, '>+ Legg til dag</button>'));
+// Dag 2 skal komme ferdig utfylt, men kunne endres.
+sjekk('… og dag 2 fylles ut som dagen etter, med samme klokkeslett',
+    str_contains($fdSida, 'dato: this.dagenEtter(grunn),')
+    && str_contains($fdSida, "fra: (forrige && forrige.fra) || st.ndFra || '18:00',"));
+// Selve feilen: slutten skal staa paa dag én.
+sjekk('… og slutten staar paa dag én, ikke dagen etter',
+    str_contains($fdSida, "slutt: s.ndDato + ' ' + til,")
+    && str_contains($fdSida, "dager: (s.ndDager || []).filter(d => d.dato),"));
+// Serveren lagrer dagene som samlinger — husets egen maate.
+sjekk('… og serveren lagrer dagene som samlinger',
+    str_contains($fdKurs, 'Samlinger::lagre($oktId, array_merge([[')
+    && str_contains($fdKurs, "foreach ((array) (Foresporsel::kropp()['dager'] ?? []) as \$d)"));
+// Den samme knappen paa Kurs-skjermen lagde en tom rad.
+sjekk('… og «+ Legg til samling» paa Kurs gjor det samme',
+    str_contains($fdSida, "leggTilSamling: () => this.setState(st => {")
+    && str_contains($fdSida, "dato: this.dagenEtter(grunn),"));
+
+// Migrasjonen tar dem som alt ligger inne.
+sjekk('migrasjon 155 gir de gamle flerdagerskursene dagene sine',
+    str_contains($fdMig, 'INSERT INTO okt_samlinger (session_id, nummer, dato, fra, til)')
+    && str_contains($fdMig, 'DATE(cs.slutt_tid) = DATE(cs.start_tid) + INTERVAL 1 DAY'));
+// En kveld som slutter tidligere paa doegnet enn den begynner — 20:00 til
+// 00:00, eller en nattevakt 22:00 til 02:00 — er én kveld. Den samme regelen
+// staar i Samlinger::speilOkt().
+sjekk('… men lar en kveld som slutter ved midnatt staa',
+    str_contains($fdMig, 'TIME(cs.slutt_tid) > TIME(cs.start_tid)')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/samlinger.php'),
+                    "\$slutt->format('H:i:s') <= \$start->format('H:i:s')"));
+// Oekter som alt har samlinger er riktige, og skal ikke roeres.
+sjekk('… og roerer ikke dem som alt har samlinger',
+    str_contains($fdMig, 'NOT EXISTS (SELECT 1 FROM okt_samlinger s WHERE s.session_id = cs.id)'));
+// start_tid og slutt_tid skal staa: med samlinger SKAL okta spenne fra
+// forste til siste dag — det er slik kunden ser «7.–8. oktober».
+sjekk('… og lar start og slutt staa som de staar',
+    !str_contains($fdMig, 'UPDATE course_sessions'));
+
+// En samling uten klokkeslett skal arve oektas egen, ogsaa for slutten.
+sjekk('en samling uten sluttid arver oektas egen',
+    str_contains($fdKal, "'slutt'   => \$sa['til'] !== '' ? (string) \$sa['til']"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

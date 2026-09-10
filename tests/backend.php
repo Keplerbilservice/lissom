@@ -7383,68 +7383,58 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
     && str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, 'aria-label="{{ msPlHjem.full }}"'),
     'skjermleseren leser «Min side» begge steder, fra aria-label');
-// ── Bunnmenyene folger det man faktisk ser ────────────────────────
+// ── Sida laases naar bunnmenyen staar der ─────────────────────────
 //
 // Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
-// naar vi scroller opp og ned. Saa sett den fast» — og paa spoersmaal: ja,
-// baade Min side og admin.
+// naar vi scroller opp og ned. Saa sett den fast» — og etter forsoeket med
+// aa flytte menyen etter det synlige vinduet: «Bunnmenyen hopper naar jeg
+// scroller opp og ned, her maa vi ha paa plass en annen loesning.» Paa
+// spoersmaal om hvilken: laas sida.
 //
-// Menyene sto allerede «fixed». Maalt i nettleseren: 731 px baade for og
-// etter 1200 px rulling, begge steder, og det finnes ingen rullelytter i
-// koden. Det som flytter seg er adresselinja i telefonens nettleser:
-// «fixed» festes til sidevinduet, som ikke krymper naar den kommer fram.
+// Adresselinja kollapser bare naar SIDA ruller. Ruller innholdet i stedet,
+// staar sidevinduet stille — og menyen med det.
 //
-// Maalt med det synlige vinduet krympet 90 px (Emulation.setPageScaleFactor
-// 1,13): «--vv-bunn» ble -90px og menyen sto noeyaktig paa skjermkanten,
-// 690 av 690 — baade paa Min side og paa admin. Tilbake paa 780 etterpaa.
-// Med 292 px krympet — et tastatur — ble den staaende, som den skal.
-// ── Chatten viser hele teksten, og staar paa den nyeste ───────────
-//
-// Eieren, 10. september 2026, med et bilde fra telefonen: «Hele teksten i
-// chatten kommer ikke med!»
-//
-// To ting sto i veien. Lista var laast til 220 px — maalt paa 390 px var
-// innholdet 297, saa 77 px laa utenfor. Og lista aapnet seg paa toppen, saa
-// det var slutten av den nyeste meldingen som forsvant.
-//
-// De 220 var en rest fra da chatten sto blant kortene paa forsiden.
-//
-// Maalt paa 390x820 etterpaa: lista 297 av 297 px, ingenting klippet. Med
-// ti meldinger: lista 451 px (55dvh), innhold 998, rullet til 547 av 547 —
-// nederst — og den siste helt synlig. Rullet man selv opp til 0, ble den
-// staaende der da det kom en ny.
-sjekk('meldingslista er ikke laast til 220 px lenger',
-    !str_contains($sida, 'max-height: 220px')
-    && str_contains($sida, '<div class="ms-chatliste" style="display: flex;'),
-    'maalt: 297 av 297 px synlig paa 390x820, mot 220 av 297 for');
-sjekk('… og hoyden folger skjermen, med reserve for gamle nettlesere',
-    str_contains($sida, '.ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }')
-    && str_contains($sida, '@media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }'),
-    '«dvh» tar hoyde for adresselinja; «vh» staar som reserve');
-sjekk('… og chatten aapner seg paa den nyeste meldingen',
-    str_contains($sida, 'if (stodNede) l.scrollTop = l.scrollHeight;'),
-    'maalt: rullet til 547 av 547, siste melding helt synlig');
-sjekk('… men staar i ro naar du selv har rullet opp for aa lese noe eldre',
-    str_contains($sida, 'stodNede = l.scrollHeight - l.scrollTop - l.clientHeight < NEDE;')
-    && str_contains($sida, 'var NEDE = 40;'),
-    'maalt: sto paa 0 da det kom en ny melding');
-
-sjekk('bunnmenyene flyttes opp naar det synlige vinduet krymper',
-    str_contains($sida, ".ms-bunnmeny,\n  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }")
-    && str_contains($sida, "document.documentElement.style.setProperty('--vv-bunn', d + 'px');"),
-    'maalt: menybunn 690 av 690 synlige piksler, begge steder');
-sjekk('… og regnestykket er bunnen av det synlige minus bunnen av sidevinduet',
-    str_contains($sida, 'var d = Math.round(vv.offsetTop + vv.height - document.documentElement.clientHeight);')
-    && str_contains($sida, 'if (d > 0) d = 0;'));
-sjekk('… men tastaturet lar menyen staa, saa den ikke legger seg paa skrivefeltet',
-    str_contains($sida, 'var TASTATUR = 160;')
-    && str_contains($sida, 'if (d < -TASTATUR) d = 0;'),
-    'en adresselinje er under 160 px, et tastatur 250-350');
-sjekk('… og en nettleser uten «visualViewport» staar som for',
-    str_contains($sida, "  var vv = window.visualViewport;\n  if (!vv) return;"));
+// Maalt paa 390x780, innlogget: Min side og alle adminskjermene laases,
+// dokumentet ruller ikke, «#dc-root» gjor det, og menyen sto paa 780 av 780
+// baade for og etter rulling. Forsida, /kurs og /nyttig-info laases ikke, og
+// PC-en heller ikke.
+sjekk('sida laases naar bunnmenyen staar der',
+    str_contains($sida, '.lx-laast, .lx-laast body { height: 100vh; height: 100dvh; overflow: hidden; }')
+    && str_contains($sida, '.lx-laast #dc-root {')
+    && str_contains($sida, "document.documentElement.classList.toggle('lx-laast', laast);"),
+    'maalt: menyen sto paa 780 av 780 baade for og etter rulling');
+sjekk('… og bare naar en bunnmeny faktisk er synlig',
+    str_contains($sida, "var m = document.querySelector('.ms-bunnmeny, .lx-bunnmeny');")
+    && str_contains($sida, 'return !!m && m.getClientRects().length > 0;'),
+    '«offsetParent» er alltid null paa noe som er «fixed» — maalt: sida ble aldri laast');
+// 88 steder ber om window.scrollTo, ni leser window.scrollY. Uten dette
+// treffer de ingenting naar dokumentet ikke ruller lenger.
+sjekk('… og rullingen sendes videre til rullefeltet',
+    str_contains($sida, 'window.scrollTo = function (a, b) {')
+    && str_contains($sida, "['scrollY', 'pageYOffset'].forEach(function (navn) {")
+    && str_contains($sida, 'return f ? f.scrollTop : document.documentElement.scrollTop;'),
+    'maalt: scrollTo(0,600), scrollTo({top:300}) og scrollTo(0,0) traff alle');
 sjekk('… og skriptet ligger i begge filene, ogsaa den uten admin',
-    str_contains(file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'), "'--vv-bunn'"),
+    str_contains(file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'), 'lx-laast'),
     'Min side ligger i den fila');
+// ── Navnene i bunnmenyen ──────────────────────────────────────────
+//
+// Eieren, 10. september 2026: «Men bunn menyen, ikke lag de saa mye storre,
+// jeg vil ikke ha orddeling.» De sto en kort stund med «anywhere», og da
+// brakk «Medlemskap» midt i ordet.
+//
+// Maalt fra 280 til 430 px: alltid én linje, aldri delt, aldri utenfor
+// cella. Paa 320 px og oppover staar skrifta paa 8,5 px som for; under det
+// krymper den — 7,56 px paa 280.
+sjekk('navnene i bunnmenyen deles aldri i to',
+    str_contains($sida, "whiteSpace: 'nowrap', textAlign: 'center',")
+    && !str_contains($sida, "overflowWrap: 'anywhere', textAlign: 'center',"),
+    'maalt fra 280 til 430 px: én linje, ingen orddeling');
+sjekk('… og skrifta krymper heller enn aa stikke ut av cella',
+    str_contains($sida, '.ms-bunnmeny { container-type: inline-size; }')
+    && str_contains($sida, '.ms-bmtekst { font-size: min(8.5px, 2.7cqw); }')
+    && substr_count($sida, 'class="ms-bmtekst"') === 6,
+    'maalt: «Medlemskap» 50 px i en celle paa 53 ved 320 px, 45 i 47 ved 280');
 sjekk('… og bunnmenyen og luftputa under den gaar bort paa PC',
     str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, '<div class="ms-bunnluft" style="{{ msBunnLuft }}"></div>'));
@@ -13570,9 +13560,12 @@ sjekk('… og veien hjem staar igjen som pille oeverst',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, 'hjem:       pille(b.hjem, naa === \'hjem\'),')
     && str_contains($msP, '<button type="button" class="ms-hjem" onClick="{{ msPlHjem.velg }}"'));
-sjekk('… og et langt navn brekker i cella i stedet for aa skyve rada bredere',
-    str_contains($msRen, "whiteSpace: 'normal', overflowWrap: 'anywhere', textAlign: 'center',"),
-    'sto som «nowrap»: med stoerre skrift ble «Logg ut» klippet av skjermkanten');
+// Sto en kort stund med «overflowWrap: anywhere». Eieren, 10. september
+// 2026: «ikke lag de saa mye storre, jeg vil ikke ha orddeling» — se
+// «.ms-bmtekst» lenger nede, der navnet krymper i stedet for aa brekke.
+sjekk('… og et langt navn krymper i cella i stedet for aa brekke',
+    str_contains($msRen, "whiteSpace: 'nowrap', textAlign: 'center',"),
+    'maalt fra 280 til 430 px: én linje, ingen orddeling, aldri utenfor cella');
 sjekk('… med de valgene eieren ba om',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")

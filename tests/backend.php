@@ -10925,12 +10925,12 @@ sjekk('… med seks valg i hver',
     && substr_count($sidaB, '{{ bmButikk.velg }}') === $logoerB
     && substr_count($sidaB, '{{ bmKasse.velg }}') === $logoerB);
 // «Ikon og tekst skal alltid brukes sammen.»
-// Min side har faatt den samme menyen — fem valg, ett sted i markupen.
-// Ikonene teller derfor $logoerB * 6 + 5.
+// Min side har faatt den samme menyen — seks valg, ett sted i markupen.
+// Ikonene teller derfor $logoerB * 6 + 6.
 sjekk('… og hvert valg har baade ikon og tekst',
-    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6 + 7
+    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6 + 6
     && substr_count($sidaB, '{{ bmTekstStil }}') === $logoerB * 6
-    && substr_count($sidaB, '{{ msBmTekstStil }}') === 7);
+    && substr_count($sidaB, '{{ msBmTekstStil }}') === 6);
 
 // Rutene skrives ikke av. Doper vi om «Butikk», folger bunnmenyen med.
 sjekk('navn og ruter hentes fra ADMIN_MENY',
@@ -13552,11 +13552,24 @@ sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
 // Maalt paa 360 px med skrifta 1,4 ganger stoerre: rada noeyaktig 360 px,
 // alle sju cellene 51 px, ingen tekst klippet — navnene brekker over to
 // linjer i stedet.
-sjekk('Min side har en bunnmeny med sju valg',
+// Seks, ikke sju. Eieren, 10. september 2026: «Fjern min side paa
+// bunnmenyen slik at de andre menyene faar storre plass.» Veien hjem staar
+// som pille oeverst paa sida — den kom dit samme kveld — saa cella her var
+// den samme veien to ganger, og tok bredde fra de seks andre.
+//
+// Maalt paa 360 px: cellene gikk fra 51 til 60 px.
+sjekk('Min side har en bunnmeny med seks valg',
     str_contains($msRen, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">')
-    && substr_count($msRen, '{{ msBmTekstStil }}') === 7
-    && str_contains($msRen, "display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',"),
-    'maalt: alle sju navnene holder seg innenfor cella ned til 360 px');
+    && substr_count($msRen, '{{ msBmTekstStil }}') === 6
+    && !str_contains($msRen, '{{ msBmHjem.velg }}')
+    && str_contains($msRen, "display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',"),
+    'maalt: alle seks navnene holder seg innenfor cella ned til 360 px');
+// Veien hjem er ikke borte — den staar som pille oeverst, og bunnmenyen
+// henter fortsatt valget sitt derfra, saa de to aldri kan komme i utakt.
+sjekk('… og veien hjem staar igjen som pille oeverst',
+    str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
+    && str_contains($msP, 'hjem:       pille(b.hjem, naa === \'hjem\'),')
+    && str_contains($msP, '<button type="button" class="ms-hjem" onClick="{{ msPlHjem.velg }}"'));
 sjekk('… og et langt navn brekker i cella i stedet for aa skyve rada bredere',
     str_contains($msRen, "whiteSpace: 'normal', overflowWrap: 'anywhere', textAlign: 'center',"),
     'sto som «nowrap»: med stoerre skrift ble «Logg ut» klippet av skjermkanten');

@@ -5155,11 +5155,18 @@ window.__resources = {
            ala vi har på admin», «Medlemskap på menyen i bunnen»,
            «Internbutkikk også», «Og chat».
 
-           Samme celle som adminmenyen bruker — se bunnMenyPunkt(). Fem
-           steder; bare det du staar paa tegnes. -->
+           Samme celle som adminmenyen bruker — se bunnMenyPunkt(). Bare
+           det du staar paa tegnes.
+
+           Seks celler, ikke sju. Eieren, 10. september 2026: «Fjern min
+           side paa bunnmenyen slik at de andre menyene faar storre plass.»
+           Veien hjem staar som pille oeverst paa sida — den kom dit samme
+           kveld, paa hans eget onske — saa cella her var den samme veien to
+           ganger, og tok bredde fra de seks andre.
+
+           Maalt paa 360 px: cellene gikk fra 51 til 60 px. -->
       <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
         <nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">
-          <button type="button" onClick="{{ msBmHjem.velg }}" aria-label="{{ msBmHjem.full }}" style="{{ msBmHjem.stil }}"><span style="{{ msBmHjem.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg><span style="{{ msBmTekstStil }}">{{ msBmHjem.navn }}</span></button>
           <button type="button" onClick="{{ msBmMedlemskap.velg }}" aria-label="{{ msBmMedlemskap.full }}" style="{{ msBmMedlemskap.stil }}"><span style="{{ msBmMedlemskap.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span style="{{ msBmTekstStil }}">{{ msBmMedlemskap.navn }}</span></button>
           <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
           <button type="button" onClick="{{ msBmSelg.velg }}" aria-label="{{ msBmSelg.full }}" style="{{ msBmSelg.stil }}"><span style="{{ msBmSelg.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 8h16v12H4V8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M12 12v5M9.5 14.5h5"/></svg><span style="{{ msBmTekstStil }}">{{ msBmSelg.navn }}</span></button>
@@ -48307,7 +48314,7 @@ class Component extends DCLogic {
             ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(250px, 100%), 1fr))',
                 gap: 'var(--space-5)', alignItems: 'stretch' }
             : { display: 'block', maxWidth: 640 },
-          msBmHjem: b.hjem, msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
+          msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
           msBmSelg: b.selg, msBmChat: b.chat, msBmNyttig: b.nyttig, msBmLoggUt: b.loggUt,
           // De samme sju, som piller. CSS velger hvilken form som vises —
           // se «.ms-pillerad» i stilarket. Raden setter ikke «display»:
@@ -48388,7 +48395,7 @@ class Component extends DCLogic {
             // stoerre skrift. Maalt her paa 390 px laa menyen fast og var
             // noeyaktig saa bred som skjermen; det er den stoerre skrifta som
             // gjor forskjellen.
-            display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+            display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
             // Plass til hjemknappen paa iPhone, som i adminmenyen.
             paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
           },

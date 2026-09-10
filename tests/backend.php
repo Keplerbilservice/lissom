@@ -2456,10 +2456,12 @@ sjekk('brenningene staar i kalenderen, vaktene ikke',
 // Uten tabellen skal endepunktet svare, ikke doe.
 sjekk('kalenderen taaler at migrasjon 088 ikke er kjort',
     str_contains($kalFil, "DB::harTabell('brenninger')"));
-// Verkstedet er blitt et sted med tre faner.
+// Verkstedet er en oversiktsside naa, ikke en fanerad. Eieren, 10.
+// september 2026: «jeg vil at disse skal vaere kort og ikke piller».
+// Vaktene og brenningene naas fra hvert sitt kort.
 sjekk('verkstedet har oppskrifter, vakter og brenning',
-    str_contains($sida, "['Vakter',        'adminoppskrifter', { vstFane: 'vakter' }],")
-    && str_contains($sida, "['Brenning',      'adminoppskrifter', { vstFane: 'brenning' }],"));
+    str_contains($sida, "sted('Vakter',          'adminoppskrifter', { vstFane: 'vakter' }),")
+    && str_contains($sida, "sted('Brenning',        'adminoppskrifter', { vstFane: 'brenning' }),"));
 // Lista viser hele aaret. En liste som bare viser to uker ser tom ut for den
 // som satte opp en vakt i november.
 sjekk('listene viser hele aaret framover, ikke bare to uker',
@@ -2871,7 +2873,8 @@ sjekk('kalenderen staar som punkt nummer to',
     str_contains($sida, "['Oversikt',  'adminoversikt'],\n      // Kalenderen staar som nummer to."));
 // Oppskriftene er verkstedets egne, og «Verkstedet» er stedet fase 8 lander.
 sjekk('oppskriftene staar under «Verkstedet»',
-    str_contains($sida, "['Verkstedet', 'adminoppskrifter'],")
+    // Menypunktet lander paa oversikten, ikke paa den fanen man sto paa sist.
+    str_contains($sida, "['Verkstedet', 'adminoppskrifter', { vstFane: '' }],")
     // Fase 8 ga stedet tre faner, saa menypunktet peker paa et omraade naa.
     && str_contains($sida, "case 'adminoppskrifter':\n        return p('Verkstedet', 'Verkstedet',"));
 // Ventelista var bare aa naa fra et kort paa Oversikt.
@@ -9343,10 +9346,12 @@ sjekk('… men teller ikke som penger i kassa',
 sjekk('hovedmenyen er ti punkter',
     !str_contains($sidaG, "['Nettsiden', 'admininnhold'],")
     && str_contains($sidaG, "['Markedsføring', 'adminmarked'],\n"));
+// De tre flyttet inn i Verkstedet 4. september. De staar der fortsatt —
+// som kort paa oversikten, etter at fanerada ble kort 10. september.
 sjekk('… og Verkstedet har faatt de tre',
-    str_contains($sidaG, "['Nettsiden',     'admininnhold'],")
-    && str_contains($sidaG, "['Referansekunder', 'adminreferanser'],\n        // Malene sto under")
-    && str_contains($sidaG, "['Tekst maler',   'adminmaler'],"));
+    str_contains($sidaG, "sted('Nettsiden',       'admininnhold'),")
+    && str_contains($sidaG, "sted('Referansekunder', 'adminreferanser'),")
+    && str_contains($sidaG, "sted('Tekst maler',     'adminmaler'),"));
 // Sto de begge steder, ville to faner gaatt til den samme skjermen og
 // begge villet lyse.
 sjekk('… og staar ikke igjen der de kom fra',
@@ -9365,7 +9370,8 @@ sjekk('nettsidens skjermer lyser Verkstedet',
 // Mobilvisning og Feilmeldinger mistet veien mellom seg.
 sjekk('… og beholder sin egen fanerad',
     str_contains($sidaG, "      'Nettsiden': [")
-    && str_contains($sidaG, "['← Verkstedet',  'adminoppskrifter', { vstFane: 'oppskrifter' }],"));
+    // Veien tilbake gaar til oversikten, ikke til oppskriftene.
+    && substr_count($sidaG, "['← Verkstedet',  'adminoppskrifter', { vstFane: '' }],") === 2);
 
 // De to som flyttet helt hoerer til Verkstedets egen rad, ikke Nettsidens.
 sjekk('referansekundene og malene hoerer til Verkstedet',
@@ -14970,9 +14976,13 @@ sjekk('… og hvert kall koster penger, saa det er et tak per person',
 
 // Skjermen.
 $dokSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('«Dokumenter» og «Spør verkstedet» staar i Verkstedets fanerad',
-    str_contains($dokSida, "['Dokumenter',    'adminoppskrifter', { vstFane: 'dokumenter' }],")
-    && str_contains($dokSida, "['Spør verkstedet', 'adminoppskrifter', { vstFane: 'faq' }],"));
+// Dokumentene har sitt eget kort paa oversikten. «Spor verkstedet» har
+// ikke kort: eieren, 10. september 2026, «eneste jeg vil ha utenom kortene
+// er spor verkstedet» — sporrefeltet staar oeverst paa oversikten.
+sjekk('«Dokumenter» staar som kort, og «Spør verkstedet» som felt',
+    str_contains($dokSida, "sted('Dokumenter',      'adminoppskrifter', { vstFane: 'dokumenter' }),")
+    && str_contains($dokSida, '<sc-if value="{{ vstErOversikt }}"')
+    && str_contains($dokSida, 'onChange="{{ faqEndre }}" placeholder="Skriv spørsmålet ditt"'));
 sjekk('… og visningen har «Skriv ut», «Last ned» og «Lukk»',
     str_contains($dokSida, 'onClick="{{ dokVisSkrivUt }}"')
     && str_contains($dokSida, 'href="{{ dokVisNedUrl }}"')
@@ -15000,7 +15010,7 @@ sjekk('… og bryteren staar som en rad nederst, ikke som en pille',
 // «Maler» i den samme menyen er tekstmalene til e-post og SMS. To punkter
 // som begge het noe med «maler» sa ingenting om hva som laa hvor.
 sjekk('… og tekstmalene heter «Tekst maler», saa navnene ikke krasjer',
-    str_contains($dokSida, "['Tekst maler',   'adminmaler'],")
+    str_contains($dokSida, "sted('Tekst maler',     'adminmaler'),")
     && str_contains($dokSida, '>Tekst maler</h1>')
     && !str_contains($dokSida, "['Maler',         'adminmaler'],"));
 
@@ -15054,10 +15064,13 @@ sjekk('… og et kort som er av staar med stiplet kant',
 // Ingen piller igjen paa de to skjermene. Hjelperen som lagde dem er borte.
 sjekk('… og pillehjelperen er borte fra dokumentskjermene',
     !str_contains($dokSida, "        const pille = (paa) => ({\n          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',\n          display: 'inline-flex', alignItems: 'center', gap: '7px',"));
-// Fanerada skal staa som den er — eieren ville ha den fremme.
-sjekk('… mens fanerada staar som for',
-    str_contains($dokSida, "['Spør verkstedet', 'adminoppskrifter', { vstFane: 'faq' }],")
-    && str_contains($dokSida, '<sc-for list="{{ omrFaner }}" as="f"'));
+// Fanerada er borte fra Verkstedet. Igjen er bare veien tilbake — uten
+// den maatte man om hovedmenyen for aa komme fra Vakter til Brenning.
+// Paa selve oversikten staar heller ikke den: den ville pekt paa seg selv.
+sjekk('… mens fanerada er blitt kort',
+    str_contains($dokSida, "      'Verkstedet': [\n        ['← Verkstedet',  'adminoppskrifter', { vstFane: '' }],\n      ],")
+    && str_contains($dokSida, '<sc-for list="{{ vstOversiktKort }}" as="v"')
+    && str_contains($dokSida, '...(erOversikt ? { harOmrFaner: false } : {}),'));
 
 // ── Hvor stor en opplasting faar vaere ───────────────────────────────────
 //

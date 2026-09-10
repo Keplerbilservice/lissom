@@ -18295,6 +18295,43 @@ window.__resources = {
         </div>
         </sc-if>
 
+        <!-- Verkstedet som oversiktsside.
+             Eieren, 10. september 2026, med et bilde av fanerada: «jeg vil
+             at disse skal vaere kort og ikke piller», og «saa det blir som
+             en oversiktsside, eneste jeg vil ha utenom kortene er spor
+             verkstedet».
+             Derfor staar sporrefeltet oeverst, utenfor kortene, og de ni
+             stedene under. Ingen fanerad her — den ville pekt paa seg selv. -->
+        <sc-if value="{{ vstErOversikt }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width: 1100px;">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-5); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-6);">
+              <input value="{{ faqSporsmal }}" onChange="{{ faqEndre }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ faqSporNaa }}" hint-size="auto,44px">{{ faqKnappNavn }}</x-import>
+            </div>
+
+            <sc-if value="{{ faqHarSvar }}" hint-placeholder-val="{{ false }}">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-bottom: var(--space-6); overflow: hidden;">
+                <div style="padding: var(--space-5); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ faqSvarTekst }}</div>
+                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra</span>
+                  <sc-for list="{{ faqKilder }}" as="k" hint-placeholder-count="2">
+                    <span style="{{ k.stil }}">{{ k.navn }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch;">
+              <sc-for list="{{ vstOversiktKort }}" as="v" hint-placeholder-count="9">
+                <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ v.navn }}</span>
+                  <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
         <!-- Dokumentkortene.
              Eieren, 10. september 2026: «det ene skal hete kontrakter, her
              vil jeg kunne lagre kontrakter, aapne og skrive ut, jeg vil ogsaa
@@ -33142,7 +33179,7 @@ class Component extends DCLogic {
       // glasurene og leiretypene som staar paa veggen. De hoerer ikke til
       // én gruppe mennesker. «Verkstedet» er det stedet de egentlig er, og
       // det er hit vaktene og brenningene kommer.
-      ['Verkstedet', 'adminoppskrifter'],
+      ['Verkstedet', 'adminoppskrifter', { vstFane: '' }],
       ['Økonomi',   'adminokonomi', { okonomiFor: '' }],
       // Butikken laa bare under Nettsiden, som en fane ved siden av «Innhold».
       // Den er et sted i seg selv — varer, priser, bilder og lager — og var
@@ -33211,48 +33248,24 @@ class Component extends DCLogic {
       // Verkstedet: det som hoerer til huset, ikke til én gruppe mennesker.
       // Oppskriftene sto her alene; vaktene og brenningene kom med
       // migrasjon 088.
+      // Verkstedet er en oversiktsside naa, ikke en fanerad.
+      //
+      // Eieren, 10. september 2026, med et bilde av rada: «jeg vil at disse
+      // skal vaere kort og ikke piller» — og «saa det blir som en
+      // oversiktsside, eneste jeg vil ha utenom kortene er spor verkstedet».
+      //
+      // De ti stedene staar som kort paa selve skjermen. Igjen her er bare
+      // veien tilbake, slik Nettsiden har den: uten den ville man maattet om
+      // hovedmenyen for aa komme fra Vakter til Brenning.
+      //
+      // Paa selve oversikten staar den ikke — den ville pekt paa seg selv.
       'Verkstedet': [
-        // Dokumentene og AI-en som svarer fra dem. Eieren, 10. september
-        // 2026: seks kort der han kan lagre, aapne, skrive ut og laste opp —
-        // og «vil det vaere muliget aa koble til en ai faq med kun denne
-        // infoen?».
-        //
-        // «Brenning» og «Maler» staar allerede i denne rada, og er noe helt
-        // annet: brenneloggen for ovnene, og tekstmalene til e-post og SMS.
-        // Kortet med dokumenter om brenning heter derfor «Brenning
-        // (dokumenter)» inne paa skjermen.
-        ['Dokumenter',    'adminoppskrifter', { vstFane: 'dokumenter' }],
-        ['Spør verkstedet', 'adminoppskrifter', { vstFane: 'faq' }],
-        ['Oppskrifter',   'adminoppskrifter', { vstFane: 'oppskrifter' }],
-        ['Vakter',        'adminoppskrifter', { vstFane: 'vakter' }],
-        ['Brenning',      'adminoppskrifter', { vstFane: 'brenning' }],
-        // Ferie hoerer til huset, som vaktene og brenningene.
-        ['Ferie',         'adminferie'],
-        // Dreieskivene og bordplassene. Ett sted, fordi alt som gaar
-        // samtidig deler dem — se Booking::ledigePlasserFlere.
-        ['Ressurser',     'adminressurser'],
-        // Nettsiden var et menypunkt for seg. Den er doera inn til sin egen
-        // fanerad — Innhold, SEO, GEO, Mobilvisning, Feilmeldinger — og
-        // staar derfor her uten aa kunne lyse: trykker du paa den, er du et
-        // annet sted. Samme maate som Medlemmer -> Internbutikk virker paa.
-        ['Nettsiden',     'admininnhold'],
-        // Referansekundene sto under Nettsiden. De er verkstedets egne
-        // kunder, ikke en tekst paa en side.
-        ['Referansekunder', 'adminreferanser'],
-        // Malene sto under Markedsfoering. Tekstene er husets egne ord —
-        // det verkstedet sier naar det sender noe fra seg.
-        //
-        // Het «Maler» til 10. september 2026. Da kom dokumentkortet «Keramikk
-        // maler» i den samme menyen, og to punkter som begge het noe med
-        // «maler» sa ingenting om hva som laa hvor. Eieren: «da kan du endre
-        // denne til tekst maler». Adressen /admin/maler staar som for, saa
-        // gamle bokmerker virker.
-        ['Tekst maler',   'adminmaler'],
+        ['← Verkstedet',  'adminoppskrifter', { vstFane: '' }],
       ],
       'Nettsiden': [
         // Veien tilbake. Nettsiden er ikke et menypunkt lenger, saa uten
         // denne fantes det ingen vei ut uten aa gaa om menyen paa nytt.
-        ['← Verkstedet',  'adminoppskrifter', { vstFane: 'oppskrifter' }],
+        ['← Verkstedet',  'adminoppskrifter', { vstFane: '' }],
         ['Innhold',       'admininnhold'],
         // Kursvelgeren sto her. Den er et verktoy, ikke en tekst paa en
         // side, og staar naa som kort paa Oversikt.
@@ -33340,7 +33353,8 @@ class Component extends DCLogic {
           st.vstFane === 'vakter' ? 'Vakter'
           : st.vstFane === 'brenning' ? 'Brenning'
           : st.vstFane === 'dokumenter' ? 'Dokumenter'
-          : st.vstFane === 'faq' ? 'Spør verkstedet' : 'Oppskrifter');
+          : st.vstFane === 'faq' ? 'Spør verkstedet'
+          : st.vstFane === 'oppskrifter' ? 'Oppskrifter' : '');
       case 'admininnhold':       return p('Verkstedet', 'Nettsiden', 'Innhold');
       // Referansekundene og malene flyttet inn i Verkstedets egen fanerad
       // 4. september. De hoerer til huset, ikke til nettsida og ikke til
@@ -51065,7 +51079,9 @@ class Component extends DCLogic {
       ...(() => {
         if (side !== 'adminoppskrifter') return {};
         this.vstHent();
-        const fane = this.state.vstFane || 'oppskrifter';
+        // Tom fane er oversikten. Var «oppskrifter» standard til 10.
+        // september 2026; da ble Verkstedet en oversiktsside.
+        const fane = this.state.vstFane === undefined ? '' : this.state.vstFane;
         const erVakt = fane === 'vakter', erBrenn = fane === 'brenning';
         const d = this.state.vst || {};
         const u = this.state.vstUtkast || {};
@@ -51177,9 +51193,12 @@ class Component extends DCLogic {
       // dokumentet, og alt er av til han slaar det paa selv.
       ...(() => {
         if (side !== 'adminoppskrifter') return {};
-        const fane = this.state.vstFane || 'oppskrifter';
+        const fane = this.state.vstFane === undefined ? '' : this.state.vstFane;
         const erDok = fane === 'dokumenter', erFaq = fane === 'faq';
-        if (!erDok && !erFaq) return { vstErDokumenter: false, vstErFaq: false };
+        const erOversikt = fane === '';
+        if (!erDok && !erFaq && !erOversikt) {
+          return { vstErDokumenter: false, vstErFaq: false, vstErOversikt: false };
+        }
         this.dokHent();
 
         const d = this.state.dok || {};
@@ -51358,10 +51377,46 @@ class Component extends DCLogic {
           };
         });
 
+        // ── Oversikten: de ti stedene som kort ───────────────────────────
+        //
+        // Eieren, 10. september 2026, med et bilde av fanerada: «jeg vil at
+        // disse skal vaere kort og ikke piller» — og «saa det blir som en
+        // oversiktsside, eneste jeg vil ha utenom kortene er spor
+        // verkstedet».
+        //
+        // Ingen nye steder og ingen som er borte: det er de samme ni som sto
+        // i rada, i den samme rekkefolgen. Bare veien inn er en annen.
+        const stedStil = {
+          appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+          font: 'inherit', minWidth: 0,
+          background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+          display: 'flex', flexDirection: 'column', height: '100%',
+        };
+        const sted = (navn, rute, forvalg) => ({
+          navn, stil: stedStil,
+          velg: () => this.gaaAdmin(rute, forvalg),
+        });
+        const oversiktKort = [
+          sted('Dokumenter',      'adminoppskrifter', { vstFane: 'dokumenter' }),
+          sted('Oppskrifter',     'adminoppskrifter', { vstFane: 'oppskrifter' }),
+          sted('Vakter',          'adminoppskrifter', { vstFane: 'vakter' }),
+          sted('Brenning',        'adminoppskrifter', { vstFane: 'brenning' }),
+          sted('Ferie',           'adminferie'),
+          sted('Ressurser',       'adminressurser'),
+          sted('Nettsiden',       'admininnhold'),
+          sted('Referansekunder', 'adminreferanser'),
+          sted('Tekst maler',     'adminmaler'),
+        ];
+
         return {
           vstErDokumenter: erDok,
           vstErFaq: erFaq,
-          vstTittel: erDok ? 'Dokumenter' : 'Spør verkstedet',
+          vstErOversikt: erOversikt,
+          vstOversiktKort: oversiktKort,
+          // Paa oversikten ville «← Verkstedet» pekt paa seg selv.
+          ...(erOversikt ? { harOmrFaner: false } : {}),
+          vstTittel: erOversikt ? 'Verkstedet' : erDok ? 'Dokumenter' : 'Spør verkstedet',
           vstUnder: erDok ? 'Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.' : '',
 
           dokKort: kortene,

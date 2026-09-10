@@ -14979,6 +14979,51 @@ sjekk('… og medlemsdelen paa Nyttig info staar bare naar noe er slaatt paa',
     str_contains($dokSida, '<sc-if value="{{ mdHarNoe }}"')
     && str_contains($dokSida, '>For medlemmer</h2>')
     && str_contains($dokSida, '>Kun for innloggede</span>'));
+// ── Hvor stor en opplasting faar vaere ───────────────────────────────────
+//
+// Eieren, 10. september 2026: hev taket «saa langt serveren tillater».
+//
+// Taket sto som 20 MB i koden. Serveren her tillot 2. Skjermen sa altsaa
+// «maks 20 MB» mens opplastingen stoppet paa 2, og den som lastet opp fikk
+// ingen forklaring som stemte. Verre: gikk hele forespoerselen over
+// «post_max_size», kom den fram TOM — og svaret ble «Du maa velge en fil»
+// paa en fil som laa der hele tiden.
+//
+// Maalt paa to servere: med 64 MB melder skjermen 64 og en PDF paa 30 MB gaar
+// inn; med 2 MB melder den 2, og bade en fil paa 5 MB og en paa 10 MB faar
+// «Filen er for stor. Maks 2 MB.»
+sjekk('taket leses av serveren, ikke skrevet av i koden',
+    str_contains($dokLib, 'public static function maksBytes(): int')
+    && str_contains($dokLib, "ini_get('upload_max_filesize')")
+    && str_contains($dokLib, "ini_get('post_max_size')")
+    && !str_contains($dokLib, 'MAKS_BYTES = 20'));
+// PHP har to tak og det laveste vinner. Post-taket maa ha rom til feltene
+// rundt fila, ellers melder vi et tall som ikke gaar gjennom.
+sjekk('… og det laveste av de to gjelder, med rom til feltene rundt fila',
+    str_contains($dokLib, '$tak[] = $post - 512 * 1024;')
+    && str_contains($dokLib, 'return max(1024 * 1024, min($tak));'));
+sjekk('… og feilmeldingen sier det virkelige tallet',
+    !str_contains($dokLib, 'Maks 20 MB')
+    && substr_count($dokLib, "'Filen er for stor. Maks ' . self::maksMb() . ' MB.'") >= 1);
+// Uten dette svarte skjermen «Du maa velge en fil» paa en fil som var
+// altfor stor. Sjekken maa staa FOR opphavssjekken, som leser $_POST og
+// derfor heller ikke har noe aa gaa paa.
+sjekk('… og en forespoersel som kommer fram tom sier at fila var for stor',
+    str_contains($dokApi, "if (\$_POST === [] && \$_FILES === [] && (int) (\$_SERVER['CONTENT_LENGTH'] ?? 0) > 0)")
+    && strpos($dokApi, "CONTENT_LENGTH") < strpos($dokApi, 'Foresporsel::krevSammeOpphav();'));
+// Taket heves to steder, fordi webhotellet kan kjore PHP paa to maater.
+// .user.ini leses av PHP-FPM og PHP-CGI; mod_php hoerer bare paa .htaccess.
+$dokIni  = file_get_contents(dirname(__DIR__) . '/.user.ini');
+$dokHtac = file_get_contents(dirname(__DIR__) . '/.htaccess');
+sjekk('… og de to oppsettfilene sier det samme',
+    str_contains($dokIni, 'upload_max_filesize = 64M')
+    && str_contains($dokIni, 'post_max_size = 66M')
+    && str_contains($dokHtac, 'php_value upload_max_filesize 64M')
+    && str_contains($dokHtac, 'php_value post_max_size 66M'));
+// Uten <IfModule> gir php_value 500 paa en server uten mod_php.
+sjekk('… og php_value staar bak <IfModule>, saa den ikke tar ned nettstedet',
+    str_contains($dokHtac, "<IfModule mod_php.c>\n    php_value upload_max_filesize 64M"));
+
 // Nyttig info er aapen med vilje. Dokumentene gaar en annen vei.
 sjekk('… og den aapne Nyttig info-veien er urort',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'Aapent med vilje')

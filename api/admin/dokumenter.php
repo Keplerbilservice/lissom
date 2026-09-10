@@ -36,7 +36,7 @@ $hent = static fn(): array => [
     'dokumenter' => Dokumenter::dokumenter(),
     'faqMedlem'  => Dokumenter::faqForMedlem(),
     'ai'         => AI::status(),
-    'maksMb'     => (int) (Dokumenter::MAKS_BYTES / 1024 / 1024),
+    'maksMb'     => Dokumenter::maksMb(),
 ];
 
 if (Foresporsel::metode() === 'GET') {
@@ -44,6 +44,18 @@ if (Foresporsel::metode() === 'GET') {
 }
 
 Foresporsel::krevMetode('POST');
+
+// En fil som sprenger serverens «post_max_size» kommer fram HELT TOM: ingen
+// $_POST, ingen $_FILES, og ingen feilkode aa lese. Uten dette svarte
+// skjermen «Du må velge en fil» paa en fil som var altfor stor — og den som
+// lastet opp lette etter en fil som laa der hele tiden.
+//
+// Staar for opphavssjekken, som leser $_POST og derfor heller ikke har noe
+// aa gaa paa.
+if ($_POST === [] && $_FILES === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    Svar::feil('Filen er for stor. Maks ' . Dokumenter::maksMb() . ' MB.');
+}
+
 Foresporsel::krevSammeOpphav();
 
 // Multipart, ikke JSON — filer kan ikke sendes som JSON.

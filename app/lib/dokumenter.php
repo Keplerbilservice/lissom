@@ -22,8 +22,60 @@ declare(strict_types=1);
 
 final class Dokumenter
 {
-    /** Storste fil vi tar imot. */
-    public const MAKS_BYTES = 20 * 1024 * 1024;
+    /**
+     * Storste fil vi tar imot — lest av serveren, ikke skrevet av her.
+     *
+     * Eieren, 10. september 2026: hev taket «saa langt serveren tillater».
+     *
+     * Vi hever det i .user.ini og .htaccess, men webhotellet kan ignorere
+     * begge. Et tall skrevet av her ville da lyve: skjermen sa «maks 20 MB»
+     * mens serveren stoppet paa 2, og den som lastet opp fikk ingen forklaring
+     * som stemte. Derfor spor vi PHP hva som faktisk gjelder.
+     *
+     * PHP har to tak og det laveste vinner: fila for seg, og hele
+     * forespoerselen. Det siste maa ha rom til feltene rundt fila, derfor
+     * en halv megabyte fratrukket.
+     */
+    public static function maksBytes(): int
+    {
+        $tall = static function (string $verdi): int {
+            $v = trim($verdi);
+            if ($v === '') {
+                return 0;
+            }
+            $siste = strtolower($v[strlen($v) - 1]);
+            $n = (int) $v;
+            return match ($siste) {
+                'g' => $n * 1024 * 1024 * 1024,
+                'm' => $n * 1024 * 1024,
+                'k' => $n * 1024,
+                default => $n,
+            };
+        };
+
+        $tak = [];
+        $opp = $tall((string) ini_get('upload_max_filesize'));
+        if ($opp > 0) {
+            $tak[] = $opp;
+        }
+        $post = $tall((string) ini_get('post_max_size'));
+        if ($post > 0) {
+            $tak[] = $post - 512 * 1024;
+        }
+        if ($tak === []) {
+            return 64 * 1024 * 1024;
+        }
+        // Aldri under én megabyte: da er noe galt med oppsettet, og en
+        // opplasting som ALLTID feiler er verre enn en som feiler paa store
+        // filer.
+        return max(1024 * 1024, min($tak));
+    }
+
+    /** Det samme i hele megabyte, til teksten paa skjermen. */
+    public static function maksMb(): int
+    {
+        return (int) floor(self::maksBytes() / 1024 / 1024);
+    }
 
     /**
      * Det som slipper inn, og hva filen da skal hete.
@@ -172,13 +224,14 @@ final class Dokumenter
     {
         if (!isset($fil['error']) || $fil['error'] !== UPLOAD_ERR_OK) {
             throw new RuntimeException(match ($fil['error'] ?? -1) {
-                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Filen er for stor. Maks 20 MB.',
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE
+                    => 'Filen er for stor. Maks ' . self::maksMb() . ' MB.',
                 UPLOAD_ERR_NO_FILE => 'Du må velge en fil.',
                 default => 'Filen kom ikke fram. Prøv igjen.',
             });
         }
-        if (($fil['size'] ?? 0) > self::MAKS_BYTES) {
-            throw new RuntimeException('Filen er for stor. Maks 20 MB.');
+        if (($fil['size'] ?? 0) > self::maksBytes()) {
+            throw new RuntimeException('Filen er for stor. Maks ' . self::maksMb() . ' MB.');
         }
 
         $tmp = (string) ($fil['tmp_name'] ?? '');

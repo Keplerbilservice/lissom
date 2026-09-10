@@ -2046,6 +2046,30 @@ sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
 // finnes ikke» under — samme fella som /kurs/lag-din-egen-bolle sto i for
 // migrasjon 091 og 092.
 $ht = file_get_contents(dirname(__DIR__) . '/.htaccess');
+// ── Den gamle adressen sender videre ──────────────────────────────
+//
+// Fram til august 2026 laa nettsida i public_html/ny.lissom.no, og Google
+// rakk aa indeksere den under det navnet. Eieren, 10. september 2026, med
+// et bilde av soekeresultatet: «Hvorfor ligger disse ute med ny.lissom.no?»
+//
+// Koden peker aldri dit — canonical, og:url, sitemap, llms.txt og robots.txt
+// sier alle «https://lissom.no», maalt paa den ekte sida. Det som manglet
+// var beskjeden til Google om hvor sida flyttet.
+//
+// Maalt med en ekte Apache og repoet som dokumentrot, for og etter:
+//   for:   ny.lissom.no/kurs  →  https://ny.lissom.no/kurs
+//   etter: ny.lissom.no/kurs  →  https://lissom.no/kurs
+//   lissom.no og www.lissom.no oppforte seg likt begge ganger.
+sjekk('ny.lissom.no sendes videre til lissom.no med 301',
+    str_contains($ht, 'RewriteCond %{HTTP_HOST} ^(www\\.)?ny\\.lissom\\.no$ [NC]')
+    && str_contains($ht, 'RewriteRule ^(.*)$ https://lissom.no/$1 [R=301,L,NE]'),
+    'maalt i Apache: /kurs?a=1 beholdt bade sti og sporsmaalstegn');
+// Over www-regelen, ellers ville www.ny.lissom.no tatt to hopp: forst til
+// ny.lissom.no, saa hit.
+sjekk('… og den staar over www-regelen, saa www.ny tas i ett hopp',
+    strpos($ht, '^(www\\.)?ny\\.lissom\\.no$')
+    < strpos($ht, 'RewriteCond %{HTTP_HOST} ^www\\.(.+)$ [NC]'));
+
 sjekk('den gamle bolleadressen gaar videre med 301',
     str_contains($ht, 'RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]'));
 // Regelen maa staa over den som sender alt annet til side.php, ellers ville
@@ -7374,6 +7398,37 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
 // 1,13): «--vv-bunn» ble -90px og menyen sto noeyaktig paa skjermkanten,
 // 690 av 690 — baade paa Min side og paa admin. Tilbake paa 780 etterpaa.
 // Med 292 px krympet — et tastatur — ble den staaende, som den skal.
+// ── Chatten viser hele teksten, og staar paa den nyeste ───────────
+//
+// Eieren, 10. september 2026, med et bilde fra telefonen: «Hele teksten i
+// chatten kommer ikke med!»
+//
+// To ting sto i veien. Lista var laast til 220 px — maalt paa 390 px var
+// innholdet 297, saa 77 px laa utenfor. Og lista aapnet seg paa toppen, saa
+// det var slutten av den nyeste meldingen som forsvant.
+//
+// De 220 var en rest fra da chatten sto blant kortene paa forsiden.
+//
+// Maalt paa 390x820 etterpaa: lista 297 av 297 px, ingenting klippet. Med
+// ti meldinger: lista 451 px (55dvh), innhold 998, rullet til 547 av 547 —
+// nederst — og den siste helt synlig. Rullet man selv opp til 0, ble den
+// staaende der da det kom en ny.
+sjekk('meldingslista er ikke laast til 220 px lenger',
+    !str_contains($sida, 'max-height: 220px')
+    && str_contains($sida, '<div class="ms-chatliste" style="display: flex;'),
+    'maalt: 297 av 297 px synlig paa 390x820, mot 220 av 297 for');
+sjekk('… og hoyden folger skjermen, med reserve for gamle nettlesere',
+    str_contains($sida, '.ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }')
+    && str_contains($sida, '@media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }'),
+    '«dvh» tar hoyde for adresselinja; «vh» staar som reserve');
+sjekk('… og chatten aapner seg paa den nyeste meldingen',
+    str_contains($sida, 'if (stodNede) l.scrollTop = l.scrollHeight;'),
+    'maalt: rullet til 547 av 547, siste melding helt synlig');
+sjekk('… men staar i ro naar du selv har rullet opp for aa lese noe eldre',
+    str_contains($sida, 'stodNede = l.scrollHeight - l.scrollTop - l.clientHeight < NEDE;')
+    && str_contains($sida, 'var NEDE = 40;'),
+    'maalt: sto paa 0 da det kom en ny melding');
+
 sjekk('bunnmenyene flyttes opp naar det synlige vinduet krymper',
     str_contains($sida, ".ms-bunnmeny,\n  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }")
     && str_contains($sida, "document.documentElement.style.setProperty('--vv-bunn', d + 'px');"),

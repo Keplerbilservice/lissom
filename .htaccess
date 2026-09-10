@@ -108,6 +108,25 @@ AddDefaultCharset UTF-8
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.vippsmobilepay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self' https://designsystem.vippsmobilepay.com; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 </IfModule>
 
+# Hvor stor en opplasting faar vaere.
+#
+# Det samme som staar i .user.ini, for den andre maaten aa kjore PHP paa.
+# .user.ini leses av PHP-FPM og PHP-CGI; kjorer serveren mod_php, er det
+# denne blokka som gjelder. Uten <IfModule> ville linjene gitt 500 paa en
+# server uten mod_php, saa de staar bak den med vilje.
+#
+# Standarden er 2 MB — mindre enn ett skannet ark i god opplosning. Koden
+# leser av det som faktisk gjelder, se Dokumenter::maksBytes(), saa skjermen
+# sier det virkelige tallet uansett hvilken av de to serveren hoerer paa.
+<IfModule mod_php.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size 66M
+</IfModule>
+<IfModule mod_php8.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size 66M
+</IfModule>
+
 # Komprimering.
 #
 # Nettsiden er én fil på nær 1 MB. Komprimert er den 193 kB — en femdel. Uten

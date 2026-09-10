@@ -4962,7 +4962,9 @@ sjekk('… og det staar i loggen hva som ble slettet',
 sjekk('… og et ukjent felt avvises for det naar kunden',
     str_contains($malApi, "Denne malen kjenner ikke {"));
 sjekk('Maler-skjermen finnes', str_contains($sida2, "erAdminMaler: side === 'adminmaler',"));
-sjekk('… og staar som kort paa Oversikt', str_contains($sida2, "kort('Maler',"));
+// Het «Maler» til 10. september 2026, da dokumentkortet «Keramikk maler»
+// kom i den samme menyen. Eieren: «da kan du endre denne til tekst maler».
+sjekk('… og staar som kort paa Oversikt', str_contains($sida2, "kort('Tekst maler',"));
 sjekk('… med feltene til aa kopiere', str_contains($sida2, 'navigator.clipboard.writeText(t)'));
 
 // ── Hentetiden staar ett sted ──────────────────────────────────────────
@@ -9344,7 +9346,7 @@ sjekk('hovedmenyen er ti punkter',
 sjekk('… og Verkstedet har faatt de tre',
     str_contains($sidaG, "['Nettsiden',     'admininnhold'],")
     && str_contains($sidaG, "['Referansekunder', 'adminreferanser'],\n        // Malene sto under")
-    && str_contains($sidaG, "['Maler',         'adminmaler'],"));
+    && str_contains($sidaG, "['Tekst maler',   'adminmaler'],"));
 // Sto de begge steder, ville to faner gaatt til den samme skjermen og
 // begge villet lyse.
 sjekk('… og staar ikke igjen der de kom fra',
@@ -9368,7 +9370,7 @@ sjekk('… og beholder sin egen fanerad',
 // De to som flyttet helt hoerer til Verkstedets egen rad, ikke Nettsidens.
 sjekk('referansekundene og malene hoerer til Verkstedet',
     str_contains($sidaG, "case 'adminreferanser':    return p('Verkstedet', 'Verkstedet', 'Referansekunder');")
-    && str_contains($sidaG, "case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Maler');"));
+    && str_contains($sidaG, "case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');"));
 // Kortet paa Oversikt skal gaa dit som for. Eieren, 1. september: «jeg vil
 // ha et eget kort paa oversikt som heter maler».
 sjekk('… og kortet paa Oversikt gaar fortsatt til malene',
@@ -14979,6 +14981,156 @@ sjekk('… og medlemsdelen paa Nyttig info staar bare naar noe er slaatt paa',
     str_contains($dokSida, '<sc-if value="{{ mdHarNoe }}"')
     && str_contains($dokSida, '>For medlemmer</h2>')
     && str_contains($dokSida, '>Kun for innloggede</span>'));
+// ── Kortene har samme form som paa Oversikt ──────────────────────────────
+//
+// Eieren, 10. september 2026: «jeg ba om smaa kort, ikke piller, jeg vil ha
+// samme layout som paa oversikt saa endre dette».
+//
+// Rammen er kortet og knappen inni er flata man trykker paa. En knapp kan
+// ikke ligge inni en annen knapp, saa bryteren nederst er sin egen — samme
+// grep som «en handling til» paa omraadekortene.
+sjekk('dokumentkortene har samme form som kortene paa Oversikt',
+    str_contains($dokSida, '<button type="button" onClick="{{ k.apne }}" style="{{ k.innerStil }}">')
+    && str_contains($dokSida, '>Åpne →</span>')
+    && str_contains($dokSida, "grid-template-columns: repeat(auto-fit, minmax(210px, 1fr))"));
+sjekk('… og bryteren staar som en rad nederst, ikke som en pille',
+    str_contains($dokSida, 'const kortBunn = (paa) => ({')
+    && str_contains($dokSida, "borderTop: '1px solid var(--border-subtle)',")
+    && str_contains($dokSida, 'synligStil: kortBunn(k.visMedlem),'));
+// «Maler» i den samme menyen er tekstmalene til e-post og SMS. To punkter
+// som begge het noe med «maler» sa ingenting om hva som laa hvor.
+sjekk('… og tekstmalene heter «Tekst maler», saa navnene ikke krasjer',
+    str_contains($dokSida, "['Tekst maler',   'adminmaler'],")
+    && str_contains($dokSida, '>Tekst maler</h1>')
+    && !str_contains($dokSida, "['Maler',         'adminmaler'],"));
+
+// ── Hvert dokument som sitt eget kort ────────────────────────────────────
+//
+// Eieren, 10. september 2026: «jeg vil at alle dokumenterne skal faa smaa
+// kort med tydelig navn paa hva det er, dette inni hvert hovedkort».
+//
+// Dokumentene sto som rader i en liste. Naa er hvert av dem et kort i den
+// samme formen som hovedkortene — bade i admin og paa medlemssida.
+sjekk('hvert dokument staar som sitt eget kort',
+    str_contains($dokSida, '<button type="button" onClick="{{ f.apne }}" style="{{ f.innerStil }}">')
+    && str_contains($dokSida, '<span style="{{ f.typeStil }}">{{ f.type }}</span>')
+    // Rada som sto der for. «radStil» finnes fortsatt paa en annen skjerm,
+    // saa det er raden i dokumentpanelet vi ser etter.
+    && !str_contains($dokSida, '<div style="{{ f.radStil }}">'));
+// Hva slags fil det er, staar over navnet — «tydelig navn paa hva det er».
+sjekk('… med filtypen over navnet',
+    str_contains($dokSida, "typeStil: {")
+    && str_contains($dokSida, "color: 'var(--terracotta-600)', marginBottom: '4px',"));
+sjekk('… og de to andre handlingene staar paa en rad nederst',
+    str_contains($dokSida, '<div style="{{ f.bunnStil }}">')
+    && str_contains($dokSida, 'onClick="{{ f.tekstVelg }}" style="{{ f.tekstStil }}"')
+    && str_contains($dokSida, 'onClick="{{ f.slett }}" style="{{ f.slettStil }}"'));
+// Medlemssida skal se ut som admin. Eieren ba om det ett sted; det hoerer
+// hjemme begge steder — se «Godkjente endringer gjoeres globalt» i CLAUDE.md.
+sjekk('… og medlemssida har den samme formen',
+    str_contains($dokSida, '<span style="{{ f.typeStil }}">{{ f.type }}</span>')
+    && substr_count($dokSida, '>Åpne →</span>') >= 3
+    && !str_contains($dokSida, 'onClick="{{ f.apne }}" style="{{ f.stil }}">Åpne</button>'));
+// «anywhere» brakk «Medlemskontrakt» midt i ordet paa et smalt kort.
+sjekk('… og et langt filnavn brekker ikke midt i ordet',
+    !str_contains($dokSida, 'line-height: 1.3; overflow-wrap: anywhere;">{{ f.navn }}</span>'));
+
+// ── Hvor stor en opplasting faar vaere ───────────────────────────────────
+//
+// Eieren, 10. september 2026: hev taket «saa langt serveren tillater».
+//
+// Taket sto som 20 MB i koden. Serveren her tillot 2. Skjermen sa altsaa
+// «maks 20 MB» mens opplastingen stoppet paa 2, og den som lastet opp fikk
+// ingen forklaring som stemte. Verre: gikk hele forespoerselen over
+// «post_max_size», kom den fram TOM — og svaret ble «Du maa velge en fil»
+// paa en fil som laa der hele tiden.
+//
+// Maalt paa to servere: med 64 MB melder skjermen 64 og en PDF paa 30 MB gaar
+// inn; med 2 MB melder den 2, og bade en fil paa 5 MB og en paa 10 MB faar
+// «Filen er for stor. Maks 2 MB.»
+sjekk('taket leses av serveren, ikke skrevet av i koden',
+    str_contains($dokLib, 'public static function maksBytes(): int')
+    && str_contains($dokLib, "ini_get('upload_max_filesize')")
+    && str_contains($dokLib, "ini_get('post_max_size')")
+    && !str_contains($dokLib, 'MAKS_BYTES = 20'));
+// PHP har to tak og det laveste vinner. Post-taket maa ha rom til feltene
+// rundt fila, ellers melder vi et tall som ikke gaar gjennom.
+sjekk('… og det laveste av de to gjelder, med rom til feltene rundt fila',
+    str_contains($dokLib, '$tak[] = $post - 512 * 1024;')
+    && str_contains($dokLib, 'return max(1024 * 1024, min($tak));'));
+sjekk('… og feilmeldingen sier det virkelige tallet',
+    !str_contains($dokLib, 'Maks 20 MB')
+    && substr_count($dokLib, "'Filen er for stor. Maks ' . self::maksMb() . ' MB.'") >= 1);
+// Uten dette svarte skjermen «Du maa velge en fil» paa en fil som var
+// altfor stor. Sjekken maa staa FOR opphavssjekken, som leser $_POST og
+// derfor heller ikke har noe aa gaa paa.
+sjekk('… og en forespoersel som kommer fram tom sier at fila var for stor',
+    str_contains($dokApi, "if (\$_POST === [] && \$_FILES === [] && (int) (\$_SERVER['CONTENT_LENGTH'] ?? 0) > 0)")
+    && strpos($dokApi, "CONTENT_LENGTH") < strpos($dokApi, 'Foresporsel::krevSammeOpphav();'));
+// ── Mange filer, og en zippet mappe ──────────────────────────────────────
+//
+// Eieren, 10. september 2026: «hvorfor er det saa vanskelig aa laste opp mange
+// dokumenter?» — og «jeg vil bare slippe en zippet stor mappe her».
+//
+// Ruta tok én fil om gangen. Tjue dokumenter ble tjue runder.
+//
+// Maalt i nettleseren: en zip med fire dokumenter og én tekstfil gir «4 filer
+// er lastet opp. 1 fil ble hoppet over», og tre filer merket samtidig gir «3
+// filer er lastet opp.»
+sjekk('mange filer kan velges paa én gang',
+    substr_count($dokSida, 'type="file" multiple="true"') >= 2
+    && str_contains($dokSida, "filer.forEach(f => skjema.append('dokument[]', f));")
+    && str_contains($dokApi, 'Dokumenter::delOpp($_FILES[\'dokument\'])'));
+// Med «multiple» kommer $_FILES som EN rad med lister, ikke som en liste med
+// rader. Uten delOpp() lagres et dokument som heter «Array».
+sjekk('… og PHP sin flerfil-form deles opp for den brukes',
+    str_contains($dokLib, 'public static function delOpp(array $felt): array')
+    && str_contains($dokLib, "if (!is_array(\$felt['name'] ?? null)) {"));
+sjekk('… og én fil som ikke gaar inn tar ikke med seg de andre',
+    str_contains($dokApi, '} catch (RuntimeException $e) {')
+    && str_contains($dokApi, '$feil[] = $e->getMessage();'));
+sjekk('… og kvitteringen teller riktig i entall og flertall',
+    str_contains($dokApi, "\$lagt === 1 ? 'Filen er lastet opp.' : \$lagt . ' filer er lastet opp.'")
+    && str_contains($dokApi, "' ble hoppet over — bare PDF, Word og bilde tas imot.'"));
+
+sjekk('en zip pakkes ut i kortet',
+    str_contains($dokLib, 'private static function pakkUt(')
+    && str_contains($dokLib, "in_array(\$mime, self::ZIP_TYPER, true)")
+    && str_contains($dokLib, 'Zip-fila inneholdt ingen filer vi kan ta imot.'));
+// Hver fil inne i zip-en gaar gjennom den samme kontrollen som en vanlig
+// opplasting: typen leses ut av innholdet, og navnet paa disken lager vi selv.
+// Det siste er ogsaa det som gjor at «../../app/config.php» inne i en zip
+// ikke kan skrive noe sted — proevd, og begge havnet i dokumentmappa.
+sjekk('… og hver fil inne i den kontrolleres som en vanlig opplasting',
+    str_contains($dokLib, "!isset(self::TYPER[\$mime])")
+    && str_contains($dokLib, "\$navn = bin2hex(random_bytes(16)) . '.' . self::TYPER[\$mime];")
+    && str_contains($dokLib, '$kort = basename(str_replace(\'\\\\\', \'/\', $inne));'));
+sjekk('… og en liten zip kan ikke fylle disken',
+    str_contains($dokLib, 'private const ZIP_MAKS_FILER = 200;')
+    && str_contains($dokLib, 'private const ZIP_MAKS_UT = 500 * 1024 * 1024;')
+    && str_contains($dokLib, '$lagt + $hoppet >= self::ZIP_MAKS_FILER || $sumUt > self::ZIP_MAKS_UT'));
+sjekk('… og det Mac legger ved siden av filene hoppes over',
+    str_contains($dokLib, "str_starts_with(\$inne, '__MACOSX/')"));
+// PHP sin zip-utvidelse er ikke gitt paa et delt webhotell. Mangler den, skal
+// kortet si fra i klartekst — og slipperuta skal ikke love zip.
+sjekk('… og kortet sier fra i klartekst om serveren ikke kan pakke ut',
+    str_contains($dokLib, "return class_exists('ZipArchive');")
+    && str_contains($dokLib, 'Serveren kan ikke pakke ut zip-filer. Last opp dokumentene hver for seg.')
+    && str_contains($dokSida, "(d.zip ? ' eller zip' : '')"));
+
+// Taket heves to steder, fordi webhotellet kan kjore PHP paa to maater.
+// .user.ini leses av PHP-FPM og PHP-CGI; mod_php hoerer bare paa .htaccess.
+$dokIni  = file_get_contents(dirname(__DIR__) . '/.user.ini');
+$dokHtac = file_get_contents(dirname(__DIR__) . '/.htaccess');
+sjekk('… og de to oppsettfilene sier det samme',
+    str_contains($dokIni, 'upload_max_filesize = 64M')
+    && str_contains($dokIni, 'post_max_size = 66M')
+    && str_contains($dokHtac, 'php_value upload_max_filesize 64M')
+    && str_contains($dokHtac, 'php_value post_max_size 66M'));
+// Uten <IfModule> gir php_value 500 paa en server uten mod_php.
+sjekk('… og php_value staar bak <IfModule>, saa den ikke tar ned nettstedet',
+    str_contains($dokHtac, "<IfModule mod_php.c>\n    php_value upload_max_filesize 64M"));
+
 // Nyttig info er aapen med vilje. Dokumentene gaar en annen vei.
 sjekk('… og den aapne Nyttig info-veien er urort',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'Aapent med vilje')

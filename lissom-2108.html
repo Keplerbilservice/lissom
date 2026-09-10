@@ -5147,12 +5147,20 @@ window.__resources = {
                       <div style="{{ k.kortStil }}">
                         <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
                         <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 4px;">{{ k.antall }}</div>
-                        <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
-                          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: 7px 0; border-top: 1px solid var(--border-subtle);">
-                            <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600; overflow-wrap: anywhere; min-width: 0;">{{ f.navn }}</span>
-                            <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">Åpne</button>
-                          </div>
-                        </sc-for>
+                        <!-- Hvert dokument som sitt eget lille kort, som i
+                             admin. Eieren, 10. september 2026: «jeg vil at
+                             alle dokumenterne skal faa smaa kort med tydelig
+                             navn paa hva det er, dette inni hvert
+                             hovedkort». -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                          <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
+                            <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
+                              <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                              <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                              <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                            </button>
+                          </sc-for>
+                        </div>
                       </div>
                     </sc-for>
                   </div>
@@ -17911,7 +17919,7 @@ window.__resources = {
       <main style="padding: var(--space-8); min-width: 0;">
         <div style="margin-bottom: var(--space-6);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Markedsføring</div>
-          <h1 style="margin: 0; font-size: var(--text-3xl);">Maler</h1>
+          <h1 style="margin: 0; font-size: var(--text-3xl);">Tekst maler</h1>
           <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Hver e-post og SMS systemet sender. Endre teksten, slå den av, eller se når den går ut. {{ malAntall }}.</p>
         </div>
         <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
@@ -18303,18 +18311,25 @@ window.__resources = {
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ dokApnetNavn }}</span>
                 </div>
                 <label style="position: relative; display: inline-flex; align-items: center; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 6px 16px; border-radius: var(--radius-pill); border: 1px solid var(--lissom-yellow); background: var(--lissom-yellow); color: var(--lissom-brown); cursor: pointer;">
-                  <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">Last opp</label>
+                  <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">Last opp</label>
               </div>
 
-              <div style="padding: 0 var(--space-6);">
+              <!-- Hvert dokument som sitt eget lille kort.
+                   Eieren, 10. september 2026: «jeg vil at alle dokumenterne
+                   skal faa smaa kort med tydelig navn paa hva det er, dette
+                   inni hvert hovedkort».
+                   Samme form som hovedkortene: ramme, knapp inni, «Aapne →»
+                   nederst, og de to andre handlingene paa en egen rad. -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-5) var(--space-6) 0;">
                 <sc-for list="{{ dokRader }}" as="f" hint-placeholder-count="3">
-                  <div style="{{ f.radStil }}">
-                    <div style="min-width: 0;">
-                      <div style="font-weight: 700; color: var(--text-heading); font-size: var(--text-base); overflow-wrap: anywhere;">{{ f.navn }} <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">{{ f.type }}</span></div>
-                      <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px;">{{ f.under }}</div>
-                    </div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-                      <button type="button" onClick="{{ f.apne }}" style="{{ f.apneStil }}">Åpne</button>
+                  <div style="{{ f.kortStil }}">
+                    <button type="button" onClick="{{ f.apne }}" style="{{ f.innerStil }}">
+                      <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                      <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                      <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ f.under }}</p>
+                      <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                    </button>
+                    <div style="{{ f.bunnStil }}">
                       <button type="button" onClick="{{ f.tekstVelg }}" style="{{ f.tekstStil }}">{{ f.tekstNavn }}</button>
                       <button type="button" onClick="{{ f.slett }}" style="{{ f.slettStil }}">Slett</button>
                     </div>
@@ -18327,7 +18342,7 @@ window.__resources = {
               </sc-if>
 
               <label style="display: block; margin: var(--space-5) var(--space-6) var(--space-6); border: 2px dashed var(--border-default); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-6); text-align: center; cursor: pointer; position: relative;">
-                <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
                 <span style="display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ dokSlippTittel }}</span>
                 <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ dokSlippUnder }}</span>
               </label>
@@ -18338,15 +18353,22 @@ window.__resources = {
             <!-- «stretch», ikke «start»: to av kortnavnene gaar over to
                  linjer, og med «start» sto pillene i ulik hoyde bortover
                  rada. Kortene er like hoye naa, og pillene staar paa linje. -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch; max-width: 1100px; margin-top: var(--space-6);">
+            <!-- Samme rutenett og samme kortform som paa Oversikt.
+                 Eieren, 10. september 2026: «jeg vil ha samme layout som paa
+                 oversikt saa endre dette».
+                 Rammen er kortet, knappen inni er flata man trykker paa — en
+                 knapp kan ikke ligge inni en annen knapp, og bryteren
+                 nederst er sin egen. Samme grep som «en handling til» paa
+                 omraadekortene. -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; max-width: 1100px; margin-top: var(--space-6);">
               <sc-for list="{{ dokKort }}" as="k" hint-placeholder-count="6">
                 <div style="{{ k.kortStil }}">
-                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ k.antall }}</div>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 8px;">
-                    <button type="button" onClick="{{ k.apne }}" style="{{ k.apneStil }}">Åpne</button>
-                    <button type="button" onClick="{{ k.veksle }}" style="{{ k.synligStil }}">{{ k.synligNavn }}</button>
-                  </div>
+                  <button type="button" onClick="{{ k.apne }}" style="{{ k.innerStil }}">
+                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
+                    <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.antall }}</p>
+                    <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                  </button>
+                  <button type="button" onClick="{{ k.veksle }}" style="{{ k.synligStil }}">{{ k.synligNavn }}</button>
                 </div>
               </sc-for>
             </div>
@@ -33212,7 +33234,13 @@ class Component extends DCLogic {
         ['Referansekunder', 'adminreferanser'],
         // Malene sto under Markedsfoering. Tekstene er husets egne ord —
         // det verkstedet sier naar det sender noe fra seg.
-        ['Maler',         'adminmaler'],
+        //
+        // Het «Maler» til 10. september 2026. Da kom dokumentkortet «Keramikk
+        // maler» i den samme menyen, og to punkter som begge het noe med
+        // «maler» sa ingenting om hva som laa hvor. Eieren: «da kan du endre
+        // denne til tekst maler». Adressen /admin/maler staar som for, saa
+        // gamle bokmerker virker.
+        ['Tekst maler',   'adminmaler'],
       ],
       'Nettsiden': [
         // Veien tilbake. Nettsiden er ikke et menypunkt lenger, saa uten
@@ -33326,7 +33354,7 @@ class Component extends DCLogic {
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
       case 'adminressurser':     return p('Verkstedet', 'Verkstedet', 'Ressurser');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
-      case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Maler');
+      case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
@@ -44277,7 +44305,7 @@ class Component extends DCLogic {
 
             // Tekstene som sendes ut. Eieren, 1. september: «jeg vil ha et
             // eget kort paa oversikt som heter maler».
-            kort('Maler',
+            kort('Tekst maler',
                  'Hver e-post og SMS systemet sender. Endre teksten, slå den av, '
                  + 'eller se når den går ut.',
                  null, 'Se malene', () => this.gaaAdmin('adminmaler', {})),
@@ -49169,13 +49197,6 @@ class Component extends DCLogic {
         this.minDokHent();
         const d = this.state.minDok || {};
         const kort = (d.kategorier || []).filter(k => (k.filer || []).length > 0);
-        const knapp = {
-          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-          font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
-          padding: '5px 13px', borderRadius: 'var(--radius-pill)',
-          border: '1px solid var(--border-default)',
-          background: 'var(--surface-card)', color: 'var(--text-heading)',
-        };
         return {
           mdHarNoe: kort.length > 0 || !!d.faq,
           mdHarKort: kort.length > 0,
@@ -49197,7 +49218,21 @@ class Component extends DCLogic {
             },
             filer: (k.filer || []).map(f => ({
               navn: f.navn,
-              stil: knapp,
+              type: f.type,
+              typeStil: {
+                display: 'inline-flex', alignItems: 'center', lineHeight: 'normal',
+                alignSelf: 'flex-start',
+                font: 'var(--type-eyebrow)', fontWeight: 700,
+                letterSpacing: 'var(--tracking-caps)',
+                color: 'var(--terracotta-600)', marginBottom: '4px',
+              },
+              stil: {
+                appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)', padding: 'var(--space-4)',
+                display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0,
+                font: 'inherit',
+              },
               // Word kan ikke vises i en nettleser; da lastes den ned. Begge
               // deler er den samme adressen — serveren avgjor hvilken av dem
               // det blir, se api/dokument.php.
@@ -51178,23 +51213,63 @@ class Component extends DCLogic {
         const vis = this.state.dokVis || null;
 
         // ── Kortene ──────────────────────────────────────────────────────
+        //
+        // Eieren, 10. september 2026: «jeg ba om smaa kort, ikke piller, jeg
+        // vil ha samme layout som paa oversikt».
+        //
+        // Derfor den samme formen som kortene der: ramme med en knapp inni,
+        // navnet i overskriftsskrift, antallet under, og «Aapne →» nederst.
+        // Rammen er kortet og knappen inni er flata man trykker paa — en
+        // knapp kan ikke ligge inni en annen knapp, og bryteren nederst er
+        // sin egen.
+        const kortRamme = {
+          background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+          display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0,
+        };
+        const kortInner = {
+          appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+          textAlign: 'left', cursor: 'pointer', width: '100%', font: 'inherit',
+          display: 'flex', flexDirection: 'column', flex: '1 1 auto',
+        };
+        // Raden nederst: samme form som «en handling til» paa Oversikt, med
+        // en strek over og teksten i husets brune.
+        const kortBunn = (paa) => ({
+          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+          textAlign: 'left', width: '100%', padding: 'var(--space-3) 0 0',
+          marginTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)',
+          font: 'var(--type-body-sm)', fontWeight: 600,
+          color: paa ? 'var(--sage-600)' : 'var(--text-muted)',
+        });
         const kortene = kort.map(k => ({
           id: k.id,
           navn: k.navn,
           antall: antallTekst(k.antall),
           apne: () => this.setState({ dokValgt: k.id }),
           synligNavn: k.visMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
-          synligStil: pille(k.visMedlem),
+          synligStil: kortBunn(k.visMedlem),
           veksle: () => this.dokKall({ handling: 'veksle', id: k.id }),
-          apneStil: knapp,
-          kortStil: {
-            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
-            display: 'flex', flexDirection: 'column', gap: '9px', minWidth: 0,
-          },
+          kortStil: kortRamme,
+          innerStil: kortInner,
         }));
 
         // ── Filene i kortet som er aapnet ────────────────────────────────
+        //
+        // Eieren, 10. september 2026: «jeg vil at alle dokumenterne skal faa
+        // smaa kort med tydelig navn paa hva det er, dette inni hvert
+        // hovedkort».
+        //
+        // Sto som rader i en liste. Naa er hvert dokument et kort i den samme
+        // formen som hovedkortene: navnet i overskriftsskrift, hva slags fil
+        // det er og naar den kom under, og «Aapne →» nederst. Rammen er
+        // kortet, knappen inni er flata man trykker paa, og de to andre
+        // handlingene staar paa en rad nederst — en knapp kan ikke ligge inni
+        // en annen knapp.
+        const filBunn = {
+          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+          textAlign: 'left', padding: 0,
+          font: 'var(--type-body-sm)', fontWeight: 600, whiteSpace: 'nowrap',
+        };
         const iKortet = valgt ? filer.filter(f => f.kategori === valgt.id) : [];
         const radene = iKortet.map(f => ({
           id: f.id,
@@ -51203,10 +51278,9 @@ class Component extends DCLogic {
           under: 'Lastet opp ' + dato(f.opprettet) + ' · ' + stor(f.storrelse)
                  + (f.harTekst ? ' · AI-en kan lese denne' : ' · Skannet ark'),
           apne: () => this.setState({ dokVis: f }),
-          apneStil: knapp,
-          skrivUt: () => this.setState({ dokVis: f }),
           tekstNavn: f.harTekst ? 'Tekst lagt inn' : 'Legg inn tekst',
-          tekstStil: pille(f.harTekst),
+          tekstStil: Object.assign({}, filBunn, {
+            color: f.harTekst ? 'var(--sage-600)' : 'var(--text-muted)' }),
           tekstVelg: () => this.setState({
             dokTekstId: f.id, dokTekstNavn: f.navn, dokTekst: '' }),
           slett: () => {
@@ -51214,11 +51288,29 @@ class Component extends DCLogic {
               this.dokKall({ handling: 'slett', id: f.id });
             }
           },
-          slettStil: knapp,
-          radStil: {
-            display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 'var(--space-4)',
-            alignItems: 'center', padding: 'var(--space-4) 0',
-            borderBottom: '1px solid var(--border-subtle)',
+          slettStil: Object.assign({}, filBunn, { color: 'var(--text-muted)' }),
+          kortStil: {
+            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+            display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0,
+          },
+          innerStil: {
+            appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+            textAlign: 'left', cursor: 'pointer', width: '100%', font: 'inherit',
+            display: 'flex', flexDirection: 'column', flex: '1 1 auto',
+          },
+          bunnStil: {
+            display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap',
+            marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)',
+            borderTop: '1px solid var(--border-subtle)',
+          },
+          // Hva slags fil det er, som et lite merke over navnet.
+          typeStil: {
+            display: 'inline-flex', alignItems: 'center', lineHeight: 'normal',
+            alignSelf: 'flex-start',
+            font: 'var(--type-eyebrow)', fontWeight: 700,
+            letterSpacing: 'var(--tracking-caps)',
+            color: 'var(--terracotta-600)', marginBottom: '4px',
           },
         }));
 
@@ -51255,16 +51347,23 @@ class Component extends DCLogic {
           dokTomt: !!valgt && radene.length === 0,
           dokTomTekst: 'Ingen dokumenter ennå.',
           dokSlippTittel: 'Slipp filen her',
-          dokSlippUnder: 'eller velg fra maskinen · PDF, Word, bilde · maks '
+          // «eller zip» staar bare naar serveren faktisk kan pakke ut. PHP
+          // sin zip-utvidelse er ikke gitt paa et delt webhotell, og en rute
+          // som lover noe den ikke kan, er verre enn en som ikke lover det.
+          dokSlippUnder: 'eller velg fra maskinen · PDF, Word, bilde'
+                         + (d.zip ? ' eller zip' : '') + ' · maks '
                          + (d.maksMb || 20) + ' MB',
+          // Alle filene, ikke bare den forste. Eieren, 10. september 2026:
+          // «hvorfor er det saa vanskelig aa laste opp mange dokumenter?» —
+          // ruta tok én om gangen, og tjue dokumenter ble tjue runder.
           dokVelgFil: (e) => {
-            const fil = e.target.files && e.target.files[0];
+            const filer = e.target.files ? Array.prototype.slice.call(e.target.files) : [];
             e.target.value = '';
-            if (!fil || !valgt) return;
+            if (!filer.length || !valgt) return;
             const skjema = new FormData();
             skjema.append('handling', 'last-opp');
             skjema.append('kategori', String(valgt.id));
-            skjema.append('dokument', fil);
+            filer.forEach(f => skjema.append('dokument[]', f));
             this.dokKall(skjema);
           },
 

@@ -14876,6 +14876,114 @@ sjekk('… og aarskalenderen har et eget kort paa Oversikt',
     str_contains($veiSida, "kort('Årskalender',")
     && str_contains($veiSida, "'Året måned for måned. Skriv inn hva som skjer.',"));
 
+// ── Dokumentkortene i verkstedet ─────────────────────────────────────────
+//
+// Eieren, 10. september 2026: seks kort — kontrakter, keramikk maler,
+// engober, glassering, brenning og dekorasjonsteknikker — der han kan lagre,
+// aapne, skrive ut og laste opp. Og: «vil det vaere mulig aa faa denne paa
+// medlemsiden ogsaa? at jeg kan velge i admin, vis paa medlemsiden?»
+//
+// Maalt i nettleseren paa 1440, 834 og 390 px: kortene staar, opplasting av
+// PDF og PNG gaar inn, visningen aapner med «Skriv ut», «Last ned» og
+// «Lukk», teksten lagres, sletting fjerner raden, og medlemssida viser bare
+// de kortene som er slaatt paa.
+$dokLib  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$dokApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$dokFil  = file_get_contents(dirname(__DIR__) . '/api/dokument.php');
+$dokMine = file_get_contents(dirname(__DIR__) . '/api/mine-dokumenter.php');
+$dokFaq  = file_get_contents(dirname(__DIR__) . '/api/spor-verkstedet.php');
+$dokMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/154_verksted_dokumenter.sql');
+
+sjekk('de seks kortene ligger i migrasjon 154',
+    str_contains($dokMig, "('kontrakter',")
+    && str_contains($dokMig, "('maler',")
+    && str_contains($dokMig, "('engober',")
+    && str_contains($dokMig, "('glassering',")
+    && str_contains($dokMig, "('brenning',")
+    && str_contains($dokMig, "('dekorasjon',"));
+// «Brenning» og «Maler» finnes fra for i den samme menyen, og er noe helt
+// annet: brenneloggen for ovnene, og tekstmalene til e-post og SMS.
+sjekk('… og dokumentkortet for brenning heter noe annet enn brenneloggen',
+    str_contains($dokMig, "'Brenning (dokumenter)'"));
+sjekk('… og alle seks staar skjult for medlemmer til eieren slaar dem paa',
+    str_contains($dokMig, 'vis_medlem  TINYINT(1)      NOT NULL DEFAULT 0'));
+
+// Bilder tegnes om til JPEG. En kontrakt kan ikke tegnes om — da er den
+// ikke lenger en kontrakt. Derfor lagres fila slik den kom, og typen leses
+// ut av selve fila.
+sjekk('bare PDF, Word og bilde slipper inn',
+    str_contains($dokLib, "'application/pdf'  => 'pdf'")
+    && str_contains($dokLib, "'application/msword' => 'doc'")
+    && str_contains($dokLib, "wordprocessingml.document' => 'docx'")
+    && str_contains($dokLib, "'image/jpeg'       => 'jpg'"));
+sjekk('… og typen leses ut av fila, ikke av filnavnet',
+    str_contains($dokLib, 'new finfo(FILEINFO_MIME_TYPE)')
+    && str_contains($dokLib, 'Filen må være PDF, Word eller bilde.'));
+sjekk('… og filnavnet lages av oss, ikke av det som ble lastet opp',
+    str_contains($dokLib, "bin2hex(random_bytes(16)) . '.' . self::TYPER[\$mime]"));
+sjekk('… og filene ligger utenfor det som publiseres',
+    str_contains($dokLib, "Bilder::mappe('dokumenter')"));
+
+// Hvem som faar se hva. Bryteren leses paa hver forespoersel: slaar eieren
+// av et kort, er lenkene medlemmene alt har sett doede med det samme.
+sjekk('et dokument i et kort som er av naas ikke av et medlem',
+    str_contains($dokFil, "((int) \$dok['vis_medlem']) !== 1 || \$medlem === null || !er_aktivt_medlem(\$medlem)")
+    && str_contains($dokFil, "Svar::feil('Fant ikke dokumentet.', 404)"));
+sjekk('… og medlemslista viser bare kortene som er slaatt paa',
+    str_contains($dokMine, 'Dokumenter::kategorier(true)')
+    && str_contains($dokMine, 'Dokumenter::dokumenter(null, true)')
+    && str_contains($dokMine, 'krev_aktivt_medlem()'));
+sjekk('… og Word lastes ned framfor aa vises, fordi den ikke kan vises',
+    str_contains($dokLib, "\$mime === 'application/pdf' || str_starts_with(\$mime, 'image/')")
+    && str_contains($dokFil, "!Dokumenter::kanVises(\$mime)"));
+
+// Bryteren staar paa kortet, ikke paa dokumentet.
+sjekk('bryteren «Vis paa medlemssiden» staar paa kortet',
+    str_contains($dokApi, "case 'veksle':")
+    && str_contains($dokApi, "DB::oppdater('verksted_kategorier', ['vis_medlem' => \$ny], ['id' => \$id])"));
+sjekk('… og «Spør verkstedet» har sin egen bryter',
+    str_contains($dokApi, "case 'veksle-faq':")
+    && str_contains($dokApi, "'verksted_faq_medlem'"));
+
+// AI-en. Ingen ny kobling: app/lib/ai.php, med samme noekkel, samme logg og
+// samme maanedstak som teksten under Markedsfoering.
+sjekk('«Spør verkstedet» bruker AI-koblingen som alt finnes',
+    str_contains($dokFaq, 'AI::sporJson(')
+    && !str_contains($dokFaq, 'api.anthropic.com'));
+sjekk('… og modellen faar bare teksten fra dokumentene',
+    str_contains($dokFaq, 'Dokumenter::kunnskap(')
+    && str_contains($dokFaq, 'og du har ÉN kilde'));
+sjekk('… og sier fra naar svaret ikke staar der',
+    substr_count($dokFaq, 'Dette står ikke i dokumentene. Legg inn et dokument som svarer på det, så finner jeg det neste gang.') >= 2);
+sjekk('… og et medlem naar den ikke for eieren har slaatt den paa',
+    str_contains($dokFaq, '!Dokumenter::faqForMedlem()')
+    && str_contains($dokFaq, "Svar::feil('Fant ikke siden.', 404)"));
+sjekk('… og et medlem naar bare kortene som er slaatt paa',
+    str_contains($dokFaq, 'Dokumenter::kunnskap(!$erAdmin, $valgte)')
+    && str_contains($dokLib, "if (\$bareMedlem) {\n            \$hvor[] = 'k.vis_medlem = 1';"));
+sjekk('… og en kilde modellen finner paa vises ikke som et dokument',
+    str_contains($dokFaq, "in_array(\$n, \$kjente, true)"));
+sjekk('… og hvert kall koster penger, saa det er et tak per person',
+    str_contains($dokFaq, "Rate::sjekk('spor-verkstedet'"));
+
+// Skjermen.
+$dokSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('«Dokumenter» og «Spør verkstedet» staar i Verkstedets fanerad',
+    str_contains($dokSida, "['Dokumenter',    'adminoppskrifter', { vstFane: 'dokumenter' }],")
+    && str_contains($dokSida, "['Spør verkstedet', 'adminoppskrifter', { vstFane: 'faq' }],"));
+sjekk('… og visningen har «Skriv ut», «Last ned» og «Lukk»',
+    str_contains($dokSida, 'onClick="{{ dokVisSkrivUt }}"')
+    && str_contains($dokSida, 'href="{{ dokVisNedUrl }}"')
+    && str_contains($dokSida, 'onClick="{{ dokVisLukk }}"'));
+sjekk('… og medlemsdelen paa Nyttig info staar bare naar noe er slaatt paa',
+    str_contains($dokSida, '<sc-if value="{{ mdHarNoe }}"')
+    && str_contains($dokSida, '>For medlemmer</h2>')
+    && str_contains($dokSida, '>Kun for innloggede</span>'));
+// Nyttig info er aapen med vilje. Dokumentene gaar en annen vei.
+sjekk('… og den aapne Nyttig info-veien er urort',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'Aapent med vilje')
+    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'verksted_dokumenter'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

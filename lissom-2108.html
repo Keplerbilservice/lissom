@@ -5120,6 +5120,76 @@ window.__resources = {
             </sc-for>
           </div>
         </section>
+
+        <!-- For medlemmer.
+             Eieren, 10. september 2026: «det samme med de andre kategoriene,
+             vis paa medlemsiden, begge paa min side altsaa under nyttig
+             informasjon».
+             Nyttig info over er en AAPEN side — api/nyttig.php er
+             tilgjengelig uten innlogging, med vilje, fordi det er innholdet
+             paa nettsida. En kontrakt kan ikke ligge der. Derfor denne
+             blokka, som henter fra api/mine-dokumenter.php og krever
+             innlogging.
+             Har eieren ikke slaatt paa noe, staar ikke blokka her i det hele
+             tatt — ingen tom overskrift. -->
+        <sc-if value="{{ mdHarNoe }}" hint-placeholder-val="{{ false }}">
+          <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
+            <div style="max-width: var(--width-content); margin: 0 auto;">
+              <sc-if value="{{ mdHarKort }}" hint-placeholder-val="{{ true }}">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7); margin-bottom: var(--space-6);">
+                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">For medlemmer</h2>
+                    <span style="{{ mdLaasStil }}">Kun for innloggede</span>
+                  </div>
+                  <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.</p>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch;">
+                    <sc-for list="{{ mdKort }}" as="k" hint-placeholder-count="4">
+                      <div style="{{ k.kortStil }}">
+                        <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
+                        <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 4px;">{{ k.antall }}</div>
+                        <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: 7px 0; border-top: 1px solid var(--border-subtle);">
+                            <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600; overflow-wrap: anywhere; min-width: 0;">{{ f.navn }}</span>
+                            <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">Åpne</button>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- Spor verkstedet, om eieren har slaatt den paa. AI-en leser
+                   bare kortene som staar over — ingenting annet. -->
+              <sc-if value="{{ mdFaq }}" hint-placeholder-val="{{ false }}">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
+                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør verkstedet</h2>
+                    <span style="{{ mdLaasStil }}">Kun for innloggede</span>
+                  </div>
+                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
+                  <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+                    <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import>
+                  </div>
+                  <sc-if value="{{ mdHarSvar }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-5);">
+                      <div style="font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ mdSvar }}</div>
+                      <sc-if value="{{ mdHarKilder }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top: var(--space-4); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra</span>
+                          <sc-for list="{{ mdKilder }}" as="k" hint-placeholder-count="2">
+                            <span style="{{ k.stil }}">{{ k.navn }}</span>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+        </sc-if>
       </sc-if>
 
       <sc-if value="{{ artikkelApen }}" hint-placeholder-val="{{ false }}">
@@ -18215,6 +18285,152 @@ window.__resources = {
           </div>
           </sc-if>
         </div>
+        </sc-if>
+
+        <!-- Dokumentkortene.
+             Eieren, 10. september 2026: «det ene skal hete kontrakter, her
+             vil jeg kunne lagre kontrakter, aapne og skrive ut, jeg vil ogsaa
+             laste opp» — og fem kort til med de samme funksjonene.
+             Bryteren staar paa kortet: «vil det vaere mulig aa faa denne paa
+             medlemsiden ogsaa? at jeg kan velge i admin, vis paa
+             medlemsiden?». Alt er av til han slaar det paa selv. -->
+        <sc-if value="{{ vstErDokumenter }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ dokErApnet }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; max-width: 900px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+                <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                  <button type="button" onClick="{{ dokLukk }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 5px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">← Alle kort</button>
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ dokApnetNavn }}</span>
+                </div>
+                <label style="position: relative; display: inline-flex; align-items: center; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 6px 16px; border-radius: var(--radius-pill); border: 1px solid var(--lissom-yellow); background: var(--lissom-yellow); color: var(--lissom-brown); cursor: pointer;">
+                  <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">Last opp</label>
+              </div>
+
+              <div style="padding: 0 var(--space-6);">
+                <sc-for list="{{ dokRader }}" as="f" hint-placeholder-count="3">
+                  <div style="{{ f.radStil }}">
+                    <div style="min-width: 0;">
+                      <div style="font-weight: 700; color: var(--text-heading); font-size: var(--text-base); overflow-wrap: anywhere;">{{ f.navn }} <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">{{ f.type }}</span></div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px;">{{ f.under }}</div>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                      <button type="button" onClick="{{ f.apne }}" style="{{ f.apneStil }}">Åpne</button>
+                      <button type="button" onClick="{{ f.tekstVelg }}" style="{{ f.tekstStil }}">{{ f.tekstNavn }}</button>
+                      <button type="button" onClick="{{ f.slett }}" style="{{ f.slettStil }}">Slett</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <sc-if value="{{ dokTomt }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: var(--space-8) var(--space-6); text-align: center; font-size: var(--text-sm); color: var(--text-muted);">{{ dokTomTekst }}</div>
+              </sc-if>
+
+              <label style="display: block; margin: var(--space-5) var(--space-6) var(--space-6); border: 2px dashed var(--border-default); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-6); text-align: center; cursor: pointer; position: relative;">
+                <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                <span style="display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ dokSlippTittel }}</span>
+                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ dokSlippUnder }}</span>
+              </label>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ dokHarKort }}" hint-placeholder-val="{{ true }}">
+            <!-- «stretch», ikke «start»: to av kortnavnene gaar over to
+                 linjer, og med «start» sto pillene i ulik hoyde bortover
+                 rada. Kortene er like hoye naa, og pillene staar paa linje. -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch; max-width: 1100px; margin-top: var(--space-6);">
+              <sc-for list="{{ dokKort }}" as="k" hint-placeholder-count="6">
+                <div style="{{ k.kortStil }}">
+                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ k.antall }}</div>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 8px;">
+                    <button type="button" onClick="{{ k.apne }}" style="{{ k.apneStil }}">Åpne</button>
+                    <button type="button" onClick="{{ k.veksle }}" style="{{ k.synligStil }}">{{ k.synligNavn }}</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- Visningen. Eieren, 10. september: «Egen visning med vaar
+               pille» — nettleserens egen PDF-viser ser ulik ut paa PC, iPad
+               og telefon, og paa telefon har den ofte ingen knapp. Word kan
+               ikke vises i en nettleser, og lastes ned i stedet. -->
+          <sc-if value="{{ dokVisApen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: fixed; inset: 0; background: rgba(46,16,2,.55); z-index: 90; display: flex; flex-direction: column; padding: var(--space-4);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; background: var(--surface-card); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: var(--space-4) var(--space-5);">
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); overflow-wrap: anywhere; min-width: 0;">{{ dokVisNavn }}</span>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-if value="{{ dokVisKanVises }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ dokVisSkrivUt }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 6px 16px; border-radius: var(--radius-pill); border: 1px solid var(--lissom-yellow); background: var(--lissom-yellow); color: var(--lissom-brown);">Skriv ut</button>
+                  </sc-if>
+                  <a href="{{ dokVisNedUrl }}" style="text-decoration: none; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 6px 16px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">Last ned</a>
+                  <button type="button" onClick="{{ dokVisLukk }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 6px 16px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">Lukk</button>
+                </div>
+              </div>
+              <sc-if value="{{ dokVisKanVises }}" hint-placeholder-val="{{ true }}">
+                <iframe id="lissom-dok-ramme" src="{{ dokVisUrl }}" title="{{ dokVisNavn }}" style="flex: 1; width: 100%; border: none; background: var(--clay-100); border-radius: 0 0 var(--radius-lg) var(--radius-lg);"></iframe>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <!-- Teksten AI-en kan lese. En PDF er en binaerfil, og et skannet
+               ark har ingen tekst i seg — derfor limes den inn her. -->
+          <sc-if value="{{ dokTekstApen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: fixed; inset: 0; background: rgba(46,16,2,.55); z-index: 90; display: flex; align-items: center; justify-content: center; padding: var(--space-4);">
+              <div style="background: var(--surface-card); border-radius: var(--radius-lg); padding: var(--space-6); width: 100%; max-width: 720px; max-height: 90vh; overflow: auto;">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Tekst AI-en kan lese</div>
+                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin-bottom: var(--space-4);">{{ dokTekstNavn }}</div>
+                <textarea value="{{ dokTekstVerdi }}" onChange="{{ dokTekstEndre }}" rows="14" placeholder="{{ dokTekstTom }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                <div style="display: flex; gap: var(--space-3); margin-top: var(--space-5);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ dokTekstLagre }}" hint-size="auto,44px">Lagre</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ dokTekstAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <!-- Spor verkstedet.
+             Eieren, 10. september 2026: «vil det vaere muliget aa koble til
+             en ai faq med kun denne infoen?». «Kun denne infoen» er hele
+             poenget: modellen faar teksten fra dokumentene og ingenting
+             annet, og sier fra naar svaret ikke staar der.
+             Ingen ny AI-kobling — app/lib/ai.php, med samme noekkel, samme
+             logg og samme maanedstak som teksten under Markedsfoering. -->
+        <sc-if value="{{ vstErFaq }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width: 900px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <button type="button" onClick="{{ dokFaqVeksle }}" style="{{ dokFaqStil }}">{{ dokFaqNavn }}</button>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ faqKostnad }}</span>
+            </div>
+
+            <div style="background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-5); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+              <input value="{{ faqSporsmal }}" onChange="{{ faqEndre }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ faqSporNaa }}" hint-size="auto,44px">{{ faqKnappNavn }}</x-import>
+            </div>
+
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-4);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">Leser fra</div>
+              <div style="display: flex; gap: 7px; flex-wrap: wrap;">
+                <sc-for list="{{ faqLeserFra }}" as="k" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <sc-if value="{{ faqHarSvar }}" hint-placeholder-val="{{ false }}">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-top: var(--space-4); overflow: hidden;">
+                <div style="padding: var(--space-5); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ faqSvarTekst }}</div>
+                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra</span>
+                  <sc-for list="{{ faqKilder }}" as="k" hint-placeholder-count="2">
+                    <span style="{{ k.stil }}">{{ k.navn }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
         </sc-if>
 
         <!-- Vaktene og brenningene.
@@ -32967,6 +33183,17 @@ class Component extends DCLogic {
       // Oppskriftene sto her alene; vaktene og brenningene kom med
       // migrasjon 088.
       'Verkstedet': [
+        // Dokumentene og AI-en som svarer fra dem. Eieren, 10. september
+        // 2026: seks kort der han kan lagre, aapne, skrive ut og laste opp —
+        // og «vil det vaere muliget aa koble til en ai faq med kun denne
+        // infoen?».
+        //
+        // «Brenning» og «Maler» staar allerede i denne rada, og er noe helt
+        // annet: brenneloggen for ovnene, og tekstmalene til e-post og SMS.
+        // Kortet med dokumenter om brenning heter derfor «Brenning
+        // (dokumenter)» inne paa skjermen.
+        ['Dokumenter',    'adminoppskrifter', { vstFane: 'dokumenter' }],
+        ['Spør verkstedet', 'adminoppskrifter', { vstFane: 'faq' }],
         ['Oppskrifter',   'adminoppskrifter', { vstFane: 'oppskrifter' }],
         ['Vakter',        'adminoppskrifter', { vstFane: 'vakter' }],
         ['Brenning',      'adminoppskrifter', { vstFane: 'brenning' }],
@@ -33076,7 +33303,9 @@ class Component extends DCLogic {
       case 'adminoppskrifter':
         return p('Verkstedet', 'Verkstedet',
           st.vstFane === 'vakter' ? 'Vakter'
-          : st.vstFane === 'brenning' ? 'Brenning' : 'Oppskrifter');
+          : st.vstFane === 'brenning' ? 'Brenning'
+          : st.vstFane === 'dokumenter' ? 'Dokumenter'
+          : st.vstFane === 'faq' ? 'Spør verkstedet' : 'Oppskrifter');
       case 'admininnhold':       return p('Verkstedet', 'Nettsiden', 'Innhold');
       // Referansekundene og malene flyttet inn i Verkstedets egen fanerad
       // 4. september. De hoerer til huset, ikke til nettsida og ikke til
@@ -34073,6 +34302,126 @@ class Component extends DCLogic {
         this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
         return false;
       });
+  }
+
+  /**
+   * Dokumentkortene i verkstedet.
+   *
+   * Eieren, 10. september 2026: seks kort — kontrakter, keramikk maler,
+   * engober, glassering, brenning og dekorasjonsteknikker — der han kan
+   * lagre, aapne, skrive ut og laste opp.
+   *
+   * Filene ligger utenfor det som publiseres og serveres av
+   * api/dokument.php. Her hentes bare lista.
+   */
+  dokHent() {
+    if (!this.erPublisert() || this._dokHentes) return;
+    this._dokHentes = true;
+    fetch('/api/admin/dokumenter.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) this.setState({ dok: d }); })
+      .catch(() => { this._dokHentes = false; });
+  }
+
+  /**
+   * En endring paa dokumentene.
+   *
+   * Tar imot enten et vanlig objekt eller et FormData. Filer kan ikke sendes
+   * som JSON, og da maa nettleseren sette Content-Type selv — setter vi den,
+   * mangler skillet mellom delene og serveren ser ingen fil.
+   */
+  dokKall(kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    const erSkjema = (typeof FormData !== 'undefined') && (kropp instanceof FormData);
+    return fetch('/api/admin/dokumenter.php', Object.assign({
+      method: 'POST', credentials: 'same-origin',
+    }, erSkjema
+      ? { body: kropp }
+      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kropp) }))
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        if (d && (d.beskjed || d.feil)) {
+          this.setState({ kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+                          kvitteringDetalj: d.beskjed || d.feil });
+        }
+        // Svaret er hele lista paa nytt, saa skjermen slipper et kall til.
+        if (ok && d && d.kategorier) this.setState({ dok: d });
+        return ok;
+      })
+      .catch(() => {
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
+  }
+
+  /**
+   * Skriv ut et dokument.
+   *
+   * Eieren, 10. september 2026, valgte egen visning framfor nettleserens
+   * egen knapp: «Egen visning med vaar pille». Grunnen er at nettleserens
+   * PDF-viser ser ulik ut paa PC, iPad og telefon — og paa telefon har den
+   * ofte ingen knapp i det hele tatt.
+   *
+   * Word kan ikke vises i en nettleser. Da er det ingenting aa skrive ut
+   * herfra, og filen lastes ned i stedet — se «Last ned» i visningen.
+   */
+  dokSkrivUt() {
+    // Ramma finnes bare naar visningen staar aapen. Hentes med id og ikke
+    // med en peker vi holder paa: skjermen tegnes om hver gang noe endrer
+    // seg, og da er en gammel peker ikke lenger den ramma som staar der.
+    const r = document.getElementById('lissom-dok-ramme');
+    if (!r || !r.contentWindow) return;
+    try {
+      r.contentWindow.focus();
+      r.contentWindow.print();
+    } catch (e) {
+      // Nekter nettleseren aa skrive ut fra ramma, er det bedre aa aapne
+      // fila enn aa la knappen gjore ingenting.
+      window.open(r.getAttribute('src'), '_blank', 'noopener');
+    }
+  }
+
+  /**
+   * Spor verkstedet: ett kall til AI-en.
+   *
+   * Ingen ny AI-kobling. Serveren bruker den som finnes — samme noekkel,
+   * samme logg, samme maanedstak — og gir modellen bare teksten fra
+   * dokumentene. Staar svaret ikke der, sier den det.
+   */
+  faqSpor(erMedlem) {
+    const sp = (this.state.faqSporsmal || '').trim();
+    if (!sp || this.state.faqJobber) return;
+    this.setState({ faqJobber: true, faqSvar: '', faqKilder: [] });
+    fetch('/api/spor-verkstedet.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sporsmal: sp, kategorier: this.state.faqKategorier || [] }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          faqJobber: false,
+          faqSvar: ok ? (d.svar || '') : (d && d.feil ? d.feil : 'AI-en svarte ikke. Prøv igjen.'),
+          faqKilder: ok ? (d.kilder || []) : [],
+        });
+        if (ok && !erMedlem) this.dokHent();
+      })
+      .catch(() => this.setState({ faqJobber: false, faqSvar: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Dokumentene medlemmet faar se.
+   *
+   * Egen vei, ikke api/nyttig.php: den er aapen med vilje, fordi den er
+   * innholdet paa nettsida. En kontrakt kan ikke ligge der.
+   */
+  minDokHent() {
+    if (!this.erPublisert() || this._minDokHentes) return;
+    this._minDokHentes = true;
+    fetch('/api/mine-dokumenter.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) this.setState({ minDok: d }); })
+      .catch(() => { this._minDokHentes = false; });
   }
 
   /** Skriver kalenderen enda? Fase 6 setter denne til true. */
@@ -48807,6 +49156,73 @@ class Component extends DCLogic {
         velg: () => { this.setState({ artikkelValgt: i }); window.scrollTo(0, 0); },
       })),
       nyttigeLenker: this.lenkeData(),
+      // ── For medlemmer: dokumentene og «Spør verkstedet» ───────────────
+      //
+      // Eieren, 10. september 2026: «det samme med de andre kategoriene, vis
+      // paa medlemsiden, begge paa min side altsaa under nyttig
+      // informasjon».
+      //
+      // Blokka staar bare naar det er noe aa vise. Slaar eieren av alle
+      // kortene, forsvinner den — ikke en tom overskrift.
+      ...(() => {
+        if (side !== 'nyttig') return { mdHarNoe: false, mdHarKort: false, mdFaq: false };
+        this.minDokHent();
+        const d = this.state.minDok || {};
+        const kort = (d.kategorier || []).filter(k => (k.filer || []).length > 0);
+        const knapp = {
+          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+          font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
+          padding: '5px 13px', borderRadius: 'var(--radius-pill)',
+          border: '1px solid var(--border-default)',
+          background: 'var(--surface-card)', color: 'var(--text-heading)',
+        };
+        return {
+          mdHarNoe: kort.length > 0 || !!d.faq,
+          mdHarKort: kort.length > 0,
+          mdFaq: !!d.faq,
+          mdLaasStil: {
+            display: 'inline-flex', alignItems: 'center', lineHeight: 'normal',
+            font: 'var(--type-body-sm)', fontWeight: 700,
+            padding: '3px 12px', borderRadius: 'var(--radius-pill)',
+            border: '1px solid var(--sage-500)',
+            background: 'var(--sage-100)', color: 'var(--sage-600)',
+          },
+          mdKort: kort.map(k => ({
+            navn: k.navn,
+            antall: k.antall === 1 ? '1 dokument' : k.antall + ' dokumenter',
+            kortStil: {
+              background: 'var(--clay-50)', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+              display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0,
+            },
+            filer: (k.filer || []).map(f => ({
+              navn: f.navn,
+              stil: knapp,
+              // Word kan ikke vises i en nettleser; da lastes den ned. Begge
+              // deler er den samme adressen — serveren avgjor hvilken av dem
+              // det blir, se api/dokument.php.
+              apne: () => window.open('/api/dokument.php?id=' + f.id, '_blank', 'noopener'),
+            })),
+          })),
+          mdSporsmal: this.state.faqSporsmal || '',
+          mdEndre: (e) => this.setState({ faqSporsmal: e.target.value }),
+          mdSpor: () => this.faqSpor(true),
+          mdKnapp: this.state.faqJobber ? 'Leter i dokumentene …' : 'Spør',
+          mdHarSvar: !!this.state.faqSvar,
+          mdSvar: this.state.faqSvar || '',
+          mdHarKilder: (this.state.faqKilder || []).length > 0,
+          mdKilder: (this.state.faqKilder || []).map(k => ({
+            navn: k,
+            stil: {
+              display: 'inline-flex', alignItems: 'center', lineHeight: 'normal',
+              font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '4px 12px', borderRadius: 'var(--radius-pill)',
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--slip-100)', color: 'var(--slip-600)',
+            },
+          })),
+        };
+      })(),
       // ── Kursbevisene, samlet ──────────────────────────────────────
       //
       // Bevisene laa bare inne i hver enkelt person. Skulle verkstedet finne
@@ -50708,6 +51124,199 @@ class Component extends DCLogic {
           vstNyDato: () => this.apneNyKursdato(),
           vstRadKnapp: erVakt ? 'Se dagen' : 'Rediger',
           vstKanSlette: erBrenn,
+        };
+      })(),
+      // ── Verkstedet: dokumentkortene og «Spør verkstedet» ─────────────
+      //
+      // Eieren, 10. september 2026: seks kort der han kan lagre, aapne,
+      // skrive ut og laste opp — og en AI som svarer «kun med denne infoen».
+      //
+      // Bryteren «Vis paa medlemssiden» staar paa kortet, ikke paa
+      // dokumentet, og alt er av til han slaar det paa selv.
+      ...(() => {
+        if (side !== 'adminoppskrifter') return {};
+        const fane = this.state.vstFane || 'oppskrifter';
+        const erDok = fane === 'dokumenter', erFaq = fane === 'faq';
+        if (!erDok && !erFaq) return { vstErDokumenter: false, vstErFaq: false };
+        this.dokHent();
+
+        const d = this.state.dok || {};
+        const kort = d.kategorier || [];
+        const filer = d.dokumenter || [];
+
+        // «218 kB» og «1,2 MB». Tallet skal kunne leses, ikke regnes ut.
+        const stor = (b) => b >= 1024 * 1024
+          ? String(Math.round(b / 1024 / 1024 * 10) / 10).replace('.', ',') + ' MB'
+          : Math.max(1, Math.round(b / 1024)) + ' kB';
+        const MND = ['jan', 'feb', 'mars', 'april', 'mai', 'juni', 'juli',
+                     'aug', 'sep', 'okt', 'nov', 'des'];
+        const dato = (iso) => {
+          const dd = new Date(String(iso).replace(' ', 'T') + 'Z');
+          return isNaN(dd) ? '' : dd.getDate() + '. ' + MND[dd.getMonth()] + ' ' + dd.getFullYear();
+        };
+        const antallTekst = (n) => n === 1 ? '1 dokument' : n + ' dokumenter';
+
+        const pille = (paa) => ({
+          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+          display: 'inline-flex', alignItems: 'center', gap: '7px',
+          font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
+          padding: '5px 13px', borderRadius: 'var(--radius-pill)',
+          border: '1px solid ' + (paa ? 'var(--sage-500)' : 'var(--border-default)'),
+          background: paa ? 'var(--sage-100)' : 'var(--surface-card)',
+          color: paa ? 'var(--sage-600)' : 'var(--text-muted)',
+        });
+        const knapp = {
+          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+          font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
+          padding: '5px 13px', borderRadius: 'var(--radius-pill)',
+          border: '1px solid var(--border-default)',
+          background: 'var(--surface-card)', color: 'var(--text-heading)',
+        };
+
+        const valgtId = this.state.dokValgt || 0;
+        const valgt = kort.filter(k => k.id === valgtId)[0] || null;
+        const vis = this.state.dokVis || null;
+
+        // ── Kortene ──────────────────────────────────────────────────────
+        const kortene = kort.map(k => ({
+          id: k.id,
+          navn: k.navn,
+          antall: antallTekst(k.antall),
+          apne: () => this.setState({ dokValgt: k.id }),
+          synligNavn: k.visMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
+          synligStil: pille(k.visMedlem),
+          veksle: () => this.dokKall({ handling: 'veksle', id: k.id }),
+          apneStil: knapp,
+          kortStil: {
+            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+            display: 'flex', flexDirection: 'column', gap: '9px', minWidth: 0,
+          },
+        }));
+
+        // ── Filene i kortet som er aapnet ────────────────────────────────
+        const iKortet = valgt ? filer.filter(f => f.kategori === valgt.id) : [];
+        const radene = iKortet.map(f => ({
+          id: f.id,
+          navn: f.navn,
+          type: f.type,
+          under: 'Lastet opp ' + dato(f.opprettet) + ' · ' + stor(f.storrelse)
+                 + (f.harTekst ? ' · AI-en kan lese denne' : ' · Skannet ark'),
+          apne: () => this.setState({ dokVis: f }),
+          apneStil: knapp,
+          skrivUt: () => this.setState({ dokVis: f }),
+          tekstNavn: f.harTekst ? 'Tekst lagt inn' : 'Legg inn tekst',
+          tekstStil: pille(f.harTekst),
+          tekstVelg: () => this.setState({
+            dokTekstId: f.id, dokTekstNavn: f.navn, dokTekst: '' }),
+          slett: () => {
+            if (window.confirm('Slette «' + f.navn + '»? Filen er borte for godt.')) {
+              this.dokKall({ handling: 'slett', id: f.id });
+            }
+          },
+          slettStil: knapp,
+          radStil: {
+            display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 'var(--space-4)',
+            alignItems: 'center', padding: 'var(--space-4) 0',
+            borderBottom: '1px solid var(--border-subtle)',
+          },
+        }));
+
+        // ── Spor verkstedet ──────────────────────────────────────────────
+        const valgteFaq = this.state.faqKategorier || [];
+        const faqKort = kort.map(k => {
+          const paa = valgteFaq.length === 0 || valgteFaq.indexOf(k.id) !== -1;
+          return {
+            navn: k.navn,
+            stil: pille(paa),
+            velg: () => this.setState(st => {
+              const alle = (st.dok && st.dok.kategorier ? st.dok.kategorier : []).map(x => x.id);
+              const naa = (st.faqKategorier && st.faqKategorier.length) ? st.faqKategorier.slice() : alle.slice();
+              const i = naa.indexOf(k.id);
+              if (i === -1) { naa.push(k.id); } else { naa.splice(i, 1); }
+              return { faqKategorier: naa.length === alle.length ? [] : naa };
+            }),
+          };
+        });
+
+        return {
+          vstErDokumenter: erDok,
+          vstErFaq: erFaq,
+          vstTittel: erDok ? 'Dokumenter' : 'Spør verkstedet',
+          vstUnder: erDok ? 'Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.' : '',
+
+          dokKort: kortene,
+          dokHarKort: kortene.length > 0,
+
+          dokErApnet: !!valgt,
+          dokApnetNavn: valgt ? valgt.navn : '',
+          dokLukk: () => this.setState({ dokValgt: 0 }),
+          dokRader: radene,
+          dokTomt: !!valgt && radene.length === 0,
+          dokTomTekst: 'Ingen dokumenter ennå.',
+          dokSlippTittel: 'Slipp filen her',
+          dokSlippUnder: 'eller velg fra maskinen · PDF, Word, bilde · maks '
+                         + (d.maksMb || 20) + ' MB',
+          dokVelgFil: (e) => {
+            const fil = e.target.files && e.target.files[0];
+            e.target.value = '';
+            if (!fil || !valgt) return;
+            const skjema = new FormData();
+            skjema.append('handling', 'last-opp');
+            skjema.append('kategori', String(valgt.id));
+            skjema.append('dokument', fil);
+            this.dokKall(skjema);
+          },
+
+          // Visningen: dokumentet med vaar egen «Skriv ut»-pille over.
+          dokVisApen: !!vis,
+          dokVisNavn: vis ? vis.navn : '',
+          dokVisUrl: vis ? '/api/dokument.php?id=' + vis.id : '',
+          dokVisNedUrl: vis ? '/api/dokument.php?id=' + vis.id + '&ned=1' : '',
+          dokVisKanVises: !!vis && (vis.mime === 'application/pdf'
+                                    || String(vis.mime).indexOf('image/') === 0),
+          dokVisSkrivUt: () => this.dokSkrivUt(),
+          dokVisLukk: () => this.setState({ dokVis: null }),
+
+          // Teksten AI-en kan lese.
+          dokTekstApen: !!this.state.dokTekstId,
+          dokTekstNavn: this.state.dokTekstNavn || '',
+          dokTekstVerdi: this.state.dokTekst || '',
+          dokTekstEndre: (e) => this.setState({ dokTekst: e.target.value }),
+          dokTekstTom: 'Ingen tekst lagt inn ennå. AI-en kan ikke svare fra dette dokumentet.',
+          dokTekstLagre: () => {
+            this.dokKall({ handling: 'tekst', id: this.state.dokTekstId,
+                           tekst: this.state.dokTekst || '' })
+              .then(ok => { if (ok) this.setState({ dokTekstId: 0, dokTekst: '' }); });
+          },
+          dokTekstAvbryt: () => this.setState({ dokTekstId: 0, dokTekst: '' }),
+
+          // «Spor verkstedet» som eget kort i gitteret, med sin egen bryter.
+          dokFaqNavn: d.faqMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
+          dokFaqStil: pille(!!d.faqMedlem),
+          dokFaqVeksle: () => this.dokKall({ handling: 'veksle-faq' }),
+
+          faqLeserFra: faqKort,
+          faqSporsmal: this.state.faqSporsmal || '',
+          faqEndre: (e) => this.setState({ faqSporsmal: e.target.value }),
+          faqSporNaa: () => this.faqSpor(false),
+          faqJobber: !!this.state.faqJobber,
+          faqKnappNavn: this.state.faqJobber ? 'Leter i dokumentene …' : 'Spør',
+          faqHarSvar: !!this.state.faqSvar,
+          faqSvarTekst: this.state.faqSvar || '',
+          faqKilder: (this.state.faqKilder || []).map(k => ({
+            navn: k,
+            stil: {
+              display: 'inline-flex', alignItems: 'center', lineHeight: 'normal',
+              font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '4px 12px', borderRadius: 'var(--radius-pill)',
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--slip-100)', color: 'var(--slip-600)',
+            },
+          })),
+          faqKostnad: d.ai
+            ? 'Brukt denne måneden: ca. ' + (d.ai.brukt || 'kr 0') + ' av ' + (d.ai.tak || '')
+            : '',
         };
       })(),
       harOppskrifter: this.oppskriftData().length > 0,

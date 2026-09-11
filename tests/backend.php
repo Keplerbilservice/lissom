@@ -16446,6 +16446,34 @@ sjekk('dreiekurset: slug, 301 og egen tittel/meta paa server og klient',
 sjekk('LocalBusiness har org.nr og koordinater',
     str_contains($mkLib2 = (string) file_get_contents(dirname(__DIR__) . '/app/lib/robottekst.php'), "'taxID'       => '938280819',")
     && str_contains($mkLib2, "'latitude' => 59.246898, 'longitude' => 10.415572"));
+// ── De sju aapne guidene ─────────────────────────────────────────────────
+// Eieren, 11. september 2026, SEO-instruksen; GO paa titler og meta. Egne
+// filer i guider/ (bin/guidepakke.mjs), /nyttig-info/<adresse> i .htaccess,
+// kort paa Nyttig info, sidekart og llms.txt. Maalt i Chrome: 1280 og 400
+// px uten sidescroll, tabeller i eget rullefelt, pille til dreiekurset.
+sjekk('de sju guidene finnes som sider, med tittel, meta, canonical og JSON-LD',
+    (static function (): bool {
+        $g = json_decode((string) file_get_contents(dirname(__DIR__) . '/guider/guider.json'), true);
+        if (count($g['guider'] ?? []) !== 7) {
+            return false;
+        }
+        foreach ($g['guider'] as $x) {
+            $h = (string) @file_get_contents(dirname(__DIR__) . '/guider/' . $x['slug'] . '.html');
+            if ($h === '' || !str_contains($h, '<title>' . htmlspecialchars($x['tittel'], ENT_QUOTES) . '</title>')
+                || !str_contains($h, '<link rel="canonical" href="https://lissom.no/nyttig-info/' . $x['slug'] . '">')
+                || !str_contains($h, 'application/ld+json') || str_contains($h, '<image-slot') || str_contains($h, 'slot="footer"')
+                || !str_contains($h, 'href="/kurs/dreiekurs">Se dreiekurs</a>')) {
+                return false;
+            }
+        }
+        return str_contains((string) file_get_contents(dirname(__DIR__) . '/guider/vanlige-sporsmal.html'), '"@type":"FAQPage"');
+    })());
+sjekk('… .htaccess, sidekartet, llms.txt og Nyttig info kjenner dem',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guider/$1.html [L]')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/sitemap.php'), "\$linjer[] = [ROT . '/nyttig-info/' . \$slug, \$laget, 'monthly', '0.6'];")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), "'](' . ROT . '/nyttig-info/' . \$slug . '): '")
+    && str_contains($mkSida, "eyebrow: 'Guider fra verkstedet', navn: g.navn, om: g.om,")
+    && str_contains($mkSida, "static get GUIDER() {"));
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
     && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")

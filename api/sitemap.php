@@ -52,6 +52,22 @@ foreach ($faste as [$sti, $prioritet, $frekvens]) {
     $linjer[] = [ROT . ($sti === '' ? '/' : $sti), $idag, $frekvens, $prioritet];
 }
 
+// De aapne guidene (eieren, 11. september 2026, SEO-instruksen). Lista lages
+// av bin/guidepakke.mjs sammen med sidene; finnes den ikke, er det ingen
+// guider aa melde.
+try {
+    $guiderFil = dirname(__DIR__) . '/guider/guider.json';
+    $guider = is_file($guiderFil) ? json_decode((string) file_get_contents($guiderFil), true) : null;
+    $laget = is_array($guider) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($guider['laget'] ?? '')) ? (string) $guider['laget'] : $idag;
+    foreach ((array) ($guider['guider'] ?? []) as $g) {
+        $slug = (string) ($g['slug'] ?? '');
+        if ($slug !== '' && preg_match('/^[a-z0-9-]+$/', $slug)) {
+            $linjer[] = [ROT . '/nyttig-info/' . $slug, $laget, 'monthly', '0.6'];
+        }
+    }
+} catch (Throwable) {
+}
+
 // Kursene. Bare de som er publisert, aapne for alle, og som enten har en
 // dato liggende ute eller skal staa uten. Et kurs uten noe av delene er en
 // side med ingenting paa — den skal ikke inviteres inn i soket.

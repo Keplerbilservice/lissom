@@ -65,6 +65,11 @@ import { fileURLToPath } from 'node:url';
 
 const kilde = process.argv[2];
 const leggTil = process.argv.includes('--legg-til');
+// --lag-om: lag PDF og tekst paa nytt ogsaa for det som alt ligger i pakka
+// (samme sti i manifestet, saa importen bytter fila i stedet for aa legge
+// til). Eieren, 11. september 2026: handbok.css fikk en layoutfiks som
+// «skal overskrive den gamle».
+const lagOm = leggTil && process.argv.includes('--lag-om');
 if (!kilde || !existsSync(kilde)) {
   console.error('Oppgi mappa «Lissom opplasting» som første argument.');
   process.exit(1);
@@ -134,6 +139,8 @@ const RUNDE_TO = [
   ['Guide - HMS i verkstedet.html',                       'hms'],
   ['Verksted - Vedlikehold.html',                         'hms'],
   ['Håndbok - Keramikk vanlige spørsmål.html',            'hms'],
+  // Runde tre (GO): «Materialkunnskap» i Leire.
+  ['Håndbok - Materialkunnskap.html',                     'leire'],
 ];
 
 // Gruppene i den rekkefoelgen de skal staa. De 20 foerste har nummer i
@@ -276,12 +283,14 @@ for (const [fil, kort] of TEKNIKK.concat(RUNDE_TO)) {
   const html = join(maler, fil);
   if (!existsSync(html)) { if (!leggTil) console.warn('Mangler: ' + fil); continue; }
   const rel = `haandboker/${kort}/${slug(fil.replace(/\.html$/i, '').replace(/^(Teknikkark|Guide|Verksted|Håndbok) - /, ''))}.pdf`;
-  if (manifest.dokumenter.some(d => d.fil === rel)) { console.log('finnes  ' + fil); continue; }
+  const finnes = manifest.dokumenter.some(d => d.fil === rel);
+  if (finnes && !lagOm) { console.log('finnes  ' + fil); continue; }
   mkdirSync(dirname(join(ut, rel)), { recursive: true });
   tilPdf(html, join(ut, rel));
   const navn = dsNavn(html) || fil.replace(/\.html$/i, '');
-  manifest.dokumenter.push({ kort, fil: rel, navn, tekst: tekstFil(html, rel) });
-  console.log('teknikk  ' + navn + '  → ' + rel);
+  const tekst = tekstFil(html, rel);
+  if (!finnes) manifest.dokumenter.push({ kort, fil: rel, navn, tekst });
+  console.log((finnes ? 'lagd om  ' : 'teknikk  ') + navn + '  → ' + rel);
 }
 
 if (leggTil) {

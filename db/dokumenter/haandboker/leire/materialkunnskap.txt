@@ -1,0 +1,161 @@
+Håndbok i materialkunnskap
+
+LISSOM KERAMIKK & HÅNDVERK AS · LISSOM.NO · POST@LISSOM.NO
+
+Håndbok
+
+Materialkunnskap
+
+Hva materialene våre faktisk er: begitning og hvordan den lages og farges, hva leire består av og hvor den kommer fra, forskjellen på underglasur og glasur – og en ærlig gjennomgang av matsikkerhet og helse i verkstedet.
+
+Innhold
+
+1 Begitning – hva det er og hvordan den lages
+
+2 Farger og effekter i begitning
+
+3 Hva er leire laget av, og hvor utvinnes den?
+
+4 Leire i Norge
+
+5 Underglasur og glasur – forskjellen
+
+6 Hva gjør et produkt matsikkert?
+
+7 Helse i verkstedet – silika og andre farer
+
+Kapittel 1
+Begitning – hva det er og hvordan den lages
+
+Begitning (også kalt engobe) er et tynt lag farget leiremasse som legges på gods før glasering – keramikkens «maling». Der glasur er glass, er begitning leire: den smelter ikke ut, men blir sittende som et matt, dekkende fargelag som kan stå alene eller ligge under en transparent glasur.
+
+En grunnbegitning er i prinsippet enkel:
+
+Basis: Hvitbrennende leire (f.eks. ballclay og kaolin) rørt ut i vann til konsistens som tykk fløte.
+
+Litt kvarts/flint justerer krymping og gjør laget mer slitesterkt.
+
+Litt flussmiddel (f.eks. fritte eller feltspat) hjelper begitningen å binde seg til godset, særlig hvis den skal på tørt eller råbrent gods.
+
+Fargestoff: Oksider eller keramiske farger (kapittel 2).
+
+Sil blandingen fint, og test på prøvebrikker. Ferdigblandet begitning kan også kjøpes – tryggest for konsistente resultater.
+
+Viktigste regel
+Begitning og gods må krympe i takt. Klassisk begitning legges derfor på lærhard leire, som fortsatt har krymping igjen. Skal den på tørt eller råbrent gods, må resepten justeres med mindre rå leire og mer brent materiale (molokitt/kalsinert kaolin) og fluss.
+
+Kapittel 2
+Farger og effekter i begitning
+
+Farger får du på to måter:
+
+Metalloksider: De klassiske råstoffene. Omtrentlige mengder i hvit basis: koboltoksid 1–3 % gir blått, kobberoksid 2–5 % grønt, jernoksid 4–10 % gult/rødbrunt til brunt, manganoksid 4–8 % brunt/lilla. Oksider er kraftige og upresise – små endringer gir store utslag, og resultatet påvirkes av glasuren over.
+
+Keramiske farger (stains): Industrielt fremstilte, stabile pigmenter i hele fargekartet, typisk 5–15 % innblanding. Dyrere, men forutsigbare – anbefalingen for rosa, gul, oransje og lilla, som er vanskelige med rene oksider.
+
+Effekter og teknikker:
+
+Sgraffito: Legg begitning på lærhard leire og riss mønster gjennom laget, så leirfargen under kommer fram.
+
+Pensel og lag: Flere strøk gir dekkende flate; tynne, raske strøk gir levende, stripete uttrykk. Lyse begitninger over mørk leire (og omvendt) gir kontrast.
+
+Slyngmønster (slip trailing): Tykk begitning i sprutflaske legges som opphøyde linjer og prikker.
+
+Marmorering: To våte begitningsfarger vippes og dras i hverandre på flatt gods.
+
+Vokse- og papirresist: Dekk felter med voks eller vått avispapir før begitningen – feltene står igjen i leirens farge.
+
+Under transparent glasur blir fargene dypere og blanke; uten glasur står de matte og tørre (da ikke på matflater).
+
+Sgraffito: riss gjennom begitningen
+
+Slyngmønster med tykk begitning
+
+Kapittel 3
+Hva er leire laget av, og hvor utvinnes den?
+
+Leire er forvitret stein. Når feltspatrike bergarter (som granitt) brytes ned av vann, vind og is gjennom millioner av år, dannes leirmineraler – først og fremst kaolinitt , et aluminiumsilikat med kjemisk bundet vann (Al₂Si₂O₅(OH)₄). De flate, mikroskopiske leirpartiklene glir på vannfilmen mellom seg – det er dette som gjør leire plastisk.
+
+Primærleire ligger der bergarten forvitret: ren og hvitbrennende, men lite plastisk. Kaolin («porselensjord») er den viktigste – store forekomster utvinnes i dagbrudd bl.a. i Cornwall (England), Tyskland, Frankrike, Kina og USA.
+
+Sekundærleire er fraktet av elver og is og avsatt andre steder. Underveis plukker den opp jern og organisk materiale: mer plastisk, men mindre ren – derav gul, rød og brun brennfarge. Ballclay, steingodsleire og rødleire er sekundærleirer.
+
+Leiren du kjøper i pose er en industriblanding av flere leirer, kvarts og feltspat – komponert for bestemt temperatur, farge og arbeidsegenskap, og ofte tilsatt chamotte.
+
+Kapittel 4
+Leire i Norge
+
+Norge har store mengder leire – mesteparten av lavlandet rundt Oslofjorden og Trondheimsfjorden ligger på marin blåleire, avsatt på havbunnen etter siste istid. Denne leiren har vært grunnlaget for norsk teglverks- og pottemakertradisjon: den er rødbrennende og lavbrennende (leirgods, typisk under ca. 1100 °C).
+
+Verkstedleiren vi bruker i dag er likevel nesten alltid importert – gjerne fra store produsenter i Tyskland, England, Nederland og Spania. Grunnen er enkel: norsk blåleire er ujevn i sammensetning og tåler ikke steingodstemperatur, mens importerte masser er renset, blandet og kvalitetssikret. Det vanligste i norske verksteder og på kurs er steingodsleire med eller uten chamotte, brent til cone 5–6 (ca. 1200–1225 °C) i elektrisk ovn – den gir tett, robust bruks­keramikk.
+
+Kan man grave sin egen?
+Ja – norsk blåleire kan renses (slemmes), testes og brukes til lavbrent keramikk, og det er et fint eksperiment. Men test krymping og brenntemperatur på småprøver først, og bland den aldri inn i verkstedets vanlige leire eller gjenvinningsbøtter.
+
+Kapittel 5
+Underglasur og glasur – forskjellen
+
+Underglasur Glasur
+
+Hva det er Farget dekormasse som ikke smelter ut – blir der du malte den Glass: smelter i ovnen til et tett, blankt eller matt sjikt
+
+Består av Keramiske pigmenter + litt leire + litt fluss (en slags raffinert begitning) Glassdanner (kvarts/silika) + flussmiddel (feltspat, fritter, kalk) + stabilisator (aluminiumoksid fra kaolin) + ev. fargestoff
+
+Legges på Lærhard, tørr eller råbrent leire – males som med vannfarger Råbrent gods (vanligst) – dyppes, helles eller sprøytes
+
+Resultat Presis dekor, skarpe linjer, hele fargekartet Overflaten og tettheten – farger flyter mer og påvirkes av tykkelse
+
+Til matflater Må dekkes av en gjennombrent, transparent glasur Selv den tette, beskyttende overflaten
+
+Kort sagt: underglasuren er tegningen, glasuren er glasset over. De brukes sammen – underglasurdekor + transparent glasur er standardoppskriften for dekorert bruks­keramikk.
+
+Kapittel 6
+Hva gjør et produkt matsikkert?
+
+Det finnes ikke én egenskap som gjør keramikk «matsikker» – det er summen av gods, glasur, brenning og overflate. Og en viktig presisering: vi kan ikke se på en kopp at den er trygg. Det vi kan, er å kontrollere prosessen:
+
+Tett gods: Leiren brent til sin modningstemperatur, så den ikke suger væske.
+
+Dokumentert trygge materialer: Blyfrie glasurer og underglasurer fra produsent, merket for matkontakt, på flater som møter mat og drikke.
+
+Riktig brenning: Til glasurens angitte cone, verifisert med kontrollkjegle – en underbrent «food safe»-glasur er ikke lenger food safe.
+
+Hel overflate: Ingen krakelering, kryping eller nålestikk på matflatene.
+
+Vær ærlig om grensene
+Hjemmetester (sitron- og vanntest) avslører grove feil, men beviser ikke trygghet. Egne glasurresepter og effektglasurer med mye metall hører til utsiden av koppen til de er ordentlig testet. Ved salg i større omfang gjelder regelverket for matkontaktmaterialer – da er laboratorietest av utlekking (bly/kadmium m.m.) veien å gå. Når vi er i tvil i verkstedet, sier vi det som det er: «dekor, ikke servise».
+
+Kapittel 7
+Helse i verkstedet – silika og andre farer
+
+Hvorfor er keramikkverksteder helsefarlige? Hovedsakelig på grunn av én ting: krystallinsk silika (kvarts), som finnes i leire, glasurråstoffer og til dels chamotte. Våt leire er ufarlig. Men når leiresøl, avskrap og glasurstøv tørker og virvles opp, pustes de fineste partiklene helt ned i lungeblærene. Der kan de ikke fjernes: kroppen kapsler dem inn, og over år dannes arrvev som gjør lungene stive – silikose . Sykdommen utvikler seg snikende, kan ikke reverseres, og øker også risikoen for kols og lungekreft. Det er summen av eksponering over tid som teller – derfor er daglige vaner alt.
+
+Andre farer:
+
+Giftige metaller: Enkelte oksider og pigmenter (bly – som vi ikke bruker, kadmium, mangan, kobolt, krom, nikkel) kan tas opp gjennom innånding av pulver og via hånd-til-munn. Farligst i tørr pulverform.
+
+Ovnsgasser: Brenning frigjør karbonmonoksid, svovel- og fluorforbindelser og fra dekorbrenninger også avdampende bindemidler. Reduksjons- og rakubrenning gir i tillegg røyk og CO.
+
+Varme: Glødende gods, ovnsluker, damp – forbrenninger skjer oftest ved stress og alenearbeid.
+
+Ergonomi: Tunge leiresekker, statisk dreiestilling og repetitivt håndarbeid sliter på rygg, håndledd og skuldre.
+
+Slik unngår vi det:
+
+Hold alt vått: Våt klut, svamp og mopp – aldri feiekost eller vanlig støvsuger. Søl fjernes før det tørker.
+
+P3/FFP3-maske ved alt tørt arbeid: veiing av glasurpulver, pussing av tørt gods, blanding av begitning – helst ved avsug eller ute.
+
+Ventilert ovnsrom: Avtrekk over ovnen, og ingen oppholder seg i rommet over tid under brenning.
+
+Rene rutiner: Arbeidstøy blir i verkstedet og vaskes vått; hendene vaskes før mat; mat og drikke holdes utenfor.
+
+Merk og lukk: Alle råstoffer merket, lokk på bøttene, pulver oppbevares lukket.
+
+Løft smart og varier stillingen – og aldri raku alene.
+
+Perspektiv
+Med våte rutiner, maske ved tørt arbeid og ventilert ovn er keramikk et trygt håndverk å drive med hele livet. Risikoen sitter ikke i faget, men i støvet – og støvet kan vi styre.
+
+Har du spørsmål?
+Skriv til post@lissom.no , så hjelper vi deg gjerne videre. Vil du lære mer, spør oss om kurs!

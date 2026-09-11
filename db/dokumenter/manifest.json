@@ -193,6 +193,12 @@
       "fil": "haandboker/hms/keramikk-vanlige-sporsmal.pdf",
       "navn": "Keramikk – vanlige spørsmål",
       "tekst": "haandboker/hms/keramikk-vanlige-sporsmal.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/materialkunnskap.pdf",
+      "navn": "Materialkunnskap",
+      "tekst": "haandboker/leire/materialkunnskap.txt"
     }
   ],
   "maler": [

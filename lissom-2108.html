@@ -24858,12 +24858,18 @@ class Component extends DCLogic {
           const impTekst = imp.tekster
             ? 'AI-tekst lagt inn på ' + imp.tekster + ' dokument' + (imp.tekster === 1 ? '' : 'er') + '.'
             : '';
+          // Ny utgave av filer som alt var inne (samme kilde, ny stoerrelse).
+          // Eieren, 11. september 2026 (GO): handbok.css «skal overskrive den
+          // gamle», og de 26 PDF-ene ble laget paa nytt.
+          const impByttet = imp.byttet
+            ? imp.byttet + ' dokument' + (imp.byttet === 1 ? '' : 'er') + ' byttet ut med ny utgave.'
+            : '';
           const linje = [
             kjort.length ? kjort.length + ' endring' + (kjort.length === 1 ? '' : 'er') + ' kjørt.' : '',
-            impInn, impTekst, impFeil,
+            impInn, impByttet, impTekst, impFeil,
           ].filter(Boolean).join(' ');
           this.setState({
-            kvittering: (kjort.length || impInn || impTekst) ? 'Databasen er oppdatert' : 'Alt var oppdatert fra før',
+            kvittering: (kjort.length || impInn || impByttet || impTekst) ? 'Databasen er oppdatert' : 'Alt var oppdatert fra før',
             kvitteringDetalj: linje,
           });
         }

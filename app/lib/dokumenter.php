@@ -1075,7 +1075,7 @@ final class Dokumenter
      */
     public static function importer(): array
     {
-        $ut = ['kort' => 0, 'dokumenter' => 0, 'tekster' => 0, 'fjernet' => 0, 'hoppet' => 0, 'feil' => []];
+        $ut = ['kort' => 0, 'dokumenter' => 0, 'tekster' => 0, 'byttet' => 0, 'fjernet' => 0, 'hoppet' => 0, 'feil' => []];
         $mappe = self::importMappe();
         if ($mappe === null || !self::harKort() || !DB::harKolonne('verksted_dokumenter', 'kilde')) {
             return $ut;
@@ -1098,9 +1098,14 @@ final class Dokumenter
         // Det som alt er inne, med om det har tekst — saa teksten kan legges
         // paa i etterkant uten aa roere fila.
         $inne = [];
-        foreach (DB::alle("SELECT id, kilde, (tekst IS NOT NULL AND tekst <> '') AS harTekst
+        foreach (DB::alle("SELECT id, kilde, filnavn, storrelse, (tekst IS NOT NULL AND tekst <> '') AS harTekst
                              FROM verksted_dokumenter WHERE kilde IS NOT NULL") as $r) {
-            $inne[(string) $r['kilde']] = ['id' => (int) $r['id'], 'harTekst' => ((int) $r['harTekst']) === 1];
+            $inne[(string) $r['kilde']] = [
+                'id'        => (int) $r['id'],
+                'harTekst'  => ((int) $r['harTekst']) === 1,
+                'filnavn'   => (string) $r['filnavn'],
+                'storrelse' => (int) $r['storrelse'],
+            ];
         }
         $slettet = self::slettedeKilder();
 
@@ -1123,15 +1128,32 @@ final class Dokumenter
                 return;
             }
             if (isset($inne[$kilde])) {
-                $ut['hoppet']++;
-                if (!$inne[$kilde]['harTekst']) {
-                    $t = $tekstFra($d);
-                    if ($t !== '') {
-                        DB::oppdater('verksted_dokumenter', ['tekst' => $t], ['id' => $inne[$kilde]['id']]);
-                        $inne[$kilde]['harTekst'] = true;
-                        $ut['tekster']++;
+                // Ny utgave av en fil som alt er inne: samme kilde, annen
+                // stoerrelse. Eieren, 11. september 2026: handbok.css fikk
+                // en layoutfiks og «skal overskrive den gamle» — da er de
+                // 26 PDF-ene laget paa nytt, og de maa faa byttet fila si
+                // uten aa bli nye rader (bryter, kort og id staar).
+                $fra = $mappe . '/' . $kilde;
+                $byttetNaa = false;
+                if (is_file($fra) && (int) filesize($fra) !== $inne[$kilde]['storrelse']) {
+                    $til = self::mappe() . '/' . $inne[$kilde]['filnavn'];
+                    if (@copy($fra, $til)) {
+                        @chmod($til, 0644);
+                        DB::oppdater('verksted_dokumenter', ['storrelse' => (int) filesize($til)], ['id' => $inne[$kilde]['id']]);
+                        $inne[$kilde]['storrelse'] = (int) filesize($til);
+                        $ut['byttet']++;
+                        $byttetNaa = true;
+                    } else {
+                        $ut['feil'][] = $kilde . ': fikk ikke byttet fila.';
                     }
                 }
+                $t = $tekstFra($d);
+                if ($t !== '' && (!$inne[$kilde]['harTekst'] || $byttetNaa)) {
+                    DB::oppdater('verksted_dokumenter', ['tekst' => $t], ['id' => $inne[$kilde]['id']]);
+                    $inne[$kilde]['harTekst'] = true;
+                    $ut['tekster']++;
+                }
+                $ut['hoppet']++;
                 return;
             }
             try {

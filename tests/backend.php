@@ -16169,6 +16169,13 @@ sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
     && str_contains($mkSida, "sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,"));
 sjekk('… svaret gjelder bare ordet det ble hentet for',
     str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
+// Eieren, 11. september 2026: «den må bytte navn til søk, du må også justere
+// plasseringen noe så den får litt luft rundt seg». Målt i Chrome (1280,
+// 820, 400 px): feltet er 36 px høyt som pillene, 8 px fra kanten, og på
+// mobil på egen rad i flukt med pillene.
+sjekk('soekefeltet i kalenderen heter «Søk …» og er like hoeyt som pillene',
+    str_contains($mkSida, 'placeholder="Søk …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px;')
+    && !str_contains($mkSida, 'placeholder="Søk person eller kurs …"'));
 sjekk('kalender admin: «Kunnskap» under person- og kurstreffene',
     str_contains($mkSida, "settKlSok: e => { this.setState({ klSok: e.target.value }); this.kunnskapSok(e.target.value); },")
     && str_contains($mkSida, '<sc-if value="{{ klKunnskapVises }}"')

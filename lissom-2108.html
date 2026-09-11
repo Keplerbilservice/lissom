@@ -7673,8 +7673,15 @@ window.__resources = {
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
               </sc-for>
             </div>
-            <div style="position: relative; margin-left: auto; flex: 0 1 240px; min-width: 170px;">
-              <input value="{{ klSok }}" onChange="{{ settKlSok }}" placeholder="Søk person eller kurs …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+            <!-- Eieren, 11. september 2026: «den må bytte navn til søk, du
+                 må også justere plasseringen noe så den får litt luft rundt
+                 seg». Sto som «Søk person eller kurs …» helt inntil
+                 høyrekanten, 40 px høyt mot pillenes 36. Nå «Søk …», 8 px
+                 fra kanten, litt bredere, og 36 px høyt som pillene. På
+                 mobil bryter feltet ned på egen rad, som før — derfor ingen
+                 fast luft mot pillene, den ville skjøvet feltet inn der. GO. -->
+            <div style="position: relative; margin-left: auto; margin-right: 8px; flex: 0 1 264px; min-width: 190px;">
+              <input value="{{ klSok }}" onChange="{{ settKlSok }}" placeholder="Søk …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
               <sc-if value="{{ klSokVises }}" hint-placeholder-val="{{ false }}">
                 <div style="position: absolute; top: calc(100% + 6px); right: 0; width: min(360px, 84vw); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 55; overflow: hidden;">
                   <sc-for list="{{ klSokTreff }}" as="t" hint-placeholder-count="3">

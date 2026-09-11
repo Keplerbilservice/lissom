@@ -111,8 +111,8 @@ final class Dokumenter
     }
 
     /**
-     * Forelderen hektet paa, som «p». Et underkort har ingen egen bryter:
-     * det er forelderens som gjelder. Tom foer migrasjon 157.
+     * Forelderen hektet paa, som «p». Et underkort er synlig naar forelderen
+     * er slaatt paa — eller det selv er det. Tom foer migrasjon 157.
      */
     private static function forelderJoin(): string
     {
@@ -121,12 +121,27 @@ final class Dokumenter
             : '';
     }
 
-    /** «Kortet er slaatt paa for medlemmer», med forelderen tatt hensyn til. */
+    /**
+     * «Kortet er slaatt paa for medlemmer», med forelderen tatt hensyn til.
+     *
+     * Et underkort (en mal) er paa naar «Keramikk maler» er paa, ELLER naar
+     * malen selv er slaatt paa. Eieren, 11. september 2026: «jeg vil ogsaa
+     * kunne dele en og en mal med min side medlemmer». Foer var det bare
+     * forelderens bryter som gjaldt.
+     */
     private static function synligSql(): string
     {
         return self::harKort()
-            ? 'IFNULL(p.vis_medlem, k.vis_medlem) = 1'
+            ? '(k.vis_medlem = 1 OR IFNULL(p.vis_medlem, 0) = 1)'
             : 'k.vis_medlem = 1';
+    }
+
+    /** Det samme som ett tall (1/0), til feltlister. */
+    private static function synligFelt(): string
+    {
+        return self::harKort()
+            ? 'GREATEST(k.vis_medlem, IFNULL(p.vis_medlem, 0))'
+            : 'k.vis_medlem';
     }
 
     /** Mappa filene ligger i. Ved siden av bildene, utenfor det som publiseres. */
@@ -152,11 +167,20 @@ final class Dokumenter
             return [];
         }
         $medKort = self::harKort();
-        $hvor    = $bareMedlem ? 'WHERE ' . self::synligSql() : '';
+        // Til medlemmet: det som er slaatt paa — og et hovedkort som selv er
+        // av, men har en mal som er paa. Uten det sto malen uten kortet sitt
+        // rundt seg, og skjermen fant den ikke.
+        $hvor = '';
+        if ($bareMedlem) {
+            $hvor = 'WHERE ' . self::synligSql() . ($medKort
+                ? ' OR EXISTS (SELECT 1 FROM verksted_kategorier b
+                                 WHERE b.forelder_id = k.id AND b.vis_medlem = 1)'
+                : '');
+        }
         $join    = self::forelderJoin();
         $felt    = $medKort
-            ? 'k.forelder_id, k.under, k.bilde, IFNULL(p.vis_medlem, k.vis_medlem) AS synlig'
-            : "NULL AS forelder_id, '' AS under, NULL AS bilde, k.vis_medlem AS synlig";
+            ? 'k.forelder_id, k.under, k.bilde, k.vis_medlem AS egen, ' . self::synligFelt() . ' AS synlig'
+            : "NULL AS forelder_id, '' AS under, NULL AS bilde, k.vis_medlem AS egen, k.vis_medlem AS synlig";
         return array_map(static fn($k) => [
             'id'        => (int) $k['id'],
             'slug'      => (string) $k['slug'],
@@ -164,7 +188,10 @@ final class Dokumenter
             'under'     => (string) $k['under'],
             'forelder'  => $k['forelder_id'] === null ? null : (int) $k['forelder_id'],
             'harBilde'  => (string) ($k['bilde'] ?? '') !== '',
+            // Slik medlemmet ser det: paa naar kortet eller forelderen er paa.
             'visMedlem' => ((int) $k['synlig']) === 1,
+            // Kortets egen bryter, slik den staar i admin.
+            'egenVis'   => ((int) $k['egen']) === 1,
             'antall'    => (int) $k['antall'],
         ], DB::alle(
             "SELECT k.id, k.slug, k.navn, k.sortering, {$felt},
@@ -187,7 +214,7 @@ final class Dokumenter
             return null;
         }
         $felt = self::harKort()
-            ? 'k.bilde, IFNULL(p.vis_medlem, k.vis_medlem) AS synlig'
+            ? 'k.bilde, ' . self::synligFelt() . ' AS synlig'
             : 'NULL AS bilde, k.vis_medlem AS synlig';
         $k = DB::en(
             "SELECT k.id, k.navn, {$felt}
@@ -260,7 +287,7 @@ final class Dokumenter
         }
         // vis_medlem er forelderens naar dokumentet ligger i et underkort —
         // det er den bryteren api/dokument.php sjekker.
-        $vis = self::harKort() ? 'IFNULL(p.vis_medlem, k.vis_medlem)' : 'k.vis_medlem';
+        $vis = self::synligFelt();
         $d = DB::en(
             "SELECT d.*, k.slug AS kategori_slug, k.navn AS kategori_navn,
                     {$vis} AS vis_medlem

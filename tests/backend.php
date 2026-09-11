@@ -15794,11 +15794,16 @@ sjekk('… og dokumentene husker kilden sin, unikt',
 sjekk('biblioteket spor om kolonnene finnes foer det bruker dem',
     str_contains($mkLib, "return self::klar() && DB::harKolonne('verksted_kategorier', 'forelder_id');")
     && str_contains($mkLib, "? 'LEFT JOIN verksted_kategorier p ON p.id = k.forelder_id'")
-    && str_contains($mkLib, "? 'IFNULL(p.vis_medlem, k.vis_medlem) = 1'"));
+    && str_contains($mkLib, "? '(k.vis_medlem = 1 OR IFNULL(p.vis_medlem, 0) = 1)'"));
 // Ett underkort har ingen egen bryter — det er forelderens som gjelder,
 // baade i lista, i dokumentlista, i én-oppslaget og hos AI-en.
+// Fra 11. september (bryter per mal): paa naar forelderen ELLER kortet
+// selv er paa — i lista, i dokumentlista, i én-oppslaget, paa bildet og
+// hos AI-en. Alle gaar gjennom synligSql()/synligFelt().
 sjekk('… og et underkort arver bryteren fra forelderen overalt',
-    substr_count($mkLib, 'IFNULL(p.vis_medlem, k.vis_medlem)') >= 4
+    substr_count($mkLib, 'self::synligSql()') >= 3
+    && substr_count($mkLib, 'self::synligFelt()') >= 3
+    && str_contains($mkLib, "? 'GREATEST(k.vis_medlem, IFNULL(p.vis_medlem, 0))'")
     && str_contains($mkLib, "{\$vis} AS vis_medlem"));
 sjekk('… og «Keramikk maler» hos AI-en betyr malene inni',
     str_contains($mkLib, "OR k.forelder_id IN (")
@@ -15977,6 +15982,32 @@ sjekk('dokumentkortene og stedskortene staar i ett rutenett med like rader',
     str_contains($mkSida, 'grid-auto-rows: 1fr; gap: var(--space-4); align-items: stretch;">
               <sc-if value="{{ vstHarForsideDok }}"')
     && substr_count($mkSida, 'grid-auto-rows: 1fr') >= 1);
+
+// ── Én og én mal til medlemmene ──────────────────────────────────────────
+//
+// Eieren, 11. september 2026: «jeg vil ogsaa kunne dele en og en mal med
+// min side medlemmer». Bryter paa hvert malkort; «Keramikk maler» paa viser
+// alle uansett, og da staar det ingen bryter paa malene.
+//
+// Maalt i Chrome: med «Keramikk maler» av sto det 69 brytere paa malene;
+// Fuglekasse gikk fra Skjult til Vises; medlemmet saa «Keramikk maler» med
+// Fuglekasse alene (fil 200, bilde 200) og fikk 404 paa Rund kopp. Med
+// «Keramikk maler» paa: 0 brytere paa malene, og medlemmet saa 70 kort.
+// AI-en for medlem med bare Fuglekasse paa: én kilde.
+sjekk('malkortet har sin egen bryter, som staar bare naar hovedkortet er av',
+    str_contains($mkSida, "visBryter: !(valgt && valgt.visMedlem),")
+    && str_contains($mkSida, "synligNavn: u.egenVis ? 'Vises for medlemmer' : 'Skjult for medlemmer',")
+    && str_contains($mkSida, "veksle: () => this.dokKall({ handling: 'veksle', id: u.id }),")
+    && str_contains($mkSida, '<sc-if value="{{ u.visBryter }}" hint-placeholder-val="{{ true }}">'));
+sjekk('… og lista sier baade hva medlemmet ser og hva bryteren staar paa',
+    str_contains($mkLib, "'visMedlem' => ((int) \$k['synlig']) === 1,")
+    && str_contains($mkLib, "'egenVis'   => ((int) \$k['egen']) === 1,"));
+// Uten dette sto malen uten kortet sitt rundt seg paa medlemssida.
+sjekk('… og hovedkortet blir med til medlemmet naar én mal er paa',
+    str_contains($mkLib, "WHERE b.forelder_id = k.id AND b.vis_medlem = 1)"));
+sjekk('… og tallet paa medlemssida teller bare det medlemmet ser',
+    str_contains($mkSida, "antall: antallTekst((k.filer || []).length + barn.reduce((sum, b) => sum + (b.filer || []).length, 0)),")
+    && str_contains($mkSida, "antall: antallTekst((u.filer || []).length),"));
 
 sjekk('kildene under svaret faar malnavnet foran',
     str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")

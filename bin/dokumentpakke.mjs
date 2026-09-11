@@ -15,6 +15,20 @@
  *
  *     node bin/dokumentpakke.mjs "C:/…/Lissom opplasting"
  *
+ * Eieren, 11. september 2026 (GO): to kort til, Leire og Dreiing, med de
+ * tolv dokumentene som kom som HTML i den nye mappa (eltingsboka, tre
+ * guider og aatte teknikkark). De legges TIL pakka som alt ligger i repoet,
+ * uten aa lage de 69 malene paa nytt — 69 PDF-er lagd paa nytt er 69 filer
+ * som ser endret ut i git uten aa vaere det:
+ *
+ *     node bin/dokumentpakke.mjs "…/Maler Lissom 2" --legg-til
+ *
+ * Med --legg-til er kildemappa selve mappa med HTML-filene (den som ellers
+ * heter «Maler Lissom» inni «Lissom opplasting»), manifestet leses og
+ * skrives tilbake, og bare det som mangler lages. Virker paa Mac ogsaa:
+ * Chrome ligger et annet sted, og bildene skaleres med sips i stedet for
+ * System.Drawing.
+ *
  * Det som skjer med hver mal:
  *   Resultatbilde.*     → bilde.jpg, skalert ned til maks 1200 px (148 MB
  *                         ble 15 MB; kortet trenger ikke mer). En som
@@ -50,6 +64,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const kilde = process.argv[2];
+const leggTil = process.argv.includes('--legg-til');
 if (!kilde || !existsSync(kilde)) {
   console.error('Oppgi mappa «Lissom opplasting» som første argument.');
   process.exit(1);
@@ -57,11 +72,13 @@ if (!kilde || !existsSync(kilde)) {
 
 const rot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ut  = join(rot, 'db', 'dokumenter');
-const maler = join(kilde, 'Maler Lissom');
+// Med --legg-til peker kilde rett paa mappa med HTML-filene.
+const maler = leggTil ? resolve(kilde) : join(kilde, 'Maler Lissom');
 
 const CHROME = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ].find(existsSync);
 
 // Haandboekene → kortet de hoerer hjemme i (slug fra migrasjon 154).
@@ -71,6 +88,52 @@ const HAANDBOEKER = [
   ['Håndbok i engober, pigmenter og oksider.pdf',   'engober'],
   ['Håndbok i keramikkbrenning.pdf',                'brenning'],
   ['Håndbok i lagvis glasering.pdf',                'glassering'],
+];
+
+// Teknikkarkene, guidene og eltingsboka: HTML i kildemappa, blir PDF som
+// Startguide. Navnet paa kortet er overskriften slik den staar i fila
+// (<!-- @dsCard name="…" -->). Kortene «leire» og «dreiing» kommer med
+// migrasjon 159.
+const TEKNIKK = [
+  ['Håndbok i elting av leire.html',                          'leire'],
+  ['Teknikkark - Ramshode-elting.html',                       'leire'],
+  ['Teknikkark - Spiralelting.html',                          'leire'],
+  ['Teknikkark - Stable og skjære.html',                      'leire'],
+  ['Guide - Gjenvinning av leire.html',                       'leire'],
+  ['Guide - Lage slikker.html',                               'leire'],
+  ['Guide - Tørking av leire.html',                           'leire'],
+  ['Teknikkark - Sentrering grunnteknikk og kjegling.html',   'dreiing'],
+  ['Teknikkark - Sentrering av store mengder.html',           'dreiing'],
+  ['Teknikkark - Dreiing fra haug.html',                      'dreiing'],
+  ['Teknikkark - Trekke opp vegger.html',                     'dreiing'],
+  ['Teknikkark - Trekke hanker.html',                         'dreiing'],
+];
+
+// Runde to, samme dag (GO): 14 dokumenter til fra mappa «Nye dokumenter».
+// Elleve gaar i kort som finnes, seks i to nye (migrasjon 160). «Regler i
+// verkstedet (plakat)» er med vilje ikke med — den sa det samme som
+// «Ordensregler og HMS» paa Min side, og ikke det samme. Samme --legg-til,
+// kjoert paa den mappa:
+//
+//     node bin/dokumentpakke.mjs "…/Nye dokumenter" --legg-til
+//
+// Lista under gaar sammen med TEKNIKK; det som ikke finnes i kildemappa
+// meldes og hoppes over, saa begge mappene kan kjoeres med samme skript.
+const RUNDE_TO = [
+  ['Teknikkark - Åpning og bunn.html',                    'dreiing'],
+  ['Teknikkark - Forming skål sylinder flaske.html',      'dreiing'],
+  ['Teknikkark - Beskjæring av fot.html',                 'dreiing'],
+  ['Teknikkark - Tuter og lokk.html',                     'dreiing'],
+  ['Guide - Glasurfeil.html',                             'glassering'],
+  ['Guide - Matsikker keramikk.html',                     'glassering'],
+  ['Verksted - Ovnsstabling.html',                        'brenning'],
+  ['Guide - Hvorfor sprakk den.html',                     'leire'],
+  ['Teknikkark - Klyping.html',                           'handbygging'],
+  ['Teknikkark - Pølseteknikk.html',                      'handbygging'],
+  ['Teknikkark - Plateteknikk.html',                      'handbygging'],
+  ['Guide - HMS i verkstedet.html',                       'hms'],
+  ['Verksted - Vedlikehold.html',                         'hms'],
+  ['Håndbok - Keramikk vanlige spørsmål.html',            'hms'],
 ];
 
 // Gruppene i den rekkefoelgen de skal staa. De 20 foerste har nummer i
@@ -88,6 +151,12 @@ const slug = (s) => s.toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 const skalerBilde = (inn, utfil, maks = 1200) => {
+  if (process.platform === 'darwin') {
+    // sips foelger med macOS. -Z skalerer lengste side; formatet settes av
+    // utfila (jpeg).
+    execFileSync('sips', ['-Z', String(maks), '-s', 'format', 'jpeg', '-s', 'formatOptions', '82', inn, '--out', utfil], { stdio: 'pipe' });
+    return;
+  }
   // System.Drawing finnes paa alle Windows-maskiner; ingen installasjon.
   const ps = `
     Add-Type -AssemblyName System.Drawing
@@ -130,12 +199,38 @@ const tekstFil = (html, relPdf) => {
 const tilPdf = (html, pdf) => {
   // En kopi av malmappa med smaa bilder, og det den deler med de andre
   // (assets/, doc-page.js) to nivaaer opp — slik guiden peker paa dem.
-  const kildeMappe = dirname(html);
-  const tmp = join(tmpdir(), 'lissom-guide', 'g', 'm');
+  // Et dokument som ligger rett i kildemappa (Startguide, teknikkarkene)
+  // peker paa assets/ ved siden av seg; da er kopien ett nivaa opp i stedet.
+  const kildeMappe = dirname(resolve(html));
+  const iRota = kildeMappe === maler;
+  const tmp = iRota ? join(tmpdir(), 'lissom-guide') : join(tmpdir(), 'lissom-guide', 'g', 'm');
   rmSync(join(tmpdir(), 'lissom-guide'), { recursive: true, force: true });
   mkdirSync(tmp, { recursive: true });
   cpSync(join(maler, 'assets'), join(tmpdir(), 'lissom-guide', 'assets'), { recursive: true });
   copyFileSync(join(maler, 'doc-page.js'), join(tmpdir(), 'lissom-guide', 'doc-page.js'));
+  for (const felles of ['handbok.css', 'image-slot.js']) {
+    if (existsSync(join(maler, felles))) copyFileSync(join(maler, felles), join(tmpdir(), 'lissom-guide', felles));
+  }
+  if (iRota) {
+    // Bare dette dokumentet og bildemappa det peker paa — ikke hele
+    // kildemappa med 71 malmapper.
+    copyFileSync(html, join(tmp, 'dok.html'));
+    if (existsSync(join(maler, 'handbok-bilder'))) {
+      mkdirSync(join(tmp, 'handbok-bilder'), { recursive: true });
+      for (const n of readdirSync(join(maler, 'handbok-bilder'))) {
+        const p = join(maler, 'handbok-bilder', n);
+        try { skalerBilde(p, join(tmp, 'handbok-bilder', n), 1000); } catch (e) { copyFileSync(p, join(tmp, 'handbok-bilder', n)); }
+      }
+    }
+    html = join(tmp, 'dok.html');
+    execFileSync(CHROME, [
+      '--headless=new', '--disable-gpu', '--no-pdf-header-footer',
+      '--virtual-time-budget=10000',
+      '--print-to-pdf=' + pdf,
+      'file:///' + html.replace(/\\/g, '/').replace(/^\//, ''),
+    ], { stdio: 'pipe' });
+    return;
+  }
   const kopier = (fra, til) => {
     for (const n of readdirSync(fra)) {
       const p = join(fra, n);
@@ -156,10 +251,44 @@ const tilPdf = (html, pdf) => {
   ], { stdio: 'pipe' });
 };
 
-rmSync(ut, { recursive: true, force: true });
-mkdirSync(ut, { recursive: true });
+const manifestSti = join(ut, 'manifest.json');
+if (leggTil && !existsSync(manifestSti)) {
+  console.error('--legg-til trenger pakka som alt ligger i db/dokumenter/.');
+  process.exit(1);
+}
+if (!leggTil) {
+  rmSync(ut, { recursive: true, force: true });
+  mkdirSync(ut, { recursive: true });
+}
 
-const manifest = { versjon: 1, laget: new Date().toISOString().slice(0, 10), dokumenter: [], maler: [] };
+const manifest = leggTil
+  ? JSON.parse(readFileSync(manifestSti, 'utf8'))
+  : { versjon: 1, laget: new Date().toISOString().slice(0, 10), dokumenter: [], maler: [] };
+
+// Overskriften slik den staar i fila, til navnet paa kortet.
+const dsNavn = (html) => {
+  const m = readFileSync(html, 'utf8').match(/@dsCard[^>]*\bname="([^"]*)"/);
+  return m ? m[1].replace(/&amp;/g, '&') : null;
+};
+
+// ── Teknikkarkene, guidene og eltingsboka ──────────────────────────────
+for (const [fil, kort] of TEKNIKK.concat(RUNDE_TO)) {
+  const html = join(maler, fil);
+  if (!existsSync(html)) { if (!leggTil) console.warn('Mangler: ' + fil); continue; }
+  const rel = `haandboker/${kort}/${slug(fil.replace(/\.html$/i, '').replace(/^(Teknikkark|Guide|Verksted|Håndbok) - /, ''))}.pdf`;
+  if (manifest.dokumenter.some(d => d.fil === rel)) { console.log('finnes  ' + fil); continue; }
+  mkdirSync(dirname(join(ut, rel)), { recursive: true });
+  tilPdf(html, join(ut, rel));
+  const navn = dsNavn(html) || fil.replace(/\.html$/i, '');
+  manifest.dokumenter.push({ kort, fil: rel, navn, tekst: tekstFil(html, rel) });
+  console.log('teknikk  ' + navn + '  → ' + rel);
+}
+
+if (leggTil) {
+  writeFileSync(manifestSti, JSON.stringify(manifest, null, 2) + '\n');
+  console.log(`\n${manifest.dokumenter.length} dokumenter, ${manifest.maler.length} maler → ${ut}`);
+  process.exit(0);
+}
 
 // ── Haandboekene ────────────────────────────────────────────────────────
 for (const [fil, kort] of HAANDBOEKER) {

@@ -2027,6 +2027,13 @@ window.__resources = {
     .lx-plakat-ark { padding: 32px 16px 40px !important; }
     .lx-plakat-kropp { padding: 40px 24px !important; }
   }
+  /* Bryteren «Søkefeltet på nettsiden» under ⚙ (eieren, 11. september
+     2026: «kan jeg heller velge å slå av hele søkefeltet?»). Av: klassen
+     settes paa <html> i componentDidUpdate, og soekeknappen i toppen er
+     borte for alle, paa alle skjermbredder. Knappen tegnes av NavBar i
+     ds-bundle.js, som er generert og ikke skal redigeres — derfor CSS,
+     ikke en prop. */
+  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }
 </style>
 </head>
 <body>
@@ -7679,6 +7686,20 @@ window.__resources = {
                   <sc-if value="{{ klSokTom }}" hint-placeholder-val="{{ false }}">
                     <div style="padding: 10px 14px; font-size: var(--text-sm); color: var(--text-muted);">Ingen treff i denne perioden.</div>
                   </sc-if>
+                  <!-- Kunnskapen under person- og kurstreffene, med en
+                       overskrift som skiller dem. Eieren, 11. september 2026
+                       (GO): «kan jeg få et lite søkefelt på kalender
+                       admin?» — feltet fantes, det er treffene som er nye.
+                       Trykk aapner dokumentet i ny fane. -->
+                  <sc-if value="{{ klKunnskapVises }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: 8px 14px 4px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); background: var(--clay-100);">Kunnskap</div>
+                    <sc-for list="{{ klKunnskap }}" as="t" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ t.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
+                        <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ t.tittel }}</span>
+                        <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ t.under }}</span>
+                      </button>
+                    </sc-for>
+                  </sc-if>
                 </div>
               </sc-if>
             </div>
@@ -12683,6 +12704,11 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Banneret under toppbildet" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Salgsuke-kampanjen" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Kursvelger-lenken i toppen" checked="{{ bryterKursvelger }}" on-change="{{ vekslKursvelger }}" hint-size="100%,28px"></x-import>
+              <!-- Eieren, 11. september 2026: «kan jeg heller velge å slå av
+                   hele søkefeltet?». Av: soekeknappen i toppen er borte for
+                   alle, og «Søk» i menyen gjoer ingenting. Feltet i kalender
+                   admin paavirkes ikke. -->
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Søkefeltet på nettsiden" checked="{{ bryterSok }}" on-change="{{ vekslSok }}" hint-size="100%,28px"></x-import>
               <!-- Seksjonen sto paa saa lenge det fantes én kunde som var
                    slaatt paa. Da matte hver enkelt kunde av for aa faa bort
                    feltet — og paa igjen etterpaa. Naa er det én bryter. -->
@@ -19621,6 +19647,24 @@ window.__resources = {
               <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ r.type }}</span>
             </button>
           </sc-for>
+          <!-- Kunnskapen: haandboekene, teknikkarkene og malene i
+               Verkstedet. Eieren, 11. september 2026 (GO). Bare for
+               innloggede — api/kunnskap-sok.php gir et medlem det som ligger
+               i kort som er slaatt paa, og admin alt. Utlogget faar ingen
+               liste her. Linja under navnet er den foerste linja i teksten
+               der ordet staar; til hoeyre staar kortet. Trykk aapner
+               dokumentet i ny fane, som «Aapne» gjoer i kortene. -->
+          <sc-for list="{{ sokKunnskap }}" as="r" hint-placeholder-count="3">
+            <button type="button" onClick="{{ r.velg }}" style="appearance: none; background: transparent; border: none; border-top: 1px solid var(--border-subtle); cursor: pointer; padding: var(--space-3) var(--space-2); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); text-align: left; font: var(--type-body); border-radius: var(--radius-sm); width: 100%;" style-hover="background: var(--clay-100);">
+              <span style="min-width: 0;">
+                <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ r.navn }}</span>
+                <sc-if value="{{ r.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); overflow-wrap: anywhere;">{{ r.under }}</span>
+                </sc-if>
+              </span>
+              <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ r.type }}</span>
+            </button>
+          </sc-for>
         </div>
         <sc-if value="{{ sokTom }}" hint-placeholder-val="{{ false }}">
           <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen treff. Prøv «dreiekurs», «kopp» eller «glasur» — eller <button type="button" onClick="{{ sokTilForesporsel }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline;">send oss en forespørsel</button>.</p>
@@ -24609,6 +24653,40 @@ class Component extends DCLogic {
   }
 
   /**
+   * Kunnskapstreff til soekefeltene: haandboekene, teknikkarkene og malene
+   * i Verkstedet. Eieren, 11. september 2026 (GO): i soekefeltet paa
+   * nettsida og i soekefeltet i kalender admin.
+   *
+   * Soeket gjoeres paa serveren (api/kunnskap-sok.php), som bare gir ut
+   * det den som spor har lov til aa se. Herfra spoerres det bare naar det
+   * kan bli noe: innlogget, og medlem eller admin. Ett kall per pause i
+   * skrivinga, ikke per tastetrykk, og svaret tas vare paa sammen med
+   * ordet det gjaldt — saa et sent svar paa et gammelt ord ikke legger
+   * seg over det nye.
+   */
+  kunnskapSok(tekst) {
+    clearTimeout(this._kunnskapTimer);
+    const t = (tekst || '').trim();
+    const kan = this.erPublisert() && this.state.innlogget && (this.state.erMedlemBruker || this.state.erAdminBruker);
+    if (t.length < 2 || !kan) {
+      if (this.state.kunnskapFor) this.setState({ kunnskapFor: '', kunnskapTreffListe: [] });
+      return;
+    }
+    this._kunnskapTimer = setTimeout(() => {
+      fetch('/api/kunnskap-sok.php?q=' + encodeURIComponent(t), { credentials: 'same-origin', cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => this.setState({ kunnskapFor: t, kunnskapTreffListe: (d && d.treff) || [] }))
+        .catch(() => this.setState({ kunnskapFor: t, kunnskapTreffListe: [] }));
+    }, 250);
+  }
+
+  /** Treffene, om de gjelder det som staar i feltet naa. Ellers ingen. */
+  kunnskapTreff(tekst) {
+    const t = (tekst || '').trim();
+    return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];
+  }
+
+  /**
    * Frakten, i kroner.
    *
    * Tallet sto skrevet inn som «89» fire steder her inne, og gikk aldri til
@@ -25136,14 +25214,19 @@ class Component extends DCLogic {
         nokkel: 'ordensregler', navn: 'Ordensregler og HMS', side: 'minside', hp: true,
         hjelp: 'Overskrift, kolon, og så teksten — ett punkt per linje. Vises på Min side.',
         standard: [
-          'Rydd etter deg: Vask verktøy, bord og dreieskive før du går. Leirerester skrapes i leirebøtta, ikke i vasken. Gulvet moppes vått — aldri kost, det virvler opp kvartsstøv.',
-          'Støv er den største risikoen: Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk støvmaske hvis det er mye støv i lokalet.',
+          // Eieren, 11. september 2026: tre punkter fra plakaten «Regler i
+          // verkstedet» flettet inn her (gjenvinningsbøtte per leirtype,
+          // P3-maske, «spør heller én gang for mye») i stedet for at
+          // plakaten ble et eget dokument. GO paa ordlyden.
+          'Rydd etter deg: Vask verktøy, bord og dreieskive før du går. Leirerester i gjenvinningsbøtta – riktig bøtte for riktig leirtype, aldri i vasken. Gulvet moppes vått — aldri kost, det virvler opp kvartsstøv.',
+          'Støv er den største risikoen: Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk P3-maske ved pussing av tørt gods og veiing av glasurpulver, helst ved avsug.',
           'Glasur og kjemikalier: Bruk hansker ved glasering. Ikke spis eller drikk i glasurrommet. Sikkerhetsdatablad henger på veggen ved glasurhylla.',
           'Ovnen: Bare Monica starter ovnen. Ikke åpne en ovn som er varmere enn 100 °C. Sett aldri noe brennbart nærmere enn en meter fra ovnen.',
           'Merk arbeidene dine: Skriv initialene dine i bunnen før tørking. Umerkede arbeider på felleshyllene kastes etter to måneder.',
           'Hylla di: Medlemmer har egen hylle. Hold arbeidene innenfor din egen plass, og ta med ferdige ting hjem så det blir plass til andre.',
           'Siste person låser: Sjekk at vinduene er lukket, vannet er avstengt og lyset er slukket. Er du den siste som forlater bygget, må du forsikre deg om at døra er låst — den låser seg ikke av seg selv.',
           'Ved uhell: Førstehjelpsskrin henger ved vasken, brannslukker ved utgangen. Meld fra til Monica på +47 94 13 46 01 ved skade, kutt eller søl av kjemikalier.',
+          'Spør heller én gang for mye: Usikker på ovn, glasur eller maskiner? Spør oss – det er det vi er her for.',
         ],
       },
       {
@@ -31466,6 +31549,9 @@ class Component extends DCLogic {
   componentDidUpdate(prevProps, prevState) {
     // Tilbakeknappen: ett steg per lag som aapnes. Se lagSynk().
     this.lagSynk();
+    // Bryteren «Søkefeltet på nettsiden»: soekeknappen i toppen tegnes av
+    // ds-bundle.js, saa den skjules med CSS paa <html>. Se stilen oeverst.
+    document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));
     // Tilbake fra Vipps-innloggingen, med et medlemskap i minnet.
     //
     // «medlemsBetalKnapp» la det igjen for den sendte henne av garde, og
@@ -36296,7 +36382,19 @@ class Component extends DCLogic {
       klTittel: tittel, klForrige: flytt(-1), klNesteSteg: flytt(1),
       klIdag: () => this.setState({ klAnker: idagIso }),
       klSok: this.state.klSok || '',
-      settKlSok: e => this.setState({ klSok: e.target.value }),
+      settKlSok: e => { this.setState({ klSok: e.target.value }); this.kunnskapSok(e.target.value); },
+      // Kunnskapstreffene i det samme feltet. Se kunnskapSok().
+      ...(() => {
+        const kt = this.kunnskapTreff(this.state.klSok);
+        return {
+          klKunnskapVises: kt.length > 0,
+          klKunnskap: kt.map(t => ({
+            tittel: t.navn,
+            under: t.kort + (t.utdrag ? ' · ' + t.utdrag : ''),
+            velg: () => window.open('/api/dokument.php?id=' + t.id, '_blank', 'noopener'),
+          })),
+        };
+      })(),
       ...(() => {
         const q = (this.state.klSok || '').trim().toLowerCase();
         if (!q) return { klSokVises: false, klSokTreff: [], klSokTom: false };
@@ -41708,8 +41806,17 @@ class Component extends DCLogic {
       sokApen: !!this.state.sokApen,
       lukkSok: () => this.setState({ sokApen: false }),
       sokTekst: this.state.sokTekst || '',
-      settSokTekst: (e) => this.setState({ sokTekst: e.target.value }),
+      settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },
       sokTilForesporsel: () => { this.setState({ sokApen: false, side: 'kurs' }); window.scrollTo(0, 0); },
+      // Kunnskapstreffene, naar de er hentet for akkurat det som staar i
+      // feltet naa. Se kunnskapSok().
+      sokKunnskap: this.kunnskapTreff(this.state.sokTekst).map(t => ({
+        navn: t.navn,
+        under: t.utdrag || '',
+        harUnder: !!t.utdrag,
+        type: t.kort,
+        velg: () => { window.open('/api/dokument.php?id=' + t.id, '_blank', 'noopener'); this.setState({ sokApen: false, sokTekst: '' }); },
+      })),
       ...(() => {
         const alt = [
           { navn: 'Nybegynner dreiekurs', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
@@ -41729,7 +41836,8 @@ class Component extends DCLogic {
         const treff = t ? alt.filter(a => (a.navn + ' ' + a.type).toLowerCase().includes(t)) : alt.slice(0, 6);
         return {
           sokResultater: treff.map(a => Object.assign({}, a, { velg: () => { this.setState({ sokApen: false, sokTekst: '', side: a.side, kursFilter: a.filter || this.state.kursFilter }); window.scrollTo(0, 0); } })),
-          sokTom: !!t && treff.length === 0,
+          // «Ingen treff» bare naar heller ikke kunnskapen hadde noe.
+          sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,
         };
       })(),
       stoppKlikk: (e) => e.stopPropagation(),
@@ -47455,6 +47563,7 @@ class Component extends DCLogic {
         };
       })(),
       bryterKursvelger: this.bryterPaa('kursvelger'),
+      bryterSok: this.bryterPaa('sok'),
       bryterReferanser: this.bryterPaa('referanser'),
       vekslReferanser: () => this.vekslBryter('referanser', 'Referansekunder på forsiden'),
       bryterMinInternkurs: this.bryterPaa('internkurs'),
@@ -48746,6 +48855,7 @@ class Component extends DCLogic {
       butikkVelgMedlem: () => this.setState({ butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }),
       visKursvelger: this.bryterPaa('kursvelger') && this.mobilVis('kursvelger'),
       vekslKursvelger: () => this.vekslBryter('kursvelger', 'Kursvelger-lenken'),
+      vekslSok: () => this.vekslBryter('sok', 'Søkefeltet'),
       // Tallfeltene sto i en spalte paa 74 px. Spalten er borte, saa bredden
       // maa staa paa feltet selv — ellers strekker det seg over hele kortet.
       grTallStil: { boxSizing: 'border-box', width: 96, border: '1px solid var(--border-subtle)',
@@ -56290,7 +56400,7 @@ class Component extends DCLogic {
       })(),
       goNav: (lenke) => {
         if (lenke === 'Handlekurv') { this.apneKurvAuto(40); return; }
-        if (lenke === 'Søk') { this.setState({ sokApen: true }); return; }
+        if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }
         const ruter = {
           'Forside': ['forside'],
           // «Kurs» lander paa alle kursene, ikke paa et eget kursfilter.

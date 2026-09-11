@@ -1,0 +1,119 @@
+Keramikk – vanlige spørsmål
+
+LISSOM KERAMIKK & HÅNDVERK AS · LISSOM.NO · POST@LISSOM.NO
+
+Håndbok
+
+Keramikk – vanlige spørsmål
+
+Svarene på spørsmålene som dukker opp igjen og igjen i verkstedet: leirens stadier, leirtyper, chamotte, cones og grader, glasur, farger som forsvinner, matsikkerhet, antall brenninger og raku.
+
+Kapittel 1
+Leirens stadier
+
+Stadium Kjennetegn Hva gjøres nå
+
+Plastisk (våt) Myk, formbar, mørk Dreiing, bygging, sammenføyning av myke deler
+
+Lærhard Fast som ost, kald mot kinnet, holder formen men kan skjæres Beskjæring av fot, hanker, tuter, riss, engobe – siste sjanse for endringer
+
+Beintørr Lys, jevn farge, romtemperert mot kinnet, svært skjør Klar for råbrenning. Løft med begge hender, aldri i hanken
+
+Råbrent (bisque) Hard, porøs, «klinger» ved banking Suger glasur godt – klar for glasering
+
+Glasurbrent Tett, glassaktig overflate Ferdig – eller klar for eventuell dekorbrenning
+
+Når skal vi beskjære?
+Ved lærhard: dreiejernet skal skjære rene, sammenhengende spon. Drar jernet leiren, er det for tidlig; støver det, er det for sent (pakk stykket i fuktig plast noen timer, så blir det skjærbart igjen).
+
+Kapittel 2
+Leirtyper og chamotte
+
+Type Brennes typisk til Egenskaper
+
+Leirgods (lavbrennende) ca. 1000–1150 °C Ofte rødbrent. Forblir porøst – må glaseres helt for å bli tett. Terrakotta, majolika
+
+Steingods ca. 1200–1300 °C Sintrer tett, sterkt og hverdagsrobust – vanligst for bruksgjenstander
+
+Porselen ca. 1250–1400 °C Hvitt, fint, kan bli gjennomskinnelig tynt. Lite plastisk og krevende å jobbe med
+
+Hva er chamotte? Ferdig brent leire som er knust til korn og blandet inn i ny leire. Kornene gir leiren «skjelett»: den står bedre under bygging, krymper mindre, tørker jevnere og tåler temperatursvingninger bedre. Prisen er en grovere overflate – fin chamotte til dreiing, grov til store bygg og skulptur. Porselen har ingen chamotte, derfor er det så vanskelig.
+
+Viktig
+Leire og glasur må passe sammen i temperatur. Lavbrennende leire i en steingodsbrenning kan smelte og ødelegge både stykket og ovnsplaten under.
+
+Kapittel 3
+Cones og grader
+
+En «cone» (Orton-kjegle) er en liten pyramide av glasurmateriale som bøyer seg når den har fått en bestemt mengde varmearbeid – kombinasjonen av temperatur og tid. To brenninger til samme makstemperatur kan gi ulikt resultat hvis den ene går raskere; derfor snakker keramikere i cones, ikke bare grader. Omtrentlige verdier ved vanlig brennhastighet:
+
+Cone ca. °C Typisk bruk
+
+06 ca. 1000 Råbrenning, lavbrennende glasur
+
+04 ca. 1060 Leirgods glasurbrenning
+
+5–6 ca. 1200–1225 Steingods «midfire» – vanligst i elektrisk ovn
+
+8–10 ca. 1260–1300 Høybrent steingods og porselen
+
+NB: 06 og 6 er ikke det samme! Null foran betyr lavere temperatur – skalaen går … 06, 05, 04 … 1, 2, … 6 … 10.
+
+Hvorfor tåler ikke alle glasurer høy temperatur? En glasur er komponert for å smelte i et bestemt vindu. Flussmidlene i den bestemmer smeltepunktet. Brennes den for høyt, blir den overflytende: den renner av stykket (og ned på ovnsplaten), koker og bobler, og fargene kan brenne ut. Brennes den for lavt, smelter den ikke ut og blir tørr og ru. Sjekk alltid glasurens angitte cone mot leirens.
+
+Kapittel 4
+Luftbobler
+
+I leiren: Luftlommer som følger med fra pakken eller eltes inn ved feil teknikk (bretting i stedet for rulling). Under dreiing gir de hakk og vugging; i ovnen kan innestengt luft og fukt utvide seg og sprenge stykket. Unngå: elt grundig, gjør wiretesten (skjær klumpen i to – snittflaten skal være tett og jevn), og stikk hull på bobler du oppdager underveis.
+
+I glasuren: Små hull i den ferdige overflaten (nålestikk/pinholes) skyldes ofte gasser som bobler gjennom glasuren uten å rekke å jevne seg ut. Se guiden om glasurfeil.
+
+En vanlig misforståelse
+Det er sjelden luftboblen i seg selv som «eksploderer» i ovnen – det er som regel fukt. Damp trenger 1000 ganger mer plass enn vann. Derfor: helt tørt gods og rolig start på brenningen.
+
+Kapittel 5
+Hvorfor forsvinner noen farger?
+
+Temperatur: Enkelte pigmenter tåler ikke høy varme. Sterke røde, rosa og oransje (ofte kadmium- eller krom-tinnbaserte) brenner gjerne ut over leirgods-/midfire-temperatur og blir blasse eller borte.
+
+Atmosfære: Samme oksid gir ulik farge i oksidasjon (elektrisk ovn) og reduksjon (gassovn med lite oksygen). Kobber er grønt i oksidasjon, oksebloderødt i reduksjon.
+
+Glasuren over: En engobe- eller underglasurfarge kan løses opp eller endres av glasuren som legges over – spesielt glasurer som beveger seg mye.
+
+Regelen: test alltid nye farger på prøvebrikker i din egen ovn, til din egen temperatur, før du bruker dem på et arbeid du er glad i.
+
+Kapittel 6
+Matsikker glasur
+
+En glasur er matsikker når den er stabil i kontakt med mat og drikke – syre fra kaffe, sitrus og eddik skal ikke trekke stoffer ut av den. Kravene i praksis:
+
+Riktig utbrent: Glasuren må være brent til sin tiltenkte cone, så den er gjennomsmeltet og tett.
+
+Trygg resept: Blyfri, og forsiktig med barium og høye metallmengder (kobber, mangan) i flater som møter mat.
+
+Hel overflate: Krakelering (fine sprekker) samler bakterier og slipper væske inn i godset – ikke mattrygt på innsiden av kopper og skåler, selv om det er fint utenpå.
+
+Blank innside: Matte og tørre overflater er oftere ustabile – bruk en pålitelig blank glasur på innsiden, dekorglasuren utenpå.
+
+Tommelfingerregel i verkstedet
+Kjøpeglasur merket «food safe», brent til riktig cone på tett gods og uten krakelering = trygt. Egne resepter og rakuvarer = pynt, til de er testet.
+
+Kapittel 7
+Hvor mange ganger brenner man?
+
+Vanligst er to: Råbrenning (gjør godset hardt og håndterbart, typisk cone 06–04) og glasurbrenning (til glasurens temperatur).
+
+Ja, man kan brenne tre – og flere: Dekorbrenninger med overglasurfarger, gull og luster legges oppå ferdig glasur og brennes lavere (ofte 700–850 °C). Regelen er at hver ny brenning er lik eller lavere enn forrige, ellers smelter du om det som allerede sitter.
+
+Én brenning finnes også: Råglasering og enkeltbrenning sparer strøm, men krever erfaring – glasur på ubrent gods er sårbart.
+
+Kapittel 8
+Hva er raku?
+
+Raku er en brennemetode der stykket tas glødende ut av ovnen ved ca. 900–1000 °C og legges rett i en beholder med brennbart materiale (sagflis, avispapir). Røyken og oksygenmangelen gir metallglans, sotsvart uglasert leire og den karakteristiske krakeleringen i glasuren. Sjokket krever chamotterik leire.
+
+Viktig om raku
+Rakuvarer er porøse og krakelerte, og regnes ikke som matsikre eller vanntette. Raku er til det vakre – ikke til kaffen.
+
+Har du spørsmål?
+Skriv til post@lissom.no , så hjelper vi deg gjerne videre. Vil du lære mer, spør oss om kurs!

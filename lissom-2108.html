@@ -18966,7 +18966,13 @@ window.__resources = {
                 <sc-if value="{{ g.harNavn }}" hint-placeholder-val="{{ true }}">
                   <div style="padding: var(--space-6) var(--space-6) 0; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ g.navn }}</div>
                 </sc-if>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-4) var(--space-6) 0;">
+                <!-- auto-fill, ikke auto-fit. Eieren, 11. september 2026: «jeg
+                     søker på smør, og det viser 3 fine kort i riktig størrelse,
+                     så viser den en som er alt for stor». Med auto-fit fylte
+                     et kort som sto alene i gruppa si hele bredden (målt: 850
+                     px mot 273). auto-fill holder spaltene selv om de er
+                     tomme — som på Min side. -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-4) var(--space-6) 0;">
                   <sc-for list="{{ g.kort }}" as="u" hint-placeholder-count="3">
                     <div style="{{ u.kortStil }}">
                       <button type="button" onClick="{{ u.apne }}" style="{{ u.innerStil }}">

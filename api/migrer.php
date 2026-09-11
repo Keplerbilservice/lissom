@@ -122,7 +122,29 @@ foreach ($mangler as $fil) {
 
 revider('migrasjon_kjort', null, null, ['resultat' => $resultat]);
 
+// Dokumentene fra importpakka (db/dokumenter/), inn i kortene i verkstedet.
+//
+// Kjoeres hver gang knappen trykkes, ikke bare naar en migrasjon var ny:
+// pakka kan ha faatt flere filer uten at basen har endret seg. Det som alt
+// er inne, hoppes over — se Dokumenter::importer(). Feilet en migrasjon over,
+// roeres ingenting: da er ikke basen slik koden venter.
+$import = ['kort' => 0, 'dokumenter' => 0, 'hoppet' => 0, 'feil' => []];
+$stoppet = array_filter($resultat, static fn($r) => $r['status'] !== 'ok') !== [];
+if (!$stoppet) {
+    DB::glemSkjema();
+    try {
+        $import = Dokumenter::importer();
+    } catch (Throwable $e) {
+        $import['feil'][] = $e->getMessage();
+        logg_feil('Dokumentimport feilet', $e);
+    }
+    if ($import['kort'] > 0 || $import['dokumenter'] > 0 || $import['feil'] !== []) {
+        revider('dokumenter_importert', null, null, $import);
+    }
+}
+
 Svar::json([
     'kjort_naa' => $resultat,
     'tabeller'  => count(DB::alle('SHOW TABLES')),
+    'import'    => $import,
 ]);

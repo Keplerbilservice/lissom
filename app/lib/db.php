@@ -103,6 +103,18 @@ final class DB
     private static array $skjema = [];
 
     /**
+     * Glem det vi husker om tabeller og kolonner.
+     *
+     * Migrasjonene kjoeres i samme forespoersel som det som kommer etter
+     * dem (importen av dokumenter). Uten dette ville harKolonne() svart
+     * «nei» om en kolonne migrasjonen nettopp laget.
+     */
+    public static function glemSkjema(): void
+    {
+        self::$skjema = [];
+    }
+
+    /**
      * Finnes tabellen?
      *
      * Migrasjonene kjores fra adminpanelet, og adminpanelet er kode. Krever

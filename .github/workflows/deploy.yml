@@ -89,3 +89,18 @@ jobs:
           protocol: ftps
           local-dir: ./db/migrations/
           server-dir: lissom-app/migrations/
+
+      # Dokumentene til kortene i verkstedet (håndbøkene og keramikkmalene).
+      # Ligger utenfor public_html som resten av app-koden: filene serveres
+      # av api/dokument.php, som sjekker hvem som spør. «⚙ Kjør
+      # oppdateringer» i admin kopierer dem inn i kortene — se
+      # Dokumenter::importer(). Pakka lages av bin/dokumentpakke.mjs.
+      - name: Legg ut dokumentene til verkstedet
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_BRUKER }}
+          password: ${{ secrets.FTP_PASSORD }}
+          protocol: ftps
+          local-dir: ./db/dokumenter/
+          server-dir: lissom-app/dokumenter-import/

@@ -28,6 +28,30 @@ if (!Dokumenter::klar()) {
     Svar::feil('Fant ikke dokumentet.', 404);
 }
 
+// Bildet paa et kort (?kort=<id>). Samme regel som for dokumentene: admin
+// ser alt, et medlem bare det som er slaatt paa, alle andre ingenting.
+// Et malkort arver bryteren fra «Keramikk maler» — det ligger i kort().
+if (Foresporsel::heltall('kort') > 0) {
+    $kort = Dokumenter::kort(Foresporsel::heltall('kort'));
+    $sti  = $kort === null ? '' : Dokumenter::bildeSti($kort);
+    if ($sti === '' || !is_file($sti)) {
+        Svar::feil('Fant ikke dokumentet.', 404);
+    }
+    if (!Sesjon::erAdmin()) {
+        $medlem = Sesjon::medlem();
+        if (((int) $kort['synlig']) !== 1 || $medlem === null || !er_aktivt_medlem($medlem)) {
+            Svar::feil('Fant ikke dokumentet.', 404);
+        }
+    }
+    $mime = (string) ((new finfo(FILEINFO_MIME_TYPE))->file($sti) ?: 'image/jpeg');
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (string) filesize($sti));
+    header('Cache-Control: private, max-age=0, no-store');
+    header('X-Content-Type-Options: nosniff');
+    readfile($sti);
+    exit;
+}
+
 $dok = Dokumenter::en(Foresporsel::heltall('id'));
 if ($dok === null) {
     Svar::feil('Fant ikke dokumentet.', 404);

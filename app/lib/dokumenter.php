@@ -98,6 +98,37 @@ final class Dokumenter
         return DB::harTabell('verksted_kategorier') && DB::harTabell('verksted_dokumenter');
     }
 
+    /**
+     * Kan et kort ligge inni et annet? Migrasjon 157.
+     *
+     * Koden legges ut foer eieren trykker «Kjør oppdateringer». I mellomtida
+     * finnes ikke kolonnene, og da maa alt her virke som foer — uten
+     * underkort, men uten feil.
+     */
+    public static function harKort(): bool
+    {
+        return self::klar() && DB::harKolonne('verksted_kategorier', 'forelder_id');
+    }
+
+    /**
+     * Forelderen hektet paa, som «p». Et underkort har ingen egen bryter:
+     * det er forelderens som gjelder. Tom foer migrasjon 157.
+     */
+    private static function forelderJoin(): string
+    {
+        return self::harKort()
+            ? 'LEFT JOIN verksted_kategorier p ON p.id = k.forelder_id'
+            : '';
+    }
+
+    /** «Kortet er slaatt paa for medlemmer», med forelderen tatt hensyn til. */
+    private static function synligSql(): string
+    {
+        return self::harKort()
+            ? 'IFNULL(p.vis_medlem, k.vis_medlem) = 1'
+            : 'k.vis_medlem = 1';
+    }
+
     /** Mappa filene ligger i. Ved siden av bildene, utenfor det som publiseres. */
     public static function mappe(): string
     {
@@ -107,6 +138,11 @@ final class Dokumenter
     /**
      * Kortene, med hvor mange dokumenter hvert av dem har.
      *
+     * Alle kortene i én flat liste, ogsaa underkortene (migrasjon 157) —
+     * «forelder» sier hvilket kort et underkort ligger inni. Skjermen setter
+     * dem sammen; her er det bare rader. «antall» er dokumentene i kortet
+     * selv, ikke i underkortene.
+     *
      * @param bool $bareMedlem Medlemssida vil bare ha dem som er slaatt paa.
      * @return list<array<string,mixed>>
      */
@@ -115,20 +151,59 @@ final class Dokumenter
         if (!self::klar()) {
             return [];
         }
-        $hvor = $bareMedlem ? 'WHERE k.vis_medlem = 1' : '';
+        $medKort = self::harKort();
+        $hvor    = $bareMedlem ? 'WHERE ' . self::synligSql() : '';
+        $join    = self::forelderJoin();
+        $felt    = $medKort
+            ? 'k.forelder_id, k.under, k.bilde, IFNULL(p.vis_medlem, k.vis_medlem) AS synlig'
+            : "NULL AS forelder_id, '' AS under, NULL AS bilde, k.vis_medlem AS synlig";
         return array_map(static fn($k) => [
             'id'        => (int) $k['id'],
             'slug'      => (string) $k['slug'],
             'navn'      => (string) $k['navn'],
-            'visMedlem' => (bool) $k['vis_medlem'],
+            'under'     => (string) $k['under'],
+            'forelder'  => $k['forelder_id'] === null ? null : (int) $k['forelder_id'],
+            'harBilde'  => (string) ($k['bilde'] ?? '') !== '',
+            'visMedlem' => ((int) $k['synlig']) === 1,
             'antall'    => (int) $k['antall'],
         ], DB::alle(
-            "SELECT k.*, (SELECT COUNT(*) FROM verksted_dokumenter d
-                           WHERE d.kategori_id = k.id) AS antall
+            "SELECT k.id, k.slug, k.navn, k.sortering, {$felt},
+                    (SELECT COUNT(*) FROM verksted_dokumenter d
+                      WHERE d.kategori_id = k.id) AS antall
                FROM verksted_kategorier k
+               {$join}
                {$hvor}
               ORDER BY k.sortering, k.id"
         ));
+    }
+
+    /**
+     * Ett kort, med forelderens bryter tatt hensyn til. Til bildet paa
+     * kortet, som serveres av api/dokument.php.
+     */
+    public static function kort(int $id): ?array
+    {
+        if (!self::klar()) {
+            return null;
+        }
+        $felt = self::harKort()
+            ? 'k.bilde, IFNULL(p.vis_medlem, k.vis_medlem) AS synlig'
+            : 'NULL AS bilde, k.vis_medlem AS synlig';
+        $k = DB::en(
+            "SELECT k.id, k.navn, {$felt}
+               FROM verksted_kategorier k
+               " . self::forelderJoin() . '
+              WHERE k.id = :i',
+            ['i' => $id]
+        );
+        return $k ?: null;
+    }
+
+    /** Stien paa disken til bildet paa et kort fra kort(). Tom uten bilde. */
+    public static function bildeSti(array $kort): string
+    {
+        $b = (string) ($kort['bilde'] ?? '');
+        return $b === '' ? '' : self::mappe() . '/' . $b;
     }
 
     /**
@@ -151,9 +226,10 @@ final class Dokumenter
             $param['k'] = $kategoriId;
         }
         if ($bareMedlem) {
-            $hvor[] = 'k.vis_medlem = 1';
+            $hvor[] = self::synligSql();
         }
         $der = $hvor === [] ? '' : 'WHERE ' . implode(' AND ', $hvor);
+        $join = self::forelderJoin();
 
         return array_map(static fn($d) => [
             'id'        => (int) $d['id'],
@@ -169,6 +245,7 @@ final class Dokumenter
                     d.tekst, d.opprettet
                FROM verksted_dokumenter d
                JOIN verksted_kategorier k ON k.id = d.kategori_id
+               {$join}
                {$der}
               ORDER BY d.opprettet DESC, d.id DESC",
             $param
@@ -181,10 +258,15 @@ final class Dokumenter
         if (!self::klar()) {
             return null;
         }
+        // vis_medlem er forelderens naar dokumentet ligger i et underkort —
+        // det er den bryteren api/dokument.php sjekker.
+        $vis = self::harKort() ? 'IFNULL(p.vis_medlem, k.vis_medlem)' : 'k.vis_medlem';
         $d = DB::en(
-            'SELECT d.*, k.slug AS kategori_slug, k.navn AS kategori_navn, k.vis_medlem
+            "SELECT d.*, k.slug AS kategori_slug, k.navn AS kategori_navn,
+                    {$vis} AS vis_medlem
                FROM verksted_dokumenter d
                JOIN verksted_kategorier k ON k.id = d.kategori_id
+               " . self::forelderJoin() . '
               WHERE d.id = :i',
             ['i' => $id]
         );
@@ -494,6 +576,9 @@ final class Dokumenter
         }
         DB::kjor('DELETE FROM verksted_dokumenter WHERE id = :i', ['i' => $id]);
         @unlink(self::sti($d));
+        // Kom det fra importpakka, skal det ikke komme tilbake ved neste
+        // «Kjør oppdateringer».
+        self::huskSlettetKilde((string) ($d['kilde'] ?? ''));
         return true;
     }
 
@@ -510,31 +595,48 @@ final class Dokumenter
         if (!self::klar()) {
             return [];
         }
+        $medKort = self::harKort();
         $hvor  = ["d.tekst IS NOT NULL", "d.tekst <> ''"];
         $param = [];
         if ($bareMedlem) {
-            $hvor[] = 'k.vis_medlem = 1';
+            $hvor[] = self::synligSql();
         }
         if ($kategorier !== []) {
+            // Velger man «Keramikk maler», er det malene inni som menes.
+            // To sett parametre for den samme lista: PDO lar ikke ett navn
+            // brukes to steder i samme setning.
             $inn = [];
+            $inn2 = [];
             foreach (array_values($kategorier) as $i => $k) {
-                $inn[] = ':k' . $i;
+                $inn[]  = ':k' . $i;
+                $inn2[] = ':f' . $i;
                 $param['k' . $i] = (int) $k;
+                if ($medKort) {
+                    $param['f' . $i] = (int) $k;
+                }
             }
-            $hvor[] = 'k.id IN (' . implode(', ', $inn) . ')';
+            $hvor[] = $medKort
+                ? '(k.id IN (' . implode(', ', $inn) . ') OR k.forelder_id IN (' . implode(', ', $inn2) . '))'
+                : 'k.id IN (' . implode(', ', $inn) . ')';
         }
         $der = 'WHERE ' . implode(' AND ', $hvor);
+        // Modellen skal kunne si hvor svaret sto: «Keramikk maler · Fuglekasse».
+        $kortNavn = $medKort
+            ? "IF(p.id IS NULL, k.navn, CONCAT(p.navn, ' · ', k.navn))"
+            : 'k.navn';
+        $sorter = $medKort ? 'IFNULL(p.sortering, k.sortering), k.sortering' : 'k.sortering';
 
         return array_map(static fn($d) => [
             'kategori' => (string) $d['kategori_navn'],
             'navn'     => (string) $d['originalnavn'],
             'tekst'    => (string) $d['tekst'],
         ], DB::alle(
-            "SELECT d.originalnavn, d.tekst, k.navn AS kategori_navn
+            "SELECT d.originalnavn, d.tekst, {$kortNavn} AS kategori_navn
                FROM verksted_dokumenter d
                JOIN verksted_kategorier k ON k.id = d.kategori_id
+               " . self::forelderJoin() . "
                {$der}
-              ORDER BY k.sortering, d.opprettet DESC",
+              ORDER BY {$sorter}, d.opprettet DESC",
             $param
         ));
     }
@@ -554,5 +656,233 @@ final class Dokumenter
         return (string) (DB::verdi(
             "SELECT verdi FROM innstillinger WHERE nokkel = 'verksted_faq_medlem'"
         ) ?? '') === '1';
+    }
+
+    // ────────────────────────────────────────────────────────── import ──
+
+    /**
+     * Mappa importpakka ligger i, eller null naar den ikke er der.
+     *
+     * Deploy-jobben legger db/dokumenter/ ved siden av app-koden, som
+     * lissom-app/dokumenter-import/. Lokalt ligger den der den er i repoet.
+     */
+    public static function importMappe(): ?string
+    {
+        foreach ([dirname(APP_DIR) . '/dokumenter-import', dirname(APP_DIR) . '/db/dokumenter'] as $m) {
+            if (is_file($m . '/manifest.json')) {
+                return $m;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Legger dokumentene fra importpakka inn i kortene.
+     *
+     * Eieren, 11. september 2026: haandboekene og de 71 keramikkmalene fra
+     * mappa «Lissom opplasting» skal inn i kortene — haandboekene i hvert
+     * sitt kort, og hver mal som sitt eget kort under «Keramikk maler».
+     *
+     * Claude har ikke tilgang til webhotellet, og admin-opplastingen flater
+     * ut mapper. Derfor gaar det denne veien: bin/dokumentpakke.mjs legger
+     * filene i repoet med et manifest, deploy-jobben legger dem ut, og
+     * «Kjør oppdateringer» kaller hit.
+     *
+     * Trygg aa kjoere om igjen: hvert dokument huskes paa «kilde» (stien i
+     * manifestet), og hvert malkort paa slug. Det som alt er inne, hoppes
+     * over. Sletter eieren et importert dokument i admin, er raden borte —
+     * og da ville neste import lagt det tilbake. Derfor huskes slettede
+     * kilder for seg, se slett() og slettedeKilder().
+     *
+     * Filene kopieres, ikke flyttes: importpakka speiles av deploy-jobben,
+     * og en fil som mangler der ville blitt lagt tilbake ved neste utrulling.
+     *
+     * @return array{kort:int,dokumenter:int,hoppet:int,feil:list<string>}
+     */
+    public static function importer(): array
+    {
+        $ut = ['kort' => 0, 'dokumenter' => 0, 'hoppet' => 0, 'feil' => []];
+        $mappe = self::importMappe();
+        if ($mappe === null || !self::harKort() || !DB::harKolonne('verksted_dokumenter', 'kilde')) {
+            return $ut;
+        }
+        // 260 filer og 140 MB skal kopieres. Maalt: 30 sekunder holdt ikke
+        // som CGI. Stopper det likevel, er det trygt aa trykke en gang til —
+        // det som kom inn, hoppes over neste gang.
+        @set_time_limit(600);
+
+        $manifest = json_decode((string) file_get_contents($mappe . '/manifest.json'), true);
+        if (!is_array($manifest)) {
+            $ut['feil'][] = 'manifest.json kunne ikke leses.';
+            return $ut;
+        }
+
+        $kortVedSlug = [];
+        foreach (DB::alle('SELECT id, slug FROM verksted_kategorier') as $k) {
+            $kortVedSlug[(string) $k['slug']] = (int) $k['id'];
+        }
+        $inne = array_flip(array_map('strval', array_column(
+            DB::alle('SELECT kilde FROM verksted_dokumenter WHERE kilde IS NOT NULL'), 'kilde'
+        )));
+        $slettet = self::slettedeKilder();
+
+        // Ett dokument inn, om det ikke alt er der.
+        $leggInn = function (array $d, int $kategoriId) use (&$ut, &$inne, $slettet, $mappe): void {
+            $kilde = (string) ($d['fil'] ?? '');
+            if ($kilde === '' || isset($inne[$kilde]) || isset($slettet[$kilde])) {
+                $ut['hoppet']++;
+                return;
+            }
+            try {
+                self::kopierInn($mappe, $kilde, $kategoriId, (string) ($d['navn'] ?? ''));
+                $inne[$kilde] = true;
+                $ut['dokumenter']++;
+            } catch (RuntimeException $e) {
+                $ut['feil'][] = $kilde . ': ' . $e->getMessage();
+            }
+        };
+
+        // Haandboekene, rett i hovedkortet sitt.
+        foreach ((array) ($manifest['dokumenter'] ?? []) as $d) {
+            $kortId = $kortVedSlug[(string) ($d['kort'] ?? '')] ?? null;
+            if ($kortId === null) {
+                $ut['feil'][] = ($d['fil'] ?? '?') . ': fant ikke kortet «' . ($d['kort'] ?? '') . '».';
+                continue;
+            }
+            $leggInn($d, $kortId);
+        }
+
+        // Malene: ett underkort hver, under «Keramikk maler».
+        $forelder = $kortVedSlug['maler'] ?? null;
+        if ($forelder === null && ($manifest['maler'] ?? []) !== []) {
+            $ut['feil'][] = 'Fant ikke kortet «Keramikk maler».';
+            return $ut;
+        }
+        foreach ((array) ($manifest['maler'] ?? []) as $m) {
+            $slug = (string) ($m['slug'] ?? '');
+            if ($slug === '') {
+                continue;
+            }
+            $id = $kortVedSlug[$slug] ?? null;
+            if ($id === null) {
+                $bilde = null;
+                $bildeKilde = (string) ($m['bilde'] ?? '');
+                if ($bildeKilde !== '') {
+                    try {
+                        $bilde = self::kopierFil($mappe, $bildeKilde);
+                    } catch (RuntimeException $e) {
+                        $ut['feil'][] = $bildeKilde . ': ' . $e->getMessage();
+                    }
+                }
+                $id = DB::settInn('verksted_kategorier', [
+                    'forelder_id' => $forelder,
+                    'slug'        => $slug,
+                    'navn'        => mb_substr((string) ($m['navn'] ?? $slug), 0, 191),
+                    'under'       => mb_substr((string) ($m['under'] ?? ''), 0, 191),
+                    'bilde'       => $bilde,
+                    // Underkortene ligger etter hovedkortene, i manifestets
+                    // rekkefoelge. Hovedkortene har 1–6.
+                    'sortering'   => 100 + (int) ($m['sortering'] ?? 0),
+                    'vis_medlem'  => 0,
+                ]);
+                $kortVedSlug[$slug] = $id;
+                $ut['kort']++;
+            }
+            // Baklengs, fordi lista sorteres nyeste foerst: da staar «Mal»
+            // oeverst i kortet og «Steg 10» nederst, slik manifestet har dem.
+            foreach (array_reverse((array) ($m['dokumenter'] ?? [])) as $d) {
+                $leggInn($d, $id);
+            }
+        }
+
+        return $ut;
+    }
+
+    /**
+     * Kopierer én fil fra importpakka inn i dokumentmappa, med et navn vi
+     * lager selv. Typen leses ut av innholdet, som ved opplasting.
+     *
+     * @return string filnavnet i dokumentmappa
+     */
+    private static function kopierFil(string $mappe, string $kilde): string
+    {
+        // Ingen «..» og ingen absolutt sti: manifestet er vaart, men fila
+        // det peker paa skal uansett ligge inni pakka.
+        if (str_contains($kilde, '..') || str_starts_with($kilde, '/') || str_contains($kilde, ':')) {
+            throw new RuntimeException('Ugyldig sti.');
+        }
+        $fra = $mappe . '/' . $kilde;
+        if (!is_file($fra)) {
+            throw new RuntimeException('Fant ikke fila i importpakka.');
+        }
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime  = (string) ($finfo->file($fra) ?: '');
+        if (!isset(self::TYPER[$mime])) {
+            throw new RuntimeException('Filen må være PDF, Word eller bilde.');
+        }
+        $navn = bin2hex(random_bytes(16)) . '.' . self::TYPER[$mime];
+        if (!@copy($fra, self::mappe() . '/' . $navn)) {
+            throw new RuntimeException('Fikk ikke lagret filen.');
+        }
+        @chmod(self::mappe() . '/' . $navn, 0644);
+        return $navn;
+    }
+
+    /** kopierFil() pluss raden i basen. */
+    private static function kopierInn(string $mappe, string $kilde, int $kategoriId, string $navn): int
+    {
+        $filnavn = self::kopierFil($mappe, $kilde);
+        $sti = self::mappe() . '/' . $filnavn;
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        return DB::settInn('verksted_dokumenter', [
+            'kategori_id'   => $kategoriId,
+            'filnavn'       => $filnavn,
+            'originalnavn'  => self::rentNavn($navn !== '' ? $navn : basename($kilde)),
+            'mime'          => (string) ($finfo->file($sti) ?: ''),
+            'storrelse'     => (int) filesize($sti),
+            'lastet_opp_av' => null,
+            'kilde'         => $kilde,
+        ]);
+    }
+
+    /**
+     * Kildene eieren har slettet, saa importen ikke legger dem tilbake.
+     *
+     * Ligger i innstillinger som én tekst med linjeskift, ikke i en egen
+     * tabell: det er en liste som sjelden vokser, og «innstillinger» finnes
+     * alt paa alle installasjoner.
+     *
+     * @return array<string,true>
+     */
+    private static function slettedeKilder(): array
+    {
+        if (!DB::harTabell('innstillinger')) {
+            return [];
+        }
+        $tekst = (string) (DB::verdi(
+            "SELECT verdi FROM innstillinger WHERE nokkel = 'verksted_import_slettet'"
+        ) ?? '');
+        $ut = [];
+        foreach (preg_split('/\R/', $tekst) ?: [] as $l) {
+            if (trim($l) !== '') {
+                $ut[trim($l)] = true;
+            }
+        }
+        return $ut;
+    }
+
+    /** Husk at denne kilden er slettet med vilje. Kalles fra slett(). */
+    private static function huskSlettetKilde(string $kilde): void
+    {
+        if ($kilde === '' || !DB::harTabell('innstillinger')) {
+            return;
+        }
+        $alle = self::slettedeKilder();
+        $alle[$kilde] = true;
+        DB::kjor(
+            'INSERT INTO innstillinger (nokkel, verdi) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)',
+            ['verksted_import_slettet', implode("\n", array_keys($alle))]
+        );
     }
 }

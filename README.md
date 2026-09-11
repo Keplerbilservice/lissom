@@ -39,6 +39,7 @@ SMS, som betales per melding.
 | `api/` | Endepunktene frontenden kaller | Ja |
 | `app/` | All logikk: database, Vipps, varsling | **Nei** — utenfor webroten |
 | `db/migrations/` | Databasestrukturen, som SQL | Nei |
+| `db/dokumenter/` | Håndbøkene og keramikkmalene til kortene i Verkstedet, med manifest. Legges ved siden av app-koden og importeres av «⚙ Kjør oppdateringer» | Nei |
 | `bin/` | Planlagte jobber (cron) | Nei |
 | `docs/` | Oppsett og referanse | Nei |
 

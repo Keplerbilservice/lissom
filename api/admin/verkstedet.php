@@ -9,6 +9,8 @@
  *   POST handling=paaminnelseVekk  { id }
  *   POST handling=brenning     { id?, slag, ovn?, dato, fra, sluttDato?, til, notat? }
  *   POST handling=brenningVekk { id }
+ *   POST handling=kalendernotat     { id?, dato, fra, til?, tekst }
+ *   POST handling=kalendernotatVekk { id }
  *
  * ── Hvorfor ───────────────────────────────────────────────────────────
  *
@@ -240,6 +242,64 @@ switch (Foresporsel::tekst('handling')) {
         DB::kjor('DELETE FROM brenninger WHERE id = :i', ['i' => $id]);
         revider('brenning_slettet', 'brenning', $id);
         Svar::ok(['beskjed' => 'Brenningen er tatt bort.']);
+
+    // --------------------------------------------- notatene i kalenderen
+    //
+    // Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til
+    // notater, ikke bare kurs? rett i kalender». Han valgte «Trykk paa
+    // dagen», «Bare admin» og «Med klokkeslett».
+    //
+    // Ikke det samme som «notat» over. Det er ETT notat per person uten
+    // dato; dette er en hendelse paa en dag, som en brenning — og det er
+    // derfor det ligger her, sammen med brenningene, og ikke i en ny fil.
+    case 'kalendernotat':
+        // Koden legges ut foer eieren trykker «Kjor oppdateringer». I
+        // mellomtida finnes ikke tabellen, og da skal ruta si det i
+        // klartekst — ikke feile med en databasefeil han ikke kan lese.
+        if (!DB::harTabell('kalender_notater')) {
+            Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
+        }
+        $dato  = Foresporsel::tekst('dato');
+        $fra   = Foresporsel::tekst('fra');
+        $til   = Foresporsel::tekst('til');
+        $tekst = mb_substr(trim(Foresporsel::tekst('tekst')), 0, 500);
+
+        if ($tekst === '') {
+            Svar::feil('Skriv notatet først.');
+        }
+        $klokke = static fn(string $k): bool => preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $k) === 1;
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dato) !== 1 || !$klokke($fra)) {
+            Svar::feil('Skriv dato som 2026-09-02 og klokkeslett som 10:00.');
+        }
+        // Tom sluttid er greit — da staar notatet paa starttida alene. Er
+        // den fylt ut, maa den vaere etter: «09:00–08:00» er ingen time.
+        if ($til !== '' && (!$klokke($til) || $til <= $fra)) {
+            Svar::feil('Notatet må slutte etter at det begynner.');
+        }
+
+        $id = Foresporsel::heltall('id');
+        $felter = [
+            'dato'  => $dato,
+            'fra'   => $fra . ':00',
+            'til'   => $til !== '' ? $til . ':00' : null,
+            'tekst' => $tekst,
+        ];
+        if ($id > 0) {
+            if (DB::en('SELECT id FROM kalender_notater WHERE id = :i', ['i' => $id]) === null) {
+                Svar::feil('Fant ikke notatet.', 404);
+            }
+            DB::oppdater('kalender_notater', $felter, ['id' => $id]);
+        } else {
+            $id = DB::settInn('kalender_notater', $felter + ['skrevet_av' => $megId]);
+        }
+        revider('kalendernotat_lagret', 'kalendernotat', $id, ['dato' => $dato]);
+        Svar::ok(['id' => $id, 'beskjed' => 'Notatet er lagret.']);
+
+    case 'kalendernotatVekk':
+        $id = Foresporsel::heltall('id');
+        DB::kjor('DELETE FROM kalender_notater WHERE id = :i', ['i' => $id]);
+        revider('kalendernotat_slettet', 'kalendernotat', $id);
+        Svar::ok(['beskjed' => 'Notatet er tatt bort.']);
 
     default:
         Svar::feil('Ukjent handling.');

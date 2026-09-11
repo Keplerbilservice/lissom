@@ -280,6 +280,43 @@ if (DB::harTabell('brenninger')) {
     }
 }
 
+// ── Notatene ────────────────────────────────────────────────────────────
+//
+// Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til notater,
+// ikke bare kurs? rett i kalender». Han valgte «Trykk paa dagen», «Bare
+// admin» og «Med klokkeslett».
+//
+// De kommer ut som hendelser som alt annet, med type «notat». Da tegner
+// maaned, uke og liste dem uten aa vite at de er nye — og de kan ikke
+// forsvinne ut av én visning fordi noen glemte den.
+//
+// Ingen tidssoneregning: notatet er lagret i lokal tid med vilje. Se
+// migrasjon 162. Det gaar ikke ut i kalenderfila og ikke i e-post; det staar
+// paa skjermen, og «08:30» skal vaere 08:30 ogsaa etter at klokka stilles.
+$notater = [];
+if (DB::harTabell('kalender_notater')) {
+    foreach (DB::alle(
+        'SELECT id, dato, fra, til, tekst FROM kalender_notater
+          WHERE dato >= :fra AND dato < :til
+       ORDER BY dato, fra',
+        ['fra' => substr($fra, 0, 10), 'til' => substr($til, 0, 10)]
+    ) as $n) {
+        $notater[] = [
+            'id'      => 'notat-' . (int) $n['id'],
+            'notatId' => (int) $n['id'],
+            'dato'    => (string) $n['dato'],
+            'tid'     => substr((string) $n['fra'], 0, 5),
+            'slutt'   => $n['til'] !== null ? substr((string) $n['til'], 0, 5) : '',
+            'tittel'  => (string) $n['tekst'],
+            'type'    => 'notat',
+            'holder'  => '',
+            'kursId' => 0, 'kap' => 0, 'pameldt' => 0, 'oktId' => 0,
+            'deltakere' => [], 'venteliste' => [], 'nye' => 0,
+            'avlyst' => false, 'intern' => false,
+        ];
+    }
+}
+
 // ── Betalingsstatus for dem som staar i koen ────────────────────────────
 //
 // Eieren, 6. september 2026, med et bilde av ventelista i kalenderen: «Ba
@@ -557,7 +594,7 @@ foreach ($okter as $o) {
 }
 
 Svar::json([
-    'hendelser' => array_merge($hendelser, $verksted, $brenninger),
+    'hendelser' => array_merge($hendelser, $verksted, $brenninger, $notater),
     'stengte'   => $stengt,
     // Kursholderne, saa kolonnene i dagsvisningen kan settes opp uten et
     // kall til. «standard» er den som vanligvis holder kursene — den staar

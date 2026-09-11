@@ -72,6 +72,7 @@ require APP_DIR . '/lib/oppsett.php';
 require APP_DIR . '/lib/kursmal.php';
 require APP_DIR . '/lib/tikk.php';
 require APP_DIR . '/lib/ai.php';
+require APP_DIR . '/lib/pdftekst.php';
 require APP_DIR . '/lib/dokumenter.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i

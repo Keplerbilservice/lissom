@@ -110,13 +110,15 @@ final class AI
     /**
      * Ett kall til modellen.
      *
-     * @param  string $system   rollen — hvem skriver, og for hvem
-     * @param  string $bruker   selve oppgaven
+     * @param  string       $system rollen — hvem skriver, og for hvem
+     * @param  string|array $bruker selve oppgaven. En liste er innholdsblokker
+     *                              slik Anthropic vil ha dem — det er slik en
+     *                              PDF foelger med. Se lesPdf().
      * @param  string $formal   hva dette gjelder, til loggen
      * @return array{tekst:string,kostnadOre:int,tokensInn:int,tokensUt:int}
      * @throws RuntimeException med en tekst som kan vises til eieren
      */
-    public static function spor(string $system, string $bruker, string $formal, int $maksTokens = 8000): array
+    public static function spor(string $system, string|array $bruker, string $formal, int $maksTokens = 8000): array
     {
         $noekkel = self::noekkel();
         if ($noekkel === '') {
@@ -142,7 +144,7 @@ final class AI
         ];
 
         $svar = http_kall(
-            'https://api.anthropic.com/v1/messages',
+            Config::aiBase() . '/v1/messages',
             'POST',
             json_encode($kropp, JSON_UNESCAPED_UNICODE),
             [
@@ -194,6 +196,66 @@ final class AI
         }
 
         return ['tekst' => $tekst, 'kostnadOre' => $ore, 'tokensInn' => $inn, 'tokensUt' => $ut];
+    }
+
+    /**
+     * Leser en PDF — ogsaa et skannet ark — og gir teksten tilbake.
+     *
+     * Eieren, 11. september 2026, om «Spoer verkstedet»: «kan man ikke stille
+     * inn saa pdf opplastinger kan inkluderes i ai soeket, slik at mer og mer
+     * kunnskap vil komme til?» Han valgte «Server foerst, Claude hvis tom»:
+     * Pdftekst::les() proever gratis, og denne tar de arkene som ikke har
+     * bokstaver i seg i det hele tatt.
+     *
+     * Merk at dette er en AVSKRIFT, ikke et sammendrag. Modellen skal ikke
+     * forklare, forkorte eller rette — staar det feil maal i haandboka, skal
+     * det staa feil her ogsaa. Det er dokumentet som er fasit naar «Spoer
+     * verkstedet» svarer, og et sammendrag ville stille gjort fasiten daarligere.
+     *
+     * @throws RuntimeException med en tekst som kan vises til eieren
+     */
+    public static function lesPdf(string $sti, string $navn): string
+    {
+        $raa = @file_get_contents($sti);
+        if (!is_string($raa) || $raa === '') {
+            throw new RuntimeException('Fikk ikke lest filen.');
+        }
+        // Anthropic tar imot 32 MB. Vi stopper godt under, for base64 gjor
+        // fila en tredel storre paa veien.
+        if (strlen($raa) > 20 * 1024 * 1024) {
+            throw new RuntimeException('Filen er for stor til å leses av AI-en.');
+        }
+
+        $system = <<<TXT
+        Du skriver av dokumenter, ord for ord.
+
+        Du faar én PDF. Skriv ut all teksten i den, i den rekkefolgen den staar,
+        og ingenting annet:
+
+        1. Ingen innledning, ingen «her er teksten», ingen oppsummering.
+        2. Ikke rett, forkort eller forklar noe. Staar det en feil, skriver du
+           feilen av.
+        3. Tabeller skrives som linjer med kolonnene skilt med mellomrom.
+        4. Er arket tomt, eller bare et bilde uten tekst, svarer du med
+           nøyaktig: INGEN TEKST
+        TXT;
+
+        $r = self::spor(
+            $system,
+            [
+                ['type' => 'document', 'source' => [
+                    'type'       => 'base64',
+                    'media_type' => 'application/pdf',
+                    'data'       => base64_encode($raa),
+                ]],
+                ['type' => 'text', 'text' => 'Skriv av teksten i «' . $navn . '».'],
+            ],
+            'Les dokument',
+            16000
+        );
+
+        $tekst = trim($r['tekst']);
+        return $tekst === 'INGEN TEKST' ? '' : $tekst;
     }
 
     /**

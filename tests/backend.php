@@ -2476,7 +2476,7 @@ sjekk('brenningens slag er et valg, ikke fritekst',
 sjekk('brenningene staar i kalenderen, vaktene ikke',
     str_contains($kalFil, "'type'      => 'brenning',")
     && !str_contains($kalFil, "'type'   => 'vakt',")
-    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $brenninger)'));
+    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $brenninger, $notater)'));
 // Uten tabellen skal endepunktet svare, ikke doe.
 sjekk('kalenderen taaler at migrasjon 088 ikke er kjort',
     str_contains($kalFil, "DB::harTabell('brenninger')"));
@@ -3374,7 +3374,7 @@ sjekk('maanedsbrikka faar den korte formen',
 // Redigereren ville vist startdagen og latt deg flytte hele kurset fra en dag
 // som ikke er den det staar paa.
 sjekk('dag to aapner okta slik den staar, ikke redigeringen',
-    str_contains($sida2, "const velg = e => (e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));"));
+    str_contains($sida2, ": e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));"));
 // Aa dra dag to alene ville flyttet hele kurset dit.
 sjekk('dag to kan ikke dras',
     str_contains($sida2, "if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;"));
@@ -7563,6 +7563,39 @@ sjekk('… og feltet tommes naar meldingen er sendt',
 sjekk('… og teksten kommer tilbake i feltet om sendingen ryker',
     substr_count($sida, 'if (skrivefelt) { skrivefelt.value = t; this.chatHoyde(skrivefelt); }') === 2,
     'én gang naar serveren avviser, én gang naar linja ryker');
+
+// ── Knappen sier «Tenker», og puster mens den gjor det ────────────
+//
+// Eieren, 11. september 2026: «naar jeg soker saa staar det paa knappen
+// leter i dokumentene, kan du endre til Tenker, og gjerne en liten
+// animasjon».
+//
+// Ordet er kortere enn det var, saa knappen hopper mindre i bredden naar den
+// bytter: 88 px i ro, 122 mens den tenker — mot «Leter i dokumentene …» for.
+//
+// Animasjonen er lys som gaar opp og ned, ikke bevegelse: en knapp som
+// hopper mens man venter gjor ventingen lengre. Den staar helt i ro for den
+// som har bedt om mindre bevegelse.
+//
+// Maalt i nettleseren paa 390 px, med svaret forsinket fire sekunder:
+// «Spør» uten animasjon → «Tenker …» med «lx-tenker» paa 1,4 s → «Spør»
+// uten animasjon igjen.
+sjekk('knappen sier «Tenker …» mens AI-en jobber',
+    substr_count($sida, "this.state.faqJobber ? 'Tenker …' : 'Spør',") === 2
+    && !str_contains($sida, 'Leter i dokumentene'),
+    'maalt: 88 px i ro, 122 mens den tenker');
+sjekk('… og den puster, uten aa flytte paa seg',
+    str_contains($sida, '  @keyframes lx-tenker {')
+    && str_contains($sida, "animation: 'lx-tenker 1.4s ease-in-out infinite' }")
+    && str_contains($sida, '    50%      { opacity: .55; }'),
+    'lys opp og ned; en knapp som hopper gjor ventingen lengre');
+sjekk('… og staar stille for den som har bedt om det',
+    str_contains($sida, '  @media (prefers-reduced-motion: reduce) {')
+    && str_contains($sida, '    [style*="lx-tenker"] { animation: none !important; }'),
+    'samme regel som «lx-puls» og koppen paa 404-sida');
+sjekk('… paa alle tre knappene, Nyttig info og begge i admin',
+    substr_count($sida, '<span style="{{ mdTenkerStil }}">') === 1
+    && substr_count($sida, '<span style="{{ faqTenkerStil }}">') === 2);
 
 // ── Skrivefeltet vokser med teksten ───────────────────────────────
 //
@@ -16099,9 +16132,161 @@ sjekk('… og det som har egen adresse faar ikke ett steg til',
     str_contains($mkSida, "if (this._lagSti !== undefined && sti !== this._lagSti) {")
     && str_contains($mkSida, "history.pushState({ side: this.state.side, idx: ++this._lagTeller }, '', sti + window.location.search);"));
 
-sjekk('kildene under svaret faar malnavnet foran',
+// ── «Hentet fra Monicas kunnskapsbase» ────────────────────────────
+//
+// Eieren, 11. september 2026: «naar den finner noe, saa staar det hentet fra
+// f eks haandbok, kan den heller staa hentet fra Monicas kunnskapsbase?»
+// Spurt om dokumentnavnet skulle bli staaende under, valgte han bare linja.
+//
+// Navnene kommer fortsatt fra serveren. De vises ikke, men de gjor to ting:
+// de avgjor om linja staar i det hele tatt — svarte modellen fra
+// dokumentene? — og de er fasiten naar svaret sier hvor det kom fra, saa en
+// modell som finner paa et dokumentnavn ikke slipper gjennom.
+sjekk('kilden staar som «Monicas kunnskapsbase», ett sted for alle tre',
+    substr_count($sida, '>Hentet fra Monicas kunnskapsbase</span>') === 3
+    && !str_contains($sida, '>Hentet fra</span>'),
+    'Nyttig info og de to i admin');
+sjekk('… men serveren vet fortsatt hvilket dokument svaret kom fra',
     str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")
-    && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"));
+    && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"),
+    'navnet avgjor om linja staar, og stopper en modell som finner paa en kilde');
+
+// ── PDF-er leses av seg selv ──────────────────────────────────────
+//
+// Eieren, 11. september 2026: «kan man ikke stille inn saa pdf opplastinger
+// kan inkluderes i ai soeket, slik at mer og mer kunnskap vil komme til?»
+// Spurt hvordan, valgte han «Server foerst, Claude hvis tom».
+//
+// Selve lesingen maales med ekte PDF-er lenger nede. Her staar reglene som
+// ikke maa forsvinne i en opprydding.
+$pdLib  = file_get_contents(dirname(__DIR__) . '/app/lib/pdftekst.php');
+$pdDok  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$pdApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$pdCron = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$pdAi   = file_get_contents(dirname(__DIR__) . '/app/lib/ai.php');
+
+sjekk('en PDF som lastes opp leses av serveren med en gang',
+    str_contains($pdDok, "\$tekst = \$mime === 'application/pdf' ? Pdftekst::les(\$mappe . '/' . \$navn) : '';")
+    && substr_count($pdDok, "Pdftekst::les(\$mappe . '/' . \$navn)") === 2,
+    'bade én fil og hver fil inni en zip');
+
+sjekk('det serveren ikke fikk lest, leser Claude',
+    str_contains($pdApi, 'Dokumenter::lesMedAi(3, 20)')
+    && str_contains($pdCron, 'Dokumenter::lesMedAi(20, 900)'),
+    'noen faa mens eieren venter, resten i natt');
+
+sjekk('Claude skriver AV dokumentet — den oppsummerer det ikke',
+    str_contains($pdAi, 'Du skriver av dokumenter, ord for ord.')
+    && str_contains($pdAi, 'Ikke rett, forkort eller forklar noe.')
+    && str_contains($pdAi, "return \$tekst === 'INGEN TEKST' ? '' : \$tekst;"),
+    'et sammendrag ville gjort fasiten i «Spor verkstedet» daarligere');
+
+sjekk('PDF-en foelger med som dokument, ikke som tekst',
+    str_contains($pdAi, "'type' => 'document', 'source' => [")
+    && str_contains($pdAi, "'media_type' => 'application/pdf',"));
+
+sjekk('sproeyt lagres aldri som tekst',
+    str_contains($pdDok, "if (\$tekst === '' || !Pdftekst::ekte(\$tekst)) {"),
+    'da ville bade vi og AI-en trodd at dokumentet var lest');
+
+sjekk('en AI som ikke svarer stopper runden, den tommer den ikke',
+    str_contains($pdDok, '} catch (RuntimeException $e) {')
+    && str_contains($pdDok, "logg('Fikk ikke lest dokument med AI', ["),
+    'taket naadd eller Anthropic nede: raden staar, og natta proever igjen');
+
+sjekk('AI-adressen kan bare byttes utenfor produksjon',
+    str_contains($mkSecrets = file_get_contents(dirname(__DIR__) . '/app/config.php'), "getenv('LISSOM_AI_BASE')")
+    && str_contains($mkSecrets, "if (\$fra !== '' && self::miljo() !== 'produksjon') {\n            return rtrim(\$fra, '/');\n        }\n        return 'https://api.anthropic.com';"),
+    'samme regel som vippsBase()');
+
+// ── Og saa de ekte PDF-ene ────────────────────────────────────────
+//
+// To filer ligger i tests/filer: én laget paa en PC, og én der teksten er et
+// bilde. Den foerste SKAL leses gratis. Den andre skal gi tomt — ikke noe
+// som ser ut som tekst — saa Claude faar den.
+$pdMappe = __DIR__ . '/filer';
+if (is_file($pdMappe . '/pdf-med-tekst.pdf')) {
+    $pdTekst = Pdftekst::les($pdMappe . '/pdf-med-tekst.pdf');
+    sjekk('en PDF laget paa en PC leses gratis, med æ, ø og å',
+        str_contains($pdTekst, 'Glasurhåndbok')
+        && str_contains($pdTekst, 'kvarts 25 %')
+        && str_contains($pdTekst, 'påføres i to strøk'),
+        'fikk ' . mb_strlen($pdTekst) . ' tegn');
+}
+if (is_file($pdMappe . '/pdf-skannet.pdf')) {
+    sjekk('et skannet ark gir tomt — ikke noe som ser ut som tekst',
+        Pdftekst::les($pdMappe . '/pdf-skannet.pdf') === '',
+        'da gaar den videre til Claude');
+}
+sjekk('sproeyt fra en feiltolket font godkjennes ikke',
+    !Pdftekst::ekte(str_repeat('█▓▒░', 40))
+    && Pdftekst::ekte('Blank glasur 1240 blandes av kvarts 25 %, feltspat 30 %, kaolin 20 % og kritt 25 %.'));
+
+// ── Notater i kalenderen ──────────────────────────────────────────
+//
+// Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til notater,
+// ikke bare kurs? rett i kalender». Han valgte «Trykk paa dagen», «Bare
+// admin» og «Med klokkeslett», og godkjente ruta paa bilde.
+$knMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/162_notater_i_kalenderen.sql');
+$knVst  = file_get_contents(dirname(__DIR__) . '/api/admin/verkstedet.php');
+$knKal  = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+
+sjekk('notatene har sin egen tabell, ikke en kolonne paa den gamle',
+    str_contains($knMig, 'CREATE TABLE IF NOT EXISTS kalender_notater')
+    && str_contains($knMig, 'dato       DATE NOT NULL')
+    && str_contains($knMig, 'fra        TIME NOT NULL'),
+    '«verksted_notater» er ETT notat per person uten dato — noe annet');
+
+sjekk('notatene kommer ut av kalenderen som hendelser, som alt annet',
+    str_contains($knKal, "'type'    => 'notat',")
+    && str_contains($knKal, "array_merge(\$hendelser, \$verksted, \$brenninger, \$notater)"),
+    'da tegner maaned, uke og liste dem uten aa vite at de er nye');
+
+sjekk('… og kalenderen taaler at oppdateringen ikke er kjort ennaa',
+    str_contains($knKal, "if (DB::harTabell('kalender_notater')) {")
+    && str_contains($knVst, "if (!DB::harTabell('kalender_notater')) {"));
+
+sjekk('bare admin kommer til notatene',
+    str_contains($knVst, '$admin = krev_admin();')
+    && str_contains($knKal, 'krev_admin();'),
+    'eieren valgte «Bare admin» — de skal ikke ut til medlemmene');
+
+sjekk('et notat maa slutte etter at det begynner',
+    str_contains($knVst, "if (\$til !== '' && (!\$klokke(\$til) || \$til <= \$fra)) {"),
+    'tom sluttid er greit; «09:00–08:00» er ingen time');
+
+sjekk('notatet lagres i lokal tid, med vilje',
+    str_contains($knMig, 'Lokal tid, slik den staar i kalenderen')
+    && !str_contains($knKal, "\$iOslo((string) \$n['fra']"),
+    'det gaar ikke ut i kalenderfila; 08:30 skal vaere 08:30 ogsaa etter sommertida');
+
+$knSida = $sida;
+sjekk('notatruta staar ett sted og brukes fra maaned, uke og dag',
+    substr_count($knSida, 'placeholder="Skriv notatet"') === 1
+    && substr_count($knSida, 'onClick="{{ d.nyttNotat }}"') === 2
+    && substr_count($knSida, 'onClick="{{ k.nyttNotat }}"') === 1,
+    'maanedscella, ukespalta og dagspalta');
+
+sjekk('et trykk paa en brikke lager ikke et notat bak den',
+    substr_count($knSida, "if (!ev || ev.target !== ev.currentTarget) return;") === 3,
+    'target er brikka, currentTarget er dagen — uten dette aapnet begge seg');
+
+sjekk('et notat kan ikke dras, og har ingen hoyreklikkmeny',
+    str_contains($knSida, "if (e.type === 'notat') return;")
+    && str_contains($knSida, "if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;"),
+    'et notat er ingen okt: ingen deltakere, ingen kursholder, ingen plasser');
+
+sjekk('notatene vises ogsaa i dagsvisningen',
+    str_contains($knSida, "const dagensNotater = dagensAlle.filter(e => e.type === 'notat');")
+    && str_contains($knSida, '{{ klNotatStripeVis }}'),
+    'dagen deler skjermen per kursholder, og et notat har ingen');
+
+sjekk('notatene staar ikke i den lette utgaven',
+    !str_contains(
+        file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'),
+        'placeholder="Skriv notatet"'
+    ),
+    'kalenderen er admin, og medlemmene laster ikke ned det de ikke skal se');
 
 // ── Leire og Dreiing, og kunnskapstreff i soeket ─────────────────────────
 //

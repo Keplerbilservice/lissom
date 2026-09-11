@@ -178,6 +178,25 @@ final class Config
     }
 
     /**
+     * Anthropic — adressen AI-kallene gaar til.
+     *
+     * Samme grep som vippsBase(), og av samme grunn: naar Claude skal lese
+     * en PDF, er det verdt aa kunne SE hva vi sender — at dokumentet faktisk
+     * blir med, og at avskriften havner paa riktig dokument — uten aa bruke
+     * penger paa et ekte kall for hver gang testen kjores.
+     *
+     * Bare utenfor produksjon. Ute er det api.anthropic.com, punktum.
+     */
+    public static function aiBase(): string
+    {
+        $fra = (string) (getenv('LISSOM_AI_BASE') ?: '');
+        if ($fra !== '' && self::miljo() !== 'produksjon') {
+            return rtrim($fra, '/');
+        }
+        return 'https://api.anthropic.com';
+    }
+
+    /**
      * Telefonnumre som får admin-tilgang uansett hva som står i databasen.
      * Nødluke, slik at du ikke kan låse deg selv ute.
      *

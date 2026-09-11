@@ -7699,7 +7699,11 @@ window.__resources = {
                stenge en enkeltdag, men ikke spoer om grunn: «Fjern pilla, la
                grunnen gaa». Dager stenges under Ferie, som naas fra pilla
                under logoen paa hver adminskjerm. -->
-          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+          <!-- Eieren, 11. september 2026 (bilde fra Safari): raden med
+               pillene og soekefeltet laa helt inntil kalenderens overkant.
+               «den må flyttes litt lenger opp så det kommer luft under
+               pillen» — 12 px luft under raden. -->
+          <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">
           <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <sc-for list="{{ klVisninger }}" as="v" hint-placeholder-count="4">
@@ -7839,19 +7843,6 @@ window.__resources = {
                  («klHolderVis»), der man kunne sende henne en beskjed. Den
                  ruta staar igjen i koden, men naas ikke lenger herfra.
                  Eieren fikk det sagt for han valgte. -->
-            <!-- Notatene paa dagen.
-                 Dagsvisningen deler skjermen i én spalte per kursholder, og
-                 et notat har ingen — uten denne stripa ville notatene vaert
-                 usynlige nettopp i visningen kalenderen aapner i. Trykk paa
-                 et notat aapner det; trykk paa en tom flate i spaltene under
-                 lager et nytt. -->
-            <sc-if value="{{ klNotatStripeVis }}" hint-placeholder-val="{{ false }}">
-              <div style="{{ klNotatStripeStil }}">
-                <sc-for list="{{ klNotatStripe }}" as="n" hint-placeholder-count="1">
-                  <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.tekst }}</button>
-                </sc-for>
-              </div>
-            </sc-if>
             <div style="{{ klBoardKroppStil }}">
               <div style="{{ klGutterStil }}">
                 <sc-for list="{{ klBoardTimer }}" as="t" hint-placeholder-count="15">
@@ -7893,6 +7884,15 @@ window.__resources = {
                 </div>
               </sc-for>
               <div style="{{ klNaStil }}"></div>
+              <!-- Notatene paa dagen, som et baand tvers over alle spaltene
+                   paa klokkeslettet sitt. De sto som piller i en stripe over
+                   timeplanen; eieren, 11. september 2026: «notat i kalender,
+                   på 1 dag visning, legges ikke på riktig klokkeslett». Han
+                   valgte «over alle spaltene». Et notat har ingen kursholder,
+                   saa det hoerer ikke hjemme i én spalte. -->
+              <sc-for list="{{ klDagNotater }}" as="n" hint-placeholder-count="0">
+                <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.tekst }}</button>
+              </sc-for>
             </div>
           </div>
         </sc-if>
@@ -36730,13 +36730,22 @@ class Component extends DCLogic {
           // Et trykk inne i ruta skal ikke lukke den. Samme grep som
           // «klStopp» bruker paa de andre rutene i kalenderen.
           klNotatStopp: ev => ev.stopPropagation(),
-          klNotatStripeVis: dagensNotater.length > 0,
-          klNotatStripeStil: { display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '0 0 var(--space-4)' },
-          klNotatStripe: dagensNotater.map(e => ({
-            tekst: e.tid + (e.slutt ? '–' + e.slutt : '') + ' ' + e.tittel,
-            stil: Object.assign({}, pill(e, false), { width: 'auto', whiteSpace: 'normal' }),
-            velg: () => this.klNotatApne(e),
-          })),
+          // Baandet ligger over spaltene (zIndex 3) men under naa-linja (4),
+          // og begynner 56 px inn — der spaltene begynner, etter timene.
+          klDagNotater: dagensNotater.map(e => {
+            const s = minAv(e.tid);
+            const sl = e.slutt ? minAv(e.slutt) : s + 60;
+            return {
+              tekst: e.tid + (e.slutt ? '–' + e.slutt : '') + ' ' + e.tittel,
+              stil: Object.assign({}, pill(e, false), {
+                position: 'absolute', left: '56px', right: 0, width: 'auto', zIndex: 3,
+                top: (Math.max(0, s - bStart) / 60 * pxTime) + 'px',
+                height: Math.max(22, (Math.min(sl, bSluttMin) - Math.max(s, bStart)) / 60 * pxTime - 4) + 'px',
+                borderRadius: '4px', padding: '2px 10px', whiteSpace: 'normal', boxSizing: 'border-box',
+              }),
+              velg: () => this.klNotatApne(e),
+            };
+          }),
         };
       })(),
       ...(() => {

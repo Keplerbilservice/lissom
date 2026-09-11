@@ -1138,6 +1138,68 @@ window.__resources = {
 </script>
 
 <script>
+// Hele meldingen skal komme med naar noen limer inn i chatten.
+//
+// Eieren, 11. september 2026: teksten fra Monica staar klippet midt i en
+// setning. «Det fikser ikke chatten, her er det noe galt!»
+//
+// Hva som er utelukket, maalt: kolonnen tar 500 tegn og meldingen er 222;
+// API-et lagrer og henter den hel; oppstillingen er bygget om og klipper
+// ikke; og en melding skrevet i feltet her og sendt med knappen kommer hel
+// fram. Teksten ligger kort i basen, og den ble kort da den ble skrevet.
+//
+// Det som staar igjen: skrivefeltet er ett felt paa én linje. Limer man inn
+// tekst med linjeskift i et slikt felt, beholder Safari BARE det som staar
+// for det forste skiftet — resten forsvinner uten et ord. Chrome tar alt og
+// gjor skiftet om til mellomrom. Eieren er paa iPhone, og WebKit lar seg
+// ikke installere her, saa det er den ene mekanismen jeg ikke faar proevd.
+//
+// Derfor gjor vi innlimingen selv: hele teksten settes inn, og linjeskift
+// blir mellomrom. Da kan ingen nettleser kaste resten. Er det ingen
+// linjeskift i det som limes, roeres ingenting — da gjor nettleseren jobben
+// som for.
+(function () {
+  function iChatten(el) {
+    return el && el.tagName === 'INPUT' && el.closest && el.closest('#minside-chat');
+  }
+  document.addEventListener('paste', function (e) {
+    var felt = e.target;
+    if (!iChatten(felt)) return;
+    var data = e.clipboardData || window.clipboardData;
+    if (!data) return;
+    var tekst = data.getData('text');
+    if (!tekst || !/[\r\n]/.test(tekst)) return;   // én linje: la nettleseren ta den
+
+    e.preventDefault();
+    var ren = tekst.replace(/\s*[\r\n]+\s*/g, ' ').trim();
+
+    // «insertText» og ikke «felt.value = ...».
+    //
+    // Skjermen holder sin egen kopi av hva som staar i feltet. Setter vi
+    // verdien rett paa elementet, ser den det ikke — og et «input» vi lager
+    // selv er ikke nok. Maalt: teksten sto i feltet, men SEND gjorde
+    // ingenting, fordi skjermen fortsatt trodde feltet var tomt.
+    //
+    // «insertText» er en ekte skriveoperasjon: nettleseren setter inn
+    // teksten og sender sitt eget «input» etterpaa, akkurat som naar noen
+    // taster. Da faar skjermen det med seg.
+    var gikk = false;
+    try { gikk = document.execCommand('insertText', false, ren); } catch (f) { gikk = false; }
+    if (!gikk) {
+      // Reserve for en nettleser som ikke tar imot den. Da staar i det
+      // minste teksten der, og den som limte kan trykke en tast.
+      var start = felt.selectionStart === null ? felt.value.length : felt.selectionStart;
+      var slutt = felt.selectionEnd === null ? felt.value.length : felt.selectionEnd;
+      felt.value = felt.value.slice(0, start) + ren + felt.value.slice(slutt);
+      var etter = start + ren.length;
+      try { felt.setSelectionRange(etter, etter); } catch (g) { /* noen felt tillater det ikke */ }
+      felt.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+})();
+</script>
+
+<script>
 // Sida laases naar bunnmenyen staar der.
 //
 // Eieren, 10. september 2026: «Bunnmenyen hopper naar jeg scroller opp og
@@ -29588,13 +29650,38 @@ class Component extends DCLogic {
   }
 
   sendChatNaa() {
-    const t = (this.state.chatTekst || '').trim();
+    // Teksten hentes fra FELTET, ikke fra skjermens kopi av det.
+    //
+    // Eieren, 11. september 2026, om en melding fra Monica som sto klippet
+    // midt i en setning: «Chat er viktigst.» Spurt om hun hadde limt den
+    // inn: «hun skrev den rett inn».
+    //
+    // Alt annet er maalt og funnet rent: kolonnen tar 500 tegn, API-et
+    // lagrer og henter hele, oppstillingen klipper ikke, en tegning midt i
+    // skrivinga tar ikke teksten, og en melding skrevet i feltet og sendt
+    // med knappen kommer hel fram her.
+    //
+    // Men denne linja sto «this.state.chatTekst». Skjermen holder sin egen
+    // kopi av hva som staar i feltet, og den oppdateres av en hendelse.
+    // Kommer det siste tegnet ikke med i den hendelsen — og telefontastatur
+    // har flere maater aa gjore det paa: retting, ordforslag, diktering —
+    // sendes kopien, ikke det som staar. Uten en lyd.
+    //
+    // Feltet er fasiten. Det er det hun ser naar hun trykker send.
+    const felt = document.getElementById('minside-chat');
+    const skrivefelt = felt && felt.querySelector('input');
+    const t = ((skrivefelt ? skrivefelt.value : this.state.chatTekst) || '').trim();
     if (!t) return;
     if (!this.erPublisert()) { this.setState({ chatFeil: 'Krever den ekte siden' }); return; }
     if (this._chatSender) return;
     this._chatSender = true;
     // Feltet tommes med det samme. Blir sendingen avvist, kommer teksten
     // tilbake — det er verre aa miste det man skrev enn aa vente et oyeblikk.
+    //
+    // Ogsaa selve feltet: skjermen skriver kopien sin inn i det naar den
+    // tegnes, men er kopien alt tom, ser den ingen grunn til aa roere det —
+    // og da ble teksten staaende igjen etter at den var sendt.
+    if (skrivefelt) skrivefelt.value = '';
     this.setState({ chatTekst: '', chatFeil: '' });
 
     fetch('/api/chat.php', {
@@ -29606,6 +29693,7 @@ class Component extends DCLogic {
       .then(({ ok, d }) => {
         this._chatSender = false;
         if (!ok) {
+          if (skrivefelt) skrivefelt.value = t;
           this.setState({ chatTekst: t, chatFeil: (d && d.feil) || 'Meldingen gikk ikke.' });
           return;
         }
@@ -29614,6 +29702,7 @@ class Component extends DCLogic {
       })
       .catch(() => {
         this._chatSender = false;
+        if (skrivefelt) skrivefelt.value = t;
         this.setState({ chatTekst: t, chatFeil: 'Fikk ikke kontakt med serveren.' });
       });
   }

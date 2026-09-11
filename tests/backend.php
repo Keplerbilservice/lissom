@@ -2476,7 +2476,7 @@ sjekk('brenningens slag er et valg, ikke fritekst',
 sjekk('brenningene staar i kalenderen, vaktene ikke',
     str_contains($kalFil, "'type'      => 'brenning',")
     && !str_contains($kalFil, "'type'   => 'vakt',")
-    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $brenninger)'));
+    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $brenninger, $notater)'));
 // Uten tabellen skal endepunktet svare, ikke doe.
 sjekk('kalenderen taaler at migrasjon 088 ikke er kjort',
     str_contains($kalFil, "DB::harTabell('brenninger')"));
@@ -3374,7 +3374,7 @@ sjekk('maanedsbrikka faar den korte formen',
 // Redigereren ville vist startdagen og latt deg flytte hele kurset fra en dag
 // som ikke er den det staar paa.
 sjekk('dag to aapner okta slik den staar, ikke redigeringen',
-    str_contains($sida2, "const velg = e => (e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));"));
+    str_contains($sida2, ": e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));"));
 // Aa dra dag to alene ville flyttet hele kurset dit.
 sjekk('dag to kan ikke dras',
     str_contains($sida2, "if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;"));
@@ -16215,6 +16215,72 @@ if (is_file($pdMappe . '/pdf-skannet.pdf')) {
 sjekk('sproeyt fra en feiltolket font godkjennes ikke',
     !Pdftekst::ekte(str_repeat('█▓▒░', 40))
     && Pdftekst::ekte('Blank glasur 1240 blandes av kvarts 25 %, feltspat 30 %, kaolin 20 % og kritt 25 %.'));
+
+// ── Notater i kalenderen ──────────────────────────────────────────
+//
+// Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til notater,
+// ikke bare kurs? rett i kalender». Han valgte «Trykk paa dagen», «Bare
+// admin» og «Med klokkeslett», og godkjente ruta paa bilde.
+$knMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/159_notater_i_kalenderen.sql');
+$knVst  = file_get_contents(dirname(__DIR__) . '/api/admin/verkstedet.php');
+$knKal  = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+
+sjekk('notatene har sin egen tabell, ikke en kolonne paa den gamle',
+    str_contains($knMig, 'CREATE TABLE IF NOT EXISTS kalender_notater')
+    && str_contains($knMig, 'dato       DATE NOT NULL')
+    && str_contains($knMig, 'fra        TIME NOT NULL'),
+    '«verksted_notater» er ETT notat per person uten dato — noe annet');
+
+sjekk('notatene kommer ut av kalenderen som hendelser, som alt annet',
+    str_contains($knKal, "'type'    => 'notat',")
+    && str_contains($knKal, "array_merge(\$hendelser, \$verksted, \$brenninger, \$notater)"),
+    'da tegner maaned, uke og liste dem uten aa vite at de er nye');
+
+sjekk('… og kalenderen taaler at oppdateringen ikke er kjort ennaa',
+    str_contains($knKal, "if (DB::harTabell('kalender_notater')) {")
+    && str_contains($knVst, "if (!DB::harTabell('kalender_notater')) {"));
+
+sjekk('bare admin kommer til notatene',
+    str_contains($knVst, '$admin = krev_admin();')
+    && str_contains($knKal, 'krev_admin();'),
+    'eieren valgte «Bare admin» — de skal ikke ut til medlemmene');
+
+sjekk('et notat maa slutte etter at det begynner',
+    str_contains($knVst, "if (\$til !== '' && (!\$klokke(\$til) || \$til <= \$fra)) {"),
+    'tom sluttid er greit; «09:00–08:00» er ingen time');
+
+sjekk('notatet lagres i lokal tid, med vilje',
+    str_contains($knMig, 'Lokal tid, slik den staar i kalenderen')
+    && !str_contains($knKal, "\$iOslo((string) \$n['fra']"),
+    'det gaar ikke ut i kalenderfila; 08:30 skal vaere 08:30 ogsaa etter sommertida');
+
+$knSida = $sida;
+sjekk('notatruta staar ett sted og brukes fra maaned, uke og dag',
+    substr_count($knSida, 'placeholder="Skriv notatet"') === 1
+    && substr_count($knSida, 'onClick="{{ d.nyttNotat }}"') === 2
+    && substr_count($knSida, 'onClick="{{ k.nyttNotat }}"') === 1,
+    'maanedscella, ukespalta og dagspalta');
+
+sjekk('et trykk paa en brikke lager ikke et notat bak den',
+    substr_count($knSida, "if (!ev || ev.target !== ev.currentTarget) return;") === 3,
+    'target er brikka, currentTarget er dagen — uten dette aapnet begge seg');
+
+sjekk('et notat kan ikke dras, og har ingen hoyreklikkmeny',
+    str_contains($knSida, "if (e.type === 'notat') return;")
+    && str_contains($knSida, "if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;"),
+    'et notat er ingen okt: ingen deltakere, ingen kursholder, ingen plasser');
+
+sjekk('notatene vises ogsaa i dagsvisningen',
+    str_contains($knSida, "const dagensNotater = dagensAlle.filter(e => e.type === 'notat');")
+    && str_contains($knSida, '{{ klNotatStripeVis }}'),
+    'dagen deler skjermen per kursholder, og et notat har ingen');
+
+sjekk('notatene staar ikke i den lette utgaven',
+    !str_contains(
+        file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'),
+        'placeholder="Skriv notatet"'
+    ),
+    'kalenderen er admin, og medlemmene laster ikke ned det de ikke skal se');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

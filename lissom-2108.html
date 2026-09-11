@@ -7722,7 +7722,7 @@ window.__resources = {
             <sc-for list="{{ klUker }}" as="uke" hint-placeholder-count="5">
               <div style="display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--border-subtle);">
                 <sc-for list="{{ uke.dager }}" as="d" hint-placeholder-count="7">
-                  <div data-dato="{{ d.iso }}" style="{{ d.stil }}">
+                  <div data-dato="{{ d.iso }}" onClick="{{ d.nyttNotat }}" style="{{ d.stil }}">
                     <div style="{{ d.tallStil }}">{{ d.tall }}</div>
                     <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="0">
                       <button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>
@@ -7755,7 +7755,7 @@ window.__resources = {
                 </sc-for>
               </div>
               <sc-for list="{{ klUkeDager }}" as="d" hint-placeholder-count="7">
-                <div data-dato="{{ d.iso }}" data-akse="1" style="{{ d.kolStil }}">
+                <div data-dato="{{ d.iso }}" data-akse="1" onClick="{{ d.nyttNotat }}" style="{{ d.kolStil }}">
                   <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="1">
                     <button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
                       <span style="display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.tid }}</span>
@@ -7795,6 +7795,19 @@ window.__resources = {
                  («klHolderVis»), der man kunne sende henne en beskjed. Den
                  ruta staar igjen i koden, men naas ikke lenger herfra.
                  Eieren fikk det sagt for han valgte. -->
+            <!-- Notatene paa dagen.
+                 Dagsvisningen deler skjermen i én spalte per kursholder, og
+                 et notat har ingen — uten denne stripa ville notatene vaert
+                 usynlige nettopp i visningen kalenderen aapner i. Trykk paa
+                 et notat aapner det; trykk paa en tom flate i spaltene under
+                 lager et nytt. -->
+            <sc-if value="{{ klNotatStripeVis }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ klNotatStripeStil }}">
+                <sc-for list="{{ klNotatStripe }}" as="n" hint-placeholder-count="1">
+                  <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.tekst }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
             <div style="{{ klBoardKroppStil }}">
               <div style="{{ klGutterStil }}">
                 <sc-for list="{{ klBoardTimer }}" as="t" hint-placeholder-count="15">
@@ -7802,7 +7815,7 @@ window.__resources = {
                 </sc-for>
               </div>
               <sc-for list="{{ klBoardKolonner }}" as="k" hint-placeholder-count="3">
-                <div data-kol="{{ k.navn }}" style="{{ klKolonneStil }}">
+                <div data-kol="{{ k.navn }}" onClick="{{ k.nyttNotat }}" style="{{ klKolonneStil }}">
                   <sc-for list="{{ k.hendelser }}" as="h" hint-placeholder-count="2">
                     <button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
                       <span style="display: block; font-weight: 700;">{{ h.tid }}</span>
@@ -8840,6 +8853,37 @@ window.__resources = {
            Eieren, 8. september 2026: «jeg trenger ikke disse i kalender», og
            spurt om de to skulle flyttes framfor aa forsvinne: «Fjern dem
            helt». Det som alt laa i basen blir staaende der, men naas ikke. -->
+      <!-- Notatruta.
+           Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til
+           notater, ikke bare kurs? rett i kalender». Han valgte «Trykk paa
+           dagen», «Bare admin» og «Med klokkeslett», og godkjente ruta paa
+           bilde: «ja, det ser fint ut».
+           Samme rute enten du trykket i maaneden, uka eller dagen. -->
+      <sc-if value="{{ klNotatVis }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klNotatAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klNotatStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(460px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Notat</div>
+            <h2 style="margin: 0 0 var(--space-5); font-size: var(--text-2xl);">{{ klNotatDato }}</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-5);">
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
+                <input type="time" value="{{ klNotatFra }}" onChange="{{ klNotatSettFra }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
+                <input type="time" value="{{ klNotatTil }}" onChange="{{ klNotatSettTil }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+              </div>
+            </div>
+            <textarea value="{{ klNotatTekst }}" onChange="{{ klNotatSettTekst }}" rows="3" placeholder="Skriv notatet" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading); resize: none; margin-bottom: var(--space-6);"></textarea>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klNotatLagreNa }}" hint-size="auto,44px">Lagre</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ klNotatSlettNa }}" hint-size="auto,44px">Slett</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klNotatAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ klIcsVises }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ klIcsLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
           <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(520px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
@@ -35591,6 +35635,64 @@ class Component extends DCLogic {
     this.setState({ kalHentet: {}, kalHendelser: {}, kalStengte: {} });
   }
 
+  /**
+   * Notatene i kalenderen.
+   *
+   * Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til notater,
+   * ikke bare kurs? rett i kalender». Han valgte «Trykk paa dagen», «Bare
+   * admin» og «Med klokkeslett», og godkjente ruta paa bilde.
+   *
+   * Ett sted for alle tre visningene: maaneden gir bare datoen, uka og dagen
+   * gir ogsaa klokkeslettet der du trykket.
+   */
+  klNotatNy(iso, minutter) {
+    if (!iso) return;
+    // Uten et klokkeslett — maaneden har ingen tidsakse — er 09:00 der
+    // verkstedagen begynner. Med ett, rundes det til naermeste halvtime:
+    // en pekerposisjon er 11:07, og ingen mener 11:07.
+    const m = minutter === undefined || minutter === null
+      ? 9 * 60 : Math.max(0, Math.min(23 * 60 + 30, Math.round(minutter / 30) * 30));
+    const klokke = t => String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+    this.setState({ klNotat: { id: 0, dato: iso, fra: klokke(m), til: klokke(Math.min(23 * 60 + 59, m + 60)), tekst: '' } });
+  }
+
+  klNotatApne(e) {
+    if (!e) return;
+    this.setState({ klNotat: { id: e.notatId || 0, dato: e.dato, fra: e.tid, til: e.slutt || '', tekst: e.tittel || '' } });
+  }
+
+  klNotatLagre() {
+    const n = this.state.klNotat;
+    if (!n) return;
+    this.vstKall({ handling: 'kalendernotat', id: n.id, dato: n.dato, fra: n.fra, til: n.til, tekst: n.tekst })
+      .then(ok => { if (ok) this.setState({ klNotat: null }); });
+  }
+
+  klNotatSlett() {
+    const n = this.state.klNotat;
+    if (!n) return;
+    // Et notat som aldri ble lagret har ingenting aa slette. Da er «Slett»
+    // det samme som aa lukke ruta — ikke et kall som svarer «fant ikke».
+    if (!n.id) { this.setState({ klNotat: null }); return; }
+    this.vstKall({ handling: 'kalendernotatVekk', id: n.id })
+      .then(ok => { if (ok) this.setState({ klNotat: null }); });
+  }
+
+  /**
+   * Klokkeslettet der du trykket i uke- eller dagsvisningen.
+   *
+   * Begge tegner timene med samme regel: «_klRange» er hvilken time stripa
+   * begynner paa og hvor mange piksler en time er. Uten den — trykker du for
+   * kalenderen har rukket aa tegne — faller vi tilbake paa 09:00, som er det
+   * maaneden gir.
+   */
+  klMinutterFra(ev) {
+    const r = this._klRange;
+    if (!ev || !r || !r.px || !ev.currentTarget) return null;
+    const boks = ev.currentTarget.getBoundingClientRect();
+    return r.start + (ev.clientY - boks.top) / r.px * 60;
+  }
+
   klTypeInfo() {
     return {
       kurs: { navn: 'Kurs', bg: 'var(--lissom-yellow)', fg: 'var(--lissom-brown)' },
@@ -35599,6 +35701,10 @@ class Component extends DCLogic {
       brenning: { navn: 'Brenning', bg: 'var(--lissom-brown)', fg: 'var(--clay-50)' },
       verksted: { navn: 'Verksted', bg: 'var(--clay-200)', fg: 'var(--text-heading)' },
       vakt: { navn: 'Vakt', bg: 'var(--surface-card)', fg: 'var(--lissom-brown)', kant: '1.5px solid var(--lissom-brown)' },
+      // Notatene. Groenn fordi gult, oransje og brunt alt er tatt av kurs,
+      // event og brenning — et notat skal ikke kunne forveksles med en okt
+      // man har paameldte paa. Eieren godkjente fargen paa bildet.
+      notat: { navn: 'Notat', bg: 'var(--sage-100)', fg: 'var(--sage-600)', kant: '1.5px solid var(--sage-500)' },
     };
   }
 
@@ -35796,8 +35902,18 @@ class Component extends DCLogic {
     // deltakerne, belegget og datoen du trykket paa. Redigereren ville vist
     // startdagen og latt deg flytte hele kurset fra en dag som ikke er den
     // det staar paa; det er ikke det man mener naar man trykker paa dag to.
-    const velg = e => (e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));
-    const meny = e => ev => { ev.preventDefault(); this.setState({ klMeny: { id: e.id, x: ev.clientX, y: ev.clientY } }); };
+    // Et notat aapner notatruta. Det har ingen deltakere, ingen kursholder
+    // og ingen plasser — oektruta ville staatt tom og bedt om aa avlyse noe
+    // som ikke er et kurs.
+    const velg = e => (e.type === 'notat' ? () => this.klNotatApne(e)
+                     : e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));
+    // Hoyreklikkmenyen slaar opp okta paa id-en, og alle valgene i den
+    // gjelder et kurs. Paa et notat skal den ikke aapne seg i det hele tatt.
+    const meny = e => ev => {
+      ev.preventDefault();
+      if (e.type === 'notat') return;
+      this.setState({ klMeny: { id: e.id, x: ev.clientX, y: ev.clientY } });
+    };
     const dragState = this.state.klDrag;
     const dagEvts = iso => alle.filter(e => e.dato === iso).sort((a, b) => a.tid.localeCompare(b.tid));
 
@@ -35933,7 +36049,7 @@ class Component extends DCLogic {
     const ukerAntall = Math.ceil((offset + dim) / 7);
     const mndCelleH = Math.max(104, Math.floor(((typeof window !== 'undefined' ? window.innerHeight : 900) - 380) / ukerAntall));
     const mndMax = Math.max(3, Math.floor((mndCelleH - 32) / 19));
-    const tomCelle = () => ({ iso: '', tall: '', stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: 'var(--clay-100)' }, tallStil: {}, hendelser: [], harMer: false, mer: '', velgDag: () => {} });
+    const tomCelle = () => ({ iso: '', tall: '', stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: 'var(--clay-100)' }, tallStil: {}, hendelser: [], harMer: false, mer: '', velgDag: () => {}, nyttNotat: () => {} });
     const celler = [];
     for (let i = 0; i < offset; i++) celler.push(tomCelle());
     for (let d = 1; d <= dim; d++) {
@@ -35958,6 +36074,16 @@ class Component extends DCLogic {
         })),
         harMer: evts.length > mndMax, mer: '+ ' + (evts.length - mndMax) + ' til',
         velgDag: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
+        // Trykk paa den tomme flaten i en dag → nytt notat.
+        //
+        // «target !== currentTarget» er hele vakten: trykker du paa en
+        // brikke inni cella, er det brikka som gjelder, og den har sin egen
+        // handling. Uten den ville hvert trykk paa et kurs ogsaa aapnet et
+        // nytt notat bak oektruta.
+        nyttNotat: ev => {
+          if (!ev || ev.target !== ev.currentTarget) return;
+          this.klNotatNy(iso, null);
+        },
       });
     }
     while (celler.length % 7) celler.push(tomCelle());
@@ -36121,6 +36247,13 @@ class Component extends DCLogic {
       return {
         navn: kn,
         harNoe: evs.length > 0,
+        // Som i uka: en tom flate i dagen aapner et notat paa den tida du
+        // traff. Notatet hoerer ikke til spalta du trykket i — et notat har
+        // ingen kursholder — det hoerer til dagen.
+        nyttNotat: ev => {
+          if (!ev || ev.target !== ev.currentTarget) return;
+          this.klNotatNy(dagIso, this.klMinutterFra(ev));
+        },
         // Hver spalte er en kursholder, og alle kan aapnes.
         erPerson: true,
         apne: () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }),
@@ -36254,6 +36387,13 @@ class Component extends DCLogic {
         kolStil: Object.assign({ position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)', background: stengtU ? 'var(--clay-200)' : (d.getDay() === 0 || d.getDay() === 6 ? 'var(--clay-50)' : 'var(--surface-card)'), backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxUke - 1) + 'px, var(--clay-100) ' + (pxUke - 1) + 'px, var(--clay-100) ' + pxUke + 'px)' },
           this.klSlippRamme('dag', 'var(--terracotta-600)')),
         naStil: erIdag && naM >= wStart && naM <= wSlutt ? { position: 'absolute', left: 0, right: 0, top: ((naM - wStart) / 60 * pxUke) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
+        // Trykk i en tom del av dagen → nytt notat paa den tida du traff.
+        // Spalta har en tidsakse, saa her kan klokkeslettet leses av
+        // pekeren i stedet for aa gjettes.
+        nyttNotat: ev => {
+          if (!ev || ev.target !== ev.currentTarget) return;
+          this.klNotatNy(iso, this.klMinutterFra(ev));
+        },
         hendelser: plas.map(p => {
           const f = farge(p.e);
           return {
@@ -36387,6 +36527,46 @@ class Component extends DCLogic {
       klKolonneStil: Object.assign({ position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)', backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxTime - 1) + 'px, var(--clay-100) ' + (pxTime - 1) + 'px, var(--clay-100) ' + pxTime + 'px)' },
         this.klSlippRamme('dag', 'var(--terracotta-600)')),
       klNaStil: dagIso === idagIso && naM >= bStart && naM <= bSluttMin ? { position: 'absolute', left: '56px', right: 0, top: ((naM - bStart) / 60 * pxTime) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
+      // ── Notatruta ───────────────────────────────────────────────────
+      //
+      // Samme rute uansett hvor du trykket: maaneden, uka eller dagen.
+      // «klNotat» er utkastet — null naar ruta er lukket.
+      ...(() => {
+        const n = this.state.klNotat;
+        const settN = felt => ev => this.setState(st => ({
+          klNotat: Object.assign({}, st.klNotat, { [felt]: ev.target.value }),
+        }));
+        const d3 = n ? new Date(n.dato + 'T00:00:00') : null;
+        // Notatene paa dagen som staar aapen. Dagsvisningen deler skjermen i
+        // én spalte per kursholder, og et notat har ingen — uten denne stripa
+        // ville de vaert usynlige nettopp i den visningen kalenderen aapner i.
+        const dagensNotater = dagensAlle.filter(e => e.type === 'notat');
+        return {
+          klNotatVis: !!n,
+          klNotatDato: d3
+            ? dagNavn[d3.getDay()].toLowerCase() + ' ' + d3.getDate() + '. ' + mndNavn[d3.getMonth()]
+            : '',
+          klNotatFra: n ? n.fra : '',
+          klNotatTil: n ? n.til : '',
+          klNotatTekst: n ? n.tekst : '',
+          klNotatSettFra: settN('fra'),
+          klNotatSettTil: settN('til'),
+          klNotatSettTekst: settN('tekst'),
+          klNotatLagreNa: () => this.klNotatLagre(),
+          klNotatSlettNa: () => this.klNotatSlett(),
+          klNotatAvbryt: () => this.setState({ klNotat: null }),
+          // Et trykk inne i ruta skal ikke lukke den. Samme grep som
+          // «klStopp» bruker paa de andre rutene i kalenderen.
+          klNotatStopp: ev => ev.stopPropagation(),
+          klNotatStripeVis: dagensNotater.length > 0,
+          klNotatStripeStil: { display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '0 0 var(--space-4)' },
+          klNotatStripe: dagensNotater.map(e => ({
+            tekst: e.tid + (e.slutt ? '–' + e.slutt : '') + ' ' + e.tittel,
+            stil: Object.assign({}, pill(e, false), { width: 'auto', whiteSpace: 'normal' }),
+            velg: () => this.klNotatApne(e),
+          })),
+        };
+      })(),
       ...(() => {
         const menyState = this.state.klMeny;
         const menyEvt = menyState ? alle.find(e => e.id === menyState.id) : null;

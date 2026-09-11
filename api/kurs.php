@@ -142,6 +142,9 @@ foreach ($kurs as $k) {
                 'nivaaTekst'      => $velg('nivaa_tekst', 'nivaaTekst') ?: Kursmal::NIVAA_UTE,
                 'nivaaIntern'     => (string) ($k['nivaa_intern'] ?? ''),
                 'kortBeskrivelse' => $velg('kort_beskrivelse', 'kortBeskrivelse'),
+                // Egen tittel og meta i soeket (migrasjon 164). Tomme = standard.
+                'seoTittel'       => trim((string) ($k['seo_tittel'] ?? '')),
+                'seoMeta'         => trim((string) ($k['seo_meta'] ?? '')),
                 'laerer'          => $velg('laerer', 'laerer'),
                 // De faa ordene som staar i faktaboksen. Hele setningen
                 // staar under «Dette laerer du»; boksen er smal.

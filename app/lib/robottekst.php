@@ -153,6 +153,7 @@ final class Robottekst
             'pris_ore'    => (int) $k['pris_ore'],
             'beskrivelse' => trim(strip_tags((string) ($k['beskrivelse'] ?? ''))),
             'kort'        => trim((string) ($k['kort_beskrivelse'] ?? '')),
+            'seo_meta'    => trim((string) ($k['seo_meta'] ?? '')),
             'tema'        => (string) ($k['tema'] ?? ''),
             'bilde'       => trim((string) ($k['bilde'] ?? '')),
             'datoer'      => $datoer,
@@ -330,7 +331,7 @@ final class Robottekst
                     return null;
                 }
                 $h1 = $k['tittel'];
-                $meta = $k['kort'] !== '' ? $k['kort'] : self::ingress($k['beskrivelse']);
+                $meta = $k['seo_meta'] !== '' ? $k['seo_meta'] : ($k['kort'] !== '' ? $k['kort'] : self::ingress($k['beskrivelse']));
                 $deler[] = self::kursHtml($k);
                 $ld[] = self::kursLd($k, $canon);
             } elseif ($erVare) {
@@ -558,6 +559,13 @@ final class Robottekst
                 'addressRegion'   => 'Vestfold',
                 'addressCountry'  => 'NO',
             ],
+            // Org.nr. fra vilkaarene, koordinatene fra kartoppslag paa adressen
+            // (59.246898, 10.415572 — Rosanes/Teie). Eieren, 11. september
+            // 2026, SEO-instruksen. Aapningstid er med vilje ikke med: den
+            // foelger kursene, og Bedriftsprofilen sier det Google viser.
+            'vatID'       => 'NO938280819MVA',
+            'taxID'       => '938280819',
+            'geo'         => ['@type' => 'GeoCoordinates', 'latitude' => 59.246898, 'longitude' => 10.415572],
             'areaServed'  => array_map(static fn(string $n): array => ['@type' => 'Place', 'name' => $n], self::OMRAADE),
             'knowsAbout'  => self::FAG,
             'sameAs'      => self::some(),

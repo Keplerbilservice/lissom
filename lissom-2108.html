@@ -56,13 +56,13 @@
      Markorene under er bindeleddet. Flyttes eller endres de, finner side.php
      ikke blokka og sender fila ut urort; bin/seosjekk.mjs sier fra. -->
 <!-- seo:start -->
-<title>Keramikkurs i Tønsberg | Lissom Keramikk</title>
+<title>Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk</title>
 <meta name="description" content="Keramikkurs, dreiekurs og events på Teie ved Tønsberg — for hele Vestfold. Lag din egen keramikk fra første kveld. Leire, verktøy og brenning inkludert.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Lissom Keramikk &amp; Håndverk">
 <meta property="og:locale" content="nb_NO">
 <meta property="og:url" content="https://lissom.no/">
-<meta property="og:title" content="Keramikkurs i Tønsberg | Lissom Keramikk">
+<meta property="og:title" content="Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk">
 <meta property="og:description" content="Kurs, events og medlemskap i keramikkverkstedet på Teie. Ingen forkunnskaper nødvendig — se datoer og book plass.">
 <meta property="og:image" content="https://lissom.no/delingsbilde.jpg">
 <meta property="og:image:width" content="1200">
@@ -23062,6 +23062,8 @@ class Component extends DCLogic {
           ferdigTid: k.ferdigTid || '',
           tillegg: k.tillegg || '',
           kortBeskrivelse: k.kortBeskrivelse || '',
+          seoTittel: k.seoTittel || '',
+          seoMeta: k.seoMeta || '',
           price: k.prisOre === 0 ? 'Gratis' : k.pris,
           status: k.datoer.length ? this.plasstekst(k.datoer, k.plasser) : 'Ta kontakt for dato',
           kunKontakt: k.datoer.length === 0,
@@ -23254,6 +23256,8 @@ class Component extends DCLogic {
       ferdigTid: kat.ferdigTid || k.ferdigTid || '',
       tillegg: kat.tillegg || k.tillegg || '',
       kortBeskrivelse: kat.kortBeskrivelse || k.kortBeskrivelse || '',
+      seoTittel: kat.seoTittel || k.seoTittel || '',
+      seoMeta: kat.seoMeta || k.seoMeta || '',
       om: kat.om || k.om,
       // «Alt som er inkludert».
       //
@@ -25049,17 +25053,20 @@ class Component extends DCLogic {
   //
   // Dette er et utgangspunkt, ikke en fasit — eieren kjenner kursene sine
   // bedre enn jeg gjor, og kan endre hver linje etterpaa.
+  // Titlene paa de ni hovedsidene er eierens egne, fra SEO-instruksen
+  // 11. september 2026 («Tønsberg» i tittelen, «Vestfold» og nabobyene i
+  // teksten). Meta-tekstene sto — de var lengre og mer konkrete.
   static get SEO_FERDIG() {
     return {
     forside: {
       fokus: 'keramikkurs Tønsberg',
-      tittel: 'Keramikkurs i Tønsberg | Lissom Keramikk',
+      tittel: 'Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk',
       meta: 'Keramikkurs, dreiekurs og events på Teie ved Tønsberg — for hele Vestfold. Lag din egen keramikk fra første kveld. Leire, verktøy og brenning inkludert.',
       slug: 'keramikkurs-tonsberg',
       h1: 'Keramikkurs og håndverk i Tønsberg',
       sekundare: 'keramikkverksted, dreiekurs, plateteknikk, lag din egen keramikk, en hobby for alle, Nøtterøy, Tjøme, Horten, Sandefjord, hele Vestfold',
       altTekst: 'Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg',
-      ogTittel: 'Keramikkurs i Tønsberg | Lissom Keramikk',
+      ogTittel: 'Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk',
       ogBeskrivelse: 'Kurs, events og medlemskap i keramikkverkstedet på Teie. Ingen forkunnskaper nødvendig — se datoer og book plass.',
       canonical: 'https://lissom.no/',
       internlenker: 'Kurs, Medlemskap, Butikk, Gavekort',
@@ -25068,13 +25075,13 @@ class Component extends DCLogic {
     },
     kurs: {
       fokus: 'keramikkurs Vestfold',
-      tittel: 'Keramikkurs og events i Vestfold | Lissom',
+      tittel: 'Keramikkurs i Tønsberg og Vestfold – se datoer | Lissom',
       meta: 'Alle kurs og events hos Lissom Keramikk ved Tønsberg: dreiekurs, plateteknikk, workshop, Sip & Clay, Date Night og Paint on Pots. Se datoer og book plass.',
       slug: 'keramikkurs-vestfold',
       h1: 'Keramikkurs og events i Vestfold',
       sekundare: 'dreiekurs, plateteknikk, workshop, sip and clay, date night, paint on pots, keramikkurs Sandefjord, keramikkurs Horten, kurs Tjøme, Andebu, Revetal',
       altTekst: 'Kursdeltakere rundt langbordet i keramikkverkstedet på Teie',
-      ogTittel: 'Keramikkurs og events i Vestfold | Lissom',
+      ogTittel: 'Keramikkurs i Tønsberg og Vestfold – se datoer | Lissom',
       ogBeskrivelse: 'Dreiekurs, bollekurs, workshop og kreative kvelder i Tønsberg. Alt utstyr inkludert. Se datoer og book plass.',
       canonical: 'https://lissom.no/kurs',
       internlenker: 'Forside, Medlemskap, Bedrift og event, Gavekort',
@@ -25083,7 +25090,7 @@ class Component extends DCLogic {
     },
     events: {
       fokus: 'keramikk events Vestfold',
-      tittel: 'Keramikk-events i Vestfold — Sip & Clay, Date Night | Lissom',
+      tittel: 'Utdrikningslag, teambuilding og events – Tønsberg | Lissom',
       meta: 'Sip & Clay, Date Night og Paint on Pots i verkstedet på Teie ved Tønsberg. Kreative kvelder for venner, par og kolleger. Se datoer og book plass.',
       slug: 'keramikk-events-vestfold',
       h1: 'Keramikk-events i Vestfold',
@@ -25203,7 +25210,7 @@ class Component extends DCLogic {
     },
     paintonpots: {
       fokus: 'paint on pots Tønsberg',
-      tittel: 'Paint on Pots — mal keramikk i Tønsberg | Lissom',
+      tittel: 'Paint on Pots – mal keramikk i Tønsberg | Lissom',
       meta: 'Velg en ferdigbrent kopp eller bolle og mal den selv. Vi glaserer og brenner, du henter den ferdig. Passer også barn. Se datoer og book plass.',
       slug: 'paint-on-pots-tonsberg',
       h1: 'Paint on Pots i Tønsberg',
@@ -25263,7 +25270,7 @@ class Component extends DCLogic {
     },
     medlemskap: {
       fokus: 'keramikkverksted medlemskap Tønsberg',
-      tittel: 'Medlemskap i keramikkverksted i Tønsberg | Lissom',
+      tittel: 'Medlemskap i keramikkverksted – Tønsberg/Vestfold | Lissom',
       meta: 'Fast plass i verkstedet på Teie med egen dørkode og hylle. Leire, glasur og brenning inkludert. Se prisene og meld deg inn i dag.',
       slug: 'medlemskap-keramikkverksted',
       h1: 'Medlemskap i keramikkverkstedet — Tønsberg',
@@ -25278,7 +25285,7 @@ class Component extends DCLogic {
     },
     butikk: {
       fokus: 'håndlaget keramikk Tønsberg',
-      tittel: 'Håndlaget keramikk fra Tønsberg | Lissom Keramikk',
+      tittel: 'Håndlaget keramikk fra Tønsberg | Lissom',
       meta: 'Kopper, boller og fat laget for hånd i verkstedet på Teie i Tønsberg. Hvert stykke er unikt. Se utvalget og kjøp direkte fra nettbutikken.',
       slug: 'handlaget-keramikk-tonsberg',
       h1: 'Håndlaget keramikk fra Tønsberg',
@@ -25293,13 +25300,13 @@ class Component extends DCLogic {
     },
     gavekort: {
       fokus: 'gavekort keramikkurs Tønsberg',
-      tittel: 'Gavekort på keramikkurs i Tønsberg | Lissom',
+      tittel: 'Gavekort på keramikkurs – opplevelsesgave Vestfold | Lissom',
       meta: 'Gi bort en kveld ved dreieskiva. Gavekortet gjelder alle kurs, events og varer, og er gyldig i tre år. Kjøp det på nett og få det på e-post.',
       slug: 'gavekort-keramikkurs',
       h1: 'Gavekort på keramikkurs — Tønsberg',
       sekundare: 'gave keramikk, opplevelsesgave Vestfold, julegave Tønsberg',
       altTekst: 'Gavekort fra Lissom Keramikk ved siden av en håndlaget kopp',
-      ogTittel: 'Gavekort på keramikkurs i Tønsberg | Lissom',
+      ogTittel: 'Gavekort på keramikkurs – opplevelsesgave Vestfold | Lissom',
       ogBeskrivelse: 'Gjelder alle kurs, events og varer. Gyldig i tre år.',
       canonical: 'https://lissom.no/gavekort',
       internlenker: 'Kurs, Butikk, Medlemskap',
@@ -25325,13 +25332,13 @@ class Component extends DCLogic {
     },
     omoss: {
       fokus: 'keramikkverksted Tønsberg',
-      tittel: 'Keramikkverksted på Teie i Tønsberg | Lissom',
+      tittel: 'Om Lissom – keramikkverkstedet på Teie | Lissom',
       meta: 'Et kreativt fristed for skaperglede og håndverk på Teie ved Tønsberg. Leire er en hobby for alle — og en time som gjør deg til stede. Se kursene våre.',
       slug: 'keramikkverksted-tonsberg',
       h1: 'Keramikkverkstedet på Teie i Tønsberg',
       sekundare: 'keramikkverksted Vestfold, en hobby for alle, bli mindful med keramikk, keramiker Tønsberg, verksted Nøtterøy',
       altTekst: 'Interiør fra keramikkverkstedet til Lissom på Teie i Tønsberg',
-      ogTittel: 'Keramikkverksted på Teie i Tønsberg | Lissom',
+      ogTittel: 'Om Lissom – keramikkverkstedet på Teie | Lissom',
       ogBeskrivelse: 'Et kreativt fristed for skaperglede og håndverk på Nøtterøy. Se hva vi holder på med.',
       canonical: 'https://lissom.no/om-oss',
       internlenker: 'Kurs, Medlemskap, Kontakt',
@@ -32196,10 +32203,14 @@ class Component extends DCLogic {
     if (this.state.side !== 'booking' || !k.slug) return null;
 
     const navn = k.title || k.tittel || '';
+    // Egen tittel og meta paa kurset (migrasjon 164, dreiekurset). Tomme
+    // for de andre — da gjelder det som alltid har gjeldt.
+    const egenTittel = String(k.seoTittel || '').trim();
+    const egenMeta = String(k.seoMeta || '').trim();
     // Beskrivelsen skal vaere hel. Kuttet midt i en setning ser ut som en
     // feil i sokeresultatet, saa vi kutter ved siste punktum som faar plass.
     const om = String(k.om || '').replace(/\s+/g, ' ').trim();
-    let meta = om;
+    let meta = egenMeta || om;
     if (meta.length > 158) {
       const kort = meta.slice(0, 158);
       const punktum = kort.lastIndexOf('. ');
@@ -32211,10 +32222,10 @@ class Component extends DCLogic {
     }
 
     return {
-      tittel: navn + ' i Tønsberg | Lissom Keramikk',
+      tittel: egenTittel || navn + ' i Tønsberg | Lissom Keramikk',
       meta: meta,
       canonical: 'https://lissom.no/kurs/' + k.slug,
-      ogTittel: navn + ' i Tønsberg | Lissom Keramikk',
+      ogTittel: egenTittel || navn + ' i Tønsberg | Lissom Keramikk',
       ogBeskrivelse: meta,
       delingsbilde: k.image ? 'https://lissom.no/' + String(k.image).replace(/^\//, '') : '',
       index: 'Index',

@@ -16480,6 +16480,65 @@ sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
     && str_contains($mkSida, '  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }')
     && str_contains($mkSida, "if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }"));
 
+// ── Medlemsinvitasjonen etter kurset ─────────────────────────────────────
+//
+// Eieren, 11. september 2026: «denne vil jeg skal sette opp så den går til
+// alle kursdeltakere 3-4 dager etter at de har vært på kurs, forutsetter at
+// de har betalt» — og «men denne vil jeg aktivere nå». GO paa avmeldinga.
+// Maalt lokalt med stubbet base: e-posten bygges med hilsenen, prisboksen
+// fra «Prøv Lissom» og en avmeldingslenke per adresse; /avmelding?k=…
+// viser «Meldt av», feil kode «Lenken virker ikke».
+$fortsettMig = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/166_medlemsinvitasjon_etter_kurs.sql');
+sjekk('migrasjon 166: malen «fortsett» staar paa, med hilsenen eieren ba om',
+    str_contains($fortsettMig, "'Vil du fortsette med leire?',")
+    && str_contains($fortsettMig, "'Hei {navn}, det var så hyggelig å ha deg på kurs, så vi håper du vil fortsette som medlem.")
+    && str_contains($fortsettMig, "{visste}Se medlemskapene")
+    && str_contains($fortsettMig, "Meld deg av: {avmelding}'")
+    && str_contains($fortsettMig, "('fortsett_paa',   '1'),")
+    && str_contains($fortsettMig, "CREATE TABLE IF NOT EXISTS epost_avmelding ("));
+$fortsettHtml = (string) file_get_contents(dirname(__DIR__) . '/app/epost/fortsett.html');
+sjekk('eierens HTML har hilsenen for «Tusen takk», prisboksen som {visste} og avmeldinga som lenke',
+    str_contains($fortsettHtml, 'Hei {navn}, det var så hyggelig å ha deg på kurs, så vi håper du vil fortsette som medlem.')
+    && strpos($fortsettHtml, 'Hei {navn}') < strpos($fortsettHtml, 'Tusen takk for at du valgte')
+    && str_contains($fortsettHtml, '{visste}')
+    && !str_contains($fortsettHtml, 'kr 990')
+    && str_contains($fortsettHtml, 'href="{avmelding}"'));
+sjekk('… og prisen i boksen kommer fra medlemskapet, ikke fra koden',
+    str_contains($cronFil, "SELECT pris_ore, timer FROM membership_plans WHERE navn = 'Prøv Lissom' AND aktiv = 1")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/epost/fortsett-visste.html'), 'kun kr {provPris} for en hel måned')
+    && !str_contains($cronFil, '990'));
+sjekk('jobben gaar bare til dem som betalte, og hopper over medlemmer og avmeldte',
+    str_contains($cronFil, 'function medlemsinvitasjon(callable $si): void')
+    && str_contains($cronFil, "WHERE b.course_session_id = :s AND b.status = 'betalt'\",\n            ['s' => \$okt['id']]\n        );\n        foreach (\$deltakere as \$d) {")
+    && str_contains($cronFil, "if (in_array(\$status, ['prove', 'aktiv', 'pause'], true) || Avmelding::erReservert(\$epost)) {")
+    && str_contains($cronFil, "AND COALESCE(cs.slutt_tid, cs.start_tid) <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL :d DAY)")
+    && str_contains($cronFil, "['fortsett_sendt_at' => gmdate('Y-m-d H:i:s')]")
+    && str_contains($cronFil, "medlemsinvitasjon(\$si);"));
+sjekk('… i samme cron-linje som oppfoelgingen, og som egen jobb',
+    substr_count($cronFil, "medlemsinvitasjon(\$si);") === 2
+    && str_contains($cronFil, "case 'fortsett':"));
+sjekk('Varsel::mal kan sende eierens egen HTML i stedet for tekstmalen',
+    str_contains($varselFil, "?int \$refId = null, ?string \$egenHtml = null")
+    && str_contains($varselFil, "self::medSignatur(\$tekst, \$gruppe, \$egenHtml)"));
+$avmFil = (string) file_get_contents(dirname(__DIR__) . '/api/avmelding.php');
+sjekk('/avmelding?k=… setter reservasjonen og viser «Meldt av»',
+    str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^avmelding/?$ /api/avmelding.php [L,QSA]')
+    && str_contains($avmFil, "\$ok = Avmelding::reserver(\$kode);")
+    && str_contains($avmFil, "\$ok ? 'Meldt av' : 'Lenken virker ikke'")
+    && str_contains($avmFil, 'Du får ikke flere e-poster om medlemskap og tilbud fra oss.')
+    && str_contains($avmFil, 'class="pille" href="https://lissom.no/">Til lissom.no</a>'));
+sjekk('koden i lenka er tilfeldig og avsloerer ikke adressen',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/avmelding.php'), '$kode = bin2hex(random_bytes(16));')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/avmelding.php'), "preg_match('/^[a-f0-9]{32}$/', \$kode)"));
+$vaFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/varsler.php');
+sjekk('admin: bryteren «Send medlemsinvitasjon etter kurs» med dager og status',
+    str_contains($mkSida, 'label="Send medlemsinvitasjon etter kurs" checked="{{ vaFortsettPaa }}" on-change="{{ vaFortsettVeksle }}"')
+    && str_contains($mkSida, 'onChange="{{ settVa.fortsett_dager }}"')
+    && str_contains($mkSida, "'anmeldelse_lenke', 'anmeldelse_timer', 'fortsett_dager',")
+    && str_contains($vaFil, "'fortsett_paa', 'fortsett_dager',")
+    && str_contains($vaFil, "\$svar['fortsett'] = [")
+    && str_contains($vaFil, "DB::harTabell('epost_avmelding') ? (int) (DB::verdi("));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

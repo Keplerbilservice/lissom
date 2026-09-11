@@ -119,6 +119,121 @@ $si = static function (string $t) use ($tilSkjerm, $ut): void {
     }
 };
 
+/**
+ * Medlemsinvitasjonen etter kurset: «Vil du fortsette med leire?»
+ *
+ * Eieren, 11. september 2026: «denne vil jeg skal sette opp så den går til
+ * alle kursdeltakere 3-4 dager etter at de har vært på kurs, forutsetter at
+ * de har betalt» — «men denne vil jeg aktivere nå».
+ *
+ * Gaar én gang per kursdato, tre dager (fortsett_dager) etter at den er
+ * holdt, til dem som betalte. Hopper over:
+ *   - aktive medlemmer (de er alt medlemmer)
+ *   - adresser som har meldt seg av (epost_avmelding)
+ *   - adresser som fikk den de siste 30 dagene (to kurs paa rad = én e-post)
+ * Og aldri lenger tilbake enn sju dogn: skrus den paa i november, gaar det
+ * ingenting for kurs i august.
+ *
+ * HTML-en er eierens egen (app/epost/fortsett.html); tekstdelen er malen
+ * «fortsett». Prisboksen fylles fra membership_plans («Prøv Lissom») — ingen
+ * faste priser i teksten.
+ */
+function medlemsinvitasjon(callable $si): void
+{
+    if (!DB::harKolonne('course_sessions', 'fortsett_sendt_at') || !Avmelding::klar()) {
+        $si('Medlemsinvitasjon: databasen er ikke oppdatert (migrasjon 166). Ingenting sendt.');
+        return;
+    }
+    $paa    = (string) Config::hent('fortsett_paa', '0') === '1';
+    $malPaa = (int) (DB::verdi("SELECT aktiv FROM notification_templates WHERE navn = 'fortsett'") ?? 0) === 1;
+    if (!$paa || !$malPaa) {
+        $si('Medlemsinvitasjon: står av' . (!$paa ? ' (bryteren)' : '') . (!$malPaa ? ' (malen er slått av)' : '') . '. Ingenting sendt.');
+        return;
+    }
+    $dager = max(1, min(14, (int) Config::hent('fortsett_dager', '3')));
+
+    $htmlFil = APP_DIR . '/epost/fortsett.html';
+    $html = is_file($htmlFil) ? (string) file_get_contents($htmlFil) : '';
+    $html = (string) preg_replace('/^<!--.*?-->\s*/s', '', $html);
+    $boksFil = APP_DIR . '/epost/fortsett-visste.html';
+    $boks = is_file($boksFil) ? (string) preg_replace('/^<!--.*?-->\s*/s', '', (string) file_get_contents($boksFil)) : '';
+
+    // Proevemedlemskapet, til prisboksen. Finnes det ikke, staar boksen tom.
+    $prov = DB::en("SELECT pris_ore, timer FROM membership_plans WHERE navn = 'Prøv Lissom' AND aktiv = 1");
+    $visste = ''; $vissteHtml = '';
+    if ($prov !== null && (int) $prov['pris_ore'] > 0 && $prov['timer'] !== null) {
+        $pris = number_format((int) $prov['pris_ore'] / 100, 0, ',', ' ');
+        $timer = (string) (int) $prov['timer'];
+        $visste = 'Visste du at? Du kan prøve medlemskapet med Prøv Lissom – kun kr ' . $pris
+                . ' for en hel måned, med all leire og glasur inkludert og inntil ' . $timer
+                . ' timer i verkstedet. En enkel måte å kjenne etter om verkstedslivet er noe for deg.' . "\n\n";
+        $vissteHtml = str_replace(['{provPris}', '{provTimer}'], [$pris, $timer], $boks);
+    }
+
+    $okter = DB::alle(
+        "SELECT cs.id, cs.start_tid, c.tittel
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.status IN ('planlagt', 'fullt', 'gjennomfort')
+            AND cs.fortsett_sendt_at IS NULL
+            AND COALESCE(cs.slutt_tid, cs.start_tid) <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL :d DAY)
+            AND COALESCE(cs.slutt_tid, cs.start_tid) > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+            AND COALESCE(c.tema, '') <> 'Kun for medlemmer'",
+        ['d' => $dager]
+    );
+
+    $antall = 0; $hoppet = 0;
+    foreach ($okter as $okt) {
+        $deltakere = DB::alle(
+            "SELECT b.gjest_navn, b.gjest_epost,
+                    m.navn AS m_navn, m.epost AS m_epost, m.status AS m_status
+               FROM bookings b
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE b.course_session_id = :s AND b.status = 'betalt'",
+            ['s' => $okt['id']]
+        );
+        foreach ($deltakere as $d) {
+            $epost = mb_strtolower(trim((string) ($d['m_epost'] ?: $d['gjest_epost'])));
+            if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+            // Alt medlem — som medlem i basen, eller adressen tilhoerer et
+            // aktivt medlem som booket som gjest.
+            $status = (string) ($d['m_status'] ?? '');
+            if ($status === '') {
+                $status = (string) (DB::verdi('SELECT status FROM members WHERE epost = :e LIMIT 1', ['e' => $epost]) ?? '');
+            }
+            if (in_array($status, ['prove', 'aktiv', 'pause'], true) || Avmelding::erReservert($epost)) {
+                $hoppet++;
+                continue;
+            }
+            $nylig = (int) (DB::verdi(
+                "SELECT COUNT(*) FROM notifications
+                  WHERE mal = 'fortsett' AND mottaker = :m AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)",
+                ['m' => $epost]
+            ) ?? 0);
+            if ($nylig > 0) {
+                $hoppet++;
+                continue;
+            }
+            $navn = trim((string) ($d['m_navn'] ?: $d['gjest_navn']));
+            $navn = $navn !== '' ? explode(' ', $navn)[0] : '';
+            $avmelding = Avmelding::lenke($epost);
+            $felter = ['navn' => $navn, 'visste' => $visste, 'avmelding' => $avmelding];
+            $e = static fn(string $t): string => htmlspecialchars($t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $egenHtml = $html === '' ? null : str_replace(
+                ['{navn}', '{visste}', '{avmelding}'],
+                [$e($navn), $vissteHtml, $e($avmelding)],
+                $html
+            );
+            Varsel::mal('fortsett', ['epost' => $epost], $felter, 'course_session', (int) $okt['id'], $egenHtml);
+            $antall++;
+        }
+        DB::oppdater('course_sessions', ['fortsett_sendt_at' => gmdate('Y-m-d H:i:s')], ['id' => $okt['id']]);
+    }
+    $si("Medlemsinvitasjon: {$antall} lagt i kø for " . count($okter) . " økt(er), {$hoppet} hoppet over (medlem, avmeldt eller fikk den nylig).");
+}
+
 switch ($jobb) {
 
     // -----------------------------------------------------------------------
@@ -318,6 +433,17 @@ switch ($jobb) {
                 ['anmeldelse_sendt_at' => gmdate('Y-m-d H:i:s')], ['id' => $okt['id']]);
         }
         $si("Oppfølging etter kurs: {$antall} lagt i kø for " . count($okter) . ' økt(er).');
+        // Medlemsinvitasjonen gaar i den samme timeslinja — ingen ny linje i
+        // cPanel. Se «fortsett» under.
+        medlemsinvitasjon($si);
+        break;
+
+    // -----------------------------------------------------------------------
+    //
+    // Medlemsinvitasjonen etter kurset, for seg (til aa kjoere for haand).
+    // Timeslinja «anmeldelser» kjoerer den ogsaa.
+    case 'fortsett':
+        medlemsinvitasjon($si);
         break;
 
     // -----------------------------------------------------------------------

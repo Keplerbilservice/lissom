@@ -16166,6 +16166,21 @@ sjekk('… og importen bytter fila paa en kilde som alt er inne naar stoerrelsen
     && str_contains($mkLib, "\$ut['byttet']++;")
     && str_contains($mkLib, "if (\$t !== '' && (!\$inne[\$kilde]['harTekst'] || \$byttetNaa)) {")
     && str_contains($mkSida, "? imp.byttet + ' dokument' + (imp.byttet === 1 ? '' : 'er') + ' byttet ut med ny utgave.'"));
+// Eieren, 11. september 2026: «vi har også laget en plakat med anmeld oss,
+// kan du bruke den som et utgangspunkt og lage klart en mal som er ment for
+// kursdeltagere som har gjennomført et kurs, ikke aktivere, bare lage
+// klart». GO paa teksten som e-post. Cron-jobben krever aktiv = 1 (se
+// bin/cron.php «anmeldelser»), saa inaktiv mal = ingenting sendes.
+sjekk('migrasjon 163 gir «anmeldelse» plakatens tekst, som e-post, og setter den inaktiv',
+    (static function (): bool {
+        $m = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/163_anmeldelse_etter_kurs_i_plakatens_stemme.sql');
+        return str_contains($m, "SET kanal = 'epost',")
+            && str_contains($m, "emne  = 'Likte du deg hos oss, {navn}?',")
+            && str_contains($m, "«Leiren husker alt du gjør med den – og vi husker alle som tar seg tid.»")
+            && str_contains($m, "aktiv = 0")
+            && str_contains($m, "WHERE navn = 'anmeldelse'")
+            && str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'), "if (!\$paa || \$lenke === '' || !\$malPaa) {");
+    })());
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
     && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")

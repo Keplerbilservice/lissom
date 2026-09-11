@@ -15967,6 +15967,17 @@ sjekk('… og setter dokumentet med navnet i spoersmaalet foerst',
             && count($u['kilder']) === 3
             && count($lite['kilder']) === 1 && mb_strlen($lite['tekst']) <= 300;
     })());
+// ── Verkstedet: fjorten like kort ────────────────────────────────────────
+//
+// Eieren, 11. september 2026: «paa verkstedet finnes det 6 stoerre kort og
+// 8 mindre kort, jeg vil at de 8 mindre kortene skal justere saa de blir
+// samme stoerrelse som de 6 stoerre kortene». Maalt i Chrome paa 1280, 834
+// og 400 px: alle fjorten kortene er 226 px hoeye.
+sjekk('dokumentkortene og stedskortene staar i ett rutenett med like rader',
+    str_contains($mkSida, 'grid-auto-rows: 1fr; gap: var(--space-4); align-items: stretch;">
+              <sc-if value="{{ vstHarForsideDok }}"')
+    && substr_count($mkSida, 'grid-auto-rows: 1fr') >= 1);
+
 sjekk('kildene under svaret faar malnavnet foran',
     str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")
     && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"));

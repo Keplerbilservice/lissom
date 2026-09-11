@@ -18897,6 +18897,12 @@ window.__resources = {
                         <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ u.antall }}</p>
                         <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
                       </button>
+                      <!-- Én og én mal til medlemmene. Staar bare naar
+                           «Keramikk maler» selv er av — er det paa, vises
+                           alle malene uansett. -->
+                      <sc-if value="{{ u.visBryter }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" onClick="{{ u.veksle }}" style="{{ u.synligStil }}">{{ u.synligNavn }}</button>
+                      </sc-if>
                     </div>
                   </sc-for>
                 </div>
@@ -50164,7 +50170,9 @@ class Component extends DCLogic {
             const barn = barnAv(k.id);
             return {
               navn: k.navn,
-              antall: antallTekst(k.antall + barn.reduce((sum, b) => sum + b.antall, 0)),
+              // Det medlemmet faar se — ikke k.antall, som ogsaa teller det
+              // som er skjult naar bare én mal er slaatt paa.
+              antall: antallTekst((k.filer || []).length + barn.reduce((sum, b) => sum + (b.filer || []).length, 0)),
               // Et kort med underkort (Keramikk maler) tar hele bredda: 71
               // maler faar ikke plass i én kolonne av tre.
               kortStil: {
@@ -50185,7 +50193,7 @@ class Component extends DCLogic {
                   navn: u.navn,
                   under: u.under || '',
                   harUnder: !!u.under,
-                  antall: antallTekst(u.antall),
+                  antall: antallTekst((u.filer || []).length),
                   harBilde: !!u.bilde,
                   bilde: u.bilde || '',
                   apen,
@@ -52270,6 +52278,14 @@ class Component extends DCLogic {
           apne: () => this.setState({ dokValgt: u.id }),
           kortStil: kortRamme,
           innerStil: kortInner,
+          // Bryteren paa malen. Eieren, 11. september 2026: «jeg vil ogsaa
+          // kunne dele en og en mal med min side medlemmer». Er hele
+          // «Keramikk maler» slaatt paa, vises alle uansett — da staar det
+          // ingen bryter paa malene, for den ville ikke gjort noe.
+          visBryter: !(valgt && valgt.visMedlem),
+          synligNavn: u.egenVis ? 'Vises for medlemmer' : 'Skjult for medlemmer',
+          synligStil: kortBunn(!!u.egenVis),
+          veksle: () => this.dokKall({ handling: 'veksle', id: u.id }),
         }));
         // Staar man inne i et underkort, gaar «tilbake» til hovedkortet —
         // ikke helt ut til alle kortene.

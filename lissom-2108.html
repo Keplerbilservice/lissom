@@ -5533,8 +5533,17 @@ window.__resources = {
                              Trykk aapner filene i malen rett i kortet;
                              trykk igjen lukker. -->
                         <sc-if value="{{ k.harUnderkort }}" hint-placeholder-val="{{ false }}">
+                          <!-- Soek og grupper, som i admin. -->
+                          <input value="{{ k.sok }}" onChange="{{ k.sokEndre }}" placeholder="Søk i malene" style="width: 100%; box-sizing: border-box; margin-top: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--surface-card); color: var(--text-heading);">
+                          <sc-if value="{{ k.sokTomt }}" hint-placeholder-val="{{ false }}">
+                            <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-muted);">Ingen dokumenter ennå.</div>
+                          </sc-if>
+                          <sc-for list="{{ k.grupper }}" as="g" hint-placeholder-count="2">
+                          <sc-if value="{{ g.harNavn }}" hint-placeholder-val="{{ true }}">
+                            <div style="margin-top: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ g.navn }}</div>
+                          </sc-if>
                           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
-                            <sc-for list="{{ k.underkort }}" as="u" hint-placeholder-count="3">
+                            <sc-for list="{{ g.kort }}" as="u" hint-placeholder-count="3">
                               <div style="{{ u.kortStil }}">
                                 <button type="button" onClick="{{ u.veksle }}" style="{{ u.knappStil }}">
                                   <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
@@ -5557,10 +5566,22 @@ window.__resources = {
                                       </button>
                                     </sc-for>
                                   </div>
+                                  <!-- Stegbildene som stripe, som i admin. -->
+                                  <sc-if value="{{ u.harSteg }}" hint-placeholder-val="{{ false }}">
+                                    <div style="display: flex; gap: var(--space-3); overflow-x: auto; margin-top: var(--space-3); -webkit-overflow-scrolling: touch;">
+                                      <sc-for list="{{ u.steg }}" as="st" hint-placeholder-count="3">
+                                        <button type="button" onClick="{{ st.apne }}" style="{{ st.stil }}">
+                                          <img data-src="{{ st.bilde }}" alt="{{ st.navn }}" loading="lazy" decoding="async" style="{{ st.bildeStil }}">
+                                          <span style="font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">{{ st.navn }}</span>
+                                        </button>
+                                      </sc-for>
+                                    </div>
+                                  </sc-if>
                                 </sc-if>
                               </div>
                             </sc-for>
                           </div>
+                          </sc-for>
                         </sc-if>
                       </div>
                     </sc-for>
@@ -18869,11 +18890,21 @@ window.__resources = {
               <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                   <button type="button" onClick="{{ dokLukk }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 5px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">{{ dokTilbakeNavn }}</button>
-                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ dokApnetNavn }}</span>
-                  <sc-if value="{{ dokApnetHarUnder }}" hint-placeholder-val="{{ false }}">
-                    <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ dokApnetUnder }}</span>
+                  <!-- Inne i en mal: bildet lite ved siden av navnet.
+                       Eieren, 11. september 2026, GO paa utkastet. -->
+                  <sc-if value="{{ dokApnetHarBilde }}" hint-placeholder-val="{{ false }}">
+                    <img data-src="{{ dokApnetBilde }}" alt="{{ dokApnetNavn }}" decoding="async" style="width: 88px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100); display: block;">
                   </sc-if>
+                  <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ dokApnetNavn }}</span>
+                    <sc-if value="{{ dokApnetErMal }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ dokApnetUnder }} · {{ dokApnetAntall }}</span>
+                    </sc-if>
+                  </div>
                 </div>
+                <sc-if value="{{ dokApnetVisBryter }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ dokApnetVeksle }}" style="{{ dokApnetSynligStil }}">{{ dokApnetSynligNavn }}</button>
+                </sc-if>
               </div>
 
               <!-- Kort i kortet. Eieren, 11. september 2026: «under kortet
@@ -18883,8 +18914,22 @@ window.__resources = {
                    inn i malen; der ligger Mal.pdf og monteringsguiden som
                    vanlige dokumentkort. -->
               <sc-if value="{{ dokHarUnderkort }}" hint-placeholder-val="{{ false }}">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-5) var(--space-6) 0;">
-                  <sc-for list="{{ dokUnderkort }}" as="u" hint-placeholder-count="3">
+                <!-- Soek oeverst, og malene i grupper med overskrift
+                     (mappenavnene: «Maler 1 til 20» …). Eieren, 11.
+                     september 2026, GO paa utkastet: «oversiktlig og
+                     skalerbart». -->
+                <div style="padding: var(--space-5) var(--space-6) 0;">
+                  <input value="{{ dokSok }}" onChange="{{ dokSokEndre }}" placeholder="Søk i malene" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+                </div>
+                <sc-if value="{{ dokSokTomt }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: var(--space-4) var(--space-6) 0; font-size: var(--text-sm); color: var(--text-muted);">{{ dokTomTekst }}</div>
+                </sc-if>
+                <sc-for list="{{ dokUnderGrupper }}" as="g" hint-placeholder-count="2">
+                <sc-if value="{{ g.harNavn }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding: var(--space-6) var(--space-6) 0; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ g.navn }}</div>
+                </sc-if>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-4) var(--space-6) 0;">
+                  <sc-for list="{{ g.kort }}" as="u" hint-placeholder-count="3">
                     <div style="{{ u.kortStil }}">
                       <button type="button" onClick="{{ u.apne }}" style="{{ u.innerStil }}">
                         <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
@@ -18906,6 +18951,7 @@ window.__resources = {
                     </div>
                   </sc-for>
                 </div>
+                </sc-for>
               </sc-if>
 
               <!-- Hvert dokument som sitt eget lille kort.
@@ -18943,6 +18989,24 @@ window.__resources = {
                   <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ dokSlippTittel }}</span>
                 </label>
               </div>
+
+              <!-- Stegbildene som en stripe. Eieren, 11. september 2026, GO
+                   paa utkastet: «stegbildene som en bildestripe med Steg 1,
+                   Steg 2 … under — ikke ti like store kort». Trykk aapner
+                   bildet i visningen, som for et dokument. -->
+              <sc-if value="{{ dokHarSteg }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: var(--space-4); overflow-x: auto; padding: 0 var(--space-6) var(--space-6); -webkit-overflow-scrolling: touch;">
+                  <sc-for list="{{ dokSteg }}" as="st" hint-placeholder-count="3">
+                    <div style="display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto;">
+                      <button type="button" onClick="{{ st.apne }}" style="{{ st.stil }}">
+                        <img data-src="{{ st.bilde }}" alt="{{ st.navn }}" loading="lazy" decoding="async" style="{{ st.bildeStil }}">
+                        <span style="font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">{{ st.navn }}</span>
+                      </button>
+                      <button type="button" onClick="{{ st.slett }}" style="{{ st.slettStil }}">Slett</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
 
               <sc-if value="{{ dokTomt }}" hint-placeholder-val="{{ true }}">
                 <div style="padding: 0 var(--space-6) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">{{ dokTomTekst }}</div>
@@ -35184,6 +35248,21 @@ class Component extends DCLogic {
       .catch(() => { this._minDokHentes = false; });
   }
 
+  /**
+   * Gruppa en mal hoerer til, lest ut av slug-en importen ga den
+   * (bin/dokumentpakke.mjs). Det er eierens egne mappenavn. En mal som
+   * ikke kommer fra pakka har ingen gruppe, og staar for seg.
+   */
+  static malGruppe(slug) {
+    const s = String(slug || '');
+    if (/^mal-\d{2}-/.test(s)) return 'Maler 1 til 20';
+    if (s.indexOf('mal-20-55-') === 0) return 'Maler 20 til 55';
+    if (s.indexOf('mal-55-85-') === 0) return 'Maler 55 til 85';
+    if (s.indexOf('mal-85-100-') === 0) return 'Maler 85 til 100';
+    if (s.indexOf('mal-ekstra-') === 0) return 'Ekstra maler';
+    return '';
+  }
+
   /** Skriver kalenderen enda? Fase 6 setter denne til true. */
   get klSkriver() { return false; }
 
@@ -50155,6 +50234,59 @@ class Component extends DCLogic {
           apne: () => window.open('/api/dokument.php?id=' + f.id, '_blank', 'noopener'),
         });
         const valgtMal = this.state.mdValgt || 0;
+        const mdSok = (this.state.mdSok || '').trim().toLowerCase();
+        // Et stegbilde er et bilde som heter «Steg N»: det staar i en stripe,
+        // ikke som et dokumentkort.
+        const erSteg = (f) => /^Steg \d+$/.test(f.navn) && String(f.type).toUpperCase() !== 'PDF' && f.kanVises;
+        const malKort = (u) => {
+          const apen = valgtMal === u.id;
+          const alle = u.filer || [];
+          return {
+            navn: u.navn,
+            under: u.under || '',
+            harUnder: !!u.under,
+            antall: antallTekst(alle.length),
+            harBilde: !!u.bilde,
+            bilde: u.bilde || '',
+            apen,
+            pil: apen ? 'Lukk' : 'Åpne →',
+            veksle: () => this.setState({ mdValgt: apen ? 0 : u.id }),
+            filer: alle.filter(f => !erSteg(f)).map(filKnapp),
+            harSteg: alle.filter(erSteg).length > 0,
+            steg: alle.filter(erSteg).sort((a, b) => parseInt(a.navn.slice(5), 10) - parseInt(b.navn.slice(5), 10)).map(f => ({
+              navn: f.navn,
+              bilde: '/api/dokument.php?id=' + f.id,
+              apne: () => window.open('/api/dokument.php?id=' + f.id, '_blank', 'noopener'),
+              stil: {
+                appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+                cursor: 'pointer', font: 'inherit', display: 'flex', flexDirection: 'column',
+                alignItems: 'flex-start', gap: 4, flex: '0 0 auto', width: 120,
+              },
+              bildeStil: {
+                width: 120, aspectRatio: '4 / 3', objectFit: 'cover', display: 'block',
+                borderRadius: 'var(--radius-md)', background: 'var(--clay-100)',
+              },
+            })),
+            kortStil: {
+              background: 'var(--surface-card)',
+              border: '1px solid ' + (apen ? 'var(--sage-500)' : 'var(--border-subtle)'),
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+              display: 'flex', flexDirection: 'column', minWidth: 0,
+              gridColumn: apen ? '1 / -1' : 'auto',
+            },
+            knappStil: {
+              appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+              textAlign: 'left', cursor: 'pointer', width: '100%', font: 'inherit',
+              display: 'flex', flexDirection: 'column', flex: '1 1 auto',
+            },
+            bildeStil: {
+              width: apen ? 220 : '100%', maxWidth: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block',
+              borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-3)',
+              background: 'var(--clay-100)',
+              // Aapen tar malen hele bredda; da skal ikke bildet gjore det.
+            },
+          };
+        };
         return {
           mdHarNoe: kort.length > 0 || !!d.faq,
           mdHarKort: kort.length > 0,
@@ -50187,39 +50319,23 @@ class Component extends DCLogic {
               // eget kort. Trykk paa malen aapner filene hennes rett under
               // bildet, i det samme kortet; trykk igjen lukker.
               harUnderkort: barn.length > 0,
-              underkort: barn.map(u => {
-                const apen = valgtMal === u.id;
-                return {
-                  navn: u.navn,
-                  under: u.under || '',
-                  harUnder: !!u.under,
-                  antall: antallTekst((u.filer || []).length),
-                  harBilde: !!u.bilde,
-                  bilde: u.bilde || '',
-                  apen,
-                  pil: apen ? 'Lukk' : 'Åpne →',
-                  veksle: () => this.setState({ mdValgt: apen ? 0 : u.id }),
-                  filer: (u.filer || []).map(filKnapp),
-                  kortStil: {
-                    background: 'var(--surface-card)',
-                    border: '1px solid ' + (apen ? 'var(--sage-500)' : 'var(--border-subtle)'),
-                    borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
-                    display: 'flex', flexDirection: 'column', minWidth: 0,
-                    gridColumn: apen ? '1 / -1' : 'auto',
-                  },
-                  knappStil: {
-                    appearance: 'none', border: 'none', background: 'transparent', padding: 0,
-                    textAlign: 'left', cursor: 'pointer', width: '100%', font: 'inherit',
-                    display: 'flex', flexDirection: 'column', flex: '1 1 auto',
-                  },
-                  bildeStil: {
-                    width: apen ? 220 : '100%', maxWidth: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block',
-                    borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-3)',
-                    background: 'var(--clay-100)',
-                    // Aapen tar malen hele bredda; da skal ikke bildet gjore det.
-                  },
-                };
-              }),
+              // Soek og grupper, som i admin. Eieren, 11. september 2026,
+              // GO paa utkastet: samme oppsett paa Min side.
+              sok: this.state.mdSok || '',
+              sokEndre: (e) => this.setState({ mdSok: e.target.value }),
+              sokTomt: barn.length > 0 && mdSok !== '' && barn.filter(u => (u.navn + ' ' + (u.under || '')).toLowerCase().indexOf(mdSok) !== -1).length === 0,
+              grupper: (() => {
+                const treff = mdSok === '' ? barn : barn.filter(u => (u.navn + ' ' + (u.under || '')).toLowerCase().indexOf(mdSok) !== -1);
+                const ut = [];
+                treff.forEach(u => {
+                  const navn = Component.malGruppe(u.slug);
+                  let g = ut.filter(x => x.navn === navn)[0];
+                  if (!g) { g = { navn, harNavn: !!navn, kort: [] }; ut.push(g); }
+                  g.kort.push(malKort(u));
+                });
+                return ut;
+              })(),
+              underkort: barn.map(malKort),
             };
           }),
           mdSporsmal: this.state.faqSporsmal || '',
@@ -52176,6 +52292,12 @@ class Component extends DCLogic {
         // Tallet paa hovedkortet teller ogsaa det som ligger i underkortene:
         // «Keramikk maler» har 200 dokumenter, ikke 0.
         const antallMed = (k) => k.antall + barnAv(k.id).reduce((sum, b) => sum + b.antall, 0);
+        // Gruppa en mal hoerer til, lest ut av slug-en importen ga den. Det er
+        // mappenavnene til eieren: «Maler 1 til 20», «Maler 20 til 55» …
+        const malGruppe = (slug) => Component.malGruppe(slug);
+        // Et stegbilde («Steg 1» … «Steg 10») er et bilde, og staar i en
+        // stripe under dokumentene — ikke som ti like store kort.
+        const erSteg = (f) => /^Steg \d+$/.test(f.navn) && String(f.mime).indexOf('image/') === 0;
 
         // «218 kB» og «1,2 MB». Tallet skal kunne leses, ikke regnes ut.
         const stor = (b) => b >= 1024 * 1024
@@ -52264,6 +52386,7 @@ class Component extends DCLogic {
         // staar paa hovedkortet og gjelder alle malene under.
         const underkortene = (valgt ? barnAv(valgt.id) : []).map(u => ({
           id: u.id,
+          slug: u.slug || '',
           navn: u.navn,
           under: u.under || '',
           harUnder: !!u.under,
@@ -52291,8 +52414,45 @@ class Component extends DCLogic {
         // ikke helt ut til alle kortene.
         const forelder = valgt && valgt.forelder ? (kort.filter(k => k.id === valgt.forelder)[0] || null) : null;
 
+        // ── Soek og grupper. Eieren, 11. september 2026 (GO paa utkastet):
+        // soekefelt oeverst, og malene i grupper med overskrift, slik at 200
+        // maler er like oversiktlige som 69.
+        const sok = (this.state.dokSok || '').trim().toLowerCase();
+        const treff = sok === ''
+          ? underkortene
+          : underkortene.filter(u => (u.navn + ' ' + u.under).toLowerCase().indexOf(sok) !== -1);
+        const grupper = [];
+        treff.forEach(u => {
+          const navn = malGruppe(u.slug);
+          let g = grupper.filter(x => x.navn === navn)[0];
+          if (!g) { g = { navn, harNavn: !!navn, kort: [] }; grupper.push(g); }
+          g.kort.push(u);
+        });
+
         const iKortet = valgt ? filer.filter(f => f.kategori === valgt.id) : [];
-        const radene = iKortet.map(f => ({
+        // Stegbildene som stripe, resten som kort.
+        const stegene = iKortet.filter(erSteg).sort((a, b) => parseInt(a.navn.slice(5), 10) - parseInt(b.navn.slice(5), 10)).map(f => ({
+          id: f.id,
+          navn: f.navn,
+          bilde: '/api/dokument.php?id=' + f.id,
+          apne: () => this.setState({ dokVis: f }),
+          slett: () => {
+            if (window.confirm('Slette «' + f.navn + '»? Filen er borte for godt.')) {
+              this.dokKall({ handling: 'slett', id: f.id });
+            }
+          },
+          stil: {
+            appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+            cursor: 'pointer', font: 'inherit', display: 'flex', flexDirection: 'column',
+            alignItems: 'flex-start', gap: 4, flex: '0 0 auto', width: 120,
+          },
+          bildeStil: {
+            width: 120, aspectRatio: '4 / 3', objectFit: 'cover', display: 'block',
+            borderRadius: 'var(--radius-md)', background: 'var(--clay-100)',
+          },
+          slettStil: Object.assign({}, filBunn, { color: 'var(--text-faint)', fontSize: 'var(--text-xs)' }),
+        }));
+        const radene = iKortet.filter(f => !erSteg(f)).map(f => ({
           id: f.id,
           navn: f.navn,
           type: f.type,
@@ -52451,11 +52611,34 @@ class Component extends DCLogic {
           // Samme ord som i ruta ellers: «← Alle kort» ut, og navnet paa
           // hovedkortet naar man staar i et underkort.
           dokTilbakeNavn: forelder ? '← ' + forelder.navn : '← Alle kort',
-          dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0 }),
+          dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0, dokSok: '' }),
           dokUnderkort: underkortene,
           dokHarUnderkort: underkortene.length > 0,
+          dokUnderGrupper: grupper,
+          dokSok: this.state.dokSok || '',
+          dokSokEndre: (e) => this.setState({ dokSok: e.target.value }),
+          dokSokTomt: sok !== '' && treff.length === 0,
+          // Hodet paa en mal: bildet lite til venstre, navn, «Mal 01» og
+          // antallet — og bryteren, om hovedkortet er av.
+          dokApnetErMal: !!forelder,
+          dokApnetHarBilde: !!(valgt && valgt.harBilde),
+          dokApnetBilde: valgt ? '/api/dokument.php?kort=' + valgt.id : '',
+          dokApnetAntall: valgt ? antallTekst(valgt.antall) : '',
+          dokApnetVisBryter: !!(forelder && !forelder.visMedlem),
+          dokApnetSynligNavn: valgt && valgt.egenVis ? 'Vises for medlemmer' : 'Skjult for medlemmer',
+          dokApnetSynligStil: {
+            appearance: 'none', cursor: 'pointer', textAlign: 'left',
+            font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
+            padding: '6px 16px', borderRadius: 'var(--radius-pill)',
+            border: '1px solid ' + (valgt && valgt.egenVis ? 'var(--sage-500)' : 'var(--border-default)'),
+            background: valgt && valgt.egenVis ? 'var(--sage-100)' : 'var(--surface-card)',
+            color: valgt && valgt.egenVis ? 'var(--sage-600)' : 'var(--text-muted)',
+          },
+          dokApnetVeksle: () => { if (valgt) this.dokKall({ handling: 'veksle', id: valgt.id }); },
+          dokSteg: stegene,
+          dokHarSteg: stegene.length > 0,
           dokRader: radene,
-          dokTomt: !!valgt && radene.length === 0 && underkortene.length === 0,
+          dokTomt: !!valgt && radene.length === 0 && stegene.length === 0 && underkortene.length === 0,
           dokTomTekst: 'Ingen dokumenter ennå.',
           dokLastKortStil: {
             position: 'relative', cursor: 'pointer', minWidth: 0,

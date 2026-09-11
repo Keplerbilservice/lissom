@@ -743,11 +743,107 @@ final class Dokumenter
         if ($treff !== []) {
             return ['treff' => $treff, 'menteDu' => null];
         }
+        // Ikke som setning — saa ord for ord. Eieren, 11. september 2026,
+        // skrev «hva er begitning» i kalenderen og fikk ingenting: setningen
+        // staar ikke i noe dokument, men «begitning» gjoer det. Sporreordene
+        // og smaaordene («hva», «er») sier ingenting og er ikke med.
+        $ordene = self::sokeord($ord);
+        if (count($ordene) >= 1 && $ordene !== [$ord]) {
+            $treff = self::sokOrd($rader, $ordene, $maks);
+            if ($treff !== []) {
+                return ['treff' => $treff, 'menteDu' => null];
+            }
+        }
         $rettet = self::rettOrd($ord, self::ordliste($rader));
         if ($rettet === null) {
             return ['treff' => [], 'menteDu' => null];
         }
-        return ['treff' => self::sokI($rader, $rettet, $maks), 'menteDu' => $rettet];
+        $treff = self::sokI($rader, $rettet, $maks);
+        if ($treff === []) {
+            $treff = self::sokOrd($rader, self::sokeord($rettet), $maks);
+        }
+        return ['treff' => $treff, 'menteDu' => $rettet];
+    }
+
+    /**
+     * Ord som ikke sier hva man leter etter: sporreord og smaaord. De
+     * rettes ikke («hvordan» skal ikke bli «hvorfor»), og de er ikke med
+     * naar det soekes ord for ord.
+     */
+    private const SMAAORD = [
+        'hva', 'hvordan', 'hvorfor', 'hvilken', 'hvilke', 'hvor', 'når', 'nar',
+        'kan', 'skal', 'bør', 'bor', 'må', 'vil', 'jeg', 'meg', 'min', 'mitt', 'mine',
+        'du', 'deg', 'din', 'ditt', 'vi', 'oss', 'vår', 'det', 'den', 'de', 'dem', 'som',
+        'er', 'var', 'blir', 'bli', 'har', 'ikke', 'med', 'uten', 'til', 'fra', 'for',
+        'om', 'på', 'pa', 'av', 'og', 'eller', 'men', 'at', 'noe', 'noen', 'gjør', 'gjøre',
+        'bruke', 'bruker', 'best', 'beste', 'mye', 'lite', 'litt', 'hvis', 'etter',
+        'før', 'inn', 'ut', 'opp', 'ned', 'over', 'under', 'en', 'et', 'ei', 'man',
+        'seg', 'sin', 'sitt', 'her', 'der', 'nå', 'da', 'så', 'sa', 'meg', 'mer', 'mest',
+    ];
+
+    /**
+     * Ordene i det skrevne som betyr noe: alt paa minst tre bokstaver som
+     * ikke er et smaaord. «hva er begitning» → ['begitning'].
+     *
+     * @return list<string>
+     */
+    public static function sokeord(string $tekst): array
+    {
+        $ut = [];
+        foreach (preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($tekst)) ?: [] as $w) {
+            if (mb_strlen($w) >= 3 && !in_array($w, self::SMAAORD, true) && !in_array($w, $ut, true)) {
+                $ut[] = $w;
+            }
+        }
+        return $ut;
+    }
+
+    /**
+     * Soek ord for ord: dokumenter der alle ordene staar foerst, saa de der
+     * noen av dem staar. Innenfor hver gruppe: navnetreff foerst.
+     *
+     * @param list<string> $ordene
+     */
+    private static function sokOrd(array $rader, array $ordene, int $maks): array
+    {
+        if ($ordene === []) {
+            return [];
+        }
+        $poeng = [];
+        foreach ($rader as $i => $r) {
+            $navn = (string) $r['etikett'] . ' ' . (string) $r['kort'];
+            $tekst = (string) ($r['tekst'] ?? '');
+            $iNavn = 0;
+            $iTekst = 0;
+            $forsteITekst = null;
+            foreach ($ordene as $o) {
+                if (mb_stripos($navn, $o) !== false) {
+                    $iNavn++;
+                } elseif ($tekst !== '' && mb_stripos($tekst, $o) !== false) {
+                    $iTekst++;
+                    $forsteITekst ??= $o;
+                }
+            }
+            $funnet = $iNavn + $iTekst;
+            if ($funnet === 0) {
+                continue;
+            }
+            $poeng[] = [
+                'alle' => $funnet === count($ordene) ? 1 : 0,
+                'funnet' => $funnet,
+                'iNavn' => $iNavn,
+                'i' => $i,
+                'treff' => [
+                    'id' => (int) $r['id'],
+                    'navn' => (string) $r['etikett'],
+                    'kort' => (string) $r['kort'],
+                    'utdrag' => $forsteITekst !== null ? self::linjeMed($tekst, $forsteITekst) : '',
+                ],
+            ];
+        }
+        usort($poeng, static fn(array $a, array $b): int =>
+            [$b['alle'], $b['funnet'], $b['iNavn'], $a['i']] <=> [$a['alle'], $a['funnet'], $a['iNavn'], $b['i']]);
+        return array_map(static fn(array $p): array => $p['treff'], array_slice($poeng, 0, $maks));
     }
 
     /** Dokumentene soeket leter i: navn, kort og tekst, filtrert paa hvem som spor. */
@@ -849,7 +945,7 @@ final class Dokumenter
     public static function naermeste(string $ord, array $ordliste): ?string
     {
         $ord = mb_strtolower($ord);
-        if (isset($ordliste[$ord]) || mb_strlen($ord) < 4) {
+        if (isset($ordliste[$ord]) || mb_strlen($ord) < 4 || in_array($ord, self::SMAAORD, true)) {
             return $ord;
         }
         $start = null;

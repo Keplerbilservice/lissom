@@ -16276,9 +16276,16 @@ sjekk('et notat kan ikke dras, og har ingen hoyreklikkmeny',
     && str_contains($knSida, "if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;"),
     'et notat er ingen okt: ingen deltakere, ingen kursholder, ingen plasser');
 
-sjekk('notatene vises ogsaa i dagsvisningen',
+// Eieren, 11. september 2026: «notat i kalender, på 1 dag visning, legges
+// ikke på riktig klokkeslett». Stripa over timeplanen er borte; notatet er
+// et baand tvers over spaltene paa klokkeslettet sitt. Maalt i Chrome:
+// notat 13:00–14:00 begynner paa 13:00-linja (± 1 px) og er én time hoyt.
+sjekk('notatene staar paa klokkeslettet sitt i dagsvisningen, tvers over spaltene',
     str_contains($knSida, "const dagensNotater = dagensAlle.filter(e => e.type === 'notat');")
-    && str_contains($knSida, '{{ klNotatStripeVis }}'),
+    && str_contains($knSida, '<sc-for list="{{ klDagNotater }}" as="n" hint-placeholder-count="0">')
+    && str_contains($knSida, "position: 'absolute', left: '56px', right: 0, width: 'auto', zIndex: 3,")
+    && str_contains($knSida, "top: (Math.max(0, s - bStart) / 60 * pxTime) + 'px',\n                height: Math.max(22,")
+    && !str_contains($knSida, 'klNotatStripeVis'),
     'dagen deler skjermen per kursholder, og et notat har ingen');
 
 sjekk('notatene staar ikke i den lette utgaven',
@@ -16444,6 +16451,19 @@ sjekk('… og rettOrd() bytter bare det som maa byttes',
 sjekk('soeket svarer med menteDu naar det skrevne ikke traff',
     str_contains($mkLib, "return ['treff' => self::sokI(\$rader, \$rettet, \$maks), 'menteDu' => \$rettet];")
     && str_contains($mkSok, "Svar::json(['treff' => \$svar['treff'], 'menteDu' => \$svar['menteDu']]);"));
+// Eieren, 11. september 2026 (bilde fra Safari): «hva er begitning» i
+// kalenderen ga «Ingen treff» — setningen staar ikke i noe dokument, men
+// ordet gjoer det. Naa soekes det ord for ord naar setningen ikke treffer,
+// uten sporreord og smaaord, og rettinga roerer ikke dem («hvordan» blir
+// ikke «hvorfor»). Maalt mot tekstfilene i db/dokumenter: «hva er
+// begitning» → Materialkunnskap; «hva er begitnig» → samme, med «Mente du».
+sjekk('soeket gaar ord for ord naar setningen ikke treffer, uten smaaordene',
+    str_contains($mkLib, "\$ordene = self::sokeord(\$ord);")
+    && str_contains($mkLib, "\$treff = self::sokOrd(\$rader, self::sokeord(\$rettet), \$maks);")
+    && str_contains($mkLib, "if (isset(\$ordliste[\$ord]) || mb_strlen(\$ord) < 4 || in_array(\$ord, self::SMAAORD, true)) {")
+    && Dokumenter::sokeord('hva er begitning') === ['begitning']
+    && Dokumenter::sokeord('Hvordan lager jeg slikker?') === ['lager', 'slikker']
+    && Dokumenter::naermeste('hvordan', ['hvorfor' => true]) === 'hvordan');
 sjekk('… og Spør verkstedet retter ordene foer den velger dokumenter',
     str_contains($mkLib, "static fn(string \$o): string => self::naermeste(\$o, \$liste) ?? \$o, \$ord")
     && str_contains($mkFaq, "Let etter meningen, ikke ordene.")
@@ -16469,6 +16489,9 @@ sjekk('… svaret gjelder bare ordet det ble hentet for',
 sjekk('soekefeltet i kalenderen heter «Søk …» og er like hoeyt som pillene',
     str_contains($mkSida, 'placeholder="Søk …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px;')
     && !str_contains($mkSida, 'placeholder="Søk person eller kurs …"'));
+sjekk('raden med pillene og soekefeltet har luft under seg',
+    str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
+    && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));
 sjekk('kalender admin: «Kunnskap» under person- og kurstreffene',
     str_contains($mkSida, "settKlSok: e => { this.setState({ klSok: e.target.value }); this.kunnskapSok(e.target.value); },")
     && str_contains($mkSida, '<sc-if value="{{ klKunnskapVises }}"')

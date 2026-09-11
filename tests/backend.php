@@ -15417,9 +15417,11 @@ sjekk('… og sier fra naar svaret ikke staar der',
 sjekk('… og et medlem naar den ikke for eieren har slaatt den paa',
     str_contains($dokFaq, '!Dokumenter::faqForMedlem()')
     && str_contains($dokFaq, "Svar::feil('Fant ikke siden.', 404)"));
+// Fra 11. september gaar bryteren via synligSql(), som tar hensyn til at
+// et underkort (en mal) arver bryteren fra «Keramikk maler».
 sjekk('… og et medlem naar bare kortene som er slaatt paa',
     str_contains($dokFaq, 'Dokumenter::kunnskap(!$erAdmin, $valgte)')
-    && str_contains($dokLib, "if (\$bareMedlem) {\n            \$hvor[] = 'k.vis_medlem = 1';"));
+    && str_contains($dokLib, "if (\$bareMedlem) {\n            \$hvor[] = self::synligSql();"));
 sjekk('… og en kilde modellen finner paa vises ikke som et dokument',
     str_contains($dokFaq, "in_array(\$n, \$kjente, true)"));
 sjekk('… og hvert kall koster penger, saa det er et tak per person',
@@ -15567,8 +15569,10 @@ sjekk('… og feilmeldingen sier det virkelige tallet',
 // Uten dette svarte skjermen «Du maa velge en fil» paa en fil som var
 // altfor stor. Sjekken maa staa FOR opphavssjekken, som leser $_POST og
 // derfor heller ikke har noe aa gaa paa.
+// Bare for skjemaer med fil: JSON-kallene (bryter, slett, tekst) har alltid
+// tom $_POST, og fikk «for stor» de ogsaa fram til 11. september.
 sjekk('… og en forespoersel som kommer fram tom sier at fila var for stor',
-    str_contains($dokApi, "if (\$_POST === [] && \$_FILES === [] && (int) (\$_SERVER['CONTENT_LENGTH'] ?? 0) > 0)")
+    str_contains($dokApi, "if (\$erSkjema && \$_POST === [] && \$_FILES === [] && (int) (\$_SERVER['CONTENT_LENGTH'] ?? 0) > 0)")
     && strpos($dokApi, "CONTENT_LENGTH") < strpos($dokApi, 'Foresporsel::krevSammeOpphav();'));
 // ── Mange filer, og en zippet mappe ──────────────────────────────────────
 //

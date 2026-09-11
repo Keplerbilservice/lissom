@@ -2180,7 +2180,7 @@ window.__resources = {
                    kalenderikon ved siden av varigheten, inne i kortet. Se
                    «meta» i ds-bundle.js; tomme felt filtreres bort selv, saa
                    et kurs uten datoer faar ingen tom rad. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
             </sc-for>
           </div>
           <div class="lx-kunmobil">
@@ -2434,7 +2434,7 @@ window.__resources = {
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
               <sc-for list="{{ popDatoer }}" as="k" hint-placeholder-count="2">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
               </sc-for>
             </div>
           </sc-if>
@@ -2585,7 +2585,7 @@ window.__resources = {
       <section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ kursAlle }}" as="k" hint-placeholder-count="8">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
           </sc-for>
         </div>
       </section>
@@ -2672,7 +2672,7 @@ window.__resources = {
 
           <div class="lx-split" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-10); align-items: start;">
             <div>
-              <div style="position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden;">
+              <div role="img" aria-label="{{ bBildeAlt }}" style="position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden;">
                 <sc-for list="{{ bKarusell }}" as="ki" hint-placeholder-count="1">
                   <div style="{{ ki.stil }}"></div>
                 </sc-for>
@@ -12037,6 +12037,14 @@ window.__resources = {
                      ingen videoopplasting bak, og film paa et delt webhotell er
                      en annen sak enn et bilde — plass, baandbredde og
                      avspilling. Staar som en opplysning til det er bestilt. -->
+                <!-- Alt-tekst paa kursbildet (migrasjon 165). Eieren, 11.
+                     september 2026, SEO-instruksen: «alt-tekster på bilder
+                     med beskrivende norsk». Samme etikett som artiklene har.
+                     Tom = kursnavnet, som foer. -->
+                <div style="margin: 0 0 var(--space-5);">
+                  <label for="k-bildealt" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Alt-tekst — hva bildet viser, for den som ikke ser det</label>
+                  <input id="k-bildealt" value="{{ kBildeAlt }}" onChange="{{ settKBildeAlt }}" placeholder="{{ kBildeAltPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body); font-size: var(--text-base); background: var(--surface-card);">
+                </div>
                 <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Video er ikke koblet opp ennå. Si fra om kursene skal kunne ha en kort film øverst i karusellen, så bygger vi det.</p>
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                   <div style="display: flex; align-items: center; gap: var(--space-2);">
@@ -23064,6 +23072,7 @@ class Component extends DCLogic {
           kortBeskrivelse: k.kortBeskrivelse || '',
           seoTittel: k.seoTittel || '',
           seoMeta: k.seoMeta || '',
+          bildeAlt: k.bildeAlt || '',
           price: k.prisOre === 0 ? 'Gratis' : k.pris,
           status: k.datoer.length ? this.plasstekst(k.datoer, k.plasser) : 'Ta kontakt for dato',
           kunKontakt: k.datoer.length === 0,
@@ -23258,6 +23267,7 @@ class Component extends DCLogic {
       kortBeskrivelse: kat.kortBeskrivelse || k.kortBeskrivelse || '',
       seoTittel: kat.seoTittel || k.seoTittel || '',
       seoMeta: kat.seoMeta || k.seoMeta || '',
+      bildeAlt: kat.bildeAlt || k.bildeAlt || '',
       om: kat.om || k.om,
       // «Alt som er inkludert».
       //
@@ -31291,6 +31301,7 @@ class Component extends DCLogic {
       nivaaIntern: this.state.kNivaaIntern || 'nybegynner',
       nivaaTekst: this.state.kNivaaTekst || '',
       kortBeskrivelse: this.state.kKortBeskrivelse || '',
+      bildeAlt: this.state.kBildeAlt || '',
       lagerDu: this.state.kLagerDu || '', medHjem: this.state.kMedHjem || '',
       ferdigTid: this.state.kFerdigTid || '', tillegg: this.state.kTillegg || '',
       varighetTekst: this.state.kVarighetTekst || '',
@@ -33470,6 +33481,7 @@ class Component extends DCLogic {
       kNivaaIntern: raa.nivaaIntern || 'nybegynner',
       kNivaaTekst: raa.nivaaTekst || '',
       kKortBeskrivelse: raa.kortBeskrivelse || '',
+      kBildeAlt: raa.bildeAlt || '',
       kLagerDu: raa.lagerDu || '', kMedHjem: raa.medHjem || '',
       kFerdigTid: raa.ferdigTid || '', kTillegg: raa.tillegg || '',
       kVarighetTekst: raa.varighetTekst || '',
@@ -42454,7 +42466,7 @@ class Component extends DCLogic {
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
-            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -43672,7 +43684,7 @@ class Component extends DCLogic {
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
-            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -43815,7 +43827,7 @@ class Component extends DCLogic {
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
-            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -48504,7 +48516,7 @@ class Component extends DCLogic {
       nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kPublisert: true, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kRessursId: 0,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
-            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
@@ -48583,6 +48595,11 @@ class Component extends DCLogic {
 
           kNivaaTekst: st.kNivaaTekst ?? '',
           settKNivaaTekst: e => this.setState({ kNivaaTekst: e.target.value }),
+          kBildeAlt: this.state.kBildeAlt || '',
+          settKBildeAlt: e => this.setState({ kBildeAlt: e.target.value }),
+          // Tomt felt: kursnavnet brukes, og det staar som plassholder saa
+          // det er synlig hva som gjelder.
+          kBildeAltPlass: (this.state.kNavn || '').trim() || 'Kursnavnet',
           kNivaaMal: staarTomt(st.kNivaaTekst, mal.nivaaTekst || 'For alle'),
           kNivaaAnbefalt: () => this.setState({ kNivaaTekst: '' }),
 
@@ -56749,6 +56766,9 @@ class Component extends DCLogic {
         const alfa = Math.min(0.85, styrke / 100 * 0.85);
         return { position: 'absolute', inset: 0, pointerEvents: 'none', background: 'rgba(46,16,2,' + alfa + ')' };
       })(),
+      // Alt-teksten paa kursbildet (migrasjon 165): det eieren skrev, ellers
+      // kursnavnet. Bildet er en bakgrunn, saa det er role="img" som baerer den.
+      bBildeAlt: ((this.state.valgtKurs || {}).bildeAlt || '').trim() || ((this.state.valgtKurs || {}).title || ''),
       bKarusell: (() => {
         const k = this.state.valgtKurs || {};
         const bilder = (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'handbygging.jpg']);

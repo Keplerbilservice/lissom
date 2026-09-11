@@ -82,3 +82,12 @@ de ble sagt i.
   det finnes ingen tilgang dit. Den kopien må tas der basen driftes.
 - Gjenopprettingspunkt før den store adminomleggingen:
   `sikkerhetskopi/2026-09-04-for-adminomlegging` (= deploy 552).
+
+## Genererte filer
+
+- `ds-bundle.js` er eksportert fra Claude Design, men har to lokale
+  endringer som må legges inn igjen etter en ny eksport (og `.min.js`
+  lages på nytt): `srcset` i `Media` (bildestørrelser) og `imageAlt` på
+  `CourseCard` (alt-tekst på kursbildet, migrasjon 165). Eieren valgte
+  dette 11. september 2026 framfor å la kortene beholde kursnavnet som alt.
+

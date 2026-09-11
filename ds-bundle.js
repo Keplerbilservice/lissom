@@ -1562,6 +1562,10 @@ function CourseCard({
   status,
   date,
   image,
+  // Alt-teksten paa bildet: hva det viser. Tom = tittelen, som foer.
+  // Lagt inn lokalt 11. september 2026 (SEO-instruksen) — se CLAUDE.md om
+  // ds-bundle.js: dette maa legges inn igjen etter en ny eksport.
+  imageAlt,
   ctaLabel = 'Book plass',
   onBook,
   style,
@@ -1584,7 +1588,7 @@ function CourseCard({
     }
   }, /*#__PURE__*/React.createElement(Media, {
     src: image,
-    alt: title
+    alt: imageAlt || title
   }), status || seats != null ? (() => {
     const label = status || (seats <= 3 ? seats + ' plasser igjen' : 'Ledig');
     const urgent = /igjen|få plasser/i.test(label);

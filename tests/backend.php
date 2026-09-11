@@ -7383,6 +7383,53 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
     && str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, 'aria-label="{{ msPlHjem.full }}"'),
     'skjermleseren leser «Min side» begge steder, fra aria-label');
+// ── Admin kan rydde i chatten, og angre ───────────────────────────
+//
+// Eieren, 10. september 2026, om en melding fra Monica som sto klippet:
+// «Da maa vi i saafall kunne slette medligen fra monica», og «Jeg vil slette
+// meldingen til monica, den maa kunne angres.»
+//
+// Slettingen var myk fra for — teksten blir staaende i basen og raden faar
+// bare et tidspunkt — saa den kunne hentes tilbake uten at noe nytt maatte
+// lagres. Det som manglet var veien inn for admin, og veien tilbake.
+//
+// Maalt mot den ekte API-en, innlogget som admin: slett andres ga 200 og
+// «Meldingen er slettet», angre-slett ga 200 og teksten tilbake. Innlogget
+// som vanlig medlem: 403 paa begge for en annens melding, 200 paa sin egen.
+// I nettleseren: knappene gikk «Slett» → «Angre sletting» → «Slett», og
+// teksten kom tilbake.
+$chatP = file_get_contents(dirname(__DIR__) . '/api/chat.php');
+sjekk('admin kan slette en melding som ikke er hans egen',
+    str_contains($chatP, '$erAdmin = Sesjon::erAdmin();')
+    && str_contains($chatP, '$egen = (int) $rad[\'member_id\'] === $megId;')
+    && str_contains($chatP, 'if (!$egen && !$erAdmin) {'),
+    'maalt: 200 som admin, 403 som medlem');
+sjekk('… og et vanlig medlem kan fortsatt bare roere sine egne',
+    str_contains($chatP, "Svar::feil('Du kan bare slette dine egne meldinger.', 403);"));
+sjekk('… og en sletting kan angres',
+    str_contains($chatP, "if (\$handling === 'slett' || \$handling === 'angre-slett') {")
+    && str_contains($chatP, "DB::kjor('UPDATE chat_meldinger SET slettet_at = NULL WHERE id = :i', ['i' => \$id]);"),
+    'teksten staar i basen hele tida — slettingen er myk');
+sjekk('… og det staar i loggen naar admin roerer andres',
+    str_contains($chatP, "revider(\$handling === 'slett' ? 'chat_slettet' : 'chat_hentet_tilbake', 'chat', \$id, ["),
+    'sin egen melding er sin egen sak, og logges ikke');
+sjekk('… og serveren sier hvem som kan slette hva',
+    str_contains($chatP, "'kanSlette' => \$egen || \$erAdmin,")
+    && str_contains($sida, 'kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,')
+    && str_contains($sida, 'kanHente: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !!m.slettet,'),
+    'skjermen tegner etter serverens svar, saa de to ikke kan komme i utakt');
+sjekk('… og knappen sier «Angre» paa sin egen og «Slett» paa andres',
+    str_contains($sida, "angreTekst: m.egen ? 'Angre' : 'Slett',")
+    && str_contains($sida, '>{{ c.angreTekst }}</button>')
+    && str_contains($sida, 'title="Angre sletting"')
+    && str_contains($sida, '>Angre sletting</button>'),
+    'eieren valgte de to ordene 10. september 2026');
+// Den vanlige runden spor bare etter det som har kommet SIDEN sist. En
+// melding som hentes tilbake er gammel, og kom derfor aldri med.
+sjekk('… og traaden hentes hel igjen naar en melding kommer tilbake',
+    str_contains($sida, "          this.hentChat(true);\n          return;"),
+    'maalt: med «false» ble «Meldingen er slettet» staaende');
+
 // ── Sida laases naar bunnmenyen staar der ─────────────────────────
 //
 // Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner

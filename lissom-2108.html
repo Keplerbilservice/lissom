@@ -5113,7 +5113,12 @@ window.__resources = {
                     <span style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
                     <span style="{{ c.boble }}">{{ c.tekst }}</span>
                     <sc-if value="{{ c.kanAngre }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre</button>
+                      <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">{{ c.angreTekst }}</button>
+                    </sc-if>
+                    <!-- Slettingen er myk: teksten staar i basen, og denne
+                         henter den tilbake. -->
+                    <sc-if value="{{ c.kanHente }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ c.hent }}" title="Angre sletting" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre sletting</button>
                     </sc-if>
                   </sc-for>
                 </div>
@@ -29572,27 +29577,48 @@ class Component extends DCLogic {
       });
   }
 
-  /** Angrer sin egen melding. Andres kan ingen roere — det avviser serveren. */
-  angreChat(id) {
+  /**
+   * Sletter en melding, eller henter den tilbake.
+   *
+   * Sin egen kan hvem som helst angre. Andres kan bare den som driver
+   * verkstedet roere — eieren, 10. september 2026: «Jeg vil slette meldingen
+   * til monica, den maa kunne angres.» Serveren avgjor; her tegnes bare det
+   * den svarer.
+   *
+   * Slettingen er myk: teksten blir staaende i basen, og «Angre sletting»
+   * henter den tilbake.
+   */
+  angreChat(id, tilbake) {
     if (!this.erPublisert() || this._chatSender) return;
     this._chatSender = true;
     fetch('/api/chat.php', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handling: 'slett', id: id }),
+      body: JSON.stringify({ handling: tilbake ? 'angre-slett' : 'slett', id: id }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
       .then(({ ok, d }) => {
         this._chatSender = false;
-        if (ok) {
-          this.setState(s => ({
-            chat: (s.chat || []).map(m => m.id === id
-              ? Object.assign({}, m, { tekst: 'Meldingen er slettet', slettet: true })
-              : m),
-          }));
-        } else {
+        if (!ok) {
           this.setState({ chatFeil: (d && d.feil) || 'Gikk ikke.' });
+          return;
         }
+        if (tilbake) {
+          // Teksten ligger i basen, ikke her, saa traaden hentes paa nytt.
+          //
+          // «true» og ikke «false»: den vanlige runden spor bare etter det
+          // som har kommet SIDEN sist, og meldingen vi nettopp hentet
+          // tilbake er gammel. Maalt: med «false» ble «Meldingen er slettet»
+          // staaende. «true» henter hele traaden om igjen.
+          this._chatHentes = false;
+          this.hentChat(true);
+          return;
+        }
+        this.setState(s => ({
+          chat: (s.chat || []).map(m => m.id === id
+            ? Object.assign({}, m, { tekst: 'Meldingen er slettet', slettet: true })
+            : m),
+        }));
       })
       .catch(() => { this._chatSender = false; });
   }
@@ -49119,8 +49145,16 @@ class Component extends DCLogic {
         { navn: 'Kari', tekst: 'Noen som vet om det er ledig plass ved vinduet?', tid: '11:02', egen: false },
         { navn: 'Jonas', tekst: 'Jepp, jeg går om en halvtime — ta plassen min!', tid: '11:05', egen: false },
       ]).map(m => Object.assign({}, m, {
-        kanAngre: !!m.egen && !m.slettet,
+        // «kanSlette» kommer fra serveren: sin egen, eller admin. Uten svar
+        // derfra — designvisningen — gjelder den gamle regelen, sin egen.
+        kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,
+        // Egen melding angrer man; andres sletter man. Samme knapp, to ord,
+        // fordi det er to ulike ting.
+        angreTekst: m.egen ? 'Angre' : 'Slett',
         angre: () => this.angreChat(m.id),
+        // Slettingen er myk, saa den kan hentes tilbake.
+        kanHente: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !!m.slettet,
+        hent: () => this.angreChat(m.id, true),
         // Myk kant, ikke pille.
         //
         // Eieren, 10. september 2026, med et bilde av chatten paa telefonen:

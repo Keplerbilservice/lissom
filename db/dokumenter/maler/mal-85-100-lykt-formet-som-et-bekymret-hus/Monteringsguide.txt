@@ -1,0 +1,77 @@
+Monteringsguide – Lykt formet som et bekymret hus
+
+LISSOM KERAMIKK & HÅNDVERK AS · LISSOM.NO · POST@LISSOM.NO
+
+Monteringsguide · Maler 85 til 100
+
+Lykt formet som et bekymret hus
+
+En konisk keramikklanterne formet som et hus med bekymret ansikt: øye-, munn- og vindusåpninger slipper lyset ut, og det foldede saltaket er avtakbart for LED-telyset.
+
+Om prosjektet
+Nivå: middels · Arbeidstid: 3–4 timer i økter · Strukturelle plater: 6 mm
+En konisk keramikklanterne formet som et hus med bekymret ansikt, kvadratiske sidevinduer og foldet, AVTAKBART saltak. Lyset siver ut gjennom åpningene.
+Bruk KUN et batteridrevet LED-telys – aldri ekte flamme.
+Skriv ut i 100 %. Kontroller skalaen: bunnen skal måle ca. 136 × 136 mm.
+Takets midtlinje er en FOLDELINJE, ikke skjærelinje. De tynne indre konturene (øyne, munn, vinduer) er åpninger som fjernes; øyenbrynene er separate påsettingsdeler.
+
+Maldeler (verifiserte mål, 6 mm leire)
+A – Frontpanel ×1: 136 mm bred nederst, 190 mm til takskjegget, 220 mm total; øyne + munn skjæres ut FØR montering
+B – Bakpanel ×1: som A, uten åpninger
+C – Sidevegg ×2: 124 mm nederst / 98 mm øverst / 190 mm høy, med to 15 × 15 mm vinduer; passer MELLOM front og bak (124 + 6 + 6 = 136)
+D – Tak ×1 (5–6 mm): 156 × 140 mm, foldes ved 78 mm; holdes avtakbart
+E – Bunn ×1 (6–7 mm): 136 × 136 mm
+F – Øyenbrynsstripe ×2 (3–4 mm): kalkeres fra en ekstra utskrift av side 1
+Valgfri nese: kort konisk leirpølse – ikke en maldel.
+
+Klargjøring
+1 Kjevle, komprimer, skjær
+
+Elt godt, kjevle gradvis i flere retninger med 6 mm-lister, komprimer begge sider (særlig rundt de fremtidige åpningene), og la platene stivne under løs plast til de slipper rent fra flaten.
+Skjær vertikalt i 90°. Skjær ut øye- og munnåpningene i fronten og de kvadratiske vinduene i sidene MENS panelene ligger flatt. Glatt åpningskantene uten å gjøre dem større. Skjær øyenbrynsstripene fra en egen 3–4 mm-plate.
+Viktig
+Alle trykte åpninger skjæres ut før montering – store åpninger i en montert konisk boks gir sprekker og deformasjon.
+
+Montering
+2 Bunn og front
+
+Komprimer bunn E og merk veggenes fotavtrykk: front/bak i flukt med ytterkantene, sidene mellom dem. Riss opp frontens nederste 6–8 mm og bunnens frontstripe, tynt leirslam, sett veggen vertikalt og press jevnt. Komprimer utvendig, leirpølse innvendig, og støtt fronten mens skjøten stivner.
+Tips
+Ikke fukt skjøten for mye – overflødig væske får fronten til å sige og deformerer åpningene.
+
+3 Sidevegger og bakside
+
+Sett første sidevegg med 124 mm-kanten ned, riss + slam underkant og kanten mot fronten, press mot innsiden av frontpanelet, komprimer og leirpølser uten å blokkere vinduet. Gjenta med den andre.
+Prøv bakpanelet tørt: bunn, takskjegg og møne skal flukte med fronten. Riss + slam bunnstripen og begge sidekantene, press på plass og komprimer alle tilgjengelige innvendige skjøter. Kontroller diagonalene gjennom bunnåpningen.
+
+4 Form det avtakbare taket
+
+Hold takrektangelet flatt til det er jevnt fast. Legg en glatt stav under midtlinjen og lag en bred, avrundet fold (innvendig vinkel ca. 123°) – bruk de monterte gavlene som guide, med papirbarriere så det ikke fester seg. Sentrer taket for jevnt utstikk.
+Ta av taket før det tørker og tørk det på en V-formet støtte.
+Viktig
+Brenn ALDRI taket festet til kroppen – de to delene holdes atskilt gjennom tørking, råbrenning og glasering, så LED-lyset kan settes inn.
+
+5 Øyenbryn, nese og finpuss
+
+Riss lett opp baksiden av hver øyenbrynsstripe og frontpanelet; minimalt leirslam, plasser i vinkel over øynene for det bekymrede uttrykket, press uten å flate ut. Valgfri nese: liten konisk leirpølse mellom øyne og munn.
+Glatt sammenføyningene uten å viske ut den håndlagde teksturen, avrund skarpe ytterhjørner, rengjør åpningskantene, og kontroller at bunnen er flat og at ingen leirpølse blokkerer LED-lyset.
+
+6 Tørking, brenning og krymping
+
+Støtt kroppen innvendig med mykt papir; tørk taket separat på V-støtte. Lett plast i de første fasene, snu når trygt, unngå sol/varme/vifter. Beregn 7–14 dager.
+Råbrenn etter leirens program; brenn kropp og tak separat. Tynt glasurlag rundt øyne, munn, vinduer, takets anlegg og mønet – for mye glasur kan gjøre åpningene trangere eller smelte taket fast.
+Krymping: 136 mm × 0,88 ≈ 119,7 mm ved 12 % – sjekk leirens faktiske krymping.
+
+Feilsøking
+Sideveggene når ikke bakpanelet → 124 mm-kanten skal være nederst; sjekk 100 %-skalaen; løft med ribbe.
+Bunnen er ikke 136 mm kvadratisk → bruk 6 mm vegger og rett opp i vinkel før skjøtene stivner.
+Veggene heller → mykt lærharde plater + midlertidige støtter.
+Sprukket takfold → fold mens fleksibel, over en rundstokk – aldri skarp papirfold.
+Taket vipper → sjekk at front- og bakmønet er på linje; finjuster undersiden mens leira er formbar.
+
+Sikker bruk
+Løft av taket etter brenning og sett inn et batteridrevet LED-telys. Ekte stearinlys fanger varme og sot i den lukkede strukturen – bruk aldri åpen flamme.
+
+Lykke til med lanternen – og husk: kun LED-lys!
+
+Har du spørsmål underveis? Skriv til post@lissom.no og oppgi navnet på malen, så hjelper vi deg.

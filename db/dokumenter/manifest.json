@@ -5,27 +5,38 @@
     {
       "kort": "dekorasjon",
       "fil": "haandboker/dekorasjon/glasurhandbok-for-keramikere.pdf",
-      "navn": "Glasurhåndbok for keramikere"
+      "navn": "Glasurhåndbok for keramikere",
+      "tekst": "haandboker/dekorasjon/glasurhandbok-for-keramikere.txt"
     },
     {
       "kort": "dekorasjon",
       "fil": "haandboker/dekorasjon/handbok-i-dekorative-teknikker.pdf",
-      "navn": "Håndbok i dekorative teknikker"
+      "navn": "Håndbok i dekorative teknikker",
+      "tekst": "haandboker/dekorasjon/handbok-i-dekorative-teknikker.txt"
     },
     {
       "kort": "engober",
       "fil": "haandboker/engober/handbok-i-engober-pigmenter-og-oksider.pdf",
-      "navn": "Håndbok i engober, pigmenter og oksider"
+      "navn": "Håndbok i engober, pigmenter og oksider",
+      "tekst": "haandboker/engober/handbok-i-engober-pigmenter-og-oksider.txt"
     },
     {
       "kort": "brenning",
       "fil": "haandboker/brenning/handbok-i-keramikkbrenning.pdf",
-      "navn": "Håndbok i keramikkbrenning"
+      "navn": "Håndbok i keramikkbrenning",
+      "tekst": "haandboker/brenning/handbok-i-keramikkbrenning.txt"
     },
     {
       "kort": "glassering",
       "fil": "haandboker/glassering/handbok-i-lagvis-glasering.pdf",
-      "navn": "Håndbok i lagvis glasering"
+      "navn": "Håndbok i lagvis glasering",
+      "tekst": "haandboker/glassering/handbok-i-lagvis-glasering.txt"
+    },
+    {
+      "kort": "maler",
+      "fil": "maler/startguide.pdf",
+      "navn": "Startguide",
+      "tekst": "maler/startguide.txt"
     }
   ],
   "maler": [
@@ -42,7 +53,8 @@
         },
         {
           "fil": "maler/mal-01-fuglekasse/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-01-fuglekasse/Monteringsguide.txt"
         },
         {
           "fil": "maler/mal-01-fuglekasse/steg-01.jpg",
@@ -87,32 +99,6 @@
       ]
     },
     {
-      "slug": "mal-02-lyshus",
-      "navn": "Lyshus",
-      "under": "Mal 02",
-      "sortering": 2,
-      "bilde": "maler/mal-02-lyshus/bilde.jpg",
-      "dokumenter": [
-        {
-          "fil": "maler/mal-02-lyshus/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
-        }
-      ]
-    },
-    {
-      "slug": "mal-03-buet-espressokopp",
-      "navn": "Buet espressokopp",
-      "under": "Mal 03",
-      "sortering": 3,
-      "bilde": "maler/mal-03-buet-espressokopp/bilde.jpg",
-      "dokumenter": [
-        {
-          "fil": "maler/mal-03-buet-espressokopp/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
-        }
-      ]
-    },
-    {
       "slug": "mal-04-rund-kopp",
       "navn": "Rund kopp",
       "under": "Mal 04",
@@ -125,7 +111,8 @@
         },
         {
           "fil": "maler/mal-04-rund-kopp/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-04-rund-kopp/Monteringsguide.txt"
         }
       ]
     },
@@ -142,7 +129,8 @@
         },
         {
           "fil": "maler/mal-05-boks-med-lokk/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-05-boks-med-lokk/Monteringsguide.txt"
         },
         {
           "fil": "maler/mal-05-boks-med-lokk/steg-01.jpg",
@@ -215,7 +203,8 @@
         },
         {
           "fil": "maler/mal-06-mugge/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-06-mugge/Monteringsguide.txt"
         },
         {
           "fil": "maler/mal-06-mugge/steg-01.jpg",
@@ -288,7 +277,8 @@
         },
         {
           "fil": "maler/mal-07-baerskal/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-07-baerskal/Monteringsguide.txt"
         },
         {
           "fil": "maler/mal-07-baerskal/original-med-videolenke.pdf",
@@ -361,7 +351,8 @@
         },
         {
           "fil": "maler/mal-08-vindspill/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-08-vindspill/Monteringsguide.txt"
         }
       ]
     },
@@ -378,7 +369,8 @@
         },
         {
           "fil": "maler/mal-09-take-away-kopp/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-09-take-away-kopp/Monteringsguide.txt"
         }
       ]
     },
@@ -395,7 +387,8 @@
         },
         {
           "fil": "maler/mal-10-liten-dekorfugl/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-10-liten-dekorfugl/Monteringsguide.txt"
         }
       ]
     },
@@ -420,7 +413,8 @@
         },
         {
           "fil": "maler/mal-11-keramikkhus/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-11-keramikkhus/Monteringsguide.txt"
         }
       ]
     },
@@ -437,7 +431,8 @@
         },
         {
           "fil": "maler/mal-12-lyslykt/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-12-lyslykt/Monteringsguide.txt"
         }
       ]
     },
@@ -454,7 +449,8 @@
         },
         {
           "fil": "maler/mal-13-vase/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-13-vase/Monteringsguide.txt"
         }
       ]
     },
@@ -471,7 +467,8 @@
         },
         {
           "fil": "maler/mal-14-skjeholder/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-14-skjeholder/Monteringsguide.txt"
         }
       ]
     },
@@ -488,7 +485,8 @@
         },
         {
           "fil": "maler/mal-15-liten-potte/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-15-liten-potte/Monteringsguide.txt"
         }
       ]
     },
@@ -505,7 +503,8 @@
         },
         {
           "fil": "maler/mal-16-flat-tallerken/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-16-flat-tallerken/Monteringsguide.txt"
         },
         {
           "fil": "maler/mal-16-flat-tallerken/veiledning-original.pdf",
@@ -526,7 +525,8 @@
         },
         {
           "fil": "maler/mal-17-halvmaneformet-tekanne/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-17-halvmaneformet-tekanne/Monteringsguide.txt"
         },
         {
           "fil": "maler/mal-17-halvmaneformet-tekanne/original-med-videolenker.pdf",
@@ -547,7 +547,8 @@
         },
         {
           "fil": "maler/mal-18-sukkerskal-med-lokk/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-18-sukkerskal-med-lokk/Monteringsguide.txt"
         }
       ]
     },
@@ -568,7 +569,8 @@
         },
         {
           "fil": "maler/mal-19-hjerteformet-tallerken/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-19-hjerteformet-tallerken/Monteringsguide.txt"
         }
       ]
     },
@@ -585,7 +587,8 @@
         },
         {
           "fil": "maler/mal-20-smorboks/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-smorboks/Monteringsguide.txt"
         }
       ]
     },
@@ -602,7 +605,8 @@
         },
         {
           "fil": "maler/mal-20-55-badekarformet-tallerken/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-badekarformet-tallerken/Monteringsguide.txt"
         }
       ]
     },
@@ -619,7 +623,8 @@
         },
         {
           "fil": "maler/mal-20-55-fransk-smorboks/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-fransk-smorboks/Monteringsguide.txt"
         }
       ]
     },
@@ -636,7 +641,8 @@
         },
         {
           "fil": "maler/mal-20-55-kaffesett-v60/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-kaffesett-v60/Monteringsguide.txt"
         }
       ]
     },
@@ -653,7 +659,8 @@
         },
         {
           "fil": "maler/mal-20-55-leirlandsby/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-leirlandsby/Monteringsguide.txt"
         }
       ]
     },
@@ -670,7 +677,8 @@
         },
         {
           "fil": "maler/mal-20-55-matchasett/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-matchasett/Monteringsguide.txt"
         }
       ]
     },
@@ -687,7 +695,8 @@
         },
         {
           "fil": "maler/mal-20-55-nottebolle/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-nottebolle/Monteringsguide.txt"
         }
       ]
     },
@@ -704,7 +713,8 @@
         },
         {
           "fil": "maler/mal-20-55-ramenbolle/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-ramenbolle/Monteringsguide.txt"
         }
       ]
     },
@@ -721,7 +731,8 @@
         },
         {
           "fil": "maler/mal-20-55-samling-av-9-vaser/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-samling-av-9-vaser/Monteringsguide.txt"
         }
       ]
     },
@@ -738,7 +749,8 @@
         },
         {
           "fil": "maler/mal-20-55-serviettholder/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-serviettholder/Monteringsguide.txt"
         }
       ]
     },
@@ -755,7 +767,8 @@
         },
         {
           "fil": "maler/mal-20-55-sitruspresse/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-sitruspresse/Monteringsguide.txt"
         }
       ]
     },
@@ -772,7 +785,8 @@
         },
         {
           "fil": "maler/mal-20-55-smorboks/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-smorboks/Monteringsguide.txt"
         }
       ]
     },
@@ -789,7 +803,8 @@
         },
         {
           "fil": "maler/mal-20-55-soppformet-sminkeorganisator/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-20-55-soppformet-sminkeorganisator/Monteringsguide.txt"
         }
       ]
     },
@@ -806,7 +821,8 @@
         },
         {
           "fil": "maler/mal-55-85-bjorn/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-bjorn/Monteringsguide.txt"
         }
       ]
     },
@@ -823,7 +839,8 @@
         },
         {
           "fil": "maler/mal-55-85-dekorativ-elefant-i-to-storrelser/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-dekorativ-elefant-i-to-storrelser/Monteringsguide.txt"
         }
       ]
     },
@@ -840,7 +857,8 @@
         },
         {
           "fil": "maler/mal-55-85-dobbelt-sopphus/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-dobbelt-sopphus/Monteringsguide.txt"
         }
       ]
     },
@@ -878,7 +896,8 @@
         },
         {
           "fil": "maler/mal-55-85-epleformet-krukke/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-epleformet-krukke/Monteringsguide.txt"
         }
       ]
     },
@@ -895,7 +914,8 @@
         },
         {
           "fil": "maler/mal-55-85-fugl/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-fugl/Monteringsguide.txt"
         }
       ]
     },
@@ -938,7 +958,8 @@
         },
         {
           "fil": "maler/mal-55-85-kanin/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-kanin/Monteringsguide.txt"
         }
       ]
     },
@@ -955,7 +976,8 @@
         },
         {
           "fil": "maler/mal-55-85-kopp-med-rode-baer/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-kopp-med-rode-baer/Monteringsguide.txt"
         }
       ]
     },
@@ -985,7 +1007,8 @@
         },
         {
           "fil": "maler/mal-55-85-koppvarmer/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-koppvarmer/Monteringsguide.txt"
         }
       ]
     },
@@ -1002,7 +1025,8 @@
         },
         {
           "fil": "maler/mal-55-85-matbolle/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-matbolle/Monteringsguide.txt"
         }
       ]
     },
@@ -1019,7 +1043,8 @@
         },
         {
           "fil": "maler/mal-55-85-mugge/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-mugge/Monteringsguide.txt"
         }
       ]
     },
@@ -1049,7 +1074,8 @@
         },
         {
           "fil": "maler/mal-55-85-samling-av-5-keramikkstykker-i-leirplateteknikk/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-samling-av-5-keramikkstykker-i-leirplateteknikk/Monteringsguide.txt"
         }
       ]
     },
@@ -1066,7 +1092,8 @@
         },
         {
           "fil": "maler/mal-55-85-sausskal/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-sausskal/Monteringsguide.txt"
         }
       ]
     },
@@ -1096,7 +1123,8 @@
         },
         {
           "fil": "maler/mal-55-85-sapeskal/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-sapeskal/Monteringsguide.txt"
         }
       ]
     },
@@ -1113,7 +1141,8 @@
         },
         {
           "fil": "maler/mal-55-85-tannpleieorganisator-til-badet/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-55-85-tannpleieorganisator-til-badet/Monteringsguide.txt"
         }
       ]
     },
@@ -1143,7 +1172,8 @@
         },
         {
           "fil": "maler/mal-85-100-blomsterformet-serviettholder/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-blomsterformet-serviettholder/Monteringsguide.txt"
         }
       ]
     },
@@ -1160,7 +1190,8 @@
         },
         {
           "fil": "maler/mal-85-100-blyantholder-oppspilt-monster/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-blyantholder-oppspilt-monster/Monteringsguide.txt"
         }
       ]
     },
@@ -1177,7 +1208,8 @@
         },
         {
           "fil": "maler/mal-85-100-hjorneblomsterpotte-med-gretten-katt/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-hjorneblomsterpotte-med-gretten-katt/Monteringsguide.txt"
         }
       ]
     },
@@ -1194,7 +1226,8 @@
         },
         {
           "fil": "maler/mal-85-100-kattepar/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-kattepar/Monteringsguide.txt"
         }
       ]
     },
@@ -1211,7 +1244,8 @@
         },
         {
           "fil": "maler/mal-85-100-lykt-formet-som-et-bekymret-hus/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-lykt-formet-som-et-bekymret-hus/Monteringsguide.txt"
         }
       ]
     },
@@ -1232,7 +1266,8 @@
         },
         {
           "fil": "maler/mal-85-100-passiv-telefonforsterker/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-passiv-telefonforsterker/Monteringsguide.txt"
         }
       ]
     },
@@ -1249,7 +1284,8 @@
         },
         {
           "fil": "maler/mal-85-100-skrikende-dorstopper/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-skrikende-dorstopper/Monteringsguide.txt"
         }
       ]
     },
@@ -1266,7 +1302,8 @@
         },
         {
           "fil": "maler/mal-85-100-smilende-tallerken-med-dryppdesign/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-smilende-tallerken-med-dryppdesign/Monteringsguide.txt"
         }
       ]
     },
@@ -1283,7 +1320,8 @@
         },
         {
           "fil": "maler/mal-85-100-stor-nisse/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-stor-nisse/Monteringsguide.txt"
         }
       ]
     },
@@ -1300,7 +1338,8 @@
         },
         {
           "fil": "maler/mal-85-100-sovnig-bokvase/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-sovnig-bokvase/Monteringsguide.txt"
         }
       ]
     },
@@ -1317,7 +1356,8 @@
         },
         {
           "fil": "maler/mal-85-100-tekanne/Monteringsguide.pdf",
-          "navn": "Monteringsguide"
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-85-100-tekanne/Monteringsguide.txt"
         }
       ]
     },

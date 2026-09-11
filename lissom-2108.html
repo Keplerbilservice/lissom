@@ -24511,12 +24511,17 @@ class Component extends DCLogic {
             ? (imp.kort ? imp.kort + ' kort og ' : '') + imp.dokumenter + ' dokument'
               + (imp.dokumenter === 1 ? '' : 'er') + ' lagt inn i verkstedet.'
             : '';
+          // Teksten AI-en leser, lagt paa dokumenter som alt var inne.
+          // Eieren, 11. september 2026: «Ja, vis teksten».
+          const impTekst = imp.tekster
+            ? 'AI-tekst lagt inn på ' + imp.tekster + ' dokument' + (imp.tekster === 1 ? '' : 'er') + '.'
+            : '';
           const linje = [
             kjort.length ? kjort.length + ' endring' + (kjort.length === 1 ? '' : 'er') + ' kjørt.' : '',
-            impInn, impFeil,
+            impInn, impTekst, impFeil,
           ].filter(Boolean).join(' ');
           this.setState({
-            kvittering: (kjort.length || impInn) ? 'Databasen er oppdatert' : 'Alt var oppdatert fra før',
+            kvittering: (kjort.length || impInn || impTekst) ? 'Databasen er oppdatert' : 'Alt var oppdatert fra før',
             kvitteringDetalj: linje,
           });
         }

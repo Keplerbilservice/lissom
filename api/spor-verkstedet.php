@@ -76,22 +76,14 @@ if ($kilder === []) {
     ]);
 }
 
-// Teksten samlet, med tydelige skiller. Modellen skal kunne peke tilbake paa
-// hvilket dokument svaret kom fra, og da maa den vite hva de heter.
-$biter = [];
-foreach ($kilder as $i => $k) {
-    $biter[] = '--- DOKUMENT ' . ($i + 1) . ' ---' . "\n"
-             . 'Kort: ' . $k['kategori'] . "\n"
-             . 'Navn: ' . $k['navn'] . "\n\n"
-             . $k['tekst'];
-}
-$kunnskap = implode("\n\n", $biter);
-
-// Modellen tar bare med seg det som faktisk faar plass. Kuttes det midt i et
-// ord, er det bedre enn at kallet avvises for lengde.
-if (mb_strlen($kunnskap) > 200000) {
-    $kunnskap = mb_substr($kunnskap, 0, 200000);
-}
+// De dokumentene som ligner mest paa spoersmaalet foerst, og bare saa mange
+// som faar plass. Fram til 11. september gikk alt inn i kortenes rekkefoelge
+// og ble kuttet paa 200 000 tegn — med fem haandboeker og 57
+// monteringsguider ble de siste aldri lest. Se Dokumenter::utvalg().
+$utvalg   = Dokumenter::utvalg($kilder, $sporsmal);
+$kunnskap = $utvalg['tekst'];
+// Bare det modellen faktisk fikk se kan staa som kilde.
+$kilder   = $utvalg['kilder'];
 
 $system = <<<TXT
 Du svarer på spørsmål om keramikkverkstedet Lissom, og du har ÉN kilde:

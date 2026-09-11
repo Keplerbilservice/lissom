@@ -24323,7 +24323,168 @@ class Component extends DCLogic {
     const sti = this.stiForSide();
     if (!sti) return;
     if (window.location.pathname.replace(/\/+$/, '') === sti.replace(/\/+$/, '')) return;
-    history.pushState({ side: this.state.side }, '', sti + window.location.search);
+    // Loepenummeret er til lagene (se lagSynk): et nytt skjermbytte ligger
+    // foran alt som var aapent paa den forrige skjermen.
+    this._lagStabel = [];
+    if (this._lagTeller === undefined) this._lagTeller = 0;
+    history.pushState({ side: this.state.side, idx: ++this._lagTeller }, '', sti + window.location.search);
+  }
+
+  // ── Tilbakeknappen lukker ett lag om gangen ──────────────────────────
+  //
+  // Eieren, 11. september 2026: «det er tungvint aa maatte trykke paa lukk
+  // knappen, saa tilbakeknappen, dette maa bli enklere». Fram til naa laa bare
+  // skjermene i nettleserhistorikken — ikke det som aapnes oppaa dem:
+  // dokumentvisningen, produktvisningen, personruta i kalenderen,
+  // kursoppsettet, chatten, kortene i Verkstedet. Trykket man tilbake med
+  // en visning aapen, hoppet nettleseren ut av hele skjermen.
+  //
+  // Naa faar hvert lag som aapnes sitt eget steg i historikken, og tilbake
+  // lukker det oeverste — som i en app. Fram aapner det igjen. Lukker man
+  // med knappen i ruta, tas steget bort, saa tilbake ikke aapner den paa
+  // nytt.
+  //
+  // Hva som er et lag, avgjoeres ikke rute for rute (det er 34 av dem):
+  //   * Ruter som legger seg oppaa skjermen kjennes igjen i DOM-en — de har
+  //     «position: fixed; inset: 0». Blir det flere av dem etter en
+  //     tilstandsendring, var det et lag som aapnet.
+  //   * Kort-i-kort, som ikke ligger oppaa noe, staar i LAG_NOKLER.
+  //
+  // Det steget husker er hvilke noekler som ble satt naar laget aapnet
+  // («til»), og hva de var foer («fra»). Tilbake setter dem tilbake; fram
+  // setter dem paa nytt. Ingenting annet i tilstanden roeres — og en noekkel
+  // som har endret seg siden (data som er hentet paa nytt) lar vi staa.
+  static get LAG_NOKLER() {
+    return {
+      dokValgt:      (v) => !!v,                           // kortet / malen i Verkstedet
+      mdValgt:       (v) => !!v,                           // malen paa Min side
+      personFor:     (v) => !!v,                           // personruta under Medlemmer
+      artikkelValgt: (v) => v !== null && v !== undefined, // artikkelen under Nyttig
+    };
+  }
+
+  /** Hvor mange ruter ligger oppaa skjermen akkurat naa? */
+  lagAntallIDom() {
+    try {
+      return document.querySelectorAll('[style*="position: fixed"][style*="inset: 0"]').length;
+    } catch (e) { return 0; }
+  }
+
+  /**
+   * Kalles fra componentDidUpdate. Ser om et lag aapnet eller lukket seg
+   * siden forrige runde, og holder historikken i takt.
+   */
+  lagSynk() {
+    if (!this.erPublisert() || !this._adresseKlar) return;
+    // Rammeverket sender ikke forrige tilstand til componentDidUpdate, saa
+    // vi husker den selv — en grunn kopi, tatt ved slutten av hver runde.
+    const prevState = this._lagForrige;
+    this._lagForrige = Object.assign({}, this.state);
+    if (!prevState) return;
+    if (this._lagTeller === undefined) this._lagTeller = 0;
+    if (!this._lagStabel) this._lagStabel = [];
+    const naa = this.lagAntallIDom();
+    const forrige = this._lagAntall === undefined ? naa : this._lagAntall;
+    this._lagAntall = naa;
+    // Endringen kom fra historikken selv (tilbake/fram). Da er den alt i takt.
+    if (this._lagStill) { this._lagStill = false; return; }
+    // Byttet adressen seg i denne runden, har sida selv lagt et steg i
+    // historikken — en vare (/butikk/<id>), et kurs, en nyhet. Da er det
+    // adressen som er laget, og tilbake virker alt. Ikke ett steg til.
+    const sti = window.location.pathname;
+    if (this._lagSti !== undefined && sti !== this._lagSti) {
+      this._lagSti = sti;
+      this._lagStabel = [];
+      return;
+    }
+    this._lagSti = sti;
+
+    const nokler = Component.LAG_NOKLER;
+    const stabel = this._lagStabel;
+    const endret = Object.keys(this.state).filter(k => this.state[k] !== prevState[k]);
+    if (endret.length === 0) return;
+
+    // ── Lukket med knappen i ruta? Da er alle «til»-noeklene i det oeverste
+    // steget borte igjen. Flere steg kan lukkes paa én gang («← Alle kort»
+    // fra en mal lukker to); da gaar historikken like mange tilbake.
+    const erLukket = (steg) => Object.keys(steg.til).every(k => this.state[k] !== steg.til[k])
+                            && Object.keys(steg.til).some(k => endret.indexOf(k) !== -1);
+    let antallLukket = 0;
+    while (stabel.length && erLukket(stabel[stabel.length - 1])) {
+      stabel.pop();
+      antallLukket++;
+    }
+    if (antallLukket > 0) {
+      const hs = history.state;
+      // Bare naar historikken faktisk staar paa lag-steg — ellers ville vi
+      // gaatt bak skjermen.
+      if (hs && hs.lag) {
+        this._lagTilbake = antallLukket;
+        try { history.go(-antallLukket); } catch (e) { this._lagTilbake = 0; }
+      }
+      return;
+    }
+
+    // ── Aapnet? Et lag oppaa skjermen kom til, eller en kort-i-kort-noekkel
+    // ble satt.
+    const eksplisitt = endret.some(k => nokler[k] && nokler[k](this.state[k]));
+    if (naa > forrige || eksplisitt) {
+      const fra = {}, til = {};
+      endret.forEach(k => {
+        const var_ = prevState[k], er = this.state[k];
+        if (typeof er === 'function' || Array.isArray(er)) return;
+        const paa = nokler[k] ? nokler[k](er) : (!!er && !var_);
+        if (paa) { fra[k] = var_ === undefined ? null : var_; til[k] = er; }
+      });
+      if (Object.keys(til).length === 0) return;
+      const steg = { lag: true, idx: ++this._lagTeller, side: this.state.side, fra, til };
+      stabel.push(steg);
+      try {
+        history.pushState(steg, '', window.location.pathname + window.location.search + window.location.hash);
+      } catch (e) { stabel.pop(); }
+    }
+  }
+
+  /**
+   * popstate: landet vi paa et lag-steg, eller bak alle lagene?
+   * Returnerer true naar hendelsen er ferdig haandtert her.
+   */
+  lagPopstate(e) {
+    if (!this._lagStabel) this._lagStabel = [];
+    // Vaart eget history.go() etter at ruta ble lukket med knappen.
+    if (this._lagTilbake) { this._lagTilbake = 0; return true; }
+    const st = e && e.state;
+    const stabel = this._lagStabel;
+    if (stabel.length === 0 && !(st && st.lag)) return false;
+
+    const idx = st && typeof st.idx === 'number' ? st.idx : -1;
+    // Alt som er dypere enn der vi landet, lukkes — oeverst foerst. En
+    // noekkel som har endret seg siden laget aapnet, lar vi staa.
+    const endringer = {};
+    while (stabel.length && stabel[stabel.length - 1].idx > idx) {
+      const s2 = stabel.pop();
+      Object.keys(s2.til).forEach(k => {
+        if (this.state[k] === s2.til[k] || endringer[k] !== undefined) endringer[k] = s2.fra[k];
+      });
+    }
+    if (st && st.lag && (!stabel.length || stabel[stabel.length - 1].idx !== st.idx)) {
+      // Fram til et lag vi hadde gaatt ut av: legg det tilbake og aapne det.
+      stabel.push(st);
+      Object.assign(endringer, st.til);
+      if (st.side && st.side !== this.state.side) endringer.side = st.side;
+    }
+    if (Object.keys(endringer).length > 0) {
+      this._lagStill = true;
+      // Skulle setState ikke gi en tegning (ingenting endret), skal ikke
+      // neste ekte endring bli oversett.
+      setTimeout(() => { this._lagStill = false; }, 300);
+      this.setState(endringer);
+    }
+    if (st && st.lag) return true;
+    // Landet paa et skjermsteg: er det den samme skjermen, er vi ferdige —
+    // ellers faar ruta ta byttet.
+    const r = this.ruteFraAdresse();
+    return !!(r && r.side === this.state.side && !r.kursSlug && !r.nyhetSlug && !r.vareId);
   }
 
   // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
@@ -29535,7 +29696,10 @@ class Component extends DCLogic {
     if (rute) {
       this.folgRute(rute);
     }
-    this._popstate = () => {
+    this._popstate = (e) => {
+      // Lagene foerst: landet vi paa et lag-steg, er det bare laget som
+      // endrer seg — ikke skjermen. Se lagPopstate().
+      if (this.lagPopstate(e)) return;
       const r = this.ruteFraAdresse();
       if (r) { this.folgRute(r); window.scrollTo(0, 0); }
     };
@@ -31298,6 +31462,8 @@ class Component extends DCLogic {
   // bruker, og henvendelsene fra for ligger der de laa.
 
   componentDidUpdate(prevProps, prevState) {
+    // Tilbakeknappen: ett steg per lag som aapnes. Se lagSynk().
+    this.lagSynk();
     // Tilbake fra Vipps-innloggingen, med et medlemskap i minnet.
     //
     // «medlemsBetalKnapp» la det igjen for den sendte henne av garde, og

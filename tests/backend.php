@@ -16047,6 +16047,44 @@ sjekk('Min side har det samme: soek, grupper og stripe',
     && str_contains($mkSida, '<sc-for list="{{ u.steg }}" as="st"')
     && str_contains($mkSida, "filer: alle.filter(f => !erSteg(f)).map(filKnapp),"));
 
+// ── Tilbakeknappen lukker ett lag om gangen ──────────────────────────────
+//
+// Eieren, 11. september 2026: «det er tungvint aa maatte trykke paa lukk
+// knappen, saa tilbakeknappen, dette maa bli enklere». Hvert lag som aapnes
+// oppaa skjermen faar sitt steg i nettleserhistorikken; tilbake lukker det
+// oeverste, fram aapner det igjen, og lukker man med knappen tas steget
+// bort. Ruter oppaa skjermen kjennes igjen i DOM-en (position: fixed;
+// inset: 0), kort-i-kort staar i LAG_NOKLER.
+//
+// Maalt i Chrome (1280 og 400 px): Kalender → Verkstedet → Keramikk maler
+// → Fuglekasse → visning; tilbake ×1 lukket visningen, ×2 malen, ×3
+// kortet, ×4 gikk til Kalender; fram ×3 aapnet alt igjen. «← Keramikk
+// maler» og «Lukk» med knappen, saa tilbake: ikke aapnet paa nytt. Butikk:
+// varen har egen adresse og ble ikke doblet; soeket lukket med tilbake.
+// «Nytt kurs» i Kalender lukket med tilbake. Min side: malen lukket med
+// tilbake. Ingen JS-feil. Personruta under Medlemmer er registrert paa
+// samme maate, men ble ikke maalt.
+sjekk('lagene har sin egen historikk: synk etter hver endring, og popstate foerst',
+    str_contains($mkSida, "    this.lagSynk();")
+    && str_contains($mkSida, "      if (this.lagPopstate(e)) return;")
+    && str_contains($mkSida, "static get LAG_NOKLER() {")
+    && str_contains($mkSida, "dokValgt:      (v) => !!v,")
+    && str_contains($mkSida, "personFor:     (v) => !!v,"));
+sjekk('… ruter oppaa skjermen kjennes igjen i DOM-en',
+    str_contains($mkSida, 'document.querySelectorAll(\'[style*="position: fixed"][style*="inset: 0"]\').length'));
+sjekk('… steget husker hva som ble satt og hva det var foer',
+    str_contains($mkSida, "const steg = { lag: true, idx: ++this._lagTeller, side: this.state.side, fra, til };")
+    && str_contains($mkSida, "if (this.state[k] === s2.til[k] || endringer[k] !== undefined) endringer[k] = s2.fra[k];"));
+sjekk('… lukket med knappen tar steget bort, ogsaa flere paa én gang',
+    str_contains($mkSida, "try { history.go(-antallLukket); } catch (e) { this._lagTilbake = 0; }"));
+// Rammeverket sender ikke forrige tilstand; kopien maa vaere vaar egen.
+sjekk('… og forrige tilstand er vaar egen kopi',
+    str_contains($mkSida, "this._lagForrige = Object.assign({}, this.state);"));
+// En vare, et kurs, en nyhet har egen adresse — da er adressen laget.
+sjekk('… og det som har egen adresse faar ikke ett steg til',
+    str_contains($mkSida, "if (this._lagSti !== undefined && sti !== this._lagSti) {")
+    && str_contains($mkSida, "history.pushState({ side: this.state.side, idx: ++this._lagTeller }, '', sti + window.location.search);"));
+
 sjekk('kildene under svaret faar malnavnet foran',
     str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")
     && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"));

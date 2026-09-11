@@ -15895,6 +15895,14 @@ sjekk('… og aapner malene som kort med bilde inni «Keramikk maler»',
     && str_contains($mkSida, '<img data-src="{{ u.bilde }}" alt="{{ u.navn }}"')
     && str_contains($mkSida, "bilde: '/api/dokument.php?kort=' + u.id,"));
 // Inne i en mal gaar «tilbake» til «Keramikk maler», ikke helt ut.
+// Fra 11. september (kveld): pilen staar i fanerada, ikke i panelhodet.
+// Eieren: «det er fortsatt mange tilbakepiler inne paa verksted siden. Jeg
+// vil ha det enklere». Maalt i Chrome: én pil, «← Keramikk maler» i malen,
+// «← Alle kort» i kortet, «← Verkstedet» i kortlista; nettleserens tilbake
+// gjoer det samme (tilbaketesten gronn).
+sjekk('én pil oeverst, som peker ett nivaa opp',
+    str_contains($mkSida, "navn: valgt ? (forelder ? '← ' + forelder.navn : '← Alle kort') : '← Verkstedet',")
+    && !str_contains($mkSida, 'onClick="{{ dokLukk }}"'));
 sjekk('… der tilbakeknappen peker paa hovedkortet',
     str_contains($mkSida, "dokTilbakeNavn: forelder ? '← ' + forelder.navn : '← Alle kort',")
     && str_contains($mkSida, "dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0, dokSok: '' }),"));

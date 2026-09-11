@@ -16139,11 +16139,33 @@ sjekk('… og pakka har de fjorten i kortene sine, uten plakaten',
         $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
         $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
         $navn = array_column($m['dokumenter'] ?? [], 'navn');
-        return $iKort('dreiing') === 9 && $iKort('glassering') === 3 && $iKort('brenning') === 2 && $iKort('leire') === 8
+        return $iKort('dreiing') === 9 && $iKort('glassering') === 3 && $iKort('brenning') === 2 && $iKort('leire') === 9
             && $iKort('handbygging') === 3 && $iKort('hms') === 3
             && !in_array('Regler i verkstedet (plakat)', $navn, true)
             && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/haandboker/hms/hms-i-verkstedet.txt'), 'Åpne først under 100 °C');
     })());
+// Runde tre (GO): «Materialkunnskap» i Leire, og handbok.css med layoutfiks
+// («skal overskrive den gamle») — de 26 PDF-ene laget paa nytt under samme
+// sti. Importen bytter fila naar stoerrelsen er en annen, uten ny rad.
+// Maalt i Chrome paa HTML-en: bilderutenettet var 353 px per figur i en
+// 650 px spalte (overlapp), er 317 med den nye CSS-en.
+sjekk('migrasjon 161 finnes, og Materialkunnskap ligger i Leire',
+    is_file(dirname(__DIR__) . '/db/migrations/161_materialkunnskap_og_ny_layout.sql')
+    && (static function (): bool {
+        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        foreach ($m['dokumenter'] ?? [] as $d) {
+            if (($d['navn'] ?? '') === 'Materialkunnskap') {
+                return ($d['kort'] ?? '') === 'leire' && is_file(dirname(__DIR__) . '/db/dokumenter/' . $d['tekst']);
+            }
+        }
+        return false;
+    })());
+sjekk('… og importen bytter fila paa en kilde som alt er inne naar stoerrelsen er ny',
+    str_contains($mkLib, "if (is_file(\$fra) && (int) filesize(\$fra) !== \$inne[\$kilde]['storrelse']) {")
+    && str_contains($mkLib, "\$til = self::mappe() . '/' . \$inne[\$kilde]['filnavn'];")
+    && str_contains($mkLib, "\$ut['byttet']++;")
+    && str_contains($mkLib, "if (\$t !== '' && (!\$inne[\$kilde]['harTekst'] || \$byttetNaa)) {")
+    && str_contains($mkSida, "? imp.byttet + ' dokument' + (imp.byttet === 1 ? '' : 'er') + ' byttet ut med ny utgave.'"));
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
     && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")

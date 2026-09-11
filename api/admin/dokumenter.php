@@ -109,10 +109,21 @@ switch ($handling) {
             Svar::feil($feil === [] ? 'Ingen av filene kunne lastes opp.' : $feil[0]);
         }
 
+        // Skannede ark har ingen bokstaver i seg, og Pdftekst::les() kom
+        // tomhendt tilbake. Claude leser dem — men eieren staar og venter,
+        // saa vi tar bare de foerste og gir oss etter noen sekunder. Resten
+        // leses av seg selv i natt: se «vedlikehold» i bin/cron.php.
+        //
+        // Eieren, 11. september 2026: «slik at mer og mer kunnskap vil komme
+        // til». Da maa det skje uten at han maa huske aa trykke paa noe.
+        @set_time_limit(90);
+        $lest = Dokumenter::lesMedAi(3, 20);
+
         revider('dokument_lastet_opp', 'dokument', null, [
             'kategori' => (string) $kategori['navn'],
             'antall'   => $lagt,
             'hoppet'   => $hoppet + count($feil),
+            'ai_lest'  => $lest['lest'],
         ]);
 
         $beskjed = $lagt === 1 ? 'Filen er lastet opp.' : $lagt . ' filer er lastet opp.';

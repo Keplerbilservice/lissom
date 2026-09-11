@@ -16145,6 +16145,77 @@ sjekk('… men serveren vet fortsatt hvilket dokument svaret kom fra',
     && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"),
     'navnet avgjor om linja staar, og stopper en modell som finner paa en kilde');
 
+// ── PDF-er leses av seg selv ──────────────────────────────────────
+//
+// Eieren, 11. september 2026: «kan man ikke stille inn saa pdf opplastinger
+// kan inkluderes i ai soeket, slik at mer og mer kunnskap vil komme til?»
+// Spurt hvordan, valgte han «Server foerst, Claude hvis tom».
+//
+// Selve lesingen maales med ekte PDF-er lenger nede. Her staar reglene som
+// ikke maa forsvinne i en opprydding.
+$pdLib  = file_get_contents(dirname(__DIR__) . '/app/lib/pdftekst.php');
+$pdDok  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$pdApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$pdCron = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$pdAi   = file_get_contents(dirname(__DIR__) . '/app/lib/ai.php');
+
+sjekk('en PDF som lastes opp leses av serveren med en gang',
+    str_contains($pdDok, "\$tekst = \$mime === 'application/pdf' ? Pdftekst::les(\$mappe . '/' . \$navn) : '';")
+    && substr_count($pdDok, "Pdftekst::les(\$mappe . '/' . \$navn)") === 2,
+    'bade én fil og hver fil inni en zip');
+
+sjekk('det serveren ikke fikk lest, leser Claude',
+    str_contains($pdApi, 'Dokumenter::lesMedAi(3, 20)')
+    && str_contains($pdCron, 'Dokumenter::lesMedAi(20, 900)'),
+    'noen faa mens eieren venter, resten i natt');
+
+sjekk('Claude skriver AV dokumentet — den oppsummerer det ikke',
+    str_contains($pdAi, 'Du skriver av dokumenter, ord for ord.')
+    && str_contains($pdAi, 'Ikke rett, forkort eller forklar noe.')
+    && str_contains($pdAi, "return \$tekst === 'INGEN TEKST' ? '' : \$tekst;"),
+    'et sammendrag ville gjort fasiten i «Spor verkstedet» daarligere');
+
+sjekk('PDF-en foelger med som dokument, ikke som tekst',
+    str_contains($pdAi, "'type' => 'document', 'source' => [")
+    && str_contains($pdAi, "'media_type' => 'application/pdf',"));
+
+sjekk('sproeyt lagres aldri som tekst',
+    str_contains($pdDok, "if (\$tekst === '' || !Pdftekst::ekte(\$tekst)) {"),
+    'da ville bade vi og AI-en trodd at dokumentet var lest');
+
+sjekk('en AI som ikke svarer stopper runden, den tommer den ikke',
+    str_contains($pdDok, '} catch (RuntimeException $e) {')
+    && str_contains($pdDok, "logg('Fikk ikke lest dokument med AI', ["),
+    'taket naadd eller Anthropic nede: raden staar, og natta proever igjen');
+
+sjekk('AI-adressen kan bare byttes utenfor produksjon',
+    str_contains($mkSecrets = file_get_contents(dirname(__DIR__) . '/app/config.php'), "getenv('LISSOM_AI_BASE')")
+    && str_contains($mkSecrets, "if (\$fra !== '' && self::miljo() !== 'produksjon') {\n            return rtrim(\$fra, '/');\n        }\n        return 'https://api.anthropic.com';"),
+    'samme regel som vippsBase()');
+
+// ── Og saa de ekte PDF-ene ────────────────────────────────────────
+//
+// To filer ligger i tests/filer: én laget paa en PC, og én der teksten er et
+// bilde. Den foerste SKAL leses gratis. Den andre skal gi tomt — ikke noe
+// som ser ut som tekst — saa Claude faar den.
+$pdMappe = __DIR__ . '/filer';
+if (is_file($pdMappe . '/pdf-med-tekst.pdf')) {
+    $pdTekst = Pdftekst::les($pdMappe . '/pdf-med-tekst.pdf');
+    sjekk('en PDF laget paa en PC leses gratis, med æ, ø og å',
+        str_contains($pdTekst, 'Glasurhåndbok')
+        && str_contains($pdTekst, 'kvarts 25 %')
+        && str_contains($pdTekst, 'påføres i to strøk'),
+        'fikk ' . mb_strlen($pdTekst) . ' tegn');
+}
+if (is_file($pdMappe . '/pdf-skannet.pdf')) {
+    sjekk('et skannet ark gir tomt — ikke noe som ser ut som tekst',
+        Pdftekst::les($pdMappe . '/pdf-skannet.pdf') === '',
+        'da gaar den videre til Claude');
+}
+sjekk('sproeyt fra en feiltolket font godkjennes ikke',
+    !Pdftekst::ekte(str_repeat('█▓▒░', 40))
+    && Pdftekst::ekte('Blank glasur 1240 blandes av kvarts 25 %, feltspat 30 %, kaolin 20 % og kritt 25 %.'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -349,14 +349,98 @@ final class Dokumenter
         }
         @chmod($mappe . '/' . $navn, 0644);
 
+        // Teksten AI-en skal lese, med en gang — gratis og paa millisekunder.
+        // Er det en PDF laget paa en PC, staar dokumentet i «Spor verkstedet»
+        // for eieren rekker aa lukke skjermen. Er det et skannet ark, blir
+        // dette tomt, og Claude tar det: se lesMedAi().
+        $tekst = $mime === 'application/pdf' ? Pdftekst::les($mappe . '/' . $navn) : '';
+
         return DB::settInn('verksted_dokumenter', [
             'kategori_id'   => $kategoriId,
             'filnavn'       => $navn,
             'originalnavn'  => self::rentNavn((string) ($fil['name'] ?? '')),
             'mime'          => $mime,
             'storrelse'     => (int) ($fil['size'] ?? 0),
+            'tekst'         => $tekst === '' ? null : $tekst,
             'lastet_opp_av' => $medlemId,
         ]);
+    }
+
+    /**
+     * De som fortsatt ikke har tekst, lest av Claude.
+     *
+     * Eieren, 11. september 2026, valgte «Server foerst, Claude hvis tom».
+     * Pdftekst::les() har alt proevd og gitt opp naar vi kommer hit — dette er
+     * de skannede arkene, der bokstavene er et bilde.
+     *
+     * To ting styrer hvor mange som tas om gangen:
+     *
+     *   $sekunder  Kalles dette rett etter en opplasting, sitter eieren og
+     *              venter. Da leser vi saa mange vi rekker paa noen sekunder
+     *              og lar resten ligge til natta — en opplasting som henger
+     *              i ti minutter ser ut som en feil.
+     *   $maks      Hvert ark koster penger. Maanedstaket i AI::tak() stopper
+     *              uansett, men det skal ikke brukes opp av én mappe.
+     *
+     * Rekkefoelgen er eldst foerst, saa det som har ligget lengst uten tekst
+     * kommer inn foerst.
+     *
+     * @return array{lest:int,tomme:int,igjen:int}
+     */
+    public static function lesMedAi(int $maks, int $sekunder): array
+    {
+        $ut = ['lest' => 0, 'tomme' => 0, 'igjen' => 0];
+        if (!self::klar() || !AI::tilgjengelig() || $maks < 1) {
+            return $ut;
+        }
+
+        $uten = DB::alle(
+            "SELECT id, filnavn, originalnavn
+               FROM verksted_dokumenter
+              WHERE mime = 'application/pdf'
+                AND (tekst IS NULL OR tekst = '')
+              ORDER BY id"
+        );
+        $ut['igjen'] = count($uten);
+        $frist = microtime(true) + $sekunder;
+
+        foreach ($uten as $d) {
+            if ($ut['lest'] + $ut['tomme'] >= $maks || microtime(true) >= $frist) {
+                break;
+            }
+            $sti = self::mappe() . '/' . (string) $d['filnavn'];
+            if (!is_file($sti)) {
+                continue;
+            }
+            try {
+                $tekst = AI::lesPdf($sti, (string) $d['originalnavn']);
+            } catch (RuntimeException $e) {
+                // Taket er naadd, noekkelen er feil, eller Anthropic er nede.
+                // Alle tre betyr det samme her: slutt aa proeve naa. Raden
+                // staar uroert, og neste natt gaar vi paa igjen.
+                logg('Fikk ikke lest dokument med AI', [
+                    'dokument' => (int) $d['id'],
+                    'grunn'    => $e->getMessage(),
+                ]);
+                break;
+            }
+            // Sproeyt er verre enn ingenting: da tror bade vi og «Spoer
+            // verkstedet» at dokumentet er lest. Samme maalestokk som naar
+            // serveren leser selv.
+            if ($tekst === '' || !Pdftekst::ekte($tekst)) {
+                $ut['tomme']++;
+                continue;
+            }
+            DB::oppdater(
+                'verksted_dokumenter',
+                ['tekst' => mb_substr($tekst, 0, Pdftekst::MAKS_TEGN)],
+                ['id' => (int) $d['id']]
+            );
+            $ut['lest']++;
+            $ut['igjen']--;
+        }
+
+        return $ut;
     }
 
     /**
@@ -498,12 +582,17 @@ final class Dokumenter
                 }
                 @chmod($mappe . '/' . $navn, 0644);
 
+                // Samme lesing som en enkelt opplasting — en zip med tjue
+                // haandboker skal ikke gi tjue dokumenter AI-en ikke kan lese.
+                $tekst = $mime === 'application/pdf' ? Pdftekst::les($mappe . '/' . $navn) : '';
+
                 DB::settInn('verksted_dokumenter', [
                     'kategori_id'   => $kategoriId,
                     'filnavn'       => $navn,
                     'originalnavn'  => self::rentNavn($kort),
                     'mime'          => $mime,
                     'storrelse'     => $bytes,
+                    'tekst'         => $tekst === '' ? null : $tekst,
                     'lastet_opp_av' => $medlemId,
                 ]);
                 $lagt++;

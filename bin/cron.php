@@ -379,8 +379,24 @@ switch ($jobb) {
         DB::kjor("UPDATE gift_cards SET status = 'utlopt'
                    WHERE status = 'aktivt' AND gyldig_til < CURDATE()");
 
+        // Skannede dokumenter som ennaa ikke er lest.
+        //
+        // Eieren, 11. september 2026: «slik at mer og mer kunnskap vil komme
+        // til». Serveren leser det den kan med en gang en fil lastes opp, og
+        // de foerste skannede arkene leses der og da — men slipper han inn en
+        // zip med femti guider, blir resten staaende. Da tar natta dem, tjue
+        // om gangen, til det er tomt.
+        //
+        // Maanedstaket i AI::tak() gjelder som ellers: er det naadd, gjor
+        // denne ingenting, og gaar paa igjen naar maaneden snur.
+        $lest = Dokumenter::lesMedAi(20, 900);
+        if ($lest['lest'] > 0 || $lest['tomme'] > 0) {
+            logg('Dokumenter lest av AI', $lest);
+        }
+
         $si("Vedlikehold: {$sesjoner} sesjoner, {$rater} ratelinjer, {$frigitt} reservasjoner frigitt, "
-            . "{$nyeOkter} faste kursdatoer lagt ut, {$stemplinger} glemte innstemplinger lukket.");
+            . "{$nyeOkter} faste kursdatoer lagt ut, {$stemplinger} glemte innstemplinger lukket, "
+            . "{$lest['lest']} dokumenter lest av AI-en.");
         break;
 
     // -----------------------------------------------------------------------

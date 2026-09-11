@@ -267,6 +267,7 @@ if (Foresporsel::metode() === 'GET') {
     // Uten Google Analytics har vi ingen besokstall — og da sier vi det, i
     // stedet for aa vise en graf uten tall bak.
     $gaId = trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/GA-id'"));
+    $gtmId = trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/GTM-id'"));
 
     // Det vi vet selv, uten Google: hva folk faktisk har booket og kjopt.
     $mestBookede = DB::alle(
@@ -326,6 +327,7 @@ if (Foresporsel::metode() === 'GET') {
         ],
         'innstillinger' => [
             'gaId'        => $gaId,
+            'gtmId'       => $gtmId,
             'aiTak'       => AI::tak(),
             'googleBedrift' => trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/Google-bedrift'")),
         ],
@@ -397,6 +399,16 @@ switch (Foresporsel::tekst('handling')) {
                 Svar::feil('Måle-ID-en ser ikke riktig ut. Den skal se ut som G-ABC1234567, og står i Google Analytics under Admin → Datastrømmer.');
             }
             $lagre('Marked/GA-id', strtoupper($ga));
+        }
+
+        if (array_key_exists('gtmId', $kropp)) {
+            $gtm = trim((string) $kropp['gtmId']);
+            // Tag Manager-containeren. Tom kobler fra; ellers maa det se ut
+            // som en container-ID, av samme grunn som over.
+            if ($gtm !== '' && preg_match('/^GTM-[A-Z0-9]{4,12}$/i', $gtm) !== 1) {
+                Svar::feil('Container-ID-en ser ikke riktig ut. Den skal se ut som GTM-ABC1234.');
+            }
+            $lagre('Marked/GTM-id', strtoupper($gtm));
         }
 
         if (array_key_exists('aiTak', $kropp)) {

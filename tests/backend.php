@@ -16500,6 +16500,32 @@ sjekk('kalender: «Spør verkstedet» i treffboksen, med de samme kortene som i 
     && str_contains($mkSida, "klHarSvar: !!this.state.klSvar && this.state.klSvarFor === (this.state.klSok || '').trim(),")
     && substr_count($mkSida, "body: JSON.stringify({ sporsmal: sp, kategorier: this.state.faqKategorier || [] }),") === 2
     && str_contains($mkSida, 'color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>'));
+// ── Google Tag Manager ───────────────────────────────────────────────────
+//
+// Eieren, 11. september 2026: «har vi google tag manager?» — «JA JEG VIL HA
+// DET TIL Å VIRKE». GO paa oppsettet: container-ID under Markedsføring →
+// Innstillinger, lastet etter samme samtykke som Analytics og ved siden av
+// den, hendelsene ogsaa i dataLayer, CSP aapnet for Ads-taggene. Maalt i
+// Chrome: ingen gtm.js foer «ja»; etter «ja» lastes gtm.js?id=GTM-…, og
+// purchase ligger i dataLayer som {event: 'purchase', value, …}.
+$gtmMarked = (string) file_get_contents(dirname(__DIR__) . '/api/admin/marked.php');
+sjekk('Tag Manager: container-ID-en lagres som Marked/GTM-id, og bare i riktig form',
+    str_contains($gtmMarked, "if (\$gtm !== '' && preg_match('/^GTM-[A-Z0-9]{4,12}\$/i', \$gtm) !== 1) {")
+    && str_contains($gtmMarked, "\$lagre('Marked/GTM-id', strtoupper(\$gtm));")
+    && str_contains($gtmMarked, "'gtmId'       => \$gtmId,")
+    && str_contains($mkSida, 'placeholder="GTM-ABC1234"'));
+sjekk('… lastes etter samtykke, ved siden av Analytics, og hendelsene gaar til dataLayer',
+    str_contains($mkSida, "const harGtm = /^GTM-[A-Z0-9]{4,12}\$/i.test(gtm) && !this._gtmSatt;")
+    && str_contains($mkSida, "if (this.samtykke() !== 'ja') return;\n    window.dataLayer = window.dataLayer || [];")
+    && str_contains($mkSida, "g.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtm.toUpperCase());")
+    && str_contains($mkSida, "window.dataLayer.push(Object.assign({ event: navn }, felter || {}));")
+    && str_contains($mkSida, "&& this.harMaaling()\n        && (this.state.samtykkeSvart || this.samtykke()) === '',"));
+sjekk('… og CSP-en slipper gjennom Tag Manager og Google Ads',
+    (static function (): bool {
+        $h = (string) file_get_contents(dirname(__DIR__) . '/.htaccess');
+        return str_contains($h, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net")
+            && str_contains($h, "frame-src 'self' https://www.googletagmanager.com https://td.doubleclick.net https://tagassistant.google.com;");
+    })());
 sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));

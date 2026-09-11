@@ -20622,6 +20622,18 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreGa }}" hint-size="auto,40px">Lagre</x-import>
             </div>
 
+            <!-- Google Tag Manager. Eieren, 11. september 2026: «har vi
+                 google tag manager?» — «JA JEG VIL HA DET TIL Å VIRKE». GO.
+                 Containeren lastes etter samme samtykke som Analytics, ved
+                 siden av den — ikke i stedet for. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Google Tag Manager</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Container-ID-en står i Tag Manager øverst, ved siden av navnet. Den ser ut som GTM-ABC1234. Analytics måler som før — ikke legg GA4 inn i Tag Manager også, da telles alt dobbelt.</p>
+              <input value="{{ mkGtmId }}" onChange="{{ mkSettGtmId }}" placeholder="GTM-ABC1234" style="{{ mkFeltStil }}">
+              <div style="height: var(--space-4);"></div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreGtm }}" hint-size="auto,40px">Lagre</x-import>
+            </div>
+
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Tak for AI-bruk</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Hver tekst AI-en skriver koster noen øre. Når taket er nådd denne måneden, stopper knappene av seg selv.</p>
@@ -27178,6 +27190,18 @@ class Component extends DCLogic {
   }
 
   /**
+   * Finnes det noe aa maale med — en Analytics-ID eller en Tag
+   * Manager-container? Samtykkelinja og angrevalget gjelder begge.
+   * Eieren, 11. september 2026: «har vi google tag manager?» — «JA JEG VIL
+   * HA DET TIL Å VIRKE». GO paa oppsettet.
+   */
+  harMaaling() {
+    const i = this.state.innholdLagret || {};
+    return /^G-[A-Z0-9]{6,20}$/i.test(String(i['Marked/GA-id'] || '').trim())
+      || /^GTM-[A-Z0-9]{4,12}$/i.test(String(i['Marked/GTM-id'] || '').trim());
+  }
+
+  /**
    * Ta tilbake svaret paa besoksmaaling.
    *
    * Aa ombestemme seg skal vaere like lett som aa si ja. Valget slettes fra
@@ -27199,9 +27223,19 @@ class Component extends DCLogic {
    */
   maal(navn, felter) {
     try {
-      if (typeof window.gtag !== 'function') return false;
-      window.gtag('event', navn, felter || {});
-      return true;
+      let gikk = false;
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', navn, felter || {});
+        gikk = true;
+      }
+      // Tag Manager utloeser paa {event: …} i dataLayer — ikke paa det
+      // gtag legger der. Samme navn og samme felter, saa «purchase» med
+      // beloep kan brukes rett som utloeser for en Google Ads-konvertering.
+      if (this._gtmSatt && window.dataLayer) {
+        window.dataLayer.push(Object.assign({ event: navn }, felter || {}));
+        gikk = true;
+      }
+      return gikk;
     } catch (e) { return false; }
   }
 
@@ -27283,26 +27317,45 @@ class Component extends DCLogic {
     document.addEventListener('visibilitychange', this._utgaveFokus);
   }
 
-  settOppAnalyse(idFra) {
-    if (!this.erPublisert() || this._gaSatt) return;
-    const id = String(idFra || (this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
-    if (!/^G-[A-Z0-9]{6,20}$/i.test(id)) return;
+  settOppAnalyse(idFra, gtmFra) {
+    if (!this.erPublisert()) return;
+    const lagret = this.state.innholdLagret || {};
+    const id = String(idFra || lagret['Marked/GA-id'] || '').trim();
+    const gtm = String(gtmFra || lagret['Marked/GTM-id'] || '').trim();
+    const harGa = /^G-[A-Z0-9]{6,20}$/i.test(id) && !this._gaSatt;
+    const harGtm = /^GTM-[A-Z0-9]{4,12}$/i.test(gtm) && !this._gtmSatt;
+    if (!harGa && !harGtm) return;
     if ((this.state.side || '').indexOf('admin') === 0) return;
     // Ingen maaling for noen har sagt ja. Gtag legger igjen
     // informasjonskapsler med det samme det lastes, saa det holder ikke aa
-    // laste det og la vaere aa bruke det.
+    // laste det og la vaere aa bruke det. Samme regel for Tag Manager.
     if (this.samtykke() !== 'ja') return;
-    this._gaSatt = true;
-
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
-    document.head.appendChild(s);
     window.dataLayer = window.dataLayer || [];
-    window.gtag = function () { window.dataLayer.push(arguments); };
-    window.gtag('js', new Date());
-    // "anonymize_ip": vi trenger ikke vite hvem som var her, bare hvor mange.
-    window.gtag('config', id, { anonymize_ip: true });
+
+    if (harGa) {
+      this._gaSatt = true;
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
+      document.head.appendChild(s);
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      // "anonymize_ip": vi trenger ikke vite hvem som var her, bare hvor mange.
+      window.gtag('config', id, { anonymize_ip: true });
+    }
+
+    // Tag Manager, ved siden av Analytics — ikke i stedet for. Analytics
+    // maaler som foer; containeren er for det som kommer i tillegg
+    // (Google Ads-konverteringen). Legges GA4 inn i containeren ogsaa,
+    // telles alt dobbelt — det staar paa kortet i admin.
+    if (harGtm) {
+      this._gtmSatt = true;
+      window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+      const g = document.createElement('script');
+      g.async = true;
+      g.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtm.toUpperCase());
+      document.head.appendChild(g);
+    }
 
     // Et kjop som ventet paa at dette skulle bli klart, telles naa.
     if (this._ventendeKjop) { this.maalKjop(this._ventendeKjop); }
@@ -28940,7 +28993,8 @@ class Component extends DCLogic {
           // aldri i gang — bortsett fra i det ene oyeblikket noen trykket
           // «ja» paa samtykkelinja, for der er ID-en alt kjent. Alle senere
           // besok gikk utelt. Den leses naa fra svaret vi nettopp fikk.
-          this.settOppAnalyse((this.state.innholdLagret || {})['Marked/GA-id'] || d.innhold['Marked/GA-id']);
+          this.settOppAnalyse((this.state.innholdLagret || {})['Marked/GA-id'] || d.innhold['Marked/GA-id'],
+                              (this.state.innholdLagret || {})['Marked/GTM-id'] || d.innhold['Marked/GTM-id']);
         }
       })
       .catch(() => {});
@@ -51432,7 +51486,7 @@ class Component extends DCLogic {
       // besokende ikke allerede har svart.
       visSamtykke: this.erPublisert()
         && side.indexOf('admin') !== 0
-        && /^G-[A-Z0-9]{6,20}$/i.test((((this.state.innholdLagret || {})['Marked/GA-id']) || '').trim())
+        && this.harMaaling()
         && (this.state.samtykkeSvart || this.samtykke()) === '',
       visNyUtgave: !!this.state.nyUtgave && !this.state.nyUtgaveAvvist,
       // location.reload() alene kan gi den samme fila tilbake fra
@@ -51451,7 +51505,7 @@ class Component extends DCLogic {
       // Angrevalget nederst paa personvernsida. Det vises bare naar det er
       // noe aa angre paa — altsaa naar det finnes en maale-ID og et svar.
       visAnalyseValg: this.erPublisert()
-        && /^G-[A-Z0-9]{6,20}$/i.test((((this.state.innholdLagret || {})['Marked/GA-id']) || '').trim())
+        && this.harMaaling()
         && (this.state.samtykkeSvart || this.samtykke()) !== '',
       analyseSvarTekst: (this.state.samtykkeSvart || this.samtykke()) === 'ja'
         ? 'Du har sagt ja til at vi måler besøket. Vil du ombestemme deg, stopper målingen med en gang du trykker under.'
@@ -55407,6 +55461,9 @@ class Component extends DCLogic {
           mkGaId: this.state.mkGaId ?? ((d.innstillinger || {}).gaId || ''),
           mkSettGaId: e => this.setState({ mkGaId: e.target.value }),
           mkLagreGa: () => this.markedKall({ handling: 'innstilling', gaId: this.state.mkGaId ?? '' }),
+          mkGtmId: this.state.mkGtmId ?? ((d.innstillinger || {}).gtmId || ''),
+          mkSettGtmId: e => this.setState({ mkGtmId: e.target.value }),
+          mkLagreGtm: () => this.markedKall({ handling: 'innstilling', gtmId: this.state.mkGtmId ?? '' }),
           mkAiTak: this.state.mkAiTak ?? String((d.innstillinger || {}).aiTak || ''),
           mkSettAiTak: e => this.setState({ mkAiTak: e.target.value }),
           mkLagreTak: () => this.markedKall({ handling: 'innstilling', aiTak: this.state.mkAiTak ?? '' }),

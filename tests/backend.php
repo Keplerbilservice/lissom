@@ -7383,6 +7383,46 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
     && str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, 'aria-label="{{ msPlHjem.full }}"'),
     'skjermleseren leser «Min side» begge steder, fra aria-label');
+// ── Chatten viser hele meldingen ──────────────────────────────────
+//
+// Eieren, 10. september 2026: «Hele teksten i chatten kommer ikke med!» —
+// og dagen etter, da hoyden alene ikke holdt: «Det fikser ikke chatten, her
+// er det noe galt!», «finn ut av dette og faa det til aa virke, slutt aa
+// anta».
+//
+// To ting er gjort. Hoyden: lista var laast til 220 px mens innholdet var
+// 297, og den aapnet seg paa toppen, saa det var slutten som forsvant.
+// Oppstillingen: navn, boble og knapp laa som loesrevne biter i et rutenett
+// med «flex-wrap» og «align-items: baseline», og en boble paa fem linjer ble
+// justert etter siste linje i seg. Det er en oppstilling som kan klippe, og
+// den hadde alt klemt «Angre · Deg 21:54 · Ok · Angre» sammen paa én linje.
+//
+// Maalt paa 320 og 390 px etterpaa: begge meldingene hele — 221 og 223 tegn
+// — ingen boble klippet, alt innenfor lista.
+sjekk('meldingslista er ikke laast til 220 px lenger',
+    !str_contains($sida, 'max-height: 220px')
+    && str_contains($sida, '.ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }')
+    && str_contains($sida, '@media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }'),
+    '«dvh» tar hoyde for adresselinja; «vh» staar som reserve');
+sjekk('… og chatten aapner seg paa den nyeste meldingen',
+    str_contains($sida, 'if (stodNede) l.scrollTop = l.scrollHeight;')
+    && str_contains($sida, 'stodNede = l.scrollHeight - l.scrollTop - l.clientHeight < NEDE;')
+    && str_contains($sida, 'var NEDE = 40;'),
+    'maalt: rullet til 547 av 547, og sto i ro paa 0 da man selv hadde rullet opp');
+sjekk('… og hver melding er sin egen rad',
+    str_contains($sida, '<div class="ms-chatliste" style="margin-bottom: var(--space-3); flex: 1; overflow-y: auto;">')
+    && str_contains($sida, '<div class="ms-chatrad">')
+    && str_contains($sida, '<span class="ms-chatmeta"')
+    && str_contains($sida, '<span class="ms-chatboble"')
+    && !str_contains($sida, 'display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px;'),
+    'maalt paa 320 og 390 px: hele teksten, ingenting klippet');
+sjekk('… og boblen har verken hoyde eller kant som kan klippe',
+    str_contains($sida, '.ms-chatboble {')
+    && str_contains($sida, '    max-width: 100%;')
+    && str_contains($sida, '    white-space: pre-wrap;')
+    && str_contains($sida, '    overflow-wrap: break-word;'),
+    '«pre-wrap» tar vare paa linjeskift den som skrev faktisk satte');
+
 // ── Admin kan rydde i chatten, og angre ───────────────────────────
 //
 // Eieren, 10. september 2026, om en melding fra Monica som sto klippet:

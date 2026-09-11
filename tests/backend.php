@@ -15960,8 +15960,14 @@ sjekk('… og migrasjon 158 finnes, saa knappen har noe aa kjoere',
     is_file(dirname(__DIR__) . '/db/migrations/158_ai_tekst_paa_de_importerte_dokumentene.sql'));
 sjekk('kvitteringa sier hvor mange som fikk AI-tekst',
     str_contains($mkSida, "'AI-tekst lagt inn på ' + imp.tekster + ' dokument'"));
+// 60 000 tegn fra 11. september (kveld): 200 000 tok 15–40 sekunder og
+// doede paa webhotellets 30-sekunders tak — «Fikk ikke kontakt med
+// serveren». Sammen med set_time_limit og max_execution_time = 150.
 sjekk('Spør verkstedet velger de dokumentene som ligner mest, innenfor taket',
-    str_contains($mkFaq, "\$utvalg   = Dokumenter::utvalg(\$kilder, \$sporsmal);")
+    str_contains($mkFaq, "\$utvalg   = Dokumenter::utvalg(\$kilder, \$sporsmal, 60000);")
+    && str_contains($mkFaq, "@set_time_limit(150);")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/.user.ini'), 'max_execution_time = 150')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'), 'php_value max_execution_time 150')
     && str_contains($mkFaq, "\$kilder   = \$utvalg['kilder'];")
     && str_contains($mkLib, "public static function utvalg(array \$kilder, string \$sporsmal, int \$maks = 200000): array")
     && str_contains($mkLib, "if (str_starts_with(\$o, \$w) || str_starts_with(\$w, \$o)) {")

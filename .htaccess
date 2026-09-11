@@ -142,10 +142,12 @@ AddDefaultCharset UTF-8
 <IfModule mod_php.c>
     php_value upload_max_filesize 64M
     php_value post_max_size 66M
+    php_value max_execution_time 150
 </IfModule>
 <IfModule mod_php8.c>
     php_value upload_max_filesize 64M
     php_value post_max_size 66M
+    php_value max_execution_time 150
 </IfModule>
 
 # Komprimering.

@@ -7747,6 +7747,26 @@ window.__resources = {
                       </button>
                     </sc-for>
                   </sc-if>
+                  <!-- Spør verkstedet, rett fra soekefeltet. Eieren, 11.
+                       september 2026: «søkefeltet i kalender ser ikke ut til
+                       å ha samme ai funksjoner og innstillinger som det andre
+                       søkefeltet i verksted». Samme kall, samme kort AI-en
+                       leser fra (valgt under Verkstedet → Spør verkstedet),
+                       samme «Tenker …» og samme linje om kilden. GO paa
+                       bildet med pilla. -->
+                  <sc-if value="{{ klSporVis }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: 10px 14px 12px; border-top: 1px solid var(--border-subtle);">
+                      <span style="{{ klSporRammeStil }}"><button type="button" onClick="{{ klSporNa }}" style="{{ klSporStil }}">{{ klSporKnapp }}</button></span>
+                      <sc-if value="{{ klHarSvar }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top: 10px; background: var(--clay-100); border-radius: var(--radius-md); padding: 12px 14px;">
+                          <div style="font-size: var(--text-sm); color: var(--text-body); line-height: 1.6; white-space: pre-wrap; text-wrap: pretty;">{{ klSvar }}</div>
+                          <sc-if value="{{ klSvarFraKilde }}" hint-placeholder-val="{{ false }}">
+                            <div style="margin-top: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
                 </div>
               </sc-if>
             </div>
@@ -35630,6 +35650,31 @@ class Component extends DCLogic {
   }
 
   /**
+   * Spør verkstedet fra soekefeltet i kalenderen.
+   *
+   * Samme kall som faqSpor(), med de samme kortene AI-en leser fra
+   * (faqKategorier, valgt under Verkstedet → Spør verkstedet). Egen
+   * tilstand, saa et svar her ikke dukker opp i Verkstedet og omvendt.
+   */
+  klSpor() {
+    const sp = (this.state.klSok || '').trim();
+    if (sp.length < 3 || this.state.klSporJobber) return;
+    this.setState({ klSporJobber: true, klSvar: '', klSvarKilder: [], klSvarFor: sp });
+    fetch('/api/spor-verkstedet.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sporsmal: sp, kategorier: this.state.faqKategorier || [] }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => this.setState({
+        klSporJobber: false,
+        klSvar: ok ? (d.svar || '') : (d && d.feil ? d.feil : 'AI-en svarte ikke. Prøv igjen.'),
+        klSvarKilder: ok ? (d.kilder || []) : [],
+      }))
+      .catch(() => this.setState({ klSporJobber: false, klSvar: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
    * Dokumentene medlemmet faar se.
    *
    * Egen vei, ikke api/nyttig.php: den er aapen med vilje, fordi den er
@@ -36635,6 +36680,19 @@ class Component extends DCLogic {
             under: t.kort + (t.utdrag ? ' · ' + t.utdrag : ''),
             velg: () => window.open('/api/dokument.php?id=' + t.id, '_blank', 'noopener'),
           })),
+          // Spør verkstedet fra det samme feltet. Svaret staar saa lenge
+          // teksten det ble spurt om staar i feltet; skrives det om, er det
+          // borte — et svar paa noe annet skal ikke bli staaende.
+          klSporVis: (this.state.klSok || '').trim().length >= 3,
+          klSporNa: () => this.klSpor(),
+          klSporKnapp: this.state.klSporJobber ? 'Tenker …' : 'Spør verkstedet',
+          klSporRammeStil: this.state.klSporJobber
+            ? { display: 'inline-flex', animation: 'lx-tenker 1.4s ease-in-out infinite' }
+            : { display: 'inline-flex' },
+          klSporStil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontFamily: 'inherit', fontSize: 'var(--text-sm)', fontWeight: 700, background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)' },
+          klHarSvar: !!this.state.klSvar && this.state.klSvarFor === (this.state.klSok || '').trim(),
+          klSvar: this.state.klSvar || '',
+          klSvarFraKilde: (this.state.klSvarKilder || []).length > 0,
         };
       })(),
       ...(() => {

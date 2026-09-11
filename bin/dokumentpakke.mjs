@@ -88,7 +88,9 @@ const CHROME = [
 
 // Haandboekene → kortet de hoerer hjemme i (slug fra migrasjon 154).
 const HAANDBOEKER = [
-  ['Glasurhåndbok for keramikere.pdf',              'dekorasjon'],
+  // Glasurhaandboken laa i «dekorasjon» til 11. september (migrasjon 162);
+  // stien i pakka er den samme, bare kortet er et annet.
+  ['Glasurhåndbok for keramikere.pdf',              'glassering'],
   ['Håndbok i dekorative teknikker.pdf',            'dekorasjon'],
   ['Håndbok i engober, pigmenter og oksider.pdf',   'engober'],
   ['Håndbok i keramikkbrenning.pdf',                'brenning'],
@@ -138,7 +140,7 @@ const RUNDE_TO = [
   ['Teknikkark - Plateteknikk.html',                      'handbygging'],
   ['Guide - HMS i verkstedet.html',                       'hms'],
   ['Verksted - Vedlikehold.html',                         'hms'],
-  ['Håndbok - Keramikk vanlige spørsmål.html',            'hms'],
+  ['Håndbok - Keramikk vanlige spørsmål.html',            'leire'],   // fra hms, migrasjon 162
   // Runde tre (GO): «Materialkunnskap» i Leire.
   ['Håndbok - Materialkunnskap.html',                     'leire'],
 ];

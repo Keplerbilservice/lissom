@@ -3,7 +3,7 @@
   "laget": "2026-09-11",
   "dokumenter": [
     {
-      "kort": "dekorasjon",
+      "kort": "glassering",
       "fil": "haandboker/dekorasjon/glasurhandbok-for-keramikere.pdf",
       "navn": "Glasurhåndbok for keramikere",
       "tekst": "haandboker/dekorasjon/glasurhandbok-for-keramikere.txt"
@@ -189,7 +189,7 @@
       "tekst": "haandboker/hms/vedlikehold.txt"
     },
     {
-      "kort": "hms",
+      "kort": "leire",
       "fil": "haandboker/hms/keramikk-vanlige-sporsmal.pdf",
       "navn": "Keramikk – vanlige spørsmål",
       "tekst": "haandboker/hms/keramikk-vanlige-sporsmal.txt"

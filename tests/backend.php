@@ -16338,8 +16338,10 @@ sjekk('… og pakka har de fjorten i kortene sine, uten plakaten',
         $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
         $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
         $navn = array_column($m['dokumenter'] ?? [], 'navn');
-        return $iKort('dreiing') === 9 && $iKort('glassering') === 3 && $iKort('brenning') === 2 && $iKort('leire') === 9
-            && $iKort('handbygging') === 3 && $iKort('hms') === 3
+        // Migrasjon 162: Vanlige spoersmaal til Leire, Glasurhaandboken til
+        // Glassering.
+        return $iKort('dreiing') === 9 && $iKort('glassering') === 4 && $iKort('brenning') === 2 && $iKort('leire') === 10
+            && $iKort('handbygging') === 3 && $iKort('hms') === 2 && $iKort('dekorasjon') === 1
             && !in_array('Regler i verkstedet (plakat)', $navn, true)
             && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/haandboker/hms/hms-i-verkstedet.txt'), 'Åpne først under 100 °C');
     })());
@@ -16410,6 +16412,15 @@ sjekk('… og deployen lint-sjekker side.php',
 sjekk('… llms.txt bruker den samme kurslista',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::kurs() as $k) {')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::medlemskap() as $p) {'));
+// Eieren, 11. september 2026: «under hms, så ligger det generell kunnskap om
+// leire» — gjennomgang av alle 33; tre svar, se migrasjon 162.
+sjekk('migrasjon 162 flytter paa kilde og gir kortet navnet Dekorteknikker',
+    (static function (): bool {
+        $m = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/162_vanlige_sporsmal_og_glasur_paa_riktig_kort.sql');
+        return str_contains($m, "WHERE d.kilde = 'haandboker/hms/keramikk-vanlige-sporsmal.pdf';")
+            && str_contains($m, "WHERE d.kilde = 'haandboker/dekorasjon/glasurhandbok-for-keramikere.pdf';")
+            && str_contains($m, "SET navn = 'Dekorteknikker'");
+    })());
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
     && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")

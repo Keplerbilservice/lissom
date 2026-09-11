@@ -16509,6 +16509,18 @@ sjekk('… og person-, kurs- og kunnskapstreffene i kalenderen er borte',
     !str_contains($mkSida, 'placeholder="Søk …"')
     && !str_contains($mkSida, '{{ klSokVises }}')
     && !str_contains($mkSida, '{{ klKunnskapVises }}'));
+    && str_contains($mkSida, 'color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>'));
+// Eieren, 11. september 2026: «På min side vil jeg ha spør o store
+// krukkemester under pillene hjem og antall inne, er det mulig? Kom med
+// forslag og vis meg» — GO paa bildene. Maalt i Chrome (1280 og 400):
+// kortet 24 px under pilleraden, Enter → «Tenker …» → svar med kildelinja.
+sjekk('Min side: «Spør o store krukkemester» som kort under pillene, bare naar den er paa for medlemmer',
+    str_contains($mkSida, 'color: var(--terracotta-600); margin-bottom: var(--space-3);">Spør o store krukkemester</div>')
+    && str_contains($mkSida, 'onKeyDown="{{ msSporTast }}" placeholder="Skriv spørsmålet ditt" aria-label="Spør o store krukkemester"')
+    && str_contains($mkSida, "const paa = erMinside && !!(this.state.minDok || {}).faq && !!this.state.erMedlemBruker;")
+    && str_contains($mkSida, "msSporNa: () => this.faqSpor(true),")
+    && strpos($mkSida, '<sc-if value="{{ msFaq }}"') > strpos($mkSida, '<nav class="ms-pillerad"')
+    && strpos($mkSida, '<sc-if value="{{ msFaq }}"') < strpos($mkSida, '<!-- ── Verkstedet ditt ──'));
 // ── Google Tag Manager ───────────────────────────────────────────────────
 //
 // Eieren, 11. september 2026: «har vi google tag manager?» — «JA JEG VIL HA

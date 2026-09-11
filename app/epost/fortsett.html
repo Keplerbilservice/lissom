@@ -1,0 +1,52 @@
+<!--
+  Medlemsinvitasjonen etter kurset. Eieren laget e-posten («E-post - Fortsett
+  hos oss.html», 11. september 2026); det som er endret her:
+    - setningen hans øverst («Hei {navn}, det var så hyggelig …»)
+    - prisboksen er {visste}, fylt fra membership_plans («Prøv Lissom») når
+      e-posten sendes — ingen faste priser i teksten. Finnes ikke planen,
+      står boksen tom.
+    - «Meld deg av» peker på {avmelding}, en personlig lenke.
+  Sendes av bin/cron.php («fortsett»), som HTML-delen av malen «fortsett».
+  Tekstdelen ligger i malen under Tekst maler.
+-->
+<!DOCTYPE html>
+<html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><title>Vil du fortsette med leire?</title></head>
+<body style="margin:0;padding:0;background-color:#FBF6EE">
+<span style="display:none;font-size:1px;color:#FBF6EE;max-height:0;max-width:0;opacity:0;overflow:hidden">Det du laget på kurset var bare begynnelsen – bli medlem i verkstedet og fortsett der du slapp.</span>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FBF6EE">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%">
+<tr><td align="center" style="padding:0 0 24px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:2px;color:#A2502B;text-transform:uppercase;font-weight:bold">Lissom Keramikk &amp; Håndverk</td></tr>
+<tr><td style="background-color:#FFFFFF;border:1px solid #E8DBC8;border-radius:12px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+<tr><td style="padding:40px 40px 0 40px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:36px;mso-line-height-rule:exactly;color:#2E1002;font-weight:bold" align="center">Vil du fortsette med leire?</td></tr>
+<tr><td style="padding:18px 44px 0 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#2E1002" align="center">Hei {navn}, det var så hyggelig å ha deg på kurs, så vi håper du vil fortsette som medlem.</td></tr>
+<tr><td style="padding:14px 44px 0 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#2E1002" align="center">Tusen takk for at du valgte å gå kurs hos oss! Det du laget der, var bare begynnelsen. Som tidligere kursdeltaker kan du bli medlem i verkstedet på Teie – og fortsette der kurset slapp.</td></tr>
+<tr><td style="padding:26px 44px 0 44px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+<tr><td width="24" valign="top" style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#A2502B;font-weight:bold">✓</td><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#2E1002;padding-bottom:8px">Fullt utstyrt verksted med dreieskiver</td></tr>
+<tr><td width="24" valign="top" style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#A2502B;font-weight:bold">✓</td><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#2E1002;padding-bottom:8px">Leire, glasurer og brenning på ett sted</td></tr>
+<tr><td width="24" valign="top" style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#A2502B;font-weight:bold">✓</td><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#2E1002;padding-bottom:8px">Et fellesskap som deler tips og skaperglede</td></tr>
+<tr><td width="24" valign="top" style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#A2502B;font-weight:bold">✓</td><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#2E1002">Kom og gå når det passer deg</td></tr>
+</table>
+</td></tr>
+{visste}
+<tr><td align="center" style="padding:30px 40px 8px 40px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<tr><td bgcolor="#4D1D12" style="border-radius:8px">
+<a href="https://lissom.no/medlemskap" style="display:block;padding:14px 34px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#FBF6EE;text-decoration:none;border-radius:8px">Se medlemskapene</a>
+</td></tr>
+</table>
+</td></tr>
+<tr><td align="center" style="padding:14px 44px 38px 44px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:#6F5D4C">Eller stikk innom, så viser vi deg rundt i verkstedet. Vi håper vi ses igjen!</td></tr>
+</table>
+</td></tr>
+<tr><td align="center" style="padding:26px 20px 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6F5D4C">
+Lissom Keramikk &amp; Håndverk AS · Nordre Løkkevei 15, 3120 Nøtterøy<br>
+<a href="https://lissom.no" style="color:#A2502B;text-decoration:underline">lissom.no</a> · <a href="mailto:monica@lissom.no" style="color:#A2502B;text-decoration:underline">monica@lissom.no</a> · tlf 941 34 601<br><br>
+Du får denne e-posten fordi du har deltatt på kurs hos oss. <a href="{avmelding}" style="color:#6F5D4C;text-decoration:underline">Meld deg av</a>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>

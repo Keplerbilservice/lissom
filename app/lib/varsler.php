@@ -191,8 +191,11 @@ final class Varsel
      *
      * @param array<string,string> $felter
      */
-    public static function mal(string $malNavn, array $mottaker, array $felter = [], ?string $refType = null, ?int $refId = null): void
+    public static function mal(string $malNavn, array $mottaker, array $felter = [], ?string $refType = null, ?int $refId = null, ?string $egenHtml = null): void
     {
+        // «$egenHtml» er en ferdig HTML-utgave av meldingen (medlemsinvitasjonen
+        // etter kurset, app/epost/fortsett.html). Tekstdelen er fortsatt
+        // malen; HTML-en gaar i stedet for den automatiske omskrivinga.
         $mal = self::hentMal($malNavn);
         if ($mal === null) {
             return;
@@ -209,7 +212,7 @@ final class Varsel
         $viaEpost = false;
         if ($kanal === 'epost' || $kanal === 'epost_sms') {
             if (!empty($mottaker['epost'])) {
-                [$epostTekst, $epostHtml] = self::medSignatur($tekst, $gruppe);
+                [$epostTekst, $epostHtml] = self::medSignatur($tekst, $gruppe, $egenHtml);
                 self::iKo('epost', (string) $mottaker['epost'], $emne, $epostTekst, $malNavn, $refType, $refId, $epostHtml);
                 $viaEpost = true;
             }

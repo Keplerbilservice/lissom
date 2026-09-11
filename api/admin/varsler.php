@@ -56,6 +56,8 @@ const FELTER = [
     // Oppfoelgingen etter kurset. Lenken staar ikke i koden — den er
     // verkstedets egen, og skal kunne byttes herfra.
     'anmeldelse_paa', 'anmeldelse_lenke', 'anmeldelse_timer',
+    // Medlemsinvitasjonen etter kurset (malen «fortsett»).
+    'fortsett_paa', 'fortsett_dager',
 ];
 
 /** De fire gruppene en mal kan hoere til, og hva de heter for et menneske. */
@@ -214,6 +216,26 @@ $svar['anmeldelse'] = [
     'sendt'  => (int) (DB::verdi(
         "SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'"
     ) ?? 0),
+];
+
+// ── Medlemsinvitasjonen etter kurset ────────────────────────────────────
+//
+// Bryteren er en innstilling, men malen «fortsett» kan ogsaa vaere slaatt
+// av under Maler — da sender jobben ingenting, og det skal skjermen si.
+$svar['fortsett'] = [
+    'paa'     => (string) Config::hent('fortsett_paa', '0') === '1',
+    'mal'     => (int) (DB::verdi(
+        "SELECT aktiv FROM notification_templates WHERE navn = 'fortsett'"
+    ) ?? 0) === 1,
+    'dager'   => max(1, min(14, (int) Config::hent('fortsett_dager', '3'))),
+    'sendt'   => (int) (DB::verdi(
+        "SELECT COUNT(*) FROM notifications WHERE mal = 'fortsett'"
+    ) ?? 0),
+    // Tabellen kommer med migrasjon 166 — for ⚙ Kjor oppdateringer finnes
+    // den ikke, og da skal ikke skjermen stoppe.
+    'avmeldt' => DB::harTabell('epost_avmelding') ? (int) (DB::verdi(
+        "SELECT COUNT(*) FROM epost_avmelding WHERE reservert = 1"
+    ) ?? 0) : 0,
 ];
 
 if (!isset($svar['stoppet'])) {

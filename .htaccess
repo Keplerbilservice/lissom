@@ -311,6 +311,10 @@ RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
 # Maa staa for regelen under, som ellers ville sendt den til side.php.
 RewriteRule ^meld-inn/([a-fA-F0-9]{32})/?$ /api/meld-inn.php?t=$1 [L,QSA]
 
+# Avmelding fra tilbud paa e-post (medlemsinvitasjonen etter kurset).
+# Lenka i e-posten er /avmelding?k=<kode>; sida ligger i api/avmelding.php.
+RewriteRule ^avmelding/?$ /api/avmelding.php [L,QSA]
+
 RewriteRule ^$ /side.php [L]
 
 # Ekte filer, mapper og /api går uendret gjennom.

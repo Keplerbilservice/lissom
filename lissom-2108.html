@@ -5622,11 +5622,15 @@ window.__resources = {
                     <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-5);">
                       <div style="font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ mdSvar }}</div>
                       <sc-if value="{{ mdHarKilder }}" hint-placeholder-val="{{ false }}">
-                        <div style="margin-top: var(--space-4); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra</span>
-                          <sc-for list="{{ mdKilder }}" as="k" hint-placeholder-count="2">
-                            <span style="{{ k.stil }}">{{ k.navn }}</span>
-                          </sc-for>
+                        <!-- «Hentet fra Monicas kunnskapsbase».
+                             Eieren, 11. september 2026: «naar den finner noe, saa staar
+                             det hentet fra f eks haandbok, kan den heller staa hentet fra
+                             Monicas kunnskapsbase?» Spurt om dokumentnavnet skulle bli
+                             staaende under, valgte han bare linja. Navnene kommer fortsatt
+                             fra serveren — de avgjor om linja staar i det hele tatt, saa
+                             den staar bare naar svaret faktisk kom fra et dokument. -->
+                        <div style="margin-top: var(--space-4);">
+                          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</span>
                         </div>
                       </sc-if>
                     </div>
@@ -18849,11 +18853,15 @@ window.__resources = {
             <sc-if value="{{ faqHarSvar }}" hint-placeholder-val="{{ false }}">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-bottom: var(--space-6); overflow: hidden;">
                 <div style="padding: var(--space-5); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ faqSvarTekst }}</div>
-                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra</span>
-                  <sc-for list="{{ faqKilder }}" as="k" hint-placeholder-count="2">
-                    <span style="{{ k.stil }}">{{ k.navn }}</span>
-                  </sc-for>
+                <!-- «Hentet fra Monicas kunnskapsbase».
+                     Eieren, 11. september 2026: «naar den finner noe, saa staar
+                     det hentet fra f eks haandbok, kan den heller staa hentet fra
+                     Monicas kunnskapsbase?» Spurt om dokumentnavnet skulle bli
+                     staaende under, valgte han bare linja. Navnene kommer fortsatt
+                     fra serveren — de avgjor om linja staar i det hele tatt, saa
+                     den staar bare naar svaret faktisk kom fra et dokument. -->
+                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
+                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</span>
                 </div>
               </div>
             </sc-if>
@@ -19134,11 +19142,15 @@ window.__resources = {
             <sc-if value="{{ faqHarSvar }}" hint-placeholder-val="{{ false }}">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-top: var(--space-4); overflow: hidden;">
                 <div style="padding: var(--space-5); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ faqSvarTekst }}</div>
-                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra</span>
-                  <sc-for list="{{ faqKilder }}" as="k" hint-placeholder-count="2">
-                    <span style="{{ k.stil }}">{{ k.navn }}</span>
-                  </sc-for>
+                <!-- «Hentet fra Monicas kunnskapsbase».
+                     Eieren, 11. september 2026: «naar den finner noe, saa staar
+                     det hentet fra f eks haandbok, kan den heller staa hentet fra
+                     Monicas kunnskapsbase?» Spurt om dokumentnavnet skulle bli
+                     staaende under, valgte han bare linja. Navnene kommer fortsatt
+                     fra serveren — de avgjor om linja staar i det hele tatt, saa
+                     den staar bare naar svaret faktisk kom fra et dokument. -->
+                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
+                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</span>
                 </div>
               </div>
             </sc-if>

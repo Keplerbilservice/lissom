@@ -16126,9 +16126,24 @@ sjekk('… og det som har egen adresse faar ikke ett steg til',
     str_contains($mkSida, "if (this._lagSti !== undefined && sti !== this._lagSti) {")
     && str_contains($mkSida, "history.pushState({ side: this.state.side, idx: ++this._lagTeller }, '', sti + window.location.search);"));
 
-sjekk('kildene under svaret faar malnavnet foran',
+// ── «Hentet fra Monicas kunnskapsbase» ────────────────────────────
+//
+// Eieren, 11. september 2026: «naar den finner noe, saa staar det hentet fra
+// f eks haandbok, kan den heller staa hentet fra Monicas kunnskapsbase?»
+// Spurt om dokumentnavnet skulle bli staaende under, valgte han bare linja.
+//
+// Navnene kommer fortsatt fra serveren. De vises ikke, men de gjor to ting:
+// de avgjor om linja staar i det hele tatt — svarte modellen fra
+// dokumentene? — og de er fasiten naar svaret sier hvor det kom fra, saa en
+// modell som finner paa et dokumentnavn ikke slipper gjennom.
+sjekk('kilden staar som «Monicas kunnskapsbase», ett sted for alle tre',
+    substr_count($sida, '>Hentet fra Monicas kunnskapsbase</span>') === 3
+    && !str_contains($sida, '>Hentet fra</span>'),
+    'Nyttig info og de to i admin');
+sjekk('… men serveren vet fortsatt hvilket dokument svaret kom fra',
     str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")
-    && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"));
+    && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"),
+    'navnet avgjor om linja staar, og stopper en modell som finner paa en kilde');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

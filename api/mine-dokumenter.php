@@ -40,12 +40,18 @@ foreach ($filer as $f) {
     ];
 }
 
+// Flat liste, ogsaa underkortene (malene under «Keramikk maler»). «forelder»
+// sier hvilket kort et underkort ligger inni; skjermen setter dem sammen.
+// Bildet paa kortet gaar gjennom api/dokument.php, som sjekker hvem som spor.
 Svar::json([
     'kategorier' => array_map(static fn($k) => [
-        'id'     => $k['id'],
-        'navn'   => $k['navn'],
-        'antall' => $k['antall'],
-        'filer'  => $perKort[$k['id']] ?? [],
+        'id'       => $k['id'],
+        'navn'     => $k['navn'],
+        'under'    => $k['under'],
+        'forelder' => $k['forelder'],
+        'bilde'    => $k['harBilde'] ? '/api/dokument.php?kort=' . $k['id'] : '',
+        'antall'   => $k['antall'],
+        'filer'    => $perKort[$k['id']] ?? [],
     ], $kategorier),
     'faq' => Dokumenter::faqForMedlem(),
 ]);

@@ -5515,15 +5515,53 @@ window.__resources = {
                              alle dokumenterne skal faa smaa kort med tydelig
                              navn paa hva det er, dette inni hvert
                              hovedkort». -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
-                          <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
-                            <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
-                              <span style="{{ f.typeStil }}">{{ f.type }}</span>
-                              <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
-                              <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
-                            </button>
-                          </sc-for>
-                        </div>
+                        <sc-if value="{{ k.harFiler }}" hint-placeholder-val="{{ true }}">
+                          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                            <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
+                              <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
+                                <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                                <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                              </button>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                        <!-- Kort i kortet: malene under «Keramikk maler».
+                             Eieren, 11. september 2026: «en og en mal maa
+                             vaere et eget kort». Bildet av det ferdige
+                             resultatet oeverst, navnet og «Mal 01» under.
+                             Trykk aapner filene i malen rett i kortet;
+                             trykk igjen lukker. -->
+                        <sc-if value="{{ k.harUnderkort }}" hint-placeholder-val="{{ false }}">
+                          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                            <sc-for list="{{ k.underkort }}" as="u" hint-placeholder-count="3">
+                              <div style="{{ u.kortStil }}">
+                                <button type="button" onClick="{{ u.veksle }}" style="{{ u.knappStil }}">
+                                  <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
+                                    <img data-src="{{ u.bilde }}" alt="{{ u.navn }}" loading="lazy" decoding="async" style="{{ u.bildeStil }}">
+                                  </sc-if>
+                                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ u.navn }}</span>
+                                  <sc-if value="{{ u.harUnder }}" hint-placeholder-val="{{ true }}">
+                                    <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 2px;">{{ u.under }}</span>
+                                  </sc-if>
+                                  <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 4px;">{{ u.antall }}</span>
+                                  <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ u.pil }}</span>
+                                </button>
+                                <sc-if value="{{ u.apen }}" hint-placeholder-val="{{ false }}">
+                                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);">
+                                    <sc-for list="{{ u.filer }}" as="f" hint-placeholder-count="2">
+                                      <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
+                                        <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                                        <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                                        <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                                      </button>
+                                    </sc-for>
+                                  </div>
+                                </sc-if>
+                              </div>
+                            </sc-for>
+                          </div>
+                        </sc-if>
                       </div>
                     </sc-for>
                   </div>
@@ -18826,10 +18864,39 @@ window.__resources = {
             <div style="background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; max-width: 900px;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-                  <button type="button" onClick="{{ dokLukk }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 5px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">← Alle kort</button>
+                  <button type="button" onClick="{{ dokLukk }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 5px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">{{ dokTilbakeNavn }}</button>
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ dokApnetNavn }}</span>
+                  <sc-if value="{{ dokApnetHarUnder }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ dokApnetUnder }}</span>
+                  </sc-if>
                 </div>
               </div>
+
+              <!-- Kort i kortet. Eieren, 11. september 2026: «under kortet
+                   keramikk maler saa maa en og en mal vaere et eget kort».
+                   Samme kortform som ellers, med bildet av det ferdige
+                   resultatet oeverst og «Mal 01» under navnet. Trykk gaar
+                   inn i malen; der ligger Mal.pdf og monteringsguiden som
+                   vanlige dokumentkort. -->
+              <sc-if value="{{ dokHarUnderkort }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-5) var(--space-6) 0;">
+                  <sc-for list="{{ dokUnderkort }}" as="u" hint-placeholder-count="3">
+                    <div style="{{ u.kortStil }}">
+                      <button type="button" onClick="{{ u.apne }}" style="{{ u.innerStil }}">
+                        <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
+                          <img data-src="{{ u.bilde }}" alt="{{ u.navn }}" loading="lazy" decoding="async" style="{{ u.bildeStil }}">
+                        </sc-if>
+                        <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ u.navn }}</span>
+                        <sc-if value="{{ u.harUnder }}" hint-placeholder-val="{{ true }}">
+                          <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 2px;">{{ u.under }}</span>
+                        </sc-if>
+                        <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ u.antall }}</p>
+                        <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                      </button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
 
               <!-- Hvert dokument som sitt eget lille kort.
                    Eieren, 10. september 2026: «jeg vil at alle dokumenterne
@@ -24433,14 +24500,33 @@ class Component extends DCLogic {
               : ((d && d.feil) || 'Prøv igjen, eller ta kontakt.'),
           });
         } else {
+          // Dokumentene fra importpakka (haandboekene og keramikkmalene)
+          // legges inn i samme kall — se api/migrer.php. Kom noe inn, skal
+          // det staa her; ellers maatte eieren gaa til Verkstedet for aa se
+          // om knappen gjorde noe. Eieren, 11. september 2026: «Ja, vis
+          // teksten».
+          const imp = (d && d.import) || {};
+          const impFeil = (imp.feil || []).length ? 'Import av dokumenter stoppet: ' + imp.feil[0] : '';
+          const impInn = (imp.kort || imp.dokumenter)
+            ? (imp.kort ? imp.kort + ' kort og ' : '') + imp.dokumenter + ' dokument'
+              + (imp.dokumenter === 1 ? '' : 'er') + ' lagt inn i verkstedet.'
+            : '';
+          const linje = [
+            kjort.length ? kjort.length + ' endring' + (kjort.length === 1 ? '' : 'er') + ' kjørt.' : '',
+            impInn, impFeil,
+          ].filter(Boolean).join(' ');
           this.setState({
-            kvittering: kjort.length ? 'Databasen er oppdatert' : 'Alt var oppdatert fra før',
-            kvitteringDetalj: kjort.length ? kjort.length + ' endring' + (kjort.length === 1 ? '' : 'er') + ' kjørt.' : '',
+            kvittering: (kjort.length || impInn) ? 'Databasen er oppdatert' : 'Alt var oppdatert fra før',
+            kvitteringDetalj: linje,
           });
         }
         // Hent status og katalog paa nytt, saa skjermen viser det som naa staar.
         this._migHentes = false;
         this.hentMigrasjoner();
+        // Dokumentkortene ogsaa: importen kan nettopp ha fylt dem, og staar
+        // man paa Verkstedet, skal tallet paa kortet stemme uten en omlasting.
+        this._dokHentes = false;
+        this.dokHent();
         this.hentKatalog();
         this._adminHentes = false;
         this.hentAdmin();
@@ -50023,7 +50109,37 @@ class Component extends DCLogic {
         if (side !== 'nyttig') return { mdHarNoe: false, mdHarKort: false, mdFaq: false };
         this.minDokHent();
         const d = this.state.minDok || {};
-        const kort = (d.kategorier || []).filter(k => (k.filer || []).length > 0);
+        // Kort i kortet: malene ligger som underkort under «Keramikk maler»,
+        // med «forelder» satt. Et hovedkort staar her naar det har filer
+        // selv, eller et underkort med filer.
+        const alle = d.kategorier || [];
+        const barnAv = (id) => alle.filter(k => k.forelder === id && (k.filer || []).length > 0);
+        const kort = alle.filter(k => !k.forelder && ((k.filer || []).length > 0 || barnAv(k.id).length > 0));
+        const antallTekst = (n) => n === 1 ? '1 dokument' : n + ' dokumenter';
+        // Filknappen, lik for filene i kortet og filene i et underkort.
+        const filKnapp = (f) => ({
+          navn: f.navn,
+          type: f.type,
+          typeStil: {
+            display: 'inline-flex', alignItems: 'center', lineHeight: 'normal',
+            alignSelf: 'flex-start',
+            font: 'var(--type-eyebrow)', fontWeight: 700,
+            letterSpacing: 'var(--tracking-caps)',
+            color: 'var(--terracotta-600)', marginBottom: '4px',
+          },
+          stil: {
+            appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)', padding: 'var(--space-4)',
+            display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0,
+            font: 'inherit',
+          },
+          // Word kan ikke vises i en nettleser; da lastes den ned. Begge
+          // deler er den samme adressen — serveren avgjor hvilken av dem
+          // det blir, se api/dokument.php.
+          apne: () => window.open('/api/dokument.php?id=' + f.id, '_blank', 'noopener'),
+        });
+        const valgtMal = this.state.mdValgt || 0;
         return {
           mdHarNoe: kort.length > 0 || !!d.faq,
           mdHarKort: kort.length > 0,
@@ -50035,37 +50151,60 @@ class Component extends DCLogic {
             border: '1px solid var(--sage-500)',
             background: 'var(--sage-100)', color: 'var(--sage-600)',
           },
-          mdKort: kort.map(k => ({
-            navn: k.navn,
-            antall: k.antall === 1 ? '1 dokument' : k.antall + ' dokumenter',
-            kortStil: {
-              background: 'var(--clay-50)', border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
-              display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0,
-            },
-            filer: (k.filer || []).map(f => ({
-              navn: f.navn,
-              type: f.type,
-              typeStil: {
-                display: 'inline-flex', alignItems: 'center', lineHeight: 'normal',
-                alignSelf: 'flex-start',
-                font: 'var(--type-eyebrow)', fontWeight: 700,
-                letterSpacing: 'var(--tracking-caps)',
-                color: 'var(--terracotta-600)', marginBottom: '4px',
+          mdKort: kort.map(k => {
+            const barn = barnAv(k.id);
+            return {
+              navn: k.navn,
+              antall: antallTekst(k.antall + barn.reduce((sum, b) => sum + b.antall, 0)),
+              // Et kort med underkort (Keramikk maler) tar hele bredda: 71
+              // maler faar ikke plass i én kolonne av tre.
+              kortStil: {
+                background: 'var(--clay-50)', border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+                display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0,
+                gridColumn: barn.length > 0 ? '1 / -1' : 'auto',
               },
-              stil: {
-                appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
-                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)', padding: 'var(--space-4)',
-                display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0,
-                font: 'inherit',
-              },
-              // Word kan ikke vises i en nettleser; da lastes den ned. Begge
-              // deler er den samme adressen — serveren avgjor hvilken av dem
-              // det blir, se api/dokument.php.
-              apne: () => window.open('/api/dokument.php?id=' + f.id, '_blank', 'noopener'),
-            })),
-          })),
+              harFiler: (k.filer || []).length > 0,
+              filer: (k.filer || []).map(filKnapp),
+              // Underkortene. Eieren, 11. september 2026: hver mal som sitt
+              // eget kort. Trykk paa malen aapner filene hennes rett under
+              // bildet, i det samme kortet; trykk igjen lukker.
+              harUnderkort: barn.length > 0,
+              underkort: barn.map(u => {
+                const apen = valgtMal === u.id;
+                return {
+                  navn: u.navn,
+                  under: u.under || '',
+                  harUnder: !!u.under,
+                  antall: antallTekst(u.antall),
+                  harBilde: !!u.bilde,
+                  bilde: u.bilde || '',
+                  apen,
+                  pil: apen ? 'Lukk' : 'Åpne →',
+                  veksle: () => this.setState({ mdValgt: apen ? 0 : u.id }),
+                  filer: (u.filer || []).map(filKnapp),
+                  kortStil: {
+                    background: 'var(--surface-card)',
+                    border: '1px solid ' + (apen ? 'var(--sage-500)' : 'var(--border-subtle)'),
+                    borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+                    display: 'flex', flexDirection: 'column', minWidth: 0,
+                    gridColumn: apen ? '1 / -1' : 'auto',
+                  },
+                  knappStil: {
+                    appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+                    textAlign: 'left', cursor: 'pointer', width: '100%', font: 'inherit',
+                    display: 'flex', flexDirection: 'column', flex: '1 1 auto',
+                  },
+                  bildeStil: {
+                    width: apen ? 220 : '100%', maxWidth: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block',
+                    borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-3)',
+                    background: 'var(--clay-100)',
+                    // Aapen tar malen hele bredda; da skal ikke bildet gjore det.
+                  },
+                };
+              }),
+            };
+          }),
           mdSporsmal: this.state.faqSporsmal || '',
           mdEndre: (e) => this.setState({ faqSporsmal: e.target.value }),
           mdSpor: () => this.faqSpor(true),
@@ -52011,6 +52150,16 @@ class Component extends DCLogic {
         const kort = d.kategorier || [];
         const filer = d.dokumenter || [];
 
+        // Kort i kortet. Eieren, 11. september 2026: «under kortet keramikk
+        // maler saa maa en og en mal vaere et eget kort». Lista fra
+        // serveren er flat; «forelder» sier hvilket kort et underkort ligger
+        // inni. Hovedkortene er de uten forelder.
+        const hoved = kort.filter(k => !k.forelder);
+        const barnAv = (id) => kort.filter(k => k.forelder === id);
+        // Tallet paa hovedkortet teller ogsaa det som ligger i underkortene:
+        // «Keramikk maler» har 200 dokumenter, ikke 0.
+        const antallMed = (k) => k.antall + barnAv(k.id).reduce((sum, b) => sum + b.antall, 0);
+
         // «218 kB» og «1,2 MB». Tallet skal kunne leses, ikke regnes ut.
         const stor = (b) => b >= 1024 * 1024
           ? String(Math.round(b / 1024 / 1024 * 10) / 10).replace('.', ',') + ' MB'
@@ -52062,10 +52211,10 @@ class Component extends DCLogic {
           font: 'var(--type-body-sm)', fontWeight: 600,
           color: paa ? 'var(--sage-600)' : 'var(--text-muted)',
         });
-        const kortene = kort.map(k => ({
+        const kortene = hoved.map(k => ({
           id: k.id,
           navn: k.navn,
-          antall: antallTekst(k.antall),
+          antall: antallTekst(antallMed(k)),
           apne: () => this.setState({ dokValgt: k.id }),
           synligNavn: k.visMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
           synligStil: kortBunn(k.visMedlem),
@@ -52091,6 +52240,32 @@ class Component extends DCLogic {
           textAlign: 'left', padding: 0,
           font: 'var(--type-body-sm)', fontWeight: 600, whiteSpace: 'nowrap',
         };
+        // ── Underkortene i kortet som er aapnet ──────────────────────────
+        //
+        // Samme kortform som hovedkortene, med bildet av det ferdige
+        // resultatet oeverst og «Mal 01» under navnet. Ingen bryter: den
+        // staar paa hovedkortet og gjelder alle malene under.
+        const underkortene = (valgt ? barnAv(valgt.id) : []).map(u => ({
+          id: u.id,
+          navn: u.navn,
+          under: u.under || '',
+          harUnder: !!u.under,
+          antall: antallTekst(u.antall),
+          harBilde: !!u.harBilde,
+          bilde: '/api/dokument.php?kort=' + u.id,
+          bildeStil: {
+            width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block',
+            borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-3)',
+            background: 'var(--clay-100)',
+          },
+          apne: () => this.setState({ dokValgt: u.id }),
+          kortStil: kortRamme,
+          innerStil: kortInner,
+        }));
+        // Staar man inne i et underkort, gaar «tilbake» til hovedkortet —
+        // ikke helt ut til alle kortene.
+        const forelder = valgt && valgt.forelder ? (kort.filter(k => k.id === valgt.forelder)[0] || null) : null;
+
         const iKortet = valgt ? filer.filter(f => f.kategori === valgt.id) : [];
         const radene = iKortet.map(f => ({
           id: f.id,
@@ -52156,11 +52331,11 @@ class Component extends DCLogic {
             ? '1px solid var(--sage-500)'
             : '1px dashed var(--border-default)',
         });
-        const faqKort = kort.map(k => {
+        const faqKort = hoved.map(k => {
           const paa = valgteFaq.length === 0 || valgteFaq.indexOf(k.id) !== -1;
           return {
             navn: k.navn,
-            antall: antallTekst(k.antall),
+            antall: antallTekst(antallMed(k)),
             stil: faqKortStil(paa),
             navnStil: {
               fontFamily: 'var(--font-display)', fontWeight: 700,
@@ -52174,7 +52349,7 @@ class Component extends DCLogic {
               textAlign: 'left',
             },
             velg: () => this.setState(st => {
-              const alle = (st.dok && st.dok.kategorier ? st.dok.kategorier : []).map(x => x.id);
+              const alle = (st.dok && st.dok.kategorier ? st.dok.kategorier : []).filter(x => !x.forelder).map(x => x.id);
               const naa = (st.faqKategorier && st.faqKategorier.length) ? st.faqKategorier.slice() : alle.slice();
               const i = naa.indexOf(k.id);
               if (i === -1) { naa.push(k.id); } else { naa.splice(i, 1); }
@@ -52246,9 +52421,16 @@ class Component extends DCLogic {
 
           dokErApnet: !!valgt,
           dokApnetNavn: valgt ? valgt.navn : '',
-          dokLukk: () => this.setState({ dokValgt: 0 }),
+          dokApnetUnder: valgt ? (valgt.under || '') : '',
+          dokApnetHarUnder: !!(valgt && valgt.under),
+          // Samme ord som i ruta ellers: «← Alle kort» ut, og navnet paa
+          // hovedkortet naar man staar i et underkort.
+          dokTilbakeNavn: forelder ? '← ' + forelder.navn : '← Alle kort',
+          dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0 }),
+          dokUnderkort: underkortene,
+          dokHarUnderkort: underkortene.length > 0,
           dokRader: radene,
-          dokTomt: !!valgt && radene.length === 0,
+          dokTomt: !!valgt && radene.length === 0 && underkortene.length === 0,
           dokTomTekst: 'Ingen dokumenter ennå.',
           dokLastKortStil: {
             position: 'relative', cursor: 'pointer', minWidth: 0,

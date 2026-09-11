@@ -15417,9 +15417,11 @@ sjekk('… og sier fra naar svaret ikke staar der',
 sjekk('… og et medlem naar den ikke for eieren har slaatt den paa',
     str_contains($dokFaq, '!Dokumenter::faqForMedlem()')
     && str_contains($dokFaq, "Svar::feil('Fant ikke siden.', 404)"));
+// Fra 11. september gaar bryteren via synligSql(), som tar hensyn til at
+// et underkort (en mal) arver bryteren fra «Keramikk maler».
 sjekk('… og et medlem naar bare kortene som er slaatt paa',
     str_contains($dokFaq, 'Dokumenter::kunnskap(!$erAdmin, $valgte)')
-    && str_contains($dokLib, "if (\$bareMedlem) {\n            \$hvor[] = 'k.vis_medlem = 1';"));
+    && str_contains($dokLib, "if (\$bareMedlem) {\n            \$hvor[] = self::synligSql();"));
 sjekk('… og en kilde modellen finner paa vises ikke som et dokument',
     str_contains($dokFaq, "in_array(\$n, \$kjente, true)"));
 sjekk('… og hvert kall koster penger, saa det er et tak per person',
@@ -15567,8 +15569,10 @@ sjekk('… og feilmeldingen sier det virkelige tallet',
 // Uten dette svarte skjermen «Du maa velge en fil» paa en fil som var
 // altfor stor. Sjekken maa staa FOR opphavssjekken, som leser $_POST og
 // derfor heller ikke har noe aa gaa paa.
+// Bare for skjemaer med fil: JSON-kallene (bryter, slett, tekst) har alltid
+// tom $_POST, og fikk «for stor» de ogsaa fram til 11. september.
 sjekk('… og en forespoersel som kommer fram tom sier at fila var for stor',
-    str_contains($dokApi, "if (\$_POST === [] && \$_FILES === [] && (int) (\$_SERVER['CONTENT_LENGTH'] ?? 0) > 0)")
+    str_contains($dokApi, "if (\$erSkjema && \$_POST === [] && \$_FILES === [] && (int) (\$_SERVER['CONTENT_LENGTH'] ?? 0) > 0)")
     && strpos($dokApi, "CONTENT_LENGTH") < strpos($dokApi, 'Foresporsel::krevSammeOpphav();'));
 // ── Mange filer, og en zippet mappe ──────────────────────────────────────
 //
@@ -15752,6 +15756,148 @@ sjekk('… og lar start og slutt staa som de staar',
 // En samling uten klokkeslett skal arve oektas egen, ogsaa for slutten.
 sjekk('en samling uten sluttid arver oektas egen',
     str_contains($fdKal, "'slutt'   => \$sa['til'] !== '' ? (string) \$sa['til']"));
+
+// ── Malene som kort i kortet, og importen av dokumentene ─────────────────
+//
+// Eieren, 11. september 2026: haandboekene og keramikkmalene fra mappa
+// «Lissom opplasting» skal inn i kortene, og «under kortet keramikk maler
+// saa maa en og en mal vaere et eget kort».
+//
+// Maalt i nettleseren (Chrome, 1280 og 400 px) mot en lokal MariaDB:
+// «⚙ Kjør 1 oppdatering» kjoerte migrasjon 157 og importen i samme trykk
+// (20 s), kvitteringa sa «71 kort og 191 dokumenter lagt inn i verkstedet»,
+// «Keramikk maler» aapnet 71 malkort med bilde, «Fuglekasse» aapnet Mal,
+// Monteringsguide og stegbildene, visningen leverte PDF-en (200), bryteren
+// paa «Keramikk maler» gikk fra «Skjult» til «Vises», medlemssida viste de
+// 71 malene og leverte fila (200) — og etter avslaaing saa medlemmet
+// ingenting. Import nummer to la inn 0 og hoppet over 191.
+$mkLib  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$mkMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/157_maler_som_kort_i_kortet.sql');
+$mkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mkMine = file_get_contents(dirname(__DIR__) . '/api/mine-dokumenter.php');
+$mkFil  = file_get_contents(dirname(__DIR__) . '/api/dokument.php');
+$mkMigr = file_get_contents(dirname(__DIR__) . '/api/migrer.php');
+$mkApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$mkDep  = file_get_contents(dirname(__DIR__) . '/.github/workflows/deploy.yml');
+
+sjekk('migrasjon 157 gir kortene forelder, undertekst og bilde',
+    str_contains($mkMig, 'ADD COLUMN forelder_id INT UNSIGNED NULL')
+    && str_contains($mkMig, 'ADD COLUMN under VARCHAR(191)')
+    && str_contains($mkMig, 'ADD COLUMN bilde VARCHAR(191) NULL')
+    && str_contains($mkMig, 'REFERENCES verksted_kategorier (id) ON DELETE CASCADE'));
+// Samme dokument to ganger er det verste importen kan gjore.
+sjekk('… og dokumentene husker kilden sin, unikt',
+    str_contains($mkMig, 'ADD COLUMN kilde VARCHAR(191) NULL')
+    && str_contains($mkMig, 'ADD UNIQUE KEY kilde (kilde)'));
+
+// Koden legges ut foer migrasjonen kjoeres. Da maa alt virke uten kolonnene.
+sjekk('biblioteket spor om kolonnene finnes foer det bruker dem',
+    str_contains($mkLib, "return self::klar() && DB::harKolonne('verksted_kategorier', 'forelder_id');")
+    && str_contains($mkLib, "? 'LEFT JOIN verksted_kategorier p ON p.id = k.forelder_id'")
+    && str_contains($mkLib, "? 'IFNULL(p.vis_medlem, k.vis_medlem) = 1'"));
+// Ett underkort har ingen egen bryter — det er forelderens som gjelder,
+// baade i lista, i dokumentlista, i én-oppslaget og hos AI-en.
+sjekk('… og et underkort arver bryteren fra forelderen overalt',
+    substr_count($mkLib, 'IFNULL(p.vis_medlem, k.vis_medlem)') >= 4
+    && str_contains($mkLib, "{\$vis} AS vis_medlem"));
+sjekk('… og «Keramikk maler» hos AI-en betyr malene inni',
+    str_contains($mkLib, "OR k.forelder_id IN (")
+    && str_contains($mkLib, "CONCAT(p.navn, ' · ', k.navn)"));
+// To sett parametre: PDO lar ikke ett navn brukes to steder.
+sjekk('… uten aa bruke samme PDO-parameter to ganger',
+    str_contains($mkLib, "\$inn2[] = ':f' . \$i;"));
+
+// Importen: manifestet sier hvor alt hoerer hjemme.
+$mkMan = dirname(__DIR__) . '/db/dokumenter/manifest.json';
+$mkM   = is_file($mkMan) ? json_decode(file_get_contents($mkMan), true) : null;
+sjekk('importpakka ligger i repoet med manifest',
+    is_array($mkM) && count($mkM['maler'] ?? []) === 71 && count($mkM['dokumenter'] ?? []) === 5);
+sjekk('… hver mal har navn, slug, bilde og minst ett dokument',
+    is_array($mkM) && count(array_filter($mkM['maler'], static fn($m) =>
+        ($m['navn'] ?? '') !== '' && ($m['slug'] ?? '') !== ''
+        && ($m['bilde'] ?? '') !== '' && count($m['dokumenter'] ?? []) > 0)) === 71);
+sjekk('… og hver fil i manifestet finnes',
+    is_array($mkM) && count(array_filter(array_merge(
+        array_map(static fn($d) => $d['fil'], $mkM['dokumenter']),
+        array_map(static fn($m) => $m['bilde'], $mkM['maler']),
+        ...array_map(static fn($m) => array_map(static fn($d) => $d['fil'], $m['dokumenter']), $mkM['maler'])
+    ), static fn($f) => !is_file(dirname($mkMan) . '/' . $f))) === 0);
+// Uten æøå og mellomrom i stiene: FTP og webhotell er ikke til aa stole paa.
+sjekk('… og stiene i pakka er uten æøå og mellomrom',
+    is_array($mkM) && count(array_filter(array_merge(
+        array_map(static fn($d) => $d['fil'], $mkM['dokumenter']),
+        ...array_map(static fn($m) => array_map(static fn($d) => $d['fil'], $m['dokumenter']), $mkM['maler'])
+    ), static fn($f) => preg_match('~^[a-z0-9/._-]+$~i', $f) !== 1)) === 0);
+sjekk('haandboekene gaar til riktige kort',
+    is_array($mkM) && array_column($mkM['dokumenter'], 'kort', 'navn') === [
+        'Glasurhåndbok for keramikere'              => 'dekorasjon',
+        'Håndbok i dekorative teknikker'            => 'dekorasjon',
+        'Håndbok i engober, pigmenter og oksider'   => 'engober',
+        'Håndbok i keramikkbrenning'                => 'brenning',
+        'Håndbok i lagvis glasering'                => 'glassering',
+    ]);
+
+sjekk('importen hopper over det som alt er inne, og det eieren har slettet',
+    str_contains($mkLib, "if (\$kilde === '' || isset(\$inne[\$kilde]) || isset(\$slettet[\$kilde])) {")
+    && str_contains($mkLib, "self::huskSlettetKilde((string) (\$d['kilde'] ?? ''));"));
+sjekk('… og legger malene under «Keramikk maler», i manifestets rekkefoelge',
+    str_contains($mkLib, "\$forelder = \$kortVedSlug['maler'] ?? null;")
+    && str_contains($mkLib, "'sortering'   => 100 + (int) (\$m['sortering'] ?? 0),"));
+// Typen leses ut av fila, som ved opplasting. Manifestet er vaart, men fila
+// skal likevel ikke kunne peke ut av pakka.
+sjekk('… leser typen ut av innholdet og nekter stier ut av pakka',
+    str_contains($mkLib, "if (str_contains(\$kilde, '..') || str_starts_with(\$kilde, '/') || str_contains(\$kilde, ':')) {")
+    && str_contains($mkLib, "if (!isset(self::TYPER[\$mime])) {\n            throw new RuntimeException('Filen må være PDF, Word eller bilde.');"));
+// Pakka ligger utenfor public_html, ved siden av app-koden.
+sjekk('… og deploy-jobben legger pakka utenfor det som publiseres',
+    str_contains($mkDep, 'local-dir: ./db/dokumenter/')
+    && str_contains($mkDep, 'server-dir: lissom-app/dokumenter-import/')
+    && str_contains($mkLib, "dirname(APP_DIR) . '/dokumenter-import'"));
+// Knappen i admin: migrasjonene forst, saa importen — i samme kall, med
+// skjemaminnet nullstilt imellom, ellers tror harKolonne() at kolonnen
+// migrasjonen nettopp laget ikke finnes.
+sjekk('«Kjør oppdateringer» importerer etter migrasjonene',
+    str_contains($mkMigr, 'DB::glemSkjema();')
+    && str_contains($mkMigr, '$import = Dokumenter::importer();')
+    && str_contains($mkMigr, "'import'    => \$import,")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/db.php'), 'public static function glemSkjema(): void'));
+sjekk('… men ikke naar en migrasjon stoppet',
+    str_contains($mkMigr, "if (!\$stoppet) {"));
+sjekk('… og kvitteringa sier hva som kom inn',
+    str_contains($mkSida, "' lagt inn i verkstedet.'")
+    && str_contains($mkSida, "'Import av dokumenter stoppet: ' + imp.feil[0]")
+    && str_contains($mkSida, "this._dokHentes = false;\n        this.dokHent();"));
+
+// Skjermen: hovedkortene er dem uten forelder, underkortene ligger inni.
+sjekk('admin viser bare hovedkortene paa forsida, med malene talt med',
+    str_contains($mkSida, 'const hoved = kort.filter(k => !k.forelder);')
+    && str_contains($mkSida, 'const kortene = hoved.map(k => ({')
+    && str_contains($mkSida, 'antall: antallTekst(antallMed(k)),'));
+sjekk('… og aapner malene som kort med bilde inni «Keramikk maler»',
+    str_contains($mkSida, '<sc-for list="{{ dokUnderkort }}" as="u"')
+    && str_contains($mkSida, '<img data-src="{{ u.bilde }}" alt="{{ u.navn }}"')
+    && str_contains($mkSida, "bilde: '/api/dokument.php?kort=' + u.id,"));
+// Inne i en mal gaar «tilbake» til «Keramikk maler», ikke helt ut.
+sjekk('… der tilbakeknappen peker paa hovedkortet',
+    str_contains($mkSida, "dokTilbakeNavn: forelder ? '← ' + forelder.navn : '← Alle kort',")
+    && str_contains($mkSida, 'dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0 }),'));
+// Bildet paa kortet gaar samme vei som dokumentene, med samme sjekk.
+sjekk('bildet paa kortet serveres av api/dokument.php med samme regel',
+    str_contains($mkFil, "if (Foresporsel::heltall('kort') > 0) {")
+    && str_contains($mkFil, "if (((int) \$kort['synlig']) !== 1 || \$medlem === null || !er_aktivt_medlem(\$medlem)) {"));
+sjekk('medlemssida faar forelder, undertekst og bilde med',
+    str_contains($mkMine, "'forelder' => \$k['forelder'],")
+    && str_contains($mkMine, "'bilde'    => \$k['harBilde'] ? '/api/dokument.php?kort=' . \$k['id'] : '',"));
+sjekk('… og viser malene som kort som aapner filene sine i kortet',
+    str_contains($mkSida, '<sc-for list="{{ k.underkort }}" as="u"')
+    && str_contains($mkSida, "veksle: () => this.setState({ mdValgt: apen ? 0 : u.id }),")
+    && str_contains($mkSida, '<sc-if value="{{ u.apen }}"'));
+
+// Funnet underveis: sjekken for «for stor fil» slo til paa alle JSON-kall,
+// saa bryteren, sletting og AI-teksten svarte «Filen er for stor».
+sjekk('«for stor fil» gjelder bare skjemaer med fil',
+    str_contains($mkApi, "\$erSkjema = str_starts_with(strtolower((string) (\$_SERVER['CONTENT_TYPE'] ?? '')), 'multipart/form-data');")
+    && str_contains($mkApi, "if (\$erSkjema && \$_POST === [] && \$_FILES === []"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

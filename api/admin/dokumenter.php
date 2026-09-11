@@ -53,7 +53,12 @@ Foresporsel::krevMetode('POST');
 //
 // Staar for opphavssjekken, som leser $_POST og derfor heller ikke har noe
 // aa gaa paa.
-if ($_POST === [] && $_FILES === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+//
+// Bare for skjemaer med fil (multipart). Bryteren, sletting og AI-teksten
+// sendes som JSON — da er $_POST alltid tom, og uten dette skillet fikk alle
+// tre «Filen er for stor» (funnet 11. september 2026, i nettleseren).
+$erSkjema = str_starts_with(strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? '')), 'multipart/form-data');
+if ($erSkjema && $_POST === [] && $_FILES === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
     Svar::feil('Filen er for stor. Maks ' . Dokumenter::maksMb() . ' MB.');
 }
 

@@ -1,0 +1,1416 @@
+{
+  "versjon": 1,
+  "laget": "2026-09-11",
+  "dokumenter": [
+    {
+      "kort": "dekorasjon",
+      "fil": "haandboker/dekorasjon/glasurhandbok-for-keramikere.pdf",
+      "navn": "Glasurhåndbok for keramikere"
+    },
+    {
+      "kort": "dekorasjon",
+      "fil": "haandboker/dekorasjon/handbok-i-dekorative-teknikker.pdf",
+      "navn": "Håndbok i dekorative teknikker"
+    },
+    {
+      "kort": "engober",
+      "fil": "haandboker/engober/handbok-i-engober-pigmenter-og-oksider.pdf",
+      "navn": "Håndbok i engober, pigmenter og oksider"
+    },
+    {
+      "kort": "brenning",
+      "fil": "haandboker/brenning/handbok-i-keramikkbrenning.pdf",
+      "navn": "Håndbok i keramikkbrenning"
+    },
+    {
+      "kort": "glassering",
+      "fil": "haandboker/glassering/handbok-i-lagvis-glasering.pdf",
+      "navn": "Håndbok i lagvis glasering"
+    }
+  ],
+  "maler": [
+    {
+      "slug": "mal-01-fuglekasse",
+      "navn": "Fuglekasse",
+      "under": "Mal 01",
+      "sortering": 1,
+      "bilde": "maler/mal-01-fuglekasse/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-01-fuglekasse/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-01.jpg",
+          "navn": "Steg 1"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-02.jpg",
+          "navn": "Steg 2"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-03.jpg",
+          "navn": "Steg 3"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-04.jpg",
+          "navn": "Steg 4"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-05.jpg",
+          "navn": "Steg 5"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-06.jpg",
+          "navn": "Steg 6"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-07.jpg",
+          "navn": "Steg 7"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-08.jpg",
+          "navn": "Steg 8"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-09.jpg",
+          "navn": "Steg 9"
+        },
+        {
+          "fil": "maler/mal-01-fuglekasse/steg-10.jpg",
+          "navn": "Steg 10"
+        }
+      ]
+    },
+    {
+      "slug": "mal-02-lyshus",
+      "navn": "Lyshus",
+      "under": "Mal 02",
+      "sortering": 2,
+      "bilde": "maler/mal-02-lyshus/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-02-lyshus/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-03-buet-espressokopp",
+      "navn": "Buet espressokopp",
+      "under": "Mal 03",
+      "sortering": 3,
+      "bilde": "maler/mal-03-buet-espressokopp/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-03-buet-espressokopp/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-04-rund-kopp",
+      "navn": "Rund kopp",
+      "under": "Mal 04",
+      "sortering": 4,
+      "bilde": "maler/mal-04-rund-kopp/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-04-rund-kopp/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-04-rund-kopp/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-05-boks-med-lokk",
+      "navn": "Boks med lokk",
+      "under": "Mal 05",
+      "sortering": 5,
+      "bilde": "maler/mal-05-boks-med-lokk/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-05-boks-med-lokk/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-01.jpg",
+          "navn": "Steg 1"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-02.jpg",
+          "navn": "Steg 2"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-03.jpg",
+          "navn": "Steg 3"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-04.jpg",
+          "navn": "Steg 4"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-05.jpg",
+          "navn": "Steg 5"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-06.jpg",
+          "navn": "Steg 6"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-07.jpg",
+          "navn": "Steg 7"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-08.jpg",
+          "navn": "Steg 8"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-09.jpg",
+          "navn": "Steg 9"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-10.jpg",
+          "navn": "Steg 10"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-11.jpg",
+          "navn": "Steg 11"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-12.jpg",
+          "navn": "Steg 12"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-13.jpg",
+          "navn": "Steg 13"
+        },
+        {
+          "fil": "maler/mal-05-boks-med-lokk/steg-14.jpg",
+          "navn": "Steg 14"
+        }
+      ]
+    },
+    {
+      "slug": "mal-06-mugge",
+      "navn": "Mugge",
+      "under": "Mal 06",
+      "sortering": 6,
+      "bilde": "maler/mal-06-mugge/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-06-mugge/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-06-mugge/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-01.jpg",
+          "navn": "Steg 1"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-02.jpg",
+          "navn": "Steg 2"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-03.jpg",
+          "navn": "Steg 3"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-04.jpg",
+          "navn": "Steg 4"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-05.jpg",
+          "navn": "Steg 5"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-06.jpg",
+          "navn": "Steg 6"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-07.jpg",
+          "navn": "Steg 7"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-08.jpg",
+          "navn": "Steg 8"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-09.jpg",
+          "navn": "Steg 9"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-10.jpg",
+          "navn": "Steg 10"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-11.jpg",
+          "navn": "Steg 11"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-12.jpg",
+          "navn": "Steg 12"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-13.jpg",
+          "navn": "Steg 13"
+        },
+        {
+          "fil": "maler/mal-06-mugge/steg-14.jpg",
+          "navn": "Steg 14"
+        }
+      ]
+    },
+    {
+      "slug": "mal-07-baerskal",
+      "navn": "Bærskål",
+      "under": "Mal 07",
+      "sortering": 7,
+      "bilde": "maler/mal-07-baerskal/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-07-baerskal/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/original-med-videolenke.pdf",
+          "navn": "Original med videolenke"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-01.jpg",
+          "navn": "Steg 1"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-02.jpg",
+          "navn": "Steg 2"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-03.jpg",
+          "navn": "Steg 3"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-04.jpg",
+          "navn": "Steg 4"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-05.jpg",
+          "navn": "Steg 5"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-06.jpg",
+          "navn": "Steg 6"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-07.jpg",
+          "navn": "Steg 7"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-08.jpg",
+          "navn": "Steg 8"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-09.jpg",
+          "navn": "Steg 9"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-10.jpg",
+          "navn": "Steg 10"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-11.jpg",
+          "navn": "Steg 11"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-12.jpg",
+          "navn": "Steg 12"
+        },
+        {
+          "fil": "maler/mal-07-baerskal/steg-13.jpg",
+          "navn": "Steg 13"
+        }
+      ]
+    },
+    {
+      "slug": "mal-08-vindspill",
+      "navn": "Vindspill",
+      "under": "Mal 08",
+      "sortering": 8,
+      "bilde": "maler/mal-08-vindspill/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-08-vindspill/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-08-vindspill/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-09-take-away-kopp",
+      "navn": "Take-away-kopp",
+      "under": "Mal 09",
+      "sortering": 9,
+      "bilde": "maler/mal-09-take-away-kopp/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-09-take-away-kopp/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-09-take-away-kopp/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-10-liten-dekorfugl",
+      "navn": "Liten dekorfugl",
+      "under": "Mal 10",
+      "sortering": 10,
+      "bilde": "maler/mal-10-liten-dekorfugl/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-10-liten-dekorfugl/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-10-liten-dekorfugl/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-11-keramikkhus",
+      "navn": "Keramikkhus",
+      "under": "Mal 11",
+      "sortering": 11,
+      "bilde": "maler/mal-11-keramikkhus/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-11-keramikkhus/mal-liten.pdf",
+          "navn": "Mal - liten"
+        },
+        {
+          "fil": "maler/mal-11-keramikkhus/mal-mellomstor.pdf",
+          "navn": "Mal - mellomstor"
+        },
+        {
+          "fil": "maler/mal-11-keramikkhus/mal-stor.pdf",
+          "navn": "Mal - stor"
+        },
+        {
+          "fil": "maler/mal-11-keramikkhus/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-12-lyslykt",
+      "navn": "Lyslykt",
+      "under": "Mal 12",
+      "sortering": 12,
+      "bilde": "maler/mal-12-lyslykt/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-12-lyslykt/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-12-lyslykt/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-13-vase",
+      "navn": "Vase",
+      "under": "Mal 13",
+      "sortering": 13,
+      "bilde": "maler/mal-13-vase/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-13-vase/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-13-vase/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-14-skjeholder",
+      "navn": "Skjeholder",
+      "under": "Mal 14",
+      "sortering": 14,
+      "bilde": "maler/mal-14-skjeholder/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-14-skjeholder/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-14-skjeholder/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-15-liten-potte",
+      "navn": "Liten potte",
+      "under": "Mal 15",
+      "sortering": 15,
+      "bilde": "maler/mal-15-liten-potte/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-15-liten-potte/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-15-liten-potte/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-16-flat-tallerken",
+      "navn": "Flat tallerken",
+      "under": "Mal 16",
+      "sortering": 16,
+      "bilde": "maler/mal-16-flat-tallerken/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-16-flat-tallerken/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-16-flat-tallerken/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        },
+        {
+          "fil": "maler/mal-16-flat-tallerken/veiledning-original.pdf",
+          "navn": "Veiledning (original)"
+        }
+      ]
+    },
+    {
+      "slug": "mal-17-halvmaneformet-tekanne",
+      "navn": "Halvmåneformet tekanne",
+      "under": "Mal 17",
+      "sortering": 17,
+      "bilde": "maler/mal-17-halvmaneformet-tekanne/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-17-halvmaneformet-tekanne/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-17-halvmaneformet-tekanne/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        },
+        {
+          "fil": "maler/mal-17-halvmaneformet-tekanne/original-med-videolenker.pdf",
+          "navn": "Original med videolenker"
+        }
+      ]
+    },
+    {
+      "slug": "mal-18-sukkerskal-med-lokk",
+      "navn": "Sukkerskål med lokk",
+      "under": "Mal 18",
+      "sortering": 18,
+      "bilde": "maler/mal-18-sukkerskal-med-lokk/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-18-sukkerskal-med-lokk/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-18-sukkerskal-med-lokk/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-19-hjerteformet-tallerken",
+      "navn": "Hjerteformet tallerken",
+      "under": "Mal 19",
+      "sortering": 19,
+      "bilde": "maler/mal-19-hjerteformet-tallerken/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-19-hjerteformet-tallerken/mal-ark-1.jpg",
+          "navn": "Mal - ark 1"
+        },
+        {
+          "fil": "maler/mal-19-hjerteformet-tallerken/mal-ark-2.jpg",
+          "navn": "Mal - ark 2"
+        },
+        {
+          "fil": "maler/mal-19-hjerteformet-tallerken/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-smorboks",
+      "navn": "Smørboks",
+      "under": "Mal 20",
+      "sortering": 20,
+      "bilde": "maler/mal-20-smorboks/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-smorboks/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-smorboks/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-badekarformet-tallerken",
+      "navn": "Badekarformet tallerken",
+      "under": "Maler 20 til 55",
+      "sortering": 21,
+      "bilde": "maler/mal-20-55-badekarformet-tallerken/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-badekarformet-tallerken/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-badekarformet-tallerken/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-fransk-smorboks",
+      "navn": "Fransk smørboks",
+      "under": "Maler 20 til 55",
+      "sortering": 22,
+      "bilde": "maler/mal-20-55-fransk-smorboks/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-fransk-smorboks/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-fransk-smorboks/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-kaffesett-v60",
+      "navn": "Kaffesett V60",
+      "under": "Maler 20 til 55",
+      "sortering": 23,
+      "bilde": "maler/mal-20-55-kaffesett-v60/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-kaffesett-v60/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-kaffesett-v60/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-leirlandsby",
+      "navn": "Leirlandsby",
+      "under": "Maler 20 til 55",
+      "sortering": 24,
+      "bilde": "maler/mal-20-55-leirlandsby/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-leirlandsby/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-leirlandsby/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-matchasett",
+      "navn": "Matchasett",
+      "under": "Maler 20 til 55",
+      "sortering": 25,
+      "bilde": "maler/mal-20-55-matchasett/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-matchasett/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-matchasett/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-nottebolle",
+      "navn": "Nøttebolle",
+      "under": "Maler 20 til 55",
+      "sortering": 26,
+      "bilde": "maler/mal-20-55-nottebolle/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-nottebolle/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-nottebolle/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-ramenbolle",
+      "navn": "Ramenbolle",
+      "under": "Maler 20 til 55",
+      "sortering": 27,
+      "bilde": "maler/mal-20-55-ramenbolle/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-ramenbolle/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-ramenbolle/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-samling-av-9-vaser",
+      "navn": "Samling av 9 vaser",
+      "under": "Maler 20 til 55",
+      "sortering": 28,
+      "bilde": "maler/mal-20-55-samling-av-9-vaser/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-samling-av-9-vaser/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-samling-av-9-vaser/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-serviettholder",
+      "navn": "Serviettholder",
+      "under": "Maler 20 til 55",
+      "sortering": 29,
+      "bilde": "maler/mal-20-55-serviettholder/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-serviettholder/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-serviettholder/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-sitruspresse",
+      "navn": "Sitruspresse",
+      "under": "Maler 20 til 55",
+      "sortering": 30,
+      "bilde": "maler/mal-20-55-sitruspresse/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-sitruspresse/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-sitruspresse/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-smorboks",
+      "navn": "Smørboks",
+      "under": "Maler 20 til 55",
+      "sortering": 31,
+      "bilde": "maler/mal-20-55-smorboks/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-smorboks/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-smorboks/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-20-55-soppformet-sminkeorganisator",
+      "navn": "Soppformet sminkeorganisator",
+      "under": "Maler 20 til 55",
+      "sortering": 32,
+      "bilde": "maler/mal-20-55-soppformet-sminkeorganisator/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-20-55-soppformet-sminkeorganisator/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-20-55-soppformet-sminkeorganisator/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-bjorn",
+      "navn": "Bjørn",
+      "under": "Maler 55 til 85",
+      "sortering": 33,
+      "bilde": "maler/mal-55-85-bjorn/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-bjorn/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-bjorn/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-dekorativ-elefant-i-to-storrelser",
+      "navn": "Dekorativ elefant i to størrelser",
+      "under": "Maler 55 til 85",
+      "sortering": 34,
+      "bilde": "maler/mal-55-85-dekorativ-elefant-i-to-storrelser/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-dekorativ-elefant-i-to-storrelser/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-dekorativ-elefant-i-to-storrelser/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-dobbelt-sopphus",
+      "navn": "Dobbelt sopphus",
+      "under": "Maler 55 til 85",
+      "sortering": 35,
+      "bilde": "maler/mal-55-85-dobbelt-sopphus/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-dobbelt-sopphus/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-dobbelt-sopphus/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-elefantformet-organisator",
+      "navn": "Elefantformet organisator",
+      "under": "Maler 55 til 85",
+      "sortering": 36,
+      "bilde": "maler/mal-55-85-elefantformet-organisator/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-elefantformet-organisator/mal-modell-1.pdf",
+          "navn": "Mal - modell 1"
+        },
+        {
+          "fil": "maler/mal-55-85-elefantformet-organisator/mal-modell-2.pdf",
+          "navn": "Mal - modell 2"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-epleformet-krukke",
+      "navn": "Epleformet krukke",
+      "under": "Maler 55 til 85",
+      "sortering": 37,
+      "bilde": "maler/mal-55-85-epleformet-krukke/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-epleformet-krukke/mal-tilleggsdeler-lite-eple.pdf",
+          "navn": "Mal - tilleggsdeler (lite eple)"
+        },
+        {
+          "fil": "maler/mal-55-85-epleformet-krukke/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-epleformet-krukke/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-fugl",
+      "navn": "Fugl",
+      "under": "Maler 55 til 85",
+      "sortering": 38,
+      "bilde": "maler/mal-55-85-fugl/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-fugl/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-fugl/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-hjerteformet-eske",
+      "navn": "Hjerteformet eske",
+      "under": "Maler 55 til 85",
+      "sortering": 39,
+      "bilde": "maler/mal-55-85-hjerteformet-eske/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-hjerteformet-eske/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-hjerteformet-kopp",
+      "navn": "Hjerteformet kopp",
+      "under": "Maler 55 til 85",
+      "sortering": 40,
+      "bilde": "maler/mal-55-85-hjerteformet-kopp/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-hjerteformet-kopp/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-kanin",
+      "navn": "Kanin",
+      "under": "Maler 55 til 85",
+      "sortering": 41,
+      "bilde": "maler/mal-55-85-kanin/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-kanin/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-kanin/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-kopp-med-rode-baer",
+      "navn": "Kopp med røde bær",
+      "under": "Maler 55 til 85",
+      "sortering": 42,
+      "bilde": "maler/mal-55-85-kopp-med-rode-baer/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-kopp-med-rode-baer/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-kopp-med-rode-baer/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-kopper-i-3-storrelser",
+      "navn": "Kopper i 3 størrelser",
+      "under": "Maler 55 til 85",
+      "sortering": 43,
+      "bilde": "maler/mal-55-85-kopper-i-3-storrelser/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-kopper-i-3-storrelser/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-koppvarmer",
+      "navn": "Koppvarmer",
+      "under": "Maler 55 til 85",
+      "sortering": 44,
+      "bilde": "maler/mal-55-85-koppvarmer/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-koppvarmer/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-koppvarmer/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-matbolle",
+      "navn": "Matbolle",
+      "under": "Maler 55 til 85",
+      "sortering": 45,
+      "bilde": "maler/mal-55-85-matbolle/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-matbolle/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-matbolle/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-mugge",
+      "navn": "Mugge",
+      "under": "Maler 55 til 85",
+      "sortering": 46,
+      "bilde": "maler/mal-55-85-mugge/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-mugge/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-mugge/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-pokal-med-fot",
+      "navn": "Pokal med fot",
+      "under": "Maler 55 til 85",
+      "sortering": 47,
+      "bilde": "maler/mal-55-85-pokal-med-fot/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-pokal-med-fot/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-samling-av-5-keramikkstykker-i-leirplateteknikk",
+      "navn": "Samling av 5 keramikkstykker i leirplateteknikk",
+      "under": "Maler 55 til 85",
+      "sortering": 48,
+      "bilde": "maler/mal-55-85-samling-av-5-keramikkstykker-i-leirplateteknikk/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-samling-av-5-keramikkstykker-i-leirplateteknikk/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-samling-av-5-keramikkstykker-i-leirplateteknikk/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-sausskal",
+      "navn": "Sausskål",
+      "under": "Maler 55 til 85",
+      "sortering": 49,
+      "bilde": "maler/mal-55-85-sausskal/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-sausskal/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-sausskal/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-sushibrett",
+      "navn": "Sushibrett",
+      "under": "Maler 55 til 85",
+      "sortering": 50,
+      "bilde": "maler/mal-55-85-sushibrett/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-sushibrett/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-sapeskal",
+      "navn": "Såpeskål",
+      "under": "Maler 55 til 85",
+      "sortering": 51,
+      "bilde": "maler/mal-55-85-sapeskal/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-sapeskal/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-sapeskal/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-tannpleieorganisator-til-badet",
+      "navn": "Tannpleieorganisator til badet",
+      "under": "Maler 55 til 85",
+      "sortering": 52,
+      "bilde": "maler/mal-55-85-tannpleieorganisator-til-badet/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-tannpleieorganisator-til-badet/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-55-85-tannpleieorganisator-til-badet/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-55-85-veggvase",
+      "navn": "Veggvase",
+      "under": "Maler 55 til 85",
+      "sortering": 53,
+      "bilde": "maler/mal-55-85-veggvase/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-55-85-veggvase/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-blomsterformet-serviettholder",
+      "navn": "Blomsterformet serviettholder",
+      "under": "Maler 85 til 100",
+      "sortering": 54,
+      "bilde": "maler/mal-85-100-blomsterformet-serviettholder/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-blomsterformet-serviettholder/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-blomsterformet-serviettholder/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-blyantholder-oppspilt-monster",
+      "navn": "Blyantholder Oppspilt monster",
+      "under": "Maler 85 til 100",
+      "sortering": 55,
+      "bilde": "maler/mal-85-100-blyantholder-oppspilt-monster/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-blyantholder-oppspilt-monster/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-blyantholder-oppspilt-monster/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-hjorneblomsterpotte-med-gretten-katt",
+      "navn": "Hjørneblomsterpotte med gretten katt",
+      "under": "Maler 85 til 100",
+      "sortering": 56,
+      "bilde": "maler/mal-85-100-hjorneblomsterpotte-med-gretten-katt/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-hjorneblomsterpotte-med-gretten-katt/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-hjorneblomsterpotte-med-gretten-katt/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-kattepar",
+      "navn": "Kattepar",
+      "under": "Maler 85 til 100",
+      "sortering": 57,
+      "bilde": "maler/mal-85-100-kattepar/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-kattepar/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-kattepar/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-lykt-formet-som-et-bekymret-hus",
+      "navn": "Lykt formet som et bekymret hus",
+      "under": "Maler 85 til 100",
+      "sortering": 58,
+      "bilde": "maler/mal-85-100-lykt-formet-som-et-bekymret-hus/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-lykt-formet-som-et-bekymret-hus/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-lykt-formet-som-et-bekymret-hus/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-passiv-telefonforsterker",
+      "navn": "Passiv telefonforsterker",
+      "under": "Maler 85 til 100",
+      "sortering": 59,
+      "bilde": "maler/mal-85-100-passiv-telefonforsterker/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-passiv-telefonforsterker/mal-modell-1.pdf",
+          "navn": "Mal - modell 1"
+        },
+        {
+          "fil": "maler/mal-85-100-passiv-telefonforsterker/mal-modell-2.pdf",
+          "navn": "Mal - modell 2"
+        },
+        {
+          "fil": "maler/mal-85-100-passiv-telefonforsterker/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-skrikende-dorstopper",
+      "navn": "Skrikende dørstopper",
+      "under": "Maler 85 til 100",
+      "sortering": 60,
+      "bilde": "maler/mal-85-100-skrikende-dorstopper/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-skrikende-dorstopper/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-skrikende-dorstopper/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-smilende-tallerken-med-dryppdesign",
+      "navn": "Smilende tallerken med dryppdesign",
+      "under": "Maler 85 til 100",
+      "sortering": 61,
+      "bilde": "maler/mal-85-100-smilende-tallerken-med-dryppdesign/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-smilende-tallerken-med-dryppdesign/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-smilende-tallerken-med-dryppdesign/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-stor-nisse",
+      "navn": "Stor nisse",
+      "under": "Maler 85 til 100",
+      "sortering": 62,
+      "bilde": "maler/mal-85-100-stor-nisse/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-stor-nisse/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-stor-nisse/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-sovnig-bokvase",
+      "navn": "Søvnig bokvase",
+      "under": "Maler 85 til 100",
+      "sortering": 63,
+      "bilde": "maler/mal-85-100-sovnig-bokvase/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-sovnig-bokvase/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-sovnig-bokvase/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-85-100-tekanne",
+      "navn": "Tekanne",
+      "under": "Maler 85 til 100",
+      "sortering": 64,
+      "bilde": "maler/mal-85-100-tekanne/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-85-100-tekanne/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-85-100-tekanne/Monteringsguide.pdf",
+          "navn": "Monteringsguide"
+        }
+      ]
+    },
+    {
+      "slug": "mal-ekstra-blomsterkopp",
+      "navn": "Blomsterkopp",
+      "under": "Ekstra maler",
+      "sortering": 65,
+      "bilde": "maler/mal-ekstra-blomsterkopp/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-ekstra-blomsterkopp/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-ekstra-fransk-smorskal",
+      "navn": "Fransk smørskål",
+      "under": "Ekstra maler",
+      "sortering": 66,
+      "bilde": "maler/mal-ekstra-fransk-smorskal/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-ekstra-fransk-smorskal/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-ekstra-halvmane",
+      "navn": "Halvmåne",
+      "under": "Ekstra maler",
+      "sortering": 67,
+      "bilde": "maler/mal-ekstra-halvmane/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-ekstra-halvmane/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-ekstra-liten-bat",
+      "navn": "Liten båt",
+      "under": "Ekstra maler",
+      "sortering": 68,
+      "bilde": "maler/mal-ekstra-liten-bat/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-ekstra-liten-bat/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-ekstra-mugge",
+      "navn": "Mugge",
+      "under": "Ekstra maler",
+      "sortering": 69,
+      "bilde": "maler/mal-ekstra-mugge/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-ekstra-mugge/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-ekstra-sitruspresse",
+      "navn": "Sitruspresse",
+      "under": "Ekstra maler",
+      "sortering": 70,
+      "bilde": "maler/mal-ekstra-sitruspresse/bilde.webp",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-ekstra-sitruspresse/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    },
+    {
+      "slug": "mal-ekstra-tallerken-i-3-deler",
+      "navn": "Tallerken i 3 deler",
+      "under": "Ekstra maler",
+      "sortering": 71,
+      "bilde": "maler/mal-ekstra-tallerken-i-3-deler/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-ekstra-tallerken-i-3-deler/mal.pdf",
+          "navn": "Mal"
+        }
+      ]
+    }
+  ]
+}

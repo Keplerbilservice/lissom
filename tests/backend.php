@@ -7450,6 +7450,41 @@ sjekk('… og boblen har verken hoyde eller kant som kan klippe',
     && str_contains($sida, '    overflow-wrap: break-word;'),
     '«pre-wrap» tar vare paa linjeskift den som skrev faktisk satte');
 
+// ── Hele meldingen skal komme med naar noen limer inn ─────────────
+//
+// Eieren, 11. september 2026: «Chat er viktigst.» Teksten fra Monica staar
+// klippet midt i en setning.
+//
+// Utelukket, maalt: kolonnen tar 500 tegn og meldingen er 222; API-et lagrer
+// og henter den hel; oppstillingen er bygget om og klipper ikke; en melding
+// skrevet i feltet og sendt med knappen kommer hel fram; og en ny tegning
+// midt i skrivinga tar ikke teksten.
+//
+// Igjen staar innlimingen. Skrivefeltet er ett felt paa én linje, og limer
+// man inn tekst med linjeskift i et slikt felt, beholder Safari BARE det som
+// staar for det forste skiftet. Chrome tar alt. Eieren er paa iPhone, og
+// WebKit lar seg ikke installere her — det er den ene mekanismen som ikke
+// lot seg proeve.
+//
+// Derfor gjor vi innlimingen selv. Maalt i nettleseren: 198 tegn med
+// linjeskift limt inn ga 198 tegn i feltet, og 111-tegnsutgaven ble sendt og
+// lagret hel. Enlinjet innliming roeres ikke.
+sjekk('en innliming med linjeskift mister ingenting',
+    str_contains($sida, "document.addEventListener('paste', function (e) {")
+    && str_contains($sida, "if (!tekst || !/[\\r\\n]/.test(tekst)) return;")
+    && str_contains($sida, "var ren = tekst.replace(/\\s*[\\r\\n]+\\s*/g, ' ').trim();"),
+    'Safari beholder bare det som staar for det forste skiftet');
+sjekk('… og bare i chatten, ikke i alle felt paa sida',
+    str_contains($sida, "return el && el.tagName === 'INPUT' && el.closest && el.closest('#minside-chat');"));
+// Skjermen holder sin egen kopi av hva som staar i feltet. Setter vi verdien
+// rett paa elementet, ser den det ikke — maalt: teksten sto i feltet, men
+// SEND gjorde ingenting. «insertText» er en ekte skriveoperasjon, og
+// nettleseren sender sitt eget «input» etterpaa.
+sjekk('… og teksten settes inn slik at skjermen faar det med seg',
+    str_contains($sida, "gikk = document.execCommand('insertText', false, ren);")
+    && str_contains($sida, 'if (!gikk) {'),
+    'maalt: uten dette ble ingen melding sendt i det hele tatt');
+
 // ── Admin kan rydde i chatten, og angre ───────────────────────────
 //
 // Eieren, 10. september 2026, om en melding fra Monica som sto klippet:

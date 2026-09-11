@@ -16009,6 +16009,44 @@ sjekk('… og tallet paa medlemssida teller bare det medlemmet ser',
     str_contains($mkSida, "antall: antallTekst((k.filer || []).length + barn.reduce((sum, b) => sum + (b.filer || []).length, 0)),")
     && str_contains($mkSida, "antall: antallTekst((u.filer || []).length),"));
 
+// ── Oppsettet inne i kortene: soek, grupper og stegstripe ────────────────
+//
+// Eieren, 11. september 2026: «se paa oppsettet inne i alle kortene slik at
+// det er oversiktlig og skalerbart» — GO paa utkastet med soekefelt,
+// grupper med mappenavnene som overskrift, malhode med lite bilde, og
+// stegbildene som en stripe i stedet for ti like store kort. Samme paa Min
+// side.
+//
+// Maalt i Chrome (1280 og 400 px): «Søk i malene» med «kopp» ga 7 maler i
+// admin og «fugl» 3 paa Min side; gruppene sto med overskrift; Fuglekasse
+// aapnet med hodet «Mal 01 · 12 dokumenter», to dokumentkort og ti
+// stegbilder i stripa, og et stegbilde aapnet visningen.
+sjekk('gruppa leses ut av slug-en, ett sted, for admin og Min side',
+    str_contains($mkSida, "static malGruppe(slug) {")
+    && str_contains($mkSida, "return 'Maler 1 til 20';")
+    && str_contains($mkSida, "return 'Ekstra maler';")
+    && substr_count($mkSida, 'Component.malGruppe(') >= 2
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/mine-dokumenter.php'), "'slug'     => \$k['slug'],"));
+sjekk('admin har soek og grupper over malene',
+    str_contains($mkSida, 'placeholder="Søk i malene"')
+    && str_contains($mkSida, '<sc-for list="{{ dokUnderGrupper }}" as="g"')
+    && str_contains($mkSida, "dokSokEndre: (e) => this.setState({ dokSok: e.target.value }),")
+    && str_contains($mkSida, "dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0, dokSok: '' }),"));
+sjekk('… og malen aapner med bildet i hodet og stegbildene som stripe',
+    str_contains($mkSida, '<img data-src="{{ dokApnetBilde }}"')
+    && str_contains($mkSida, "{{ dokApnetUnder }} · {{ dokApnetAntall }}")
+    && str_contains($mkSida, "const erSteg = (f) => /^Steg \\d+$/.test(f.navn) && String(f.mime).indexOf('image/') === 0;")
+    && str_contains($mkSida, '<sc-for list="{{ dokSteg }}" as="st"')
+    && str_contains($mkSida, "const radene = iKortet.filter(f => !erSteg(f)).map(f => ({"));
+sjekk('… og bryteren paa malen staar i hodet naar hovedkortet er av',
+    str_contains($mkSida, "dokApnetVisBryter: !!(forelder && !forelder.visMedlem),")
+    && str_contains($mkSida, '<sc-if value="{{ dokApnetVisBryter }}"'));
+sjekk('Min side har det samme: soek, grupper og stripe',
+    substr_count($mkSida, 'placeholder="Søk i malene"') === 2
+    && str_contains($mkSida, '<sc-for list="{{ k.grupper }}" as="g"')
+    && str_contains($mkSida, '<sc-for list="{{ u.steg }}" as="st"')
+    && str_contains($mkSida, "filer: alle.filter(f => !erSteg(f)).map(filKnapp),"));
+
 sjekk('kildene under svaret faar malnavnet foran',
     str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")
     && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"));

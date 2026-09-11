@@ -47,6 +47,9 @@ Svar::json([
     'kategorier' => array_map(static fn($k) => [
         'id'       => $k['id'],
         'navn'     => $k['navn'],
+        // Til gruppene paa Min side (Component.malGruppe). Slug-en er vaar, ikke
+        // noe en bruker har skrevet.
+        'slug'     => $k['slug'],
         'under'    => $k['under'],
         'forelder' => $k['forelder'],
         'bilde'    => $k['harBilde'] ? '/api/dokument.php?kort=' . $k['id'] : '',

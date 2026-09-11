@@ -7564,6 +7564,39 @@ sjekk('… og teksten kommer tilbake i feltet om sendingen ryker',
     substr_count($sida, 'if (skrivefelt) { skrivefelt.value = t; this.chatHoyde(skrivefelt); }') === 2,
     'én gang naar serveren avviser, én gang naar linja ryker');
 
+// ── Knappen sier «Tenker», og puster mens den gjor det ────────────
+//
+// Eieren, 11. september 2026: «naar jeg soker saa staar det paa knappen
+// leter i dokumentene, kan du endre til Tenker, og gjerne en liten
+// animasjon».
+//
+// Ordet er kortere enn det var, saa knappen hopper mindre i bredden naar den
+// bytter: 88 px i ro, 122 mens den tenker — mot «Leter i dokumentene …» for.
+//
+// Animasjonen er lys som gaar opp og ned, ikke bevegelse: en knapp som
+// hopper mens man venter gjor ventingen lengre. Den staar helt i ro for den
+// som har bedt om mindre bevegelse.
+//
+// Maalt i nettleseren paa 390 px, med svaret forsinket fire sekunder:
+// «Spør» uten animasjon → «Tenker …» med «lx-tenker» paa 1,4 s → «Spør»
+// uten animasjon igjen.
+sjekk('knappen sier «Tenker …» mens AI-en jobber',
+    substr_count($sida, "this.state.faqJobber ? 'Tenker …' : 'Spør',") === 2
+    && !str_contains($sida, 'Leter i dokumentene'),
+    'maalt: 88 px i ro, 122 mens den tenker');
+sjekk('… og den puster, uten aa flytte paa seg',
+    str_contains($sida, '  @keyframes lx-tenker {')
+    && str_contains($sida, "animation: 'lx-tenker 1.4s ease-in-out infinite' }")
+    && str_contains($sida, '    50%      { opacity: .55; }'),
+    'lys opp og ned; en knapp som hopper gjor ventingen lengre');
+sjekk('… og staar stille for den som har bedt om det',
+    str_contains($sida, '  @media (prefers-reduced-motion: reduce) {')
+    && str_contains($sida, '    [style*="lx-tenker"] { animation: none !important; }'),
+    'samme regel som «lx-puls» og koppen paa 404-sida');
+sjekk('… paa alle tre knappene, Nyttig info og begge i admin',
+    substr_count($sida, '<span style="{{ mdTenkerStil }}">') === 1
+    && substr_count($sida, '<span style="{{ faqTenkerStil }}">') === 2);
+
 // ── Skrivefeltet vokser med teksten ───────────────────────────────
 //
 // Eieren, 11. september 2026: «dette er helt utrolig klonete … naar jeg

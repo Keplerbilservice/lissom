@@ -1328,6 +1328,22 @@ window.__resources = {
     .lx-puls { animation: none; }
   }
 
+  /* Knappen puster mens AI-en tenker.
+     ---------------------------------
+     Eieren, 11. september 2026: «kan du endre til Tenker, og gjerne en liten
+     animasjon».
+
+     Den skal si «jeg holder paa», ikke ta oppmerksomheten. Derfor bare lys
+     som gaar opp og ned, ingen bevegelse: en knapp som hopper mens man
+     venter gjor ventingen lengre. Stille for den som har bedt om det. */
+  @keyframes lx-tenker {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .55; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [style*="lx-tenker"] { animation: none !important; }
+  }
+
   @keyframes lx-kopp-snurr {
     0%   { transform: perspective(600px) rotateY(0deg); }
     40%  { transform: perspective(600px) rotateY(720deg); }
@@ -5600,7 +5616,7 @@ window.__resources = {
                   <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
                   <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
                     <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import>
+                    <span style="{{ mdTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import></span>
                   </div>
                   <sc-if value="{{ mdHarSvar }}" hint-placeholder-val="{{ false }}">
                     <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-5);">
@@ -18827,7 +18843,7 @@ window.__resources = {
           <div style="max-width: 1100px;">
             <div style="background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-5); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-6);">
               <input value="{{ faqSporsmal }}" onChange="{{ faqEndre }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ faqSporNaa }}" hint-size="auto,44px">{{ faqKnappNavn }}</x-import>
+              <span style="{{ faqTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ faqSporNaa }}" hint-size="auto,44px">{{ faqKnappNavn }}</x-import></span>
             </div>
 
             <sc-if value="{{ faqHarSvar }}" hint-placeholder-val="{{ false }}">
@@ -19096,7 +19112,7 @@ window.__resources = {
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-5); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
               <input value="{{ faqSporsmal }}" onChange="{{ faqEndre }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ faqSporNaa }}" hint-size="auto,44px">{{ faqKnappNavn }}</x-import>
+              <span style="{{ faqTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ faqSporNaa }}" hint-size="auto,44px">{{ faqKnappNavn }}</x-import></span>
             </div>
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-4);">
@@ -50509,7 +50525,18 @@ class Component extends DCLogic {
           mdSporsmal: this.state.faqSporsmal || '',
           mdEndre: (e) => this.setState({ faqSporsmal: e.target.value }),
           mdSpor: () => this.faqSpor(true),
-          mdKnapp: this.state.faqJobber ? 'Leter i dokumentene …' : 'Spør',
+          // Eieren, 11. september 2026: «naar jeg soker saa staar det paa
+          // knappen leter i dokumentene, kan du endre til Tenker, og gjerne
+          // en liten animasjon».
+          //
+          // Ordet er kortere enn det var, saa knappen hopper ikke i bredden
+          // naar den bytter. Prikkene staar stille; det er knappen som
+          // puster, og den staar helt i ro for den som har bedt om mindre
+          // bevegelse — se «lx-tenker» i stilarket.
+          mdKnapp: this.state.faqJobber ? 'Tenker …' : 'Spør',
+          mdTenkerStil: this.state.faqJobber
+            ? { display: 'inline-flex', animation: 'lx-tenker 1.4s ease-in-out infinite' }
+            : { display: 'inline-flex' },
           mdHarSvar: !!this.state.faqSvar,
           mdSvar: this.state.faqSvar || '',
           mdHarKilder: (this.state.faqKilder || []).length > 0,
@@ -52893,7 +52920,11 @@ class Component extends DCLogic {
           faqEndre: (e) => this.setState({ faqSporsmal: e.target.value }),
           faqSporNaa: () => this.faqSpor(false),
           faqJobber: !!this.state.faqJobber,
-          faqKnappNavn: this.state.faqJobber ? 'Leter i dokumentene …' : 'Spør',
+          // Samme knapp som paa Nyttig info — se «mdKnapp» der.
+          faqKnappNavn: this.state.faqJobber ? 'Tenker …' : 'Spør',
+          faqTenkerStil: this.state.faqJobber
+            ? { display: 'inline-flex', animation: 'lx-tenker 1.4s ease-in-out infinite' }
+            : { display: 'inline-flex' },
           faqHarSvar: !!this.state.faqSvar,
           faqSvarTekst: this.state.faqSvar || '',
           faqKilder: (this.state.faqKilder || []).map(k => ({

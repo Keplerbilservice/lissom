@@ -15891,13 +15891,13 @@ sjekk('admin viser bare hovedkortene paa forsida, med malene talt med',
     && str_contains($mkSida, 'const kortene = hoved.map(k => ({')
     && str_contains($mkSida, 'antall: antallTekst(antallMed(k)),'));
 sjekk('… og aapner malene som kort med bilde inni «Keramikk maler»',
-    str_contains($mkSida, '<sc-for list="{{ dokUnderkort }}" as="u"')
+    str_contains($mkSida, '<sc-for list="{{ g.kort }}" as="u"')
     && str_contains($mkSida, '<img data-src="{{ u.bilde }}" alt="{{ u.navn }}"')
     && str_contains($mkSida, "bilde: '/api/dokument.php?kort=' + u.id,"));
 // Inne i en mal gaar «tilbake» til «Keramikk maler», ikke helt ut.
 sjekk('… der tilbakeknappen peker paa hovedkortet',
     str_contains($mkSida, "dokTilbakeNavn: forelder ? '← ' + forelder.navn : '← Alle kort',")
-    && str_contains($mkSida, 'dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0 }),'));
+    && str_contains($mkSida, "dokLukk: () => this.setState({ dokValgt: forelder ? forelder.id : 0, dokSok: '' }),"));
 // Bildet paa kortet gaar samme vei som dokumentene, med samme sjekk.
 sjekk('bildet paa kortet serveres av api/dokument.php med samme regel',
     str_contains($mkFil, "if (Foresporsel::heltall('kort') > 0) {")
@@ -15906,7 +15906,7 @@ sjekk('medlemssida faar forelder, undertekst og bilde med',
     str_contains($mkMine, "'forelder' => \$k['forelder'],")
     && str_contains($mkMine, "'bilde'    => \$k['harBilde'] ? '/api/dokument.php?kort=' . \$k['id'] : '',"));
 sjekk('… og viser malene som kort som aapner filene sine i kortet',
-    str_contains($mkSida, '<sc-for list="{{ k.underkort }}" as="u"')
+    str_contains($mkSida, '<sc-for list="{{ k.grupper }}" as="g"')
     && str_contains($mkSida, "veksle: () => this.setState({ mdValgt: apen ? 0 : u.id }),")
     && str_contains($mkSida, '<sc-if value="{{ u.apen }}"'));
 
@@ -16007,7 +16007,7 @@ sjekk('… og hovedkortet blir med til medlemmet naar én mal er paa',
     str_contains($mkLib, "WHERE b.forelder_id = k.id AND b.vis_medlem = 1)"));
 sjekk('… og tallet paa medlemssida teller bare det medlemmet ser',
     str_contains($mkSida, "antall: antallTekst((k.filer || []).length + barn.reduce((sum, b) => sum + (b.filer || []).length, 0)),")
-    && str_contains($mkSida, "antall: antallTekst((u.filer || []).length),"));
+    && str_contains($mkSida, "antall: antallTekst(alle.length),"));
 
 // ── Oppsettet inne i kortene: soek, grupper og stegstripe ────────────────
 //

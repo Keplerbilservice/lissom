@@ -7383,6 +7383,33 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
     && str_contains($sida, ".ms-bunnmeny,\n    .ms-bunnluft,\n    .ms-hjem-kort { display: none !important; }")
     && str_contains($sida, 'aria-label="{{ msPlHjem.full }}"'),
     'skjermleseren leser «Min side» begge steder, fra aria-label');
+// ── Maaling: hvilken adresse ble sida lastet med? ─────────────────
+//
+// Eieren, 11. september 2026: «naar jeg er i admin og oppdaterer saa gaar
+// jeg rett inn i min side. Dette er paa mobil, finn ut av dette og faa det
+// til aa virke, slutt aa anta.»
+//
+// Alt som lot seg maale herfra er gaatt gjennom uten treff: alle 39
+// adminskjermer har sin egen adresse, «/» gir Forside, «/admin» gir
+// Kalender, uten adminrett havner man paa admininnlogging og ikke Min side,
+// app-ikonet ville startet paa forsida, og utgavevakta laster aldri sida paa
+// nytt av seg selv.
+//
+// Han faar ikke sett adressefeltet paa telefonen, og valgte at aarsaken
+// skal finnes for noe rettes. Maalingen skriver én linje per sidelasting
+// under /admin og /min-side — og bare der, ellers ville den druknet i
+// vanlige besok.
+//
+// Maalt lokalt: /admin/oversikt og /min-side ga hver sin linje, /kurs og /
+// ga ingen.
+$sideP = file_get_contents(dirname(__DIR__) . '/side.php');
+sjekk('sidelastinger under admin og Min side maales',
+    str_contains($sideP, "str_starts_with(\$sti, '/admin') || str_starts_with(\$sti, '/min-side')")
+    && str_contains($sideP, "logg('SIDE', [")
+    && str_contains($sideP, "'ba_om'   => \$sti,")
+    && str_contains($sideP, "'fil'     => \$erAdmin ? 'med admin' : 'uten admin',"),
+    'maalt: to linjer for /admin/oversikt og /min-side, ingen for /kurs og /');
+
 // ── Chatten viser hele meldingen ──────────────────────────────────
 //
 // Eieren, 10. september 2026: «Hele teksten i chatten kommer ikke med!» —

@@ -105,6 +105,43 @@ if (($_COOKIE[SIDE_COOKIE] ?? '') !== '') {
     }
 }
 
+// ── Maaling: hvilken adresse ble sida faktisk lastet med? ────────────
+//
+// Eieren, 11. september 2026: «naar jeg er i admin og oppdaterer saa gaar
+// jeg rett inn i min side. Dette er paa mobil, finn ut av dette og faa det
+// til aa virke, slutt aa anta.»
+//
+// Alt som lot seg maale herfra er gaatt gjennom: alle 39 adminskjermer har
+// sin egen adresse, «/» gir Forside, «/admin» gir Kalender, uten adminrett
+// havner man paa admininnlogging og ikke Min side, app-ikonet ville startet
+// paa forsida, og utgavevakta laster aldri sida paa nytt av seg selv. Ingen
+// av dem gir Min side. Han faar ikke sett adressefeltet paa telefonen, og
+// valgte at aarsaken skal finnes for noe rettes.
+//
+// Derfor denne. Én linje per sidelasting under /admin og /min-side — ikke
+// paa resten av nettsida, der det ville vaert stoy. Linja sier hvilken
+// adresse nettleseren BA om, og hvilken av de to filene som ble sendt.
+//
+// Er adressen «/min-side» naar han staar i admin, fulgte adressen aldri med
+// inn. Er den «/admin/...», er det oppstarten som velger feil skjerm. De to
+// krever hver sin retting, og gjetning har alt kostet en runde.
+//
+// Loggen ligger i cPanel under «Errors», eller i ~/logs/. Sok etter «SIDE».
+$sti = (string) ($_SERVER['REQUEST_URI'] ?? '');
+if (str_starts_with($sti, '/admin') || str_starts_with($sti, '/min-side')) {
+    // logg() ligger i app/lib/logg.php og lastes med backend. Har vi ikke
+    // vaert innom den — ingen sesjonscookie — finnes den ikke, og da er det
+    // uansett ikke en innlogget som staar her.
+    if (function_exists('logg')) {
+        logg('SIDE', [
+            'ba_om'   => $sti,
+            'fil'     => $erAdmin ? 'med admin' : 'uten admin',
+            'cookie'  => ($_COOKIE[SIDE_COOKIE] ?? '') !== '' ? 'ja' : 'nei',
+            'kom_fra' => (string) ($_SERVER['HTTP_REFERER'] ?? ''),
+        ]);
+    }
+}
+
 $html = false;
 if (!$erAdmin) {
     $html = @file_get_contents(SIDE_LETT);

@@ -296,6 +296,11 @@ RewriteRule ^forside-topp\.html$ / [R=301,L]
 # «/kurs/kurs-boller» ellers ville blitt servert som en vanlig side.
 RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
 
+# Dreiekurset byttet adresse 11. september 2026 (SEO-instruksen: kort adresse
+# for det kurset flest soeker etter). Migrasjon 164 flyttet slug-en; den
+# gamle sendes videre paa samme maate som bolleadressen over.
+RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]
+
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
 # Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle

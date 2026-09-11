@@ -187,15 +187,21 @@ $d = null;
 if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
     try {
         $lastBackend();
+        // seo_tittel og seo_meta kom med migrasjon 164 (dreiekurset). Tomme
+        // for de andre kursene — da gjelder det som alltid har gjeldt.
+        $egne = DB::harKolonne('courses', 'seo_tittel') ? 'seo_tittel, seo_meta' : 'NULL AS seo_tittel, NULL AS seo_meta';
         $k = DB::en(
-            "SELECT tittel, beskrivelse, bilde FROM courses
+            "SELECT tittel, beskrivelse, bilde, {$egne} FROM courses
               WHERE slug = :s AND status = 'publisert'
                 AND COALESCE(tema, '') <> 'Kun for medlemmer'",
             ['s' => $treff[1]]
         );
         if ($k !== null) {
             $navn = (string) $k['tittel'];
-            $meta = trim((string) preg_replace('/\s+/u', ' ', (string) ($k['beskrivelse'] ?? '')));
+            $egenTittel = trim((string) ($k['seo_tittel'] ?? ''));
+            $egenMeta   = trim((string) ($k['seo_meta'] ?? ''));
+            $meta = $egenMeta !== '' ? $egenMeta
+                  : trim((string) preg_replace('/\s+/u', ' ', (string) ($k['beskrivelse'] ?? '')));
             if (mb_strlen($meta) > 158) {
                 $kort = mb_substr($meta, 0, 158);
                 $punktum = mb_strrpos($kort, '. ');
@@ -209,10 +215,10 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
             }
             $bilde = trim((string) ($k['bilde'] ?? ''));
             $d = [
-                'tittel'        => $navn . ' i Tønsberg | Lissom Keramikk',
+                'tittel'        => $egenTittel !== '' ? $egenTittel : $navn . ' i Tønsberg | Lissom Keramikk',
                 'meta'          => $meta,
                 'canonical'     => ROT . '/kurs/' . rawurlencode($treff[1]),
-                'ogTittel'      => $navn . ' i Tønsberg | Lissom Keramikk',
+                'ogTittel'      => $egenTittel !== '' ? $egenTittel : $navn . ' i Tønsberg | Lissom Keramikk',
                 'ogBeskrivelse' => $meta,
                 'delingsbilde'  => $bilde !== '' ? ROT . '/' . ltrim($bilde, '/') : '',
                 'index'         => 'Index',
@@ -299,7 +305,7 @@ if ($d === null) {
 // samme innhold.
 $ikkeISoket = $d === null || strtolower((string) ($d['index'] ?? 'Index')) === 'noindex';
 
-$tittel = (string) ($d['tittel'] ?? 'Keramikkurs i Tønsberg | Lissom Keramikk');
+$tittel = (string) ($d['tittel'] ?? 'Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk');
 $meta   = (string) ($d['meta'] ?? '');
 $canon  = (string) ($d['canonical'] ?? '');
 $ogT    = (string) ($d['ogTittel'] ?? $tittel);

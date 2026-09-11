@@ -16421,6 +16421,31 @@ sjekk('migrasjon 162 flytter paa kilde og gir kortet navnet Dekorteknikker',
             && str_contains($m, "WHERE d.kilde = 'haandboker/dekorasjon/glasurhandbok-for-keramikere.pdf';")
             && str_contains($m, "SET navn = 'Dekorteknikker'");
     })());
+// ── SEO-instruksen 11. september 2026 ────────────────────────────────────
+// Eierens titler paa de ni hovedsidene, dreiekurset paa /kurs/dreiekurs med
+// egen tittel og meta (migrasjon 164 + 301), og LocalBusiness med org.nr og
+// koordinater. Meta-tekstene sto (eieren: «behold dagens meta»).
+sjekk('titlene paa hovedsidene er eierens, og forsida sier det samme i hodet',
+    (static function (): bool {
+        $k = json_decode((string) file_get_contents(dirname(__DIR__) . '/seo-kart.json'), true);
+        $t = static fn(string $id): string => (string) ($k['sider'][$id]['tittel'] ?? '');
+        return $t('forside') === 'Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk'
+            && $t('kurs') === 'Keramikkurs i Tønsberg og Vestfold – se datoer | Lissom'
+            && $t('medlemskap') === 'Medlemskap i keramikkverksted – Tønsberg/Vestfold | Lissom'
+            && $t('events') === 'Utdrikningslag, teambuilding og events – Tønsberg | Lissom'
+            && $t('gavekort') === 'Gavekort på keramikkurs – opplevelsesgave Vestfold | Lissom'
+            && $t('omoss') === 'Om Lissom – keramikkverkstedet på Teie | Lissom'
+            && str_contains((string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html'), '<title>Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk</title>');
+    })());
+sjekk('dreiekurset: slug, 301 og egen tittel/meta paa server og klient',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/164_dreiekurs_adressen.sql'), "SET slug       = 'dreiekurs',")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/side.php'), "'tittel'        => \$egenTittel !== '' ? \$egenTittel : \$navn . ' i Tønsberg | Lissom Keramikk',")
+    && str_contains($mkSida, "tittel: egenTittel || navn + ' i Tønsberg | Lissom Keramikk',")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/kurs.php'), "'seoTittel'       => trim((string) (\$k['seo_tittel'] ?? '')),"));
+sjekk('LocalBusiness har org.nr og koordinater',
+    str_contains($mkLib2 = (string) file_get_contents(dirname(__DIR__) . '/app/lib/robottekst.php'), "'taxID'       => '938280819',")
+    && str_contains($mkLib2, "'latitude' => 59.246898, 'longitude' => 10.415572"));
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
     && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")

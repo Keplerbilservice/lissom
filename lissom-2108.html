@@ -29650,13 +29650,38 @@ class Component extends DCLogic {
   }
 
   sendChatNaa() {
-    const t = (this.state.chatTekst || '').trim();
+    // Teksten hentes fra FELTET, ikke fra skjermens kopi av det.
+    //
+    // Eieren, 11. september 2026, om en melding fra Monica som sto klippet
+    // midt i en setning: «Chat er viktigst.» Spurt om hun hadde limt den
+    // inn: «hun skrev den rett inn».
+    //
+    // Alt annet er maalt og funnet rent: kolonnen tar 500 tegn, API-et
+    // lagrer og henter hele, oppstillingen klipper ikke, en tegning midt i
+    // skrivinga tar ikke teksten, og en melding skrevet i feltet og sendt
+    // med knappen kommer hel fram her.
+    //
+    // Men denne linja sto «this.state.chatTekst». Skjermen holder sin egen
+    // kopi av hva som staar i feltet, og den oppdateres av en hendelse.
+    // Kommer det siste tegnet ikke med i den hendelsen — og telefontastatur
+    // har flere maater aa gjore det paa: retting, ordforslag, diktering —
+    // sendes kopien, ikke det som staar. Uten en lyd.
+    //
+    // Feltet er fasiten. Det er det hun ser naar hun trykker send.
+    const felt = document.getElementById('minside-chat');
+    const skrivefelt = felt && felt.querySelector('input');
+    const t = ((skrivefelt ? skrivefelt.value : this.state.chatTekst) || '').trim();
     if (!t) return;
     if (!this.erPublisert()) { this.setState({ chatFeil: 'Krever den ekte siden' }); return; }
     if (this._chatSender) return;
     this._chatSender = true;
     // Feltet tommes med det samme. Blir sendingen avvist, kommer teksten
     // tilbake — det er verre aa miste det man skrev enn aa vente et oyeblikk.
+    //
+    // Ogsaa selve feltet: skjermen skriver kopien sin inn i det naar den
+    // tegnes, men er kopien alt tom, ser den ingen grunn til aa roere det —
+    // og da ble teksten staaende igjen etter at den var sendt.
+    if (skrivefelt) skrivefelt.value = '';
     this.setState({ chatTekst: '', chatFeil: '' });
 
     fetch('/api/chat.php', {
@@ -29668,6 +29693,7 @@ class Component extends DCLogic {
       .then(({ ok, d }) => {
         this._chatSender = false;
         if (!ok) {
+          if (skrivefelt) skrivefelt.value = t;
           this.setState({ chatTekst: t, chatFeil: (d && d.feil) || 'Meldingen gikk ikke.' });
           return;
         }
@@ -29676,6 +29702,7 @@ class Component extends DCLogic {
       })
       .catch(() => {
         this._chatSender = false;
+        if (skrivefelt) skrivefelt.value = t;
         this.setState({ chatTekst: t, chatFeil: 'Fikk ikke kontakt med serveren.' });
       });
   }

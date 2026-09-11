@@ -7450,6 +7450,39 @@ sjekk('… og boblen har verken hoyde eller kant som kan klippe',
     && str_contains($sida, '    overflow-wrap: break-word;'),
     '«pre-wrap» tar vare paa linjeskift den som skrev faktisk satte');
 
+// ── Teksten hentes fra feltet, ikke fra skjermens kopi ────────────
+//
+// Eieren, 11. september 2026: «Chat er viktigst.» Meldingen fra Monica sto
+// klippet midt i en setning. Spurt om hun hadde limt den inn: «hun skrev
+// den rett inn».
+//
+// Alt annet er maalt og funnet rent: kolonnen tar 500 tegn og meldingen er
+// 222; API-et lagrer og henter den hel; oppstillingen er bygget om og
+// klipper ikke; en tegning midt i skrivinga tar ikke det som staar i
+// feltet; og en melding skrevet i feltet og sendt med knappen kommer hel
+// fram her.
+//
+// Men sendChatNaa leste «this.state.chatTekst» — skjermens egen kopi av
+// feltet, som oppdateres av en hendelse. Kommer det siste tegnet ikke med i
+// den hendelsen, og telefontastatur har flere maater aa gjore det paa
+// (retting, ordforslag, diktering), sendes kopien i stedet for det som
+// staar. Uten en lyd. Feltet er fasiten — det er det hun ser naar hun
+// trykker send.
+//
+// Maalt i nettleseren, tre veier: skrevet og sendt, kopien satt bevisst
+// bakut med feltet helt, og limt inn med linjeskift. Alle tre kom hele
+// fram, og feltet sto tomt etterpaa.
+sjekk('chatten sender det som staar i feltet',
+    str_contains($sida, "const skrivefelt = felt && felt.querySelector('input');")
+    && str_contains($sida, "const t = ((skrivefelt ? skrivefelt.value : this.state.chatTekst) || '').trim();"),
+    'sto «this.state.chatTekst» — skjermens kopi, som kan henge etter');
+sjekk('… og feltet tommes naar meldingen er sendt',
+    str_contains($sida, "if (skrivefelt) skrivefelt.value = '';"),
+    'skjermen roerer ikke feltet naar kopien alt er tom');
+sjekk('… og teksten kommer tilbake i feltet om sendingen ryker',
+    substr_count($sida, 'if (skrivefelt) skrivefelt.value = t;') === 2,
+    'én gang naar serveren avviser, én gang naar linja ryker');
+
 // ── Hele meldingen skal komme med naar noen limer inn ─────────────
 //
 // Eieren, 11. september 2026: «Chat er viktigst.» Teksten fra Monica staar

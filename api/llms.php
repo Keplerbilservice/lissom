@@ -216,6 +216,18 @@ $ut[] = '- [Om verkstedet](' . ROT . '/om-oss)';
 $ut[] = '- [Kontakt](' . ROT . '/kontakt)';
 $ut[] = '- [Spørsmål og svar](' . ROT . '/sporsmal-og-svar): det folk lurer på før de melder seg på';
 $ut[] = '- [Nyttig info](' . ROT . '/nyttig-info): brennetabell, cone-temperaturer og trivselsregler';
+// De aapne guidene, med den ene setningen som sier hva de svarer paa.
+try {
+    $guiderFil = dirname(__DIR__) . '/guider/guider.json';
+    $guider = is_file($guiderFil) ? json_decode((string) file_get_contents($guiderFil), true) : null;
+    foreach ((array) ($guider['guider'] ?? []) as $g) {
+        $slug = (string) ($g['slug'] ?? '');
+        if ($slug !== '' && preg_match('/^[a-z0-9-]+$/', $slug)) {
+            $ut[] = '- [' . (string) ($g['navn'] ?? $slug) . '](' . ROT . '/nyttig-info/' . $slug . '): ' . (string) ($g['om'] ?? '');
+        }
+    }
+} catch (Throwable) {
+}
 $ut[] = '- [Guider og nyheter](' . ROT . '/nyheter)';
 $ut[] = '';
 $ut[] = '## Vilkår';

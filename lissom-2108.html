@@ -25378,6 +25378,52 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * De aapne guidene under /nyttig-info/<adresse>.
+   *
+   * Eieren, 11. september 2026, SEO-instruksen: «Publiser de åpne guidene
+   * med egne URL-er under /nyttig-info/<slug>, med H1 = tittel og
+   * meta-beskrivelse per guide.» Spurt hvilke: «De sju i instruksen».
+   * Titlene og meta-tekstene er godkjent ordrett.
+   *
+   * Sidene er ferdige filer i guider/, laget av bin/guidepakke.mjs fra den
+   * samme HTML-en som PDF-ene i Verkstedet — og lista der leses HERFRA, saa
+   * kortene paa Nyttig info, sidekartet, llms.txt og sidene sier det samme.
+   * «kilde» er filnavnet i mappa guidene kom i.
+   */
+  static get GUIDER() {
+    return [
+      { slug: 'hvorfor-sprakk-den', navn: 'Hvorfor sprakk den?', om: 'Feilsøking av sprekker og brudd – fra tørkehylle til ovn.',
+        kilde: 'Guide - Hvorfor sprakk den.html',
+        tittel: 'Hvorfor sprakk keramikken? Les sprekken | Lissom Keramikk',
+        meta: 'Feilsøking av sprekker og brudd i keramikk – fra tørkehylle til ovn. S-sprekk, kantsprekk, skjøter og dampeksplosjon: årsak, og hva du gjør neste gang.' },
+      { slug: 'matsikker-keramikk', navn: 'Matsikker keramikk', om: 'Hva som kreves for at kopper og fat er trygge i bruk.',
+        kilde: 'Guide - Matsikker keramikk.html',
+        tittel: 'Matsikker keramikk – hva som kreves | Lissom Keramikk',
+        meta: 'Tett gods, trygg glasur, riktig brenning og hel overflate: fire krav for at kopper og fat er trygge i bruk. Om krakelering, oppvaskmaskin, raku og hjemmetester.' },
+      { slug: 'glasurfeil', navn: 'Glasurfeil', om: 'Renning, nålestikk, krakelering, avskalling – årsak og løsning.',
+        kilde: 'Guide - Glasurfeil.html',
+        tittel: 'Glasurfeil: renning, nålestikk, krakelering og avskalling | Lissom',
+        meta: 'De seks vanligste glasurfeilene – hvordan de ser ut, hvorfor de oppstår og hva du endrer. Med feilsøkingstabell og tre punkter som forebygger det meste.' },
+      { slug: 'gjenvinning-av-leire', navn: 'Gjenvinning av leire', om: 'Fra tørre rester til fullverdig leire.',
+        kilde: 'Guide - Gjenvinning av leire.html',
+        tittel: 'Gjenvinne leire – slik gjør du det | Lissom Keramikk',
+        meta: 'Ubrent leire kan gjenvinnes i det uendelige. Tørk, bløtlegg, gipsplate og elting – steg for steg, og svar på hvorfor bøtta lukter.' },
+      { slug: 'lage-slikker', navn: 'Lage slikker', om: 'Flytende leire til liming, dekor og støping.',
+        kilde: 'Guide - Lage slikker.html',
+        tittel: 'Lage slikker (leirslam) til liming og dekor | Lissom Keramikk',
+        meta: 'Slikker er keramikerens lim. Slik lager du den av leirerester, får riktig konsistens, og bruker den til hanker, knotter og dekor.' },
+      { slug: 'torking-av-leire', navn: 'Tørking av leire', om: 'Jevn og kontrollert tørk uten sprekker og skjevheter.',
+        kilde: 'Guide - Tørking av leire.html',
+        tittel: 'Tørking av leire uten sprekker | Lissom Keramikk',
+        meta: 'De fleste sprekker oppstår på tørkehylla, ikke i ovnen. Stadiene lærhard og beintørr, plast, snuing og kinntesten – jevn og kontrollert tørk.' },
+      { slug: 'vanlige-sporsmal', navn: 'Keramikk – vanlige spørsmål', om: 'Leirens stadier, leirtyper, cones, glasur og brenning – litt om alt.',
+        kilde: 'Håndbok - Keramikk vanlige spørsmål.html',
+        tittel: 'Keramikk – vanlige spørsmål: leire, cones, glasur og brenning | Lissom',
+        meta: 'Leirens stadier, leirtyper og chamotte, cone til grader, luftbobler, farger som forsvinner, matsikker glasur, antall brenninger og hva raku er.' },
+    ];
+  }
+
   static get PLAKATER() {
     return [
       {
@@ -50580,7 +50626,13 @@ class Component extends DCLogic {
         { eyebrow: 'Brennetabell', navn: 'Cone til grader', om: 'Orton-coner omregnet til celsius og fahrenheit — verdiene vi styrer ovnene etter.', side: 'plakatcone' },
         { eyebrow: 'Medlemmer', navn: 'Informasjon til medlemmer', om: 'Det viktigste å vite om brenning, glasur og oppbevaring i verkstedet.', side: 'plakatinfo' },
         { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: this.plakatPunkter('trivsel').length + ' enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
-      ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
+      ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } }))
+        // De aapne guidene, som egne sider (guider/<adresse>.html). Eieren,
+        // 11. september 2026 (GO): «Guider fra verkstedet» som merke.
+        .concat(Component.GUIDER.map(g => ({
+          eyebrow: 'Guider fra verkstedet', navn: g.navn, om: g.om,
+          velg: () => { window.location.href = '/nyttig-info/' + g.slug; },
+        }))),
       erAdminNyttig: side === 'adminnyttig',
       erAdminVideokurs: side === 'adminvideokurs',
       adminNavVideokurs: this.adminSideMeny(),

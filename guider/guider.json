@@ -1,0 +1,69 @@
+{
+  "laget": "2026-09-11",
+  "om": "Laget av bin/guidepakke.mjs fra Component.GUIDER i lissom-2108.html. Rediger der, ikke her.",
+  "guider": [
+    {
+      "slug": "hvorfor-sprakk-den",
+      "navn": "Hvorfor sprakk den?",
+      "om": "Feilsøking av sprekker og brudd – fra tørkehylle til ovn.",
+      "tittel": "Hvorfor sprakk keramikken? Les sprekken | Lissom Keramikk",
+      "meta": "Feilsøking av sprekker og brudd i keramikk – fra tørkehylle til ovn. S-sprekk, kantsprekk, skjøter og dampeksplosjon: årsak, og hva du gjør neste gang.",
+      "h1": "Hvorfor sprakk den?",
+      "ord": 350
+    },
+    {
+      "slug": "matsikker-keramikk",
+      "navn": "Matsikker keramikk",
+      "om": "Hva som kreves for at kopper og fat er trygge i bruk.",
+      "tittel": "Matsikker keramikk – hva som kreves | Lissom Keramikk",
+      "meta": "Tett gods, trygg glasur, riktig brenning og hel overflate: fire krav for at kopper og fat er trygge i bruk. Om krakelering, oppvaskmaskin, raku og hjemmetester.",
+      "h1": "Matsikker keramikk",
+      "ord": 314
+    },
+    {
+      "slug": "glasurfeil",
+      "navn": "Glasurfeil",
+      "om": "Renning, nålestikk, krakelering, avskalling – årsak og løsning.",
+      "tittel": "Glasurfeil: renning, nålestikk, krakelering og avskalling | Lissom",
+      "meta": "De seks vanligste glasurfeilene – hvordan de ser ut, hvorfor de oppstår og hva du endrer. Med feilsøkingstabell og tre punkter som forebygger det meste.",
+      "h1": "Glasurfeil",
+      "ord": 339
+    },
+    {
+      "slug": "gjenvinning-av-leire",
+      "navn": "Gjenvinning av leire",
+      "om": "Fra tørre rester til fullverdig leire.",
+      "tittel": "Gjenvinne leire – slik gjør du det | Lissom Keramikk",
+      "meta": "Ubrent leire kan gjenvinnes i det uendelige. Tørk, bløtlegg, gipsplate og elting – steg for steg, og svar på hvorfor bøtta lukter.",
+      "h1": "Gjenvinning av leire",
+      "ord": 336
+    },
+    {
+      "slug": "lage-slikker",
+      "navn": "Lage slikker",
+      "om": "Flytende leire til liming, dekor og støping.",
+      "tittel": "Lage slikker (leirslam) til liming og dekor | Lissom Keramikk",
+      "meta": "Slikker er keramikerens lim. Slik lager du den av leirerester, får riktig konsistens, og bruker den til hanker, knotter og dekor.",
+      "h1": "Lage slikker",
+      "ord": 318
+    },
+    {
+      "slug": "torking-av-leire",
+      "navn": "Tørking av leire",
+      "om": "Jevn og kontrollert tørk uten sprekker og skjevheter.",
+      "tittel": "Tørking av leire uten sprekker | Lissom Keramikk",
+      "meta": "De fleste sprekker oppstår på tørkehylla, ikke i ovnen. Stadiene lærhard og beintørr, plast, snuing og kinntesten – jevn og kontrollert tørk.",
+      "h1": "Tørking av leire",
+      "ord": 316
+    },
+    {
+      "slug": "vanlige-sporsmal",
+      "navn": "Keramikk – vanlige spørsmål",
+      "om": "Leirens stadier, leirtyper, cones, glasur og brenning – litt om alt.",
+      "tittel": "Keramikk – vanlige spørsmål: leire, cones, glasur og brenning | Lissom",
+      "meta": "Leirens stadier, leirtyper og chamotte, cone til grader, luftbobler, farger som forsvinner, matsikker glasur, antall brenninger og hva raku er.",
+      "h1": "Keramikk – vanlige spørsmål",
+      "ord": 1041
+    }
+  ]
+}

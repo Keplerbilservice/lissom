@@ -334,6 +334,13 @@ RewriteRule ^meld-inn/([a-fA-F0-9]{32})/?$ /api/meld-inn.php?t=$1 [L,QSA]
 # Lenka i e-posten er /avmelding?k=<kode>; sida ligger i api/avmelding.php.
 RewriteRule ^avmelding/?$ /api/avmelding.php [L,QSA]
 
+# De aapne guidene: /nyttig-info/<adresse> er en ferdig fil i guider/, laget
+# av bin/guidepakke.mjs (eieren, 11. september 2026, SEO-instruksen). Bare
+# naar fila finnes — /nyttig-info/brennetabell og de andre plakatene er
+# skjermer i nettsida og gaar videre til side.php som foer.
+RewriteCond %{DOCUMENT_ROOT}/guider/$1.html -f
+RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guider/$1.html [L]
+
 RewriteRule ^$ /side.php [L]
 
 # Ekte filer, mapper og /api går uendret gjennom.

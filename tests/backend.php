@@ -7528,9 +7528,8 @@ sjekk('… og chatten spor etter nytt mens panelet staar aapent',
 sjekk('… og hjelperne finner det kortet som staar framme',
     str_contains($sida, 'chatteKort() {')
     && str_contains($sida, "const alle = [document.getElementById('minside-chat'), document.getElementById('admin-chat')];")
-    && str_contains($sida, "var navn = ['minside-chat', 'admin-chat'];")
-    && str_contains($sida, "&& (el.closest('#minside-chat') || el.closest('#admin-chat'));"),
-    'sending, rulling og innliming maa treffe det samme kortet');
+    && str_contains($sida, "var navn = ['minside-chat', 'admin-chat'];"),
+    'sending og rulling maa treffe det samme kortet');
 
 // ── Teksten hentes fra feltet, ikke fra skjermens kopi ────────────
 //
@@ -7555,52 +7554,62 @@ sjekk('… og hjelperne finner det kortet som staar framme',
 // bakut med feltet helt, og limt inn med linjeskift. Alle tre kom hele
 // fram, og feltet sto tomt etterpaa.
 sjekk('chatten sender det som staar i feltet',
-    str_contains($sida, "const skrivefelt = felt && felt.querySelector('input');")
+    str_contains($sida, "const skrivefelt = felt && felt.querySelector('textarea');")
     && str_contains($sida, "const t = ((skrivefelt ? skrivefelt.value : this.state.chatTekst) || '').trim();"),
     'sto «this.state.chatTekst» — skjermens kopi, som kan henge etter');
 sjekk('… og feltet tommes naar meldingen er sendt',
-    str_contains($sida, "if (skrivefelt) skrivefelt.value = '';"),
+    str_contains($sida, "if (skrivefelt) { skrivefelt.value = ''; this.chatHoyde(skrivefelt); }"),
     'skjermen roerer ikke feltet naar kopien alt er tom');
 sjekk('… og teksten kommer tilbake i feltet om sendingen ryker',
-    substr_count($sida, 'if (skrivefelt) skrivefelt.value = t;') === 2,
+    substr_count($sida, 'if (skrivefelt) { skrivefelt.value = t; this.chatHoyde(skrivefelt); }') === 2,
     'én gang naar serveren avviser, én gang naar linja ryker');
 
-// ── Hele meldingen skal komme med naar noen limer inn ─────────────
+// ── Skrivefeltet vokser med teksten ───────────────────────────────
 //
-// Eieren, 11. september 2026: «Chat er viktigst.» Teksten fra Monica staar
-// klippet midt i en setning.
+// Eieren, 11. september 2026: «dette er helt utrolig klonete … naar jeg
+// skriver saa skriver jeg i en lang streng, jeg maa faa opp et felt som
+// utvider seg saa jeg faktisk ser hva jeg skriver. naa har du justert og
+// justert, men du klarer det ikke, saa da foreslaar jeg at du tenker litt
+// annerledes.»
 //
-// Utelukket, maalt: kolonnen tar 500 tegn og meldingen er 222; API-et lagrer
-// og henter den hel; oppstillingen er bygget om og klipper ikke; en melding
-// skrevet i feltet og sendt med knappen kommer hel fram; og en ny tegning
-// midt i skrivinga tar ikke teksten.
+// Han hadde rett. Feltet var et «input»: ett felt paa én linje. Teksten
+// rullet ut til venstre mens man skrev, og linjeskift kunne det ikke
+// inneholde i det hele tatt. Alt som var gjort for det — omskrevet
+// innliming, hele veien fra felt til server — var lapper rundt den ene
+// tingen. Omskrivingen av innlimingen er tatt bort igjen: et «textarea»
+// taaler linjeskift selv.
 //
-// Igjen staar innlimingen. Skrivefeltet er ett felt paa én linje, og limer
-// man inn tekst med linjeskift i et slikt felt, beholder Safari BARE det som
-// staar for det forste skiftet. Chrome tar alt. Eieren er paa iPhone, og
-// WebKit lar seg ikke installere her — det er den ene mekanismen som ikke
-// lot seg proeve.
+// Vist som forslag og godkjent. Paa spoersmaal om hva Enter skulle gjore:
+// «Enter sender, som naa».
 //
-// Derfor gjor vi innlimingen selv. Maalt i nettleseren: 198 tegn med
-// linjeskift limt inn ga 198 tegn i feltet, og 111-tegnsutgaven ble sendt og
-// lagret hel. Enlinjet innliming roeres ikke.
-sjekk('en innliming med linjeskift mister ingenting',
-    str_contains($sida, "document.addEventListener('paste', function (e) {")
-    && str_contains($sida, "if (!tekst || !/[\\r\\n]/.test(tekst)) return;")
-    && str_contains($sida, "var ren = tekst.replace(/\\s*[\\r\\n]+\\s*/g, ' ').trim();"),
-    'Safari beholder bare det som staar for det forste skiftet');
-sjekk('… og bare i chatten, ikke i alle felt paa sida',
-    str_contains($sida, "return el && el.tagName === 'INPUT' && el.closest")
-    && str_contains($sida, "&& (el.closest('#minside-chat') || el.closest('#admin-chat'));"),
-    'chatten staar to steder: paa Min side, og i panelet i admin');
-// Skjermen holder sin egen kopi av hva som staar i feltet. Setter vi verdien
-// rett paa elementet, ser den det ikke — maalt: teksten sto i feltet, men
-// SEND gjorde ingenting. «insertText» er en ekte skriveoperasjon, og
-// nettleseren sender sitt eget «input» etterpaa.
-sjekk('… og teksten settes inn slik at skjermen faar det med seg',
-    str_contains($sida, "gikk = document.execCommand('insertText', false, ren);")
-    && str_contains($sida, 'if (!gikk) {'),
-    'maalt: uten dette ble ingen melding sendt i det hele tatt');
+// Maalt paa 390 px: feltet 41 px tomt, 86 px etter én setning, 153 px etter
+// to, og stopper paa seks linjer. Enter sendte hele teksten — 221 av 221
+// tegn — og feltet sto tomt og lavt igjen etterpaa. Det samme i panelet i
+// admin. Shift+Enter ga linjeskift, det ble lagret, og boblen viste to
+// linjer.
+sjekk('skrivefeltet i chatten er et felt som vokser',
+    substr_count($sida, '<textarea class="ms-chatskriv" value="{{ chatTekst }}"') === 2
+    && !str_contains($sida, '<input value="{{ chatTekst }}"'),
+    'maalt: 41 px tomt, 153 px etter to setninger, tak paa seks linjer');
+sjekk('… og hoyden settes etter hvor mye som staar i det',
+    str_contains($sida, 'chatHoyde(felt) {')
+    && str_contains($sida, "felt.style.height = 'auto';")
+    && str_contains($sida, "felt.style.height = Math.min(felt.scrollHeight, Math.round(linje * 6 + luft)) + 'px';"),
+    '«auto» forst, ellers kan feltet bare vokse og aldri krympe');
+sjekk('… og Enter sender, mens Shift+Enter gir ny linje',
+    str_contains($sida, "if (!e || e.key !== 'Enter' || e.shiftKey) return;"),
+    'eieren valgte «Enter sender, som naa» 11. september 2026');
+sjekk('… og feltet kan ikke dras i, og er ikke en pille',
+    str_contains($sida, '  .ms-chatskriv {')
+    && str_contains($sida, '    resize: none;')
+    && str_contains($sida, '    border-radius: var(--radius-lg);'),
+    'en pille som blir seks linjer hoy ser ut som en feil');
+// Lappen fra i natt: innlimingen ble skrevet om fordi et enlinjes felt
+// kaster linjeskift. Et textarea taaler dem, og da skal lappen vekk.
+sjekk('… og omskrivingen av innlimingen er tatt bort',
+    !str_contains($sida, "document.addEventListener('paste', function (e) {")
+    && !str_contains($sida, "document.execCommand('insertText', false, ren)"),
+    'maalt: Shift+Enter ga linjeskift som ble lagret og vist');
 
 // ── Admin kan rydde i chatten, og angre ───────────────────────────
 //

@@ -18889,7 +18889,9 @@ window.__resources = {
             <div style="background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; max-width: 900px;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-                  <button type="button" onClick="{{ dokLukk }}" style="appearance: none; cursor: pointer; white-space: nowrap; font: var(--type-body-sm); font-weight: 700; line-height: normal; padding: 5px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-heading);">{{ dokTilbakeNavn }}</button>
+                  <!-- Pilen som sto her er flyttet opp i fanerada — én pil,
+                       ikke to. Eieren, 11. september 2026: «jeg vil ha det
+                       enklere». -->
                   <!-- Inne i en mal: bildet lite ved siden av navnet.
                        Eieren, 11. september 2026, GO paa utkastet. -->
                   <sc-if value="{{ dokApnetHarBilde }}" hint-placeholder-val="{{ false }}">
@@ -52761,6 +52763,21 @@ class Component extends DCLogic {
           vstHarForsideDok: forsideDok.length > 0,
           // Paa oversikten ville «← Verkstedet» pekt paa seg selv.
           ...(erOversikt ? { harOmrFaner: false } : {}),
+          // Én pil, alltid oeverst, som peker ett nivaa opp. Eieren, 11.
+          // september 2026: «det er fortsatt mange tilbakepiler inne paa
+          // verksted siden. Jeg vil ha det enklere». Foer sto «← Verkstedet»
+          // i fanerada OG «← Alle kort» / «← Keramikk maler» i panelhodet —
+          // to piler som pekte til hvert sitt nivaa. Naa er det fanerada som
+          // sier hvor man gaar: opp til malene, til kortene, eller ut til
+          // Verkstedet — det samme som nettleserens tilbake gjoer.
+          ...(erDok ? {
+            omrFaner: this.omraadeFaner().omrFaner.slice(0, 1).map(fane => Object.assign({}, fane, {
+              navn: valgt ? (forelder ? '← ' + forelder.navn : '← Alle kort') : '← Verkstedet',
+              velg: valgt
+                ? () => this.setState({ dokValgt: forelder ? forelder.id : 0, dokSok: '' })
+                : fane.velg,
+            })),
+          } : {}),
           vstTittel: erOversikt ? 'Verkstedet' : erDok ? 'Dokumenter' : 'Spør verkstedet',
           vstUnder: erDok ? 'Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.' : '',
 

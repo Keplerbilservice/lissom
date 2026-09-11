@@ -126,7 +126,14 @@ AddDefaultCharset UTF-8
     # Lest av i fila for de ble lagt inn: den henter ingenting annet — ingen
     # fetch, ingen bilder. Logoen ligger som SVG inni skriptet. Derfor er
     # img-src og connect-src urort.
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.vippsmobilepay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self' https://designsystem.vippsmobilepay.com; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    #
+    # Google Tag Manager og Google Ads (eieren, 11. september 2026, GO):
+    # gtm.js fra googletagmanager.com, Ads-konverteringen fra
+    # googleadservices.com / googleads.g.doubleclick.net, telle-pikslene til
+    # google.com/google.no, og Tag Assistant (forhaandsvisningen) i ramme.
+    # Andre tagger i containeren — Meta, TikTok — maa aapnes her ogsaa,
+    # ellers blir de stille blokkert.
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://cdn.vippsmobilepay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.google.no https://googleads.g.doubleclick.net https://www.googleadservices.com; font-src 'self' https://designsystem.vippsmobilepay.com; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://pagead2.googlesyndication.com; frame-src 'self' https://www.googletagmanager.com https://td.doubleclick.net https://tagassistant.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 </IfModule>
 
 # Hvor stor en opplasting faar vaere.

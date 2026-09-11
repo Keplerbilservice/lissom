@@ -628,10 +628,42 @@ final class Dokumenter
      */
     public static function sok(string $ord, bool $bareMedlem, int $maks = 6): array
     {
+        return self::sokMedForslag($ord, $bareMedlem, $maks)['treff'];
+    }
+
+    /**
+     * Soeket, med slingringsmonn for feilstaving.
+     *
+     * Eieren, 11. september 2026 (GO): «jeg vil ikke måtte treffe helt når
+     * jeg spør om noe, kanskje den kan si, mente du dette??». Gir det
+     * skrevne ingen treff, byttes hvert ord som ikke finnes i dokumentene
+     * ut med det naermeste ordet som gjoer det (se naermeste()), soeket
+     * gjoeres paa nytt med det, og forslaget sendes med som «menteDu» saa
+     * skjermen kan vise «Mente du «sentrering»?» over treffene.
+     *
+     * @return array{treff:list<array{id:int,navn:string,kort:string,utdrag:string}>,menteDu:?string}
+     */
+    public static function sokMedForslag(string $ord, bool $bareMedlem, int $maks = 6): array
+    {
         $ord = mb_strtolower(trim($ord));
         if ($ord === '' || mb_strlen($ord) < 2 || !self::klar()) {
-            return [];
+            return ['treff' => [], 'menteDu' => null];
         }
+        $rader = self::sokRader($bareMedlem);
+        $treff = self::sokI($rader, $ord, $maks);
+        if ($treff !== []) {
+            return ['treff' => $treff, 'menteDu' => null];
+        }
+        $rettet = self::rettOrd($ord, self::ordliste($rader));
+        if ($rettet === null) {
+            return ['treff' => [], 'menteDu' => null];
+        }
+        return ['treff' => self::sokI($rader, $rettet, $maks), 'menteDu' => $rettet];
+    }
+
+    /** Dokumentene soeket leter i: navn, kort og tekst, filtrert paa hvem som spor. */
+    private static function sokRader(bool $bareMedlem): array
+    {
         $medKort = self::harKort();
         $hvor = $bareMedlem ? 'WHERE ' . self::synligSql() : '';
         // «Mugge · Monteringsguide» i et underkort — 57 guider heter
@@ -642,7 +674,7 @@ final class Dokumenter
         $kortNavn = $medKort ? 'IF(p.id IS NULL, k.navn, p.navn)' : 'k.navn';
         $sorter = $medKort ? 'IFNULL(p.sortering, k.sortering), k.sortering' : 'k.sortering';
 
-        $rader = DB::alle(
+        return DB::alle(
             "SELECT d.id, d.tekst, {$etikett} AS etikett, {$kortNavn} AS kort
                FROM verksted_dokumenter d
                JOIN verksted_kategorier k ON k.id = d.kategori_id
@@ -650,7 +682,11 @@ final class Dokumenter
                {$hvor}
               ORDER BY {$sorter}, d.opprettet DESC"
         );
+    }
 
+    /** Selve soeket: navnetreff foerst, saa treff i teksten. */
+    private static function sokI(array $rader, string $ord, int $maks): array
+    {
         $iNavn = [];
         $iTekst = [];
         foreach ($rader as $r) {
@@ -669,6 +705,120 @@ final class Dokumenter
             $iTekst[] = $treff;
         }
         return array_slice(array_merge($iNavn, $iTekst), 0, $maks);
+    }
+
+    /**
+     * Alle ord paa fire bokstaver eller mer i navn, kort og tekst — det
+     * «Mente du» kan foreslaa. Bare ord som faktisk staar i dokumentene,
+     * saa forslaget alltid gir treff.
+     *
+     * @return array<string,true>
+     */
+    public static function ordliste(array $rader): array
+    {
+        $liste = [];
+        foreach ($rader as $r) {
+            $alt = ($r['etikett'] ?? $r['navn'] ?? '') . ' ' . ($r['kort'] ?? $r['kategori'] ?? '') . ' ' . ($r['tekst'] ?? '');
+            foreach (preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($alt)) ?: [] as $w) {
+                if (mb_strlen($w) >= 4) {
+                    $liste[$w] = true;
+                }
+            }
+        }
+        return $liste;
+    }
+
+    /**
+     * Det skrevne med hvert ukjente ord byttet ut med det naermeste kjente.
+     * Null naar ingenting ble byttet, eller et ord ikke har noe i naerheten.
+     */
+    public static function rettOrd(string $tekst, array $ordliste): ?string
+    {
+        $byttet = false;
+        $ut = [];
+        foreach (preg_split('/\s+/u', trim($tekst)) ?: [] as $w) {
+            $n = self::naermeste($w, $ordliste);
+            if ($n === null) {
+                return null;
+            }
+            if ($n !== $w) {
+                $byttet = true;
+            }
+            $ut[] = $n;
+        }
+        return $byttet ? implode(' ', $ut) : null;
+    }
+
+    /**
+     * Ordet selv om det finnes, ellers det naermeste i lista:
+     *   - et ord som begynner slik («sentrer» → «sentrering»), korteste vinner
+     *   - ellers én bokstav feil for ord paa 5–8 bokstaver, to for lengre.
+     * Ord under fire bokstaver rettes ikke — der er alt like naert alt.
+     * Levenshtein regner bytes; æøå gjoeres om til ett tegn foerst saa en
+     * feil i «kjæle» teller som én, ikke to.
+     */
+    public static function naermeste(string $ord, array $ordliste): ?string
+    {
+        $ord = mb_strtolower($ord);
+        if (isset($ordliste[$ord]) || mb_strlen($ord) < 4) {
+            return $ord;
+        }
+        $start = null;
+        foreach ($ordliste as $w => $_) {
+            if (str_starts_with((string) $w, $ord) && ($start === null || mb_strlen((string) $w) < mb_strlen($start))) {
+                $start = (string) $w;
+            }
+        }
+        if ($start !== null) {
+            return $start;
+        }
+        $lengde = mb_strlen($ord);
+        $tak = $lengde <= 4 ? 0 : ($lengde <= 8 ? 1 : 2);
+        if ($tak === 0) {
+            return null;
+        }
+        $a = self::ascii($ord);
+        $beste = null;
+        $besteAvstand = $tak + 1;
+        $besteFelles = -1;
+        foreach ($ordliste as $w => $_) {
+            $w = (string) $w;
+            if (abs(mb_strlen($w) - $lengde) > $tak) {
+                continue;
+            }
+            $d = levenshtein($a, self::ascii($w));
+            if ($d > $besteAvstand) {
+                continue;
+            }
+            // Like naer: det som begynner likt vinner («hankk» → «hank», ikke
+            // «hakk»), deretter det korteste.
+            $felles = self::fellesStart($ord, $w);
+            if ($d < $besteAvstand || $felles > $besteFelles
+                || ($felles === $besteFelles && $beste !== null && mb_strlen($w) < mb_strlen($beste))) {
+                $beste = $w;
+                $besteAvstand = $d;
+                $besteFelles = $felles;
+            }
+        }
+        return $beste;
+    }
+
+    /** Hvor mange bokstaver to ord har felles fra starten. */
+    private static function fellesStart(string $a, string $b): int
+    {
+        $n = min(mb_strlen($a), mb_strlen($b));
+        for ($i = 0; $i < $n; $i++) {
+            if (mb_substr($a, $i, 1) !== mb_substr($b, $i, 1)) {
+                return $i;
+            }
+        }
+        return $n;
+    }
+
+    /** æøå som ett tegn hver, til levenshtein(). */
+    private static function ascii(string $s): string
+    {
+        return strtr($s, ['æ' => '{', 'ø' => '|', 'å' => '}', 'é' => 'e', 'ü' => 'u', 'ö' => '|', 'ä' => '{']);
     }
 
     /** Den foerste linja i teksten som inneholder ordet, kuttet til én linje paa skjermen. */
@@ -786,6 +936,15 @@ final class Dokumenter
             }
         }
         $ord = array_keys($ord);
+        // Slingringsmonn (eieren, 11. september 2026, GO): et ord som ikke
+        // staar i noe dokument byttes med det naermeste som gjoer det, saa
+        // «sentering» sorterer sentreringsarkene oeverst likevel.
+        if ($ord !== []) {
+            $liste = self::ordliste($kilder);
+            $ord = array_values(array_unique(array_map(
+                static fn(string $o): string => self::naermeste($o, $liste) ?? $o, $ord
+            )));
+        }
 
         $poeng = static function (array $k) use ($ord): int {
             $navn  = mb_strtolower($k['kategori'] . ' ' . $k['navn']);

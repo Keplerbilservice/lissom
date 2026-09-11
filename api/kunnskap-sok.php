@@ -2,7 +2,9 @@
 /**
  * Søk i kunnskapen — håndbøkene, teknikkarkene og malene i Verkstedet.
  *
- *   GET ?q=ord     inntil seks treff: { id, navn, kort, utdrag }
+ *   GET ?q=ord     inntil seks treff: { id, navn, kort, utdrag }, og
+ *                  menteDu: ordet treffene gjelder naar det skrevne ikke
+ *                  ga noen (null ellers)
  *
  * Eieren, 11. september 2026 (GO): kunnskapstreff i søkefeltet på nettsida
  * og i søkefeltet i kalender admin.
@@ -39,4 +41,7 @@ if (mb_strlen($q) > 80) {
 // aa skrive, og lite nok til at et skript ikke leser ut alt ord for ord.
 Rate::sjekk('kunnskap-sok', 100, 60, 'medlem:' . (int) $medlem['id']);
 
-Svar::json(['treff' => Dokumenter::sok($q, !$erAdmin)]);
+// «menteDu» er satt naar det skrevne ikke ga treff, men et ord i naerheten
+// gjorde det — da er treffene for det ordet. Eieren, 11. september 2026 (GO).
+$svar = Dokumenter::sokMedForslag($q, !$erAdmin);
+Svar::json(['treff' => $svar['treff'], 'menteDu' => $svar['menteDu']]);

@@ -16161,6 +16161,47 @@ sjekk('… linja rundt ordet, kuttet til én linje',
             && $r->invoke(null, "a\nb\n", 'hank') === ''
             && str_starts_with($lang, '… ') && mb_strlen($lang) <= 111 && str_contains($lang, 'sprekker');
     })());
+// ── Slingringsmonn og «Mente du» ─────────────────────────────────────────
+//
+// Eieren, 11. september 2026 (GO): «jeg vil ikke måtte treffe helt når jeg
+// spør om noe, kanskje den kan si, mente du dette??» og «jeg må også kunne
+// stille spørsmål på flere måter, vær litt fleksibel, foreslå om du er
+// usikker». Målt i Chrome mot stub: «sentering» ga «Mente du «sentrering»?»
+// over treffene i begge feltene; trykk satte ordet i feltet. Rettemotoren
+// kjørt mot de 87 tekstene i pakka (Python-port): sentering→sentrering,
+// brening→brenning, tørkning→tørking, hankk→hank.
+sjekk('naermeste(): ordet selv, ellers start-treff, ellers én–to bokstaver feil',
+    (static function (): bool {
+        $l = array_fill_keys(['sentrering', 'brenning', 'hank', 'hakk', 'tørking', 'glasur', 'koboltoksid'], true);
+        return Dokumenter::naermeste('sentrering', $l) === 'sentrering'
+            && Dokumenter::naermeste('sentrer', $l) === 'sentrering'
+            && Dokumenter::naermeste('sentering', $l) === 'sentrering'
+            && Dokumenter::naermeste('hankk', $l) === 'hank'
+            && Dokumenter::naermeste('tørkning', $l) === 'tørking'
+            && Dokumenter::naermeste('koboltoksyd', $l) === 'koboltoksid'
+            && Dokumenter::naermeste('xyzq', $l) === null
+            && Dokumenter::naermeste('og', $l) === 'og';
+    })());
+sjekk('… og rettOrd() bytter bare det som maa byttes',
+    (static function (): bool {
+        $l = array_fill_keys(['sentrering', 'store', 'mengder'], true);
+        return Dokumenter::rettOrd('sentering av store mengder', $l) === 'sentrering av store mengder'
+            && Dokumenter::rettOrd('sentrering av store mengder', $l) === null
+            && Dokumenter::rettOrd('qqqqqq', $l) === null;
+    })());
+sjekk('soeket svarer med menteDu naar det skrevne ikke traff',
+    str_contains($mkLib, "return ['treff' => self::sokI(\$rader, \$rettet, \$maks), 'menteDu' => \$rettet];")
+    && str_contains($mkSok, "Svar::json(['treff' => \$svar['treff'], 'menteDu' => \$svar['menteDu']]);"));
+sjekk('… og Spør verkstedet retter ordene foer den velger dokumenter',
+    str_contains($mkLib, "static fn(string \$o): string => self::naermeste(\$o, \$liste) ?? \$o, \$ord")
+    && str_contains($mkFaq, "Let etter meningen, ikke ordene.")
+    && str_contains($mkFaq, "«Jeg tolker det som at du spør om …». Passer flere ting, spør:")
+    && str_contains($mkFaq, "4. Passer ingenting, svar nøyaktig dette og ingenting mer:"));
+sjekk('… «Mente du» staar i begge soekefeltene',
+    str_contains($mkSida, '<sc-if value="{{ sokHarMenteDu }}"')
+    && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?')
+    && str_contains($mkSida, '<sc-if value="{{ klHarMenteDu }}"')
+    && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ klMenteDu }}»</span>?'));
 sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
     str_contains($mkSida, '<sc-for list="{{ sokKunnskap }}" as="r"')
     && str_contains($mkSida, "settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },")

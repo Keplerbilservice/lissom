@@ -7700,6 +7700,9 @@ window.__resources = {
                        Trykk aapner dokumentet i ny fane. -->
                   <sc-if value="{{ klKunnskapVises }}" hint-placeholder-val="{{ false }}">
                     <div style="padding: 8px 14px 4px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); background: var(--clay-100);">Kunnskap</div>
+                    <sc-if value="{{ klHarMenteDu }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ klMenteDuVelg }}" style="appearance: none; border: none; background: var(--clay-100); cursor: pointer; display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 2px 14px 8px; font: var(--type-body-sm); color: var(--text-muted);">Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ klMenteDu }}»</span>?</button>
+                    </sc-if>
                     <sc-for list="{{ klKunnskap }}" as="t" hint-placeholder-count="2">
                       <button type="button" onClick="{{ t.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
                         <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ t.tittel }}</span>
@@ -19661,6 +19664,12 @@ window.__resources = {
                liste her. Linja under navnet er den foerste linja i teksten
                der ordet staar; til hoeyre staar kortet. Trykk aapner
                dokumentet i ny fane, som «Aapne» gjoer i kortene. -->
+          <!-- «Mente du «…»?» naar det skrevne ikke traff, men et ord i
+               naerheten gjorde det. Treffene under er for det ordet; trykk
+               setter det i feltet. -->
+          <sc-if value="{{ sokHarMenteDu }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ sokMenteDuVelg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: var(--space-2) var(--space-2) 0; text-align: left; font: var(--type-body); font-size: var(--text-sm); color: var(--text-muted);">Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?</button>
+          </sc-if>
           <sc-for list="{{ sokKunnskap }}" as="r" hint-placeholder-count="3">
             <button type="button" onClick="{{ r.velg }}" style="appearance: none; background: transparent; border: none; border-top: 1px solid var(--border-subtle); cursor: pointer; padding: var(--space-3) var(--space-2); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); text-align: left; font: var(--type-body); border-radius: var(--radius-sm); width: 100%;" style-hover="background: var(--clay-100);">
               <span style="min-width: 0;">
@@ -24682,8 +24691,8 @@ class Component extends DCLogic {
     this._kunnskapTimer = setTimeout(() => {
       fetch('/api/kunnskap-sok.php?q=' + encodeURIComponent(t), { credentials: 'same-origin', cache: 'no-store' })
         .then(r => r.json())
-        .then(d => this.setState({ kunnskapFor: t, kunnskapTreffListe: (d && d.treff) || [] }))
-        .catch(() => this.setState({ kunnskapFor: t, kunnskapTreffListe: [] }));
+        .then(d => this.setState({ kunnskapFor: t, kunnskapTreffListe: (d && d.treff) || [], kunnskapMenteDu: (d && d.menteDu) || '' }))
+        .catch(() => this.setState({ kunnskapFor: t, kunnskapTreffListe: [], kunnskapMenteDu: '' }));
     }, 250);
   }
 
@@ -24691,6 +24700,17 @@ class Component extends DCLogic {
   kunnskapTreff(tekst) {
     const t = (tekst || '').trim();
     return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];
+  }
+
+  /**
+   * «Mente du «sentrering»?» — ordet serveren fant treff for da det skrevne
+   * ikke ga noen. Eieren, 11. september 2026 (GO): «jeg vil ikke måtte
+   * treffe helt når jeg spør om noe, kanskje den kan si, mente du dette??».
+   * Tom naar det skrevne traff selv.
+   */
+  kunnskapMenteDu(tekst) {
+    const t = (tekst || '').trim();
+    return t && this.state.kunnskapFor === t ? (this.state.kunnskapMenteDu || '') : '';
   }
 
   /**
@@ -36393,7 +36413,11 @@ class Component extends DCLogic {
       // Kunnskapstreffene i det samme feltet. Se kunnskapSok().
       ...(() => {
         const kt = this.kunnskapTreff(this.state.klSok);
+        const md = this.kunnskapMenteDu(this.state.klSok);
         return {
+          klMenteDu: md,
+          klHarMenteDu: !!md,
+          klMenteDuVelg: () => { this.setState({ klSok: md }); this.kunnskapSok(md); },
           klKunnskapVises: kt.length > 0,
           klKunnskap: kt.map(t => ({
             tittel: t.navn,
@@ -41817,6 +41841,9 @@ class Component extends DCLogic {
       sokTilForesporsel: () => { this.setState({ sokApen: false, side: 'kurs' }); window.scrollTo(0, 0); },
       // Kunnskapstreffene, naar de er hentet for akkurat det som staar i
       // feltet naa. Se kunnskapSok().
+      sokMenteDu: this.kunnskapMenteDu(this.state.sokTekst),
+      sokHarMenteDu: !!this.kunnskapMenteDu(this.state.sokTekst),
+      sokMenteDuVelg: () => { const o = this.kunnskapMenteDu(this.state.sokTekst); this.setState({ sokTekst: o }); this.kunnskapSok(o); },
       sokKunnskap: this.kunnskapTreff(this.state.sokTekst).map(t => ({
         navn: t.navn,
         under: t.utdrag || '',

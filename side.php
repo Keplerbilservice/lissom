@@ -337,6 +337,45 @@ $hode = MERKE_START . "\n"
 
 $html = substr_replace($html, $hode, $start, $slutt + strlen(MERKE_SLUTT) - $start);
 
+// ── Sida slik den ser ut for det som ikke kjoerer skript ────────────────
+//
+// Eieren, 11. september 2026 (GO): hovedteksten og de strukturerte dataene
+// tegnes ferdig paa serveren for de aapne sidene. Maalt med OAI-SearchBot som
+// avsender: /kurs ga 584 plassholdere og ingen kurs. Se app/lib/robottekst.php.
+//
+// JSON-LD gaar inn i <head> med samme merke som skriptet bruker
+// (data-lissom-ld), saa nettleseren bytter det ut med sitt eget naar den er
+// ferdig. Teksten gaar inn rett etter <body>; paa forsida limes den
+// ferdigtegnede toppen inn foran den etterpaa (den ligger absolutt over
+// alt, og teksten starter under den). Skriptet i lissom-2108.html fjerner
+// teksten naar den ekte skjermen staar. Gaar noe galt, gaar sida ut uten,
+// som foer.
+$robot = null;
+if (!$ikkeISoket && $d !== null) {
+    try {
+        $lastBackend();
+        $robot = Robottekst::lag($adresse, $d, $kart);
+    } catch (Throwable) {
+        $robot = null;
+    }
+}
+if ($robot !== null) {
+    $ld = json_encode($robot['ld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $hodeSlutt = strpos($html, '</head>');
+    if (is_string($ld) && $hodeSlutt !== false) {
+        // «</script» inne i en tekst ville avsluttet taggen for tidlig.
+        $ld = str_replace('</', '<\/', $ld);
+        $html = substr_replace($html, '<script type="application/ld+json" data-lissom-ld="1">' . $ld . '</script>' . "\n", $hodeSlutt, 0);
+    }
+    if ($robot['html'] !== '') {
+        $hodeSlutt = strpos($html, '</head>');
+        $kropp = $hodeSlutt === false ? false : strpos($html, '<body>', $hodeSlutt);
+        if ($kropp !== false) {
+            $html = substr_replace($html, '<body>' . "\n" . $robot['html'], $kropp, strlen('<body>'));
+        }
+    }
+}
+
 // ── Toppen av forsida, ferdig tegnet ────────────────────────────────────
 //
 // Nettsida er én fil som dc-runtime bygger om til React etter at den er

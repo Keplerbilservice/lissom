@@ -56,53 +56,23 @@ $ut[] = '';
 $ut[] = '## Kurs og events';
 $ut[] = '';
 try {
-    $utenDato = DB::harKolonne('courses', 'vis_uten_dato') ? 'c.vis_uten_dato' : '0 AS vis_uten_dato';
-    $kurs = DB::alle(
-        "SELECT c.slug, c.tittel, c.pris_ore, c.beskrivelse, {$utenDato},
-                (SELECT MIN(cs.start_tid) FROM course_sessions cs
-                  WHERE cs.course_id = c.id AND cs.status = 'planlagt'
-                    AND cs.start_tid > UTC_TIMESTAMP()) AS neste,
-                (SELECT COUNT(*) FROM course_sessions cs2
-                  WHERE cs2.course_id = c.id AND cs2.status = 'planlagt'
-                    AND cs2.start_tid > UTC_TIMESTAMP()) AS kommende
-           FROM courses c
-          WHERE c.status = 'publisert'
-            AND COALESCE(c.tema, '') <> 'Kun for medlemmer'
-            AND c.slug IS NOT NULL AND c.slug <> ''
-       ORDER BY c.tittel"
-    );
-
-    $oslo = new DateTimeZone('Europe/Oslo');
-    $mnd = [1 => 'januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
-            'august', 'september', 'oktober', 'november', 'desember'];
-
-    foreach ($kurs as $k) {
-        if ((int) $k['kommende'] === 0 && (int) ($k['vis_uten_dato'] ?? 0) === 0) {
-            continue;
-        }
+    // Kurslista er den samme som robotteksten paa sidene bruker — ett sted,
+    // ikke to som blir uenige. Se app/lib/robottekst.php.
+    foreach (Robottekst::kurs() as $k) {
         $bit = [];
-        if ((int) $k['pris_ore'] > 0) {
-            $bit[] = 'kr. ' . number_format((int) $k['pris_ore'] / 100, 0, ',', ' ') . ',-';
+        if ($k['pris_ore'] > 0) {
+            $bit[] = Robottekst::kroner($k['pris_ore']);
         }
         if ($k['neste'] !== null) {
-            $d = (new DateTimeImmutable((string) $k['neste'], new DateTimeZone('UTC')))->setTimezone($oslo);
-            $bit[] = 'neste ' . (int) $d->format('j') . '. ' . $mnd[(int) $d->format('n')];
-            $n = (int) $k['kommende'];
-            if ($n > 1) { $bit[] = $n . ' datoer ute'; }
+            $bit[] = 'neste ' . Robottekst::dato($k['neste']);
+            if ($k['kommende'] > 1) { $bit[] = $k['kommende'] . ' datoer ute'; }
         }
-        // Foerste setning av beskrivelsen. En AI siterer helst noe kort og
-        // helt — ikke tre avsnitt den maa klippe i selv.
-        $om = trim(strip_tags((string) ($k['beskrivelse'] ?? '')));
-        if ($om !== '') {
-            $punktum = strcspn($om, '.');
-            $om = trim(substr($om, 0, min($punktum + 1, 160)));
-            if ($om !== '') { $bit[] = rtrim($om, '.'); }
-        }
-        $ut[] = '- [' . $k['tittel'] . '](' . ROT . '/kurs/' . rawurlencode((string) $k['slug']) . ')'
+        $om = Robottekst::ingress($k['beskrivelse']);
+        if ($om !== '') { $bit[] = rtrim($om, '.'); }
+        $ut[] = '- [' . $k['tittel'] . '](' . ROT . '/kurs/' . rawurlencode($k['slug']) . ')'
               . ($bit ? ': ' . implode(' · ', $bit) : '');
     }
 } catch (Throwable) {
-    // De faste avsnittene gaar ut uansett.
 }
 $ut[] = '';
 $ut[] = '- [Alle kurs og events](' . ROT . '/kurs): hele lista, med datoer og ledige plasser';
@@ -225,20 +195,15 @@ $ut[] = '';
 $ut[] = '## Medlemskap og butikk';
 $ut[] = '';
 try {
-    foreach (DB::alle(
-        "SELECT navn, pris_ore, timer, intervall FROM membership_plans
-          WHERE aktiv = 1 ORDER BY pris_ore"
-    ) as $p) {
+    foreach (Robottekst::medlemskap() as $p) {
         $d = [];
-        if ((int) $p['pris_ore'] > 0) {
-            $d[] = 'kr. ' . number_format((int) $p['pris_ore'] / 100, 0, ',', ' ') . ',- per '
-                 . ((string) ($p['intervall'] ?? 'maaned') === 'aar' ? 'år' : 'måned');
+        if ($p['pris_ore'] > 0) {
+            $d[] = Robottekst::kroner($p['pris_ore']) . ' per ' . ($p['intervall'] === 'aar' ? 'år' : 'måned');
         }
-        $d[] = $p['timer'] === null ? 'fri tilgang' : ((int) $p['timer']) . ' timer';
+        $d[] = $p['timer'] === null ? 'fri tilgang' : $p['timer'] . ' timer';
         $ut[] = '- ' . $p['navn'] . ': ' . implode(' · ', $d);
     }
 } catch (Throwable) {
-    // Uten planene staar lenkene under uansett.
 }
 $ut[] = '- [Medlemskap](' . ROT . '/medlemskap): fast plass i verkstedet, egen hylle og dørkode';
 $ut[] = '- [Butikk](' . ROT . '/butikk): håndlaget keramikk fra verkstedet';

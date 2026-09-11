@@ -1,5 +1,5 @@
 {
-  "laget": "2026-09-05",
+  "laget": "2026-09-11",
   "om": "Laget av bin/seokart.mjs. Rediger lissom-2108.html, ikke denne.",
   "stier": {
     "/": "forside",
@@ -334,5 +334,47 @@
       "schema": "Event",
       "index": "Index"
     }
-  }
+  },
+  "sporsmal": [
+    {
+      "q": "Må jeg kunne noe om keramikk fra før?",
+      "a": "Nei. Kursene starter fra bunnen, og vi veileder deg gjennom hele prosessen."
+    },
+    {
+      "q": "Hvor lang tid tar det før keramikken er ferdig?",
+      "a": "Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar normalt to til fire uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige — og du finner den på Min side og på lissom.no/ferdigbrent."
+    },
+    {
+      "q": "Hvor lenge oppbevarer dere ferdige arbeider?",
+      "a": "Vi oppbevarer ferdige arbeider i to uker etter at du har fått beskjed om at de er klare. Trenger du lengre tid, ta kontakt."
+    },
+    {
+      "q": "Kan jeg bli medlem uten å ha tatt kurs hos dere?",
+      "a": "Du må ha tatt et kurs hos oss, eller ha erfaring fra før. Ta kontakt, så finner vi ut av det."
+    },
+    {
+      "q": "Kan jeg bruke verkstedet når jeg vil?",
+      "a": "Som medlem har du tilgang døgnet rundt med egen dørkode. Du booker verkstedtid på Min side, så alle får plass ved skivene."
+    },
+    {
+      "q": "Hvordan booker jeg tid i verkstedet?",
+      "a": "På Min side velger du dag og tidspunkt, og stempler inn når du kommer. Timen telles fra innstempling."
+    },
+    {
+      "q": "Hvorfor må jeg booke verkstedtid?",
+      "a": "Verkstedet har begrenset med skiver og arbeidsplasser. Booking sikrer at du alltid har plass når du kommer."
+    },
+    {
+      "q": "Kan jeg komme innom uten medlemskap?",
+      "a": "Ja — bli med på et kurs eller et event. Der trenger du ikke medlemskap."
+    },
+    {
+      "q": "Kan jeg spise og drikke av keramikken?",
+      "a": "Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder."
+    },
+    {
+      "q": "Kan jeg bestille bare brenning hos dere?",
+      "a": "Nei. Brenning er forbeholdt medlemmer."
+    }
+  ]
 }

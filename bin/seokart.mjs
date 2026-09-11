@@ -61,6 +61,22 @@ const STIER = statiskGetter('STIER');
 const SEO   = statiskGetter('SEO_FERDIG');
 const KART  = sideTilSeo();
 
+/**
+ * Spoersmaalene paa /sporsmal-og-svar, slik de staar som standard i nettsida
+ * («sporsmal: (() => {» i renderVals). Serveren tegner dem som tekst og
+ * FAQPage for robotene (app/lib/robottekst.php), og skal si det samme som
+ * skjermen — derfor leses de herfra, ikke skrives inn paa nytt. Det eieren
+ * har lagret i admin legges over paa serveren, som paa skjermen.
+ */
+function sporsmal() {
+  const i = kilde.indexOf('sporsmal: (() => {');
+  if (i < 0) throw new Error('Fant ikke «sporsmal: (() => {» i lissom-2108.html');
+  const start = kilde.indexOf('return [', i);
+  const liste = eval('(' + balansert(kilde, kilde.indexOf('[', start)) + ')');
+  return liste.map(s => ({ q: s.q, a: s.a }));
+}
+const SPORSMAL = sporsmal();
+
 // Adresse → SEO-oppforing.
 //
 // Unntaket staar i seoIdForSide() og gjentas her, for det henger paa
@@ -80,9 +96,10 @@ const ut = {
   om: 'Laget av bin/seokart.mjs. Rediger lissom-2108.html, ikke denne.',
   stier,
   sider: SEO,
+  sporsmal: SPORSMAL,
 };
 
 const maal = path.join(ROT, 'seo-kart.json');
 fs.writeFileSync(maal, JSON.stringify(ut, null, 2) + '\n');
-console.log(Object.keys(stier).length + ' adresser og ' + Object.keys(SEO).length
-  + ' sider skrevet til seo-kart.json');
+console.log(Object.keys(stier).length + ' adresser, ' + Object.keys(SEO).length
+  + ' sider og ' + SPORSMAL.length + ' spørsmål skrevet til seo-kart.json');

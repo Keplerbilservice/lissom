@@ -7475,15 +7475,53 @@ sjekk('… og et vanlig medlem kan fortsatt bare roere sine egne',
     str_contains($chatP, "Svar::feil('Du kan bare slette dine egne meldinger.', 403);"));
 sjekk('… og en sletting kan angres',
     str_contains($chatP, "if (\$handling === 'slett' || \$handling === 'angre-slett') {")
-    && str_contains($chatP, "DB::kjor('UPDATE chat_meldinger SET slettet_at = NULL WHERE id = :i', ['i' => \$id]);"),
+    && str_contains($chatP, "'UPDATE chat_meldinger SET slettet_at = NULL'"),
     'teksten staar i basen hele tida — slettingen er myk');
 sjekk('… og det staar i loggen naar admin roerer andres',
     str_contains($chatP, "revider(\$handling === 'slett' ? 'chat_slettet' : 'chat_hentet_tilbake', 'chat', \$id, ["),
     'sin egen melding er sin egen sak, og logges ikke');
+// ── Hvem som kan hente tilbake ────────────────────────────────────
+//
+// Eieren, 11. september 2026: «min side kan angre meldingen som admin har
+// slettet!»
+//
+// Slettingen er myk, og det var det som gjorde den angrelig. Men regelen var
+// «din egen melding, din egen knapp» — og da kunne medlemmet sette opp igjen
+// det verkstedet nettopp hadde ryddet vekk. «slettet_at» sier NAAR, ikke AV
+// HVEM.
+//
+// Migrasjon 156 legger til «slettet_av». Regelen: slettet du den selv, kan
+// du angre. Slettet verkstedet den, er det bare verkstedet som kan det.
+//
+// Maalt mot den ekte API-en: admin slettet medlemmets melding, medlemmet fikk
+// kanHente=false og 403 da det proevde likevel, admin fikk hentet den
+// tilbake. Slettet medlemmet sin egen, fikk det kanHente=true og hentet den
+// tilbake selv.
+sjekk('migrasjon 156 husker hvem som slettet meldingen',
+    str_contains($mig156 = file_get_contents(dirname(__DIR__) . '/db/migrations/156_hvem_slettet_meldingen.sql'), 'ALTER TABLE chat_meldinger')
+    && str_contains($mig156, 'ADD COLUMN slettet_av BIGINT UNSIGNED NULL'),
+    'uten den kan ingen skille «jeg slettet den» fra «verkstedet slettet den»');
+sjekk('… og den som slettet blir skrevet ned',
+    str_contains($chatP, "\$vetHvemSomSlettet = DB::harKolonne('chat_meldinger', 'slettet_av');")
+    && str_contains($chatP, "(\$vetHvemSomSlettet ? ', slettet_av = :a' : '')"),
+    'kolonnen kan mangle til migrasjonen er kjort — da staar koden likevel');
+sjekk('… og et medlem kan ikke angre det verkstedet har slettet',
+    str_contains($chatP, "if (\$handling === 'angre-slett' && !\$erAdmin) {")
+    && str_contains($chatP, "Svar::feil('Denne meldingen er slettet av verkstedet.', 403);"),
+    'maalt: 403 for medlemmet, 200 for admin');
+sjekk('… og serveren sier ogsaa hvem som kan hente tilbake',
+    str_contains($chatP, "'kanHente'  => \$slettet && (\$erAdmin || (")
+    && str_contains($sida, 'kanHente: m.kanHente === undefined'),
+    'skjermen tegner etter serverens svar, ikke etter sin egen regel');
+// Er migrasjonen ikke kjort, vet ingen hvem som slettet hva. Da faar bare
+// admin hente noe tilbake — heller én knapp for lite enn én for mye.
+sjekk('… og uten migrasjonen faar bare admin hente noe tilbake',
+    str_contains($chatP, "\$slettetAv = \$vetHvemSomSlettet")
+    && str_contains($chatP, "if (\$slettetAv === null || (int) \$slettetAv !== \$megId) {"));
+
 sjekk('… og serveren sier hvem som kan slette hva',
     str_contains($chatP, "'kanSlette' => \$egen || \$erAdmin,")
-    && str_contains($sida, 'kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,')
-    && str_contains($sida, 'kanHente: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !!m.slettet,'),
+    && str_contains($sida, 'kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,'),
     'skjermen tegner etter serverens svar, saa de to ikke kan komme i utakt');
 // To ord i chatten, ikke tre. Knappen paa sin egen melding het «Angre» fram
 // til eieren sa fra, 11. september 2026: «Jeg vil kun ha slett og angre

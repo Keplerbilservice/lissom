@@ -49190,8 +49190,14 @@ class Component extends DCLogic {
         // derfra — designvisningen — gjelder den gamle regelen, sin egen.
         kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,
         angre: () => this.angreChat(m.id),
-        // Slettingen er myk, saa den kan hentes tilbake.
-        kanHente: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !!m.slettet,
+        // Aa hente tilbake er noe annet enn aa slette. Eieren,
+        // 11. september 2026: «min side kan angre meldingen som admin har
+        // slettet!» Slettet du den selv, kan du angre; slettet verkstedet
+        // den, er det bare verkstedet som kan det. Serveren avgjor — se
+        // «kanHente» i api/chat.php.
+        kanHente: m.kanHente === undefined
+          ? (!!m.egen && !!m.slettet)
+          : !!m.kanHente,
         hent: () => this.angreChat(m.id, true),
         // Myk kant, ikke pille.
         //

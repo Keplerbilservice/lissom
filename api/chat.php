@@ -37,15 +37,27 @@ $megId = (int) $medlem['id'];
 // admin bruker, saa en sesjon uten passord ikke gir mer her enn der.
 $erAdmin = Sesjon::erAdmin();
 
+// Hvem som slettet meldingen. Eieren, 11. september 2026: «min side kan
+// angre meldingen som admin har slettet!»
+//
+// «slettet_at» sier naar, ikke av hvem — og uten det kunne medlemmet hente
+// tilbake det verkstedet nettopp hadde ryddet vekk. Migrasjon 156 legger til
+// kolonnen.
+//
+// Er den ikke kjort ennaa, faar bare admin hente noe tilbake i det hele
+// tatt. Heller én knapp for lite hos et medlem enn én for mye.
+$vetHvemSomSlettet = DB::harKolonne('chat_meldinger', 'slettet_av');
+
 /**
  * Meldingene, nyeste sist.
  *
  * Navnet leses fra medlemmet naa, ikke fra da meldingen ble skrevet: bytter
  * noen navn, skal det staa riktig ogsaa paa det gamle.
  */
-$les = static function (int $etter) use ($megId, $erAdmin): array {
+$les = static function (int $etter) use ($megId, $erAdmin, $vetHvemSomSlettet): array {
     $rader = DB::alle(
         'SELECT c.id, c.member_id, c.tekst, c.created_at, c.slettet_at,
+                ' . ($vetHvemSomSlettet ? 'c.slettet_av,' : 'NULL AS slettet_av,') . '
                 m.navn
            FROM chat_meldinger c
            JOIN members m ON m.id = c.member_id
@@ -57,7 +69,7 @@ $les = static function (int $etter) use ($megId, $erAdmin): array {
     $rader = array_reverse($rader);
 
     $oslo = new DateTimeZone('Europe/Oslo');
-    return array_map(static function (array $r) use ($megId, $erAdmin, $oslo): array {
+    return array_map(static function (array $r) use ($megId, $erAdmin, $vetHvemSomSlettet, $oslo): array {
         $egen = (int) $r['member_id'] === $megId;
         $slettet = $r['slettet_at'] !== null;
         return [
@@ -71,6 +83,14 @@ $les = static function (int $etter) use ($megId, $erAdmin): array {
             // Serveren sier hvem som kan roere hva; skjermen tegner bare
             // etter det. Da kan de to ikke komme i utakt.
             'kanSlette' => $egen || $erAdmin,
+            // Aa hente tilbake er noe annet enn aa slette: slettet du den
+            // selv, kan du angre. Slettet verkstedet den, er det bare
+            // verkstedet som kan det.
+            'kanHente'  => $slettet && ($erAdmin || (
+                $egen && $vetHvemSomSlettet
+                     && $r['slettet_av'] !== null
+                     && (int) $r['slettet_av'] === $megId
+            )),
         ];
     }, $rader);
 };
@@ -103,13 +123,34 @@ if ($handling === 'slett' || $handling === 'angre-slett') {
         Svar::feil('Du kan bare slette dine egne meldinger.', 403);
     }
 
+    // Aa hente tilbake krever mer enn aa slette: har verkstedet ryddet vekk
+    // en melding, skal ikke den som skrev den kunne sette den opp igjen.
+    if ($handling === 'angre-slett' && !$erAdmin) {
+        $slettetAv = $vetHvemSomSlettet
+            ? DB::verdi('SELECT slettet_av FROM chat_meldinger WHERE id = :i', ['i' => $id])
+            : null;
+        if ($slettetAv === null || (int) $slettetAv !== $megId) {
+            Svar::feil('Denne meldingen er slettet av verkstedet.', 403);
+        }
+    }
+
     // Sletting er myk: teksten staar i basen, raden faar bare et tidspunkt,
     // og den som leser ser «Meldingen er slettet». Derfor kan den hentes
     // tilbake — eieren ba om nettopp det.
     if ($handling === 'slett') {
-        DB::kjor('UPDATE chat_meldinger SET slettet_at = UTC_TIMESTAMP() WHERE id = :i AND slettet_at IS NULL', ['i' => $id]);
+        DB::kjor(
+            'UPDATE chat_meldinger SET slettet_at = UTC_TIMESTAMP()'
+            . ($vetHvemSomSlettet ? ', slettet_av = :a' : '')
+            . ' WHERE id = :i AND slettet_at IS NULL',
+            $vetHvemSomSlettet ? ['i' => $id, 'a' => $megId] : ['i' => $id]
+        );
     } else {
-        DB::kjor('UPDATE chat_meldinger SET slettet_at = NULL WHERE id = :i', ['i' => $id]);
+        DB::kjor(
+            'UPDATE chat_meldinger SET slettet_at = NULL'
+            . ($vetHvemSomSlettet ? ', slettet_av = NULL' : '')
+            . ' WHERE id = :i',
+            ['i' => $id]
+        );
     }
 
     // Rydder admin i andres meldinger, skal det staa i loggen hvem som

@@ -1,0 +1,530 @@
+Håndbok i lagvis glasering
+
+LISSOM KERAMIKK & HÅNDVERK AS · LISSOM.NO · POST@LISSOM.NO
+
+Håndbok
+
+Lagvis glasering
+
+Forbedre arbeidene dine med unike og profesjonelle overflater. Teknikker, kombinasjoner og feilsøking for glasur i flere lag.
+
+Innhold
+
+1 Introduksjon: Kunsten å glasere lagvis
+
+2 Materialer du trenger
+
+3 Forstå glasurens oppførsel
+
+4 Forberedelse før glasering
+
+5 Påføringsteknikker
+
+6 Vanlige feil og hvordan du unngår dem
+
+7 Brenningens innvirkning
+
+8 Spesialeffekter
+
+9 Praktiske eksempler og velprøvde kombinasjoner
+
+10 Konklusjon og neste steg
+
+Kapittel 1
+Introduksjon: Kunsten å glasere lagvis
+
+Lag-på-lag-glasering er en av de mest fascinerende og allsidige teknikkene innen keramikk. Ved å kombinere forskjellige glasurer i lag kan du skape unike effekter som forvandler et enkelt stykke til et kunstverk.
+
+Hva er lagvis glasering?
+
+Lagvis glasering innebærer å påføre mer enn én glasur på samme stykke, enten delvis eller fullstendig. Dette gir mulighet for å:
+
+Lage gradienteffekter og fargeblandinger.
+
+Skape unike teksturer og mønstre.
+
+Tilføre dybde og kontrast til overflaten.
+
+Fordeler med å lære teknikken
+
+Kreativ allsidighet: Du kan bruke enkle grunnglasurer til å lage komplekse overflater.
+
+Tilpasning: Ingen stykker blir like; hvert lag gir et eget resultat.
+
+Uventede effekter: Kombinasjonene kan overraske deg med unike teksturer og toner.
+
+Vanlige utfordringer
+
+Glasurer som er inkompatible og ikke blandes godt.
+
+For høy flyt som gir uønsket avrenning.
+
+Uforutsigbare brenningsresultater.
+
+Hvorfor denne håndboken er nyttig
+Guiden lærer deg ikke bare de grunnleggende teknikkene, men også hvordan du unngår vanlige feil og får mest mulig ut av glasurene dine.
+
+«Hver lagdeling er en mulighet til å oppdage noe unikt innen keramikk.»
+
+Kapittel 2
+Materialer du trenger
+
+For vellykket lagvis glasering er det viktig å ha riktige materialer og verktøy. Her er hva du trenger, og hvorfor hver del er viktig.
+
+1. Keramiske glasurer
+
+Høyflytende glasurer: Ideelle for dryppeffekter og gradientblandinger.
+
+Lavflytende glasurer: Perfekte som bunnlag, siden de holder seg stabile under brenning.
+
+Transparente glasurer: Brukes som siste strøk for å intensivere farger og skape dybde.
+
+Anbefaling
+Sjekk alltid at glasurene du skal kombinere er kompatible: brenningstemperatur, leiretype og så videre.
+
+2. Egnet leire
+
+Steingods eller porselen: Ideelt for lagvis glasering fordi de tåler høyere temperaturer og gir bedre reaksjon mellom glasurene.
+
+Lavtemperaturleire: Fungerer også, men krever spesifikke glasurer for å unngå festeproblemer.
+
+3. Grunnleggende verktøy
+
+Keramikkpensler: For kontrollerte lag og presise detaljer.
+
+Små beholdere: For blanding og justering av glasur når du vil endre flyten.
+
+Fin sil: For å filtrere glasuren og hindre klumper som påvirker overflaten.
+
+Spatel eller skje: For å røre glasuren jevn før bruk.
+
+4. Ekstrautstyr
+
+Keramikkovn: Nødvendig for å herde glasurene og oppnå de ønskede effektene.
+
+Støtteplater til ovnen: Hindrer at rennende glasur skader ovnsbunnen.
+
+Pyrometriske kjegler: For nøyaktig måling av temperaturen under brenning.
+
+Tips
+Dokumenter alltid materialene og glasurene du bruker i hvert prosjekt. Da kan du gjenskape vellykkede kombinasjoner og unngå feil i senere arbeider.
+
+Tabell: Kjennetegn og bruk av glasurer for lagvis glasering
+
+Glasurtype Egenskaper Anbefalt bruk
+
+Høyflytende glasur Renner lett, gir gradient- og dryppeffekter og naturlige blandinger mellom farger. Ideell som topplag.
+
+Lavflytende glasur Holder seg stabil på stykket og bevarer definerte former og farger. Bruk som bunnlag for å unngå for mye blanding, og til teknikker med presise detaljer.
+
+Transparent glasur Fremhever fargene i lagene under og tilfører dybde og tekstur. Blank eller sateng finish som siste strøk; forsterker dekor.
+
+Kapittel 3
+Forstå glasurens oppførsel
+
+For å mestre lagvis glasering må du forstå hvordan glasurer reagerer med hverandre og oppfører seg under påføring og brenning. Her er nøkkelbegrepene som hjelper deg å unngå feil og oppnå gode resultater.
+
+1. Høy flyt vs. lav flyt
+
+Flyteevnen til en glasur bestemmer hvordan den oppfører seg når den legges oppå en annen:
+
+Høy flyt
+
+Har en tendens til å renne og blande seg med bunnglasuren.
+
+Ideell for gradient- og smelteeffekter.
+
+Forsiktig: Et for tykt lag kan dryppe og sette flekker på ovnsbunnen.
+
+Lav flyt
+
+Forblir mer stabil og gir tydelig definerte farger.
+
+Perfekt som bunnglasur for å unngå for mye blanding.
+
+Tips
+Bruk alltid den mest stabile glasuren som bunnlag – det gir bedre kontroll.
+
+2. Kompatibilitet mellom glasurer
+
+Ikke alle glasurer fungerer godt sammen. Noen kan gi defekter som sprekker, bobler eller uventede fargeendringer.
+
+Brenningstemperatur: Glasurene må ha samme modningsintervall.
+
+Kjemisk sammensetning: Unngå kombinasjoner som reagerer negativt, for eksempel enkelte metalloksider.
+
+Termisk tilpasning: Sørg for at glasurenes utvidelseskoeffisient er kompatibel, ellers kan det oppstå sprekker.
+
+Praktisk tips
+Gjør små tester på fliser eller prøvebiter før du påfører kombinasjonen på det ferdige stykket.
+
+3. Hvordan forutsi resultater
+
+Keramikk byr alltid på en viss overraskelse, men du kan redusere det uventede:
+
+Påfør tynne lag i innledende tester for å se hvordan glasurene samspiller.
+
+Dokumenter mengder, glasurtyper og temperatur i hver test.
+
+Eksperimenter først med kontrastfarger for å se de tydeligste effektene.
+
+Eksempel: Lavflytende glasur
+
+Eksempel: Høyflytende glasur
+
+Kapittel 4
+Forberedelse før glasering
+
+Riktig forberedelse er nøkkelen til et vellykket resultat. Før du påfører glasurene må både stykket og materialene være klare, slik at du unngår feil og får mest mulig ut av arbeidet.
+
+1. Forberedelse av stykket
+
+Rengjøring: Sørg for at stykket er helt rent. Fjern støv og fett med en fuktig svamp før du glaserer.
+
+Stykkets tilstand: Arbeid med stykker i biskuit-stadiet (brent én gang). Da er leiren porøs og glasuren fester seg godt.
+
+2. Justering av glasuren
+
+Konsistens: Glasuren bør ha en konsistens som ligner tynn fløte. Bruk en fin sil for å fjerne klumper før påføring.
+
+Viskositet: Juster med vann hvis den er for tykk, men ikke fortynn for mye – da mister den festeevnen. En viskositetsmåler hjelper deg å holde riktig konsistens for hver teknikk.
+
+Tips
+Lavflytende glasur trenger vanligvis mindre ekstra vann for å holde seg stabil.
+
+3. Organisering av verktøyene
+
+Gjør klar rene pensler, beholdere og filler før du begynner.
+
+Ha glasurene klare og merket, slik at du ser hvilken som er bunnglasur og hvilken som er topplag.
+
+4. Forberedende tester
+
+Før du går løs på det endelige stykket:
+
+Test på fliser eller små biter for å se hvordan glasurene samspiller.
+
+Prøv ulike kombinasjoner og lagtykkelser for å forutse resultatet.
+
+Praktisk tips
+Dokumenter testene dine. Noter proporsjoner, teknikker og resultater, så kan du gjenskape vellykkede kombinasjoner i fremtidige stykker.
+
+Eksempel: Stykker i biskuit-stadiet før glasering
+
+Kapittel 5
+Påføringsteknikker
+
+1. Dypping
+
+Ideell for å dekke store områder jevnt.
+
+Dypp stykket i den første glasuren (bunnlaget), og sørg for at den dekker helt.
+
+La bunnglasuren tørke litt.
+
+Senk bare en del av stykket ned i den andre glasuren, slik at de to kan samspille i overlappingsområdet.
+
+Anbefalt bruk: Jevne gradienter og fargekombinasjoner med tydelige linjer mellom lagene.
+
+Tips
+Arbeid med glasurer med ulik flyt for å unngå uønskede blandinger.
+
+2. Påføring med pensel
+
+Perfekt for detaljer og kontrollerte blandinger.
+
+Påfør bunnglasuren med jevne penselstrøk over hele stykket.
+
+Når den er tørr, bruk en annen pensel til å legge den andre glasuren på de ønskede områdene.
+
+Eksperimenter med mønstre som linjer, sirkler eller geometriske former.
+
+Anbefalt bruk: Detaljerte eller personlige design og presis kontroll i små områder.
+
+Tips
+Bruk pensler i forskjellige tykkelser for å variere effektene.
+
+3. Helleteknikk
+
+Ideell for organiske effekter og uventede teksturer.
+
+Hell den første glasuren over stykket, slik at den dekker helt.
+
+Hell den andre glasuren over den første, og la den renne og blande seg naturlig.
+
+Vipp stykket for å styre glasurens flyt.
+
+Anbefalt bruk: Abstrakte, kunstneriske overflater og dekorative gjenstander med slående effekter.
+
+Tips
+Sett en beholder under stykket for å samle opp overflødig glasur og unngå svinn.
+
+4. Blandede og kreative teknikker
+
+Kombiner to eller flere metoder for å utforske nye overflater. For eksempel:
+
+Penselstrøk oppå et lag med hellet glasur.
+
+Først dypping, deretter detaljer lagt til med pensel.
+
+Praktisk tips
+Dokumenter trinnene og kombinasjonene du bruker, slik at du kan gjenskape vellykkede resultater.
+
+Tabell: Fordeler og ulemper med påføringsteknikkene
+
+Teknikk Fordeler Ulemper
+
+Dypping Dekker store områder jevnt; ideell for myke overganger. Vanskelig å kontrollere små detaljer; krever mer glasur tilgjengelig.
+
+Pensel Presis kontroll i bestemte områder; ideell for tilpassede design og detaljer. Kan etterlate merker hvis den ikke påføres riktig; langsommere enn dypping.
+
+Helling Gir organiske og unike effekter; perfekt for abstrakte overflater. Vanskelig å gjenskape nøyaktig; noe glasur kan gå til spille.
+
+Blandede teknikker Kombinerer det beste fra flere metoder; lar deg eksperimentere og skape unike overflater. Krever mer tid og planlegging; kan være vanskelig å mestre i starten.
+
+Kapittel 6
+Vanlige feil og hvordan du unngår dem
+
+Lagvis glasering er en fascinerende prosess, men den byr også på utfordringer. Å kjenne igjen og forebygge vanlige feil hjelper deg å oppnå mer forutsigbare og profesjonelle resultater.
+
+1. Glasurer som ikke passer sammen
+
+Problem: Glasurene fester seg ikke ordentlig til hverandre, sprekker eller mister farge når de overlapper.
+
+Kontroller at glasurene er kompatible i brenningstemperatur og kjemisk sammensetning.
+
+Test på små biter før du bruker dem på det endelige prosjektet.
+
+Ved sprekker: Juster bunnglasuren med en høyere andel silika for bedre styrke.
+
+2. For mye avrenning eller opphopning
+
+Problem: Toppglasuren renner for mye og gir flekker eller opphopning nederst på stykket.
+
+Bruk lavflytende glasur som bunnlag, så toppglasuren ikke blander seg ukontrollert.
+
+Påfør tynne topplag for å begrense avrenningen.
+
+Sett støtteplater under stykket i ovnen for å beskytte ovnsbunnen mot glasur som kan renne.
+
+3. Bobler og brenningsfeil
+
+Problem: Det dannes bobler i glasuren, eller det oppstår defekter som hull i overflaten etter brenning.
+
+Sikt glasuren godt for å fjerne luftpartikler og klumper.
+
+Juster brenningskurven med en holdetid ved modningstemperaturen, slik at boblene får slippe ut.
+
+Hvis boblene vedvarer, fortynn glasuren litt med vann for bedre flyt.
+
+4. Uforutsigbare resultater
+
+Problem: Fargene blandes ikke som forventet, eller overflaten blir annerledes enn planlagt.
+
+Dokumenter glasurforhold og brenningstemperatur nøye i hver test.
+
+Påfør jevne lag for å unngå tykkelsesforskjeller som påvirker resultatet.
+
+Ønsker du mer kontroll, bruk transparent glasur som topplag for å jevne ut overganger.
+
+Til slutt
+Feil er en del av læringen. Ethvert uventet resultat er en mulighet til å oppdage nye effekter og forbedre teknikkene dine.
+
+Tabell: Vanlige problemer og løsninger
+
+Problem Beskrivelse Praktisk løsning
+
+Inkompatible glasurer Sprekker eller fargetap ved lagdeling. Bekreft at glasurene er kompatible i temperatur og kjemi. Gjør innledende tester.
+
+For mye avrenning Toppglasuren renner og samler seg ved bunnen. Bruk en lavflytende base, påfør tynne lag og bruk støtteplater i ovnen.
+
+Bobler i glasuren Bobler eller hull etter brenning. Sikt glasuren godt, juster brenningskurven og tynn eventuelt glasuren litt ut.
+
+Uventede farger Fargene blander seg ikke som forventet. Dokumenter proporsjoner, påfør jevne lag og prøv transparent glasur for å jevne overganger.
+
+Ujevne overflater Synlige forskjeller mellom glaserte områder. Påfør jevne lag og sjekk glasurens konsistens før påføring.
+
+Kapittel 7
+Brenningens innvirkning
+
+Brenningen er det avgjørende øyeblikket der glasurene samspiller og avslører sine endelige effekter. Å forstå hvordan temperatur og tid påvirker glasurens oppførsel gir mer kontrollerte og forutsigbare resultater.
+
+1. Hvordan temperaturen påvirker
+
+Lav temperatur (1000–1100 °C)
+
+Ideell for blanke glasurer og livlige farger.
+
+Glasurene holder seg mer stabile, med mindre avrenning.
+
+Mindre samspill mellom glasurlagene.
+
+Høy temperatur (1200–1300 °C)
+
+Gir større sammensmelting mellom glasurene og mer organiske effekter.
+
+Høyflytende glasurer får markerte renn og jevne gradienter.
+
+Høyere risiko for endringer hvis påføringen ikke er kontrollert.
+
+Tips
+Bruk pyrometriske kjegler for å sikre at ovnen når ønsket temperatur og holder seg stabil.
+
+2. Anbefalt brenningskurve
+
+Brenningskurven påvirker direkte hvordan glasurene oppfører seg. Her er et eksempel for lagvis glasering:
+
+Langsom første stigning: Øk temperaturen gradvis til 600 °C for å unngå spenninger i stykket.
+
+Kontrollert stigning: Øk temperaturen raskere opp til glasurens modningsområde (1000–1300 °C, avhengig av glasuren).
+
+Hold temperaturen: La ovnen holde modningstemperaturen i 10–20 minutter, slik at glasuren får reagere ordentlig.
+
+Langsom avkjøling: La ovnen kjøle seg gradvis ned for å unngå at stykkene sprekker.
+
+3. Vanlige problemer under brenning
+
+For mye avrenning: Påfør tynnere lag eller senk makstemperaturen litt.
+
+Dempede farger: Sjekk om temperaturen passet til glasuren som ble brukt.
+
+Sprekker: Juster glasurens varmeutvidelseskoeffisient, for eksempel ved å endre proporsjonene i formuleringen.
+
+Eksempel: Brent ved lav temperatur
+
+Eksempel: Brent ved høy temperatur
+
+Kapittel 8
+Spesialeffekter
+
+Lagvis glasering gir ikke bare fargekombinasjoner – teknikken kan også skape unike visuelle effekter og slående teksturer. Her ser vi på hvordan du oppnår spesielle overflater med avanserte teknikker og bestemte glasurer.
+
+1. Gradienteffekter
+
+Bruk høyflytende glasur som topplag og la den renne naturlig.
+
+Vipp stykket litt etter påføring for å styre flyten.
+
+Legg topplaget bare på bestemte områder for å skape kontraster og overganger.
+
+Tips
+Kombiner varme og kalde farger for mer slående gradienter.
+
+2. Tekstureffekter
+
+Bruk glasurer med metalloksider (som jern eller kobber) som reagerer kjemisk under brenning og skaper teksturer.
+
+Påfør topplaget med tørr pensel for synlige penselstrøk og en røff effekt.
+
+Eksperimenter med reaktive glasurer som gir krakelering eller marmorerte effekter når de legges lagvis.
+
+3. Avslutning med transparent glasur
+
+Legg en klar, blank glasur over en matt for å fremheve fargene og gi dybde.
+
+Bruk transparente glasurer farget med pigmenter for gjennomskinnelige fargelag.
+
+Lag mønstre ved å påføre klar glasur på utvalgte områder, slik at teksturer og dekor under trer frem.
+
+4. Kombinasjon av reaktive glasurer
+
+Reaktive glasurer inneholder oksider som samspiller under brenningen.
+
+Påfør en reaktiv base (for eksempel en askeglasur) og topp med en silikarik glasur for unike teksturer.
+
+Eksperimenter med glasurer som gir marmorerte eller krystalliserende effekter.
+
+Merk
+Resultatene med reaktive glasurer er uforutsigbare – men det er nettopp det som gjør dem interessante.
+
+Gradient
+
+Teksturert
+
+Reaktiv glasur
+
+Klar glasur
+
+Kapittel 9
+Praktiske eksempler og velprøvde kombinasjoner
+
+Dette kapittelet viser vellykkede glasurkombinasjoner med effekter og anbefalinger, samt praktiske eksempler du kan gjenskape på egne stykker.
+
+Kombinasjon 1: Myk gradient mellom kontrastfarger
+
+Base: Lavflytende hvit matt glasur.
+
+Topplag: Høyflytende blå blank glasur.
+
+Effekt: En jevn gradient der det blå flyter kontrollert over den hvite basen og skaper harmoniske overganger.
+
+Anbefaling: Påfør et tynt lag av den blå glasuren øverst på stykket og vipp det litt for å styre flyten.
+
+Eksempel: Myk gradient
+
+Kombinasjon 2: Organisk spettet effekt
+
+Base: Olivengrønn satengglasur.
+
+Topplag: Reaktiv transparent glasur med jernoksider.
+
+Effekt: Små flekker og marmorerte teksturer trer frem mot det grønne og gir en rustikk, naturlig finish.
+
+Anbefaling: Påfør topplaget med tørr pensel for å forsterke flekkene.
+
+Eksempel: Organisk spettet effekt
+
+Kombinasjon 3: Krakelerte teksturer på mørk bakgrunn
+
+Base: Blank svart glasur.
+
+Topplag: Matt transparent glasur med høyt sinkoksidinnhold.
+
+Effekt: Kontrollert krakelering som avslører den svarte bunnglasuren og gir dybde og kontrast.
+
+Anbefaling: Bruk tynne lag for å unngå oppbygging som kan svekke krakeleringseffekten.
+
+Eksempel: Krakelert tekstur
+
+Praktisk eksempel: Lagvis glasering på kopper
+
+Påfør en lys matt glasur på hele koppen som base.
+
+Legg vertikale linjer med en mørk blank glasur (høy flyt) med pensel.
+
+La glasuren flyte ned mot underkanten under brenningen for å skape en dryppeffekt.
+
+Forventet resultat: En kopp med et dynamisk og organisk design som skiller seg ut i enhver kolleksjon.
+
+Eksempel: Dryppeffekt på kopper
+
+Kapittel 10
+Konklusjon og neste steg
+
+Gratulerer – du er ferdig med håndboken i lagvis glasering! Nå som du har lært de viktigste teknikkene for å kombinere glasurer og skape fantastiske effekter, er det på tide å bruke det du har lært og ta ferdighetene dine videre.
+
+Refleksjon over det du har lært
+
+Gjennom denne håndboken har vi dekket grunnprinsippene for vellykket lagvis glasering: fra å velge riktige glasurer til å bruke spesifikke teknikker for unike resultater. Du har lært å kontrollere glasurmengden, blande farger og leke med teksturer. Alt dette lar deg eksperimentere og sette et personlig, profesjonelt preg på keramikken din.
+
+Det er på tide å øve!
+
+Lagvis glasering er en kunst som perfeksjoneres gjennom øvelse. Ikke nøl med å eksperimentere med forskjellige glasurkombinasjoner, påføringsmåter og brenninger. Hvert forsøk bringer deg nærmere arbeider som ikke bare er visuelt tiltalende, men også unike i stilen.
+
+Neste steg
+
+Test i liten skala: Begynn med å teste på små biter. Da kan du utforske nye kombinasjoner uten å bruke for mye materiale. Husk at hver feil er en verdifull lærdom!
+
+Studer resultatene: Analyser stykkene etter brenning. Blandet fargene seg som forventet? Ble effekten slik du ønsket? Denne analysen er viktig for å utvikle teknikken og finne din personlige stil.
+
+Fortsett å lære: Keramikkens verden er full av nye teknikker og materialer. Hold deg oppdatert og søk inspirasjon til å fortsette å utvikle deg.
+
+Del arbeidene dine: Bli med i keramikkmiljøer og vis frem det du lager. Tilbakemeldinger fra andre keramikere er uvurderlige for å bli bedre.
+
+Vurder kurs: Vil du fordype deg i spesifikke teknikker eller keramikk generelt, er kurs en fin vei videre.
+
+Ikke stopp!
+Å lære keramikk er en kontinuerlig prosess. Denne håndboken har gitt deg et solid grunnlag, men mulighetene er uendelige. Det er din tur til å skape, utforske og ta håndverket ditt til nye høyder!
+
+Har du spørsmål?
+Skriv til post@lissom.no , så hjelper vi deg gjerne videre. Vil du lære mer, spør oss om kurs!

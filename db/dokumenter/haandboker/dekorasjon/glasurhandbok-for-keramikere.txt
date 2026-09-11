@@ -1,0 +1,883 @@
+Glasurhåndbok for keramikere
+
+LISSOM KERAMIKK & HÅNDVERK AS · LISSOM.NO · POST@LISSOM.NO
+
+Håndbok
+
+Glasurhåndbok for keramikere
+
+Forbedre arbeidene dine med unike og profesjonelle overflater. Typer, formulering, påføring og feilsøking av glasurer.
+
+Innhold
+
+1 Introduksjon til keramiske glasurer
+
+2 Typer glasurer og overflater
+
+3 Forberedelse, justering og formulering
+
+4 Påføringsteknikker
+
+5 Vanlige problemer og løsninger
+
+6 Glasurer og kreative effekter
+
+7 Brenning og ideelle temperaturer
+
+8 Stell og vedlikehold av ovnen
+
+9 Hvor kjøpe materialer og glasurer?
+
+10 Praktiske prosjekter og konklusjoner
+
+Kapittel 1
+Introduksjon til keramiske glasurer
+
+Hvorfor er glasurer viktige i keramikk?
+
+Glasurer er keramikkens sjel: De beskytter arbeidene, fremhever skjønnheten deres og gir dem personlighet. Fra blanke og matte overflater til teksturerte effekter forvandler glasur enhver kreasjon til et unikt kunstverk.
+
+Lav og høy temperatur: Hva bør du vite?
+
+Denne håndboken dekker teknikker og formler for arbeid med glasurer både ved lave temperaturer (dekorative gjenstander) og høye temperaturer for steingods (bruks- og holdbare gjenstander). Den er en ressurs for alle typer keramikere!
+
+Slik velger du riktig glasur til stykket ditt
+
+Valg av glasur avhenger av formålet med stykket og hvilken leire du bruker:
+
+Dekorative gjenstander: Lavtemperaturglasurer er ideelle – de gir livlige farger og unike effekter.
+
+Bruksgjenstander: Til tallerkener, kopper og servise er høytemperaturglasurer bedre; de er mer holdbare og trygge for daglig bruk.
+
+Spesifikke overflater: Vurder om du vil ha en matt, blank eller teksturert finish, avhengig av stilen du ønsker.
+
+Hva finner du i denne håndboken?
+
+Grunnleggende og avanserte konsepter om glasurer.
+
+Teknikker for å påføre og tilpasse overflatene dine.
+
+Praktiske løsninger på vanlige problemer.
+
+Prosjekter for å eksperimentere og bli bedre.
+
+Oppskrifter og formler for å lage dine egne glasurer.
+
+Sikkerhet og håndtering av keramiske materialer
+
+Arbeid med keramiske glasurer innebærer håndtering av materialer som kan være farlige uten riktig behandling. Følg disse anbefalingene for å beskytte helsen din og sikre et trygt miljø:
+
+Forholdsregler med pulvermaterialer
+
+Bruk kvalitetsmasker (N95 eller bedre) for å unngå å puste inn fine partikler.
+
+Unngå å puste inn støv når du blander tørre ingredienser eller sikter glasur.
+
+Arbeid i godt ventilerte områder, eller bruk helst punktavsug.
+
+Vask hender og ansikt etter å ha håndtert tørr glasur.
+
+Riktig bruk av maske, hansker og ventilasjon
+
+Bruk hansker når du håndterer våt glasur, spesielt glasurer med oksider eller giftige komponenter.
+
+Jobber du i et lukket rom, sørg for tilstrekkelig ventilasjon eller bruk avtrekksvifte.
+
+Ikke spis eller drikk i arbeidsområdet – da unngår du utilsiktet inntak av partikler.
+
+Sikker håndtering av glasuravfall
+
+Ikke hell rester av flytende glasur i avløpet. La den bunnfelle seg i en beholder og hell det rene vannet over til gjenbruk.
+
+Fast avfall skal kastes forsvarlig eller gjenvinnes der det er mulig.
+
+Merk avfallsbeholdere tydelig og oppbevar dem utilgjengelig for barn og kjæledyr.
+
+Kapittel 2
+Typer glasurer og overflater
+
+Lavtemperaturglasurer
+
+Kjennetegn: Lavtemperaturglasurer har vanligvis livlige og iøynefallende farger. De egner seg best til dekorative gjenstander, siden de ikke alltid tåler slitasje eller vann.
+
+Bruksområder: Perfekte til skulpturer, dekor og kunstprosjekter.
+
+Høytemperaturglasurer (steingods)
+
+Kjennetegn: Disse glasurene er mer holdbare og tryggere for hverdagsartikler som servise. De gir mer subtile overflater, ofte i en jordnær og naturlig fargepalett.
+
+Bruksområder: Kopper, tallerkener, boller og andre gjenstander som trenger holdbarhet.
+
+Eksempel: Lavtemperaturstykke
+
+Eksempel: Høytemperaturstykke (steingods)
+
+De vanligste overflatene
+
+Blank: Fremhever farger og teksturer. Ideell for dekorative gjenstander som skal ha en livlig finish.
+
+Matt: Sofistikert og elegant, perfekt for moderne servise.
+
+Sateng: En mellomting mellom matt og blank, med en unik visuell mykhet.
+
+Teksturert: Skaper unike effekter som krakelering eller metalliske overflater som fremhever kreativiteten i arbeidene dine.
+
+Blank
+
+Matt
+
+Teksturert
+
+Sateng
+
+Referansetabell
+
+Glasurtype Ideell temperatur De vanligste fargene
+
+Lav temperatur Kjegle 06–04 Levende røde, turkise og gule toner
+
+Høy temperatur (steingods) Kjegle 6–10 Jordfarger, myke hvittoner, dempede blåtoner
+
+Ekstra tips
+Velg glasur og finish ut fra formålet med stykket og stilen du ønsker å formidle.
+
+Innovasjoner og trender innen overflater
+
+Keramiske overflater har utviklet seg takket være nye materialer og avanserte teknikker. Her er noen av de viktigste innovasjonene:
+
+Fotokeramiske glasurer: Reagerer på lys og skaper mønstre eller farger som endres med belysningen. Brukes mest til dekorative og kunstneriske gjenstander, og krever spesiell brenning eller UV-eksponering for aktivering.
+
+Selvreparerende glasurer: Utviklet for å reparere mikrosprekker fra støt eller termisk stress. De inneholder mikrokapsler som frigjør reparasjonsmateriale ved skade. Ideelle for servise og bruksgjenstander med høye krav til holdbarhet.
+
+Iriserende og metalliske glasurer: Gir unike visuelle effekter som endres med synsvinkelen, ved hjelp av metallpartikler eller spesialkomponenter med flerfargede refleksjoner. Populære i keramiske smykker og moderne dekor.
+
+Ny generasjon reaktive glasurer: Skaper komplekse teksturer eller patina-effekter i møte med andre glasurer eller leirtyper, og etterligner naturlige materialer som stein, tre eller eldet metall.
+
+Kapittel 3
+Forberedelse, justering og formulering
+
+Hvordan forberede glasur effektivt?
+
+Forberedelsen av glasuren er et viktig trinn for å oppnå jevne, profesjonelle overflater. Følg disse grunnleggende trinnene for en perfekt blanding:
+
+Sikt ingrediensene: Sil alle ingrediensene gjennom en fin sikt før blanding, så unngår du klumper og sikrer jevn fordeling.
+
+Bland med vann: Tilsett vann litt etter litt under konstant omrøring til du får ønsket tetthet.
+
+Bruk stavmikser: Et elektrisk verktøy hjelper deg å løse opp ingrediensene helt.
+
+Justering av tetthet og viskositet
+
+Tetthet og viskositet er nøkkelen til riktig påføring.
+
+Tetthet: Bruk et hydrometer til å måle og justere etter glasurtypen. Blanke glasurer: høyere tetthet. Matte glasurer: lavere tetthet.
+
+Viskositet: Justeres ved å tilsette vann eller fortykningsmiddel etter behov.
+
+Glasurtype Anbefalt tetthet Formål/kjennetegn
+
+Blank 1,45 g/cm³ Fremhever farger og gir en glassaktig finish.
+
+Matt 1,35 g/cm³ Gir en glatt finish uten gjenskinn.
+
+Teksturert (krakelert) 1,40 g/cm³ Unike effekter med en visuelt rik overflate.
+
+Viktige verktøy for å lage glasur
+
+Sikter og siler: Fjerner store partikler og gir en homogen blanding. Bruk finmaskede sikter (80–100 mesh).
+
+Stavmikser eller rørepinne: Uunnværlig for å blande glasuren og hindre at materialene skiller seg.
+
+Hydrometer: Måler glasurens tetthet, slik at du kan justere den etter behov.
+
+Måleskjeer og -kopper: Nyttige for å måle nøyaktige mengder vann og tørrstoff.
+
+Store beholdere: Gjør blandingen enklere og hindrer søl.
+
+Silikonspatler: Ideelle for å skrape kantene på beholderen og utnytte materialet.
+
+Hansker og maske: Beskytter deg når du håndterer pulvermaterialer som kan være giftige.
+
+Glasurformulering: En grunnleggende veiledning
+
+Glasurformulering er nøkkelen til å tilpasse farger, teksturer og overflater. Her er en praktisk veiledning med grunnoppskrifter og tips for trygg eksperimentering.
+
+1. Grunnkomponentene i en glasur
+
+Glassdannere (silika): Danner glasslaget på overflaten.
+
+Flussmidler: Hjelper glasuren å smelte ved lavere temperaturer.
+
+Stabilisatorer (alumina): Kontrollerer glasurens flyt og hindrer at den renner under brenning.
+
+2. Grunnoppskrifter
+
+Blank klar glasur (høy temperatur): 50 % keramisk fritte 3134, 25 % silika, 25 % kaolin.
+
+Matt, ugjennomsiktig glasur (høy temperatur): 40 % keramisk fritte 3124, 30 % silika, 20 % kaolin, 10 % kalsiumkarbonat.
+
+Satengglasur (lav temperatur): 60 % keramisk fritte 3195, 20 % kalsiumkarbonat, 10 % talkum, 10 % silika.
+
+3. Farge i glasuren
+
+Gi glasuren et personlig preg med pigmenter eller oksider:
+
+Koboltoksid: 1–2 % for blåtoner.
+
+Kobberoksid: 2–4 % for grønne eller turkise farger.
+
+Jernoksid: 4–8 % for brune eller røde farger.
+
+Tinnoksid: 5–8 % for matte glasurer.
+
+Tips
+Test alltid på små prøver før du bruker formelen på et stort stykke.
+
+4. Registrering og justeringer
+
+Nøyaktige prosenter av hver komponent.
+
+Resultater etter brenning (temperatur, atmosfære, utseende).
+
+Notater om justeringer til neste test.
+
+Avansert guide til glasurformulering
+
+Avansert formulering gir tilpassede overflater, farger og teksturer med større kontroll over oppskriften.
+
+Kjemiske justeringer for farger og teksturer
+
+Fargeendring: Varier konsentrasjonen av metalloksider (kobolt, kobber, jern) for å forsterke eller dempe fargene. Tilsett opasifikatorer som tinnoksid eller zirkonium for pastellfarger eller mindre gjennomsiktighet. Kombiner oksider for spesifikke farger (for eksempel smaragdgrønn = kobolt + krom).
+
+Teksturendring: Øk aluminainnholdet for matte overflater. Tilsett grove partikler (sand, granulert silika) for kornete eller ru teksturer. Bruk spesifikke flussmidler for krakelerte eller metalliske effekter.
+
+Slik lager du reaktive glasurer med unike effekter
+
+Lagvise glasurer: Påfør en baseglasur og legg en reaktiv glasur oppå for flytende eller kontrasterende mønstre.
+
+Krystallinske glasurer: Tilsett materialer som gir krystalldannelse under langsom avkjøling (for eksempel sinkoksid).
+
+Kontrollerte reduksjonsglasurer: Manipuler ovnsatmosfæren for metalliske overflater eller intense farger.
+
+Fluorescerende glasurer: Pigmenter som reagerer under UV-lys, hovedsakelig dekorative.
+
+Sammenligningstabell: Formler for glasureffekter
+
+Ønsket effekt Grunnformel (i %) Kjennetegn Brenningsanbefaling
+
+Blank 50 % fritte 3134, 25 % silika, 25 % kaolin Glassaktig finish, intense farger. Kjegle 6–10 (høy temperatur)
+
+Matt 40 % fritte 3124, 30 % silika, 20 % kaolin, 10 % kalsiumkarbonat Glatt overflate uten refleksjoner. Kjegle 6–10 (høy temperatur)
+
+Teksturert (krakelert) 50 % fritte 3134, 20 % silika, 20 % kaolin, 10 % alumina Overflate med kontrollerte sprekker. Kjegle 6–8 (middels til høy)
+
+Metallisk 40 % fritte 3124, 20 % silika, 30 % kaolin, 10 % jern- eller kobberoksid Metalliske refleksjoner. Reduserende atmosfære, kjegle 6–10
+
+Krystallinsk 50 % fritte 3195, 20 % silika, 20 % kaolin, 10 % sinkoksid Dekorative krystaller. Langsom avkjøling, kjegle 6–10
+
+Fluorescerende 50 % fritte 3134, 20 % silika, 20 % kaolin, 10 % fluorescerende pigment Gløder under UV-lys. Kjegle 06–04 (lav temperatur)
+
+Reaktiv 40 % fritte 3124, 30 % silika, 20 % kaolin, 10 % blandede metalloksider Unike og varierte effekter. Kjegle 6–10 (høy temperatur)
+
+Kapittel 4
+Påføringsteknikker
+
+Lær de viktigste teknikkene for å glasere stykkene dine:
+
+1. Dypping
+
+Beskrivelse: Senk stykket helt ned i glasuren for jevn dekning.
+
+Fordeler: Rask – ideell for større produksjon.
+
+Bland glasuren godt før du senker stykket ned i den.
+
+Løft stykket sakte opp for å unngå drypping.
+
+2. Pensel
+
+Beskrivelse: Påfør glasuren med myke pensler på bestemte områder eller små stykker.
+
+Fordeler: Full kontroll over påføringen.
+
+Bruk myke pensler for å unngå merker.
+
+Påfør tynne lag og la det tørke mellom hvert lag.
+
+3. Sprøyting
+
+Beskrivelse: Bruk airbrush eller sprøytepistol for en jevn påføring.
+
+Fordeler: Gir gradientfinish og dekker store stykker uten problemer.
+
+Bruk maske for å beskytte deg mot luftbårne partikler.
+
+Sørg for at glasuren har riktig konsistens for airbrushen.
+
+4. Helling
+
+Ideell for: Abstrakte design og spontane effekter.
+
+Hell glasuren direkte over stykket fra ulike høyder.
+
+La glasuren flyte naturlig og juster tykkelsen.
+
+Bruk en stor beholder til å samle opp overflødig glasur.
+
+Lek med forskjellige farger hellet i lag for flytende effekter.
+
+Avansert tips
+Kombiner glasurer med ulik viskositet for uventede mønstre.
+
+5. Blandede teknikker
+
+Ideell for: Unike og kreative arbeider.
+
+Påfør en base med pensel og sprøyt over detaljene.
+
+Kombiner dypping og svamp for mer dynamiske teksturer.
+
+Eksperimenter med kombinasjoner på små stykker før du bruker dem på store prosjekter.
+
+Tips
+Hold oversikt over kombinasjonene og resultatene dine, så kan du gjenta favoritteffektene.
+
+Referansetabell
+
+Teknikk Fordeler Ideell for
+
+Dypping Rask og ensartet. Større produksjon.
+
+Pensel Presis og detaljert. Små stykker og unike design.
+
+Sprøyting Myke gradientoverflater. Store stykker og spesialeffekter.
+
+Helling Organiske, spontane resultater. Abstrakte design og dramatiske effekter.
+
+Blandede teknikker Kombinerer det beste fra flere metoder. Unike stykker og avanserte overflater.
+
+Dypping
+
+Pensel
+
+Sprøyting
+
+Helling
+
+Slik oppnår du ensartede overflater
+
+Rengjør stykket grundig for støv og fett før du påfører glasuren.
+
+Hold glasurens tetthet og viskositet tilpasset den valgte påføringsmetoden.
+
+Kombinerer du teknikker, la stykket tørke godt mellom hver, så unngår du heftproblemer.
+
+Vanlige feil i påføringen
+
+Drypp: Påfør glasur i tynne lag og fjern overflødig glasur ved dypping.
+
+Uglaserte områder: Sjekk dekningen før brenning. En liten pensel kan korrigere ujevnheter.
+
+Uønsket tekstur: Oppdager du bobler eller klumper, sikt glasuren på nytt.
+
+Innovasjoner: digitale verktøy
+
+Tradisjonelle påføringsteknikker suppleres i dag av digitale verktøy som gir større kontroll og kreativitet:
+
+Programvare for glasurformulering: Programmer som GlazeBase og DigitalFire lar deg lage og justere glasuroppskrifter presist, føre detaljerte testlogger og simulere resultatet før du påfører glasuren fysisk.
+
+Digitaltrykk av glasurer: Teknologi som påfører glasur og pigmenter med spesialskrivere – komplekse design i høy oppløsning, mest brukt i dekorativ keramikk og industri.
+
+Robotisert påføring: Robotarmer for serieproduksjon gir jevn og kontrollert påføring og åpner for programmerbare mønstre og gradienter.
+
+Nye blandede metoder: Pensel og sprøyting kombinert med digitale hjelpemidler, og laserskårne eller 3D-printede sjablonger for komplekse design.
+
+Kapittel 5
+Vanlige problemer og løsninger
+
+1. Bobler, flekker og glasur som ikke fester seg
+
+Bobler
+
+Årsak: Luft fanget i glasuren eller stykket, eller at stykket ikke var helt tørt før glasering.
+
+Sikt glasuren godt før bruk for å fjerne store partikler og luft.
+
+La glasuren hvile noen minutter etter blanding, slik at bobler forsvinner.
+
+Sørg for at stykket er tørt før du glaserer.
+
+Flekker
+
+Årsak: Smuss, støv eller fett på overflaten, eller ujevnt blandet glasur.
+
+Rengjør stykket med en fuktig klut før du påfører glasuren.
+
+Rør eller bland glasuren godt før bruk, så den ikke skiller seg.
+
+Dårlig heft
+
+Årsak: For tynn glasur eller støv på stykket.
+
+Juster glasurens tetthet med mindre vann eller med fortykningsmiddel.
+
+Rengjør stykket med fuktig svamp og sikt glasuren for bedre heft.
+
+2. Fargeforskjeller mellom rå og brent glasur
+
+Årsak: Brenningstemperaturen påvirker glasurens kjemiske reaksjoner; fargen på rå glasur samsvarer ikke alltid med den endelige fargen etter brenning. Leiretypen spiller også inn.
+
+Test på små biter før du glaserer hele produksjonen.
+
+Bruk referansetabellene fra glasurprodusenten.
+
+Loggfør temperaturer og resultater for å justere oppskriftene i senere brenninger.
+
+3. Slik hindrer du at glasuren renner på vertikale stykker
+
+Årsak: For tynn glasur eller for tykt lag; dårlig heft på buede eller vertikale flater.
+
+Juster tettheten slik at glasuren ikke blir for rennende (1,35–1,40 g/cm³ er ideelt).
+
+Påfør glasuren i tynne lag og la den tørke mellom lagene.
+
+Unngå å dyppe stykker med mange kurver helt; bruk pensel for bedre kontroll.
+
+Ekstra tips
+Før logg over hver glasering og brenning. Noter formler, temperaturer og resultater for å se mønstre og forbedre deg kontinuerlig.
+
+Kvalitetskontroll og standardisering
+
+Konsistente resultater av høy kvalitet er viktig i produksjonen av glaserte gjenstander.
+
+Holdbarhets- og mattrygghetstester
+
+Utfør slitasjetester for å vurdere motstanden til bruksglasurer (servise, kopper osv.).
+
+Test glasurens heft med kontrollerte trykk- eller slagtester.
+
+Vurder motstand mot brå temperaturendringer (termisk sjokk).
+
+Sørg for at glasur på funksjonelle stykker ikke avgir giftige stoffer.
+
+Test med eddik eller andre syrer for å se om glasuren reagerer eller brytes ned.
+
+Bruk kun glasur merket som matsikker på servise.
+
+Metoder for jevn kvalitet i produksjonen
+
+Detaljert logg over formler og brenninger: Før en keramikkjournal med data om sammensetninger, temperaturer og resultater.
+
+Kalibrert utstyr: Riktig justerte hydrometre, viskometre og pyrometre gir mer forutsigbare resultater.
+
+Periodisk testing: Kjør prøver før du bruker ny glasur i full produksjon.
+
+Standardiserte prosedyrer: Definer faste trinn for hver påføringsteknikk, fra forberedelse til brenning.
+
+Kapittel 6
+Glasurer og kreative effekter
+
+Glasurer beskytter ikke bare arbeidene dine – de er også et verktøy for å gi dem personlighet og stil. Her utforsker vi teknikker og effekter du kan oppnå med litt kreativitet og de riktige materialene.
+
+1. Teknikker for teksturerte overflater
+
+Krakelert: Bruk glasurer laget for å sprekke, eller tilsett spesifikke oksider. Tips: Prøv klare glasurer på farget leire for å fremheve sprekkene.
+
+Metallisk: Glasurer med jern- eller kobberoksid brent i reduserende atmosfære. Tips: Påfør på små områder, så stykket ikke blir overlesset.
+
+Granulerte glasurer: Bland grove oksidpartikler eller pigmenter med matte glasurer. Perfekt for dekorative gjenstander med markert tekstur.
+
+2. Tilpassede blandinger for unike farger
+
+Kombiner blanke og matte glasurer for slående kontraster.
+
+Bland inn metalloksider (som kobolt eller kobber) i små mengder for å eksperimentere med unike nyanser.
+
+Tips
+Dokumenter blandingene og resultatene dine, så kan du gjenta effektene du liker.
+
+3. Kjemiske reaksjoner for spesialeffekter
+
+Oksidasjon vs. reduksjon: Ovnsatmosfæren kan endre glasurfargene – kobberoksid blir for eksempel rødt i reduserende atmosfære.
+
+Lagvise glasurer: Påfør to forskjellige glasurer lagvis for uventede mønstre.
+
+Ekstra tips
+Trikset for kreative effekter er eksperimentering. Ikke vær redd for å prøve nye kombinasjoner – og dokumenter hvert trinn for å forstå resultatene.
+
+Kreative glasureffekter
+
+Kommersielle glasurer kontra egenlagde glasurer
+
+Begge har fordeler og ulemper som bør vurderes ut fra prosjektet.
+
+Kommersielle glasurer
+
+Fordeler: Klare til bruk uten kompleks formulering. Konsistens garantert av produsenten. Bredt utvalg av farger og finisher. Tydelige instruksjoner om temperatur og påføring.
+
+Ulemper: Begrenset tilpasning. Kan være dyre sammenlignet med glasur laget fra bunnen av. Noen egner seg ikke for høye temperaturer eller spesielle bruksområder.
+
+Egenlagde glasurer
+
+Fordeler: Full kontroll over formuleringen og unike overflater. Mulighet til å lage spesifikke glasurer for ulike leirtyper og effekter. Lavere kostnader over tid ved kjøp av basismaterialer i større mengder.
+
+Ulemper: Krever avansert formuleringskunnskap. Mindre forutsigbare resultater uten skikkelig testing. Lengre forberedelses- og testtid.
+
+Slik tilpasser du kommersielle glasurer
+
+Tilpassede blandinger: Kombiner kommersielle glasurer med oksider eller pigmenter for å endre fargene, eller legg flere glasurer lagvis for kombinerte effekter.
+
+Teksturer og spesialeffekter: Tilsett kornede materialer eller metallpulver for teksturerte overflater; eksperimenter med lagdeling og blandede teknikker.
+
+Justering av fortynning og viskositet: Endre tettheten til kommersielle glasurer for å påvirke oppførselen under påføring.
+
+Sammenligningstabell
+
+Aspekt Kommersielle glasurer Egenlagde glasurer
+
+Brukervennlighet Klar til bruk, tydelige instruksjoner. Krever avansert formuleringskunnskap.
+
+Kostnad Generelt dyrere per volum. Rimeligere over tid ved større innkjøp av råvarer.
+
+Tilpasning Begrenset til blanding av ferdige glasurer. Full kontroll over formel, farger, teksturer og effekter.
+
+Sikkerhet Tydelige sikkerhetsinstruksjoner fra produsenten. Avhenger av riktig håndtering av råmaterialene.
+
+Allsidighet Ideell for nybegynnere og raske prosjekter. Unike og spesifikke glasurer for hvert prosjekt.
+
+Forberedelsestid Umiddelbart klar til påføring. Mer tid til testing og justeringer.
+
+Ideelle bruksområder Dekorative eller funksjonelle prosjekter med standardkrav. Kunstneriske, personlige eller eksperimentelle arbeider.
+
+Anbefaling Følg produsentens instruksjoner og test på små prøver først. Test kontinuerlig og før detaljert logg over formler og resultater.
+
+Kapittel 7
+Brenning og ideelle temperaturer
+
+Brenning er et av de viktigste trinnene i den keramiske prosessen. Temperatur og tid påvirker direkte hvordan glasuren smelter og den endelige finishen på stykkene.
+
+1. Bruk av pyrometriske kjegler
+
+Hva er de? Kjegler er keramiske verktøy som bøyer seg når de når en bestemt temperatur. De viser om ovnen har nådd riktig temperatur for glasurbrenningen.
+
+Plasser en kjegle midt i ovnen ved siden av stykkene dine.
+
+Bruk flere kjegler (for eksempel kjegle 5, 6 og 7) for å sikre at glasuren smelter i riktig område.
+
+Bruk alltid kjegler som samsvarer med glasurens temperatur.
+
+2. Temperaturområde etter glasurtype
+
+Lav temperatur (kjegle 06–04): Ideell for dekorative glasurer og livlige farger. Cirka 950–1100 °C.
+
+Høy temperatur, steingods (kjegle 6–10): Perfekt for funksjonelle og slitesterke glasurer. Cirka 1220–1300 °C.
+
+Tips
+Sjekk alltid glasurens spesifikasjoner, slik at den passer innenfor det ideelle området.
+
+3. Faktorer som påvirker brenningen
+
+Varmefordeling: Sonene i ovnen kan variere i temperatur. Bruk et ekstra termometer for å overvåke dette.
+
+Oppvarmingshastighet: For rask temperaturøkning kan gi bobler eller sprekker. Øk gradvis.
+
+Holdetid: Når ideell temperatur er nådd, hold ovnen der så lenge glasuren krever.
+
+4. Anbefalinger for glasering av forskjellige stykker
+
+Store stykker: Brenn ved jevn temperatur for å unngå varmestress.
+
+Stykker med flerlags glasur: Sørg for at alle lagene er tørre før de settes i ovnen.
+
+Glasurtype Kjegle Omtrentlig temperatur Kjennetegn
+
+Lav temperatur Kjegle 06–04 950–1100 °C Livlige farger, ideell for dekorative gjenstander.
+
+Høy temperatur (steingods) Kjegle 6–10 1220–1300 °C Slitesterk overflate, perfekt for servise.
+
+Brenningens innvirkning på glasurer
+
+1. Temperatur og effekter
+
+Lav temperatur (980–1080 °C): Lysere og mer intense farger på grunn av mindre kjemisk samspill mellom komponentene. Lavere slitestyrke – ideell for dekor.
+
+Høy temperatur (1200–1280 °C): Mer naturlige og myke toner med varig finish. Bedre glasursmelting gir overflater som tåler daglig bruk.
+
+Praktisk tips
+Sjekk alltid temperaturområdet produsenten anbefaler, så unngår du bobler eller dårlig smeltet glasur.
+
+2. Temperaturkurven (stigning og avkjøling)
+
+Rask stigning: Kan gi bobler eller sprekker hvis stykket ikke rekker å frigjøre gasser.
+
+Langsom stigning: Lar gassene slippe gradvis ut og reduserer overflatefeil.
+
+Rask avkjøling: Kan gi spenninger i glasuren, med sprekker eller avskalling som resultat.
+
+Langsom avkjøling: Lar glasurkrystallene utvikle seg riktig og gir en mer stabil, slitesterk overflate.
+
+Ekstra tips
+Bruk pyrometer eller programmerbar kontroller for å styre temperaturkurvene nøyaktig.
+
+3. Ovnsatmosfære: oksiderende vs. reduserende
+
+Oksiderende atmosfære: Lysere og mer konsistente farger. Typisk i elektriske ovner.
+
+Reduserende atmosfære: Mer varierte effekter og dempede eller metalliske toner. Vanlig i gass- og vedovner.
+
+4. Vanlige brenningsproblemer
+
+Rennende glasur: For mye flussmiddel eller svært høy temperatur. Juster oppskriften eller senk temperaturen.
+
+Sprekker: Ulik utvidelseskoeffisient mellom stykke og glasur. Bruk glasurer som er kompatible med leiren.
+
+Bobler: Gasser fanget i stykket eller glasuren. Forleng stignings- og avkjølingskurven.
+
+Brenningslogg og resultatanalyse
+
+Detaljert registrering av hver brenning er viktig for konsistente resultater og for å kunne gjenskape vellykkede oppskrifter. Loggen forenkler også feilsøking.
+
+Beskrivelse av stykket: Leiretype (hvit, rød, porselen, steingods), glasurtype (blank, matt, teksturert) og påføringsteknikk (dypping, pensel, sprøyting).
+
+Temperaturkurve: Oppvarmingshastighet (°C per time), maksimal temperatur, holdetid og avkjølingshastighet.
+
+Ovnsatmosfære: Oksiderende (vanlig i elektriske ovner) eller reduserende (gass- og vedfyrte ovner).
+
+Observerte resultater: Farge og tekstur, eventuelle defekter (sprekker, bobler, rennende glasur), sammenligning med tidligere prøver.
+
+Foreslåtte justeringer: Endringer i glasurformelen, temperaturkurven eller atmosfæren; nye teknikker å teste.
+
+Sammenligningstabell: Brenningens innvirkning på ulike glasurer
+
+Brenningsforhold Blanke glasurer Matte glasurer Teksturerte glasurer Metalliske glasurer
+
+Lav temperatur (kjegle 06–04) Ufullstendig smelting, dempede farger. Støvete eller ujevnt utseende. Ugjennomsiktig tekstur uten definert effekt. Svake eller fraværende metalliske refleksjoner.
+
+Høy temperatur (kjegle 6–10) Intens glans og god smelting. Glatt og jevn overflate. Uttalt relieff og definerte detaljer. Intense og godt festede metalliske refleksjoner.
+
+Rask avkjøling Kan gi sprekker uten riktig kontroll. Vanligvis uten merkbare endringer. Teksturene utvikles ikke fullt ut. Mindre intense refleksjoner.
+
+Langsom avkjøling Større dybde og fargerikdom. Glattere overflate. Fremmer krystaller og komplekse mønstre. Større metning i metalltonene.
+
+Oksiderende atmosfære Lyse og konsistente farger. Ensartet matt utseende. Definerte effekter uten metalliske variasjoner. Mindre uttalte metallfarger.
+
+Reduserende atmosfære Delvis tap av glans. Matt utseende med varme undertoner. Teksturer beriket med unike variasjoner. Dype og livlige metalltoner.
+
+Resultater etter brenning ved riktig temperatur
+
+Kapittel 8
+Stell og vedlikehold av ovnen
+
+Ovnen er keramikerens viktigste verktøy, og riktig vedlikehold sikrer korrekt drift, konsistente resultater og lengre levetid. Her er beste praksis for å ta vare på ovnen din.
+
+1. Regelmessig rengjøring
+
+Etter hver brenning
+
+Fjern glasurrester som kan ha falt ned på platene. Bruk en myk skrape for å unngå å skade overflaten.
+
+Rengjør varmeelementene og innerveggene med en myk børste for å fjerne støv og fragmenter.
+
+Hver 3.–6. måned
+
+Støvsug innsiden av ovnen for å fjerne støv som kan påvirke brenningsresultatene.
+
+Tips
+Bruk beskyttelsesplater i bunnen, så hindrer du at smeltet glasur skader ovnen.
+
+2. Inspeksjon av varmeelementer
+
+Se over varmeelementene for sprekker, brennmerker eller slitte områder.
+
+Bruker ovnen lengre tid på å nå ønsket temperatur, kan det være tegn på at elementene må byttes.
+
+Anbefaling
+Bytt varmeelementene når ytelsen er redusert med 20–30 %. Se produsentens håndbok for sikker utskifting.
+
+3. Vedlikehold av ovnsplater
+
+Før hver brenning: Påfør et lag ildfast platebeskyttelse (kiln wash) over platene for å beskytte mot rennende glasur og sprut.
+
+Av og til: Puss platene med slipesvamp hvis det dannes glasuravleiringer.
+
+Bytt platene hvis de får deformasjoner eller dype sprekker som påvirker stabiliteten til stykkene.
+
+4. Kalibrering av ovnen
+
+Bruk pyrometer for å kontrollere at den viste temperaturen stemmer.
+
+Avviker den faktiske temperaturen mer enn 10 °C fra innstilt verdi, må termostaten kanskje justeres eller byttes.
+
+Praktisk tips
+Test jevnlig med pyrometriske kjegler for å bekrefte ovnens nøyaktighet.
+
+5. Sikkerhet ved bruk av ovnen
+
+Egnet plassering: Sett ovnen på et godt ventilert sted, unna brennbare materialer, med minst 30 cm klaring til veggene.
+
+Elektrisk kontroll: Sjekk ledninger og tilkoblinger regelmessig for å unngå kortslutning.
+
+Under brenning: La aldri ovnen stå uten tilsyn mens temperaturen stiger. Bruk varmebestandige hansker og verktøy når du håndterer varme deler.
+
+6. Vedlikeholdslogg
+
+Journalføring hjelper deg å forebygge større problemer. Ta med:
+
+Dato for siste rengjøring og inspeksjon.
+
+Utskiftninger som er gjort (varmeelementer, plater, termostat).
+
+Observasjoner om ovnens ytelse.
+
+Med riktig vedlikehold varer ovnen lenger og gir bedre resultater i hver brenning. Ta vare på den, så blir den din beste allierte i keramikken.
+
+En godt vedlikeholdt ovn gir konsistente resultater
+
+Kapittel 9
+Hvor kjøpe materialer og glasurer?
+
+Pålitelige leverandører er nøkkelen til å sikre kvaliteten på glasurene og materialene dine. Her er hva du bør se etter og hvor du bør kjøpe.
+
+1. Hva kjennetegner en pålitelig leverandør?
+
+Kvalitetsgaranti: Sørg for at glasurer og materialer oppfyller standardene for keramikk.
+
+Variasjon: Se etter leverandører med et bredt utvalg – fra ferdige glasurer til pigmenter og verktøy.
+
+Trygg frakt: Velg butikker som pakker forsendelsene godt, så du unngår transportskader.
+
+Teknisk støtte: Noen leverandører gir råd om bruken av produktene sine.
+
+Praktisk tips
+Før du gjør et stort innkjøp, bestill små mengder for å teste produktene og sjekke at de svarer til forventningene.
+
+2. Grunnleggende materialer å anskaffe
+
+Bruksklare glasurer: For lave og høye temperaturer, i forskjellige finisher (blank, matt, transparent).
+
+Pigmenter og oksider: For å sette et personlig preg på glasurene dine.
+
+Påføringsverktøy: Pensler, svamper, sprøyter eller sprøytepistoler.
+
+Testmateriell: Prøvefliser og pyrometriske kjegler.
+
+Ovnstilbehør: Beskyttelsesplater, platebeskyttelse og støtter for små stykker.
+
+3. Anbefalinger for kjøp av glasur
+
+Bruksklare kommersielle glasurer: Ideelle for nybegynnere og for raske resultater. Se etter glasurer med tydelig angitt temperaturområde, og sjekk om de passer til funksjonelle eller rent dekorative gjenstander.
+
+Råvarer for formulering: For viderekomne er komponenter som fritte, silika, kaolin og kalsiumkarbonat viktige – de lar deg lage tilpassede glasurer etter behov.
+
+4. Hvor kan du handle?
+
+Spesialiserte keramikkbutikker: Best for spesifikke produkter og direkte rådgivning.
+
+Nettbutikker: Stort utvalg av verktøy, glasurer og håndlagde pigmenter.
+
+Fysiske butikker: Har du en lokal keramikkbutikk i nærheten, kan du vurdere produktene på stedet og få gode råd.
+
+5. Tips for å spare penger
+
+Storinnkjøp: Har du lagringsplass, gir større kvanta ofte rabatter.
+
+Del bestillinger: Gå sammen med andre keramikere om store bestillinger og del fraktkostnadene.
+
+Utnytt kampanjer: Mange nettbutikker har sesongrabatter.
+
+Husk at kvaliteten på materialene direkte påvirker resultatet av arbeidene dine.
+
+Økologiske og bærekraftige alternativer
+
+Med økende miljøbevissthet velger mange keramikere mer miljøvennlige materialer og metoder. Slik gjør du prosessene dine mer bærekraftige uten å gå på akkord med kvaliteten:
+
+Giftfri glasurformulering
+
+Bytt ut farlige komponenter (som bly og kadmium) med tryggere alternativer, for eksempel tinnoksid eller zirkonium til opasifisering.
+
+Velg glasurer som oppfyller standardene for mattrygghet.
+
+Unngå materialer som kan avgi giftige forbindelser under brenning.
+
+Ansvarlig materialbruk og gjenvinning
+
+Bruk dekanterte glasurrester på nytt i nye formuleringer eller eksperimentelle prosjekter.
+
+Sorter og oppbevar restmaterialer riktig for å unngå forurensning.
+
+Kjøp bare den mengden du trenger til hvert prosjekt, så unngår du svinn.
+
+Miljøvennlige alternativer
+
+Velg kommersielle glasurer sertifisert som giftfrie eller miljøvennlige.
+
+Lag glasurer med naturlige eller mindre bearbeidede komponenter.
+
+Vurder lokal leire for å redusere karbonavtrykket.
+
+Kapittel 10
+Praktiske prosjekter og konklusjoner
+
+Keramikk er en visuell og taktil kunstform, der glasurene spiller en avgjørende rolle i å forvandle enkle gjenstander til unike kunstverk. I galleriet nedenfor finner du inspirerende eksempler på overflater og teknikker som viser hva du kan oppnå med kunnskapen i denne håndboken.
+
+Slik bruker du galleriet
+
+Se hvordan de ulike teknikkene (pensel, dypping, sprøyting) påvirker den endelige finishen.
+
+Legg merke til variasjonene i farge og tekstur avhengig av brenningstemperaturen.
+
+La deg inspirere til å prøve kombinasjoner av glasurer og effekter på egne arbeider.
+
+Galleri
+
+Sett det du har lært ut i praksis
+
+Den beste måten å mestre glasering på er gjennom øvelse. Her er tre prosjekter for å eksperimentere med forskjellige teknikker og finisher.
+
+1. Fargepalett med lav- og høytemperaturglasurer
+
+Mål: Lage en visuell referanse for hvordan forskjellige glasurer reagerer i ovnen din.
+
+Materialer: Små leirfliser (hvite og røde), lav- og høytemperaturglasurer.
+
+Påfør forskjellige glasurer (blanke, matte og transparente) på flisene.
+
+Merk hver flis med glasuren som er brukt og leiretypen.
+
+Brenn flisene etter glasurspesifikasjonene og noter resultatene.
+
+Forventet resultat: En visuell veiledning for glasurvalg i fremtidige prosjekter.
+
+2. Glasering av et krus
+
+Mål: Øve på jevn påføring og utforske fargekombinasjoner.
+
+Materialer: Et biskuitbrent krus og to glasurer med ulik finish (blank og matt).
+
+Dypp kruset halvveis i en blank glasur.
+
+Påfør en matt glasur øverst med pensel.
+
+Brenn etter spesifikasjonene og vurder kontrasten mellom de to overflatene.
+
+Forventet resultat: Et bruksklart krus med kombinert finish.
+
+3. Dekorere en tallerken med glasurer og teksturer
+
+Mål: Lære lagvis glasering og teksturerte effekter.
+
+Materialer: En biskuitbrent tallerken, teksturerte eller metalliske glasurer, svamp eller detaljpensel.
+
+Påfør et bunnlag med klar glasur.
+
+Bruk svamp eller pensel til å legge teksturert glasur på utvalgte områder.
+
+Brenn etter instruksjonene og se hvordan glasurene samspiller.
+
+Forventet resultat: En dekorativ tallerken med kreative effekter.
+
+Fortsett å utforske!
+Dette galleriet og prosjektene er en invitasjon til å eksperimentere og presse kreativiteten din videre. Den eneste grensen er fantasien din.
+
+Har du spørsmål?
+Skriv til post@lissom.no , så hjelper vi deg gjerne videre. Vil du lære mer, spør oss om kurs!

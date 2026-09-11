@@ -15811,11 +15811,19 @@ sjekk('… uten aa bruke samme PDO-parameter to ganger',
 $mkMan = dirname(__DIR__) . '/db/dokumenter/manifest.json';
 $mkM   = is_file($mkMan) ? json_decode(file_get_contents($mkMan), true) : null;
 sjekk('importpakka ligger i repoet med manifest',
-    is_array($mkM) && count($mkM['maler'] ?? []) === 71 && count($mkM['dokumenter'] ?? []) === 5);
+    // 69, ikke 71: Lyshus og Buet espressokopp mangler malfil, og eieren
+    // vil ikke ha dem (11. september). Seks dokumenter: fem haandboeker og
+    // Startguiden, som gaar rett i «Keramikk maler».
+    is_array($mkM) && count($mkM['maler'] ?? []) === 69 && count($mkM['dokumenter'] ?? []) === 6);
 sjekk('… hver mal har navn, slug, bilde og minst ett dokument',
     is_array($mkM) && count(array_filter($mkM['maler'], static fn($m) =>
         ($m['navn'] ?? '') !== '' && ($m['slug'] ?? '') !== ''
-        && ($m['bilde'] ?? '') !== '' && count($m['dokumenter'] ?? []) > 0)) === 71);
+        && ($m['bilde'] ?? '') !== '' && count($m['dokumenter'] ?? []) > 0)) === 69);
+// Ingen mal uten malfil. Eieren, 11. september 2026: «dersom det mangler
+// maler, saa vil jeg at disse slettes og ikke vises i admin».
+sjekk('… og hver mal har en malfil',
+    is_array($mkM) && count(array_filter($mkM['maler'], static fn($m) =>
+        !array_filter($m['dokumenter'], static fn($d) => preg_match('/^mal(?![a-z])/i', $d['navn']) === 1))) === 0);
 sjekk('… og hver fil i manifestet finnes',
     is_array($mkM) && count(array_filter(array_merge(
         array_map(static fn($d) => $d['fil'], $mkM['dokumenter']),
@@ -15835,10 +15843,14 @@ sjekk('haandboekene gaar til riktige kort',
         'Håndbok i engober, pigmenter og oksider'   => 'engober',
         'Håndbok i keramikkbrenning'                => 'brenning',
         'Håndbok i lagvis glasering'                => 'glassering',
+        'Startguide'                                => 'maler',
     ]);
 
+// Fra 11. september (AI-teksten) er «alt inne» sin egen gren: da legges
+// teksten paa om den mangler, men fila roeres ikke.
 sjekk('importen hopper over det som alt er inne, og det eieren har slettet',
-    str_contains($mkLib, "if (\$kilde === '' || isset(\$inne[\$kilde]) || isset(\$slettet[\$kilde])) {")
+    str_contains($mkLib, "if (\$kilde === '' || isset(\$slettet[\$kilde])) {")
+    && str_contains($mkLib, "if (isset(\$inne[\$kilde])) {\n                \$ut['hoppet']++;")
     && str_contains($mkLib, "self::huskSlettetKilde((string) (\$d['kilde'] ?? ''));"));
 sjekk('… og legger malene under «Keramikk maler», i manifestets rekkefoelge',
     str_contains($mkLib, "\$forelder = \$kortVedSlug['maler'] ?? null;")
@@ -15898,6 +15910,66 @@ sjekk('… og viser malene som kort som aapner filene sine i kortet',
 sjekk('«for stor fil» gjelder bare skjemaer med fil',
     str_contains($mkApi, "\$erSkjema = str_starts_with(strtolower((string) (\$_SERVER['CONTENT_TYPE'] ?? '')), 'multipart/form-data');")
     && str_contains($mkApi, "if (\$erSkjema && \$_POST === [] && \$_FILES === []"));
+
+// ── Teksten AI-en leser, og utvalget den faar ────────────────────────────
+//
+// Eieren, 11. september 2026: «Spør verkstedet» svarte «Dette står ikke i
+// dokumentene» om alt — modellen leser tekst, ikke filer, og de importerte
+// dokumentene hadde ingen. Naa foelger teksten fra HTML-kildene med i pakka.
+//
+// Maalt: importen la tekst paa 60 dokumenter som alt var inne og lot
+// eierens egen tekst staa; «⚙ Kjør 1 oppdatering» i nettleseren sa «1
+// endring kjørt. AI-tekst lagt inn på 61 dokumenter.»; Lyshus og Buet
+// espressokopp ble fjernet (fjernet=2), og import nummer to gjorde
+// ingenting. Utvalget satte «Fuglekasse · Monteringsguide» foerst for
+// «Hvordan lager jeg en fuglekasse?» og «Vindspill · Monteringsguide» for
+// «… vindspillet», og holdt seg under 200 000 tegn (61 dokumenter er
+// 319 000).
+$mkLib  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$mkFaq  = file_get_contents(dirname(__DIR__) . '/api/spor-verkstedet.php');
+$mkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('teksten foelger med i pakka, for haandboekene, startguiden og guidene',
+    is_array($mkM)
+    && count(array_filter($mkM['dokumenter'], static fn($d) => ($d['tekst'] ?? '') !== '')) === 6
+    && count(array_filter(array_merge(...array_map(static fn($m) => $m['dokumenter'], $mkM['maler'])),
+             static fn($d) => ($d['tekst'] ?? '') !== '')) === 55
+    && count(array_filter(array_merge($mkM['dokumenter'], ...array_map(static fn($m) => $m['dokumenter'], $mkM['maler'])),
+             static fn($d) => ($d['tekst'] ?? '') !== '' && !is_file(dirname($mkMan) . '/' . $d['tekst']))) === 0);
+sjekk('importen legger teksten paa, ogsaa paa det som alt er inne — men ikke over eierens egen',
+    str_contains($mkLib, "if (!\$inne[\$kilde]['harTekst']) {")
+    && str_contains($mkLib, "DB::oppdater('verksted_dokumenter', ['tekst' => \$t], ['id' => \$inne[\$kilde]['id']]);")
+    && str_contains($mkLib, "'tekst'         => \$tekst === '' ? null : \$tekst,"));
+sjekk('… og fjerner malkort som er tatt ut av pakka, om alt i dem kom derfra',
+    str_contains($mkLib, "if (isset(\$iPakka[(string) \$k['slug']])) {")
+    && str_contains($mkLib, "WHERE kategori_id = :k AND kilde IS NULL")
+    && str_contains($mkLib, "\$ut['fjernet']++;"));
+sjekk('… og migrasjon 158 finnes, saa knappen har noe aa kjoere',
+    is_file(dirname(__DIR__) . '/db/migrations/158_ai_tekst_paa_de_importerte_dokumentene.sql'));
+sjekk('kvitteringa sier hvor mange som fikk AI-tekst',
+    str_contains($mkSida, "'AI-tekst lagt inn på ' + imp.tekster + ' dokument'"));
+sjekk('Spør verkstedet velger de dokumentene som ligner mest, innenfor taket',
+    str_contains($mkFaq, "\$utvalg   = Dokumenter::utvalg(\$kilder, \$sporsmal);")
+    && str_contains($mkFaq, "\$kilder   = \$utvalg['kilder'];")
+    && str_contains($mkLib, "public static function utvalg(array \$kilder, string \$sporsmal, int \$maks = 200000): array")
+    && str_contains($mkLib, "if (str_starts_with(\$o, \$w) || str_starts_with(\$w, \$o)) {")
+    && !str_contains($mkFaq, "mb_substr(\$kunnskap, 0, 200000)"));
+// Med tekster kan utvalget proeves uten AI-noekkel.
+sjekk('… og setter dokumentet med navnet i spoersmaalet foerst',
+    (static function (): bool {
+        $k = [
+            ['kategori' => 'Glassering', 'navn' => 'Håndbok i lagvis glasering', 'tekst' => str_repeat('glasur lag ', 500)],
+            ['kategori' => 'Keramikk maler · Vindspill', 'navn' => 'Vindspill · Monteringsguide', 'tekst' => 'Kjevle leira til 0,5 cm.'],
+            ['kategori' => 'Keramikk maler · Fuglekasse', 'navn' => 'Fuglekasse · Monteringsguide', 'tekst' => 'Kjevle leira til 0,5 cm.'],
+        ];
+        $u = Dokumenter::utvalg($k, 'hvor tykk skal leira være til vindspillet');
+        $lite = Dokumenter::utvalg($k, 'x', 300);
+        return ($u['kilder'][0]['navn'] ?? '') === 'Vindspill · Monteringsguide'
+            && count($u['kilder']) === 3
+            && count($lite['kilder']) === 1 && mb_strlen($lite['tekst']) <= 300;
+    })());
+sjekk('kildene under svaret faar malnavnet foran',
+    str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")
+    && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

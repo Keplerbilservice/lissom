@@ -29,13 +29,22 @@
  *   bilder/steg-NN.jpg  → steg-NN.jpg, urørt, som «Steg N»
  *   annet (svg)         → hoppes over og meldes; appen tar ikke imot det
  *
+ * Og teksten AI-en kan lese («Spør verkstedet» svarer bare fra tekst som er
+ * lagt inn paa dokumentet — en PDF er en binaerfil for den). Haandboekene
+ * og monteringsguidene finnes som HTML i kildemappa; teksten hentes ut av
+ * dem og legges ved som .txt, pekt paa fra manifestet («tekst»). Importen
+ * legger den inn — ogsaa paa dokumenter som alt er importert uten tekst.
+ *
+ * Startguide.html (generell veiledning for utskrift og oppbygging) blir
+ * dokumentet «Startguide» rett i kortet Keramikk maler, med tekst.
+ *
  * Mappenavnene i repoet er uten æøå og mellomrom — FTP og webhotell er ikke
  * til aa stole paa med annet. Navnet slik det skal staa paa kortet ligger i
  * manifestet.
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, statSync, copyFileSync, writeFileSync, rmSync, cpSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, copyFileSync, writeFileSync, readFileSync, rmSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -99,6 +108,25 @@ const skalerBilde = (inn, utfil, maks = 1200) => {
   execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { stdio: 'pipe' });
 };
 
+// Teksten ut av en HTML-side: skript og stil bort, blokker blir linjeskift,
+// resten av taggene blir mellomrom. Ingen DOM — dette er ikke en nettleser,
+// og teksten skal leses av en modell, ikke vises.
+const tekstAv = (html) => html
+  .replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '')
+  .replace(/<!--[\s\S]*?-->/g, '')
+  .replace(/<(br|\/p|\/h[1-6]|\/li|\/div|\/tr|\/section|\/figcaption|\/dd|\/dt)[^>]*>/gi, '\n')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
+  .replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+
+// Skriver teksten ved siden av dokumentet og gir stien til manifestet.
+const tekstFil = (html, relPdf) => {
+  const rel = relPdf.replace(/\.pdf$/i, '.txt');
+  writeFileSync(join(ut, rel), tekstAv(readFileSync(html, 'utf8')) + '\n');
+  return rel;
+};
+
 const tilPdf = (html, pdf) => {
   // En kopi av malmappa med smaa bilder, og det den deler med de andre
   // (assets/, doc-page.js) to nivaaer opp — slik guiden peker paa dem.
@@ -140,8 +168,23 @@ for (const [fil, kort] of HAANDBOEKER) {
   const rel = `haandboker/${kort}/${slug(fil.replace(/\.pdf$/i, ''))}.pdf`;
   mkdirSync(dirname(join(ut, rel)), { recursive: true });
   copyFileSync(inn, join(ut, rel));
-  manifest.dokumenter.push({ kort, fil: rel, navn: fil.replace(/\.pdf$/i, '') });
-  console.log('håndbok  ' + fil);
+  const dok = { kort, fil: rel, navn: fil.replace(/\.pdf$/i, '') };
+  const html = join(maler, fil.replace(/\.pdf$/i, '.html'));
+  if (existsSync(html)) dok.tekst = tekstFil(html, rel);
+  manifest.dokumenter.push(dok);
+  console.log('håndbok  ' + fil + (dok.tekst ? '  (+tekst)' : ''));
+}
+
+// Startguiden: én for alle malene, rett i kortet «Keramikk maler».
+{
+  const html = join(maler, 'Startguide.html');
+  if (existsSync(html)) {
+    const rel = 'maler/startguide.pdf';
+    mkdirSync(join(ut, 'maler'), { recursive: true });
+    tilPdf(html, join(ut, rel));
+    manifest.dokumenter.push({ kort: 'maler', fil: rel, navn: 'Startguide', tekst: tekstFil(html, rel) });
+    console.log('startguide');
+  }
 }
 
 // ── Malene ──────────────────────────────────────────────────────────────
@@ -192,7 +235,8 @@ for (const [gruppe, prefiks] of GRUPPER) {
       if (endelse.toLowerCase() === 'html') {
         if (!/^Monteringsguide$/i.test(stamme)) { console.warn('  hopper over ' + mappe + '/' + f); continue; }
         tilPdf(join(inn, f), join(ut, relMappe, 'Monteringsguide.pdf'));
-        mal.dokumenter.push({ fil: relMappe + '/Monteringsguide.pdf', navn: 'Monteringsguide' });
+        mal.dokumenter.push({ fil: relMappe + '/Monteringsguide.pdf', navn: 'Monteringsguide',
+                              tekst: tekstFil(join(inn, f), relMappe + '/Monteringsguide.pdf') });
         continue;
       }
       const utnavn = slug(stamme) + '.' + endelse.toLowerCase();
@@ -206,6 +250,15 @@ for (const [gruppe, prefiks] of GRUPPER) {
         copyFileSync(join(steg, b), join(ut, relMappe, b.toLowerCase()));
         mal.dokumenter.push({ fil: relMappe + '/' + b.toLowerCase(), navn: 'Steg ' + nr });
       }
+    }
+    // Eieren, 11. september 2026: «dersom det mangler maler, saa vil jeg
+    // at disse slettes og ikke vises i admin». En mal uten en malfil aa
+    // skrive ut er ikke en mal — bare en guide til noe man ikke kan lage.
+    // Importen fjerner kortet om det alt er lagt inn.
+    if (!mal.dokumenter.some(d => /^mal(?![a-z])/i.test(d.navn))) {
+      rmSync(join(ut, relMappe), { recursive: true, force: true });
+      console.warn('  ' + mappe + ': ingen malfil — tas ikke med');
+      continue;
     }
     manifest.maler.push(mal);
     console.log('mal      ' + malSlug + '  (' + mal.dokumenter.length + ')');

@@ -626,12 +626,19 @@ final class Dokumenter
             : 'k.navn';
         $sorter = $medKort ? 'IFNULL(p.sortering, k.sortering), k.sortering' : 'k.sortering';
 
+        // «navn» er det modellen ser og det som staar under svaret. I et
+        // underkort faar det malnavnet foran: 57 guider heter
+        // «Monteringsguide», og «Fuglekasse · Monteringsguide» sier hvilken.
+        $etikett = $medKort
+            ? "IF(p.id IS NULL, d.originalnavn, CONCAT(k.navn, ' · ', d.originalnavn))"
+            : 'd.originalnavn';
+
         return array_map(static fn($d) => [
             'kategori' => (string) $d['kategori_navn'],
-            'navn'     => (string) $d['originalnavn'],
+            'navn'     => (string) $d['etikett'],
             'tekst'    => (string) $d['tekst'],
         ], DB::alle(
-            "SELECT d.originalnavn, d.tekst, {$kortNavn} AS kategori_navn
+            "SELECT d.originalnavn, d.tekst, {$kortNavn} AS kategori_navn, {$etikett} AS etikett
                FROM verksted_dokumenter d
                JOIN verksted_kategorier k ON k.id = d.kategori_id
                " . self::forelderJoin() . "
@@ -639,6 +646,96 @@ final class Dokumenter
               ORDER BY {$sorter}, d.opprettet DESC",
             $param
         ));
+    }
+
+    /**
+     * Det modellen faar lese: de dokumentene som ligner mest paa spoersmaalet
+     * foerst, og bare saa mange som faar plass.
+     *
+     * Fram til 11. september 2026 gikk dokumentene inn i kortenes rekkefoelge
+     * og ble kuttet paa 200 000 tegn. Med fem haandboeker og 57
+     * monteringsguider (rundt 300 000 tegn) ble de siste aldri lest — spurte
+     * man om en mal langt nede i lista, fantes den ikke for modellen.
+     *
+     * Ingen ny AI-kobling for aa velge: ordene i spoersmaalet telles i hvert
+     * dokument, og treff i navnet eller kortet teller mer enn treff i
+     * teksten. Det som ikke treffer noe, kommer etter — det er fortsatt med
+     * om det er plass. Rekkefoelgen mellom like treff er den gamle.
+     *
+     * Dokumentene legges til ett og ett til taket er brukt, og det som ikke
+     * faar plass utelates helt — ikke kuttet midt i, for da staar en halv
+     * oppskrift der som om den var hel.
+     *
+     * @param list<array{kategori:string,navn:string,tekst:string}> $kilder fra kunnskap()
+     * @return array{tekst:string,kilder:list<array{kategori:string,navn:string,tekst:string}>}
+     */
+    public static function utvalg(array $kilder, string $sporsmal, int $maks = 200000): array
+    {
+        $ord = [];
+        foreach (preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($sporsmal)) ?: [] as $o) {
+            // Korte ord («og», «en», «på») treffer alt og sier ingenting.
+            if (mb_strlen($o) >= 3) {
+                $ord[$o] = true;
+            }
+        }
+        $ord = array_keys($ord);
+
+        $poeng = static function (array $k) use ($ord): int {
+            $navn  = mb_strtolower($k['kategori'] . ' ' . $k['navn']);
+            // Ordene i navnet hver for seg, saa «vindspillet» i spoersmaalet
+            // treffer «Vindspill» i navnet — norsk boeyer i enden av ordet.
+            $navnOrd = array_filter(
+                preg_split('/[^\p{L}\p{N}]+/u', $navn) ?: [],
+                static fn($w) => mb_strlen($w) >= 4
+            );
+            $tekst = mb_strtolower($k['tekst']);
+            $sum   = 0;
+            foreach ($ord as $o) {
+                foreach ($navnOrd as $w) {
+                    if (str_starts_with($o, $w) || str_starts_with($w, $o)) {
+                        $sum += 20;
+                        break;
+                    }
+                }
+                // Tak per ord: et langt dokument skal ikke vinne bare ved aa
+                // vaere langt.
+                $sum += min(10, mb_substr_count($tekst, $o));
+            }
+            return $sum;
+        };
+
+        $rekkefolge = [];
+        foreach (array_values($kilder) as $i => $k) {
+            $rekkefolge[] = ['i' => $i, 'p' => $poeng($k)];
+        }
+        usort($rekkefolge, static fn($a, $b) => ($b['p'] <=> $a['p']) ?: ($a['i'] <=> $b['i']));
+
+        $kilder  = array_values($kilder);
+        $biter   = [];
+        $brukt   = 0;
+        $medtatt = [];
+        foreach ($rekkefolge as $r) {
+            $k = $kilder[$r['i']];
+            $bit = '--- DOKUMENT ' . (count($biter) + 1) . ' ---' . "\n"
+                 . 'Kort: ' . $k['kategori'] . "\n"
+                 . 'Navn: ' . $k['navn'] . "\n\n"
+                 . $k['tekst'];
+            $lengde = mb_strlen($bit) + 2;
+            if ($brukt + $lengde > $maks) {
+                // Det foerste dokumentet skal alltid med, om saa avkortet.
+                if ($biter === []) {
+                    $biter[]   = mb_substr($bit, 0, $maks);
+                    $medtatt[] = $k;
+                    $brukt     = $maks;
+                }
+                continue;
+            }
+            $biter[]   = $bit;
+            $brukt    += $lengde;
+            $medtatt[] = $k;
+        }
+
+        return ['tekst' => implode("\n\n", $biter), 'kilder' => $medtatt];
     }
 
     /**
@@ -697,11 +794,22 @@ final class Dokumenter
      * Filene kopieres, ikke flyttes: importpakka speiles av deploy-jobben,
      * og en fil som mangler der ville blitt lagt tilbake ved neste utrulling.
      *
-     * @return array{kort:int,dokumenter:int,hoppet:int,feil:list<string>}
+     * Teksten AI-en leser («tekst» i manifestet, en .txt ved siden av fila)
+     * legges inn sammen med dokumentet — og paa dokumenter som alt er inne
+     * uten tekst. Eieren, 11. september 2026: «Spør verkstedet» svarte
+     * «Dette står ikke i dokumentene» om alt, fordi en PDF er en binaerfil
+     * for modellen. Tekst eieren har skrevet selv roeres ikke.
+     *
+     * Et malkort som ikke lenger staar i manifestet fjernes, med filene sine
+     * — men bare naar alt i det kom fra pakka. Eieren, 11. september 2026:
+     * «dersom det mangler maler, saa vil jeg at disse slettes og ikke vises
+     * i admin».
+     *
+     * @return array{kort:int,dokumenter:int,tekster:int,fjernet:int,hoppet:int,feil:list<string>}
      */
     public static function importer(): array
     {
-        $ut = ['kort' => 0, 'dokumenter' => 0, 'hoppet' => 0, 'feil' => []];
+        $ut = ['kort' => 0, 'dokumenter' => 0, 'tekster' => 0, 'fjernet' => 0, 'hoppet' => 0, 'feil' => []];
         $mappe = self::importMappe();
         if ($mappe === null || !self::harKort() || !DB::harKolonne('verksted_dokumenter', 'kilde')) {
             return $ut;
@@ -721,22 +829,53 @@ final class Dokumenter
         foreach (DB::alle('SELECT id, slug FROM verksted_kategorier') as $k) {
             $kortVedSlug[(string) $k['slug']] = (int) $k['id'];
         }
-        $inne = array_flip(array_map('strval', array_column(
-            DB::alle('SELECT kilde FROM verksted_dokumenter WHERE kilde IS NOT NULL'), 'kilde'
-        )));
+        // Det som alt er inne, med om det har tekst — saa teksten kan legges
+        // paa i etterkant uten aa roere fila.
+        $inne = [];
+        foreach (DB::alle("SELECT id, kilde, (tekst IS NOT NULL AND tekst <> '') AS harTekst
+                             FROM verksted_dokumenter WHERE kilde IS NOT NULL") as $r) {
+            $inne[(string) $r['kilde']] = ['id' => (int) $r['id'], 'harTekst' => ((int) $r['harTekst']) === 1];
+        }
         $slettet = self::slettedeKilder();
 
-        // Ett dokument inn, om det ikke alt er der.
-        $leggInn = function (array $d, int $kategoriId) use (&$ut, &$inne, $slettet, $mappe): void {
+        // Teksten fra pakka, eller tom.
+        $tekstFra = static function (array $d) use ($mappe): string {
+            $sti = (string) ($d['tekst'] ?? '');
+            if ($sti === '' || str_contains($sti, '..') || str_starts_with($sti, '/') || str_contains($sti, ':')) {
+                return '';
+            }
+            $t = @file_get_contents($mappe . '/' . $sti);
+            return $t === false ? '' : mb_substr(trim($t), 0, 200000);
+        };
+
+        // Ett dokument inn, om det ikke alt er der — og teksten paa, om den
+        // mangler.
+        $leggInn = function (array $d, int $kategoriId) use (&$ut, &$inne, $slettet, $mappe, $tekstFra): void {
             $kilde = (string) ($d['fil'] ?? '');
-            if ($kilde === '' || isset($inne[$kilde]) || isset($slettet[$kilde])) {
+            if ($kilde === '' || isset($slettet[$kilde])) {
                 $ut['hoppet']++;
                 return;
             }
+            if (isset($inne[$kilde])) {
+                $ut['hoppet']++;
+                if (!$inne[$kilde]['harTekst']) {
+                    $t = $tekstFra($d);
+                    if ($t !== '') {
+                        DB::oppdater('verksted_dokumenter', ['tekst' => $t], ['id' => $inne[$kilde]['id']]);
+                        $inne[$kilde]['harTekst'] = true;
+                        $ut['tekster']++;
+                    }
+                }
+                return;
+            }
             try {
-                self::kopierInn($mappe, $kilde, $kategoriId, (string) ($d['navn'] ?? ''));
-                $inne[$kilde] = true;
+                $t  = $tekstFra($d);
+                $id = self::kopierInn($mappe, $kilde, $kategoriId, (string) ($d['navn'] ?? ''), $t);
+                $inne[$kilde] = ['id' => $id, 'harTekst' => $t !== ''];
                 $ut['dokumenter']++;
+                if ($t !== '') {
+                    $ut['tekster']++;
+                }
             } catch (RuntimeException $e) {
                 $ut['feil'][] = $kilde . ': ' . $e->getMessage();
             }
@@ -795,6 +934,35 @@ final class Dokumenter
             }
         }
 
+        // Malkort som er tatt ut av pakka. Bare underkort under «Keramikk
+        // maler», og bare naar alt i kortet kom fra pakka — har eieren lastet
+        // opp noe eget der, staar kortet.
+        if ($forelder !== null) {
+            $iPakka = array_flip(array_map(
+                static fn($m) => (string) ($m['slug'] ?? ''), (array) ($manifest['maler'] ?? [])
+            ));
+            foreach (DB::alle('SELECT id, slug, bilde FROM verksted_kategorier WHERE forelder_id = :f', ['f' => $forelder]) as $k) {
+                if (isset($iPakka[(string) $k['slug']])) {
+                    continue;
+                }
+                $egne = (int) DB::verdi(
+                    'SELECT COUNT(*) FROM verksted_dokumenter WHERE kategori_id = :k AND kilde IS NULL',
+                    ['k' => (int) $k['id']]
+                );
+                if ($egne > 0) {
+                    continue;
+                }
+                foreach (DB::alle('SELECT id FROM verksted_dokumenter WHERE kategori_id = :k', ['k' => (int) $k['id']]) as $d) {
+                    self::slett((int) $d['id']);
+                }
+                if ((string) ($k['bilde'] ?? '') !== '') {
+                    @unlink(self::mappe() . '/' . (string) $k['bilde']);
+                }
+                DB::kjor('DELETE FROM verksted_kategorier WHERE id = :i', ['i' => (int) $k['id']]);
+                $ut['fjernet']++;
+            }
+        }
+
         return $ut;
     }
 
@@ -828,8 +996,8 @@ final class Dokumenter
         return $navn;
     }
 
-    /** kopierFil() pluss raden i basen. */
-    private static function kopierInn(string $mappe, string $kilde, int $kategoriId, string $navn): int
+    /** kopierFil() pluss raden i basen, med teksten AI-en leser om det er en. */
+    private static function kopierInn(string $mappe, string $kilde, int $kategoriId, string $navn, string $tekst = ''): int
     {
         $filnavn = self::kopierFil($mappe, $kilde);
         $sti = self::mappe() . '/' . $filnavn;
@@ -842,6 +1010,7 @@ final class Dokumenter
             'storrelse'     => (int) filesize($sti),
             'lastet_opp_av' => null,
             'kilde'         => $kilde,
+            'tekst'         => $tekst === '' ? null : $tekst,
         ]);
     }
 

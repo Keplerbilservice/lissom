@@ -1145,67 +1145,44 @@ window.__resources = {
 </script>
 
 <script>
-// Hele meldingen skal komme med naar noen limer inn i chatten.
+// Skrivefeltet i chatten vokser med teksten.
 //
-// Eieren, 11. september 2026: teksten fra Monica staar klippet midt i en
-// setning. «Det fikser ikke chatten, her er det noe galt!»
+// Eieren, 11. september 2026: «jeg maa faa opp et felt som utvider seg saa
+// jeg faktisk ser hva jeg skriver».
 //
-// Hva som er utelukket, maalt: kolonnen tar 500 tegn og meldingen er 222;
-// API-et lagrer og henter den hel; oppstillingen er bygget om og klipper
-// ikke; og en melding skrevet i feltet her og sendt med knappen kommer hel
-// fram. Teksten ligger kort i basen, og den ble kort da den ble skrevet.
-//
-// Det som staar igjen: skrivefeltet er ett felt paa én linje. Limer man inn
-// tekst med linjeskift i et slikt felt, beholder Safari BARE det som staar
-// for det forste skiftet — resten forsvinner uten et ord. Chrome tar alt og
-// gjor skiftet om til mellomrom. Eieren er paa iPhone, og WebKit lar seg
-// ikke installere her, saa det er den ene mekanismen jeg ikke faar proevd.
-//
-// Derfor gjor vi innlimingen selv: hele teksten settes inn, og linjeskift
-// blir mellomrom. Da kan ingen nettleser kaste resten. Er det ingen
-// linjeskift i det som limes, roeres ingenting — da gjor nettleseren jobben
-// som for.
+// Selve utregningen staar i chatHoyde() inne i skjermen — den vet hvilken
+// linjehoyde feltet har. Her staar bare det som maa skje utenfra: hoyden maa
+// settes paa nytt hver gang innholdet endrer seg, og én gang naar feltet
+// dukker opp, slik at en tekst som alt staar der faar plass med det samme.
 (function () {
-  function iChatten(el) {
-    return el && el.tagName === 'INPUT' && el.closest
-        && (el.closest('#minside-chat') || el.closest('#admin-chat'));
+  function felt(el) {
+    return el && el.classList && el.classList.contains('ms-chatskriv') ? el : null;
   }
-  document.addEventListener('paste', function (e) {
-    var felt = e.target;
-    if (!iChatten(felt)) return;
-    var data = e.clipboardData || window.clipboardData;
-    if (!data) return;
-    var tekst = data.getData('text');
-    if (!tekst || !/[\r\n]/.test(tekst)) return;   // én linje: la nettleseren ta den
-
-    e.preventDefault();
-    var ren = tekst.replace(/\s*[\r\n]+\s*/g, ' ').trim();
-
-    // «insertText» og ikke «felt.value = ...».
-    //
-    // Skjermen holder sin egen kopi av hva som staar i feltet. Setter vi
-    // verdien rett paa elementet, ser den det ikke — og et «input» vi lager
-    // selv er ikke nok. Maalt: teksten sto i feltet, men SEND gjorde
-    // ingenting, fordi skjermen fortsatt trodde feltet var tomt.
-    //
-    // «insertText» er en ekte skriveoperasjon: nettleseren setter inn
-    // teksten og sender sitt eget «input» etterpaa, akkurat som naar noen
-    // taster. Da faar skjermen det med seg.
-    var gikk = false;
-    try { gikk = document.execCommand('insertText', false, ren); } catch (f) { gikk = false; }
-    if (!gikk) {
-      // Reserve for en nettleser som ikke tar imot den. Da staar i det
-      // minste teksten der, og den som limte kan trykke en tast.
-      var start = felt.selectionStart === null ? felt.value.length : felt.selectionStart;
-      var slutt = felt.selectionEnd === null ? felt.value.length : felt.selectionEnd;
-      felt.value = felt.value.slice(0, start) + ren + felt.value.slice(slutt);
-      var etter = start + ren.length;
-      try { felt.setSelectionRange(etter, etter); } catch (g) { /* noen felt tillater det ikke */ }
-      felt.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  });
+  function sett(el) {
+    if (!el) return;
+    var s = window.getComputedStyle(el);
+    var linje = parseFloat(s.lineHeight) || 20;
+    var luft = parseFloat(s.paddingTop) + parseFloat(s.paddingBottom)
+             + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, Math.round(linje * 6 + luft)) + 'px';
+  }
+  document.addEventListener('input', function (e) { sett(felt(e.target)); });
+  function alle() {
+    var f = document.querySelectorAll('.ms-chatskriv');
+    for (var i = 0; i < f.length; i++) sett(f[i]);
+  }
+  function start() {
+    alle();
+    // Feltet tegnes om naar man bytter fane eller aapner panelet i admin.
+    // Samme verktoy som skriptene over bruker.
+    new MutationObserver(alle).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.body) start();
+  else document.addEventListener('DOMContentLoaded', start);
 })();
 </script>
+
 
 <script>
 // Sida laases naar bunnmenyen staar der.
@@ -1656,6 +1633,31 @@ window.__resources = {
      «dvh». */
   .ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }
   @media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }
+
+  /* Skrivefeltet i chatten: ett felt som vokser.
+     --------------------------------------------
+     Eieren, 11. september 2026: «naar jeg skriver saa skriver jeg i en lang
+     streng, jeg maa faa opp et felt som utvider seg saa jeg faktisk ser hva
+     jeg skriver» — og: «du har justert og justert, men du klarer det ikke».
+
+     Han hadde rett. Feltet var et «input»: ett felt paa én linje. Teksten
+     rullet ut til venstre mens man skrev, og linjeskift kunne det ikke
+     inneholde i det hele tatt. Alt som var gjort for dette var lapper rundt
+     den ene tingen.
+
+     Naa er det et «textarea». Hoyden settes av chatHoyde() etter hvor mye som
+     staar i det — én linje til aa begynne med, opp til seks.
+
+     «resize: none»: hjornet man kan dra i hoerer ikke hjemme i en chat, og
+     paa telefonen finnes det ikke uansett. Radiusen er myk og ikke en pille:
+     en pille som blir seks linjer hoy ser ut som en feil. */
+  .ms-chatskriv {
+    resize: none;
+    overflow-y: auto;
+    border-radius: var(--radius-lg);
+    line-height: 1.45;
+    font-family: inherit;
+  }
 
   /* Én melding, én rad.
      -------------------
@@ -5238,8 +5240,8 @@ window.__resources = {
                     </div>
                   </sc-for>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); margin-top: auto;">
-                  <input value="{{ chatTekst }}" onChange="{{ settChatTekst }}" onKeyDown="{{ chatEnter }}" placeholder="Skriv" style="box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;">
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); align-items: end; margin-top: auto;">
+                  <textarea class="ms-chatskriv" value="{{ chatTekst }}" onChange="{{ settChatTekst }}" onKeyDown="{{ chatEnter }}" rows="1" placeholder="Skriv" style="box-sizing: border-box; border: 1px solid var(--border-subtle); padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;"></textarea>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ sendChat }}" hint-size="auto,38px">Send</x-import>
                 </div>
               </div>
@@ -8709,8 +8711,8 @@ window.__resources = {
                   </div>
                 </sc-for>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); margin-top: auto;">
-                <input value="{{ chatTekst }}" onChange="{{ settChatTekst }}" onKeyDown="{{ chatEnter }}" placeholder="Skriv" style="box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;">
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); align-items: end; margin-top: auto;">
+                <textarea class="ms-chatskriv" value="{{ chatTekst }}" onChange="{{ settChatTekst }}" onKeyDown="{{ chatEnter }}" rows="1" placeholder="Skriv" style="box-sizing: border-box; border: 1px solid var(--border-subtle); padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;"></textarea>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ sendChat }}" hint-size="auto,38px">Send</x-import>
               </div>
             </div>
@@ -29732,6 +29734,33 @@ class Component extends DCLogic {
     return alle[0] || alle[1] || null;
   }
 
+  /**
+   * Setter hoyden paa skrivefeltet etter hvor mye som staar i det.
+   *
+   * Eieren, 11. september 2026: «naar jeg skriver saa skriver jeg i en lang
+   * streng, jeg maa faa opp et felt som utvider seg saa jeg faktisk ser hva
+   * jeg skriver».
+   *
+   * Feltet var ett felt paa én linje. Teksten rullet ut til venstre mens man
+   * skrev, saa man saa aldri mer enn de siste ordene — og det kunne ikke
+   * inneholde linjeskift i det hele tatt.
+   *
+   * Naa vokser det nedover, én linje om gangen, opp til seks. Over det
+   * ruller det inni seg selv; seks linjer er nok til aa se en hel melding,
+   * og lite nok til at kortet ikke spiser skjermen.
+   *
+   * «auto» forst: uten det kan feltet bare vokse, aldri krympe igjen.
+   */
+  chatHoyde(felt) {
+    if (!felt) return;
+    const s = window.getComputedStyle(felt);
+    const linje = parseFloat(s.lineHeight) || 20;
+    const luft = parseFloat(s.paddingTop) + parseFloat(s.paddingBottom)
+               + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
+    felt.style.height = 'auto';
+    felt.style.height = Math.min(felt.scrollHeight, Math.round(linje * 6 + luft)) + 'px';
+  }
+
   sendChatNaa() {
     // Teksten hentes fra FELTET, ikke fra skjermens kopi av det.
     //
@@ -29754,7 +29783,7 @@ class Component extends DCLogic {
     // Chatten staar to steder: paa Min side, og i panelet i admin. Den som
     // er framme er den man skriver i.
     const felt = this.chatteKort();
-    const skrivefelt = felt && felt.querySelector('input');
+    const skrivefelt = felt && felt.querySelector('textarea');
     const t = ((skrivefelt ? skrivefelt.value : this.state.chatTekst) || '').trim();
     if (!t) return;
     if (!this.erPublisert()) { this.setState({ chatFeil: 'Krever den ekte siden' }); return; }
@@ -29766,7 +29795,7 @@ class Component extends DCLogic {
     // Ogsaa selve feltet: skjermen skriver kopien sin inn i det naar den
     // tegnes, men er kopien alt tom, ser den ingen grunn til aa roere det —
     // og da ble teksten staaende igjen etter at den var sendt.
-    if (skrivefelt) skrivefelt.value = '';
+    if (skrivefelt) { skrivefelt.value = ''; this.chatHoyde(skrivefelt); }
     this.setState({ chatTekst: '', chatFeil: '' });
 
     fetch('/api/chat.php', {
@@ -29778,7 +29807,7 @@ class Component extends DCLogic {
       .then(({ ok, d }) => {
         this._chatSender = false;
         if (!ok) {
-          if (skrivefelt) skrivefelt.value = t;
+          if (skrivefelt) { skrivefelt.value = t; this.chatHoyde(skrivefelt); }
           this.setState({ chatTekst: t, chatFeil: (d && d.feil) || 'Meldingen gikk ikke.' });
           return;
         }
@@ -29787,7 +29816,7 @@ class Component extends DCLogic {
       })
       .catch(() => {
         this._chatSender = false;
-        if (skrivefelt) skrivefelt.value = t;
+        if (skrivefelt) { skrivefelt.value = t; this.chatHoyde(skrivefelt); }
         this.setState({ chatTekst: t, chatFeil: 'Fikk ikke kontakt med serveren.' });
       });
   }
@@ -49370,7 +49399,17 @@ class Component extends DCLogic {
       chatTekst: this.state.chatTekst ?? '',
       settChatTekst: (e) => this.setState({ chatTekst: e.target.value, chatNye: 0, chatFeil: '' }),
       sendChat: () => this.sendChatNaa(),
-      chatEnter: (e) => { if (e && e.key === 'Enter') { e.preventDefault(); this.sendChatNaa(); } },
+      // Enter sender. Eieren, 11. september 2026, spurt om hva Enter skulle
+      // gjore i et felt som vokser: «Enter sender, som nå».
+      //
+      // Shift+Enter gir ny linje. Den finnes for den som sitter ved en PC og
+      // vil skrive et avsnitt; paa telefonen finnes ikke Shift, og der er
+      // Enter og SEND det samme som for.
+      chatEnter: (e) => {
+        if (!e || e.key !== 'Enter' || e.shiftKey) return;
+        e.preventDefault();
+        this.sendChatNaa();
+      },
       // Meldingene kommer fra /api/chat.php. «Kari» og «Jonas» staar igjen som
       // startinnhold i designvisningen, saa boblene har noe aa tegne — paa
       // den ekte sida vises bare det som faktisk er skrevet.

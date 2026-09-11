@@ -2063,6 +2063,12 @@ window.__resources = {
      ds-bundle.js, som er generert og ikke skal redigeres — derfor CSS,
      ikke en prop. */
   html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }
+  /* Spør verkstedet i kalenderen paa mobil. Eieren, 11. september 2026
+     (bilde fra iPhone): feltet var 264 px og treffboksen stakk ut forbi
+     kortet. Paa smal skjerm faar feltet hele raden. */
+  @media (max-width: 640px) {
+    .lx-klsok { flex: 1 1 100% !important; margin-right: 0 !important; }
+  }
 </style>
 </head>
 <body>
@@ -5626,11 +5632,15 @@ window.__resources = {
               </sc-if>
 
               <!-- Spor verkstedet, om eieren har slaatt den paa. AI-en leser
-                   bare kortene som staar over — ingenting annet. -->
+                   bare kortene som staar over — ingenting annet.
+                   Navnet: eieren, 11. september 2026: «Jeg vil også endre
+                   navn fra spør verkstedet til, spør o store krukkemester».
+                   Skrevet som han skrev det. Gjelder overalt den vises:
+                   her, i kalenderen og i adminfanen. -->
               <sc-if value="{{ mdFaq }}" hint-placeholder-val="{{ false }}">
                 <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
                   <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
-                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør verkstedet</h2>
+                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør o store krukkemester</h2>
                     <span style="{{ mdLaasStil }}">Kun for innloggede</span>
                   </div>
                   <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
@@ -7710,67 +7720,27 @@ window.__resources = {
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
               </sc-for>
             </div>
-            <!-- Eieren, 11. september 2026: «den må bytte navn til søk, du
-                 må også justere plasseringen noe så den får litt luft rundt
-                 seg». Sto som «Søk person eller kurs …» helt inntil
-                 høyrekanten, 40 px høyt mot pillenes 36. Nå «Søk …», 8 px
-                 fra kanten, litt bredere, og 36 px høyt som pillene. På
-                 mobil bryter feltet ned på egen rad, som før — derfor ingen
-                 fast luft mot pillene, den ville skjøvet feltet inn der. GO. -->
-            <div style="position: relative; margin-left: auto; margin-right: 8px; flex: 0 1 264px; min-width: 190px;">
-              <input value="{{ klSok }}" onChange="{{ settKlSok }}" placeholder="Søk …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
-              <sc-if value="{{ klSokVises }}" hint-placeholder-val="{{ false }}">
-                <div style="position: absolute; top: calc(100% + 6px); right: 0; width: min(360px, 84vw); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 55; overflow: hidden;">
-                  <sc-for list="{{ klSokTreff }}" as="t" hint-placeholder-count="3">
-                    <button type="button" onClick="{{ t.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
-                      <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ t.tittel }}</span>
-                      <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ t.under }}</span>
-                    </button>
-                  </sc-for>
-                  <sc-if value="{{ klSokTom }}" hint-placeholder-val="{{ false }}">
-                    <div style="padding: 10px 14px; font-size: var(--text-sm); color: var(--text-muted);">Ingen treff i denne perioden.</div>
-                  </sc-if>
-                  <!-- Kunnskapen under person- og kurstreffene, med en
-                       overskrift som skiller dem. Eieren, 11. september 2026
-                       (GO): «kan jeg få et lite søkefelt på kalender
-                       admin?» — feltet fantes, det er treffene som er nye.
-                       Trykk aapner dokumentet i ny fane. -->
-                  <sc-if value="{{ klKunnskapVises }}" hint-placeholder-val="{{ false }}">
-                    <div style="padding: 8px 14px 4px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); background: var(--clay-100);">Kunnskap</div>
-                    <sc-if value="{{ klHarMenteDu }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ klMenteDuVelg }}" style="appearance: none; border: none; background: var(--clay-100); cursor: pointer; display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 2px 14px 8px; font: var(--type-body-sm); color: var(--text-muted);">Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ klMenteDu }}»</span>?</button>
-                    </sc-if>
-                    <sc-for list="{{ klKunnskap }}" as="t" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ t.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
-                        <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ t.tittel }}</span>
-                        <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ t.under }}</span>
-                      </button>
-                    </sc-for>
-                  </sc-if>
-                  <!-- Spør verkstedet, rett fra soekefeltet. Eieren, 11.
-                       september 2026: «søkefeltet i kalender ser ikke ut til
-                       å ha samme ai funksjoner og innstillinger som det andre
-                       søkefeltet i verksted». Samme kall, samme kort AI-en
-                       leser fra (valgt under Verkstedet → Spør verkstedet),
-                       samme «Tenker …» og samme linje om kilden. GO paa
-                       bildet med pilla. -->
-                  <sc-if value="{{ klSporVis }}" hint-placeholder-val="{{ false }}">
-                    <div style="padding: 10px 14px 12px; border-top: 1px solid var(--border-subtle);">
-                      <span style="{{ klSporRammeStil }}"><button type="button" onClick="{{ klSporNa }}" style="{{ klSporStil }}">{{ klSporKnapp }}</button></span>
-                      <sc-if value="{{ klHarSvar }}" hint-placeholder-val="{{ false }}">
-                        <div style="margin-top: 10px; background: var(--clay-100); border-radius: var(--radius-md); padding: 12px 14px;">
-                          <div style="font-size: var(--text-sm); color: var(--text-body); line-height: 1.6; white-space: pre-wrap; text-wrap: pretty;">{{ klSvar }}</div>
-                          <sc-if value="{{ klSvarFraKilde }}" hint-placeholder-val="{{ false }}">
-                            <div style="margin-top: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>
-                          </sc-if>
-                        </div>
-                      </sc-if>
-                    </div>
-                  </sc-if>
-                </div>
-              </sc-if>
+            <!-- Spør verkstedet, i kalenderen. Feltet het «Søk …» og fant
+                 personer, kursdatoer og dokumenter, med AI-en som en pille
+                 nederst i treffboksen. Eieren, 11. september 2026: «Jeg vil
+                 at hele dette søkefeltet er spør verkstedet. Thats it» —
+                 «Samme funksjon». Valgte «Bort — bare Spør verkstedet».
+                 Samme kall og samme kort som under Verkstedet → Spør
+                 verkstedet, samme «Tenker …» og samme linje om kilden.
+                 Enter spoer ogsaa. Paa mobil tar feltet hele raden. -->
+            <div class="lx-klsok" style="display: flex; align-items: center; gap: var(--space-2); margin-left: auto; margin-right: 8px; flex: 0 1 380px; min-width: 240px;">
+              <input value="{{ klSok }}" onChange="{{ settKlSok }}" onKeyDown="{{ klSporTast }}" placeholder="Skriv spørsmålet ditt" aria-label="Spør o store krukkemester" style="box-sizing: border-box; flex: 1 1 auto; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+              <span style="{{ klSporRammeStil }}"><button type="button" onClick="{{ klSporNa }}" style="{{ klSporStil }}">{{ klSporKnapp }}</button></span>
             </div>
           </div>
+          <sc-if value="{{ klHarSvar }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); max-width: 74ch;">
+              <div style="font-size: var(--text-sm); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ klSvar }}</div>
+              <sc-if value="{{ klSvarFraKilde }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>
+              </sc-if>
+            </div>
+          </sc-if>
           <!-- Rad to sto her: «Inne naa» og stemple-pilla.
                Eieren, 9. september 2026: «pillen inne naa, den vbil jeg skal
                flyttes i det brune sidemenyen og underferie», og spurt om hva
@@ -34598,7 +34568,7 @@ class Component extends DCLogic {
           st.vstFane === 'vakter' ? 'Vakter'
           : st.vstFane === 'brenning' ? 'Brenning'
           : st.vstFane === 'dokumenter' ? 'Dokumenter'
-          : st.vstFane === 'faq' ? 'Spør verkstedet'
+          : st.vstFane === 'faq' ? 'Spør o store krukkemester'
           : st.vstFane === 'oppskrifter' ? 'Oppskrifter' : '');
       case 'admininnhold':       return p('Verkstedet', 'Nettsiden', 'Innhold');
       // Referansekundene og malene flyttet inn i Verkstedets egen fanerad
@@ -36719,48 +36689,20 @@ class Component extends DCLogic {
       klTittel: tittel, klForrige: flytt(-1), klNesteSteg: flytt(1),
       klIdag: () => this.setState({ klAnker: idagIso }),
       klSok: this.state.klSok || '',
-      settKlSok: e => { this.setState({ klSok: e.target.value }); this.kunnskapSok(e.target.value); },
-      // Kunnskapstreffene i det samme feltet. Se kunnskapSok().
-      ...(() => {
-        const kt = this.kunnskapTreff(this.state.klSok);
-        const md = this.kunnskapMenteDu(this.state.klSok);
-        return {
-          klMenteDu: md,
-          klHarMenteDu: !!md,
-          klMenteDuVelg: () => { this.setState({ klSok: md }); this.kunnskapSok(md); },
-          klKunnskapVises: kt.length > 0,
-          klKunnskap: kt.map(t => ({
-            tittel: t.navn,
-            under: t.kort + (t.utdrag ? ' · ' + t.utdrag : ''),
-            velg: () => window.open('/api/dokument.php?id=' + t.id, '_blank', 'noopener'),
-          })),
-          // Spør verkstedet fra det samme feltet. Svaret staar saa lenge
-          // teksten det ble spurt om staar i feltet; skrives det om, er det
-          // borte — et svar paa noe annet skal ikke bli staaende.
-          klSporVis: (this.state.klSok || '').trim().length >= 3,
-          klSporNa: () => this.klSpor(),
-          klSporKnapp: this.state.klSporJobber ? 'Tenker …' : 'Spør verkstedet',
-          klSporRammeStil: this.state.klSporJobber
-            ? { display: 'inline-flex', animation: 'lx-tenker 1.4s ease-in-out infinite' }
-            : { display: 'inline-flex' },
-          klSporStil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontFamily: 'inherit', fontSize: 'var(--text-sm)', fontWeight: 700, background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)' },
-          klHarSvar: !!this.state.klSvar && this.state.klSvarFor === (this.state.klSok || '').trim(),
-          klSvar: this.state.klSvar || '',
-          klSvarFraKilde: (this.state.klSvarKilder || []).length > 0,
-        };
-      })(),
-      ...(() => {
-        const q = (this.state.klSok || '').trim().toLowerCase();
-        if (!q) return { klSokVises: false, klSokTreff: [], klSokTom: false };
-        const treff = alle.filter(e => !e.avlyst && (e.tittel.toLowerCase().indexOf(q) >= 0 || (e.holder || '').toLowerCase().indexOf(q) >= 0 || (e.deltakere || []).some(p => p.navn.toLowerCase().indexOf(q) >= 0)))
-          .sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).slice(0, 8)
-          .map(e => {
-            const d2 = new Date(e.dato + 'T12:00:00');
-            const dl = (e.deltakere || []).find(p => p.navn.toLowerCase().indexOf(q) >= 0);
-            return { tittel: e.tittel, under: uked[(d2.getDay() + 6) % 7] + ' ' + d2.getDate() + '. ' + mndNavn[d2.getMonth()] + ' · ' + e.tid + (dl ? ' · ' + dl.navn : ''), velg: () => this.setState({ klAnker: e.dato, klVisning: 'dag', klValgtId: e.id, klSok: '' }) };
-          });
-        return { klSokVises: true, klSokTreff: treff, klSokTom: treff.length === 0 };
-      })(),
+      settKlSok: e => this.setState({ klSok: e.target.value }),
+      // Spør verkstedet. Svaret staar saa lenge teksten det ble spurt om
+      // staar i feltet; skrives det om, er det borte — et svar paa noe
+      // annet skal ikke bli staaende.
+      klSporNa: () => this.klSpor(),
+      klSporTast: e => { if (e.key === 'Enter') { e.preventDefault(); this.klSpor(); } },
+      klSporKnapp: this.state.klSporJobber ? 'Tenker …' : 'Spør',
+      klSporRammeStil: this.state.klSporJobber
+        ? { display: 'inline-flex', flex: '0 0 auto', animation: 'lx-tenker 1.4s ease-in-out infinite' }
+        : { display: 'inline-flex', flex: '0 0 auto' },
+      klSporStil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', height: '36px', padding: '0 18px', fontFamily: 'inherit', fontSize: 'var(--text-sm)', fontWeight: 700, background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', whiteSpace: 'nowrap' },
+      klHarSvar: !!this.state.klSvar && this.state.klSvarFor === (this.state.klSok || '').trim(),
+      klSvar: this.state.klSvar || '',
+      klSvarFraKilde: (this.state.klSvarKilder || []).length > 0,
       klErStengt: !!this.klStengte()[dagIso],
       klStengTekst: this.klStengte()[dagIso] !== undefined ? 'Åpne dagen' : 'Steng dagen',
       // Raden i «apningstider» er overstyringen: finnes den, gjelder den,
@@ -53305,7 +53247,7 @@ class Component extends DCLogic {
                 : fane.velg,
             })),
           } : {}),
-          vstTittel: erOversikt ? 'Verkstedet' : erDok ? 'Dokumenter' : 'Spør verkstedet',
+          vstTittel: erOversikt ? 'Verkstedet' : erDok ? 'Dokumenter' : 'Spør o store krukkemester',
           vstUnder: erDok ? 'Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.' : '',
 
           dokKort: kortene,

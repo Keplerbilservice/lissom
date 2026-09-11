@@ -16127,7 +16127,22 @@ sjekk('… og pakka har de tolv dokumentene i de to kortene',
         $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
         $alleHarTekst = !array_filter($m['dokumenter'] ?? [], static fn($d) => in_array($d['kort'] ?? '', ['leire', 'dreiing'], true)
             && !is_file(dirname(__DIR__) . '/db/dokumenter/' . ($d['tekst'] ?? 'finnes-ikke')));
-        return $iKort('leire') === 7 && $iKort('dreiing') === 5 && $alleHarTekst;
+        return $iKort('leire') >= 7 && $iKort('dreiing') >= 5 && $alleHarTekst;
+    })());
+// Runde to samme dag (GO): fjorten dokumenter til, to nye kort. «Regler i
+// verkstedet (plakat)» med vilje ikke med — se migrasjon 160.
+sjekk('migrasjon 160 legger til Håndbygging og HMS og vedlikehold',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/160_handbygging_og_hms.sql'),
+        "    ('handbygging', 'Håndbygging',        9),\n    ('hms',         'HMS og vedlikehold', 10);"));
+sjekk('… og pakka har de fjorten i kortene sine, uten plakaten',
+    (static function (): bool {
+        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
+        $navn = array_column($m['dokumenter'] ?? [], 'navn');
+        return $iKort('dreiing') === 9 && $iKort('glassering') === 3 && $iKort('brenning') === 2 && $iKort('leire') === 8
+            && $iKort('handbygging') === 3 && $iKort('hms') === 3
+            && !in_array('Regler i verkstedet (plakat)', $navn, true)
+            && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/haandboker/hms/hms-i-verkstedet.txt'), 'Åpne først under 100 °C');
     })());
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")

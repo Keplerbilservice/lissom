@@ -109,6 +109,90 @@
       "fil": "haandboker/dreiing/trekke-hanker.pdf",
       "navn": "Trekke hanker",
       "tekst": "haandboker/dreiing/trekke-hanker.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/apning-og-bunn.pdf",
+      "navn": "Åpning og bunn",
+      "tekst": "haandboker/dreiing/apning-og-bunn.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/forming-skal-sylinder-flaske.pdf",
+      "navn": "Forming: skål, sylinder og flaske",
+      "tekst": "haandboker/dreiing/forming-skal-sylinder-flaske.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/beskjaering-av-fot.pdf",
+      "navn": "Beskjæring av fot",
+      "tekst": "haandboker/dreiing/beskjaering-av-fot.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/tuter-og-lokk.pdf",
+      "navn": "Tuter og lokk",
+      "tekst": "haandboker/dreiing/tuter-og-lokk.txt"
+    },
+    {
+      "kort": "glassering",
+      "fil": "haandboker/glassering/glasurfeil.pdf",
+      "navn": "Glasurfeil",
+      "tekst": "haandboker/glassering/glasurfeil.txt"
+    },
+    {
+      "kort": "glassering",
+      "fil": "haandboker/glassering/matsikker-keramikk.pdf",
+      "navn": "Matsikker keramikk",
+      "tekst": "haandboker/glassering/matsikker-keramikk.txt"
+    },
+    {
+      "kort": "brenning",
+      "fil": "haandboker/brenning/ovnsstabling.pdf",
+      "navn": "Ovnsstabling",
+      "tekst": "haandboker/brenning/ovnsstabling.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/hvorfor-sprakk-den.pdf",
+      "navn": "Hvorfor sprakk den?",
+      "tekst": "haandboker/leire/hvorfor-sprakk-den.txt"
+    },
+    {
+      "kort": "handbygging",
+      "fil": "haandboker/handbygging/klyping.pdf",
+      "navn": "Klyping (pinch)",
+      "tekst": "haandboker/handbygging/klyping.txt"
+    },
+    {
+      "kort": "handbygging",
+      "fil": "haandboker/handbygging/polseteknikk.pdf",
+      "navn": "Pølseteknikk (coiling)",
+      "tekst": "haandboker/handbygging/polseteknikk.txt"
+    },
+    {
+      "kort": "handbygging",
+      "fil": "haandboker/handbygging/plateteknikk.pdf",
+      "navn": "Plateteknikk (slab)",
+      "tekst": "haandboker/handbygging/plateteknikk.txt"
+    },
+    {
+      "kort": "hms",
+      "fil": "haandboker/hms/hms-i-verkstedet.pdf",
+      "navn": "HMS i verkstedet",
+      "tekst": "haandboker/hms/hms-i-verkstedet.txt"
+    },
+    {
+      "kort": "hms",
+      "fil": "haandboker/hms/vedlikehold.pdf",
+      "navn": "Vedlikehold",
+      "tekst": "haandboker/hms/vedlikehold.txt"
+    },
+    {
+      "kort": "hms",
+      "fil": "haandboker/hms/keramikk-vanlige-sporsmal.pdf",
+      "navn": "Keramikk – vanlige spørsmål",
+      "tekst": "haandboker/hms/keramikk-vanlige-sporsmal.txt"
     }
   ],
   "maler": [

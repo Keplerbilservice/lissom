@@ -109,6 +109,33 @@ const TEKNIKK = [
   ['Teknikkark - Trekke hanker.html',                         'dreiing'],
 ];
 
+// Runde to, samme dag (GO): 14 dokumenter til fra mappa «Nye dokumenter».
+// Elleve gaar i kort som finnes, seks i to nye (migrasjon 160). «Regler i
+// verkstedet (plakat)» er med vilje ikke med — den sa det samme som
+// «Ordensregler og HMS» paa Min side, og ikke det samme. Samme --legg-til,
+// kjoert paa den mappa:
+//
+//     node bin/dokumentpakke.mjs "…/Nye dokumenter" --legg-til
+//
+// Lista under gaar sammen med TEKNIKK; det som ikke finnes i kildemappa
+// meldes og hoppes over, saa begge mappene kan kjoeres med samme skript.
+const RUNDE_TO = [
+  ['Teknikkark - Åpning og bunn.html',                    'dreiing'],
+  ['Teknikkark - Forming skål sylinder flaske.html',      'dreiing'],
+  ['Teknikkark - Beskjæring av fot.html',                 'dreiing'],
+  ['Teknikkark - Tuter og lokk.html',                     'dreiing'],
+  ['Guide - Glasurfeil.html',                             'glassering'],
+  ['Guide - Matsikker keramikk.html',                     'glassering'],
+  ['Verksted - Ovnsstabling.html',                        'brenning'],
+  ['Guide - Hvorfor sprakk den.html',                     'leire'],
+  ['Teknikkark - Klyping.html',                           'handbygging'],
+  ['Teknikkark - Pølseteknikk.html',                      'handbygging'],
+  ['Teknikkark - Plateteknikk.html',                      'handbygging'],
+  ['Guide - HMS i verkstedet.html',                       'hms'],
+  ['Verksted - Vedlikehold.html',                         'hms'],
+  ['Håndbok - Keramikk vanlige spørsmål.html',            'hms'],
+];
+
 // Gruppene i den rekkefoelgen de skal staa. De 20 foerste har nummer i
 // mappenavnet; resten staar med gruppenavnet under.
 const GRUPPER = [
@@ -245,10 +272,10 @@ const dsNavn = (html) => {
 };
 
 // ── Teknikkarkene, guidene og eltingsboka ──────────────────────────────
-for (const [fil, kort] of TEKNIKK) {
+for (const [fil, kort] of TEKNIKK.concat(RUNDE_TO)) {
   const html = join(maler, fil);
-  if (!existsSync(html)) { console.warn('Mangler: ' + fil); continue; }
-  const rel = `haandboker/${kort}/${slug(fil.replace(/\.html$/i, '').replace(/^(Teknikkark|Guide) - /, ''))}.pdf`;
+  if (!existsSync(html)) { if (!leggTil) console.warn('Mangler: ' + fil); continue; }
+  const rel = `haandboker/${kort}/${slug(fil.replace(/\.html$/i, '').replace(/^(Teknikkark|Guide|Verksted|Håndbok) - /, ''))}.pdf`;
   if (manifest.dokumenter.some(d => d.fil === rel)) { console.log('finnes  ' + fil); continue; }
   mkdirSync(dirname(join(ut, rel)), { recursive: true });
   tilPdf(html, join(ut, rel));

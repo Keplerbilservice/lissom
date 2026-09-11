@@ -32,6 +32,9 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
           find api app bin -name '*.php' -print0 | xargs -0 -n1 php -l
+          # side.php ligger i rota og serverer hver eneste side. En
+          # syntaksfeil der er hele nettsida nede — den sjekkes ogsaa.
+          php -l side.php
 
       # 1) Nettsiden: alt som skal være offentlig tilgjengelig.
       - name: Legg ut nettsiden

@@ -1054,7 +1054,8 @@ window.__resources = {
 // neste bilde — saa det finnes ikke et oyeblikk der begge er synlige.
 // setTimeout eller requestAnimationFrame ville gitt akkurat det.
 //
-// Finnes ingen kopi — alle sider unntatt forsida — gjor dette ingenting.
+// Finnes ingen kopi — alle sider unntatt forsida — gjor dette ingenting
+// med toppen. Robotteksten (lissom-tekst) tas uansett, se rydd().
 (function () {
   var EKTE = '[data-screen-label="Forside"] section.lx-hero';
   // Malen ligger fortsatt i DOM-en, skjult inne i <x-dc>, og treffer den
@@ -1068,12 +1069,24 @@ window.__resources = {
     }
     return false;
   }
+  // Robotteksten (<main id="lissom-tekst">, fra app/lib/robottekst.php)
+  // ligger paa alle aapne sider og fjernes naar en ekte skjerm staar —
+  // hvilken som helst, ikke bare forsida.
+  function skjermFinnes() {
+    var alle = document.querySelectorAll('[data-screen-label]');
+    for (var i = 0; i < alle.length; i++) {
+      if (!alle[i].closest('x-dc')) return true;
+    }
+    return false;
+  }
   function rydd() {
+    var tekst = document.getElementById('lissom-tekst');
+    if (tekst && skjermFinnes()) tekst.remove();
     var kopi = document.getElementById('lissom-topp');
-    if (!kopi) return true;                       // ingen kopi: ferdig.
+    if (!kopi) return !document.getElementById('lissom-tekst');   // ingen kopi: ferdig naar teksten er borte.
     if (!ekteFinnes()) return false;
     kopi.remove();
-    return true;
+    return !document.getElementById('lissom-tekst');
   }
   function start() {
     if (rydd()) return;

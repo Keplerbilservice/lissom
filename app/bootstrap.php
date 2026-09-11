@@ -73,6 +73,7 @@ require APP_DIR . '/lib/kursmal.php';
 require APP_DIR . '/lib/tikk.php';
 require APP_DIR . '/lib/ai.php';
 require APP_DIR . '/lib/dokumenter.php';
+require APP_DIR . '/lib/robottekst.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i
 // feilloggen på webhotellet i stedet.

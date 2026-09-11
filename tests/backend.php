@@ -16181,6 +16181,36 @@ sjekk('migrasjon 163 gir «anmeldelse» plakatens tekst, som e-post, og setter d
             && str_contains($m, "WHERE navn = 'anmeldelse'")
             && str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'), "if (!\$paa || \$lenke === '' || !\$malPaa) {");
     })());
+// ── Sidene slik robotene ser dem ─────────────────────────────────────────
+//
+// Eieren, 11. september 2026 (GO): hovedteksten og de strukturerte dataene
+// tegnes paa serveren for de aapne sidene. Maalt foer: OAI-SearchBot fikk
+// 584 plassholdere paa /kurs. Maalt etter, lokalt med stubbet base: /kurs
+// 112 ord og ItemList, kurssida Course med én Event per dato, /sporsmal-
+// og-svar FAQPage, /min-side ingenting. I Chrome: teksten staar fra foerste
+// byte og fjernes i samme oeyeblikk som den ekte skjermen finnes.
+sjekk('Robottekst: kroner, dato og ingress',
+    Robottekst::kroner(280000) === 'kr. 2 800,-'
+    && Robottekst::dato('2026-09-16 16:00:00') === '16. september'
+    && Robottekst::dato('2026-09-16 16:00:00', true) === '16. september kl. 18:00'
+    && Robottekst::ingress('Første setning. Andre setning.') === 'Første setning.'
+    && mb_strlen(Robottekst::ingress(str_repeat('x', 300))) <= 160);
+sjekk('… side.php legger JSON-LD i hodet og teksten etter <body>, og aldri paa noindex',
+    (static function (): bool {
+        $s = (string) file_get_contents(dirname(__DIR__) . '/side.php');
+        return str_contains($s, "\$robot = Robottekst::lag(\$adresse, \$d, \$kart);")
+            && str_contains($s, "if (!\$ikkeISoket && \$d !== null) {")
+            && str_contains($s, "'<script type=\"application/ld+json\" data-lissom-ld=\"1\">'")
+            && str_contains($s, "'<body>' . \"\\n\" . \$robot['html']");
+    })());
+sjekk('… skriptet fjerner teksten naar en ekte skjerm staar, paa alle sider',
+    str_contains($mkSida, "var tekst = document.getElementById('lissom-tekst');")
+    && str_contains($mkSida, "if (tekst && skjermFinnes()) tekst.remove();"));
+sjekk('… og deployen lint-sjekker side.php',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/.github/workflows/deploy.yml'), 'php -l side.php'));
+sjekk('… llms.txt bruker den samme kurslista',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::kurs() as $k) {')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::medlemskap() as $p) {'));
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
     && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")

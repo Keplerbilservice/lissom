@@ -2,10 +2,11 @@
 /**
  * Medlemschatten.
  *
- *   GET                     de siste meldingene
- *   GET ?etter=<id>         bare det som har kommet siden sist
- *   POST                    { tekst }        send en melding
- *   POST handling=slett     { id }           angre sin egen
+ *   GET                        de siste meldingene
+ *   GET ?etter=<id>            bare det som har kommet siden sist
+ *   POST                       { tekst }     send en melding
+ *   POST handling=slett        { id }        angre sin egen — admin kan alle
+ *   POST handling=angre-slett  { id }        hent en slettet melding tilbake
  *
  * Meldingene laa i localStorage. De var altsaa synlige bare for den som
  * skrev dem — chatten gikk én vei, og det kom aldri et varsel, fordi det
@@ -28,13 +29,21 @@ const CHAT_MAKS_TEGN = 500;
 $medlem = krev_aktivt_medlem();
 $megId = (int) $medlem['id'];
 
+// Den som driver verkstedet maa kunne rydde i rommet. Eieren, 10. september
+// 2026, om en melding fra Monica som sto klippet: «Jeg vil slette meldingen
+// til monica, den maa kunne angres.»
+//
+// Sesjon::erAdmin() og ikke rollen i raden: den samme sperra som resten av
+// admin bruker, saa en sesjon uten passord ikke gir mer her enn der.
+$erAdmin = Sesjon::erAdmin();
+
 /**
  * Meldingene, nyeste sist.
  *
  * Navnet leses fra medlemmet naa, ikke fra da meldingen ble skrevet: bytter
  * noen navn, skal det staa riktig ogsaa paa det gamle.
  */
-$les = static function (int $etter) use ($megId): array {
+$les = static function (int $etter) use ($megId, $erAdmin): array {
     $rader = DB::alle(
         'SELECT c.id, c.member_id, c.tekst, c.created_at, c.slettet_at,
                 m.navn
@@ -48,7 +57,7 @@ $les = static function (int $etter) use ($megId): array {
     $rader = array_reverse($rader);
 
     $oslo = new DateTimeZone('Europe/Oslo');
-    return array_map(static function (array $r) use ($megId, $oslo): array {
+    return array_map(static function (array $r) use ($megId, $erAdmin, $oslo): array {
         $egen = (int) $r['member_id'] === $megId;
         $slettet = $r['slettet_at'] !== null;
         return [
@@ -59,6 +68,9 @@ $les = static function (int $etter) use ($megId): array {
                         ->setTimezone($oslo)->format('H:i'),
             'egen'  => $egen,
             'slettet' => $slettet,
+            // Serveren sier hvem som kan roere hva; skjermen tegner bare
+            // etter det. Da kan de to ikke komme i utakt.
+            'kanSlette' => $egen || $erAdmin,
         ];
     }, $rader);
 };
@@ -77,18 +89,38 @@ if (Foresporsel::metode() === 'GET') {
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 
-if (Foresporsel::tekst('handling') === 'slett') {
+$handling = Foresporsel::tekst('handling');
+if ($handling === 'slett' || $handling === 'angre-slett') {
     $id = Foresporsel::heltall('id');
     $rad = DB::en('SELECT id, member_id FROM chat_meldinger WHERE id = :i', ['i' => $id]);
     if ($rad === null) {
         Svar::feil('Fant ikke meldingen.', 404);
     }
-    // Bare sin egen. Ingen skal kunne fjerne det andre har skrevet.
-    if ((int) $rad['member_id'] !== $megId) {
+    // Sin egen, eller admin. Et medlem skal fortsatt ikke kunne roere det
+    // et annet medlem har skrevet.
+    $egen = (int) $rad['member_id'] === $megId;
+    if (!$egen && !$erAdmin) {
         Svar::feil('Du kan bare slette dine egne meldinger.', 403);
     }
-    DB::kjor('UPDATE chat_meldinger SET slettet_at = UTC_TIMESTAMP() WHERE id = :i AND slettet_at IS NULL', ['i' => $id]);
-    Svar::ok(['id' => $id]);
+
+    // Sletting er myk: teksten staar i basen, raden faar bare et tidspunkt,
+    // og den som leser ser «Meldingen er slettet». Derfor kan den hentes
+    // tilbake — eieren ba om nettopp det.
+    if ($handling === 'slett') {
+        DB::kjor('UPDATE chat_meldinger SET slettet_at = UTC_TIMESTAMP() WHERE id = :i AND slettet_at IS NULL', ['i' => $id]);
+    } else {
+        DB::kjor('UPDATE chat_meldinger SET slettet_at = NULL WHERE id = :i', ['i' => $id]);
+    }
+
+    // Rydder admin i andres meldinger, skal det staa i loggen hvem som
+    // gjorde hva. Sin egen melding er sin egen sak.
+    if (!$egen && function_exists('revider')) {
+        revider($handling === 'slett' ? 'chat_slettet' : 'chat_hentet_tilbake', 'chat', $id, [
+            'skrevet_av' => (int) $rad['member_id'],
+        ]);
+    }
+
+    Svar::ok(['id' => $id, 'slettet' => $handling === 'slett']);
 }
 
 // Et rom flere deler taaler ikke at én fyller det. Tjue meldinger paa fem

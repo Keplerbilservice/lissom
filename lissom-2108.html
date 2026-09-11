@@ -1088,52 +1088,6 @@ window.__resources = {
 })();
 </script>
 
-<script>
-// Bunnmenyene folger det man faktisk ser.
-//
-// Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
-// naar vi scroller opp og ned. Saa sett den fast» — og paa spoersmaal: ja,
-// baade Min side og admin.
-//
-// Menyene er «position: fixed; bottom: 0», og maalt i nettleseren staar de
-// bom stille: 731 px baade for og etter 1200 px rulling, paa Min side og paa
-// admin. Det finnes ingen rullelytter i koden i det hele tatt.
-//
-// Det som flytter seg er adresselinja i telefonens nettleser. «fixed» festes
-// til SIDEVINDUET (layout viewport), og det krymper ikke naar adresselinja
-// kommer fram. Menyen blir da staaende bak den — den ser ut til aa skli ned
-// og bli borte, og komme tilbake naar man ruller andre veien.
-//
-// «visualViewport» er det man faktisk ser. Avstanden fra bunnen av det til
-// bunnen av sidevinduet legges i «--vv-bunn», og stilarket flytter menyene
-// like langt opp. Da staar de i ro mot skjermkanten.
-//
-// Tastaturet: naar det er framme krymper det synlige vinduet med 250-350 px.
-// Da lar vi menyen bli staaende der den er — loftet opp ville den lagt seg
-// oppa skrivefeltet i chatten. Grensa er 160 px: hoyere enn en adresselinje,
-// lavere enn et tastatur.
-(function () {
-  var vv = window.visualViewport;
-  if (!vv) return;                       // ingen stotte: alt staar som for.
-  var TASTATUR = 160;
-  var venter = false;
-  var sist = null;
-  function skriv() {
-    venter = false;
-    var d = Math.round(vv.offsetTop + vv.height - document.documentElement.clientHeight);
-    if (d > 0) d = 0;                    // ser mer enn sidevinduet: ingenting aa gjore.
-    if (d < -TASTATUR) d = 0;            // tastaturet, ikke adresselinja.
-    if (d === sist) return;              // samme tall: ikke ror stilen.
-    sist = d;
-    document.documentElement.style.setProperty('--vv-bunn', d + 'px');
-  }
-  function be() { if (!venter) { venter = true; requestAnimationFrame(skriv); } }
-  vv.addEventListener('resize', be);
-  vv.addEventListener('scroll', be);
-  window.addEventListener('orientationchange', be);
-  skriv();
-})();
-</script>
 
 <script>
 // Chatten staar paa den nyeste meldingen, ikke paa den eldste.
@@ -1177,6 +1131,89 @@ window.__resources = {
     // Meldingene kommer inn etter at sida er tegnet, og nye kommer til mens
     // man staar der. Samme verktoy som toppen over bruker.
     new MutationObserver(folg).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.body) start();
+  else document.addEventListener('DOMContentLoaded', start);
+})();
+</script>
+
+<script>
+// Sida laases naar bunnmenyen staar der.
+//
+// Eieren, 10. september 2026: «Bunnmenyen hopper naar jeg scroller opp og
+// ned, her maa vi ha paa plass en annen loesning.»
+//
+// Hele forklaringen staar i stilarket, ved «.lx-laast». Kort: naar sida ikke
+// ruller, kollapser ikke adresselinja, og da staar menyen stille. Det er
+// innholdet som ruller i stedet — «#dc-root» blir rullefeltet.
+//
+// Her staar bare de to tingene CSS ikke kan gjore selv:
+//
+//   1. Sette klassen naar en bunnmeny faktisk er synlig, og ta den av igjen
+//      naar den ikke er det. Ellers ville en PC-skjerm ogsaa blitt laast.
+//
+//   2. Sende rullingen videre. Koden ber om «window.scrollTo(...)» 88 steder
+//      — «gaa til toppen» naar man bytter fane, «rull ned til dette kortet»
+//      naar noe aapner seg. Naar dokumentet ikke ruller lenger, treffer de
+//      ingenting. De faar svar av rullefeltet i stedet.
+//
+//      «window.scrollY» leses ni steder, alltid som «rect.top + scrollY - 90»
+//      — altsaa «hvor staar dette i dokumentet». Med rullefeltet oeverst i
+//      vinduet er svaret rullefeltets egen «scrollTop», og regnestykket gaar
+//      opp som for.
+(function () {
+  var rot = null;
+  function felt() {
+    if (!rot) rot = document.getElementById('dc-root');
+    return rot;
+  }
+  function menyVises() {
+    var m = document.querySelector('.ms-bunnmeny, .lx-bunnmeny');
+    // «offsetParent» duger ikke: den er alltid null paa noe som er «fixed»,
+    // og menyen er nettopp det. Maalt: sida ble aldri laast. Antall rammer
+    // er null naar CSS har satt «display: none», og ellers minst én.
+    return !!m && m.getClientRects().length > 0;
+  }
+  var laast = false;
+  function still() {
+    var skalLaases = menyVises() && !!felt();
+    if (skalLaases === laast) return;
+    laast = skalLaases;
+    document.documentElement.classList.toggle('lx-laast', laast);
+  }
+
+  // Rullingen sendes videre. Staar sida ulaast, gjor begge det de alltid har
+  // gjort.
+  var egenTo = window.scrollTo.bind(window);
+  var egenBy = window.scrollBy.bind(window);
+  window.scrollTo = function (a, b) {
+    var f = laast && felt();
+    if (!f) return egenTo(a, b);
+    if (a && typeof a === 'object') return f.scrollTo(a);
+    return f.scrollTo(a || 0, b || 0);
+  };
+  window.scrollBy = function (a, b) {
+    var f = laast && felt();
+    if (!f) return egenBy(a, b);
+    if (a && typeof a === 'object') return f.scrollBy(a);
+    return f.scrollBy(a || 0, b || 0);
+  };
+  ['scrollY', 'pageYOffset'].forEach(function (navn) {
+    Object.defineProperty(window, navn, {
+      configurable: true,
+      get: function () {
+        var f = laast && felt();
+        return f ? f.scrollTop : document.documentElement.scrollTop;
+      },
+    });
+  });
+
+  function start() {
+    still();
+    // Skjermen tegnes om naar man bytter side, og bunnmenyen kommer og gaar
+    // med den. Samme verktoy som de to skriptene over bruker.
+    new MutationObserver(still).observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', still);
   }
   if (document.body) start();
   else document.addEventListener('DOMContentLoaded', start);
@@ -1494,25 +1531,41 @@ window.__resources = {
     .ms-hjem-kort { display: none !important; }
   }
 
-  /* Bunnmenyene folger det man faktisk ser, ikke sida.
-     --------------------------------------------------
-     Eieren, 10. september 2026: «Denne bunnmenyen føytter seg og forsvinner
-     naar vi scroller opp og ned. Saa sett den fast», og paa spoersmaal:
-     ja, baade Min side og admin.
 
-     Menyene er «fixed» mot bunnen, og maalt i nettleseren staar de bom
-     stille — 731 px baade for og etter 1200 px rulling, begge steder. Det
-     finnes ingen rullelytter i koden.
+  /* Sida staar stille naar bunnmenyen staar der.
+     ---------------------------------------------
+     Eieren, 10. september 2026: «Bunnmenyen hopper naar jeg scroller opp og
+     ned, her maa vi ha paa plass en annen loesning.» Og paa spoersmaal om
+     hvilken: laas sida.
 
-     Det som flytter seg er adresselinja i telefonens nettleser. «fixed»
-     festes til SIDEVINDUET, som ikke krymper naar adresselinja kommer
-     fram — saa menyen blir staaende bak den og ser ut til aa skli vekk.
+     Hvorfor den hoppet: en meny som er «fixed» festes til SIDEVINDUET.
+     Adresselinja i telefonens nettleser glir inn og ut mens man ruller, og
+     sidevinduet er like hoyt hele tida — saa menyen blir staaende bak den.
+     Loesningen for dette var et skript som flyttet menyen etter det man
+     faktisk saa; adresselinja glir i smaa steg, og menyen fulgte etter i
+     rykk. Verre enn utgangspunktet, og den er tatt ut igjen.
 
-     «--vv-bunn» settes av skriptet oeverst i fila og er avstanden fra
-     bunnen av det man ser til bunnen av sidevinduet. Null paa PC, og null
-     i en nettleser uten «visualViewport». */
-  .ms-bunnmeny,
-  .lx-bunnmeny { transform: translateY(var(--vv-bunn, 0px)); }
+     Dette er den andre veien: naar SIDA ikke ruller, kollapser adresselinja
+     aldri. Da staar sidevinduet stille, og menyen med det.
+
+     Sida ruller likevel — det er innholdet som ruller, ikke dokumentet.
+     «#dc-root» er ramma alt tegnes inni, og den blir rullefeltet. Menyen
+     ligger inni den, men er «fixed», og «fixed» maales mot vinduet uansett
+     hvor i dokumentet noe staar — saa den blir staaende.
+
+     Klassen settes bare naar bunnmenyen faktisk staar der: telefon paa Min
+     side, og under 980 px i admin. Paa PC roeres ingenting.
+
+     «100dvh» og ikke «100vh»: «vh» regnes ut fra vinduet UTEN adresselinja,
+     og med den framme ville bunnen ligget under skjermkanten. Linja over er
+     reserven for nettlesere som ikke kan «dvh». */
+  .lx-laast, .lx-laast body { height: 100vh; height: 100dvh; overflow: hidden; }
+  .lx-laast #dc-root {
+    height: 100vh; height: 100dvh;
+    overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
 
   /* Meldingslista i chatten.
      ------------------------
@@ -1533,6 +1586,27 @@ window.__resources = {
      «dvh». */
   .ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }
   @media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }
+
+  /* Navnene i bunnmenyen paa Min side.
+     ----------------------------------
+     Eieren, 10. september 2026: «Men bunn menyen, ikke lag de saa mye
+     storre, jeg vil ikke ha orddeling.»
+
+     De sto en kort stund med «overflowWrap: anywhere» — da brakk
+     «Medlemskap» midt i ordet, «Medlemska» over «p». Det er borte: navnet
+     staar paa én linje, alltid.
+
+     For at det skal gaa maa skrifta kunne krympe naar cella er smal. «cqw»
+     er én prosent av bredden paa menyen, saa 2,7cqw er 2,7 prosent av den
+     — og cella er en sjettedel, altsaa 16,7 prosent. Da faar det lengste
+     navnet plass uansett hvor smal telefonen er. Paa en vanlig telefon er
+     8,5 px minst av de to, saa der staar skrifta noeyaktig som for.
+
+     «container-type» maa staa paa menyen for at «cqw» skal ha noe aa maale
+     mot. Den gjor menyen til en ramme for absolutt plasserte barn — det
+     har den ingen av — og roerer ikke at menyen selv staar «fixed». */
+  .ms-bunnmeny { container-type: inline-size; }
+  .ms-bmtekst { font-size: min(8.5px, 2.7cqw); }
 
 
   /* Kortene paa telefonen: tittel, tall og «Se mer».
@@ -5039,7 +5113,16 @@ window.__resources = {
                     <span style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
                     <span style="{{ c.boble }}">{{ c.tekst }}</span>
                     <sc-if value="{{ c.kanAngre }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre</button>
+                      <!-- «Slett», ogsaa paa sin egen. Den het «Angre» der
+                           fram til eieren sa fra, 11. september 2026: «Jeg
+                           vil kun ha slett og angre sletting». To ord i
+                           chatten, ikke tre. -->
+                      <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Slett</button>
+                    </sc-if>
+                    <!-- Slettingen er myk: teksten staar i basen, og denne
+                         henter den tilbake. -->
+                    <sc-if value="{{ c.kanHente }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ c.hent }}" title="Angre sletting" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre sletting</button>
                     </sc-if>
                   </sc-for>
                 </div>
@@ -5155,17 +5238,24 @@ window.__resources = {
            ala vi har på admin», «Medlemskap på menyen i bunnen»,
            «Internbutkikk også», «Og chat».
 
-           Samme celle som adminmenyen bruker — se bunnMenyPunkt(). Fem
-           steder; bare det du staar paa tegnes. -->
+           Samme celle som adminmenyen bruker — se bunnMenyPunkt(). Bare
+           det du staar paa tegnes.
+
+           Seks celler, ikke sju. Eieren, 10. september 2026: «Fjern min
+           side paa bunnmenyen slik at de andre menyene faar storre plass.»
+           Veien hjem staar som pille oeverst paa sida — den kom dit samme
+           kveld, paa hans eget onske — saa cella her var den samme veien to
+           ganger, og tok bredde fra de seks andre.
+
+           Maalt paa 360 px: cellene gikk fra 51 til 60 px. -->
       <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
         <nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">
-          <button type="button" onClick="{{ msBmHjem.velg }}" aria-label="{{ msBmHjem.full }}" style="{{ msBmHjem.stil }}"><span style="{{ msBmHjem.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg><span style="{{ msBmTekstStil }}">{{ msBmHjem.navn }}</span></button>
-          <button type="button" onClick="{{ msBmMedlemskap.velg }}" aria-label="{{ msBmMedlemskap.full }}" style="{{ msBmMedlemskap.stil }}"><span style="{{ msBmMedlemskap.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span style="{{ msBmTekstStil }}">{{ msBmMedlemskap.navn }}</span></button>
-          <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
-          <button type="button" onClick="{{ msBmSelg.velg }}" aria-label="{{ msBmSelg.full }}" style="{{ msBmSelg.stil }}"><span style="{{ msBmSelg.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 8h16v12H4V8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M12 12v5M9.5 14.5h5"/></svg><span style="{{ msBmTekstStil }}">{{ msBmSelg.navn }}</span></button>
-          <button type="button" onClick="{{ msBmChat.velg }}" aria-label="{{ msBmChat.full }}" style="{{ msBmChat.stil }}"><span style="{{ msBmChat.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><span style="{{ msBmTekstStil }}">{{ msBmChat.navn }}</span></button>
-          <button type="button" onClick="{{ msBmNyttig.velg }}" aria-label="{{ msBmNyttig.full }}" style="{{ msBmNyttig.stil }}"><span style="{{ msBmNyttig.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span style="{{ msBmTekstStil }}">{{ msBmNyttig.navn }}</span></button>
-          <button type="button" onClick="{{ msBmLoggUt.velg }}" aria-label="{{ msBmLoggUt.full }}" style="{{ msBmLoggUt.stil }}"><span style="{{ msBmLoggUt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span style="{{ msBmTekstStil }}">{{ msBmLoggUt.navn }}</span></button>
+          <button type="button" onClick="{{ msBmMedlemskap.velg }}" aria-label="{{ msBmMedlemskap.full }}" style="{{ msBmMedlemskap.stil }}"><span style="{{ msBmMedlemskap.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmMedlemskap.navn }}</span></button>
+          <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ msBmSelg.velg }}" aria-label="{{ msBmSelg.full }}" style="{{ msBmSelg.stil }}"><span style="{{ msBmSelg.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 8h16v12H4V8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M12 12v5M9.5 14.5h5"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmSelg.navn }}</span></button>
+          <button type="button" onClick="{{ msBmChat.velg }}" aria-label="{{ msBmChat.full }}" style="{{ msBmChat.stil }}"><span style="{{ msBmChat.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmChat.navn }}</span></button>
+          <button type="button" onClick="{{ msBmNyttig.velg }}" aria-label="{{ msBmNyttig.full }}" style="{{ msBmNyttig.stil }}"><span style="{{ msBmNyttig.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmNyttig.navn }}</span></button>
+          <button type="button" onClick="{{ msBmLoggUt.velg }}" aria-label="{{ msBmLoggUt.full }}" style="{{ msBmLoggUt.stil }}"><span style="{{ msBmLoggUt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmLoggUt.navn }}</span></button>
         </nav>
       </sc-if>
     </div>
@@ -29491,27 +29581,48 @@ class Component extends DCLogic {
       });
   }
 
-  /** Angrer sin egen melding. Andres kan ingen roere — det avviser serveren. */
-  angreChat(id) {
+  /**
+   * Sletter en melding, eller henter den tilbake.
+   *
+   * Sin egen kan hvem som helst angre. Andres kan bare den som driver
+   * verkstedet roere — eieren, 10. september 2026: «Jeg vil slette meldingen
+   * til monica, den maa kunne angres.» Serveren avgjor; her tegnes bare det
+   * den svarer.
+   *
+   * Slettingen er myk: teksten blir staaende i basen, og «Angre sletting»
+   * henter den tilbake.
+   */
+  angreChat(id, tilbake) {
     if (!this.erPublisert() || this._chatSender) return;
     this._chatSender = true;
     fetch('/api/chat.php', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handling: 'slett', id: id }),
+      body: JSON.stringify({ handling: tilbake ? 'angre-slett' : 'slett', id: id }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
       .then(({ ok, d }) => {
         this._chatSender = false;
-        if (ok) {
-          this.setState(s => ({
-            chat: (s.chat || []).map(m => m.id === id
-              ? Object.assign({}, m, { tekst: 'Meldingen er slettet', slettet: true })
-              : m),
-          }));
-        } else {
+        if (!ok) {
           this.setState({ chatFeil: (d && d.feil) || 'Gikk ikke.' });
+          return;
         }
+        if (tilbake) {
+          // Teksten ligger i basen, ikke her, saa traaden hentes paa nytt.
+          //
+          // «true» og ikke «false»: den vanlige runden spor bare etter det
+          // som har kommet SIDEN sist, og meldingen vi nettopp hentet
+          // tilbake er gammel. Maalt: med «false» ble «Meldingen er slettet»
+          // staaende. «true» henter hele traaden om igjen.
+          this._chatHentes = false;
+          this.hentChat(true);
+          return;
+        }
+        this.setState(s => ({
+          chat: (s.chat || []).map(m => m.id === id
+            ? Object.assign({}, m, { tekst: 'Meldingen er slettet', slettet: true })
+            : m),
+        }));
       })
       .catch(() => { this._chatSender = false; });
   }
@@ -48307,7 +48418,7 @@ class Component extends DCLogic {
             ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(250px, 100%), 1fr))',
                 gap: 'var(--space-5)', alignItems: 'stretch' }
             : { display: 'block', maxWidth: 640 },
-          msBmHjem: b.hjem, msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
+          msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
           msBmSelg: b.selg, msBmChat: b.chat, msBmNyttig: b.nyttig, msBmLoggUt: b.loggUt,
           // De samme sju, som piller. CSS velger hvilken form som vises —
           // se «.ms-pillerad» i stilarket. Raden setter ikke «display»:
@@ -48388,20 +48499,24 @@ class Component extends DCLogic {
             // stoerre skrift. Maalt her paa 390 px laa menyen fast og var
             // noeyaktig saa bred som skjermen; det er den stoerre skrifta som
             // gjor forskjellen.
-            display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+            display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
             // Plass til hjemknappen paa iPhone, som i adminmenyen.
             paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
           },
           // Sju valg, ikke seks som i admin. Da er cella 51 px paa en telefon
           // paa 360, og «Medlemskap» er 53 med 9 px skrift. Et halvt punkt
           // mindre holder det lengste navnet innenfor sin egen celle.
+          // Navnet under ikonet.
+          //
+          // Skriftstoerrelsen staar i stilarket, se «.ms-bmtekst». Den kan
+          // ikke staa her: den maa regnes ut fra hvor bred cella er, og det
+          // vet bare CSS.
           msBmTekstStil: {
-            fontSize: 8.5, lineHeight: 1.15, letterSpacing: '-.01em',
-            // Sto som «nowrap». Da kunne et langt navn ikke gjore annet enn
-            // aa skyve cella bredere — og med stoerre skrift paa telefonen
-            // ble «Logg ut» klippet av skjermkanten. Naa brekker det heller
-            // over to linjer.
-            whiteSpace: 'normal', overflowWrap: 'anywhere', textAlign: 'center',
+            lineHeight: 1.15, letterSpacing: '-.01em',
+            // Aldri to linjer, og aldri et ord delt i to. Eieren,
+            // 10. september 2026: «ikke lag de saa mye storre, jeg vil ikke
+            // ha orddeling».
+            whiteSpace: 'nowrap', textAlign: 'center',
             color: 'inherit', fontWeight: 'inherit',
           },
           // Menyen ligger fast over innholdet. Uten luft under blir det
@@ -49034,8 +49149,13 @@ class Component extends DCLogic {
         { navn: 'Kari', tekst: 'Noen som vet om det er ledig plass ved vinduet?', tid: '11:02', egen: false },
         { navn: 'Jonas', tekst: 'Jepp, jeg går om en halvtime — ta plassen min!', tid: '11:05', egen: false },
       ]).map(m => Object.assign({}, m, {
-        kanAngre: !!m.egen && !m.slettet,
+        // «kanSlette» kommer fra serveren: sin egen, eller admin. Uten svar
+        // derfra — designvisningen — gjelder den gamle regelen, sin egen.
+        kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,
         angre: () => this.angreChat(m.id),
+        // Slettingen er myk, saa den kan hentes tilbake.
+        kanHente: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !!m.slettet,
+        hent: () => this.angreChat(m.id, true),
         // Myk kant, ikke pille.
         //
         // Eieren, 10. september 2026, med et bilde av chatten paa telefonen:

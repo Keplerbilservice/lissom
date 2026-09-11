@@ -4420,6 +4420,30 @@ window.__resources = {
               </sc-if>
               </sc-if>
 
+              <!-- Spør o store krukkemester, rett under pillene.
+                   Eieren, 11. september 2026: «På min side vil jeg ha spør o
+                   store krukkemester under pillene hjem og antall inne».
+                   Samme felt, samme kall og samme svar som under Nyttig
+                   info — og bare naar eieren har slaatt den paa for
+                   medlemmer («Vises for medlemmer» under Verkstedet). -->
+              <sc-if value="{{ msFaq }}" hint-placeholder-val="{{ false }}">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Spør o store krukkemester</div>
+                <div style="display: flex; gap: var(--space-3); align-items: center;">
+                  <input value="{{ msSporsmal }}" onChange="{{ msSporEndre }}" onKeyDown="{{ msSporTast }}" placeholder="Skriv spørsmålet ditt" aria-label="Spør o store krukkemester" style="flex: 1 1 auto; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 40px; padding: 0 16px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <span style="{{ msSporRammeStil }}"><button type="button" onClick="{{ msSporNa }}" style="{{ msSporStil }}">{{ msSporKnapp }}</button></span>
+                </div>
+                <sc-if value="{{ msHarSvar }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-4); background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
+                    <div style="font-size: var(--text-sm); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ msSvar }}</div>
+                    <sc-if value="{{ msSvarFraKilde }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+              </sc-if>
+
 
           <!-- ── Verkstedet ditt ──────────────────────────────────────
                Ett kort, ikke fire. Eieren, 5. september: «jeg ønsker at den
@@ -49514,6 +49538,29 @@ class Component extends DCLogic {
           // Tallet staar i pilla; ruta med hvem som er inne og haken aapner
           // seg naar du trykker. Den lyser naar den er aapen, som de andre.
           msVerkstedApen: !!this.state.msVerksted,
+          // Spør o store krukkemester under pillene (eieren, 11. september
+          // 2026). Samme tilstand som feltet under Nyttig info: ett
+          // spoersmaal, ett svar, uansett hvor det ble stilt.
+          ...(() => {
+            const erMinside = (this.state.side || '') === 'minside';
+            if (erMinside && this.erPublisert() && this.state.innlogget) this.minDokHent();
+            const paa = erMinside && !!(this.state.minDok || {}).faq && !!this.state.erMedlemBruker;
+            return {
+              msFaq: paa,
+              msSporsmal: this.state.faqSporsmal || '',
+              msSporEndre: (e) => this.setState({ faqSporsmal: e.target.value }),
+              msSporTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.faqSpor(true); } },
+              msSporNa: () => this.faqSpor(true),
+              msSporKnapp: this.state.faqJobber ? 'Tenker …' : 'Spør',
+              msSporRammeStil: this.state.faqJobber
+                ? { display: 'inline-flex', flex: '0 0 auto', animation: 'lx-tenker 1.4s ease-in-out infinite' }
+                : { display: 'inline-flex', flex: '0 0 auto' },
+              msSporStil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', height: '40px', padding: '0 20px', fontFamily: 'inherit', fontSize: 'var(--text-sm)', fontWeight: 700, background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', whiteSpace: 'nowrap' },
+              msHarSvar: !!this.state.faqSvar,
+              msSvar: this.state.faqSvar || '',
+              msSvarFraKilde: (this.state.faqKilder || []).length > 0,
+            };
+          })(),
           msPlVerksted: (() => {
             const aapen = !!this.state.msVerksted;
             // ── Tallet i pilla ─────────────────────────────────────

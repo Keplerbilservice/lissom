@@ -1105,7 +1105,14 @@ window.__resources = {
 (function () {
   var NEDE = 40;
   function lista() {
-    var kort = document.getElementById('minside-chat');
+    // Chatten staar to steder — paa Min side, og i panelet i admin. Det er
+    // det synlige som skal rulles.
+    var kort = null;
+    var navn = ['minside-chat', 'admin-chat'];
+    for (var n = 0; n < navn.length; n++) {
+      var k = document.getElementById(navn[n]);
+      if (k && k.getClientRects().length > 0) { kort = k; break; }
+    }
     if (!kort) return null;
     for (var i = 0; i < kort.children.length; i++) {
       if (kort.children[i].className === 'ms-chatliste') return kort.children[i];
@@ -1160,7 +1167,8 @@ window.__resources = {
 // som for.
 (function () {
   function iChatten(el) {
-    return el && el.tagName === 'INPUT' && el.closest && el.closest('#minside-chat');
+    return el && el.tagName === 'INPUT' && el.closest
+        && (el.closest('#minside-chat') || el.closest('#admin-chat'));
   }
   document.addEventListener('paste', function (e) {
     var felt = e.target;
@@ -8646,6 +8654,61 @@ window.__resources = {
             <sc-if value="{{ klHSendt }}" hint-placeholder-val="{{ false }}">
               <div style="margin-top: var(--space-3); background: var(--sage-100, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--text-heading);">{{ klHSendtTekst }}</div>
             </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Chatten, aapnet fra snarveien paa Kalender.
+           Eieren, 11. september 2026: knappen tok ham ut av admin og over
+           paa Min side. Samme kort staar her i stedet, i samme panelform
+           som Dagsrapport — se klChat i renderVals. -->
+      <sc-if value="{{ klChatVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klChatLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-5); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-2);">
+              <button type="button" onClick="{{ klChatLukk }}" aria-label="Lukk" style="appearance: none; border: none; background: transparent; cursor: pointer; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            </div>
+<div id="admin-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
+                <span style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">
+                  Medlemschat
+                  <!-- Prikken staar bare naar noen andre har skrevet noe du
+                       ikke har sett. Fram til 24. august laa meldingene i
+                       din egen nettleser: da kom det aldri noe inn, og det
+                       fantes ingenting aa varsle om. -->
+                  <sc-if value="{{ chatHarNytt }}" hint-placeholder-val="{{ false }}">
+                    <span class="lx-puls" style="width: 8px; height: 8px; border-radius: 50%; background: var(--terracotta-500); flex: 0 0 auto;"></span>
+                  </sc-if>
+                </span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ chatStatus }}</span>
+              </div>
+              <!-- Hoyden staar i stilarket, se «.ms-chatliste». Den var
+                   220 px her, og klippet den nyeste meldingen. -->
+              <div class="ms-chatliste" style="margin-bottom: var(--space-3); flex: 1; overflow-y: auto;">
+                <sc-for list="{{ chatMeldinger }}" as="c" hint-placeholder-count="2">
+                  <div class="ms-chatrad">
+                  <span class="ms-chatmeta" style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
+                  <span class="ms-chatboble" style="{{ c.boble }}">{{ c.tekst }}</span>
+                  <sc-if value="{{ c.kanAngre }}" hint-placeholder-val="{{ false }}">
+                    <!-- «Slett», ogsaa paa sin egen. Den het «Angre» der
+                         fram til eieren sa fra, 11. september 2026: «Jeg
+                         vil kun ha slett og angre sletting». To ord i
+                         chatten, ikke tre. -->
+                    <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Slett</button>
+                  </sc-if>
+                  <!-- Slettingen er myk: teksten staar i basen, og denne
+                       henter den tilbake. -->
+                  <sc-if value="{{ c.kanHente }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ c.hent }}" title="Angre sletting" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre sletting</button>
+                  </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); margin-top: auto;">
+                <input value="{{ chatTekst }}" onChange="{{ settChatTekst }}" onKeyDown="{{ chatEnter }}" placeholder="Skriv" style="box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ sendChat }}" hint-size="auto,38px">Send</x-import>
+              </div>
+            </div>
           </div>
         </div>
       </sc-if>
@@ -29649,6 +29712,21 @@ class Component extends DCLogic {
     if (this._chatIntervall) { clearInterval(this._chatIntervall); this._chatIntervall = null; }
   }
 
+  /**
+   * Chattekortet som staar framme.
+   *
+   * Det finnes to: «minside-chat» paa Min side, og «admin-chat» i panelet
+   * som aapner seg fra snarveien paa Kalender. Bare ett er synlig av gangen,
+   * og det er det man skriver i.
+   */
+  chatteKort() {
+    const alle = [document.getElementById('minside-chat'), document.getElementById('admin-chat')];
+    for (let i = 0; i < alle.length; i++) {
+      if (alle[i] && alle[i].getClientRects().length > 0) return alle[i];
+    }
+    return alle[0] || alle[1] || null;
+  }
+
   sendChatNaa() {
     // Teksten hentes fra FELTET, ikke fra skjermens kopi av det.
     //
@@ -29668,7 +29746,9 @@ class Component extends DCLogic {
     // sendes kopien, ikke det som staar. Uten en lyd.
     //
     // Feltet er fasiten. Det er det hun ser naar hun trykker send.
-    const felt = document.getElementById('minside-chat');
+    // Chatten staar to steder: paa Min side, og i panelet i admin. Den som
+    // er framme er den man skriver i.
+    const felt = this.chatteKort();
     const skrivefelt = felt && felt.querySelector('input');
     const t = ((skrivefelt ? skrivefelt.value : this.state.chatTekst) || '').trim();
     if (!t) return;
@@ -37645,10 +37725,24 @@ class Component extends DCLogic {
       // skjermen sin. Ingen ny chat bygges ved siden av den som finnes.
       // Henting og oppfrisking starter av seg selv naar Min side staar
       // aapen — se startChat() og componentDidUpdate.
-      klChat: () => {
-        this.setState({ side: 'minside', msFane: 'chat', fhRolle: '', fhFra: '' });
-        window.scrollTo(0, 0);
-      },
+      // Chatten aapner seg HER, ikke paa Min side.
+      //
+      // Eieren, 11. september 2026: «jeg staar inne paa min side admin
+      // https://lissom.no/admin, saa trykker jeg paa chat, da kommer jeg inn
+      // paa min side … her er det en alvorlig feil.»
+      //
+      // Knappen satte «side: minside», og adressen fulgte lojalt etter. Man
+      // mistet plassen sin i admin hver gang man ville lese chatten.
+      //
+      // I koden over staar det han ba om 9. september: «en tom pille som
+      // heter Chat som vi skal komme til bakre til». Den ble koblet til Min
+      // side i mellomtiden. Naa er vi ved «bakre til».
+      //
+      // Samme chat, samme kort, samme endepunkt — bare i et panel, slik
+      // Dagsrapport og Aarskalender aapner seg.
+      klChatVises: !!this.state.klChatVis,
+      klChat: () => this.setState({ klChatVis: true }),
+      klChatLukk: () => this.setState({ klChatVis: false }),
       // Statusen sto i en egen «klInne» som ingenting satte: knappen viste
       // «Stemple inn» ogsaa naar man var innstemplet. Naa er det den samme
       // kilden som knappen i sidemenyen og paa Min side.
@@ -39916,9 +40010,12 @@ class Component extends DCLogic {
     // Chatten spor etter nytt saa lenge Min side staar aapen. Den stopper seg
     // selv naar man gaar videre — 20 sekunder er ofte nok til at en samtale
     // henger sammen, og sjelden nok til aa merkes.
-    if (side === 'minside' && this.state.innlogget) {
+    if ((side === 'minside' || this.state.klChatVis) && this.state.innlogget) {
       // Gruppechatten. Samtalen med Monica ble hentet her ogsaa; den er
       // borte, og endepunktet spoerres ikke lenger.
+      //
+      // «klChatVis» er chattepanelet i admin. Uten det her sto panelet med
+      // en tom liste: meldingene hentes av denne runden, ikke av panelet.
       this.startChat();
     } else if (side !== 'minside') {
       this.stoppChat();

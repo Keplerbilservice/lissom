@@ -7450,6 +7450,45 @@ sjekk('… og boblen har verken hoyde eller kant som kan klippe',
     && str_contains($sida, '    overflow-wrap: break-word;'),
     '«pre-wrap» tar vare paa linjeskift den som skrev faktisk satte');
 
+// ── Chatten aapner seg i admin, ikke paa Min side ─────────────────
+//
+// Eieren, 11. september 2026: «jeg staar inne paa min side admin
+// https://lissom.no/admin, saa trykker jeg paa chat, da kommer jeg inn paa
+// min side, nettleser viser https://lissom.no/min-side, her er det en
+// alvorlig feil.»
+//
+// klChat satte «side: minside», og adressen fulgte lojalt etter. Man mistet
+// plassen sin i admin hver gang man ville lese chatten. I koden over
+// snarveien staar det han ba om 9. september: «en tom pille som heter Chat
+// som vi skal komme til bakre til».
+//
+// Naa aapner samme kort seg i et panel, slik Dagsrapport og Aarskalender
+// gjor. Maalt paa 390 og 1440 px: adressen ble staaende paa /admin,
+// skjermen paa «Admin – kalender», panelet viste meldingene, en melding
+// skrevet der ble sendt og lagret, og lukking lot en staa i admin.
+sjekk('Chat-snarveien i admin aapner et panel, ikke Min side',
+    str_contains($sida, 'klChat: () => this.setState({ klChatVis: true }),')
+    && str_contains($sida, 'klChatVises: !!this.state.klChatVis,')
+    && str_contains($sida, 'klChatLukk: () => this.setState({ klChatVis: false }),')
+    && !str_contains($sida, "this.setState({ side: 'minside', msFane: 'chat', fhRolle: '', fhFra: '' });"),
+    'maalt: adressen ble staaende paa /admin');
+sjekk('… og panelet har det samme chattekortet',
+    str_contains($sida, '<sc-if value="{{ klChatVises }}"')
+    && str_contains($sida, '<div id="admin-chat"')
+    && substr_count($sida, 'class="ms-chatliste"') === 2,
+    'samme kort, samme endepunkt — ikke en kopi ved siden av');
+// Meldingene hentes av runden i componentDidUpdate, ikke av panelet. Uten
+// dette sto panelet med tom liste.
+sjekk('… og chatten spor etter nytt mens panelet staar aapent',
+    str_contains($sida, "if ((side === 'minside' || this.state.klChatVis) && this.state.innlogget) {"));
+// Skrivefeltet finnes to steder naa. Det synlige er det man skriver i.
+sjekk('… og hjelperne finner det kortet som staar framme',
+    str_contains($sida, 'chatteKort() {')
+    && str_contains($sida, "const alle = [document.getElementById('minside-chat'), document.getElementById('admin-chat')];")
+    && str_contains($sida, "var navn = ['minside-chat', 'admin-chat'];")
+    && str_contains($sida, "&& (el.closest('#minside-chat') || el.closest('#admin-chat'));"),
+    'sending, rulling og innliming maa treffe det samme kortet');
+
 // ── Teksten hentes fra feltet, ikke fra skjermens kopi ────────────
 //
 // Eieren, 11. september 2026: «Chat er viktigst.» Meldingen fra Monica sto
@@ -7508,7 +7547,9 @@ sjekk('en innliming med linjeskift mister ingenting',
     && str_contains($sida, "var ren = tekst.replace(/\\s*[\\r\\n]+\\s*/g, ' ').trim();"),
     'Safari beholder bare det som staar for det forste skiftet');
 sjekk('… og bare i chatten, ikke i alle felt paa sida',
-    str_contains($sida, "return el && el.tagName === 'INPUT' && el.closest && el.closest('#minside-chat');"));
+    str_contains($sida, "return el && el.tagName === 'INPUT' && el.closest")
+    && str_contains($sida, "&& (el.closest('#minside-chat') || el.closest('#admin-chat'));"),
+    'chatten staar to steder: paa Min side, og i panelet i admin');
 // Skjermen holder sin egen kopi av hva som staar i feltet. Setter vi verdien
 // rett paa elementet, ser den det ikke — maalt: teksten sto i feltet, men
 // SEND gjorde ingenting. «insertText» er en ekte skriveoperasjon, og
@@ -14683,15 +14724,21 @@ sjekk('… og de to foerste gaar til skjermene som finnes',
 // Eieren, 8. september 2026, etter at vi hadde slaatt fast at gruppechatten
 // paa Facebook ikke kan hentes inn: «Ok, koble den til pilla».
 //
-// Samme vei som nabopillene, og ingen ny chat ved siden av den som finnes.
+// Samme chat som finnes, ingen ny ved siden av den.
+//
+// Den tok deg til Min side fram til 11. september 2026. Eieren: «jeg staar
+// inne paa min side admin … saa trykker jeg paa chat, da kommer jeg inn paa
+// min side … her er det en alvorlig feil.» Naa aapner den et panel, og du
+// blir staaende i admin. Se «klChat» lenger nede.
 sjekk('… og Chat gaar til medlemschatten',
-    str_contains($byttSida, "this.setState({ side: 'minside', msFane: 'chat', fhRolle: '', fhFra: '' });")
+    str_contains($byttSida, 'klChat: () => this.setState({ klChatVis: true }),')
+    && str_contains($byttSida, '<div id="admin-chat"')
     && !str_contains($byttSida, "kvittering: 'Chat er ikke bygget ennå',"));
 // Fanen finnes paa Min side, og henting og oppfrisking starter av seg selv
-// naar sida staar aapen.
+// naar sida staar aapen — eller naar panelet i admin staar aapent.
 sjekk('… og fanen den peker paa finnes',
     str_contains($byttSida, "msFaneChat:       f === 'chat',")
-    && str_contains($byttSida, "if (side === 'minside' && this.state.innlogget) {"));
+    && str_contains($byttSida, "if ((side === 'minside' || this.state.klChatVis) && this.state.innlogget) {"));
 sjekk('… i sin egen rad, over hele bredden',
     str_contains($byttSida, "klSnarveiRadStil: {")
     && str_contains($byttSida, "gridColumn: '1 / -1',")

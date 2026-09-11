@@ -37,6 +37,78 @@
       "fil": "maler/startguide.pdf",
       "navn": "Startguide",
       "tekst": "maler/startguide.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/handbok-i-elting-av-leire.pdf",
+      "navn": "Håndbok i elting av leire",
+      "tekst": "haandboker/leire/handbok-i-elting-av-leire.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/ramshode-elting.pdf",
+      "navn": "Ramshode-elting",
+      "tekst": "haandboker/leire/ramshode-elting.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/spiralelting.pdf",
+      "navn": "Spiralelting",
+      "tekst": "haandboker/leire/spiralelting.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/stable-og-skjaere.pdf",
+      "navn": "Stable og skjære",
+      "tekst": "haandboker/leire/stable-og-skjaere.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/gjenvinning-av-leire.pdf",
+      "navn": "Gjenvinning av leire",
+      "tekst": "haandboker/leire/gjenvinning-av-leire.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/lage-slikker.pdf",
+      "navn": "Lage slikker",
+      "tekst": "haandboker/leire/lage-slikker.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/torking-av-leire.pdf",
+      "navn": "Tørking av leire",
+      "tekst": "haandboker/leire/torking-av-leire.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/sentrering-grunnteknikk-og-kjegling.pdf",
+      "navn": "Sentrering: grunnteknikk og kjegling",
+      "tekst": "haandboker/dreiing/sentrering-grunnteknikk-og-kjegling.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/sentrering-av-store-mengder.pdf",
+      "navn": "Sentrering av store mengder",
+      "tekst": "haandboker/dreiing/sentrering-av-store-mengder.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/dreiing-fra-haug.pdf",
+      "navn": "Dreiing fra haug (off-hump)",
+      "tekst": "haandboker/dreiing/dreiing-fra-haug.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/trekke-opp-vegger.pdf",
+      "navn": "Trekke opp vegger",
+      "tekst": "haandboker/dreiing/trekke-opp-vegger.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/trekke-hanker.pdf",
+      "navn": "Trekke hanker",
+      "tekst": "haandboker/dreiing/trekke-hanker.txt"
     }
   ],
   "maler": [

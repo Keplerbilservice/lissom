@@ -610,6 +610,86 @@ final class Dokumenter
     }
 
     /**
+     * Soek i kunnskapen: dokumentnavn, kortnavn og teksten.
+     *
+     * Eieren, 11. september 2026 (GO): kunnskapstreff i soekefeltet paa
+     * nettsida og i soekefeltet i kalender admin. Et medlem faar bare det
+     * som ligger i kort som er slaatt paa; admin faar alt. Utlogget kommer
+     * ikke hit — api/kunnskap-sok.php krever innlogging.
+     *
+     * Navnetreff foerst, saa treff i teksten. Under hvert treff staar den
+     * foerste linja i dokumentet der ordet forekommer, saa man ser hva
+     * treffet gjelder foer man aapner: «Trekke hanker — Hanken sprekker i
+     * festene: …». Soeket gjoeres her og ikke i basen, fordi teksten er
+     * 56 000 ord til sammen: LIKE over det er like raskt, og linja rundt
+     * treffet maa uansett finnes i PHP.
+     *
+     * @return list<array{id:int,navn:string,kort:string,utdrag:string}>
+     */
+    public static function sok(string $ord, bool $bareMedlem, int $maks = 6): array
+    {
+        $ord = mb_strtolower(trim($ord));
+        if ($ord === '' || mb_strlen($ord) < 2 || !self::klar()) {
+            return [];
+        }
+        $medKort = self::harKort();
+        $hvor = $bareMedlem ? 'WHERE ' . self::synligSql() : '';
+        // «Mugge · Monteringsguide» i et underkort — 57 guider heter
+        // «Monteringsguide», og kortnavnet sier hvilken.
+        $etikett = $medKort
+            ? "IF(p.id IS NULL, d.originalnavn, CONCAT(k.navn, ' · ', d.originalnavn))"
+            : 'd.originalnavn';
+        $kortNavn = $medKort ? 'IF(p.id IS NULL, k.navn, p.navn)' : 'k.navn';
+        $sorter = $medKort ? 'IFNULL(p.sortering, k.sortering), k.sortering' : 'k.sortering';
+
+        $rader = DB::alle(
+            "SELECT d.id, d.tekst, {$etikett} AS etikett, {$kortNavn} AS kort
+               FROM verksted_dokumenter d
+               JOIN verksted_kategorier k ON k.id = d.kategori_id
+               " . self::forelderJoin() . "
+               {$hvor}
+              ORDER BY {$sorter}, d.opprettet DESC"
+        );
+
+        $iNavn = [];
+        $iTekst = [];
+        foreach ($rader as $r) {
+            $navn = (string) $r['etikett'];
+            $kort = (string) $r['kort'];
+            $treff = ['id' => (int) $r['id'], 'navn' => $navn, 'kort' => $kort, 'utdrag' => ''];
+            if (mb_stripos($navn . ' ' . $kort, $ord) !== false) {
+                $iNavn[] = $treff;
+                continue;
+            }
+            $tekst = (string) ($r['tekst'] ?? '');
+            if ($tekst === '' || mb_stripos($tekst, $ord) === false) {
+                continue;
+            }
+            $treff['utdrag'] = self::linjeMed($tekst, $ord);
+            $iTekst[] = $treff;
+        }
+        return array_slice(array_merge($iNavn, $iTekst), 0, $maks);
+    }
+
+    /** Den foerste linja i teksten som inneholder ordet, kuttet til én linje paa skjermen. */
+    private static function linjeMed(string $tekst, string $ord): string
+    {
+        foreach (preg_split('/\R/u', $tekst) ?: [] as $linje) {
+            $linje = trim($linje);
+            if ($linje === '' || mb_stripos($linje, $ord) === false) {
+                continue;
+            }
+            // Starter et stykke foer ordet naar linja er lang, saa ordet er med.
+            $pos = mb_stripos($linje, $ord);
+            if ($pos > 60) {
+                $linje = '… ' . mb_substr($linje, $pos - 40);
+            }
+            return mb_strlen($linje) > 110 ? mb_substr($linje, 0, 108) . ' …' : $linje;
+        }
+        return '';
+    }
+
+    /**
      * Teksten AI-en kan lese, fra de kortene den faar se.
      *
      * @param bool $bareMedlem Spor et medlem, er det bare kortene som er

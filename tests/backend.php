@@ -16103,6 +16103,68 @@ sjekk('kildene under svaret faar malnavnet foran',
     str_contains($mkLib, "CONCAT(k.navn, ' · ', d.originalnavn)")
     && str_contains($mkLib, "'navn'     => (string) \$d['etikett'],"));
 
+// ── Leire og Dreiing, og kunnskapstreff i soeket ─────────────────────────
+//
+// Eieren, 11. september 2026 (GO): to kort til med de tolv dokumentene som
+// kom som HTML (eltingsboka, tre guider, aatte teknikkark); kunnskapstreff
+// i soekefeltet paa nettsida for innloggede og i soekefeltet i kalender
+// admin; og bryteren «Søkefeltet på nettsiden» under ⚙.
+//
+// Maalt i Chrome mot en stub-tjener (1280, 820 og 400 px): «hank» ga tre
+// kunnskapstreff under sidetreffene, med linja fra teksten under navnet og
+// kortet til hoeyre; trykk aapnet /api/dokument.php?id= i ny fane og lukket
+// boksen. Utlogget: ingen henting og ingen liste. Bryteren av: klassen
+// lx-uten-sok paa <html>, soekeknappen borte. Kalender admin: «Kunnskap»
+// under person-/kurstreffene. Selve api/kunnskap-sok.php er ikke kjoert —
+// ingen PHP paa maskinen det ble bygget paa.
+$mkSok = file_get_contents(dirname(__DIR__) . '/api/kunnskap-sok.php');
+sjekk('migrasjon 159 legger til Leire og Dreiing etter de seks',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/159_leire_og_dreiing.sql'),
+        "    ('leire',   'Leire',   7),\n    ('dreiing', 'Dreiing', 8);"));
+sjekk('… og pakka har de tolv dokumentene i de to kortene',
+    (static function (): bool {
+        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
+        $alleHarTekst = !array_filter($m['dokumenter'] ?? [], static fn($d) => in_array($d['kort'] ?? '', ['leire', 'dreiing'], true)
+            && !is_file(dirname(__DIR__) . '/db/dokumenter/' . ($d['tekst'] ?? 'finnes-ikke')));
+        return $iKort('leire') === 7 && $iKort('dreiing') === 5 && $alleHarTekst;
+    })());
+sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
+    str_contains($mkSok, "\$medlem  = krev_medlem();")
+    && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")
+    && str_contains($mkLib, "\$hvor = \$bareMedlem ? 'WHERE ' . self::synligSql() : '';"));
+sjekk('… navnetreff foerst, saa linja i teksten',
+    str_contains($mkLib, "return array_slice(array_merge(\$iNavn, \$iTekst), 0, \$maks);")
+    && str_contains($mkLib, "\$treff['utdrag'] = self::linjeMed(\$tekst, \$ord);"));
+sjekk('… linja rundt ordet, kuttet til én linje',
+    (static function (): bool {
+        $r = new ReflectionMethod(Dokumenter::class, 'linjeMed');
+        $r->setAccessible(true);
+        $t = "Forberedelse\nBruk samme leire som koppen.\n" . str_repeat('x', 80) . " Hanken sprekker i festene: Hank og kopp hadde ulik fuktighet, eller tørket for raskt, og litt til bak.";
+        $lang = $r->invoke(null, $t, 'sprekker');
+        return $r->invoke(null, "a\nHanken\n", 'hank') === 'Hanken'
+            && $r->invoke(null, "a\nb\n", 'hank') === ''
+            && str_starts_with($lang, '… ') && mb_strlen($lang) <= 111 && str_contains($lang, 'sprekker');
+    })());
+sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
+    str_contains($mkSida, '<sc-for list="{{ sokKunnskap }}" as="r"')
+    && str_contains($mkSida, "settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },")
+    && str_contains($mkSida, "const kan = this.erPublisert() && this.state.innlogget && (this.state.erMedlemBruker || this.state.erAdminBruker);")
+    && str_contains($mkSida, "fetch('/api/kunnskap-sok.php?q=' + encodeURIComponent(t), { credentials: 'same-origin', cache: 'no-store' })")
+    && str_contains($mkSida, "sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,"));
+sjekk('… svaret gjelder bare ordet det ble hentet for',
+    str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
+sjekk('kalender admin: «Kunnskap» under person- og kurstreffene',
+    str_contains($mkSida, "settKlSok: e => { this.setState({ klSok: e.target.value }); this.kunnskapSok(e.target.value); },")
+    && str_contains($mkSida, '<sc-if value="{{ klKunnskapVises }}"')
+    && str_contains($mkSida, 'color: var(--terracotta-600); background: var(--clay-100);">Kunnskap</div>'));
+sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
+    str_contains($mkSida, 'label="Søkefeltet på nettsiden" checked="{{ bryterSok }}" on-change="{{ vekslSok }}"')
+    && str_contains($mkSida, "vekslSok: () => this.vekslBryter('sok', 'Søkefeltet'),")
+    && str_contains($mkSida, "document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));")
+    && str_contains($mkSida, '  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }')
+    && str_contains($mkSida, "if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

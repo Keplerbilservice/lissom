@@ -16489,6 +16489,17 @@ sjekk('… svaret gjelder bare ordet det ble hentet for',
 sjekk('soekefeltet i kalenderen heter «Søk …» og er like hoeyt som pillene',
     str_contains($mkSida, 'placeholder="Søk …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px;')
     && !str_contains($mkSida, 'placeholder="Søk person eller kurs …"'));
+// Eieren, 11. september 2026: «søkefeltet i kalender ser ikke ut til å ha
+// samme ai funksjoner og innstillinger som det andre søkefeltet i verksted».
+// GO paa bildet: pilla «Spør verkstedet» nederst i treffboksen, samme kall og
+// samme kort som i Verkstedet (faqKategorier). Maalt i Chrome: «Tenker …»
+// med pust, svaret med kildelinja, og svaret borte naar teksten endres.
+sjekk('kalender: «Spør verkstedet» i treffboksen, med de samme kortene som i Verkstedet',
+    str_contains($mkSida, '<button type="button" onClick="{{ klSporNa }}" style="{{ klSporStil }}">{{ klSporKnapp }}</button>')
+    && str_contains($mkSida, "klSporKnapp: this.state.klSporJobber ? 'Tenker …' : 'Spør verkstedet',")
+    && str_contains($mkSida, "klHarSvar: !!this.state.klSvar && this.state.klSvarFor === (this.state.klSok || '').trim(),")
+    && substr_count($mkSida, "body: JSON.stringify({ sporsmal: sp, kategorier: this.state.faqKategorier || [] }),") === 2
+    && str_contains($mkSida, 'color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>'));
 sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));

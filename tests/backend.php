@@ -16482,24 +16482,33 @@ sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
     && str_contains($mkSida, "sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,"));
 sjekk('… svaret gjelder bare ordet det ble hentet for',
     str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
-// Eieren, 11. september 2026: «den må bytte navn til søk, du må også justere
-// plasseringen noe så den får litt luft rundt seg». Målt i Chrome (1280,
-// 820, 400 px): feltet er 36 px høyt som pillene, 8 px fra kanten, og på
-// mobil på egen rad i flukt med pillene.
-sjekk('soekefeltet i kalenderen heter «Søk …» og er like hoeyt som pillene',
-    str_contains($mkSida, 'placeholder="Søk …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px;')
-    && !str_contains($mkSida, 'placeholder="Søk person eller kurs …"'));
-// Eieren, 11. september 2026: «søkefeltet i kalender ser ikke ut til å ha
-// samme ai funksjoner og innstillinger som det andre søkefeltet i verksted».
-// GO paa bildet: pilla «Spør verkstedet» nederst i treffboksen, samme kall og
-// samme kort som i Verkstedet (faqKategorier). Maalt i Chrome: «Tenker …»
-// med pust, svaret med kildelinja, og svaret borte naar teksten endres.
-sjekk('kalender: «Spør verkstedet» i treffboksen, med de samme kortene som i Verkstedet',
-    str_contains($mkSida, '<button type="button" onClick="{{ klSporNa }}" style="{{ klSporStil }}">{{ klSporKnapp }}</button>')
-    && str_contains($mkSida, "klSporKnapp: this.state.klSporJobber ? 'Tenker …' : 'Spør verkstedet',")
+// Feltet het «Søk …» og fant personer, kursdatoer og dokumenter, med AI-en
+// som pille nederst i treffboksen. Eieren, 11. september 2026: «Jeg vil at
+// hele dette søkefeltet er spør verkstedet. Thats it» — «Samme funksjon»,
+// og «Bort — bare Spør verkstedet». Samme kall og samme kort som i
+// Verkstedet (faqKategorier). Maalt i Chrome (1280 og 400): felt + «Spør»,
+// Enter spoer, «Tenker …» med pust, svaret under raden med kildelinja,
+// svaret borte naar teksten endres; paa mobil tar feltet hele raden.
+sjekk('kalender: feltet er «Spør verkstedet», samme funksjon som i Verkstedet',
+    str_contains($mkSida, 'onKeyDown="{{ klSporTast }}" placeholder="Skriv spørsmålet ditt" aria-label="Spør o store krukkemester"')
+    && str_contains($mkSida, '<button type="button" onClick="{{ klSporNa }}" style="{{ klSporStil }}">{{ klSporKnapp }}</button>')
+    && str_contains($mkSida, "klSporKnapp: this.state.klSporJobber ? 'Tenker …' : 'Spør',")
+    && str_contains($mkSida, "klSporTast: e => { if (e.key === 'Enter') { e.preventDefault(); this.klSpor(); } },")
     && str_contains($mkSida, "klHarSvar: !!this.state.klSvar && this.state.klSvarFor === (this.state.klSok || '').trim(),")
     && substr_count($mkSida, "body: JSON.stringify({ sporsmal: sp, kategorier: this.state.faqKategorier || [] }),") === 2
-    && str_contains($mkSida, 'color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>'));
+    && str_contains($mkSida, 'color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>')
+    && str_contains($mkSida, '    .lx-klsok { flex: 1 1 100% !important; margin-right: 0 !important; }'));
+// Eieren, 11. september 2026: «Jeg vil også endre navn fra spør verkstedet
+// til, spør o store krukkemester». Skrevet som han skrev det.
+sjekk('«Spør verkstedet» heter «Spør o store krukkemester» overalt den vises',
+    str_contains($mkSida, 'letter-spacing: 0;">Spør o store krukkemester</h2>')
+    && str_contains($mkSida, 'aria-label="Spør o store krukkemester"')
+    && str_contains($mkSida, ": st.vstFane === 'faq' ? 'Spør o store krukkemester'")
+    && !str_contains($mkSida, '>Spør verkstedet<'));
+sjekk('… og person-, kurs- og kunnskapstreffene i kalenderen er borte',
+    !str_contains($mkSida, 'placeholder="Søk …"')
+    && !str_contains($mkSida, '{{ klSokVises }}')
+    && !str_contains($mkSida, '{{ klKunnskapVises }}'));
 // ── Google Tag Manager ───────────────────────────────────────────────────
 //
 // Eieren, 11. september 2026: «har vi google tag manager?» — «JA JEG VIL HA
@@ -16534,10 +16543,6 @@ sjekk('… og CSP-en slipper selve innsendingen til Analytics gjennom (EU-region
 sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));
-sjekk('kalender admin: «Kunnskap» under person- og kurstreffene',
-    str_contains($mkSida, "settKlSok: e => { this.setState({ klSok: e.target.value }); this.kunnskapSok(e.target.value); },")
-    && str_contains($mkSida, '<sc-if value="{{ klKunnskapVises }}"')
-    && str_contains($mkSida, 'color: var(--terracotta-600); background: var(--clay-100);">Kunnskap</div>'));
 sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
     str_contains($mkSida, 'label="Søkefeltet på nettsiden" checked="{{ bryterSok }}" on-change="{{ vekslSok }}"')
     && str_contains($mkSida, "vekslSok: () => this.vekslBryter('sok', 'Søkefeltet'),")

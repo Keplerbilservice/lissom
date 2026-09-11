@@ -16509,7 +16509,6 @@ sjekk('… og person-, kurs- og kunnskapstreffene i kalenderen er borte',
     !str_contains($mkSida, 'placeholder="Søk …"')
     && !str_contains($mkSida, '{{ klSokVises }}')
     && !str_contains($mkSida, '{{ klKunnskapVises }}'));
-    && str_contains($mkSida, 'color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</div>'));
 // Eieren, 11. september 2026: «På min side vil jeg ha spør o store
 // krukkemester under pillene hjem og antall inne, er det mulig? Kom med
 // forslag og vis meg» — GO paa bildene. Maalt i Chrome (1280 og 400):

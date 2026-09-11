@@ -16085,6 +16085,13 @@ sjekk('… og malen aapner med bildet i hodet og stegbildene som stripe',
     && str_contains($mkSida, "const erSteg = (f) => /^Steg \\d+$/.test(f.navn) && String(f.mime).indexOf('image/') === 0;")
     && str_contains($mkSida, '<sc-for list="{{ dokSteg }}" as="st"')
     && str_contains($mkSida, "const radene = iKortet.filter(f => !erSteg(f)).map(f => ({"));
+// Eieren, 11. september 2026: «jeg søker på smør, og det viser 3 fine kort i
+// riktig størrelse, så viser den en som er alt for stor». Maalt i Chrome
+// (1280 px): et malkort alene i gruppa si var 850 px bredt, de andre 273.
+// Med auto-fill er alle 273 (1280 og 1600), 219 (820), 270 (400).
+sjekk('malkortene i admin holder spaltene ogsaa naar et kort staar alene i gruppa',
+    str_contains($mkSida, 'grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; padding: var(--space-4) var(--space-6) 0;">
+                  <sc-for list="{{ g.kort }}" as="u"'));
 sjekk('… og bryteren paa malen staar i hodet naar hovedkortet er av',
     str_contains($mkSida, "dokApnetVisBryter: !!(forelder && !forelder.visMedlem),")
     && str_contains($mkSida, '<sc-if value="{{ dokApnetVisBryter }}"'));

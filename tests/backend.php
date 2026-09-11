@@ -16474,6 +16474,20 @@ sjekk('… .htaccess, sidekartet, llms.txt og Nyttig info kjenner dem',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), "'](' . ROT . '/nyttig-info/' . \$slug . '): '")
     && str_contains($mkSida, "eyebrow: 'Guider fra verkstedet', navn: g.navn, om: g.om,")
     && str_contains($mkSida, "static get GUIDER() {"));
+// ── Alt-tekst paa kursbildet ─────────────────────────────────────────────
+// Eieren, 11. september 2026, SEO-instruksen («alt-tekster på bilder med
+// beskrivende norsk»). Feltet i kursoppsettet, gjennom API-et, til kortene
+// (imageAlt i CourseCard, lagt inn lokalt i ds-bundle.js — se CLAUDE.md) og
+// kurssida (role="img"). Tomt = kursnavnet, som foer.
+sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
+    is_file(dirname(__DIR__) . '/db/migrations/165_alt_tekst_paa_kursbildet.sql')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/kurs.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "'bildeAlt'        => 'bilde_alt',")
+    && str_contains($mkSida, 'Alt-tekst — hva bildet viser, for den som ikke ser det</label>')
+    && substr_count($mkSida, 'image-alt="{{ k.bildeAlt }}"') === 3
+    && str_contains($mkSida, '<div role="img" aria-label="{{ bBildeAlt }}"')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.js'), 'alt: imageAlt || title')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.min.js'), 'imageAlt||title'));
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
     && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")

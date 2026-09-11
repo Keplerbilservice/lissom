@@ -145,6 +145,8 @@ foreach ($kurs as $k) {
                 // Egen tittel og meta i soeket (migrasjon 164). Tomme = standard.
                 'seoTittel'       => trim((string) ($k['seo_tittel'] ?? '')),
                 'seoMeta'         => trim((string) ($k['seo_meta'] ?? '')),
+                // Alt-tekst paa bildet (migrasjon 165). Tom = kursnavnet.
+                'bildeAlt'        => trim((string) ($k['bilde_alt'] ?? '')),
                 'laerer'          => $velg('laerer', 'laerer'),
                 // De faa ordene som staar i faktaboksen. Hele setningen
                 // staar under «Dette laerer du»; boksen er smal.

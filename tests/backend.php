@@ -7418,12 +7418,18 @@ sjekk('… og serveren sier hvem som kan slette hva',
     && str_contains($sida, 'kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,')
     && str_contains($sida, 'kanHente: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !!m.slettet,'),
     'skjermen tegner etter serverens svar, saa de to ikke kan komme i utakt');
-sjekk('… og knappen sier «Angre» paa sin egen og «Slett» paa andres',
-    str_contains($sida, "angreTekst: m.egen ? 'Angre' : 'Slett',")
-    && str_contains($sida, '>{{ c.angreTekst }}</button>')
+// To ord i chatten, ikke tre. Knappen paa sin egen melding het «Angre» fram
+// til eieren sa fra, 11. september 2026: «Jeg vil kun ha slett og angre
+// sletting».
+sjekk('… og knappene heter «Slett» og «Angre sletting», ogsaa paa sin egen',
+    str_contains($sida, '>Slett</button>')
     && str_contains($sida, 'title="Angre sletting"')
-    && str_contains($sida, '>Angre sletting</button>'),
-    'eieren valgte de to ordene 10. september 2026');
+    && str_contains($sida, '>Angre sletting</button>')
+    // «Angre» finnes fortsatt to andre steder — oppsigelsen paa Min side
+    // og angreknappen i kalenderen. Det er chatten dette gjelder, saa det
+    // er chatteknappen som telles.
+    && !str_contains($sida, 'title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre<'),
+    'eieren valgte ordene 10. og 11. september 2026');
 // Den vanlige runden spor bare etter det som har kommet SIDEN sist. En
 // melding som hentes tilbake er gammel, og kom derfor aldri med.
 sjekk('… og traaden hentes hel igjen naar en melding kommer tilbake',

@@ -5113,7 +5113,11 @@ window.__resources = {
                     <span style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
                     <span style="{{ c.boble }}">{{ c.tekst }}</span>
                     <sc-if value="{{ c.kanAngre }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">{{ c.angreTekst }}</button>
+                      <!-- «Slett», ogsaa paa sin egen. Den het «Angre» der
+                           fram til eieren sa fra, 11. september 2026: «Jeg
+                           vil kun ha slett og angre sletting». To ord i
+                           chatten, ikke tre. -->
+                      <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Slett</button>
                     </sc-if>
                     <!-- Slettingen er myk: teksten staar i basen, og denne
                          henter den tilbake. -->
@@ -49148,9 +49152,6 @@ class Component extends DCLogic {
         // «kanSlette» kommer fra serveren: sin egen, eller admin. Uten svar
         // derfra — designvisningen — gjelder den gamle regelen, sin egen.
         kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,
-        // Egen melding angrer man; andres sletter man. Samme knapp, to ord,
-        // fordi det er to ulike ting.
-        angreTekst: m.egen ? 'Angre' : 'Slett',
         angre: () => this.angreChat(m.id),
         // Slettingen er myk, saa den kan hentes tilbake.
         kanHente: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !!m.slettet,

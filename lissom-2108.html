@@ -18826,8 +18826,15 @@ window.__resources = {
                  verksted, ikke under dokumenter».
                  Samme kort som inne paa Dokumenter — samme navn, samme
                  antall, samme bryter. Ett trykk faerre. -->
-            <sc-if value="{{ vstHarForsideDok }}" hint-placeholder-val="{{ true }}">
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-6);">
+            <!-- Ett rutenett for alle fjorten kortene, og alle radene like
+                 hoeye (grid-auto-rows: 1fr). Eieren, 11. september 2026:
+                 «paa verkstedet finnes det 6 stoerre kort og 8 mindre kort,
+                 jeg vil at de 8 mindre kortene skal justere saa de blir
+                 samme stoerrelse som de 6 stoerre kortene». Dokumentkortene
+                 har antall og bryter nederst og ble hoeyere; i to rutenett
+                 kunne ikke stedskortene foelge dem. -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); grid-auto-rows: 1fr; gap: var(--space-4); align-items: stretch;">
+              <sc-if value="{{ vstHarForsideDok }}" hint-placeholder-val="{{ true }}">
                 <sc-for list="{{ vstForsideDok }}" as="k" hint-placeholder-count="6">
                   <div style="{{ k.kortStil }}">
                     <button type="button" onClick="{{ k.apne }}" style="{{ k.innerStil }}">
@@ -18838,10 +18845,7 @@ window.__resources = {
                     <button type="button" onClick="{{ k.veksle }}" style="{{ k.synligStil }}">{{ k.synligNavn }}</button>
                   </div>
                 </sc-for>
-              </div>
-            </sc-if>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch;">
+              </sc-if>
               <sc-for list="{{ vstOversiktKort }}" as="v" hint-placeholder-count="8">
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ v.navn }}</span>

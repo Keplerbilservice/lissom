@@ -15846,8 +15846,11 @@ sjekk('haandboekene gaar til riktige kort',
         'Startguide'                                => 'maler',
     ]);
 
+// Fra 11. september (AI-teksten) er «alt inne» sin egen gren: da legges
+// teksten paa om den mangler, men fila roeres ikke.
 sjekk('importen hopper over det som alt er inne, og det eieren har slettet',
-    str_contains($mkLib, "if (\$kilde === '' || isset(\$inne[\$kilde]) || isset(\$slettet[\$kilde])) {")
+    str_contains($mkLib, "if (\$kilde === '' || isset(\$slettet[\$kilde])) {")
+    && str_contains($mkLib, "if (isset(\$inne[\$kilde])) {\n                \$ut['hoppet']++;")
     && str_contains($mkLib, "self::huskSlettetKilde((string) (\$d['kilde'] ?? ''));"));
 sjekk('… og legger malene under «Keramikk maler», i manifestets rekkefoelge',
     str_contains($mkLib, "\$forelder = \$kortVedSlug['maler'] ?? null;")

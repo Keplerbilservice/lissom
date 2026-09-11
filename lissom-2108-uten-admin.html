@@ -1587,6 +1587,41 @@ window.__resources = {
   .ms-chatliste { min-height: 0; max-height: 55vh; max-height: 55dvh; }
   @media (min-width: 761px) { .ms-chatliste { max-height: 420px; } }
 
+  /* Én melding, én rad.
+     -------------------
+     Eieren, 11. september 2026, etter at hoyden var rettet: «Det fikser ikke
+     chatten, her er det noe galt!» — og videre: «finn ut av dette og faa det
+     til aa virke, slutt aa anta».
+
+     Hva som ER maalt: Monicas melding sendt ordrett gjennom den ekte API-en,
+     emoji og alt — 223 tegn inn, 223 ut, kolonnen tar 500 — og hele teksten
+     vises her paa 280, 320, 390 og 1440 px. Teksten hans er klippet paa
+     noeyaktig samme ord bade for og etter at hoyden ble endret, saa hoyden
+     var ikke aarsaken.
+
+     Hva som IKKE er maalt: raden i produksjonsbasen. Det finnes ingen tilgang
+     dit. Og Safaris egen motor, som ikke lar seg installere her.
+
+     Derfor er lista bygget om, ikke justert. Den sto som et rutenett med
+     «flex-wrap» og «align-items: baseline»: navn, boble og knapp var tre
+     loesrevne biter som fant plassen sin selv, og en boble paa fem linjer
+     ble justert etter SISTE linje i seg. Det er en oppstilling som kan
+     klippe, og som alt hadde klemt «Angre · Deg 21:54 · Ok · Angre» sammen
+     paa én linje.
+
+     Naa er hver melding sin egen rad, i vanlig flyt: navnet paa en linje,
+     boblen under, knappen etter. Ingen baseline aa rette seg etter, ingen
+     hoyde paa boblen, ingenting som klipper. «pre-wrap» tar vare paa
+     linjeskift den som skrev faktisk satte. */
+  .ms-chatrad { margin-bottom: 12px; }
+  .ms-chatrad:last-child { margin-bottom: 0; }
+  .ms-chatmeta { display: block; margin-bottom: 3px; }
+  .ms-chatboble {
+    max-width: 100%;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
   /* Navnene i bunnmenyen paa Min side.
      ----------------------------------
      Eieren, 10. september 2026: «Men bunn menyen, ikke lag de saa mye
@@ -5108,10 +5143,11 @@ window.__resources = {
                 </div>
                 <!-- Hoyden staar i stilarket, se «.ms-chatliste». Den var
                      220 px her, og klippet den nyeste meldingen. -->
-                <div class="ms-chatliste" style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: var(--space-3); flex: 1; overflow-y: auto; align-content: flex-start;">
+                <div class="ms-chatliste" style="margin-bottom: var(--space-3); flex: 1; overflow-y: auto;">
                   <sc-for list="{{ chatMeldinger }}" as="c" hint-placeholder-count="2">
-                    <span style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
-                    <span style="{{ c.boble }}">{{ c.tekst }}</span>
+                    <div class="ms-chatrad">
+                    <span class="ms-chatmeta" style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
+                    <span class="ms-chatboble" style="{{ c.boble }}">{{ c.tekst }}</span>
                     <sc-if value="{{ c.kanAngre }}" hint-placeholder-val="{{ false }}">
                       <!-- «Slett», ogsaa paa sin egen. Den het «Angre» der
                            fram til eieren sa fra, 11. september 2026: «Jeg
@@ -5124,6 +5160,7 @@ window.__resources = {
                     <sc-if value="{{ c.kanHente }}" hint-placeholder-val="{{ false }}">
                       <button type="button" onClick="{{ c.hent }}" title="Angre sletting" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre sletting</button>
                     </sc-if>
+                    </div>
                   </sc-for>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); margin-top: auto;">

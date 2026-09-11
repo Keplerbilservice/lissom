@@ -16526,6 +16526,11 @@ sjekk('… og CSP-en slipper gjennom Tag Manager og Google Ads',
         return str_contains($h, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net")
             && str_contains($h, "frame-src 'self' https://www.googletagmanager.com https://td.doubleclick.net https://tagassistant.google.com;");
     })());
+// Maalt live 11. september 2026: CSP-en stoppet region1.analytics.google.com
+// /g/collect og stats.g.doubleclick.net — innsendingen til Analytics.
+sjekk('… og CSP-en slipper selve innsendingen til Analytics gjennom (EU-region)',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
+        "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.google-analytics.com https://stats.g.doubleclick.net"));
 sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));

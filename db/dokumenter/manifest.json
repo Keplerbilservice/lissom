@@ -37,6 +37,168 @@
       "fil": "maler/startguide.pdf",
       "navn": "Startguide",
       "tekst": "maler/startguide.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/handbok-i-elting-av-leire.pdf",
+      "navn": "Håndbok i elting av leire",
+      "tekst": "haandboker/leire/handbok-i-elting-av-leire.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/ramshode-elting.pdf",
+      "navn": "Ramshode-elting",
+      "tekst": "haandboker/leire/ramshode-elting.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/spiralelting.pdf",
+      "navn": "Spiralelting",
+      "tekst": "haandboker/leire/spiralelting.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/stable-og-skjaere.pdf",
+      "navn": "Stable og skjære",
+      "tekst": "haandboker/leire/stable-og-skjaere.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/gjenvinning-av-leire.pdf",
+      "navn": "Gjenvinning av leire",
+      "tekst": "haandboker/leire/gjenvinning-av-leire.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/lage-slikker.pdf",
+      "navn": "Lage slikker",
+      "tekst": "haandboker/leire/lage-slikker.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/torking-av-leire.pdf",
+      "navn": "Tørking av leire",
+      "tekst": "haandboker/leire/torking-av-leire.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/sentrering-grunnteknikk-og-kjegling.pdf",
+      "navn": "Sentrering: grunnteknikk og kjegling",
+      "tekst": "haandboker/dreiing/sentrering-grunnteknikk-og-kjegling.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/sentrering-av-store-mengder.pdf",
+      "navn": "Sentrering av store mengder",
+      "tekst": "haandboker/dreiing/sentrering-av-store-mengder.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/dreiing-fra-haug.pdf",
+      "navn": "Dreiing fra haug (off-hump)",
+      "tekst": "haandboker/dreiing/dreiing-fra-haug.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/trekke-opp-vegger.pdf",
+      "navn": "Trekke opp vegger",
+      "tekst": "haandboker/dreiing/trekke-opp-vegger.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/trekke-hanker.pdf",
+      "navn": "Trekke hanker",
+      "tekst": "haandboker/dreiing/trekke-hanker.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/apning-og-bunn.pdf",
+      "navn": "Åpning og bunn",
+      "tekst": "haandboker/dreiing/apning-og-bunn.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/forming-skal-sylinder-flaske.pdf",
+      "navn": "Forming: skål, sylinder og flaske",
+      "tekst": "haandboker/dreiing/forming-skal-sylinder-flaske.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/beskjaering-av-fot.pdf",
+      "navn": "Beskjæring av fot",
+      "tekst": "haandboker/dreiing/beskjaering-av-fot.txt"
+    },
+    {
+      "kort": "dreiing",
+      "fil": "haandboker/dreiing/tuter-og-lokk.pdf",
+      "navn": "Tuter og lokk",
+      "tekst": "haandboker/dreiing/tuter-og-lokk.txt"
+    },
+    {
+      "kort": "glassering",
+      "fil": "haandboker/glassering/glasurfeil.pdf",
+      "navn": "Glasurfeil",
+      "tekst": "haandboker/glassering/glasurfeil.txt"
+    },
+    {
+      "kort": "glassering",
+      "fil": "haandboker/glassering/matsikker-keramikk.pdf",
+      "navn": "Matsikker keramikk",
+      "tekst": "haandboker/glassering/matsikker-keramikk.txt"
+    },
+    {
+      "kort": "brenning",
+      "fil": "haandboker/brenning/ovnsstabling.pdf",
+      "navn": "Ovnsstabling",
+      "tekst": "haandboker/brenning/ovnsstabling.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/hvorfor-sprakk-den.pdf",
+      "navn": "Hvorfor sprakk den?",
+      "tekst": "haandboker/leire/hvorfor-sprakk-den.txt"
+    },
+    {
+      "kort": "handbygging",
+      "fil": "haandboker/handbygging/klyping.pdf",
+      "navn": "Klyping (pinch)",
+      "tekst": "haandboker/handbygging/klyping.txt"
+    },
+    {
+      "kort": "handbygging",
+      "fil": "haandboker/handbygging/polseteknikk.pdf",
+      "navn": "Pølseteknikk (coiling)",
+      "tekst": "haandboker/handbygging/polseteknikk.txt"
+    },
+    {
+      "kort": "handbygging",
+      "fil": "haandboker/handbygging/plateteknikk.pdf",
+      "navn": "Plateteknikk (slab)",
+      "tekst": "haandboker/handbygging/plateteknikk.txt"
+    },
+    {
+      "kort": "hms",
+      "fil": "haandboker/hms/hms-i-verkstedet.pdf",
+      "navn": "HMS i verkstedet",
+      "tekst": "haandboker/hms/hms-i-verkstedet.txt"
+    },
+    {
+      "kort": "hms",
+      "fil": "haandboker/hms/vedlikehold.pdf",
+      "navn": "Vedlikehold",
+      "tekst": "haandboker/hms/vedlikehold.txt"
+    },
+    {
+      "kort": "hms",
+      "fil": "haandboker/hms/keramikk-vanlige-sporsmal.pdf",
+      "navn": "Keramikk – vanlige spørsmål",
+      "tekst": "haandboker/hms/keramikk-vanlige-sporsmal.txt"
+    },
+    {
+      "kort": "leire",
+      "fil": "haandboker/leire/materialkunnskap.pdf",
+      "navn": "Materialkunnskap",
+      "tekst": "haandboker/leire/materialkunnskap.txt"
     }
   ],
   "maler": [

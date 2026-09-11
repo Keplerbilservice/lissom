@@ -291,7 +291,7 @@ if (DB::harTabell('brenninger')) {
 // forsvinne ut av én visning fordi noen glemte den.
 //
 // Ingen tidssoneregning: notatet er lagret i lokal tid med vilje. Se
-// migrasjon 159. Det gaar ikke ut i kalenderfila og ikke i e-post; det staar
+// migrasjon 162. Det gaar ikke ut i kalenderfila og ikke i e-post; det staar
 // paa skjermen, og «08:30» skal vaere 08:30 ogsaa etter at klokka stilles.
 $notater = [];
 if (DB::harTabell('kalender_notater')) {

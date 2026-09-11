@@ -15993,8 +15993,14 @@ sjekk('… og migrasjon 158 finnes, saa knappen har noe aa kjoere',
     is_file(dirname(__DIR__) . '/db/migrations/158_ai_tekst_paa_de_importerte_dokumentene.sql'));
 sjekk('kvitteringa sier hvor mange som fikk AI-tekst',
     str_contains($mkSida, "'AI-tekst lagt inn på ' + imp.tekster + ' dokument'"));
+// 60 000 tegn fra 11. september (kveld): 200 000 tok 15–40 sekunder og
+// doede paa webhotellets 30-sekunders tak — «Fikk ikke kontakt med
+// serveren». Sammen med set_time_limit og max_execution_time = 150.
 sjekk('Spør verkstedet velger de dokumentene som ligner mest, innenfor taket',
-    str_contains($mkFaq, "\$utvalg   = Dokumenter::utvalg(\$kilder, \$sporsmal);")
+    str_contains($mkFaq, "\$utvalg   = Dokumenter::utvalg(\$kilder, \$sporsmal, 60000);")
+    && str_contains($mkFaq, "@set_time_limit(150);")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/.user.ini'), 'max_execution_time = 150')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'), 'php_value max_execution_time 150')
     && str_contains($mkFaq, "\$kilder   = \$utvalg['kilder'];")
     && str_contains($mkLib, "public static function utvalg(array \$kilder, string \$sporsmal, int \$maks = 200000): array")
     && str_contains($mkLib, "if (str_starts_with(\$o, \$w) || str_starts_with(\$w, \$o)) {")
@@ -16221,7 +16227,7 @@ sjekk('sproeyt fra en feiltolket font godkjennes ikke',
 // Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til notater,
 // ikke bare kurs? rett i kalender». Han valgte «Trykk paa dagen», «Bare
 // admin» og «Med klokkeslett», og godkjente ruta paa bilde.
-$knMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/159_notater_i_kalenderen.sql');
+$knMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/162_notater_i_kalenderen.sql');
 $knVst  = file_get_contents(dirname(__DIR__) . '/api/admin/verkstedet.php');
 $knKal  = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
 
@@ -16281,6 +16287,153 @@ sjekk('notatene staar ikke i den lette utgaven',
         'placeholder="Skriv notatet"'
     ),
     'kalenderen er admin, og medlemmene laster ikke ned det de ikke skal se');
+
+// ── Leire og Dreiing, og kunnskapstreff i soeket ─────────────────────────
+//
+// Eieren, 11. september 2026 (GO): to kort til med de tolv dokumentene som
+// kom som HTML (eltingsboka, tre guider, aatte teknikkark); kunnskapstreff
+// i soekefeltet paa nettsida for innloggede og i soekefeltet i kalender
+// admin; og bryteren «Søkefeltet på nettsiden» under ⚙.
+//
+// Maalt i Chrome mot en stub-tjener (1280, 820 og 400 px): «hank» ga tre
+// kunnskapstreff under sidetreffene, med linja fra teksten under navnet og
+// kortet til hoeyre; trykk aapnet /api/dokument.php?id= i ny fane og lukket
+// boksen. Utlogget: ingen henting og ingen liste. Bryteren av: klassen
+// lx-uten-sok paa <html>, soekeknappen borte. Kalender admin: «Kunnskap»
+// under person-/kurstreffene. Selve api/kunnskap-sok.php er ikke kjoert —
+// ingen PHP paa maskinen det ble bygget paa.
+$mkSok = file_get_contents(dirname(__DIR__) . '/api/kunnskap-sok.php');
+sjekk('migrasjon 159 legger til Leire og Dreiing etter de seks',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/159_leire_og_dreiing.sql'),
+        "    ('leire',   'Leire',   7),\n    ('dreiing', 'Dreiing', 8);"));
+sjekk('… og pakka har de tolv dokumentene i de to kortene',
+    (static function (): bool {
+        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
+        $alleHarTekst = !array_filter($m['dokumenter'] ?? [], static fn($d) => in_array($d['kort'] ?? '', ['leire', 'dreiing'], true)
+            && !is_file(dirname(__DIR__) . '/db/dokumenter/' . ($d['tekst'] ?? 'finnes-ikke')));
+        return $iKort('leire') >= 7 && $iKort('dreiing') >= 5 && $alleHarTekst;
+    })());
+// Runde to samme dag (GO): fjorten dokumenter til, to nye kort. «Regler i
+// verkstedet (plakat)» med vilje ikke med — se migrasjon 160.
+sjekk('migrasjon 160 legger til Håndbygging og HMS og vedlikehold',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/160_handbygging_og_hms.sql'),
+        "    ('handbygging', 'Håndbygging',        9),\n    ('hms',         'HMS og vedlikehold', 10);"));
+sjekk('… og pakka har de fjorten i kortene sine, uten plakaten',
+    (static function (): bool {
+        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
+        $navn = array_column($m['dokumenter'] ?? [], 'navn');
+        return $iKort('dreiing') === 9 && $iKort('glassering') === 3 && $iKort('brenning') === 2 && $iKort('leire') === 9
+            && $iKort('handbygging') === 3 && $iKort('hms') === 3
+            && !in_array('Regler i verkstedet (plakat)', $navn, true)
+            && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/haandboker/hms/hms-i-verkstedet.txt'), 'Åpne først under 100 °C');
+    })());
+// Runde tre (GO): «Materialkunnskap» i Leire, og handbok.css med layoutfiks
+// («skal overskrive den gamle») — de 26 PDF-ene laget paa nytt under samme
+// sti. Importen bytter fila naar stoerrelsen er en annen, uten ny rad.
+// Maalt i Chrome paa HTML-en: bilderutenettet var 353 px per figur i en
+// 650 px spalte (overlapp), er 317 med den nye CSS-en.
+sjekk('migrasjon 161 finnes, og Materialkunnskap ligger i Leire',
+    is_file(dirname(__DIR__) . '/db/migrations/161_materialkunnskap_og_ny_layout.sql')
+    && (static function (): bool {
+        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        foreach ($m['dokumenter'] ?? [] as $d) {
+            if (($d['navn'] ?? '') === 'Materialkunnskap') {
+                return ($d['kort'] ?? '') === 'leire' && is_file(dirname(__DIR__) . '/db/dokumenter/' . $d['tekst']);
+            }
+        }
+        return false;
+    })());
+sjekk('… og importen bytter fila paa en kilde som alt er inne naar stoerrelsen er ny',
+    str_contains($mkLib, "if (is_file(\$fra) && (int) filesize(\$fra) !== \$inne[\$kilde]['storrelse']) {")
+    && str_contains($mkLib, "\$til = self::mappe() . '/' . \$inne[\$kilde]['filnavn'];")
+    && str_contains($mkLib, "\$ut['byttet']++;")
+    && str_contains($mkLib, "if (\$t !== '' && (!\$inne[\$kilde]['harTekst'] || \$byttetNaa)) {")
+    && str_contains($mkSida, "? imp.byttet + ' dokument' + (imp.byttet === 1 ? '' : 'er') + ' byttet ut med ny utgave.'"));
+sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
+    str_contains($mkSok, "\$medlem  = krev_medlem();")
+    && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")
+    && str_contains($mkLib, "\$hvor = \$bareMedlem ? 'WHERE ' . self::synligSql() : '';"));
+sjekk('… navnetreff foerst, saa linja i teksten',
+    str_contains($mkLib, "return array_slice(array_merge(\$iNavn, \$iTekst), 0, \$maks);")
+    && str_contains($mkLib, "\$treff['utdrag'] = self::linjeMed(\$tekst, \$ord);"));
+sjekk('… linja rundt ordet, kuttet til én linje',
+    (static function (): bool {
+        $r = new ReflectionMethod(Dokumenter::class, 'linjeMed');
+        $r->setAccessible(true);
+        $t = "Forberedelse\nBruk samme leire som koppen.\n" . str_repeat('x', 80) . " Hanken sprekker i festene: Hank og kopp hadde ulik fuktighet, eller tørket for raskt, og litt til bak.";
+        $lang = $r->invoke(null, $t, 'sprekker');
+        return $r->invoke(null, "a\nHanken\n", 'hank') === 'Hanken'
+            && $r->invoke(null, "a\nb\n", 'hank') === ''
+            && str_starts_with($lang, '… ') && mb_strlen($lang) <= 111 && str_contains($lang, 'sprekker');
+    })());
+// ── Slingringsmonn og «Mente du» ─────────────────────────────────────────
+//
+// Eieren, 11. september 2026 (GO): «jeg vil ikke måtte treffe helt når jeg
+// spør om noe, kanskje den kan si, mente du dette??» og «jeg må også kunne
+// stille spørsmål på flere måter, vær litt fleksibel, foreslå om du er
+// usikker». Målt i Chrome mot stub: «sentering» ga «Mente du «sentrering»?»
+// over treffene i begge feltene; trykk satte ordet i feltet. Rettemotoren
+// kjørt mot de 87 tekstene i pakka (Python-port): sentering→sentrering,
+// brening→brenning, tørkning→tørking, hankk→hank.
+sjekk('naermeste(): ordet selv, ellers start-treff, ellers én–to bokstaver feil',
+    (static function (): bool {
+        $l = array_fill_keys(['sentrering', 'brenning', 'hank', 'hakk', 'tørking', 'glasur', 'koboltoksid'], true);
+        return Dokumenter::naermeste('sentrering', $l) === 'sentrering'
+            && Dokumenter::naermeste('sentrer', $l) === 'sentrering'
+            && Dokumenter::naermeste('sentering', $l) === 'sentrering'
+            && Dokumenter::naermeste('hankk', $l) === 'hank'
+            && Dokumenter::naermeste('tørkning', $l) === 'tørking'
+            && Dokumenter::naermeste('koboltoksyd', $l) === 'koboltoksid'
+            && Dokumenter::naermeste('xyzq', $l) === null
+            && Dokumenter::naermeste('og', $l) === 'og';
+    })());
+sjekk('… og rettOrd() bytter bare det som maa byttes',
+    (static function (): bool {
+        $l = array_fill_keys(['sentrering', 'store', 'mengder'], true);
+        return Dokumenter::rettOrd('sentering av store mengder', $l) === 'sentrering av store mengder'
+            && Dokumenter::rettOrd('sentrering av store mengder', $l) === null
+            && Dokumenter::rettOrd('qqqqqq', $l) === null;
+    })());
+sjekk('soeket svarer med menteDu naar det skrevne ikke traff',
+    str_contains($mkLib, "return ['treff' => self::sokI(\$rader, \$rettet, \$maks), 'menteDu' => \$rettet];")
+    && str_contains($mkSok, "Svar::json(['treff' => \$svar['treff'], 'menteDu' => \$svar['menteDu']]);"));
+sjekk('… og Spør verkstedet retter ordene foer den velger dokumenter',
+    str_contains($mkLib, "static fn(string \$o): string => self::naermeste(\$o, \$liste) ?? \$o, \$ord")
+    && str_contains($mkFaq, "Let etter meningen, ikke ordene.")
+    && str_contains($mkFaq, "«Jeg tolker det som at du spør om …». Passer flere ting, spør:")
+    && str_contains($mkFaq, "4. Passer ingenting, svar nøyaktig dette og ingenting mer:"));
+sjekk('… «Mente du» staar i begge soekefeltene',
+    str_contains($mkSida, '<sc-if value="{{ sokHarMenteDu }}"')
+    && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?')
+    && str_contains($mkSida, '<sc-if value="{{ klHarMenteDu }}"')
+    && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ klMenteDu }}»</span>?'));
+sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
+    str_contains($mkSida, '<sc-for list="{{ sokKunnskap }}" as="r"')
+    && str_contains($mkSida, "settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },")
+    && str_contains($mkSida, "const kan = this.erPublisert() && this.state.innlogget && (this.state.erMedlemBruker || this.state.erAdminBruker);")
+    && str_contains($mkSida, "fetch('/api/kunnskap-sok.php?q=' + encodeURIComponent(t), { credentials: 'same-origin', cache: 'no-store' })")
+    && str_contains($mkSida, "sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,"));
+sjekk('… svaret gjelder bare ordet det ble hentet for',
+    str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
+// Eieren, 11. september 2026: «den må bytte navn til søk, du må også justere
+// plasseringen noe så den får litt luft rundt seg». Målt i Chrome (1280,
+// 820, 400 px): feltet er 36 px høyt som pillene, 8 px fra kanten, og på
+// mobil på egen rad i flukt med pillene.
+sjekk('soekefeltet i kalenderen heter «Søk …» og er like hoeyt som pillene',
+    str_contains($mkSida, 'placeholder="Søk …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 36px; padding: 0 16px;')
+    && !str_contains($mkSida, 'placeholder="Søk person eller kurs …"'));
+sjekk('kalender admin: «Kunnskap» under person- og kurstreffene',
+    str_contains($mkSida, "settKlSok: e => { this.setState({ klSok: e.target.value }); this.kunnskapSok(e.target.value); },")
+    && str_contains($mkSida, '<sc-if value="{{ klKunnskapVises }}"')
+    && str_contains($mkSida, 'color: var(--terracotta-600); background: var(--clay-100);">Kunnskap</div>'));
+sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
+    str_contains($mkSida, 'label="Søkefeltet på nettsiden" checked="{{ bryterSok }}" on-change="{{ vekslSok }}"')
+    && str_contains($mkSida, "vekslSok: () => this.vekslBryter('sok', 'Søkefeltet'),")
+    && str_contains($mkSida, "document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));")
+    && str_contains($mkSida, '  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }')
+    && str_contains($mkSida, "if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

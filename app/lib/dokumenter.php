@@ -1032,7 +1032,7 @@ final class Dokumenter
      * @param list<int> $kategorier Tomt betyr alle den har lov til.
      * @return list<array{kategori:string,navn:string,tekst:string}>
      */
-    public static function kunnskap(bool $bareMedlem, array $kategorier = []): array
+    public static function kunnskap(bool $bareMedlem, array $kategorier = [], array $utenSlug = []): array
     {
         if (!self::klar()) {
             return [];
@@ -1042,6 +1042,24 @@ final class Dokumenter
         $param = [];
         if ($bareMedlem) {
             $hvor[] = self::synligSql();
+        }
+        // Kort som holdes utenfor uansett — kontraktene for medlemmene.
+        // Eieren, 11. september 2026: «søkemotoren må ha tilgang til alt så
+        // den fungerer likt som hos admin», og «Alt unntatt Kontrakter».
+        if ($utenSlug !== []) {
+            $ut = [];
+            $ut2 = [];
+            foreach (array_values($utenSlug) as $i => $slug) {
+                $ut[]  = ':u' . $i;
+                $ut2[] = ':v' . $i;
+                $param['u' . $i] = (string) $slug;
+                if ($medKort) {
+                    $param['v' . $i] = (string) $slug;
+                }
+            }
+            $hvor[] = $medKort
+                ? '(k.slug NOT IN (' . implode(', ', $ut) . ") AND IFNULL(p.slug, '') NOT IN (" . implode(', ', $ut2) . '))'
+                : 'k.slug NOT IN (' . implode(', ', $ut) . ')';
         }
         if ($kategorier !== []) {
             // Velger man «Keramikk maler», er det malene inni som menes.

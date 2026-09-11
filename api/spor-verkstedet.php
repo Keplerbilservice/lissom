@@ -59,8 +59,14 @@ if (mb_strlen($sporsmal) > 500) {
 // og lite nok til at en som holder knappen inne ikke tommer maanedstaket.
 Rate::sjekk('spor-verkstedet', 10, 3600, 'medlem:' . (int) $medlem['id']);
 
-// Kortene den faar lese. Et medlem naar uansett bare dem som er slaatt paa
-// for medlemmer — kunnskap() sperrer for det, ikke lista som kommer inn.
+// Kortene den faar lese. Admin velger selv (kortene under «Leser fra»).
+//
+// Et medlem fikk foer bare kortene som var slaatt paa for medlemmer. Eieren,
+// 11. september 2026: «Jeg vil ikke at de skal se kortene på sin side, men
+// søkemotoren må ha tilgang til alt så den fungerer likt som hos admin» —
+// «Alt unntatt Kontrakter». Kortene paa Min side styres fortsatt av
+// bryterne; det er bare AI-en som leser forbi dem. Svaret kan sitere
+// dokumentene, men lenker ikke til dem.
 $valgte = [];
 foreach ((array) (Foresporsel::kropp()['kategorier'] ?? []) as $k) {
     if (is_numeric($k)) {
@@ -68,7 +74,9 @@ foreach ((array) (Foresporsel::kropp()['kategorier'] ?? []) as $k) {
     }
 }
 
-$kilder = Dokumenter::kunnskap(!$erAdmin, $valgte);
+$kilder = $erAdmin
+    ? Dokumenter::kunnskap(false, $valgte)
+    : Dokumenter::kunnskap(false, [], ['kontrakter']);
 if ($kilder === []) {
     Svar::ok([
         'svar'   => 'Dette står ikke i dokumentene. Legg inn et dokument som svarer på det, så finner jeg det neste gang.',

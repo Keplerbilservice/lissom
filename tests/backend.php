@@ -16520,6 +16520,15 @@ sjekk('Min side: «Spør o store krukkemester» som kort under pillene, bare naa
     && str_contains($mkSida, "msSporNa: () => this.faqSpor(true),")
     && strpos($mkSida, '<sc-if value="{{ msFaq }}"') > strpos($mkSida, '<nav class="ms-pillerad"')
     && strpos($mkSida, '<sc-if value="{{ msFaq }}"') < strpos($mkSida, '<!-- ── Verkstedet ditt ──'));
+// Eieren, 11. september 2026: «Jeg vil ikke at de skal se kortene på sin
+// side, men søkemotoren må ha tilgang til alt så den fungerer likt som hos
+// admin» — «Alt unntatt Kontrakter». Kortene paa Min side styres fortsatt
+// av bryterne; AI-en leser forbi dem.
+sjekk('Spør o store krukkemester leser alt for medlemmene, unntatt Kontrakter',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/spor-verkstedet.php'),
+        "\$kilder = \$erAdmin\n    ? Dokumenter::kunnskap(false, \$valgte)\n    : Dokumenter::kunnskap(false, [], ['kontrakter']);")
+    && str_contains($mkLib, "public static function kunnskap(bool \$bareMedlem, array \$kategorier = [], array \$utenSlug = []): array")
+    && str_contains($mkLib, "? '(k.slug NOT IN (' . implode(', ', \$ut) . \") AND IFNULL(p.slug, '') NOT IN (\" . implode(', ', \$ut2) . '))'"));
 // ── Google Tag Manager ───────────────────────────────────────────────────
 //
 // Eieren, 11. september 2026: «har vi google tag manager?» — «JA JEG VIL HA

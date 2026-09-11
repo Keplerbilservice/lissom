@@ -5218,7 +5218,12 @@ window.__resources = {
                     <div class="ms-chatrad">
                     <span class="ms-chatmeta" style="{{ c.metaStil }}">{{ c.navn }} {{ c.tid }}</span>
                     <span class="ms-chatboble" style="{{ c.boble }}">{{ c.tekst }}</span>
-                    <sc-if value="{{ c.kanAngre }}" hint-placeholder-val="{{ false }}">
+                    <!-- Paa Min side er ogsaa admin bare et medlem: sin
+                         egen melding, og bare den han selv har slettet.
+                         Eieren, 11. september 2026: «jeg vil ikke kunne
+                         slette den naar jeg er inne paa min side, kun naar
+                         jeg er i admin.» Verktoyet staar i panelet i admin. -->
+                    <sc-if value="{{ c.kanAngreEgen }}" hint-placeholder-val="{{ false }}">
                       <!-- «Slett», ogsaa paa sin egen. Den het «Angre» der
                            fram til eieren sa fra, 11. september 2026: «Jeg
                            vil kun ha slett og angre sletting». To ord i
@@ -5227,7 +5232,7 @@ window.__resources = {
                     </sc-if>
                     <!-- Slettingen er myk: teksten staar i basen, og denne
                          henter den tilbake. -->
-                    <sc-if value="{{ c.kanHente }}" hint-placeholder-val="{{ false }}">
+                    <sc-if value="{{ c.kanHenteEgen }}" hint-placeholder-val="{{ false }}">
                       <button type="button" onClick="{{ c.hent }}" title="Angre sletting" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre sletting</button>
                     </sc-if>
                     </div>
@@ -29824,9 +29829,17 @@ class Component extends DCLogic {
           this.hentChat(true);
           return;
         }
+        // Den som nettopp slettet kan alltid hente tilbake — det er enten
+        // hans egen melding, eller han er admin. Uten disse to sto raden
+        // uten knapp til neste runde hadde hentet svaret fra serveren.
         this.setState(s => ({
           chat: (s.chat || []).map(m => m.id === id
-            ? Object.assign({}, m, { tekst: 'Meldingen er slettet', slettet: true })
+            ? Object.assign({}, m, {
+                tekst: 'Meldingen er slettet',
+                slettet: true,
+                slettetAvMeg: true,
+                kanHente: true,
+              })
             : m),
         }));
       })
@@ -49372,9 +49385,22 @@ class Component extends DCLogic {
         { navn: 'Kari', tekst: 'Noen som vet om det er ledig plass ved vinduet?', tid: '11:02', egen: false },
         { navn: 'Jonas', tekst: 'Jepp, jeg går om en halvtime — ta plassen min!', tid: '11:05', egen: false },
       ]).map(m => Object.assign({}, m, {
-        // «kanSlette» kommer fra serveren: sin egen, eller admin. Uten svar
-        // derfra — designvisningen — gjelder den gamle regelen, sin egen.
+        // To sett knapper, fordi chatten staar to steder.
+        //
+        // Eieren, 11. september 2026: «jeg vil ikke kunne slette den naar jeg
+        // er inne paa min side, kun naar jeg er i admin.»
+        //
+        // I panelet i admin gjelder «kanSlette» og «kanHente» fra serveren:
+        // sin egen, eller admin. Paa Min side er ogsaa admin bare et medlem —
+        // sin egen melding, og bare den han selv har slettet.
+        //
+        // Serveren slipper fortsatt admin til begge steder. Det er ikke en
+        // sperre mot noen som helst; det er at verktoyet hoerer hjemme der
+        // man driver verkstedet, ikke der man er medlem.
         kanAngre: (m.kanSlette === undefined ? !!m.egen : !!m.kanSlette) && !m.slettet,
+        kanAngreEgen: !!m.egen && !m.slettet,
+        kanHenteEgen: !!m.egen && !!m.slettet
+          && (m.slettetAvMeg === undefined ? true : !!m.slettetAvMeg),
         angre: () => this.angreChat(m.id),
         // Aa hente tilbake er noe annet enn aa slette. Eieren,
         // 11. september 2026: «min side kan angre meldingen som admin har

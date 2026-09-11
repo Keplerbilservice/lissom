@@ -83,6 +83,13 @@ $les = static function (int $etter) use ($megId, $erAdmin, $vetHvemSomSlettet): 
             // Serveren sier hvem som kan roere hva; skjermen tegner bare
             // etter det. Da kan de to ikke komme i utakt.
             'kanSlette' => $egen || $erAdmin,
+            // Slettet du den selv? Eieren, 11. september 2026: «jeg vil
+            // ikke kunne slette den naar jeg er inne paa min side, kun naar
+            // jeg er i admin.» Paa Min side er ogsaa admin bare et medlem,
+            // og et medlem kan hente tilbake det det selv slettet.
+            'slettetAvMeg' => $slettet && $vetHvemSomSlettet
+                           && $r['slettet_av'] !== null
+                           && (int) $r['slettet_av'] === $megId,
             // Aa hente tilbake er noe annet enn aa slette: slettet du den
             // selv, kan du angre. Slettet verkstedet den, er det bare
             // verkstedet som kan det.

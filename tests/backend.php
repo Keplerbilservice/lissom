@@ -7450,6 +7450,49 @@ sjekk('… og boblen har verken hoyde eller kant som kan klippe',
     && str_contains($sida, '    overflow-wrap: break-word;'),
     '«pre-wrap» tar vare paa linjeskift den som skrev faktisk satte');
 
+// ── Verktoyet hoerer hjemme i admin ───────────────────────────────
+//
+// Eieren, 11. september 2026: «ja, men jeg vil ikke kunne slette den naar
+// jeg er inne paa min side, kun naar jeg er i admin.»
+//
+// Chatten staar to steder, og knappene foelger stedet: i panelet i admin
+// gjelder serverens «kanSlette» og «kanHente» — sin egen, eller admin. Paa
+// Min side er ogsaa admin bare et medlem: sin egen melding, og bare den han
+// selv har slettet.
+//
+// Serveren slipper fortsatt admin til begge steder. Det er ikke en sperre
+// mot noen; det er at verktoyet staar der man driver verkstedet.
+//
+// Maalt i nettleseren paa 390 px, innlogget som admin:
+//   Min side       andres melding: ingen knapp. Sin egen: «Slett».
+//   Admin-panelet  andres melding: «Slett».
+//   slettet i panelet → «Angre sletting» der, og fortsatt ingen knapp paa
+//                       Min side.
+//   sin egen paa Min side → «Slett» → «Angre sletting» → teksten tilbake.
+sjekk('paa Min side er ogsaa admin bare et medlem',
+    str_contains($sida, 'kanAngreEgen: !!m.egen && !m.slettet,')
+    && str_contains($sida, 'kanHenteEgen: !!m.egen && !!m.slettet')
+    && str_contains($sida, '<sc-if value="{{ c.kanAngreEgen }}"')
+    && str_contains($sida, '<sc-if value="{{ c.kanHenteEgen }}"'),
+    'maalt: ingen knapp paa andres melding paa Min side');
+sjekk('… mens panelet i admin har serverens regel',
+    str_contains($sida, '<sc-if value="{{ c.kanAngre }}"')
+    && str_contains($sida, '<sc-if value="{{ c.kanHente }}"')
+    && substr_count($sida, '{{ c.kanAngre }}') === 1
+    && substr_count($sida, '{{ c.kanAngreEgen }}') === 1,
+    'ett sted hver — ikke begge to i begge kortene');
+// «slettetAvMeg» skiller «jeg slettet den» fra «verkstedet slettet den».
+// Uten den ville admin kunne hente tilbake fra Min side ogsaa.
+sjekk('… og serveren sier om det var du som slettet den',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/chat.php'),
+                 "'slettetAvMeg' => \$slettet && \$vetHvemSomSlettet"),
+    'et medlem henter bare tilbake det det selv har slettet');
+// Raden sto uten knapp til neste runde hadde hentet svaret fra serveren.
+sjekk('… og knappen staar der med det samme du har slettet',
+    str_contains($sida, "                slettetAvMeg: true,")
+    && str_contains($sida, "                kanHente: true,"),
+    'den som nettopp slettet kan alltid hente tilbake');
+
 // ── Chatten aapner seg i admin, ikke paa Min side ─────────────────
 //
 // Eieren, 11. september 2026: «jeg staar inne paa min side admin

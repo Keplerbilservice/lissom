@@ -147,6 +147,20 @@ final class Maler
                 'lenke' => 'Lenken de legger igjen ordene på',
             ],
         ],
+        // Kom med medlemsinvitasjonen 12. september, men sto ikke her.
+        // bin/cron.php kaller Varsel::mal('fortsett', ...), og Varsel::mal()
+        // skriver bare en linje i loggen og gaar videre naar malen mangler i
+        // registeret — saa teksten var usynlig under Tekst maler, og kunne
+        // verken leses eller rettes av eieren.
+        'fortsett' => [
+            'tittel' => 'Vil du fortsette med leire?',
+            'hvor'   => 'Sendes noen dager etter kurset, til dem som ikke alt er medlemmer.',
+            'felter' => [
+                'navn'      => 'Fornavnet til deltakeren',
+                'visste'    => 'Prisboksen for «Prøv Lissom», hentet fra medlemskapene',
+                'avmelding' => 'Lenken de melder seg av med',
+            ],
+        ],
 
         // ── Venteliste ──────────────────────────────────────────────
         'venteliste_satt' => [

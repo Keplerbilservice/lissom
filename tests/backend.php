@@ -450,9 +450,24 @@ echo "\n== Oppfoelgingen etter kurset ==\n";
 // Meldingen skal ikke kunne gaa ut ved et uhell. Tre ting maa stemme, og
 // den skal aldri naa noen som var her for lenge siden.
 if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
+    // Her sto «malen finnes og staar som SMS». Migrasjon 163 gjorde den om
+    // til e-post og slo den AV, etter beskjed fra eieren: teksten ble for
+    // lang til SMS, og «ikke aktivere». Proven holdt paa den gamle
+    // avgjorelsen og var roed fra den dagen.
     $mal = DB::en("SELECT kanal, aktiv FROM notification_templates WHERE navn = 'anmeldelse'");
-    sjekk('malen finnes og staar som SMS',
-        $mal !== null && (string) $mal['kanal'] === 'sms', json_encode($mal));
+    sjekk('malen finnes, gaar som e-post og staar av',
+        $mal !== null && (string) $mal['kanal'] === 'epost' && (int) $mal['aktiv'] === 0,
+        json_encode($mal));
+
+    // Resten av blokka proever selve jobben, og da maa malen vaere paa —
+    // Varsel::mal() henter bare aktive. Vi slaar den paa her og setter den
+    // tilbake naar vi er ferdige, slik bryteren «anmeldelse_paa» ogsaa
+    // behandles. Uten dette ville jobben aldri sendt noe, og de proevene
+    // hadde sluttet aa maale det de er til for.
+    $malStodAv = $mal !== null && (int) $mal['aktiv'] === 0;
+    if ($malStodAv) {
+        DB::kjor("UPDATE notification_templates SET aktiv = 1 WHERE navn = 'anmeldelse'");
+    }
 
     // Uten SMS satt opp skal den gaa som e-post — samme melding, annen vei.
     // Det er hele poenget: den er klar for SMS uten aa vente paa SMS.
@@ -523,6 +538,9 @@ if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
         DB::verdi('SELECT anmeldelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $enda]) === null);
 
     // Rydder etter oss.
+    if ($malStodAv) {
+        DB::kjor("UPDATE notification_templates SET aktiv = 0 WHERE navn = 'anmeldelse'");
+    }
     DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Anmeldelsesprove'");
     DB::kjor('DELETE FROM course_sessions WHERE id IN (:a, :b, :c)',
         ['a' => $nyOkt, 'b' => $gammelOkt, 'c' => $enda]);
@@ -7362,7 +7380,10 @@ sjekk('Min side har baade piller og bunnmeny i markupen',
 sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
     str_contains($sida, '.ms-pillerad { display: flex; }')
     && str_contains($sida, '@media (min-width: 761px) {')
-    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }'));
+    // «:not(.ms-ovn)» kom med «Ovn er toemt» 12. september. Pilla staar
+    // igjen paa telefonen sammen med «Hjem» og «x inne» — den er hele
+    // poenget med varselet, og skal ikke gjemme seg i bunnmenyen.
+    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem):not(.ms-ovn) { display: none !important; }'));
 // Eieren, 10. september 2026: «Kan du flytte min side knappen lenger opp paa
 // siden ved siden av pillen med antall inn.» Foer dette var veien hjem cella
 // lengst til venstre i bunnmenyen — han fant den ikke.
@@ -7580,8 +7601,10 @@ sjekk('… og teksten kommer tilbake i feltet om sendingen ryker',
 // Maalt i nettleseren paa 390 px, med svaret forsinket fire sekunder:
 // «Spør» uten animasjon → «Tenker …» med «lx-tenker» paa 1,4 s → «Spør»
 // uten animasjon igjen.
+// Tre knapper fra 12. september: Nyttig info, de to i admin — og «Spor o
+// store krukkemester» paa Min side, som kom med kortet under pillene.
 sjekk('knappen sier «Tenker …» mens AI-en jobber',
-    substr_count($sida, "this.state.faqJobber ? 'Tenker …' : 'Spør',") === 2
+    substr_count($sida, "this.state.faqJobber ? 'Tenker …' : 'Spør',") === 3
     && !str_contains($sida, 'Leter i dokumentene'),
     'maalt: 88 px i ro, 122 mens den tenker');
 sjekk('… og den puster, uten aa flytte paa seg',
@@ -7593,9 +7616,12 @@ sjekk('… og staar stille for den som har bedt om det',
     str_contains($sida, '  @media (prefers-reduced-motion: reduce) {')
     && str_contains($sida, '    [style*="lx-tenker"] { animation: none !important; }'),
     'samme regel som «lx-puls» og koppen paa 404-sida');
-sjekk('… paa alle tre knappene, Nyttig info og begge i admin',
+sjekk('… paa alle fire knappene, Nyttig info, begge i admin og Min side',
     substr_count($sida, '<span style="{{ mdTenkerStil }}">') === 1
-    && substr_count($sida, '<span style="{{ faqTenkerStil }}">') === 2);
+    && substr_count($sida, '<span style="{{ faqTenkerStil }}">') === 2
+    // Min side-knappen har sin egen ramme, men samme animasjon.
+    && str_contains($sida, "animation: 'lx-tenker 1.4s ease-in-out infinite' }")
+    && str_contains($sida, '<span style="{{ msSporRammeStil }}">'));
 
 // ── Skrivefeltet vokser med teksten ───────────────────────────────
 //
@@ -12843,8 +12869,19 @@ sjekk('skriptet lastes fra Vipps, uten aa sinke sida',
 // Lest av i selve fila for de ble lagt inn: skriptet henter skriftene sine
 // fra designsystem.vippsmobilepay.com, og ellers ingenting — ingen fetch,
 // ingen bilder. Logoen ligger som SVG inni skriptet.
+// Her sto hele «script-src»-linja ordrett. Da Google Ads kom inn 12.
+// september — googleadservices.com og googleads.g.doubleclick.net —
+// sluttet den aa stemme, og proven var roed uten at noe var galt.
+//
+// Det som betyr noe er at Vipps-domenet staar der. Vi leser derfor ut
+// script-src og ser etter det, saa lista kan vokse uten aa velte proven —
+// men forsvinner Vipps, blir den roed, og det er hele hensikten.
+preg_match("/script-src ([^;]+);/", $htacc, $mCsp);
+$scriptSrc = $mCsp[1] ?? '';
 sjekk('CSP slipper inn skriptet',
-    str_contains($htacc, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.vippsmobilepay.com;"));
+    str_contains($scriptSrc, 'https://cdn.vippsmobilepay.com')
+    && str_contains($scriptSrc, "'self'"),
+    'script-src: ' . $scriptSrc);
 sjekk('… og skriftene knappen setter teksten i',
     str_contains($htacc, "font-src 'self' https://designsystem.vippsmobilepay.com;"));
 // Uten denne kunne noen «rydde» og ta bort det ene domenet. Da ville knappen
@@ -14052,8 +14089,10 @@ sjekk('… og ingen kurs paa skivene er ogsaa et svar',
 // ── Et menyvalg skal aldri fore til en tom skjerm ──────────────────
 // Eieren: «Menyen selg viser ingenting, er det pga jeg ikke har aktivert
 // den». Skjemaet staar bak to brytere i admin.
+// «medlemsvisning()» ble «kanSelge()» 12. september — admin er innenfor,
+// som paa serveren. Proven holdt paa det gamle navnet.
 sjekk('«Selg» sier fra naar skjemaet er slaatt av',
-    str_contains($k2Ren, 'msSelgAv: this.medlemsvisning()')
+    str_contains($k2Ren, 'msSelgAv: this.kanSelge()')
     && str_contains($k2Ren, "&& !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),")
     && str_contains($k2Ren, '<sc-if value="{{ msSelgAv }}"'),
     'maalt: ingen av de sju stedene staar tomme');
@@ -15450,11 +15489,18 @@ sjekk('… og sier fra naar svaret ikke staar der',
 sjekk('… og et medlem naar den ikke for eieren har slaatt den paa',
     str_contains($dokFaq, '!Dokumenter::faqForMedlem()')
     && str_contains($dokFaq, "Svar::feil('Fant ikke siden.', 404)"));
-// Fra 11. september gaar bryteren via synligSql(), som tar hensyn til at
-// et underkort (en mal) arver bryteren fra «Keramikk maler».
-sjekk('… og et medlem naar bare kortene som er slaatt paa',
-    str_contains($dokFaq, 'Dokumenter::kunnskap(!$erAdmin, $valgte)')
-    && str_contains($dokLib, "if (\$bareMedlem) {\n            \$hvor[] = self::synligSql();"));
+// Her sto «et medlem naar bare kortene som er slaatt paa». Regelen ble byttet
+// 12. september (publisering #152): eieren ville at krukkemesteren skal lese
+// ALLE kortene for medlemmene — «Alt unntatt Kontrakter». Bryteren paa kortet
+// styrer fortsatt hva medlemmet SER under Min side; den styrer ikke lenger
+// hva AI-en kan svare fra.
+//
+// Unntaket henger paa slug-en «kontrakter», ikke paa navnet. Kortet heter
+// «Dokumenter» fra migrasjon 168, og unntaket maa foelge med.
+sjekk('… og krukkemesteren leser alt for medlemmene, unntatt kontraktene',
+    str_contains($dokFaq, "Dokumenter::kunnskap(false, [], ['kontrakter'])")
+    && str_contains($dokLib, "if (\$bareMedlem) {\n            \$hvor[] = self::synligSql();"),
+    'bryteren styrer hva medlemmet ser, ikke hva AI-en kan lese');
 sjekk('… og en kilde modellen finner paa vises ikke som et dokument',
     str_contains($dokFaq, "in_array(\$n, \$kjente, true)"));
 sjekk('… og hvert kall koster penger, saa det er et tak per person',
@@ -15853,11 +15899,18 @@ sjekk('… uten aa bruke samme PDO-parameter to ganger',
 // Importen: manifestet sier hvor alt hoerer hjemme.
 $mkMan = dirname(__DIR__) . '/db/dokumenter/manifest.json';
 $mkM   = is_file($mkMan) ? json_decode(file_get_contents($mkMan), true) : null;
+// Her sto «count(dokumenter) === 6». Pakka vokser hver gang eieren legger
+// inn en haandbok — 26 kom inn 11. og 12. september — og da var proven roed
+// uten at noe var galt. Et tall som endrer seg av at systemet brukes, er
+// ingen paastand det gaar an aa holde.
+//
+// 69 maler staar: det ER en avgjorelse. Lyshus og Buet espressokopp mangler
+// malfil, og eieren vil ikke ha dem (11. september). Kommer det en mal til
+// uten at noen har bestemt det, skal proven si fra.
 sjekk('importpakka ligger i repoet med manifest',
-    // 69, ikke 71: Lyshus og Buet espressokopp mangler malfil, og eieren
-    // vil ikke ha dem (11. september). Seks dokumenter: fem haandboeker og
-    // Startguiden, som gaar rett i «Keramikk maler».
-    is_array($mkM) && count($mkM['maler'] ?? []) === 69 && count($mkM['dokumenter'] ?? []) === 6);
+    is_array($mkM) && count($mkM['maler'] ?? []) === 69
+    && count($mkM['dokumenter'] ?? []) >= 6,
+    is_array($mkM) ? count($mkM['maler']) . ' maler, ' . count($mkM['dokumenter']) . ' dokumenter' : 'fant ikke manifestet');
 sjekk('… hver mal har navn, slug, bilde og minst ett dokument',
     is_array($mkM) && count(array_filter($mkM['maler'], static fn($m) =>
         ($m['navn'] ?? '') !== '' && ($m['slug'] ?? '') !== ''
@@ -15879,9 +15932,35 @@ sjekk('… og stiene i pakka er uten æøå og mellomrom',
         array_map(static fn($d) => $d['fil'], $mkM['dokumenter']),
         ...array_map(static fn($m) => array_map(static fn($d) => $d['fil'], $m['dokumenter']), $mkM['maler'])
     ), static fn($f) => preg_match('~^[a-z0-9/._-]+$~i', $f) !== 1)) === 0);
-sjekk('haandboekene gaar til riktige kort',
-    is_array($mkM) && array_column($mkM['dokumenter'], 'kort', 'navn') === [
-        'Glasurhåndbok for keramikere'              => 'dekorasjon',
+// Her sto alle seks dokumentene med navn og kort, ordrett. Samme sak: lista
+// vokser. Det som betyr noe er at ingen av dem peker paa et kort som ikke
+// finnes — da havner dokumentet ingen steder, og ingen sier fra.
+//
+// Kortene er de samme som migrasjonene lager. Slug-en «kontrakter» staar med
+// selv om ingenting i pakka gaar dit; kortet finnes, og det er det som
+// sjekkes.
+$mkKort = ['kontrakter', 'maler', 'engober', 'glassering', 'brenning',
+           'dekorasjon', 'leire', 'dreiing', 'handbygging', 'hms'];
+$mkUkjent = is_array($mkM)
+    ? array_values(array_unique(array_diff(array_column($mkM['dokumenter'], 'kort'), $mkKort)))
+    : ['fant ikke manifestet'];
+sjekk('hvert dokument i pakka peker paa et kort som finnes',
+    $mkUkjent === [], 'ukjente kort: ' . implode(', ', $mkUkjent));
+
+// Og de seks som var der fra starten staar der de skal. De er eierens egne
+// avgjorelser, én for én, og skal ikke kunne flytte seg i en opprydding.
+sjekk('… og de seks foerste staar fortsatt paa sitt kort',
+    is_array($mkM) && array_intersect_key(
+        array_column($mkM['dokumenter'], 'kort', 'navn'),
+        array_flip([
+            'Glasurhåndbok for keramikere', 'Håndbok i dekorative teknikker',
+            'Håndbok i engober, pigmenter og oksider', 'Håndbok i keramikkbrenning',
+            'Håndbok i lagvis glasering', 'Startguide',
+        ])
+    ) === [
+        // Flyttet fra «dekorasjon» til «Glassering» med publisering #137 —
+        // eieren: «Glasurhaandboken til Glassering».
+        'Glasurhåndbok for keramikere'              => 'glassering',
         'Håndbok i dekorative teknikker'            => 'dekorasjon',
         'Håndbok i engober, pigmenter og oksider'   => 'engober',
         'Håndbok i keramikkbrenning'                => 'brenning',
@@ -15891,9 +15970,14 @@ sjekk('haandboekene gaar til riktige kort',
 
 // Fra 11. september (AI-teksten) er «alt inne» sin egen gren: da legges
 // teksten paa om den mangler, men fila roeres ikke.
+// Fra 12. september gjor grenen «alt inne» mer enn aa telle: er fila byttet
+// ut i pakka (ny layout), kopieres den over og teksten legges paa nytt. Den
+// gamle proven krevde at «hoppet++» sto rett under if-en, og ble roed av at
+// det kom noe imellom.
 sjekk('importen hopper over det som alt er inne, og det eieren har slettet',
     str_contains($mkLib, "if (\$kilde === '' || isset(\$slettet[\$kilde])) {")
-    && str_contains($mkLib, "if (isset(\$inne[\$kilde])) {\n                \$ut['hoppet']++;")
+    && str_contains($mkLib, 'if (isset($inne[$kilde])) {')
+    && preg_match('/if \(isset\(\$inne\[\$kilde\]\)\) \{.*?\$ut\[.hoppet.\]\+\+;\s*return;/s', $mkLib) === 1
     && str_contains($mkLib, "self::huskSlettetKilde((string) (\$d['kilde'] ?? ''));"));
 sjekk('… og legger malene under «Keramikk maler», i manifestets rekkefoelge',
     str_contains($mkLib, "\$forelder = \$kortVedSlug['maler'] ?? null;")
@@ -15979,15 +16063,27 @@ sjekk('«for stor fil» gjelder bare skjemaer med fil',
 $mkLib  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
 $mkFaq  = file_get_contents(dirname(__DIR__) . '/api/spor-verkstedet.php');
 $mkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('teksten foelger med i pakka, for haandboekene, startguiden og guidene',
-    is_array($mkM)
-    && count(array_filter($mkM['dokumenter'], static fn($d) => ($d['tekst'] ?? '') !== '')) === 6
-    && count(array_filter(array_merge(...array_map(static fn($m) => $m['dokumenter'], $mkM['maler'])),
-             static fn($d) => ($d['tekst'] ?? '') !== '')) === 55
-    && count(array_filter(array_merge($mkM['dokumenter'], ...array_map(static fn($m) => $m['dokumenter'], $mkM['maler'])),
-             static fn($d) => ($d['tekst'] ?? '') !== '' && !is_file(dirname($mkMan) . '/' . $d['tekst']))) === 0);
+// Her sto «6» og «55». Begge tallene vokser naar eieren legger inn en
+// haandbok til. Det som betyr noe er at HVERT dokument i pakka har tekst —
+// uten den kan «Spor o store krukkemester» ikke svare fra det — og at ingen
+// av tekstfilene mangler paa disken.
+$mkAlleDok = is_array($mkM) ? $mkM['dokumenter'] : [];
+$mkUtenTekst = array_values(array_map(
+    static fn($d) => (string) ($d['navn'] ?? $d['fil'] ?? '?'),
+    array_filter($mkAlleDok, static fn($d) => ($d['tekst'] ?? '') === '')
+));
+sjekk('hvert dokument i pakka har teksten AI-en leser',
+    $mkAlleDok !== [] && $mkUtenTekst === [],
+    $mkUtenTekst === [] ? count($mkAlleDok) . ' dokumenter' : 'uten tekst: ' . implode(', ', $mkUtenTekst));
+sjekk('… og ingen tekstfil mangler paa disken',
+    is_array($mkM) && count(array_filter(
+        array_merge($mkM['dokumenter'], ...array_map(static fn($m) => $m['dokumenter'], $mkM['maler'])),
+        static fn($d) => ($d['tekst'] ?? '') !== '' && !is_file(dirname($mkMan) . '/' . $d['tekst'])
+    )) === 0);
+// «|| $byttetNaa» kom med ny-layout-importen 12. september: byttes fila ut,
+// skal teksten leses paa nytt ogsaa naar den sto der fra for.
 sjekk('importen legger teksten paa, ogsaa paa det som alt er inne — men ikke over eierens egen',
-    str_contains($mkLib, "if (!\$inne[\$kilde]['harTekst']) {")
+    str_contains($mkLib, "if (\$t !== '' && (!\$inne[\$kilde]['harTekst'] || \$byttetNaa)) {")
     && str_contains($mkLib, "DB::oppdater('verksted_dokumenter', ['tekst' => \$t], ['id' => \$inne[\$kilde]['id']]);")
     && str_contains($mkLib, "'tekst'         => \$tekst === '' ? null : \$tekst,"));
 sjekk('… og fjerner malkort som er tatt ut av pakka, om alt i dem kom derfra',
@@ -16497,9 +16593,11 @@ sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
     && str_contains($mkSida, '<div role="img" aria-label="{{ bBildeAlt }}"')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.js'), 'alt: imageAlt || title')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.min.js'), 'imageAlt||title'));
+// Endepunktet gikk over til sokMedForslag() 11. september, da «Mente du»
+// kom. Proven holdt paa det gamle kallet.
 sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
     str_contains($mkSok, "\$medlem  = krev_medlem();")
-    && str_contains($mkSok, "Svar::json(['treff' => Dokumenter::sok(\$q, !\$erAdmin)]);")
+    && str_contains($mkSok, "Dokumenter::sokMedForslag(\$q, !\$erAdmin)")
     && str_contains($mkLib, "\$hvor = \$bareMedlem ? 'WHERE ' . self::synligSql() : '';"));
 sjekk('… navnetreff foerst, saa linja i teksten',
     str_contains($mkLib, "return array_slice(array_merge(\$iNavn, \$iTekst), 0, \$maks);")
@@ -16542,8 +16640,10 @@ sjekk('… og rettOrd() bytter bare det som maa byttes',
             && Dokumenter::rettOrd('sentrering av store mengder', $l) === null
             && Dokumenter::rettOrd('qqqqqq', $l) === null;
     })());
+// Returlinja ble skrevet om da soeket begynte aa gaa ord for ord (12.
+// september). Det som betyr noe er at forslaget foelger med ut.
 sjekk('soeket svarer med menteDu naar det skrevne ikke traff',
-    str_contains($mkLib, "return ['treff' => self::sokI(\$rader, \$rettet, \$maks), 'menteDu' => \$rettet];")
+    str_contains($mkLib, "return ['treff' => \$treff, 'menteDu' => \$rettet];")
     && str_contains($mkSok, "Svar::json(['treff' => \$svar['treff'], 'menteDu' => \$svar['menteDu']]);"));
 // Eieren, 11. september 2026 (bilde fra Safari): «hva er begitning» i
 // kalenderen ga «Ingen treff» — setningen staar ikke i noe dokument, men
@@ -16563,11 +16663,18 @@ sjekk('… og Spør verkstedet retter ordene foer den velger dokumenter',
     && str_contains($mkFaq, "Let etter meningen, ikke ordene.")
     && str_contains($mkFaq, "«Jeg tolker det som at du spør om …». Passer flere ting, spør:")
     && str_contains($mkFaq, "4. Passer ingenting, svar nøyaktig dette og ingenting mer:"));
-sjekk('… «Mente du» staar i begge soekefeltene',
+// Her sto «i begge soekefeltene». Feltet i kalenderen er ikke et soekefelt
+// lenger: fra publisering #147 og #150 spor det «Spor o store krukkemester»
+// rett, og da er det AI-en som svarer — ikke en treffliste med «Mente du».
+// Soekefeltet paa nettsida er det ene som er igjen, og der staar den.
+sjekk('«Mente du» staar i soekefeltet paa nettsida',
     str_contains($mkSida, '<sc-if value="{{ sokHarMenteDu }}"')
     && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?')
-    && str_contains($mkSida, '<sc-if value="{{ klHarMenteDu }}"')
-    && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ klMenteDu }}»</span>?'));
+    && str_contains($mkSida, 'sokMenteDuVelg: () =>'),
+    'feltet i kalenderen sporr AI-en i stedet');
+sjekk('… og feltet i kalenderen sporr krukkemesteren, ikke soeket',
+    str_contains($mkSida, 'aria-label="Spør o store krukkemester"')
+    && !str_contains($mkSida, 'klHarMenteDu'));
 sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
     str_contains($mkSida, '<sc-for list="{{ sokKunnskap }}" as="r"')
     && str_contains($mkSida, "settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },")
@@ -16894,6 +17001,50 @@ sjekk('… og valgt fil og sluppet fil gaar samme vei inn',
 sjekk('… og kortet lyser opp mens fila henger over det',
     str_contains($opSida, "border: '2px dashed ' + (this.state.dokDrar ? 'var(--lissom-brown)' : 'var(--border-default)'),"),
     'bommer man, aapner nettleseren fila i stedet for aa laste den opp');
+
+// ── Samtykkesignalet og sidevisningene ────────────────────────────
+//
+// Eieren, 12. september 2026: «kan du sjekke at alt maaler, analytics og tag
+// manager ads osv, er det noe som mangler?» Maalt i nettleseren fant vi to
+// hull, og han valgte «Samtykkesignal + sidevisninger».
+$msSida = $sida;
+
+sjekk('vi laster fortsatt ingenting for noen har sagt ja',
+    str_contains($msSida, "if (this.samtykke() !== 'ja') return;"),
+    'samtykkesignalet endrer ikke paa det — det sier bare fra NAAR det er sagt ja');
+
+sjekk('Google faar vite at samtykket ble gitt (Consent Mode v2)',
+    str_contains($msSida, "const SAMTYKKE_FELT = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];")
+    && str_contains($msSida, "window.gtag('consent', 'default', samtykkeSett('denied'));")
+    && str_contains($msSida, "window.gtag('consent', 'update', samtykkeSett('granted'));"),
+    'uten det mister Ads modellerte konverteringer og remarketing i EOES');
+
+// Rekkefolgen er hele poenget: kommer signalet etter «config», har taggen
+// alt sendt sitt forste kall paa det gamle grunnlaget.
+$posSamtykke = strpos($msSida, "window.gtag('consent', 'default'");
+$posConfig   = strpos($msSida, "window.gtag('config', id, { anonymize_ip: true });");
+$posGtm      = strpos($msSida, "g.src = 'https://www.googletagmanager.com/gtm.js?id='");
+sjekk('… og det staar foer bade «config» og gtm.js',
+    $posSamtykke !== false && $posConfig !== false && $posGtm !== false
+    && $posSamtykke < $posConfig && $posSamtykke < $posGtm);
+
+sjekk('… og trekkes det tilbake, faar Google vite det ogsaa',
+    preg_match('/gaAv\(av\) \{.*?ad_storage: av \? \'denied\' : \'granted\'/s', $msSida) === 1,
+    '«ga-disable» stopper Analytics, men ikke Tag Manager og ikke Ads');
+
+sjekk('sidevisninger telles ogsaa naar man bytter side uten aa laste paa nytt',
+    str_contains($msSida, 'maalSide() {')
+    && str_contains($msSida, "this.maal('page_view', {")
+    && str_contains($msSida, 'this.maalSide();'),
+    'maalt for: forsida → /kurs → et kurs ga NULL nye linjer i dataLayer');
+
+sjekk('… men den forste telles ikke to ganger',
+    str_contains($msSida, 'if (this._maaltSti === undefined) { this._maaltSti = sti; return; }'),
+    '«config» har alt sendt den');
+
+sjekk('… og gclid og utm lager ikke hver sin side i rapporten',
+    str_contains($msSida, 'page_path: window.location.pathname,')
+    && str_contains($msSida, 'page_location: window.location.href,'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

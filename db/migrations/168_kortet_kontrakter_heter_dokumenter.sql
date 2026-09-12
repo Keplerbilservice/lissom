@@ -1,0 +1,17 @@
+-- Kortet «Kontrakter» heter «Dokumenter».
+--
+-- Eieren, 12. september 2026: «endre navnet paa kortet som heter kontrakter
+-- til dokumenter».
+--
+-- Bare navnet paa skjermen. Slug-en blir staaende som «kontrakter», og det
+-- er med vilje: den er identiteten kortet har alle andre steder.
+--
+--   api/spor-verkstedet.php  holder nettopp dette kortet unna det «Spor o
+--                            store krukkemester» leser for medlemmene
+--                            («Alt unntatt Kontrakter»).
+--   db/dokumenter/manifest.json  peker importpakka hit med «kort:
+--                            "kontrakter"».
+--
+-- Hadde vi byttet slug-en ogsaa, ville begge sluttet aa treffe — og
+-- kontraktene til medlemmene ville plutselig vaert noe AI-en kunne sitere.
+UPDATE verksted_kategorier SET navn = 'Dokumenter' WHERE slug = 'kontrakter';

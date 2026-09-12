@@ -22189,6 +22189,30 @@ window.__resources = {
   </div>
 </sc-if>
 
+<!-- ⚙ Verktøy — de fem radene fra sidemenyen, samlet.
+
+     Eieren, 12. september 2026: «Nettsiden, oppdatert, vipps, meld feil og
+     synk, disse samler du i en pille». Pilleraden under logoen tok tre
+     rader av adminstripa på telefon.
+
+     Arket står én gang, her blant de andre overleggene — ikke én gang per
+     adminskjerm. Radene bygges i adminMobilMeny() av de samme radene fra
+     adminMeny() som pillene brukte før: samme navn, samme handling. Er det
+     oppdateringer som venter, står den raden gul, slik den gjør i
+     sidemenyen. -->
+<sc-if value="{{ vkVises }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ vkLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ vkStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(420px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Verktøy</div>
+      <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+        <sc-for list="{{ vkRader }}" as="v" hint-placeholder-count="5">
+          <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ harKvittering }}" hint-placeholder-val="{{ true }}">
   <!-- Flata bak kvitteringen. Den demper resten av skjermen saa boksen
        leses som et svar paa det man nettopp gjorde, og ett klikk hvor som
@@ -35785,41 +35809,85 @@ class Component extends DCLogic {
     // rett under logoen. Ingen ny meny: `kort` er bare et kortere navn paa
     // rader som alt fantes. Paa stor skjerm staar sidemenyen som for — der
     // har de alltid vaert synlige, og pilleraden er skjult.
-    const topp = ekstra.map(r => Object.assign({}, r, {
+    // Fem av dem ligger naa bak én pille.
+    //
+    // Eieren, 12. september 2026: «Nettsiden, oppdatert, vipps, meld feil og
+    // synk, disse samler du i en pille». Pilleraden tok tre rader av
+    // adminstripa paa telefon; naa tar den to. «Logg ut» staar for seg —
+    // den skal kunne treffes uten aa aapne noe forst.
+    //
+    // Ingen ny meny: radene i arket er de samme fra adminMeny(), med de
+    // samme navnene og de samme handlingene. Verktoypillen aapner bare
+    // arket.
+    const utNavn = Component.ADMIN_LOGG_UT;
+    const verktoy = ekstra.filter(r => r.navn !== utNavn);
+    const utlogg = ekstra.filter(r => r.navn === utNavn);
+    // Venter det oppdateringer, sier raden det med gult. Da skal pillen si
+    // det ogsaa — ellers er det gjemt bak et trykk.
+    const venterNoe = verktoy.some(r => r.stil && r.stil.color === 'var(--lissom-yellow)');
+
+    // Samme ramme som Stemple inn, Ferie og Inne naa rett over.
+    //
+    // Eieren, 12. september: «jeg vil ha lik storrelse pa pillene som
+    // stemple inn, ferie og inne na». Maalt i nettleseren: den raden er
+    // 34 px hoy, 8/14 i luft, 12 px tekst. Verktoypillene laa paa 42 og
+    // 11/16 — to naesten like rader i to ulike stoerrelser.
+    const pilleStil = (farge) => ({
+      appearance: 'none', cursor: 'pointer', flex: '0 0 auto',
+      padding: '8px 14px', borderRadius: 'var(--radius-pill)',
+      fontSize: 12, lineHeight: 1.2, minHeight: 34, fontWeight: 700,
+      whiteSpace: 'nowrap',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      border: '1px solid rgba(244,235,222,.28)',
+      background: 'transparent',
+      color: farge || 'var(--clay-200)',
+    });
+
+    const topp = [{
+      navn: '\u2699 Verkt\u00f8y',
+      full: 'Nettsiden, oppdateringer, Vipps, meld feil og synk',
+      velg: () => this.setState({ verktoyApen: true, admMobApen: false }),
+      stil: pilleStil(venterNoe ? 'var(--lissom-yellow)' : null),
+    }].concat(utlogg.map(r => Object.assign({}, r, {
       navn: r.kort || r.navn,
       full: (r.navn || '').replace(/\s+/g, ' ').trim(),
-      stil: {
-        appearance: 'none', cursor: 'pointer', flex: '0 0 auto',
-        // 11 px, ikke 8, og minst 42 hoye.
-        //
-        // Eieren sa «litt trangt rundt pillene», og etter forste forsok:
-        // «Pillene fortsatt trangt plassert». Da maalte jeg i stedet for aa
-        // gjette igjen: pillene var 35 px hoye, mens ALT annet du kan trykke
-        // paa den samme skjermen er 42-43 — bunnmenyens seks valg er 42, og
-        // «Meny» rett under er 43. De sto ikke trangt i forhold til
-        // hverandre; de sto for smaa i forhold til alt rundt.
-        //
-        // 42 er ogsaa naermest Apples egen grense for hvor lite et
-        // trykkemaal kan vaere for at fingeren boemmer.
-        padding: '11px 16px', borderRadius: 'var(--radius-pill)',
-        font: 'var(--type-chip)', minHeight: 42, whiteSpace: 'nowrap',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        border: '1px solid rgba(244,235,222,.28)',
-        background: 'transparent',
-        color: (r.stil && r.stil.color) || 'var(--clay-200)',
-      },
-    }));
+      stil: pilleStil((r.stil && r.stil.color) || null),
+    })));
+
+    // Radene inne i arket. Samme navn og samme handling som i sidemenyen,
+    // bare tegnet som rader paa et lyst kort — og arket lukkes naar man
+    // har valgt noe.
+    const vkRader = verktoy.map(r => {
+      const gult = r.stil && r.stil.color === 'var(--lissom-yellow)';
+      return {
+        navn: (r.navn || '').replace(/\s+/g, ' ').trim(),
+        velg: () => { this.setState({ verktoyApen: false }); r.velg(); },
+        stil: {
+          appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+          width: '100%', boxSizing: 'border-box',
+          padding: '14px 16px', borderRadius: 'var(--radius-md)',
+          font: 'var(--type-body-sm)', fontWeight: gult ? 700 : 600,
+          background: gult ? 'var(--lissom-yellow)' : 'var(--clay-50)',
+          color: gult ? 'var(--lissom-brown)' : 'var(--text-heading)',
+        },
+      };
+    });
 
     return {
+      vkRader: vkRader,
+      vkVises: !!this.state.verktoyApen,
+      vkLukk: () => this.setState({ verktoyApen: false }),
+      vkStopp: e => e.stopPropagation(),
       admToppEkstra: topp,
       admToppEkstraStil: {
         width: '100%', boxSizing: 'border-box',
-        // 12 px mellom radene, ikke 8. Maalt: alle de andre mellomrommene i
-        // adminstripa er 16 — logoraden til pilleraden, pilleraden til
-        // «Meny». Pilleradene laa paa 8 og var det eneste som var pakket
-        // tettere enn resten. Nedover 12, sidelengs 10: pillene i den samme
-        // rada hoerer taettere sammen enn to rader gjor.
-        display: 'flex', flexWrap: 'wrap', gap: '12px 10px',
+        // Eieren, 12. september: «Og samle pillene med et penere oppsett».
+        // Stemplingsraden og denne er to soesken i sidemenyen, og imellom
+        // dem staar asidens egen luft paa 16 px — samme avstand som ned til
+        // «Meny». Da leste de som to grupper. Samme 8 px som mellom pillene
+        // i en rad, saa alle fem staar som én gruppe under logoen.
+        marginTop: 'calc(8px - var(--space-4))',
+        display: 'flex', flexWrap: 'wrap', gap: 8,
       },
       admMobNaa: sted.fane ? sted.meny + ' \u00b7 ' + sted.fane : (sted.meny || 'Admin'),
       admMobApen: apen,

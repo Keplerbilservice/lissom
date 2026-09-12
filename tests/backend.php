@@ -15507,7 +15507,10 @@ sjekk('dokumentkortene har samme form som kortene paa Oversikt',
 sjekk('… og bryteren staar som en rad nederst, ikke som en pille',
     str_contains($dokSida, 'const kortBunn = (paa) => ({')
     && str_contains($dokSida, "borderTop: '1px solid var(--border-subtle)',")
-    && str_contains($dokSida, 'synligStil: kortBunn(k.visMedlem),'));
+    // Raden bygges fortsatt av kortBunn(). Fra 12. september legges det en
+    // peker paa toppen for kortet som ikke kan trykkes — se «laast» — saa
+    // linja er ikke lenger ordrett den samme.
+    && str_contains($dokSida, 'kortBunn(k.visMedlem),'));
 // «Maler» i den samme menyen er tekstmalene til e-post og SMS. To punkter
 // som begge het noe med «maler» sa ingenting om hva som laa hvor.
 sjekk('… og tekstmalene heter «Tekst maler», saa navnene ikke krasjer',
@@ -16713,6 +16716,41 @@ sjekk('admin: bryteren «Send medlemsinvitasjon etter kurs» med dager og status
     && str_contains($vaFil, "'fortsett_paa', 'fortsett_dager',")
     && str_contains($vaFil, "\$svar['fortsett'] = [")
     && str_contains($vaFil, "DB::harTabell('epost_avmelding') ? (int) (DB::verdi("));
+
+// ── Kortet med kontraktene kan ikke slaas paa for medlemmene ──────
+//
+// Eieren, 12. september 2026: «dokumenter skal ikke vises for medlemmer, saa
+// skru av den funksjonen». Spurt om bryteren skulle bli staaende: «Fjern den
+// helt».
+//
+// Kortet heter «Dokumenter» fra migrasjon 168, men slug-en er fortsatt
+// «kontrakter» — og det er slug-en alt annet kjenner det paa.
+$kkApi   = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$kkSida  = $sida;
+$kkMig168 = file_get_contents(dirname(__DIR__) . '/db/migrations/168_kortet_kontrakter_heter_dokumenter.sql');
+$kkMig169 = file_get_contents(dirname(__DIR__) . '/db/migrations/169_dokumentkortet_skjules_for_medlemmer.sql');
+
+sjekk('kortet heter «Dokumenter», men slug-en staar',
+    str_contains($kkMig168, "UPDATE verksted_kategorier SET navn = 'Dokumenter' WHERE slug = 'kontrakter';")
+    && !str_contains($kkMig168, "SET slug"),
+    'slug-en er identiteten bade importpakka og «Spor o store krukkemester» bruker');
+
+sjekk('… og det staar av for medlemmene',
+    str_contains($kkMig169, "UPDATE verksted_kategorier SET vis_medlem = 0 WHERE slug = 'kontrakter';"));
+
+sjekk('serveren nekter aa slaa det paa igjen',
+    str_contains($kkApi, "if ((string) \$k['slug'] === 'kontrakter') {")
+    && str_contains($kkApi, "Svar::feil('Dette kortet kan ikke vises for medlemmer.');"),
+    'skjermen er bare det man ser — sperra maa staa her');
+
+sjekk('… og pilla i skjermen kan ikke trykkes',
+    str_contains($kkSida, "const laast = k => k.slug === 'kontrakter';")
+    && str_contains($kkSida, "veksle: laast(k) ? () => {} : () => this.dokKall({ handling: 'veksle', id: k.id }),")
+    && str_contains($kkSida, "laast(k) ? { cursor: 'default' } : {}"),
+    'pilla staar og sier hvordan det er, men gjor ingenting');
+
+sjekk('… mens de andre kortene fortsatt kan veksles',
+    str_contains($kkApi, "\$ny = ((int) \$k['vis_medlem']) === 1 ? 0 : 1;"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

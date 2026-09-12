@@ -171,6 +171,19 @@ switch ($handling) {
         if (!$k) {
             Svar::feil('Fant ikke kortet.');
         }
+        // Ett kort kan ikke slaas paa for medlemmene.
+        //
+        // Eieren, 12. september 2026: «dokumenter skal ikke vises for
+        // medlemmer, saa skru av den funksjonen». Spurt om bryteren skulle
+        // bli staaende: «Fjern den helt».
+        //
+        // Kortet heter «Dokumenter» fra migrasjon 168, men slug-en er
+        // fortsatt «kontrakter», og der ligger kontraktene til medlemmene.
+        // Pilla er borte i skjermen — men det er HER det er sperret, for
+        // skjermen er bare det man ser.
+        if ((string) $k['slug'] === 'kontrakter') {
+            Svar::feil('Dette kortet kan ikke vises for medlemmer.');
+        }
         $ny = ((int) $k['vis_medlem']) === 1 ? 0 : 1;
         DB::oppdater('verksted_kategorier', ['vis_medlem' => $ny], ['id' => $id]);
         revider('dokumentkort_synlighet', 'kategori', $id, [

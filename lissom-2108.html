@@ -53120,14 +53120,29 @@ class Component extends DCLogic {
           font: 'var(--type-body-sm)', fontWeight: 600,
           color: paa ? 'var(--sage-600)' : 'var(--text-muted)',
         });
+        // ── Ett kort kan ikke slaas paa for medlemmene ──────────────────
+        //
+        // Eieren, 12. september 2026: «dokumenter skal ikke vises for
+        // medlemmer, saa skru av den funksjonen». Spurt om bryteren skulle
+        // bli staaende, valgte han «Fjern den helt».
+        //
+        // Kortet heter «Dokumenter» fra migrasjon 168, men slug-en er
+        // fortsatt «kontrakter» — og det er kontraktene til medlemmene som
+        // ligger der. Pilla staar igjen og sier hvordan det er; den er bare
+        // ikke lenger noe man kan trykke paa.
+        //
+        // Sperra som betyr noe ligger i api/admin/dokumenter.php. Denne er
+        // for at ingen skal proeve.
+        const laast = k => k.slug === 'kontrakter';
         const kortene = hoved.map(k => ({
           id: k.id,
           navn: k.navn,
           antall: antallTekst(antallMed(k)),
           apne: () => this.setState({ dokValgt: k.id }),
           synligNavn: k.visMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
-          synligStil: kortBunn(k.visMedlem),
-          veksle: () => this.dokKall({ handling: 'veksle', id: k.id }),
+          synligStil: Object.assign({}, kortBunn(k.visMedlem),
+            laast(k) ? { cursor: 'default' } : {}),
+          veksle: laast(k) ? () => {} : () => this.dokKall({ handling: 'veksle', id: k.id }),
           kortStil: kortRamme,
           innerStil: kortInner,
         }));

@@ -83,6 +83,16 @@ if (Foresporsel::tekst('handling') === 'trekk' || ($_POST['handling'] ?? '') ===
 
 // ---- legg ut en vare
 //
+// Bare aarsmedlemmene. Eieren, 12. september 2026: «jeg vil at det er kun
+// års medlemmer som skal få denne». Nettsida skjuler «Selg» for de andre,
+// men et skjema kan sendes utenom skjermen — saa sperra staar her ogsaa.
+// Kjennes igjen paa plan-navnet, slik det staar paa medlemmet. Admin er
+// innenfor som ellers.
+if ((string) ($medlem['rolle'] ?? '') !== 'admin'
+    && trim((string) ($medlem['medlemskap_type'] ?? '')) !== 'Årsmedlemskap') {
+    Svar::feil('Salg av egne arbeider er for årsmedlemmer.', 403);
+}
+
 // Skjemaet sendes som multipart fordi det har med et bilde. Feltene ligger
 // derfor i $_POST, ikke i JSON-kroppen.
 $felt = static fn(string $n): string => trim((string) ($_POST[$n] ?? ''));

@@ -4352,7 +4352,7 @@ window.__resources = {
               <button type="button" class="ms-hjem" onClick="{{ msPlHjem.velg }}" aria-label="{{ msPlHjem.full }}" style="{{ msPlHjem.stil }}"><span class="ms-hjem-kort">Hjem</span><span class="ms-hjem-langt">{{ msPlHjem.navn }}</span></button>
               <button type="button" onClick="{{ msPlMedlemskap.velg }}" aria-label="{{ msPlMedlemskap.full }}" style="{{ msPlMedlemskap.stil }}">{{ msPlMedlemskap.navn }}</button>
               <button type="button" onClick="{{ msPlButikk.velg }}" aria-label="{{ msPlButikk.full }}" style="{{ msPlButikk.stil }}">{{ msPlButikk.navn }}</button>
-              <button type="button" onClick="{{ msPlSelg.velg }}" aria-label="{{ msPlSelg.full }}" style="{{ msPlSelg.stil }}">{{ msPlSelg.navn }}</button>
+              <sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msPlSelg.velg }}" aria-label="{{ msPlSelg.full }}" style="{{ msPlSelg.stil }}">{{ msPlSelg.navn }}</button></sc-if>
               <button type="button" onClick="{{ msPlChat.velg }}" aria-label="{{ msPlChat.full }}" style="{{ msPlChat.stil }}">{{ msPlChat.navn }}</button>
               <button type="button" onClick="{{ msPlNyttig.velg }}" aria-label="{{ msPlNyttig.full }}" style="{{ msPlNyttig.stil }}">{{ msPlNyttig.navn }}</button>
               <button type="button" onClick="{{ msPlLoggUt.velg }}" aria-label="{{ msPlLoggUt.full }}" style="{{ msPlLoggUt.stil }}">{{ msPlLoggUt.navn }}</button>
@@ -5432,7 +5432,7 @@ window.__resources = {
         <nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">
           <button type="button" onClick="{{ msBmMedlemskap.velg }}" aria-label="{{ msBmMedlemskap.full }}" style="{{ msBmMedlemskap.stil }}"><span style="{{ msBmMedlemskap.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmMedlemskap.navn }}</span></button>
           <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
-          <button type="button" onClick="{{ msBmSelg.velg }}" aria-label="{{ msBmSelg.full }}" style="{{ msBmSelg.stil }}"><span style="{{ msBmSelg.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 8h16v12H4V8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M12 12v5M9.5 14.5h5"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmSelg.navn }}</span></button>
+          <sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msBmSelg.velg }}" aria-label="{{ msBmSelg.full }}" style="{{ msBmSelg.stil }}"><span style="{{ msBmSelg.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 8h16v12H4V8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M12 12v5M9.5 14.5h5"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmSelg.navn }}</span></button></sc-if>
           <button type="button" onClick="{{ msBmChat.velg }}" aria-label="{{ msBmChat.full }}" style="{{ msBmChat.stil }}"><span style="{{ msBmChat.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmChat.navn }}</span></button>
           <button type="button" onClick="{{ msBmNyttig.velg }}" aria-label="{{ msBmNyttig.full }}" style="{{ msBmNyttig.stil }}"><span style="{{ msBmNyttig.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmNyttig.navn }}</span></button>
           <button type="button" onClick="{{ msBmLoggUt.velg }}" aria-label="{{ msBmLoggUt.full }}" style="{{ msBmLoggUt.stil }}"><span style="{{ msBmLoggUt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span class="ms-bmtekst" style="{{ msBmTekstStil }}">{{ msBmLoggUt.navn }}</span></button>
@@ -24921,6 +24921,21 @@ class Component extends DCLogic {
   }
 
   /**
+   * Faar dette medlemmet selge egne arbeider?
+   *
+   * Eieren, 12. september 2026: «kun års medlemmer». Planen kommer fra
+   * api/meg.php (medlemskap_type), og kjennes igjen paa navnet slik det
+   * staar i basen. De andre ser ikke «Selg» i det hele tatt — ingen pille,
+   * ingen fane, ingen bunnmeny. Serveren sperrer det samme i
+   * api/medlemssalg.php. Utenfor den ekte sida vises alt, som ellers.
+   */
+  kanSelge() {
+    if (!this.medlemsvisning()) return false;
+    if (!this.erPublisert()) return true;
+    return (this.state.medlemPlan || '').trim() === 'Årsmedlemskap';
+  }
+
+  /**
    * Teksten et felt i innholdsredigeringen har akkurat naa.
    *
    * Redigeringsskjemaet skrev til content_blocks, og nettsiden leste aldri
@@ -26300,6 +26315,9 @@ class Component extends DCLogic {
           // medlemskapet er noe verkstedet godkjenner.
           erMedlemBruker: !!d.erMedlem,
           soknadStatus: d.soknadStatus || null,
+          // Planen medlemmet staar paa. «Selg» paa Min side er bare for
+          // aarsmedlemmene — se kanSelge().
+          medlemPlan: (d.medlem && d.medlem.medlemskap) || '',
           medlemEpost: (d.medlem && d.medlem.epost) || '',
           // Nummeret fra kontoen, saa den som er logget inn slipper aa
           // skrive det paa nytt for hver paamelding.
@@ -30127,7 +30145,7 @@ class Component extends DCLogic {
         .then(d => {
           if (d && !d.innlogget) {
             this.setState({
-              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '',
+              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemPlan: '',
               side: 'login',
               kvittering: 'Du er logget ut',
               kvitteringDetalj: 'Av sikkerhetsgrunner logges du ut etter tre timer. Logg inn med Vipps for aa fortsette.',
@@ -35390,6 +35408,7 @@ class Component extends DCLogic {
     if (!this.medlemsvisning()
         && (f === 'medlemskap' || f === 'butikk' || f === 'selg'
             || f === 'nyttig' || f === 'chat')) return 'hjem';
+    if (f === 'selg' && !this.kanSelge()) return 'hjem';
     return f;
   }
 
@@ -39819,7 +39838,7 @@ class Component extends DCLogic {
     fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })
       .then(() => {
         this.setState({
-          innlogget: false, erAdminBruker: false, erMedlemBruker: false,
+          innlogget: false, erAdminBruker: false, erMedlemBruker: false, medlemPlan: '',
           soknadStatus: null, vippsNavn: '', side: 'forside',
           kvittering: 'Du er logget ut',
         });
@@ -49624,7 +49643,8 @@ class Component extends DCLogic {
           msFaneHjem:       f === 'hjem',
           msFaneMedlemskap: f === 'medlemskap',
           msFaneButikk:     f === 'butikk',
-          msFaneSelg:       f === 'selg',
+          msFaneSelg:       f === 'selg' && this.kanSelge(),
+          msKanSelge:       this.kanSelge(),
           msFaneNyttig:     f === 'nyttig',
           msFaneChat:       f === 'chat',
           // Bunnmenyen staar bare for den som faktisk har de fem stedene.
@@ -54581,10 +54601,10 @@ class Component extends DCLogic {
       kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
       salgSkjemaEtikett: this.bryterPaa('salgsskjema') ? 'Synlig' : 'Skjult',
       salgSkjemaVeksl: () => this.vekslBryter('salgsskjema', 'Skjemaet for å legge ut arbeider'),
-      visSalgSkjema: this.medlemsvisning() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
+      visSalgSkjema: this.kanSelge() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
       // Menyvalget «Selg» finnes for alle medlemmer. Er skjemaet slaatt av,
       // skal skjermen si det — ikke staa tom.
-      msSelgAv: this.medlemsvisning()
+      msSelgAv: this.kanSelge()
         && !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),
       msSelgAvTekst: 'Verkstedet har slått av muligheten til å legge ut egne arbeider'
         + ' for øyeblikket. Ta kontakt hvis du har noe du vil selge.',

@@ -35,11 +35,25 @@ if ($medlem === null && $medlemId > 0) {
     Rate::sjekk('avtale-retur', maks: 30, vindu: 600);
 }
 
+// Det besoksmaalingen trenger for aa telle et nytt medlemskap — og bare
+// naar det ble nytt akkurat naa. Sto avtalen alt som aktiv (cron rakk det
+// foerst, eller returlenka aapnes en gang til), sendes ingenting med: da
+// er det ikke en fullfoert innmelding, det er en side som lastes paa nytt.
+// Samme form som api/betaling-retur.php, saa nettsida kan telle det likt.
+// (Eieren, 12. september 2026: Google Ads-konverteringene.)
+$kvittering = '';
+
 if ($medlemId > 0) {
     $a = Medlemskap::avtale($medlemId);
     if ($a !== null) {
         try {
-            Medlemskap::oppdaterFraVipps($a);
+            $for = (string) $a['status'];
+            $ny = Medlemskap::oppdaterFraVipps($a);
+            if ($ny === 'aktiv' && $for !== 'aktiv') {
+                $kvittering = '&kjop=A' . (int) $a['id']
+                    . '&belop=' . number_format((int) $a['pris_ore'] / 100, 2, '.', '')
+                    . '&slag=medlemskap';
+            }
         } catch (Throwable $e) {
             // Kommer vi ikke fram til Vipps, skal hun likevel videre. Runden
             // tar den neste gang.
@@ -48,5 +62,5 @@ if ($medlemId > 0) {
     }
 }
 
-header('Location: ' . Config::nettsted() . '/min-side?avtale=1');
+header('Location: ' . Config::nettsted() . '/min-side?avtale=1' . $kvittering);
 exit;

@@ -26600,6 +26600,9 @@ class Component extends DCLogic {
         if (!ok) { this.setState({ ktFeil: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '', ktEmne: '' });
         this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });
+        // Google Ads-konverteringen for en forespoersel. Uten verdi — det
+        // er ikke solgt noe ennaa. (Eieren, 12. september 2026.)
+        this.maal('forespurt_kontakt', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });
         ferdig();
       })
       .catch(() => {
@@ -26634,6 +26637,7 @@ class Component extends DCLogic {
           fsNavn: '', fsKontakt: '', fsMelding: '', fsAntall: null,
         });
         this.maal('generate_lead', { form: s.fsType || 'Forespørsel' });
+        this.maal('forespurt_kontakt', { form: s.fsType || 'Forespørsel' });
         clearTimeout(this._fsTimer);
         this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
       })
@@ -27309,9 +27313,15 @@ class Component extends DCLogic {
    * der av api/betaling-retur.php — som har spurt Vipps om betalingen
    * virkelig gikk gjennom. Vi teller altsaa ikke et kjop fordi noen kom
    * tilbake til sida, men fordi serveren har bekreftet at det er betalt.
+   *
+   * Aarsmedlemskapet gaar ikke gjennom en betaling, men en avtale i Vipps,
+   * og kommer tilbake via api/vipps-avtale-retur.php med «kjop=A<avtale>»
+   * — A-en holder avtalene fra hverandre fra betalingene i lista over det
+   * som er talt. Den sender bare med tallene naar avtalen ble aktiv i det
+   * samme kallet, saa en side som lastes paa nytt teller ingenting.
    */
   maalKjop(hash) {
-    const id = (String(hash).match(/kjop=(\d+)/) || [])[1];
+    const id = (String(hash).match(/kjop=(A?\d+)/) || [])[1];
     if (!id) return;
     const belop = Number((String(hash).match(/belop=([\d.]+)/) || [])[1] || 0);
     const slag = (String(hash).match(/slag=([a-z_]+)/) || [])[1] || 'kjop';
@@ -27333,6 +27343,16 @@ class Component extends DCLogic {
       currency: 'NOK',
       items: [{ item_id: slag, item_name: NAVN[slag] || slag, price: belop, quantity: 1 }],
     });
+
+    // Google Ads-konverteringene, ved siden av «purchase» — ikke i stedet
+    // for. Ett navn per slag, saa kurs, gavekort og medlemskap kan telles
+    // hver for seg i Ads. Butikksalg over disken har ikke noe eget navn:
+    // det er ikke noe en annonse foerer til. (Eieren, 12. september 2026.)
+    // Samme felter som eksempelet hans: value, currency, transaction_id.
+    const ADS = { booking: 'booking_fullfort', gavekort: 'gavekort_kjopt', medlemskap: 'medlemskap_startet' };
+    if (gikk && ADS[slag]) {
+      this.maal(ADS[slag], { value: belop, currency: 'NOK', transaction_id: 'L' + id });
+    }
 
     // Merkes bare naar det faktisk ble talt. Sto merket der uansett, ville
     // et kjop gjort for noen sa ja til maaling vaert regnet som talt for
@@ -29128,6 +29148,17 @@ class Component extends DCLogic {
 
   // Retur fra Vipps: #betaling=ok / avbrutt / venter
   visBetalingsutfall() {
+    // Retur fra en Vipps-avtale (aarsmedlemskapet): /min-side?avtale=1, og
+    // — bare naar avtalen ble aktiv i det kallet — kjop=A<id>&belop=&slag=.
+    // Tallene strykes fra adressen paa samme maate som hashen under, saa de
+    // ikke foelger med en lenke som deles. Se api/vipps-avtale-retur.php.
+    const sok = String(window.location.search || '');
+    if (/[?&]avtale=1/.test(sok) && /[?&]kjop=A\d+/.test(sok)) {
+      const rest = sok.replace(/&(kjop|belop|slag)=[^&]*/g, '');
+      history.replaceState(null, '', window.location.pathname + rest + window.location.hash);
+      this.maalKjop(sok);
+    }
+
     // Hele hashen tas vare paa forst. Linja under stryker den fra adressen,
     // og da er belopet borte for vi rekker aa telle kjopet.
     const hash = String(window.location.hash || '');

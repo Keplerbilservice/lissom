@@ -27340,6 +27340,19 @@ class Component extends DCLogic {
   gaAv(av) {
     const id = ((this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
     if (id) { try { window['ga-disable-' + id] = !!av; } catch (e) { /* da staar den som den star */ } }
+    // Og si fra til Google. «ga-disable» stopper Analytics, men ikke Tag
+    // Manager og ikke Ads — de leser samtykket. Ombestemmer noen seg midt i
+    // et besok, skal begge slutte med det samme, uten aa laste sida paa nytt.
+    try {
+      if (typeof window.gtag === 'function' && this._samtykkeSendt) {
+        window.gtag('consent', 'update', {
+          ad_storage: av ? 'denied' : 'granted',
+          ad_user_data: av ? 'denied' : 'granted',
+          ad_personalization: av ? 'denied' : 'granted',
+          analytics_storage: av ? 'denied' : 'granted',
+        });
+      }
+    } catch (e) { /* en maaling som feiler skal aldri stoppe valget */ }
   }
 
   /**
@@ -27390,6 +27403,38 @@ class Component extends DCLogic {
       }
       return gikk;
     } catch (e) { return false; }
+  }
+
+  /**
+   * Teller en sidevisning naar man bytter side uten aa laste paa nytt.
+   *
+   * Hele nettsida er én fil. Gaar man fra forsida til /kurs og videre inn i
+   * et kurs, byttes adressen med pushState og ingenting lastes — og
+   * «config» har alt sendt sin ene sidevisning. Maalt 12. september 2026:
+   * forsida → /kurs → /kurs/testliten ga NULL nye linjer i dataLayer. GA4
+   * saa ett sidebesok per besokende, uansett hvor mange kurs de aapnet.
+   *
+   * Den forste visningen telles ikke her — den er alt talt av «config».
+   * Derfor settes stien foerste gang uten aa maale.
+   *
+   * Tittelen er riktig naar vi kommer hit: seoTilHodet() kjorer i
+   * renderVals(), altsaa for componentDidUpdate.
+   */
+  maalSide() {
+    if (!this._gaSatt && !this._gtmSatt) return;
+    const sti = window.location.pathname + window.location.search;
+    if (this._maaltSti === undefined) { this._maaltSti = sti; return; }
+    if (sti === this._maaltSti) return;
+    this._maaltSti = sti;
+    // «page_path» uten spoersmaalstegnet: gclid fra en annonse og utm-ene
+    // fra et nyhetsbrev ville ellers blitt hver sin side i rapporten, og
+    // /kurs ville ligget spredd paa tjue linjer. Hele adressen staar i
+    // «page_location», som er der Google leter etter dem.
+    this.maal('page_view', {
+      page_location: window.location.href,
+      page_path: window.location.pathname,
+      page_title: document.title,
+    });
   }
 
   /**
@@ -27500,6 +27545,34 @@ class Component extends DCLogic {
     // laste det og la vaere aa bruke det. Samme regel for Tag Manager.
     if (this.samtykke() !== 'ja') return;
     window.dataLayer = window.dataLayer || [];
+    // Stubben maa staa foer begge to: samtykkesignalet under gaar i
+    // dataLayer, og Tag Manager leser det samme koeen som Analytics.
+    if (typeof window.gtag !== 'function') {
+      window.gtag = function () { window.dataLayer.push(arguments); };
+    }
+
+    // ── Samtykkesignalet (Consent Mode v2) ──────────────────────────
+    //
+    // Vi laster ingenting for noen har sagt ja — det staar fast. Men
+    // Google fikk heller aldri VITE at det var sagt ja, og uten det
+    // signalet mister Google Ads modellerte konverteringer og
+    // remarketing i EOES, og viser en advarsel i kontoen.
+    //
+    // «default» foerst med alt avslaatt, saa «update» med alt paa. Det er
+    // Googles egen rekkefolge for en side som blokkerer til samtykket er
+    // gitt: taggen skal aldri se en verden der «granted» kom uten en
+    // «default» foran.
+    //
+    // Rekkefolgen er hele poenget — dette maa staa FOER «config» og for
+    // gtm.js. Kommer det etter, har taggen alt sendt sitt forste kall paa
+    // det gamle grunnlaget.
+    const SAMTYKKE_FELT = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];
+    const samtykkeSett = (verdi) => SAMTYKKE_FELT.reduce((o, k) => { o[k] = verdi; return o; }, {});
+    if (!this._samtykkeSendt) {
+      this._samtykkeSendt = true;
+      window.gtag('consent', 'default', samtykkeSett('denied'));
+      window.gtag('consent', 'update', samtykkeSett('granted'));
+    }
 
     if (harGa) {
       this._gaSatt = true;
@@ -27507,7 +27580,6 @@ class Component extends DCLogic {
       s.async = true;
       s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
       document.head.appendChild(s);
-      window.gtag = function () { window.dataLayer.push(arguments); };
       window.gtag('js', new Date());
       // "anonymize_ip": vi trenger ikke vite hvem som var her, bare hvor mange.
       window.gtag('config', id, { anonymize_ip: true });
@@ -32046,6 +32118,8 @@ class Component extends DCLogic {
   componentDidUpdate(prevProps, prevState) {
     // Tilbakeknappen: ett steg per lag som aapnes. Se lagSynk().
     this.lagSynk();
+    // Byttet man side uten aa laste paa nytt, telles den. Se maalSide().
+    this.maalSide();
     // Bryteren «Søkefeltet på nettsiden»: soekeknappen i toppen tegnes av
     // ds-bundle.js, saa den skjules med CSS paa <html>. Se stilen oeverst.
     document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));

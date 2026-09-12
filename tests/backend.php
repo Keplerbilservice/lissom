@@ -16895,6 +16895,50 @@ sjekk('… og kortet lyser opp mens fila henger over det',
     str_contains($opSida, "border: '2px dashed ' + (this.state.dokDrar ? 'var(--lissom-brown)' : 'var(--border-default)'),"),
     'bommer man, aapner nettleseren fila i stedet for aa laste den opp');
 
+// ── Samtykkesignalet og sidevisningene ────────────────────────────
+//
+// Eieren, 12. september 2026: «kan du sjekke at alt maaler, analytics og tag
+// manager ads osv, er det noe som mangler?» Maalt i nettleseren fant vi to
+// hull, og han valgte «Samtykkesignal + sidevisninger».
+$msSida = $sida;
+
+sjekk('vi laster fortsatt ingenting for noen har sagt ja',
+    str_contains($msSida, "if (this.samtykke() !== 'ja') return;"),
+    'samtykkesignalet endrer ikke paa det — det sier bare fra NAAR det er sagt ja');
+
+sjekk('Google faar vite at samtykket ble gitt (Consent Mode v2)',
+    str_contains($msSida, "const SAMTYKKE_FELT = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];")
+    && str_contains($msSida, "window.gtag('consent', 'default', samtykkeSett('denied'));")
+    && str_contains($msSida, "window.gtag('consent', 'update', samtykkeSett('granted'));"),
+    'uten det mister Ads modellerte konverteringer og remarketing i EOES');
+
+// Rekkefolgen er hele poenget: kommer signalet etter «config», har taggen
+// alt sendt sitt forste kall paa det gamle grunnlaget.
+$posSamtykke = strpos($msSida, "window.gtag('consent', 'default'");
+$posConfig   = strpos($msSida, "window.gtag('config', id, { anonymize_ip: true });");
+$posGtm      = strpos($msSida, "g.src = 'https://www.googletagmanager.com/gtm.js?id='");
+sjekk('… og det staar foer bade «config» og gtm.js',
+    $posSamtykke !== false && $posConfig !== false && $posGtm !== false
+    && $posSamtykke < $posConfig && $posSamtykke < $posGtm);
+
+sjekk('… og trekkes det tilbake, faar Google vite det ogsaa',
+    preg_match('/gaAv\(av\) \{.*?ad_storage: av \? \'denied\' : \'granted\'/s', $msSida) === 1,
+    '«ga-disable» stopper Analytics, men ikke Tag Manager og ikke Ads');
+
+sjekk('sidevisninger telles ogsaa naar man bytter side uten aa laste paa nytt',
+    str_contains($msSida, 'maalSide() {')
+    && str_contains($msSida, "this.maal('page_view', {")
+    && str_contains($msSida, 'this.maalSide();'),
+    'maalt for: forsida → /kurs → et kurs ga NULL nye linjer i dataLayer');
+
+sjekk('… men den forste telles ikke to ganger',
+    str_contains($msSida, 'if (this._maaltSti === undefined) { this._maaltSti = sti; return; }'),
+    '«config» har alt sendt den');
+
+sjekk('… og gclid og utm lager ikke hver sin side i rapporten',
+    str_contains($msSida, 'page_path: window.location.pathname,')
+    && str_contains($msSida, 'page_location: window.location.href,'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

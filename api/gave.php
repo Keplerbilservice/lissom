@@ -65,6 +65,10 @@ if (Foresporsel::metode() === 'GET') {
         'id'        => (int) $g['id'],
         'type'      => (string) $g['type'],
         'tittel'    => $tittel($g),
+        // Antallet, saa kortet kan boye «timen»/«timene» etter samme regel
+        // som tittelen over. Uten det matte skjermen lese tallet ut av
+        // tittelteksten, og da ville de to kunne sprike.
+        'timer'     => (int) $g['timer'],
         'hilsen'    => (string) ($g['hilsen'] ?? ''),
         'gyldigTil' => Booking::norskDatoKort((string) $g['gyldig_til'] . ' 12:00:00'),
         // Bare «Ta med en venn» har et skjema aa fylle ut. De andre vises som

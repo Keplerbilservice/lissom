@@ -22530,7 +22530,11 @@ const SIDEINNHOLD = {
   'Min side': [
     { navn: 'Ta med en venn', type: 'Gavekort', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Ta med en venn' },
-      { l: 'Tekst', v: 'Ta med en venn på kurs i august. Vennen må være med deg hele tiden.', lang: true } ] },
+      // Teksten sa «paa kurs i august» — to feil i én linje: gaven gjelder
+      // verkstedet, ikke et kurs, og august staar fast i en tekst som skal
+      // gjelde hele aaret. Eieren, 12. september 2026: «ta med en venn, er du
+      // kan ta med en venn i verkstedet en dag. (Ikke kurs)».
+      { l: 'Tekst', v: 'Ta med en venn i verkstedet en dag. Vennen må være med deg hele tiden.', lang: true } ] },
     { navn: 'Internbutikk', type: 'Redigeres under Nettsiden → Butikk', synlig: 'Publisert', felter: [] },
   ],
   // Blokk 0 er innledningen paa sida. Blokk 1-10 er de ti avsnittene, i
@@ -50348,12 +50352,29 @@ class Component extends DCLogic {
       ...(() => {
         const g = this.state.minGave;
         const gyldig = g && g.gyldigTil ? 'Gjelder ut ' + g.gyldigTil : 'Gjelder ut denne måneden';
+        // Skrev ikke giveren en hilsen, falt kortet tilbake paa nettsideteksten
+        // under «Min side» — den om aa ta med en venn. Da sto det «1 ekstra
+        // time» i overskriften og «Ta med en venn paa kurs» rett ved siden av.
+        // Eieren, 12. september 2026: «her staar det ogsaa ta med en venn paa
+        // et kurs. Det er feil.» Hver gavetype sier naa sitt, og venneteksten
+        // blir staaende redigerbar under Nettsiden.
+        const gaveTekst = () => {
+          if (g && g.hilsen) return g.hilsen;
+          if (g && g.type === 'timer') {
+            // Én time er ikke «timene». Samme boyning som tittelen, se
+            // $tittel() i api/gave.php.
+            return (g.timer === 1 ? 'Timen' : 'Timene')
+              + ' legges på timetaket ditt denne måneden når du løser inn gaven.';
+          }
+          if (g && g.type === 'gavekort') return 'Ta gavekortet med neste gang du er innom.';
+          return this.innh('Min side/0/Tekst');
+        };
         return {
           aInvitasjon: this.apne(
             (g && g.tittel) || this.innh('Min side/0/Overskrift'),
             'Gave fra verkstedet',
             [
-              { navn: 'Hilsen', verdi: (g && g.hilsen) || this.innh('Min side/0/Tekst') },
+              { navn: 'Hilsen', verdi: gaveTekst() },
               { navn: 'Gyldig', verdi: gyldig },
               // «Ta gaven med neste gang du er innom» sto paa alle tre.
               // Eieren, 8. september 2026: «de faar jo ikke noe fysisk» — en
@@ -50373,7 +50394,7 @@ class Component extends DCLogic {
           // det bare naar det finnes en gave.
           harVennegave: !!g,
           gaveTittel: (g && g.tittel) || 'Ta med en venn',
-          gaveTekstVis: (g && g.hilsen) || this.innh('Min side/0/Tekst'),
+          gaveTekstVis: gaveTekst(),
           gaveKnapp: (g && g.harSkjema) ? 'Send invitasjon' : 'Løs inn gaven',
         };
       })(),

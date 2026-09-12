@@ -16684,6 +16684,27 @@ sjekk('… aarsmedlemskapet telles naar avtalen ble aktiv ved retur, og bare da'
             && str_contains($mkSida, "if (/[?&]avtale=1/.test(sok) && /[?&]kjop=A\\d+/.test(sok)) {")
             && str_contains($mkSida, "const rest = sok.replace(/&(kjop|belop|slag)=[^&]*/g, '');");
     })());
+// ── «Selg» bare for aarsmedlemmene ───────────────────────────────────────
+//
+// Eieren, 12. september 2026: «jeg vil at det er kun års medlemmer som skal
+// få denne, kan du fikse dette, og aktivere den?» Planen kommer fra
+// api/meg.php, nettsida skjuler pille, fane og bunnmeny for de andre, og
+// serveren sperrer innlegging. Migrasjon 170 slaar begge bryterne paa.
+sjekk('Selg egne arbeider: bare planen «Årsmedlemskap» ser pille, fane og bunnmeny',
+    str_contains($mkSida, "medlemPlan: (d.medlem && d.medlem.medlemskap) || '',")
+    && str_contains($mkSida, "    return (this.state.medlemPlan || '').trim() === 'Årsmedlemskap';")
+    && str_contains($mkSida, "if (f === 'selg' && !this.kanSelge()) return 'hjem';")
+    && str_contains($mkSida, "          msFaneSelg:       f === 'selg' && this.kanSelge(),\n          msKanSelge:       this.kanSelge(),")
+    && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msPlSelg.velg }}"') === 1
+    && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msBmSelg.velg }}"') === 1
+    && str_contains($mkSida, "visSalgSkjema: this.kanSelge() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),"));
+sjekk('… serveren avviser innlegging fra andre enn aarsmedlemmer, og migrasjon 170 slaar bryterne paa',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php'),
+        "    && trim((string) (\$medlem['medlemskap_type'] ?? '')) !== 'Årsmedlemskap') {\n    Svar::feil('Salg av egne arbeider er for årsmedlemmer.', 403);")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
+        "INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/medlemssalg', 'ja')\nON DUPLICATE KEY UPDATE verdi = 'ja';")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
+        "VALUES ('Vis/salgsskjema', 'ja')"));
 sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));

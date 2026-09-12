@@ -4995,11 +4995,13 @@ window.__resources = {
                    noe du har laget. -->
               <sc-if value="{{ msFaneSelg }}" hint-placeholder-val="{{ false }}">
               <!-- Et menyvalg skal aldri fore til en tom skjerm.
-                   Skjemaet staar bak to brytere i admin — «salgsskjema» og
-                   «medlemssalg». Er én av dem av, sto det ingenting her, og
-                   ingenting som sa hvorfor. Eieren, 5. september: «Menyen
-                   selg viser ingenting, er det pga jeg ikke har aktivert
-                   den». Naa staar svaret paa skjermen. -->
+                   Skjemaet staar bak bryteren «Selg egne arbeider» i admin.
+                   Er den av, sto det ingenting her, og ingenting som sa
+                   hvorfor. Eieren, 5. september: «Menyen selg viser
+                   ingenting, er det pga jeg ikke har aktivert den». Naa
+                   staar svaret paa skjermen.
+                   Bryteren laa som to — «salgsskjema» og «medlemssalg» — som
+                   begge maatte staa paa. Slaatt sammen 12. september 2026. -->
               <sc-if value="{{ msSelgAv }}" hint-placeholder-val="{{ false }}">
                 <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Selg keramikk</div>
@@ -54907,7 +54909,14 @@ class Component extends DCLogic {
       // Butikken viser bare det som er godkjent. Bildet kommer fra
       // api/bilde.php, som ikke gir ut bilder til varer som venter.
       salgApen: !!this.state.salgApen,
-      salgSkjemaPaa: this.bryterPaa('salgsskjema'),
+      // Samme bryter som «Selg egne arbeider» paa Oversikt. Det var to
+      // brytere med hver sin noekkel — «Vis/medlemssalg» og
+      // «Vis/salgsskjema» — og koden krevde at BEGGE sto paa. Slo du paa den
+      // ene, skjedde ingenting, og skjermen sa ikke hvilken som manglet.
+      // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for
+      // samme tema?». Naa er det én noekkel, vist to steder. Migrasjon 172
+      // slaar dem sammen, og tar den gamle noekkelen ut av basen.
+      salgSkjemaPaa: this.bryterPaa('medlemssalg'),
       kampanjeVis: this.bryterPaa('salgsuke') && this.mobilVis('salgsuke'),
       kampanjePaa: this.bryterPaa('salgsuke'),
       kampanjeEtikett: this.bryterPaa('salgsuke') ? 'Vises på forsiden' : 'Skjult',
@@ -54949,13 +54958,16 @@ class Component extends DCLogic {
         };
       })(),
       kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
-      salgSkjemaEtikett: this.bryterPaa('salgsskjema') ? 'Synlig' : 'Skjult',
-      salgSkjemaVeksl: () => this.vekslBryter('salgsskjema', 'Skjemaet for å legge ut arbeider'),
-      visSalgSkjema: this.kanSelge() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
+      salgSkjemaEtikett: this.bryterPaa('medlemssalg') ? 'Synlig' : 'Skjult',
+      // Samme navn i kvitteringen begge steder. Sto det «Skjemaet for aa
+      // legge ut arbeider er skjult» her og «Selg egne arbeider er skjult»
+      // paa Oversikt, saa det ut som to ulike brytere — og det er det ikke
+      // lenger.
+      salgSkjemaVeksl: () => this.vekslBryter('medlemssalg', 'Selg egne arbeider'),
+      visSalgSkjema: this.kanSelge() && this.bryterPaa('medlemssalg'),
       // Menyvalget «Selg» finnes for alle medlemmer. Er skjemaet slaatt av,
       // skal skjermen si det — ikke staa tom.
-      msSelgAv: this.kanSelge()
-        && !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),
+      msSelgAv: this.kanSelge() && !this.bryterPaa('medlemssalg'),
       msSelgAvTekst: 'Verkstedet har slått av muligheten til å legge ut egne arbeider'
         + ' for øyeblikket. Ta kontakt hvis du har noe du vil selge.',
       lukkSalg: () => this.setState({ salgApen: null }),

@@ -14116,12 +14116,13 @@ sjekk('… og ingen kurs paa skivene er ogsaa et svar',
 
 // ── Et menyvalg skal aldri fore til en tom skjerm ──────────────────
 // Eieren: «Menyen selg viser ingenting, er det pga jeg ikke har aktivert
-// den». Skjemaet staar bak to brytere i admin.
+// den». Skjemaet staar bak bryteren «Selg egne arbeider» i admin.
 // «medlemsvisning()» ble «kanSelge()» 12. september — admin er innenfor,
 // som paa serveren. Proven holdt paa det gamle navnet.
+// Bryteren laa som to, «salgsskjema» og «medlemssalg», som begge maatte staa
+// paa. Slaatt sammen samme dag — se migrasjon 172.
 sjekk('«Selg» sier fra naar skjemaet er slaatt av',
-    str_contains($k2Ren, 'msSelgAv: this.kanSelge()')
-    && str_contains($k2Ren, "&& !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),")
+    str_contains($k2Ren, "msSelgAv: this.kanSelge() && !this.bryterPaa('medlemssalg'),")
     && str_contains($k2Ren, '<sc-if value="{{ msSelgAv }}"'),
     'maalt: ingen av de sju stedene staar tomme');
 
@@ -16832,7 +16833,7 @@ sjekk('Selg egne arbeider: bare planen «Årsmedlemskap» ser pille, fane og bun
     && str_contains($mkSida, "          msFaneSelg:       f === 'selg' && this.kanSelge(),\n          msKanSelge:       this.kanSelge(),")
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msPlSelg.velg }}"') === 1
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msBmSelg.velg }}"') === 1
-    && str_contains($mkSida, "visSalgSkjema: this.kanSelge() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),"));
+    && str_contains($mkSida, "visSalgSkjema: this.kanSelge() && this.bryterPaa('medlemssalg'),"));
 sjekk('… serveren avviser innlegging fra andre enn aarsmedlemmer, og migrasjon 170 slaar bryterne paa',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php'),
         "    && trim((string) (\$medlem['medlemskap_type'] ?? '')) !== 'Årsmedlemskap') {\n    Svar::feil('Salg av egne arbeider er for årsmedlemmer.', 403);")
@@ -16840,6 +16841,34 @@ sjekk('… serveren avviser innlegging fra andre enn aarsmedlemmer, og migrasjon
         "INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/medlemssalg', 'ja')\nON DUPLICATE KEY UPDATE verdi = 'ja';")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
         "VALUES ('Vis/salgsskjema', 'ja')"));
+
+// ── Én bryter, ikke to ───────────────────────────────────────────────────
+//
+// Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme
+// tema?». «Selg egne arbeider» paa Oversikt og «"Selg keramikk" paa Min side»
+// paa Butikken var to noekler som koden krevde at BEGGE sto paa. Slo du paa
+// den ene, skjedde ingenting, og skjermen sa ikke hvilken som manglet.
+$mig172 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/172_en_bryter_for_selg_egne_arbeider.sql');
+$vis172 = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('begge bryterne leser den samme noekkelen',
+    str_contains($vis172, "      salgSkjemaPaa: this.bryterPaa('medlemssalg'),")
+    && str_contains($vis172, "      salgSkjemaEtikett: this.bryterPaa('medlemssalg') ? 'Synlig' : 'Skjult',")
+    && str_contains($vis172, "      salgSkjemaVeksl: () => this.vekslBryter('medlemssalg', 'Selg egne arbeider'),")
+    && str_contains($vis172, "      bryterMinSalg: this.bryterPaa('medlemssalg'),"),
+    'to brytere for det samme er verre enn ingen');
+// Ingen skal lete etter den gamle noekkelen igjen.
+sjekk('… og den gamle noekkelen finnes ikke lenger i koden',
+    !str_contains($vis172, "bryterPaa('salgsskjema')")
+    && !str_contains($vis172, "vekslBryter('salgsskjema'"));
+// Migrasjonen skal aldri slaa salget PAA av seg selv. Maalt lokalt paa alle
+// seks kombinasjonene: bare «paa + paa» (og «ingen rad + paa») ender paa.
+sjekk('… og sammenslaaingen slaar ingenting paa av seg selv',
+    str_contains($mig172, "SELECT 'Vis/medlemssalg', 'nei'")
+    && str_contains($mig172, "      WHERE nokkel IN ('Vis/medlemssalg', 'Vis/salgsskjema')\n        AND verdi = 'nei'")
+    && str_contains($mig172, "ON DUPLICATE KEY UPDATE verdi = 'nei';"));
+sjekk('… og den gamle raden tas ut av basen',
+    str_contains($mig172, "DELETE FROM content_blocks WHERE nokkel = 'Vis/salgsskjema';"));
 // ── «Ovn er tømt» ────────────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: knapp paa Min side og paa kalenderen i admin;

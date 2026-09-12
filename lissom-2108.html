@@ -1341,6 +1341,19 @@ window.__resources = {
     .lx-puls { animation: none; }
   }
 
+  /* «Ovnen er tømt» — kortet pulserer til man har trykket «Sett».
+     Eieren, 12. september 2026: «gjerne med en pulserende vinsing».
+     Bare gloeden gaar opp og ned; kortet selv staar stille, saa teksten
+     er til aa lese. Stille for den som har bedt om mindre bevegelse. */
+  @keyframes lx-ovn-puls {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(230, 184, 0, 0); }
+    50%      { box-shadow: 0 0 0 8px rgba(230, 184, 0, .45); }
+  }
+  .lx-ovn-puls { animation: lx-ovn-puls 1.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .lx-ovn-puls { animation: none; box-shadow: 0 0 0 4px rgba(230, 184, 0, .45); }
+  }
+
   /* Knappen puster mens AI-en tenker.
      ---------------------------------
      Eieren, 11. september 2026: «kan du endre til Tenker, og gjerne en liten
@@ -1598,7 +1611,7 @@ window.__resources = {
        Raden staar over faneinnholdet, ikke inne i det, saa pilla foelger
        med paa alle fanene — ogsaa Chat og Butikk, der veien hjem var
        lengst. */
-    .ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }
+    .ms-pillerad > *:not(.ms-verksted):not(.ms-hjem):not(.ms-ovn) { display: none !important; }
     .ms-hjem-langt { display: none !important; }
   }
   @media (min-width: 761px) {
@@ -4360,6 +4373,12 @@ window.__resources = {
                    raden paa telefonen — se «.ms-verksted» i stilarket. De sju
                    over staar i bunnmenyen der. -->
               <button type="button" class="ms-verksted" onClick="{{ msPlVerksted.velg }}" aria-label="{{ msPlVerksted.full }}" style="{{ msPlVerksted.stil }}"><span style="{{ msPlVerksted.prikk }}"></span>{{ msPlVerksted.navn }}</button>
+              <!-- «Ovn er tømt». Eieren, 12. september 2026. Staar paa
+                   telefonen ogsaa (se «.ms-ovn» i stilarket) — det er en
+                   handling, ikke et sted, og den skal kunne trykkes der man
+                   staar med ovnen. Kortet som de andre ser, ligger under
+                   pillene paa Hjem. -->
+              <button type="button" class="ms-ovn" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
             </nav>
           </sc-if>
               <!-- Hvem som er i verkstedet, rett under pilla.
@@ -4460,6 +4479,22 @@ window.__resources = {
                naa bak menyvalget Medlemskap, med de samme radene. -->
           <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+          <!-- Ovnen er toemt — kortet de andre ser. Staar her det siste
+               doegnet etter at noen trykket «Ovn er tømt», og pulserer til
+               man selv har trykket «Sett». Se ovnVals(). -->
+          <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ false }}">
+          <div class="{{ ovnKortKlasse }}" style="{{ ovnKortStil }}">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+              <div>
+                <h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ovnen er tømt</h3>
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ ovnLinje }}</p>
+              </div>
+              <sc-if value="{{ ovnUsett }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>
+              </sc-if>
+            </div>
+          </div>
+          </sc-if>
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Verkstedet ditt</div>
@@ -7484,7 +7519,24 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
           </div>
+          <!-- «Ovn er tømt» — samme knapp som medlemmene har paa Min side.
+               Eieren, 12. september 2026: «admin må også ha denne knappen
+               på kalender oversikten». -->
+          <button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
         </div>
+        <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ false }}">
+        <div class="{{ ovnKortKlasse }}" style="{{ ovnKortStil }}">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <div>
+              <h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ovnen er tømt</h3>
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ ovnLinje }}</p>
+            </div>
+            <sc-if value="{{ ovnUsett }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
 
         <div style="{{ klSideGridStil }}">
 
@@ -27476,6 +27528,106 @@ class Component extends DCLogic {
 
     // Et kjop som ventet paa at dette skulle bli klart, telles naa.
     if (this._ventendeKjop) { this.maalKjop(this._ventendeKjop); }
+  }
+
+  // ── «Ovn er tømt» ───────────────────────────────────────────────────
+  //
+  // Eieren, 12. september 2026: en knapp paa Min side (og paa kalenderen i
+  // admin) som sier at ovnen er toemt. De andre ser det som et kort som
+  // pulserer til de selv trykker «Sett», og etter 24 timer er det borte
+  // uansett. Serveren er api/ovn.php; her er det bare hente, trykke, tegne.
+
+  /** Siste toemming, hentet paa nytt hoeyst hvert minutt mens skjermen staar. */
+  hentOvn(tving) {
+    if (!this.erPublisert() || !this.state.innlogget || this._ovnHentes) return;
+    if (!tving && this._ovnHentet && Date.now() - this._ovnHentet < 60 * 1000) return;
+    this._ovnHentes = true;
+    fetch('/api/ovn.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._ovnHentes = false;
+        this._ovnHentet = Date.now();
+        if (d && d.ok !== false) this.setState({ ovn: d.tomt || null, ovnKlar: !!d.klar });
+        // Den som blir staaende paa Min side skal ogsaa faa se det naar
+        // noen andre trykker. Ett minutt er tett nok — det er en ovn.
+        clearTimeout(this._ovnVakt);
+        this._ovnVakt = setTimeout(() => {
+          const side = this.state.side || '';
+          if (side !== 'minside' && side !== 'adminkalender') return;
+          // Fana ligger i bakgrunnen: hent naar skjermen tegnes neste gang.
+          if (document.hidden) { this._ovnHentet = 0; return; }
+          this.hentOvn(true);
+        }, 60 * 1000);
+      })
+      .catch(() => { this._ovnHentes = false; this._ovnHentet = Date.now(); });
+  }
+
+  /** Ovnen er toemt naa, eller: jeg har sett det. Svaret tegnes med en gang. */
+  ovnKall(handling) {
+    if (!this.erPublisert()) {
+      // Utenfor den ekte sida: vis det som om det gikk, saa skjermen kan ses.
+      if (handling === 'tomt') this.setState({ ovn: { id: 1, av: this.state.vippsNavn || 'Monica', naar: Math.floor(Date.now() / 1000), sett: true }, ovnKlar: true, kvitteringTone: 'success', kvittering: 'Takk, de andre får beskjed' });
+      else this.setState(st => ({ ovn: st.ovn ? Object.assign({}, st.ovn, { sett: true }) : null }));
+      return;
+    }
+    if (this._ovnSender) return;
+    this._ovnSender = true;
+    fetch('/api/ovn.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._ovnSender = false;
+        if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
+        this._ovnHentet = Date.now();
+        this.setState(Object.assign({ ovn: d.tomt || null, ovnKlar: true },
+          handling === 'tomt' ? { kvitteringTone: 'success', kvittering: 'Takk, de andre får beskjed' } : {}));
+      })
+      .catch(() => {
+        this._ovnSender = false;
+        this.setState({ kvitteringTone: 'danger', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
+  /**
+   * Det skjermene trenger — Min side og kalenderen i admin tegner det samme.
+   * «i dag 14:20» / «i går 09:10» regnes i nettleserens egen klokke.
+   */
+  ovnVals() {
+    const o = this.state.ovn || null;
+    const naa = new Date();
+    const t = o ? new Date(o.naar * 1000) : null;
+    const to = n => (n < 10 ? '0' : '') + n;
+    const klokke = t ? to(t.getHours()) + ':' + to(t.getMinutes()) : '';
+    const dag = t ? (t.toDateString() === naa.toDateString() ? 'i dag' : 'i går') : '';
+    const usett = !!o && !o.sett;
+    const pille = (aktiv) => ({
+      appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+      borderRadius: 'var(--radius-pill)', padding: '10px 20px',
+      font: 'var(--type-body-sm)', fontWeight: 700,
+      border: aktiv ? '2px solid var(--lissom-brown)' : '2px solid var(--border-subtle)',
+      background: aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)',
+      color: aktiv ? 'var(--clay-50)' : 'var(--lissom-brown)',
+    });
+    return {
+      ovnVis: !!o,
+      ovnUsett: usett,
+      ovnLinje: o ? 'Tømt av ' + (o.av || 'et medlem') + ' · ' + dag + ' ' + klokke : '',
+      ovnKortKlasse: usett ? 'lx-ovn-puls' : '',
+      ovnKortStil: {
+        background: 'var(--surface-card)', border: '2px solid var(--yellow-500, #E6B800)',
+        borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
+        marginBottom: 'var(--space-6)',
+      },
+      ovnTomtNaa: () => this.ovnKall('tomt'),
+      ovnSettNaa: () => this.ovnKall('sett'),
+      // Samme form som pillene paa raden (minsidePiller). «Sett» lyser, som
+      // en aktiv pille — det er den man skal trykke.
+      ovnPilleStil: pille(false),
+      ovnSettStil: pille(true),
+    };
   }
 
   /** Henter gjennomfoerte kursdatoer til kortet paa Oversikt. */
@@ -49685,12 +49837,14 @@ class Component extends DCLogic {
           // Tallet staar i pilla; ruta med hvem som er inne og haken aapner
           // seg naar du trykker. Den lyser naar den er aapen, som de andre.
           msVerkstedApen: !!this.state.msVerksted,
+          ...this.ovnVals(),
           // Spør o store krukkemester under pillene (eieren, 11. september
           // 2026). Samme tilstand som feltet under Nyttig info: ett
           // spoersmaal, ett svar, uansett hvor det ble stilt.
           ...(() => {
             const erMinside = (this.state.side || '') === 'minside';
             if (erMinside && this.erPublisert() && this.state.innlogget) this.minDokHent();
+            if (erMinside) this.hentOvn();
             const paa = erMinside && !!(this.state.minDok || {}).faq && !!this.state.erMedlemBruker;
             return {
               msFaq: paa,
@@ -50870,6 +51024,7 @@ class Component extends DCLogic {
       erAdminKalender: side === 'adminkalender',
       adminNavKalender: this.adminSideMeny(),
       ...(side === 'adminkalender' ? this.klVals() : {}),
+      ...(side === 'adminkalender' ? (this.hentOvn(), this.ovnVals()) : {}),
       erAdminArskalender: side === 'adminarskalender',
       adminNavArskalender: this.adminSideMeny(),
       // ── Aarskalenderen ────────────────────────────────────────────

@@ -24984,6 +24984,10 @@ class Component extends DCLogic {
   kanSelge() {
     if (!this.medlemsvisning()) return false;
     if (!this.erPublisert()) return true;
+    // Admin er innenfor, som paa serveren. Eieren, 12. september 2026: «jeg
+    // får ikke solgt på min side i allefall» — admin-kontoen staar ikke som
+    // aarsmedlem, og da var fanen borte for den som skulle proeve den.
+    if (this.state.erAdminBruker) return true;
     return (this.state.medlemPlan || '').trim() === 'Årsmedlemskap';
   }
 

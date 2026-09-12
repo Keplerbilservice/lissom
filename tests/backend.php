@@ -16654,6 +16654,36 @@ sjekk('… og CSP-en slipper gjennom Tag Manager og Google Ads',
 sjekk('… og CSP-en slipper selve innsendingen til Analytics gjennom (EU-region)',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
         "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.google-analytics.com https://stats.g.doubleclick.net"));
+// ── Google Ads-konverteringene ───────────────────────────────────────────
+//
+// Eieren, 12. september 2026: fire hendelser paa den eksisterende gtag-en,
+// fyrt paa fullfoert handling — aldri paa en bekreftelsesadresse som lastes.
+// booking_fullfort / gavekort_kjopt / medlemskap_startet med value, currency
+// og transaction_id, etter at serveren har spurt Vipps; forespurt_kontakt
+// etter at serveren har tatt imot skjemaet. Ved siden av purchase og
+// generate_lead, ikke i stedet for.
+sjekk('Google Ads: kjoepene fyrer booking_fullfort / gavekort_kjopt / medlemskap_startet etter Vipps-bekreftet betaling',
+    str_contains($mkSida, "const ADS = { booking: 'booking_fullfort', gavekort: 'gavekort_kjopt', medlemskap: 'medlemskap_startet' };")
+    && str_contains($mkSida, "if (gikk && ADS[slag]) {\n      this.maal(ADS[slag], { value: belop, currency: 'NOK', transaction_id: 'L' + id });")
+    && str_contains($mkSida, "if (m[1] === 'ok') this.maalKjop(hash);"));
+sjekk('… forespurt_kontakt fyres etter serverens OK paa kontakt- og gruppeskjemaet',
+    substr_count($mkSida, "this.maal('forespurt_kontakt', { form:") === 2
+    && str_contains($mkSida, "this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });\n        // Google Ads-konverteringen for en forespoersel. Uten verdi — det\n        // er ikke solgt noe ennaa. (Eieren, 12. september 2026.)\n        this.maal('forespurt_kontakt', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });")
+    && str_contains($mkSida, "this.maal('generate_lead', { form: s.fsType || 'Forespørsel' });\n        this.maal('forespurt_kontakt', { form: s.fsType || 'Forespørsel' });"));
+// Aarsmedlemskapet gaar via en Vipps-avtale, ikke en betaling, og kom
+// tilbake til /min-side?avtale=1 uten noe om utfallet. Naa foelger tallene
+// med — bare naar avtalen ble aktiv i det samme kallet.
+sjekk('… aarsmedlemskapet telles naar avtalen ble aktiv ved retur, og bare da',
+    (static function () use ($mkSida): bool {
+        $r = (string) file_get_contents(dirname(__DIR__) . '/api/vipps-avtale-retur.php');
+        return str_contains($r, "if (\$ny === 'aktiv' && \$for !== 'aktiv') {")
+            && str_contains($r, "\$kvittering = '&kjop=A' . (int) \$a['id']")
+            && str_contains($r, ". '&slag=medlemskap';")
+            && str_contains($r, "header('Location: ' . Config::nettsted() . '/min-side?avtale=1' . \$kvittering);")
+            && str_contains($mkSida, "const id = (String(hash).match(/kjop=(A?\\d+)/) || [])[1];")
+            && str_contains($mkSida, "if (/[?&]avtale=1/.test(sok) && /[?&]kjop=A\\d+/.test(sok)) {")
+            && str_contains($mkSida, "const rest = sok.replace(/&(kjop|belop|slag)=[^&]*/g, '');");
+    })());
 sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));

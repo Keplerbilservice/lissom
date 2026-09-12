@@ -1,0 +1,12 @@
+-- Kortet «Dokumenter» skal ikke staa for medlemmene.
+--
+-- Eieren, 12. september 2026: «dokumenter skal ikke vises for medlemmer, saa
+-- skru av den funksjonen».
+--
+-- Kortet er det som het «Kontrakter» til migrasjon 168. Det sto slaatt PAA
+-- for medlemmene, og i det ligger kontraktene deres. Migrasjon 154 satte alt
+-- av med vilje — «alt er av til han slaar det paa selv, ogsaa kontraktene,
+-- som nok bor bli staaende av» — men bryteren er trykket paa siden, og et
+-- kort med kontrakter er ikke noe som skal staa aapent fordi noen kom borti
+-- en pille.
+UPDATE verksted_kategorier SET vis_medlem = 0 WHERE slug = 'kontrakter';

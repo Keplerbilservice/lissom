@@ -109,21 +109,10 @@ switch ($handling) {
             Svar::feil($feil === [] ? 'Ingen av filene kunne lastes opp.' : $feil[0]);
         }
 
-        // Skannede ark har ingen bokstaver i seg, og Pdftekst::les() kom
-        // tomhendt tilbake. Claude leser dem — men eieren staar og venter,
-        // saa vi tar bare de foerste og gir oss etter noen sekunder. Resten
-        // leses av seg selv i natt: se «vedlikehold» i bin/cron.php.
-        //
-        // Eieren, 11. september 2026: «slik at mer og mer kunnskap vil komme
-        // til». Da maa det skje uten at han maa huske aa trykke paa noe.
-        @set_time_limit(90);
-        $lest = Dokumenter::lesMedAi(3, 20);
-
         revider('dokument_lastet_opp', 'dokument', null, [
             'kategori' => (string) $kategori['navn'],
             'antall'   => $lagt,
             'hoppet'   => $hoppet + count($feil),
-            'ai_lest'  => $lest['lest'],
         ]);
 
         $beskjed = $lagt === 1 ? 'Filen er lastet opp.' : $lagt . ' filer er lastet opp.';
@@ -132,7 +121,28 @@ switch ($handling) {
             $beskjed .= ' ' . $over . ($over === 1 ? ' fil' : ' filer')
                       . ' ble hoppet over — bare PDF, Word og bilde tas imot.';
         }
-        Svar::ok(['beskjed' => $beskjed] + $hent());
+
+        // Svaret foerst. Saa leser Claude de skannede arkene.
+        //
+        // Her sto lesingen FOER svaret, fra 11. september. Ett AI-kall har
+        // 120 sekunders tidsavbrudd, og tre av dem er seks minutter —
+        // nettleseren satt og ventet paa et svar som aldri kom, og eieren
+        // saa en skjerm der ingenting skjedde og ingen feil kom.
+        //
+        // Eieren, 12. september 2026: «jeg kan klikke og faar velge, men den
+        // laster ikke opp noen dokumenter, ingen feilmelding». Filene laa
+        // inne hele tiden; det var svaret som aldri kom fram.
+        //
+        // Naa er skjermen oppdatert foer lesingen begynner. Kan serveren
+        // ikke slippe nettleseren fri (ingen php-fpm), gjores ingenting her
+        // — da tar nattas vedlikehold alle sammen. Se Svar::okOgFortsett().
+        Svar::okOgFortsett(['beskjed' => $beskjed] + $hent(), static function (): void {
+            @set_time_limit(300);
+            $lest = Dokumenter::lesMedAi(5, 240);
+            if ($lest['lest'] > 0) {
+                logg('Dokumenter lest av AI etter opplasting', $lest);
+            }
+        });
 
     // --------------------------------------------------------------- slett
     case 'slett':

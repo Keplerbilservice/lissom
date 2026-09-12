@@ -34,6 +34,55 @@ final class Svar
         self::json(['ok' => true] + $data);
     }
 
+    /**
+     * Svar foerst, jobb etterpaa.
+     *
+     * Eieren, 12. september 2026: «jeg kan klikke og faar velge, men den
+     * laster ikke opp noen dokumenter, ingen feilmelding».
+     *
+     * Grunnen: opplastingen ba Claude lese de skannede arkene FOR den
+     * svarte. Ett AI-kall har 120 sekunders tidsavbrudd, og tre av dem etter
+     * hverandre er seks minutter. Nettleseren satt og ventet paa et svar som
+     * aldri kom — og en foresporsel som henger gir ingen feilmelding, fordi
+     * ingenting feilet. Det saa ut som om ingenting skjedde.
+     *
+     * Her sendes svaret ferdig, forbindelsen lukkes, og foerst DA gjores
+     * resten. Da er skjermen oppdatert med én gang, uansett hvor lenge
+     * etterarbeidet tar.
+     *
+     * «fastcgi_finish_request» finnes bare paa php-fpm. Finnes den ikke, er
+     * det ingen maate aa slippe nettleseren fri paa, og da gjor vi ikke
+     * etterarbeidet i det hele tatt — det er bedre at det venter til natta
+     * enn at eieren sitter og ser paa en skjerm som ikke rikker seg.
+     *
+     * @param callable(): void $etterpaa kjores bare naar svaret er levert
+     */
+    public static function okOgFortsett(array $data, callable $etterpaa): never
+    {
+        if (!function_exists('fastcgi_finish_request')) {
+            self::ok($data);
+        }
+
+        if (!headers_sent()) {
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-store');
+            header('X-Content-Type-Options: nosniff');
+            header('Referrer-Policy: same-origin');
+        }
+        echo json_encode(['ok' => true] + $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        fastcgi_finish_request();
+
+        // Etterarbeidet skal aldri kunne velte noe: svaret er alt sendt, og
+        // et kast her ville bare endt i feilloggen som en halv forespoersel.
+        try {
+            $etterpaa();
+        } catch (Throwable $e) {
+            logg_feil('Etterarbeidet etter svaret stoppet', $e);
+        }
+        exit;
+    }
+
     /** Feil som skal vises til kunden. Aldri teknisk detalj her. */
     public static function feil(string $melding, int $status = 400, array $ekstra = []): never
     {

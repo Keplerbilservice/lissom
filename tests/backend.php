@@ -15480,7 +15480,9 @@ sjekk('… og de staar ikke to ganger naar ett kort er aapnet',
 // Opplastingen er et kort ved siden av dokumentene, ikke en pille i toppen
 // og en stor rute nederst. Eieren: «+ en som staar last opp paa».
 sjekk('… og opplastingen er et kort i den samme rada',
-    str_contains($dokSida, '<label style="{{ dokLastKortStil }}">')
+    // Fra 12. september tar kortet ogsaa imot en sluppet fil, saa taggen
+    // har tre handlere foran stilen. Det er fortsatt den samme label-en.
+    str_contains($dokSida, 'onDrop="{{ dokSlipp }}" style="{{ dokLastKortStil }}">')
     && str_contains($dokSida, 'dokLastKortStil: {')
     && str_contains($dokSida, ">Last opp</span>")
     && !str_contains($dokSida, 'display: block; margin: var(--space-5) var(--space-6) var(--space-6); border: 2px dashed'));
@@ -16180,10 +16182,14 @@ sjekk('en PDF som lastes opp leses av serveren med en gang',
     && substr_count($pdDok, "Pdftekst::les(\$mappe . '/' . \$navn)") === 2,
     'bade én fil og hver fil inni en zip');
 
+// Her sto «Dokumenter::lesMedAi(3, 20)» rett for svaret. Eieren, 12.
+// september 2026: «jeg kan klikke og faar velge, men den laster ikke opp
+// noen dokumenter, ingen feilmelding» — den ventet paa Claude for den
+// svarte. Naa ligger lesingen ETTER svaret, og eieren venter ikke paa den.
 sjekk('det serveren ikke fikk lest, leser Claude',
-    str_contains($pdApi, 'Dokumenter::lesMedAi(3, 20)')
+    str_contains($pdApi, 'Dokumenter::lesMedAi(5, 240)')
     && str_contains($pdCron, 'Dokumenter::lesMedAi(20, 900)'),
-    'noen faa mens eieren venter, resten i natt');
+    'etter at svaret er sendt, og resten i natt');
 
 sjekk('Claude skriver AV dokumentet — den oppsummerer det ikke',
     str_contains($pdAi, 'Du skriver av dokumenter, ord for ord.')
@@ -16751,6 +16757,60 @@ sjekk('… og pilla i skjermen kan ikke trykkes',
 
 sjekk('… mens de andre kortene fortsatt kan veksles',
     str_contains($kkApi, "\$ny = ((int) \$k['vis_medlem']) === 1 ? 0 : 1;"));
+
+// ── Opplastingen svarer med en gang, og slipping virker ───────────
+//
+// Eieren, 12. september 2026: «jeg kan klikke og faar velge, men den laster
+// ikke opp noen dokumenter, ingen feilmelding», og «det fungerer ikke aa
+// laste opp selv, verken klikk aa last opp eller slipp aa dra».
+//
+// To feil i én skjerm:
+//
+//   1. Opplastingen ba Claude lese de skannede arkene FOER den svarte. Ett
+//      AI-kall har 120 sekunders tidsavbrudd; tre av dem er seks minutter.
+//      Nettleseren ventet paa et svar som aldri kom — og en foresporsel som
+//      henger gir ingen feilmelding, fordi ingenting feilet.
+//   2. «Slipp filen her» har staatt paa kortet siden 10. september uten at
+//      noe tok imot et slipp. Det fantes ikke én onDrop i hele nettsiden.
+$opApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$opHttp = file_get_contents(dirname(__DIR__) . '/app/lib/http.php');
+$opSida = $sida;
+
+sjekk('opplastingen svarer foer AI-en leser',
+    str_contains($opApi, 'Svar::okOgFortsett([')
+    && !preg_match('/lesMedAi\([^)]*\);\s*\n\s*revider/', $opApi),
+    'seks minutters venting saa ut som om ingenting skjedde');
+
+sjekk('… og uten php-fpm gjores etterarbeidet ikke i det hele tatt',
+    str_contains($opHttp, "if (!function_exists('fastcgi_finish_request')) {")
+    && str_contains($opHttp, 'self::ok($data);'),
+    'da tar nattas vedlikehold dem — bedre enn en skjerm som ikke rikker seg');
+
+sjekk('… og etterarbeidet kan ikke velte svaret som alt er sendt',
+    str_contains($opHttp, '} catch (Throwable $e) {')
+    && str_contains($opHttp, "logg_feil('Etterarbeidet etter svaret stoppet', \$e);"));
+
+sjekk('«Slipp filen her» tar faktisk imot en fil',
+    str_contains($opSida, 'onDragOver="{{ dokDragOver }}" onDragLeave="{{ dokDragUt }}" onDrop="{{ dokSlipp }}"')
+    && substr_count($opSida, 'onDrop="{{ dokSlipp }}"') === 1);
+
+sjekk('… og begge stopper nettleseren, ellers kommer slippet aldri',
+    preg_match('/dokDragOver: \(e\) => \{\s*if \(!e\) return;\s*e\.preventDefault\(\);/', $opSida) === 1
+    && preg_match('/dokSlipp: \(e\) => \{\s*if \(!e\) return;\s*e\.preventDefault\(\);/', $opSida) === 1,
+    'uten preventDefault paa dragover sier nettleseren nei til slippet');
+
+sjekk('… og valgt fil og sluppet fil gaar samme vei inn',
+    str_contains($opSida, 'dokSendFiler(filer, kort) {')
+    // Begge kallerne — dokVelgFil og dokSlipp — og ingen av dem bygger
+    // skjemaet selv. («last-opp» finnes ogsaa i to andre skjermer; de
+    // hoerer ikke hit.)
+    && substr_count($opSida, 'this.dokSendFiler(') === 2
+    && preg_match('/dokVelgFil: \(e\) => \{(?:(?!\},).)*new FormData/s', $opSida) !== 1,
+    'to veier med hver sin kopi ville kommet i utakt');
+
+sjekk('… og kortet lyser opp mens fila henger over det',
+    str_contains($opSida, "border: '2px dashed ' + (this.state.dokDrar ? 'var(--lissom-brown)' : 'var(--border-default)'),"),
+    'bommer man, aapner nettleseren fila i stedet for aa laste den opp');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

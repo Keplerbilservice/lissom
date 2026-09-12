@@ -19153,7 +19153,7 @@ window.__resources = {
                      laster opp, + en som staar last opp paa».
                      Stiplet kant, saa det ser ut som det er noe som skal
                      fylles. Fila kan bade velges og slippes paa kortet. -->
-                <label style="{{ dokLastKortStil }}">
+                <label onDragOver="{{ dokDragOver }}" onDragLeave="{{ dokDragUt }}" onDrop="{{ dokSlipp }}" style="{{ dokLastKortStil }}">
                   <input type="file" multiple="true" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.zip" onChange="{{ dokVelgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">Last opp</span>
                   <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ dokSlippUnder }}</p>
@@ -24816,6 +24816,22 @@ class Component extends DCLogic {
 
   dorkodeNaa() {
     return this.internInfo().dorkode || '';
+  }
+
+  /**
+   * Filene av garde, enten de ble valgt eller sluppet.
+   *
+   * Ett sted, saa de to veiene inn ikke kan komme i utakt. Ingen fil og
+   * ingen aapent kort er ikke en feil — da trykket eller dro man bare feil,
+   * og da skal ingenting skje.
+   */
+  dokSendFiler(filer, kort) {
+    if (!filer || !filer.length || !kort) return;
+    const skjema = new FormData();
+    skjema.append('handling', 'last-opp');
+    skjema.append('kategori', String(kort.id));
+    filer.forEach(f => skjema.append('dokument[]', f));
+    this.dokKall(skjema);
   }
 
   erPublisert() {
@@ -53440,12 +53456,15 @@ class Component extends DCLogic {
           dokRader: radene,
           dokTomt: !!valgt && radene.length === 0 && stegene.length === 0 && underkortene.length === 0,
           dokTomTekst: 'Ingen dokumenter ennå.',
+          // Kortet lyser opp mens fila henger over det. Uten det vet man
+          // ikke om man har truffet — og bommer man, aapner nettleseren fila
+          // i stedet for aa laste den opp.
           dokLastKortStil: {
             position: 'relative', cursor: 'pointer', minWidth: 0,
             display: 'flex', flexDirection: 'column', height: '100%',
             padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)',
-            border: '2px dashed var(--border-default)',
-            background: 'var(--clay-100)',
+            border: '2px dashed ' + (this.state.dokDrar ? 'var(--lissom-brown)' : 'var(--border-default)'),
+            background: this.state.dokDrar ? 'var(--sage-100)' : 'var(--clay-100)',
           },
           dokSlippTittel: 'Slipp filen her',
           // «eller zip» staar bare naar serveren faktisk kan pakke ut. PHP
@@ -53460,12 +53479,33 @@ class Component extends DCLogic {
           dokVelgFil: (e) => {
             const filer = e.target.files ? Array.prototype.slice.call(e.target.files) : [];
             e.target.value = '';
-            if (!filer.length || !valgt) return;
-            const skjema = new FormData();
-            skjema.append('handling', 'last-opp');
-            skjema.append('kategori', String(valgt.id));
-            filer.forEach(f => skjema.append('dokument[]', f));
-            this.dokKall(skjema);
+            this.dokSendFiler(filer, valgt);
+          },
+
+          // ── Dra og slipp ────────────────────────────────────────────────
+          //
+          // Kortet har sagt «Slipp filen her» siden 10. september, men
+          // ingenting tok imot et slipp — det fantes ikke én onDrop i hele
+          // nettsiden. Dro man en fil inn, aapnet nettleseren fila i stedet,
+          // og adminskjermen var borte. Eieren, 12. september 2026: «det
+          // fungerer ikke aa laste opp selv, verken klikk aa last opp eller
+          // slipp aa dra».
+          //
+          // «preventDefault» paa BEGGE er det som gjor det. Uten den paa
+          // dragover sier nettleseren nei til slippet for det skjer, og
+          // onDrop kommer aldri.
+          dokDragOver: (e) => {
+            if (!e) return;
+            e.preventDefault();
+            if (!this.state.dokDrar) this.setState({ dokDrar: true });
+          },
+          dokDragUt: () => { if (this.state.dokDrar) this.setState({ dokDrar: false }); },
+          dokSlipp: (e) => {
+            if (!e) return;
+            e.preventDefault();
+            this.setState({ dokDrar: false });
+            const dt = e.dataTransfer;
+            this.dokSendFiler(dt && dt.files ? Array.prototype.slice.call(dt.files) : [], valgt);
           },
 
           // Visningen: dokumentet med vaar egen «Skriv ut»-pille over.

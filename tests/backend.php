@@ -450,9 +450,24 @@ echo "\n== Oppfoelgingen etter kurset ==\n";
 // Meldingen skal ikke kunne gaa ut ved et uhell. Tre ting maa stemme, og
 // den skal aldri naa noen som var her for lenge siden.
 if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
+    // Her sto «malen finnes og staar som SMS». Migrasjon 163 gjorde den om
+    // til e-post og slo den AV, etter beskjed fra eieren: teksten ble for
+    // lang til SMS, og «ikke aktivere». Proven holdt paa den gamle
+    // avgjorelsen og var roed fra den dagen.
     $mal = DB::en("SELECT kanal, aktiv FROM notification_templates WHERE navn = 'anmeldelse'");
-    sjekk('malen finnes og staar som SMS',
-        $mal !== null && (string) $mal['kanal'] === 'sms', json_encode($mal));
+    sjekk('malen finnes, gaar som e-post og staar av',
+        $mal !== null && (string) $mal['kanal'] === 'epost' && (int) $mal['aktiv'] === 0,
+        json_encode($mal));
+
+    // Resten av blokka proever selve jobben, og da maa malen vaere paa —
+    // Varsel::mal() henter bare aktive. Vi slaar den paa her og setter den
+    // tilbake naar vi er ferdige, slik bryteren «anmeldelse_paa» ogsaa
+    // behandles. Uten dette ville jobben aldri sendt noe, og de proevene
+    // hadde sluttet aa maale det de er til for.
+    $malStodAv = $mal !== null && (int) $mal['aktiv'] === 0;
+    if ($malStodAv) {
+        DB::kjor("UPDATE notification_templates SET aktiv = 1 WHERE navn = 'anmeldelse'");
+    }
 
     // Uten SMS satt opp skal den gaa som e-post — samme melding, annen vei.
     // Det er hele poenget: den er klar for SMS uten aa vente paa SMS.
@@ -523,6 +538,9 @@ if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
         DB::verdi('SELECT anmeldelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $enda]) === null);
 
     // Rydder etter oss.
+    if ($malStodAv) {
+        DB::kjor("UPDATE notification_templates SET aktiv = 0 WHERE navn = 'anmeldelse'");
+    }
     DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Anmeldelsesprove'");
     DB::kjor('DELETE FROM course_sessions WHERE id IN (:a, :b, :c)',
         ['a' => $nyOkt, 'b' => $gammelOkt, 'c' => $enda]);
@@ -7362,7 +7380,10 @@ sjekk('Min side har baade piller og bunnmeny i markupen',
 sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
     str_contains($sida, '.ms-pillerad { display: flex; }')
     && str_contains($sida, '@media (min-width: 761px) {')
-    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }'));
+    // «:not(.ms-ovn)» kom med «Ovn er toemt» 12. september. Pilla staar
+    // igjen paa telefonen sammen med «Hjem» og «x inne» — den er hele
+    // poenget med varselet, og skal ikke gjemme seg i bunnmenyen.
+    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem):not(.ms-ovn) { display: none !important; }'));
 // Eieren, 10. september 2026: «Kan du flytte min side knappen lenger opp paa
 // siden ved siden av pillen med antall inn.» Foer dette var veien hjem cella
 // lengst til venstre i bunnmenyen — han fant den ikke.
@@ -7580,8 +7601,10 @@ sjekk('… og teksten kommer tilbake i feltet om sendingen ryker',
 // Maalt i nettleseren paa 390 px, med svaret forsinket fire sekunder:
 // «Spør» uten animasjon → «Tenker …» med «lx-tenker» paa 1,4 s → «Spør»
 // uten animasjon igjen.
+// Tre knapper fra 12. september: Nyttig info, de to i admin — og «Spor o
+// store krukkemester» paa Min side, som kom med kortet under pillene.
 sjekk('knappen sier «Tenker …» mens AI-en jobber',
-    substr_count($sida, "this.state.faqJobber ? 'Tenker …' : 'Spør',") === 2
+    substr_count($sida, "this.state.faqJobber ? 'Tenker …' : 'Spør',") === 3
     && !str_contains($sida, 'Leter i dokumentene'),
     'maalt: 88 px i ro, 122 mens den tenker');
 sjekk('… og den puster, uten aa flytte paa seg',
@@ -7593,9 +7616,12 @@ sjekk('… og staar stille for den som har bedt om det',
     str_contains($sida, '  @media (prefers-reduced-motion: reduce) {')
     && str_contains($sida, '    [style*="lx-tenker"] { animation: none !important; }'),
     'samme regel som «lx-puls» og koppen paa 404-sida');
-sjekk('… paa alle tre knappene, Nyttig info og begge i admin',
+sjekk('… paa alle fire knappene, Nyttig info, begge i admin og Min side',
     substr_count($sida, '<span style="{{ mdTenkerStil }}">') === 1
-    && substr_count($sida, '<span style="{{ faqTenkerStil }}">') === 2);
+    && substr_count($sida, '<span style="{{ faqTenkerStil }}">') === 2
+    // Min side-knappen har sin egen ramme, men samme animasjon.
+    && str_contains($sida, "animation: 'lx-tenker 1.4s ease-in-out infinite' }")
+    && str_contains($sida, '<span style="{{ msSporRammeStil }}">'));
 
 // ── Skrivefeltet vokser med teksten ───────────────────────────────
 //
@@ -12843,8 +12869,19 @@ sjekk('skriptet lastes fra Vipps, uten aa sinke sida',
 // Lest av i selve fila for de ble lagt inn: skriptet henter skriftene sine
 // fra designsystem.vippsmobilepay.com, og ellers ingenting — ingen fetch,
 // ingen bilder. Logoen ligger som SVG inni skriptet.
+// Her sto hele «script-src»-linja ordrett. Da Google Ads kom inn 12.
+// september — googleadservices.com og googleads.g.doubleclick.net —
+// sluttet den aa stemme, og proven var roed uten at noe var galt.
+//
+// Det som betyr noe er at Vipps-domenet staar der. Vi leser derfor ut
+// script-src og ser etter det, saa lista kan vokse uten aa velte proven —
+// men forsvinner Vipps, blir den roed, og det er hele hensikten.
+preg_match("/script-src ([^;]+);/", $htacc, $mCsp);
+$scriptSrc = $mCsp[1] ?? '';
 sjekk('CSP slipper inn skriptet',
-    str_contains($htacc, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.vippsmobilepay.com;"));
+    str_contains($scriptSrc, 'https://cdn.vippsmobilepay.com')
+    && str_contains($scriptSrc, "'self'"),
+    'script-src: ' . $scriptSrc);
 sjekk('… og skriftene knappen setter teksten i',
     str_contains($htacc, "font-src 'self' https://designsystem.vippsmobilepay.com;"));
 // Uten denne kunne noen «rydde» og ta bort det ene domenet. Da ville knappen
@@ -14052,8 +14089,10 @@ sjekk('… og ingen kurs paa skivene er ogsaa et svar',
 // ── Et menyvalg skal aldri fore til en tom skjerm ──────────────────
 // Eieren: «Menyen selg viser ingenting, er det pga jeg ikke har aktivert
 // den». Skjemaet staar bak to brytere i admin.
+// «medlemsvisning()» ble «kanSelge()» 12. september — admin er innenfor,
+// som paa serveren. Proven holdt paa det gamle navnet.
 sjekk('«Selg» sier fra naar skjemaet er slaatt av',
-    str_contains($k2Ren, 'msSelgAv: this.medlemsvisning()')
+    str_contains($k2Ren, 'msSelgAv: this.kanSelge()')
     && str_contains($k2Ren, "&& !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),")
     && str_contains($k2Ren, '<sc-if value="{{ msSelgAv }}"'),
     'maalt: ingen av de sju stedene staar tomme');

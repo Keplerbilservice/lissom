@@ -7,17 +7,22 @@
 //   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold >/dev/null
 //   0 4 * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
 //   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser >/dev/null
+//   0 8 * * *     php ~/lissom-app/bin/cron.php fortsett >/dev/null
 //
 // «>/dev/null» bakerst, og bare stdout: CGI-utgaven av PHP skriver alltid den
 // tomme linja som avslutter hodeblokka, og cron sender e-post for hvert tegn
 // en jobb skriver. Stderr staar igjen med vilje — en jobb som feiler skal
 // fortsatt sende e-post, med grunnen i. Hele forklaringen i docs/OPPSETT.md.
 //
-// Alle seks staar her, og alle seks staar i docs/OPPSETT.md. Fram til
+// Alle sju staar her, og alle sju staar i docs/OPPSETT.md. Fram til
 // 5. september sto det fem hvert sted — men ikke de samme fem: her manglet
 // «anmeldelser», og i OPPSETT.md manglet «medlemstrekk». Det siste er jobben
 // som henter inn pengene, og den ble derfor aldri satt opp i cPanel.
 // tests/backend.php leser naa begge listene og krever at de stemmer.
+//
+// «fortsett» kom med medlemsinvitasjonen 12. september og sto ingen av
+// stedene. Proven var roed fra den dagen — og hadde den ikke vaert det,
+// ville invitasjonen aldri gaatt ut, fordi jobben aldri ble satt opp.
 //
 // Klokkeslettene er UTC. 07:00 UTC er 09:00 norsk sommertid, 08:00 om vinteren.
 

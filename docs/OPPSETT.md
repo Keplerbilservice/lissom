@@ -197,6 +197,7 @@ jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 | «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser >/dev/null` |
 | **Medlemstrekket** | *(ingen — sett Minute `0`, Hour `4`)* | `0 4 * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null` |
 | Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser >/dev/null` |
+| Medlemsinvitasjon etter kurs | *(ingen — sett Minute `0`, Hour `8`)* | `0 8 * * *` | `php ~/lissom-app/bin/cron.php fortsett >/dev/null` |
 | Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold >/dev/null` |
 
 For de tre siste: velg **Once Per Day** i menyen først, og rett så Hour fra `0`

@@ -17046,6 +17046,60 @@ sjekk('… og gclid og utm lager ikke hver sin side i rapporten',
     str_contains($msSida, 'page_path: window.location.pathname,')
     && str_contains($msSida, 'page_location: window.location.href,'));
 
+// ── Bokstav for bokstav, og fila som bommer ───────────────────────
+//
+// Eieren, 12. september 2026, om plakatene han lastet opp: teksten kom ut
+// med én bokstav per linje. Skriveren setter hver bokstav for seg —
+//
+//     <0021> Tj  7.21 0 Td <0019> Tj  5.61 0 Td <0032> Tj
+//
+// — og «Td gir linjeskift» gjorde «LISSOM» til seks linjer.
+$bfLib  = file_get_contents(dirname(__DIR__) . '/app/lib/pdftekst.php');
+$bfSida = $sida;
+
+sjekk('linjeskift bare naar skrivehodet flytter seg NEDOVER',
+    str_contains($bfLib, "if (\$ord === 'Td' || \$ord === 'TD') {")
+    && str_contains($bfLib, '$bryt = abs($ty) > 0.01;'),
+    'ty er null naar bokstaven bare settes ved siden av den forrige');
+sjekk('… og et nytt «Tm» med en annen y er ogsaa en ny linje',
+    str_contains($bfLib, "} elseif (\$ord === 'Tm') {")
+    && str_contains($bfLib, '$bryt = $y !== null && $sisteY !== null && abs($y - $sisteY) > 0.01;'));
+
+// Og saa den ekte plakaten. Den er den eneste proven som betyr noe her:
+// reglene over kan staa riktig og likevel gi rot.
+$bfPlakat = __DIR__ . '/filer/pdf-bokstav-for-bokstav.pdf';
+if (is_file($bfPlakat)) {
+    $bfT = Pdftekst::les($bfPlakat);
+    sjekk('plakaten leses som ord, ikke som én bokstav per linje',
+        str_contains($bfT, 'LISSOM KERAMIKK & HÅNDVERK')
+        && str_contains($bfT, 'Et par ord fra deg betyr mer enn du tror')
+        && !str_contains($bfT, "L\nI\nS\nS\nO\nM"),
+        mb_strlen($bfT) . ' tegn');
+}
+// Og den vanlige PDF-en skal lese seg som for.
+if (is_file(__DIR__ . '/filer/pdf-med-tekst.pdf')) {
+    $bfV = Pdftekst::les(__DIR__ . '/filer/pdf-med-tekst.pdf');
+    sjekk('… og en vanlig PDF leses fortsatt som for',
+        str_contains($bfV, 'Glasurhåndbok')
+        && str_contains($bfV, 'kvarts 25 %')
+        && str_contains($bfV, 'påføres i to strøk'));
+}
+
+// ── Bommer man med fila ───────────────────────────────────────────
+//
+// Slipper du en fil ved siden av «Last opp»-kortet, aapnet nettleseren fila
+// og adminskjermen var borte. Maalt i nettleseren: slipp paa <h1> stoppes
+// og skjermen staar; slipp paa kortet laster opp, og skjermen staar.
+sjekk('en fil som slippes utenfor en slippsone aapner ikke nettleseren',
+    str_contains($bfSida, "document.addEventListener('drop', this._slippVakt);")
+    && str_contains($bfSida, "document.addEventListener('dragover', this._slippVakt);")
+    && str_contains($bfSida, "if (k.hasAttribute && k.hasAttribute('data-slipp')) return;")
+    && str_contains($bfSida, "if (k.tagName === 'INPUT' && k.type === 'file') return;"));
+sjekk('… og kortet er merket som slippsone',
+    str_contains($bfSida, '<label data-slipp="1" onDragOver="{{ dokDragOver }}"'));
+sjekk('… og vakta tas ned igjen naar skjermen forsvinner',
+    str_contains($bfSida, "document.removeEventListener('drop', this._slippVakt);"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

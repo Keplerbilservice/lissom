@@ -11560,10 +11560,12 @@ sjekk('… og de staar rett under Stemple inn, Ferie og Inne naa',
 sjekk('… og de er ikke lenger gjemt nederst i menypanelet',
     !str_contains($uKode, 'admMobEkstra'));
 
-// Ingen ny meny: pillene er de samme radene fra adminMeny(), med kortere
-// navn. Blir det en rad til der, kommer den med hit av seg selv.
+// Ingen ny meny: bade pillen og radene i verktoeyarket er de samme radene
+// fra adminMeny(). Blir det en rad til der, kommer den med hit av seg selv.
 sjekk('pillene kommer fra den samme lista som sidemenyen',
-    str_contains($uKode, 'const topp = ekstra.map(r => Object.assign({}, r, {'));
+    str_contains($uKode, 'const verktoy = ekstra.filter(r => r.navn !== utNavn);')
+    && str_contains($uKode, 'const utlogg = ekstra.filter(r => r.navn === utNavn);')
+    && str_contains($uKode, 'const vkRader = verktoy.map(r => {'));
 sjekk('… og de fem har hvert sitt kortnavn',
     str_contains($uKode, "kort: '↗ Nettsiden',")
     && str_contains($uKode, "? '⚡ Sjekker …' : '⚡ Vipps',")
@@ -11652,26 +11654,52 @@ sjekk('… og pillene har luft inni seg',
 sjekk('… og stripa har luft rundt seg',
     str_contains($sidaP2, "padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row'"));
 
-// Verktoeypillene: «Nettsiden», «Oppdater», «Vipps», «Meld feil», «Logg ut».
+// Verktoeypillene: «⚙ Verktøy» og «⏻ Logg ut».
 //
-// Eieren sa det to ganger — «litt trangt rundt pillene», og etter forste
-// forsok «Pillene fortsatt trangt plassert». Andre gang maalte jeg framfor aa
-// gjette: pillene var 35 px hoye, mens ALT annet du kan trykke paa den samme
-// skjermen er 42-43. Bunnmenyens seks valg er 42, «Meny» rett under er 43.
-// De sto ikke trangt mot hverandre; de sto for smaa mot alt rundt.
+// Fem av dem laa som egne piller til 12. september 2026. Eieren:
+// «Nettsiden, oppdatert, vipps, meld feil og synk, disse samler du i en
+// pille». «Logg ut» ble staaende for seg — den skal kunne treffes uten aa
+// aapne noe forst.
 //
-// Og radene laa 8 px fra hverandre i en stripe der hvert eneste andre
-// mellomrom er 16 — det eneste som var pakket tettere enn omgivelsene.
+// Storrelsen fulgte med: «jeg vil ha lik storrelse pa pillene som stemple
+// inn, ferie og inne na». Den raden er maalt til 34 px, 8/14 i luft, 12 px
+// tekst. Verktoeypillene laa paa 42 og 11/16 — to naesten like rader i to
+// ulike stoerrelser, rett under hverandre.
 //
-// Maalt for og etter paa 390 px: pillehoyde 35 → 42, mellom radene 8 → 12,
-// hele stripa 227 → 245 px.
-sjekk('verktoeypillene er like store som alt annet man trykker paa',
-    str_contains($sidaP2, "padding: '11px 16px', borderRadius: 'var(--radius-pill)',")
-    && str_contains($sidaP2, "font: 'var(--type-chip)', minHeight: 42, whiteSpace: 'nowrap',"));
-// Nedover 12, sidelengs 10: to piller i samme rad hoerer taettere sammen enn
-// to rader gjor.
-sjekk('… og radene har like mye luft som resten av stripa',
-    str_contains($sidaP2, "display: 'flex', flexWrap: 'wrap', gap: '12px 10px',"));
+// Maalt paa 390 px for og etter: stripa gikk fra tre pillerader til to.
+sjekk('verktoeypillene er like store som stemplingspillene over',
+    str_contains($sidaP2, "      padding: '8px 14px', borderRadius: 'var(--radius-pill)',")
+    && str_contains($sidaP2, "      fontSize: 12, lineHeight: 1.2, minHeight: 34, fontWeight: 700,"));
+// Eieren, 12. september: «Og samle pillene med et penere oppsett». Asidens
+// egen luft mellom de to radene er 16 — like mye som ned til «Meny», saa de
+// leste som to grupper. Trukket opp til de samme 8 som mellom pillene i en
+// rad, saa alle fem staar som én gruppe under logoen.
+sjekk('… og de to radene staar som én gruppe',
+    str_contains($sidaP2, "        marginTop: 'calc(8px - var(--space-4))',")
+    && str_contains($sidaP2, "        display: 'flex', flexWrap: 'wrap', gap: 8,"));
+
+// Pilla aapner arket, og «Logg ut» staar utenfor det.
+sjekk('⚙ Verktøy aapner verktoeyarket',
+    str_contains($sidaP2, "      navn: '\u2699 Verkt\u00f8y',")
+    && str_contains($sidaP2, "verktoyApen: true, admMobApen: false"));
+// Venter det oppdateringer, staar raden gul i sidemenyen. Da skal pilla si
+// det ogsaa — ellers er det gjemt bak et trykk.
+sjekk('… og den staar gul naar oppdateringer venter',
+    str_contains($sidaP2, "const venterNoe = verktoy.some(r => r.stil && r.stil.color === 'var(--lissom-yellow)');")
+    && str_contains($sidaP2, "stil: pilleStil(venterNoe ? 'var(--lissom-yellow)' : null),"));
+
+// Arket staar én gang, blant de andre overleggene — ikke én gang per
+// adminskjerm, slik pilleraden gjor.
+sjekk('verktoeyarket staar bare én gang i malen',
+    substr_count($sidaP2, '<sc-if value="{{ vkVises }}"') === 1
+    && substr_count($sidaP2, '<sc-for list="{{ vkRader }}" as="v"') === 1);
+sjekk('… og radene der har samme navn og handling som i sidemenyen',
+    str_contains($sidaP2, "        navn: (r.navn || '').replace(/\s+/g, ' ').trim(),")
+    && str_contains($sidaP2, "        velg: () => { this.setState({ verktoyApen: false }); r.velg(); },"));
+sjekk('… og arket lukkes bade med et trykk utenfor og etter et valg',
+    str_contains($sidaP2, "      vkLukk: () => this.setState({ verktoyApen: false }),")
+    && str_contains($sidaP2, '<div onClick="{{ vkLukk }}" style="position: fixed; inset: 0;')
+    && str_contains($sidaP2, "      vkStopp: e => e.stopPropagation(),"));
 
 echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
 // Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn, saa vil jeg

@@ -279,16 +279,52 @@ final class Pdftekst
         $i = 0;
         $n = strlen($s);
         $ord = '';
+        // Tallene som staar foran operatoren. «7.2 0 Td» er to av dem.
+        $tall = [];
+        // Y-en fra forrige «Tm». null betyr at vi ikke har sett en ennaa.
+        $sisteY = null;
 
-        $avslutt = static function () use (&$ord, &$ut): void {
+        // ── Naar er det en ny linje? ────────────────────────────────────
+        //
+        // Her sto «Td gir linjeskift», punktum. Det var feil, og det viste
+        // seg foerst 12. september paa en plakat: skriveren setter HVER
+        // BOKSTAV for seg med sitt eget Td —
+        //
+        //     <0021> Tj  7.21 0 Td <0019> Tj  5.61 0 Td <0032> Tj
+        //
+        // — og da kom teksten ut med én bokstav per linje. «L» og «I» og «S»
+        // under hverandre i stedet for «LISSOM».
+        //
+        // Td flytter skrivehodet med (tx, ty). Det er «ty» som betyr noe: er
+        // den null, staar vi paa den samme linja og flytter oss bare
+        // bortover. Mellomrommene mellom ordene er egne tegn i teksten, saa
+        // de kommer med uansett.
+        //
+        // «Tm» setter posisjonen absolutt, med seks tall. Et nytt Tm med en
+        // annen y er ogsaa en ny linje — slik gjor mange skrivere det.
+        $avslutt = static function () use (&$ord, &$ut, &$tall, &$sisteY): void {
             if ($ord === '') {
+                $tall = [];
                 return;
             }
-            // Operatorene som flytter skrivehodet til en ny linje.
-            if (in_array($ord, ['Td', 'TD', 'T*', 'ET', "'", '"'], true)) {
+            $bryt = false;
+            if ($ord === 'Td' || $ord === 'TD') {
+                $ty = count($tall) >= 2 ? (float) $tall[count($tall) - 1] : 0.0;
+                $bryt = abs($ty) > 0.01;
+            } elseif ($ord === 'Tm') {
+                $y = count($tall) >= 6 ? (float) $tall[count($tall) - 1] : null;
+                $bryt = $y !== null && $sisteY !== null && abs($y - $sisteY) > 0.01;
+                if ($y !== null) {
+                    $sisteY = $y;
+                }
+            } elseif (in_array($ord, ['T*', 'ET', "'", '"'], true)) {
+                $bryt = true;
+            }
+            if ($bryt) {
                 $ut[] = ['br', ''];
             }
             $ord = '';
+            $tall = [];
         };
 
         while ($i < $n) {
@@ -316,9 +352,28 @@ final class Pdftekst
                 $i = $linje === false ? $n : $linje + 1;
                 continue;
             }
+            // Et tall: «7.2119904», «-.24», «0». Vi tar vare paa det til vi
+            // ser hvilken operator det hoerer til.
+            if ($c === '-' || $c === '+' || $c === '.' || ($c >= '0' && $c <= '9')) {
+                $j = $i;
+                while ($j < $n && (
+                    $s[$j] === '-' || $s[$j] === '+' || $s[$j] === '.'
+                    || ($s[$j] >= '0' && $s[$j] <= '9')
+                )) {
+                    $j++;
+                }
+                $ord = '';
+                $tall[] = substr($s, $i, $j - $i);
+                $i = $j;
+                continue;
+            }
             if (preg_match('/[\sa-zA-Z*\'"]/', $c) === 1) {
                 if (trim($c) === '') {
-                    $avslutt();
+                    // Mellomrom skiller tall fra tall. Er det et ord som er
+                    // ferdig skrevet, er det en operator, og den avgjores naa.
+                    if ($ord !== '') {
+                        $avslutt();
+                    }
                 } else {
                     $ord .= $c;
                 }

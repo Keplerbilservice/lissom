@@ -1854,7 +1854,7 @@ window.__resources = {
        Raden staar over faneinnholdet, ikke inne i det, saa pilla foelger
        med paa alle fanene — ogsaa Chat og Butikk, der veien hjem var
        lengst. */
-    .ms-pillerad > *:not(.ms-verksted):not(.ms-hjem):not(.ms-ovn) { display: none !important; }
+    .ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }
     .ms-hjem-langt { display: none !important; }
   }
   @media (min-width: 761px) {
@@ -4701,12 +4701,6 @@ window.__resources = {
                    raden paa telefonen — se «.ms-verksted» i stilarket. De sju
                    over staar i bunnmenyen der. -->
               <button type="button" class="ms-verksted" onClick="{{ msPlVerksted.velg }}" aria-label="{{ msPlVerksted.full }}" style="{{ msPlVerksted.stil }}"><span style="{{ msPlVerksted.prikk }}"></span>{{ msPlVerksted.navn }}</button>
-              <!-- «Ovn er tømt». Eieren, 12. september 2026. Staar paa
-                   telefonen ogsaa (se «.ms-ovn» i stilarket) — det er en
-                   handling, ikke et sted, og den skal kunne trykkes der man
-                   staar med ovnen. Kortet som de andre ser, ligger under
-                   pillene paa Hjem. -->
-              <button type="button" class="ms-ovn" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
             </nav>
           </sc-if>
               <!-- Hvem som er i verkstedet, rett under pilla.
@@ -4807,22 +4801,30 @@ window.__resources = {
                naa bak menyvalget Medlemskap, med de samme radene. -->
           <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-          <!-- Ovnen er toemt — kortet de andre ser. Staar her det siste
-               doegnet etter at noen trykket «Ovn er tømt», og pulserer til
-               man selv har trykket «Sett». Se ovnVals(). -->
-          <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ false }}">
+          <!-- Ovnkortet. Eieren, 12. og 13. september 2026: «Ovn er tømt»,
+               «Råbrann satt» og «Glasurbrann satt» som piller i kortet, og
+               statusen — det siste trykket — oeverst i det samme kortet.
+               Pulserer til man selv har trykket «Sett»; borte etter 24
+               timer. Se ovnVals(). -->
           <div class="{{ ovnKortKlasse }}" style="{{ ovnKortStil }}">
+            <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
               <div>
-                <h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ovnen er tømt</h3>
+                <h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ ovnTittel }}</h3>
                 <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ ovnLinje }}</p>
               </div>
               <sc-if value="{{ ovnUsett }}" hint-placeholder-val="{{ false }}">
                 <button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>
               </sc-if>
             </div>
+            </sc-if>
+            <!-- De tre handlingene. Det siste trykket er statusen over. -->
+            <div style="{{ ovnRadStil }}">
+              <button type="button" onClick="{{ ovnRaabrannNaa }}" style="{{ ovnPilleStil }}">Råbrann satt</button>
+              <button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>
+              <button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
+            </div>
           </div>
-          </sc-if>
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Verkstedet ditt</div>
@@ -7858,24 +7860,29 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
           </div>
-          <!-- «Ovn er tømt» — samme knapp som medlemmene har paa Min side.
-               Eieren, 12. september 2026: «admin må også ha denne knappen
-               på kalender oversikten». -->
-          <button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
         </div>
-        <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ false }}">
+        <!-- Ovnkortet — det samme som medlemmene har paa Min side. Eieren,
+             12. september 2026: «admin må også ha denne knappen på kalender
+             oversikten»; 13. september: raabrann og glasurbrann i samme kort. -->
         <div class="{{ ovnKortKlasse }}" style="{{ ovnKortStil }}">
+          <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
             <div>
-              <h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ovnen er tømt</h3>
+              <h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ ovnTittel }}</h3>
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ ovnLinje }}</p>
             </div>
             <sc-if value="{{ ovnUsett }}" hint-placeholder-val="{{ false }}">
               <button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>
             </sc-if>
           </div>
+          </sc-if>
+          <!-- De tre handlingene. Det siste trykket er statusen over. -->
+          <div style="{{ ovnRadStil }}">
+            <button type="button" onClick="{{ ovnRaabrannNaa }}" style="{{ ovnPilleStil }}">Råbrann satt</button>
+            <button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>
+            <button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
+          </div>
         </div>
-        </sc-if>
 
         <div style="{{ klSideGridStil }}">
 
@@ -28139,7 +28146,7 @@ class Component extends DCLogic {
   ovnKall(handling) {
     if (!this.erPublisert()) {
       // Utenfor den ekte sida: vis det som om det gikk, saa skjermen kan ses.
-      if (handling === 'tomt') this.setState({ ovn: { id: 1, av: this.state.vippsNavn || 'Monica', naar: Math.floor(Date.now() / 1000), sett: true }, ovnKlar: true, kvitteringTone: 'success', kvittering: 'Takk, de andre får beskjed' });
+      if (handling !== 'sett') this.setState({ ovn: { id: 1, slag: handling, av: this.state.vippsNavn || 'Monica', naar: Math.floor(Date.now() / 1000), sett: true }, ovnKlar: true, kvitteringTone: 'success', kvittering: 'Takk, de andre får beskjed' });
       else this.setState(st => ({ ovn: st.ovn ? Object.assign({}, st.ovn, { sett: true }) : null }));
       return;
     }
@@ -28156,7 +28163,7 @@ class Component extends DCLogic {
         if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this._ovnHentet = Date.now();
         this.setState(Object.assign({ ovn: d.tomt || null, ovnKlar: true },
-          handling === 'tomt' ? { kvitteringTone: 'success', kvittering: 'Takk, de andre får beskjed' } : {}));
+          handling !== 'sett' ? { kvitteringTone: 'success', kvittering: 'Takk, de andre får beskjed' } : {}));
       })
       .catch(() => {
         this._ovnSender = false;
@@ -28176,6 +28183,10 @@ class Component extends DCLogic {
     const klokke = t ? to(t.getHours()) + ':' + to(t.getMinutes()) : '';
     const dag = t ? (t.toDateString() === naa.toDateString() ? 'i dag' : 'i går') : '';
     const usett = !!o && !o.sett;
+    // Det siste trykket er statusen. «tomt» er ogsaa det radene fra foer
+    // migrasjon 179 har.
+    const slag = o ? (o.slag || 'tomt') : '';
+    const TITTEL = { tomt: 'Ovnen er tømt', raabrann: 'Råbrann er satt', glasurbrann: 'Glasurbrann er satt' };
     const pille = (aktiv) => ({
       appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
       borderRadius: 'var(--radius-pill)', padding: '10px 20px',
@@ -28187,14 +28198,26 @@ class Component extends DCLogic {
     return {
       ovnVis: !!o,
       ovnUsett: usett,
-      ovnLinje: o ? 'Tømt av ' + (o.av || 'et medlem') + ' · ' + dag + ' ' + klokke : '',
+      ovnTittel: TITTEL[slag] || TITTEL.tomt,
+      ovnLinje: o ? (slag === 'tomt' ? 'Tømt av ' : 'Satt av ') + (o.av || 'et medlem') + ' · ' + dag + ' ' + klokke : '',
       ovnKortKlasse: usett ? 'lx-ovn-puls' : '',
+      // Gul ramme mens statusen er ny for meg; brun naar den er sett, og
+      // naar det ikke er noen status — som kortene rundt.
       ovnKortStil: {
-        background: 'var(--surface-card)', border: '2px solid var(--yellow-500, #E6B800)',
+        background: 'var(--surface-card)',
+        border: '2px solid ' + (usett ? 'var(--yellow-500, #E6B800)' : 'var(--lissom-brown)'),
         borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
         marginBottom: 'var(--space-6)',
       },
+      // Pillene under statusen. Streken over dem staar bare naar det er en
+      // status aa skille dem fra.
+      ovnRadStil: Object.assign(
+        { display: 'flex', flexWrap: 'wrap', gap: '10px' },
+        o ? { marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)' } : {}
+      ),
       ovnTomtNaa: () => this.ovnKall('tomt'),
+      ovnRaabrannNaa: () => this.ovnKall('raabrann'),
+      ovnGlasurNaa: () => this.ovnKall('glasurbrann'),
       ovnSettNaa: () => this.ovnKall('sett'),
       // Samme form som pillene paa raden (minsidePiller). «Sett» lyser, som
       // en aktiv pille — det er den man skal trykke.

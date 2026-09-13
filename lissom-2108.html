@@ -1990,7 +1990,8 @@ window.__resources = {
     .lx-vasms[data-apen="false"],
     .lx-vasignatur[data-apen="false"],
     .lx-geoliste[data-apen="false"],
-    .lx-geotiltak[data-apen="false"] { display: none !important; }
+    .lx-geotiltak[data-apen="false"],
+    .lx-innholdliste[data-apen="false"] { display: none !important; }
   }
 
   /* Verkstedet paa telefon: kortene to og to.
@@ -17970,7 +17971,11 @@ window.__resources = {
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(190px, 260px) minmax(0, 1fr); gap: var(--space-6); align-items: start;">
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); position: sticky; top: var(--space-6);">
+          <div>
+            <!-- Bak en pille paa telefonen. Paa stoerre skjerm staar lista i
+                 sin egen spalte, klistret i toppen, som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ innholdListeVeksle }}" style="{{ listeKnappStil }}">{{ innholdListeKnapp }}</button>
+            <div class="lx-innholdliste" data-apen="{{ innholdListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); position: sticky; top: var(--space-6);">
             <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); padding: 0 10px var(--space-3);">Sider</div>
             <div style="display: flex; flex-direction: column; gap: 2px;">
               <sc-for list="{{ innholdSider }}" as="p" hint-placeholder-count="7">
@@ -17982,6 +17987,7 @@ window.__resources = {
             </div>
             <div style="height: 1px; background: var(--border-subtle); margin: var(--space-4) 10px;"></div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ aNySide }}" hint-size="100%,36px">Ny side</x-import>
+            </div>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
@@ -54095,12 +54101,21 @@ class Component extends DCLogic {
         };
       })(),
       erAdminInnhold: side === 'admininnhold',
+      // Sidelista bak en pille paa telefonen. Skjermen var 4 158 px paa en
+      // 390 px skjerm — 4,9 skjermer — og 1 132 av dem var lista man ruller
+      // forbi for aa naa feltene. Samme grep som paa SEO og GEO; lista
+      // lukker seg naar en side er valgt. Maalt 13. september 2026.
+      // Se «.lx-listevis» i stilarket.
+      innholdListeApen: !!this.state.innholdListeApen,
+      innholdListeVeksle: () => this.setState({ innholdListeApen: !this.state.innholdListeApen }),
+      innholdListeKnapp: 'Sider (' + Object.keys(SIDEINNHOLD).length + ')'
+        + (this.state.innholdListeApen ? ' \u25b4' : ' \u25be'),
       innholdSider: Object.keys(SIDEINNHOLD).map(navn => {
         const valgt = navn === (this.state.innholdSide || 'Forside');
         return {
           navn,
           under: SIDEINNHOLD[navn].length + (navn === 'Personvern' ? ' avsnitt' : ' seksjoner'),
-          velg: () => this.setState({ innholdSide: navn, innholdBlokk: 0 }),
+          velg: () => this.setState({ innholdSide: navn, innholdBlokk: 0, innholdListeApen: false }),
           stil: {
             appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
             display: 'flex', flexDirection: 'column', gap: 2,

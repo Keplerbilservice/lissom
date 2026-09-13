@@ -10056,7 +10056,7 @@ sjekk('… og lenken sier det samme som overskriften',
     && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
 // Én stil paa begge lenkene, saa de ikke driver fra hverandre.
 sjekk('… og alle lenkene deler stil',
-    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 10
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 11
     && str_contains($sidaG, '      listeKnappStil: {'));
 
 // ── SEO-skjermen paa telefonen ─────────────────────────────────────────
@@ -10111,7 +10111,7 @@ sjekk('… mens meldingene som ikke gikk ut staar aapne',
 // Maalt: 5,5 -> 3,7 skjermer. PC uendret paa 2 382 px.
 sjekk('de to lange blokkene paa GEO ligger bak hver sin pille paa telefonen',
     str_contains($sidaG, '    .lx-geoliste[data-apen="false"],')
-    && str_contains($sidaG, '    .lx-geotiltak[data-apen="false"] { display: none !important; }'));
+    && str_contains($sidaG, '    .lx-geotiltak[data-apen="false"],'));
 // Samme oppfoersel som paa SEO: lista lukker seg naar en side er valgt.
 sjekk('… og GEO-lista lukker seg naar en side er valgt',
     str_contains($sidaG, 'const velgSide = id => () => this.setState({ geoValgtId: id, geoListeApen: false });'));
@@ -10136,6 +10136,17 @@ sjekk('… med radene fremdeles like hoeye',
 sjekk('… og navnet deles ikke midt i ordet',
     str_contains($sidaG, '.lx-adminaside ~ main .lx-vststed span[style*="--text-xl"] {')
     && str_contains($sidaG, '      overflow-wrap: break-word;'));
+
+// ── Innholdsskjermen paa telefonen ─────────────────────────────────────
+//
+// 4 158 px paa en 390 px skjerm — 4,9 skjermer — hvorav sidelista er
+// 1 132 px man ruller forbi for aa naa feltene. Samme grep som paa SEO og
+// GEO. Maalt: 4,9 -> 3,6 skjermer. PC uendret paa 3 187 px.
+sjekk('sidelista i innhold ligger bak en pille paa telefonen',
+    str_contains($sidaG, '    .lx-innholdliste[data-apen="false"] { display: none !important; }'));
+// Lukker seg naar en side er valgt, som de to andre.
+sjekk('… og lukker seg naar en side er valgt',
+    str_contains($sidaG, "velg: () => this.setState({ innholdSide: navn, innholdBlokk: 0, innholdListeApen: false }),"));
 
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //

@@ -141,7 +141,12 @@ const HVORFOR = {
  * de to uten aa ryke hver gang det settes opp et kurs til.
  */
 const TALL = {
-  '/admin': [{ merke: 'Planlagte kurs', tak: 90, hvorfor: 'kursdatoer, ikke ni drop-in-plasser om dagen' }],
+  // Sto paa «/admin» til 13. september 2026. Da ble «/admin» kalenderen, og
+  // Oversikt fikk sin egen adresse — kortet flyttet med. Vakta lette videre
+  // paa den gamle adressen og fant ikke merket i det hele tatt: to av 143
+  // sjekker roede, uten at noe var galt med tallet. Maalt i nettleseren:
+  // «Planlagte kurs» staar paa /admin/oversikt, med 32 under seg.
+  '/admin/oversikt': [{ merke: 'Planlagte kurs', tak: 90, hvorfor: 'kursdatoer, ikke ni drop-in-plasser om dagen' }],
 };
 
 /** Adresser som ikke skal finnes lenger. */

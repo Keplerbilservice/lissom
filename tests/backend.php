@@ -6741,12 +6741,20 @@ sjekk('… og ventelistepilla er like stor som kurspilla',
     substr_count($sida, $kurspille) === 3
     && substr_count($sida, "display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }),") === 3);
 sjekk('… med den samme skrifta i navnet og i det under',
-    substr_count($sida, "navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },") === 3
     // Sto paa 10 px til 13. september 2026. Maalt i nettleseren: 48 tekster
     // paa 10 px i admin, og typemerket paa kurspilla — «Event», «Workshop»,
     // «Kurs» — var 30 av dem. Eieren ba om at de skulle opp. De tre pillene
     // fulgte hverandre opp, slik denne vakta er til for.
-    && substr_count($sida, "fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },") === 3);
+    //
+    // Stoerrelsen er det vakta holder paa — ikke at de tre er byte for byte
+    // like. Eieren, 13. september 2026: «større plass til navnet på
+    // deltaker». Ventelistepilla fikk da «flex: '0 0 auto', maxWidth: '70%'»
+    // paa navnet og «flex: '1 1 auto'» paa det under, saa navnet staar helt
+    // ut og kursnavnet kuttes i stedet. De to andre er som foer.
+    substr_count($sida, "navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },") === 2
+    && substr_count($sida, "navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: '0 0 auto', maxWidth: '70%' },") === 1
+    && substr_count($sida, "fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },") === 2
+    && substr_count($sida, "fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '1 1 auto', minWidth: 0, justifyContent: 'flex-end' },") === 1);
 // Bare venstrekanten skiller dem, saa man ser hvilken liste man er i.
 sjekk('… men ventelista beholder den terrakotta venstrekanten',
     str_contains($sida, "borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)'"));
@@ -7024,9 +7032,16 @@ sjekk('… og kallet gaar til serveren, ikke bare til skjermen',
 sjekk('sidepanelet viser hver som venter én gang',
     str_contains($sida, "klVlSide: (() => { const sett = {}; return alle.filter(")
     && str_contains($sida, "if (sett[n2]) { return false; }"));
-sjekk('… og sier «Hele kurset» framfor en kveld hun ikke har valgt',
-    str_contains($sida, "under: (v.paaKurset
-                ? 'Hele kurset'"));
+// Sto med dagen, «Hele kurset» og koeplassen til 13. september 2026.
+// Eieren, med et bilde av ventelista: «større plass til navnet på deltaker,
+// fjerne teksten: hele kurset #1». Alt tre er borte; raden under navnet er
+// betalingsstatusen fra 6. september, og staar bare naar den finnes.
+sjekk('… og raden under navnet er betalingsstatusen, ikke en kveld hun ikke har valgt',
+    str_contains($sida, "under: v.status || '',")
+    && str_contains($sida, "harUnder: !!v.status,")
+    // «Hele kurset» staar fortsatt paa Min side, der medlemmet ser sin egen
+    // koeplass. Det er bare i sidepanelet paa adminkalenderen den er borte.
+    && !str_contains($sida, 'paaKurset'));
 // Grupperte oekter (et kurs over flere dager paa én paamelding) legger
 // koene sammen. Uten dublettsjekk ville «3 venter» vaert én person.
 sjekk('grupperte oekter teller ikke den samme personen flere ganger',
@@ -15072,9 +15087,14 @@ sjekk('… og serveren sender med hva den avbestilte paameldingen sto med',
 sjekk('… og maaten gaar foran, med de samme ordene som deltakerraden',
     str_contains($kalFil, "\$maate = trim((string) (\$treff['betalt_maate'] ?? ''));")
     && str_contains($kalFil, "] ?? 'Ikke betalt';"));
+// Sto som «· #2 · Ikke betalt» til 13. september 2026. Eieren ba da om
+// stoerre plass til navnet, og at «hele kurset #1» skulle bort. Koeplassen
+// gikk med; betalingsstatusen — det denne vakta er til for — staar igjen
+// alene paa raden under navnet, og bare naar den finnes.
 sjekk('… og ventelistepilla viser den, som «Bytt dato» gjor',
     str_contains($sidaKal = file_get_contents(dirname(__DIR__) . '/lissom-2108.html'),
-        "+ ' · #' + v.posisjon\n                + (v.status ? ' · ' + v.status : '')"));
+        "under: v.status || '',")
+    && str_contains($sidaKal, "harUnder: !!v.status,"));
 sjekk('… og den som meldte seg paa koen selv faar ingen status',
     str_contains($kalFil, "    if (\$treff === null) {\n        return '';"));
 
@@ -17636,10 +17656,16 @@ echo "\n== ⊙ Synlighet: alle bryterne paa ett sted ==\n";
 $syn = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Arket staar én gang, blant de andre overleggene — ikke én gang per skjerm.
+//
+// Radene staar derimot to steder fra 13. september 2026: i arket, og som et
+// aapent kort paa adminkalenderen. Eieren: «jeg vil ha på kalender siden,
+// synlighet på siden, slik at jeg her enkelt når alle vis skjul knappene,
+// legg i et kort», og valgte «aapent, i tillegg til arket». Samme kilde,
+// samme lagring — to visninger, ikke to loesninger.
 sjekk('synlighetsarket staar bare én gang i malen',
     substr_count($syn, '<sc-if value="{{ synVises }}"') === 1
-    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 1
-    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 1);
+    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 2
+    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 2);
 // Ti rader: fem paa nettsiden, fem paa Min side. Maalt i nettleseren.
 sjekk('… og har alle elleve bryterne',
     substr_count($syn, "            rad('") === 11

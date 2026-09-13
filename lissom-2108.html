@@ -2802,7 +2802,14 @@ window.__resources = {
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Spørsmål og svar</div>
-            <h2 style="margin: 0 0 var(--space-5);">Det folk lurer på</h2>
+            <!-- Overskrifta er en h1, ikke en h2. Maalt i nettleseren 13.
+                 september 2026: side.php skriver «<h1>Det folk lurer på</h1>»
+                 i det serveren sender, men nettsida bytter ut innholdet naar
+                 den starter — og etter det sto det ingen h1 igjen paa sida.
+                 Google leser den ferdig kjoerte siden. Samme ord som foer, og
+                 skriftstoerrelsen er h2-regelen skrevet ut, saa den ser lik
+                 ut. -->
+            <h1 style="margin: 0 0 var(--space-5); font-size: clamp(30px, 2.4vw, 44px); letter-spacing: var(--tracking-display);">Det folk lurer på</h1>
             <p style="margin: 0 0 var(--space-6); color: var(--text-muted); font-size: var(--text-base); text-wrap: pretty;">Finner du ikke svaret? Ring oss eller send en e-post, vi svarer som regel samme dag.</p>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="mail" hint-size="auto,44px">monica@lissom.no</x-import>
           </div>
@@ -25763,7 +25770,11 @@ class Component extends DCLogic {
       altTekst: 'Ferdig dreide boller på tørkehylla i keramikkverkstedet på Teie',
       ogTittel: 'Keramikkurs i boller i Tønsberg | Lissom',
       ogBeskrivelse: 'Én kveld, dine egne boller, alt inkludert. Se ledige datoer og book plass i Tønsberg.',
-      canonical: 'https://lissom.no/kurs/boller',
+      // Kurset heter «lag-din-egen-bolle» i adressefeltet. «kurs-boller» var
+      // den gamle, og .htaccess sender den videre; «boller» har aldri vaert
+      // en adresse. Maalt 13. september 2026: /kurs/boller faller tilbake
+      // til kurslistas tittel, uten canonical.
+      canonical: 'https://lissom.no/kurs/lag-din-egen-bolle',
       internlenker: 'Alle kurs, Store fat kurs, Gavekort',
       schema: 'Course',
       index: 'Index',
@@ -25778,7 +25789,9 @@ class Component extends DCLogic {
       altTekst: 'Stort fat formet i plateteknikk over form i verkstedet på Teie',
       ogTittel: 'Keramikkurs i store fat i Tønsberg | Lissom',
       ogBeskrivelse: 'Plateteknikk over form, alt utstyr inkludert. Se ledige datoer og book plass i Tønsberg.',
-      canonical: 'https://lissom.no/kurs/store-fat',
+      // Kurset heter «store-fat-kurs» i adressefeltet. Maalt samme dag:
+      // /kurs/store-fat faller tilbake til kurslistas tittel, uten canonical.
+      canonical: 'https://lissom.no/kurs/store-fat-kurs',
       internlenker: 'Alle kurs, Kurs boller, Medlemskap',
       schema: 'Course',
       index: 'Index',
@@ -28338,6 +28351,10 @@ class Component extends DCLogic {
         background: 'var(--surface-card)',
         border: '2px solid ' + (usett ? 'var(--yellow-500, #E6B800)' : 'var(--lissom-brown)'),
         borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
+        // Luft over, ikke bare under. Eieren, 13. september 2026, med et
+        // bilde av Min side: kortet laa klistret inntil «Spør Krukkemester»
+        // over seg. Samme avstand paa begge sider, som kortene ellers.
+        marginTop: 'var(--space-6)',
         marginBottom: 'var(--space-6)',
       },
       // Pillene under statusen. Streken over dem staar bare naar det er en

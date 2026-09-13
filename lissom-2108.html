@@ -1599,6 +1599,34 @@ window.__resources = {
     }
   }
 
+  /* Ferikalenderen paa telefon.
+     Kalenderen har aatte kolonner: ukepilla og sju dager. Paa en 390 px
+     skjerm er det 268 px aa dele paa, og «Uke 36» tok 58 av dem — da ble
+     hver dag 25 px bred, godt under de 32 px en finger trenger. Maalt
+     13. september 2026.
+
+     Under 560 px faller ordet «Uke» bort og bare tallet staar igjen, luft
+     og kantmarg strammes, og dagene blir 33 px. Hele teksten ligger i
+     aria-label, saa den som faar sida lest opp hoerer «Uke 36» som foer.
+     PC og nettbrett er uroert. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-feriekalender {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+    }
+    .lx-adminaside ~ main .lx-ferierad {
+      grid-template-columns: 32px repeat(7, minmax(0, 1fr)) !important;
+      gap: 3px !important;
+    }
+    .lx-adminaside ~ main .lx-ferierad > button:first-child {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+    .lx-adminaside ~ main .lx-ukeord {
+      display: none;
+    }
+  }
+
   @media (max-width: 560px) {
     .lx-adminaside ~ main .lx-topprad x-import,
     .lx-adminaside ~ main .lx-topprad .sc-host-x,
@@ -14504,16 +14532,16 @@ window.__resources = {
             <button type="button" onClick="{{ feNeste }}" aria-label="Neste måned" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-pill); cursor: pointer; padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading);">›</button>
           </div>
 
-          <div style="padding: var(--space-4) var(--space-5);">
-            <div style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px;">
+          <div class="lx-feriekalender" style="padding: var(--space-4) var(--space-5);">
+            <div class="lx-ferierad" style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px;">
               <span></span>
               <sc-for list="{{ feUkedager }}" as="u" hint-placeholder-count="7">
                 <span style="text-align: center; font: var(--type-label); font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ u.navn }}</span>
               </sc-for>
             </div>
             <sc-for list="{{ feUker }}" as="v" hint-placeholder-count="6">
-              <div style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px; align-items: center;">
-                <button type="button" onClick="{{ v.vekslUke }}" style="{{ v.ukeStil }}">{{ v.uke }}</button>
+              <div class="lx-ferierad" style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px; align-items: center;">
+                <button type="button" onClick="{{ v.vekslUke }}" aria-label="{{ v.uke }}" style="{{ v.ukeStil }}"><span class="lx-ukeord">Uke&nbsp;</span>{{ v.ukeTall }}</button>
                 <sc-for list="{{ v.dager }}" as="g" hint-placeholder-count="7">
                   <button type="button" onClick="{{ g.veksl }}" title="{{ g.tittel }}" style="{{ g.stil }}">
                     <span>{{ g.tall }}</span>
@@ -30669,6 +30697,11 @@ class Component extends DCLogic {
           && framover.every(x => stengte.indexOf(x) !== -1);
         return {
           uke: 'Uke ' + this.ukeNummer(dager[0]),
+          // Paa telefon er det ikke plass til bade ordet «Uke» og dager
+          // som er store nok aa treffe: 268 px skal romme aatte kolonner.
+          // Ordet skjules under 560 px (se .lx-ukeord), tallet blir staaende,
+          // og hele teksten ligger i aria-label for den som leser opp sida.
+          ukeTall: String(this.ukeNummer(dager[0])),
           // Pille, ikke understreka tekst. Eieren, 6. september 2026: «ingen
           // link», «jeg vil ha samme pille som resten». Ukene er smalere enn
           // radpillene ellers — de staar i margen ved siden av dagene — men

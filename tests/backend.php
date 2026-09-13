@@ -8307,6 +8307,12 @@ sjekk('ingen tekst lover tre uker lenger',
     && !preg_match('~oppbevar\w*[^.]{0,40}tre uker~iu', $fbFil));
 
 if (DB::harTabell('notification_templates')) {
+    // Kanalen: e-post, ikke SMS. Eieren, 13. september 2026: «Bare e-post»
+    // — SMS koster penger per melding. Den har gaatt paa e-post hele tiden
+    // fordi SMS ikke er satt opp, men det skal ikke avhenge av det.
+    // Migrasjon 178.
+    sjekk('«ferdig brent» gaar paa e-post',
+        (string) DB::verdi("SELECT kanal FROM notification_templates WHERE navn = 'ferdig_brent'") === 'epost');
     $fb = (string) DB::verdi("SELECT tekst FROM notification_templates WHERE navn = 'ferdig_brent'");
     sjekk('malen i basen sier to uker',
         $fb === '' || (str_contains($fb, 'to uker') && !str_contains($fb, 'tre uker')),

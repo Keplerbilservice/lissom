@@ -392,6 +392,19 @@ final class Maler
                 'pris'      => 'Prisen de satte',
             ],
         ],
+        'intern_ny_pamelding' => [
+            'tittel' => 'Til deg: ny påmelding',
+            'hvor'   => 'Sendes til verkstedet når noen melder seg på et kurs.',
+            'felter' => [
+                'navn'     => 'Navnet på den som meldte seg på',
+                'kurs'     => 'Kurset',
+                'naar'     => 'Når kurset er',
+                'belop'    => 'Summen',
+                'betaling' => '«Betalt» eller «Ubetalt»',
+                'epost'    => 'E-postadressen deres',
+                'telefon'  => 'Telefonnummeret, eller «(ikke oppgitt)»',
+            ],
+        ],
         'intern_gave_lost_inn' => [
             'tittel' => 'Til deg: gave løst inn',
             'hvor'   => 'Sendes til verkstedet når et medlem løser inn en gave.',

@@ -969,6 +969,37 @@ final class Booking
             'ordre' => (string) $b['tittel'] . ($naar !== '' ? ' — ' . $naar : ''),
             'belop' => self::kroner((int) $b['belop_ore']),
         ], 'booking', $bookingId);
+
+        // ── Og en beskjed til verkstedet ──────────────────────────────
+        //
+        // Eieren, 13. september 2026: «Det er varsel paa ny paamelding, men
+        // det er ikke kommet noen mail til admin, dette maa fikses».
+        //
+        // Det var ingen feil: den var aldri bygget. Verkstedet fikk e-post
+        // ved nytt medlem, ny foresporsel, ny vare, gave som skal pakkes og
+        // gave lost inn — men ikke ved en paamelding. Varselet han saa er
+        // tallet paa Oversikt, ikke en e-post.
+        //
+        // Den staar her, sammen med kvitteringa til kunden: alt malen
+        // trenger er alt hentet, og da kan de to ikke komme i utakt.
+        //
+        // Betalingsstatus var han tydelig paa: «Jeg vil ha betalingsstatus
+        // paa mailen ogsaa». En plass kan vaere reservert uten at noe er
+        // betalt — «Betalt» og «Ubetalt» er de samme to ordene som staar i
+        // Paameldte-lista, se api/admin/pameldte.php.
+        Varsel::malTilAdmin('intern_ny_pamelding', [
+            'navn'     => (string) ($b['m_navn'] ?: $b['gjest_navn']),
+            'kurs'     => (string) $b['tittel'],
+            'naar'     => $naar,
+            'belop'    => self::kroner((int) $b['belop_ore']),
+            'betaling' => (string) $b['status'] === 'betalt' ? 'Betalt' : 'Ubetalt',
+            // En deltaker lagt inn for haand kan mangle begge. Da sto det
+            // «Kontakt:  · (ikke oppgitt)» med et loest skille foran.
+            // «(ikke oppgitt)» er det samme ordet malen for nytt medlem
+            // bruker om et telefonnummer som ikke finnes.
+            'epost'    => (string) ($b['m_epost'] ?: $b['gjest_epost']) ?: '(ikke oppgitt)',
+            'telefon'  => (string) ($b['m_telefon'] ?: $b['gjest_telefon']) ?: '(ikke oppgitt)',
+        ], 'booking', $bookingId);
     }
 
     /**

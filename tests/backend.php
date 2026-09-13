@@ -6720,7 +6720,11 @@ sjekk('… og ventelistepilla er like stor som kurspilla',
     && substr_count($sida, "display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }),") === 3);
 sjekk('… med den samme skrifta i navnet og i det under',
     substr_count($sida, "navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },") === 3
-    && substr_count($sida, "fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },") === 3);
+    // Sto paa 10 px til 13. september 2026. Maalt i nettleseren: 48 tekster
+    // paa 10 px i admin, og typemerket paa kurspilla — «Event», «Workshop»,
+    // «Kurs» — var 30 av dem. Eieren ba om at de skulle opp. De tre pillene
+    // fulgte hverandre opp, slik denne vakta er til for.
+    && substr_count($sida, "fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },") === 3);
 // Bare venstrekanten skiller dem, saa man ser hvilken liste man er i.
 sjekk('… men ventelista beholder den terrakotta venstrekanten',
     str_contains($sida, "borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)'"));
@@ -10041,7 +10045,7 @@ sjekk('de to lange listene ligger bak hver sin lenke paa telefonen',
     str_contains($sidaG, '  .lx-listevis { display: none; }')
     && str_contains($sidaG, '    .lx-listevis { display: block !important; }')
     && str_contains($sidaG, '    .lx-kursliste[data-apen="false"],')
-    && str_contains($sidaG, '    .lx-datoliste[data-apen="false"] { display: none !important; }'));
+    && str_contains($sidaG, '    .lx-datoliste[data-apen="false"],'));
 // Ukestripa staar som foer, oeverst: det er den man trenger for aa se dagen.
 sjekk('… mens ukestripa staar aapen',
     !str_contains($sidaG, '.lx-ukestripe[data-apen'));
@@ -10051,9 +10055,126 @@ sjekk('… og lenken sier det samme som overskriften',
     str_contains($sidaG, "kursListeKnapp: (NAVN[fane] || NAVN.alle) + ' (' + this.kursSokte().length + ')'")
     && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
 // Én stil paa begge lenkene, saa de ikke driver fra hverandre.
-sjekk('… og begge lenkene deler stil',
-    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 2
+sjekk('… og alle lenkene deler stil',
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 12
     && str_contains($sidaG, '      listeKnappStil: {'));
+
+// ── SEO-skjermen paa telefonen ─────────────────────────────────────────
+//
+// 6 062 piksler paa en 390 px skjerm — 7,2 skjermer. Halve hoyden var ting
+// man ser paa, ikke fyller ut: lista over de tjue sidene (1 004 px), det
+// automatiske skjemaet (356 px) og de ti forslagene (1 193 px).
+//
+// Samme grep som paa Kurs- og Nettbutikkskjermen, ikke et nytt et.
+// Maalt: 7,2 -> 4,4 skjermer. PC uendret paa 3 921 px.
+sjekk('de tre lange blokkene paa SEO ligger bak hver sin pille paa telefonen',
+    str_contains($sidaG, '    .lx-seoliste[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-seoskjema[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-seoforslag[data-apen="false"],'));
+// Tallet i pilla kommer fra lista selv, ikke fra et tall skrevet ved siden av.
+sjekk('… og tallet i pilla telles, ikke skrives',
+    str_contains($sidaG, "seoListeKnapp: 'Sider og score (' + alle.length + ')'")
+    && str_contains($sidaG, "seoForslagKnapp: 'Forslag til lokale landingssider (' + LANDINGSSOK.length + ')'"));
+// Velger man en side, lukker lista seg — ellers ville de nitten andre staa
+// mellom deg og feltene du nettopp aapnet.
+sjekk('… og lista lukker seg naar en side er valgt',
+    str_contains($sidaG, 'const velgSide = id => () => this.setState({ seoValgtId: id, seoListeApen: false });'));
+
+// ── Varselskjermen paa telefonen ───────────────────────────────────────
+//
+// 5 572 piksler paa en 390 px skjerm — 6,6 skjermer — og 4 058 av dem var
+// ting som settes opp én gang: e-postkontoen (618 px), SMS-en (338 px) og
+// signaturen (3 102 px). Statuskortene og lista over meldinger som ikke
+// gikk ut staar aapne; det er dem man kommer for aa se.
+//
+// Maalt: 6,6 -> 2,0 skjermer. PC uendret paa 3 410 px.
+sjekk('de tre oppsettblokkene i varsler ligger bak hver sin pille paa telefonen',
+    str_contains($sidaG, '    .lx-vaepost[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-vasms[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-vasignatur[data-apen="false"],'));
+// Pillene sier det overskriften inne i boksen sier. Sto de hver for seg,
+// kunne de sagt hver sitt.
+sjekk('… og pillene sier det samme som overskriftene',
+    str_contains($sidaG, "vaEpostKnapp: 'E-postkontoen'")
+    && str_contains($sidaG, "vaSmsKnapp: 'SMS hos Sveve'")
+    && str_contains($sidaG, "vaSignaturKnapp: 'Signatur i e-postene systemet sender'"));
+// Lista over det som ikke gikk ut skal staa aapen — den er grunnen til aa
+// aapne skjermen i det hele tatt.
+sjekk('… mens meldingene som ikke gikk ut staar aapne',
+    !str_contains($sidaG, '.lx-vafeil[data-apen'));
+
+// ── GEO-skjermen paa telefonen ─────────────────────────────────────────
+//
+// Tvillingen til SEO, samme grep: 4 667 px paa en 390 px skjerm — 5,5
+// skjermer — hvorav sidelista er 1 004 px og statuslinjene nederst 633.
+//
+// Maalt: 5,5 -> 3,7 skjermer. PC uendret paa 2 382 px.
+sjekk('de to lange blokkene paa GEO ligger bak hver sin pille paa telefonen',
+    str_contains($sidaG, '    .lx-geoliste[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-geotiltak[data-apen="false"],'));
+// Samme oppfoersel som paa SEO: lista lukker seg naar en side er valgt.
+sjekk('… og GEO-lista lukker seg naar en side er valgt',
+    str_contains($sidaG, 'const velgSide = id => () => this.setState({ geoValgtId: id, geoListeApen: false });'));
+
+// ── Verkstedet paa telefonen ───────────────────────────────────────────
+//
+// Atten kort under hverandre: 4 723 px paa en 390 px skjerm — 5,6 skjermer
+// for aa naa det nederste. To og to under 560 px.
+//
+// Radene er fremdeles like hoeye. Eieren, 11. september 2026: «jeg vil at
+// de 8 mindre kortene skal justere saa de blir samme stoerrelse som de 6
+// stoerre kortene» — og 13. september valgte han aa beholde det framfor de
+// 800 px en fri hoeyde ville spart. Maalt: 5,6 -> 3,4 skjermer.
+sjekk('kortene paa Verkstedet staar to og to paa telefonen',
+    str_contains($sidaG, '<div class="lx-vststed" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); grid-auto-rows: 1fr;')
+    && str_contains($sidaG, '      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;'));
+// Like hoeye rader staar uroert — det var hele poenget med aa spoerre.
+sjekk('… med radene fremdeles like hoeye',
+    !str_contains($sidaG, '.lx-vststed { grid-auto-rows')
+    && !str_contains($sidaG, 'grid-auto-rows: auto !important;'));
+// Navnet maa faa plass i den smale spalta, ellers deles det midt i ordet.
+sjekk('… og navnet deles ikke midt i ordet',
+    str_contains($sidaG, '.lx-adminaside ~ main .lx-vststed span[style*="--text-xl"] {')
+    && str_contains($sidaG, '      overflow-wrap: break-word;'));
+
+// ── Innholdsskjermen paa telefonen ─────────────────────────────────────
+//
+// 4 158 px paa en 390 px skjerm — 4,9 skjermer — hvorav sidelista er
+// 1 132 px man ruller forbi for aa naa feltene. Samme grep som paa SEO og
+// GEO. Maalt: 4,9 -> 3,6 skjermer. PC uendret paa 3 187 px.
+sjekk('sidelista i innhold ligger bak en pille paa telefonen',
+    str_contains($sidaG, '    .lx-innholdliste[data-apen="false"],'));
+// Lukker seg naar en side er valgt, som de to andre.
+sjekk('… og lukker seg naar en side er valgt',
+    str_contains($sidaG, "velg: () => this.setState({ innholdSide: navn, innholdBlokk: 0, innholdListeApen: false }),"));
+
+// ── Malskjermen paa telefonen ──────────────────────────────────────────
+//
+// 3 749 px paa en 390 px skjerm — 4,4 skjermer — hvorav 2 502 er de 36
+// malene man ruller forbi for aa naa emnet og teksten.
+// Maalt: 4,4 -> 1,5 skjermer. PC uendret paa 2 751 px.
+sjekk('mal-lista ligger bak en pille paa telefonen',
+    str_contains($sidaG, '    .lx-malliste[data-apen="false"] { display: none !important; }'));
+sjekk('… og lukker seg naar en mal er valgt',
+    str_contains($sidaG, "velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),"));
+
+// ── Datolista paa stor skjerm ──────────────────────────────────────────
+//
+// «Alle kurs» var 6 850 px paa en 1280 px skjerm — 7,6 skjermer. Det var
+// ikke antallet datoer alene: hver rad var 128 px hoey fordi de fire
+// knappene ikke fikk plass ved siden av teksten og brot ned paa egen
+// linje. Navnet og plassbaren gir fra seg litt fra 760 px og opp.
+//
+// Maalt: 6 850 -> 5 662 px, 7,6 -> 6,3 skjermer, rad 128 -> 84 px.
+// Ingenting er skjult; begge listene staar aapne som foer.
+sjekk('datoraden staar paa én linje paa stor skjerm',
+    str_contains($sidaG, '    .lx-adminaside ~ main .lx-datonavn { flex: 1 1 140px !important; }')
+    && str_contains($sidaG, '      flex: 0 1 110px !important;'));
+// Under 760 px skal knappene fremdeles bryte — ellers staar «Slett dato»
+// utenfor ramma paa en telefon.
+sjekk('… mens de fremdeles bryter paa telefonen',
+    str_contains($sidaG, '  @media (min-width: 760px) {
+    .lx-adminaside ~ main .lx-datonavn'));
 
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //
@@ -17080,6 +17201,42 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
+
+echo "\n== Medlemmet ser bildet det legger ut ==\n";
+// Eieren, 13. september 2026, med bilde fra en telefon: «Et aarsmedlem
+// forsoeker aa legge ut et produkt for salg. Jeg forsoekte aa laste opp et
+// bilde men det ser saann ut.» Ruta viste filnavnet «IMG_4637.jpeg» og ikke
+// bildet — og rett under sto «Fokuspunkt: velg hvilken del av bildet som
+// skal ligge i midten».
+$msApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
+$mig177 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/177_fokuspunkt_paa_medlemsvarer.sql');
+sjekk('bildet vises i ruta, ikke filnavnet',
+    str_contains($vis172, "        this._skUrl = URL.createObjectURL(f);")
+    && str_contains($vis172, 'background-image: {{ skBildeCss }}; background-size: cover; background-position: {{ skFokus }};'),
+    'maalt paa 390 px: bildet fyller ruta');
+// Punktene ligger over bildet, saa hun peker paa det hun ser.
+sjekk('… og de ni punktene ligger oppaa bildet',
+    str_contains($vis172, 'position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);'),
+    'maalt: ni knapper paa 85 x 85 px');
+// Valget gikk ingen steder for: settFokus() lagrer gjennom
+// api/admin/bilder.php, som krever admin.
+sjekk('… og valget foelger med produktet',
+    str_contains($vis172, "        skjema.append('fokus', s.skFokus || '50% 50%');")
+    && str_contains($msApi, "\$fokus = trim(Foresporsel::tekst('fokus'));")
+    && str_contains($mig177, "  ADD COLUMN fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;"),
+    'maalt: «Nede venstre» ble lagret som «0% 100%»');
+// Et fritt felt her ville endt som ren CSS i «background-position» ute.
+sjekk('… og bare de ni punktene godtas',
+    str_contains($msApi, "if (!in_array(\$fokus, \$fokusValg, true)) {"));
+// Koden rulles ut for migrasjonen kjores. Uten sperra ville ingen faatt lagt
+// ut noe i det vinduet.
+sjekk('… og innsending virker ogsaa for migrasjonen er kjort',
+    str_contains($msApi, "if (DB::harKolonne('member_sales', 'fokus')) {"));
+// Butikken skal vise utsnittet medlemmet valgte, ikke midten.
+sjekk('… og butikken bruker det valgte utsnittet',
+    str_contains($vis172, "          fokus: g.fokus || this.fokusFor(g.bilde || ''),")
+    && str_contains($vis172, "          spFokus: p.fokus || this.fokusFor(p.bilde || ''),"));
 
 echo "\n== Verkstedet faar e-post ved ny paamelding ==\n";
 // Eieren, 13. september 2026: «Det er varsel paa ny paamelding, men det er

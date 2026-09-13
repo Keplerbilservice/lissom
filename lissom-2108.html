@@ -1599,6 +1599,34 @@ window.__resources = {
     }
   }
 
+  /* Ferikalenderen paa telefon.
+     Kalenderen har aatte kolonner: ukepilla og sju dager. Paa en 390 px
+     skjerm er det 268 px aa dele paa, og «Uke 36» tok 58 av dem — da ble
+     hver dag 25 px bred, godt under de 32 px en finger trenger. Maalt
+     13. september 2026.
+
+     Under 560 px faller ordet «Uke» bort og bare tallet staar igjen, luft
+     og kantmarg strammes, og dagene blir 33 px. Hele teksten ligger i
+     aria-label, saa den som faar sida lest opp hoerer «Uke 36» som foer.
+     PC og nettbrett er uroert. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-feriekalender {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+    }
+    .lx-adminaside ~ main .lx-ferierad {
+      grid-template-columns: 32px repeat(7, minmax(0, 1fr)) !important;
+      gap: 3px !important;
+    }
+    .lx-adminaside ~ main .lx-ferierad > button:first-child {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+    .lx-adminaside ~ main .lx-ukeord {
+      display: none;
+    }
+  }
+
   @media (max-width: 560px) {
     .lx-adminaside ~ main .lx-topprad x-import,
     .lx-adminaside ~ main .lx-topprad .sc-host-x,
@@ -1954,7 +1982,68 @@ window.__resources = {
   @media (max-width: 760px) {
     .lx-listevis { display: block !important; }
     .lx-kursliste[data-apen="false"],
-    .lx-datoliste[data-apen="false"] { display: none !important; }
+    .lx-datoliste[data-apen="false"],
+    .lx-seoliste[data-apen="false"],
+    .lx-seoskjema[data-apen="false"],
+    .lx-seoforslag[data-apen="false"],
+    .lx-vaepost[data-apen="false"],
+    .lx-vasms[data-apen="false"],
+    .lx-vasignatur[data-apen="false"],
+    .lx-geoliste[data-apen="false"],
+    .lx-geotiltak[data-apen="false"],
+    .lx-innholdliste[data-apen="false"],
+    .lx-malliste[data-apen="false"] { display: none !important; }
+  }
+
+  /* Datolista paa stor skjerm: én linje per dato.
+     ------------------------------------------------------------------
+     «Alle kurs» var 6 850 px paa en 1280 px skjerm — 7,6 skjermer. Det var
+     ikke antallet datoer alene: hver rad var 128 px hoey fordi de fire
+     knappene (Rediger · Legg til deltaker · Paameldte · Slett dato) ikke
+     fikk plass ved siden av teksten og brot ned paa egen linje. 950 px
+     rad, og barna krevde 18 + 200 + 150 + 124 + 351 pluss luft.
+
+     Navnet og plassbaren gir fra seg litt fra 760 px og opp, saa alt staar
+     paa én linje: raden blir 84 px. Under 760 px roeres ingenting — der
+     SKAL knappene bryte, ellers staar «Slett dato» utenfor ramma.
+
+     Maalt 13. september 2026: 6 850 -> 5 662 px, 7,6 -> 6,3 skjermer.
+     Ingenting er skjult; begge listene staar aapne som foer. */
+  @media (min-width: 760px) {
+    .lx-adminaside ~ main .lx-datonavn { flex: 1 1 140px !important; }
+    .lx-adminaside ~ main .lx-datobar {
+      flex: 0 1 110px !important;
+      min-width: 80px !important;
+    }
+  }
+
+  /* Verkstedet paa telefon: kortene to og to.
+     ------------------------------------------------------------------
+     Atten kort under hverandre ble 4 723 px paa en 390 px skjerm — 5,6
+     skjermer for aa naa det nederste. «minmax(210px, 1fr)» gir bare én
+     spalte naar det er 310 px aa dele paa.
+
+     Under 560 px staar de to og to. Radene er fremdeles like hoeye
+     (grid-auto-rows: 1fr staar uroert) — eieren, 11. september 2026: «jeg
+     vil at de 8 mindre kortene skal justere saa de blir samme stoerrelse
+     som de 6 stoerre kortene». Han valgte 13. september aa beholde det
+     framfor de 800 px en fri hoeyde ville spart.
+
+     Navnet staar paa --text-base i den smale spalta, ikke --text-xl.
+     «Haandbygging» og «Referansekunder» er breiere enn 107 px tekstflate
+     paa den store graden og ble delt midt i ordet — «Haandbyggi/ng».
+     Paa --text-base staar de paa én linje. Maalt: 5,6 -> 3,6 skjermer. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-vststed {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .lx-adminaside ~ main .lx-vststed span[style*="--text-xl"] {
+      font-size: var(--text-base) !important;
+    }
+    .lx-adminaside ~ main .lx-vststed span,
+    .lx-adminaside ~ main .lx-vststed p {
+      overflow-wrap: break-word;
+    }
   }
 
   /* Salgskampanjen. Bildet staar ved siden av teksten paa stor skjerm, og
@@ -5213,26 +5302,35 @@ window.__resources = {
                     <div style="display: flex; flex-direction: column; gap: var(--space-4);">
                       <!-- «image-slot» er en plassholder fra designverktoyet og
                            laster ingenting opp. Et vanlig filfelt gjor det. -->
-                      <label style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px; border: 2px dashed var(--lissom-brown); background: var(--clay-100); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: var(--space-4); text-align: center;">
-                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ settSkBilde }}" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                      <!-- Bildet, ikke filnavnet.
+                           Eieren, 13. september 2026, med bilde fra en
+                           telefon: ruta viste «IMG_4637.jpeg» og ingenting
+                           mer, mens fokuspunktet under ba henne peke ut et
+                           utsnitt av det hun ikke saa. Naa fyller bildet
+                           ruta, og de ni punktene ligger oppaa det.
+                           Se settSkBilde i renderVals. -->
+                      <label style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px; border: 2px dashed var(--lissom-brown); background-color: var(--clay-100); background-image: {{ skBildeCss }}; background-size: cover; background-position: {{ skFokus }}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: var(--space-4); text-align: center;">
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ settSkBilde }}" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 1;">
                         <sc-if value="{{ harSkBilde }}" hint-placeholder-val="{{ false }}">
-                          <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); word-break: break-all;">{{ skBilde }}</span>
-                          <span style="font-size: var(--text-xs); color: var(--text-muted);">Trykk for å bytte bilde</span>
+                          <!-- Punktene ligger over bildet, i et rutenett som
+                               dekker hele ruta. Da peker hun paa den delen av
+                               bildet hun vil ha i midten, ikke paa en tom
+                               firkant under. -->
+                          <div style="position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4px; padding: 8px; z-index: 2;">
+                            <sc-for list="{{ skFokusValg }}" as="f" hint-placeholder-count="9">
+                              <button type="button" onClick="{{ f.velg }}" aria-label="{{ f.navn }}" style="{{ f.stil }}"></button>
+                            </sc-for>
+                          </div>
+                          <span style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 6px 8px; background: rgba(77, 29, 18, .72); color: var(--clay-50); font-size: var(--text-xs); pointer-events: none;">Trykk for å bytte bilde</span>
                         </sc-if>
                         <sc-if value="{{ skIkkeBilde }}" hint-placeholder-val="{{ true }}">
                           <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Velg produktbilde</span>
                           <span style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">JPG, PNG eller WEBP. Maks 8 MB. Bildet skaleres og lagres på nytt hos oss.</span>
                         </sc-if>
                       </label>
-                      <div>
-                        <div style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Fokuspunkt</div>
-                        <div style="display: grid; grid-template-columns: repeat(3, 24px); gap: 4px;">
-                          <sc-for list="{{ skFokusValg }}" as="f" hint-placeholder-count="9">
-                            <button type="button" onClick="{{ f.velg }}" aria-label="{{ f.navn }}" style="{{ f.stil }}"></button>
-                          </sc-for>
-                        </div>
-                        <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">Velg hvilken del av bildet som skal ligge i midten av kvadratet.</p>
-                      </div>
+                      <sc-if value="{{ harSkBilde }}" hint-placeholder-val="{{ false }}">
+                        <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Trykk i bildet for å velge hvilken del som skal ligge i midten av kvadratet.</p>
+                      </sc-if>
                       <input value="{{ skNavn }}" onChange="{{ settSk.navn }}" placeholder="Produktnavn *" style="{{ skFeltStil }}">
                       <input value="{{ skTekst }}" onChange="{{ settSk.tekst }}" placeholder="Kort beskrivelse *" style="{{ skFeltStil }}">
                       <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
@@ -12531,11 +12629,11 @@ window.__resources = {
                      seg lager mange, og aa ta dem én og én er ikke en jobb
                      noen faktisk gjor. -->
                 <input type="checkbox" checked="{{ o.valgt }}" onChange="{{ o.vekslValgt }}" title="Velg denne datoen" style="width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--lissom-brown); cursor: pointer;">
-                <div style="flex: 1 1 200px; min-width: 0;">
+                <div class="lx-datonavn" style="flex: 1 1 200px; min-width: 0;">
                   <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.naar }} · {{ o.ledigTekst }}</div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 150px; min-width: 120px;">
+                <div class="lx-datobar" style="display: flex; align-items: center; gap: 10px; flex: 0 1 150px; min-width: 120px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
                     <div style="{{ o.barStil }}"></div>
                   </div>
@@ -13922,7 +14020,11 @@ window.__resources = {
 
         <div class="lx-split" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start;">
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen. Serveren settes opp én gang og
+                 roeres ikke etterpaa; paa stoerre skjerm staar den aapen. -->
+            <button type="button" class="lx-listevis" onClick="{{ vaEpostVeksle }}" style="{{ listeKnappStil }}">{{ vaEpostKnapp }}</button>
+            <div class="lx-vaepost" data-apen="{{ vaEpostApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">E-postkontoen</div>
             <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4);">
@@ -13944,15 +14046,19 @@ window.__resources = {
               </div>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Serveren er som regel mail.lissom.no, ikke leverandørens egen adresse. Brukernavn og passord er innloggingen til selve e-postkontoen.</p>
             </div>
+            </div>
           </div>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <button type="button" class="lx-listevis" onClick="{{ vaSmsVeksle }}" style="{{ listeKnappStil }}">{{ vaSmsKnapp }}</button>
+            <div class="lx-vasms" data-apen="{{ vaSmsApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">SMS hos Sveve</div>
             <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <input value="{{ vaSveveBruker }}" onChange="{{ settVa.sveve_bruker }}" placeholder="Brukernavn hos Sveve" aria-label="Sveve-bruker" style="{{ vaFeltStil }}">
               <input type="password" value="{{ vaSvevePassord }}" onChange="{{ settVa.sveve_passord }}" placeholder="{{ vaSvevePassordHint }}" aria-label="Sveve-passord" style="{{ vaFeltStil }}">
               <input value="{{ vaSmsAvsender }}" onChange="{{ settVa.sms_avsender }}" placeholder="Avsendernavn på SMS, f.eks. Lissom" aria-label="SMS-avsender" style="{{ vaFeltStil }}">
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Uten dette går påminnelser og «keramikken er ferdig brent» bare på e-post. Kurspåminnelser sendes da som e-post alene.</p>
+            </div>
             </div>
           </div>
         </div>
@@ -13965,7 +14071,11 @@ window.__resources = {
              tatt — de gaar som ren tekst. Naa foelger den med, og teksten
              sendes sammen med HTML-en saa den som leser ren tekst faar de
              samme opplysningene. -->
-        <div style="margin-top: var(--space-6); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="margin-top: var(--space-6);">
+        <!-- Signaturen er 3 102 px paa telefonen — over halve skjermen — og
+             skrives én gang. Bak en pille der; aapen som foer paa PC. -->
+        <button type="button" class="lx-listevis" onClick="{{ vaSignaturVeksle }}" style="{{ listeKnappStil }}">{{ vaSignaturKnapp }}</button>
+        <div class="lx-vasignatur" data-apen="{{ vaSignaturApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Signatur i e-postene systemet sender</div>
           <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
             <sc-if value="{{ vaSignaturMangler }}" hint-placeholder-val="{{ false }}">
@@ -14055,6 +14165,7 @@ window.__resources = {
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; margin-top: var(--space-8);">
@@ -14495,16 +14606,16 @@ window.__resources = {
             <button type="button" onClick="{{ feNeste }}" aria-label="Neste måned" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-pill); cursor: pointer; padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading);">›</button>
           </div>
 
-          <div style="padding: var(--space-4) var(--space-5);">
-            <div style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px;">
+          <div class="lx-feriekalender" style="padding: var(--space-4) var(--space-5);">
+            <div class="lx-ferierad" style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px;">
               <span></span>
               <sc-for list="{{ feUkedager }}" as="u" hint-placeholder-count="7">
                 <span style="text-align: center; font: var(--type-label); font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ u.navn }}</span>
               </sc-for>
             </div>
             <sc-for list="{{ feUker }}" as="v" hint-placeholder-count="6">
-              <div style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px; align-items: center;">
-                <button type="button" onClick="{{ v.vekslUke }}" style="{{ v.ukeStil }}">{{ v.uke }}</button>
+              <div class="lx-ferierad" style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px; align-items: center;">
+                <button type="button" onClick="{{ v.vekslUke }}" aria-label="{{ v.uke }}" style="{{ v.ukeStil }}"><span class="lx-ukeord">Uke&nbsp;</span>{{ v.ukeTall }}</button>
                 <sc-for list="{{ v.dager }}" as="g" hint-placeholder-count="7">
                   <button type="button" onClick="{{ g.veksl }}" title="{{ g.tittel }}" style="{{ g.stil }}">
                     <span>{{ g.tall }}</span>
@@ -17883,7 +17994,11 @@ window.__resources = {
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(190px, 260px) minmax(0, 1fr); gap: var(--space-6); align-items: start;">
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); position: sticky; top: var(--space-6);">
+          <div>
+            <!-- Bak en pille paa telefonen. Paa stoerre skjerm staar lista i
+                 sin egen spalte, klistret i toppen, som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ innholdListeVeksle }}" style="{{ listeKnappStil }}">{{ innholdListeKnapp }}</button>
+            <div class="lx-innholdliste" data-apen="{{ innholdListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); position: sticky; top: var(--space-6);">
             <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); padding: 0 10px var(--space-3);">Sider</div>
             <div style="display: flex; flex-direction: column; gap: 2px;">
               <sc-for list="{{ innholdSider }}" as="p" hint-placeholder-count="7">
@@ -17895,6 +18010,7 @@ window.__resources = {
             </div>
             <div style="height: 1px; background: var(--border-subtle); margin: var(--space-4) 10px;"></div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ aNySide }}" hint-size="100%,36px">Ny side</x-import>
+            </div>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
@@ -18947,7 +19063,11 @@ window.__resources = {
         </sc-if>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, 1.7fr); gap: var(--space-6); align-items: start;">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen. Paa stoerre skjerm staar lista i
+                 sin egen spalte som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ malListeVeksle }}" style="{{ listeKnappStil }}">{{ malListeKnapp }}</button>
+            <div class="lx-malliste" data-apen="{{ malListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Alle malene</div>
             <sc-for list="{{ malListe }}" as="m" hint-placeholder-count="10">
               <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">
@@ -18958,6 +19078,7 @@ window.__resources = {
                 </sc-if>
               </button>
             </sc-for>
+            </div>
           </div>
 
           <sc-if value="{{ malHarValgt }}" hint-placeholder-val="{{ true }}">
@@ -19340,7 +19461,7 @@ window.__resources = {
                  samme stoerrelse som de 6 stoerre kortene». Dokumentkortene
                  har antall og bryter nederst og ble hoeyere; i to rutenett
                  kunne ikke stedskortene foelge dem. -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); grid-auto-rows: 1fr; gap: var(--space-4); align-items: stretch;">
+            <div class="lx-vststed" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); grid-auto-rows: 1fr; gap: var(--space-4); align-items: stretch;">
               <sc-if value="{{ vstHarForsideDok }}" hint-placeholder-val="{{ true }}">
                 <sc-for list="{{ vstForsideDok }}" as="k" hint-placeholder-count="6">
                   <div style="{{ k.kortStil }}">
@@ -19902,7 +20023,7 @@ window.__resources = {
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0;">
                   <div style="{{ s.stil }}"></div>
                   <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">{{ s.uke }}</span>
-                  <span style="font-size: 10px; color: var(--text-muted); white-space: nowrap;">{{ s.sum }}</span>
+                  <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">{{ s.sum }}</span>
                 </div>
               </sc-for>
             </div>
@@ -21371,7 +21492,13 @@ window.__resources = {
         </sc-for>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.6fr); gap: var(--space-6); align-items: start; margin-top: var(--space-6);">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen. Lista over de tjue sidene er
+                 1 004 px, og den staar mellom deg og feltene du kom for aa
+                 fylle ut. Knappen finnes bare under 760 px; paa stoerre
+                 skjerm staar lista i sin egen spalte som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ seoListeVeksle }}" style="{{ listeKnappStil }}">{{ seoListeKnapp }}</button>
+            <div class="lx-seoliste" data-apen="{{ seoListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Sider og score</div>
             <sc-for list="{{ seoListe }}" as="s" hint-placeholder-count="8">
               <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">
@@ -21380,6 +21507,7 @@ window.__resources = {
                 <span style="flex: 0 0 28px; text-align: right; font-weight: 700;">{{ s.score }}</span>
               </button>
             </sc-for>
+            </div>
           </div>
 
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -21431,13 +21559,24 @@ window.__resources = {
             </div>
 
             <div style="margin-top: var(--space-5);">
+              <!-- Skjemaet lages av seg selv av det som staar i feltene over.
+                   Det er til aa se paa, ikke fylle ut — derfor lukket paa
+                   telefonen, og aapent som foer paa stoerre skjerm. -->
+              <button type="button" class="lx-listevis" onClick="{{ seoSchemaVeksle }}" style="{{ listeKnappStil }}">{{ seoSchemaKnapp }}</button>
+              <div class="lx-seoskjema" data-apen="{{ seoSchemaApen }}">
               <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Strukturert data (genereres automatisk)</div>
               <pre style="margin: 0; background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4); font-size: 11px; line-height: 1.5; color: var(--text-body); overflow-x: auto; white-space: pre-wrap;">{{ seoSchemaJson }}</pre>
+              </div>
             </div>
           </div>
         </div>
 
-        <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="margin-top: var(--space-8);">
+        <!-- Huskelista er ti forslag og 1 193 px. Den leses en sjelden gang,
+             ikke hver gang skjermen aapnes — derfor bak en pille paa
+             telefonen, aapen som foer paa stoerre skjerm. -->
+        <button type="button" class="lx-listevis" onClick="{{ seoForslagVeksle }}" style="{{ listeKnappStil }}">{{ seoForslagKnapp }}</button>
+        <div class="lx-seoforslag" data-apen="{{ seoForslagApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); display: flex; justify-content: space-between; gap: var(--space-4); align-items: baseline;">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Forslag til lokale landingssider</span>
             <span style="font-size: var(--text-xs); color: var(--text-muted);">Huk av det du har tatt — listen lagres</span>
@@ -21456,6 +21595,7 @@ window.__resources = {
               </div>
             </div>
           </sc-for>
+        </div>
         </div>
       </main>
     </div>
@@ -21666,7 +21806,11 @@ window.__resources = {
         </sc-for>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.6fr); gap: var(--space-6); align-items: start; margin-top: var(--space-6);">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen, som paa SEO. Paa stoerre skjerm
+                 staar lista i sin egen spalte som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ geoListeVeksle }}" style="{{ listeKnappStil }}">{{ geoListeKnapp }}</button>
+            <div class="lx-geoliste" data-apen="{{ geoListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Sider og score</div>
             <sc-for list="{{ geoListe }}" as="s" hint-placeholder-count="8">
               <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">
@@ -21675,6 +21819,7 @@ window.__resources = {
                 <span style="flex: 0 0 28px; text-align: right; font-weight: 700;">{{ s.score }}</span>
               </button>
             </sc-for>
+            </div>
           </div>
 
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -21744,7 +21889,12 @@ window.__resources = {
           </div>
         </div>
 
-        <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="margin-top: var(--space-8);">
+        <!-- Fire linjer som sier at llms.txt, robots.txt, de strukturerte
+             dataene og sidekartet er paa plass. Det leses en sjelden gang —
+             bak en pille paa telefonen, aapent som foer paa stoerre skjerm. -->
+        <button type="button" class="lx-listevis" onClick="{{ geoTiltakVeksle }}" style="{{ listeKnappStil }}">{{ geoTiltakKnapp }}</button>
+        <div class="lx-geotiltak" data-apen="{{ geoTiltakApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Hva som ellers er gjort for AI-søk</div>
           <sc-for list="{{ geoTiltak }}" as="g" hint-placeholder-count="4">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: 12px var(--space-5); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
@@ -21755,6 +21905,7 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="success" hint-size="auto,24px">{{ g.status }}</x-import>
             </div>
           </sc-for>
+        </div>
         </div>
       </main>
     </div>
@@ -30660,6 +30811,11 @@ class Component extends DCLogic {
           && framover.every(x => stengte.indexOf(x) !== -1);
         return {
           uke: 'Uke ' + this.ukeNummer(dager[0]),
+          // Paa telefon er det ikke plass til bade ordet «Uke» og dager
+          // som er store nok aa treffe: 268 px skal romme aatte kolonner.
+          // Ordet skjules under 560 px (se .lx-ukeord), tallet blir staaende,
+          // og hele teksten ligger i aria-label for den som leser opp sida.
+          ukeTall: String(this.ukeNummer(dager[0])),
           // Pille, ikke understreka tekst. Eieren, 6. september 2026: «ingen
           // link», «jeg vil ha samme pille som resten». Ukene er smalere enn
           // radpillene ellers — de staar i margen ved siden av dagene — men
@@ -32630,7 +32786,7 @@ class Component extends DCLogic {
       // Navnet tar plassen som er, typen legger seg til hoyre. Var det
       // delt paa PC og mobil; naa er kortet det samme begge steder.
       navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },
-      metaStil: { display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },
+      metaStil: { display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },
       ned: e => this.klNyDragStart(k, e),
     }));
   }
@@ -38196,7 +38352,7 @@ class Component extends DCLogic {
               kortStil: Object.assign({ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '3px', borderLeftStyle: 'solid', borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)', cursor: 'grab', userSelect: 'none', minWidth: 0 },
                 { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }),
               navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },
-              metaStil: { display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },
+              metaStil: { display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },
               // Kursnavnet er det lange, saa det er det som kuttes. Plassen i
               // koen staar alltid helt ut.
               kursStil: { overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 },
@@ -38231,7 +38387,7 @@ class Component extends DCLogic {
                   kortStil: Object.assign({ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '3px', borderLeftStyle: 'solid', borderLeftColor: 'var(--sage-500)', borderRadius: 'var(--radius-sm)', cursor: 'grab', userSelect: 'none', minWidth: 0 },
                     { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }),
                   navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },
-                  metaStil: { display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },
+                  metaStil: { display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },
                   kursStil: { overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 },
                   underStil: { flex: '0 0 auto', marginLeft: 'auto' },
                   ned: ev => this.klBdDragStart(v, ev),
@@ -48474,7 +48630,7 @@ class Component extends DCLogic {
               },
               merke: pl.aktiv ? 'I salg' : 'Ikke i salg',
               merkeStil: {
-                font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+                font: 'var(--type-label)', fontSize: 12, letterSpacing: 'var(--tracking-caps)',
                 textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
                 background: pl.aktiv ? 'var(--sage-100, #E3EDE4)' : 'var(--clay-200)',
                 color: pl.aktiv ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)',
@@ -48485,7 +48641,7 @@ class Component extends DCLogic {
               harMerkelapp: true,
               merkelapp: (pl.merke || '').trim() || (pl.engangs ? 'Prøveperiode' : 'Medlemskap'),
               merkelappStil: {
-                font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+                font: 'var(--type-label)', fontSize: 12, letterSpacing: 'var(--tracking-caps)',
                 textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
                 background: 'var(--clay-100)', color: 'var(--terracotta-600)', whiteSpace: 'nowrap',
               },
@@ -50638,7 +50794,11 @@ class Component extends DCLogic {
         const medlem = this.galleriListe().filter(g => g.status === 'publisert').map(g => ({
           title: g.tittel, detalj: g.tekst, pris: g.pris, image: g.bilde,
           visInfo: () => this.setState({ salgApen: g.id }),
-          imageCss: "url('" + g.bilde + "')", fokus: this.fokusFor(g.bilde || ''),
+          // Fokuspunktet medlemmet valgte da hun la den ut, ikke det admin
+          // har satt paa fila. Kommer fra api/medlemssalg.php; «fokusFor» er
+          // reserven for varer lagt ut for migrasjon 177.
+          imageCss: "url('" + g.bilde + "')",
+          fokus: g.fokus || this.fokusFor(g.bilde || ''),
           // Navnet paa den som laget den — det er hele poenget med
           // kolleksjonen. Sto som «Laget av medlem» paa alt.
           badge: g.laget || 'Laget av medlem', kategori: g.kategori, erMedlem: true,
@@ -53969,12 +54129,21 @@ class Component extends DCLogic {
         };
       })(),
       erAdminInnhold: side === 'admininnhold',
+      // Sidelista bak en pille paa telefonen. Skjermen var 4 158 px paa en
+      // 390 px skjerm — 4,9 skjermer — og 1 132 av dem var lista man ruller
+      // forbi for aa naa feltene. Samme grep som paa SEO og GEO; lista
+      // lukker seg naar en side er valgt. Maalt 13. september 2026.
+      // Se «.lx-listevis» i stilarket.
+      innholdListeApen: !!this.state.innholdListeApen,
+      innholdListeVeksle: () => this.setState({ innholdListeApen: !this.state.innholdListeApen }),
+      innholdListeKnapp: 'Sider (' + Object.keys(SIDEINNHOLD).length + ')'
+        + (this.state.innholdListeApen ? ' \u25b4' : ' \u25be'),
       innholdSider: Object.keys(SIDEINNHOLD).map(navn => {
         const valgt = navn === (this.state.innholdSide || 'Forside');
         return {
           navn,
           under: SIDEINNHOLD[navn].length + (navn === 'Personvern' ? ' avsnitt' : ' seksjoner'),
-          velg: () => this.setState({ innholdSide: navn, innholdBlokk: 0 }),
+          velg: () => this.setState({ innholdSide: navn, innholdBlokk: 0, innholdListeApen: false }),
           stil: {
             appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
             display: 'flex', flexDirection: 'column', gap: 2,
@@ -55832,14 +56001,39 @@ class Component extends DCLogic {
           spTittel: p.tittel, spTekst: p.tekst, spLaget: p.laget, spPris: p.pris,
           spTelefon: p.vipps, spLevering: p.levering,
           spBildeCss: "url('" + p.bilde + "')",
-          spFokus: this.fokusFor(p.bilde || ''),
+          spFokus: p.fokus || this.fokusFor(p.bilde || ''),
         };
       })(),
       skNavn: this.state.skNavn || '', skTekst: this.state.skTekst || '', skPris: this.state.skPris || '',
       skAntall: this.state.skAntall || '', skProdusent: this.state.skProdusent || '',
       skVipps: this.state.skVipps || '', skKontakt: this.state.skKontakt || '',
       skFeltStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', background: 'var(--surface-card)' },
-      skFokusValg: this.fokusValg('salg-ny'),
+      skBildeCss: this.state.skBildeUrl ? "url('" + this.state.skBildeUrl + "')" : 'none',
+      skFokus: this.state.skFokus || '50% 50%',
+      // ── Fokuspunktene ─────────────────────────────────────────────────
+      //
+      // Sto som fokusValg('salg-ny'). Den lagrer gjennom
+      // api/admin/bilder.php, som krever admin — et medlem fikk aldri valget
+      // sitt lagret noe sted, og api/medlemssalg.php tok ikke imot noe
+      // fokuspunkt. Valget forsvant naar hun sendte inn.
+      //
+      // Naa ligger det i skjemaet og foelger med produktet. Punktene legges
+      // oppaa bildet, saa hun peker paa det hun faktisk ser.
+      skFokusValg: (() => {
+        const navn = ['Oppe venstre', 'Oppe midten', 'Oppe høyre', 'Midt venstre', 'Midten', 'Midt høyre', 'Nede venstre', 'Nede midten', 'Nede høyre'];
+        const pos = ['0% 0%', '50% 0%', '100% 0%', '0% 50%', '50% 50%', '100% 50%', '0% 100%', '50% 100%', '100% 100%'];
+        const naa = this.state.skFokus || '50% 50%';
+        return pos.map((p, i) => ({
+          navn: navn[i],
+          velg: () => this.setState({ skFokus: p }),
+          stil: {
+            appearance: 'none', cursor: 'pointer', padding: 0, borderRadius: 6,
+            border: p === naa ? '2px solid var(--lissom-brown)' : '1px solid rgba(255,255,255,.75)',
+            background: p === naa ? 'var(--lissom-yellow)' : 'rgba(255,255,255,.28)',
+            transition: 'all .15s ease',
+          },
+        }));
+      })(),
       settSk: {
         navn: e => this.setState({ skNavn: e.target.value }),
         tekst: e => this.setState({ skTekst: e.target.value }),
@@ -55879,7 +56073,18 @@ class Component extends DCLogic {
           return;
         }
         this._skFil = f;
-        this.setState({ skBildeNavn: f.name, skFeil: null });
+        // ── Vis bildet ────────────────────────────────────────────────
+        //
+        // Eieren, 13. september 2026, med bilde fra en telefon: ruta viste
+        // filnavnet «IMG_4637.jpeg» og ikke bildet. Rett under sto
+        // «Fokuspunkt — velg hvilken del av bildet som skal ligge i midten»,
+        // saa medlemmet skulle peke ut et utsnitt av noe hun ikke saa.
+        //
+        // Bildet leses i nettleseren. Ingenting sendes til serveren for hun
+        // trykker «Send til godkjenning».
+        if (this._skUrl) URL.revokeObjectURL(this._skUrl);
+        this._skUrl = URL.createObjectURL(f);
+        this.setState({ skBildeNavn: f.name, skBildeUrl: this._skUrl, skFeil: null });
       },
       skSender: !!this.state.skSender,
       skSendKnapp: this.state.skSender ? 'Sender …' : 'Send til godkjenning',
@@ -55912,6 +56117,7 @@ class Component extends DCLogic {
         skjema.append('kontakt', s.skKontakt);
         skjema.append('kategori', s.skKategori);
         if (this._skFil) skjema.append('bilde', this._skFil);
+        skjema.append('fokus', s.skFokus || '50% 50%');
 
         this.setState({ skSender: true, skFeil: null });
         fetch('/api/medlemssalg.php', { method: 'POST', credentials: 'same-origin', body: skjema })
@@ -56558,7 +56764,7 @@ class Component extends DCLogic {
             // verkstedet er forskjellen at den ene har vaert ute, og at det
             // kan finnes lenker der ute som naa er dode.
             merke: a.merke || (a.status === 'publisert' ? 'Ute' : 'Kladd'),
-            merkeStil: { font: 'var(--type-label)', fontSize: '10px', letterSpacing: 'var(--tracking-caps)',
+            merkeStil: { font: 'var(--type-label)', fontSize: '12px', letterSpacing: 'var(--tracking-caps)',
                          textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
                          background: a.status === 'publisert' ? 'var(--sage-100, #E3EDE4)'
                                    : a.status === 'planlagt' ? 'var(--lissom-yellow)' : 'var(--clay-200)',
@@ -57137,11 +57343,20 @@ class Component extends DCLogic {
         return {
           malIngen: alle.length === 0,
           malAntall: alle.length + (alle.length === 1 ? ' mal' : ' maler'),
+          // Mal-lista bak en pille paa telefonen. Skjermen var 3 749 px paa
+          // en 390 px skjerm — 4,4 skjermer — og 2 502 av dem var de 36
+          // malene man ruller forbi for aa naa emnet og teksten. Samme grep
+          // som paa SEO, GEO og Innhold; lista lukker seg naar en mal er
+          // valgt. Maalt 13. september 2026. Se «.lx-listevis» i stilarket.
+          malListeApen: !!this.state.malListeApen,
+          malListeVeksle: () => this.setState({ malListeApen: !this.state.malListeApen }),
+          malListeKnapp: 'Alle malene (' + alle.length + ')'
+            + (this.state.malListeApen ? ' \u25b4' : ' \u25be'),
           malListe: alle.map(m => ({
             navn: m.tittel,
             kanal: kanalTekst(m.kanal),
             av: !m.aktiv,
-            velg: () => this.setState({ malValgt: m.navn, malUtkast: null }),
+            velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),
             stil: {
               display: 'flex', flexDirection: 'column', gap: 2, width: '100%', textAlign: 'left',
               appearance: 'none', cursor: 'pointer',
@@ -57252,6 +57467,26 @@ class Component extends DCLogic {
         const feil = (this.state.varslerFeil || []).filter(f => !f.lost);
 
         return {
+          // De tre oppsettblokkene bak hver sin pille paa telefonen.
+          // Skjermen var 5 572 px paa en 390 px skjerm — 6,6 skjermer — og
+          // 4 058 av dem var ting som settes opp én gang: e-postkontoen
+          // (618 px), SMS-en (338 px) og signaturen (3 102 px). Statuskortene
+          // og lista over meldinger som ikke gikk ut staar aapne; det er dem
+          // man kommer for aa se. Maalt 13. september 2026.
+          //
+          // Samme grep som paa Kurs-, Nettbutikk- og SEO-skjermen. Knappene
+          // staar bare under 760 px. Se «.lx-listevis» i stilarket.
+          vaEpostApen: !!this.state.vaEpostApen,
+          vaEpostVeksle: () => this.setState({ vaEpostApen: !this.state.vaEpostApen }),
+          vaEpostKnapp: 'E-postkontoen' + (this.state.vaEpostApen ? ' \u25b4' : ' \u25be'),
+          vaSmsApen: !!this.state.vaSmsApen,
+          vaSmsVeksle: () => this.setState({ vaSmsApen: !this.state.vaSmsApen }),
+          vaSmsKnapp: 'SMS hos Sveve' + (this.state.vaSmsApen ? ' \u25b4' : ' \u25be'),
+          vaSignaturApen: !!this.state.vaSignaturApen,
+          vaSignaturVeksle: () => this.setState({ vaSignaturApen: !this.state.vaSignaturApen }),
+          vaSignaturKnapp: 'Signatur i e-postene systemet sender'
+            + (this.state.vaSignaturApen ? ' \u25b4' : ' \u25be'),
+
           vaFeltStil: 'width: 100%; box-sizing: border-box; padding: 12px 14px;'
             + ' border: 1px solid var(--border-subtle); border-radius: var(--radius-md);'
             + ' font-size: var(--text-sm); font-family: inherit; background: var(--surface-page);'
@@ -57519,6 +57754,10 @@ class Component extends DCLogic {
       }),
       ...(() => {
         if (side !== 'adminseo') return {};
+        // Lokale soek det er verdt aa lage en landingsside for. Staar her
+        // som en egen liste fordi tallet i pilla som aapner dem skal komme
+        // fra lista selv — ikke vaere skrevet inn ved siden av.
+        const LANDINGSSOK = ['Keramikkurs i T\u00f8nsberg', 'Dreiekurs i T\u00f8nsberg', 'Keramikkurs i Vestfold', 'Kreativt kurs for voksne', 'Teambuilding med keramikk', 'Gavekort p\u00e5 keramikkurs', 'H\u00e5ndlaget keramikk fra T\u00f8nsberg', 'Norsk keramikk kunst', 'Keramikkverksted med medlemskap', 'Kurs og events hos Lissom Keramikk'];
         const sider = this.seoSider();
         const valgtId = this.state.seoValgtId || 'dreiekurs';
         const valgtSide = sider.find(x => x.id === valgtId) || sider[0];
@@ -57547,7 +57786,11 @@ class Component extends DCLogic {
         const utenTittel = alle.filter(x => !iBruk(x.s.id).tittel);
         const utenAlt = alle.filter(x => !iBruk(x.s.id).altTekst);
         const under70 = alle.filter(x => x.sc.score < 70);
-        const velgSide = id => () => this.setState({ seoValgtId: id });
+        // Lista lukker seg naar du har valgt. Ellers ville de nitten andre
+        // sidene staa mellom deg og feltene du nettopp aapnet — og da var
+        // det ingen vits i aa lukke dem i utgangspunktet. Paa stoerre skjerm
+        // staar lista i sin egen spalte og merker ikke dette.
+        const velgSide = id => () => this.setState({ seoValgtId: id, seoListeApen: false });
         return {
           // Kortene her er snarveier til den foerste sida som har problemet.
           // Er lista tom, er det ingenting aa gaa til — og da skal kortet
@@ -57579,6 +57822,23 @@ class Component extends DCLogic {
             under70.length ? { tekst: under70.length + ' sider har SEO-score under 70', hint: 'Start med den laveste', velg: velgSide(under70.sort((a, b) => a.sc.score - b.sc.score)[0].s.id) } : null,
           ].filter(Boolean),
           seoAltGront: [utenTittel, utenMeta, utenAlt, under70].every(x => !x.length),
+          // De tre lange blokkene paa SEO-skjermen bak hver sin pille paa
+          // telefonen. Skjermen var 6 062 px paa en 390 px skjerm — 7,2
+          // skjermer aa dra forbi — og halve hoyden var ting man ser paa,
+          // ikke fyller ut: sidelista (1 004 px), de automatiske dataene
+          // (356 px) og forslagene (1 193 px). Maalt 13. september 2026.
+          //
+          // Samme grep som paa Kurs- og Nettbutikkskjermen: knappene staar
+          // bare under 760 px, og paa stoerre skjerm staar alt aapent som
+          // foer. Se «.lx-listevis» i stilarket.
+          seoListeApen: !!this.state.seoListeApen,
+          seoListeVeksle: () => this.setState({ seoListeApen: !this.state.seoListeApen }),
+          seoListeKnapp: 'Sider og score (' + alle.length + ')'
+            + (this.state.seoListeApen ? ' \u25b4' : ' \u25be'),
+          seoSchemaApen: !!this.state.seoSchemaApen,
+          seoSchemaVeksle: () => this.setState({ seoSchemaApen: !this.state.seoSchemaApen }),
+          seoSchemaKnapp: 'Strukturert data (genereres automatisk)'
+            + (this.state.seoSchemaApen ? ' \u25b4' : ' \u25be'),
           seoListe: alle.map(x => ({
             navn: x.s.navn, type: x.s.type, score: x.sc.score + '',
             velg: velgSide(x.s.id),
@@ -57737,6 +57997,10 @@ class Component extends DCLogic {
               return { seoUtkast: u };
             });
           },
+          seoForslagApen: !!this.state.seoForslagApen,
+          seoForslagVeksle: () => this.setState({ seoForslagApen: !this.state.seoForslagApen }),
+          seoForslagKnapp: 'Forslag til lokale landingssider (' + LANDINGSSOK.length + ')'
+            + (this.state.seoForslagApen ? ' \u25b4' : ' \u25be'),
           // Huskeliste over lokale soek det er verdt aa lage en side for.
           // Avkryssingen lagres som resten av tekstene, saa lista ikke
           // nullstiller seg hver gang skjermen aapnes.
@@ -57745,7 +58009,7 @@ class Component extends DCLogic {
               try { return JSON.parse((this.state.innholdLagret || {})['SEO/landing'] || '{}') || {}; }
               catch (e) { return {}; }
             })();
-            return ['Keramikkurs i Tønsberg', 'Dreiekurs i Tønsberg', 'Keramikkurs i Vestfold', 'Kreativt kurs for voksne', 'Teambuilding med keramikk', 'Gavekort på keramikkurs', 'Håndlaget keramikk fra Tønsberg', 'Norsk keramikk kunst', 'Keramikkverksted med medlemskap', 'Kurs og events hos Lissom Keramikk'].map(navn => ({
+            return LANDINGSSOK.map(navn => ({
               navn, fokus: navn.toLowerCase(),
               status: merket[navn] ? 'Planlagt' : 'Ikke tatt',
               tone: merket[navn] ? 'success' : 'neutral',
@@ -57778,7 +58042,9 @@ class Component extends DCLogic {
         const utenSporsmal = alle.filter(x => !(this.geoData(x.s.id).sporsmal || '').trim());
         const utenFakta = alle.filter(x => !(this.geoData(x.s.id).fakta || '').trim());
         const under70 = alle.filter(x => x.sc.score < 70);
-        const velgSide = id => () => this.setState({ geoValgtId: id });
+        // Lista lukker seg naar du har valgt, som paa SEO. Ellers ville de
+        // nitten andre sidene staa mellom deg og feltene du nettopp aapnet.
+        const velgSide = id => () => this.setState({ geoValgtId: id, geoListeApen: false });
 
         return {
           adminNavGeo: this.adminSideMeny(),
@@ -57807,6 +58073,19 @@ class Component extends DCLogic {
             under70.length ? { tekst: under70.length + ' sider har GEO-score under 70', hint: 'Start med den laveste', velg: velgSide(under70.slice().sort((a, b) => a.sc.score - b.sc.score)[0].s.id) } : null,
           ].filter(Boolean),
           geoAltGront: [utenSvar, utenSporsmal, utenFakta, under70].every(x => !x.length),
+          // De to lange blokkene paa GEO bak hver sin pille paa telefonen.
+          // Skjermen var 4 667 px paa en 390 px skjerm — 5,5 skjermer — og
+          // 1 637 av dem var sidelista (1 004 px) og statuslinjene nederst
+          // (633 px). Samme grep som paa SEO, tvillingskjermen.
+          // Maalt 13. september 2026. Se «.lx-listevis» i stilarket.
+          geoListeApen: !!this.state.geoListeApen,
+          geoListeVeksle: () => this.setState({ geoListeApen: !this.state.geoListeApen }),
+          geoListeKnapp: 'Sider og score (' + alle.length + ')'
+            + (this.state.geoListeApen ? ' \u25b4' : ' \u25be'),
+          geoTiltakApen: !!this.state.geoTiltakApen,
+          geoTiltakVeksle: () => this.setState({ geoTiltakApen: !this.state.geoTiltakApen }),
+          geoTiltakKnapp: 'Hva som ellers er gjort for AI-søk'
+            + (this.state.geoTiltakApen ? ' \u25b4' : ' \u25be'),
           geoListe: alle.map(x => ({
             navn: x.s.navn, score: x.sc.score + '',
             velg: velgSide(x.s.id),

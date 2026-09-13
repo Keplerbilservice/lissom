@@ -1588,6 +1588,11 @@ window.__resources = {
      px mot spaltas 151) faar hele linja i stedet for aa bli klippet.
      Ordet skal kunne leses; det er derfor det staar der. */
   @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-pillerad {
+      /* Elleve av radene var flex uten «wrap» — da kan ingenting falle ned
+         paa linje to, og to like brede blir umulig. */
+      flex-wrap: wrap !important;
+    }
     .lx-adminaside ~ main .lx-pillerad > button {
       flex: 1 1 calc(50% - 12px) !important;
       min-width: fit-content !important;
@@ -7746,7 +7751,7 @@ window.__resources = {
               </button>
             </sc-for>
           </div>
-          <div style="{{ klSnarveiPilleRadStil }}">
+          <div class="lx-pillerad" style="{{ klSnarveiPilleRadStil }}">
             <sc-for list="{{ klSnarveiPiller }}" as="s" hint-placeholder-count="6">
               <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}<sc-if value="{{ s.harVerdi }}" hint-placeholder-val="{{ false }}"><span style="{{ s.verdiStil }}">{{ s.verdi }}</span></sc-if></button>
             </sc-for>
@@ -9699,7 +9704,7 @@ window.__resources = {
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.sendEpost }}" hint-size="auto,40px">Send e-post</x-import>
                   </sc-if>
 
-                  <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
+                  <div class="lx-pillerad" style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
                     <button class="lx-radpille" type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
                     <button class="lx-radpille" type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
                   </div>
@@ -12314,7 +12319,7 @@ window.__resources = {
                 <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ admUkeTittel }}</div>
                 <div style="font-size: var(--text-lg); color: var(--text-muted); margin-top: 2px;">{{ admUkeMaaned }}</div>
               </div>
-              <div style="display: flex; gap: var(--space-2);">
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-2);">
                 <button type="button" onClick="{{ admUkeForrige }}" aria-label="Tilbake" style="{{ admUkePilStil }}">‹</button>
                 <button type="button" onClick="{{ admUkeNeste }}" aria-label="Fram" style="{{ admUkePilStil }}">›</button>
                 <button type="button" onClick="{{ admUkeNaa }}" style="{{ admUkeNaaStil }}">I dag</button>
@@ -12433,7 +12438,7 @@ window.__resources = {
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ kursListeTittel }} · {{ adminKursAntall }}</span>
               <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
                 <input value="{{ kursSok }}" onChange="{{ settKursSok }}" placeholder="Søk etter kurs" style="{{ kursSokStil }}">
-                <div style="display: flex; gap: 2px;">
+                <div class="lx-pillerad" style="display: flex; gap: 2px;">
                   <sc-for list="{{ kursFaneValg }}" as="f" hint-placeholder-count="3">
                     <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
                   </sc-for>
@@ -13028,7 +13033,7 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Omsetning</span>
-              <div style="display: flex; gap: 2px;">
+              <div class="lx-pillerad" style="display: flex; gap: 2px;">
                 <sc-for list="{{ ovOmsValg }}" as="o" hint-placeholder-count="2">
                   <button type="button" onClick="{{ o.velg }}" style="{{ o.stil }}">{{ o.navn }}</button>
                 </sc-for>
@@ -13246,7 +13251,7 @@ window.__resources = {
                     <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">{{ q.merke }}</div>
                     <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ q.tekst }}</div>
                   </div>
-                  <div style="display: flex; gap: 6px; align-items: center;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; align-items: center;">
                     <button type="button" onClick="{{ q.opp }}" aria-label="Flytt opp" style="{{ q.pilStil }}">↑</button>
                     <button type="button" onClick="{{ q.ned }}" aria-label="Flytt ned" style="{{ q.pilStil }}">↓</button>
                     <button class="lx-radpille" type="button" onClick="{{ q.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ q.redigerTekst }}</button>
@@ -15266,7 +15271,7 @@ window.__resources = {
                        samme kall, samme skjema, ingen ny losning. -->
                   <button type="button" onClick="{{ p.betaling }}" title="Åpne betalingen" style="{{ p.betalingStil }}">{{ p.status }}</button>
                 </div>
-                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                <div class="lx-pillerad" style="display: flex; gap: var(--space-3); margin-left: auto;">
                   <!-- «Marker som betalt» satte en status og ikke noe mer:
                        ingen sum, ingen hvem, ingen naar, og ingen vei tilbake
                        om noen slo inn feil. Her registreres pengene. -->
@@ -15676,7 +15681,7 @@ window.__resources = {
                       <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Rabatt %</span>
                       <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ grTallStil }}">
                     </label>
-                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-left: auto;">
+                    <div class="lx-pillerad" style="display: flex; align-items: center; gap: var(--space-3); margin-left: auto;">
                       <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
                       <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
                     </div>
@@ -17524,7 +17529,7 @@ window.__resources = {
                 <div class="lx-medlstatus" style="margin-left: auto; flex: 0 0 120px;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
                 </div>
-                <div style="display: flex; gap: 10px; flex: 0 0 108px;">
+                <div class="lx-pillerad" style="display: flex; gap: 10px; flex: 0 0 108px;">
                   <sc-if value="{{ m.kanAvslutte }}" hint-placeholder-val="{{ true }}">
                     <button class="lx-radpille" type="button" onClick="{{ m.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Avslutt</button>
                   </sc-if>
@@ -19107,7 +19112,7 @@ window.__resources = {
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">{{ redTittel }}</div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn</label>
                 <input value="{{ redNavn }}" onChange="{{ settRedNavn }}" placeholder="F.eks. Blank glasur 1240" style="width: 100%; box-sizing: border-box; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-4);">
-                <div style="display: flex; gap: 8px; margin-bottom: var(--space-5);">
+                <div class="lx-pillerad" style="display: flex; gap: 8px; margin-bottom: var(--space-5);">
                   <sc-for list="{{ redTyper }}" as="t" hint-placeholder-count="2">
                     <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
                   </sc-for>
@@ -19594,7 +19599,7 @@ window.__resources = {
                     <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ r.tittel }}</div>
                     <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.under }}</div>
                   </div>
-                  <div style="display: flex; gap: var(--space-3);">
+                  <div class="lx-pillerad" style="display: flex; gap: var(--space-3);">
                     <button class="lx-radpille" type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">{{ vstRadKnapp }}</button>
                     <sc-if value="{{ vstKanSlette }}" hint-placeholder-val="{{ true }}">
                       <button class="lx-radpille" type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--terracotta-600); font: var(--type-body-sm); font-weight: 700;">Ta bort</button>

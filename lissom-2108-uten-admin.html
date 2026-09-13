@@ -1588,6 +1588,11 @@ window.__resources = {
      px mot spaltas 151) faar hele linja i stedet for aa bli klippet.
      Ordet skal kunne leses; det er derfor det staar der. */
   @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-pillerad {
+      /* Elleve av radene var flex uten «wrap» — da kan ingenting falle ned
+         paa linje to, og to like brede blir umulig. */
+      flex-wrap: wrap !important;
+    }
     .lx-adminaside ~ main .lx-pillerad > button {
       flex: 1 1 calc(50% - 12px) !important;
       min-width: fit-content !important;

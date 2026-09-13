@@ -13886,8 +13886,8 @@ sjekk('pillene staar to og to i lik bredde paa telefon',
     && str_contains($sidaP, '      min-width: fit-content !important;'),
     'maalt: 59 rader paa 390 px');
 sjekk('… og alle pilleradene i admin er merket',
-    substr_count($sidaP, 'class="lx-pillerad"') === 98,
-    '98 rader');
+    substr_count($sidaP, 'class="lx-pillerad"') === 109,
+    '109 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
 
 // Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
 // lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september

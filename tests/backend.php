@@ -17782,6 +17782,28 @@ sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett de
             && str_contains($m, 'CREATE TABLE IF NOT EXISTS ovn_tomt_sett (')
             && str_contains($m, '  PRIMARY KEY (tomt_id, member_id)');
     })());
+// ── Kalenderen, 13. september 2026: tre ting ─────────────────────────────
+//
+// Eieren: «1. legge til send beskjed ved siden av chat pillen i kalender …
+// komme til samme sted som medlemmer, beskjeder. 2. … synlighet på siden …
+// alle vis skjul knappene, legg i et kort (aapent, i tillegg til arket).
+// 3. Kalender, venteliste, pillene med navn og kurs, større plass til
+// navnet på deltaker, fjerne teksten: hele kurset #1». Maalt i Chrome.
+sjekk('Kalender: «Send beskjed» ved siden av Chat gaar til Medlemmer → Beskjeder',
+    str_contains($mkSida, "                { navn: 'Chat',        velg: () => this.setState({ klChatVis: true }) },\n")
+    && str_contains($mkSida, "                { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },"));
+sjekk('… synlighetskortet paa kalenderen har de samme radene som arket i Verktøy, i full bredde og to kolonner',
+    substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 2
+    && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="6">') === 1
+    && str_contains($mkSida, '<div style="grid-column: 1 / -1; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);">')
+    && str_contains($mkSida, 'grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--space-2) var(--space-8);')
+    && str_contains($mkSida, "      ...(side === 'adminkalender' && !this.state.dok ? (this.dokHent(), {}) : {}),"));
+sjekk('… ventelista: navnet staar helt ut, kurset kuttes, «Hele kurset · #1» er borte',
+    str_contains($mkSida, "              under: v.status || '',\n              harUnder: !!v.status,")
+    && !str_contains($mkSida, "? 'Hele kurset'")
+    && str_contains($mkSida, "whiteSpace: 'nowrap', minWidth: 0, flex: '0 0 auto', maxWidth: '70%' },")
+    && str_contains($mkSida, "marginLeft: 'auto', flex: '1 1 auto', minWidth: 0, justifyContent: 'flex-end' },")
+    && str_contains($mkSida, '<sc-if value="{{ v.harUnder }}" hint-placeholder-val="{{ false }}">'));
 sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));

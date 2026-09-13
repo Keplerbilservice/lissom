@@ -7419,10 +7419,11 @@ sjekk('Min side har baade piller og bunnmeny i markupen',
 sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
     str_contains($sida, '.ms-pillerad { display: flex; }')
     && str_contains($sida, '@media (min-width: 761px) {')
-    // «:not(.ms-ovn)» kom med «Ovn er toemt» 12. september. Pilla staar
-    // igjen paa telefonen sammen med «Hjem» og «x inne» — den er hele
-    // poenget med varselet, og skal ikke gjemme seg i bunnmenyen.
-    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem):not(.ms-ovn) { display: none !important; }'));
+    // «:not(.ms-ovn)» kom med «Ovn er toemt» 12. september og gikk ut igjen
+    // 13., da de tre ovnshandlingene flyttet inn i ovnkortet. Pilla finnes
+    // ikke lenger — unntaket i velgeren ble staaende her etter at CSS-en var
+    // rettet, og var den siste raude sjekken i pakka.
+    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }'));
 // Eieren, 10. september 2026: «Kan du flytte min side knappen lenger opp paa
 // siden ved siden av pillen med antall inn.» Foer dette var veien hjem cella
 // lengst til venstre i bunnmenyen — han fant den ikke.

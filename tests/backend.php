@@ -576,10 +576,20 @@ $antKvitt = (int)DB::verdi("SELECT COUNT(*) FROM notifications
                              WHERE ref_type='booking' AND ref_id=:i
                                AND emne NOT LIKE 'Ny påmelding:%'",['i'=>$bid]);
 sjekk('kun én kvittering tross to markeringer', $antKvitt === 1, $antKvitt . ' stk');
-$antAdmin = (int)DB::verdi("SELECT COUNT(*) FROM notifications
-                             WHERE ref_type='booking' AND ref_id=:i
-                               AND emne LIKE 'Ny påmelding:%'",['i'=>$bid]);
-sjekk('… og verkstedet varsles ogsaa bare én gang', $antAdmin === 1, $antAdmin . ' stk');
+// Verkstedet kan vaere flere adresser — adressen i admin, og de som har
+// rollen. Da er det én rad per adresse, og det er som det skal. Det vakta
+// skal fange er en rad for MYE: samme mottaker to ganger, fordi betalinga
+// ble markert to ganger.
+$admRader = DB::alle("SELECT mottaker FROM notifications
+                       WHERE ref_type='booking' AND ref_id=:i
+                         AND emne LIKE 'Ny påmelding:%'",['i'=>$bid]);
+$admMott = array_map(static fn($r) => mb_strtolower((string) $r['mottaker']), $admRader);
+sjekk('… og verkstedet varsles én gang per adresse',
+    count($admMott) === count(array_unique($admMott)),
+    implode(', ', $admMott));
+sjekk('… og alle adressene fikk den',
+    count(array_unique($admMott)) === count(Varsel::adminEposter()),
+    count(array_unique($admMott)) . ' av ' . count(Varsel::adminEposter()));
 
 echo "\n== Kapasitet teller reservasjoner ==\n";
 $forbrukt = Booking::ledigePlasser($oktId);
@@ -1555,19 +1565,31 @@ sjekk('ingen adresse staar to ganger i adminlista',
 //
 // Eieren, 9. september 2026: «la oss forholde oss til det som staar i admin,
 // jeg vil at det kun er monica eller post@lissom.no som skal faa eposter,
-// gjelder hele systemet.» Han valgte post@lissom.no.
+// gjelder hele systemet.» Han valgte post@lissom.no, og rolleoppslaget ble
+// tatt bort.
 //
-// For gikk de til alle med rollen «admin» i basen. Da avgjorde rollelista
-// hvem som fikk e-post, og en ny administrator fikk dem uten at noen hadde
-// bestemt det. Naa er det avsenderoppsettet under Innstillinger → Varsler.
+// Eieren, 13. september 2026: «jeg vil bli varslet paa epost naar noen sender
+// meg en besked eller vestillig. Altsaa slik det har fungert hele tiden.»
+// Endringa 9. september tok hans egen adresse ut av lista. Begge deler staar
+// naa: adressen i admin, og de som er admin i basen.
+//
+// «admin_eposter» i secrets.php slaar fortsatt begge av og bestemmer lista
+// selv — det er der en som vil ha kontroll setter den.
 $varselFil = file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
-sjekk('adminvarsler slaar ikke lenger opp rollen i basen',
-    !str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
-sjekk('… de gaar til adressen som staar i admin',
-    $forNokler === [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))],
+sjekk('adminvarsler gaar til adressen som staar i admin',
+    in_array(
+        (string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no')),
+        $forNokler,
+        true
+    ),
     implode(', ', $forNokler));
-// Én adresse, ikke en liste som vokser med hver nye administrator.
-sjekk('… og det er én adresse', count($forNokler) === 1, (string) count($forNokler));
+// … og til dem som er admin, som for 9. september.
+sjekk('… og til dem som har rollen admin',
+    str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
+// Fila bestemmer fortsatt alene naar den er fylt ut.
+sjekk('… mens admin_eposter i fila slaar begge av',
+    str_contains($varselFil, "\$fra = Config::hent('admin_eposter', []);")
+    && str_contains($varselFil, '        if ($liste === []) {'));
 // Rollen avgjor fortsatt hvem som kommer INN i admin — det er en annen sak,
 // og den skal ikke ryke med her.
 sjekk('rollen avgjor fortsatt adgangen til admin',
@@ -17254,8 +17276,34 @@ sjekk('… og de ni punktene ligger oppaa bildet',
 sjekk('… og valget foelger med produktet',
     str_contains($vis172, "        skjema.append('fokus', s.skFokus || '50% 50%');")
     && str_contains($msApi, "\$fokus = trim(Foresporsel::tekst('fokus'));")
-    && str_contains($mig177, "  ADD COLUMN fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;"),
+    && str_contains($mig177, "  ADD COLUMN IF NOT EXISTS fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;"),
     'maalt: «Nede venstre» ble lagret som «0% 100%»');
+// «IF NOT EXISTS», som de 42 andre migrasjonene som legger til en kolonne.
+// Uten den doer hele kjoringa paa en base som alt har kolonna, og alt etter
+// 177 blir staaende ukjort. Funnet 13. september 2026.
+sjekk('… og migrasjonen taaler aa kjores om igjen',
+    str_contains($mig177, 'ADD COLUMN IF NOT EXISTS fokus'));
+
+// ── En feil som ikke sier hva som er galt, hjelper ingen ────────────────
+//
+// Eieren, 13. september 2026: «Naar noen melder seg paa kurs, saa fikk jeg
+// epost for, det gjor jeg ikke lenger.» Koen sa «Leverandoren svarte med
+// feil» paa hver eneste rad. Grunnen: $sisteFeil ble satt av sendSmtp() og
+// sendSms(), men aldri av fallbacken — serverens egen mail(). Er ikke SMTP
+// satt opp, er det den veien alt gaar, og da staar man uten et svar.
+//
+// Maalt: hele koen kjort mot en tjener uten sendmail. For: «Leverandoren
+// svarte med feil» x 13. Etter: «SMTP er ikke satt opp, og serverens egen
+// e-post tok ikke imot meldingen» x 13, lest i admin.
+$varslerKode = (string) file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+sjekk('serverens egen e-post sier ogsaa hvorfor det gikk galt',
+    str_contains($varslerKode, "\$ok = @mail(\$til, \$emneKodet, \$kropp, \$headere, '-f' . \$fra);")
+    && str_contains($varslerKode, "self::\$sisteFeil = 'SMTP er ikke satt opp, og serverens egen e-post tok ikke imot meldingen'"));
+// PHP-ens egen advarsel legges bak, naar det finnes en: «sendmail: not
+// found» sier mer enn setninga alene.
+sjekk('… med serverens egne ord bak, der de finnes',
+    str_contains($varslerKode, "\$foer = error_get_last();")
+    && str_contains($varslerKode, "(\$sagt !== '' ? ' — ' . \$sagt : '');"));
 // Et fritt felt her ville endt som ren CSS i «background-position» ute.
 sjekk('… og bare de ni punktene godtas',
     str_contains($msApi, "if (!in_array(\$fokus, \$fokusValg, true)) {"));

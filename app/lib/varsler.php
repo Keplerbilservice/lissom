@@ -91,7 +91,37 @@ final class Varsel
         $liste = is_array($fra) ? $fra : [];
 
         if ($liste === []) {
+            // Adressen som staar i admin. Den har vaert den eneste siden
+            // 9. september.
             $liste = [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))];
+
+            // Og de som er admin i basen, som for 9. september.
+            //
+            // Eieren, 13. september 2026: «jeg vil bli varslet paa epost naar
+            // noen sender meg en besked eller vestillig. Altsaa slik det har
+            // fungert hele tiden.»
+            //
+            // Endringa 9. september tok bort rolleoppslaget helt, og da sluttet
+            // hans egen adresse aa faa dem — de gikk bare til post@lissom.no.
+            // Begge deler staar naa: adressen i admin skal fortsatt faa dem,
+            // og det skal de som er admin.
+            //
+            // Grunnen til at rolleoppslaget ble tatt bort var at en ny
+            // administrator begynte aa faa e-post uten at noen hadde bestemt
+            // det. Den bekymringa staar ved lag — men den loeses med
+            // «admin_eposter» i secrets.php, som slaar begge deler av og
+            // bestemmer lista selv. Den staar foerst, som for.
+            try {
+                foreach (DB::alle(
+                    "SELECT epost FROM members
+                      WHERE rolle = 'admin' AND epost IS NOT NULL AND epost <> ''
+                        AND anonymisert_at IS NULL"
+                ) as $r) {
+                    $liste[] = (string) $r['epost'];
+                }
+            } catch (Throwable $e) {
+                // Uten base staar adressen fra admin alene, som over.
+            }
         }
 
         // Samme adresse skal telle som én, ogsaa naar den staar med ulik
@@ -563,7 +593,29 @@ final class Utsending
             return self::sendSmtp($til, $emneKodet, $kropp, $headere, (string) $fra);
         }
 
-        return mail($til, $emneKodet, $kropp, $headere, '-f' . $fra);
+        // Serverens egen e-post. mail() svarer bare true eller false, og
+        // grunnen staar i PHP-ens siste advarsel — «sendmail: not found»,
+        // «Could not execute mail delivery program», eller hva serveren nna
+        // sier. Uten dette blir «Leverandoren svarte med feil» staaende i
+        // koen, og det hjelper ingen: eieren ser en rad som feilet uten aa
+        // faa vite hvorfor.
+        //
+        // Funnet 13. september 2026. Eieren: «Naar noen melder seg paa kurs,
+        // saa fikk jeg epost for, det gjor jeg ikke lenger.» Koen sa bare
+        // «Leverandoren svarte med feil» paa hver eneste rad — $sisteFeil ble
+        // satt av sendSmtp() og sendSms(), men aldri her.
+        $foer = error_get_last();
+        $ok = @mail($til, $emneKodet, $kropp, $headere, '-f' . $fra);
+        if (!$ok) {
+            $etter = error_get_last();
+            $sagt = ($etter !== null && $etter !== $foer)
+                ? trim((string) ($etter['message'] ?? ''))
+                : '';
+            self::$sisteFeil = 'SMTP er ikke satt opp, og serverens egen e-post tok ikke imot meldingen'
+                . ($sagt !== '' ? ' — ' . $sagt : '');
+            logg('E-post: serverens egen sending feilet', ['til' => $til, 'feil' => $sagt]);
+        }
+        return $ok;
     }
 
     /**

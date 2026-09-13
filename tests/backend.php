@@ -576,10 +576,20 @@ $antKvitt = (int)DB::verdi("SELECT COUNT(*) FROM notifications
                              WHERE ref_type='booking' AND ref_id=:i
                                AND emne NOT LIKE 'Ny påmelding:%'",['i'=>$bid]);
 sjekk('kun én kvittering tross to markeringer', $antKvitt === 1, $antKvitt . ' stk');
-$antAdmin = (int)DB::verdi("SELECT COUNT(*) FROM notifications
-                             WHERE ref_type='booking' AND ref_id=:i
-                               AND emne LIKE 'Ny påmelding:%'",['i'=>$bid]);
-sjekk('… og verkstedet varsles ogsaa bare én gang', $antAdmin === 1, $antAdmin . ' stk');
+// Verkstedet kan vaere flere adresser — adressen i admin, og de som har
+// rollen. Da er det én rad per adresse, og det er som det skal. Det vakta
+// skal fange er en rad for MYE: samme mottaker to ganger, fordi betalinga
+// ble markert to ganger.
+$admRader = DB::alle("SELECT mottaker FROM notifications
+                       WHERE ref_type='booking' AND ref_id=:i
+                         AND emne LIKE 'Ny påmelding:%'",['i'=>$bid]);
+$admMott = array_map(static fn($r) => mb_strtolower((string) $r['mottaker']), $admRader);
+sjekk('… og verkstedet varsles én gang per adresse',
+    count($admMott) === count(array_unique($admMott)),
+    implode(', ', $admMott));
+sjekk('… og alle adressene fikk den',
+    count(array_unique($admMott)) === count(Varsel::adminEposter()),
+    count(array_unique($admMott)) . ' av ' . count(Varsel::adminEposter()));
 
 echo "\n== Kapasitet teller reservasjoner ==\n";
 $forbrukt = Booking::ledigePlasser($oktId);
@@ -1555,19 +1565,31 @@ sjekk('ingen adresse staar to ganger i adminlista',
 //
 // Eieren, 9. september 2026: «la oss forholde oss til det som staar i admin,
 // jeg vil at det kun er monica eller post@lissom.no som skal faa eposter,
-// gjelder hele systemet.» Han valgte post@lissom.no.
+// gjelder hele systemet.» Han valgte post@lissom.no, og rolleoppslaget ble
+// tatt bort.
 //
-// For gikk de til alle med rollen «admin» i basen. Da avgjorde rollelista
-// hvem som fikk e-post, og en ny administrator fikk dem uten at noen hadde
-// bestemt det. Naa er det avsenderoppsettet under Innstillinger → Varsler.
+// Eieren, 13. september 2026: «jeg vil bli varslet paa epost naar noen sender
+// meg en besked eller vestillig. Altsaa slik det har fungert hele tiden.»
+// Endringa 9. september tok hans egen adresse ut av lista. Begge deler staar
+// naa: adressen i admin, og de som er admin i basen.
+//
+// «admin_eposter» i secrets.php slaar fortsatt begge av og bestemmer lista
+// selv — det er der en som vil ha kontroll setter den.
 $varselFil = file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
-sjekk('adminvarsler slaar ikke lenger opp rollen i basen',
-    !str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
-sjekk('… de gaar til adressen som staar i admin',
-    $forNokler === [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))],
+sjekk('adminvarsler gaar til adressen som staar i admin',
+    in_array(
+        (string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no')),
+        $forNokler,
+        true
+    ),
     implode(', ', $forNokler));
-// Én adresse, ikke en liste som vokser med hver nye administrator.
-sjekk('… og det er én adresse', count($forNokler) === 1, (string) count($forNokler));
+// … og til dem som er admin, som for 9. september.
+sjekk('… og til dem som har rollen admin',
+    str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
+// Fila bestemmer fortsatt alene naar den er fylt ut.
+sjekk('… mens admin_eposter i fila slaar begge av',
+    str_contains($varselFil, "\$fra = Config::hent('admin_eposter', []);")
+    && str_contains($varselFil, '        if ($liste === []) {'));
 // Rollen avgjor fortsatt hvem som kommer INN i admin — det er en annen sak,
 // og den skal ikke ryke med her.
 sjekk('rollen avgjor fortsatt adgangen til admin',

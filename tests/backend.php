@@ -17071,6 +17071,26 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
 
+echo "\n== Kursvelgeren: ett svar aapent om gangen ==\n";
+// Maalt i nettleseren 13. september 2026: 208 piller og 3867 px aa rulle paa
+// den ene skjermen. Hvert svar sto helt utslaatt — seksten kurspiller, tre
+// nivaa, seks hvem, fire metoder — seks svar under hverandre. Eieren fikk se
+// skjermen med svarene slaatt sammen og svarte «GO — slaa sammen svarene».
+// Maalt etter: 34 piller og 1516 px lukket, 63 og 1996 med ett svar aapent.
+sjekk('svaret staar lukket til du aapner det',
+    str_contains($vis172, "              apen: (this.state.kvaSvarApen || 0) === sv.id,")
+    && str_contains($vis172, "              apne: () => this.setState(st => ({ kvaSvarApen: st.kvaSvarApen === sv.id ? 0 : sv.id })),")
+    && str_contains($vis172, '<sc-if value="{{ sv.apen }}" hint-placeholder-val="{{ true }}">'),
+    'maalt: 208 piller foer, 34 etter');
+// Linja er satt sammen av pillenavnene som alt staar der. Ingen nye ord.
+sjekk('… og lukket sier den hva som er valgt',
+    str_contains($vis172, '<button type="button" onClick="{{ sv.apne }}" style="{{ sv.sumStil }}">{{ sv.oppsummering }}</button>')
+    && str_contains($vis172, "                return deler.length ? deler.join(' · ') : 'Ingen valg satt';"),
+    'maalt: «Date Night · To sammen», «Nybegynner dreiekurs · Nybegynnere · Dreiing»');
+// Linja er en rad, ikke en lenke — arbeidsreglene sier piller og kort.
+sjekk('… uten understrek',
+    str_contains($vis172, "              sumStil: {\n                appearance: 'none', border: 'none', background: 'transparent',"));
+
 echo "\n== Oversikt har ingen tom seksjon ==\n";
 // Alt som laa under «Synlighet og innhold» er flyttet ut, ett stykke om
 // gangen — bryterne til ⊙ Synlighet, kursvelgeren opp som kort,

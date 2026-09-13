@@ -13354,6 +13354,10 @@ window.__resources = {
                           <button class="lx-radpille" type="button" onClick="{{ sv.lagre }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Lagre</button>
                           <button type="button" onClick="{{ sv.slett }}" aria-label="Slett svaret" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
                         </div>
+                        <!-- Lukket: navnet og én linje som sier hva som er
+                             valgt. Aapent: alle brikkene. Se «apen» i
+                             renderVals for hvorfor. -->
+                        <sc-if value="{{ sv.apen }}" hint-placeholder-val="{{ true }}">
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
                           <div style="grid-column: 1 / -1;">
                             <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Anbefaler</label>
@@ -13381,6 +13385,10 @@ window.__resources = {
                             </div>
                           </sc-for>
                         </div>
+                        </sc-if>
+                        <sc-if value="{{ sv.lukket }}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{ sv.apne }}" style="{{ sv.sumStil }}">{{ sv.oppsummering }}</button>
+                        </sc-if>
                       </div>
                     </sc-for>
                   </div>
@@ -53706,6 +53714,45 @@ class Component extends DCLogic {
             kanHaSvar: ['envalg', 'flervalg'].indexOf(uq(q, 'type', q.type)) !== -1,
             harSvar: (q.svar || []).length > 0,
             svar: (q.svar || []).map(sv => ({
+              // ── Ett svar aapent om gangen ─────────────────────────────
+              //
+              // Maalt i nettleseren 13. september 2026: 208 piller og 3867 px
+              // aa rulle paa denne ene skjermen. Hvert svar sto helt utslaatt
+              // — seksten kurspiller, tre nivaa, seks hvem, fire metoder —
+              // seks svar under hverandre.
+              //
+              // Eieren fikk se skjermen med svarene slaatt sammen og svarte
+              // «GO — slaa sammen svarene». Maalt paa den: 63 piller og
+              // 1991 px.
+              //
+              // Lukket staar navnet og én linje som sier hva som er valgt.
+              // Linja er satt sammen av pillenavnene som alt staar der; ingen
+              // nye ord. Et trykk aapner svaret, og lukker det forrige.
+              apen: (this.state.kvaSvarApen || 0) === sv.id,
+              lukket: (this.state.kvaSvarApen || 0) !== sv.id,
+              apne: () => this.setState(st => ({ kvaSvarApen: st.kvaSvarApen === sv.id ? 0 : sv.id })),
+              // Hele linja er trykkflata. Ingen understrek: den er en rad, og
+              // arbeidsreglene sier piller og kort — ikke lenker.
+              sumStil: {
+                appearance: 'none', border: 'none', background: 'transparent',
+                cursor: 'pointer', padding: '6px 0 0', textAlign: 'left', width: '100%',
+                font: 'var(--type-body-sm)', color: 'var(--text-muted)',
+              },
+              oppsummering: (() => {
+                const deler = [];
+                const mal = String(us(sv, 'mal', sv.mal || ''));
+                const traff = (maalene || []).filter(m => String(m.verdi) === mal)[0];
+                if (traff) deler.push(traff.navn);
+                [['passerNivaa', MERKER.nivaa], ['passerHvem', MERKER.hvem], ['metode', MERKER.metode]]
+                  .forEach(([felt, liste]) => {
+                    String(us(sv, felt, sv[felt] || '')).split(',').map(x => x.trim()).filter(Boolean)
+                      .forEach(kode => {
+                        const t = (liste || []).filter(([k]) => k === kode)[0];
+                        if (t) deler.push(t[1]);
+                      });
+                  });
+                return deler.length ? deler.join(' · ') : 'Ingen valg satt';
+              })(),
               radStil: {
                 border: '1px solid ' + (sv.aktiv ? 'var(--border-subtle)' : 'var(--clay-200)'),
                 borderRadius: 'var(--radius-md)', padding: 'var(--space-4)',

@@ -10045,7 +10045,7 @@ sjekk('de to lange listene ligger bak hver sin lenke paa telefonen',
     str_contains($sidaG, '  .lx-listevis { display: none; }')
     && str_contains($sidaG, '    .lx-listevis { display: block !important; }')
     && str_contains($sidaG, '    .lx-kursliste[data-apen="false"],')
-    && str_contains($sidaG, '    .lx-datoliste[data-apen="false"] { display: none !important; }'));
+    && str_contains($sidaG, '    .lx-datoliste[data-apen="false"],'));
 // Ukestripa staar som foer, oeverst: det er den man trenger for aa se dagen.
 sjekk('… mens ukestripa staar aapen',
     !str_contains($sidaG, '.lx-ukestripe[data-apen'));
@@ -10055,9 +10055,30 @@ sjekk('… og lenken sier det samme som overskriften',
     str_contains($sidaG, "kursListeKnapp: (NAVN[fane] || NAVN.alle) + ' (' + this.kursSokte().length + ')'")
     && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
 // Én stil paa begge lenkene, saa de ikke driver fra hverandre.
-sjekk('… og begge lenkene deler stil',
-    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 2
+sjekk('… og alle lenkene deler stil',
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 5
     && str_contains($sidaG, '      listeKnappStil: {'));
+
+// ── SEO-skjermen paa telefonen ─────────────────────────────────────────
+//
+// 6 062 piksler paa en 390 px skjerm — 7,2 skjermer. Halve hoyden var ting
+// man ser paa, ikke fyller ut: lista over de tjue sidene (1 004 px), det
+// automatiske skjemaet (356 px) og de ti forslagene (1 193 px).
+//
+// Samme grep som paa Kurs- og Nettbutikkskjermen, ikke et nytt et.
+// Maalt: 7,2 -> 4,4 skjermer. PC uendret paa 3 921 px.
+sjekk('de tre lange blokkene paa SEO ligger bak hver sin pille paa telefonen',
+    str_contains($sidaG, '    .lx-seoliste[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-seoskjema[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-seoforslag[data-apen="false"] { display: none !important; }'));
+// Tallet i pilla kommer fra lista selv, ikke fra et tall skrevet ved siden av.
+sjekk('… og tallet i pilla telles, ikke skrives',
+    str_contains($sidaG, "seoListeKnapp: 'Sider og score (' + alle.length + ')'")
+    && str_contains($sidaG, "seoForslagKnapp: 'Forslag til lokale landingssider (' + LANDINGSSOK.length + ')'"));
+// Velger man en side, lukker lista seg — ellers ville de nitten andre staa
+// mellom deg og feltene du nettopp aapnet.
+sjekk('… og lista lukker seg naar en side er valgt',
+    str_contains($sidaG, 'const velgSide = id => () => this.setState({ seoValgtId: id, seoListeApen: false });'));
 
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //

@@ -1982,7 +1982,10 @@ window.__resources = {
   @media (max-width: 760px) {
     .lx-listevis { display: block !important; }
     .lx-kursliste[data-apen="false"],
-    .lx-datoliste[data-apen="false"] { display: none !important; }
+    .lx-datoliste[data-apen="false"],
+    .lx-seoliste[data-apen="false"],
+    .lx-seoskjema[data-apen="false"],
+    .lx-seoforslag[data-apen="false"] { display: none !important; }
   }
 
   /* Salgskampanjen. Bildet staar ved siden av teksten paa stor skjerm, og
@@ -21408,7 +21411,13 @@ window.__resources = {
         </sc-for>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.6fr); gap: var(--space-6); align-items: start; margin-top: var(--space-6);">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen. Lista over de tjue sidene er
+                 1 004 px, og den staar mellom deg og feltene du kom for aa
+                 fylle ut. Knappen finnes bare under 760 px; paa stoerre
+                 skjerm staar lista i sin egen spalte som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ seoListeVeksle }}" style="{{ listeKnappStil }}">{{ seoListeKnapp }}</button>
+            <div class="lx-seoliste" data-apen="{{ seoListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Sider og score</div>
             <sc-for list="{{ seoListe }}" as="s" hint-placeholder-count="8">
               <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">
@@ -21417,6 +21426,7 @@ window.__resources = {
                 <span style="flex: 0 0 28px; text-align: right; font-weight: 700;">{{ s.score }}</span>
               </button>
             </sc-for>
+            </div>
           </div>
 
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -21468,13 +21478,24 @@ window.__resources = {
             </div>
 
             <div style="margin-top: var(--space-5);">
+              <!-- Skjemaet lages av seg selv av det som staar i feltene over.
+                   Det er til aa se paa, ikke fylle ut — derfor lukket paa
+                   telefonen, og aapent som foer paa stoerre skjerm. -->
+              <button type="button" class="lx-listevis" onClick="{{ seoSchemaVeksle }}" style="{{ listeKnappStil }}">{{ seoSchemaKnapp }}</button>
+              <div class="lx-seoskjema" data-apen="{{ seoSchemaApen }}">
               <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Strukturert data (genereres automatisk)</div>
               <pre style="margin: 0; background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4); font-size: 11px; line-height: 1.5; color: var(--text-body); overflow-x: auto; white-space: pre-wrap;">{{ seoSchemaJson }}</pre>
+              </div>
             </div>
           </div>
         </div>
 
-        <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="margin-top: var(--space-8);">
+        <!-- Huskelista er ti forslag og 1 193 px. Den leses en sjelden gang,
+             ikke hver gang skjermen aapnes — derfor bak en pille paa
+             telefonen, aapen som foer paa stoerre skjerm. -->
+        <button type="button" class="lx-listevis" onClick="{{ seoForslagVeksle }}" style="{{ listeKnappStil }}">{{ seoForslagKnapp }}</button>
+        <div class="lx-seoforslag" data-apen="{{ seoForslagApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); display: flex; justify-content: space-between; gap: var(--space-4); align-items: baseline;">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Forslag til lokale landingssider</span>
             <span style="font-size: var(--text-xs); color: var(--text-muted);">Huk av det du har tatt — listen lagres</span>
@@ -21493,6 +21514,7 @@ window.__resources = {
               </div>
             </div>
           </sc-for>
+        </div>
         </div>
       </main>
     </div>
@@ -57602,6 +57624,10 @@ class Component extends DCLogic {
       }),
       ...(() => {
         if (side !== 'adminseo') return {};
+        // Lokale soek det er verdt aa lage en landingsside for. Staar her
+        // som en egen liste fordi tallet i pilla som aapner dem skal komme
+        // fra lista selv — ikke vaere skrevet inn ved siden av.
+        const LANDINGSSOK = ['Keramikkurs i T\u00f8nsberg', 'Dreiekurs i T\u00f8nsberg', 'Keramikkurs i Vestfold', 'Kreativt kurs for voksne', 'Teambuilding med keramikk', 'Gavekort p\u00e5 keramikkurs', 'H\u00e5ndlaget keramikk fra T\u00f8nsberg', 'Norsk keramikk kunst', 'Keramikkverksted med medlemskap', 'Kurs og events hos Lissom Keramikk'];
         const sider = this.seoSider();
         const valgtId = this.state.seoValgtId || 'dreiekurs';
         const valgtSide = sider.find(x => x.id === valgtId) || sider[0];
@@ -57630,7 +57656,11 @@ class Component extends DCLogic {
         const utenTittel = alle.filter(x => !iBruk(x.s.id).tittel);
         const utenAlt = alle.filter(x => !iBruk(x.s.id).altTekst);
         const under70 = alle.filter(x => x.sc.score < 70);
-        const velgSide = id => () => this.setState({ seoValgtId: id });
+        // Lista lukker seg naar du har valgt. Ellers ville de nitten andre
+        // sidene staa mellom deg og feltene du nettopp aapnet — og da var
+        // det ingen vits i aa lukke dem i utgangspunktet. Paa stoerre skjerm
+        // staar lista i sin egen spalte og merker ikke dette.
+        const velgSide = id => () => this.setState({ seoValgtId: id, seoListeApen: false });
         return {
           // Kortene her er snarveier til den foerste sida som har problemet.
           // Er lista tom, er det ingenting aa gaa til — og da skal kortet
@@ -57662,6 +57692,23 @@ class Component extends DCLogic {
             under70.length ? { tekst: under70.length + ' sider har SEO-score under 70', hint: 'Start med den laveste', velg: velgSide(under70.sort((a, b) => a.sc.score - b.sc.score)[0].s.id) } : null,
           ].filter(Boolean),
           seoAltGront: [utenTittel, utenMeta, utenAlt, under70].every(x => !x.length),
+          // De tre lange blokkene paa SEO-skjermen bak hver sin pille paa
+          // telefonen. Skjermen var 6 062 px paa en 390 px skjerm — 7,2
+          // skjermer aa dra forbi — og halve hoyden var ting man ser paa,
+          // ikke fyller ut: sidelista (1 004 px), de automatiske dataene
+          // (356 px) og forslagene (1 193 px). Maalt 13. september 2026.
+          //
+          // Samme grep som paa Kurs- og Nettbutikkskjermen: knappene staar
+          // bare under 760 px, og paa stoerre skjerm staar alt aapent som
+          // foer. Se «.lx-listevis» i stilarket.
+          seoListeApen: !!this.state.seoListeApen,
+          seoListeVeksle: () => this.setState({ seoListeApen: !this.state.seoListeApen }),
+          seoListeKnapp: 'Sider og score (' + alle.length + ')'
+            + (this.state.seoListeApen ? ' \u25b4' : ' \u25be'),
+          seoSchemaApen: !!this.state.seoSchemaApen,
+          seoSchemaVeksle: () => this.setState({ seoSchemaApen: !this.state.seoSchemaApen }),
+          seoSchemaKnapp: 'Strukturert data (genereres automatisk)'
+            + (this.state.seoSchemaApen ? ' \u25b4' : ' \u25be'),
           seoListe: alle.map(x => ({
             navn: x.s.navn, type: x.s.type, score: x.sc.score + '',
             velg: velgSide(x.s.id),
@@ -57820,6 +57867,10 @@ class Component extends DCLogic {
               return { seoUtkast: u };
             });
           },
+          seoForslagApen: !!this.state.seoForslagApen,
+          seoForslagVeksle: () => this.setState({ seoForslagApen: !this.state.seoForslagApen }),
+          seoForslagKnapp: 'Forslag til lokale landingssider (' + LANDINGSSOK.length + ')'
+            + (this.state.seoForslagApen ? ' \u25b4' : ' \u25be'),
           // Huskeliste over lokale soek det er verdt aa lage en side for.
           // Avkryssingen lagres som resten av tekstene, saa lista ikke
           // nullstiller seg hver gang skjermen aapnes.
@@ -57828,7 +57879,7 @@ class Component extends DCLogic {
               try { return JSON.parse((this.state.innholdLagret || {})['SEO/landing'] || '{}') || {}; }
               catch (e) { return {}; }
             })();
-            return ['Keramikkurs i Tønsberg', 'Dreiekurs i Tønsberg', 'Keramikkurs i Vestfold', 'Kreativt kurs for voksne', 'Teambuilding med keramikk', 'Gavekort på keramikkurs', 'Håndlaget keramikk fra Tønsberg', 'Norsk keramikk kunst', 'Keramikkverksted med medlemskap', 'Kurs og events hos Lissom Keramikk'].map(navn => ({
+            return LANDINGSSOK.map(navn => ({
               navn, fokus: navn.toLowerCase(),
               status: merket[navn] ? 'Planlagt' : 'Ikke tatt',
               tone: merket[navn] ? 'success' : 'neutral',

@@ -5208,7 +5208,8 @@ sjekk('placeholderen for kassa er borte',
 sjekk('… og knappen aapner den ekte kassa',
     str_contains($sida2, "klKasse: () => this.gaaAdmin('adminuttak', {"));
 sjekk('… med samme utgangspunkt som kortet paa oversikten',
-    substr_count($sida2, "utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',") === 2);
+    // Tre fra 13. september: snarveispilla paa kalenderen kom til.
+    substr_count($sida2, "utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',") === 3);
 
 // ── Alle fire medlemskapene, ikke bare de tre ──────────────────────────
 //
@@ -8474,8 +8475,16 @@ sjekk('… og blokkene ligger foran rutenettet',
 // si. Eieren: «gjor alle kortene paa oversikt like, altsaa samme som de smaa
 // kortene». Panelet staar i rada OVER rutenettet naa, med hele bredden, og
 // stolpene er i behold.
-sjekk('statistikkpanelet staar over kortrutenettet',
-    strpos($sida2, '{{ ovPopVis }}') < strpos($sida2, 'id="ov-kortrutenett"'));
+// Panelet flyttet til Kurs og deltakere 13. september 2026. Eieren, spurt
+// hvor grupperabatten og statistikken skulle: «Kurs og deltakere, begge to».
+// Ramma og stolpene er de samme; det er stedet som er nytt.
+sjekk('statistikkpanelet staar paa Kurs og deltakere',
+    strpos($sida2, 'data-screen-label="Admin – område"') < strpos($sida2, '{{ ovPopVis }}')
+    && str_contains($sida2, '<sc-if value="{{ omrErKurs }}"')
+    // Skjermen tegner alle omraadene, saa den maa vite hvilket den staar i.
+    && str_contains($sida2, "            omrErKurs: true,")
+    // Tallene regnes bare paa de to skjermene som viser dem.
+    && str_contains($sida2, "        if (side !== 'adminoversikt' && side !== 'adminomrkurs') return { ovKort: [] };"));
 sjekk('… med samme ramme som resten',
     str_contains($sida2, "borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',")
     && str_contains($sida2, "borderRadius: 'var(--radius-lg)', overflow: 'hidden',"));
@@ -11071,7 +11080,8 @@ sjekk('… og «Ingen innstemplet» naar verkstedet er tomt',
 // Kalenderens sidemeny hadde ikke noe bunnfelt i det hele tatt. Uten dette
 // var det nettopp den skjermen eieren spurte om som sto uten navn.
 sjekk('… ogsaa i kalenderens sidemeny',
-    strpos($sida, '{{ admMenyInne }}') < strpos($sida, '{{ klSnarveiRadStil }}'));
+    // Snarveisrada ble oversiktsrada 13. september 2026.
+    strpos($sida, '{{ admMenyInne }}') < strpos($sida, '{{ klOversiktRadStil }}'));
 
 // ── Telefonen ───────────────────────────────────────────────────────────
 //
@@ -13836,8 +13846,63 @@ sjekk('… og ingen piller staar igjen med det gamle maalet',
     'alle 14 stedene er endret');
 // Tolv naa: «+ N til» i menyskuffen paa telefon kom til 7. september, og
 // bruker det samme maalet som resten.
+//
+// Fjorten fra 13. september 2026: radhandlingene i admin ble piller, og to av
+// dem stiles fra JS — «Velg noen andre» i ny registrering, og «Skjul»/«Vis»
+// paa referansekundene. Resten gaar gjennom klassen «.lx-radpille», som
+// bruker det samme maalet.
 sjekk('… og de som har skrift bruker pillemaalet',
-    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 12);
+    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 14
+    && str_contains($utenKomm, '    padding: 6px 12px !important;')
+    && str_contains($utenKomm, '    font: var(--type-chip) !important;'));
+
+// 2b. Maalt i nettleseren 13. september 2026: 675 piller paa ti adminskjermer
+//     fordelt paa 15 ulike hoeyder — 31, 28, 30, 37, 41, 39, 29, 36, 19, 43,
+//     47, 33, 35, 45 og 23 px. Eieren: «Ser rotete ut med forskjellige
+//     pillestoerrelser». Han valgte to maal, ikke tre: «Liten» for alt inne
+//     paa skjermen, «Stor» for hovedhandlinga oeverst.
+//
+//     Etterpaa: 923 piller paa 32 px, 19 paa 48, og ni merkelapper som ikke
+//     er piller. Regelen treffer paa stilstrengen, saa en ny pille faar
+//     maalet av seg selv — men da maa selve regelen staa der.
+sjekk('pillene i admin har to maal og ikke femten',
+    str_contains($sidaP, '.lx-adminaside ~ main button[style*="--radius-pill"],')
+    && str_contains($sidaP, '    min-height: 32px !important;')
+    && str_contains($sidaP, '.lx-adminaside ~ main .lx-topprad button {')
+    && str_contains($sidaP, '    min-height: 48px !important;'),
+    'maalt: 32 px x 923, 48 px x 19');
+sjekk('… og hovedhandlinga oeverst er merket paa hver adminskjerm',
+    substr_count($sidaP, 'class="lx-topprad"') === 11,
+    'elleve topprader med knapp');
+// Runde ikonknapper staar i samme rad som pillene og maa vaere like hoeye.
+// Fanepillene sto med bredde etter ordet. Eieren saa tre varianter av
+// faneraden paa Paameldte 13. september 2026 og valgte to like brede:
+// «Jeg vil ha to like bredder som vi avtalte, husk globalt». Derfor staar
+// klassen paa alle pilleradene i admin, ikke bare den han saa.
+// Maalt paa 390 px: 59 rader, to per linje, lik bredde.
+sjekk('pillene staar to og to i lik bredde paa telefon',
+    str_contains($sidaP, '    .lx-adminaside ~ main .lx-pillerad > button {')
+    && str_contains($sidaP, '      flex: 1 1 calc(50% - 12px) !important;')
+    && str_contains($sidaP, '      min-width: fit-content !important;'),
+    'maalt: 59 rader paa 390 px');
+sjekk('… og alle pilleradene i admin er merket',
+    substr_count($sidaP, 'class="lx-pillerad"') === 115,
+    '115 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
+
+// Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
+// lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september
+// 2026. Maalt paa 390 px: alle tre 310 x 48, samme venstrekant.
+sjekk('… og de store knappene fyller bredden paa telefon',
+    str_contains($sidaP, '  @media (max-width: 560px) {')
+    && str_contains($sidaP, '    .lx-adminaside ~ main .lx-topprad button {'),
+    'maalt: 310 x 48 paa 390 px');
+sjekk('… og de runde ikonknappene foelger samme maal',
+    str_contains($sidaP, '.lx-adminaside ~ main button[style*="border-radius: 50%"] {'));
+// Merkelapper er ikke piller: «Betalt», «Ubetalt» og «Ikke betalt» sier en
+// tilstand. De bruker 999px og ikke «--radius-pill», og staar derfor igjen.
+sjekk('… mens merkelappene staar igjen som merkelapper',
+    str_contains($utenKomm, "textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,"),
+    'ni merkelapper, 19 og 23 px');
 
 // 3. Bindingspilla sa hele setningen i versaler og ble en gul flate over to
 //    linjer. Naboene sier ett ord — «BETALT», «AKTIV» — og datoen under.
@@ -14842,8 +14907,23 @@ sjekk('… og et nytt medlemskap starter uten avtaletrekk',
 // Fra 8. september er de sju: «Synk med mobilen» flyttet til sidemenyen —
 // eieren: «pillen synk med mobilen kan fjernes, legg heller til en link i
 // sidemenyen under meld inn feil».
-sjekk('alle sju snarveiene staar som kort',
-    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 7);
+// Fra 13. september 2026 er raden en oversikt, ikke en snarveismeny. Eieren:
+// «kan du kombinere det med kalender? Saa kan vi droppe oversikt?» — han fikk
+// tre varianter tegnet og valgte B: seks kort som svarer paa noe, og en smal
+// snarveisrad under med de fire som ikke finnes i menyen.
+sjekk('oversiktsrada har seks kort som svarer paa noe',
+    str_contains($byttSida, '<sc-for list="{{ klOversiktKort }}" as="k"')
+    && substr_count($byttSida, "                kort('") === 6
+    && str_contains($byttSida, "                kort('I dag',")
+    && str_contains($byttSida, "                kort('Venter på deg', String(venter), [")
+    && str_contains($byttSida, "                kort('Ubetalt', kr(sum), [")
+    && str_contains($byttSida, "                kort('Inne nå', String(inne),")
+    && str_contains($byttSida, "                kort('Siste sju dager',")
+    && str_contains($byttSida, "                kort('Ovnen',"));
+// Ingen nye kall: alt ligger i adminData, som hentes paa hver adminskjerm.
+sjekk('… og tallene kommer fra det som alt hentes',
+    str_contains($byttSida, '            const d = this.state.adminData || {};')
+    && !str_contains($byttSida, "klOversiktHent"));
 // Boksene er borte, og med dem stilene deres. Staar én av dem igjen, staar
 // det en boks blant kortene.
 sjekk('… og de tre boksene er borte',
@@ -14863,10 +14943,13 @@ sjekk('… og notatet og paaminnelsene er borte',
 // De tre nye. Medlemmer og Paameldte gaar til skjermer som alt finnes; Chat
 // er tom med vilje — eieren: «en tom pille som heter Chat som vi skal komme
 // til bakre til».
-sjekk('… og Medlemmer, Paameldte og Chat staar i stedet',
-    str_contains($byttSida, '<span style="{{ klSnarveiNavnStil }}">Medlemmer</span>')
-    && str_contains($byttSida, '<span style="{{ klSnarveiNavnStil }}">Påmeldte</span>')
-    && str_contains($byttSida, '<span style="{{ klSnarveiNavnStil }}">Chat</span>'));
+// Medlemmer og Paameldte finnes i menyen; Nye paameldinger er blitt til
+// «Venter paa deg». De fire som ikke har et menypunkt staar som piller.
+sjekk('… og de fire uten menypunkt staar som piller under',
+    str_contains($byttSida, '<sc-for list="{{ klSnarveiPiller }}" as="s"')
+    && str_contains($byttSida, "                { navn: 'Chat',        velg: () => this.setState({ klChatVis: true }) },")
+    && str_contains($byttSida, "                { navn: 'Dagsrapport', velg: () => this.setState({ klRapVis: true }) },")
+    && str_contains($byttSida, "                { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },"));
 sjekk('… og de to foerste gaar til skjermene som finnes',
     str_contains($byttSida, "klGaMedlemmer: () => this.gaaAdmin('adminmedlem',")
     && str_contains($byttSida, "klGaPameldte: () => this.gaaAdmin('adminpameldte', {}),"));
@@ -14907,11 +14990,11 @@ sjekk('… og tallet staar som et merke, ikke i navnet',
 sjekk('… og de er borte fra sidespalta',
     !str_contains($byttSida, 'on-click="{{ klRapApne }}" hint-size="auto,44px">Dagsrapport</x-import>')
     && !str_contains($byttSida, 'on-click="{{ klIcsApne }}" hint-size="auto,44px">Synk med mobilen</x-import>'));
+// Pillene gjoer det de alltid har gjort: samme rute, samme panel.
 sjekk('… men de gjoer det samme som for',
-    str_contains($byttSida, 'onClick="{{ klRapApne }}" style="{{ klSnarveiStil }}"')
-    && str_contains($byttSida, 'onClick="{{ klKasse }}" style="{{ klSnarveiStil }}"')
-    && str_contains($byttSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
-    && str_contains($byttSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"'));
+    str_contains($byttSida, 'klRapApne: () => this.setState({ klRapVis: true }),')
+    && str_contains($byttSida, 'klChat: () => this.setState({ klChatVis: true }),')
+    && str_contains($byttSida, "klAarApne: () => this.gaaAdmin('adminarskalender', {}),"));
 // «Synk med mobilen» er ikke lenger et kort. Den staar i sidemenyen, og maa
 // ikke ligge igjen begge steder.
 sjekk('… og «Synk med mobilen» er ute av kortraden',
@@ -15311,7 +15394,9 @@ sjekk('… og draget bruker den samme terskelen som de andre',
 // Pilla ble siden et kort oeverst paa sida: «gjor om til smaa kort og legg
 // de i header menyen paa en fin maate».
 sjekk('… og naas fra kalenderen uten en lenke',
-    str_contains($aarSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"'));
+    // Fra 13. september 2026 en pille i snarveisrada under oversiktskortene.
+    str_contains($aarSida, "                { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
+    && str_contains($aarSida, '<sc-for list="{{ klSnarveiPiller }}" as="s"'));
 // Kursene fyller den ikke av seg selv.
 sjekk('… og fylles bare av det eieren skriver selv',
     !str_contains($aarSida, 'aarKurs')
@@ -15419,16 +15504,17 @@ sjekk('«Legg til person» staar som pille ved Venteliste i kalenderen',
     && str_contains($veiSida, "klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),"));
 // Begge to ble kort oeverst paa sida samme kveld. Rekkefolgen staar
 // fortsatt: Dagsrapport, Kasse, Aarskalender, Nye paameldinger, Synk.
-sjekk('… og aarskalenderen staar som kort mellom Kasse og Nye paameldinger',
-    str_contains($veiSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
-    && strpos($veiSida, 'onClick="{{ klKasse }}" style="{{ klSnarveiStil }}"')
-       < strpos($veiSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
-    && strpos($veiSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
-       < strpos($veiSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"')
+// Rekkefolgen i snarveisrada: Kasse for Aarskalender, som i kortrada for.
+sjekk('… og aarskalenderen staar sist i snarveisrada, etter Kasse',
+    strpos($veiSida, "                { navn: 'Kasse',       velg: () => this.gaaAdmin('adminuttak', {")
+       < strpos($veiSida, "                { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
     && str_contains($veiSida, "klAarApne: () => this.gaaAdmin('adminarskalender', {}),"));
-sjekk('… og nye paameldinger som kort, med tallet som merke',
-    str_contains($veiSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"')
-    && str_contains($veiSida, '{{ klSnarveiMerkeStil }}">{{ klNyePamAntall }}</span>'));
+// «Nye paameldinger» var et kort med tallet som merke. Fra 13. september er
+// det den samme tellinga, som én av linjene i «Venter paa deg» — og kortet
+// gaar til den samme skjermen.
+sjekk('… og nye paameldinger telles i «Venter paa deg»',
+    str_contains($veiSida, "            const nye   = (d.nyeste || []).length;")
+    && str_contains($veiSida, "                     () => this.gaaAdmin('adminnyepameldinger', {})),"));
 // «ingen link»: raden oeverst er borte.
 sjekk('… og raden med lenka oeverst er borte',
     !str_contains($veiSida, 'aarStripe')
@@ -16452,7 +16538,6 @@ sjekk('notatene staar ikke i den lette utgaven',
 // lx-uten-sok paa <html>, soekeknappen borte. Kalender admin: «Kunnskap»
 // under person-/kurstreffene. Selve api/kunnskap-sok.php er ikke kjoert —
 // ingen PHP paa maskinen det ble bygget paa.
-$mkSok = file_get_contents(dirname(__DIR__) . '/api/kunnskap-sok.php');
 sjekk('migrasjon 159 legger til Leire og Dreiing etter de seks',
     str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/159_leire_og_dreiing.sql'),
         "    ('leire',   'Leire',   7),\n    ('dreiing', 'Dreiing', 8);"));
@@ -16624,12 +16709,23 @@ sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
     && str_contains($mkSida, '<div role="img" aria-label="{{ bBildeAlt }}"')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.js'), 'alt: imageAlt || title')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.min.js'), 'imageAlt||title'));
-// Endepunktet gikk over til sokMedForslag() 11. september, da «Mente du»
-// kom. Proven holdt paa det gamle kallet.
-sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
-    str_contains($mkSok, "\$medlem  = krev_medlem();")
-    && str_contains($mkSok, "Dokumenter::sokMedForslag(\$q, !\$erAdmin)")
-    && str_contains($mkLib, "\$hvor = \$bareMedlem ? 'WHERE ' . self::synligSql() : '';"));
+// Dokumentsoeket er borte. Eieren sa GO til det 11. september 2026, for to
+// soekefelt: soeket paa nettsida og soekefeltet i kalender admin. 13.
+// september tok vi det ut av nettsida — «Soek paa nettsiden skal ikke faa
+// soeke i dokumenter eller annet fra verksted» — og admin-feltet ble
+// «Spoer o store krukkemester», som er AI og ikke dette. Da sto det igjen
+// uten vei inn: null kallere i hele repoet. Eieren: «Fjern det».
+//
+// Motoren i app/lib/dokumenter.php staar igjen med vilje — den er ikke
+// bedt fjernet, og proevene under passer fortsatt paa den.
+sjekk('dokumentsoeket har ingen vei inn lenger',
+    !is_file(dirname(__DIR__) . '/api/kunnskap-sok.php')
+    && !str_contains($sidaP, 'kunnskapSok')
+    && !str_contains($sidaP, 'kunnskapTreffListe')
+    && !str_contains($sidaP, "fetch('/api/kunnskap-sok.php"),
+    '95 linjer ute; motoren staar igjen');
+sjekk('… og motoren gir et medlem bare det som er slaatt paa',
+    str_contains($mkLib, "\$hvor = \$bareMedlem ? 'WHERE ' . self::synligSql() : '';"));
 sjekk('… navnetreff foerst, saa linja i teksten',
     str_contains($mkLib, "return array_slice(array_merge(\$iNavn, \$iTekst), 0, \$maks);")
     && str_contains($mkLib, "\$treff['utdrag'] = self::linjeMed(\$tekst, \$ord);"));
@@ -16674,8 +16770,7 @@ sjekk('… og rettOrd() bytter bare det som maa byttes',
 // Returlinja ble skrevet om da soeket begynte aa gaa ord for ord (12.
 // september). Det som betyr noe er at forslaget foelger med ut.
 sjekk('soeket svarer med menteDu naar det skrevne ikke traff',
-    str_contains($mkLib, "return ['treff' => \$treff, 'menteDu' => \$rettet];")
-    && str_contains($mkSok, "Svar::json(['treff' => \$svar['treff'], 'menteDu' => \$svar['menteDu']]);"));
+    str_contains($mkLib, "return ['treff' => \$treff, 'menteDu' => \$rettet];"));
 // Eieren, 11. september 2026 (bilde fra Safari): «hva er begitning» i
 // kalenderen ga «Ingen treff» — setningen staar ikke i noe dokument, men
 // ordet gjoer det. Naa soekes det ord for ord naar setningen ikke treffer,
@@ -16751,8 +16846,12 @@ sjekk('… og feltet spoer ikke serveren i det hele tatt naar man skriver',
 sjekk('… mens feltet i kalenderen sporr krukkemesteren som for',
     str_contains($mkSida, 'aria-label="Spør o store krukkemester"')
     && !str_contains($mkSida, 'klHarMenteDu'));
-sjekk('… svaret gjelder bare ordet det ble hentet for',
-    str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
+// Her sto en proeve paa at kunnskapssvaret bare gjaldt ordet det ble hentet
+// for. Metodene den saa paa er fjernet 13. september 2026 — se
+// «dokumentsoeket har ingen vei inn lenger» over.
+sjekk('… og kunnskapstreffene er ute av fila',
+    !str_contains($mkSida, 'kunnskapFor')
+    && !str_contains($mkSida, 'kunnskapMenteDu'));
 // Feltet het «Søk …» og fant personer, kursdatoer og dokumenter, med AI-en
 // som pille nederst i treffboksen. Eieren, 11. september 2026: «Jeg vil at
 // hele dette søkefeltet er spør verkstedet. Thats it» — «Samme funksjon»,
@@ -16972,6 +17071,136 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
 
+echo "\n== Markedsfoering: ti faner ble fem grupper ==\n";
+// Maalt i nettleseren 13. september 2026: ti faner paa én linje paa PC, fem
+// rader paa telefon. Ikke rotete — men ti ting aa velge mellom. Eieren fikk
+// se forslaget tegnet paa den ekte skjermen og svarte «GO — bygg som vist».
+//
+// Fire av gruppenavnene fantes fra foer. «Utsending» er det eneste nye
+// ordet, og han godkjente det.
+sjekk('fanene staar i fem grupper',
+    str_contains($vis172, "          ['Tavle',         ['tavle']],")
+    && str_contains($vis172, "          ['Innhold',       ['artikler', 'bank', 'sosialt']],")
+    && str_contains($vis172, "          ['Utsending',     ['brev', 'kurs']],")
+    && str_contains($vis172, "          ['Analyse',       ['analyse', 'seo']],")
+    && str_contains($vis172, "          ['Innstillinger', ['innstillinger', 'assistent']],"),
+    'maalt: fem piller oeverst, fanene i gruppa under');
+// Tavle er alene om sin gruppe; da skal ikke en tom rad staa igjen.
+sjekk('… og underraden staar bare naar gruppa har flere',
+    str_contains($vis172, '          mkHarUnder: minGruppe[1].length > 1,')
+    && str_contains($vis172, '<sc-if value="{{ mkHarUnder }}" hint-placeholder-val="{{ true }}">'));
+// SEO er en egen skjerm, ikke en fane her. Staar man der, er det fortsatt
+// «Analyse» som gjelder — og knappen maa fortsatt gaa dit.
+sjekk('… og SEO gaar fortsatt til sin egen skjerm',
+    str_contains($vis172, "            velg: n === 'seo'\n              ? () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); }"),
+    'maalt: trykk paa SEO gir «Soekemotoroppsett»');
+
+echo "\n== Kursvelgeren: ett svar aapent om gangen ==\n";
+// Maalt i nettleseren 13. september 2026: 208 piller og 3867 px aa rulle paa
+// den ene skjermen. Hvert svar sto helt utslaatt — seksten kurspiller, tre
+// nivaa, seks hvem, fire metoder — seks svar under hverandre. Eieren fikk se
+// skjermen med svarene slaatt sammen og svarte «GO — slaa sammen svarene».
+// Maalt etter: 34 piller og 1516 px lukket, 63 og 1996 med ett svar aapent.
+sjekk('svaret staar lukket til du aapner det',
+    str_contains($vis172, "              apen: (this.state.kvaSvarApen || 0) === sv.id,")
+    && str_contains($vis172, "              apne: () => this.setState(st => ({ kvaSvarApen: st.kvaSvarApen === sv.id ? 0 : sv.id })),")
+    && str_contains($vis172, '<sc-if value="{{ sv.apen }}" hint-placeholder-val="{{ true }}">'),
+    'maalt: 208 piller foer, 34 etter');
+// Linja er satt sammen av pillenavnene som alt staar der. Ingen nye ord.
+sjekk('… og lukket sier den hva som er valgt',
+    str_contains($vis172, '<button type="button" onClick="{{ sv.apne }}" style="{{ sv.sumStil }}">{{ sv.oppsummering }}</button>')
+    && str_contains($vis172, "                return deler.length ? deler.join(' · ') : 'Ingen valg satt';"),
+    'maalt: «Date Night · To sammen», «Nybegynner dreiekurs · Nybegynnere · Dreiing»');
+// Linja er en rad, ikke en lenke — arbeidsreglene sier piller og kort.
+sjekk('… uten understrek',
+    str_contains($vis172, "              sumStil: {\n                appearance: 'none', border: 'none', background: 'transparent',"));
+
+echo "\n== Oversikt har ingen tom seksjon ==\n";
+// Alt som laa under «Synlighet og innhold» er flyttet ut, ett stykke om
+// gangen — bryterne til ⊙ Synlighet, kursvelgeren opp som kort,
+// grupperabatten til Kurs og deltakere. Til slutt sto overskrifta igjen uten
+// noe under seg. Maalt i nettleseren 13. september 2026: overskrifta paa
+// y=1189, ingenting etter den.
+sjekk('den tomme seksjonen paa Oversikt er borte',
+    !str_contains($vis172, '>Synlighet og innhold</div>'),
+    'overskrift og tomt rutenett ute; ingen funksjon borte');
+
+echo "\n== Navnene i Kassa er ikke lenker ==\n";
+// Eieren har sagt det tre ganger — 6. september 2026: «ingen link», og «jeg
+// vil ha samme pille som resten» — og det staar i arbeidsreglene. Maalt i
+// nettleseren 13. september: tre understreka navn igjen i Kassa, og de var
+// det eneste stedet i raden man kunne trykke seg inn paa medlemmet.
+sjekk('navnet i Kassa er en overskrift, ikke en lenke',
+    str_contains($vis172, "        navnStil: {\n          font: 'inherit', fontWeight: 700, color: 'var(--text-heading)', textAlign: 'left',\n        },")
+    && !str_contains($vis172, "          textDecoration: erMedlem ? 'underline' : 'none', textUnderlineOffset: '3px',"),
+    'maalt: 0 understreka knapper igjen paa skjermen');
+// Navnet ble gjenbrukt fra kursraden under Nyttig info; eieren: «Ja, behold
+// det». Ingen nye ord for noe som alt finnes.
+sjekk('… og veien inn er en pille med samme maal som resten',
+    str_contains($vis172, '<button type="button" onClick="{{ u.aapne }}" style="{{ u.seStil }}">Se personen</button>')
+    && str_contains($vis172, "          borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)',\n          background: 'var(--surface-card)', color: 'var(--lissom-brown)',\n          font: 'var(--type-chip)', whiteSpace: 'nowrap',"));
+
+echo "\n== Salgsuka blir en generell salgskampanje ==\n";
+// Eieren, 13. september 2026: «Jeg vil ogsaa at salgsuke banneret skal vaere
+// et generelt salgs kampanje. Her vil jeg legge til og redigere bilde og
+// tekster og mulighet for aa vise pris / De kan godt lagres som maler saa har
+// vi». Han saa forslaget og valgte «GO — bygg alt».
+$kmpApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kampanjer.php');
+$mig175 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/175_salgskampanjer.sql');
+
+sjekk('hver kampanje er en rad, ikke tre tekstfelt',
+    str_contains($mig175, 'CREATE TABLE IF NOT EXISTS kampanjer (')
+    && str_contains($mig175, '  pris_ore    INT UNSIGNED NULL,')
+    && str_contains($mig175, '  bilde       VARCHAR(255) NULL,')
+    && str_contains($mig175, '  knapp       VARCHAR(191) NULL,'));
+// Uten dette ville banneret staatt tomt til noen skrev alt paa nytt.
+sjekk('… og salgsuka som staar der i dag flyttes inn som den foerste',
+    str_contains($mig175, "INSERT INTO kampanjer (id, navn, merke, tittel, tekst, knapp, maal, sist_brukt)")
+    && str_contains($mig175, "'Medlemmenes salgsuke',")
+    && str_contains($mig175, "'Se medlemmenes keramikk',"));
+// Forsiden leser bare content_blocks — se api/innhold.php. Speilinga er det
+// eneste som faar kampanjen ut til en besoekende.
+sjekk('den som staar ute speiles dit forsiden leser fra',
+    str_contains($kmpApi, "        'Kampanje/aktiv'  => (string) (int) \$k['id'],")
+    && str_contains($kmpApi, "        'Kampanje/pris'   => \$k['pris_ore'] === null ? '' : (string) (int) \$k['pris_ore'],")
+    && str_contains($vis172, "          kampanjeBilde: il['Kampanje/bilde'] || '',"));
+// De gamle noeklene leses fortsatt: banneret skal staa uendret til eieren har
+// trykket «Kjoer oppdateringer».
+sjekk('… og banneret staar uendret til migrasjonen er kjoert',
+    str_contains($vis172, "          const g = gammel ? il['Salgsuke/' + gammel] : undefined;")
+    && str_contains($vis172, "          kampanjeTittel: f('tittel', 'tittel', 'Medlemmenes salgsuke'),"));
+// Eieren, 13. september 2026: «Men ikke to piller, pris og se utvalget, det
+// holder med se utvalget». Prisen er en linje, ikke en knapp ved siden av.
+sjekk('prisen staar som en linje, ikke som en pille til',
+    str_contains($vis172, '<sc-if value="{{ kampanjeHarPris }}" hint-placeholder-val="{{ false }}">')
+    && str_contains($vis172, 'font-size: var(--text-3xl); color: var(--lissom-yellow);">{{ kampanjePris }}</div>')
+    && !str_contains($vis172, 'kampanjePrisStil'));
+// Ingen hardkodet pris: tomt felt er ingen pris, ikke null kroner.
+sjekk('… og tomt prisfelt gir ingen pris',
+    str_contains($kmpApi, "    \$prisOre = null;")
+    && str_contains($vis172, '          kampanjeHarPris: harPris,'));
+// Et fritt felt for hvor knappen gaar ville vaert en aapen omdirigering paa
+// forsiden.
+sjekk('knappen gaar bare til steder som finnes',
+    str_contains($kmpApi, "    if (!in_array(\$maal, ['butikk', 'medlemsbutikk', 'kurs', 'events', 'medlemskap', 'gavekort'], true)) {"));
+// Eieren, 13. september 2026: «Husk vis paa forside og skal staa samlet med
+// det andre». Bryteren staar i ⊙ Synlighet — én bryter, ett sted.
+sjekk('bryteren staar i ⊙ Synlighet og ikke ogsaa paa kortet',
+    str_contains($vis172, "            rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
+    && str_contains($vis172, '>Banneret under kursene. {{ kampanjeStatus }}</div>')
+    && !str_contains($vis172, 'checked="{{ kampanjePaa }}"'));
+// Maalt i nettleseren: «velg bilde, lagre» ga «Kampanjen maa ha en
+// overskrift». Skjemaet viste kampanjen som sto ute, men den laa bare i
+// lista — foerste endring laget en kladd med bare det ene feltet.
+sjekk('foerste endring tar vare paa resten av skjemaet',
+    str_contains($vis172, "      kmpRed: Object.assign({}, st.kmpRed || (st.kmpListe || []).filter(k => k.ute)[0] || {}, endring),"));
+// Den som staar ute skal ikke kunne slettes: da ville forsiden pekt paa noe
+// som er borte.
+sjekk('kampanjen som staar ute kan ikke slettes ved et uhell',
+    str_contains($kmpApi, "    if (aktivKampanje() === \$id) {")
+    && str_contains($kmpApi, "        Svar::feil('Denne står på forsiden. Vis en annen først, eller slå av banneret.');"));
+
 // «Skjul» var en enveis luke: varen forsvant ogsaa fra admin, og sto hverken
 // under «venter» eller «Publisert». Da kunne den verken legges ut igjen eller
 // slettes.
@@ -16983,6 +17212,43 @@ sjekk('… og de kan legges ut igjen',
     str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
     && str_contains($vis172, '>Legg ut igjen</button>'));
 // Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+// Grupperabatten flyttet med. Den er en kursinnstilling, ikke en oversikt.
+sjekk('grupperabatten staar paa Kurs og deltakere',
+    strpos($sida2, 'data-screen-label="Admin – område"') < strpos($sida2, '{{ visGrRabatt }}')
+    && substr_count($sida2, '<sc-if value="{{ visGrRabatt }}"') === 1,
+    'maalt i nettleseren: staar under Kurs og deltakere, ikke under Medlemmer');
+
+echo "\n== Omsetninga som piller, og banneret dit teksten redigeres ==\n";
+// Eieren, 13. september 2026: «Okonomi og omsetning kan staa paa kalender som
+// piller», og om banner-redigeringa: «redigering av banneret gaar til der du
+// foreslo» — Nettsiden › Innhold.
+$flytt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Tallet staar i pilla, saa man slipper aa aapne noe for aa se det.
+sjekk('omsetninga staar som to piller paa kalenderen',
+    str_contains($flytt, "                { navn: 'Omsetning i dag', verdi: (d.omsetning || {}).idag || '',")
+    && str_contains($flytt, "                { navn: 'Denne måneden',   verdi: (d.omsetning || {}).maned || '',")
+    && str_contains($flytt, '<sc-if value="{{ s.harVerdi }}"'),
+    'maalt: «Omsetning i dag kr. 690,-» og «Denne maaneden kr. 1 320,-»');
+// Trykk gaar dit linjene bak tallet staar.
+sjekk('… og trykk gaar til Økonomi',
+    substr_count($flytt, "                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },") === 2);
+
+// Banner-redigeringa er flyttet, ikke kopiert. Den laa paa Oversikt; naa staar
+// den der resten av teksten paa nettsida redigeres.
+sjekk('banner-redigeringa staar bare ett sted',
+    substr_count($flytt, '{{ bnTittel }}') === 1
+    && substr_count($flytt, '<sc-if value="{{ visBannerRed }}"') === 1);
+// Rekkefolgen avgjor hvilken skjerm den havner paa: etter «Admin – innhold»,
+// for neste skjerm begynner.
+sjekk('… og det stedet er Nettsiden › Innhold',
+    strpos($flytt, 'data-screen-label="Admin – innhold"') < strpos($flytt, '{{ bnTittel }}')
+    && strpos($flytt, '{{ bnTittel }}') < strpos($flytt, 'data-screen-label="Admin – butikk"'),
+    'maalt i nettleseren: skjemaet staar paa Innhold, og lagringa virker derfra');
+// Bryteren som slaar banneret av og paa er noe annet, og staar i ⊙ Synlighet.
+sjekk('… mens bryteren staar i ⊙ Synlighet',
+    str_contains($flytt, "            rad('Banneret under toppbildet',"));
+
 echo "\n== ⊙ Synlighet: alle bryterne paa ett sted ==\n";
 // Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise paa
 // siden, min side skal samles og legges paa menyen verktoy», «paa pc, vis meg
@@ -16999,7 +17265,9 @@ sjekk('synlighetsarket staar bare én gang i malen',
 sjekk('… og har alle elleve bryterne',
     substr_count($syn, "            rad('") === 11
     && str_contains($syn, "            rad('Banneret under toppbildet',")
-    && str_contains($syn, "            rad('Salgsuke-kampanjen', this.bryterPaa('salgsuke'),")
+    // Het «Salgsuke-kampanjen» til 13. september 2026; da ble salgsuka en
+    // generell salgskampanje, og navnet foelger med.
+    && str_contains($syn, "            rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
     && str_contains($syn, "            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
     && str_contains($syn, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),")
     && str_contains($syn, "            rad('Referansekunder på forsiden', this.bryterPaa('referanser'),")
@@ -17075,10 +17343,13 @@ sjekk('bryterpillene i medlemssalg-kortet ligger i samme spalte',
     // venstre kant, og da bestemmer teksten igjen hvor pilla havner.
     && str_contains($vis172, '  .lx-bryterhoyre { margin-left: auto; }'),
     'maalt paa 1000, 820 og 390 px: én spalte paa alle tre');
-// To igjen etter 13. september: «"Selg keramikk" paa Min side» flyttet til
-// «⊙ Synlighet» — den var den samme noekkelen som «Selg egne arbeider».
-sjekk('… og begge bryterne i kortet er med',
-    substr_count($vis172, '<span class="lx-bryterhoyre">') === 2);
+// Én igjen etter 13. september. «"Selg keramikk" paa Min side» flyttet til
+// «⊙ Synlighet» — den var den samme noekkelen som «Selg egne arbeider» — og
+// salgskampanjens bryter gikk samme vei: «Husk vis paa forside og skal staa
+// samlet med det andre». Auto-godkjenn blir staaende: den hoerer til
+// godkjenningsarbeidet, ikke til hva som vises.
+sjekk('… og bryteren i kortet er med',
+    substr_count($vis172, '<span class="lx-bryterhoyre">') === 1);
 
 sjekk('… og slettes for godt, etter et spoersmaal',
     str_contains($vis172, "  salgSlett(v) {")

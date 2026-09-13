@@ -7072,9 +7072,11 @@ sjekk('… og markupen spor om det',
     str_contains($sida, '<sc-if value="{{ visGrRabatt }}" hint-placeholder-val="{{ true }}">')
     && str_contains($sida, '<sc-if value="{{ visBannerRed }}" hint-placeholder-val="{{ true }}">'));
 // Av/paa-bryteren som heter det samme er noe annet: den styrer om banneret
-// vises for kunden, og staar igjen. Den er én linje, ikke et skjema.
+// vises for kunden, og staar igjen. Den flyttet til «⊙ Synlighet»
+// 13. september 2026 — samme navn, samme noekkel, ett sted.
 sjekk('… mens av/paa-bryteren med samme navn staar igjen',
-    str_contains($sida, 'label="Banneret under toppbildet"'));
+    str_contains($sida, "            rad('Banneret under toppbildet',")
+    && str_contains($sida, "                (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',"));
 
 // ── Ingen priser skrevet inn i koden ──────────────────────────────────
 //
@@ -16942,6 +16944,65 @@ sjekk('… og de kan legges ut igjen',
     str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
     && str_contains($vis172, '>Legg ut igjen</button>'));
 // Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+echo "\n== ⊙ Synlighet: alle bryterne paa ett sted ==\n";
+// Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise paa
+// siden, min side skal samles og legges paa menyen verktoy», «paa pc, vis meg
+// et forslag for aa enkle tilgang», «ikke lag dobbelt, men flytt og fjern fra
+// gammel plassering».
+$syn = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Arket staar én gang, blant de andre overleggene — ikke én gang per skjerm.
+sjekk('synlighetsarket staar bare én gang i malen',
+    substr_count($syn, '<sc-if value="{{ synVises }}"') === 1
+    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 1
+    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 1);
+// Ti rader: fem paa nettsiden, fem paa Min side. Maalt i nettleseren.
+sjekk('… og har alle ti bryterne',
+    substr_count($syn, "            rad('") === 10
+    && str_contains($syn, "            rad('Banneret under toppbildet',")
+    && str_contains($syn, "            rad('Salgsuke-kampanjen', this.bryterPaa('salgsuke'),")
+    && str_contains($syn, "            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
+    && str_contains($syn, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),")
+    && str_contains($syn, "            rad('Referansekunder på forsiden', this.bryterPaa('referanser'),")
+    && str_contains($syn, "            rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),")
+    && str_contains($syn, "            rad('Internbutikken', this.bryterPaa('internbutikk'),")
+    && str_contains($syn, "            rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),")
+    && str_contains($syn, "            rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),")
+    && str_contains($syn, "            rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),"));
+// Én vei inn paa telefon (Verktoy-arket) og én paa PC (sidemenyen) — den
+// samme raden fra adminMeny() baerer begge.
+sjekk('… og aapnes fra Verktøy paa telefon og fra sidemenyen paa PC',
+    str_contains($syn, "        navn: '⊙  Synlighet',\n        kort: '⊙ Synlighet',")
+    && str_contains($syn, "        velg: () => this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }),"));
+
+// «Flytt og fjern fra gammel plassering»: ingen av kortene skal finnes igjen.
+sjekk('de gamle kortene er fjernet, ikke kopiert',
+    !str_contains($syn, '>Vis på nettsiden</div>')
+    && !str_contains($syn, '>Vis for medlemmene på Min side</div>')
+    && !str_contains($syn, '>Synlighet på nettsiden</div>')
+    && !str_contains($syn, '>«Selg keramikk» på Min side</div>'),
+    'fire av noeklene sto dobbelt, under to ulike navn');
+// Ingen av de gamle bryterne skal staa igjen som egen x-import.
+sjekk('… og ingen av de ti bryterne staar to steder',
+    !str_contains($syn, 'label="Banneret under toppbildet"')
+    && !str_contains($syn, 'label="Kursvelger-lenken i toppen"')
+    && !str_contains($syn, 'label="Kursvelger-lenken på forsiden"')
+    && !str_contains($syn, 'label="Søkefeltet på nettsiden"')
+    && !str_contains($syn, 'label="Referansekunder på forsiden"')
+    && !str_contains($syn, 'label="Interne kurs og samlinger"')
+    && !str_contains($syn, 'label="Internbutikken"')
+    && !str_contains($syn, 'label="Selg egne arbeider"')
+    && !str_contains($syn, 'label="Gaven («Ta med en venn»)"')
+    && !str_contains($syn, 'label="Frys av medlemskap"'));
+// Auto-godkjenn hoerer til godkjenningsarbeidet, ikke til hva som vises.
+sjekk('… mens Auto-godkjenn blir staaende paa Butikken',
+    str_contains($syn, '>Auto-godkjenn nye varer</div>'));
+// Kursvelgerbryteren paa Butikken las «visKursvelger» — bryteren OG
+// mobilvisninga. Den sto av naar lenken var skjult paa mobil, selv om
+// bryteren var paa. Den er borte med kortet.
+sjekk('… og bryteren som leste feil er borte',
+    !str_contains($syn, 'checked="{{ visKursvelger }}"'));
+
 // ── Pillene i medlemssalg-kortet staar rett over hverandre ───────────────
 //
 // Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten saa
@@ -16959,8 +17020,10 @@ sjekk('bryterpillene i medlemssalg-kortet ligger i samme spalte',
     // venstre kant, og da bestemmer teksten igjen hvor pilla havner.
     && str_contains($vis172, '  .lx-bryterhoyre { margin-left: auto; }'),
     'maalt paa 1000, 820 og 390 px: én spalte paa alle tre');
-sjekk('… og alle tre bryterne i kortet er med',
-    substr_count($vis172, '<span class="lx-bryterhoyre">') === 3);
+// To igjen etter 13. september: «"Selg keramikk" paa Min side» flyttet til
+// «⊙ Synlighet» — den var den samme noekkelen som «Selg egne arbeider».
+sjekk('… og begge bryterne i kortet er med',
+    substr_count($vis172, '<span class="lx-bryterhoyre">') === 2);
 
 sjekk('… og slettes for godt, etter et spoersmaal',
     str_contains($vis172, "  salgSlett(v) {")
@@ -17005,8 +17068,9 @@ sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));
 sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
-    str_contains($mkSida, 'label="Søkefeltet på nettsiden" checked="{{ bryterSok }}" on-change="{{ vekslSok }}"')
-    && str_contains($mkSida, "vekslSok: () => this.vekslBryter('sok', 'Søkefeltet'),")
+    // Bryteren flyttet til «⊙ Synlighet» 13. september 2026. Samme navn,
+    // samme noekkel — nettsida merker ingen forskjell.
+    str_contains($mkSida, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),\n                () => this.vekslBryter('sok', 'Søkefeltet')),")
     && str_contains($mkSida, "document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));")
     && str_contains($mkSida, '  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }')
     && str_contains($mkSida, "if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }"));

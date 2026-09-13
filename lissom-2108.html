@@ -24398,6 +24398,12 @@ class Component extends DCLogic {
   leggTil(navn) {
     this.iKurv(navn, 1);
     this.apneKurvAuto(220);
+    // Trakta: lagt i handlekurven. Se maalVare().
+    const v = this.kurvVare(navn);
+    this.maal('add_to_cart', this.traktFelter({
+      item_id: v ? String(v.id) : String(navn), item_name: this.kurvNavn(navn),
+      item_category: (v && v.kategori) || 'Butikk', price: this.prisAv(String(navn)) || 0, quantity: 1,
+    }));
   }
 
   apneKurvAuto(top) {
@@ -27227,7 +27233,7 @@ class Component extends DCLogic {
         this._ktPagaar = false;
         if (!ok) { this.setState({ ktFeil: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '', ktEmne: '' });
-        this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });
+        this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' }, { epost, telefon: tlf });
         // Google Ads-konverteringen for en forespoersel. Uten verdi — det
         // er ikke solgt noe ennaa. (Eieren, 12. september 2026.)
         this.maal('forespurt_kontakt', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });
@@ -27264,7 +27270,7 @@ class Component extends DCLogic {
           fsSendt2: true, fsFeil: null,
           fsNavn: '', fsKontakt: '', fsMelding: '', fsAntall: null,
         });
-        this.maal('generate_lead', { form: s.fsType || 'Forespørsel' });
+        this.maal('generate_lead', { form: s.fsType || 'Forespørsel' }, this.hvemAv(s.fsKontakt));
         this.maal('forespurt_kontakt', { form: s.fsType || 'Forespørsel' });
         clearTimeout(this._fsTimer);
         this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
@@ -27624,6 +27630,9 @@ class Component extends DCLogic {
     }
     if (this._soknadPagaar) return;
     this._soknadPagaar = true;
+    const hvem = { epost, telefon: (this.state.bmTelefon || '').trim() || this.state.medlemTelefon || '' };
+    const vare = { item_id: 'medlemskap', item_name: type, item_category: 'Medlemskap', price: this.prisAv(type) || 0, quantity: 1 };
+    this.maal('begin_checkout', this.traktFelter(vare), hvem);
 
     fetch('/api/medlemsordre.php', {
       method: 'POST',
@@ -27649,12 +27658,17 @@ class Component extends DCLogic {
           this.setState({ bmFeil: d.feil || 'Fikk ikke startet innmeldingen. Prøv igjen om litt.' });
           return;
         }
-        this.maal('sign_up', { method: 'Innmelding', form: this.state.bmType || '' });
+        this.maal('sign_up', { method: 'Innmelding', form: this.state.bmType || '' }, hvem);
         // Soknaden oppretter betalingsavtalen i Vipps, og serveren svarer med
         // adressen den godkjennes paa. Uten dette steget kom man inn som
         // medlem uten at det fantes noe aa trekke fra — og da kom det aldri
         // penger, verken den maaneden eller senere.
-        if (d.url) { window.location.href = d.url; return; }
+        if (d.url) {
+          this.huskKjoper(hvem);
+          this.maal('add_payment_info', this.traktFelter(vare, { payment_type: 'Vipps' }), hvem);
+          window.location.href = d.url;
+          return;
+        }
         // Serveren svarer alltid med en adresse til Vipps — innmeldingen ER
         // betalingen, det finnes ingen soknad til behandling lenger. Kommer
         // det ingen adresse, er noe galt, og da skal det staa at noe er galt
@@ -27693,6 +27707,8 @@ class Component extends DCLogic {
     }
     if (this._gavekortPagaar) return;
     this._gavekortPagaar = true;
+    const vare = { item_id: 'gavekort', item_name: 'Gavekort', item_category: 'Gavekort', price: belop, quantity: 1 };
+    this.maal('begin_checkout', this.traktFelter(vare));
 
     fetch('/api/gavekort.php', {
       method: 'POST',
@@ -27712,6 +27728,11 @@ class Component extends DCLogic {
           this.setState({ kvittering: 'Kunne ikke kjøpe gavekort', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
           return;
         }
+        // Kjoperen er den som er logget inn — ikke mottakeren i skjemaet.
+        // huskKjoper() uten felter tar kontoen.
+        this.huskKjoper(null);
+        this.maal('add_payment_info', this.traktFelter(vare, { payment_type: 'Vipps' }),
+                  { epost: this.state.medlemEpost, telefon: this.state.medlemTelefon });
         window.location.href = d.url;
       })
       .catch(() => {
@@ -27776,6 +27797,8 @@ class Component extends DCLogic {
     }
     if (this._kjopPagaar) return;
     this._kjopPagaar = true;
+    const varerIKurv = this.kurvSomVarer();
+    this.maal('begin_checkout', this.traktFelter(varerIKurv));
 
     fetch('/api/ordre.php', {
       method: 'POST',
@@ -27817,6 +27840,10 @@ class Component extends DCLogic {
           });
           return;
         }
+        // Kassa har ingen felter for e-post og telefon; da er det kontoen.
+        const hvem = { epost: (this.state.kaEpost || this.state.medlemEpost || '').trim(), telefon: (this.state.kaTelefon || this.state.medlemTelefon || '').trim() };
+        this.huskKjoper(hvem);
+        this.maal('add_payment_info', this.traktFelter(varerIKurv, { payment_type: 'Vipps' }), hvem);
         window.location.href = d.url; // her overtar Vipps
       })
       .catch(() => {
@@ -27928,10 +27955,15 @@ class Component extends DCLogic {
    * maale-ID, eller admin. Da finnes ikke window.gtag, og alt som kaller
    * denne kan gjore det uten aa sporre om lov forst. En maaling som feiler
    * skal aldri stoppe det den maaler, saa den svelger ogsaa feil.
+   *
+   * @param {{epost?: string, telefon?: string}} [hvem] Den som handler —
+   *        se maalHvem(). Sendes med paa konverteringene, aldri paa
+   *        sidevisninger.
    */
-  maal(navn, felter) {
+  maal(navn, felter, hvem) {
     try {
       let gikk = false;
+      if (hvem) this.maalHvem(hvem);
       if (typeof window.gtag === 'function') {
         window.gtag('event', navn, felter || {});
         gikk = true;
@@ -27945,6 +27977,156 @@ class Component extends DCLogic {
       }
       return gikk;
     } catch (e) { return false; }
+  }
+
+  /**
+   * Hvem det er som handler — Googles «brukeroppgitte data».
+   *
+   * Safari og iPhone kaster informasjonskapslene etter faa dager. Da vet
+   * Google ikke lenger at den som kjopte torsdag er den som klikket paa
+   * annonsen mandag, og kjopet telles som om det kom fra ingen steder. Med
+   * e-posten og telefonnummeret sendt med, matcher Google kjopet mot
+   * Google-kontoen kunden er logget inn paa i stedet. Google selv anslaar
+   * 10–20 % flere konverteringer som blir SETT — de samme kjopene, bare
+   * riktig tilskrevet. (Eieren, 13. september 2026: «jeg vil ha det beste
+   * av det beste».)
+   *
+   * Adressen gaar aldri over nettet i klartekst. gtag normaliserer og
+   * hasher (SHA-256) i nettleseren for noe sendes — det er Googles egen
+   * dokumenterte vei, og den eneste Google godtar. Og ingenting sendes uten
+   * samtykke: uten «ja» finnes ikke window.gtag, og kallet gjor ingenting.
+   *
+   * «set» gjelder for alle hendelser som kommer etter i samme besok. Derfor
+   * kalles den fra maal() rett for hendelsen, ikke en gang for alle.
+   *
+   * To ting den aldri skal faa: mottakerens adresse paa et gavekort — det
+   * er ikke hen som kjoper — og noe fra admin. Begge er holdt unna der
+   * kallene staar, ikke her.
+   *
+   * Maa slaas paa i Google for det virker: GA4 → Admin → Datainnsamling →
+   * «Innsamling av brukeroppgitte data». Ellers kastes feltet i dora.
+   */
+  maalHvem(hvem) {
+    if (typeof window.gtag !== 'function') return;
+    const ut = {};
+    const epost = String((hvem && hvem.epost) || '').trim().toLowerCase();
+    if (epost.indexOf('@') > 0) ut.email = epost;
+    const tlf = this.e164((hvem && hvem.telefon) || '');
+    if (tlf) ut.phone_number = tlf;
+    if (!Object.keys(ut).length) return;
+    try { window.gtag('set', 'user_data', ut); } catch (e) { /* da gaar hendelsen uten */ }
+  }
+
+  /**
+   * «94 13 46 01» → «+4794134601». Google vil ha E.164 og ingenting annet;
+   * et nummer som ikke lar seg lese slik, sendes ikke.
+   */
+  e164(raa) {
+    let s = String(raa || '').replace(/[^\d+]/g, '');
+    if (s.indexOf('00') === 0) s = '+' + s.slice(2);
+    if (/^\d{8}$/.test(s)) s = '+47' + s;
+    if (/^47\d{8}$/.test(s)) s = '+' + s;
+    return /^\+\d{8,15}$/.test(s) ? s : '';
+  }
+
+  /**
+   * Ett felt som er enten e-post eller telefon. Kontaktskjemaet og
+   * forespoerselen har det slik: «E-post eller telefon», og kunden velger.
+   */
+  hvemAv(kontakt) {
+    const s = String(kontakt || '').trim();
+    return s.indexOf('@') > 0 ? { epost: s } : { telefon: s };
+  }
+
+  /**
+   * Husk hvem som gikk til Vipps.
+   *
+   * Kjopet telles forst naar kunden kommer tilbake — og da er sida lastet
+   * paa nytt, og alt som laa i minnet er borte. Det som ble skrevet i
+   * skjemaet legges igjen i sessionStorage, slik bookingen alt gjor med
+   * sine felter (lissom_booking), og maalKjop() henter det opp igjen.
+   * Fanen er den samme hele veien, ogsaa naar Vipps-appen aapnes paa
+   * mobil, saa sessionStorage rekker.
+   */
+  huskKjoper(hvem) {
+    const epost = String((hvem && hvem.epost) || this.state.medlemEpost || '').trim();
+    const telefon = String((hvem && hvem.telefon) || this.state.medlemTelefon || '').trim();
+    try { sessionStorage.setItem('lissom_kjoper', JSON.stringify({ epost, telefon })); } catch (_) { /* privat modus: da brukes kontoen */ }
+  }
+
+  /**
+   * Kurset paa bookingsida, slik Google vil ha en vare: id, navn, pris.
+   *
+   * Prisen staar paa kortet naar det er lagt gjennom medServerdata(), men
+   * ikke alle veiene inn gaar der — da hentes den fra katalogen, som
+   * ekteDatoer() gjor.
+   */
+  kursSomVare() {
+    const k = this.state.valgtKurs || {};
+    const tittel = k.title || k.tittel || '';
+    const kat = (this.state.katalog || []).find(x => x.tittel === tittel) || {};
+    const ore = Number(k.prisOre != null ? k.prisOre : kat.prisOre);
+    return {
+      item_id: k.slug || kat.slug || tittel,
+      item_name: tittel,
+      item_category: k.tema || k.level || 'Kurs',
+      // Medlemskapene gaar ogsaa gjennom bookingsida, og de staar ikke i
+      // katalogen — prisAv() kjenner planene.
+      price: isFinite(ore) ? ore / 100 : (this.prisAv(tittel) || 0),
+      quantity: 1,
+    };
+  }
+
+  /** Handlekurven som varelinjer, med det kunden ser som pris. */
+  kurvSomVarer() {
+    const kurv = this.state.kurv || {};
+    return Object.keys(kurv).map(n => {
+      const v = this.kurvVare(n);
+      return { item_id: v ? String(v.id) : n, item_name: this.kurvNavn(n), price: this.prisAv(n) || 0, quantity: kurv[n] };
+    });
+  }
+
+  /** Feltene GA4 vil ha paa et trinn i trakta: valuta, sum og varene. */
+  traktFelter(varer, mer) {
+    const liste = Array.isArray(varer) ? varer : [varer];
+    const sum = liste.reduce((s, v) => s + (Number(v.price) || 0) * (Number(v.quantity) || 1), 0);
+    return Object.assign({ currency: 'NOK', value: Math.round(sum * 100) / 100, items: liste }, mer || {});
+  }
+
+  /**
+   * Trinnene FOER kjopet: at et kurs eller en vare ble aapnet.
+   *
+   * Til naa ble bare maallinja maalt — purchase, generate_lead, sign_up.
+   * GA4 kunne si hvor mange som kjopte, men ikke hvor mange som saa paa
+   * kurset og lot vaere, eller hvor i loepet de falt fra. Med view_item →
+   * begin_checkout → add_payment_info → purchase faar traktrapporten noe
+   * aa vise, og Google Ads faar tre signaler til aa by etter, ikke ett.
+   * (Eieren, 13. september 2026.)
+   *
+   * Kalles fra componentDidUpdate, ved siden av maalSide(). Bookingsida
+   * aapnes fra ti steder; her telles alle uten at noen av dem roeres.
+   * Samme kurs to ganger paa rad — en setState som ikke byttet kurset —
+   * telles ikke: objektet er det samme.
+   *
+   * Rammeverket sender ikke forrige tilstand til componentDidUpdate (se
+   * lagSynk()), saa de to feltene det gjelder huskes her.
+   */
+  maalVare() {
+    const s = this.state;
+    const prev = this._maalVareForrige || {};
+    this._maalVareForrige = { side: s.side, valgtKurs: s.valgtKurs, piProdukt: s.piProdukt };
+    if (s.side === 'booking' && s.valgtKurs && (prev.side !== 'booking' || prev.valgtKurs !== s.valgtKurs)) {
+      this.maal('view_item', this.traktFelter(this.kursSomVare()));
+    }
+    // Varen i butikken: baade ruta fra /butikk/<id>-navn og «Vis»-knappen
+    // paa kortet gaar gjennom piProdukt.
+    const p = s.piProdukt;
+    if (p && prev.piProdukt !== p) {
+      this.maal('view_item', this.traktFelter({
+        item_id: String(p.id || p.title), item_name: p.title, item_category: p.kategori || 'Butikk',
+        price: (Number(p.prisOre) || 0) / 100, quantity: 1,
+      }));
+    }
   }
 
   /**
@@ -28010,12 +28192,20 @@ class Component extends DCLogic {
       booking: 'Kurs eller event', gavekort: 'Gavekort',
       ordre: 'Butikk', medlemskap: 'Medlemskap',
     };
+    // Hvem som kjopte: det som ble lagt igjen for turen til Vipps — se
+    // huskKjoper() — og ellers kontoen, om /api/meg.php har rukket aa
+    // svare. Kommer den etter, gaar kjopet uten; det er likevel talt.
+    let hvem = null;
+    try { hvem = JSON.parse(sessionStorage.getItem('lissom_kjoper') || 'null'); } catch (_) { hvem = null; }
+    if (!hvem || (!hvem.epost && !hvem.telefon)) {
+      hvem = { epost: this.state.medlemEpost || '', telefon: this.state.medlemTelefon || '' };
+    }
     const gikk = this.maal('purchase', {
       transaction_id: 'L' + id,
       value: belop,
       currency: 'NOK',
       items: [{ item_id: slag, item_name: NAVN[slag] || slag, price: belop, quantity: 1 }],
-    });
+    }, hvem);
 
     // Google Ads-konverteringene, ved siden av «purchase» — ikke i stedet
     // for. Ett navn per slag, saa kurs, gavekort og medlemskap kan telles
@@ -28038,6 +28228,7 @@ class Component extends DCLogic {
     if (!gikk) { this._ventendeKjop = hash; return; }
     this._ventendeKjop = null;
     try { localStorage.setItem('lissom-kjop', talt.concat(id).slice(-30).join(',')); } catch (e) { /* da telles det kanskje igjen */ }
+    try { sessionStorage.removeItem('lissom_kjoper'); } catch (e) { /* da ligger den til fanen lukkes */ }
   }
 
   /**
@@ -32831,6 +33022,8 @@ class Component extends DCLogic {
     this.lagSynk();
     // Byttet man side uten aa laste paa nytt, telles den. Se maalSide().
     this.maalSide();
+    // Aapnet man et kurs eller en vare, telles det. Se maalVare().
+    this.maalVare();
     // Bryteren «Søkefeltet på nettsiden»: soekeknappen i toppen tegnes av
     // ds-bundle.js, saa den skjules med CSS paa <html>. Se stilen oeverst.
     document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));
@@ -34078,7 +34271,12 @@ class Component extends DCLogic {
     const kropp = { handling: 'start', plan: navn, betaling: maate };
     if (kontakt && kontakt.epost)   { kropp.epost = kontakt.epost; }
     if (kontakt && kontakt.telefon) { kropp.telefon = kontakt.telefon; }
-    this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps');
+    // Trakta: kassa er begynt. Varen foelger med til medlemskapKall(), som
+    // teller add_payment_info idet Vipps overtar.
+    const vare = { item_id: 'medlemskap', item_name: navn, item_category: 'Medlemskap', price: this.prisAv(navn) || 0, quantity: 1 };
+    const hvem = { epost: (kontakt && kontakt.epost) || this.state.medlemEpost, telefon: (kontakt && kontakt.telefon) || this.state.medlemTelefon };
+    this.maal('begin_checkout', this.traktFelter(vare), hvem);
+    this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps', { vare, hvem });
   }
 
   /**
@@ -34253,10 +34451,22 @@ class Component extends DCLogic {
     }, 400);
   }
 
-  medlemskapKall(kropp, merkelapp) {
+  /**
+   * @param {{vare: Object, hvem: Object}} [trakt] Fra startAbonnement() og
+   *        bookingsida: varen og kjoperen, saa add_payment_info kan telles
+   *        idet Vipps overtar. «siOpp» sender ingenting, og teller ingenting.
+   */
+  medlemskapKall(kropp, merkelapp, trakt) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._medlemskapLagrer) return Promise.resolve(false);
     this._medlemskapLagrer = true;
+    const tilVipps = (url) => {
+      if (trakt) {
+        this.huskKjoper(trakt.hvem);
+        this.maal('add_payment_info', this.traktFelter(trakt.vare, { payment_type: 'Vipps' }), trakt.hvem);
+      }
+      window.location.href = url;
+    };
 
     return fetch('/api/medlemskap.php', {
       method: 'POST',
@@ -34297,7 +34507,7 @@ class Component extends DCLogic {
               ],
               handling: 'Åpne Vipps',
               maal: null, skjema: false,
-              gjor: () => { window.location.href = d.url; },
+              gjor: () => { tilVipps(d.url); },
               aboValg: null,
             },
             detaljMva: null,
@@ -34306,7 +34516,7 @@ class Component extends DCLogic {
           this.hentMedlemskap();
           return true;
         }
-        if (ok && d.url) { window.location.href = d.url; return true; }
+        if (ok && d.url) { tilVipps(d.url); return true; }
         this.setState({
           kvittering: ok ? (merkelapp || 'Lagret') : 'Gikk ikke',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
@@ -40995,6 +41205,10 @@ class Component extends DCLogic {
     if (this.state.bookJobber) return;
 
     this.setState({ bookJobber: true });
+    // Trakta: kassa er begynt. Etter innloggingssjekken, saa den som sendes
+    // til Vipps-innlogging og trykker igjen etterpaa telles én gang.
+    const vare = this.kursSomVare();
+    this.maal('begin_checkout', this.traktFelter(vare));
 
     fetch('/api/book.php', {
       method: 'POST',
@@ -41016,6 +41230,11 @@ class Component extends DCLogic {
           return;
         }
         if (d.betaling) {
+          // Trakta: paa vei til betaling. gtag sender med sendBeacon, saa
+          // hendelsen overlever at sida forlates i neste linje.
+          const hvem = { epost: (this.state.bEpost || this.state.medlemEpost || '').trim(), telefon: (this.state.bTelefon || this.state.medlemTelefon || '').trim() };
+          this.huskKjoper(hvem);
+          this.maal('add_payment_info', this.traktFelter(vare, { payment_type: 'Vipps' }), hvem);
           window.location.href = d.url; // her overtar Vipps
           return;
         }
@@ -43891,7 +44110,10 @@ class Component extends DCLogic {
         // hver maaned. «Betalingen er gjennomfort» sto her uansett — for et
         // trekk som ikke fantes.
         if ((k.tema === 'Medlemskap' || k.level === 'Medlemskap') && this.erPublisert()) {
-          this.medlemskapKall({ handling: 'start', plan: k.title || k.tittel });
+          const vare = this.kursSomVare();
+          const hvem = { epost: this.state.medlemEpost, telefon: this.state.medlemTelefon };
+          this.maal('begin_checkout', this.traktFelter(vare), hvem);
+          this.medlemskapKall({ handling: 'start', plan: k.title || k.tittel }, undefined, { vare, hvem });
           return;
         }
 

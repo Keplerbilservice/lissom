@@ -13856,6 +13856,33 @@ sjekk('… og de som har skrift bruker pillemaalet',
     && str_contains($utenKomm, '    padding: 6px 12px !important;')
     && str_contains($utenKomm, '    font: var(--type-chip) !important;'));
 
+// 2b. Maalt i nettleseren 13. september 2026: 675 piller paa ti adminskjermer
+//     fordelt paa 15 ulike hoeyder — 31, 28, 30, 37, 41, 39, 29, 36, 19, 43,
+//     47, 33, 35, 45 og 23 px. Eieren: «Ser rotete ut med forskjellige
+//     pillestoerrelser». Han valgte to maal, ikke tre: «Liten» for alt inne
+//     paa skjermen, «Stor» for hovedhandlinga oeverst.
+//
+//     Etterpaa: 923 piller paa 32 px, 19 paa 48, og ni merkelapper som ikke
+//     er piller. Regelen treffer paa stilstrengen, saa en ny pille faar
+//     maalet av seg selv — men da maa selve regelen staa der.
+sjekk('pillene i admin har to maal og ikke femten',
+    str_contains($sidaP, '.lx-adminaside ~ main button[style*="--radius-pill"],')
+    && str_contains($sidaP, '    min-height: 32px !important;')
+    && str_contains($sidaP, '.lx-adminaside ~ main .lx-topprad button {')
+    && str_contains($sidaP, '    min-height: 48px !important;'),
+    'maalt: 32 px x 923, 48 px x 19');
+sjekk('… og hovedhandlinga oeverst er merket paa hver adminskjerm',
+    substr_count($sidaP, 'class="lx-topprad"') === 11,
+    'elleve topprader med knapp');
+// Runde ikonknapper staar i samme rad som pillene og maa vaere like hoeye.
+sjekk('… og de runde ikonknappene foelger samme maal',
+    str_contains($sidaP, '.lx-adminaside ~ main button[style*="border-radius: 50%"] {'));
+// Merkelapper er ikke piller: «Betalt», «Ubetalt» og «Ikke betalt» sier en
+// tilstand. De bruker 999px og ikke «--radius-pill», og staar derfor igjen.
+sjekk('… mens merkelappene staar igjen som merkelapper',
+    str_contains($utenKomm, "textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,"),
+    'ni merkelapper, 19 og 23 px');
+
 // 3. Bindingspilla sa hele setningen i versaler og ble en gul flate over to
 //    linjer. Naboene sier ett ord — «BETALT», «AKTIV» — og datoen under.
 // Ordet ble «Bindingstid» 7. september. Eieren: «vi kan godt ha en pille som

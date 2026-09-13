@@ -1490,6 +1490,88 @@ window.__resources = {
   }
   .lx-radpille:hover { border-color: var(--lissom-brown) !important; }
 
+  /* ── Ett maal paa pillene ────────────────────────────────────────────
+     Eieren, 13. september 2026: «Ser rotete ut med forskjellige
+     pillestoerrelser», og «Husk piller skal staa symetrisk, paa riktig
+     side saa de er sentrert. Samme stoerrelse.»
+
+     Maalt i nettleseren foer: 675 piller paa ti adminskjermer fordelt paa
+     15 ulike hoeyder — 31, 28, 30, 37, 41, 39, 29, 36, 19, 43, 47, 33, 35,
+     45 og 23 px. Det var ikke et system.
+
+     Han valgte to maal, ikke tre: «Liten» for alt inne paa skjermen —
+     radhandlinger, faner og filtre — og «Stor» for hovedhandlinga oeverst.
+
+     Regelen treffer paa stilstrengen, ikke paa hvert enkelt sted: hver
+     pille i admin har «--radius-pill» i sin egen stil, og det er den
+     eneste tingen de har felles. Da trengs det én regel i stedet for aa
+     skrive om over hundre stilobjekter — og en ny pille faar maalet
+     automatisk. Bare maalet staar her; farge, ramme og bakgrunn blir
+     igjen paa knappen, saa en valgt fane er fremdeles brun.
+
+     Merkelapper er ikke piller: «Betalt», «Ubetalt» og «Ikke betalt»
+     bruker «999px» og ikke «--radius-pill», og staar derfor igjen som de
+     er. De sier en tilstand, de er ikke noe du trykker paa. */
+  .lx-adminaside ~ main button[style*="--radius-pill"],
+  .lx-adminaside ~ main a[style*="--radius-pill"],
+  .lx-admtopp button,
+  .lx-radpille {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    min-height: 32px !important;
+    height: auto !important;
+    padding: 0 12px !important;
+    border-radius: var(--radius-pill) !important;
+    font-size: var(--text-xs) !important;
+    line-height: 1.1 !important;
+    white-space: nowrap;
+    cursor: pointer;
+    /* Staar pilla i en rad som strekker seg, ble den hoeyere enn maalet:
+       maalt 40 px paa «Meld inn» og «Se Min side» under Alle deltakere, og
+       39 px paa «Legg til» i aarskalenderen. Da er det raden som bestemmer,
+       ikke pilla. Sentrert i raden er ogsaa det eieren ba om: «piller skal
+       staa symetrisk, paa riktig side saa de er sentrert». */
+    align-self: center !important;
+  }
+
+  /* Runde ikonknapper staar i samme rad som pillene — «−», «+», «↑», «↓»
+     og pilene i kalenderen. Maalt 30 og 36 px mot pillenes 32. Samme
+     hoeyde, og like bred som hoey, saa raden staar paa linje. */
+  .lx-adminaside ~ main button[style*="border-radius: 50%"] {
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    /* Pilene «‹» og «›» hadde linjehoeyde 34 i en sirkel paa 32, og tegnet
+       stakk utenfor. Maalt: innhold 32 mot 30 i ramma. */
+    line-height: 1 !important;
+    align-self: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+
+  /* «Stor» — hovedhandlinga oeverst paa skjermen. Den staar i toppraden
+     ved siden av overskriften, og det er én, sjelden to, per skjerm.
+     Regelen maa staa etter «Liten», og veie like tungt, for knappene i
+     toppraden treffes av begge. Maalt: med bare «.lx-topprad button» vant
+     «Liten», og «Ovn er tømt» ble 32 px i stedet for 48. */
+  .lx-adminaside ~ main .lx-topprad button {
+    min-height: 48px !important;
+    height: auto !important;
+    padding: 0 22px !important;
+    font-size: var(--text-sm) !important;
+    line-height: 1.1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    border-radius: var(--radius-pill) !important;
+  }
+
   /* Bryterne i medlemssalg-kortet: pilla til hoeyre for teksten.
      Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten
      saa de kommer rett ovenfor hverandre».
@@ -6096,7 +6178,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Nyttig info</h1>
@@ -7563,7 +7645,7 @@ window.__resources = {
         </sc-if>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
@@ -11161,7 +11243,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kurs og medlemskap</div>
             <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Medlemskap</h1>
@@ -11557,7 +11639,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ kursSkjermEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ kursSkjermTittel }}</h1>
@@ -14980,7 +15062,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Påmeldte</h1>
@@ -15750,7 +15832,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kursdeltakere</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Deltakere</h1>
@@ -17646,7 +17728,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-8) var(--space-8) var(--space-16); min-width: 0;">
-        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-5) var(--space-8); margin-bottom: var(--space-7);">
+        <div class="lx-topprad" style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-5) var(--space-8); margin-bottom: var(--space-7);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Innhold</h1>
@@ -18002,7 +18084,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ butikkTittel }}</h1>
@@ -18963,7 +19045,7 @@ window.__resources = {
         </sc-if>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ vstTittel }}</h1>
@@ -19652,7 +19734,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ okEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ okMaanedTittel }}</h1>
@@ -20199,7 +20281,7 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-8); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-5);">
+        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-5);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Markedsføring</div>
             <h1 style="margin: 0; font-size: var(--text-3xl);">{{ mkFaneTittel }}</h1>
@@ -47721,8 +47803,8 @@ class Component extends DCLogic {
           admUkeNaa: () => this.setState({ admAnker: nokkel(iDag) }),
           admUkePilStil: pil,
           admUkeNaaStil: {
-            appearance: 'none', cursor: 'pointer', height: 36, padding: '0 14px',
-            borderRadius: 999, border: '1px solid var(--border-subtle)',
+            appearance: 'none', cursor: 'pointer', padding: '0 12px',
+            borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)',
             background: nokkel(anker) === nokkel(iDag) ? 'var(--lissom-brown)' : 'var(--surface-card)',
             color: nokkel(anker) === nokkel(iDag) ? 'var(--clay-50)' : 'var(--text-heading)',
             font: 'var(--type-body-sm)', fontWeight: 600,

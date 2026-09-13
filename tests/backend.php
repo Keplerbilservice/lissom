@@ -17006,6 +17006,37 @@ sjekk('… og de kan legges ut igjen',
     str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
     && str_contains($vis172, '>Legg ut igjen</button>'));
 // Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+echo "\n== Omsetninga som piller, og banneret dit teksten redigeres ==\n";
+// Eieren, 13. september 2026: «Okonomi og omsetning kan staa paa kalender som
+// piller», og om banner-redigeringa: «redigering av banneret gaar til der du
+// foreslo» — Nettsiden › Innhold.
+$flytt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Tallet staar i pilla, saa man slipper aa aapne noe for aa se det.
+sjekk('omsetninga staar som to piller paa kalenderen',
+    str_contains($flytt, "                { navn: 'Omsetning i dag', verdi: (d.omsetning || {}).idag || '',")
+    && str_contains($flytt, "                { navn: 'Denne måneden',   verdi: (d.omsetning || {}).maned || '',")
+    && str_contains($flytt, '<sc-if value="{{ s.harVerdi }}"'),
+    'maalt: «Omsetning i dag kr. 690,-» og «Denne maaneden kr. 1 320,-»');
+// Trykk gaar dit linjene bak tallet staar.
+sjekk('… og trykk gaar til Økonomi',
+    substr_count($flytt, "                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },") === 2);
+
+// Banner-redigeringa er flyttet, ikke kopiert. Den laa paa Oversikt; naa staar
+// den der resten av teksten paa nettsida redigeres.
+sjekk('banner-redigeringa staar bare ett sted',
+    substr_count($flytt, '{{ bnTittel }}') === 1
+    && substr_count($flytt, '<sc-if value="{{ visBannerRed }}"') === 1);
+// Rekkefolgen avgjor hvilken skjerm den havner paa: etter «Admin – innhold»,
+// for neste skjerm begynner.
+sjekk('… og det stedet er Nettsiden › Innhold',
+    strpos($flytt, 'data-screen-label="Admin – innhold"') < strpos($flytt, '{{ bnTittel }}')
+    && strpos($flytt, '{{ bnTittel }}') < strpos($flytt, 'data-screen-label="Admin – butikk"'),
+    'maalt i nettleseren: skjemaet staar paa Innhold, og lagringa virker derfra');
+// Bryteren som slaar banneret av og paa er noe annet, og staar i ⊙ Synlighet.
+sjekk('… mens bryteren staar i ⊙ Synlighet',
+    str_contains($flytt, "            rad('Banneret under toppbildet',"));
+
 echo "\n== ⊙ Synlighet: alle bryterne paa ett sted ==\n";
 // Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise paa
 // siden, min side skal samles og legges paa menyen verktoy», «paa pc, vis meg

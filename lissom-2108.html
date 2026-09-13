@@ -7604,8 +7604,8 @@ window.__resources = {
             </sc-for>
           </div>
           <div style="{{ klSnarveiPilleRadStil }}">
-            <sc-for list="{{ klSnarveiPiller }}" as="s" hint-placeholder-count="4">
-              <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}</button>
+            <sc-for list="{{ klSnarveiPiller }}" as="s" hint-placeholder-count="6">
+              <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}<sc-if value="{{ s.harVerdi }}" hint-placeholder-val="{{ false }}"><span style="{{ s.verdiStil }}">{{ s.verdi }}</span></sc-if></button>
             </sc-for>
           </div>
         </div>
@@ -12940,57 +12940,11 @@ window.__resources = {
 
         <!-- Banneret under toppbildet. Ett felt som skal brukes til det som
              gjelder akkurat naa: aapent hus, gavekort til jul, paaskeegg. -->
-        <sc-if value="{{ visBannerRed }}" hint-placeholder-val="{{ true }}">
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
-            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Banneret under toppbildet</span>
-            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ bnStatus }}</span>
-          </div>
-
-          <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); max-width: 780px;">
-            <div>
-              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Overskrift</label>
-              <input value="{{ bnTittel }}" onChange="{{ settBnTittel }}" placeholder="F.eks. Gi et gavekort" style="{{ bnFeltStil }}">
-            </div>
-
-            <div>
-              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tekst</label>
-              <textarea value="{{ bnTekst }}" onChange="{{ settBnTekst }}" rows="2" placeholder="En setning eller to om hva det gjelder." style="{{ bnOmradeStil }}"></textarea>
-            </div>
-
-            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4);">
-              <div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tekst på knappen</label>
-                <input value="{{ bnKnapp }}" onChange="{{ settBnKnapp }}" placeholder="F.eks. Kjøp gavekort" style="{{ bnFeltStil }}">
-              </div>
-              <div style="grid-column: 1 / -1;">
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knappen går til</label>
-                <!-- Brikkene tar hele raden: en halv spalte gjor aatte valg til en søyle. -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                  <sc-for list="{{ bnMaal }}" as="br" hint-placeholder-count="8">
-                    <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
-                  </sc-for>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde til høyre i banneret</label>
-              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                <sc-for list="{{ bnBilder }}" as="i" hint-placeholder-count="6">
-                  <button type="button" onClick="{{ i.velg }}" title="{{ i.navn }}" aria-label="{{ i.navn }}" style="{{ i.stil }}"></button>
-                </sc-for>
-              </div>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ bnLagre }}" hint-size="auto,44px">Lagre banneret</x-import>
-              <button type="button" onClick="{{ bnTilbakestill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Tilbakestill</button>
-              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ bnHint }}</span>
-            </div>
-          </div>
-        </div>
-        </sc-if>
+          <!-- Banner-redigeringa sto her. Eieren, 13. september 2026, etter
+               aa ha faatt se hva den faktisk var: «redigering av banneret
+               gaar til der du foreslo» — Nettsiden › Innhold.
+               Bryteren som slaar banneret av og paa er noe annet; den
+               flyttet til ⊙ Synlighet samme dag. -->
 
         <!-- «Ikke fornyet — minn dem paa» sto her.
              Flyttet til Medlemmer 27. august paa bestilling: det er arbeid
@@ -17664,6 +17618,69 @@ window.__resources = {
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
           </div>
+        </sc-if>
+
+        <!-- Banneret under toppbildet.
+
+             Det laa paa Oversikt, sammen med grupperabatten og
+             oemsetningstallene. Eieren, 13. september 2026: «redigering av
+             banneret gaar til der du foreslo». Det er tekst paa nettsida, og
+             hoerer hjemme der resten av teksten redigeres.
+
+             Samme skjema, samme felter, samme lagring — flyttet, ikke
+             kopiert. Bryteren som slaar det av og paa staar i ⊙ Synlighet.
+             «visBannerRed» skjuler skjemaet paa telefon som for; der er det
+             for mange felter til aa fylles ut med tommelen. -->
+        <sc-if value="{{ visBannerRed }}" hint-placeholder-val="{{ true }}">
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Banneret under toppbildet</span>
+            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ bnStatus }}</span>
+          </div>
+
+          <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); max-width: 780px;">
+            <div>
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Overskrift</label>
+              <input value="{{ bnTittel }}" onChange="{{ settBnTittel }}" placeholder="F.eks. Gi et gavekort" style="{{ bnFeltStil }}">
+            </div>
+
+            <div>
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tekst</label>
+              <textarea value="{{ bnTekst }}" onChange="{{ settBnTekst }}" rows="2" placeholder="En setning eller to om hva det gjelder." style="{{ bnOmradeStil }}"></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4);">
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tekst på knappen</label>
+                <input value="{{ bnKnapp }}" onChange="{{ settBnKnapp }}" placeholder="F.eks. Kjøp gavekort" style="{{ bnFeltStil }}">
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knappen går til</label>
+                <!-- Brikkene tar hele raden: en halv spalte gjor aatte valg til en søyle. -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ bnMaal }}" as="br" hint-placeholder-count="8">
+                    <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde til høyre i banneret</label>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <sc-for list="{{ bnBilder }}" as="i" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ i.velg }}" title="{{ i.navn }}" aria-label="{{ i.navn }}" style="{{ i.stil }}"></button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ bnLagre }}" hint-size="auto,44px">Lagre banneret</x-import>
+              <button type="button" onClick="{{ bnTilbakestill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Tilbakestill</button>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ bnHint }}</span>
+            </div>
+          </div>
+        </div>
         </sc-if>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(190px, 260px) minmax(0, 1fr); gap: var(--space-6); align-items: start;">
@@ -48736,13 +48753,26 @@ class Component extends DCLogic {
                     utBelop: '', utSalgBeskjed: '',
                   }) },
                 { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },
+                // Omsetninga sto som et kort paa Oversikt. Eieren,
+                // 13. september 2026: «Okonomi og omsetning kan staa paa
+                // kalender som piller». Tallet staar i pilla, saa man slipper
+                // aa aapne noe for aa se det; trykk gaar til Okonomi, der
+                // linjene bak tallet staar.
+                { navn: 'Omsetning i dag', verdi: (d.omsetning || {}).idag || '',
+                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
+                { navn: 'Denne måneden',   verdi: (d.omsetning || {}).maned || '',
+                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
               ].map(x => Object.assign({}, x, {
+                harVerdi: !!x.verdi,
+                verdiStil: { fontWeight: 800, color: 'var(--lissom-brown)' },
                 stil: {
                   appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
                   padding: '8px 15px', borderRadius: 'var(--radius-pill)',
                   font: 'var(--type-body-sm)', fontWeight: 600,
                   background: 'var(--surface-card)',
                   border: '1px solid var(--border-subtle)', color: 'var(--lissom-brown)',
+                  // Luft mellom navnet og tallet paa de to som baerer et beloep.
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
                 },
               })),
               klSnarveiPilleRadStil: {

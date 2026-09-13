@@ -13814,9 +13814,13 @@ sjekk('ressursvalget staar aapent i kortet',
     'ute som inne');
 sjekk('… og lenka som gjemte det er ikke i bruk lenger',
     !str_contains($msU, '{{ msRessursLenke }}'), 'brikkene staar der selv');
+// Sto som «this.stemplingKall(inne ? …)» til 13. september 2026. Da fikk
+// utstemplinga en rute foerst, og de to veiene skilte lag i metoden — men
+// det er fortsatt ÉN metode begge knappene kaller.
 sjekk('stemplinga skjer ett sted',
     str_contains($msU, '  vekslStempling() {')
-    && substr_count($msU, 'this.stemplingKall(inne ?') === 1,
+    && substr_count($msU, '  vekslStempling() {') === 1
+    && substr_count($msU, 'vekslStempling: () => this.vekslStempling(),') === 1,
     'én metode, to knapper');
 
 // 3. QR-en ved doera.
@@ -17830,7 +17834,10 @@ sjekk('Ovnkortet: tre piller i kortet paa Min side og kalenderen, statusen oever
 sjekk('… api/ovn.php tar imot raabrann og glasurbrann som slag, og migrasjon 179 legger til kolonnen',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "const SLAG = ['tomt', 'raabrann', 'glasurbrann'];")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "if (in_array(\$handling, SLAG, true)) {")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "        'slag' => in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt',")
+    // Sto som «'slag' => in_array(...)» i svaret til 13. september 2026. Da
+    // fikk toemminga en egen levetid, og slaget maatte leses foer tida kunne
+    // proeves paa den — derfor staar det i en variabel over svaret naa.
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "    \$slag = in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt';")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/179_ovnkortet_raabrann_glasurbrann.sql'),
         "    ADD COLUMN IF NOT EXISTS slag VARCHAR(24) NOT NULL DEFAULT 'tomt'"));
 sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett det; migrasjon 171 lager tabellene',
@@ -17846,6 +17853,78 @@ sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett de
             && str_contains($m, 'CREATE TABLE IF NOT EXISTS ovn_tomt_sett (')
             && str_contains($m, '  PRIMARY KEY (tomt_id, member_id)');
     })());
+// ── Ruta ved utstempling ────────────────────────────────────────────────
+//
+// Eieren, 13. september 2026: «naar medlemmene stempler seg ut, er det mulig
+// aa faa en pop up som viser hvor lenge har de vaert stemplet inn? Bekreft,
+// feil tid, send beskjed til admin.» Og: «faar medlemmene varsel naar de har
+// 20 % av timene igjen?» — nei, og han valgte at det skal staa i den samme
+// ruta.
+//
+// Maalt i nettleseren samme dag, 390 og 1280 px: knappen aapner ruta,
+// «Du var inne i 2 t 15 min», «Stemplet inn 19:49». «Feil tid — si fra»
+// lukket oekta (0 aapne igjen) og la én henvendelse av typen «Feil
+// stemplingstid» i admin.
+$stemplApi = (string) file_get_contents(dirname(__DIR__) . '/api/stempling.php');
+sjekk('utstempling gaar via ruta, innstempling rett gjennom',
+    str_contains($sida, "if (inne) { this.setState({ utstApen: true }); return; }")
+    && str_contains($sida, "this.stemplingKall({ handling: 'inn', ressursId: valgt || 0 }, true);")
+    && str_contains($sida, '<sc-if value="{{ utstVis }}"'));
+sjekk('… og ruta sier hvor lenge, med tallene serveren alt sender',
+    str_contains($sida, "utstLenge: 'Du var inne i ' + lenge,")
+    && str_contains($sida, "utstFra: 'Stemplet inn ' + siden + '. Tida trekkes fra timene dine denne måneden.',"));
+sjekk('… «Feil tid — si fra» lukker oekta og sier fra til verkstedet',
+    str_contains($sida, "this.stemplingKall({ handling: 'feiltid' }, true);")
+    && str_contains($stemplApi, "} elseif (\$handling === 'feiltid') {")
+    && str_contains($stemplApi, "'type'    => 'Feil stemplingstid',")
+    && str_contains($stemplApi, "Varsel::malTilAdmin('intern_ny_foresporsel', ["));
+// «bruktMin» teller den paagaaende oekta med fra for — se
+// Stempling::minutterDenneManeden(). Foerste utgave la den til én gang til,
+// og ruta sa «3,5 timer igjen» der det var 5,8. Maalt etter rettinga: 27 t
+// fra for pluss 2,3 t naa ga «5,7 av 35 timer igjen».
+sjekk('… og 20 %-linja regner ikke den paagaaende oekta to ganger',
+    str_contains($sida, 'const brukt = t.bruktMin || 0;')
+    && str_contains($sida, 'const naerTomt = tak !== null && tak > 0 && brukt >= tak * 60 * 0.8;')
+    && !str_contains($sida, "(t.bruktMin || 0) + (st.saaLengeMin || 0)"));
+sjekk('… linja staar bare naar timene begynner aa ta slutt',
+    str_contains($sida, '<sc-if value="{{ utstNaerTomt }}"')
+    && str_contains($sida, "'Etter denne økta har du ingen timer igjen denne måneden.'")
+    && str_contains($sida, "'Etter denne økta har du ' + String(etter).replace('.', ',') + ' av ' + tak + ' timer igjen.'"));
+// Fri tilgang har ingen grense, og da er det ingenting aa telle ned mot.
+sjekk('… og fri tilgang faar ingen nedtelling',
+    str_contains($sida, "const tak = t.perMnd === null || t.perMnd === undefined ? null : Number(t.perMnd);"));
+
+// ── Hvor lenge ovnstatusen staar ────────────────────────────────────────
+//
+// Eieren, 13. september 2026: «dersom det aktivere en raavrann eller
+// glassurbrann, saa overstyrer dette at ovnen er toemt. Vi juster ogsaa ned
+// visningstid paa at ovnen er toemt til 12 timer».
+//
+// Det foerste gjorde den fra for: den nyeste raden er statusen. Maalt i
+// nettleseren samme dag — tomt, raabrann, glasurbrann, tomt etter hverandre
+// ga akkurat det siste trykket hver gang.
+//
+// Det andre er nytt. Maalt, med rader lagt inn med alder:
+//   tomt 11 t → tomt          tomt 13 t → ingenting
+//   raabrann 13 t → raabrann  raabrann 25 t → ingenting
+//   glasurbrann 23 t → glasurbrann
+//
+// Og rekkefoelgen holder: raabrann 20 t etterfulgt av tomt 13 t gir
+// ingenting — den eldre brenningen skal ikke dukke opp igjen under en
+// toemming som har gaatt ut paa tid.
+sjekk('«Ovn er tømt» staar i 12 timer, brenningene i 24',
+    (static function (): bool {
+        $a = (string) file_get_contents(dirname(__DIR__) . '/api/ovn.php');
+        return str_contains($a, "    \$timer = \$slag === 'tomt' ? 12 : 24;")
+            && str_contains($a, "    if (\$naar->getTimestamp() < time() - \$timer * 3600) {")
+            // Den nyeste raden hentes foerst, og tida proeves paa den. Snur
+            // man om paa det, dukker en eldre brenning opp igjen naar
+            // toemminga over den gaar ut.
+            && strpos($a, 'ORDER BY id DESC LIMIT 1') < strpos($a, "\$timer = \$slag === 'tomt' ? 12 : 24;");
+    })());
+sjekk('… og skjermen sier det samme som serveren',
+    str_contains($sida, '// Hvor lenge statusen staar, avgjoer api/ovn.php: «Ovn er tømt» i 12 timer'));
+
 // ── Kalenderen, 13. september 2026: tre ting ─────────────────────────────
 //
 // Eieren: «1. legge til send beskjed ved siden av chat pillen i kalender …

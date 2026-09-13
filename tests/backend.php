@@ -13875,6 +13875,13 @@ sjekk('… og hovedhandlinga oeverst er merket paa hver adminskjerm',
     substr_count($sidaP, 'class="lx-topprad"') === 11,
     'elleve topprader med knapp');
 // Runde ikonknapper staar i samme rad som pillene og maa vaere like hoeye.
+// Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
+// lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september
+// 2026. Maalt paa 390 px: alle tre 310 x 48, samme venstrekant.
+sjekk('… og de store knappene fyller bredden paa telefon',
+    str_contains($sidaP, '  @media (max-width: 560px) {')
+    && str_contains($sidaP, '    .lx-adminaside ~ main .lx-topprad button {'),
+    'maalt: 310 x 48 paa 390 px');
 sjekk('… og de runde ikonknappene foelger samme maal',
     str_contains($sidaP, '.lx-adminaside ~ main button[style*="border-radius: 50%"] {'));
 // Merkelapper er ikke piller: «Betalt», «Ubetalt» og «Ikke betalt» sier en

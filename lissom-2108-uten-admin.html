@@ -1572,6 +1572,21 @@ window.__resources = {
     border-radius: var(--radius-pill) !important;
   }
 
+  /* Paa telefon stables de tre under hverandre. Like hoeye, men ulikt lange
+     — «Last ned liste», «Send beskjed» og «Legg til deltaker» ga tre ulike
+     hoeyrekanter. Eieren, 13. september 2026, valgte full bredde: da staar
+     kolonnen rett. Maalt paa 390 px. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-topprad x-import,
+    .lx-adminaside ~ main .lx-topprad .sc-host-x,
+    .lx-adminaside ~ main .lx-topprad button {
+      width: 100% !important;
+    }
+    .lx-adminaside ~ main .lx-topprad > div:last-child {
+      width: 100%;
+    }
+  }
+
   /* Bryterne i medlemssalg-kortet: pilla til hoeyre for teksten.
      Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten
      saa de kommer rett ovenfor hverandre».

@@ -10056,7 +10056,7 @@ sjekk('… og lenken sier det samme som overskriften',
     && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
 // Én stil paa begge lenkene, saa de ikke driver fra hverandre.
 sjekk('… og alle lenkene deler stil',
-    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 11
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 12
     && str_contains($sidaG, '      listeKnappStil: {'));
 
 // ── SEO-skjermen paa telefonen ─────────────────────────────────────────
@@ -10143,10 +10143,20 @@ sjekk('… og navnet deles ikke midt i ordet',
 // 1 132 px man ruller forbi for aa naa feltene. Samme grep som paa SEO og
 // GEO. Maalt: 4,9 -> 3,6 skjermer. PC uendret paa 3 187 px.
 sjekk('sidelista i innhold ligger bak en pille paa telefonen',
-    str_contains($sidaG, '    .lx-innholdliste[data-apen="false"] { display: none !important; }'));
+    str_contains($sidaG, '    .lx-innholdliste[data-apen="false"],'));
 // Lukker seg naar en side er valgt, som de to andre.
 sjekk('… og lukker seg naar en side er valgt',
     str_contains($sidaG, "velg: () => this.setState({ innholdSide: navn, innholdBlokk: 0, innholdListeApen: false }),"));
+
+// ── Malskjermen paa telefonen ──────────────────────────────────────────
+//
+// 3 749 px paa en 390 px skjerm — 4,4 skjermer — hvorav 2 502 er de 36
+// malene man ruller forbi for aa naa emnet og teksten.
+// Maalt: 4,4 -> 1,5 skjermer. PC uendret paa 2 751 px.
+sjekk('mal-lista ligger bak en pille paa telefonen',
+    str_contains($sidaG, '    .lx-malliste[data-apen="false"] { display: none !important; }'));
+sjekk('… og lukker seg naar en mal er valgt',
+    str_contains($sidaG, "velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),"));
 
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //

@@ -1991,7 +1991,8 @@ window.__resources = {
     .lx-vasignatur[data-apen="false"],
     .lx-geoliste[data-apen="false"],
     .lx-geotiltak[data-apen="false"],
-    .lx-innholdliste[data-apen="false"] { display: none !important; }
+    .lx-innholdliste[data-apen="false"],
+    .lx-malliste[data-apen="false"] { display: none !important; }
   }
 
   /* Verkstedet paa telefon: kortene to og to.
@@ -19040,7 +19041,11 @@ window.__resources = {
         </sc-if>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, 1.7fr); gap: var(--space-6); align-items: start;">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen. Paa stoerre skjerm staar lista i
+                 sin egen spalte som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ malListeVeksle }}" style="{{ listeKnappStil }}">{{ malListeKnapp }}</button>
+            <div class="lx-malliste" data-apen="{{ malListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Alle malene</div>
             <sc-for list="{{ malListe }}" as="m" hint-placeholder-count="10">
               <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">
@@ -19051,6 +19056,7 @@ window.__resources = {
                 </sc-if>
               </button>
             </sc-for>
+            </div>
           </div>
 
           <sc-if value="{{ malHarValgt }}" hint-placeholder-val="{{ true }}">
@@ -57315,11 +57321,20 @@ class Component extends DCLogic {
         return {
           malIngen: alle.length === 0,
           malAntall: alle.length + (alle.length === 1 ? ' mal' : ' maler'),
+          // Mal-lista bak en pille paa telefonen. Skjermen var 3 749 px paa
+          // en 390 px skjerm — 4,4 skjermer — og 2 502 av dem var de 36
+          // malene man ruller forbi for aa naa emnet og teksten. Samme grep
+          // som paa SEO, GEO og Innhold; lista lukker seg naar en mal er
+          // valgt. Maalt 13. september 2026. Se «.lx-listevis» i stilarket.
+          malListeApen: !!this.state.malListeApen,
+          malListeVeksle: () => this.setState({ malListeApen: !this.state.malListeApen }),
+          malListeKnapp: 'Alle malene (' + alle.length + ')'
+            + (this.state.malListeApen ? ' \u25b4' : ' \u25be'),
           malListe: alle.map(m => ({
             navn: m.tittel,
             kanal: kanalTekst(m.kanal),
             av: !m.aktiv,
-            velg: () => this.setState({ malValgt: m.navn, malUtkast: null }),
+            velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),
             stil: {
               display: 'flex', flexDirection: 'column', gap: 2, width: '100%', textAlign: 'left',
               appearance: 'none', cursor: 'pointer',

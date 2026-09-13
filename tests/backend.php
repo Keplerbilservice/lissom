@@ -7072,9 +7072,11 @@ sjekk('… og markupen spor om det',
     str_contains($sida, '<sc-if value="{{ visGrRabatt }}" hint-placeholder-val="{{ true }}">')
     && str_contains($sida, '<sc-if value="{{ visBannerRed }}" hint-placeholder-val="{{ true }}">'));
 // Av/paa-bryteren som heter det samme er noe annet: den styrer om banneret
-// vises for kunden, og staar igjen. Den er én linje, ikke et skjema.
+// vises for kunden, og staar igjen. Den flyttet til «⊙ Synlighet»
+// 13. september 2026 — samme navn, samme noekkel, ett sted.
 sjekk('… mens av/paa-bryteren med samme navn staar igjen',
-    str_contains($sida, 'label="Banneret under toppbildet"'));
+    str_contains($sida, "            rad('Banneret under toppbildet',")
+    && str_contains($sida, "                (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',"));
 
 // ── Ingen priser skrevet inn i koden ──────────────────────────────────
 //
@@ -14116,12 +14118,13 @@ sjekk('… og ingen kurs paa skivene er ogsaa et svar',
 
 // ── Et menyvalg skal aldri fore til en tom skjerm ──────────────────
 // Eieren: «Menyen selg viser ingenting, er det pga jeg ikke har aktivert
-// den». Skjemaet staar bak to brytere i admin.
+// den». Skjemaet staar bak bryteren «Selg egne arbeider» i admin.
 // «medlemsvisning()» ble «kanSelge()» 12. september — admin er innenfor,
 // som paa serveren. Proven holdt paa det gamle navnet.
+// Bryteren laa som to, «salgsskjema» og «medlemssalg», som begge maatte staa
+// paa. Slaatt sammen samme dag — se migrasjon 172.
 sjekk('«Selg» sier fra naar skjemaet er slaatt av',
-    str_contains($k2Ren, 'msSelgAv: this.kanSelge()')
-    && str_contains($k2Ren, "&& !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),")
+    str_contains($k2Ren, "msSelgAv: this.kanSelge() && !this.bryterPaa('medlemssalg'),")
     && str_contains($k2Ren, '<sc-if value="{{ msSelgAv }}"'),
     'maalt: ingen av de sju stedene staar tomme');
 
@@ -16691,24 +16694,63 @@ sjekk('… og Spør verkstedet retter ordene foer den velger dokumenter',
     && str_contains($mkFaq, "Let etter meningen, ikke ordene.")
     && str_contains($mkFaq, "«Jeg tolker det som at du spør om …». Passer flere ting, spør:")
     && str_contains($mkFaq, "4. Passer ingenting, svar nøyaktig dette og ingenting mer:"));
-// Her sto «i begge soekefeltene». Feltet i kalenderen er ikke et soekefelt
-// lenger: fra publisering #147 og #150 spor det «Spor o store krukkemester»
-// rett, og da er det AI-en som svarer — ikke en treffliste med «Mente du».
-// Soekefeltet paa nettsida er det ene som er igjen, og der staar den.
-sjekk('«Mente du» staar i soekefeltet paa nettsida',
-    str_contains($mkSida, '<sc-if value="{{ sokHarMenteDu }}"')
-    && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?')
-    && str_contains($mkSida, 'sokMenteDuVelg: () =>'),
-    'feltet i kalenderen sporr AI-en i stedet');
-sjekk('… og feltet i kalenderen sporr krukkemesteren, ikke soeket',
+// ── Soeket leser de ekte kursene og varene ───────────────────────────────
+//
+// Eieren, 13. september 2026, etter aa ha faatt se hva feltet faktisk gjorde:
+// «Ja, og butikkvarene ogsaa».
+//
+// Det var tolv linjer skrevet inn i fila — fem kursnavn og sju sidenavn. Et
+// nytt kurs fantes ikke i soeket for noen skrev det inn i koden.
+sjekk('soeket leser kursene fra den samme lista som kurssida',
+    str_contains($mkSida, "        const kurs = this.kursKort().map(k => ({")
+    && str_contains($mkSida, "          navn: k.title,")
+    && str_contains($mkSida, "            if (!(k.slug && this.aapneKursSlug(k.slug))) {"));
+// Medlemsvarene har ingen offentlig adresse — de skal ikke ligge i et soek
+// alle kan bruke. Serveren gir dem ingen «sti», og det er den vi gaar etter.
+sjekk('… og varene fra nettbutikken, uten medlemsvarene',
+    str_contains($mkSida, "        const varer = (this.state.butikkvareListe || [])\n          .filter(v => !v.kunMedlemmer && v.sti)")
+    && str_contains($mkSida, "              if (!this.aapneVare(v.id)) this.setState({ side: 'butikk' });"));
+// De fem kursnavnene skal ikke staa skrevet inn ved siden av de ekte.
+sjekk('… og de fem kursnavnene er ikke lenger skrevet inn',
+    !str_contains($mkSida, "{ navn: 'Nybegynner dreiekurs', type: 'Kurs', side: 'kurs'")
+    && !str_contains($mkSida, "{ navn: 'Date Night', type: 'Event', side: 'kurs'")
+    && !str_contains($mkSida, "{ navn: 'Paint on Pots', type: 'Event', side: 'kurs'"));
+// Temaet er med i soeket, ikke paa skjermen: «plateteknikk» skal finne
+// kurset selv om ordet ikke staar i navnet.
+sjekk('… og temaet teller med i soeket',
+    str_contains($mkSida, "          ? alt.filter(a => (a.navn + ' ' + a.type + ' ' + (a.ekstra || '')).toLowerCase().includes(t))")
+    && str_contains($mkSida, "          ekstra: k.tema || '',"));
+// Sidene som ikke har en rad i basen staar igjen som faste linjer. De er
+// sider, ikke data.
+sjekk('… mens sidene uten rad i basen staar igjen',
+    str_contains($mkSida, "          { navn: 'Medlemskap og priser', type: 'Medlemskap', velg: { side: 'medlemskap' } },")
+    && str_contains($mkSida, "          { navn: 'Salgsvilkår', type: 'Info', velg: { side: 'vilkar' } },"));
+
+// Kunnskapen ut av nettsidesoeket.
+//
+// Eieren, 13. september 2026: «Søk paa nettsiden skal ikke faa soeke i
+// dokumenter eller annet fra verksted. Det er kun soek paa nettsiden i kurs
+// events etc, ingen ai her».
+//
+// Feltet fant til da ogsaa haandboekene, teknikkarkene og malene i
+// Verkstedet, og foreslo «Mente du «…»?». Begge deler er borte; feltet spoer
+// ikke lenger api/kunnskap-sok.php.
+sjekk('nettsidesoeket soeker ikke i dokumentene fra Verkstedet',
+    !str_contains($mkSida, '{{ sokKunnskap }}')
+    && !str_contains($mkSida, '{{ sokHarMenteDu }}')
+    && !str_contains($mkSida, '{{ sokMenteDu }}')
+    // Navnene staar bare i kommentaren som forteller hvor de ble av.
+    && !str_contains($mkSida, '{{ sokMenteDuVelg }}')
+    && !str_contains($mkSida, 'sokMenteDuVelg:'),
+    'dokumentene er for medlemmene, ikke for nettsida');
+sjekk('… og feltet spoer ikke serveren i det hele tatt naar man skriver',
+    str_contains($mkSida, "settSokTekst: (e) => this.setState({ sokTekst: e.target.value }),")
+    && str_contains($mkSida, "          sokTom: !!t && treff.length === 0,"));
+// Feltet i kalender admin er en annen sak: der spoer det «Spoer o store
+// krukkemester» rett, og det roeres ikke.
+sjekk('… mens feltet i kalenderen sporr krukkemesteren som for',
     str_contains($mkSida, 'aria-label="Spør o store krukkemester"')
     && !str_contains($mkSida, 'klHarMenteDu'));
-sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
-    str_contains($mkSida, '<sc-for list="{{ sokKunnskap }}" as="r"')
-    && str_contains($mkSida, "settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },")
-    && str_contains($mkSida, "const kan = this.erPublisert() && this.state.innlogget && (this.state.erMedlemBruker || this.state.erAdminBruker);")
-    && str_contains($mkSida, "fetch('/api/kunnskap-sok.php?q=' + encodeURIComponent(t), { credentials: 'same-origin', cache: 'no-store' })")
-    && str_contains($mkSida, "sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,"));
 sjekk('… svaret gjelder bare ordet det ble hentet for',
     str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
 // Feltet het «Søk …» og fant personer, kursdatoer og dokumenter, med AI-en
@@ -16832,7 +16874,7 @@ sjekk('Selg egne arbeider: bare planen «Årsmedlemskap» ser pille, fane og bun
     && str_contains($mkSida, "          msFaneSelg:       f === 'selg' && this.kanSelge(),\n          msKanSelge:       this.kanSelge(),")
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msPlSelg.velg }}"') === 1
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msBmSelg.velg }}"') === 1
-    && str_contains($mkSida, "visSalgSkjema: this.kanSelge() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),"));
+    && str_contains($mkSida, "visSalgSkjema: this.kanSelge() && this.bryterPaa('medlemssalg'),"));
 sjekk('… serveren avviser innlegging fra andre enn aarsmedlemmer, og migrasjon 170 slaar bryterne paa',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php'),
         "    && trim((string) (\$medlem['medlemskap_type'] ?? '')) !== 'Årsmedlemskap') {\n    Svar::feil('Salg av egne arbeider er for årsmedlemmer.', 403);")
@@ -16840,6 +16882,211 @@ sjekk('… serveren avviser innlegging fra andre enn aarsmedlemmer, og migrasjon
         "INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/medlemssalg', 'ja')\nON DUPLICATE KEY UPDATE verdi = 'ja';")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
         "VALUES ('Vis/salgsskjema', 'ja')"));
+
+// ── Én bryter, ikke to ───────────────────────────────────────────────────
+//
+// Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme
+// tema?». «Selg egne arbeider» paa Oversikt og «"Selg keramikk" paa Min side»
+// paa Butikken var to noekler som koden krevde at BEGGE sto paa. Slo du paa
+// den ene, skjedde ingenting, og skjermen sa ikke hvilken som manglet.
+$mig172 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/172_en_bryter_for_selg_egne_arbeider.sql');
+$vis172 = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('begge bryterne leser den samme noekkelen',
+    str_contains($vis172, "      salgSkjemaPaa: this.bryterPaa('medlemssalg'),")
+    && str_contains($vis172, "      salgSkjemaEtikett: this.bryterPaa('medlemssalg') ? 'Synlig' : 'Skjult',")
+    && str_contains($vis172, "      salgSkjemaVeksl: () => this.vekslBryter('medlemssalg', 'Selg egne arbeider'),")
+    && str_contains($vis172, "      bryterMinSalg: this.bryterPaa('medlemssalg'),"),
+    'to brytere for det samme er verre enn ingen');
+// Ingen skal lete etter den gamle noekkelen igjen.
+sjekk('… og den gamle noekkelen finnes ikke lenger i koden',
+    !str_contains($vis172, "bryterPaa('salgsskjema')")
+    && !str_contains($vis172, "vekslBryter('salgsskjema'"));
+// Migrasjonen skal aldri slaa salget PAA av seg selv. Maalt lokalt paa alle
+// seks kombinasjonene: bare «paa + paa» (og «ingen rad + paa») ender paa.
+sjekk('… og sammenslaaingen slaar ingenting paa av seg selv',
+    str_contains($mig172, "SELECT 'Vis/medlemssalg', 'nei'")
+    && str_contains($mig172, "      WHERE nokkel IN ('Vis/medlemssalg', 'Vis/salgsskjema')\n        AND verdi = 'nei'")
+    && str_contains($mig172, "ON DUPLICATE KEY UPDATE verdi = 'nei';"));
+sjekk('… og den gamle raden tas ut av basen',
+    str_contains($mig172, "DELETE FROM content_blocks WHERE nokkel = 'Vis/salgsskjema';"));
+
+// ── Og kolleksjonen i butikken foelger den samme bryteren ────────────────
+//
+// Eieren, 12. september 2026: «Jeg skal ha 1 bryter. Den skal slaa av og paa
+// funksjonen selg egne arbeider». Sto skjemaet paa og «Medlemskolleksjonen i
+// butikken» av, kunne medlemmene legge ut varer og Monica godkjenne dem uten
+// at en eneste kunde saa dem — og ingen skjerm sa fra.
+$mig173 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/173_en_bryter_for_hele_medlemssalget.sql');
+sjekk('butikkfanen foelger bryteren for medlemssalg',
+    str_contains($vis172, "      visMedlemskolleksjon: this.bryterPaa('medlemssalg'),")
+    && !str_contains($vis172, "bryterPaa('medlemskolleksjon')")
+    && !str_contains($vis172, 'vekslMedlemskolleksjon'));
+// To bryterrader for det samme var nettopp det eieren ba om aa bli kvitt.
+sjekk('… og den egne bryterraden staar ikke lenger noe sted',
+    !str_contains($vis172, 'label="Medlemskolleksjonen i butikken"'));
+// Kampanjeknappen «Se medlemmenes keramikk» setter kolleksjonen direkte. Er
+// salget av, skal butikken likevel staa paa Lissom — ikke paa en fane som
+// ikke finnes, med en tom liste under.
+sjekk('… og butikken kan ikke staa i en kolleksjon som er slaatt av',
+    str_contains($vis172, "  butikkKolleksjonNaa() {\n    if (!this.bryterPaa('medlemssalg')) return 'Lissom';")
+    // Én gang: inne i metoden selv. Leser noen andre staten direkte, er
+    // sperra hoppet over akkurat der.
+    && substr_count($vis172, "(this.state.butikkKolleksjon || 'Lissom') === 'Medlem'") === 1);
+sjekk('… og sammenslaainga slaar ingenting paa av seg selv',
+    str_contains($mig173, "      WHERE nokkel IN ('Vis/medlemssalg', 'Vis/medlemskolleksjon')\n        AND verdi = 'nei'")
+    && str_contains($mig173, "ON DUPLICATE KEY UPDATE verdi = 'nei';")
+    && str_contains($mig173, "DELETE FROM content_blocks WHERE nokkel = 'Vis/medlemskolleksjon';"));
+
+echo "\n== Auto-godkjenn, og varer som kan fjernes ==\n";
+// Eieren, 12. september 2026: «Jeg vil fortsatt godkjenne eller sette auto
+// godkjenn, men maa kunne fjerne disse produktene».
+$salgApi = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
+$mig174  = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/174_auto_godkjenn_og_ny_mal.sql');
+
+// Defaulten er den viktige. bryterPaa() sier PAA naar raden mangler — det gaar
+// bra for noe som bare skjuler en boks, men her ville det betydd at varer gaar
+// ut i butikken uten at noen har sett paa dem.
+sjekk('auto-godkjenn krever «ja», ikke bare fravaer av «nei»',
+    str_contains($salgApi, "\"SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/autogodkjenn'\"\n) === 'ja';")
+    && str_contains($vis172, "      gAutoPaa: (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',")
+    && !str_contains($vis172, "bryterPaa('autogodkjenn')"),
+    'en manglende rad skal ikke slippe varer ut usett');
+sjekk('… og migrasjonen skriver «nei» eksplisitt',
+    str_contains($mig174, "INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/autogodkjenn', 'nei')")
+    // Kjores migrasjonen paa nytt, skal den ikke slaa av det eieren har slaatt paa.
+    && str_contains($mig174, 'ON DUPLICATE KEY UPDATE verdi = verdi;'));
+// Maalt i nettleseren: av gir «ligger til godkjenning» og status
+// til_godkjenning, paa gir «er ute i butikken naa» og status publisert.
+sjekk('… og varen gaar rett ut naar den staar paa',
+    str_contains($salgApi, "    'status'      => \$auto ? 'publisert' : 'til_godkjenning',")
+    && str_contains($salgApi, "        ? 'Takk! «' . \$tittel . '» er ute i butikken nå.'"));
+// Gaar en vare ut uten at noen har sett paa den, er det mer verdt aa faa vite
+// om, ikke mindre. Egen mal, saa teksten ikke lyver om at noe venter.
+sjekk('… og verkstedet faar sin egen beskjed om det',
+    str_contains($salgApi, "    Varsel::malTilAdmin(\$auto ? 'intern_ny_vare_ute' : 'intern_ny_vare', [")
+    && str_contains($mig174, "('intern_ny_vare_ute', 'epost', 'Ny vare ute i butikken',")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+        "        'intern_ny_vare_ute' => ["),
+    'malen skal kunne endres under Maler, som de andre');
+
+// «Skjul» var en enveis luke: varen forsvant ogsaa fra admin, og sto hverken
+// under «venter» eller «Publisert». Da kunne den verken legges ut igjen eller
+// slettes.
+sjekk('skjulte og avviste varer er fortsatt innen rekkevidde',
+    str_contains($vis172, "      gSkjulte: this.galleriListe()\n        .filter(g => g.status === 'skjult' || g.status === 'avvist')")
+    && str_contains($vis172, '<sc-for list="{{ gSkjulte }}" as="g"')
+    && str_contains($vis172, '>Skjult og avvist</span>'));
+sjekk('… og de kan legges ut igjen',
+    str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
+    && str_contains($vis172, '>Legg ut igjen</button>'));
+// Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+echo "\n== ⊙ Synlighet: alle bryterne paa ett sted ==\n";
+// Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise paa
+// siden, min side skal samles og legges paa menyen verktoy», «paa pc, vis meg
+// et forslag for aa enkle tilgang», «ikke lag dobbelt, men flytt og fjern fra
+// gammel plassering».
+$syn = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Arket staar én gang, blant de andre overleggene — ikke én gang per skjerm.
+sjekk('synlighetsarket staar bare én gang i malen',
+    substr_count($syn, '<sc-if value="{{ synVises }}"') === 1
+    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 1
+    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 1);
+// Ti rader: fem paa nettsiden, fem paa Min side. Maalt i nettleseren.
+sjekk('… og har alle elleve bryterne',
+    substr_count($syn, "            rad('") === 11
+    && str_contains($syn, "            rad('Banneret under toppbildet',")
+    && str_contains($syn, "            rad('Salgsuke-kampanjen', this.bryterPaa('salgsuke'),")
+    && str_contains($syn, "            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
+    && str_contains($syn, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),")
+    && str_contains($syn, "            rad('Referansekunder på forsiden', this.bryterPaa('referanser'),")
+    && str_contains($syn, "            rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),")
+    && str_contains($syn, "            rad('Internbutikken', this.bryterPaa('internbutikk'),")
+    && str_contains($syn, "            rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),")
+    && str_contains($syn, "            rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),")
+    && str_contains($syn, "            rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),")
+    && str_contains($syn, "            rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,"));
+// «Spoer o store krukkemester» laa som en knapp under Verkstedet, der man
+// maatte staa for aa finne den. Eieren, 13. september 2026: «jeg vil kunne
+// skru av og paa o store krukkemsker for medlemmer».
+sjekk('… og krukkemesteren er flyttet, ikke kopiert',
+    // Bare i kommentaren som forteller hvor den ble av — ingen binding.
+    !str_contains($syn, '{{ dokFaqVeksle }}')
+    && !str_contains($syn, '{{ dokFaqNavn }}')
+    && !str_contains($syn, '{{ dokFaqStil }}')
+    && !str_contains($syn, 'dokFaqVeksle:')
+    && str_contains($syn, "                () => this.dokKall({ handling: 'veksle-faq' })),"));
+// Den eneste raden som ikke bor i content_blocks. Lista hentes bare naar man
+// staar paa Verkstedet, saa uten dette viste raden «av» paa alle andre
+// skjermer, uansett hva som sto i basen.
+sjekk('… og lista hentes naar panelet aapnes',
+    substr_count($syn, "{ this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); }") === 2);
+// Én vei inn paa telefon (Verktoy-arket) og én paa PC (sidemenyen) — den
+// samme raden fra adminMeny() baerer begge.
+sjekk('… og aapnes fra Verktøy paa telefon og fra sidemenyen paa PC',
+    str_contains($syn, "        navn: '⊙  Synlighet',\n        kort: '⊙ Synlighet',")
+    && str_contains($syn, "        velg: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },"));
+
+// «Flytt og fjern fra gammel plassering»: ingen av kortene skal finnes igjen.
+sjekk('de gamle kortene er fjernet, ikke kopiert',
+    !str_contains($syn, '>Vis på nettsiden</div>')
+    && !str_contains($syn, '>Vis for medlemmene på Min side</div>')
+    && !str_contains($syn, '>Synlighet på nettsiden</div>')
+    && !str_contains($syn, '>«Selg keramikk» på Min side</div>'),
+    'fire av noeklene sto dobbelt, under to ulike navn');
+// Ingen av de gamle bryterne skal staa igjen som egen x-import.
+sjekk('… og ingen av de ti bryterne staar to steder',
+    !str_contains($syn, 'label="Banneret under toppbildet"')
+    && !str_contains($syn, 'label="Kursvelger-lenken i toppen"')
+    && !str_contains($syn, 'label="Kursvelger-lenken på forsiden"')
+    && !str_contains($syn, 'label="Søkefeltet på nettsiden"')
+    && !str_contains($syn, 'label="Referansekunder på forsiden"')
+    && !str_contains($syn, 'label="Interne kurs og samlinger"')
+    && !str_contains($syn, 'label="Internbutikken"')
+    && !str_contains($syn, 'label="Selg egne arbeider"')
+    && !str_contains($syn, 'label="Gaven («Ta med en venn»)"')
+    && !str_contains($syn, 'label="Frys av medlemskap"'));
+// Auto-godkjenn hoerer til godkjenningsarbeidet, ikke til hva som vises.
+sjekk('… mens Auto-godkjenn blir staaende paa Butikken',
+    str_contains($syn, '>Auto-godkjenn nye varer</div>'));
+// Kursvelgerbryteren paa Butikken las «visKursvelger» — bryteren OG
+// mobilvisninga. Den sto av naar lenken var skjult paa mobil, selv om
+// bryteren var paa. Den er borte med kortet.
+sjekk('… og bryteren som leste feil er borte',
+    !str_contains($syn, 'checked="{{ visKursvelger }}"'));
+
+// ── Pillene i medlemssalg-kortet staar rett over hverandre ───────────────
+//
+// Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten saa
+// de kommer rett ovenfor hverandre».
+//
+// Komponenten tegner pilla forst og teksten etter. Naar raden skyver gruppa
+// mot hoeyre, bestemmer lengden paa teksten hvor pilla havner — «Synlig»,
+// «Paa» og «Vises paa forsiden» er ulikt lange. Maalt for: x = 840, 863 og
+// 769. Etter: 888 for alle tre.
+sjekk('bryterpillene i medlemssalg-kortet ligger i samme spalte',
+    str_contains($vis172, '  .lx-bryterhoyre label { flex-direction: row-reverse; }')
+    // x-import pakker alt i en <div class="sc-host-x">, saa «>» treffer ikke.
+    && !str_contains($vis172, '.lx-bryterhoyre > label')
+    // Bryter raden, faar bryteren sin egen linje. Uten denne starter den mot
+    // venstre kant, og da bestemmer teksten igjen hvor pilla havner.
+    && str_contains($vis172, '  .lx-bryterhoyre { margin-left: auto; }'),
+    'maalt paa 1000, 820 og 390 px: én spalte paa alle tre');
+// To igjen etter 13. september: «"Selg keramikk" paa Min side» flyttet til
+// «⊙ Synlighet» — den var den samme noekkelen som «Selg egne arbeider».
+sjekk('… og begge bryterne i kortet er med',
+    substr_count($vis172, '<span class="lx-bryterhoyre">') === 2);
+
+sjekk('… og slettes for godt, etter et spoersmaal',
+    str_contains($vis172, "  salgSlett(v) {")
+    && str_contains($vis172, "    if (!window.confirm('Slette «' + v.tittel + '» for godt?'")
+    && str_contains($vis172, "        + ' Bildet slettes også. Dette kan ikke angres.')) return;")
+    && str_contains($vis172, "    this.salgKall({ handling: 'slett', id: v.id });")
+    && substr_count($vis172, 'slett: () => this.salgSlett(g),') === 2,
+    'bildet ryddes med paa serveren, og det kan ikke angres');
 // ── «Ovn er tømt» ────────────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: knapp paa Min side og paa kalenderen i admin;
@@ -16876,11 +17123,13 @@ sjekk('raden med pillene og soekefeltet har luft under seg',
     str_contains($mkSida, '<div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">')
     && str_contains($mkSida, 'margin-bottom: var(--space-3);">' . "\n" . '          <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">'));
 sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
-    str_contains($mkSida, 'label="Søkefeltet på nettsiden" checked="{{ bryterSok }}" on-change="{{ vekslSok }}"')
-    && str_contains($mkSida, "vekslSok: () => this.vekslBryter('sok', 'Søkefeltet'),")
+    // Bryteren flyttet til «⊙ Synlighet» 13. september 2026. Samme navn,
+    // samme noekkel — nettsida merker ingen forskjell.
+    str_contains($mkSida, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),\n                () => this.vekslBryter('sok', 'Søkefeltet')),")
     && str_contains($mkSida, "document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));")
     && str_contains($mkSida, '  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }')
-    && str_contains($mkSida, "if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }"));
+    && str_contains($mkSida, "          if (this.bryterPaa('sok')) {\n            if (!this.state.katalog) this.hentKatalog();")
+    && str_contains($mkSida, "            this.setState({ sokApen: true });"));
 
 // ── Medlemsinvitasjonen etter kurset ─────────────────────────────────────
 //

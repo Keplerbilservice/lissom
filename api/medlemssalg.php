@@ -147,6 +147,19 @@ if (isset($_FILES['bilde']) && ($_FILES['bilde']['error'] ?? UPLOAD_ERR_NO_FILE)
     }
 }
 
+// Auto-godkjenn.
+//
+// Eieren, 12. september 2026: «Jeg vil fortsatt godkjenne eller sette auto
+// godkjenn». Staar den paa, gaar varen rett ut i butikken.
+//
+// Merk defaulten: her kreves 'ja', ikke «alt annet enn nei». De andre
+// bryterne staar paa naar raden mangler — det gaar bra for noe som bare
+// skjuler en boks. Her ville en manglende rad betydd at varer gaar ut uten
+// at noen har sett paa dem. Migrasjon 174 skriver 'nei' eksplisitt.
+$auto = (string) DB::verdi(
+    "SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/autogodkjenn'"
+) === 'ja';
+
 $id = DB::settInn('member_sales', [
     'member_id'   => (int) $medlem['id'],
     'tittel'      => $tittel,
@@ -158,19 +171,23 @@ $id = DB::settInn('member_sales', [
     'antall'      => $antall,
     'vippsnummer' => $vipps,
     'kontakt'     => $kontakt,
-    'status'      => 'til_godkjenning',
+    'status'      => $auto ? 'publisert' : 'til_godkjenning',
 ]);
 
-// Verkstedet skal vite at det ligger noe og venter.
-    Varsel::malTilAdmin('intern_ny_vare', [
+// Verkstedet skal vite at det ligger noe og venter — eller at noe gikk rett
+// ut. Gaar varen ut uten at noen har sett paa den, er det MER verdt aa faa
+// vite om, ikke mindre.
+    Varsel::malTilAdmin($auto ? 'intern_ny_vare_ute' : 'intern_ny_vare', [
         'produsent' => $produsent,
         'tittel'    => $tittel,
         'pris'      => Booking::kroner($pris * 100),
     ], 'medlemssalg', $id);
 
-revider('medlemssalg_lagt_ut', 'member_sale', $id, ['tittel' => $tittel]);
+revider('medlemssalg_lagt_ut', 'member_sale', $id, ['tittel' => $tittel, 'auto' => $auto]);
 
 Svar::ok([
     'id'      => $id,
-    'beskjed' => 'Takk! «' . $tittel . '» ligger til godkjenning. Du får beskjed når den er ute i butikken.',
+    'beskjed' => $auto
+        ? 'Takk! «' . $tittel . '» er ute i butikken nå.'
+        : 'Takk! «' . $tittel . '» ligger til godkjenning. Du får beskjed når den er ute i butikken.',
 ]);

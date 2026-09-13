@@ -1462,6 +1462,25 @@ window.__resources = {
      som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
      si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
      spalter, saa hele menyen faar plass uten aa rulle. */
+  /* Bryterne i medlemssalg-kortet: pilla til hoeyre for teksten.
+     Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten
+     saa de kommer rett ovenfor hverandre».
+     Komponenten tegner pilla forst og teksten etter. Naar raden skyver hele
+     gruppa mot hoeyre, bestemmer lengden paa teksten hvor pilla havner —
+     «Synlig», «Paa» og «Vises paa forsiden» er ulikt lange, og de tre pillene
+     sto i tre ulike spalter. Maalt: x = 840, 863 og 769.
+     Snur vi rekkefolgen, er det pilla som ligger inntil hoeyre kant, og den
+     er like brei hver gang. Komponenten setter ingen flex-direction selv, saa
+     denne regelen har fritt leide.
+     x-import pakker alt i en <div class="sc-host-x">, saa «>» treffer ikke
+     etiketten. Maalt: med «>» sto pillene fortsatt i tre spalter.
+     «margin-left: auto» maa vaere med: blir raden for smal, bryter den, og
+     bryteren faar sin egen linje. Uten denne starter den mot venstre kant, og
+     da bestemmer teksten igjen hvor pilla havner. Maalt paa 820 px: tre
+     spalter uten, én med. */
+  .lx-bryterhoyre { margin-left: auto; }
+  .lx-bryterhoyre label { flex-direction: row-reverse; }
+
   .lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og
@@ -4995,11 +5014,13 @@ window.__resources = {
                    noe du har laget. -->
               <sc-if value="{{ msFaneSelg }}" hint-placeholder-val="{{ false }}">
               <!-- Et menyvalg skal aldri fore til en tom skjerm.
-                   Skjemaet staar bak to brytere i admin — «salgsskjema» og
-                   «medlemssalg». Er én av dem av, sto det ingenting her, og
-                   ingenting som sa hvorfor. Eieren, 5. september: «Menyen
-                   selg viser ingenting, er det pga jeg ikke har aktivert
-                   den». Naa staar svaret paa skjermen. -->
+                   Skjemaet staar bak bryteren «Selg egne arbeider» i admin.
+                   Er den av, sto det ingenting her, og ingenting som sa
+                   hvorfor. Eieren, 5. september: «Menyen selg viser
+                   ingenting, er det pga jeg ikke har aktivert den». Naa
+                   staar svaret paa skjermen.
+                   Bryteren laa som to — «salgsskjema» og «medlemssalg» — som
+                   begge maatte staa paa. Slaatt sammen 12. september 2026. -->
               <sc-if value="{{ msSelgAv }}" hint-placeholder-val="{{ false }}">
                 <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Selg keramikk</div>
@@ -12859,40 +12880,15 @@ window.__resources = {
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Synlighet og innhold</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: start; margin-bottom: var(--space-10);">
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Vis på nettsiden</div>
-            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Banneret under toppbildet" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Salgsuke-kampanjen" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Kursvelger-lenken i toppen" checked="{{ bryterKursvelger }}" on-change="{{ vekslKursvelger }}" hint-size="100%,28px"></x-import>
-              <!-- Eieren, 11. september 2026: «kan jeg heller velge å slå av
-                   hele søkefeltet?». Av: soekeknappen i toppen er borte for
-                   alle, og «Søk» i menyen gjoer ingenting. Feltet i kalender
-                   admin paavirkes ikke. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Søkefeltet på nettsiden" checked="{{ bryterSok }}" on-change="{{ vekslSok }}" hint-size="100%,28px"></x-import>
-              <!-- Seksjonen sto paa saa lenge det fantes én kunde som var
-                   slaatt paa. Da matte hver enkelt kunde av for aa faa bort
-                   feltet — og paa igjen etterpaa. Naa er det én bryter. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Referansekunder på forsiden" checked="{{ bryterReferanser }}" on-change="{{ vekslReferanser }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Medlemskolleksjonen i butikken" checked="{{ visMedlemskolleksjon }}" on-change="{{ vekslMedlemskolleksjon }}" hint-size="100%,28px"></x-import>
-            </div>
-          </div>
-
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Vis for medlemmene på Min side</div>
-            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Interne kurs og samlinger" checked="{{ bryterMinInternkurs }}" on-change="{{ vekslMinInternkurs }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Internbutikken" checked="{{ bryterMinInternbutikk }}" on-change="{{ vekslMinInternbutikk }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Selg egne arbeider" checked="{{ bryterMinSalg }}" on-change="{{ vekslMinSalg }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Gaven («Ta med en venn»)" checked="{{ bryterMinGave }}" on-change="{{ vekslMinGave }}" hint-size="100%,28px"></x-import>
-              <!-- «Frys av medlemskap» sto her som en bryter uten kobling:
-                   medlemmene fikk en knapp som ikke gjorde noe. Naa finnes
-                   soknaden, svaret og perioden — se api/medlem-frys.php og
-                   api/admin/frys.php. Soknadene staar under Medlemmer. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Frys av medlemskap" checked="{{ bryterMinFrys }}" on-change="{{ vekslMinFrys }}" hint-size="100%,28px"></x-import>
-              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: calc(var(--space-3) * -1); text-wrap: pretty;">Medlemmene kan søke om å fryse medlemskapet i en periode. Søknadene kommer opp under Medlemmer, og du svarer der. Trekket stopper ikke av seg selv — Vipps kan ikke sette en avtale på pause, bare stoppe den.</div>
-            </div>
-          </div>
+          <!-- Her sto de to kortene «Vis paa nettsiden» og «Vis for
+               medlemmene paa Min side», med ti brytere til sammen.
+               Eieren, 13. september 2026: «alle funksjoner der det er snakk
+               om aa vise paa siden, min side skal samles og legges paa
+               menyen verktoy» og «ikke lag dobbelt, men flytt og fjern fra
+               gammel plassering».
+               De staar naa i «⊙ Synlighet» — i Verktoy-arket paa telefon og
+               i sidemenyen paa PC. Samme navn, samme brytere; flyttet, ikke
+               kopiert. -->
 
           <!-- Kursvelgeren sto her, som en boks med en lenke videre. Den
                staar naa som kort oeverst paa Oversikt, sammen med de andre
@@ -18018,15 +18014,15 @@ window.__resources = {
           </div>
 
           <div class="lx-butordre" style="display: flex; flex-direction: column; gap: var(--space-6);">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Synlighet på nettsiden</div>
-            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Banneret under toppbildet" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Medlemskolleksjonen i butikken" checked="{{ visMedlemskolleksjon }}" on-change="{{ vekslMedlemskolleksjon }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Kursvelger-lenken på forsiden" checked="{{ visKursvelger }}" on-change="{{ vekslKursvelger }}" hint-size="100%,28px"></x-import>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Gjelder forsiden og butikken med en gang du skrur av eller på.</p>
-            </div>
-          </div>
+          <!-- Her sto kortet «Synlighet paa nettsiden» med to brytere som
+               BEGGE alt fantes paa Oversikt: «Banneret under toppbildet»
+               (Banner/pa) og «Kursvelger-lenken paa forsiden» (kursvelger,
+               under et annet navn). Eieren, 13. september 2026: «ikke lag
+               dobbelt, men flytt og fjern fra gammel plassering».
+               Kursvelgerbryteren her leste dessuten feil: den sto av naar
+               lenken var skjult paa mobil, selv om bryteren var paa — den
+               las «visKursvelger», som er bryteren OG mobilvisninga.
+               Begge staar naa i «⊙ Synlighet». -->
 
           <!-- Kursvelgeren sto her, som en boks med en lenke videre. Den
                staar naa som kort oeverst paa Oversikt, sammen med de andre
@@ -18089,12 +18085,20 @@ window.__resources = {
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Medlemssalg — venter på godkjenning</span>
             <span style="font-size: var(--text-xs);">Publiseres i butikken først når du godkjenner</span>
           </div>
+          <!-- Her sto «"Selg keramikk" paa Min side» — den samme noekkelen
+               som «Selg egne arbeider», bare under et annet navn. Den staar
+               naa i «⊙ Synlighet», under «Paa Min side». Auto-godkjenn blir
+               staaende her: den hoerer til godkjenningsarbeidet, ikke til
+               hva som vises. -->
+          <!-- Auto-godkjenn. Eieren, 12. september 2026: «Jeg vil fortsatt
+               godkjenne eller sette auto godkjenn». Staar den paa, gaar varen
+               rett ut — men den kan fortsatt skjules eller slettes under. -->
           <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
             <div style="min-width: 0;">
-              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">«Selg keramikk» på Min side</div>
-              <div style="font-size: var(--text-xs); color: var(--text-muted);">Styrer om medlemmene ser innsendingsskjemaet. Allerede publiserte produkter påvirkes ikke.</div>
+              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Auto-godkjenn nye varer</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Varen går rett ut i butikken uten at du ser på den først. Du kan fortsatt skjule eller slette den etterpå.</div>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ salgSkjemaEtikett }}" checked="{{ salgSkjemaPaa }}" on-change="{{ salgSkjemaVeksl }}" hint-size="auto,28px"></x-import>
+            <span class="lx-bryterhoyre"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ gAutoEtikett }}" checked="{{ gAutoPaa }}" on-change="{{ gAutoVeksl }}" hint-size="auto,28px"></x-import></span>
           </div>
           <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
@@ -18102,7 +18106,7 @@ window.__resources = {
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Salgsuke — kampanje på forsiden</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">Front en periode der medlemmene selger varer sammen i nettbutikken.</div>
               </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ kampanjeEtikett }}" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="auto,28px"></x-import>
+              <span class="lx-bryterhoyre"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ kampanjeEtikett }}" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="auto,28px"></x-import></span>
             </div>
             <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
               <input value="{{ kampanjeTittel }}" onChange="{{ settKampanjeTittel }}" placeholder="Tittel" style="{{ skFeltStil }}">
@@ -18139,7 +18143,21 @@ window.__resources = {
             <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--clay-100); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Publisert</span>
               <sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">
-                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-heading);">{{ g.tittel }}<button type="button" onClick="{{ g.skjul }}" title="Skjul fra nettsiden" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Skjul</button></span>
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-heading);">{{ g.tittel }}<button type="button" onClick="{{ g.skjul }}" title="Skjul fra nettsiden" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Skjul</button><button type="button" onClick="{{ g.slett }}" title="Slett varen og bildet for godt" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Slett</button></span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <!-- Skjulte og avviste varer.
+               Eieren, 12. september 2026: «maa kunne fjerne disse
+               produktene». Trykket man «Skjul», forsvant varen ogsaa fra
+               admin — den sto hverken her eller over, og man kom aldri til
+               den igjen. Verken for aa legge den ut paa nytt eller for aa
+               slette den. -->
+          <sc-if value="{{ gHarSkjulte }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Skjult og avvist</span>
+              <sc-for list="{{ gSkjulte }}" as="g" hint-placeholder-count="3">
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-muted);">{{ g.tittel }}<button type="button" onClick="{{ g.leggUt }}" title="Legg varen ut i butikken igjen" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700;">Legg ut igjen</button><button type="button" onClick="{{ g.slett }}" title="Slett varen og bildet for godt" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Slett</button></span>
               </sc-for>
             </div>
           </sc-if>
@@ -19310,8 +19328,13 @@ window.__resources = {
              logg og samme maanedstak som teksten under Markedsfoering. -->
         <sc-if value="{{ vstErFaq }}" hint-placeholder-val="{{ false }}">
           <div style="max-width: 900px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
-              <button type="button" onClick="{{ dokFaqVeksle }}" style="{{ dokFaqStil }}">{{ dokFaqNavn }}</button>
+            <!-- Her sto knappen «Vises for medlemmer». Eieren, 13. september
+                 2026: «jeg vil kunne skru av og paa o store krukkemsker for
+                 medlemmer» — og «ikke lag dobbelt, men flytt og fjern fra
+                 gammel plassering». Den staar naa i «⊙ Synlighet», under
+                 «Paa Min side», sammen med de andre. Samme innstilling,
+                 samme kall. -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
               <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ faqKostnad }}</span>
             </div>
 
@@ -19846,30 +19869,12 @@ window.__resources = {
               <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ r.type }}</span>
             </button>
           </sc-for>
-          <!-- Kunnskapen: haandboekene, teknikkarkene og malene i
-               Verkstedet. Eieren, 11. september 2026 (GO). Bare for
-               innloggede — api/kunnskap-sok.php gir et medlem det som ligger
-               i kort som er slaatt paa, og admin alt. Utlogget faar ingen
-               liste her. Linja under navnet er den foerste linja i teksten
-               der ordet staar; til hoeyre staar kortet. Trykk aapner
-               dokumentet i ny fane, som «Aapne» gjoer i kortene. -->
-          <!-- «Mente du «…»?» naar det skrevne ikke traff, men et ord i
-               naerheten gjorde det. Treffene under er for det ordet; trykk
-               setter det i feltet. -->
-          <sc-if value="{{ sokHarMenteDu }}" hint-placeholder-val="{{ false }}">
-            <button type="button" onClick="{{ sokMenteDuVelg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: var(--space-2) var(--space-2) 0; text-align: left; font: var(--type-body); font-size: var(--text-sm); color: var(--text-muted);">Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?</button>
-          </sc-if>
-          <sc-for list="{{ sokKunnskap }}" as="r" hint-placeholder-count="3">
-            <button type="button" onClick="{{ r.velg }}" style="appearance: none; background: transparent; border: none; border-top: 1px solid var(--border-subtle); cursor: pointer; padding: var(--space-3) var(--space-2); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); text-align: left; font: var(--type-body); border-radius: var(--radius-sm); width: 100%;" style-hover="background: var(--clay-100);">
-              <span style="min-width: 0;">
-                <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ r.navn }}</span>
-                <sc-if value="{{ r.harUnder }}" hint-placeholder-val="{{ true }}">
-                  <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); overflow-wrap: anywhere;">{{ r.under }}</span>
-                </sc-if>
-              </span>
-              <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ r.type }}</span>
-            </button>
-          </sc-for>
+          <!-- Her sto kunnskapstreffene fra Verkstedet — haandboekene,
+               teknikkarkene og malene — og «Mente du «…»?».
+               Eieren, 13. september 2026: «Søk paa nettsiden skal ikke faa
+               soeke i dokumenter eller annet fra verksted. Det er kun soek
+               paa nettsiden i kurs events etc, ingen ai her».
+               Soekefeltet i kalender admin er en annen sak og roeres ikke. -->
         </div>
         <sc-if value="{{ sokTom }}" hint-placeholder-val="{{ false }}">
           <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen treff. Prøv «dreiekurs», «kopp» eller «glasur» — eller <button type="button" onClick="{{ sokTilForesporsel }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline;">send oss en forespørsel</button>.</p>
@@ -22185,6 +22190,41 @@ window.__resources = {
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ fmSend }}" hint-size="auto,44px">{{ fmSendTekst }}</x-import>
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ fmLukk }}" hint-size="auto,44px">Avbryt</x-import>
       </div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ⊙ Synlighet — alle bryterne for hva som vises, paa ett sted.
+
+     Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise
+     paa siden, min side skal samles og legges paa menyen verktoy», og «ikke
+     lag dobbelt, men flytt og fjern fra gammel plassering».
+
+     De sto i to kort paa Oversikt, og fire av noeklene sto i tillegg paa
+     Butikken under andre navn. Kortene er fjernet begge steder; dette er den
+     eneste veien inn naa. Aapnes fra «⊙ Synlighet» i Verktøy-arket paa
+     telefon og fra den samme raden i sidemenyen paa PC.
+
+     Arket staar én gang i malen, ikke én gang per adminskjerm. Navnet paa
+     hver rad, og hva den gjoer, er det samme som for. -->
+<sc-if value="{{ synVises }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ synLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ synStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Synlighet</div>
+      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">På nettsiden</div>
+      <sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 11px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
+        </div>
+      </sc-for>
+      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-top: var(--space-6);">På Min side</div>
+      <sc-for list="{{ synMin }}" as="r" hint-placeholder-count="5">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 11px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
+        </div>
+      </sc-for>
     </div>
   </div>
 </sc-if>
@@ -24868,6 +24908,19 @@ class Component extends DCLogic {
   // seksjonen.
   bryterPaa(nokkel) {
     return (this.state.innholdLagret || {})['Vis/' + nokkel] !== 'nei';
+  }
+
+  /**
+   * Hvilken kolleksjon butikken staar i: «Lissom» eller «Medlem».
+   *
+   * Er medlemssalget slaatt av, finnes ikke «Medlem» — heller ikke for den
+   * som kom inn via kampanjeknappen «Se medlemmenes keramikk», som setter
+   * kolleksjonen direkte. Uten dette sto butikken paa en fane som ikke var
+   * der, og viste en tom liste uten noe som sa hvorfor.
+   */
+  butikkKolleksjonNaa() {
+    if (!this.bryterPaa('medlemssalg')) return 'Lissom';
+    return (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'Medlem' : 'Lissom';
   }
 
   vekslBryter(nokkel, navn) {
@@ -33690,6 +33743,21 @@ class Component extends DCLogic {
       { id: 2, status: 'venter', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter.', laget: 'Laget av et medlem', bilde: 'assets_photos_handbygging.jpg', pris: 'kr. 650,-', vipps: '923 45 678', kontakt: 'medlem@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
     ];
   }
+  /**
+   * Sletter en vare for godt — varen og bildet.
+   *
+   * Eieren, 12. september 2026: «maa kunne fjerne disse produktene».
+   * Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+   *
+   * Den spor forst. «Skjul» kan angres ved aa legge varen ut igjen; dette
+   * kan ikke, og bildet ryddes med.
+   */
+  salgSlett(v) {
+    if (!window.confirm('Slette «' + v.tittel + '» for godt?'
+        + ' Bildet slettes også. Dette kan ikke angres.')) return;
+    this.salgKall({ handling: 'slett', id: v.id });
+  }
+
   // Godkjenning gaar mot serveren. Sto som en liste i skjermbildet, saa et
   // «godkjenn» var borte ved neste sidelasting — og varen kom aldri ut.
   salgKall(kropp) {
@@ -39941,11 +40009,25 @@ class Component extends DCLogic {
     return stempling.concat(rader).concat([
       // Ut av admin. To ting man vil ha for haanden hele tida, og som ikke
       // fantes: veien tilbake til nettsiden, og veien ut.
+      // Synlighet: alle bryterne for hva som vises, paa ett sted.
+      //
+      // Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa
+      // vise paa siden, min side skal samles og legges paa menyen verktoy»
+      // og «paa pc, vis meg et forslag for aa enkle tilgang».
+      //
+      // Raden staar oeverst blant verktoyene: i sidemenyen paa PC, og i
+      // Verktoy-arket paa telefon — arket bygges av de samme radene.
+      {
+        navn: '⊙  Synlighet',
+        kort: '⊙ Synlighet',
+        velg: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },
+        stil: Object.assign({}, this.adminBunnStil(), { marginTop: 'var(--space-4)', borderTop: '1px solid rgba(244,235,222,.18)', paddingTop: 'var(--space-4)' }),
+      },
       {
         navn: '↗  Se nettsiden',
         kort: '↗ Nettsiden',
         velg: this.go('forside'),
-        stil: Object.assign({}, this.adminBunnStil(), { marginTop: 'var(--space-4)', borderTop: '1px solid rgba(244,235,222,.18)', paddingTop: 'var(--space-4)' }),
+        stil: this.adminBunnStil(),
       },
       // «Logg ut» sto her, rett under «Se nettsiden». Den staar naa nederst,
       // under Test Vipps: det er den man trykker sjeldnest, og den man minst
@@ -42646,41 +42728,80 @@ class Component extends DCLogic {
       sokApen: !!this.state.sokApen,
       lukkSok: () => this.setState({ sokApen: false }),
       sokTekst: this.state.sokTekst || '',
-      settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },
+      settSokTekst: (e) => this.setState({ sokTekst: e.target.value }),
       sokTilForesporsel: () => { this.setState({ sokApen: false, side: 'kurs' }); window.scrollTo(0, 0); },
-      // Kunnskapstreffene, naar de er hentet for akkurat det som staar i
-      // feltet naa. Se kunnskapSok().
-      sokMenteDu: this.kunnskapMenteDu(this.state.sokTekst),
-      sokHarMenteDu: !!this.kunnskapMenteDu(this.state.sokTekst),
-      sokMenteDuVelg: () => { const o = this.kunnskapMenteDu(this.state.sokTekst); this.setState({ sokTekst: o }); this.kunnskapSok(o); },
-      sokKunnskap: this.kunnskapTreff(this.state.sokTekst).map(t => ({
-        navn: t.navn,
-        under: t.utdrag || '',
-        harUnder: !!t.utdrag,
-        type: t.kort,
-        velg: () => { window.open('/api/dokument.php?id=' + t.id, '_blank', 'noopener'); this.setState({ sokApen: false, sokTekst: '' }); },
-      })),
+      // Her laa «sokKunnskap», «sokMenteDu» og «sokMenteDuVelg» —
+      // kunnskapstreffene fra Verkstedet. Eieren, 13. september 2026: «Søk
+      // paa nettsiden skal ikke faa soeke i dokumenter eller annet fra
+      // verksted. Det er kun soek paa nettsiden i kurs events etc, ingen ai
+      // her». Feltet spoer ikke lenger api/kunnskap-sok.php.
+      // Soekefeltet leser de ekte kursene og varene.
+      //
+      // Eieren, 13. september 2026, etter aa ha faatt se hva det faktisk
+      // gjorde: «Ja, og butikkvarene ogsaa».
+      //
+      // Det var tolv linjer skrevet inn her — fem kursnavn, sju sidenavn.
+      // Et nytt kurs eller en ny vare fantes ikke i soeket for noen skrev det
+      // inn i koden, og «Sommerkurs i dreiing» ga ingen treff.
+      //
+      // Naa kommer kursene fra kursKort() — den samme lista kurssida tegner,
+      // med de samme reglene for hva som vises — og varene fra
+      // butikkvareListe, uten dem som bare er for medlemmer. Sidene som ikke
+      // har en rad i basen staar igjen som faste linjer; de er sider, ikke
+      // data.
       ...(() => {
-        const alt = [
-          { navn: 'Nybegynner dreiekurs', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
-          { navn: 'Kurs boller', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
-          { navn: 'Store fat kurs', type: 'Kurs', side: 'kurs', filter: 'Håndbygging' },
-          { navn: 'Paint on Pots', type: 'Event', side: 'kurs', filter: 'Paint on pots' },
-          { navn: 'Date Night', type: 'Event', side: 'kurs', filter: 'Events' },
-          { navn: 'Medlemskap og priser', type: 'Medlemskap', side: 'medlemskap' },
-          { navn: 'Kopper, boller og fat', type: 'Butikk', side: 'butikk' },
-          { navn: 'Gavekort', type: 'Butikk', side: 'butikk' },
-          { navn: 'Bedriftsevent og utdrikningslag', type: 'Bedrift og event', side: 'bedrift' },
-          { navn: 'Guider: glasur, brenning og cone-tabell', type: 'Nyttig info', side: 'nyttig' },
-          { navn: 'Om oss og veibeskrivelse', type: 'Om oss', side: 'omoss' },
-          { navn: 'Salgsvilkår', type: 'Info', side: 'vilkar' },
-        ];
+        const sider = [
+          { navn: 'Medlemskap og priser', type: 'Medlemskap', velg: { side: 'medlemskap' } },
+          { navn: 'Kopper, boller og fat', type: 'Butikk', velg: { side: 'butikk' } },
+          { navn: 'Bedriftsevent og utdrikningslag', type: 'Bedrift og event', velg: { side: 'bedrift' } },
+          { navn: 'Guider: glasur, brenning og cone-tabell', type: 'Nyttig info', velg: { side: 'nyttig' } },
+          { navn: 'Om oss og veibeskrivelse', type: 'Om oss', velg: { side: 'omoss' } },
+          { navn: 'Salgsvilkår', type: 'Info', velg: { side: 'vilkar' } },
+        ].map(a => Object.assign({}, a, {
+          aapne: () => { this.setState(Object.assign({ sokApen: false, sokTekst: '' }, a.velg)); window.scrollTo(0, 0); },
+        }));
+
+        // Kursene og eventene, slik de staar paa kurssida.
+        const kurs = this.kursKort().map(k => ({
+          navn: k.title,
+          // «Event · For dere to» og «Nybegynner» er nivaaet, ikke typen.
+          type: /^Event/.test(k.level || '') ? 'Event' : 'Kurs',
+          // Temaet er med i soeket, ikke paa skjermen: skriver du
+          // «plateteknikk», skal kurset komme opp selv om ordet ikke staar i
+          // navnet.
+          ekstra: k.tema || '',
+          aapne: () => {
+            this.setState({ sokApen: false, sokTekst: '' });
+            if (!(k.slug && this.aapneKursSlug(k.slug))) {
+              this.setState({ side: 'kurs' });
+            }
+            window.scrollTo(0, 0);
+          },
+        }));
+
+        // Varene i nettbutikken. Medlemsvarene har ingen offentlig adresse —
+        // se aapneVare() — og skal ikke ligge i et soek alle kan bruke.
+        const varer = (this.state.butikkvareListe || [])
+          .filter(v => !v.kunMedlemmer && v.sti)
+          .map(v => ({
+            navn: v.tittel,
+            type: v.kategori || 'Butikk',
+            ekstra: '',
+            aapne: () => {
+              this.setState({ sokApen: false, sokTekst: '' });
+              if (!this.aapneVare(v.id)) this.setState({ side: 'butikk' });
+              window.scrollTo(0, 0);
+            },
+          }));
+
+        const alt = kurs.concat(varer).concat(sider);
         const t = (this.state.sokTekst || '').toLowerCase().trim();
-        const treff = t ? alt.filter(a => (a.navn + ' ' + a.type).toLowerCase().includes(t)) : alt.slice(0, 6);
+        const treff = t
+          ? alt.filter(a => (a.navn + ' ' + a.type + ' ' + (a.ekstra || '')).toLowerCase().includes(t))
+          : alt.slice(0, 6);
         return {
-          sokResultater: treff.map(a => Object.assign({}, a, { velg: () => { this.setState({ sokApen: false, sokTekst: '', side: a.side, kursFilter: a.filter || this.state.kursFilter }); window.scrollTo(0, 0); } })),
-          // «Ingen treff» bare naar heller ikke kunnskapen hadde noe.
-          sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,
+          sokResultater: treff.map(a => ({ navn: a.navn, type: a.type, velg: a.aapne })),
+          sokTom: !!t && treff.length === 0,
         };
       })(),
       stoppKlikk: (e) => e.stopPropagation(),
@@ -48409,6 +48530,69 @@ class Component extends DCLogic {
       bryterSok: this.bryterPaa('sok'),
       bryterReferanser: this.bryterPaa('referanser'),
       vekslReferanser: () => this.vekslBryter('referanser', 'Referansekunder på forsiden'),
+      // ── Synlighet: alle bryterne paa ett sted ────────────────────────
+      //
+      // Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa
+      // vise paa siden, min side skal samles og legges paa menyen verktoy»,
+      // «paa pc, vis meg et forslag for aa enkle tilgang», «ikke lag dobbelt,
+      // men flytt og fjern fra gammel plassering».
+      //
+      // De sto i to kort paa Oversikt, og FEM av dem sto i tillegg paa
+      // Butikken under andre navn: «Banneret under toppbildet» (Banner/pa),
+      // «Kursvelger-lenken paa forsiden» (kursvelger), «Vises paa forsiden»
+      // (salgsuke) og «Synlig» (medlemssalg). Fire noekler, to brytere hver.
+      //
+      // Naa er det ett panel, aapnet fra Verktoy paa telefon og fra
+      // sidemenyen paa PC. Ingen ny bryter: hver rad er den samme
+      // «bryterPaa» og den samme «vekslBryter» som for.
+      ...(() => {
+        const rad = (navn, paa, veksl) => ({ navn, paa, veksl });
+        return {
+          synNett: [
+            rad('Banneret under toppbildet',
+                (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',
+                () => this.lagreInnhold(
+                  { 'Banner/pa': (this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'ja' : 'nei' },
+                  'Banneret er ' + ((this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'slått på' : 'skjult'))),
+            rad('Salgsuke-kampanjen', this.bryterPaa('salgsuke'),
+                () => this.vekslBryter('salgsuke', 'Salgsuke-kampanjen')),
+            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),
+                () => this.vekslBryter('kursvelger', 'Kursvelger-lenken')),
+            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),
+                () => this.vekslBryter('sok', 'Søkefeltet')),
+            rad('Referansekunder på forsiden', this.bryterPaa('referanser'),
+                () => this.vekslBryter('referanser', 'Referansekunder på forsiden')),
+          ],
+          synMin: [
+            rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),
+                () => this.vekslBryter('internkurs', 'Interne kurs og samlinger')),
+            rad('Internbutikken', this.bryterPaa('internbutikk'),
+                () => this.vekslBryter('internbutikk', 'Internbutikken')),
+            rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),
+                () => this.vekslBryter('medlemssalg', 'Selg egne arbeider')),
+            rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),
+                () => this.vekslBryter('gaven', 'Gaven')),
+            rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),
+                () => this.vekslBryter('medlemfrys', 'Frys av medlemskap')),
+            // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
+            // store krukkemsker for medlemmer».
+            //
+            // Bryteren fantes — som en knapp under Verkstedet › Spoer o store
+            // krukkemester, der man maatte staa for aa finne den. Samme
+            // innstilling (verksted_faq_medlem), samme kall; bare flyttet hit
+            // sammen med de andre. Knappen der er fjernet.
+            //
+            // Den eneste raden som ikke bor i content_blocks, saa den leser
+            // og skriver sitt eget sted.
+            rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,
+                () => this.dokKall({ handling: 'veksle-faq' })),
+          ],
+          synVises: !!this.state.synlighetApen,
+          synAapne: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },
+          synLukk: () => this.setState({ synlighetApen: false }),
+          synStopp: e => e.stopPropagation(),
+        };
+      })(),
       bryterMinInternkurs: this.bryterPaa('internkurs'),
       vekslMinInternkurs: () => this.vekslBryter('internkurs', 'Interne kurs og samlinger'),
       bryterMinInternbutikk: this.bryterPaa('internbutikk'),
@@ -49861,15 +50045,20 @@ class Component extends DCLogic {
           },
         };
       })(),
-      visMedlemskolleksjon: this.bryterPaa('medlemskolleksjon'),
-      vekslMedlemskolleksjon: () => {
-        // Skjules kolleksjonen mens man staar i den, maa butikken tilbake
-        // til Lissom — ellers blir skjermen staaende tom.
-        if (this.bryterPaa('medlemskolleksjon')) this.setState({ butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' });
-        this.vekslBryter('medlemskolleksjon', 'Medlemskolleksjonen');
-      },
-      butikkLissomKant: (this.state.butikkKolleksjon || 'Lissom') !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
-      butikkMedlemKant: (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+      // Kolleksjonen i butikken og skjemaet paa Min side er den samme
+      // bryteren.
+      //
+      // Eieren, 12. september 2026: «Jeg skal ha 1 bryter. Den skal slaa av
+      // og paa funksjonen selg egne arbeider».
+      //
+      // Det var to: «Selg egne arbeider» (Vis/medlemssalg) og
+      // «Medlemskolleksjonen i butikken» (Vis/medlemskolleksjon). Sto den
+      // forste paa og den andre av, kunne medlemmene legge ut varer, Monica
+      // kunne godkjenne dem — og ingen kunde saa dem. Ingenting sa fra.
+      // Migrasjon 173 slaar dem sammen.
+      visMedlemskolleksjon: this.bryterPaa('medlemssalg'),
+      butikkLissomKant: this.butikkKolleksjonNaa() !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+      butikkMedlemKant: this.butikkKolleksjonNaa() === 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
       // Knappene sto som en fast liste: Alt, Kopper, Boller, Fat, Gavekort.
       // Kategoriene i butikken settes i admin, og de andre — Vaser,
       // Tallerkener, Materialer — hadde ingen knapp. «Boller» og «Fat»
@@ -49877,7 +50066,7 @@ class Component extends DCLogic {
       // knappene ikke gjorde noe. Naa kommer de fra varene som faktisk ligger
       // der.
       butikkFiltre: (() => {
-        const erMedlem = (this.state.butikkKolleksjon || 'Lissom') === 'Medlem';
+        const erMedlem = this.butikkKolleksjonNaa() === 'Medlem';
         const kilde = erMedlem
           ? this.galleriListe().filter(g => g.status === 'publisert').map(g => g.kategori)
           : (this.erPublisert()
@@ -49926,7 +50115,7 @@ class Component extends DCLogic {
           cta: 'Se produkt',
           velgHandling: () => this.setState({ salgApen: g.id }),
         }));
-        const alle = (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? medlem : egne;
+        const alle = this.butikkKolleksjonNaa() === 'Medlem' ? medlem : egne;
         if (filter === 'Alt') return alle;
         return alle.filter(p => p.kategori === filter);
       })(),
@@ -53932,19 +54121,10 @@ class Component extends DCLogic {
           },
           dokTekstAvbryt: () => this.setState({ dokTekstId: 0, dokTekst: '' }),
 
-          // «Spor verkstedet» som eget kort i gitteret, med sin egen bryter.
-          dokFaqNavn: d.faqMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
-          dokFaqStil: {
-            appearance: 'none', cursor: 'pointer', textAlign: 'left',
-            font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
-            padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)',
-            background: d.faqMedlem ? 'var(--surface-card)' : 'transparent',
-            border: d.faqMedlem
-              ? '1px solid var(--sage-500)'
-              : '1px dashed var(--border-default)',
-            color: d.faqMedlem ? 'var(--sage-600)' : 'var(--text-muted)',
-          },
-          dokFaqVeksle: () => this.dokKall({ handling: 'veksle-faq' }),
+          // Her laa «dokFaqNavn», «dokFaqStil» og «dokFaqVeksle» — knappen
+          // «Vises for medlemmer». Bryteren staar naa i «⊙ Synlighet», som
+          // en rad under «Paa Min side». Samme innstilling, samme kall; se
+          // «Spør o store krukkemester» i synMin.
 
           faqLeserFra: faqKort,
           faqSporsmal: this.state.faqSporsmal || '',
@@ -54907,7 +55087,14 @@ class Component extends DCLogic {
       // Butikken viser bare det som er godkjent. Bildet kommer fra
       // api/bilde.php, som ikke gir ut bilder til varer som venter.
       salgApen: !!this.state.salgApen,
-      salgSkjemaPaa: this.bryterPaa('salgsskjema'),
+      // Samme bryter som «Selg egne arbeider» paa Oversikt. Det var to
+      // brytere med hver sin noekkel — «Vis/medlemssalg» og
+      // «Vis/salgsskjema» — og koden krevde at BEGGE sto paa. Slo du paa den
+      // ene, skjedde ingenting, og skjermen sa ikke hvilken som manglet.
+      // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for
+      // samme tema?». Naa er det én noekkel, vist to steder. Migrasjon 172
+      // slaar dem sammen, og tar den gamle noekkelen ut av basen.
+      salgSkjemaPaa: this.bryterPaa('medlemssalg'),
       kampanjeVis: this.bryterPaa('salgsuke') && this.mobilVis('salgsuke'),
       kampanjePaa: this.bryterPaa('salgsuke'),
       kampanjeEtikett: this.bryterPaa('salgsuke') ? 'Vises på forsiden' : 'Skjult',
@@ -54949,13 +55136,16 @@ class Component extends DCLogic {
         };
       })(),
       kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
-      salgSkjemaEtikett: this.bryterPaa('salgsskjema') ? 'Synlig' : 'Skjult',
-      salgSkjemaVeksl: () => this.vekslBryter('salgsskjema', 'Skjemaet for å legge ut arbeider'),
-      visSalgSkjema: this.kanSelge() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
+      salgSkjemaEtikett: this.bryterPaa('medlemssalg') ? 'Synlig' : 'Skjult',
+      // Samme navn i kvitteringen begge steder. Sto det «Skjemaet for aa
+      // legge ut arbeider er skjult» her og «Selg egne arbeider er skjult»
+      // paa Oversikt, saa det ut som to ulike brytere — og det er det ikke
+      // lenger.
+      salgSkjemaVeksl: () => this.vekslBryter('medlemssalg', 'Selg egne arbeider'),
+      visSalgSkjema: this.kanSelge() && this.bryterPaa('medlemssalg'),
       // Menyvalget «Selg» finnes for alle medlemmer. Er skjemaet slaatt av,
       // skal skjermen si det — ikke staa tom.
-      msSelgAv: this.kanSelge()
-        && !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),
+      msSelgAv: this.kanSelge() && !this.bryterPaa('medlemssalg'),
       msSelgAvTekst: 'Verkstedet har slått av muligheten til å legge ut egne arbeider'
         + ' for øyeblikket. Ta kontakt hvis du har noe du vil selge.',
       lukkSalg: () => this.setState({ salgApen: null }),
@@ -55127,8 +55317,41 @@ class Component extends DCLogic {
       gIngenVenter: !this.galleriListe().some(g => g.status === 'venter'),
       gPubliserte: this.galleriListe().filter(g => g.status === 'publisert').map(g => Object.assign({}, g, {
         skjul: () => this.salgKall({ handling: 'skjul', id: g.id }),
+        slett: () => this.salgSlett(g),
       })),
       gHarPubliserte: this.galleriListe().some(g => g.status === 'publisert'),
+      // Skjulte og avviste varer.
+      //
+      // Eieren, 12. september 2026: «maa kunne fjerne disse produktene».
+      // Trykket man «Skjul», forsvant varen ogsaa fra admin — den sto
+      // hverken under «venter» eller «Publisert», og man kom aldri til den
+      // igjen. Verken for aa legge den ut paa nytt eller for aa slette den.
+      //
+      // «Legg ut igjen» er den samme ruta som «Godkjenn»; ingen ny
+      // serverhandling.
+      gSkjulte: this.galleriListe()
+        .filter(g => g.status === 'skjult' || g.status === 'avvist')
+        .map(g => Object.assign({}, g, {
+          merke: g.status === 'avvist' ? 'Avvist' : 'Skjult',
+          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),
+          slett: () => this.salgSlett(g),
+        })),
+      gHarSkjulte: this.galleriListe().some(g => g.status === 'skjult' || g.status === 'avvist'),
+      // Auto-godkjenn.
+      //
+      // Krever 'ja', ikke «alt annet enn nei» slik bryterPaa() gjor. En
+      // manglende rad skal ikke bety at varer gaar ut i butikken uten at
+      // noen har sett paa dem. Serveren krever det samme — se
+      // api/medlemssalg.php — og migrasjon 174 skriver 'nei' eksplisitt.
+      gAutoPaa: (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',
+      gAutoEtikett: (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja' ? 'På' : 'Av',
+      gAutoVeksl: () => {
+        const paa = (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja';
+        this.lagreInnhold(
+          { 'Vis/autogodkjenn': paa ? 'nei' : 'ja' },
+          paa ? 'Auto-godkjenn er slått av' : 'Auto-godkjenn er slått på'
+        );
+      },
       gDelSendt: !!this.state.gDelSendt,
       gDelIkkeSendt: !this.state.gDelSendt,
       // Her laa en eldre utgave av «Selg keramikk»: gTittel, gTekst, gSkaper og
@@ -57380,7 +57603,17 @@ class Component extends DCLogic {
       })(),
       goNav: (lenke) => {
         if (lenke === 'Handlekurv') { this.apneKurvAuto(40); return; }
-        if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }
+        // Soeket leser kursene og varene. Staar man paa «Om oss», er ingen
+        // av delene hentet ennaa, og feltet ville bare vist de faste sidene.
+        // Hentes bare naar de mangler — ett kall, ikke ett per aapning.
+        if (lenke === 'Søk') {
+          if (this.bryterPaa('sok')) {
+            if (!this.state.katalog) this.hentKatalog();
+            if (!this.state.butikkvareListe) this.hentButikk();
+            this.setState({ sokApen: true });
+          }
+          return;
+        }
         const ruter = {
           'Forside': ['forside'],
           // «Kurs» lander paa alle kursene, ikke paa et eget kursfilter.

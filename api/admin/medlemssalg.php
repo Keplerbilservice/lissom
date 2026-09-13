@@ -84,6 +84,9 @@ switch (Foresporsel::tekst('handling')) {
         revider('medlemssalg_avvist', 'member_sale', $id, ['tittel' => $rad['tittel'], 'grunn' => $grunn]);
         Svar::ok(['salg' => $hent(), 'beskjed' => $rad['tittel'] . ' er avvist, og selgeren har fått beskjed.']);
 
+    // «Legg ut igjen» paa en vare som er skjult eller avvist. Samme vei ut i
+    // butikken som «Godkjenn», og selgeren faar den samme beskjeden — den
+    // sier at varen er ute, og det er sant begge veier.
     case 'skjul':
         DB::oppdater('member_sales', ['status' => 'skjult'], ['id' => $id]);
         revider('medlemssalg_skjult', 'member_sale', $id, ['tittel' => $rad['tittel']]);

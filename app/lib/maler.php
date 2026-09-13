@@ -383,6 +383,15 @@ final class Maler
                 'pris'      => 'Prisen de satte',
             ],
         ],
+        'intern_ny_vare_ute' => [
+            'tittel' => 'Til deg: vare gikk rett ut',
+            'hvor'   => 'Sendes til verkstedet når et medlem legger ut en vare og auto-godkjenn står på.',
+            'felter' => [
+                'produsent' => 'Medlemmet som laget den',
+                'tittel'    => 'Varens navn',
+                'pris'      => 'Prisen de satte',
+            ],
+        ],
         'intern_gave_lost_inn' => [
             'tittel' => 'Til deg: gave løst inn',
             'hvor'   => 'Sendes til verkstedet når et medlem løser inn en gave.',

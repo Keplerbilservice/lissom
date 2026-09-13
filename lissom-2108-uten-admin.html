@@ -1462,6 +1462,25 @@ window.__resources = {
      som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
      si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
      spalter, saa hele menyen faar plass uten aa rulle. */
+  /* Bryterne i medlemssalg-kortet: pilla til hoeyre for teksten.
+     Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten
+     saa de kommer rett ovenfor hverandre».
+     Komponenten tegner pilla forst og teksten etter. Naar raden skyver hele
+     gruppa mot hoeyre, bestemmer lengden paa teksten hvor pilla havner —
+     «Synlig», «Paa» og «Vises paa forsiden» er ulikt lange, og de tre pillene
+     sto i tre ulike spalter. Maalt: x = 840, 863 og 769.
+     Snur vi rekkefolgen, er det pilla som ligger inntil hoeyre kant, og den
+     er like brei hver gang. Komponenten setter ingen flex-direction selv, saa
+     denne regelen har fritt leide.
+     x-import pakker alt i en <div class="sc-host-x">, saa «>» treffer ikke
+     etiketten. Maalt: med «>» sto pillene fortsatt i tre spalter.
+     «margin-left: auto» maa vaere med: blir raden for smal, bryter den, og
+     bryteren faar sin egen linje. Uten denne starter den mot venstre kant, og
+     da bestemmer teksten igjen hvor pilla havner. Maalt paa 820 px: tre
+     spalter uten, én med. */
+  .lx-bryterhoyre { margin-left: auto; }
+  .lx-bryterhoyre label { flex-direction: row-reverse; }
+
   .lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og

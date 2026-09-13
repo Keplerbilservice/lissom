@@ -16942,6 +16942,26 @@ sjekk('… og de kan legges ut igjen',
     str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
     && str_contains($vis172, '>Legg ut igjen</button>'));
 // Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+// ── Pillene i medlemssalg-kortet staar rett over hverandre ───────────────
+//
+// Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten saa
+// de kommer rett ovenfor hverandre».
+//
+// Komponenten tegner pilla forst og teksten etter. Naar raden skyver gruppa
+// mot hoeyre, bestemmer lengden paa teksten hvor pilla havner — «Synlig»,
+// «Paa» og «Vises paa forsiden» er ulikt lange. Maalt for: x = 840, 863 og
+// 769. Etter: 888 for alle tre.
+sjekk('bryterpillene i medlemssalg-kortet ligger i samme spalte',
+    str_contains($vis172, '  .lx-bryterhoyre label { flex-direction: row-reverse; }')
+    // x-import pakker alt i en <div class="sc-host-x">, saa «>» treffer ikke.
+    && !str_contains($vis172, '.lx-bryterhoyre > label')
+    // Bryter raden, faar bryteren sin egen linje. Uten denne starter den mot
+    // venstre kant, og da bestemmer teksten igjen hvor pilla havner.
+    && str_contains($vis172, '  .lx-bryterhoyre { margin-left: auto; }'),
+    'maalt paa 1000, 820 og 390 px: én spalte paa alle tre');
+sjekk('… og alle tre bryterne i kortet er med',
+    substr_count($vis172, '<span class="lx-bryterhoyre">') === 3);
+
 sjekk('… og slettes for godt, etter et spoersmaal',
     str_contains($vis172, "  salgSlett(v) {")
     && str_contains($vis172, "    if (!window.confirm('Slette «' + v.tittel + '» for godt?'")

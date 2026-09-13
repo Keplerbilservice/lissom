@@ -47549,6 +47549,11 @@ class Component extends DCLogic {
           sum: b.sum || b.belop,
           status: b.status,
           referanse: b.referanse,
+          // Hva betalinga gjaldt. Eieren, 13. september 2026, med bilde av
+          // kortet: «Her staar datoen naar hun bestilte, men jeg ser ikke
+          // naar og hvilket kurs hun skal paa. Det maa vi ha».
+          kurs: b.kurs || '',
+          kursDato: b.kursDato || '',
           // ── Refusjon ────────────────────────────────────────────────
           //
           // Avbestiller kunden selv fra Min side, refunderer api/avbestill
@@ -47607,6 +47612,12 @@ class Component extends DCLogic {
         { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug', sum: 'kr. 2 380,-' },
         { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug', sum: 'kr. 220,-' },
       ]), b => [b.navn, b.hva, [
+        // Kurset og kursdatoen staar oeverst, foer pengene: det er det
+        // foerste man lurer paa naar man aapner en betaling. Linjene staar
+        // bare naar de har noe aa si — et gavekort og en butikkordre har
+        // ingen kursdato, og en tom linje er verre enn ingen.
+        ...(b.kurs ? [{ navn: 'Kurs', verdi: b.kurs }] : []),
+        ...(b.kursDato ? [{ navn: 'Kursdato', verdi: b.kursDato }] : []),
         { navn: 'Beløp', verdi: b.sum },
         { navn: 'Tidspunkt', verdi: b.tid },
         { navn: 'Status', verdi: b.status || 'Betalt' },

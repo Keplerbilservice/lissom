@@ -17071,6 +17071,23 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
 
+echo "\n== Betalingskortet sier hva betalinga gjaldt ==\n";
+// Eieren, 13. september 2026, med bilde av kortet: «Her staar datoen naar hun
+// bestilte, men jeg ser ikke naar og hvilket kurs hun skal paa. Det maa vi
+// ha». Kursnavnet staar paa kurset og datoen paa oekta, saa det er to hopp
+// fra betalinga.
+$betApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+sjekk('betalinga henter kurset og kursdatoen',
+    str_contains($betApi, "                (SELECT c.tittel FROM bookings b\n                   JOIN courses c ON c.id = b.course_id")
+    && str_contains($betApi, "                (SELECT cs.start_tid FROM bookings b\n                   JOIN course_sessions cs ON cs.id = b.course_session_id")
+    && str_contains($betApi, "        'kurs'       => (string) (\$p['kurs_tittel'] ?? ''),"),
+    'maalt: «Testkapasitet» og «onsdag 23. september, 12:00»');
+// Et gavekort og en butikkordre har ingen kursdato. En tom linje er verre
+// enn ingen linje.
+sjekk('… og linjene staar bare naar de har noe aa si',
+    str_contains($vis172, "        ...(b.kurs ? [{ navn: 'Kurs', verdi: b.kurs }] : []),")
+    && str_contains($vis172, "        ...(b.kursDato ? [{ navn: 'Kursdato', verdi: b.kursDato }] : []),"));
+
 echo "\n== Markedsfoering: ti faner ble fem grupper ==\n";
 // Maalt i nettleseren 13. september 2026: ti faner paa én linje paa PC, fem
 // rader paa telefon. Ikke rotete — men ti ting aa velge mellom. Eieren fikk

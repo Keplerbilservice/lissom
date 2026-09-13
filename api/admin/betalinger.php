@@ -51,7 +51,21 @@ if (Foresporsel::metode() === 'GET') {
         "SELECT p.id, p.vipps_reference, p.formal, p.type, p.belop_ore, p.refundert_ore,
                 p.status, p.created_at, m.navn AS medlem, {$maateFelt},
                 (SELECT b.id FROM bookings b WHERE b.payment_id = p.id LIMIT 1) AS booking_id,
-                (SELECT o.id FROM orders o WHERE o.payment_id = p.id LIMIT 1) AS ordre_id
+                (SELECT o.id FROM orders o WHERE o.payment_id = p.id LIMIT 1) AS ordre_id,
+                -- Hva betalinga gjaldt, ikke bare naar den kom.
+                --
+                -- Eieren, 13. september 2026, med bilde av kortet: «Her staar
+                -- datoen naar hun bestilte, men jeg ser ikke naar og hvilket
+                -- kurs hun skal paa. Det maa vi ha».
+                --
+                -- Kursnavnet staar paa kurset og ikke paa oekta, og datoen
+                -- staar paa oekta og ikke paa kurset — derfor to hopp.
+                (SELECT c.tittel FROM bookings b
+                   JOIN courses c ON c.id = b.course_id
+                  WHERE b.payment_id = p.id LIMIT 1) AS kurs_tittel,
+                (SELECT cs.start_tid FROM bookings b
+                   JOIN course_sessions cs ON cs.id = b.course_session_id
+                  WHERE b.payment_id = p.id LIMIT 1) AS kurs_start
            FROM payments p
       LEFT JOIN members m ON m.id = p.member_id
          WHERE p.status IN ('betalt', 'delvis_refundert', 'refundert')
@@ -115,6 +129,11 @@ if (Foresporsel::metode() === 'GET') {
         // kvittering aa sende — og da skal knappen ikke staa der.
         'bookingId'  => $p['booking_id'] === null ? null : (int) $p['booking_id'],
         'ordreId'    => $p['ordre_id'] === null ? null : (int) $p['ordre_id'],
+        // Tomme strenger naar betalinga ikke er en kursbooking — et gavekort
+        // og en butikkordre har ingen kursdato. Skjermen lar linjene staa ute
+        // da, framfor aa vise et tomt felt.
+        'kurs'       => (string) ($p['kurs_tittel'] ?? ''),
+        'kursDato'   => $p['kurs_start'] === null ? '' : Booking::norskDato((string) $p['kurs_start']),
     ], $betalinger)]);
 }
 

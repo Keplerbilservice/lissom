@@ -42735,25 +42735,72 @@ class Component extends DCLogic {
       // paa nettsiden skal ikke faa soeke i dokumenter eller annet fra
       // verksted. Det er kun soek paa nettsiden i kurs events etc, ingen ai
       // her». Feltet spoer ikke lenger api/kunnskap-sok.php.
+      // Soekefeltet leser de ekte kursene og varene.
+      //
+      // Eieren, 13. september 2026, etter aa ha faatt se hva det faktisk
+      // gjorde: «Ja, og butikkvarene ogsaa».
+      //
+      // Det var tolv linjer skrevet inn her — fem kursnavn, sju sidenavn.
+      // Et nytt kurs eller en ny vare fantes ikke i soeket for noen skrev det
+      // inn i koden, og «Sommerkurs i dreiing» ga ingen treff.
+      //
+      // Naa kommer kursene fra kursKort() — den samme lista kurssida tegner,
+      // med de samme reglene for hva som vises — og varene fra
+      // butikkvareListe, uten dem som bare er for medlemmer. Sidene som ikke
+      // har en rad i basen staar igjen som faste linjer; de er sider, ikke
+      // data.
       ...(() => {
-        const alt = [
-          { navn: 'Nybegynner dreiekurs', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
-          { navn: 'Kurs boller', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
-          { navn: 'Store fat kurs', type: 'Kurs', side: 'kurs', filter: 'Håndbygging' },
-          { navn: 'Paint on Pots', type: 'Event', side: 'kurs', filter: 'Paint on pots' },
-          { navn: 'Date Night', type: 'Event', side: 'kurs', filter: 'Events' },
-          { navn: 'Medlemskap og priser', type: 'Medlemskap', side: 'medlemskap' },
-          { navn: 'Kopper, boller og fat', type: 'Butikk', side: 'butikk' },
-          { navn: 'Gavekort', type: 'Butikk', side: 'butikk' },
-          { navn: 'Bedriftsevent og utdrikningslag', type: 'Bedrift og event', side: 'bedrift' },
-          { navn: 'Guider: glasur, brenning og cone-tabell', type: 'Nyttig info', side: 'nyttig' },
-          { navn: 'Om oss og veibeskrivelse', type: 'Om oss', side: 'omoss' },
-          { navn: 'Salgsvilkår', type: 'Info', side: 'vilkar' },
-        ];
+        const sider = [
+          { navn: 'Medlemskap og priser', type: 'Medlemskap', velg: { side: 'medlemskap' } },
+          { navn: 'Kopper, boller og fat', type: 'Butikk', velg: { side: 'butikk' } },
+          { navn: 'Bedriftsevent og utdrikningslag', type: 'Bedrift og event', velg: { side: 'bedrift' } },
+          { navn: 'Guider: glasur, brenning og cone-tabell', type: 'Nyttig info', velg: { side: 'nyttig' } },
+          { navn: 'Om oss og veibeskrivelse', type: 'Om oss', velg: { side: 'omoss' } },
+          { navn: 'Salgsvilkår', type: 'Info', velg: { side: 'vilkar' } },
+        ].map(a => Object.assign({}, a, {
+          aapne: () => { this.setState(Object.assign({ sokApen: false, sokTekst: '' }, a.velg)); window.scrollTo(0, 0); },
+        }));
+
+        // Kursene og eventene, slik de staar paa kurssida.
+        const kurs = this.kursKort().map(k => ({
+          navn: k.title,
+          // «Event · For dere to» og «Nybegynner» er nivaaet, ikke typen.
+          type: /^Event/.test(k.level || '') ? 'Event' : 'Kurs',
+          // Temaet er med i soeket, ikke paa skjermen: skriver du
+          // «plateteknikk», skal kurset komme opp selv om ordet ikke staar i
+          // navnet.
+          ekstra: k.tema || '',
+          aapne: () => {
+            this.setState({ sokApen: false, sokTekst: '' });
+            if (!(k.slug && this.aapneKursSlug(k.slug))) {
+              this.setState({ side: 'kurs' });
+            }
+            window.scrollTo(0, 0);
+          },
+        }));
+
+        // Varene i nettbutikken. Medlemsvarene har ingen offentlig adresse —
+        // se aapneVare() — og skal ikke ligge i et soek alle kan bruke.
+        const varer = (this.state.butikkvareListe || [])
+          .filter(v => !v.kunMedlemmer && v.sti)
+          .map(v => ({
+            navn: v.tittel,
+            type: v.kategori || 'Butikk',
+            ekstra: '',
+            aapne: () => {
+              this.setState({ sokApen: false, sokTekst: '' });
+              if (!this.aapneVare(v.id)) this.setState({ side: 'butikk' });
+              window.scrollTo(0, 0);
+            },
+          }));
+
+        const alt = kurs.concat(varer).concat(sider);
         const t = (this.state.sokTekst || '').toLowerCase().trim();
-        const treff = t ? alt.filter(a => (a.navn + ' ' + a.type).toLowerCase().includes(t)) : alt.slice(0, 6);
+        const treff = t
+          ? alt.filter(a => (a.navn + ' ' + a.type + ' ' + (a.ekstra || '')).toLowerCase().includes(t))
+          : alt.slice(0, 6);
         return {
-          sokResultater: treff.map(a => Object.assign({}, a, { velg: () => { this.setState({ sokApen: false, sokTekst: '', side: a.side, kursFilter: a.filter || this.state.kursFilter }); window.scrollTo(0, 0); } })),
+          sokResultater: treff.map(a => ({ navn: a.navn, type: a.type, velg: a.aapne })),
           sokTom: !!t && treff.length === 0,
         };
       })(),
@@ -57556,7 +57603,17 @@ class Component extends DCLogic {
       })(),
       goNav: (lenke) => {
         if (lenke === 'Handlekurv') { this.apneKurvAuto(40); return; }
-        if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }
+        // Soeket leser kursene og varene. Staar man paa «Om oss», er ingen
+        // av delene hentet ennaa, og feltet ville bare vist de faste sidene.
+        // Hentes bare naar de mangler — ett kall, ikke ett per aapning.
+        if (lenke === 'Søk') {
+          if (this.bryterPaa('sok')) {
+            if (!this.state.katalog) this.hentKatalog();
+            if (!this.state.butikkvareListe) this.hentButikk();
+            this.setState({ sokApen: true });
+          }
+          return;
+        }
         const ruter = {
           'Forside': ['forside'],
           // «Kurs» lander paa alle kursene, ikke paa et eget kursfilter.

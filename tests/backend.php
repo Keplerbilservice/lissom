@@ -16694,6 +16694,38 @@ sjekk('… og Spør verkstedet retter ordene foer den velger dokumenter',
     && str_contains($mkFaq, "Let etter meningen, ikke ordene.")
     && str_contains($mkFaq, "«Jeg tolker det som at du spør om …». Passer flere ting, spør:")
     && str_contains($mkFaq, "4. Passer ingenting, svar nøyaktig dette og ingenting mer:"));
+// ── Soeket leser de ekte kursene og varene ───────────────────────────────
+//
+// Eieren, 13. september 2026, etter aa ha faatt se hva feltet faktisk gjorde:
+// «Ja, og butikkvarene ogsaa».
+//
+// Det var tolv linjer skrevet inn i fila — fem kursnavn og sju sidenavn. Et
+// nytt kurs fantes ikke i soeket for noen skrev det inn i koden.
+sjekk('soeket leser kursene fra den samme lista som kurssida',
+    str_contains($mkSida, "        const kurs = this.kursKort().map(k => ({")
+    && str_contains($mkSida, "          navn: k.title,")
+    && str_contains($mkSida, "            if (!(k.slug && this.aapneKursSlug(k.slug))) {"));
+// Medlemsvarene har ingen offentlig adresse — de skal ikke ligge i et soek
+// alle kan bruke. Serveren gir dem ingen «sti», og det er den vi gaar etter.
+sjekk('… og varene fra nettbutikken, uten medlemsvarene',
+    str_contains($mkSida, "        const varer = (this.state.butikkvareListe || [])\n          .filter(v => !v.kunMedlemmer && v.sti)")
+    && str_contains($mkSida, "              if (!this.aapneVare(v.id)) this.setState({ side: 'butikk' });"));
+// De fem kursnavnene skal ikke staa skrevet inn ved siden av de ekte.
+sjekk('… og de fem kursnavnene er ikke lenger skrevet inn',
+    !str_contains($mkSida, "{ navn: 'Nybegynner dreiekurs', type: 'Kurs', side: 'kurs'")
+    && !str_contains($mkSida, "{ navn: 'Date Night', type: 'Event', side: 'kurs'")
+    && !str_contains($mkSida, "{ navn: 'Paint on Pots', type: 'Event', side: 'kurs'"));
+// Temaet er med i soeket, ikke paa skjermen: «plateteknikk» skal finne
+// kurset selv om ordet ikke staar i navnet.
+sjekk('… og temaet teller med i soeket',
+    str_contains($mkSida, "          ? alt.filter(a => (a.navn + ' ' + a.type + ' ' + (a.ekstra || '')).toLowerCase().includes(t))")
+    && str_contains($mkSida, "          ekstra: k.tema || '',"));
+// Sidene som ikke har en rad i basen staar igjen som faste linjer. De er
+// sider, ikke data.
+sjekk('… mens sidene uten rad i basen staar igjen',
+    str_contains($mkSida, "          { navn: 'Medlemskap og priser', type: 'Medlemskap', velg: { side: 'medlemskap' } },")
+    && str_contains($mkSida, "          { navn: 'Salgsvilkår', type: 'Info', velg: { side: 'vilkar' } },"));
+
 // Kunnskapen ut av nettsidesoeket.
 //
 // Eieren, 13. september 2026: «Søk paa nettsiden skal ikke faa soeke i
@@ -17096,7 +17128,8 @@ sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
     str_contains($mkSida, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),\n                () => this.vekslBryter('sok', 'Søkefeltet')),")
     && str_contains($mkSida, "document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));")
     && str_contains($mkSida, '  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }')
-    && str_contains($mkSida, "if (lenke === 'Søk') { if (this.bryterPaa('sok')) this.setState({ sokApen: true }); return; }"));
+    && str_contains($mkSida, "          if (this.bryterPaa('sok')) {\n            if (!this.state.katalog) this.hentKatalog();")
+    && str_contains($mkSida, "            this.setState({ sokApen: true });"));
 
 // ── Medlemsinvitasjonen etter kurset ─────────────────────────────────────
 //

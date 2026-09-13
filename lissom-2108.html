@@ -34192,14 +34192,19 @@ class Component extends DCLogic {
 
 
   mobilSkjul() {
-    // Salgsuke-banneret finnes to steder paa forsiden. Paa mobil kom de rett
-    // etter hverandre, saa det nederste (over «Dette skjer naa») er av som
-    // standard. Det kan slaas paa igjen under Admin -> Mobilvisning.
-    //
     // Valget laa i localStorage. Det er den enkelte nettleserens eget lager:
     // eieren skrudde av en seksjon, og den var like synlig for alle andre.
     // Naa ligger det i content_blocks som resten.
-    const standard = { salgsuke: true };
+    //
+    // Salgsuke-banneret sto her med «true» — skjult paa telefon. Det stammet
+    // fra den gang banneret sto to steder paa forsiden: paa mobil kom de rett
+    // etter hverandre, saa det nederste var av som standard. Det andre er
+    // borte, og maalt 13. september 2026 var det ingen igjen paa 390 px —
+    // kampanjen naadde ikke dem som er paa telefon, og det er de fleste.
+    //
+    // Eieren valgte aa slaa den paa. Den kan fortsatt skjules under
+    // Nettsiden -> Mobilvisning, som for.
+    const standard = {};
     const il = this.state.innholdLagret || {};
     const ut = Object.assign({}, standard);
     Object.keys(il).forEach(k => {

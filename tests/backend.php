@@ -7419,10 +7419,11 @@ sjekk('Min side har baade piller og bunnmeny i markupen',
 sjekk('… og CSS velger hvilken som vises, ved 760 px som resten av sida',
     str_contains($sida, '.ms-pillerad { display: flex; }')
     && str_contains($sida, '@media (min-width: 761px) {')
-    // «:not(.ms-ovn)» kom med «Ovn er toemt» 12. september. Pilla staar
-    // igjen paa telefonen sammen med «Hjem» og «x inne» — den er hele
-    // poenget med varselet, og skal ikke gjemme seg i bunnmenyen.
-    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem):not(.ms-ovn) { display: none !important; }'));
+    // «:not(.ms-ovn)» kom med «Ovn er toemt» 12. september og gikk ut igjen
+    // 13., da de tre ovnshandlingene flyttet inn i ovnkortet. Pilla finnes
+    // ikke lenger — unntaket i velgeren ble staaende her etter at CSS-en var
+    // rettet, og var den siste raude sjekken i pakka.
+    && str_contains($sida, '.ms-pillerad > *:not(.ms-verksted):not(.ms-hjem) { display: none !important; }'));
 // Eieren, 10. september 2026: «Kan du flytte min side knappen lenger opp paa
 // siden ved siden av pillen med antall inn.» Foer dette var veien hjem cella
 // lengst til venstre i bunnmenyen — han fant den ikke.
@@ -10200,6 +10201,59 @@ sjekk('datoraden staar paa én linje paa stor skjerm',
     && str_contains($sidaG, '      flex: 0 1 110px !important;'));
 // Under 760 px skal knappene fremdeles bryte — ellers staar «Slett dato»
 // utenfor ramma paa en telefon.
+// ── Alt i sitemapen skal kunne indekseres ──────────────────────────────
+//
+// Eieren, 13. september 2026, med bilde fra Search Console: ni sider var
+// indeksert av de atten sitemapen sendte Google til.
+//
+// side.php setter «noindex,nofollow» paa alt den ikke kjenner. Det er riktig
+// for /kasse, /min-side og en skrivefeil — men tolv ekte sider falt ned der:
+// de fem faste (vilkaar, personvern og de tre plakatene under Nyttig info) og
+// alle sju aapne guidene. De sto i sitemapen, saa Google ble bedt om aa hente
+// dem, og fikk «ikke indekser meg» tilbake. Fire av dem sto som indeksert og
+// ville falt ut.
+//
+// Vakta leser sitemapen og SEO-kartet og krever at de er enige: hver fast
+// adresse sitemapen melder, skal ha en oppfoering — ellers faar den noindex.
+$sitemapKode = (string) file_get_contents(dirname(__DIR__) . '/api/sitemap.php');
+$seoKart = json_decode((string) file_get_contents(dirname(__DIR__) . '/seo-kart.json'), true);
+preg_match_all("/\\['(\\/[a-z0-9\\/-]*)',\\s+'[0-9.]+'/", $sitemapKode, $tSm);
+$fasteISitemap = array_map(static fn($x) => $x === '' ? '/' : $x, $tSm[1]);
+$utenOppforing = array_values(array_filter(
+    $fasteISitemap,
+    static fn($a) => !isset($seoKart['stier'][$a])
+));
+sjekk('hver fast adresse i sitemapen har en SEO-oppfoering',
+    $utenOppforing === [],
+    $utenOppforing === [] ? count($fasteISitemap) . ' adresser' : implode(', ', $utenOppforing));
+// Guidene gaar ALDRI gjennom side.php: .htaccess sender /nyttig-info/<slug>
+// rett til en ferdig fil i guider/, med egen tittel og «index,follow» skrevet
+// inn. Bare naar fila finnes — plakatene har ingen fil og er skjermer i
+// nettsida, og de staar derfor i SEO-kartet over.
+//
+// Dette sto jeg og rettet 13. september for jeg oppdaget at den lokale
+// testserveren ikke har regelen. Guidene saa ut som de hadde noindex; de har
+// det ikke i produksjon.
+sjekk('guidene serveres som ferdige filer, ikke gjennom side.php',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
+        'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guider/$1.html [L]')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
+        'RewriteCond %{DOCUMENT_ROOT}/guider/$1.html -f'));
+// … og hver fil sier selv at den skal indekseres.
+sjekk('… og hver guidefil staar paa index',
+    (static function (): bool {
+        foreach (glob(dirname(__DIR__) . '/guider/*.html') ?: [] as $f) {
+            if (!str_contains((string) file_get_contents($f), '<meta name="robots" content="index,follow">')) {
+                return false;
+            }
+        }
+        return true;
+    })());
+// Sidene som IKKE skal i soket skal fortsatt staa utenfor.
+sjekk('… mens kassa og Min side fortsatt staar paa noindex',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/side.php'),
+        "\$ikkeISoket = \$d === null || strtolower((string) (\$d['index'] ?? 'Index')) === 'noindex';"));
+
 // ── «Ubetalt»-kortet fører dit de ubetalte står ────────────────────────
 //
 // Eieren, 13. september 2026: «naar jeg trykker paa ubetalt kortet (i kortet

@@ -1576,6 +1576,24 @@ window.__resources = {
      — «Last ned liste», «Send beskjed» og «Legg til deltaker» ga tre ulike
      hoeyrekanter. Eieren, 13. september 2026, valgte full bredde: da staar
      kolonnen rett. Maalt paa 390 px. */
+  /* To like brede piller paa telefon.
+     Eieren, 13. september 2026, saa tre varianter av faneraden paa Paameldte
+     — bredden foelger ordet, tre like brede, to like brede — og valgte to:
+     «Jeg vil ha to like bredder som vi avtalte, husk globalt». Derfor staar
+     klassen paa alle 98 pilleradene i admin, ikke bare den han saa.
+
+     «flex-basis: calc(50% - 12px)» med «flex-grow: 1» gir to per linje: to
+     piller fyller linja, en tredje faar ikke plass. «min-width: fit-content»
+     er unntaket — et langt navn som «Store former, viderekomne» (maalt 156
+     px mot spaltas 151) faar hele linja i stedet for aa bli klippet.
+     Ordet skal kunne leses; det er derfor det staar der. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-pillerad > button {
+      flex: 1 1 calc(50% - 12px) !important;
+      min-width: fit-content !important;
+    }
+  }
+
   @media (max-width: 560px) {
     .lx-adminaside ~ main .lx-topprad x-import,
     .lx-adminaside ~ main .lx-topprad .sc-host-x,
@@ -6204,7 +6222,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -6225,7 +6243,7 @@ window.__resources = {
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Ingress</label>
             <textarea value="{{ artIngress }}" onChange="{{ settArtIngress }}" rows="2" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+            <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
               <sc-for list="{{ artBildeValg }}" as="v" hint-placeholder-count="7">
                 <button type="button" onClick="{{ v.velg }}" title="{{ v.navn }}" aria-label="{{ v.navn }}" style="{{ v.stil }}"></button>
               </sc-for>
@@ -7132,7 +7150,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -7918,7 +7936,7 @@ window.__resources = {
                pillen» — 12 px luft under raden. -->
           <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3);">
           <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
               <sc-for list="{{ klVisninger }}" as="v" hint-placeholder-count="4">
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
               </sc-for>
@@ -9345,7 +9363,7 @@ window.__resources = {
                       </div>
                       <!-- Bytte maaned uten aa dra. Paa telefonen er dette
                            eneste vei: et trykk er ikke et dra. -->
-                      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                      <div class="lx-pillerad" style="display: flex; gap: 4px; flex-wrap: wrap;">
                         <sc-for list="{{ aarFlyttValg }}" as="fm" hint-placeholder-count="12">
                           <button type="button" onClick="{{ fm.velg }}" style="{{ fm.stil }}">{{ fm.navn }}</button>
                         </sc-for>
@@ -9560,7 +9578,7 @@ window.__resources = {
              deltakere» — og da maa raden staa her ogsaa, ellers er skjermen
              en blindvei man bare kommer seg ut av gjennom menyen. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -9583,7 +9601,7 @@ window.__resources = {
           </div>
           <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-3);">
             <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Velg kurs og dato</div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
               <sc-for list="{{ vlNyDatoer }}" as="d" hint-placeholder-count="4">
                 <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.navn }}</button>
               </sc-for>
@@ -9664,7 +9682,7 @@ window.__resources = {
                        en liste med fulle kvelder er en knapp som sier nei. -->
                   <sc-if value="{{ v.kanGiPlass }}" hint-placeholder-val="{{ true }}">
                     <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Tildel kurs</div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
                       <sc-for list="{{ v.datoer }}" as="dt" hint-placeholder-count="2">
                         <button type="button" onClick="{{ dt.giPlass }}" style="{{ dt.stil }}">{{ dt.merke }}</button>
                       </sc-for>
@@ -9936,7 +9954,7 @@ window.__resources = {
               <div style="flex: 1 1 150px;">
                 <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hvem</label>
                 <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <sc-for list="{{ khValg }}" as="br" hint-placeholder-count="3">
                     <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
@@ -10230,7 +10248,7 @@ window.__resources = {
              pillene» — og etter forste retting: «gi den mer luft». 40 px over,
              24 under: raden hoerer til det som kommer etter den, ikke til
              kortet over. -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 40px 0 var(--space-6);">
+        <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 40px 0 var(--space-6);">
           <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="3">
             <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
           </sc-for>
@@ -10284,7 +10302,7 @@ window.__resources = {
                      staar — en betaling fra forrige maaned skal kunne finnes.
                      Da hopper brikkene til «Alt» selv, saa det ikke ser ut som
                      lista lyver. -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
                   <sc-for list="{{ btPerioder }}" as="pb" hint-placeholder-count="2">
                     <button type="button" onClick="{{ pb.velg }}" style="{{ pb.stil }}">{{ pb.navn }}</button>
                   </sc-for>
@@ -10756,7 +10774,7 @@ window.__resources = {
               <sc-if value="{{ utGvSolgt }}" hint-placeholder-val="{{ true }}">
                 <div>
                   <div style="{{ utEtikett }}">Betalt med</div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <sc-for list="{{ utGvMaater }}" as="gm" hint-placeholder-count="2">
                       <button type="button" onClick="{{ gm.velg }}" style="{{ gm.stil }}">{{ gm.navn }}</button>
                     </sc-for>
@@ -11026,7 +11044,7 @@ window.__resources = {
               <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Hva skal de registreres på?</span>
             </div>
 
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
               <sc-for list="{{ nrHvaValg }}" as="h" hint-placeholder-count="4">
                 <button type="button" onClick="{{ h.velg }}" style="{{ h.stil }}">{{ h.navn }}</button>
               </sc-for>
@@ -11037,7 +11055,7 @@ window.__resources = {
               <div>
                 <label style="{{ nrEtikett }}">Medlemskap</label>
                 <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <sc-for list="{{ nrPlaner }}" as="br" hint-placeholder-count="4">
                     <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
@@ -11053,7 +11071,7 @@ window.__resources = {
               <div>
                 <label style="{{ nrEtikett }}">{{ nrOktEtikett }}</label>
                 <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                   <sc-for list="{{ nrOkter }}" as="br" hint-placeholder-count="6">
                     <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
@@ -11070,7 +11088,7 @@ window.__resources = {
                   <div>
                     <label style="{{ nrEtikett }}">Betalt med</label>
                     <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                       <sc-for list="{{ nrMaater }}" as="br" hint-placeholder-count="5">
                         <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
@@ -11268,7 +11286,7 @@ window.__resources = {
         </div>
 
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11675,7 +11693,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ false }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11691,7 +11709,7 @@ window.__resources = {
                  seksjoner. Aapnet du et kurs for aa se paa noe, matte du
                  rulle helt ned for aa komme deg ut igjen — eller ut av hele
                  skjermen, og da var du ikke lenger i kurslista. -->
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div class="lx-pillerad" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
               <button class="lx-radpille" type="button" onClick="{{ kTilbakeListe }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">← Tilbake til kurslista</button>
               <!-- Datoene til kurset staar lenger nede paa skjermen, i lista
                    som alt finnes. Sto det ikke noe om det her, var det ikke
@@ -11707,7 +11725,7 @@ window.__resources = {
                  ut». Bildene ligger i steg 3 — bak to trykk paa «Neste»,
                  nederst i tolv seksjoner. At de fantes var ikke til aa vite.
                  Naa staar de tre stegene med navn, og ett trykk tar deg dit. -->
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
+            <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
               <sc-for list="{{ kStegValg }}" as="sv" hint-placeholder-count="3">
                 <button type="button" onClick="{{ sv.velg }}" style="{{ sv.stil }}">{{ sv.navn }}</button>
               </sc-for>
@@ -11744,7 +11762,7 @@ window.__resources = {
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">02 · Kategori</div>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Kategorien kunden filtrerer på ute under «Våre kurs», og samtidig hva slags kurs det er.</p>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-2);">
+                  <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-2);">
                     <sc-for list="{{ kKategorier }}" as="t" hint-placeholder-count="8">
                       <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
                     </sc-for>
@@ -11801,7 +11819,7 @@ window.__resources = {
                   <div style="margin-top: var(--space-5);">
                     <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hva bruker kurset?</div>
                     <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">{{ kRessursHjelp }}</p>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap;">
                       <sc-for list="{{ kRessursValg }}" as="r" hint-placeholder-count="3">
                         <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
                       </sc-for>
@@ -11830,7 +11848,7 @@ window.__resources = {
                     <sc-for list="{{ kMerkegrupper }}" as="g" hint-placeholder-count="4">
                       <div>
                         <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">{{ g.navn }}</div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap;">
                           <sc-for list="{{ g.valg }}" as="v" hint-placeholder-count="3">
                             <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
                           </sc-for>
@@ -11868,7 +11886,7 @@ window.__resources = {
                       <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Nivå — internt</div>
                       <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">For deres egen del, så dere vet hva slags kurs det er.</p>
                       <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises ingen steder ute. Kunden ser aldri ordet «nybegynner» eller «videregående».</p>
-                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <sc-for list="{{ kNivaaValg }}" as="n" hint-placeholder-count="2">
                           <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
                         </sc-for>
@@ -12092,7 +12110,7 @@ window.__resources = {
                   </div>
                 </sc-if>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gjentakelse</label>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
                   <sc-for list="{{ kGjentakValg }}" as="g" hint-placeholder-count="4">
                     <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
                   </sc-for>
@@ -12133,7 +12151,7 @@ window.__resources = {
                     </sc-if>
 
                     <sc-if value="{{ kSerieUkedag }}" hint-placeholder-val="{{ true }}">
-                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                      <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
                         <sc-for list="{{ kSerieDager }}" as="d" hint-placeholder-count="7">
                           <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.kort }}</button>
                         </sc-for>
@@ -12305,7 +12323,7 @@ window.__resources = {
             </div>
             <!-- Uke, maaned og liste — de samme tre visningene som
                  kalenderen har, paa de samme oektene. -->
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+            <div class="lx-pillerad" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
               <sc-for list="{{ admVisValg }}" as="v" hint-placeholder-count="3">
                 <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
               </sc-for>
@@ -12438,7 +12456,7 @@ window.__resources = {
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ k.pameldte }}</span>
                 </div>
                 <div style="font-size: var(--text-sm); color: var(--text-body); white-space: nowrap;">{{ k.neste }}</div>
-                <div style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
+                <div class="lx-pillerad" style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
                   <button class="lx-radpille" type="button" onClick="{{ k.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <sc-if value="{{ k.harDato }}" hint-placeholder-val="{{ true }}">
                     <button class="lx-radpille" type="button" onClick="{{ k.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
@@ -12457,7 +12475,7 @@ window.__resources = {
           <div id="admin-datoer" class="lx-datoliste" data-apen="{{ datoListeApen }}" style="{{ datoBlokkStil }}">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ aktiveOkterTittel }} · {{ aktiveOkterAntall }}</span>
-              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+              <div class="lx-pillerad" style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                 <button type="button" onClick="{{ oktVinduVeksle }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ oktVinduTekst }}</button>
                 <!-- Veien tilbake til alle datoene. Uten den staar man igjen
                      med ett kurs og ingen maate aa se resten paa. -->
@@ -12499,7 +12517,7 @@ window.__resources = {
                 <!-- Knappene bryter naar det ikke er plass. Paa en telefon er
                      «Rediger · Legg til deltaker · Paameldte · Slett dato»
                      bredere enn kortet, og «Slett dato» sto utenfor ramma. -->
-                <div style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
+                <div class="lx-pillerad" style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
                   <button class="lx-radpille" type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <button class="lx-radpille" type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
                   <button class="lx-radpille" type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
@@ -12543,7 +12561,7 @@ window.__resources = {
                       <div>
                         <label style="{{ mpEtikett }}">Betalt med</label>
                         <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                           <sc-for list="{{ mpMaater }}" as="br" hint-placeholder-count="4">
                             <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                           </sc-for>
@@ -12611,7 +12629,7 @@ window.__resources = {
                         <div style="flex: 0 1 200px;">
                           <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kursholder</label>
                           <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                             <sc-for list="{{ kursholderValg }}" as="br" hint-placeholder-count="3">
                               <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                             </sc-for>
@@ -13251,7 +13269,7 @@ window.__resources = {
                       <div style="grid-column: 1 / -1;">
                         <label for="{{ q.typeId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Svartype</label>
                         <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                           <sc-for list="{{ q.typeValg }}" as="br" hint-placeholder-count="6">
                             <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                           </sc-for>
@@ -13260,7 +13278,7 @@ window.__resources = {
                       <div style="grid-column: 1 / -1;">
                         <label for="{{ q.narId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Vis bare når</label>
                         <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                           <sc-for list="{{ q.narBrikker }}" as="br" hint-placeholder-count="3">
                             <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                           </sc-for>
@@ -13312,7 +13330,7 @@ window.__resources = {
                           <div style="grid-column: 1 / -1;">
                             <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Anbefaler</label>
                             <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                            <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                               <sc-for list="{{ sv.malValg }}" as="br" hint-placeholder-count="6">
                                 <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                               </sc-for>
@@ -13327,7 +13345,7 @@ window.__resources = {
                           <sc-for list="{{ sv.merkegrupper }}" as="g" hint-placeholder-count="4">
                             <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;">
                               <span style="font-size: var(--text-xs); color: var(--text-muted); min-width: 64px;">{{ g.navn }}</span>
-                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <sc-for list="{{ g.valg }}" as="v" hint-placeholder-count="3">
                                   <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
                                 </sc-for>
@@ -13542,7 +13560,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -13649,7 +13667,7 @@ window.__resources = {
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.under }}</div>
               </div>
               <span style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: {{ r.merkeFarge }}; white-space: nowrap;">{{ r.merke }}</span>
-              <div style="display: flex; gap: var(--space-3); margin-left: auto; flex-wrap: wrap;">
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); margin-left: auto; flex-wrap: wrap;">
                 <button type="button" onClick="{{ r.opp }}" title="Flytt opp" style="{{ r.pilStil }}">↑</button>
                 <button type="button" onClick="{{ r.ned }}" title="Flytt ned" style="{{ r.pilStil }}">↓</button>
                 <!-- Vis eller skjul uten aa slette. Et skjult kort ligger her
@@ -13827,7 +13845,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet, saa veien tilbake til Markedsforing staar
              der som paa de andre skjermene. Uten den var dette en blindvei. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="2">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -13878,7 +13896,7 @@ window.__resources = {
               <input value="{{ vaBruker }}" onChange="{{ settVa.smtp_bruker }}" placeholder="post@lissom.no" aria-label="Brukernavn" style="{{ vaFeltStil }}">
               <input type="password" value="{{ vaPassord }}" onChange="{{ settVa.smtp_passord }}" placeholder="{{ vaPassordHint }}" aria-label="Passord" style="{{ vaFeltStil }}">
               <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <sc-for list="{{ vaSikkerhetValg }}" as="br" hint-placeholder-count="3">
                   <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                 </sc-for>
@@ -14196,7 +14214,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -14216,7 +14234,7 @@ window.__resources = {
               <sc-if value="{{ r.harMerknad }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ r.merknad }}</p>
               </sc-if>
-              <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-4);">
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-4);">
                 <button class="lx-radpille" type="button" onClick="{{ r.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Endre</button>
                 <button class="lx-radpille" type="button" onClick="{{ r.veksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ r.vekselTekst }}</button>
                 <button class="lx-radpille" type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
@@ -14426,7 +14444,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -14644,7 +14662,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -14884,7 +14902,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -15092,7 +15110,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -15120,7 +15138,7 @@ window.__resources = {
                 <div style="grid-column: 1 / -1;">
                   <label style="{{ mpEtikett }}">Kurs</label>
                   <!-- Brikkene tar hele raden. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                     <sc-for list="{{ mpKursvalg }}" as="br" hint-placeholder-count="6">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
@@ -15129,7 +15147,7 @@ window.__resources = {
                 <div style="grid-column: 1 / -1;">
                   <label style="{{ mpEtikett }}">Dato</label>
                   <!-- Brikkene tar hele raden. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                     <sc-for list="{{ mpOkter }}" as="br" hint-placeholder-count="6">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
@@ -15163,7 +15181,7 @@ window.__resources = {
                 <div>
                   <label style="{{ mpEtikett }}">Betalt med</label>
                   <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ mpMaater }}" as="br" hint-placeholder-count="5">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
@@ -15318,7 +15336,7 @@ window.__resources = {
                         <div style="flex: 0 1 200px; min-width: 150px;">
                           <label style="{{ mpEtikett }}">Hvordan kom pengene inn</label>
                           <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                             <sc-for list="{{ betMaater }}" as="br" hint-placeholder-count="5">
                               <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                             </sc-for>
@@ -15369,7 +15387,7 @@ window.__resources = {
                   <div style="flex: 1 1 320px; min-width: 0;">
                     <label style="{{ mpEtikett }}">Flytt {{ p.navn }} til</label>
                     <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                       <sc-for list="{{ flyttOkter }}" as="br" hint-placeholder-count="6">
                         <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
@@ -15666,7 +15684,7 @@ window.__resources = {
                   <div>
                     <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Gjelder</span>
                     <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                       <sc-for list="{{ r.gjelderValg }}" as="br" hint-placeholder-count="2">
                         <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
@@ -15863,7 +15881,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -15898,7 +15916,7 @@ window.__resources = {
                 <div style="grid-column: 1 / -1;">
                   <label style="{{ miEtikett }}">Medlemskap</label>
                   <!-- Brikkene tar hele raden. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ miTyper }}" as="br" hint-placeholder-count="3">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
@@ -16131,7 +16149,7 @@ window.__resources = {
                      Se «bytt-plan» i api/admin/medlemmer.php. -->
                 <div style="margin-top: var(--space-5);">
                   <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Medlemskap</div>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ personPlanValg }}" as="v" hint-placeholder-count="4">
                       <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
                     </sc-for>
@@ -16226,19 +16244,19 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6); max-width: 680px;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Gi gave — vises øverst på Min side</div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hva vil du gi?</label>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-5);">
               <sc-for list="{{ gTypeValg }}" as="t" hint-placeholder-count="3">
                 <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
               </sc-for>
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvem skal få den?</label>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
               <sc-for list="{{ gMottakerValg }}" as="t" hint-placeholder-count="2">
                 <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
               </sc-for>
             </div>
             <sc-if value="{{ gEttMedlem }}" hint-placeholder-val="{{ false }}">
-              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
                 <sc-for list="{{ gMedlemValg }}" as="m" hint-placeholder-count="6">
                   <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                 </sc-for>
@@ -16532,7 +16550,7 @@ window.__resources = {
                  innlogging framfor aa gi henne hele verkstedet. -->
             <div>
               <div style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Tilgang</div>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <sc-for list="{{ brRoller }}" as="r" hint-placeholder-count="3">
                   <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
                 </sc-for>
@@ -16715,7 +16733,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -16917,7 +16935,7 @@ window.__resources = {
                 <div style="grid-column: 1 / -1;">
                   <label style="{{ miEtikett }}">Medlemskap</label>
                   <!-- Brikkene tar hele raden. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ miTyper }}" as="br" hint-placeholder-count="3">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
@@ -16986,19 +17004,19 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6); max-width: 680px;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Gi gave — vises øverst på Min side</div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hva vil du gi?</label>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-5);">
               <sc-for list="{{ gTypeValg }}" as="t" hint-placeholder-count="3">
                 <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
               </sc-for>
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvem skal få den?</label>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
               <sc-for list="{{ gMottakerValg }}" as="t" hint-placeholder-count="2">
                 <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
               </sc-for>
             </div>
             <sc-if value="{{ gEttMedlem }}" hint-placeholder-val="{{ false }}">
-              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
                 <sc-for list="{{ gMedlemValg }}" as="m" hint-placeholder-count="6">
                   <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                 </sc-for>
@@ -17229,7 +17247,7 @@ window.__resources = {
                        Se «bytt-plan» i api/admin/medlemmer.php. -->
                   <div style="margin-top: var(--space-5);">
                     <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Medlemskap</div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                       <sc-for list="{{ personPlanValg }}" as="v" hint-placeholder-count="4">
                         <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
                       </sc-for>
@@ -17440,12 +17458,12 @@ window.__resources = {
           <!-- «medlemsliste» er ankeret personruta ruller tilbake til naar
                den lukkes eller lagres. Se lukkPerson og lagrePersonKontakt. -->
           <div id="medlemsliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
               <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
                 <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
               </sc-for>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
+            <div class="lx-pillerad" style="display: flex; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
               <button type="button" onClick="{{ sorterNavn }}" style="{{ sortKnappStil }}">Medlem {{ sortNavnPil }}</button><button type="button" onClick="{{ sorterTimer }}" style="{{ sortKnappStil }}">Timer brukt {{ sortTimerPil }}</button>
             </div>
             <sc-for list="{{ medlemmer }}" as="m" hint-placeholder-count="6">
@@ -17552,7 +17570,7 @@ window.__resources = {
                   <div>
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
                     <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                       <sc-for list="{{ nbOkter }}" as="br" hint-placeholder-count="5">
                         <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
@@ -17757,7 +17775,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -17801,7 +17819,7 @@ window.__resources = {
               <div style="grid-column: 1 / -1;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knappen går til</label>
                 <!-- Brikkene tar hele raden: en halv spalte gjor aatte valg til en søyle. -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <sc-for list="{{ bnMaal }}" as="br" hint-placeholder-count="8">
                     <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
@@ -17811,7 +17829,7 @@ window.__resources = {
 
             <div>
               <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde til høyre i banneret</label>
-              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                 <sc-for list="{{ bnBilder }}" as="i" hint-placeholder-count="6">
                   <button type="button" onClick="{{ i.velg }}" title="{{ i.navn }}" aria-label="{{ i.navn }}" style="{{ i.stil }}"></button>
                 </sc-for>
@@ -17893,13 +17911,13 @@ window.__resources = {
                     <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
                       <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Utseende</div>
                       <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bakgrunn</div>
-                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+                      <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
                         <sc-for list="{{ b.bakgrunner }}" as="v" hint-placeholder-count="4">
                           <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
                         </sc-for>
                       </div>
                       <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gradient over bilde/bakgrunn</div>
-                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                      <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
                         <sc-for list="{{ b.overganger }}" as="v" hint-placeholder-count="3">
                           <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
                         </sc-for>
@@ -18113,7 +18131,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -18146,7 +18164,7 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
                 </div>
                 <!-- Hver linje skal kunne endres og fjernes der den staar. -->
-                <div style="display: flex; gap: var(--space-2); align-items: center; margin-left: auto; flex-wrap: wrap;">
+                <div class="lx-pillerad" style="display: flex; gap: var(--space-2); align-items: center; margin-left: auto; flex-wrap: wrap;">
                   <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ v.bildeKnapp }}</button>
                   <button type="button" onClick="{{ v.velg }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">Rediger</button>
                   <button class="lx-radpille" type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
@@ -18275,7 +18293,7 @@ window.__resources = {
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
               </div>
-              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+              <div class="lx-pillerad" style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                 <button type="button" onClick="{{ g.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
                 <button type="button" onClick="{{ g.avvis }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">Avvis</button>
               </div>
@@ -18472,7 +18490,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -18487,7 +18505,7 @@ window.__resources = {
                 <!-- Ett sted for begge slag. Meldinger fra medlemmene og
                      foresporsler fra nettsiden laa i hver sin liste, men i
                      samme tabell — saa de viste det samme. -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <sc-for list="{{ henvFiltre }}" as="hf" hint-placeholder-count="3">
                     <button type="button" onClick="{{ hf.velg }}" style="{{ hf.stil }}">{{ hf.navn }}</button>
                   </sc-for>
@@ -18580,7 +18598,7 @@ window.__resources = {
                 <div>
                   <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
                   <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                     <sc-for list="{{ nbOkter }}" as="br" hint-placeholder-count="5">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
@@ -18823,7 +18841,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -18862,7 +18880,7 @@ window.__resources = {
               <sc-if value="{{ malHarFelter }}" hint-placeholder-val="{{ true }}">
                 <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
                   <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Felt du kan bruke — trykk for å kopiere</div>
-                  <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                  <div class="lx-pillerad" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
                     <sc-for list="{{ malFelter }}" as="f" hint-placeholder-count="4">
                       <button type="button" onClick="{{ f.kopier }}" title="{{ f.hva }}" style="{{ f.stil }}">{{ f.felt }}</button>
                     </sc-for>
@@ -19074,7 +19092,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -19545,7 +19563,7 @@ window.__resources = {
                   <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">{{ f.etikett }}</label>
                   <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
                     <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                       <sc-for list="{{ f.valg }}" as="br" hint-placeholder-count="3">
                         <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
@@ -19766,7 +19784,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -19843,7 +19861,7 @@ window.__resources = {
                     <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Beløp i kroner</label>
                     <input value="{{ refBelop }}" onChange="{{ settRefBelop }}" inputmode="numeric" placeholder="Tomt = alt som gjenstår" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
                     <p style="margin: 8px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ b.refHjelp }}</p>
-                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                    <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                       <button type="button" onClick="{{ b.refUtfor }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--terracotta-500); background: var(--terracotta-500); color: var(--clay-50); border-radius: var(--radius-pill); padding: 8px 18px; font: var(--type-body-sm); font-weight: 700;">Refunder</button>
                       <button class="lx-radpille" type="button" onClick="{{ b.refLukk }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); padding: 8px 4px; font: var(--type-body-sm);">Avbryt</button>
                     </div>
@@ -20310,7 +20328,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -20318,7 +20336,7 @@ window.__resources = {
         </sc-if>
 
         <!-- Fanene -->
-        <div style="display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-4); margin-bottom: var(--space-6);">
+        <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-4); margin-bottom: var(--space-6);">
           <sc-for list="{{ mkFaner }}" as="f" hint-placeholder-count="9">
             <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
           </sc-for>
@@ -20455,7 +20473,7 @@ window.__resources = {
             <input value="{{ mkArtEmne }}" onChange="{{ mkSettArtEmne }}" placeholder="F.eks. Dreiekurs for nybegynnere" style="{{ mkFeltStil }}">
             <div style="height: var(--space-3);"></div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kategori</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
               <sc-for list="{{ mkKategorier }}" as="k" hint-placeholder-count="6">
                 <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
               </sc-for>
@@ -20482,7 +20500,7 @@ window.__resources = {
           </div>
 
           <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-xl);">Forslag ut fra det dere holder</h2>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap;">
             <sc-for list="{{ mkArtForslag }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.velg }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm);">{{ f.navn }}</button>
             </sc-for>
@@ -20491,7 +20509,7 @@ window.__resources = {
 
         <!-- ── Kunnskapsbank ──────────────────────────────────────────── -->
         <sc-if value="{{ mkErBank }}" hint-placeholder-val="{{ false }}">
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+          <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
             <sc-for list="{{ mkBankFiltre }}" as="f" hint-placeholder-count="7">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -20519,7 +20537,7 @@ window.__resources = {
                          Lista var bare et forslag i AI-skjemaet; her sto det et
                          tomt felt, og en artikkel havnet lett utenfor
                          kategoriene kundene kan filtrere paa. -->
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                    <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
                       <sc-for list="{{ abKategoriValg }}" as="k" hint-placeholder-count="6">
                         <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
                       </sc-for>
@@ -20584,7 +20602,7 @@ window.__resources = {
                             <div style="grid-column: 1 / -1;">
                               <label for="{{ ab.etterId }}" style="{{ abLitenEtikett }}">Står etter</label>
                               <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <sc-for list="{{ ab.etterValg }}" as="br" hint-placeholder-count="3">
                                   <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                                 </sc-for>
@@ -20593,7 +20611,7 @@ window.__resources = {
                             <div style="grid-column: 1 / -1;">
                               <label for="{{ ab.plassId }}" style="{{ abLitenEtikett }}">Plassering</label>
                               <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <sc-for list="{{ ab.plassValg }}" as="br" hint-placeholder-count="4">
                                   <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                                 </sc-for>
@@ -20602,7 +20620,7 @@ window.__resources = {
                             <div style="grid-column: 1 / -1;">
                               <label for="{{ ab.storrId }}" style="{{ abLitenEtikett }}">Størrelse</label>
                               <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                              <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <sc-for list="{{ ab.storrValg }}" as="br" hint-placeholder-count="3">
                                   <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                                 </sc-for>
@@ -20721,13 +20739,13 @@ window.__resources = {
         <sc-if value="{{ mkErSosialt }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kanal</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
               <sc-for list="{{ mkKanaler }}" as="k" hint-placeholder-count="4">
                 <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
               </sc-for>
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Form</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
               <sc-for list="{{ mkFormer }}" as="k" hint-placeholder-count="4">
                 <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
               </sc-for>
@@ -21198,7 +21216,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -21503,7 +21521,7 @@ window.__resources = {
         </div>
 
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>

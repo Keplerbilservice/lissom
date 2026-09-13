@@ -1576,6 +1576,24 @@ window.__resources = {
      — «Last ned liste», «Send beskjed» og «Legg til deltaker» ga tre ulike
      hoeyrekanter. Eieren, 13. september 2026, valgte full bredde: da staar
      kolonnen rett. Maalt paa 390 px. */
+  /* To like brede piller paa telefon.
+     Eieren, 13. september 2026, saa tre varianter av faneraden paa Paameldte
+     — bredden foelger ordet, tre like brede, to like brede — og valgte to:
+     «Jeg vil ha to like bredder som vi avtalte, husk globalt». Derfor staar
+     klassen paa alle 98 pilleradene i admin, ikke bare den han saa.
+
+     «flex-basis: calc(50% - 12px)» med «flex-grow: 1» gir to per linje: to
+     piller fyller linja, en tredje faar ikke plass. «min-width: fit-content»
+     er unntaket — et langt navn som «Store former, viderekomne» (maalt 156
+     px mot spaltas 151) faar hele linja i stedet for aa bli klippet.
+     Ordet skal kunne leses; det er derfor det staar der. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-pillerad > button {
+      flex: 1 1 calc(50% - 12px) !important;
+      min-width: fit-content !important;
+    }
+  }
+
   @media (max-width: 560px) {
     .lx-adminaside ~ main .lx-topprad x-import,
     .lx-adminaside ~ main .lx-topprad .sc-host-x,

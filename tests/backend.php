@@ -13875,6 +13875,20 @@ sjekk('… og hovedhandlinga oeverst er merket paa hver adminskjerm',
     substr_count($sidaP, 'class="lx-topprad"') === 11,
     'elleve topprader med knapp');
 // Runde ikonknapper staar i samme rad som pillene og maa vaere like hoeye.
+// Fanepillene sto med bredde etter ordet. Eieren saa tre varianter av
+// faneraden paa Paameldte 13. september 2026 og valgte to like brede:
+// «Jeg vil ha to like bredder som vi avtalte, husk globalt». Derfor staar
+// klassen paa alle pilleradene i admin, ikke bare den han saa.
+// Maalt paa 390 px: 59 rader, to per linje, lik bredde.
+sjekk('pillene staar to og to i lik bredde paa telefon',
+    str_contains($sidaP, '    .lx-adminaside ~ main .lx-pillerad > button {')
+    && str_contains($sidaP, '      flex: 1 1 calc(50% - 12px) !important;')
+    && str_contains($sidaP, '      min-width: fit-content !important;'),
+    'maalt: 59 rader paa 390 px');
+sjekk('… og alle pilleradene i admin er merket',
+    substr_count($sidaP, 'class="lx-pillerad"') === 98,
+    '98 rader');
+
 // Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
 // lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september
 // 2026. Maalt paa 390 px: alle tre 310 x 48, samme venstrekant.

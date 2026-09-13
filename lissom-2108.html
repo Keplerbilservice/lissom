@@ -49306,12 +49306,29 @@ class Component extends DCLogic {
                        venter ? null : linje('Ingenting venter'),
                      ].filter(Boolean), venter > 0,
                      () => this.gaaAdmin('adminnyepameldinger', {})),
+                // Til Kassa, ikke til OEkonomi.
+                //
+                // Eieren, 13. september 2026: «naar jeg trykker paa ubetalt
+                // kortet (i kortet staar det kr 7090 3 kursavgifter) men jeg
+                // faar ikke opp hvem som er ubetalt, dette maa jeg ha tilbake
+                // slik det var».
+                //
+                // OEkonomi viser betalinger som FINNES. En ubetalt kursavgift
+                // har ingen betaling, og sto derfor ikke der — man kom til en
+                // liste uten dem man kom for aa se.
+                //
+                // Lista finnes: «Ikke betalt» i Kassa, bygget av skylderKort()
+                // og samme tall som dette kortet teller. Den har alle tre
+                // slagene — kurs, medlemskap og butikk — med navn, beloep og
+                // knappene «Kontant» og «Vipps» som gjor opp med ett trykk.
+                // Den sto paa Oversikt fram til 4. september; eieren flyttet
+                // den selv: «det hoerer til i Kassa».
                 kort('Ubetalt', kr(sum), [
                        kursavg ? linje(kursavg + (kursavg === 1 ? ' kursavgift' : ' kursavgifter')) : null,
                        medl    ? linje(medl + (medl === 1 ? ' medlem' : ' medlemmer')) : null,
                        sum     ? null : linje('Alt er betalt'),
                      ].filter(Boolean), sum > 0,
-                     () => this.gaaAdmin('adminokonomi', { okonomiFor: '' })),
+                     () => this.gaaAdmin('adminuttak', {})),
                 kort('Inne nå', String(inne),
                      [linje(inne ? 'i verkstedet nå' : 'Ingen innstemplet')]),
                 kort('Siste sju dager',

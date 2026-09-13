@@ -10200,6 +10200,29 @@ sjekk('datoraden staar paa én linje paa stor skjerm',
     && str_contains($sidaG, '      flex: 0 1 110px !important;'));
 // Under 760 px skal knappene fremdeles bryte — ellers staar «Slett dato»
 // utenfor ramma paa en telefon.
+// ── «Ubetalt»-kortet fører dit de ubetalte står ────────────────────────
+//
+// Eieren, 13. september 2026: «naar jeg trykker paa ubetalt kortet (i kortet
+// staar det kr 7090 3 kursavgifter) men jeg faar ikke opp hvem som er
+// ubetalt, dette maa jeg ha tilbake slik det var».
+//
+// Kortet pekte paa OEkonomi. Den skjermen viser betalinger som FINNES, og en
+// ubetalt kursavgift har ingen betaling — han kom til en liste uten dem han
+// kom for aa se.
+//
+// Lista finnes i Kassa: «Ikke betalt», bygget av skylderKort() av de samme
+// tallene kortet teller, med alle tre slagene og knappene som gjor opp.
+//
+// Maalt i nettleseren: kortet sa «kr. 14 560,- · 3 kursavgifter · 3
+// medlemmer», og etter trykket sto lista «IKKE BETALT · 6 ubetalte ·
+// kr. 14 560,- utestaaende» — samme sum.
+sjekk('«Ubetalt»-kortet gaar til Kassa, ikke til OEkonomi',
+    str_contains($sidaG, "                     () => this.gaaAdmin('adminuttak', {})),"));
+// Lista staar i Kassa, og regnestykket ett sted — se skylderKort().
+sjekk('… og lista den fører til staar der',
+    str_contains($sidaG, 'value="{{ ovSkylderVis }}"')
+    && str_contains($sidaG, '  skylderKort() {'));
+
 // ── Ingen tekst under 12 px, ingen trykkflate under 32 ──────────────────
 //
 // Maalt 13. september 2026 paa atten adminskjermer: 96 tekster under 12 px

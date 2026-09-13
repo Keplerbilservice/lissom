@@ -57,6 +57,46 @@ if (Foresporsel::metode() === 'POST') {
         if ($min !== null) {
             revider('stemplet_ut', 'member', $id, ['minutter' => $min]);
         }
+    } elseif ($handling === 'feiltid') {
+        // ── «Feil tid — si fra» ─────────────────────────────────────────
+        //
+        // Eieren, 13. september 2026: «naar medlemmene stempler seg ut, er det
+        // mulig aa faa en pop up som viser hvor lenge har de vaert stemplet
+        // inn? Bekreft, feil tid, send beskjed til admin.»
+        //
+        // Medlemmet gaar uansett — oekta lukkes. Det er tida som er feil, og
+        // den retter verkstedet. Beskjeden legges i enquiries, samme sted som
+        // kontaktskjemaet, saa den staar i admin til noen har tatt den; e-post
+        // alene drukner.
+        $apen = Stempling::apenOkt($id);
+        $fra  = $apen !== null ? (string) $apen['inn_tid'] : '';
+        $min  = Stempling::ut($id);
+        if ($min !== null) {
+            revider('stemplet_ut', 'member', $id, ['minutter' => $min, 'feiltid' => 1]);
+        }
+        $navn = trim((string) ($medlem['navn'] ?? '')) ?: 'Et medlem';
+        $melding = $navn . ' sier at tida på denne økta ble feil.' . "\n\n"
+            . ($fra !== '' ? 'Stemplet inn: ' . Booking::norskDato($fra) . "\n" : '')
+            . ($min !== null ? 'Registrert: ' . $min . ' minutter' . "\n" : '')
+            . "\nØkta er lukket. Rett tida under Admin → Medlemmer.";
+        try {
+            $sak = DB::settInn('enquiries', [
+                'navn'    => $navn,
+                'epost'   => ($medlem['epost'] ?? '') !== '' ? (string) $medlem['epost'] : null,
+                'telefon' => ($medlem['telefon'] ?? '') !== '' ? (string) $medlem['telefon'] : null,
+                'type'    => 'Feil stemplingstid',
+                'melding' => $melding,
+                'ip'      => Foresporsel::ipBinaer(),
+            ]);
+            Varsel::malTilAdmin('intern_ny_foresporsel', [
+                'navn'         => $navn,
+                'oppsummering' => $melding,
+            ], 'enquiry', $sak);
+        } catch (Throwable $e) {
+            // Beskjeden er ikke verdt aa stoppe utstemplinga for. Medlemmet
+            // har gaatt; oekta er lukket. Dette havner i loggen.
+            logg_feil('Fikk ikke sendt «feil stemplingstid» til verkstedet', $e);
+        }
     } elseif ($handling === 'glemt') {
         // ── Glemt aa stemple ut ─────────────────────────────────────────
         //
@@ -203,11 +243,13 @@ try {
 
 $siden = null;
 $saaLenge = null;
+$saaLengeMin = 0;
 if ($apen !== null) {
     $inn = (new DateTimeImmutable((string) $apen['inn_tid'], new DateTimeZone('UTC')))
         ->setTimezone(new DateTimeZone('Europe/Oslo'));
     $siden = $inn->format('H:i');
-    $saaLenge = Stempling::varighet((int) round((time() - $inn->getTimestamp()) / 60));
+    $saaLengeMin = max(0, (int) round((time() - $inn->getTimestamp()) / 60));
+    $saaLenge = Stempling::varighet($saaLengeMin);
 }
 
 // ── De tre siste hele maanedene ────────────────────────────────────────
@@ -243,6 +285,10 @@ Svar::json([
     'historikk'   => $historikk,
     'siden'       => $siden,
     'saaLenge'    => $saaLenge,
+    // Minuttene bak «saaLenge». «timer.bruktMin» teller den paagaaende oekta
+    // med fra for, saa dette er ikke noe aa legge til der — det er tallet bak
+    // teksten, for den som trenger det som et tall.
+    'saaLengeMin' => $saaLengeMin,
     'visMeg'      => (bool) ($medlem['vis_innstempling'] ?? 1),
     // Hva medlemmet kan velge mellom, og hva det staar med naa.
     'ressurser'   => $ressurser,

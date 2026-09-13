@@ -22707,6 +22707,37 @@ window.__resources = {
   </div>
 </sc-if>
 
+<!-- Utstempling: hvor lenge var jeg inne?
+
+     Eieren, 13. september 2026: «naar medlemmene stempler seg ut, er det
+     mulig aa faa en pop up som viser hvor lenge har de vaert stemplet inn?
+     Bekreft, feil tid, send beskjed til admin.»
+
+     Foer dette lukket «Stemple ut» oekta med det samme, uten et ord om hvor
+     mange timer som gikk med. Var tida feil, maatte medlemmet finne «Glemt aa
+     stemple ut» selv etterpaa.
+
+     Tallene er de serveren alt sender: «siden» og «saaLenge» — de samme som
+     staar i linja under knappen. Ingen ny henting. -->
+<sc-if value="{{ utstVis }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ utstLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 540; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ utstStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(420px, 100%); padding: var(--space-7) var(--space-6) var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; text-align: center;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Stemple ut</div>
+      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading); line-height: 1.15;">{{ utstLenge }}</div>
+      <p style="margin: var(--space-3) 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ utstFra }}</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ utstBekreft }}" hint-size="100%,52px">Bekreft</x-import>
+        <button type="button" onClick="{{ utstFeil }}" style="{{ utstFeilStil }}">Feil tid — si fra</button>
+      </div>
+      <!-- Timene tar slutt. Staar bare naar denne oekta passerer 80 %; ellers
+           er det et tall medlemmet ikke trenger aa forholde seg til naa. -->
+      <sc-if value="{{ utstNaerTomt }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ utstIgjenStil }}">{{ utstIgjen }}</div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
 <!-- ⊙ Synlighet — alle bryterne for hva som vises, paa ett sted.
 
      Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise
@@ -32900,8 +32931,29 @@ class Component extends DCLogic {
     const st = this.state.stempling || {};
     const alle = st.ressurser || [];
     const valgt = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
-    this.stemplingKall(inne ? { handling: 'ut' }
-                            : { handling: 'inn', ressursId: valgt || 0 }, true);
+    // Utstempling gaar via ruta som viser hvor lenge man var inne. Eieren, 13.
+    // september 2026. Innstempling gaar rett gjennom som for — der er det
+    // ingenting aa bekrefte.
+    if (inne) { this.setState({ utstApen: true }); return; }
+    this.stemplingKall({ handling: 'inn', ressursId: valgt || 0 }, true);
+  }
+
+  /** Stempler ut for ekte, og lukker ruta. */
+  utstemplNaa() {
+    this.setState({ utstApen: false });
+    this.stemplingKall({ handling: 'ut' }, true);
+  }
+
+  /**
+   * «Feil tid — si fra».
+   *
+   * Medlemmet gaar uansett, saa oekta lukkes. Det er tida som er feil, og den
+   * retter verkstedet. Serveren legger beskjeden blant henvendelsene, der den
+   * staar til noen har tatt den — se api/stempling.php, handling «feiltid».
+   */
+  utstemplFeil() {
+    this.setState({ utstApen: false });
+    this.stemplingKall({ handling: 'feiltid' }, true);
   }
 
   erInne() {
@@ -51761,6 +51813,65 @@ class Component extends DCLogic {
         const st = this.state.stempling;
         if (st) return st.innstemplet ? 'Innstemplet ' + st.siden + ' · ' + st.saaLenge : 'Du er ikke innstemplet';
         return this.erPublisert() ? 'Henter …' : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet');
+      })(),
+      // ── Ruta ved utstempling ─────────────────────────────────────────
+      //
+      // Eieren, 13. september 2026: «naar medlemmene stempler seg ut, er det
+      // mulig aa faa en pop up som viser hvor lenge har de vaert stemplet
+      // inn? Bekreft, feil tid, send beskjed til admin.»
+      //
+      // Tallene er de serveren alt sender — «siden» og «saaLenge» — de samme
+      // som staar i linja under knappen. Ingen ny henting, ingen ny regning.
+      ...(() => {
+        const st = this.state.stempling || {};
+        const lenge = st.saaLenge || '1 t 20 min';
+        const siden = st.siden || '13:42';
+        // ── Naar timene begynner aa ta slutt ──────────────────────────
+        //
+        // Eieren, 13. september 2026: «faar medlemmene varsel naar de har 20 %
+        // av timene igjen?» Nei — Min side viste tallet, men sa aldri fra.
+        // Han valgte at det skal staa her, i ruta: det er her medlemmet staar
+        // og ser tida gaa.
+        //
+        // Regnet paa ETTER denne oekta: det er den som eventuelt passerer
+        // grensa.
+        //
+        // «bruktMin» teller den paagaaende oekta med fra for — se
+        // Stempling::minutterDenneManeden(), som legger sammen de lukkede og
+        // minuttene som har gaatt paa den aapne. Foerste utgave her la dem til
+        // én gang til, og ruta sa «3,5 timer igjen» der det var 5,8.
+        //
+        // Fri tilgang (perMnd = null) har ingenting aa telle ned mot.
+        const t = st.timer || {};
+        const tak = t.perMnd === null || t.perMnd === undefined ? null : Number(t.perMnd);
+        const brukt = t.bruktMin || 0;
+        const etter = tak === null ? null : Math.max(0, Math.round((tak * 60 - brukt) / 6) / 10);
+        const naerTomt = tak !== null && tak > 0 && brukt >= tak * 60 * 0.8;
+        return {
+          utstVis: !!this.state.utstApen,
+          utstLenge: 'Du var inne i ' + lenge,
+          utstFra: 'Stemplet inn ' + siden + '. Tida trekkes fra timene dine denne måneden.',
+          utstNaerTomt: naerTomt,
+          utstIgjen: etter === null ? '' : (etter === 0
+            ? 'Etter denne økta har du ingen timer igjen denne måneden.'
+            : 'Etter denne økta har du ' + String(etter).replace('.', ',') + ' av ' + tak + ' timer igjen.'),
+          utstIgjenStil: {
+            marginTop: 'var(--space-4)', marginBottom: 'calc(var(--space-4) * -1)',
+            padding: '10px 14px', borderRadius: 'var(--radius-md)',
+            background: 'var(--clay-100)', borderLeft: '3px solid var(--lissom-yellow)',
+            fontSize: 'var(--text-sm)', color: 'var(--text-body)', textAlign: 'left',
+          },
+          utstBekreft: () => this.utstemplNaa(),
+          utstFeil: () => this.utstemplFeil(),
+          utstLukk: () => this.setState({ utstApen: false }),
+          utstStopp: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+          // Andrevalget er stille: det er ikke det man vanligvis skal trykke.
+          utstFeilStil: {
+            appearance: 'none', background: 'transparent', border: 'none', padding: '12px',
+            cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 700,
+            color: 'var(--terracotta-600)', textDecoration: 'underline', textUnderlineOffset: '3px',
+          },
+        };
       })(),
       // ── Hva medlemmet skal bruke ─────────────────────────────────────
       //

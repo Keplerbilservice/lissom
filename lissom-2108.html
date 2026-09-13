@@ -1522,6 +1522,10 @@ window.__resources = {
     box-sizing: border-box !important;
     min-height: 32px !important;
     height: auto !important;
+    /* Maanedspilene «‹» og «›» i ferikalenderen har bare ett tegn, og ble
+       29 px breie av de 12 px luft paa hver side — maalt 13. september
+       2026. En pille er aldri smalere enn den er hoey. */
+    min-width: 32px !important;
     padding: 0 12px !important;
     border-radius: var(--radius-pill) !important;
     font-size: var(--text-xs) !important;
@@ -1534,6 +1538,50 @@ window.__resources = {
        ikke pilla. Sentrert i raden er ogsaa det eieren ba om: «piller skal
        staa symetrisk, paa riktig side saa de er sentrert». */
     align-self: center !important;
+  }
+
+  /* Ingen tekst under 12 px i admin.
+     ------------------------------------------------------------------
+     Maalt 13. september 2026: 96 tekster paa elleve adminskjermer sto paa
+     11 px, og nitten i ferikalenderen paa 10. Det er merkelapper, tellere,
+     smaatekst under et navn — det man leser naar man skal finne noe.
+
+     Regelen staar her og ikke i de femti stilobjektene, av to grunner. Den
+     ene: flere av dem brukes ogsaa paa kundesiden, og den skal ikke roeres
+     (eieren, 13. september 2026: «Du skal ikke røre noe på kundesiden,
+     dette er viktig»). Den andre: «.lx-adminaside ~ main» finnes bare i
+     admin, saa regelen kan ikke naa ut.
+
+     Den treffer paa stilstrengen, som pilleregelen under — en ny tekst paa
+     11 px faar maalet automatisk. */
+  .lx-adminaside ~ main [style*="font-size: 11px"],
+  .lx-adminaside ~ main [style*="font-size: 10px"],
+  /* Merkene fra designsystemet — «Admin», «Publisert», «I bruk» — staar paa
+     «--text-2xs», som er 11 px. Tokenet selv roeres ikke: det gjelder ogsaa
+     kundesiden. */
+  .lx-adminaside ~ main [style*="--text-2xs"] {
+    font-size: 12px !important;
+  }
+
+  /* Et merke du kan trykke paa er ogsaa en trykkflate.
+     ------------------------------------------------------------------
+     Kommentaren over sier at «Betalt», «Ubetalt» og «Ikke betalt» er
+     merkelapper og ikke piller — «de sier en tilstand, de er ikke noe du
+     trykker paa». Det stemmer for dem som staar i en <span>. Men noen av
+     dem er <button>: betalinga i medlemslista aapner betalingskortet, og
+     statusen i paameldte slaar betalt av og paa.
+
+     Maalt 13. september 2026: elleve slike, 19 til 23 px hoeye. De faar 32
+     som resten. Formen staar — farge, ramme og runding blir igjen paa
+     knappen, saa et merke ser fremdeles ut som et merke. De som er <span>
+     roeres ikke. Skjermene ble 0, 20 og 6 px hoeyere. */
+  .lx-adminaside ~ main button[style*="border-radius: 999px"],
+  .lx-adminaside ~ main button.lx-medlpille {
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
   }
 
   /* Runde ikonknapper staar i samme rad som pillene — «−», «+», «↑», «↓»
@@ -13450,7 +13498,7 @@ window.__resources = {
                           <button type="button" onClick="{{ sv.opp }}" aria-label="Flytt opp" style="{{ sv.pilStil }}">↑</button>
                           <button type="button" onClick="{{ sv.ned }}" aria-label="Flytt ned" style="{{ sv.pilStil }}">↓</button>
                           <button class="lx-radpille" type="button" onClick="{{ sv.lagre }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Lagre</button>
-                          <button type="button" onClick="{{ sv.slett }}" aria-label="Slett svaret" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
+                          <button type="button" onClick="{{ sv.slett }}" aria-label="Slett svaret" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center;">×</button>
                         </div>
                         <!-- Lukket: navnet og én linje som sier hva som er
                              valgt. Aapent: alle brikkene. Se «apen» i
@@ -15825,7 +15873,7 @@ window.__resources = {
                     </label>
                     <div class="lx-pillerad" style="display: flex; align-items: center; gap: var(--space-3); margin-left: auto;">
                       <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
-                      <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
+                      <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1; min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center;">×</button>
                     </div>
                   </div>
                   <div>
@@ -47561,7 +47609,10 @@ class Component extends DCLogic {
       sorterTimer: () => this.setState(s => ({ medlemSort: s.medlemSort === 'timer' ? '' : 'timer' })),
       sortNavnPil: this.state.medlemSort === 'navn' ? '↓' : '',
       sortTimerPil: this.state.medlemSort === 'timer' ? '↓' : '',
-      sortKnappStil: { appearance: 'none', border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', font: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', color: 'inherit', textAlign: 'left' },
+      // «Medlem» og «Timer brukt» sorterer lista. De var 20 px hoeye —
+      // maalt 13. september 2026 — mot de 32 en finger trenger. Luften
+      // legges under teksten, saa raden staar som foer.
+      sortKnappStil: { appearance: 'none', border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', font: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', color: 'inherit', textAlign: 'left', minHeight: 32, display: 'inline-flex', alignItems: 'center' },
       soknader: (this.state.adminSoknader || []).map(sk => ({
         id: sk.id,
         navn: sk.navn,
@@ -53917,6 +53968,9 @@ class Component extends DCLogic {
                 appearance: 'none', border: 'none', background: 'transparent',
                 cursor: 'pointer', padding: '6px 0 0', textAlign: 'left', width: '100%',
                 font: 'var(--type-body-sm)', color: 'var(--text-muted)',
+                // 29 px hoey, maalt 13. september 2026. Hele linja er
+                // trykkflata, og da skal den vaere like hoey som resten.
+                minHeight: 32, display: 'flex', alignItems: 'center',
               },
               oppsummering: (() => {
                 const deler = [];

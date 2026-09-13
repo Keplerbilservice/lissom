@@ -10172,6 +10172,36 @@ sjekk('datoraden staar paa én linje paa stor skjerm',
     && str_contains($sidaG, '      flex: 0 1 110px !important;'));
 // Under 760 px skal knappene fremdeles bryte — ellers staar «Slett dato»
 // utenfor ramma paa en telefon.
+// ── Ingen tekst under 12 px, ingen trykkflate under 32 ──────────────────
+//
+// Maalt 13. september 2026 paa atten adminskjermer: 96 tekster under 12 px
+// (11 px paa elleve skjermer, 10 i ferikalenderen) og 22 trykkflater under
+// 32 px. Etter: 0 og 0, paa 390, 834 og 1280 px.
+//
+// Regelen staar i stilarket og ikke i de femti stilobjektene, fordi flere
+// av dem ogsaa brukes paa kundesiden — og den skal ikke roeres. Eieren,
+// 13. september 2026: «Du skal ikke røre noe på kundesiden, dette er
+// viktig». «.lx-adminaside ~ main» finnes bare i admin.
+sjekk('ingen tekst under 12 px i admin',
+    str_contains($sidaG, '  .lx-adminaside ~ main [style*="font-size: 11px"],')
+    && str_contains($sidaG, '  .lx-adminaside ~ main [style*="font-size: 10px"],')
+    && str_contains($sidaG, '  .lx-adminaside ~ main [style*="--text-2xs"] {'));
+// Tokenet «--text-2xs» er 11 px i sidas egen skala paa <body>, og gjelder
+// ogsaa kundesiden. Endres det der, endres merkene til kunden ogsaa.
+// (Designsystemets egen eksport har sin egen 12 px-verdi hoeyere oppe i
+// fila; den blir overskrevet av denne og teller ikke.)
+sjekk('… uten aa endre tokenet kundesiden bruker',
+    str_contains($sidaG, '--section-y: 96px; --text-2xs: 11px; --text-xs: 12px;'));
+// Et merke du kan trykke paa er en trykkflate. De som bare sier en
+// tilstand staar i en <span> og roeres ikke.
+sjekk('merkene man kan trykke paa er 32 px',
+    str_contains($sidaG, '  .lx-adminaside ~ main button[style*="border-radius: 999px"],')
+    && str_contains($sidaG, '  .lx-adminaside ~ main button.lx-medlpille {'));
+// En pille er aldri smalere enn den er hoey — maanedspilene «‹» og «›» har
+// bare ett tegn og ble 29 px.
+sjekk('… og en pille er aldri smalere enn den er hoey',
+    str_contains($sidaG, '    min-width: 32px !important;'));
+
 sjekk('… mens de fremdeles bryter paa telefonen',
     str_contains($sidaG, '  @media (min-width: 760px) {
     .lx-adminaside ~ main .lx-datonavn'));

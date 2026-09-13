@@ -183,11 +183,11 @@ fra admin-panelet. Poenget er at du aldri kan låse deg selv ute.
 
 ## 7. Sett opp de planlagte jobbene
 
-cPanel → **Cron Jobs**. Legg inn seks.
+cPanel → **Cron Jobs**. Legg inn sju.
 
 Øverst i skjemaet er det en nedtrekksmeny som heter **Common Settings**. Velger
 du noe der, fyller cPanel ut de fem feltene under — Minute, Hour, Day, Month,
-Weekday — helt av seg selv. Da trenger du ikke røre dem. Tre av de seks
+Weekday — helt av seg selv. Da trenger du ikke røre dem. Tre av de sju
 jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 
 | Jobb | Common Settings | Feltene blir | Kommando |
@@ -195,14 +195,21 @@ jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 | Varselkøen | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php varsler >/dev/null` |
 | Betalinger som henger | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php betalinger >/dev/null` |
 | «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser >/dev/null` |
-| **Medlemstrekket** | *(ingen — sett Minute `0`, Hour `4`)* | `0 4 * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null` |
+| **Medlemstrekket** | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null` |
 | Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser >/dev/null` |
 | Medlemsinvitasjon etter kurs | *(ingen — sett Minute `0`, Hour `8`)* | `0 8 * * *` | `php ~/lissom-app/bin/cron.php fortsett >/dev/null` |
 | Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold >/dev/null` |
 
 For de tre siste: velg **Once Per Day** i menyen først, og rett så Hour fra `0`
-til `4`, `7` og `1`. Resten av feltene skal stå med stjerne — en stjerne betyr
+til `7`, `8` og `1`. Resten av feltene skal stå med stjerne — en stjerne betyr
 «hver».
+
+Medlemstrekket sto på `0 4 * * *` fram til 13. september 2026. Eieren ba da om
+det «så ofte jeg kan». Forfallet er en dato og ikke et klokkeslett, så oftere
+enn hver time gir ingenting: et medlem forfaller ved midnatt, og hver time
+henter pengene innen 01:00. Hvert femte minutt ville gitt 55 minutter til, én
+gang per medlem per måned — mot 288 runder i døgnet der hver runde spør Vipps
+om hver avtale som venter på godkjenning. Han valgte hver time.
 
 ### Hvorfor `>/dev/null` står bakerst
 

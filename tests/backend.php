@@ -14678,9 +14678,14 @@ sjekk('… og toppteksten i cron.php ogsaa',
     $iToppteksten === $iKoden,
     'koden: ' . implode(', ', $iKoden) . '  ·  toppteksten: ' . implode(', ', $iToppteksten));
 // Den som faktisk henter inn pengene. Sto den ikke her, ble den ikke satt opp.
+// Medlemstrekket sto paa «0 4 * * *» fram til 13. september 2026. Eieren ba
+// da om det «saa ofte jeg kan» — og valgte hver time da han fikk vite at
+// forfallet er en dato og ikke et klokkeslett: oftere enn hver time gir
+// ingenting, og hvert femte minutt ville gitt 288 runder i dognet der hver
+// runde sporr Vipps om hver avtale som venter paa godkjenning.
 sjekk('… og medlemstrekket staar i oppsettet med klokkeslett',
     str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null`')
-    && str_contains($oppsett, '`0 4 * * *`'));
+    && str_contains($oppsett, '`0 * * * *`'));
 // «>/dev/null» paa alle seks. Uten den sender cPanel én tom e-post per
 // kjoring: CGI-utgaven av PHP skriver alltid den tomme linja som avslutter
 // hodeblokka, og cron sender e-post for hvert tegn en jobb skriver.

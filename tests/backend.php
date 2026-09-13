@@ -17709,8 +17709,12 @@ sjekk('synlighetsarket staar bare én gang i malen',
     && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 2
     && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 2);
 // Ti rader: fem paa nettsiden, fem paa Min side. Maalt i nettleseren.
-sjekk('… og har alle elleve bryterne',
-    substr_count($syn, "            rad('") === 11
+// Ble tolv 13. september 2026. Eieren: «jeg vil ha bryter til aa skru av
+// glemte aa stemple for medlemmene. Og den skal og skrus av.» Migrasjon 181
+// setter den av; herfra kan den slaas paa igjen.
+sjekk('… og har alle tolv bryterne',
+    substr_count($syn, "            rad('") === 12
+    && str_contains($syn, "            rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),")
     && str_contains($syn, "            rad('Banneret under toppbildet',")
     // Het «Salgsuke-kampanjen» til 13. september 2026; da ble salgsuka en
     // generell salgskampanje, og navnet foelger med.
@@ -17853,6 +17857,31 @@ sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett de
             && str_contains($m, 'CREATE TABLE IF NOT EXISTS ovn_tomt_sett (')
             && str_contains($m, '  PRIMARY KEY (tomt_id, member_id)');
     })());
+// ── «Glemt aa stemple ut» bak en bryter ─────────────────────────────────
+//
+// Eieren, 13. september 2026: «jeg vil ha bryter til aa skru av glemte aa
+// stemple for medlemmene. Og den skal og skrus av.»
+//
+// Feltet lot medlemmet rette oekta selv. Naa staar det bak en bryter i
+// ⊙ Synlighet, og migrasjon 181 setter den av fra start — ellers ville den
+// vaert paa til noen husket aa trykke.
+//
+// Maalt i nettleseren, 390 px: med bryteren av staar «Glemt aa stemple ut»
+// ikke paa Min side; slaas den paa, staar den der igjen.
+sjekk('«Glemt å stemple ut» staar bak bryteren',
+    str_contains($sida, "        const si = this.bryterPaa('glemtstempling')\n          ? (this.state.stempling || {}).siste : null;"));
+sjekk('… og migrasjon 181 setter den av fra start',
+    (static function (): bool {
+        $m = (string) @file_get_contents(dirname(__DIR__) . '/db/migrations/181_glemt_stempling_av.sql');
+        // INSERT IGNORE og ikke REPLACE: har noen slaatt den paa med vilje,
+        // skal ikke en ny kjoering slaa den av igjen.
+        return str_contains($m, "INSERT IGNORE INTO content_blocks (nokkel, verdi) VALUES ('Vis/glemtstempling', 'nei');");
+    })());
+// Veien er ikke stengt: «Feil tid — si fra» i ruta ved utstempling staar,
+// uansett hva bryteren staar paa.
+sjekk('… mens «Feil tid — si fra» staar uansett',
+    str_contains($sida, '<button type="button" onClick="{{ utstFeil }}" style="{{ utstFeilStil }}">Feil tid — si fra</button>'));
+
 // ── Ruta ved utstempling ────────────────────────────────────────────────
 //
 // Eieren, 13. september 2026: «naar medlemmene stempler seg ut, er det mulig

@@ -8307,6 +8307,12 @@ sjekk('ingen tekst lover tre uker lenger',
     && !preg_match('~oppbevar\w*[^.]{0,40}tre uker~iu', $fbFil));
 
 if (DB::harTabell('notification_templates')) {
+    // Kanalen: e-post, ikke SMS. Eieren, 13. september 2026: «Bare e-post»
+    // — SMS koster penger per melding. Den har gaatt paa e-post hele tiden
+    // fordi SMS ikke er satt opp, men det skal ikke avhenge av det.
+    // Migrasjon 178.
+    sjekk('«ferdig brent» gaar paa e-post',
+        (string) DB::verdi("SELECT kanal FROM notification_templates WHERE navn = 'ferdig_brent'") === 'epost');
     $fb = (string) DB::verdi("SELECT tekst FROM notification_templates WHERE navn = 'ferdig_brent'");
     sjekk('malen i basen sier to uker',
         $fb === '' || (str_contains($fb, 'to uker') && !str_contains($fb, 'tre uker')),
@@ -10194,6 +10200,29 @@ sjekk('datoraden staar paa én linje paa stor skjerm',
     && str_contains($sidaG, '      flex: 0 1 110px !important;'));
 // Under 760 px skal knappene fremdeles bryte — ellers staar «Slett dato»
 // utenfor ramma paa en telefon.
+// ── «Ubetalt»-kortet fører dit de ubetalte står ────────────────────────
+//
+// Eieren, 13. september 2026: «naar jeg trykker paa ubetalt kortet (i kortet
+// staar det kr 7090 3 kursavgifter) men jeg faar ikke opp hvem som er
+// ubetalt, dette maa jeg ha tilbake slik det var».
+//
+// Kortet pekte paa OEkonomi. Den skjermen viser betalinger som FINNES, og en
+// ubetalt kursavgift har ingen betaling — han kom til en liste uten dem han
+// kom for aa se.
+//
+// Lista finnes i Kassa: «Ikke betalt», bygget av skylderKort() av de samme
+// tallene kortet teller, med alle tre slagene og knappene som gjor opp.
+//
+// Maalt i nettleseren: kortet sa «kr. 14 560,- · 3 kursavgifter · 3
+// medlemmer», og etter trykket sto lista «IKKE BETALT · 6 ubetalte ·
+// kr. 14 560,- utestaaende» — samme sum.
+sjekk('«Ubetalt»-kortet gaar til Kassa, ikke til OEkonomi',
+    str_contains($sidaG, "                     () => this.gaaAdmin('adminuttak', {})),"));
+// Lista staar i Kassa, og regnestykket ett sted — se skylderKort().
+sjekk('… og lista den fører til staar der',
+    str_contains($sidaG, 'value="{{ ovSkylderVis }}"')
+    && str_contains($sidaG, '  skylderKort() {'));
+
 // ── Ingen tekst under 12 px, ingen trykkflate under 32 ──────────────────
 //
 // Maalt 13. september 2026 paa atten adminskjermer: 96 tekster under 12 px
@@ -14672,9 +14701,14 @@ sjekk('… og toppteksten i cron.php ogsaa',
     $iToppteksten === $iKoden,
     'koden: ' . implode(', ', $iKoden) . '  ·  toppteksten: ' . implode(', ', $iToppteksten));
 // Den som faktisk henter inn pengene. Sto den ikke her, ble den ikke satt opp.
+// Medlemstrekket sto paa «0 4 * * *» fram til 13. september 2026. Eieren ba
+// da om det «saa ofte jeg kan» — og valgte hver time da han fikk vite at
+// forfallet er en dato og ikke et klokkeslett: oftere enn hver time gir
+// ingenting, og hvert femte minutt ville gitt 288 runder i dognet der hver
+// runde sporr Vipps om hver avtale som venter paa godkjenning.
 sjekk('… og medlemstrekket staar i oppsettet med klokkeslett',
     str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null`')
-    && str_contains($oppsett, '`0 4 * * *`'));
+    && str_contains($oppsett, '`0 * * * *`'));
 // «>/dev/null» paa alle seks. Uten den sender cPanel én tom e-post per
 // kjoring: CGI-utgaven av PHP skriver alltid den tomme linja som avslutter
 // hodeblokka, og cron sender e-post for hvert tegn en jobb skriver.

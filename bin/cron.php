@@ -5,7 +5,7 @@
 //   */5 * * * *   php ~/lissom-app/bin/cron.php betalinger >/dev/null
 //   0 * * * *     php ~/lissom-app/bin/cron.php anmeldelser >/dev/null
 //   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold >/dev/null
-//   0 4 * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
+//   0 * * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
 //   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser >/dev/null
 //   0 8 * * *     php ~/lissom-app/bin/cron.php fortsett >/dev/null
 //

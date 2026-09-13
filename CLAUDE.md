@@ -38,6 +38,10 @@ de ble sagt i.
   Dette står ikke i strid med «gjøres globalt» under: en endring eieren har
   godkjent skal gjøres alle steder den hører hjemme — men en endring han
   ikke har bedt om, skal ikke gjøres noe sted.
+- **Ikke rør kundesiden.** Nettsiden slik en kunde ser den endres bare når
+  eieren ber om det, punkt for punkt. Ser du noe der som burde vært
+  annerledes: si fra, ikke rett det. (Eieren, 13. september 2026: «Du skal
+  ikke røre noe på kundesiden, dette er viktig».)
 - Ikke fjern funksjonalitet uten godkjenning.
 - Ikke endre en arbeidsflyt uten å forklare konsekvensen først.
 - Ikke lag en parallell løsning når funksjonen finnes. Se etter den først.

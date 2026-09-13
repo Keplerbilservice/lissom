@@ -2371,7 +2371,11 @@ window.__resources = {
     }
 
     .lx-ms-selg { order: 99 !important; }
-    #minside-internkurs { order: 98 !important; }
+    /* «#minside-internkurs { order: 98 }» sto her til 13. september 2026.
+       Eieren: «naar det er beskjed eller intern samling, saa er det fint at
+       den vises paa min side forside, under dreieskivene denne uka». Med
+       order 98 laa kortet nest nederst paa telefonen — under alt annet. Naa
+       staar det der det staar i malen, rett under dreieskivene, som paa PC. */
     .lx-bedriftdesk { display: none !important; }
     .lx-bedriftmobil { display: flex !important; }
   }
@@ -34307,6 +34311,29 @@ class Component extends DCLogic {
     return { score: Math.max(0, score), trekk };
   }
 
+  /**
+   * Hvor lenge siden en beskjed kom, med de ordene kortet er tegnet med.
+   *
+   * Utkastet sto med «I dag», «3 dager siden» og «1 uke siden». Det er de
+   * samme formene her, regnet ut av datoen serveren sendte.
+   *
+   * Regnet i nettleseren, ikke paa serveren: «i dag» er i dag der medlemmet
+   * staar. Er datoen uleselig, staar feltet tomt — en tom linje er bedre enn
+   * «Invalid Date» over en beskjed fra verkstedet.
+   */
+  beskjedTid(naar) {
+    const t = new Date(String(naar || '').replace(' ', 'T'));
+    if (isNaN(t.getTime())) return '';
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    const d1 = new Date(t); d1.setHours(0, 0, 0, 0);
+    const dager = Math.round((d0 - d1) / 86400000);
+    if (dager <= 0) return 'I dag';
+    if (dager === 1) return 'I går';
+    if (dager < 7) return dager + ' dager siden';
+    const uker = Math.floor(dager / 7);
+    return uker === 1 ? '1 uke siden' : uker + ' uker siden';
+  }
+
   // Medlemskapsavtalen i Vipps. Kunden godkjenner den én gang, og den
   // belastes hver maaned av cron — ikke av et sidevisning.
   hentMedlemskap() {
@@ -34316,7 +34343,11 @@ class Component extends DCLogic {
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         this._medlemskapHentes = false;
-        if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null });
+        // Beskjedene fra verkstedet folger med det samme kallet. De hoerer
+        // til medlemmet, som planen og avtalen gjor, og et kall til for tre
+        // linjer tekst ville vaert et kall for mye.
+        if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null,
+          beskjedListe: Array.isArray(d.beskjeder) ? d.beskjeder : [] });
       })
       .catch(() => { this._medlemskapHentes = false; });
   }
@@ -52203,11 +52234,28 @@ class Component extends DCLogic {
           fontSize: 13, fontWeight: 700, letterSpacing: '.02em',
         },
       })),
-      // Beskjeder fra verkstedet finnes ikke som endepunkt ennaa, saa lista
-      // er tom paa den ekte siden. Kortet staar derfor bare naar det faktisk
-      // er noe aa lese — et tomt kort med overskrift sier ingenting.
-      harBeskjeder: (this.erPublisert() ? [] : [1, 2, 3]).length > 0,
-      beskjeder: (this.erPublisert() ? [] : [
+      // Beskjedene fra verkstedet.
+      //
+      // Sto tomme paa den ekte siden fram til 13. september 2026: kortet
+      // fantes, men det var ikke noe endepunkt aa hente fra. Eieren: «paa min
+      // side, saa ser det ut til at beskjeder til medlemmene ikke vises».
+      //
+      // Naa lagrer api/admin/beskjed.php hver beskjed til medlemmene, og
+      // api/medlemskap.php sender de fem siste seks ukene tilbake. Kortet
+      // staar fortsatt bare naar det er noe aa lese — et tomt kort med
+      // overskrift sier ingenting.
+      harBeskjeder: (this.erPublisert()
+        ? (this.state.beskjedListe || []) : [1, 2, 3]).length > 0,
+      beskjeder: (this.erPublisert()
+        ? (this.state.beskjedListe || []).map((b, i) => ({
+            tittel: b.tittel,
+            tekst: b.tekst,
+            tid: this.beskjedTid(b.naar),
+            // Den oeverste er den nyeste. Den gule kanten peker paa den som
+            // er verdt aa lese foerst, slik den gjor i utkastet.
+            ny: i === 0,
+          }))
+        : [
         { tittel: 'Ovnen går natt til torsdag', tid: 'I dag', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med.', ny: true },
         { tittel: 'Ny leire på lager', tid: '3 dager siden', tekst: 'Grå stengods 2 er tilbake. Ligger under trappa.' },
         { tittel: 'Åpen dag 6. september', tid: '1 uke siden', tekst: 'Verkstedet er åpent for publikum 11–16. Medlemmer kan gjerne stå på stand.' },

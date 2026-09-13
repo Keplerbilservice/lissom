@@ -17744,24 +17744,37 @@ sjekk('… og slettes for godt, etter et spoersmaal',
 // paa telefon), kortet kommer med «Tømt av … · i dag hh:mm», pulserer for
 // den som ikke har sett det, og slutter naar «Sett» trykkes — ogsaa etter
 // ny lasting.
-sjekk('Ovn er tømt: pille paa Min side og kalenderen, kort med «Sett» som pulserer til det er sett',
-    substr_count($mkSida, '<button type="button" class="ms-ovn" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>') === 1
-    && substr_count($mkSida, '<button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>') === 1
-    && substr_count($mkSida, '<sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ false }}">') === 2
+// 13. september 2026: «jeg vil utvide til, en pille råbrann satt og en pille
+// glassurbrann satt … statusen skal vises i samme kortet som ovnen tømt».
+// GO paa skissen: de tre pillene inne i kortet, statusen (siste trykk)
+// oeverst i det samme kortet, paa Min side og kalenderen. Maalt i Chrome.
+sjekk('Ovnkortet: tre piller i kortet paa Min side og kalenderen, statusen oeverst, «Sett» som pulserer til det er sett',
+    substr_count($mkSida, '<button type="button" onClick="{{ ovnRaabrannNaa }}" style="{{ ovnPilleStil }}">Råbrann satt</button>') === 2
+    && substr_count($mkSida, '<button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>') === 2
+    && substr_count($mkSida, '<button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>') === 2
+    && !str_contains($mkSida, 'class="ms-ovn"')
+    && substr_count($mkSida, '<sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">') === 2
+    && substr_count($mkSida, '<h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ ovnTittel }}</h3>') === 2
     && substr_count($mkSida, '<button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>') === 2
+    && str_contains($mkSida, "    const TITTEL = { tomt: 'Ovnen er tømt', raabrann: 'Råbrann er satt', glasurbrann: 'Glasurbrann er satt' };")
+    && str_contains($mkSida, "      ovnLinje: o ? (slag === 'tomt' ? 'Tømt av ' : 'Satt av ') + (o.av || 'et medlem') + ' · ' + dag + ' ' + klokke : '',")
     && str_contains($mkSida, "      ovnKortKlasse: usett ? 'lx-ovn-puls' : '',")
-    && str_contains($mkSida, "      ovnLinje: o ? 'Tømt av ' + (o.av || 'et medlem') + ' · ' + dag + ' ' + klokke : '',")
-    && str_contains($mkSida, "    .ms-pillerad > *:not(.ms-verksted):not(.ms-hjem):not(.ms-ovn) { display: none !important; }")
     && str_contains($mkSida, "  .lx-ovn-puls { animation: lx-ovn-puls 1.6s ease-in-out infinite; }")
     && str_contains($mkSida, "            if (erMinside) this.hentOvn();")
     && str_contains($mkSida, "      ...(side === 'adminkalender' ? (this.hentOvn(), this.ovnVals()) : {}),"));
+sjekk('… api/ovn.php tar imot raabrann og glasurbrann som slag, og migrasjon 179 legger til kolonnen',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "const SLAG = ['tomt', 'raabrann', 'glasurbrann'];")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "if (in_array(\$handling, SLAG, true)) {")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "        'slag' => in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt',")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/179_ovnkortet_raabrann_glasurbrann.sql'),
+        "    ADD COLUMN IF NOT EXISTS slag VARCHAR(24) NOT NULL DEFAULT 'tomt'"));
 sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett det; migrasjon 171 lager tabellene',
     (static function (): bool {
         $a = (string) file_get_contents(dirname(__DIR__) . '/api/ovn.php');
         $m = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/171_ovnen_er_tomt.sql');
         return str_contains($a, "          WHERE created_at >= UTC_TIMESTAMP() - INTERVAL 24 HOUR")
             && str_contains($a, "        'SELECT 1 FROM ovn_tomt_sett WHERE tomt_id = :t AND member_id = :m',")
-            && str_contains($a, "if (\$handling === 'tomt') {\n    \$id = DB::settInn('ovn_tomt', [")
+            && str_contains($a, "    \$id = DB::settInn('ovn_tomt', \$rad);")
             && substr_count($a, "'INSERT IGNORE INTO ovn_tomt_sett (tomt_id, member_id) VALUES (:t, :m)',") === 2
             && str_contains($a, "\$medlem = krev_aktivt_medlem();")
             && str_contains($m, 'CREATE TABLE IF NOT EXISTS ovn_tomt (')

@@ -1,15 +1,19 @@
 <?php
 /**
- * «Ovn er tømt».
+ * Ovnkortet: «Ovn er tømt», «Råbrann satt», «Glasurbrann satt».
  *
  * Eieren, 12. september 2026: medlemmene vil ha en knapp paa Min side som
  * sier at ovnen er toemt, og de andre skal se det — med en pulserende
  * markering — til de selv har trykket «Sett». Etter 24 timer er det borte
  * uansett. Admin har samme knapp paa kalenderoversikten.
+ * 13. september: to piller til, raabrann satt og glasurbrann satt, i samme
+ * kort. Det siste trykket er statusen — én om gangen.
  *
- *   GET                    siste toemming det siste doegnet, og om jeg har sett den
- *   POST handling=tomt     ovnen er toemt naa (av meg)
- *   POST handling=sett     jeg har sett den siste toemmingen
+ *   GET                        siste status det siste doegnet, og om jeg har sett den
+ *   POST handling=tomt         ovnen er toemt naa (av meg)
+ *   POST handling=raabrann     raabrann er satt (av meg)
+ *   POST handling=glasurbrann  glasurbrann er satt (av meg)
+ *   POST handling=sett         jeg har sett den siste statusen
  *
  * Medlemmer og admin. Alt svarer med det samme bildet som GET, saa skjermen
  * alltid viser det som staar i basen.
@@ -25,6 +29,9 @@ $medlemId = (int) $medlem['id'];
 // Foer migrasjon 171 er kjoert finnes ikke tabellene. Da er det ingen
 // toemming aa vise, og knappen sier fra naar den trykkes.
 $klar = DB::harTabell('ovn_tomt') && DB::harTabell('ovn_tomt_sett');
+// Slaget kom med migrasjon 179. Foer den er kjoert er alt «tomt».
+$harSlag = $klar && DB::harKolonne('ovn_tomt', 'slag');
+const SLAG = ['tomt', 'raabrann', 'glasurbrann'];
 
 /**
  * Siste toemming det siste doegnet — eller null.
@@ -32,12 +39,12 @@ $klar = DB::harTabell('ovn_tomt') && DB::harTabell('ovn_tomt_sett');
  * Doegnet regnes fra basens klokke, som gaar i UTC (app/bootstrap.php), saa
  * «24 timer» er 24 timer uansett sommertid.
  */
-$siste = static function () use ($klar, $medlemId): ?array {
+$siste = static function () use ($klar, $harSlag, $medlemId): ?array {
     if (!$klar) {
         return null;
     }
     $r = DB::en(
-        'SELECT id, navn, created_at FROM ovn_tomt
+        'SELECT id, navn, created_at' . ($harSlag ? ', slag' : '') . ' FROM ovn_tomt
           WHERE created_at >= UTC_TIMESTAMP() - INTERVAL 24 HOUR
           ORDER BY id DESC LIMIT 1'
     );
@@ -50,6 +57,7 @@ $siste = static function () use ($klar, $medlemId): ?array {
     );
     return [
         'id'   => (int) $r['id'],
+        'slag' => in_array((string) ($r['slag'] ?? ''), SLAG, true) ? (string) $r['slag'] : 'tomt',
         'av'   => (string) $r['navn'],
         // Sekunder siden epoken. Nettleseren skriver «i dag 14:20» selv, i
         // sin egen tidssone — basen lagrer UTC.
@@ -71,17 +79,24 @@ if (!$klar) {
 
 $handling = Foresporsel::tekst('handling');
 
-if ($handling === 'tomt') {
-    $id = DB::settInn('ovn_tomt', [
+if (in_array($handling, SLAG, true)) {
+    if ($handling !== 'tomt' && !$harSlag) {
+        Svar::feil('«' . ($handling === 'raabrann' ? 'Råbrann' : 'Glasurbrann') . ' satt» er ikke satt opp ennå. Kjør oppdateringen av databasen først.');
+    }
+    $rad = [
         'member_id' => $medlemId,
         'navn'      => mb_substr(trim((string) ($medlem['navn'] ?? '')), 0, 191) ?: 'et medlem',
-    ]);
-    // Den som toemte har sett det.
+    ];
+    if ($harSlag) {
+        $rad['slag'] = $handling;
+    }
+    $id = DB::settInn('ovn_tomt', $rad);
+    // Den som trykket har sett det.
     DB::kjor(
         'INSERT IGNORE INTO ovn_tomt_sett (tomt_id, member_id) VALUES (:t, :m)',
         ['t' => $id, 'm' => $medlemId]
     );
-    revider('ovn_tomt', 'member', $medlemId, ['tomt' => $id]);
+    revider('ovn_' . $handling, 'member', $medlemId, ['tomt' => $id]);
     Svar::ok(['klar' => true, 'tomt' => $siste()]);
 }
 

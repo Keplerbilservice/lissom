@@ -1462,6 +1462,34 @@ window.__resources = {
      som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
      si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
      spalter, saa hele menyen faar plass uten aa rulle. */
+  /* Radhandlingene i admin: piller, ikke understreka lenker.
+
+     Eieren har sagt det to ganger — 6. september 2026: «ingen link», og
+     «jeg vil ha samme pille som resten, kan du ikke lagre dette». Det staar i
+     arbeidsreglene, men 108 knapper i admin var fortsatt understreka tekst:
+     Rediger, Slett, Endre, Flytt, Betaling, Avbryt, Lukk og resten.
+
+     Maalt i nettleseren: 15 av 38 adminskjermer hadde slike.
+
+     Én klasse i stedet for aa skrive om 53 ulike stilstrenger. Den maa veie
+     tyngre enn stilen paa knappen selv, derfor «!important» — samme grep som
+     adminmenyen bruker. Teksten er den samme; det er formen som endres. */
+  .lx-radpille {
+    appearance: none !important;
+    text-decoration: none !important;
+    /* Samme maal som alle andre piller. Det ligger ett felles i «--type-chip»,
+       og vakta «pillene har ett felles maal» passer paa at ingen bruker et
+       annet. */
+    padding: 6px 12px !important;
+    border-radius: var(--radius-pill) !important;
+    border: 1px solid var(--border-subtle) !important;
+    background: var(--surface-card) !important;
+    font: var(--type-chip) !important;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .lx-radpille:hover { border-color: var(--lissom-brown) !important; }
+
   /* Bryterne i medlemssalg-kortet: pilla til hoeyre for teksten.
      Eieren, 13. september 2026: «Pillene maa staa paa hoeyre side av teksten
      saa de kommer rett ovenfor hverandre».
@@ -6174,10 +6202,10 @@ window.__resources = {
               <sc-if value="{{ b.sperret }}" hint-placeholder-val="{{ false }}">
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">Trukket tilbake</span>
               </sc-if>
-              <button type="button" onClick="{{ b.rett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+              <button class="lx-radpille" type="button" onClick="{{ b.rett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
               <button type="button" onClick="{{ b.sperr }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ b.sperrTekst }}</button>
               <sc-if value="{{ b.harPerson }}" hint-placeholder-val="{{ true }}">
-                <button type="button" onClick="{{ b.sePerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Se personen →</button>
+                <button class="lx-radpille" type="button" onClick="{{ b.sePerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Se personen →</button>
               </sc-if>
             </div>
           </sc-for>
@@ -6230,7 +6258,7 @@ window.__resources = {
                     <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ pl.antall }}</div>
                   </div>
                   <div style="display: flex; gap: var(--space-3); align-items: center;">
-                    <button type="button" onClick="{{ pl.apne }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se siden →</button>
+                    <button class="lx-radpille" type="button" onClick="{{ pl.apne }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se siden →</button>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ pl.lagre }}" hint-size="auto,36px">{{ pl.knapp }}</x-import>
                   </div>
                 </div>
@@ -6246,7 +6274,7 @@ window.__resources = {
                   <div style="font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Cone til grader</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ coneAntall }} — faste verdier, kan ikke endres</div>
                 </div>
-                <button type="button" onClick="{{ goPlakatCone }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se siden →</button>
+                <button class="lx-radpille" type="button" onClick="{{ goPlakatCone }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se siden →</button>
               </div>
               <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--text-body); max-width: 62ch;">Orton-conene er fysiske verdier vi styrer ovnene etter. De ligger fast med vilje — en tabell som kan skrives om fra et tekstfelt er ikke en tabell å brenne etter.</p>
             </div>
@@ -7249,7 +7277,7 @@ window.__resources = {
                panelet under staar i to spalter. -->
           <div style="max-width: 980px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
             <div>
-              <button type="button" onClick="{{ fbTilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">← Alle kurs</button>
+              <button class="lx-radpille" type="button" onClick="{{ fbTilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">← Alle kurs</button>
               <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading); margin-top: var(--space-2);">{{ fbKursTittel }}</div>
               <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ fbKursNaar }} · {{ fbKursTall }}</div>
             </div>
@@ -7328,7 +7356,7 @@ window.__resources = {
                         <sc-if value="{{ d.utenKontakt }}" hint-placeholder-val="{{ false }}">
                           <span style="font-size: var(--text-xs); color: var(--text-muted);">Verken e-post eller telefon. Må kontaktes på annen måte.</span>
                         </sc-if>
-                        <button type="button" onClick="{{ d.veksleHentet }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ d.hentetTekst }}</button>
+                        <button class="lx-radpille" type="button" onClick="{{ d.veksleHentet }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ d.hentetTekst }}</button>
                       </div>
                     </div>
 
@@ -7725,7 +7753,7 @@ window.__resources = {
                     <span style="{{ bd.underStil }}">{{ bd.under }}</span>
                   </div>
                 </button>
-                <button type="button" onClick="{{ bd.tilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 0 0; text-align: left; font-size: 10px; font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 2px;">Sett tilbake</button>
+                <button class="lx-radpille" type="button" onClick="{{ bd.tilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 0 0; text-align: left; font-size: 10px; font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 2px;">Sett tilbake</button>
               </div>
             </sc-for>
             <sc-if value="{{ klBdTom }}" hint-placeholder-val="{{ true }}">
@@ -8341,7 +8369,7 @@ window.__resources = {
                         <input type="time" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" style="{{ klRDagTidStil }}">
                         <span style="color: var(--text-muted);">–</span>
                         <input type="time" value="{{ sa.til }}" onChange="{{ sa.settTil }}" style="{{ klRDagTidStil }}">
-                        <button type="button" onClick="{{ sa.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
+                        <button class="lx-radpille" type="button" onClick="{{ sa.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
                       </div>
                       <input value="{{ sa.overskrift }}" onChange="{{ sa.settOverskrift }}" placeholder="Overskrift, f.eks. «Sentrering og dreiing»" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                       <div style="height: 8px;"></div>
@@ -8452,9 +8480,9 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klRLagre }}" hint-size="auto,44px">Lagre</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klRAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
               <div style="margin-left: auto; display: flex; gap: var(--space-4);">
-                <button type="button" onClick="{{ klRDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Deltakere</button>
+                <button class="lx-radpille" type="button" onClick="{{ klRDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Deltakere</button>
                 <sc-if value="{{ klRKanKurs }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ klRFull }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Full redigering →</button>
+                  <button class="lx-radpille" type="button" onClick="{{ klRFull }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Full redigering →</button>
                 </sc-if>
               </div>
             </div>
@@ -8499,7 +8527,7 @@ window.__resources = {
               <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-4);">
                 <div style="padding: var(--space-3) var(--space-4); background: var(--clay-100); display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Deltakere</span>
-                  <button type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">Åpne Påmeldte →</button>
+                  <button class="lx-radpille" type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">Åpne Påmeldte →</button>
                 </div>
                 <sc-for list="{{ klValgt.deltakere }}" as="p" hint-placeholder-count="3">
                   <button type="button" onClick="{{ p.velg }}" onMouseDown="{{ p.ned }}" style="{{ p.radStil }}">
@@ -8551,7 +8579,7 @@ window.__resources = {
                 <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-4);">
                   <div style="padding: var(--space-3) var(--space-4); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
                     <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
-                    <button type="button" onClick="{{ klTildelNesteValgt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Tildel plass til førstemann →</button>
+                    <button class="lx-radpille" type="button" onClick="{{ klTildelNesteValgt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Tildel plass til førstemann →</button>
                   </div>
                   <sc-for list="{{ klValgt.venteliste }}" as="v" hint-placeholder-count="2">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: 9px var(--space-4); border-top: 1px solid var(--border-subtle);">
@@ -8684,7 +8712,7 @@ window.__resources = {
             <sc-if value="{{ klBSvarSendtVis }}" hint-placeholder-val="{{ false }}">
               <div style="background: var(--sage-100, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--text-heading); margin-bottom: var(--space-3);">{{ klBSvarSendtTekst }}</div>
             </sc-if>
-            <button type="button" onClick="{{ klGaBeskjeder }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Åpne alle beskjeder →</button>
+            <button class="lx-radpille" type="button" onClick="{{ klGaBeskjeder }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Åpne alle beskjeder →</button>
           </div>
         </div>
       </sc-if>
@@ -8822,7 +8850,7 @@ window.__resources = {
               </div>
             </sc-if>
             <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
-              <button type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Se full påmelding i Påmeldte →</button>
+              <button class="lx-radpille" type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Se full påmelding i Påmeldte →</button>
             </div>
           </div>
         </div>
@@ -8905,12 +8933,12 @@ window.__resources = {
                          fram til eieren sa fra, 11. september 2026: «Jeg
                          vil kun ha slett og angre sletting». To ord i
                          chatten, ikke tre. -->
-                    <button type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Slett</button>
+                    <button class="lx-radpille" type="button" onClick="{{ c.angre }}" title="Slett meldingen" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Slett</button>
                   </sc-if>
                   <!-- Slettingen er myk: teksten staar i basen, og denne
                        henter den tilbake. -->
                   <sc-if value="{{ c.kanHente }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ c.hent }}" title="Angre sletting" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre sletting</button>
+                    <button class="lx-radpille" type="button" onClick="{{ c.hent }}" title="Angre sletting" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px;">Angre sletting</button>
                   </sc-if>
                   </div>
                 </sc-for>
@@ -9021,7 +9049,7 @@ window.__resources = {
                    kalender, og synk med mobilen», og han valgte «Behold kortet
                    Synk med mobilen». Knappen foelger med hit, saa maaten aa
                    stoppe en lekket adresse paa ikke forsvinner med lenka. -->
-              <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+              <button class="lx-radpille" type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
             </div>
           </div>
         </div>
@@ -9557,8 +9585,8 @@ window.__resources = {
                   </sc-if>
 
                   <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
-                    <button type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
-                    <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
+                    <button class="lx-radpille" type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
+                    <button class="lx-radpille" type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
                   </div>
                 </div>
               </sc-if>
@@ -9732,7 +9760,7 @@ window.__resources = {
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px;">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kursholdere</span>
-            <button type="button" onClick="{{ aRegistrerTimer }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Registrer timer</button>
+            <button class="lx-radpille" type="button" onClick="{{ aRegistrerTimer }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Registrer timer</button>
           </div>
           <sc-for list="{{ kursholdere }}" as="h" hint-placeholder-count="3">
             <div onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
@@ -9749,7 +9777,7 @@ window.__resources = {
                   <span style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); background: var(--lissom-yellow); border-radius: var(--radius-pill); padding: 2px 10px; white-space: nowrap;">Standard</span>
                 </sc-if>
                 <sc-if value="{{ h.kanBliStandard }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ h.settStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Gjør til standard</button>
+                  <button class="lx-radpille" type="button" onClick="{{ h.settStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Gjør til standard</button>
                 </sc-if>
                 <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</span>
               </div>
@@ -9781,7 +9809,7 @@ window.__resources = {
                   </sc-if>
                 </button>
                 <sc-if value="{{ khHarSignatur }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ khFjernSignatur }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Fjern</button>
+                  <button class="lx-radpille" type="button" onClick="{{ khFjernSignatur }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Fjern</button>
                 </sc-if>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">Står tomt: beviset skrives uten signatur.</span>
               </div>
@@ -9794,9 +9822,9 @@ window.__resources = {
               </div>
               <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khLagre }}" hint-size="auto,38px">{{ khKnapp }}</x-import>
-                <button type="button" onClick="{{ khLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                <button class="lx-radpille" type="button" onClick="{{ khLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
                 <sc-if value="{{ khKanSlette }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ khSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Sluttet</button>
+                  <button class="lx-radpille" type="button" onClick="{{ khSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Sluttet</button>
                 </sc-if>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khBeskjed }}</span>
               </div>
@@ -9831,7 +9859,7 @@ window.__resources = {
               </div>
               <div style="display: flex; gap: var(--space-3); align-items: center;">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khTimeLagre }}" hint-size="auto,38px">Før timene</x-import>
-                <button type="button" onClick="{{ khTimeLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Lukk</button>
+                <button class="lx-radpille" type="button" onClick="{{ khTimeLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Lukk</button>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khTimeBeskjed }}</span>
               </div>
             </div>
@@ -9841,7 +9869,7 @@ window.__resources = {
                 <span style="font-weight: 600; color: var(--text-heading);">{{ t.hvem }}</span>
                 <span>{{ t.timer }} t</span>
                 <span>{{ t.hva }}</span>
-                <button type="button" onClick="{{ t.slett }}" style="margin-left: auto; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Fjern</button>
+                <button class="lx-radpille" type="button" onClick="{{ t.slett }}" style="margin-left: auto; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Fjern</button>
               </div>
             </sc-for>
           </sc-if>
@@ -10286,7 +10314,7 @@ window.__resources = {
                      salg som gjores opp, bare med flere sedler paa disken. -->
                 <sc-if value="{{ utKanDele }}" hint-placeholder-val="{{ true }}">
                   <div style="margin-top: calc(var(--space-4) * -1);">
-                    <button type="button" onClick="{{ utDeltBytt }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ utDeltByttTekst }}</button>
+                    <button class="lx-radpille" type="button" onClick="{{ utDeltBytt }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ utDeltByttTekst }}</button>
                   </div>
                 </sc-if>
 
@@ -11302,7 +11330,7 @@ window.__resources = {
                     <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ plVelgBilde }}" hint-size="auto,38px">{{ plBildeKnapp }}</x-import>
                       <sc-if value="{{ plHarBilde }}" hint-placeholder-val="{{ false }}">
-                        <button type="button" onClick="{{ plFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                        <button class="lx-radpille" type="button" onClick="{{ plFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
                       </sc-if>
                     </div>
                   </div>
@@ -11567,7 +11595,7 @@ window.__resources = {
                  rulle helt ned for aa komme deg ut igjen — eller ut av hele
                  skjermen, og da var du ikke lenger i kurslista. -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
-              <button type="button" onClick="{{ kTilbakeListe }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">← Tilbake til kurslista</button>
+              <button class="lx-radpille" type="button" onClick="{{ kTilbakeListe }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">← Tilbake til kurslista</button>
               <!-- Datoene til kurset staar lenger nede paa skjermen, i lista
                    som alt finnes. Sto det ikke noe om det her, var det ikke
                    til aa vite at de var der. -->
@@ -11755,7 +11783,7 @@ window.__resources = {
                       <input id="k-nivaatekst" value="{{ kNivaaTekst }}" onChange="{{ settKNivaaTekst }}" placeholder="For alle" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                       <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                         <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kNivaaMal }}</span>
-                        <button type="button" onClick="{{ kNivaaAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                        <button class="lx-radpille" type="button" onClick="{{ kNivaaAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
                       </div>
                     </div>
 
@@ -11780,7 +11808,7 @@ window.__resources = {
                     <div>
                       <label for="k-medhjem" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette får du med hjem</label>
                       <textarea id="k-medhjem" value="{{ kMedHjem }}" onChange="{{ settKMedHjem }}" rows="3" placeholder="{{ kMedHjemMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
-                      <button type="button" onClick="{{ kMedHjemAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                      <button class="lx-radpille" type="button" onClick="{{ kMedHjemAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
                     </div>
 
                     <div>
@@ -11792,10 +11820,10 @@ window.__resources = {
                       <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                         <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdFerdigHjelp }}</span>
                         <sc-if value="{{ kStdFerdigHarHent }}" hint-placeholder-val="{{ true }}">
-                          <button type="button" onClick="{{ kStdFerdigHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                          <button class="lx-radpille" type="button" onClick="{{ kStdFerdigHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
                         </sc-if>
                         <sc-if value="{{ kStdFerdigHarLagre }}" hint-placeholder-val="{{ false }}">
-                          <button type="button" onClick="{{ kStdFerdigLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdFerdigLagreTekst }}</button>
+                          <button class="lx-radpille" type="button" onClick="{{ kStdFerdigLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdFerdigLagreTekst }}</button>
                         </sc-if>
                       </div>
                     </div>
@@ -11825,10 +11853,10 @@ window.__resources = {
                   <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdPunkterHjelp }}</span>
                     <sc-if value="{{ kStdPunkterHarHent }}" hint-placeholder-val="{{ true }}">
-                      <button type="button" onClick="{{ kStdPunkterHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                      <button class="lx-radpille" type="button" onClick="{{ kStdPunkterHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
                     </sc-if>
                     <sc-if value="{{ kStdPunkterHarLagre }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ kStdPunkterLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdPunkterLagreTekst }}</button>
+                      <button class="lx-radpille" type="button" onClick="{{ kStdPunkterLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdPunkterLagreTekst }}</button>
                     </sc-if>
                   </div>
                 </div>
@@ -11842,10 +11870,10 @@ window.__resources = {
                   <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdPraktiskHjelp }}</span>
                     <sc-if value="{{ kStdPraktiskHarHent }}" hint-placeholder-val="{{ true }}">
-                      <button type="button" onClick="{{ kStdPraktiskHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                      <button class="lx-radpille" type="button" onClick="{{ kStdPraktiskHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
                     </sc-if>
                     <sc-if value="{{ kStdPraktiskHarLagre }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ kStdPraktiskLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdPraktiskLagreTekst }}</button>
+                      <button class="lx-radpille" type="button" onClick="{{ kStdPraktiskLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdPraktiskLagreTekst }}</button>
                     </sc-if>
                   </div>
                 </div>
@@ -11961,7 +11989,7 @@ window.__resources = {
                         <input type="time" value="{{ d.fra }}" onChange="{{ d.settFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 8px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                         <span style="color: var(--text-muted);">–</span>
                         <input type="time" value="{{ d.til }}" onChange="{{ d.settTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 8px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                        <button type="button" onClick="{{ d.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
+                        <button class="lx-radpille" type="button" onClick="{{ d.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
                       </div>
                     </sc-for>
                   </div>
@@ -12001,7 +12029,7 @@ window.__resources = {
                         <sc-for list="{{ kSerier }}" as="r" hint-placeholder-count="2">
                           <div style="display: flex; align-items: center; gap: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px;">
                             <span style="flex: 1; font-size: var(--text-sm); color: var(--text-heading);">{{ r.tekst }}</span>
-                            <button type="button" onClick="{{ r.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
+                            <button class="lx-radpille" type="button" onClick="{{ r.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
                           </div>
                         </sc-for>
                       </div>
@@ -12147,7 +12175,7 @@ window.__resources = {
                      fjerne datoene i stedet. Har noen meldt seg paa, avlyses
                      kurset framfor aa forsvinne — det staar i bekreftelsen. -->
                 <sc-if value="{{ kKanSlette }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ kSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett kurset</button>
+                  <button class="lx-radpille" type="button" onClick="{{ kSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett kurset</button>
                 </sc-if>
               </div>
             </div>
@@ -12314,11 +12342,11 @@ window.__resources = {
                 </div>
                 <div style="font-size: var(--text-sm); color: var(--text-body); white-space: nowrap;">{{ k.neste }}</div>
                 <div style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
-                  <button type="button" onClick="{{ k.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
+                  <button class="lx-radpille" type="button" onClick="{{ k.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <sc-if value="{{ k.harDato }}" hint-placeholder-val="{{ true }}">
-                    <button type="button" onClick="{{ k.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
+                    <button class="lx-radpille" type="button" onClick="{{ k.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
                   </sc-if>
-                  <button type="button" onClick="{{ k.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
+                  <button class="lx-radpille" type="button" onClick="{{ k.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
                 </div>
               </div>
             </sc-for>
@@ -12337,14 +12365,14 @@ window.__resources = {
                 <!-- Veien tilbake til alle datoene. Uten den staar man igjen
                      med ett kurs og ingen maate aa se resten paa. -->
                 <sc-if value="{{ datoerForEttKurs }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ lukkDatoerFor }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 5px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Vis alle datoer</button>
+                  <button class="lx-radpille" type="button" onClick="{{ lukkDatoerFor }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 5px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Vis alle datoer</button>
                 </sc-if>
               </div>
               <sc-if value="{{ harValgteOkter }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                   <span style="font-size: var(--text-xs); color: var(--text-body);">{{ valgteOkterTekst }}</span>
                   <button type="button" onClick="{{ slettValgteOkter }}" style="appearance: none; border: 1px solid var(--terracotta-500); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); white-space: nowrap;">Slett de valgte</button>
-                  <button type="button" onClick="{{ nullstillValgteOkter }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern valget</button>
+                  <button class="lx-radpille" type="button" onClick="{{ nullstillValgteOkter }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern valget</button>
                 </div>
               </sc-if>
             </div>
@@ -12375,14 +12403,14 @@ window.__resources = {
                      «Rediger · Legg til deltaker · Paameldte · Slett dato»
                      bredere enn kortet, og «Slett dato» sto utenfor ramma. -->
                 <div style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
-                  <button type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
-                  <button type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
-                  <button type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
                   <!-- Tar bort datoen, ikke kurset. Gjentar kurset seg, blir
                        det mange datoer, og de kunne bare avlyses — de ble
                        staaende i lista uansett. Har noen meldt seg paa,
                        avlyses datoen framfor aa forsvinne. -->
-                  <button type="button" onClick="{{ o.slettDato }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm); white-space: nowrap;">Slett dato</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.slettDato }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm); white-space: nowrap;">Slett dato</button>
                 </div>
 
                 <!-- Legg til en deltaker, her, paa denne datoen.
@@ -12396,7 +12424,7 @@ window.__resources = {
                   <div style="flex: 1 1 100%; padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
                     <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
                       <strong style="font-size: var(--text-sm); color: var(--text-heading);">Legg til deltaker · {{ o.naar }}</strong>
-                      <button type="button" onClick="{{ mpLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+                      <button class="lx-radpille" type="button" onClick="{{ mpLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-4);">
                       <div>
@@ -12468,7 +12496,7 @@ window.__resources = {
                     <div style="display: flex; gap: var(--space-3); align-items: center; margin-left: auto;">
                       <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ oktBeskjed }}</span>
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ o.lagreDato }}" hint-size="auto,36px">Lagre</x-import>
-                      <button type="button" onClick="{{ o.avbrytRediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Avbryt</button>
+                      <button class="lx-radpille" type="button" onClick="{{ o.avbrytRediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Avbryt</button>
                     </div>
 
                     <!-- Pris og informasjon som gjelder bare denne datoen.
@@ -12514,7 +12542,7 @@ window.__resources = {
                               <input type="time" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" style="{{ oktFeltStil }}">
                               <span style="color: var(--text-muted);">–</span>
                               <input type="time" value="{{ sa.til }}" onChange="{{ sa.settTil }}" style="{{ oktFeltStil }}">
-                              <button type="button" onClick="{{ sa.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
+                              <button class="lx-radpille" type="button" onClick="{{ sa.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
                             </div>
                             <input value="{{ sa.overskrift }}" onChange="{{ sa.settOverskrift }}" placeholder="Overskrift, f.eks. «Sentrering og dreiing»" style="{{ oktBredtFeltStil }}">
                             <div style="height: 8px;"></div>
@@ -13106,8 +13134,8 @@ window.__resources = {
                   <div style="display: flex; gap: 6px; align-items: center;">
                     <button type="button" onClick="{{ q.opp }}" aria-label="Flytt opp" style="{{ q.pilStil }}">↑</button>
                     <button type="button" onClick="{{ q.ned }}" aria-label="Flytt ned" style="{{ q.pilStil }}">↓</button>
-                    <button type="button" onClick="{{ q.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ q.redigerTekst }}</button>
-                    <button type="button" onClick="{{ q.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                    <button class="lx-radpille" type="button" onClick="{{ q.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ q.redigerTekst }}</button>
+                    <button class="lx-radpille" type="button" onClick="{{ q.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                   </div>
                 </div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3); text-wrap: pretty;">{{ q.detalj }}</div>
@@ -13167,7 +13195,7 @@ window.__resources = {
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Spørsmålet er i bruk" checked="{{ q.rAktiv }}" on-change="{{ q.vekslAktiv }}" hint-size="100%,28px"></x-import>
                     <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ q.lagre }}" hint-size="auto,38px">Lagre spørsmålet</x-import>
-                      <button type="button" onClick="{{ q.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+                      <button class="lx-radpille" type="button" onClick="{{ q.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
                     </div>
                   </div>
                 </sc-if>
@@ -13180,7 +13208,7 @@ window.__resources = {
                           <input value="{{ sv.tekst }}" onChange="{{ sv.settTekst }}" style="flex: 1 1 180px; min-width: 0; FELT">
                           <button type="button" onClick="{{ sv.opp }}" aria-label="Flytt opp" style="{{ sv.pilStil }}">↑</button>
                           <button type="button" onClick="{{ sv.ned }}" aria-label="Flytt ned" style="{{ sv.pilStil }}">↓</button>
-                          <button type="button" onClick="{{ sv.lagre }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Lagre</button>
+                          <button class="lx-radpille" type="button" onClick="{{ sv.lagre }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Lagre</button>
                           <button type="button" onClick="{{ sv.slett }}" aria-label="Slett svaret" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
@@ -13471,7 +13499,7 @@ window.__resources = {
                     <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ refVelgBilde }}" hint-size="auto,38px">{{ refBildeKnapp }}</x-import>
                       <sc-if value="{{ refHarFBilde }}" hint-placeholder-val="{{ false }}">
-                        <button type="button" onClick="{{ refFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                        <button class="lx-radpille" type="button" onClick="{{ refFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
                       </sc-if>
                     </div>
                   </div>
@@ -13484,7 +13512,7 @@ window.__resources = {
                     <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ refRedVelgLogo }}" hint-size="auto,38px">{{ refRedLogoKnapp }}</x-import>
                       <sc-if value="{{ refRedHarLogo }}" hint-placeholder-val="{{ false }}">
-                        <button type="button" onClick="{{ refRedFjernLogo }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern logoen</button>
+                        <button class="lx-radpille" type="button" onClick="{{ refRedFjernLogo }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern logoen</button>
                       </sc-if>
                     </div>
                   </div>
@@ -13504,7 +13532,7 @@ window.__resources = {
 
               <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ refLagre }}" hint-size="auto,44px">Lagre</x-import>
-                <button type="button" onClick="{{ refAvbryt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                <button class="lx-radpille" type="button" onClick="{{ refAvbryt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ refBeskjed }}</span>
               </div>
             </div>
@@ -13530,8 +13558,8 @@ window.__resources = {
                 <!-- Vis eller skjul uten aa slette. Et skjult kort ligger her
                      med bilde, sitat og rekkefolge i behold. -->
                 <button type="button" onClick="{{ r.veksle }}" style="{{ r.visStil }}">{{ r.visTekst }}</button>
-                <button type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
-                <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Slett</button>
+                <button class="lx-radpille" type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                <button class="lx-radpille" type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Slett</button>
               </div>
             </div>
           </sc-for>
@@ -14092,9 +14120,9 @@ window.__resources = {
                 <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ r.merknad }}</p>
               </sc-if>
               <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-4);">
-                <button type="button" onClick="{{ r.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Endre</button>
-                <button type="button" onClick="{{ r.veksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ r.vekselTekst }}</button>
-                <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                <button class="lx-radpille" type="button" onClick="{{ r.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Endre</button>
+                <button class="lx-radpille" type="button" onClick="{{ r.veksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ r.vekselTekst }}</button>
+                <button class="lx-radpille" type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
               </div>
             </div>
           </sc-for>
@@ -14341,7 +14369,7 @@ window.__resources = {
           <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
             <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty; flex: 1 1 260px;">{{ feOppsummering }}</p>
             <sc-if value="{{ feHarStengt }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ feNullstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Åpne alle igjen</button>
+              <button class="lx-radpille" type="button" onClick="{{ feNullstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Åpne alle igjen</button>
             </sc-if>
           </div>
         </div>
@@ -14555,7 +14583,7 @@ window.__resources = {
             <sc-if value="{{ frHarRapporter }}" hint-placeholder-val="{{ false }}">
               <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="copy" on-click="{{ frKopier }}" hint-size="auto,36px">Kopier alt</x-import>
-                <button type="button" onClick="{{ frLukkAlle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Merk alle som sett</button>
+                <button class="lx-radpille" type="button" onClick="{{ frLukkAlle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Merk alle som sett</button>
               </div>
             </sc-if>
           </div>
@@ -14584,7 +14612,7 @@ window.__resources = {
               <sc-if value="{{ r.harBilde }}" hint-placeholder-val="{{ false }}">
                 <img data-src="{{ r.bilde }}" alt="Skjermbilde fra den som meldte fra" style="{{ r.bildeStil }}">
               </sc-if>
-              <button type="button" onClick="{{ r.lukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sett på</button>
+              <button class="lx-radpille" type="button" onClick="{{ r.lukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sett på</button>
             </div>
           </sc-for>
         </div>
@@ -14981,7 +15009,7 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
               <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Legg til deltaker</h2>
-              <button type="button" onClick="{{ mpLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+              <button class="lx-radpille" type="button" onClick="{{ mpLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 780px;">
@@ -15080,7 +15108,7 @@ window.__resources = {
         <sc-if value="{{ harPameldtFilter }}" hint-placeholder-val="{{ true }}">
           <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5);">
             <span style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Viser: {{ pameldtFilterNavn }}</span>
-            <button type="button" onClick="{{ nullstillFilter }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Vis alle</button>
+            <button class="lx-radpille" type="button" onClick="{{ nullstillFilter }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Vis alle</button>
           </div>
         </sc-if>
 
@@ -15127,16 +15155,16 @@ window.__resources = {
                   <!-- «Marker som betalt» satte en status og ikke noe mer:
                        ingen sum, ingen hvem, ingen naar, og ingen vei tilbake
                        om noen slo inn feil. Her registreres pengene. -->
-                  <button type="button" onClick="{{ p.betaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Betaling</button>
-                  <button type="button" onClick="{{ p.flytt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Flytt</button>
+                  <button class="lx-radpille" type="button" onClick="{{ p.betaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Betaling</button>
+                  <button class="lx-radpille" type="button" onClick="{{ p.flytt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Flytt</button>
                   <!-- Retter antallet, og beloepet.
                        Eieren, 5. september: «jeg har meldt paa 10 personer,
                        saa kom det bare 6 — jeg kan legge til flere, men ikke
                        redigere antall som kom», og «jeg maa kunne overstyre
                        pris ved aa taste inn». Samme moenster som Flytt og
                        Betaling: panelet aapner paa raden. -->
-                  <button type="button" onClick="{{ p.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Endre</button>
-                  <button type="button" onClick="{{ p.avbestill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Avbestill</button>
+                  <button class="lx-radpille" type="button" onClick="{{ p.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Endre</button>
+                  <button class="lx-radpille" type="button" onClick="{{ p.avbestill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Avbestill</button>
                 </div>
               </div>
 
@@ -15173,7 +15201,7 @@ window.__resources = {
                             <span style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ h.annullertTekst }}</span>
                           </sc-if>
                           <sc-if value="{{ h.kanAnnulleres }}" hint-placeholder-val="{{ true }}">
-                            <button type="button" onClick="{{ h.annuller }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Annuller</button>
+                            <button class="lx-radpille" type="button" onClick="{{ h.annuller }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Annuller</button>
                           </sc-if>
                         </div>
                       </sc-for>
@@ -15749,7 +15777,7 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 780px;">
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
               <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Meld inn som medlem</h2>
-              <button type="button" onClick="{{ miLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+              <button class="lx-radpille" type="button" onClick="{{ miLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
             </div>
             <sc-if value="{{ miKjent }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">Personen står i registeret fra før. Kontoen beholdes — historikken og kursbevisene følger med.</p>
@@ -15892,7 +15920,7 @@ window.__resources = {
                 <!-- Beviset bygges av paameldingen. Er navnet stavet feil, eller
                      staar det feil kurs paa arket, maatte det for rettes i basen. -->
                 <sc-if value="{{ h.kanRetteBevis }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+                  <button class="lx-radpille" type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
                   <button type="button" onClick="{{ h.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ h.sperrTekst }}</button>
                 </sc-if>
                 <!-- Paameldingen staar i navnet til en gjest med samme e-post eller
@@ -15992,7 +16020,7 @@ window.__resources = {
                       <sc-for list="{{ personBetalingMaater }}" as="m" hint-placeholder-count="2">
                         <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                       </sc-for>
-                      <button type="button" onClick="{{ vekslPersonBetaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                      <button class="lx-radpille" type="button" onClick="{{ vekslPersonBetaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
                     </div>
                   </div>
                 </sc-if>
@@ -16160,7 +16188,7 @@ window.__resources = {
               </div>
               <div style="display: flex; gap: var(--space-3); margin-left: auto; flex-wrap: wrap;">
                 <sc-if value="{{ d.harKonto }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ d.seMinSide }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Se Min side</button>
+                  <button class="lx-radpille" type="button" onClick="{{ d.seMinSide }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Se Min side</button>
                 </sc-if>
                 <sc-if value="{{ d.utenKonto }}" hint-placeholder-val="{{ false }}">
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">Ingen konto — ser ingenting ennå</span>
@@ -16174,10 +16202,10 @@ window.__resources = {
                 <!-- Retting rett paa raden. Personruta bygges av kontoen, og
                      en kursdeltaker uten konto har ingen. -->
                 <sc-if value="{{ d.kanRetteBevis }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ d.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+                  <button class="lx-radpille" type="button" onClick="{{ d.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
                   <button type="button" onClick="{{ d.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ d.sperrTekst }}</button>
                 </sc-if>
-                <button type="button" onClick="{{ d.meldInn }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Meld inn</button>
+                <button class="lx-radpille" type="button" onClick="{{ d.meldInn }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Meld inn</button>
               </div>
             </div>
           </sc-for>
@@ -16613,8 +16641,8 @@ window.__resources = {
                 <span style="font-size: var(--text-sm); color: var(--text-heading);">{{ k.pameldte }}</span>
                 <!-- Raden foerte til admin og stoppet der. Endre og fjerne
                      maatte gjores i kurslista, som ingen fant. -->
-                <button type="button" onClick="{{ k.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
-                <button type="button" onClick="{{ k.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted);">Slett</button>
+                <button class="lx-radpille" type="button" onClick="{{ k.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                <button class="lx-radpille" type="button" onClick="{{ k.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted);">Slett</button>
               </div>
             </div>
           </sc-for>
@@ -16663,7 +16691,7 @@ window.__resources = {
                   <button type="button" onClick="{{ o.purr }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">{{ o.knapp }}</button>
                 </sc-if>
                 <sc-if value="{{ o.harKontakt }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ o.kontakt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Kontakt</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.kontakt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Kontakt</button>
                 </sc-if>
               </div>
             </div>
@@ -16754,7 +16782,7 @@ window.__resources = {
                   </sc-if>
                   <sc-if value="{{ f.loper }}" hint-placeholder-val="{{ false }}">
                     <div style="margin-top: var(--space-3);">
-                      <button type="button" onClick="{{ f.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avslutt frysen nå</button>
+                      <button class="lx-radpille" type="button" onClick="{{ f.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avslutt frysen nå</button>
                     </div>
                   </sc-if>
                 </div>
@@ -16768,7 +16796,7 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 780px;">
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
               <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Meld inn som medlem</h2>
-              <button type="button" onClick="{{ miLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+              <button class="lx-radpille" type="button" onClick="{{ miLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
             </div>
             <sc-if value="{{ miKjent }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">Personen står i registeret fra før. Kontoen beholdes — historikken og kursbevisene følger med.</p>
@@ -17002,7 +17030,7 @@ window.__resources = {
                   <!-- Beviset bygges av paameldingen. Er navnet stavet feil, eller
                        staar det feil kurs paa arket, maatte det for rettes i basen. -->
                   <sc-if value="{{ h.kanRetteBevis }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+                    <button class="lx-radpille" type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
                     <button type="button" onClick="{{ h.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ h.sperrTekst }}</button>
                   </sc-if>
                   <!-- Paameldingen staar i navnet til en gjest med samme e-post eller
@@ -17090,7 +17118,7 @@ window.__resources = {
                         <sc-for list="{{ personBetalingMaater }}" as="m" hint-placeholder-count="2">
                           <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                         </sc-for>
-                        <button type="button" onClick="{{ vekslPersonBetaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                        <button class="lx-radpille" type="button" onClick="{{ vekslPersonBetaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
                       </div>
                     </div>
                   </sc-if>
@@ -17383,13 +17411,13 @@ window.__resources = {
                 </div>
                 <div style="display: flex; gap: 10px; flex: 0 0 108px;">
                   <sc-if value="{{ m.kanAvslutte }}" hint-placeholder-val="{{ true }}">
-                    <button type="button" onClick="{{ m.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Avslutt</button>
+                    <button class="lx-radpille" type="button" onClick="{{ m.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Avslutt</button>
                   </sc-if>
                   <sc-if value="{{ m.kanGjenapne }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ m.gjenapne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Ta inn igjen</button>
+                    <button class="lx-radpille" type="button" onClick="{{ m.gjenapne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Ta inn igjen</button>
                   </sc-if>
                   <sc-if value="{{ m.kanSlette }}" hint-placeholder-val="{{ true }}">
-                    <button type="button" onClick="{{ m.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
+                    <button class="lx-radpille" type="button" onClick="{{ m.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
                   </sc-if>
                 </div>
               </div>
@@ -17695,7 +17723,7 @@ window.__resources = {
 
             <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ bnLagre }}" hint-size="auto,44px">Lagre banneret</x-import>
-              <button type="button" onClick="{{ bnTilbakestill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Tilbakestill</button>
+              <button class="lx-radpille" type="button" onClick="{{ bnTilbakestill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Tilbakestill</button>
               <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ bnHint }}</span>
             </div>
           </div>
@@ -18024,7 +18052,7 @@ window.__resources = {
                 <div style="display: flex; gap: var(--space-2); align-items: center; margin-left: auto; flex-wrap: wrap;">
                   <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ v.bildeKnapp }}</button>
                   <button type="button" onClick="{{ v.velg }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">Rediger</button>
-                  <button type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                  <button class="lx-radpille" type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                 </div>
               </div>
             </sc-for>
@@ -18398,7 +18426,7 @@ window.__resources = {
                       <textarea value="{{ henvSvar }}" onChange="{{ settHenvSvar }}" rows="3" placeholder="Skriv svaret her — det går som e-post til den som spurte" style="{{ henvFeltStil }}"></textarea>
                       <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ f.sendSvar }}" hint-size="auto,38px">Send svar</x-import>
-                        <button type="button" onClick="{{ f.merk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">{{ f.merkTekst }}</button>
+                        <button class="lx-radpille" type="button" onClick="{{ f.merk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">{{ f.merkTekst }}</button>
                         <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ henvBeskjed }}</span>
                       </div>
                     </div>
@@ -18475,7 +18503,7 @@ window.__resources = {
               <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Oppsett</div>
-                  <button type="button" onClick="{{ nbVisOppsett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ nbOppsettKnapp }}</button>
+                  <button class="lx-radpille" type="button" onClick="{{ nbVisOppsett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ nbOppsettKnapp }}</button>
                 </div>
                 <div style="display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap;">
                   <button type="button" onClick="{{ nbVelgBilde }}" aria-label="{{ nbBildeKnapp }}" style="{{ nbBildeStil }}"></button>
@@ -18495,7 +18523,7 @@ window.__resources = {
                       </div>
                     </div>
                     <sc-if value="{{ nbHarBilde }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ nbFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                      <button class="lx-radpille" type="button" onClick="{{ nbFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
                     </sc-if>
                   </div>
                 </div>
@@ -18978,7 +19006,7 @@ window.__resources = {
                     <div style="display: grid; grid-template-columns: 1.6fr 0.6fr auto; gap: 6px; align-items: center;">
                       <input value="{{ l.navn }}" onChange="{{ l.settNavn }}" placeholder="Råvare" style="box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;">
                       <input value="{{ l.pst }}" onChange="{{ l.settPst }}" placeholder="%" style="box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;">
-                      <button type="button" onClick="{{ l.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
+                      <button class="lx-radpille" type="button" onClick="{{ l.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
                     </div>
                   </sc-for>
                 </div>
@@ -19004,7 +19032,7 @@ window.__resources = {
                     <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ o.navn }}</div>
                     <div style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-top: 4px;">{{ o.type }}</div>
                   </div>
-                  <button type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px; font-size: var(--text-sm);">
                   <div style="display: flex; gap: var(--space-4);"><span style="color: var(--text-muted); min-width: 92px;">Råvarer</span><span style="color: var(--text-heading);">{{ o.baseTekst }}</span></div>
@@ -19025,7 +19053,7 @@ window.__resources = {
               <sc-for list="{{ fargeValg }}" as="f" hint-placeholder-count="1">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--text-sm); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px;">
                   <span style="color: var(--text-heading);">{{ f.navn }} · {{ f.pst }}</span>
-                  <button type="button" onClick="{{ f.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
+                  <button class="lx-radpille" type="button" onClick="{{ f.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
                 </div>
               </sc-for>
             </div>
@@ -19452,9 +19480,9 @@ window.__resources = {
                     <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.under }}</div>
                   </div>
                   <div style="display: flex; gap: var(--space-3);">
-                    <button type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">{{ vstRadKnapp }}</button>
+                    <button class="lx-radpille" type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">{{ vstRadKnapp }}</button>
                     <sc-if value="{{ vstKanSlette }}" hint-placeholder-val="{{ true }}">
-                      <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--terracotta-600); font: var(--type-body-sm); font-weight: 700;">Ta bort</button>
+                      <button class="lx-radpille" type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--terracotta-600); font: var(--type-body-sm); font-weight: 700;">Ta bort</button>
                     </sc-if>
                   </div>
                 </div>
@@ -19710,7 +19738,7 @@ window.__resources = {
                      en avlyst dato, en kunde som ringer. -->
                 <sc-if value="{{ b.kanRefundere }}" hint-placeholder-val="{{ true }}">
                   <div style="padding: 0 var(--space-6) var(--space-4);">
-                    <button type="button" onClick="{{ b.refApne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Refunder …</button>
+                    <button class="lx-radpille" type="button" onClick="{{ b.refApne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Refunder …</button>
                   </div>
                 </sc-if>
                 <sc-if value="{{ b.refApen }}" hint-placeholder-val="{{ false }}">
@@ -19720,7 +19748,7 @@ window.__resources = {
                     <p style="margin: 8px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ b.refHjelp }}</p>
                     <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                       <button type="button" onClick="{{ b.refUtfor }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--terracotta-500); background: var(--terracotta-500); color: var(--clay-50); border-radius: var(--radius-pill); padding: 8px 18px; font: var(--type-body-sm); font-weight: 700;">Refunder</button>
-                      <button type="button" onClick="{{ b.refLukk }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); padding: 8px 4px; font: var(--type-body-sm);">Avbryt</button>
+                      <button class="lx-radpille" type="button" onClick="{{ b.refLukk }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); padding: 8px 4px; font: var(--type-body-sm);">Avbryt</button>
                     </div>
                   </div>
                 </sc-if>
@@ -20245,7 +20273,7 @@ window.__resources = {
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ u.publiser }}" hint-size="auto,40px">Publiser nå</x-import>
                     </sc-if>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ u.godkjenn }}" hint-size="auto,40px">{{ u.godkjennTekst }}</x-import>
-                    <button type="button" onClick="{{ u.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                    <button class="lx-radpille" type="button" onClick="{{ u.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                   </div>
                 </div>
               </div>
@@ -20274,7 +20302,7 @@ window.__resources = {
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ g.publiser }}" hint-size="auto,40px">Publiser</x-import>
                     </sc-if>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ g.bruk }}" hint-size="auto,40px">{{ g.brukKnapp }}</x-import>
-                    <button type="button" onClick="{{ g.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                    <button class="lx-radpille" type="button" onClick="{{ g.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                   </div>
                 </div>
               </div>
@@ -20346,7 +20374,7 @@ window.__resources = {
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkArtBildeVelg }}" hint-size="auto,36px">{{ mkArtBildeKnapp }}</x-import>
                   <sc-if value="{{ mkArtBildeHar }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ mkArtBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
+                    <button class="lx-radpille" type="button" onClick="{{ mkArtBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
                   </sc-if>
                 </div>
               </div>
@@ -20379,7 +20407,7 @@ window.__resources = {
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-5);">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
                 <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Rediger artikkel</h2>
-                <button type="button" onClick="{{ abLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+                <button class="lx-radpille" type="button" onClick="{{ abLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
               </div>
               <div style="display: flex; flex-direction: column; gap: var(--space-4);">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
@@ -20421,7 +20449,7 @@ window.__resources = {
                       <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ abVelgBilde }}" hint-size="auto,38px">{{ abBildeKnapp }}</x-import>
                         <sc-if value="{{ abHarBilde }}" hint-placeholder-val="{{ false }}">
-                          <button type="button" onClick="{{ abFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                          <button class="lx-radpille" type="button" onClick="{{ abFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
                         </sc-if>
                       </div>
                     </div>
@@ -20493,7 +20521,7 @@ window.__resources = {
                             <input id="{{ ab.altId }}" value="{{ ab.alt }}" onChange="{{ ab.settAlt }}" placeholder="La stå tom hvis bildet bare er pynt" style="{{ abFeltStil }}">
                           </div>
                         </div>
-                        <button type="button" onClick="{{ ab.fjern }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern</button>
+                        <button class="lx-radpille" type="button" onClick="{{ ab.fjern }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern</button>
                       </div>
                     </sc-for>
                   </div>
@@ -20533,12 +20561,12 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ a.veksle }}" hint-size="auto,40px">{{ a.knapp }}</x-import>
                   <!-- «Publiser» var det foerste stedet man saa hvordan
                        artikkelen ble. Naa kan den aapnes for den er ute. -->
-                  <button type="button" onClick="{{ a.seDen }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ a.seTekst }}</button>
+                  <button class="lx-radpille" type="button" onClick="{{ a.seDen }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ a.seTekst }}</button>
                   <sc-if value="{{ a.kanPlanlegge }}" hint-placeholder-val="{{ true }}">
-                    <button type="button" onClick="{{ a.planlegg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ a.planTekst }}</button>
+                    <button class="lx-radpille" type="button" onClick="{{ a.planlegg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ a.planTekst }}</button>
                   </sc-if>
-                  <button type="button" onClick="{{ a.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
-                  <button type="button" onClick="{{ a.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                  <button class="lx-radpille" type="button" onClick="{{ a.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                  <button class="lx-radpille" type="button" onClick="{{ a.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                 </div>
 
                 <sc-if value="{{ a.planApen }}" hint-placeholder-val="{{ false }}">
@@ -20546,7 +20574,7 @@ window.__resources = {
                     <label for="{{ a.planId }}" style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">Går ut</label>
                     <input id="{{ a.planId }}" type="datetime-local" value="{{ a.planTid }}" onChange="{{ a.settPlanTid }}" style="box-sizing: border-box; padding: 9px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font: var(--type-body-sm); background: var(--surface-page); color: var(--text-heading);">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ a.lagrePlan }}" hint-size="auto,38px">Sett tidspunkt</x-import>
-                    <button type="button" onClick="{{ a.avbrytPlan }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                    <button class="lx-radpille" type="button" onClick="{{ a.avbrytPlan }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">Norsk tid. Artikkelen går ut av seg selv.</span>
                   </div>
                 </sc-if>
@@ -20576,7 +20604,7 @@ window.__resources = {
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkBrevBildeVelg }}" hint-size="auto,36px">{{ mkBrevBildeKnapp }}</x-import>
                   <sc-if value="{{ mkBrevBildeHar }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ mkBrevBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
+                    <button class="lx-radpille" type="button" onClick="{{ mkBrevBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
                   </sc-if>
                 </div>
               </div>
@@ -20621,7 +20649,7 @@ window.__resources = {
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkSosBildeVelg }}" hint-size="auto,36px">{{ mkSosBildeKnapp }}</x-import>
                   <sc-if value="{{ mkSosBildeHar }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ mkSosBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
+                    <button class="lx-radpille" type="button" onClick="{{ mkSosBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
                   </sc-if>
                 </div>
               </div>
@@ -21549,7 +21577,7 @@ window.__resources = {
       <!-- Soeket sendes med norsk som spraak, saa «keramikk» virker. Ordene
            i biblioteket er likevel skrevet paa engelsk, og et engelsk ord
            treffer derfor bredere enn oversettelsen av det. -->
-      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Søk på norsk eller engelsk. Engelske ord treffer bredest — <em>pottery</em>, <em>ceramics</em>, <em>clay</em>. <button type="button" onClick="{{ ssSjekk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk tilkoblingen</button> · <button type="button" onClick="{{ ssKoble }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ ssKobleTekst }}</button></p>
+      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Søk på norsk eller engelsk. Engelske ord treffer bredest — <em>pottery</em>, <em>ceramics</em>, <em>clay</em>. <button class="lx-radpille" type="button" onClick="{{ ssSjekk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk tilkoblingen</button> · <button class="lx-radpille" type="button" onClick="{{ ssKoble }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ ssKobleTekst }}</button></p>
       <!-- Shutterstock avviser tilkoblingen om returadressen ikke staar
            registrert paa appen, og da havner du paa feilsida deres uten aa
            vite hvorfor. Derfor staar adressen her foerst. -->
@@ -21572,7 +21600,7 @@ window.__resources = {
         <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-6);">
           <span style="font-size: var(--text-xs); color: var(--text-muted);">Trykk et bilde for å lisensiere og legge det inn. Miniatyrene har vannmerke — det ferdige bildet har ikke.</span>
           <sc-if value="{{ ssFlere }}" hint-placeholder-val="{{ true }}">
-            <button type="button" onClick="{{ ssNeste }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Flere treff</button>
+            <button class="lx-radpille" type="button" onClick="{{ ssNeste }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Flere treff</button>
           </sc-if>
         </div>
       </sc-if>
@@ -21585,7 +21613,7 @@ window.__resources = {
         <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin: var(--space-2) 0 var(--space-6);">
           <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkFokusTekst }}</span>
           <sc-if value="{{ mkKanMidtstille }}" hint-placeholder-val="{{ true }}">
-            <button type="button" onClick="{{ mkMidtstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Midtstill</button>
+            <button class="lx-radpille" type="button" onClick="{{ mkMidtstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Midtstill</button>
           </sc-if>
         </div>
       </sc-if>
@@ -21622,7 +21650,7 @@ window.__resources = {
       <!-- Het «Bruk standardbildet i stedet». Paa bilderute 2 og 3 finnes det
            ikke noe standardbilde, og da lovet knappen noe den ikke gjor. Den
            tommer ruta — det er alt den gjor, og det er det den sier naa. -->
-      <button type="button" onClick="{{ mkFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet fra ruta</button>
+      <button class="lx-radpille" type="button" onClick="{{ mkFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet fra ruta</button>
     </div>
   </div>
 </sc-if>
@@ -21660,7 +21688,7 @@ window.__resources = {
               <button type="button" onClick="{{ l.pluss }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 26px; height: 26px; color: var(--text-heading); font-size: 15px;">+</button>
             </div>
             <div class="lx-kurvsum" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-left: auto; text-align: right; white-space: nowrap;">{{ l.linjesum }}</div>
-            <button type="button" onClick="{{ l.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); text-decoration: underline; text-underline-offset: 2px;">Fjern</button>
+            <button class="lx-radpille" type="button" onClick="{{ l.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); text-decoration: underline; text-underline-offset: 2px;">Fjern</button>
           </div>
         </sc-for>
       </div>
@@ -21684,7 +21712,7 @@ window.__resources = {
       <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Åpne Vipps-appen på telefonen din og godkjenn betalingen til Lissom Keramikk &amp; Håndverk AS.</p>
       <div style="display: flex; flex-direction: column; gap: var(--space-3);">
         <button type="button" onClick="{{ godkjennVipps }}" style="appearance: none; cursor: pointer; border: none; background: #FF5B24; color: #fff; border-radius: var(--radius-pill); padding: 14px 20px; font: var(--type-body); font-weight: 700;">Godkjenn i Vipps</button>
-        <button type="button" onClick="{{ avbrytVipps }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+        <button class="lx-radpille" type="button" onClick="{{ avbrytVipps }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
       </div>
       <p style="margin: var(--space-5) 0 0; font-size: 11px; color: var(--text-muted);">Demo — i den ferdige løsningen åpnes ekte Vipps</p>
     </div>
@@ -21710,7 +21738,7 @@ window.__resources = {
         </div>
         <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="shopping-bag" on-click="{{ piLeggIKurv }}" hint-size="auto,52px">Legg i kurv</x-import>
-          <button type="button" onClick="{{ piLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+          <button class="lx-radpille" type="button" onClick="{{ piLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
         </div>
       </div>
     </div>
@@ -21759,7 +21787,7 @@ window.__resources = {
         <textarea value="{{ nkBeskrivelse }}" onChange="{{ settNkBeskrivelse }}" placeholder="Kort beskrivelse av kurset" rows="{{ 3 }}" style="{{ npTekstStil }}"></textarea>
         <div style="display: flex; align-items: center; gap: var(--space-4);">
           <button type="button" onClick="{{ nkLeggUt }}" style="{{ nkKnappStil }}">Legg ut kurset</button>
-          <button type="button" onClick="{{ nkLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+          <button class="lx-radpille" type="button" onClick="{{ nkLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
         </div>
       </div>
     </div>
@@ -21811,7 +21839,7 @@ window.__resources = {
         </label>
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-1);">
           <button type="button" onClick="{{ npLeggUt }}" style="{{ npKnappStil }}">{{ npHandling }}</button>
-          <button type="button" onClick="{{ npLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+          <button class="lx-radpille" type="button" onClick="{{ npLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
         </div>
       </div>
     </div>
@@ -22003,7 +22031,7 @@ window.__resources = {
               <input type="time" value="{{ dg.fra }}" onChange="{{ dg.settFra }}" style="{{ ndDagFeltStil }}">
               <span style="color: var(--text-muted);">–</span>
               <input type="time" value="{{ dg.til }}" onChange="{{ dg.settTil }}" style="{{ ndDagFeltStil }}">
-              <button type="button" onClick="{{ dg.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
+              <button class="lx-radpille" type="button" onClick="{{ dg.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
             </div>
           </sc-for>
           <button type="button" onClick="{{ ndLeggTilDag }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Legg til dag</button>
@@ -22027,7 +22055,7 @@ window.__resources = {
              raden. Uten den ser en fastlimt rad ut som slutten paa dialogen. -->
         <div style="position: sticky; bottom: calc(var(--space-6) * -1); z-index: 1; display: flex; align-items: center; gap: var(--space-4); margin: var(--space-2) calc(var(--space-6) * -1) calc(var(--space-6) * -1); padding: var(--space-4) var(--space-6) var(--space-6); background: var(--surface-card); border-top: 1px solid var(--border-subtle); box-shadow: 0 -10px 14px -10px rgba(45,20,12,.18);">
           <button type="button" onClick="{{ ndLeggTil }}" style="{{ ndLeggTilStil }}">{{ ndLeggTilTekst }}</button>
-          <button type="button" onClick="{{ ndLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ferdig</button>
+          <button class="lx-radpille" type="button" onClick="{{ ndLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ferdig</button>
         </div>
       </div>
     </div>
@@ -22087,7 +22115,7 @@ window.__resources = {
 
         <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="refresh-cw" on-click="{{ vsPaaNytt }}" hint-size="auto,44px">Sjekk på nytt</x-import>
-          <button type="button" onClick="{{ vsLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+          <button class="lx-radpille" type="button" onClick="{{ vsLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
         </div>
       </div>
     </div>
@@ -22136,7 +22164,7 @@ window.__resources = {
           <div style="display: flex; align-items: center; gap: var(--space-4);">
             <button type="button" onClick="{{ kvNeste }}" style="{{ kvNesteStil }}">{{ kvNesteLabel }}</button>
             <sc-if value="{{ kvHarTilbake }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ kvTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Tilbake</button>
+              <button class="lx-radpille" type="button" onClick="{{ kvTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Tilbake</button>
             </sc-if>
           </div>
         </sc-if>
@@ -22147,7 +22175,7 @@ window.__resources = {
           <p style="margin: var(--space-2) 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 52ch; text-wrap: pretty;">{{ kvTekst }}</p>
           <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ kvGaTil }}" hint-size="auto,44px">Les mer</x-import>
-            <button type="button" onClick="{{ kvNullstill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Start på nytt</button>
+            <button class="lx-radpille" type="button" onClick="{{ kvNullstill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Start på nytt</button>
           </div>
           <!-- Naermeste alternativer. Sto det bare ett forslag, hadde den som
                ikke kjente seg igjen ingen vei videre enn aa begynne paa nytt. -->
@@ -22190,7 +22218,7 @@ window.__resources = {
       <sc-if value="{{ fmHarBilde }}" hint-placeholder-val="{{ false }}">
         <div style="display: flex; flex-direction: column; gap: var(--space-2);">
           <img data-src="{{ fmBilde }}" alt="Skjermbildet du har valgt" style="{{ fmBildeStil }}">
-          <button type="button" onClick="{{ fmFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+          <button class="lx-radpille" type="button" onClick="{{ fmFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
         </div>
       </sc-if>
       <sc-if value="{{ fmIkkeBilde }}" hint-placeholder-val="{{ true }}">
@@ -22286,7 +22314,7 @@ window.__resources = {
   <div style="display: flex; flex-direction: column; gap: var(--space-4); max-height: min(62vh, 520px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
     <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ detaljUnder }}</div>
     <sc-if value="{{ detaljTilbake }}" hint-placeholder-val="{{ true }}">
-      <button type="button" onClick="{{ gaaTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; margin: -10px -8px; text-align: left; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">← Tilbake til listen</button>
+      <button class="lx-radpille" type="button" onClick="{{ gaaTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; margin: -10px -8px; text-align: left; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">← Tilbake til listen</button>
     </sc-if>
     <sc-if value="{{ detaljLese }}" hint-placeholder-val="{{ true }}">
       <div style="max-height: 52vh; overflow-y: auto; display: flex; flex-direction: column;">
@@ -22372,7 +22400,7 @@ window.__resources = {
       <p style="margin: 0; font-size: var(--text-sm); font-weight: 600; line-height: 1.6;">Det er lagt ut en ny utgave av siden. Last den inn på nytt for å få med det nyeste.</p>
       <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
         <button type="button" onClick="{{ lastNyUtgave }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-brown); color: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Last inn på nytt</button>
-        <button type="button" onClick="{{ avvisNyUtgave }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--lissom-brown); padding: 9px 12px; font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Ikke nå</button>
+        <button class="lx-radpille" type="button" onClick="{{ avvisNyUtgave }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--lissom-brown); padding: 9px 12px; font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Ikke nå</button>
       </div>
     </div>
   </div>
@@ -30345,13 +30373,18 @@ class Component extends DCLogic {
           && framover.every(x => stengte.indexOf(x) !== -1);
         return {
           uke: 'Uke ' + this.ukeNummer(dager[0]),
+          // Pille, ikke understreka tekst. Eieren, 6. september 2026: «ingen
+          // link», «jeg vil ha samme pille som resten». Ukene er smalere enn
+          // radpillene ellers — de staar i margen ved siden av dagene — men
+          // formen er den samme.
           ukeStil: {
             appearance: 'none', cursor: framover.length ? 'pointer' : 'default',
-            border: 'none', background: 'transparent', padding: '0 6px',
+            padding: '4px 9px', borderRadius: 'var(--radius-pill)',
             font: 'var(--type-body-sm)', fontSize: 11, whiteSpace: 'nowrap',
+            border: '1px solid var(--border-subtle)',
+            background: framover.length ? 'var(--surface-card)' : 'transparent',
             color: framover.length ? 'var(--lissom-brown)' : 'var(--text-muted)',
-            textDecoration: framover.length ? 'underline' : 'none',
-            textUnderlineOffset: 3, opacity: framover.length ? 1 : .45,
+            opacity: framover.length ? 1 : .45,
           },
           vekslUke: () => {
             if (!framover.length) return;
@@ -45201,10 +45234,13 @@ class Component extends DCLogic {
           nrEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
                        color: 'var(--text-heading)', marginBottom: 6 },
           nrFeltStil: felt,
+          // Pille, som resten av radhandlingene. Se «.lx-radpille».
           nrLenkeStil: {
-            appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
-            color: 'var(--lissom-brown)', font: 'var(--type-body-sm)', fontWeight: 600,
-            textDecoration: 'underline', textUnderlineOffset: 3, whiteSpace: 'nowrap',
+            appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+            padding: '6px 12px', font: 'var(--type-chip)',
+            borderRadius: 'var(--radius-pill)',
+            border: '1px solid var(--border-subtle)', background: 'var(--surface-card)',
+            color: 'var(--lissom-brown)',
           },
 
           nrHarValgt: !!valgt,
@@ -53488,10 +53524,11 @@ class Component extends DCLogic {
             // referansekundene, saa slipper jeg aa slette de».
             visTekst: k.aktiv ? 'Skjul' : 'Vis',
             visStil: {
-              appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
-              font: 'var(--type-body-sm)', fontWeight: 600,
+              appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+              padding: '6px 12px', font: 'var(--type-chip)',
+              borderRadius: 'var(--radius-pill)',
+              border: '1px solid var(--border-subtle)', background: 'var(--surface-card)',
               color: k.aktiv ? 'var(--text-muted)' : 'var(--sage-600, #4C6B4F)',
-              textDecoration: 'underline', textUnderlineOffset: 3,
             },
             veksle: () => this.referanseKall({ handling: 'veksle', id: k.id, paa: k.aktiv ? 'nei' : 'ja' }),
             opp: () => this.referanseKall({ handling: 'flytt', id: k.id, retning: 'opp' }),

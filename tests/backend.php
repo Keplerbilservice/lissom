@@ -13846,8 +13846,15 @@ sjekk('… og ingen piller staar igjen med det gamle maalet',
     'alle 14 stedene er endret');
 // Tolv naa: «+ N til» i menyskuffen paa telefon kom til 7. september, og
 // bruker det samme maalet som resten.
+//
+// Fjorten fra 13. september 2026: radhandlingene i admin ble piller, og to av
+// dem stiles fra JS — «Velg noen andre» i ny registrering, og «Skjul»/«Vis»
+// paa referansekundene. Resten gaar gjennom klassen «.lx-radpille», som
+// bruker det samme maalet.
 sjekk('… og de som har skrift bruker pillemaalet',
-    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 12);
+    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 14
+    && str_contains($utenKomm, '    padding: 6px 12px !important;')
+    && str_contains($utenKomm, '    font: var(--type-chip) !important;'));
 
 // 3. Bindingspilla sa hele setningen i versaler og ble en gul flate over to
 //    linjer. Naboene sier ett ord — «BETALT», «AKTIV» — og datoen under.

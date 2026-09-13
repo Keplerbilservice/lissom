@@ -29,6 +29,7 @@ $ut = static fn(array $r, bool $eier): array => [
     'tekst'     => $r['beskrivelse'],
     'laget'     => 'Laget av ' . ($r['produsent'] ?: 'et medlem'),
     'bilde'     => $r['bilde'] ? '/api/bilde.php?salg=' . rawurlencode((string) $r['bilde']) : null,
+    'fokus'     => (string) ($r['fokus'] ?? '50% 50%'),
     'pris'      => Booking::kroner((int) $r['pris_ore']),
     'kategori'  => $r['kategori'] ?: 'Annet',
     'antall'    => (int) $r['antall'],
@@ -160,7 +161,24 @@ $auto = (string) DB::verdi(
     "SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/autogodkjenn'"
 ) === 'ja';
 
-$id = DB::settInn('member_sales', [
+// Hvilken del av bildet som skal ligge i midten av kvadratet.
+//
+// Medlemmet peker paa bildet i skjemaet. Foer 13. september 2026 gikk valget
+// ingen steder: det ble lagret lokalt og sendt til api/admin/bilder.php, som
+// krever admin. Naa foelger det med produktet.
+//
+// Bare de ni punktene skjemaet tilbyr godtas. Et fritt felt her ville endt
+// som ren CSS i «background-position» paa nettsida.
+$fokusValg = ['0% 0%', '50% 0%', '100% 0%', '0% 50%', '50% 50%', '100% 50%', '0% 100%', '50% 100%', '100% 100%'];
+$fokus = trim(Foresporsel::tekst('fokus'));
+if (!in_array($fokus, $fokusValg, true)) {
+    $fokus = '50% 50%';
+}
+
+// Koden rulles ut for eieren trykker «Kjoer oppdateringer». I det vinduet
+// finnes ikke kolonna, og en innsending med den ville feilet helt — da kunne
+// ingen legge ut noe. Fokuspunktet er det som kan vente.
+$rad = [
     'member_id'   => (int) $medlem['id'],
     'tittel'      => $tittel,
     'produsent'   => $produsent,
@@ -172,7 +190,12 @@ $id = DB::settInn('member_sales', [
     'vippsnummer' => $vipps,
     'kontakt'     => $kontakt,
     'status'      => $auto ? 'publisert' : 'til_godkjenning',
-]);
+];
+if (DB::harKolonne('member_sales', 'fokus')) {
+    $rad['fokus'] = $fokus;
+}
+
+$id = DB::settInn('member_sales', $rad);
 
 // Verkstedet skal vite at det ligger noe og venter — eller at noe gikk rett
 // ut. Gaar varen ut uten at noen har sett paa den, er det MER verdt aa faa

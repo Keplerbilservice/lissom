@@ -6720,7 +6720,11 @@ sjekk('… og ventelistepilla er like stor som kurspilla',
     && substr_count($sida, "display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }),") === 3);
 sjekk('… med den samme skrifta i navnet og i det under',
     substr_count($sida, "navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },") === 3
-    && substr_count($sida, "fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },") === 3);
+    // Sto paa 10 px til 13. september 2026. Maalt i nettleseren: 48 tekster
+    // paa 10 px i admin, og typemerket paa kurspilla — «Event», «Workshop»,
+    // «Kurs» — var 30 av dem. Eieren ba om at de skulle opp. De tre pillene
+    // fulgte hverandre opp, slik denne vakta er til for.
+    && substr_count($sida, "fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },") === 3);
 // Bare venstrekanten skiller dem, saa man ser hvilken liste man er i.
 sjekk('… men ventelista beholder den terrakotta venstrekanten',
     str_contains($sida, "borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)'"));
@@ -17080,6 +17084,42 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
+
+echo "\n== Medlemmet ser bildet det legger ut ==\n";
+// Eieren, 13. september 2026, med bilde fra en telefon: «Et aarsmedlem
+// forsoeker aa legge ut et produkt for salg. Jeg forsoekte aa laste opp et
+// bilde men det ser saann ut.» Ruta viste filnavnet «IMG_4637.jpeg» og ikke
+// bildet — og rett under sto «Fokuspunkt: velg hvilken del av bildet som
+// skal ligge i midten».
+$msApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
+$mig177 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/177_fokuspunkt_paa_medlemsvarer.sql');
+sjekk('bildet vises i ruta, ikke filnavnet',
+    str_contains($vis172, "        this._skUrl = URL.createObjectURL(f);")
+    && str_contains($vis172, 'background-image: {{ skBildeCss }}; background-size: cover; background-position: {{ skFokus }};'),
+    'maalt paa 390 px: bildet fyller ruta');
+// Punktene ligger over bildet, saa hun peker paa det hun ser.
+sjekk('… og de ni punktene ligger oppaa bildet',
+    str_contains($vis172, 'position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);'),
+    'maalt: ni knapper paa 85 x 85 px');
+// Valget gikk ingen steder for: settFokus() lagrer gjennom
+// api/admin/bilder.php, som krever admin.
+sjekk('… og valget foelger med produktet',
+    str_contains($vis172, "        skjema.append('fokus', s.skFokus || '50% 50%');")
+    && str_contains($msApi, "\$fokus = trim(Foresporsel::tekst('fokus'));")
+    && str_contains($mig177, "  ADD COLUMN fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;"),
+    'maalt: «Nede venstre» ble lagret som «0% 100%»');
+// Et fritt felt her ville endt som ren CSS i «background-position» ute.
+sjekk('… og bare de ni punktene godtas',
+    str_contains($msApi, "if (!in_array(\$fokus, \$fokusValg, true)) {"));
+// Koden rulles ut for migrasjonen kjores. Uten sperra ville ingen faatt lagt
+// ut noe i det vinduet.
+sjekk('… og innsending virker ogsaa for migrasjonen er kjort',
+    str_contains($msApi, "if (DB::harKolonne('member_sales', 'fokus')) {"));
+// Butikken skal vise utsnittet medlemmet valgte, ikke midten.
+sjekk('… og butikken bruker det valgte utsnittet',
+    str_contains($vis172, "          fokus: g.fokus || this.fokusFor(g.bilde || ''),")
+    && str_contains($vis172, "          spFokus: p.fokus || this.fokusFor(p.bilde || ''),"));
 
 echo "\n== Verkstedet faar e-post ved ny paamelding ==\n";
 // Eieren, 13. september 2026: «Det er varsel paa ny paamelding, men det er

@@ -1995,6 +1995,28 @@ window.__resources = {
     .lx-malliste[data-apen="false"] { display: none !important; }
   }
 
+  /* Datolista paa stor skjerm: én linje per dato.
+     ------------------------------------------------------------------
+     «Alle kurs» var 6 850 px paa en 1280 px skjerm — 7,6 skjermer. Det var
+     ikke antallet datoer alene: hver rad var 128 px hoey fordi de fire
+     knappene (Rediger · Legg til deltaker · Paameldte · Slett dato) ikke
+     fikk plass ved siden av teksten og brot ned paa egen linje. 950 px
+     rad, og barna krevde 18 + 200 + 150 + 124 + 351 pluss luft.
+
+     Navnet og plassbaren gir fra seg litt fra 760 px og opp, saa alt staar
+     paa én linje: raden blir 84 px. Under 760 px roeres ingenting — der
+     SKAL knappene bryte, ellers staar «Slett dato» utenfor ramma.
+
+     Maalt 13. september 2026: 6 850 -> 5 662 px, 7,6 -> 6,3 skjermer.
+     Ingenting er skjult; begge listene staar aapne som foer. */
+  @media (min-width: 760px) {
+    .lx-adminaside ~ main .lx-datonavn { flex: 1 1 140px !important; }
+    .lx-adminaside ~ main .lx-datobar {
+      flex: 0 1 110px !important;
+      min-width: 80px !important;
+    }
+  }
+
   /* Verkstedet paa telefon: kortene to og to.
      ------------------------------------------------------------------
      Atten kort under hverandre ble 4 723 px paa en 390 px skjerm — 5,6

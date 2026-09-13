@@ -10158,6 +10158,24 @@ sjekk('mal-lista ligger bak en pille paa telefonen',
 sjekk('… og lukker seg naar en mal er valgt',
     str_contains($sidaG, "velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),"));
 
+// ── Datolista paa stor skjerm ──────────────────────────────────────────
+//
+// «Alle kurs» var 6 850 px paa en 1280 px skjerm — 7,6 skjermer. Det var
+// ikke antallet datoer alene: hver rad var 128 px hoey fordi de fire
+// knappene ikke fikk plass ved siden av teksten og brot ned paa egen
+// linje. Navnet og plassbaren gir fra seg litt fra 760 px og opp.
+//
+// Maalt: 6 850 -> 5 662 px, 7,6 -> 6,3 skjermer, rad 128 -> 84 px.
+// Ingenting er skjult; begge listene staar aapne som foer.
+sjekk('datoraden staar paa én linje paa stor skjerm',
+    str_contains($sidaG, '    .lx-adminaside ~ main .lx-datonavn { flex: 1 1 140px !important; }')
+    && str_contains($sidaG, '      flex: 0 1 110px !important;'));
+// Under 760 px skal knappene fremdeles bryte — ellers staar «Slett dato»
+// utenfor ramma paa en telefon.
+sjekk('… mens de fremdeles bryter paa telefonen',
+    str_contains($sidaG, '  @media (min-width: 760px) {
+    .lx-adminaside ~ main .lx-datonavn'));
+
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //
 // Kalenderen viste ingenting om penger. Man maatte aapne okta for aa se om

@@ -12876,7 +12876,6 @@ window.__resources = {
                    slaatt paa. Da matte hver enkelt kunde av for aa faa bort
                    feltet — og paa igjen etterpaa. Naa er det én bryter. -->
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Referansekunder på forsiden" checked="{{ bryterReferanser }}" on-change="{{ vekslReferanser }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Medlemskolleksjonen i butikken" checked="{{ visMedlemskolleksjon }}" on-change="{{ vekslMedlemskolleksjon }}" hint-size="100%,28px"></x-import>
             </div>
           </div>
 
@@ -18024,7 +18023,6 @@ window.__resources = {
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Synlighet på nettsiden</div>
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Banneret under toppbildet" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Medlemskolleksjonen i butikken" checked="{{ visMedlemskolleksjon }}" on-change="{{ vekslMedlemskolleksjon }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Kursvelger-lenken på forsiden" checked="{{ visKursvelger }}" on-change="{{ vekslKursvelger }}" hint-size="100%,28px"></x-import>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Gjelder forsiden og butikken med en gang du skrur av eller på.</p>
             </div>
@@ -24870,6 +24868,19 @@ class Component extends DCLogic {
   // seksjonen.
   bryterPaa(nokkel) {
     return (this.state.innholdLagret || {})['Vis/' + nokkel] !== 'nei';
+  }
+
+  /**
+   * Hvilken kolleksjon butikken staar i: «Lissom» eller «Medlem».
+   *
+   * Er medlemssalget slaatt av, finnes ikke «Medlem» — heller ikke for den
+   * som kom inn via kampanjeknappen «Se medlemmenes keramikk», som setter
+   * kolleksjonen direkte. Uten dette sto butikken paa en fane som ikke var
+   * der, og viste en tom liste uten noe som sa hvorfor.
+   */
+  butikkKolleksjonNaa() {
+    if (!this.bryterPaa('medlemssalg')) return 'Lissom';
+    return (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'Medlem' : 'Lissom';
   }
 
   vekslBryter(nokkel, navn) {
@@ -49863,15 +49874,20 @@ class Component extends DCLogic {
           },
         };
       })(),
-      visMedlemskolleksjon: this.bryterPaa('medlemskolleksjon'),
-      vekslMedlemskolleksjon: () => {
-        // Skjules kolleksjonen mens man staar i den, maa butikken tilbake
-        // til Lissom — ellers blir skjermen staaende tom.
-        if (this.bryterPaa('medlemskolleksjon')) this.setState({ butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' });
-        this.vekslBryter('medlemskolleksjon', 'Medlemskolleksjonen');
-      },
-      butikkLissomKant: (this.state.butikkKolleksjon || 'Lissom') !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
-      butikkMedlemKant: (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+      // Kolleksjonen i butikken og skjemaet paa Min side er den samme
+      // bryteren.
+      //
+      // Eieren, 12. september 2026: «Jeg skal ha 1 bryter. Den skal slaa av
+      // og paa funksjonen selg egne arbeider».
+      //
+      // Det var to: «Selg egne arbeider» (Vis/medlemssalg) og
+      // «Medlemskolleksjonen i butikken» (Vis/medlemskolleksjon). Sto den
+      // forste paa og den andre av, kunne medlemmene legge ut varer, Monica
+      // kunne godkjenne dem — og ingen kunde saa dem. Ingenting sa fra.
+      // Migrasjon 173 slaar dem sammen.
+      visMedlemskolleksjon: this.bryterPaa('medlemssalg'),
+      butikkLissomKant: this.butikkKolleksjonNaa() !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+      butikkMedlemKant: this.butikkKolleksjonNaa() === 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
       // Knappene sto som en fast liste: Alt, Kopper, Boller, Fat, Gavekort.
       // Kategoriene i butikken settes i admin, og de andre — Vaser,
       // Tallerkener, Materialer — hadde ingen knapp. «Boller» og «Fat»
@@ -49879,7 +49895,7 @@ class Component extends DCLogic {
       // knappene ikke gjorde noe. Naa kommer de fra varene som faktisk ligger
       // der.
       butikkFiltre: (() => {
-        const erMedlem = (this.state.butikkKolleksjon || 'Lissom') === 'Medlem';
+        const erMedlem = this.butikkKolleksjonNaa() === 'Medlem';
         const kilde = erMedlem
           ? this.galleriListe().filter(g => g.status === 'publisert').map(g => g.kategori)
           : (this.erPublisert()
@@ -49928,7 +49944,7 @@ class Component extends DCLogic {
           cta: 'Se produkt',
           velgHandling: () => this.setState({ salgApen: g.id }),
         }));
-        const alle = (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? medlem : egne;
+        const alle = this.butikkKolleksjonNaa() === 'Medlem' ? medlem : egne;
         if (filter === 'Alt') return alle;
         return alle.filter(p => p.kategori === filter);
       })(),

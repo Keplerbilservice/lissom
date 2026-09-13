@@ -16869,6 +16869,34 @@ sjekk('… og sammenslaaingen slaar ingenting paa av seg selv',
     && str_contains($mig172, "ON DUPLICATE KEY UPDATE verdi = 'nei';"));
 sjekk('… og den gamle raden tas ut av basen',
     str_contains($mig172, "DELETE FROM content_blocks WHERE nokkel = 'Vis/salgsskjema';"));
+
+// ── Og kolleksjonen i butikken foelger den samme bryteren ────────────────
+//
+// Eieren, 12. september 2026: «Jeg skal ha 1 bryter. Den skal slaa av og paa
+// funksjonen selg egne arbeider». Sto skjemaet paa og «Medlemskolleksjonen i
+// butikken» av, kunne medlemmene legge ut varer og Monica godkjenne dem uten
+// at en eneste kunde saa dem — og ingen skjerm sa fra.
+$mig173 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/173_en_bryter_for_hele_medlemssalget.sql');
+sjekk('butikkfanen foelger bryteren for medlemssalg',
+    str_contains($vis172, "      visMedlemskolleksjon: this.bryterPaa('medlemssalg'),")
+    && !str_contains($vis172, "bryterPaa('medlemskolleksjon')")
+    && !str_contains($vis172, 'vekslMedlemskolleksjon'));
+// To bryterrader for det samme var nettopp det eieren ba om aa bli kvitt.
+sjekk('… og den egne bryterraden staar ikke lenger noe sted',
+    !str_contains($vis172, 'label="Medlemskolleksjonen i butikken"'));
+// Kampanjeknappen «Se medlemmenes keramikk» setter kolleksjonen direkte. Er
+// salget av, skal butikken likevel staa paa Lissom — ikke paa en fane som
+// ikke finnes, med en tom liste under.
+sjekk('… og butikken kan ikke staa i en kolleksjon som er slaatt av',
+    str_contains($vis172, "  butikkKolleksjonNaa() {\n    if (!this.bryterPaa('medlemssalg')) return 'Lissom';")
+    // Én gang: inne i metoden selv. Leser noen andre staten direkte, er
+    // sperra hoppet over akkurat der.
+    && substr_count($vis172, "(this.state.butikkKolleksjon || 'Lissom') === 'Medlem'") === 1);
+sjekk('… og sammenslaainga slaar ingenting paa av seg selv',
+    str_contains($mig173, "      WHERE nokkel IN ('Vis/medlemssalg', 'Vis/medlemskolleksjon')\n        AND verdi = 'nei'")
+    && str_contains($mig173, "ON DUPLICATE KEY UPDATE verdi = 'nei';")
+    && str_contains($mig173, "DELETE FROM content_blocks WHERE nokkel = 'Vis/medlemskolleksjon';"));
 // ── «Ovn er tømt» ────────────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: knapp paa Min side og paa kalenderen i admin;

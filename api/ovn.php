@@ -4,12 +4,21 @@
  *
  * Eieren, 12. september 2026: medlemmene vil ha en knapp paa Min side som
  * sier at ovnen er toemt, og de andre skal se det — med en pulserende
- * markering — til de selv har trykket «Sett». Etter 24 timer er det borte
- * uansett. Admin har samme knapp paa kalenderoversikten.
+ * markering — til de selv har trykket «Sett». Admin har samme knapp paa
+ * kalenderoversikten.
  * 13. september: to piller til, raabrann satt og glasurbrann satt, i samme
  * kort. Det siste trykket er statusen — én om gangen.
  *
- *   GET                        siste status det siste doegnet, og om jeg har sett den
+ * Hvor lenge statusen staar, kommer an paa hva den er:
+ *
+ *   «Ovn er tømt»       12 timer
+ *   raabrann, glasurbrann  24 timer
+ *
+ * Eieren, 13. september 2026: «vi juster ogsaa ned visningstid paa at ovnen
+ * er toemt til 12 timer». En toemt ovn er en beskjed om at det er plass naa —
+ * den er ikke sann et helt doegn etterpaa. En brenning som staar, staar.
+ *
+ *   GET                        siste status som fortsatt staar, og om jeg har sett den
  *   POST handling=tomt         ovnen er toemt naa (av meg)
  *   POST handling=raabrann     raabrann er satt (av meg)
  *   POST handling=glasurbrann  glasurbrann er satt (av meg)
@@ -34,10 +43,16 @@ $harSlag = $klar && DB::harKolonne('ovn_tomt', 'slag');
 const SLAG = ['tomt', 'raabrann', 'glasurbrann'];
 
 /**
- * Siste toemming det siste doegnet — eller null.
+ * Siste status som fortsatt staar — eller null.
  *
- * Doegnet regnes fra basens klokke, som gaar i UTC (app/bootstrap.php), saa
- * «24 timer» er 24 timer uansett sommertid.
+ * Tida regnes fra basens klokke, som gaar i UTC (app/bootstrap.php), saa
+ * timene er timer uansett sommertid.
+ *
+ * Det nyeste trykket er alltid statusen: trykker noen «Råbrann satt» etter at
+ * ovnen ble toemt, er det raabrannen som staar. Derfor hentes den nyeste
+ * raden foerst, og tida proeves paa den — ikke omvendt. Var det nyeste en
+ * toemming som har gaatt ut paa tid, er kortet tomt; da skal ikke en eldre
+ * brenning dukke opp igjen under den, for den ovnen er jo toemt.
  */
 $siste = static function () use ($klar, $harSlag, $medlemId): ?array {
     if (!$klar) {
@@ -51,17 +66,24 @@ $siste = static function () use ($klar, $harSlag, $medlemId): ?array {
     if ($r === null) {
         return null;
     }
+    $slag = in_array((string) ($r['slag'] ?? ''), SLAG, true) ? (string) $r['slag'] : 'tomt';
+    $naar = new DateTimeImmutable((string) $r['created_at'], new DateTimeZone('UTC'));
+    // «Ovn er tømt» staar i 12 timer, brenningene i 24. Se toppen av fila.
+    $timer = $slag === 'tomt' ? 12 : 24;
+    if ($naar->getTimestamp() < time() - $timer * 3600) {
+        return null;
+    }
     $sett = DB::verdi(
         'SELECT 1 FROM ovn_tomt_sett WHERE tomt_id = :t AND member_id = :m',
         ['t' => (int) $r['id'], 'm' => $medlemId]
     );
     return [
         'id'   => (int) $r['id'],
-        'slag' => in_array((string) ($r['slag'] ?? ''), SLAG, true) ? (string) $r['slag'] : 'tomt',
+        'slag' => $slag,
         'av'   => (string) $r['navn'],
         // Sekunder siden epoken. Nettleseren skriver «i dag 14:20» selv, i
         // sin egen tidssone — basen lagrer UTC.
-        'naar' => (new DateTimeImmutable((string) $r['created_at'], new DateTimeZone('UTC')))->getTimestamp(),
+        'naar' => $naar->getTimestamp(),
         'sett' => $sett !== null && $sett !== false,
     ];
 };

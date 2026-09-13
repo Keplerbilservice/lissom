@@ -28453,8 +28453,13 @@ class Component extends DCLogic {
   //
   // Eieren, 12. september 2026: en knapp paa Min side (og paa kalenderen i
   // admin) som sier at ovnen er toemt. De andre ser det som et kort som
-  // pulserer til de selv trykker «Sett», og etter 24 timer er det borte
-  // uansett. Serveren er api/ovn.php; her er det bare hente, trykke, tegne.
+  // pulserer til de selv trykker «Sett».
+  //
+  // Hvor lenge statusen staar, avgjoer api/ovn.php: «Ovn er tømt» i 12 timer
+  // (eieren, 13. september), raabrann og glasurbrann i 24. Det siste trykket
+  // er alltid statusen — en raabrann etter en toemming overstyrer den.
+  //
+  // Serveren er api/ovn.php; her er det bare hente, trykke, tegne.
 
   /** Siste toemming, hentet paa nytt hoeyst hvert minutt mens skjermen staar. */
   hentOvn(tving) {

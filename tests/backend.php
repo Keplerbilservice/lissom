@@ -17830,7 +17830,10 @@ sjekk('Ovnkortet: tre piller i kortet paa Min side og kalenderen, statusen oever
 sjekk('… api/ovn.php tar imot raabrann og glasurbrann som slag, og migrasjon 179 legger til kolonnen',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "const SLAG = ['tomt', 'raabrann', 'glasurbrann'];")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "if (in_array(\$handling, SLAG, true)) {")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "        'slag' => in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt',")
+    // Sto som «'slag' => in_array(...)» i svaret til 13. september 2026. Da
+    // fikk toemminga en egen levetid, og slaget maatte leses foer tida kunne
+    // proeves paa den — derfor staar det i en variabel over svaret naa.
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "    \$slag = in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt';")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/179_ovnkortet_raabrann_glasurbrann.sql'),
         "    ADD COLUMN IF NOT EXISTS slag VARCHAR(24) NOT NULL DEFAULT 'tomt'"));
 sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett det; migrasjon 171 lager tabellene',
@@ -17846,6 +17849,37 @@ sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett de
             && str_contains($m, 'CREATE TABLE IF NOT EXISTS ovn_tomt_sett (')
             && str_contains($m, '  PRIMARY KEY (tomt_id, member_id)');
     })());
+// ── Hvor lenge ovnstatusen staar ────────────────────────────────────────
+//
+// Eieren, 13. september 2026: «dersom det aktivere en raavrann eller
+// glassurbrann, saa overstyrer dette at ovnen er toemt. Vi juster ogsaa ned
+// visningstid paa at ovnen er toemt til 12 timer».
+//
+// Det foerste gjorde den fra for: den nyeste raden er statusen. Maalt i
+// nettleseren samme dag — tomt, raabrann, glasurbrann, tomt etter hverandre
+// ga akkurat det siste trykket hver gang.
+//
+// Det andre er nytt. Maalt, med rader lagt inn med alder:
+//   tomt 11 t → tomt          tomt 13 t → ingenting
+//   raabrann 13 t → raabrann  raabrann 25 t → ingenting
+//   glasurbrann 23 t → glasurbrann
+//
+// Og rekkefoelgen holder: raabrann 20 t etterfulgt av tomt 13 t gir
+// ingenting — den eldre brenningen skal ikke dukke opp igjen under en
+// toemming som har gaatt ut paa tid.
+sjekk('«Ovn er tømt» staar i 12 timer, brenningene i 24',
+    (static function (): bool {
+        $a = (string) file_get_contents(dirname(__DIR__) . '/api/ovn.php');
+        return str_contains($a, "    \$timer = \$slag === 'tomt' ? 12 : 24;")
+            && str_contains($a, "    if (\$naar->getTimestamp() < time() - \$timer * 3600) {")
+            // Den nyeste raden hentes foerst, og tida proeves paa den. Snur
+            // man om paa det, dukker en eldre brenning opp igjen naar
+            // toemminga over den gaar ut.
+            && strpos($a, 'ORDER BY id DESC LIMIT 1') < strpos($a, "\$timer = \$slag === 'tomt' ? 12 : 24;");
+    })());
+sjekk('… og skjermen sier det samme som serveren',
+    str_contains($sida, '// Hvor lenge statusen staar, avgjoer api/ovn.php: «Ovn er tømt» i 12 timer'));
+
 // ── Kalenderen, 13. september 2026: tre ting ─────────────────────────────
 //
 // Eieren: «1. legge til send beskjed ved siden av chat pillen i kalender …

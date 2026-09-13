@@ -20428,12 +20428,21 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <!-- Fanene -->
-        <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-4); margin-bottom: var(--space-6);">
-          <sc-for list="{{ mkFaner }}" as="f" hint-placeholder-count="9">
-            <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+        <!-- Fanene, i to nivaa: gruppa oeverst, fanene i gruppa under.
+             Se GRUPPER i renderVals for hvorfor. -->
+        <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+          <sc-for list="{{ mkGrupper }}" as="g" hint-placeholder-count="5">
+            <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
           </sc-for>
         </div>
+        <sc-if value="{{ mkHarUnder }}" hint-placeholder-val="{{ true }}">
+          <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+            <sc-for list="{{ mkUnderfaner }}" as="f" hint-placeholder-count="3">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-6);"></div>
 
         <!-- AI-en er ikke koblet til: si det én gang, ovest, i stedet for paa hver knapp -->
         <sc-if value="{{ mkAiMangler }}" hint-placeholder-val="{{ true }}">
@@ -56272,6 +56281,31 @@ class Component extends DCLogic {
           ['seo', 'SEO'], ['analyse', 'Analyse'], ['assistent', 'Assistent'],
           ['innstillinger', 'Innstillinger'],
         ];
+
+        // ── Ti faner ble fem grupper ────────────────────────────────────
+        //
+        // Maalt i nettleseren 13. september 2026: ti faner paa én linje paa
+        // PC, fem rader paa telefon. Ikke rotete — men ti ting aa velge
+        // mellom. Eieren fikk se forslaget tegnet paa den ekte skjermen og
+        // svarte «GO — bygg som vist».
+        //
+        // Fire av gruppenavnene finnes fra for: «Innhold» staar under
+        // Nettsiden, og «Tavle», «Analyse» og «Innstillinger» er faner han
+        // alt har. «Utsending» er det eneste nye ordet, og han godkjente det.
+        //
+        // Koster litt mer plass, ikke mindre — PC gaar fra 49 til 122 px —
+        // og det er med vilje: gevinsten er fem valg i stedet for ti.
+        const GRUPPER = [
+          ['Tavle',         ['tavle']],
+          ['Innhold',       ['artikler', 'bank', 'sosialt']],
+          ['Utsending',     ['brev', 'kurs']],
+          ['Analyse',       ['analyse', 'seo']],
+          ['Innstillinger', ['innstillinger', 'assistent']],
+        ];
+        const navnPaa = n => (FANER.filter(f => f[0] === n)[0] || [, n])[1];
+        // SEO er en egen skjerm, ikke en fane her. Staar man der, er det
+        // fortsatt «Analyse» som gjelder.
+        const minGruppe = GRUPPER.filter(g => g[1].indexOf(fane) !== -1)[0] || GRUPPER[0];
         const faneStil = paa => ({
           appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
           padding: '9px 16px', font: 'var(--type-body-sm)', fontWeight: 600,
@@ -56308,8 +56342,16 @@ class Component extends DCLogic {
         const bankListe = artikler.filter(a => bankFilter === 'Alle' || (a.kategori || 'Uten kategori') === bankFilter);
 
         return {
-          mkFaner: FANER.map(([n, navn]) => ({
-            navn, stil: faneStil(fane === n),
+          // Gaar man til en gruppe, aapnes den foerste fana i den.
+          mkGrupper: GRUPPER.map(([g, faner]) => ({
+            navn: g, stil: faneStil(minGruppe[0] === g),
+            velg: () => this.setState({ mkFane: faner[0] }),
+          })),
+          // Under staar fanene i gruppa man er i. «Tavle» er alene om sin,
+          // saa da staar raden tom og skjules.
+          mkHarUnder: minGruppe[1].length > 1,
+          mkUnderfaner: minGruppe[1].map(n => ({
+            navn: navnPaa(n), stil: velgStil(fane === n),
             velg: n === 'seo'
               ? () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); }
               : () => this.setState({ mkFane: n }),

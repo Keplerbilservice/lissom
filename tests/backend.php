@@ -13886,8 +13886,8 @@ sjekk('pillene staar to og to i lik bredde paa telefon',
     && str_contains($sidaP, '      min-width: fit-content !important;'),
     'maalt: 59 rader paa 390 px');
 sjekk('… og alle pilleradene i admin er merket',
-    substr_count($sidaP, 'class="lx-pillerad"') === 114,
-    '114 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
+    substr_count($sidaP, 'class="lx-pillerad"') === 115,
+    '115 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
 
 // Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
 // lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september
@@ -17070,6 +17070,30 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
+
+echo "\n== Markedsfoering: ti faner ble fem grupper ==\n";
+// Maalt i nettleseren 13. september 2026: ti faner paa én linje paa PC, fem
+// rader paa telefon. Ikke rotete — men ti ting aa velge mellom. Eieren fikk
+// se forslaget tegnet paa den ekte skjermen og svarte «GO — bygg som vist».
+//
+// Fire av gruppenavnene fantes fra foer. «Utsending» er det eneste nye
+// ordet, og han godkjente det.
+sjekk('fanene staar i fem grupper',
+    str_contains($vis172, "          ['Tavle',         ['tavle']],")
+    && str_contains($vis172, "          ['Innhold',       ['artikler', 'bank', 'sosialt']],")
+    && str_contains($vis172, "          ['Utsending',     ['brev', 'kurs']],")
+    && str_contains($vis172, "          ['Analyse',       ['analyse', 'seo']],")
+    && str_contains($vis172, "          ['Innstillinger', ['innstillinger', 'assistent']],"),
+    'maalt: fem piller oeverst, fanene i gruppa under');
+// Tavle er alene om sin gruppe; da skal ikke en tom rad staa igjen.
+sjekk('… og underraden staar bare naar gruppa har flere',
+    str_contains($vis172, '          mkHarUnder: minGruppe[1].length > 1,')
+    && str_contains($vis172, '<sc-if value="{{ mkHarUnder }}" hint-placeholder-val="{{ true }}">'));
+// SEO er en egen skjerm, ikke en fane her. Staar man der, er det fortsatt
+// «Analyse» som gjelder — og knappen maa fortsatt gaa dit.
+sjekk('… og SEO gaar fortsatt til sin egen skjerm',
+    str_contains($vis172, "            velg: n === 'seo'\n              ? () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); }"),
+    'maalt: trykk paa SEO gir «Soekemotoroppsett»');
 
 echo "\n== Kursvelgeren: ett svar aapent om gangen ==\n";
 // Maalt i nettleseren 13. september 2026: 208 piller og 3867 px aa rulle paa

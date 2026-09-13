@@ -1993,6 +1993,35 @@ window.__resources = {
     .lx-geotiltak[data-apen="false"] { display: none !important; }
   }
 
+  /* Verkstedet paa telefon: kortene to og to.
+     ------------------------------------------------------------------
+     Atten kort under hverandre ble 4 723 px paa en 390 px skjerm — 5,6
+     skjermer for aa naa det nederste. «minmax(210px, 1fr)» gir bare én
+     spalte naar det er 310 px aa dele paa.
+
+     Under 560 px staar de to og to. Radene er fremdeles like hoeye
+     (grid-auto-rows: 1fr staar uroert) — eieren, 11. september 2026: «jeg
+     vil at de 8 mindre kortene skal justere saa de blir samme stoerrelse
+     som de 6 stoerre kortene». Han valgte 13. september aa beholde det
+     framfor de 800 px en fri hoeyde ville spart.
+
+     Navnet staar paa --text-base i den smale spalta, ikke --text-xl.
+     «Haandbygging» og «Referansekunder» er breiere enn 107 px tekstflate
+     paa den store graden og ble delt midt i ordet — «Haandbyggi/ng».
+     Paa --text-base staar de paa én linje. Maalt: 5,6 -> 3,6 skjermer. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-vststed {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .lx-adminaside ~ main .lx-vststed span[style*="--text-xl"] {
+      font-size: var(--text-base) !important;
+    }
+    .lx-adminaside ~ main .lx-vststed span,
+    .lx-adminaside ~ main .lx-vststed p {
+      overflow-wrap: break-word;
+    }
+  }
+
   /* Salgskampanjen. Bildet staar ved siden av teksten paa stor skjerm, og
      over den paa telefon — 340 px bilde ved siden av teksten paa en 390 px
      skjerm ville latt en spalte staa igjen paa 20 px. */

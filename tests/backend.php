@@ -10116,6 +10116,27 @@ sjekk('de to lange blokkene paa GEO ligger bak hver sin pille paa telefonen',
 sjekk('… og GEO-lista lukker seg naar en side er valgt',
     str_contains($sidaG, 'const velgSide = id => () => this.setState({ geoValgtId: id, geoListeApen: false });'));
 
+// ── Verkstedet paa telefonen ───────────────────────────────────────────
+//
+// Atten kort under hverandre: 4 723 px paa en 390 px skjerm — 5,6 skjermer
+// for aa naa det nederste. To og to under 560 px.
+//
+// Radene er fremdeles like hoeye. Eieren, 11. september 2026: «jeg vil at
+// de 8 mindre kortene skal justere saa de blir samme stoerrelse som de 6
+// stoerre kortene» — og 13. september valgte han aa beholde det framfor de
+// 800 px en fri hoeyde ville spart. Maalt: 5,6 -> 3,4 skjermer.
+sjekk('kortene paa Verkstedet staar to og to paa telefonen',
+    str_contains($sidaG, '<div class="lx-vststed" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); grid-auto-rows: 1fr;')
+    && str_contains($sidaG, '      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;'));
+// Like hoeye rader staar uroert — det var hele poenget med aa spoerre.
+sjekk('… med radene fremdeles like hoeye',
+    !str_contains($sidaG, '.lx-vststed { grid-auto-rows')
+    && !str_contains($sidaG, 'grid-auto-rows: auto !important;'));
+// Navnet maa faa plass i den smale spalta, ellers deles det midt i ordet.
+sjekk('… og navnet deles ikke midt i ordet',
+    str_contains($sidaG, '.lx-adminaside ~ main .lx-vststed span[style*="--text-xl"] {')
+    && str_contains($sidaG, '      overflow-wrap: break-word;'));
+
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //
 // Kalenderen viste ingenting om penger. Man maatte aapne okta for aa se om

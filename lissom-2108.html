@@ -1957,6 +1957,14 @@ window.__resources = {
     .lx-datoliste[data-apen="false"] { display: none !important; }
   }
 
+  /* Salgskampanjen. Bildet staar ved siden av teksten paa stor skjerm, og
+     over den paa telefon — 340 px bilde ved siden av teksten paa en 390 px
+     skjerm ville latt en spalte staa igjen paa 20 px. */
+  @media (max-width: 760px) {
+    .lx-kampanje { flex-direction: column-reverse; }
+    .lx-kampanjebilde { flex: 0 0 auto !important; height: 200px; }
+  }
+
   .lx-butvis { display: none; }
   @media (max-width: 760px) {
     .lx-butordre { order: 1; }
@@ -2435,15 +2443,31 @@ window.__resources = {
            onske fra eieren. Medlemskap naas fortsatt fra toppmenyen og fra
            sin egen side. -->
 
+      <!-- Salgskampanjen. Bilde, merkelapp, pris og knappetekst settes i
+           admin under Nettbutikk; se kampanjeMerke i renderVals.
+
+           Prisen staar som en linje over knappen. Eieren, 13. september
+           2026: «Men ikke to piller, pris og se utvalget, det holder med se
+           utvalget». -->
       <sc-if value="{{ kampanjeVis }}" hint-placeholder-val="{{ false }}">
-        <section data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-12) var(--space-8);">
-          <div class="lx-band" style="max-width: var(--width-content); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6) var(--space-10); flex-wrap: wrap;">
-            <div style="min-width: 0; max-width: 72ch;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-2);">{{ kampanjeMerke }}</div>
-              <h2 style="margin: 0 0 var(--space-3); color: var(--clay-50);">{{ kampanjeTittel }}</h2>
-              <p style="margin: 0; font-size: var(--text-lg); line-height: 1.55; color: var(--clay-200); text-wrap: pretty;">{{ kampanjeTekst }}</p>
+        <section data-theme="ink" style="background: var(--lissom-brown);">
+          <div class="lx-kampanje" style="max-width: var(--width-content); margin: 0 auto; display: flex; align-items: stretch; gap: 0;">
+            <div style="flex: 1 1 auto; min-width: 0; padding: var(--space-12) var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6) var(--space-10); flex-wrap: wrap;">
+              <div style="min-width: 0; max-width: 72ch;">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-2);">{{ kampanjeMerke }}</div>
+                <h2 style="margin: 0 0 var(--space-3); color: var(--clay-50);">{{ kampanjeTittel }}</h2>
+                <p style="margin: 0; font-size: var(--text-lg); line-height: 1.55; color: var(--clay-200); text-wrap: pretty;">{{ kampanjeTekst }}</p>
+                <sc-if value="{{ kampanjeHarPris }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin: var(--space-5) 0 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-3xl); color: var(--lissom-yellow);">{{ kampanjePris }}</div>
+                </sc-if>
+              </div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ kampanjeTilButikk }}" hint-size="auto,56px">{{ kampanjeKnappTekst }}</x-import>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ kampanjeTilButikk }}" hint-size="auto,56px">Se medlemmenes keramikk</x-import>
+            <sc-if value="{{ kampanjeHarBilde }}" hint-placeholder-val="{{ false }}">
+              <div class="lx-kampanjebilde" style="flex: 0 0 340px; align-self: stretch;">
+                <img data-src="{{ kampanjeBilde }}" alt="" loading="lazy" decoding="async" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+              </div>
+            </sc-if>
           </div>
         </section>
       </sc-if>
@@ -18265,30 +18289,87 @@ window.__resources = {
             </div>
             <span class="lx-bryterhoyre"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ gAutoEtikett }}" checked="{{ gAutoPaa }}" on-change="{{ gAutoVeksl }}" hint-size="auto,28px"></x-import></span>
           </div>
+          <!-- Salgskampanjen. Var salgsuka med tre tekstfelt; naa bilde, fri
+               merkelapp, valgfri pris, egen knappetekst — og hver kampanje
+               lagres, saa den kan hentes fram igjen. Eieren, 13. september
+               2026, valgte «GO — bygg alt». Se api/admin/kampanjer.php. -->
           <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
-              <div style="min-width: 0;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Salgsuke — kampanje på forsiden</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">Front en periode der medlemmene selger varer sammen i nettbutikken.</div>
+            <!-- Bryteren staar ikke her. Eieren, 13. september 2026: «Husk vis
+                 paa forside og skal staa samlet med det andre» — alle
+                 av-og-paa-brytere staar i ⊙ Synlighet, og en kopi her ville
+                 vaert to brytere for det samme. Linja under sier hvor den er,
+                 og hva som gjelder naa. -->
+            <div style="margin-bottom: var(--space-4);">
+              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Salgskampanje på forsiden</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Banneret under kursene. {{ kampanjeStatus }}</div>
+            </div>
+
+            <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <sc-if value="{{ kmpHarBilde }}" hint-placeholder-val="{{ true }}">
+                <img data-src="{{ kmpBilde }}" alt="" loading="lazy" decoding="async" style="width: 116px; height: 78px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              </sc-if>
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ kmpVelgBilde }}" style="{{ kmpPilleStil }}">{{ kmpBildeKnapp }}</button>
+                <sc-if value="{{ kmpHarBilde }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ kmpFjernBilde }}" style="{{ kmpPilleStil }}">Fjern bilde</button>
+                </sc-if>
               </div>
-              <span class="lx-bryterhoyre"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ kampanjeEtikett }}" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="auto,28px"></x-import></span>
             </div>
+
             <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
-              <input value="{{ kampanjeTittel }}" onChange="{{ settKampanjeTittel }}" placeholder="Tittel" style="{{ skFeltStil }}">
-              <input value="{{ kampanjePeriode }}" onChange="{{ settKampanjePeriode }}" placeholder="Periode, f.eks. 2.–8. september" style="{{ skFeltStil }}">
+              <input value="{{ kmpMerke }}" onChange="{{ settKmpMerke }}" placeholder="Merkelapp, f.eks. Høstsalg · 20.–26. oktober" style="{{ skFeltStil }}">
+              <input value="{{ kmpTittel }}" onChange="{{ settKmpTittel }}" placeholder="Overskrift" style="{{ skFeltStil }}">
             </div>
-            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-              <input value="{{ kampanjeTekst }}" onChange="{{ settKampanjeTekst }}" placeholder="Tekst som vises på forsiden" style="{{ skFeltStil }}">
+            <div style="margin-top: var(--space-4);">
+              <input value="{{ kmpTekst }}" onChange="{{ settKmpTekst }}" placeholder="Teksten under overskriften" style="{{ skFeltStil }}">
             </div>
-            <!-- Teksten sto bare i skjermbildet og forsvant ved neste
-                 sidelasting — den staar paa forsiden, saa den maa lagres. -->
-            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kampanjeLagre }}" hint-size="auto,36px">{{ kampanjeKnapp }}</x-import>
-              <sc-if value="{{ kampanjeUlagret }}" hint-placeholder-val="{{ false }}">
-                <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+            <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
+              <input value="{{ kmpPris }}" onChange="{{ settKmpPris }}" placeholder="Pris i kroner, f.eks. 350" style="{{ skFeltStil }}">
+              <input value="{{ kmpKnapp }}" onChange="{{ settKmpKnapp }}" placeholder="Knappetekst, f.eks. Se utvalget" style="{{ skFeltStil }}">
+            </div>
+
+            <div style="margin-top: var(--space-4);">
+              <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);">Knappen går til</div>
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <sc-for list="{{ kmpMaalValg }}" as="mv" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ mv.velg }}" style="{{ mv.stil }}">{{ mv.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div class="lx-pillerad" style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+              <button type="button" onClick="{{ kmpLagre }}" style="{{ kmpLagreStil }}">Lagre kampanjen</button>
+              <button type="button" onClick="{{ kmpNyMal }}" style="{{ kmpPilleStil }}">Lagre som ny mal</button>
+              <sc-if value="{{ kmpHarBeskjed }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">{{ kmpBeskjed }}</span>
               </sc-if>
             </div>
           </div>
+
+          <div style="padding: var(--space-4) var(--space-6) 0;">
+            <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Lagrede kampanjer</div>
+          </div>
+          <sc-if value="{{ kmpIngen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">{{ kmpIngenTekst }}</div>
+          </sc-if>
+          <sc-for list="{{ kmpListe }}" as="km" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: var(--space-3); min-width: 0;">
+                <sc-if value="{{ km.harBilde }}" hint-placeholder-val="{{ true }}">
+                  <img data-src="{{ km.bilde }}" alt="" loading="lazy" decoding="async" style="width: 54px; height: 38px; object-fit: cover; border-radius: var(--radius-sm);">
+                </sc-if>
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ km.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ km.detalj }}</div>
+                </div>
+              </div>
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ km.vis }}" style="{{ km.visStil }}">{{ km.visTekst }}</button>
+                <button type="button" onClick="{{ km.rediger }}" style="{{ kmpPilleStil }}">Rediger</button>
+                <button type="button" onClick="{{ km.slett }}" style="{{ kmpPilleStil }}">Slett</button>
+              </div>
+            </div>
+          </sc-for>
           <sc-if value="{{ gIngenVenter }}" hint-placeholder-val="{{ false }}">
             <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingen bidrag venter nå.</div>
           </sc-if>
@@ -28434,6 +28515,115 @@ class Component extends DCLogic {
     this.setState(st => ({ plRed: Object.assign({}, st.plRed || {}, endring) }));
   }
 
+  /**
+   * Endrer ett felt i kampanjeskjemaet.
+   *
+   * Samme grep som endreReferanse(): billedvelgeren maa kunne skrive i
+   * skjemaet, og en ny kampanje finnes ikke paa serveren foer den er lagret.
+   */
+  endreKampanje(endring) {
+    this.setState(st => ({
+      // Skjemaet viser den kampanjen som staar ute, men den laa bare i lista
+      // — ikke i kladden. Foerste endring laget da en kladd med bare det ene
+      // feltet, og resten var borte: maalt i nettleseren ga «velg bilde,
+      // lagre» en kampanje uten overskrift, og serveren avviste den.
+      kmpRed: Object.assign({}, st.kmpRed || (st.kmpListe || []).filter(k => k.ute)[0] || {}, endring),
+      kmpBeskjed: '',
+    }));
+  }
+
+  /**
+   * Legger den aktive kampanjen inn i innholdet nettleseren alt har.
+   *
+   * hentInnhold() lar det som staar i nettleseren vinne over svaret fra
+   * serveren — ellers ville en usendt endring blitt overskrevet midt i
+   * skrivinga. Her er det motsatt vei: serveren har nettopp speilet
+   * kampanjen, og de verdiene er de ferske. Uten dette sto banneret med
+   * forrige kampanje til siden ble lastet paa nytt.
+   */
+  speilKampanje(svar) {
+    const speil = svar && svar.speil;
+    if (!speil || typeof speil !== 'object') return;
+    this.setState(s => ({ innholdLagret: Object.assign({}, s.innholdLagret, speil) }));
+  }
+
+  /** Henter kampanjene til admin. */
+  hentKampanjer() {
+    if (!this.erPublisert() || this._kmpHentes) return;
+    this._kmpHentes = true;
+    fetch('/api/admin/kampanjer.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d && d.kampanjer) this.setState({ kmpListe: d.kampanjer }); })
+      .catch(() => {})
+      .then(() => { this._kmpHentes = false; });
+  }
+
+  /**
+   * Vis, slett — alt som ikke er selve skjemaet.
+   *
+   * Forsiden leser fra content_blocks, og serveren speiler den aktive
+   * kampanjen dit. Derfor hentes innholdet paa nytt her: ellers staar
+   * banneret med forrige kampanje til siden lastes om.
+   */
+  kampanjeKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/kampanjer.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.kampanjer) this.setState({ kmpListe: d.kampanjer });
+        this.setState({ kvittering: (d && d.ok) ? 'Lagret' : 'Ble ikke lagret',
+                        kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+        this.speilKampanje(d);
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Lagrer kampanjeskjemaet.
+   *
+   * «somNy» dropper id-en, saa den samme teksten blir en ny mal i stedet for
+   * aa overskrive den du hentet fram.
+   */
+  lagreKampanje(somNy) {
+    const k = this.state.kmpRed || {};
+    if (!(k.tittel || '').trim()) { this.setState({ kmpBeskjed: 'Kampanjen må ha en overskrift.' }); return; }
+    if (!this.erPublisert()) { this.setState({ kmpBeskjed: 'Krever den ekte siden' }); return; }
+    if (this._kmpLagrer) return;
+    this._kmpLagrer = true;
+    this.setState({ kmpBeskjed: 'Lagrer …' });
+
+    fetch('/api/admin/kampanjer.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'lagre',
+        id: somNy ? 0 : (k.id || 0),
+        navn: k.navn || '', merke: k.merke || '', tittel: k.tittel || '',
+        tekst: k.tekst || '', pris: k.pris || '', bilde: k.bilde || '',
+        knapp: k.knapp || '', maal: k.maal || 'butikk',
+      }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.kampanjer) this.setState({ kmpListe: d.kampanjer });
+        if (d && d.ok) {
+          this.setState(st => ({ kmpRed: Object.assign({}, st.kmpRed, { id: d.id }), kmpBeskjed: '' }));
+          this.setState({ kvittering: 'Lagret', kvitteringDetalj: d.beskjed || '' });
+          this.speilKampanje(d);
+        } else {
+          this.setState({ kmpBeskjed: (d && (d.feil || d.beskjed)) || 'Ble ikke lagret' });
+        }
+      })
+      .catch(() => this.setState({ kmpBeskjed: 'Fikk ikke kontakt med serveren.' }))
+      .then(() => { this._kmpLagrer = false; });
+  }
+
   /** Endrer ett felt i referansekunde-skjemaet. */
   endreReferanse(endring) {
     this.setState(st => ({
@@ -28549,6 +28739,12 @@ class Component extends DCLogic {
     // kunde har ingen id aa lagre paa foer den er opprettet.
     if (v.slag === 'referanse') {
       this.endreReferanse({ bilde: url || '' });
+      return;
+    }
+    // Bildet i salgskampanjen ligger i skjemaet til kampanjen lagres — en ny
+    // kampanje har ingen id aa lagre paa foer den er opprettet.
+    if (v.slag === 'kampanje') {
+      this.endreKampanje({ bilde: url || '' });
       return;
     }
     if (v.slag === 'referanselogo') {
@@ -41486,6 +41682,11 @@ class Component extends DCLogic {
         && !this.state.ferdigbrentAdmin) {
       this.hentFerdigbrentAdmin();
     }
+    // Salgskampanjene. Kortet staar under Nettbutikk, og lista maa vaere der
+    // foer eieren kan hente fram en mal.
+    if (side === 'adminbutikk' && !this.state.kmpListe) {
+      this.hentKampanjer();
+    }
     // Kortet paa Oversikt viser hvor mange referanser som staar ute, saa
     // lista maa hentes der ogsaa — ikke bare paa skjermen som redigerer dem.
     if ((side === 'adminreferanser' || side === 'adminoversikt') && !this.state.refAdmin) {
@@ -42889,7 +43090,8 @@ class Component extends DCLogic {
       // Billedruta naas fra baade Kunnskapsbanken og Butikk, saa verdiene
       // ligger her framfor inne i én av skjermene.
       ...this.bildevalgVals(),
-      mkBildevalgHva: (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen'
+      mkBildevalgHva: (this.state.bildeFor || {}).slag === 'kampanje' ? 'Bilde til kampanjen'
+        : (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen'
         : (this.state.bildeFor || {}).slag === 'plan' ? 'Bilde til medlemskapet'
         : (this.state.bildeFor || {}).slag === 'artikkelbilde' ? 'Bilde i artikkelteksten'
         : (this.state.bildeFor || {}).slag === 'kurs'
@@ -48736,8 +48938,8 @@ class Component extends DCLogic {
                 () => this.lagreInnhold(
                   { 'Banner/pa': (this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'ja' : 'nei' },
                   'Banneret er ' + ((this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'slått på' : 'skjult'))),
-            rad('Salgsuke-kampanjen', this.bryterPaa('salgsuke'),
-                () => this.vekslBryter('salgsuke', 'Salgsuke-kampanjen')),
+            rad('Salgskampanjen', this.bryterPaa('salgsuke'),
+                () => this.vekslBryter('salgsuke', 'Salgskampanjen')),
             rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),
                 () => this.vekslBryter('kursvelger', 'Kursvelger-lenken')),
             rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),
@@ -55427,44 +55629,150 @@ class Component extends DCLogic {
       kampanjeVis: this.bryterPaa('salgsuke') && this.mobilVis('salgsuke'),
       kampanjePaa: this.bryterPaa('salgsuke'),
       kampanjeEtikett: this.bryterPaa('salgsuke') ? 'Vises på forsiden' : 'Skjult',
-      kampanjeVeksl: () => this.vekslBryter('salgsuke', 'Salgsuke-kampanjen'),
-      // Kampanjeteksten paa forsiden. Laa i state og forsvant ved neste
-      // sidelasting — og naadde aldri en besokende, for state finnes bare i
-      // nettleseren til den som skrev.
+      kampanjeVeksl: () => this.vekslBryter('salgsuke', 'Salgskampanjen'),
+      kampanjeStatus: this.bryterPaa('salgsuke')
+        ? 'Står på forsiden nå.'
+        : 'Er slått av. Slå den på under ⊙ Synlighet.',
+      // Salgskampanjen paa forsiden.
+      //
+      // Var «salgsuka»: tre tekstfelt i content_blocks og en merkelapp som
+      // sto fast paa «Salgsuke». Eieren, 13. september 2026: «Jeg vil ogsaa
+      // at salgsuke banneret skal vaere et generelt salgs kampanje. Her vil
+      // jeg legge til og redigere bilde og tekster og mulighet for aa vise
+      // pris / De kan godt lagres som maler saa har vi».
+      //
+      // Hver kampanje er en rad i «kampanjer» — se api/admin/kampanjer.php.
+      // Den som staar ute speiles til «Kampanje/», og det er de noeklene
+      // forsiden leser. De gamle «Salgsuke/»-noeklene leses fortsatt som
+      // reserve, saa banneret staar uendret til migrasjon 175 er kjort.
       ...(() => {
         const il = this.state.innholdLagret || {};
-        const kladd = this.state.kampanjeKladd || {};
-        const felt = (n, standard) => kladd[n] ?? il['Salgsuke/' + n] ?? standard;
-        const sett = n => e => {
-          const v = e.target.value;
-          this.setState(st => ({ kampanjeKladd: Object.assign({}, st.kampanjeKladd, { [n]: v }) }));
+        const f = (n, gammel, standard) => {
+          const v = il['Kampanje/' + n];
+          if (v !== undefined && v !== null && v !== '') return v;
+          const g = gammel ? il['Salgsuke/' + gammel] : undefined;
+          return (g !== undefined && g !== null && g !== '') ? g : standard;
         };
-        const tittel  = felt('tittel', 'Medlemmenes salgsuke');
-        const periode = felt('periode', '');
-        const tekst   = felt('tekst', 'I én uke selger vi medlemmenes håndlagde keramikk sammen i nettbutikken. Alt er laget i verkstedet på Teie.');
-        const ulagret = Object.keys(kladd).length > 0;
+        const periode = (il['Salgsuke/periode'] || '').trim();
+        const prisOre = parseInt(il['Kampanje/pris'] || '', 10);
+        const harPris = Number.isFinite(prisOre) && prisOre > 0;
+        const maal = il['Kampanje/maal'] || 'butikk';
 
         return {
-          // «Salgsuke · 2.–8. september» sto fast. Er ingen periode satt,
-          // staar det bare «Salgsuke» framfor en dato som ikke gjelder.
-          kampanjeMerke: periode.trim() ? 'Salgsuke · ' + periode.trim() : 'Salgsuke',
-          kampanjeTittel: tittel, settKampanjeTittel: sett('tittel'),
-          kampanjePeriode: periode, settKampanjePeriode: sett('periode'),
-          kampanjeTekst: tekst, settKampanjeTekst: sett('tekst'),
-          kampanjeUlagret: ulagret,
-          kampanjeKnapp: ulagret ? 'Lagre kampanjen' : 'Lagret',
-          kampanjeLagre: () => {
-            if (!ulagret) return;
-            this.lagreInnhold({
-              'Salgsuke/tittel': tittel,
-              'Salgsuke/periode': periode,
-              'Salgsuke/tekst': tekst,
-            }, 'Salgsuken er lagret');
-            this.setState({ kampanjeKladd: {} });
+          kampanjeMerke: f('merke', null, periode ? 'Salgsuke · ' + periode : 'Salgsuke'),
+          kampanjeTittel: f('tittel', 'tittel', 'Medlemmenes salgsuke'),
+          kampanjeTekst: f('tekst', 'tekst',
+            'I én uke selger vi medlemmenes håndlagde keramikk sammen i nettbutikken. Alt er laget i verkstedet på Teie.'),
+          kampanjeBilde: il['Kampanje/bilde'] || '',
+          kampanjeHarBilde: !!(il['Kampanje/bilde'] || ''),
+          // Prisen staar som en linje over knappen, ikke som en pille ved
+          // siden av den. Eieren, 13. september 2026: «Men ikke to piller,
+          // pris og se utvalget, det holder med se utvalget».
+          kampanjeHarPris: harPris,
+          // Samme skrivemaate som prisene ellers paa nettsiden — «kr. 350,-»,
+          // ikke «kr 350». kroner() er for regnskapet og skriver oerene.
+          kampanjePris: harPris
+            ? 'kr.' + ' ' + Math.round(prisOre / 100).toLocaleString('nb-NO') + ',-'
+            : '',
+          kampanjeKnappTekst: f('knapp', null, 'Se medlemmenes keramikk'),
+          kampanjeTilButikk: () => {
+            const steder = {
+              butikk:        { side: 'butikk', butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' },
+              medlemsbutikk: { side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' },
+              kurs:          { side: 'kurs' },
+              events:        { side: 'events' },
+              medlemskap:    { side: 'medlemskap' },
+              gavekort:      { side: 'gavekort' },
+            };
+            this.setState(steder[maal] || steder.medlemsbutikk);
+            window.scrollTo(0, 0);
           },
         };
       })(),
-      kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
+      // Admin-skjemaet for salgskampanjen. Kladden ligger i «kmpRed» til den
+      // lagres — en ny kampanje finnes ikke paa serveren foer da, og
+      // billedvelgeren maa kunne skrive i den. Se lagreKampanje().
+      ...(() => {
+        const liste = this.state.kmpListe;
+        const il = this.state.innholdLagret || {};
+        const aktiv = parseInt(il['Kampanje/aktiv'] || '0', 10) || 0;
+        // Skjemaet starter paa den som staar ute. Da ser eieren det samme
+        // her som paa forsiden, i stedet for et tomt skjema.
+        const ute = (liste || []).filter(k => k.ute)[0];
+        const r = this.state.kmpRed || (ute ? Object.assign({}, ute) : {});
+        const sett = n => e => {
+          const v = e.target.value;
+          this.endreKampanje({ [n]: v });
+        };
+        const pille = (valgt) => ({
+          appearance: 'none', cursor: 'pointer', padding: '6px 12px',
+          borderRadius: 'var(--radius-pill)', font: 'var(--type-chip)',
+          border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+          background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)',
+          color: valgt ? 'var(--clay-50)' : 'var(--text-heading)',
+          whiteSpace: 'nowrap',
+        });
+        const kr = (p) => {
+          const n = parseFloat(String(p).replace(',', '.'));
+          return Number.isFinite(n) && n > 0
+            ? 'kr.' + ' ' + Math.round(n).toLocaleString('nb-NO') + ',-'
+            : 'Ingen pris';
+        };
+        const dato = (d) => {
+          if (!d) return 'aldri brukt';
+          const t = new Date(String(d).replace(' ', 'T'));
+          return isNaN(t) ? 'aldri brukt'
+            : 'sist brukt ' + t.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' });
+        };
+
+        return {
+          kmpBilde: r.bilde || '',
+          kmpHarBilde: !!(r.bilde || ''),
+          kmpBildeKnapp: (r.bilde || '') ? 'Bytt bilde' : 'Velg bilde',
+          kmpVelgBilde: () => this.apneBildevalg({ slag: 'kampanje' }),
+          kmpFjernBilde: () => this.endreKampanje({ bilde: '' }),
+          kmpMerke: r.merke || '', settKmpMerke: sett('merke'),
+          kmpTittel: r.tittel || '', settKmpTittel: sett('tittel'),
+          kmpTekst: r.tekst || '', settKmpTekst: sett('tekst'),
+          kmpPris: r.pris || '', settKmpPris: sett('pris'),
+          kmpKnapp: r.knapp || '', settKmpKnapp: sett('knapp'),
+          kmpMaalValg: [
+            ['butikk', 'Butikken'], ['medlemsbutikk', 'Medlemmenes varer'],
+            ['kurs', 'Kursene'], ['events', 'Events'],
+            ['medlemskap', 'Medlemskap'], ['gavekort', 'Gavekort'],
+          ].map(([v, navn]) => ({
+            navn, velg: () => this.endreKampanje({ maal: v }),
+            stil: pille((r.maal || 'butikk') === v),
+          })),
+          kmpPilleStil: pille(false),
+          kmpLagreStil: Object.assign(pille(false), {
+            background: 'var(--lissom-yellow)', border: '1px solid var(--lissom-brown)',
+            color: 'var(--lissom-brown)',
+          }),
+          kmpLagre: () => this.lagreKampanje(false),
+          kmpNyMal: () => this.lagreKampanje(true),
+          kmpBeskjed: this.state.kmpBeskjed || '',
+          kmpHarBeskjed: !!this.state.kmpBeskjed,
+          kmpIngen: (liste || []).length === 0,
+          kmpIngenTekst: liste === null || liste === undefined
+            ? 'Henter kampanjene …'
+            : 'Ingen lagret ennå. Fyll ut feltene over og trykk «Lagre som ny mal».',
+          kmpListe: (liste || []).map(k => ({
+            navn: k.navn,
+            bilde: k.bilde || '',
+            harBilde: !!(k.bilde || ''),
+            detalj: kr(k.pris) + ' · ' + dato(k.brukt),
+            visTekst: k.id === aktiv ? 'Vises nå' : 'Vis denne',
+            visStil: pille(k.id === aktiv),
+            vis: () => { if (k.id !== aktiv) this.kampanjeKall({ handling: 'vis', id: k.id }); },
+            rediger: () => this.setState({ kmpRed: Object.assign({}, k), kmpBeskjed: '' }),
+            slett: () => {
+              if (!window.confirm('Slette «' + k.navn + '» for godt? Dette kan ikke angres.')) return;
+              this.kampanjeKall({ handling: 'slett', id: k.id });
+            },
+          })),
+        };
+      })(),
       salgSkjemaEtikett: this.bryterPaa('medlemssalg') ? 'Synlig' : 'Skjult',
       // Samme navn i kvitteringen begge steder. Sto det «Skjemaet for aa
       // legge ut arbeider er skjult» her og «Selg egne arbeider er skjult»
@@ -57124,7 +57432,7 @@ class Component extends DCLogic {
       mobilForhandsNy: () => this.setState(s2 => ({ mobilForhandsNr: (s2.mobilForhandsNr || 1) + 1 })),
       mobilValg: [
         { nokkel: 'apenthus', navn: 'Banneret under toppbildet' },
-        { nokkel: 'salgsuke', navn: 'Salgsuke-kampanjen' },
+        { nokkel: 'salgsuke', navn: 'Salgskampanjen' },
         { nokkel: 'kursvelger', navn: 'Kursvelger-lenken i toppen' },
       ].map(v => {
         const paa = !(this.mobilSkjul())[v.nokkel];

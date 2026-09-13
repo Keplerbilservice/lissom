@@ -13886,8 +13886,8 @@ sjekk('pillene staar to og to i lik bredde paa telefon',
     && str_contains($sidaP, '      min-width: fit-content !important;'),
     'maalt: 59 rader paa 390 px');
 sjekk('… og alle pilleradene i admin er merket',
-    substr_count($sidaP, 'class="lx-pillerad"') === 109,
-    '109 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
+    substr_count($sidaP, 'class="lx-pillerad"') === 113,
+    '113 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
 
 // Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
 // lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september
@@ -17058,6 +17058,67 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
 
+echo "\n== Salgsuka blir en generell salgskampanje ==\n";
+// Eieren, 13. september 2026: «Jeg vil ogsaa at salgsuke banneret skal vaere
+// et generelt salgs kampanje. Her vil jeg legge til og redigere bilde og
+// tekster og mulighet for aa vise pris / De kan godt lagres som maler saa har
+// vi». Han saa forslaget og valgte «GO — bygg alt».
+$kmpApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kampanjer.php');
+$mig175 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/175_salgskampanjer.sql');
+
+sjekk('hver kampanje er en rad, ikke tre tekstfelt',
+    str_contains($mig175, 'CREATE TABLE IF NOT EXISTS kampanjer (')
+    && str_contains($mig175, '  pris_ore    INT UNSIGNED NULL,')
+    && str_contains($mig175, '  bilde       VARCHAR(255) NULL,')
+    && str_contains($mig175, '  knapp       VARCHAR(191) NULL,'));
+// Uten dette ville banneret staatt tomt til noen skrev alt paa nytt.
+sjekk('… og salgsuka som staar der i dag flyttes inn som den foerste',
+    str_contains($mig175, "INSERT INTO kampanjer (id, navn, merke, tittel, tekst, knapp, maal, sist_brukt)")
+    && str_contains($mig175, "'Medlemmenes salgsuke',")
+    && str_contains($mig175, "'Se medlemmenes keramikk',"));
+// Forsiden leser bare content_blocks — se api/innhold.php. Speilinga er det
+// eneste som faar kampanjen ut til en besoekende.
+sjekk('den som staar ute speiles dit forsiden leser fra',
+    str_contains($kmpApi, "        'Kampanje/aktiv'  => (string) (int) \$k['id'],")
+    && str_contains($kmpApi, "        'Kampanje/pris'   => \$k['pris_ore'] === null ? '' : (string) (int) \$k['pris_ore'],")
+    && str_contains($vis172, "          kampanjeBilde: il['Kampanje/bilde'] || '',"));
+// De gamle noeklene leses fortsatt: banneret skal staa uendret til eieren har
+// trykket «Kjoer oppdateringer».
+sjekk('… og banneret staar uendret til migrasjonen er kjoert',
+    str_contains($vis172, "          const g = gammel ? il['Salgsuke/' + gammel] : undefined;")
+    && str_contains($vis172, "          kampanjeTittel: f('tittel', 'tittel', 'Medlemmenes salgsuke'),"));
+// Eieren, 13. september 2026: «Men ikke to piller, pris og se utvalget, det
+// holder med se utvalget». Prisen er en linje, ikke en knapp ved siden av.
+sjekk('prisen staar som en linje, ikke som en pille til',
+    str_contains($vis172, '<sc-if value="{{ kampanjeHarPris }}" hint-placeholder-val="{{ false }}">')
+    && str_contains($vis172, 'font-size: var(--text-3xl); color: var(--lissom-yellow);">{{ kampanjePris }}</div>')
+    && !str_contains($vis172, 'kampanjePrisStil'));
+// Ingen hardkodet pris: tomt felt er ingen pris, ikke null kroner.
+sjekk('… og tomt prisfelt gir ingen pris',
+    str_contains($kmpApi, "    \$prisOre = null;")
+    && str_contains($vis172, '          kampanjeHarPris: harPris,'));
+// Et fritt felt for hvor knappen gaar ville vaert en aapen omdirigering paa
+// forsiden.
+sjekk('knappen gaar bare til steder som finnes',
+    str_contains($kmpApi, "    if (!in_array(\$maal, ['butikk', 'medlemsbutikk', 'kurs', 'events', 'medlemskap', 'gavekort'], true)) {"));
+// Eieren, 13. september 2026: «Husk vis paa forside og skal staa samlet med
+// det andre». Bryteren staar i ⊙ Synlighet — én bryter, ett sted.
+sjekk('bryteren staar i ⊙ Synlighet og ikke ogsaa paa kortet',
+    str_contains($vis172, "            rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
+    && str_contains($vis172, '>Banneret under kursene. {{ kampanjeStatus }}</div>')
+    && !str_contains($vis172, 'checked="{{ kampanjePaa }}"'));
+// Maalt i nettleseren: «velg bilde, lagre» ga «Kampanjen maa ha en
+// overskrift». Skjemaet viste kampanjen som sto ute, men den laa bare i
+// lista — foerste endring laget en kladd med bare det ene feltet.
+sjekk('foerste endring tar vare paa resten av skjemaet',
+    str_contains($vis172, "      kmpRed: Object.assign({}, st.kmpRed || (st.kmpListe || []).filter(k => k.ute)[0] || {}, endring),"));
+// Den som staar ute skal ikke kunne slettes: da ville forsiden pekt paa noe
+// som er borte.
+sjekk('kampanjen som staar ute kan ikke slettes ved et uhell',
+    str_contains($kmpApi, "    if (aktivKampanje() === \$id) {")
+    && str_contains($kmpApi, "        Svar::feil('Denne står på forsiden. Vis en annen først, eller slå av banneret.');"));
+
 // «Skjul» var en enveis luke: varen forsvant ogsaa fra admin, og sto hverken
 // under «venter» eller «Publisert». Da kunne den verken legges ut igjen eller
 // slettes.
@@ -17122,7 +17183,9 @@ sjekk('synlighetsarket staar bare én gang i malen',
 sjekk('… og har alle elleve bryterne',
     substr_count($syn, "            rad('") === 11
     && str_contains($syn, "            rad('Banneret under toppbildet',")
-    && str_contains($syn, "            rad('Salgsuke-kampanjen', this.bryterPaa('salgsuke'),")
+    // Het «Salgsuke-kampanjen» til 13. september 2026; da ble salgsuka en
+    // generell salgskampanje, og navnet foelger med.
+    && str_contains($syn, "            rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
     && str_contains($syn, "            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
     && str_contains($syn, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),")
     && str_contains($syn, "            rad('Referansekunder på forsiden', this.bryterPaa('referanser'),")
@@ -17198,10 +17261,13 @@ sjekk('bryterpillene i medlemssalg-kortet ligger i samme spalte',
     // venstre kant, og da bestemmer teksten igjen hvor pilla havner.
     && str_contains($vis172, '  .lx-bryterhoyre { margin-left: auto; }'),
     'maalt paa 1000, 820 og 390 px: én spalte paa alle tre');
-// To igjen etter 13. september: «"Selg keramikk" paa Min side» flyttet til
-// «⊙ Synlighet» — den var den samme noekkelen som «Selg egne arbeider».
-sjekk('… og begge bryterne i kortet er med',
-    substr_count($vis172, '<span class="lx-bryterhoyre">') === 2);
+// Én igjen etter 13. september. «"Selg keramikk" paa Min side» flyttet til
+// «⊙ Synlighet» — den var den samme noekkelen som «Selg egne arbeider» — og
+// salgskampanjens bryter gikk samme vei: «Husk vis paa forside og skal staa
+// samlet med det andre». Auto-godkjenn blir staaende: den hoerer til
+// godkjenningsarbeidet, ikke til hva som vises.
+sjekk('… og bryteren i kortet er med',
+    substr_count($vis172, '<span class="lx-bryterhoyre">') === 1);
 
 sjekk('… og slettes for godt, etter et spoersmaal',
     str_contains($vis172, "  salgSlett(v) {")

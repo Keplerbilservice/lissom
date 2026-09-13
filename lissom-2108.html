@@ -1985,7 +1985,10 @@ window.__resources = {
     .lx-datoliste[data-apen="false"],
     .lx-seoliste[data-apen="false"],
     .lx-seoskjema[data-apen="false"],
-    .lx-seoforslag[data-apen="false"] { display: none !important; }
+    .lx-seoforslag[data-apen="false"],
+    .lx-vaepost[data-apen="false"],
+    .lx-vasms[data-apen="false"],
+    .lx-vasignatur[data-apen="false"] { display: none !important; }
   }
 
   /* Salgskampanjen. Bildet staar ved siden av teksten paa stor skjerm, og
@@ -13962,7 +13965,11 @@ window.__resources = {
 
         <div class="lx-split" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start;">
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen. Serveren settes opp én gang og
+                 roeres ikke etterpaa; paa stoerre skjerm staar den aapen. -->
+            <button type="button" class="lx-listevis" onClick="{{ vaEpostVeksle }}" style="{{ listeKnappStil }}">{{ vaEpostKnapp }}</button>
+            <div class="lx-vaepost" data-apen="{{ vaEpostApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">E-postkontoen</div>
             <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4);">
@@ -13984,15 +13991,19 @@ window.__resources = {
               </div>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Serveren er som regel mail.lissom.no, ikke leverandørens egen adresse. Brukernavn og passord er innloggingen til selve e-postkontoen.</p>
             </div>
+            </div>
           </div>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <button type="button" class="lx-listevis" onClick="{{ vaSmsVeksle }}" style="{{ listeKnappStil }}">{{ vaSmsKnapp }}</button>
+            <div class="lx-vasms" data-apen="{{ vaSmsApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">SMS hos Sveve</div>
             <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <input value="{{ vaSveveBruker }}" onChange="{{ settVa.sveve_bruker }}" placeholder="Brukernavn hos Sveve" aria-label="Sveve-bruker" style="{{ vaFeltStil }}">
               <input type="password" value="{{ vaSvevePassord }}" onChange="{{ settVa.sveve_passord }}" placeholder="{{ vaSvevePassordHint }}" aria-label="Sveve-passord" style="{{ vaFeltStil }}">
               <input value="{{ vaSmsAvsender }}" onChange="{{ settVa.sms_avsender }}" placeholder="Avsendernavn på SMS, f.eks. Lissom" aria-label="SMS-avsender" style="{{ vaFeltStil }}">
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Uten dette går påminnelser og «keramikken er ferdig brent» bare på e-post. Kurspåminnelser sendes da som e-post alene.</p>
+            </div>
             </div>
           </div>
         </div>
@@ -14005,7 +14016,11 @@ window.__resources = {
              tatt — de gaar som ren tekst. Naa foelger den med, og teksten
              sendes sammen med HTML-en saa den som leser ren tekst faar de
              samme opplysningene. -->
-        <div style="margin-top: var(--space-6); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="margin-top: var(--space-6);">
+        <!-- Signaturen er 3 102 px paa telefonen — over halve skjermen — og
+             skrives én gang. Bak en pille der; aapen som foer paa PC. -->
+        <button type="button" class="lx-listevis" onClick="{{ vaSignaturVeksle }}" style="{{ listeKnappStil }}">{{ vaSignaturKnapp }}</button>
+        <div class="lx-vasignatur" data-apen="{{ vaSignaturApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Signatur i e-postene systemet sender</div>
           <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
             <sc-if value="{{ vaSignaturMangler }}" hint-placeholder-val="{{ false }}">
@@ -14095,6 +14110,7 @@ window.__resources = {
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; margin-top: var(--space-8);">
@@ -57357,6 +57373,26 @@ class Component extends DCLogic {
         const feil = (this.state.varslerFeil || []).filter(f => !f.lost);
 
         return {
+          // De tre oppsettblokkene bak hver sin pille paa telefonen.
+          // Skjermen var 5 572 px paa en 390 px skjerm — 6,6 skjermer — og
+          // 4 058 av dem var ting som settes opp én gang: e-postkontoen
+          // (618 px), SMS-en (338 px) og signaturen (3 102 px). Statuskortene
+          // og lista over meldinger som ikke gikk ut staar aapne; det er dem
+          // man kommer for aa se. Maalt 13. september 2026.
+          //
+          // Samme grep som paa Kurs-, Nettbutikk- og SEO-skjermen. Knappene
+          // staar bare under 760 px. Se «.lx-listevis» i stilarket.
+          vaEpostApen: !!this.state.vaEpostApen,
+          vaEpostVeksle: () => this.setState({ vaEpostApen: !this.state.vaEpostApen }),
+          vaEpostKnapp: 'E-postkontoen' + (this.state.vaEpostApen ? ' \u25b4' : ' \u25be'),
+          vaSmsApen: !!this.state.vaSmsApen,
+          vaSmsVeksle: () => this.setState({ vaSmsApen: !this.state.vaSmsApen }),
+          vaSmsKnapp: 'SMS hos Sveve' + (this.state.vaSmsApen ? ' \u25b4' : ' \u25be'),
+          vaSignaturApen: !!this.state.vaSignaturApen,
+          vaSignaturVeksle: () => this.setState({ vaSignaturApen: !this.state.vaSignaturApen }),
+          vaSignaturKnapp: 'Signatur i e-postene systemet sender'
+            + (this.state.vaSignaturApen ? ' \u25b4' : ' \u25be'),
+
           vaFeltStil: 'width: 100%; box-sizing: border-box; padding: 12px 14px;'
             + ' border: 1px solid var(--border-subtle); border-radius: var(--radius-md);'
             + ' font-size: var(--text-sm); font-family: inherit; background: var(--surface-page);'

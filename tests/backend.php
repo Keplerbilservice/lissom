@@ -10056,7 +10056,7 @@ sjekk('… og lenken sier det samme som overskriften',
     && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
 // Én stil paa begge lenkene, saa de ikke driver fra hverandre.
 sjekk('… og alle lenkene deler stil',
-    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 5
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 8
     && str_contains($sidaG, '      listeKnappStil: {'));
 
 // ── SEO-skjermen paa telefonen ─────────────────────────────────────────
@@ -10070,7 +10070,7 @@ sjekk('… og alle lenkene deler stil',
 sjekk('de tre lange blokkene paa SEO ligger bak hver sin pille paa telefonen',
     str_contains($sidaG, '    .lx-seoliste[data-apen="false"],')
     && str_contains($sidaG, '    .lx-seoskjema[data-apen="false"],')
-    && str_contains($sidaG, '    .lx-seoforslag[data-apen="false"] { display: none !important; }'));
+    && str_contains($sidaG, '    .lx-seoforslag[data-apen="false"],'));
 // Tallet i pilla kommer fra lista selv, ikke fra et tall skrevet ved siden av.
 sjekk('… og tallet i pilla telles, ikke skrives',
     str_contains($sidaG, "seoListeKnapp: 'Sider og score (' + alle.length + ')'")
@@ -10079,6 +10079,29 @@ sjekk('… og tallet i pilla telles, ikke skrives',
 // mellom deg og feltene du nettopp aapnet.
 sjekk('… og lista lukker seg naar en side er valgt',
     str_contains($sidaG, 'const velgSide = id => () => this.setState({ seoValgtId: id, seoListeApen: false });'));
+
+// ── Varselskjermen paa telefonen ───────────────────────────────────────
+//
+// 5 572 piksler paa en 390 px skjerm — 6,6 skjermer — og 4 058 av dem var
+// ting som settes opp én gang: e-postkontoen (618 px), SMS-en (338 px) og
+// signaturen (3 102 px). Statuskortene og lista over meldinger som ikke
+// gikk ut staar aapne; det er dem man kommer for aa se.
+//
+// Maalt: 6,6 -> 2,0 skjermer. PC uendret paa 3 410 px.
+sjekk('de tre oppsettblokkene i varsler ligger bak hver sin pille paa telefonen',
+    str_contains($sidaG, '    .lx-vaepost[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-vasms[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-vasignatur[data-apen="false"] { display: none !important; }'));
+// Pillene sier det overskriften inne i boksen sier. Sto de hver for seg,
+// kunne de sagt hver sitt.
+sjekk('… og pillene sier det samme som overskriftene',
+    str_contains($sidaG, "vaEpostKnapp: 'E-postkontoen'")
+    && str_contains($sidaG, "vaSmsKnapp: 'SMS hos Sveve'")
+    && str_contains($sidaG, "vaSignaturKnapp: 'Signatur i e-postene systemet sender'"));
+// Lista over det som ikke gikk ut skal staa aapen — den er grunnen til aa
+// aapne skjermen i det hele tatt.
+sjekk('… mens meldingene som ikke gikk ut staar aapne',
+    !str_contains($sidaG, '.lx-vafeil[data-apen'));
 
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //

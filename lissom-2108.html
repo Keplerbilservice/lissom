@@ -25924,6 +25924,103 @@ class Component extends DCLogic {
       schema: 'FAQPage',
       index: 'Index',
     },
+    // ── De fem som sto i sitemapen uten en oppfoering her ─────────────
+    //
+    // Eieren, 13. september 2026, med bilde fra Search Console. Ni sider var
+    // indeksert; sitemapen sender Google til atten.
+    //
+    // side.php setter «noindex,nofollow» paa alt den ikke kjenner — en
+    // fornuftig regel for /kasse og for en skrivefeil, men disse fem ER ekte
+    // sider med egen skjerm. Sitemapen ba Google hente dem, og sida svarte
+    // «ikke indekser meg». Fire av dem sto som indeksert i Search Console
+    // (gjennomsoekt 23. august) og ville falt ut ved neste runde.
+    //
+    // De fikk ogsaa forsidas tittel, fordi den er reserven naar oppfoeringa
+    // mangler: «Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk» sto paa
+    // alle fem.
+    //
+    // Tekstene er skrevet etter det som faktisk staar paa sidene — lest i
+    // nettleseren 13. september. En beskrivelse som lover noe sida ikke har,
+    // er verre enn ingen.
+    plakatcone: {
+      fokus: 'cone til grader keramikk',
+      tittel: 'Cone til grader – brennetabell for keramikk | Lissom',
+      meta: 'Orton-coner omregnet til Celsius og Fahrenheit — fra høybrenning på cone 10 og nedover. Brennetabellen vi bruker i keramikkverkstedet på Teie.',
+      slug: 'nyttig-info/brennetabell',
+      h1: 'Cone til grader',
+      sekundare: 'orton cone, brennetabell keramikk, cone 06 grader, glasurbrenning temperatur, råbrenning keramikk',
+      altTekst: 'Brennetabell som viser Orton-coner i Celsius og Fahrenheit',
+      ogTittel: 'Cone til grader – brennetabell for keramikk | Lissom',
+      ogBeskrivelse: 'Orton-coner i Celsius og Fahrenheit, slik vi brenner i verkstedet på Teie.',
+      canonical: 'https://lissom.no/nyttig-info/brennetabell',
+      internlenker: 'Nyttig info, Medlemskap, Kurs',
+      schema: 'Article',
+      index: 'Index',
+    },
+    plakatinfo: {
+      fokus: 'informasjon til medlemmer keramikkverksted',
+      tittel: 'Informasjon til medlemmer | Lissom Keramikk',
+      meta: 'Praktisk informasjon for medlemmer hos Lissom Keramikk — råbrente plater, glasur før og etter råbrenning, hva som følger med i medlemskapet, og egen brenning.',
+      slug: 'nyttig-info/medlemsinfo',
+      h1: 'Informasjon til medlemmer',
+      sekundare: 'keramikkverksted medlemskap, råbrenning, glasurbrenning, underglasur, egen hylle verksted',
+      altTekst: 'Hyller med medlemmenes keramikk i verkstedet på Teie',
+      ogTittel: 'Informasjon til medlemmer | Lissom Keramikk',
+      ogBeskrivelse: 'Slik brukes verkstedet: plater, glasur, brenning og hva som følger med i medlemskapet.',
+      canonical: 'https://lissom.no/nyttig-info/medlemsinfo',
+      internlenker: 'Nyttig info, Medlemskap, Trivselsregler',
+      schema: 'Article',
+      index: 'Index',
+    },
+    plakattrivsel: {
+      fokus: 'trivselsregler keramikkverksted',
+      tittel: 'Trivselsregler i verkstedet | Lissom Keramikk',
+      meta: 'Ni kjøreregler i keramikkverkstedet på Teie — rydding, oppvask, lys, låsing og å sjekke tavlen før du går.',
+      slug: 'nyttig-info/trivselsregler',
+      h1: 'Trivselsregler',
+      sekundare: 'keramikkverksted regler, rydde etter seg, låse verksted, felles verksted Tønsberg',
+      altTekst: 'Ryddige arbeidsbord i keramikkverkstedet på Teie',
+      ogTittel: 'Trivselsregler i verkstedet | Lissom Keramikk',
+      ogBeskrivelse: 'Kjørereglene i verkstedet på Teie — rydding, oppvask, lys og låsing.',
+      canonical: 'https://lissom.no/nyttig-info/trivselsregler',
+      internlenker: 'Nyttig info, Medlemskap, Informasjon til medlemmer',
+      schema: 'Article',
+      index: 'Index',
+    },
+    // Vilkaar og personvern rangerer aldri paa noe. De staar her fordi Google
+    // ser etter synlige vilkaar paa en side som tar betalt, og fordi /vilkar
+    // alt sto som indeksert. Tekstene bygger paa overskriftene; hele
+    // avtaleteksten er ikke lest.
+    vilkar: {
+      fokus: 'salgsvilkår Lissom Keramikk',
+      tittel: 'Salgsvilkår | Lissom Keramikk',
+      meta: 'Vilkårene for kurs, medlemskap, gavekort og butikk hos Lissom Keramikk i Tønsberg — påmelding, betaling, avbestilling og angrerett.',
+      slug: 'vilkar',
+      h1: 'Salgsvilkår',
+      sekundare: 'avbestilling keramikkurs, angrerett, betingelser medlemskap, kjøpsvilkår',
+      altTekst: 'Lissom Keramikk & Håndverk i Tønsberg',
+      ogTittel: 'Salgsvilkår | Lissom Keramikk',
+      ogBeskrivelse: 'Vilkår for kurs, medlemskap, gavekort og butikk hos Lissom Keramikk i Tønsberg.',
+      canonical: 'https://lissom.no/vilkar',
+      internlenker: 'Personvern, Kontakt, Kurs',
+      schema: 'WebPage',
+      index: 'Index',
+    },
+    personvern: {
+      fokus: 'personvern Lissom Keramikk',
+      tittel: 'Personvern | Lissom Keramikk',
+      meta: 'Hvordan Lissom Keramikk i Tønsberg behandler personopplysninger — hva vi lagrer, hvorfor, hvor lenge, og hvilke rettigheter du har.',
+      slug: 'personvern',
+      h1: 'Personvern',
+      sekundare: 'personopplysninger, GDPR, informasjonskapsler, dine rettigheter',
+      altTekst: 'Lissom Keramikk & Håndverk i Tønsberg',
+      ogTittel: 'Personvern | Lissom Keramikk',
+      ogBeskrivelse: 'Hvordan Lissom Keramikk behandler personopplysninger, og hvilke rettigheter du har.',
+      canonical: 'https://lissom.no/personvern',
+      internlenker: 'Salgsvilkår, Kontakt',
+      schema: 'WebPage',
+      index: 'Index',
+    },
     omoss: {
       fokus: 'keramikkverksted Tønsberg',
       tittel: 'Om Lissom – keramikkverkstedet på Teie | Lissom',
@@ -33000,6 +33097,12 @@ class Component extends DCLogic {
       // og en generisk fanetittel.
       kalender: 'kalender', nyttig: 'nyttig', nyheter: 'nyheter',
       kursoversikt: 'kursoversikt', sporsmal: 'sporsmal',
+      // De tre guidene under «Nyttig info», og de to juridiske. Sto i
+      // sitemapen uten en oppfoering her, og fikk derfor noindex og forsidas
+      // tittel. Se SEO_FERDIG.
+      plakatcone: 'plakatcone', plakatinfo: 'plakatinfo',
+      plakattrivsel: 'plakattrivsel',
+      vilkar: 'vilkar', personvern: 'personvern',
     }[side] || null;
   }
 

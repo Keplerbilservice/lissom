@@ -37,6 +37,12 @@ $faste = [
     ['/om-oss',                       '0.6', 'monthly'],
     ['/kontakt',                      '0.6', 'monthly'],
     ['/nyheter',                      '0.6', 'weekly'],
+    // De to sto i SEO-kartet med egen tittel og «index», men ikke her — da
+    // maatte Google finne dem via en lenke, og det tar lengre tid.
+    // Eieren, 13. september 2026, med bilde fra Search Console: ni sider var
+    // indeksert av de atten sitemapen sendte den til.
+    ['/kursene-vare',                 '0.7', 'weekly'],
+    ['/sporsmal-og-svar',             '0.6', 'monthly'],
     ['/nyttig-info',                  '0.5', 'monthly'],
     ['/nyttig-info/brennetabell',     '0.4', 'yearly'],
     ['/nyttig-info/medlemsinfo',      '0.4', 'yearly'],

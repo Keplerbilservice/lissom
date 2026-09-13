@@ -16694,24 +16694,31 @@ sjekk('… og Spør verkstedet retter ordene foer den velger dokumenter',
     && str_contains($mkFaq, "Let etter meningen, ikke ordene.")
     && str_contains($mkFaq, "«Jeg tolker det som at du spør om …». Passer flere ting, spør:")
     && str_contains($mkFaq, "4. Passer ingenting, svar nøyaktig dette og ingenting mer:"));
-// Her sto «i begge soekefeltene». Feltet i kalenderen er ikke et soekefelt
-// lenger: fra publisering #147 og #150 spor det «Spor o store krukkemester»
-// rett, og da er det AI-en som svarer — ikke en treffliste med «Mente du».
-// Soekefeltet paa nettsida er det ene som er igjen, og der staar den.
-sjekk('«Mente du» staar i soekefeltet paa nettsida',
-    str_contains($mkSida, '<sc-if value="{{ sokHarMenteDu }}"')
-    && str_contains($mkSida, 'Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?')
-    && str_contains($mkSida, 'sokMenteDuVelg: () =>'),
-    'feltet i kalenderen sporr AI-en i stedet');
-sjekk('… og feltet i kalenderen sporr krukkemesteren, ikke soeket',
+// Kunnskapen ut av nettsidesoeket.
+//
+// Eieren, 13. september 2026: «Søk paa nettsiden skal ikke faa soeke i
+// dokumenter eller annet fra verksted. Det er kun soek paa nettsiden i kurs
+// events etc, ingen ai her».
+//
+// Feltet fant til da ogsaa haandboekene, teknikkarkene og malene i
+// Verkstedet, og foreslo «Mente du «…»?». Begge deler er borte; feltet spoer
+// ikke lenger api/kunnskap-sok.php.
+sjekk('nettsidesoeket soeker ikke i dokumentene fra Verkstedet',
+    !str_contains($mkSida, '{{ sokKunnskap }}')
+    && !str_contains($mkSida, '{{ sokHarMenteDu }}')
+    && !str_contains($mkSida, '{{ sokMenteDu }}')
+    // Navnene staar bare i kommentaren som forteller hvor de ble av.
+    && !str_contains($mkSida, '{{ sokMenteDuVelg }}')
+    && !str_contains($mkSida, 'sokMenteDuVelg:'),
+    'dokumentene er for medlemmene, ikke for nettsida');
+sjekk('… og feltet spoer ikke serveren i det hele tatt naar man skriver',
+    str_contains($mkSida, "settSokTekst: (e) => this.setState({ sokTekst: e.target.value }),")
+    && str_contains($mkSida, "          sokTom: !!t && treff.length === 0,"));
+// Feltet i kalender admin er en annen sak: der spoer det «Spoer o store
+// krukkemester» rett, og det roeres ikke.
+sjekk('… mens feltet i kalenderen sporr krukkemesteren som for',
     str_contains($mkSida, 'aria-label="Spør o store krukkemester"')
     && !str_contains($mkSida, 'klHarMenteDu'));
-sjekk('nettsida: kunnskapstreffene etter sidetreffene, hentet naar man skriver',
-    str_contains($mkSida, '<sc-for list="{{ sokKunnskap }}" as="r"')
-    && str_contains($mkSida, "settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },")
-    && str_contains($mkSida, "const kan = this.erPublisert() && this.state.innlogget && (this.state.erMedlemBruker || this.state.erAdminBruker);")
-    && str_contains($mkSida, "fetch('/api/kunnskap-sok.php?q=' + encodeURIComponent(t), { credentials: 'same-origin', cache: 'no-store' })")
-    && str_contains($mkSida, "sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,"));
 sjekk('… svaret gjelder bare ordet det ble hentet for',
     str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
 // Feltet het «Søk …» og fant personer, kursdatoer og dokumenter, med AI-en
@@ -16957,8 +16964,8 @@ sjekk('synlighetsarket staar bare én gang i malen',
     && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 1
     && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 1);
 // Ti rader: fem paa nettsiden, fem paa Min side. Maalt i nettleseren.
-sjekk('… og har alle ti bryterne',
-    substr_count($syn, "            rad('") === 10
+sjekk('… og har alle elleve bryterne',
+    substr_count($syn, "            rad('") === 11
     && str_contains($syn, "            rad('Banneret under toppbildet',")
     && str_contains($syn, "            rad('Salgsuke-kampanjen', this.bryterPaa('salgsuke'),")
     && str_contains($syn, "            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
@@ -16968,12 +16975,28 @@ sjekk('… og har alle ti bryterne',
     && str_contains($syn, "            rad('Internbutikken', this.bryterPaa('internbutikk'),")
     && str_contains($syn, "            rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),")
     && str_contains($syn, "            rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),")
-    && str_contains($syn, "            rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),"));
+    && str_contains($syn, "            rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),")
+    && str_contains($syn, "            rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,"));
+// «Spoer o store krukkemester» laa som en knapp under Verkstedet, der man
+// maatte staa for aa finne den. Eieren, 13. september 2026: «jeg vil kunne
+// skru av og paa o store krukkemsker for medlemmer».
+sjekk('… og krukkemesteren er flyttet, ikke kopiert',
+    // Bare i kommentaren som forteller hvor den ble av — ingen binding.
+    !str_contains($syn, '{{ dokFaqVeksle }}')
+    && !str_contains($syn, '{{ dokFaqNavn }}')
+    && !str_contains($syn, '{{ dokFaqStil }}')
+    && !str_contains($syn, 'dokFaqVeksle:')
+    && str_contains($syn, "                () => this.dokKall({ handling: 'veksle-faq' })),"));
+// Den eneste raden som ikke bor i content_blocks. Lista hentes bare naar man
+// staar paa Verkstedet, saa uten dette viste raden «av» paa alle andre
+// skjermer, uansett hva som sto i basen.
+sjekk('… og lista hentes naar panelet aapnes',
+    substr_count($syn, "{ this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); }") === 2);
 // Én vei inn paa telefon (Verktoy-arket) og én paa PC (sidemenyen) — den
 // samme raden fra adminMeny() baerer begge.
 sjekk('… og aapnes fra Verktøy paa telefon og fra sidemenyen paa PC',
     str_contains($syn, "        navn: '⊙  Synlighet',\n        kort: '⊙ Synlighet',")
-    && str_contains($syn, "        velg: () => this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }),"));
+    && str_contains($syn, "        velg: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },"));
 
 // «Flytt og fjern fra gammel plassering»: ingen av kortene skal finnes igjen.
 sjekk('de gamle kortene er fjernet, ikke kopiert',

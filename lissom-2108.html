@@ -19328,8 +19328,13 @@ window.__resources = {
              logg og samme maanedstak som teksten under Markedsfoering. -->
         <sc-if value="{{ vstErFaq }}" hint-placeholder-val="{{ false }}">
           <div style="max-width: 900px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
-              <button type="button" onClick="{{ dokFaqVeksle }}" style="{{ dokFaqStil }}">{{ dokFaqNavn }}</button>
+            <!-- Her sto knappen «Vises for medlemmer». Eieren, 13. september
+                 2026: «jeg vil kunne skru av og paa o store krukkemsker for
+                 medlemmer» — og «ikke lag dobbelt, men flytt og fjern fra
+                 gammel plassering». Den staar naa i «⊙ Synlighet», under
+                 «Paa Min side», sammen med de andre. Samme innstilling,
+                 samme kall. -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
               <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ faqKostnad }}</span>
             </div>
 
@@ -19864,30 +19869,12 @@ window.__resources = {
               <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ r.type }}</span>
             </button>
           </sc-for>
-          <!-- Kunnskapen: haandboekene, teknikkarkene og malene i
-               Verkstedet. Eieren, 11. september 2026 (GO). Bare for
-               innloggede — api/kunnskap-sok.php gir et medlem det som ligger
-               i kort som er slaatt paa, og admin alt. Utlogget faar ingen
-               liste her. Linja under navnet er den foerste linja i teksten
-               der ordet staar; til hoeyre staar kortet. Trykk aapner
-               dokumentet i ny fane, som «Aapne» gjoer i kortene. -->
-          <!-- «Mente du «…»?» naar det skrevne ikke traff, men et ord i
-               naerheten gjorde det. Treffene under er for det ordet; trykk
-               setter det i feltet. -->
-          <sc-if value="{{ sokHarMenteDu }}" hint-placeholder-val="{{ false }}">
-            <button type="button" onClick="{{ sokMenteDuVelg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: var(--space-2) var(--space-2) 0; text-align: left; font: var(--type-body); font-size: var(--text-sm); color: var(--text-muted);">Mente du <span style="font-weight: 700; color: var(--lissom-brown);">«{{ sokMenteDu }}»</span>?</button>
-          </sc-if>
-          <sc-for list="{{ sokKunnskap }}" as="r" hint-placeholder-count="3">
-            <button type="button" onClick="{{ r.velg }}" style="appearance: none; background: transparent; border: none; border-top: 1px solid var(--border-subtle); cursor: pointer; padding: var(--space-3) var(--space-2); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); text-align: left; font: var(--type-body); border-radius: var(--radius-sm); width: 100%;" style-hover="background: var(--clay-100);">
-              <span style="min-width: 0;">
-                <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ r.navn }}</span>
-                <sc-if value="{{ r.harUnder }}" hint-placeholder-val="{{ true }}">
-                  <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); overflow-wrap: anywhere;">{{ r.under }}</span>
-                </sc-if>
-              </span>
-              <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ r.type }}</span>
-            </button>
-          </sc-for>
+          <!-- Her sto kunnskapstreffene fra Verkstedet — haandboekene,
+               teknikkarkene og malene — og «Mente du «…»?».
+               Eieren, 13. september 2026: «Søk paa nettsiden skal ikke faa
+               soeke i dokumenter eller annet fra verksted. Det er kun soek
+               paa nettsiden i kurs events etc, ingen ai her».
+               Soekefeltet i kalender admin er en annen sak og roeres ikke. -->
         </div>
         <sc-if value="{{ sokTom }}" hint-placeholder-val="{{ false }}">
           <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen treff. Prøv «dreiekurs», «kopp» eller «glasur» — eller <button type="button" onClick="{{ sokTilForesporsel }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline;">send oss en forespørsel</button>.</p>
@@ -40033,7 +40020,7 @@ class Component extends DCLogic {
       {
         navn: '⊙  Synlighet',
         kort: '⊙ Synlighet',
-        velg: () => this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }),
+        velg: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },
         stil: Object.assign({}, this.adminBunnStil(), { marginTop: 'var(--space-4)', borderTop: '1px solid rgba(244,235,222,.18)', paddingTop: 'var(--space-4)' }),
       },
       {
@@ -42741,20 +42728,13 @@ class Component extends DCLogic {
       sokApen: !!this.state.sokApen,
       lukkSok: () => this.setState({ sokApen: false }),
       sokTekst: this.state.sokTekst || '',
-      settSokTekst: (e) => { this.setState({ sokTekst: e.target.value }); this.kunnskapSok(e.target.value); },
+      settSokTekst: (e) => this.setState({ sokTekst: e.target.value }),
       sokTilForesporsel: () => { this.setState({ sokApen: false, side: 'kurs' }); window.scrollTo(0, 0); },
-      // Kunnskapstreffene, naar de er hentet for akkurat det som staar i
-      // feltet naa. Se kunnskapSok().
-      sokMenteDu: this.kunnskapMenteDu(this.state.sokTekst),
-      sokHarMenteDu: !!this.kunnskapMenteDu(this.state.sokTekst),
-      sokMenteDuVelg: () => { const o = this.kunnskapMenteDu(this.state.sokTekst); this.setState({ sokTekst: o }); this.kunnskapSok(o); },
-      sokKunnskap: this.kunnskapTreff(this.state.sokTekst).map(t => ({
-        navn: t.navn,
-        under: t.utdrag || '',
-        harUnder: !!t.utdrag,
-        type: t.kort,
-        velg: () => { window.open('/api/dokument.php?id=' + t.id, '_blank', 'noopener'); this.setState({ sokApen: false, sokTekst: '' }); },
-      })),
+      // Her laa «sokKunnskap», «sokMenteDu» og «sokMenteDuVelg» —
+      // kunnskapstreffene fra Verkstedet. Eieren, 13. september 2026: «Søk
+      // paa nettsiden skal ikke faa soeke i dokumenter eller annet fra
+      // verksted. Det er kun soek paa nettsiden i kurs events etc, ingen ai
+      // her». Feltet spoer ikke lenger api/kunnskap-sok.php.
       ...(() => {
         const alt = [
           { navn: 'Nybegynner dreiekurs', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
@@ -42774,8 +42754,7 @@ class Component extends DCLogic {
         const treff = t ? alt.filter(a => (a.navn + ' ' + a.type).toLowerCase().includes(t)) : alt.slice(0, 6);
         return {
           sokResultater: treff.map(a => Object.assign({}, a, { velg: () => { this.setState({ sokApen: false, sokTekst: '', side: a.side, kursFilter: a.filter || this.state.kursFilter }); window.scrollTo(0, 0); } })),
-          // «Ingen treff» bare naar heller ikke kunnskapen hadde noe.
-          sokTom: !!t && treff.length === 0 && this.kunnskapTreff(this.state.sokTekst).length === 0,
+          sokTom: !!t && treff.length === 0,
         };
       })(),
       stoppKlikk: (e) => e.stopPropagation(),
@@ -48548,9 +48527,21 @@ class Component extends DCLogic {
                 () => this.vekslBryter('gaven', 'Gaven')),
             rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),
                 () => this.vekslBryter('medlemfrys', 'Frys av medlemskap')),
+            // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
+            // store krukkemsker for medlemmer».
+            //
+            // Bryteren fantes — som en knapp under Verkstedet › Spoer o store
+            // krukkemester, der man maatte staa for aa finne den. Samme
+            // innstilling (verksted_faq_medlem), samme kall; bare flyttet hit
+            // sammen med de andre. Knappen der er fjernet.
+            //
+            // Den eneste raden som ikke bor i content_blocks, saa den leser
+            // og skriver sitt eget sted.
+            rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,
+                () => this.dokKall({ handling: 'veksle-faq' })),
           ],
           synVises: !!this.state.synlighetApen,
-          synAapne: () => this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }),
+          synAapne: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },
           synLukk: () => this.setState({ synlighetApen: false }),
           synStopp: e => e.stopPropagation(),
         };
@@ -54083,19 +54074,10 @@ class Component extends DCLogic {
           },
           dokTekstAvbryt: () => this.setState({ dokTekstId: 0, dokTekst: '' }),
 
-          // «Spor verkstedet» som eget kort i gitteret, med sin egen bryter.
-          dokFaqNavn: d.faqMedlem ? 'Vises for medlemmer' : 'Skjult for medlemmer',
-          dokFaqStil: {
-            appearance: 'none', cursor: 'pointer', textAlign: 'left',
-            font: 'var(--type-body-sm)', fontWeight: 700, lineHeight: 'normal',
-            padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)',
-            background: d.faqMedlem ? 'var(--surface-card)' : 'transparent',
-            border: d.faqMedlem
-              ? '1px solid var(--sage-500)'
-              : '1px dashed var(--border-default)',
-            color: d.faqMedlem ? 'var(--sage-600)' : 'var(--text-muted)',
-          },
-          dokFaqVeksle: () => this.dokKall({ handling: 'veksle-faq' }),
+          // Her laa «dokFaqNavn», «dokFaqStil» og «dokFaqVeksle» — knappen
+          // «Vises for medlemmer». Bryteren staar naa i «⊙ Synlighet», som
+          // en rad under «Paa Min side». Samme innstilling, samme kall; se
+          // «Spør o store krukkemester» i synMin.
 
           faqLeserFra: faqKort,
           faqSporsmal: this.state.faqSporsmal || '',

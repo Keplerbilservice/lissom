@@ -13856,6 +13856,44 @@ sjekk('… og de er piller, ikke understreket tekst',
 sjekk('kortet heter det det er — beskjeder fra verkstedet',
     (bool) preg_match('/id="minside-beskjeder".{0,400}>Beskjeder<\/div>/s', $msU)
     && (bool) preg_match('/id="minside-beskjeder".{0,700}>Fra verkstedet<\/h3>/s', $msU));
+// Oppslagstavla var tom i produksjon fram til 13. september 2026. Kortet
+// fantes, men renderVals sa det selv: «finnes ikke som endepunkt ennaa».
+// Eieren: «paa min side, saa ser det ut til at beskjeder til medlemmene ikke
+// vises». Maalt i nettleseren samme dag: admin sendte «Ovnen går natt til
+// torsdag» til alle medlemmer, og den sto paa Min side som «I dag».
+$beskjedApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/beskjed.php');
+$medlemApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('… og en beskjed til medlemmene lagres, ikke bare sendes',
+    str_contains($beskjedApi, "if (\$til === 'medlemmer') {")
+    && str_contains($beskjedApi, "DB::settInn('medlemsbeskjeder', ["));
+sjekk('… bare til medlemmene — deltakerne paa en dato har ingen Min side',
+    substr_count($beskjedApi, "DB::settInn('medlemsbeskjeder'") === 1);
+sjekk('… og api/medlemskap.php sender dem til den som er logget inn',
+    str_contains($medlemApi, 'FROM medlemsbeskjeder')
+    && str_contains($medlemApi, "'beskjeder' => \$beskjeder"));
+sjekk('… en beskjed med type gaar bare til den medlemskapstypen',
+    str_contains($medlemApi, "WHERE (type = '' OR type = :t)"));
+sjekk('… og tavla henter ikke mer enn de fem siste seks ukene',
+    str_contains($medlemApi, 'INTERVAL 42 DAY')
+    && str_contains($medlemApi, 'LIMIT 5'));
+sjekk('… kortet leser fra staten, ikke fra en liste i fila',
+    str_contains($msU, '(this.state.beskjedListe || [])')
+    && str_contains($msU, 'beskjedListe: Array.isArray(d.beskjeder) ? d.beskjeder : []'));
+sjekk('… og tida staar med de ordene kortet er tegnet med',
+    str_contains($msU, "return 'I dag';")
+    && str_contains($msU, "return 'I går';")
+    && str_contains($msU, "return dager + ' dager siden';")
+    && str_contains($msU, "return uker === 1 ? '1 uke siden' : uker + ' uker siden';"));
+// Eieren, samme dag: «naar det er beskjed eller intern samling, saa er det
+// fint at den vises paa min side forside, under dreieskivene denne uka».
+// Paa telefonen laa «Interne kurs og samlinger» nest nederst — «order: 98»
+// skjot den under alt annet. Maalt paa 390 px etterpaa: Dreieskivene 1158,
+// Beskjeder 1380, Interne kurs og samlinger 1713.
+// Merk: kommentaren der regelen sto siterer den gamle formen, saa vakta maa
+// se etter hele erklaeringa — ikke bare navnet og tallet.
+sjekk('… og interne samlinger skyves ikke ned paa telefonen lenger',
+    !str_contains($sida, '#minside-internkurs { order: 98 !important; }')
+    && str_contains($sida, '.lx-ms-selg { order: 99 !important; }'));
 sjekk('… og samtalen med Monica er borte',
     !str_contains($msU, 'Send en beskjed til Monica')
     && !str_contains($msU, 'Dine meldinger til Monica')

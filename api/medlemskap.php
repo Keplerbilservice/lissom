@@ -129,7 +129,45 @@ if (Foresporsel::metode() === 'GET') {
         }
     }
 
-    Svar::json(['planer' => $planer(), 'min' => $min]);
+    // ── Beskjedene fra verkstedet ────────────────────────────────────
+    //
+    // Eieren, 13. september 2026: «paa min side, saa ser det ut til at
+    // beskjeder til medlemmene ikke vises». Kortet har staatt paa forsiden
+    // hele tiden med en tom liste — det fantes ikke noe endepunkt.
+    //
+    // Tavla er medlemmenes: bare den som er logget inn faar den, og bare den
+    // som er medlem. Beskjeder uten type gikk til alle; de med type gikk til
+    // én medlemskapstype, og da skal ikke de andre se dem.
+    //
+    // Seks uker tilbake, og de fem siste. En beskjed om ovnen forrige maaned
+    // er ikke noe medlemmet skal rulle forbi for aa finne den fra i gaar.
+    $beskjeder = [];
+    if ($medlem !== null) {
+        $minType = (string) ($medlem['status'] === 'prove'
+            ? 'prove' : ($medlem['medlemskap_type'] ?? ''));
+        try {
+            $beskjeder = array_map(static fn($b) => [
+                'tittel' => (string) $b['tittel'],
+                'tekst'  => (string) $b['tekst'],
+                // Datoen sendes som den er. Hvor lenge siden det er, regnes
+                // ut i nettleseren — serveren vet ikke hva klokka er hos den
+                // som leser.
+                'naar'   => (string) $b['opprettet'],
+            ], DB::alle(
+                "SELECT tittel, tekst, opprettet FROM medlemsbeskjeder
+                  WHERE (type = '' OR type = :t)
+                    AND opprettet >= (NOW() - INTERVAL 42 DAY)
+               ORDER BY opprettet DESC, id DESC LIMIT 5",
+                ['t' => $minType]
+            ));
+        } catch (Throwable $e) {
+            // Tabellen kommer med migrasjon 180. Har den ikke kjoert ennaa,
+            // staar kortet tomt som for — resten av Min side skal virke.
+            logg('Min side: fikk ikke hentet beskjeder', ['feil' => $e->getMessage()]);
+        }
+    }
+
+    Svar::json(['planer' => $planer(), 'min' => $min, 'beskjeder' => $beskjeder]);
 }
 
 // ----------------------------------------------------------------- skriving

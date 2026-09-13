@@ -17,7 +17,7 @@ require __DIR__ . '/../_boot.php';
 
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
-krev_admin();
+$jeg = krev_admin();
 
 $til   = Foresporsel::tekst('til', 'okt');
 $tekst = trim(Foresporsel::tekst('tekst'));
@@ -190,6 +190,33 @@ if ($epost === 0 && $antallSms === 0) {
               . ', men ingen av dem har e-post eller telefonnummer registrert.',
         409
     );
+}
+
+// Oppslagstavla paa Min side.
+//
+// Eieren, 13. september 2026: «paa min side, saa ser det ut til at beskjeder
+// til medlemmene ikke vises». Kortet «Beskjeder — Fra verkstedet» har staatt
+// paa forsiden hele tiden, men beskjeden ble bare sendt — aldri lagret. Var
+// e-posten lest og slettet, fantes den ingen steder.
+//
+// Den lagres etter at noe faktisk gikk ut: gikk ingenting, har svaret over
+// alt avbrutt med en feil, og da skal det ikke staa noe paa tavla heller.
+//
+// Bare beskjeder til medlemmene. Deltakerne paa en kursdato har ingen Min
+// side, og én enkelt mottaker er ikke en oppslagstavle.
+if ($til === 'medlemmer') {
+    try {
+        DB::settInn('medlemsbeskjeder', [
+            'tittel' => $emne,
+            'tekst'  => $tekst,
+            'type'   => mb_substr(Foresporsel::tekst('type'), 0, 64),
+            'av'     => mb_substr((string) ($jeg['navn'] ?? ''), 0, 191),
+        ]);
+    } catch (Throwable $e) {
+        // Tavla er ikke verdt en feilmelding til den som nettopp sendte:
+        // e-postene er alt i koen. Den havner i loggen i stedet.
+        logg('Beskjed: fikk ikke lagret til Min side', ['feil' => $e->getMessage()]);
+    }
 }
 
 $beskjed = sprintf(

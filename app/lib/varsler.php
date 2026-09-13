@@ -563,7 +563,29 @@ final class Utsending
             return self::sendSmtp($til, $emneKodet, $kropp, $headere, (string) $fra);
         }
 
-        return mail($til, $emneKodet, $kropp, $headere, '-f' . $fra);
+        // Serverens egen e-post. mail() svarer bare true eller false, og
+        // grunnen staar i PHP-ens siste advarsel — «sendmail: not found»,
+        // «Could not execute mail delivery program», eller hva serveren nna
+        // sier. Uten dette blir «Leverandoren svarte med feil» staaende i
+        // koen, og det hjelper ingen: eieren ser en rad som feilet uten aa
+        // faa vite hvorfor.
+        //
+        // Funnet 13. september 2026. Eieren: «Naar noen melder seg paa kurs,
+        // saa fikk jeg epost for, det gjor jeg ikke lenger.» Koen sa bare
+        // «Leverandoren svarte med feil» paa hver eneste rad — $sisteFeil ble
+        // satt av sendSmtp() og sendSms(), men aldri her.
+        $foer = error_get_last();
+        $ok = @mail($til, $emneKodet, $kropp, $headere, '-f' . $fra);
+        if (!$ok) {
+            $etter = error_get_last();
+            $sagt = ($etter !== null && $etter !== $foer)
+                ? trim((string) ($etter['message'] ?? ''))
+                : '';
+            self::$sisteFeil = 'SMTP er ikke satt opp, og serverens egen e-post tok ikke imot meldingen'
+                . ($sagt !== '' ? ' — ' . $sagt : '');
+            logg('E-post: serverens egen sending feilet', ['til' => $til, 'feil' => $sagt]);
+        }
+        return $ok;
     }
 
     /**

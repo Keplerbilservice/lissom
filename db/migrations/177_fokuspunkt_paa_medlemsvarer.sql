@@ -15,5 +15,9 @@
 -- «50% 50%» er midten, det samme fokusFor() gir naar ingenting er valgt.
 -- Gamle rader far den, og staar noeyaktig som for.
 
+-- «IF NOT EXISTS», som de 42 andre migrasjonene som legger til en kolonne.
+-- Uten den doer hele kjoringa paa en base som alt har kolonna — og alt etter
+-- 177 blir staaende ukjort. Funnet 13. september 2026 da migrasjonen ble
+-- kjort mot en base der kolonna alt var lagt inn for haand under testing.
 ALTER TABLE member_sales
-  ADD COLUMN fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;
+  ADD COLUMN IF NOT EXISTS fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;

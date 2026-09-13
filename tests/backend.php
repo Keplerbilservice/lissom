@@ -17254,8 +17254,34 @@ sjekk('… og de ni punktene ligger oppaa bildet',
 sjekk('… og valget foelger med produktet',
     str_contains($vis172, "        skjema.append('fokus', s.skFokus || '50% 50%');")
     && str_contains($msApi, "\$fokus = trim(Foresporsel::tekst('fokus'));")
-    && str_contains($mig177, "  ADD COLUMN fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;"),
+    && str_contains($mig177, "  ADD COLUMN IF NOT EXISTS fokus VARCHAR(16) NOT NULL DEFAULT '50% 50%' AFTER bilde;"),
     'maalt: «Nede venstre» ble lagret som «0% 100%»');
+// «IF NOT EXISTS», som de 42 andre migrasjonene som legger til en kolonne.
+// Uten den doer hele kjoringa paa en base som alt har kolonna, og alt etter
+// 177 blir staaende ukjort. Funnet 13. september 2026.
+sjekk('… og migrasjonen taaler aa kjores om igjen',
+    str_contains($mig177, 'ADD COLUMN IF NOT EXISTS fokus'));
+
+// ── En feil som ikke sier hva som er galt, hjelper ingen ────────────────
+//
+// Eieren, 13. september 2026: «Naar noen melder seg paa kurs, saa fikk jeg
+// epost for, det gjor jeg ikke lenger.» Koen sa «Leverandoren svarte med
+// feil» paa hver eneste rad. Grunnen: $sisteFeil ble satt av sendSmtp() og
+// sendSms(), men aldri av fallbacken — serverens egen mail(). Er ikke SMTP
+// satt opp, er det den veien alt gaar, og da staar man uten et svar.
+//
+// Maalt: hele koen kjort mot en tjener uten sendmail. For: «Leverandoren
+// svarte med feil» x 13. Etter: «SMTP er ikke satt opp, og serverens egen
+// e-post tok ikke imot meldingen» x 13, lest i admin.
+$varslerKode = (string) file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+sjekk('serverens egen e-post sier ogsaa hvorfor det gikk galt',
+    str_contains($varslerKode, "\$ok = @mail(\$til, \$emneKodet, \$kropp, \$headere, '-f' . \$fra);")
+    && str_contains($varslerKode, "self::\$sisteFeil = 'SMTP er ikke satt opp, og serverens egen e-post tok ikke imot meldingen'"));
+// PHP-ens egen advarsel legges bak, naar det finnes en: «sendmail: not
+// found» sier mer enn setninga alene.
+sjekk('… med serverens egne ord bak, der de finnes',
+    str_contains($varslerKode, "\$foer = error_get_last();")
+    && str_contains($varslerKode, "(\$sagt !== '' ? ' — ' . \$sagt : '');"));
 // Et fritt felt her ville endt som ren CSS i «background-position» ute.
 sjekk('… og bare de ni punktene godtas',
     str_contains($msApi, "if (!in_array(\$fokus, \$fokusValg, true)) {"));

@@ -16538,7 +16538,6 @@ sjekk('notatene staar ikke i den lette utgaven',
 // lx-uten-sok paa <html>, soekeknappen borte. Kalender admin: «Kunnskap»
 // under person-/kurstreffene. Selve api/kunnskap-sok.php er ikke kjoert —
 // ingen PHP paa maskinen det ble bygget paa.
-$mkSok = file_get_contents(dirname(__DIR__) . '/api/kunnskap-sok.php');
 sjekk('migrasjon 159 legger til Leire og Dreiing etter de seks',
     str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/159_leire_og_dreiing.sql'),
         "    ('leire',   'Leire',   7),\n    ('dreiing', 'Dreiing', 8);"));
@@ -16710,12 +16709,23 @@ sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
     && str_contains($mkSida, '<div role="img" aria-label="{{ bBildeAlt }}"')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.js'), 'alt: imageAlt || title')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.min.js'), 'imageAlt||title'));
-// Endepunktet gikk over til sokMedForslag() 11. september, da «Mente du»
-// kom. Proven holdt paa det gamle kallet.
-sjekk('soeket krever innlogging og gir et medlem bare det som er slaatt paa',
-    str_contains($mkSok, "\$medlem  = krev_medlem();")
-    && str_contains($mkSok, "Dokumenter::sokMedForslag(\$q, !\$erAdmin)")
-    && str_contains($mkLib, "\$hvor = \$bareMedlem ? 'WHERE ' . self::synligSql() : '';"));
+// Dokumentsoeket er borte. Eieren sa GO til det 11. september 2026, for to
+// soekefelt: soeket paa nettsida og soekefeltet i kalender admin. 13.
+// september tok vi det ut av nettsida — «Soek paa nettsiden skal ikke faa
+// soeke i dokumenter eller annet fra verksted» — og admin-feltet ble
+// «Spoer o store krukkemester», som er AI og ikke dette. Da sto det igjen
+// uten vei inn: null kallere i hele repoet. Eieren: «Fjern det».
+//
+// Motoren i app/lib/dokumenter.php staar igjen med vilje — den er ikke
+// bedt fjernet, og proevene under passer fortsatt paa den.
+sjekk('dokumentsoeket har ingen vei inn lenger',
+    !is_file(dirname(__DIR__) . '/api/kunnskap-sok.php')
+    && !str_contains($sidaP, 'kunnskapSok')
+    && !str_contains($sidaP, 'kunnskapTreffListe')
+    && !str_contains($sidaP, "fetch('/api/kunnskap-sok.php"),
+    '95 linjer ute; motoren staar igjen');
+sjekk('… og motoren gir et medlem bare det som er slaatt paa',
+    str_contains($mkLib, "\$hvor = \$bareMedlem ? 'WHERE ' . self::synligSql() : '';"));
 sjekk('… navnetreff foerst, saa linja i teksten',
     str_contains($mkLib, "return array_slice(array_merge(\$iNavn, \$iTekst), 0, \$maks);")
     && str_contains($mkLib, "\$treff['utdrag'] = self::linjeMed(\$tekst, \$ord);"));
@@ -16760,8 +16770,7 @@ sjekk('… og rettOrd() bytter bare det som maa byttes',
 // Returlinja ble skrevet om da soeket begynte aa gaa ord for ord (12.
 // september). Det som betyr noe er at forslaget foelger med ut.
 sjekk('soeket svarer med menteDu naar det skrevne ikke traff',
-    str_contains($mkLib, "return ['treff' => \$treff, 'menteDu' => \$rettet];")
-    && str_contains($mkSok, "Svar::json(['treff' => \$svar['treff'], 'menteDu' => \$svar['menteDu']]);"));
+    str_contains($mkLib, "return ['treff' => \$treff, 'menteDu' => \$rettet];"));
 // Eieren, 11. september 2026 (bilde fra Safari): «hva er begitning» i
 // kalenderen ga «Ingen treff» — setningen staar ikke i noe dokument, men
 // ordet gjoer det. Naa soekes det ord for ord naar setningen ikke treffer,
@@ -16837,8 +16846,12 @@ sjekk('… og feltet spoer ikke serveren i det hele tatt naar man skriver',
 sjekk('… mens feltet i kalenderen sporr krukkemesteren som for',
     str_contains($mkSida, 'aria-label="Spør o store krukkemester"')
     && !str_contains($mkSida, 'klHarMenteDu'));
-sjekk('… svaret gjelder bare ordet det ble hentet for',
-    str_contains($mkSida, "return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];"));
+// Her sto en proeve paa at kunnskapssvaret bare gjaldt ordet det ble hentet
+// for. Metodene den saa paa er fjernet 13. september 2026 — se
+// «dokumentsoeket har ingen vei inn lenger» over.
+sjekk('… og kunnskapstreffene er ute av fila',
+    !str_contains($mkSida, 'kunnskapFor')
+    && !str_contains($mkSida, 'kunnskapMenteDu'));
 // Feltet het «Søk …» og fant personer, kursdatoer og dokumenter, med AI-en
 // som pille nederst i treffboksen. Eieren, 11. september 2026: «Jeg vil at
 // hele dette søkefeltet er spør verkstedet. Thats it» — «Samme funksjon»,

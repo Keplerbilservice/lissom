@@ -25224,51 +25224,6 @@ class Component extends DCLogic {
   }
 
   /**
-   * Kunnskapstreff til soekefeltene: haandboekene, teknikkarkene og malene
-   * i Verkstedet. Eieren, 11. september 2026 (GO): i soekefeltet paa
-   * nettsida og i soekefeltet i kalender admin.
-   *
-   * Soeket gjoeres paa serveren (api/kunnskap-sok.php), som bare gir ut
-   * det den som spor har lov til aa se. Herfra spoerres det bare naar det
-   * kan bli noe: innlogget, og medlem eller admin. Ett kall per pause i
-   * skrivinga, ikke per tastetrykk, og svaret tas vare paa sammen med
-   * ordet det gjaldt — saa et sent svar paa et gammelt ord ikke legger
-   * seg over det nye.
-   */
-  kunnskapSok(tekst) {
-    clearTimeout(this._kunnskapTimer);
-    const t = (tekst || '').trim();
-    const kan = this.erPublisert() && this.state.innlogget && (this.state.erMedlemBruker || this.state.erAdminBruker);
-    if (t.length < 2 || !kan) {
-      if (this.state.kunnskapFor) this.setState({ kunnskapFor: '', kunnskapTreffListe: [] });
-      return;
-    }
-    this._kunnskapTimer = setTimeout(() => {
-      fetch('/api/kunnskap-sok.php?q=' + encodeURIComponent(t), { credentials: 'same-origin', cache: 'no-store' })
-        .then(r => r.json())
-        .then(d => this.setState({ kunnskapFor: t, kunnskapTreffListe: (d && d.treff) || [], kunnskapMenteDu: (d && d.menteDu) || '' }))
-        .catch(() => this.setState({ kunnskapFor: t, kunnskapTreffListe: [], kunnskapMenteDu: '' }));
-    }, 250);
-  }
-
-  /** Treffene, om de gjelder det som staar i feltet naa. Ellers ingen. */
-  kunnskapTreff(tekst) {
-    const t = (tekst || '').trim();
-    return t && this.state.kunnskapFor === t ? (this.state.kunnskapTreffListe || []) : [];
-  }
-
-  /**
-   * «Mente du «sentrering»?» — ordet serveren fant treff for da det skrevne
-   * ikke ga noen. Eieren, 11. september 2026 (GO): «jeg vil ikke måtte
-   * treffe helt når jeg spør om noe, kanskje den kan si, mente du dette??».
-   * Tom naar det skrevne traff selv.
-   */
-  kunnskapMenteDu(tekst) {
-    const t = (tekst || '').trim();
-    return t && this.state.kunnskapFor === t ? (this.state.kunnskapMenteDu || '') : '';
-  }
-
-  /**
    * Frakten, i kroner.
    *
    * Tallet sto skrevet inn som «89» fire steder her inne, og gikk aldri til

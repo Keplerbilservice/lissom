@@ -13886,8 +13886,8 @@ sjekk('pillene staar to og to i lik bredde paa telefon',
     && str_contains($sidaP, '      min-width: fit-content !important;'),
     'maalt: 59 rader paa 390 px');
 sjekk('… og alle pilleradene i admin er merket',
-    substr_count($sidaP, 'class="lx-pillerad"') === 113,
-    '113 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
+    substr_count($sidaP, 'class="lx-pillerad"') === 114,
+    '114 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
 
 // Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
 // lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september
@@ -17057,6 +17057,21 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
+
+echo "\n== Navnene i Kassa er ikke lenker ==\n";
+// Eieren har sagt det tre ganger — 6. september 2026: «ingen link», og «jeg
+// vil ha samme pille som resten» — og det staar i arbeidsreglene. Maalt i
+// nettleseren 13. september: tre understreka navn igjen i Kassa, og de var
+// det eneste stedet i raden man kunne trykke seg inn paa medlemmet.
+sjekk('navnet i Kassa er en overskrift, ikke en lenke',
+    str_contains($vis172, "        navnStil: {\n          font: 'inherit', fontWeight: 700, color: 'var(--text-heading)', textAlign: 'left',\n        },")
+    && !str_contains($vis172, "          textDecoration: erMedlem ? 'underline' : 'none', textUnderlineOffset: '3px',"),
+    'maalt: 0 understreka knapper igjen paa skjermen');
+// Navnet ble gjenbrukt fra kursraden under Nyttig info; eieren: «Ja, behold
+// det». Ingen nye ord for noe som alt finnes.
+sjekk('… og veien inn er en pille med samme maal som resten',
+    str_contains($vis172, '<button type="button" onClick="{{ u.aapne }}" style="{{ u.seStil }}">Se personen</button>')
+    && str_contains($vis172, "          borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)',\n          background: 'var(--surface-card)', color: 'var(--lissom-brown)',\n          font: 'var(--type-chip)', whiteSpace: 'nowrap',"));
 
 echo "\n== Salgsuka blir en generell salgskampanje ==\n";
 // Eieren, 13. september 2026: «Jeg vil ogsaa at salgsuke banneret skal vaere

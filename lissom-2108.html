@@ -10234,8 +10234,13 @@ window.__resources = {
             <sc-for list="{{ ovSkylder }}" as="u" hint-placeholder-count="3">
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5);">
                 <span style="min-width: 0; flex: 1 1 220px;">
-                  <button type="button" onClick="{{ u.aapne }}" style="{{ u.navnStil }}"><span style="display: block; font-size: var(--text-sm);">{{ u.navn }}</span></button>
+                  <span style="{{ u.navnStil }}"><span style="display: block; font-size: var(--text-sm);">{{ u.navn }}</span></span>
                   <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
+                  <sc-if value="{{ u.erMedlem }}" hint-placeholder-val="{{ true }}">
+                    <span class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: 6px;">
+                      <button type="button" onClick="{{ u.aapne }}" style="{{ u.seStil }}">Se personen</button>
+                    </span>
+                  </sc-if>
                 </span>
                 <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
                 <!-- To maater sto over hverandre. Fire i samme stabel ville
@@ -35896,11 +35901,24 @@ class Component extends DCLogic {
         aapne: erMedlem
           ? () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: u.navn })
           : () => {},
+        // Navnet er en overskrift, ikke en lenke.
+        //
+        // Eieren har sagt det tre ganger — 6. september 2026: «ingen link», og
+        // «jeg vil ha samme pille som resten» — og det staar i arbeidsreglene:
+        // «Piller, ikke lenker». Her sto navnet fortsatt understreka, og var
+        // det eneste stedet i raden man kunne trykke seg inn paa medlemmet.
+        // Maalt i nettleseren: tre slike igjen i Kassa.
+        //
+        // Veien inn ligger naa som en pille sammen med de andre, med det
+        // samme navnet admin bruker fra for — «Se personen», se kursraden.
         navnStil: {
-          appearance: 'none', background: 'transparent', border: 'none', padding: 0,
           font: 'inherit', fontWeight: 700, color: 'var(--text-heading)', textAlign: 'left',
-          cursor: erMedlem ? 'pointer' : 'default',
-          textDecoration: erMedlem ? 'underline' : 'none', textUnderlineOffset: '3px',
+        },
+        seStil: {
+          appearance: 'none', cursor: 'pointer', padding: '6px 12px',
+          borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-subtle)',
+          background: 'var(--surface-card)', color: 'var(--lissom-brown)',
+          font: 'var(--type-chip)', whiteSpace: 'nowrap',
         },
         // Ett trykk merker den betalt, med maaten.
         //

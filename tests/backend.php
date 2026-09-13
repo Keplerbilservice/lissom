@@ -17071,6 +17071,16 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
 
+echo "\n== Oversikt har ingen tom seksjon ==\n";
+// Alt som laa under «Synlighet og innhold» er flyttet ut, ett stykke om
+// gangen — bryterne til ⊙ Synlighet, kursvelgeren opp som kort,
+// grupperabatten til Kurs og deltakere. Til slutt sto overskrifta igjen uten
+// noe under seg. Maalt i nettleseren 13. september 2026: overskrifta paa
+// y=1189, ingenting etter den.
+sjekk('den tomme seksjonen paa Oversikt er borte',
+    !str_contains($vis172, '>Synlighet og innhold</div>'),
+    'overskrift og tomt rutenett ute; ingen funksjon borte');
+
 echo "\n== Navnene i Kassa er ikke lenker ==\n";
 // Eieren har sagt det tre ganger — 6. september 2026: «ingen link», og «jeg
 // vil ha samme pille som resten» — og det staar i arbeidsreglene. Maalt i

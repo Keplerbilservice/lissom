@@ -10056,7 +10056,7 @@ sjekk('… og lenken sier det samme som overskriften',
     && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
 // Én stil paa begge lenkene, saa de ikke driver fra hverandre.
 sjekk('… og alle lenkene deler stil',
-    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 8
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 10
     && str_contains($sidaG, '      listeKnappStil: {'));
 
 // ── SEO-skjermen paa telefonen ─────────────────────────────────────────
@@ -10091,7 +10091,7 @@ sjekk('… og lista lukker seg naar en side er valgt',
 sjekk('de tre oppsettblokkene i varsler ligger bak hver sin pille paa telefonen',
     str_contains($sidaG, '    .lx-vaepost[data-apen="false"],')
     && str_contains($sidaG, '    .lx-vasms[data-apen="false"],')
-    && str_contains($sidaG, '    .lx-vasignatur[data-apen="false"] { display: none !important; }'));
+    && str_contains($sidaG, '    .lx-vasignatur[data-apen="false"],'));
 // Pillene sier det overskriften inne i boksen sier. Sto de hver for seg,
 // kunne de sagt hver sitt.
 sjekk('… og pillene sier det samme som overskriftene',
@@ -10102,6 +10102,19 @@ sjekk('… og pillene sier det samme som overskriftene',
 // aapne skjermen i det hele tatt.
 sjekk('… mens meldingene som ikke gikk ut staar aapne',
     !str_contains($sidaG, '.lx-vafeil[data-apen'));
+
+// ── GEO-skjermen paa telefonen ─────────────────────────────────────────
+//
+// Tvillingen til SEO, samme grep: 4 667 px paa en 390 px skjerm — 5,5
+// skjermer — hvorav sidelista er 1 004 px og statuslinjene nederst 633.
+//
+// Maalt: 5,5 -> 3,7 skjermer. PC uendret paa 2 382 px.
+sjekk('de to lange blokkene paa GEO ligger bak hver sin pille paa telefonen',
+    str_contains($sidaG, '    .lx-geoliste[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-geotiltak[data-apen="false"] { display: none !important; }'));
+// Samme oppfoersel som paa SEO: lista lukker seg naar en side er valgt.
+sjekk('… og GEO-lista lukker seg naar en side er valgt',
+    str_contains($sidaG, 'const velgSide = id => () => this.setState({ geoValgtId: id, geoListeApen: false });'));
 
 // ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
 //

@@ -1988,7 +1988,9 @@ window.__resources = {
     .lx-seoforslag[data-apen="false"],
     .lx-vaepost[data-apen="false"],
     .lx-vasms[data-apen="false"],
-    .lx-vasignatur[data-apen="false"] { display: none !important; }
+    .lx-vasignatur[data-apen="false"],
+    .lx-geoliste[data-apen="false"],
+    .lx-geotiltak[data-apen="false"] { display: none !important; }
   }
 
   /* Salgskampanjen. Bildet staar ved siden av teksten paa stor skjerm, og
@@ -21741,7 +21743,11 @@ window.__resources = {
         </sc-for>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.6fr); gap: var(--space-6); align-items: start; margin-top: var(--space-6);">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div>
+            <!-- Bak en pille paa telefonen, som paa SEO. Paa stoerre skjerm
+                 staar lista i sin egen spalte som foer. -->
+            <button type="button" class="lx-listevis" onClick="{{ geoListeVeksle }}" style="{{ listeKnappStil }}">{{ geoListeKnapp }}</button>
+            <div class="lx-geoliste" data-apen="{{ geoListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Sider og score</div>
             <sc-for list="{{ geoListe }}" as="s" hint-placeholder-count="8">
               <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">
@@ -21750,6 +21756,7 @@ window.__resources = {
                 <span style="flex: 0 0 28px; text-align: right; font-weight: 700;">{{ s.score }}</span>
               </button>
             </sc-for>
+            </div>
           </div>
 
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -21819,7 +21826,12 @@ window.__resources = {
           </div>
         </div>
 
-        <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="margin-top: var(--space-8);">
+        <!-- Fire linjer som sier at llms.txt, robots.txt, de strukturerte
+             dataene og sidekartet er paa plass. Det leses en sjelden gang —
+             bak en pille paa telefonen, aapent som foer paa stoerre skjerm. -->
+        <button type="button" class="lx-listevis" onClick="{{ geoTiltakVeksle }}" style="{{ listeKnappStil }}">{{ geoTiltakKnapp }}</button>
+        <div class="lx-geotiltak" data-apen="{{ geoTiltakApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Hva som ellers er gjort for AI-søk</div>
           <sc-for list="{{ geoTiltak }}" as="g" hint-placeholder-count="4">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: 12px var(--space-5); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
@@ -21830,6 +21842,7 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="success" hint-size="auto,24px">{{ g.status }}</x-import>
             </div>
           </sc-for>
+        </div>
         </div>
       </main>
     </div>
@@ -57948,7 +57961,9 @@ class Component extends DCLogic {
         const utenSporsmal = alle.filter(x => !(this.geoData(x.s.id).sporsmal || '').trim());
         const utenFakta = alle.filter(x => !(this.geoData(x.s.id).fakta || '').trim());
         const under70 = alle.filter(x => x.sc.score < 70);
-        const velgSide = id => () => this.setState({ geoValgtId: id });
+        // Lista lukker seg naar du har valgt, som paa SEO. Ellers ville de
+        // nitten andre sidene staa mellom deg og feltene du nettopp aapnet.
+        const velgSide = id => () => this.setState({ geoValgtId: id, geoListeApen: false });
 
         return {
           adminNavGeo: this.adminSideMeny(),
@@ -57977,6 +57992,19 @@ class Component extends DCLogic {
             under70.length ? { tekst: under70.length + ' sider har GEO-score under 70', hint: 'Start med den laveste', velg: velgSide(under70.slice().sort((a, b) => a.sc.score - b.sc.score)[0].s.id) } : null,
           ].filter(Boolean),
           geoAltGront: [utenSvar, utenSporsmal, utenFakta, under70].every(x => !x.length),
+          // De to lange blokkene paa GEO bak hver sin pille paa telefonen.
+          // Skjermen var 4 667 px paa en 390 px skjerm — 5,5 skjermer — og
+          // 1 637 av dem var sidelista (1 004 px) og statuslinjene nederst
+          // (633 px). Samme grep som paa SEO, tvillingskjermen.
+          // Maalt 13. september 2026. Se «.lx-listevis» i stilarket.
+          geoListeApen: !!this.state.geoListeApen,
+          geoListeVeksle: () => this.setState({ geoListeApen: !this.state.geoListeApen }),
+          geoListeKnapp: 'Sider og score (' + alle.length + ')'
+            + (this.state.geoListeApen ? ' \u25b4' : ' \u25be'),
+          geoTiltakApen: !!this.state.geoTiltakApen,
+          geoTiltakVeksle: () => this.setState({ geoTiltakApen: !this.state.geoTiltakApen }),
+          geoTiltakKnapp: 'Hva som ellers er gjort for AI-søk'
+            + (this.state.geoTiltakApen ? ' \u25b4' : ' \u25be'),
           geoListe: alle.map(x => ({
             navn: x.s.navn, score: x.sc.score + '',
             velg: velgSide(x.s.id),

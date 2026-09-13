@@ -18096,6 +18096,16 @@ window.__resources = {
             </div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ salgSkjemaEtikett }}" checked="{{ salgSkjemaPaa }}" on-change="{{ salgSkjemaVeksl }}" hint-size="auto,28px"></x-import>
           </div>
+          <!-- Auto-godkjenn. Eieren, 12. september 2026: «Jeg vil fortsatt
+               godkjenne eller sette auto godkjenn». Staar den paa, gaar varen
+               rett ut — men den kan fortsatt skjules eller slettes under. -->
+          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="min-width: 0;">
+              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Auto-godkjenn nye varer</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Varen går rett ut i butikken uten at du ser på den først. Du kan fortsatt skjule eller slette den etterpå.</div>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ gAutoEtikett }}" checked="{{ gAutoPaa }}" on-change="{{ gAutoVeksl }}" hint-size="auto,28px"></x-import>
+          </div>
           <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
               <div style="min-width: 0;">
@@ -18139,7 +18149,21 @@ window.__resources = {
             <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--clay-100); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Publisert</span>
               <sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">
-                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-heading);">{{ g.tittel }}<button type="button" onClick="{{ g.skjul }}" title="Skjul fra nettsiden" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Skjul</button></span>
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-heading);">{{ g.tittel }}<button type="button" onClick="{{ g.skjul }}" title="Skjul fra nettsiden" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Skjul</button><button type="button" onClick="{{ g.slett }}" title="Slett varen og bildet for godt" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Slett</button></span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <!-- Skjulte og avviste varer.
+               Eieren, 12. september 2026: «maa kunne fjerne disse
+               produktene». Trykket man «Skjul», forsvant varen ogsaa fra
+               admin — den sto hverken her eller over, og man kom aldri til
+               den igjen. Verken for aa legge den ut paa nytt eller for aa
+               slette den. -->
+          <sc-if value="{{ gHarSkjulte }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Skjult og avvist</span>
+              <sc-for list="{{ gSkjulte }}" as="g" hint-placeholder-count="3">
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-muted);">{{ g.tittel }}<button type="button" onClick="{{ g.leggUt }}" title="Legg varen ut i butikken igjen" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700;">Legg ut igjen</button><button type="button" onClick="{{ g.slett }}" title="Slett varen og bildet for godt" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Slett</button></span>
               </sc-for>
             </div>
           </sc-if>
@@ -33703,6 +33727,21 @@ class Component extends DCLogic {
       { id: 2, status: 'venter', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter.', laget: 'Laget av et medlem', bilde: 'assets_photos_handbygging.jpg', pris: 'kr. 650,-', vipps: '923 45 678', kontakt: 'medlem@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
     ];
   }
+  /**
+   * Sletter en vare for godt — varen og bildet.
+   *
+   * Eieren, 12. september 2026: «maa kunne fjerne disse produktene».
+   * Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+   *
+   * Den spor forst. «Skjul» kan angres ved aa legge varen ut igjen; dette
+   * kan ikke, og bildet ryddes med.
+   */
+  salgSlett(v) {
+    if (!window.confirm('Slette «' + v.tittel + '» for godt?'
+        + ' Bildet slettes også. Dette kan ikke angres.')) return;
+    this.salgKall({ handling: 'slett', id: v.id });
+  }
+
   // Godkjenning gaar mot serveren. Sto som en liste i skjermbildet, saa et
   // «godkjenn» var borte ved neste sidelasting — og varen kom aldri ut.
   salgKall(kropp) {
@@ -55155,8 +55194,41 @@ class Component extends DCLogic {
       gIngenVenter: !this.galleriListe().some(g => g.status === 'venter'),
       gPubliserte: this.galleriListe().filter(g => g.status === 'publisert').map(g => Object.assign({}, g, {
         skjul: () => this.salgKall({ handling: 'skjul', id: g.id }),
+        slett: () => this.salgSlett(g),
       })),
       gHarPubliserte: this.galleriListe().some(g => g.status === 'publisert'),
+      // Skjulte og avviste varer.
+      //
+      // Eieren, 12. september 2026: «maa kunne fjerne disse produktene».
+      // Trykket man «Skjul», forsvant varen ogsaa fra admin — den sto
+      // hverken under «venter» eller «Publisert», og man kom aldri til den
+      // igjen. Verken for aa legge den ut paa nytt eller for aa slette den.
+      //
+      // «Legg ut igjen» er den samme ruta som «Godkjenn»; ingen ny
+      // serverhandling.
+      gSkjulte: this.galleriListe()
+        .filter(g => g.status === 'skjult' || g.status === 'avvist')
+        .map(g => Object.assign({}, g, {
+          merke: g.status === 'avvist' ? 'Avvist' : 'Skjult',
+          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),
+          slett: () => this.salgSlett(g),
+        })),
+      gHarSkjulte: this.galleriListe().some(g => g.status === 'skjult' || g.status === 'avvist'),
+      // Auto-godkjenn.
+      //
+      // Krever 'ja', ikke «alt annet enn nei» slik bryterPaa() gjor. En
+      // manglende rad skal ikke bety at varer gaar ut i butikken uten at
+      // noen har sett paa dem. Serveren krever det samme — se
+      // api/medlemssalg.php — og migrasjon 174 skriver 'nei' eksplisitt.
+      gAutoPaa: (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',
+      gAutoEtikett: (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja' ? 'På' : 'Av',
+      gAutoVeksl: () => {
+        const paa = (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja';
+        this.lagreInnhold(
+          { 'Vis/autogodkjenn': paa ? 'nei' : 'ja' },
+          paa ? 'Auto-godkjenn er slått av' : 'Auto-godkjenn er slått på'
+        );
+      },
       gDelSendt: !!this.state.gDelSendt,
       gDelIkkeSendt: !this.state.gDelSendt,
       // Her laa en eldre utgave av «Selg keramikk»: gTittel, gTekst, gSkaper og

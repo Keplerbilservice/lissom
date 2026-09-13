@@ -16897,6 +16897,58 @@ sjekk('… og sammenslaainga slaar ingenting paa av seg selv',
     str_contains($mig173, "      WHERE nokkel IN ('Vis/medlemssalg', 'Vis/medlemskolleksjon')\n        AND verdi = 'nei'")
     && str_contains($mig173, "ON DUPLICATE KEY UPDATE verdi = 'nei';")
     && str_contains($mig173, "DELETE FROM content_blocks WHERE nokkel = 'Vis/medlemskolleksjon';"));
+
+echo "\n== Auto-godkjenn, og varer som kan fjernes ==\n";
+// Eieren, 12. september 2026: «Jeg vil fortsatt godkjenne eller sette auto
+// godkjenn, men maa kunne fjerne disse produktene».
+$salgApi = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
+$mig174  = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/174_auto_godkjenn_og_ny_mal.sql');
+
+// Defaulten er den viktige. bryterPaa() sier PAA naar raden mangler — det gaar
+// bra for noe som bare skjuler en boks, men her ville det betydd at varer gaar
+// ut i butikken uten at noen har sett paa dem.
+sjekk('auto-godkjenn krever «ja», ikke bare fravaer av «nei»',
+    str_contains($salgApi, "\"SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/autogodkjenn'\"\n) === 'ja';")
+    && str_contains($vis172, "      gAutoPaa: (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',")
+    && !str_contains($vis172, "bryterPaa('autogodkjenn')"),
+    'en manglende rad skal ikke slippe varer ut usett');
+sjekk('… og migrasjonen skriver «nei» eksplisitt',
+    str_contains($mig174, "INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/autogodkjenn', 'nei')")
+    // Kjores migrasjonen paa nytt, skal den ikke slaa av det eieren har slaatt paa.
+    && str_contains($mig174, 'ON DUPLICATE KEY UPDATE verdi = verdi;'));
+// Maalt i nettleseren: av gir «ligger til godkjenning» og status
+// til_godkjenning, paa gir «er ute i butikken naa» og status publisert.
+sjekk('… og varen gaar rett ut naar den staar paa',
+    str_contains($salgApi, "    'status'      => \$auto ? 'publisert' : 'til_godkjenning',")
+    && str_contains($salgApi, "        ? 'Takk! «' . \$tittel . '» er ute i butikken nå.'"));
+// Gaar en vare ut uten at noen har sett paa den, er det mer verdt aa faa vite
+// om, ikke mindre. Egen mal, saa teksten ikke lyver om at noe venter.
+sjekk('… og verkstedet faar sin egen beskjed om det',
+    str_contains($salgApi, "    Varsel::malTilAdmin(\$auto ? 'intern_ny_vare_ute' : 'intern_ny_vare', [")
+    && str_contains($mig174, "('intern_ny_vare_ute', 'epost', 'Ny vare ute i butikken',")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+        "        'intern_ny_vare_ute' => ["),
+    'malen skal kunne endres under Maler, som de andre');
+
+// «Skjul» var en enveis luke: varen forsvant ogsaa fra admin, og sto hverken
+// under «venter» eller «Publisert». Da kunne den verken legges ut igjen eller
+// slettes.
+sjekk('skjulte og avviste varer er fortsatt innen rekkevidde',
+    str_contains($vis172, "      gSkjulte: this.galleriListe()\n        .filter(g => g.status === 'skjult' || g.status === 'avvist')")
+    && str_contains($vis172, '<sc-for list="{{ gSkjulte }}" as="g"')
+    && str_contains($vis172, '>Skjult og avvist</span>'));
+sjekk('… og de kan legges ut igjen',
+    str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
+    && str_contains($vis172, '>Legg ut igjen</button>'));
+// Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+sjekk('… og slettes for godt, etter et spoersmaal',
+    str_contains($vis172, "  salgSlett(v) {")
+    && str_contains($vis172, "    if (!window.confirm('Slette «' + v.tittel + '» for godt?'")
+    && str_contains($vis172, "        + ' Bildet slettes også. Dette kan ikke angres.')) return;")
+    && str_contains($vis172, "    this.salgKall({ handling: 'slett', id: v.id });")
+    && substr_count($vis172, 'slett: () => this.salgSlett(g),') === 2,
+    'bildet ryddes med paa serveren, og det kan ikke angres');
 // ── «Ovn er tømt» ────────────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: knapp paa Min side og paa kalenderen i admin;

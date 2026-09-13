@@ -12809,32 +12809,8 @@ window.__resources = {
                hva folk vil ha. Streken bak hver rad er andelen av det
                stoerste, saa forholdet mellom dem er til aa se og ikke bare
                til aa lese. -->
-          <sc-if value="{{ ovPopVis }}" hint-placeholder-val="{{ false }}">
-            <!-- Samme ramme som de andre kortene, og inne i det samme
-                 rutenettet. Fargestripa paa toppen er borte; den gjorde
-                 dette panelet til noe annet enn kortene rundt.
-
-                 Bredden foelger samme regel som ovSkylderRamme: to spalter
-                 der det er plass, hele rada paa telefonen. -->
-            <div style="{{ ovPopRamme }}">
-              <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
-                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovPopPeriode }}</span>
-              </div>
-              <sc-for list="{{ ovPopulaere }}" as="k" hint-placeholder-count="5">
-                <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-                  <span style="flex: 1 1 200px; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ k.tittel }}</span>
-                  <span style="flex: 2 1 160px; min-width: 80px;">
-                    <span style="{{ k.stolpeStil }}"></span>
-                  </span>
-                  <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ k.plasser }}</span>
-                </div>
-              </sc-for>
-              <sc-if value="{{ ovPopTom }}" hint-placeholder-val="{{ false }}">
-                <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen påmeldinger siste tolv måneder ennå.</div>
-              </sc-if>
-            </div>
-          </sc-if>
+          <!-- Statistikken over mest populaere kurs sto her. Flyttet til
+               Kurs og deltakere 13. september 2026 — den teller kurs. -->
           <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
 
             <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
@@ -12886,56 +12862,9 @@ window.__resources = {
 
              De staar som for paa pc — det er der man setter dem opp. Bare
              mobilen slipper dem. -->
-        <sc-if value="{{ visGrRabatt }}" hint-placeholder-val="{{ true }}">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Grupperabatt</div>
-            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Rabatten trekkes automatisk i kassen når antallet i bestillingen når minimum. Høyeste sats vinner.</p>
-              <!-- Én rad er ett kort, ikke fem spalter.
-                   Spaltene var 74 px, 74 px, resten, 44 px og 28 px. Da
-                   «Gjelder» ble brikker i stedet for et nedtrekk, fikk de en
-                   spalte paa under to hundre piksler aa staa i, og ni valg
-                   ble en soyle nedover. Eieren, 30. august, om akkurat det:
-                   «syns du dette ser bra ut?» Nei.
-                   Naa staar tallene ved siden av hverandre med hver sin
-                   etikett, og valgene i full bredde under. -->
-              <sc-for list="{{ grListe }}" as="r" hint-placeholder-count="2">
-                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
-                  <div style="display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap;">
-                    <label style="flex: 0 0 auto;">
-                      <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Fra antall</span>
-                      <input type="number" min="2" value="{{ r.min }}" onChange="{{ r.settMin }}" title="Minimum antall deltakere" style="{{ grTallStil }}">
-                    </label>
-                    <label style="flex: 0 0 auto;">
-                      <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Rabatt %</span>
-                      <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ grTallStil }}">
-                    </label>
-                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-left: auto;">
-                      <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
-                      <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
-                    </div>
-                  </div>
-                  <div>
-                    <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Gjelder</span>
-                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                      <sc-for list="{{ r.gjelderValg }}" as="br" hint-placeholder-count="2">
-                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
-                      </sc-for>
-                    </div>
-                  </div>
-                </div>
-              </sc-for>
-              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-                <button type="button" onClick="{{ grLeggTil }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Nytt rabattnivå</button>
-                <!-- Nivaaene laa bare i skjermbildet. Serveren visste ingenting
-                     om dem og trakk full pris, mens bookingsiden viste rabatt. -->
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ grLagre }}" hint-size="auto,36px">{{ grKnapp }}</x-import>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">Eksempel: fra 3 deltakere, 10 % avslag.</span>
-              </div>
-            </div>
-          </div>
-        </sc-if>
+          <!-- Grupperabatten sto her. Eieren, 13. september 2026: den hoerer
+               til Kurs og deltakere. Den er en kursinnstilling, ikke en
+               oversikt. -->
         </div>
 
         <!-- Banneret under toppbildet. Ett felt som skal brukes til det som
@@ -15541,6 +15470,96 @@ window.__resources = {
             </div>
           </sc-for>
         </div>
+
+        <!-- Grupperabatten og kursstatistikken.
+
+             Begge sto paa Oversikt. Eieren, 13. september 2026, spurt hvor de
+             skulle: «Kurs og deltakere, begge to». Rabatten er en
+             kursinnstilling, og statistikken teller kurs.
+
+             Denne skjermen tegner alle omraadene — Medlemmer, Kurs og
+             deltakere, og resten. Derfor staar de bak «omrErKurs», saa de
+             ikke dukker opp under Medlemmer ogsaa.
+
+             Samme skjema og samme tall som for; flyttet, ikke kopiert. -->
+        <sc-if value="{{ omrErKurs }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ ovPopVis }}" hint-placeholder-val="{{ false }}">
+            <!-- Samme ramme som de andre kortene, og inne i det samme
+                 rutenettet. Fargestripa paa toppen er borte; den gjorde
+                 dette panelet til noe annet enn kortene rundt.
+
+                 Bredden foelger samme regel som ovSkylderRamme: to spalter
+                 der det er plass, hele rada paa telefonen. -->
+            <div style="{{ ovPopRamme }}">
+              <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovPopPeriode }}</span>
+              </div>
+              <sc-for list="{{ ovPopulaere }}" as="k" hint-placeholder-count="5">
+                <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                  <span style="flex: 1 1 200px; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ k.tittel }}</span>
+                  <span style="flex: 2 1 160px; min-width: 80px;">
+                    <span style="{{ k.stolpeStil }}"></span>
+                  </span>
+                  <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ k.plasser }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ ovPopTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen påmeldinger siste tolv måneder ennå.</div>
+              </sc-if>
+            </div>
+          </sc-if>
+        <sc-if value="{{ visGrRabatt }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Grupperabatt</div>
+            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Rabatten trekkes automatisk i kassen når antallet i bestillingen når minimum. Høyeste sats vinner.</p>
+              <!-- Én rad er ett kort, ikke fem spalter.
+                   Spaltene var 74 px, 74 px, resten, 44 px og 28 px. Da
+                   «Gjelder» ble brikker i stedet for et nedtrekk, fikk de en
+                   spalte paa under to hundre piksler aa staa i, og ni valg
+                   ble en soyle nedover. Eieren, 30. august, om akkurat det:
+                   «syns du dette ser bra ut?» Nei.
+                   Naa staar tallene ved siden av hverandre med hver sin
+                   etikett, og valgene i full bredde under. -->
+              <sc-for list="{{ grListe }}" as="r" hint-placeholder-count="2">
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
+                  <div style="display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap;">
+                    <label style="flex: 0 0 auto;">
+                      <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Fra antall</span>
+                      <input type="number" min="2" value="{{ r.min }}" onChange="{{ r.settMin }}" title="Minimum antall deltakere" style="{{ grTallStil }}">
+                    </label>
+                    <label style="flex: 0 0 auto;">
+                      <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Rabatt %</span>
+                      <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ grTallStil }}">
+                    </label>
+                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-left: auto;">
+                      <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
+                      <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
+                    </div>
+                  </div>
+                  <div>
+                    <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Gjelder</span>
+                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <sc-for list="{{ r.gjelderValg }}" as="br" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ grLeggTil }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Nytt rabattnivå</button>
+                <!-- Nivaaene laa bare i skjermbildet. Serveren visste ingenting
+                     om dem og trakk full pris, mens bookingsiden viste rabatt. -->
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ grLagre }}" hint-size="auto,36px">{{ grKnapp }}</x-import>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">Eksempel: fra 3 deltakere, 10 % avslag.</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        </sc-if>
       </main>
     </div>
   </sc-if>
@@ -44218,6 +44237,11 @@ class Component extends DCLogic {
           return {
             erAdminOmraade: true,
             adminNavOmraade: this.adminSideMeny(),
+            // Grupperabatten og kursstatistikken flyttet hit fra Oversikt
+            // 13. september 2026. Denne skjermen tegner alle omraadene, saa de
+            // to maa staa bak et flagg — ellers dukket de opp under Medlemmer
+            // ogsaa.
+            omrErKurs: true,
             omrTittel: 'Kurs og deltakere',
             omrUnder: 'Alt verkstedet tilbyr, og alle som kommer: kursene med '
               + 'datoene sine, medlemskapene, og hvem som er meldt på hva.',
@@ -46267,7 +46291,11 @@ class Component extends DCLogic {
       // Kursholdere staar paa denne sida, saa de to ruller dit i stedet for
       // aa bytte skjerm.
       ...(() => {
-        if (side !== 'adminoversikt') return { ovKort: [] };
+        // Statistikken over mest populaere kurs flyttet til Kurs og deltakere
+        // 13. september 2026, saa tallene maa regnes der ogsaa. «ovKort» er
+        // fortsatt bare Oversikt sitt kortrutenett; det tegnes ikke andre
+        // steder, saa det koster ingenting aa ha det med.
+        if (side !== 'adminoversikt' && side !== 'adminomrkurs') return { ovKort: [] };
 
         const d = this.state.adminData || null;
         const okter = (this.state.adminOkter || []);

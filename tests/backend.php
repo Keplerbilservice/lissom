@@ -8475,8 +8475,16 @@ sjekk('… og blokkene ligger foran rutenettet',
 // si. Eieren: «gjor alle kortene paa oversikt like, altsaa samme som de smaa
 // kortene». Panelet staar i rada OVER rutenettet naa, med hele bredden, og
 // stolpene er i behold.
-sjekk('statistikkpanelet staar over kortrutenettet',
-    strpos($sida2, '{{ ovPopVis }}') < strpos($sida2, 'id="ov-kortrutenett"'));
+// Panelet flyttet til Kurs og deltakere 13. september 2026. Eieren, spurt
+// hvor grupperabatten og statistikken skulle: «Kurs og deltakere, begge to».
+// Ramma og stolpene er de samme; det er stedet som er nytt.
+sjekk('statistikkpanelet staar paa Kurs og deltakere',
+    strpos($sida2, 'data-screen-label="Admin – område"') < strpos($sida2, '{{ ovPopVis }}')
+    && str_contains($sida2, '<sc-if value="{{ omrErKurs }}"')
+    // Skjermen tegner alle omraadene, saa den maa vite hvilket den staar i.
+    && str_contains($sida2, "            omrErKurs: true,")
+    // Tallene regnes bare paa de to skjermene som viser dem.
+    && str_contains($sida2, "        if (side !== 'adminoversikt' && side !== 'adminomrkurs') return { ovKort: [] };"));
 sjekk('… med samme ramme som resten',
     str_contains($sida2, "borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',")
     && str_contains($sida2, "borderRadius: 'var(--radius-lg)', overflow: 'hidden',"));
@@ -17006,6 +17014,12 @@ sjekk('… og de kan legges ut igjen',
     str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
     && str_contains($vis172, '>Legg ut igjen</button>'));
 // Handlinga har ligget paa serveren hele tida, uten en knapp noe sted.
+// Grupperabatten flyttet med. Den er en kursinnstilling, ikke en oversikt.
+sjekk('grupperabatten staar paa Kurs og deltakere',
+    strpos($sida2, 'data-screen-label="Admin – område"') < strpos($sida2, '{{ visGrRabatt }}')
+    && substr_count($sida2, '<sc-if value="{{ visGrRabatt }}"') === 1,
+    'maalt i nettleseren: staar under Kurs og deltakere, ikke under Medlemmer');
+
 echo "\n== Omsetninga som piller, og banneret dit teksten redigeres ==\n";
 // Eieren, 13. september 2026: «Okonomi og omsetning kan staa paa kalender som
 // piller», og om banner-redigeringa: «redigering av banneret gaar til der du

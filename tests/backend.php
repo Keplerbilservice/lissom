@@ -568,8 +568,18 @@ sjekk('forste markering virker', Booking::markerBetalt($ref) === true);
 sjekk('bookingen ble betalt', DB::verdi('SELECT status FROM bookings WHERE id=:i',['i'=>$bid]) === 'betalt');
 sjekk('reservasjonsfristen er fjernet', DB::verdi('SELECT reservert_til FROM bookings WHERE id=:i',['i'=>$bid]) === null);
 sjekk('andre markering gjor ingenting', Booking::markerBetalt($ref) === false);
-$antKvitt = (int)DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type='booking' AND ref_id=:i",['i'=>$bid]);
+// Kvitteringa til kunden, ikke beskjeden til verkstedet. Fra 13. september
+// 2026 gaar det to varsler paa en paamelding — se «Verkstedet faar e-post ved
+// ny paamelding» lenger nede. Proeven her gjelder kunden sin: at den ikke
+// sendes to ganger naar betalinga markeres to ganger.
+$antKvitt = (int)DB::verdi("SELECT COUNT(*) FROM notifications
+                             WHERE ref_type='booking' AND ref_id=:i
+                               AND emne NOT LIKE 'Ny påmelding:%'",['i'=>$bid]);
 sjekk('kun én kvittering tross to markeringer', $antKvitt === 1, $antKvitt . ' stk');
+$antAdmin = (int)DB::verdi("SELECT COUNT(*) FROM notifications
+                             WHERE ref_type='booking' AND ref_id=:i
+                               AND emne LIKE 'Ny påmelding:%'",['i'=>$bid]);
+sjekk('… og verkstedet varsles ogsaa bare én gang', $antAdmin === 1, $antAdmin . ' stk');
 
 echo "\n== Kapasitet teller reservasjoner ==\n";
 $forbrukt = Booking::ledigePlasser($oktId);
@@ -17070,6 +17080,35 @@ sjekk('… og verkstedet faar sin egen beskjed om det',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
         "        'intern_ny_vare_ute' => ["),
     'malen skal kunne endres under Maler, som de andre');
+
+echo "\n== Verkstedet faar e-post ved ny paamelding ==\n";
+// Eieren, 13. september 2026: «Det er varsel paa ny paamelding, men det er
+// ikke kommet noen mail til admin, dette maa fikses». Det var ingen feil —
+// den var aldri bygget: verkstedet fikk e-post ved nytt medlem, ny
+// foresporsel, ny vare, gave som skal pakkes og gave lost inn, men ikke ved
+// en paamelding. Varselet han saa er tallet paa Oversikt.
+$bokLib = (string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$mig176 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/176_varsel_ved_ny_pamelding.sql');
+sjekk('paameldinga varsler verkstedet',
+    str_contains($bokLib, "        Varsel::malTilAdmin('intern_ny_pamelding', [")
+    && str_contains($mig176, "('intern_ny_pamelding', 'epost', 'Ny påmelding: {kurs}',"),
+    'maalt: e-post til post@lissom.no med emnet «Ny paamelding: Testnye»');
+// «Jeg vil ha betalingsstatus paa mailen ogsaa». En plass kan vaere
+// reservert uten at noe er betalt.
+sjekk('… og sier om den er betalt',
+    str_contains($bokLib, "            'betaling' => (string) \$b['status'] === 'betalt' ? 'Betalt' : 'Ubetalt',")
+    && str_contains($mig176, 'Betaling: {betaling}'),
+    'maalt: «Ubetalt» paa en reservert plass, «Betalt» etter betaling');
+// En deltaker lagt inn for haand kan mangle begge. Da sto det «Kontakt:  ·
+// (ikke oppgitt)» med et loest skille foran.
+sjekk('… og staar uten et loest skille naar kontakten mangler',
+    str_contains($bokLib, "            'epost'    => (string) (\$b['m_epost'] ?: \$b['gjest_epost']) ?: '(ikke oppgitt)',"));
+// Malen skal kunne endres under Tekst maler, som de andre.
+sjekk('… og malen er redigerbar som de andre',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+        "        'intern_ny_pamelding' => ["),
+    'maalt: staar i lista under Verkstedet -> Tekst maler');
 
 echo "\n== Betalingskortet sier hva betalinga gjaldt ==\n";
 // Eieren, 13. september 2026, med bilde av kortet: «Her staar datoen naar hun

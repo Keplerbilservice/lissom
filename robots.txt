@@ -17,12 +17,18 @@
 
 User-agent: *
 
-# Admin, Min side og API-et har ingenting å gjøre i et søkeresultat.
+# Admin, Min side og kassa har ingenting å gjøre i et søkeresultat.
 # Sidene krever innlogging uansett, men en søkemotor skal ikke bruke tid
 # på dem — og en halvlastet adminskjerm skal ikke kunne dukke opp på Google.
+#
+# /api/ sto her også, til 14. september 2026. Google kjører skriptet på
+# sida før den leser hodet, og skriptet henter kurs, artikler og innhold
+# fra /api/. Med /api/ sperret fikk Google tomme kurssider og «Siden
+# finnes ikke» (noindex) på hver artikkel — målt i Search Console.
+# API-et svarer med JSON uten lenker, så det havner ikke i søket av seg
+# selv, og det som krever innlogging svarer 401 til roboter.
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /
@@ -54,7 +60,6 @@ Allow: /
 User-agent: OAI-SearchBot
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /
@@ -62,7 +67,6 @@ Allow: /
 User-agent: PerplexityBot
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /
@@ -70,7 +74,6 @@ Allow: /
 User-agent: Claude-SearchBot
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /
@@ -80,7 +83,6 @@ Allow: /
 User-agent: GPTBot
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /
@@ -88,7 +90,6 @@ Allow: /
 User-agent: ClaudeBot
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /
@@ -96,7 +97,6 @@ Allow: /
 User-agent: Google-Extended
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /
@@ -104,7 +104,6 @@ Allow: /
 User-agent: Applebot-Extended
 Disallow: /admin
 Disallow: /min-side
-Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
 Allow: /

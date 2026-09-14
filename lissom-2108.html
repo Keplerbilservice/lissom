@@ -33924,14 +33924,15 @@ class Component extends DCLogic {
     // Haandverk» og ingen beskrivelse — altsaa det som ville blitt vist i
     // sokeresultatet. Naa staar riktig tittel der fra forste tegning, uten
     // aa spore noen om noe.
-    const kursSeo = this.seoKurs() || this.seoVare();
+    const kursSeo = this.seoKurs() || this.seoVare() || this.seoNyhet();
     const d = kursSeo || Object.assign({}, (id && Component.SEO_FERDIG[id]) || {}, id ? this.seoData(id) : {});
     const std = (id && this.seoSider().find(x => x.id === id)) || null;
     const tittel = d.tittel
       || (std ? std.navn + ' | Lissom Keramikk & Håndverk' : this.seoStandardTittel(side));
     const merke = side + '|' + tittel + '|' + (this.state.katalog || []).length
       + '|' + ((this.state.valgtKurs || {}).slug || '')
-      + '|' + ((this.state.piProdukt || {}).sti || '');
+      + '|' + ((this.state.piProdukt || {}).sti || '')
+      + '|' + ((this.state.nyLest || {}).slug || '');
     if (this._seoSatt === merke) return;
     this._seoSatt = merke;
 
@@ -34088,6 +34089,37 @@ class Component extends DCLogic {
       ogTittel: navn + ' — håndlaget keramikk | Lissom',
       ogBeskrivelse: meta,
       delingsbilde: v.image ? 'https://lissom.no/' + String(v.image).replace(/^\//, '') : '',
+      index: 'Index',
+    };
+  }
+
+  // En aapen artikkel. Serveren sender riktig tittel, beskrivelse og
+  // canonical i hodet (side.php), men her inne fikk artikkelen nyhetslistas
+  // — tittelen «Keramikkguider og nyheter …» og canonical til /nyheter. Google
+  // leser hodet etter at skriptet har kjort, saa alle artiklene saa ut som
+  // kopier av lista. Maalt i Search Console 14. september 2026. Samme
+  // format som side.php, saa hodet er likt for og etter skriptet.
+  seoNyhet() {
+    const a = this.state.nyLest || null;
+    if (this.state.side !== 'nyheter' || !a || !a.slug) return null;
+
+    const navn = String(a.tittel || '').trim();
+    let meta = String(a.ingress || '').replace(/\s+/g, ' ').trim();
+    if (meta.length > 158) {
+      const kort = meta.slice(0, 158);
+      const punktum = kort.lastIndexOf('. ');
+      meta = punktum > 60 ? kort.slice(0, punktum + 1) : kort.trim() + ' …';
+    }
+    const bilde = String(a.bilde || '').trim();
+
+    return {
+      tittel: navn + ' | Lissom Keramikk',
+      meta: meta,
+      canonical: 'https://lissom.no/nyheter/' + encodeURIComponent(a.slug),
+      ogTittel: navn,
+      ogBeskrivelse: meta,
+      delingsbilde: bilde ? 'https://lissom.no/' + bilde.replace(/^\//, '') : '',
+      altTekst: String(a.bildeAlt || '').trim() || navn,
       index: 'Index',
     };
   }

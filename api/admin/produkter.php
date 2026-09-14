@@ -61,7 +61,16 @@ if (Foresporsel::metode() === 'GET') {
         'lager'        => $v['lager'] === null ? null : (int) $v['lager'],
         'kunMedlemmer' => (bool) $v['kun_medlemmer'],
         'status'       => $v['status'],
+        // Handlelista, migrasjon 182. Er den ikke kjoert, staar feltene tomme
+        // og skjemaet viser dem som tomme — det er riktig svar da.
+        'artikkelnr'   => (string) ($v['artikkelnr'] ?? ''),
+        'leverandorId' => isset($v['leverandor_id']) && $v['leverandor_id'] !== null ? (int) $v['leverandor_id'] : 0,
+        'kanBestilles' => (bool) ($v['kan_bestilles'] ?? 0),
     ], $varer),
+    'leverandorer' => DB::harTabell('leverandorer')
+        ? array_map(static fn($l) => ['id' => (int) $l['id'], 'navn' => (string) $l['navn']],
+                    DB::alle('SELECT id, navn FROM leverandorer WHERE aktiv = 1 ORDER BY navn'))
+        : [],
     // Frakten. Sto som «kr. 89,-» skrevet inn i nettleseren, og kunne ikke
     // endres uten aa endre koden. Naa staar den i basen.
     'fraktOre' => (int) (DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']) ?? 0),
@@ -161,6 +170,19 @@ $data = [
     'status'        => in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'utsolgt'], true)
                         ? Foresporsel::tekst('status') : 'publisert',
 ];
+
+// Handlelista, migrasjon 182. Artikkelnummeret er leverandorens eget nummer,
+// og det er det som staar i bestillingen — derfor foelger det varen og ikke
+// bestillingen. «Kan bestilles» er det som avgjor om varen dukker opp i
+// handlelista paa Min side; ligger den bare paa lager, hoerer den hjemme i
+// kurven som for.
+if (DB::harKolonne('products', 'artikkelnr')) {
+    $lev = Foresporsel::heltall('leverandorId');
+    $data['artikkelnr']    = mb_substr(trim(Foresporsel::tekst('artikkelnr')), 0, 64);
+    $data['leverandor_id'] = $lev > 0 && DB::en('SELECT id FROM leverandorer WHERE id = :i', ['i' => $lev]) !== null
+                                ? $lev : null;
+    $data['kan_bestilles'] = Foresporsel::tekst('kanBestilles') === 'ja' ? 1 : 0;
+}
 
 // Navnet avgjor ingenting. Tidligere ble en vare uten id slaatt sammen med
 // en som alt het det samme, og den forste ble stille overskrevet — to like

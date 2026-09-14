@@ -78,3 +78,21 @@ INSERT IGNORE INTO innstillinger (nokkel, verdi) VALUES ('handleliste_gebyr_pros
 -- Kortet staar av til varene har faatt artikkelnummer og leverandor. Uten
 -- det ville medlemmene sett en tom liste dagen dette ble lagt ut.
 INSERT IGNORE INTO content_blocks (nokkel, verdi) VALUES ('Vis/handleliste', 'nei');
+
+-- Teksten til leverandoren er en mal, som alle andre utsendelser. Eieren,
+-- 1. september 2026: «hvorfor kan ikke alle vaere redigerbare? og ligge i et
+-- eget kort paa oversikt som heter maler». Da kan ordlyden endres under Maler
+-- uten at noen roerer koden. «{varer}» er varelinjene, delt opp per medlem.
+INSERT IGNORE INTO notification_templates (navn, kanal, emne, tekst, gruppe) VALUES (
+    'leverandorbestilling',
+    'epost',
+    'Bestilling {nummer} — Lissom Keramikk & Håndverk',
+    'Hei! Vi vil gjerne bestille varene under. Bestillingen er delt opp per person — vi ber om at hver bestilling pakkes for seg og merkes med navnet.
+
+Leveres til: Nordre Løkkevei 15, 3120 Nøtterøy
+
+{varer}
+
+Gi beskjed om noe ikke er på lager, så tar vi det ut av bestillingen.',
+    'ordre'
+);

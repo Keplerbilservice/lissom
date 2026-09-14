@@ -36551,6 +36551,11 @@ class Component extends DCLogic {
       case 'adminbutikk':
         // Butikken er sitt eget punkt i menyen naa. Internbutikken hoerer
         // fortsatt til medlemmene — det er varene deres.
+        // Tre lister paa samme skjerm: butikken, internbutikken og
+        // handlelistene. Stien og den aktive fanen maa si hvilken.
+        if (st.butikkFane === 'Handlelister') {
+          return p('Nettbutikk', 'Nettbutikk', 'Handlelister');
+        }
         return st.butikkFane === 'Medlemssalg'
           ? p('Nettbutikk', 'Nettbutikk', 'Internbutikk')
           : p('Nettbutikk', 'Nettbutikk', 'Butikken');

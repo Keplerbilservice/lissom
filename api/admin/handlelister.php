@@ -414,9 +414,23 @@ if ($handling === 'bestill') {
     }
 
     $nummer = 'B-' . gmdate('ym') . '-' . str_pad((string) random_int(1, 999), 3, '0', STR_PAD_LEFT);
-    [$emne, $tekst, $html] = handleliste_bestilling($nummer, (string) $lev['navn'], $perMedlem);
 
-    Varsel::epost((string) $lev['epost'], $emne, $tekst, 'leverandor', $leverandorId, 'system', $html);
+    // Teksten ligger som mal, ikke her. Eieren, 1. september 2026: «hvorfor
+    // kan ikke alle vaere redigerbare?» — da kan han endre ordlyden overfor
+    // leverandoren uten at noen roerer koden. Varelinjene flettes inn.
+    Varsel::mal(
+        'leverandorbestilling',
+        ['epost' => (string) $lev['epost']],
+        [
+            'nummer'     => $nummer,
+            'leverandor' => (string) $lev['navn'],
+            'dato'       => date('d.m.Y'),
+            'varer'      => handleliste_varetekst($perMedlem),
+        ],
+        'leverandor',
+        $leverandorId
+    );
+
     DB::kjor(
         'UPDATE handleliste_linjer SET bestilt_at = NOW(), status = \'ferdig\' WHERE id IN ('
         . implode(',', array_map(static fn($l) => (int) $l['id'], $linjer)) . ')'
@@ -429,67 +443,25 @@ if ($handling === 'bestill') {
 Svar::feil('Ukjent handling.');
 
 /**
- * Bestillingen, som e-post.
+ * Varelinjene i bestillingen, delt opp per medlem.
  *
- * Delt opp per medlem, med navnet over varene deres. Merkingen staar én gang
- * oeverst framfor paa hver linje — eieren, 14. september: «be om at hver
- * bestilling merkes med navn».
+ * Eieren, 14. september 2026: «lag heller bestillingen pr medlem ikke samle
+ * pr produkt, og be om at hver bestilling merkes med navn». Navnet staar over
+ * varene som hoerer til, og merkingen bes om én gang i malen — ikke paa hver
+ * eneste linje.
  *
  * @param array<int,array{navn:string,linjer:list<array<string,mixed>>}> $perMedlem
- * @return array{0:string,1:string,2:string}
  */
-function handleliste_bestilling(string $nummer, string $leverandor, array $perMedlem): array
+function handleliste_varetekst(array $perMedlem): string
 {
-    $emne = 'Bestilling ' . $nummer . ' — Lissom Keramikk & Håndverk';
-    $apning = 'Hei! Vi vil gjerne bestille varene under. Bestillingen er delt opp'
-            . ' per person — vi ber om at hver bestilling pakkes for seg og merkes med navnet.';
-    $slutt  = 'Gi beskjed om noe ikke er på lager, så tar vi det ut av bestillingen.';
-
-    $tekst = $apning . "\n\n";
+    $ut = '';
     foreach ($perMedlem as $m) {
-        $tekst .= $m['navn'] . "\n";
+        $ut .= $m['navn'] . "\n";
         foreach ($m['linjer'] as $l) {
-            $tekst .= '  ' . str_pad((string) $l['artikkelnr'], 10) . ' ' . $l['tittel']
-                    . ' — ' . (int) $l['antall'] . " stk\n";
+            $ut .= '  ' . str_pad((string) $l['artikkelnr'], 10) . ' ' . $l['tittel']
+                 . ' — ' . (int) $l['antall'] . " stk\n";
         }
-        $tekst .= "\n";
+        $ut .= "\n";
     }
-    $tekst .= $slutt . "\n\nVennlig hilsen\nLissom Keramikk & Håndverk";
-
-    $e = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-    $bolker = '';
-    foreach ($perMedlem as $m) {
-        $bolker .= '<tr><td style="padding:16px 22px 4px 22px;font-family:Georgia,serif;font-size:16px;'
-                 . 'font-weight:bold;color:#4D1D12;border-top:2px solid #E8DBC8">' . $e($m['navn']) . '</td></tr>';
-        foreach ($m['linjer'] as $l) {
-            $bolker .= '<tr><td style="padding:4px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#2E1002">'
-                     . '<span style="color:#7A6558">' . $e((string) $l['artikkelnr']) . '</span> &nbsp; '
-                     . $e((string) $l['tittel'])
-                     . ' &nbsp;—&nbsp; <b>' . (int) $l['antall'] . ' stk</b></td></tr>';
-        }
-    }
-
-    $html = '<!DOCTYPE html><html lang="no"><head><meta charset="utf-8">'
-      . '<meta name="viewport" content="width=device-width, initial-scale=1"><title>' . $e($emne) . '</title></head>'
-      . '<body style="margin:0;padding:0;background-color:#FBF6EE">'
-      . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FBF6EE">'
-      . '<tr><td align="center" style="padding:32px 16px">'
-      . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background-color:#FFFFFF;border:1px solid #E8DBC8;border-radius:12px">'
-      . '<tr><td style="padding:22px 22px 6px 22px;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:2px;'
-      . 'text-transform:uppercase;color:#A2502B;font-weight:bold">Lissom Keramikk &amp; Håndverk</td></tr>'
-      . '<tr><td style="padding:0 22px 16px 22px;font-family:Georgia,serif;font-size:22px;font-weight:bold;color:#4D1D12">'
-      . 'Bestilling ' . $e($nummer) . '</td></tr>'
-      . '<tr><td style="padding:0 22px 16px 22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#2E1002;'
-      . 'border-bottom:1px solid #E8DBC8">Til ' . $e($leverandor) . '<br>Dato ' . date('d.m.Y')
-      . '<br>Leveres til Nordre Løkkevei 15, 3120 Nøtterøy</td></tr>'
-      . '<tr><td style="padding:18px 22px 0 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;color:#2E1002">'
-      . $e($apning) . '</td></tr>'
-      . $bolker
-      . '<tr><td style="padding:20px 22px 0 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;color:#2E1002;'
-      . 'border-top:2px solid #E8DBC8">' . $e($slutt) . '</td></tr>'
-      . '<tr><td style="padding:14px 22px 24px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#2E1002">'
-      . 'Vennlig hilsen<br>Lissom Keramikk &amp; Håndverk</td></tr>'
-      . '</table></td></tr></table></body></html>';
-
-    return [$emne, $tekst, $html];
+    return rtrim($ut);
 }

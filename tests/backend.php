@@ -11524,9 +11524,14 @@ sjekk('… og fanerekka foelger med, ellers forsvinner fanene',
     && !str_contains($sidaN2, "      'Butikk': [\n        ['Butikken',"));
 sjekk('… og skjermen sier hvor man staar',
     str_contains($sidaN2, "? p('Nettbutikk', 'Nettbutikk', 'Internbutikk')")
-    && str_contains($sidaN2, ": p('Nettbutikk', 'Nettbutikk', 'Butikken');"));
+    && str_contains($sidaN2, ": p('Nettbutikk', 'Nettbutikk', 'Butikken');")
+    // Handlelistene kom 14. september 2026 som den tredje lista.
+    && str_contains($sidaN2, "return p('Nettbutikk', 'Nettbutikk', 'Handlelister');"));
+// Tre lister paa samme skjerm fra 14. september 2026: butikken, internbutikken
+// og handlelistene. Overskrifta maa si hvilken av dem man staar i.
 sjekk('… og overskrifta paa skjermen',
-    str_contains($sidaN2, "butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk',"));
+    str_contains($sidaN2, "butikkTittel: this.state.butikkFane === 'Handlelister' ? 'Handlelister'")
+    && str_contains($sidaN2, "        : (this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk'),"));
 sjekk('… og kortet paa Oversikt',
     str_contains($sidaN2, "kort('Nettbutikk',"));
 
@@ -17712,8 +17717,10 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Ble tolv 13. september 2026. Eieren: «jeg vil ha bryter til aa skru av
 // glemte aa stemple for medlemmene. Og den skal og skrus av.» Migrasjon 181
 // setter den av; herfra kan den slaas paa igjen.
-sjekk('… og har alle tolv bryterne',
-    substr_count($syn, "            rad('") === 12
+// Tretten 14. september: handlelista, migrasjon 182, ogsaa av fra start.
+sjekk('… og har alle tretten bryterne',
+    substr_count($syn, "            rad('") === 13
+    && str_contains($syn, "            rad('Handlelista', this.bryterPaa('handleliste'),")
     && str_contains($syn, "            rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),")
     && str_contains($syn, "            rad('Banneret under toppbildet',")
     // Het «Salgsuke-kampanjen» til 13. september 2026; da ble salgsuka en
@@ -18233,6 +18240,106 @@ sjekk('… og kortet er merket som slippsone',
     str_contains($bfSida, '<label data-slipp="1" onDragOver="{{ dokDragOver }}"'));
 sjekk('… og vakta tas ned igjen naar skjermen forsvinner',
     str_contains($bfSida, "document.removeEventListener('drop', this._slippVakt);"));
+
+// ── Handlelista og samlebestillingen ─────────────────────────────
+//
+// Eieren, 13. september 2026: «kan vi faa til en handleliste som vises paa min
+// side medlemmer ... medlemmene maa kunne samle opp og trykk send ... listen
+// som oversendes admin maa slaas sammen til en liste ... maa kunne legge inn
+// pris pr varelinje, kunne kreve inn betaling ved vipps ... prisene maa legge
+// paa adm gebyr 5%».
+//
+// Maalt i nettleseren for dette ble skrevet: medlemmet la til, telte opp og
+// sendte; admin satte pris, saa oppgjoret med gebyret, og sendte bestillingen.
+
+$hlM = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/182_handleliste_og_samlebestilling.sql');
+sjekk('migrasjon 182 lager linjene, leverandorene og malen',
+    str_contains($hlM, 'CREATE TABLE IF NOT EXISTS handleliste_linjer')
+    && str_contains($hlM, 'CREATE TABLE IF NOT EXISTS leverandorer')
+    && str_contains($hlM, "INSERT IGNORE INTO leverandorer (navn) VALUES ('Cerama'), ('Waldemar Ellefsen');")
+    && str_contains($hlM, "'leverandorbestilling',"));
+// Kortet staar av til varene har faatt artikkelnummer. Ellers moeter
+// medlemmene en tom liste den dagen dette legges ut.
+sjekk('… og bryteren staar av fra start',
+    str_contains($hlM, "INSERT IGNORE INTO content_blocks (nokkel, verdi) VALUES ('Vis/handleliste', 'nei');"));
+// Eieren, 13. september: «prisene maa legge paa adm gebyr 5%». Satsen staar i
+// basen, ikke i koden — da kan han endre den selv. Samme regel som prisene
+// ellers: ingen tall skrevet inn i PHP-en.
+sjekk('… og gebyrsatsen er en innstilling, ikke et tall i koden',
+    str_contains($hlM, "INSERT IGNORE INTO innstillinger (nokkel, verdi) VALUES ('handleliste_gebyr_prosent', '5');"));
+
+$hlMedlem = (string) file_get_contents(dirname(__DIR__) . '/api/handleliste.php');
+sjekk('medlemmets liste er stengt naar bryteren staar av',
+    str_contains($hlMedlem, "\$paa = (string) DB::verdi(\"SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/handleliste'\") !== 'nei';")
+    && str_contains($hlMedlem, "Svar::feil('Handlelista er ikke åpen nå. Ta kontakt med verkstedet.', 403);"));
+// Samme vare to ganger er én linje med hoyere antall. Ellers ville lista
+// fyltes med like rader, og bestillingen blitt uleselig.
+sjekk('… og samme vare to ganger blir én linje',
+    str_contains($hlMedlem, "WHERE member_id = :m AND product_id = :p AND status = 'apen'"));
+sjekk('… og «send» flytter bare mine egne aapne linjer',
+    str_contains($hlMedlem, "UPDATE handleliste_linjer SET status = 'sendt', sendt_at = NOW()\n          WHERE member_id = :m AND status = 'apen'"));
+
+$hlAdmin = (string) file_get_contents(dirname(__DIR__) . '/api/admin/handlelister.php');
+sjekk('gebyret hentes fra basen hver gang',
+    str_contains($hlAdmin, "SELECT verdi FROM innstillinger WHERE nokkel = 'handleliste_gebyr_prosent'")
+    // Ingen sats skrevet inn i koden. «/ 100» er prosentregninga selv.
+    && !preg_match('/gebyr\s*=\s*5\b/i', $hlAdmin));
+// Kravet er en vanlig ordre med en betaling, som kassa og nettbutikken.
+// Da dukker det opp i omsetningen uten en egen tabell aa holde i takt.
+sjekk('… og kravet blir en ordre med en betaling, ett per medlem',
+    str_contains($hlAdmin, "DB::settInn('orders', [")
+    && str_contains($hlAdmin, "'formal'          => 'ordre',")
+    && str_contains($hlAdmin, "Vipps::opprettBetaling(")
+    && str_contains($hlAdmin, "                \$telefon,\n                true\n            );"));
+// Gaar Vipps i vasken, skal det ikke ligge igjen en ordre som ingen har bedt
+// om. Maalt: kravet feilet mot en tjener uten Vipps-noekler, og det sto null
+// ordrer igjen etterpaa.
+sjekk('… og en ordre som ikke ble til et krav ryddes bort',
+    str_contains($hlAdmin, "DB::kjor('DELETE FROM order_lines WHERE order_id = :o', ['o' => \$ordreId]);")
+    && str_contains($hlAdmin, "DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => \$ordreId]);"));
+// Bestillingen gjor linjene ferdige. Uten pris ville varene vaert kjopt inn
+// uten at noen ble bedt om aa betale for dem.
+sjekk('… og ingen bestilling gaar ut for prisen er satt',
+    str_contains($hlAdmin, "Svar::feil('Noen varelinjer hos ' . \$lev['navn'] . ' mangler pris. Sett prisen først, så blir kravet riktig.');"));
+// Eieren, 14. september: «lag heller bestillingen pr medlem ikke samle pr
+// produkt, og be om at hver bestilling merkes med navn».
+sjekk('… og bestillingen ut er delt per medlem',
+    str_contains($hlAdmin, 'function handleliste_varetekst(array $perMedlem): string')
+    && str_contains($hlAdmin, "\$ut .= \$m['navn'] . \"\\n\";"));
+// Teksten til leverandoren er en mal, som alt annet som sendes ut.
+sjekk('… og teksten til leverandoren ligger som mal',
+    str_contains($hlAdmin, "Varsel::mal(\n        'leverandorbestilling',")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'leverandorbestilling' => ["));
+// Beloepet paa skjermen og beloepet i kravet er det samme. Booking::kroner
+// runder til hele kroner, og gebyret har oere.
+sjekk('… og beloep med oere vises med oere',
+    str_contains($hlAdmin, 'function handleliste_kroner(int $ore): string')
+    && str_contains($hlAdmin, 'if ($ore % 100 === 0) {'));
+
+$hlS = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kortet staar paa Min side, under internbutikken',
+    str_contains($hlS, '<sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">')
+    && str_contains($hlS, '<div id="minside-handleliste"')
+    && strpos($hlS, 'id="minside-internbutikk"') < strpos($hlS, 'id="minside-handleliste"'));
+// Eieren, 14. september: «vi trenger navn og artikkelnummer, ikke hele
+// beskrivelsen paa produktet», og «jeg vil ikke at det brekker». Navnet
+// kuttes med «…» framfor aa brekke; nummeret staar fast og kuttes aldri.
+sjekk('… og varelinja staar paa én linje, med nummeret i behold',
+    str_contains($hlS, 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</div>')
+    && str_contains($hlS, 'style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.nummer }}</div>'));
+sjekk('… og soekefeltet finnes',
+    str_contains($hlS, 'placeholder="Søk etter leire, glasur, verktøy …"'));
+// Fanen i admin. Varene og ordrene staar til side naar handlelistene vises —
+// det er to ulike aerend paa samme skjerm.
+sjekk('fanen «Handlelister» finnes under Nettbutikk',
+    str_contains($hlS, "['Handlelister',  'adminbutikk',     { butikkFane: 'Handlelister' }],")
+    && str_contains($hlS, '<sc-if value="{{ butFaneHandlelister }}"')
+    && str_contains($hlS, '<sc-if value="{{ butFaneVarer }}"'));
+// Uten artikkelnummer og leverandor paa varen kan ingenting bestilles.
+sjekk('… og vareskjemaet har artikkelnummer, leverandor og «kan bestilles»',
+    str_contains($hlS, 'placeholder="Artikkelnummer hos leverandøren"')
+    && str_contains($hlS, '<sc-for list="{{ npLeverandorer }}" as="l"')
+    && str_contains($hlS, '<span>Kan bestilles (handlelista)</span>'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

@@ -382,7 +382,16 @@ final class Stempling
         $ut = $inn->setTime($t, $m);
         // Gikk noen etter midnatt, er klokkeslettet mindre enn det de kom paa.
         // Da er det neste doegn, ikke samme morgen.
-        if ($ut <= $inn) {
+        //
+        // «<», ikke «<=». Sto det «<=», ble et klokkeslett LIKT inn-tida
+        // regnet som neste doegn — og stoppet av stengetida under, med
+        // beskjeden «Verkstedet stenger kl. 23». Det var det eieren fikk 14.
+        // september 2026: et medlem hadde stemplet inn og ut 08:05, feltet
+        // aapnet paa 08:05, og «Sett utstemplingen» svarte at verkstedet
+        // stenger klokka 23. Naa gaar et likt klokkeslett videre til
+        // rettUt(), som sier det som stemmer: tidspunktet maa vaere etter
+        // innstemplinga.
+        if ($ut < $inn) {
             $ut = $ut->modify('+1 day');
         }
 

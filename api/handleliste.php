@@ -26,7 +26,7 @@ require __DIR__ . '/_boot.php';
 $medlem = krev_aktivt_medlem();
 $medlemId = (int) $medlem['id'];
 
-// Foer migrasjon 182 er kjoert finnes ikke tabellen. Da er det ingen liste aa
+// Foer migrasjon 184 er kjoert finnes ikke tabellen. Da er det ingen liste aa
 // vise, og kortet staar tomt framfor aa feile.
 $klar = DB::harTabell('handleliste_linjer') && DB::harKolonne('products', 'artikkelnr');
 

@@ -305,7 +305,8 @@ final class Robottekst
         $id = (string) ($kart['stier'][$adresse] ?? '');
         $erKurs = str_starts_with($adresse, '/kurs/');
         $erVare = str_starts_with($adresse, '/butikk/');
-        if ($id === '' && !$erKurs && !$erVare) {
+        $erNyhet = preg_match('~^/nyheter/([a-z0-9\-]+)$~i', $adresse, $nyhetTreff) === 1;
+        if ($id === '' && !$erKurs && !$erVare && !$erNyhet) {
             return null;
         }
         if (strtolower((string) ($seo['index'] ?? 'Index')) === 'noindex') {
@@ -334,6 +335,23 @@ final class Robottekst
                 $meta = $k['seo_meta'] !== '' ? $k['seo_meta'] : ($k['kort'] !== '' ? $k['kort'] : self::ingress($k['beskrivelse']));
                 $deler[] = self::kursHtml($k);
                 $ld[] = self::kursLd($k, $canon);
+            } elseif ($erNyhet) {
+                // Artikkelen, tegnet ferdig — med FAQ-data naar den har
+                // «# Ofte stilte spørsmål» med «## spørsmål» under. Det er
+                // artiklene som gjoer at et AI-svar siterer Lissom: de
+                // svarer paa det folk spoer om. (Eieren, 14. september 2026.)
+                $a = self::artikkelVedSlug($nyhetTreff[1]);
+                if ($a === null) {
+                    return null;
+                }
+                $h1 = $a['tittel'];
+                $meta = self::ingress($a['ingress'] !== '' ? $a['ingress'] : $a['innhold']);
+                $deler[] = self::artikkelHtml($a);
+                $ld[] = self::artikkelLd($a, $canon);
+                $faq = self::artikkelFaq($a['innhold']);
+                if ($faq !== []) {
+                    $ld[] = self::sporsmalLd($faq, $canon);
+                }
             } elseif ($erVare) {
                 $vareId = Lenker::vareId($adresse);
                 $v = null;
@@ -387,6 +405,17 @@ final class Robottekst
                 if ($liste !== []) {
                     $ld[] = self::sporsmalLd($liste, $canon);
                 }
+            } elseif ($id === 'bedrift') {
+                // «Laget for»: bedriftene verkstedet har laget keramikk for.
+                // Eieren, 14. september 2026: «Få også med at vi har laget
+                // keramikk for flere bedrifter, Spire Regnskap, Kepler
+                // Bilservice og for Grenseløs». Lista er den samme som paa
+                // forsida — referansekundene i admin — saa den vokser der.
+                $kunder = self::referanser();
+                if ($kunder !== []) {
+                    $deler[] = self::referanseHtml($kunder);
+                    $ld[] = self::referanseLd($kunder, $canon);
+                }
             }
         } catch (Throwable) {
             // Basen svarte ikke: overskrift og ingress gaar likevel.
@@ -401,11 +430,14 @@ final class Robottekst
     private static function ramme(string $h1, string $meta, string $innhold, bool $forside): string
     {
         $e = [self::class, 'e'];
-        // Paa forsida ligger den ferdigtegnede toppen (#lissom-topp) absolutt
-        // over alt; teksten starter under den.
-        $topp = $forside ? 'margin-top:100vh;' : '';
+        // Her sto «margin-top:100vh» paa forsida, for aa komme under den
+        // ferdigtegnede toppen (#lissom-topp) som laa absolutt over alt. Den
+        // ligger naa i vanlig flyt — se bin/forhaandstegn.mjs — og teksten
+        // foelger rett under den av seg selv. $forside beholdes i signaturen,
+        // saa kallene staar som foer.
+        unset($forside);
         return '<style>'
-            . '#lissom-tekst{max-width:760px;margin:0 auto;padding:40px 24px 64px;font:var(--type-body,400 16px/1.6 "Alegreya Sans",sans-serif);color:var(--text-body,#2E1002);' . $topp . '}'
+            . '#lissom-tekst{max-width:760px;margin:0 auto;padding:40px 24px 64px;font:var(--type-body,400 16px/1.6 "Alegreya Sans",sans-serif);color:var(--text-body,#2E1002)}'
             . '#lissom-tekst h1,#lissom-tekst h2,#lissom-tekst h3{font-family:var(--font-display,"Bitter",serif);color:var(--text-heading,#4D1D12);line-height:1.15;margin:0 0 10px}'
             . '#lissom-tekst h1{font-size:34px}#lissom-tekst h2{font-size:22px;margin-top:34px}#lissom-tekst h3{font-size:18px;margin:18px 0 4px}'
             . '#lissom-tekst p{margin:0 0 12px}#lissom-tekst .lede{font-size:18px;color:var(--text-muted,#6F5D4C)}'
@@ -743,6 +775,95 @@ final class Robottekst
         return $p;
     }
 
+    /**
+     * Referansekundene — de aktive, med samtykke. Samme utvalg som
+     * api/referanser.php gir forsida.
+     */
+    public static function referanser(): array
+    {
+        if (!DB::harTabell('referansekunder')) {
+            return [];
+        }
+        $logoFelt = DB::harKolonne('referansekunder', 'logo') ? 'logo,' : '';
+        $rader = DB::alle(
+            "SELECT navn, bilde, {$logoFelt} tekst, sitat, sitat_av, lenke
+               FROM referansekunder
+              WHERE aktiv = 1 AND samtykke = 1
+           ORDER BY sortering, navn"
+        );
+        $ut = [];
+        foreach ($rader as $r) {
+            $navn = trim((string) $r['navn']);
+            if ($navn === '') {
+                continue;
+            }
+            $ut[] = [
+                'navn'    => $navn,
+                'bilde'   => trim((string) ($r['bilde'] ?? '')),
+                'logo'    => trim((string) ($r['logo'] ?? '')),
+                'tekst'   => trim((string) ($r['tekst'] ?? '')),
+                'sitat'   => trim((string) ($r['sitat'] ?? '')),
+                'sitatAv' => trim((string) ($r['sitat_av'] ?? '')),
+                'lenke'   => trim((string) ($r['lenke'] ?? '')),
+            ];
+        }
+        return $ut;
+    }
+
+    private static function referanseHtml(array $kunder): string
+    {
+        $ut = '<h2>Laget for</h2><p>Vi lager kopper, skåler og servise for bedrifter i Vestfold — dreid og glasert i verkstedet på Teie, med motiv tegnet etter ønske.</p><ul>';
+        foreach ($kunder as $k) {
+            $ut .= '<li><strong>' . self::e($k['navn']) . '</strong>';
+            if ($k['tekst'] !== '') {
+                $ut .= ' — ' . self::e($k['tekst']);
+            }
+            if ($k['sitat'] !== '') {
+                $ut .= ' <q>' . self::e($k['sitat']) . '</q>';
+                if ($k['sitatAv'] !== '') {
+                    $ut .= ' (' . self::e($k['sitatAv']) . ')';
+                }
+            }
+            $ut .= '</li>';
+        }
+        return $ut . '</ul><p><a href="/kontakt">Send en forespørsel</a></p>';
+    }
+
+    /**
+     * Referansene som strukturerte data: ei liste av arbeider, hvert med
+     * bedriften det ble laget for. Det er dette som lar et AI-svar knytte
+     * «keramikk for Grenseløs» til Lissom.
+     */
+    private static function referanseLd(array $kunder, string $canon): array
+    {
+        $liste = [];
+        foreach ($kunder as $i => $k) {
+            $verk = [
+                '@type'   => 'CreativeWork',
+                'name'    => 'Keramikk laget for ' . $k['navn'],
+                'creator' => ['@id' => self::ROT . '/#verksted'],
+                'sourceOrganization' => array_filter([
+                    '@type' => 'Organization',
+                    'name'  => $k['navn'],
+                    'url'   => $k['lenke'] !== '' ? $k['lenke'] : null,
+                ]),
+            ];
+            if ($k['tekst'] !== '') {
+                $verk['description'] = $k['tekst'];
+            }
+            if ($k['bilde'] !== '') {
+                $verk['image'] = self::bildeUrl($k['bilde']);
+            }
+            $liste[] = ['@type' => 'ListItem', 'position' => $i + 1, 'item' => $verk];
+        }
+        return [
+            '@type' => 'ItemList',
+            '@id'   => $canon . '#laget-for',
+            'name'  => 'Keramikk laget for bedrifter',
+            'itemListElement' => $liste,
+        ];
+    }
+
     private static function vareListeLd(array $varer): array
     {
         $i = 0;
@@ -768,5 +889,135 @@ final class Robottekst
                 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $s['a']],
             ], $liste),
         ];
+    }
+
+    // ── Artiklene ───────────────────────────────────────────────────────
+
+    /** Én publisert artikkel, eller null. */
+    public static function artikkelVedSlug(string $slug): ?array
+    {
+        $a = DB::en(
+            "SELECT tittel, kategori, ingress, innhold, bilde, bilde_alt, dato, publisert_at, updated_at
+               FROM articles WHERE slug = :s AND status = 'publisert'",
+            ['s' => mb_substr($slug, 0, 191)]
+        );
+        if ($a === null) {
+            return null;
+        }
+        return [
+            'tittel'    => trim((string) $a['tittel']),
+            'kategori'  => trim((string) ($a['kategori'] ?? '')),
+            'ingress'   => trim((string) ($a['ingress'] ?? '')),
+            'innhold'   => (string) ($a['innhold'] ?? ''),
+            'bilde'     => trim((string) ($a['bilde'] ?? '')),
+            'bildeAlt'  => trim((string) ($a['bilde_alt'] ?? '')),
+            'publisert' => (string) ($a['publisert_at'] ?? ''),
+            'endret'    => (string) ($a['updated_at'] ?? ''),
+        ];
+    }
+
+    /**
+     * Artikkelteksten som HTML. Samme enkle format som nettsida tegner
+     * (parseInnhold): «# » er mellomtittel, «## » undertittel, «- » punkt,
+     * tom linje skiller avsnitt. Tabellene (brennetabellen) hoppes over —
+     * de staar paa sin egen side.
+     */
+    private static function artikkelHtml(array $a): string
+    {
+        $ut = '';
+        $liste = false;
+        foreach (explode("\n", str_replace("\r", '', $a['innhold'])) as $raa) {
+            $l = trim($raa);
+            if ($l === '' || str_starts_with($l, '|')) {
+                if ($liste) { $ut .= '</ul>'; $liste = false; }
+                continue;
+            }
+            if (str_starts_with($l, '- ')) {
+                if (!$liste) { $ut .= '<ul>'; $liste = true; }
+                $ut .= '<li>' . self::e(substr($l, 2)) . '</li>';
+                continue;
+            }
+            if ($liste) { $ut .= '</ul>'; $liste = false; }
+            if (str_starts_with($l, '## ')) {
+                $ut .= '<h3>' . self::e(substr($l, 3)) . '</h3>';
+            } elseif (str_starts_with($l, '# ')) {
+                $ut .= '<h2>' . self::e(substr($l, 2)) . '</h2>';
+            } else {
+                $ut .= '<p>' . self::e($l) . '</p>';
+            }
+        }
+        if ($liste) { $ut .= '</ul>'; }
+        return $ut;
+    }
+
+    /**
+     * Spoersmaal og svar fra artikkelen: alt under en mellomtittel som
+     * begynner med «Ofte stilte» — hvert «## spoersmaal» med avsnittene
+     * under som svar. Ingen slik bolk: tom liste, ingen FAQ-data.
+     */
+    public static function artikkelFaq(string $innhold): array
+    {
+        $ut = [];
+        $inne = false;
+        $q = null;
+        $a = [];
+        $lukk = static function () use (&$ut, &$q, &$a): void {
+            if ($q !== null && $a !== []) {
+                $ut[] = ['q' => $q, 'a' => implode(' ', $a)];
+            }
+            $q = null;
+            $a = [];
+        };
+        foreach (explode("\n", str_replace("\r", '', $innhold)) as $raa) {
+            $l = trim($raa);
+            if (str_starts_with($l, '# ')) {
+                $lukk();
+                $inne = stripos(substr($l, 2), 'ofte stilte') === 0 || stripos(substr($l, 2), 'spørsmål og svar') === 0;
+                continue;
+            }
+            if (!$inne) {
+                continue;
+            }
+            if (str_starts_with($l, '## ')) {
+                $lukk();
+                $q = trim(substr($l, 3));
+                continue;
+            }
+            if ($l !== '' && $q !== null) {
+                $a[] = str_starts_with($l, '- ') ? substr($l, 2) : $l;
+            }
+        }
+        $lukk();
+        return $ut;
+    }
+
+    private static function artikkelLd(array $a, string $canon): array
+    {
+        $ld = [
+            '@type'    => 'Article',
+            '@id'      => $canon . '#artikkel',
+            'headline' => $a['tittel'],
+            'url'      => $canon,
+            'inLanguage' => 'nb',
+            'author'    => ['@id' => self::ROT . '/#verksted'],
+            'publisher' => ['@id' => self::ROT . '/#verksted'],
+            'mainEntityOfPage' => $canon,
+        ];
+        if ($a['ingress'] !== '') {
+            $ld['description'] = self::ingress($a['ingress']);
+        }
+        if ($a['kategori'] !== '') {
+            $ld['articleSection'] = $a['kategori'];
+        }
+        if ($a['bilde'] !== '') {
+            $ld['image'] = self::bildeUrl($a['bilde']);
+        }
+        if ($a['publisert'] !== '') {
+            $ld['datePublished'] = self::iso($a['publisert']);
+        }
+        if ($a['endret'] !== '') {
+            $ld['dateModified'] = self::iso($a['endret']);
+        }
+        return $ld;
     }
 }

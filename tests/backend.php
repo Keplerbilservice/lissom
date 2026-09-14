@@ -17717,7 +17717,7 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Ble tolv 13. september 2026. Eieren: «jeg vil ha bryter til aa skru av
 // glemte aa stemple for medlemmene. Og den skal og skrus av.» Migrasjon 181
 // setter den av; herfra kan den slaas paa igjen.
-// Tretten 14. september: handlelista, migrasjon 182, ogsaa av fra start.
+// Tretten 14. september: handlelista, migrasjon 184, ogsaa av fra start.
 sjekk('… og har alle tretten bryterne',
     substr_count($syn, "            rad('") === 13
     && str_contains($syn, "            rad('Handlelista', this.bryterPaa('handleliste'),")
@@ -18252,8 +18252,8 @@ sjekk('… og vakta tas ned igjen naar skjermen forsvinner',
 // Maalt i nettleseren for dette ble skrevet: medlemmet la til, telte opp og
 // sendte; admin satte pris, saa oppgjoret med gebyret, og sendte bestillingen.
 
-$hlM = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/182_handleliste_og_samlebestilling.sql');
-sjekk('migrasjon 182 lager linjene, leverandorene og malen',
+$hlM = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/184_handleliste_og_samlebestilling.sql');
+sjekk('migrasjon 184 lager linjene, leverandorene og malen',
     str_contains($hlM, 'CREATE TABLE IF NOT EXISTS handleliste_linjer')
     && str_contains($hlM, 'CREATE TABLE IF NOT EXISTS leverandorer')
     && str_contains($hlM, "INSERT IGNORE INTO leverandorer (navn) VALUES ('Cerama'), ('Waldemar Ellefsen');")

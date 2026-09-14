@@ -61,7 +61,7 @@ if (Foresporsel::metode() === 'GET') {
         'lager'        => $v['lager'] === null ? null : (int) $v['lager'],
         'kunMedlemmer' => (bool) $v['kun_medlemmer'],
         'status'       => $v['status'],
-        // Handlelista, migrasjon 182. Er den ikke kjoert, staar feltene tomme
+        // Handlelista, migrasjon 184. Er den ikke kjoert, staar feltene tomme
         // og skjemaet viser dem som tomme — det er riktig svar da.
         'artikkelnr'   => (string) ($v['artikkelnr'] ?? ''),
         'leverandorId' => isset($v['leverandor_id']) && $v['leverandor_id'] !== null ? (int) $v['leverandor_id'] : 0,
@@ -171,7 +171,7 @@ $data = [
                         ? Foresporsel::tekst('status') : 'publisert',
 ];
 
-// Handlelista, migrasjon 182. Artikkelnummeret er leverandorens eget nummer,
+// Handlelista, migrasjon 184. Artikkelnummeret er leverandorens eget nummer,
 // og det er det som staar i bestillingen — derfor foelger det varen og ikke
 // bestillingen. «Kan bestilles» er det som avgjor om varen dukker opp i
 // handlelista paa Min side; ligger den bare paa lager, hoerer den hjemme i

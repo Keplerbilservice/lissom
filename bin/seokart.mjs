@@ -95,6 +95,11 @@ const ut = {
   laget: new Date().toISOString().slice(0, 10),
   om: 'Laget av bin/seokart.mjs. Rediger lissom-2108.html, ikke denne.',
   stier,
+  // Alle faste adresser, ogsaa de private (/kasse, /min-side, /admin/…).
+  // side.php svarer 404 for det som verken staar her eller er et kurs, en
+  // nyhet eller en vare i basen. Uten lista svarte alt 200 — «/phpinfo.php»
+  // ga hele forsida — og Google brukte tid paa soeppel (13. september 2026).
+  alle: STIER.map(r => r.sti).filter(s => !s.includes(':')),
   sider: SEO,
   sporsmal: SPORSMAL,
 };

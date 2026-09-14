@@ -38,6 +38,32 @@ RewriteRule ^(.*)$ https://%1/$1 [R=301,L,NE]
 RewriteCond %{HTTPS} !=on
 RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 
+# ── Det som ikke er nettsida, svarer 403 ───────────────────────────────
+#
+# Sikkerhetsskanning 13. september 2026, mot den ekte sida:
+#
+#   /vendor/  /api/  /tests/   viste innholdet sitt — LiteSpeed lister en
+#                              mappe uten indeksfil. /api/ ga alle 55
+#                              endepunktene paa ett brett.
+#   /tests/backend.php         kjorte (svarte 500), og flyt.sh kunne leses.
+#   /api/_boot.php             kunne kalles rett, og svarte 200.
+#
+# «Options -Indexes» ville tatt det forste, men er ikke tillatt i .htaccess
+# hos alle verter — og der det ikke er tillatt, stopper HELE sida med 500.
+# Omskrivingsregler er alt i bruk her, saa de brukes til dette ogsaa.
+#
+# Mapper: en adresse som treffer en mappe har ingenting aa vise. Forsida er
+# ogsaa en mappe (webroten), men den gaar til side.php lenger nede — regelen
+# krever minst ett tegn foran skraastreken, saa «/» rores ikke. .well-known
+# er filer i mapper, ikke mapper, og gaar som for.
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.+/?$ - [F]
+
+# Testene og oppstartsfila til API-et er kode, ikke sider. api/_boot.php
+# kreves inn av de andre filene i api/ — det rores ikke av en 403 utenfra.
+RewriteRule ^tests(/|$) - [F]
+RewriteRule ^api/_boot\.php$ - [F]
+
 # Forsida er nettsida, ikke en omvei til den.
 #
 # «/» ble servert av index.html, som er en meta-refresh videre til

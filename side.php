@@ -275,6 +275,45 @@ if ($d === null && str_starts_with($adresse, '/butikk/')) {
     }
 }
 
+// Artiklene: /nyheter/<slug>. De gikk ut som «noindex» med forsidas tittel
+// — Google fikk aldri se dem, og de sto ikke i sitemapen. Maalt 14.
+// september 2026 mot den ekte sida. Tittel og beskrivelse er artikkelens
+// egne; teksten tegnes av Robottekst::lag() lenger nede.
+if ($d === null && preg_match('~^/nyheter/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
+    try {
+        $lastBackend();
+        $a = DB::en(
+            "SELECT tittel, ingress, bilde, bilde_alt FROM articles
+              WHERE slug = :s AND status = 'publisert'",
+            ['s' => mb_substr($treff[1], 0, 191)]
+        );
+        if ($a !== null) {
+            $navn = trim((string) $a['tittel']);
+            $meta = trim((string) preg_replace('/\s+/u', ' ', (string) ($a['ingress'] ?? '')));
+            if (mb_strlen($meta) > 158) {
+                $kort = mb_substr($meta, 0, 158);
+                $punktum = mb_strrpos($kort, '. ');
+                $meta = ($punktum !== false && $punktum > 60)
+                    ? mb_substr($kort, 0, $punktum + 1)
+                    : trim($kort) . ' …';
+            }
+            $bilde = trim((string) ($a['bilde'] ?? ''));
+            $d = [
+                'tittel'        => $navn . ' | Lissom Keramikk',
+                'meta'          => $meta,
+                'canonical'     => ROT . '/nyheter/' . rawurlencode($treff[1]),
+                'ogTittel'      => $navn,
+                'ogBeskrivelse' => $meta,
+                'delingsbilde'  => $bilde !== '' ? ROT . '/' . ltrim($bilde, '/') : '',
+                'altTekst'      => trim((string) ($a['bilde_alt'] ?? '')) ?: $navn,
+                'index'         => 'Index',
+            ];
+        }
+    } catch (Throwable) {
+        // Basen er nede, eller artikkelen finnes ikke. Da staar hodet som det gjor.
+    }
+}
+
 if ($d === null) {
     $id = $kart['stier'][$adresse] ?? null;
     if ($id !== null && isset($kart['sider'][$id])) {
@@ -296,6 +335,62 @@ if ($d === null) {
             // Ferdigteksten staar. Den er bedre enn ingen.
         }
     }
+}
+
+// ── Finnes sida i det hele tatt? ────────────────────────────────────────
+//
+// Alt svarte 200. «/phpinfo.php», «/finnes-ikke» og «/vendor/autoload.php»
+// ga hele forsida — 1,5 MB — med status 200, og nettsida viste «siden
+// finnes ikke» inni. Google kaller det «soft 404»: den bruker tid paa
+// soeppel framfor sidene som betyr noe, og Search Console sto med 8 sider
+// «gjennomsoekt, ikke indeksert». (Sikkerhetsskanning 13. september 2026.)
+//
+// Sida sendes som foer — det er nettsida som tegner «ikke funnet» — men med
+// status 404, saa robotene vet det. Kjent er: en fast adresse (ogsaa de
+// private, /kasse og /admin/…, se «alle» i seo-kart.json), et publisert
+// kurs, en publisert nyhet, eller en vare i butikken.
+//
+// Tvil gir 200. Mangler lista (gammelt kart), eller er basen nede, svares
+// det som foer — en side som feilaktig faar 404 er verre enn en som
+// feilaktig faar 200.
+$finnes = $d !== null;
+$alle = $kart['alle'] ?? null;
+if (!$finnes && is_array($alle)) {
+    $finnes = in_array($adresse, $alle, true);
+    // Bare adressene som KAN vaere noe i basen spoer basen. En ren
+    // skrivefeil trenger ikke basen for aa faa nei.
+    $erKurs  = preg_match('~^/(?:kurs|events)/([a-z0-9\-]+)$~i', $adresse, $treff) === 1;
+    $erNyhet = !$erKurs && preg_match('~^/nyheter/([a-z0-9\-]+)$~i', $adresse, $treff) === 1;
+    $erVare  = !$erKurs && !$erNyhet && str_starts_with($adresse, '/butikk/');
+    if (!$finnes && ($erKurs || $erNyhet || $erVare)) {
+        try {
+            $lastBackend();
+            if ($erKurs) {
+                // Uten tema-filteret over: et medlemskurs er en side for
+                // medlemmene, selv om det ikke skal i soket.
+                $finnes = (int) DB::verdi(
+                    "SELECT COUNT(*) FROM courses WHERE slug = :s AND status = 'publisert'",
+                    ['s' => $treff[1]]
+                ) > 0;
+            } elseif ($erNyhet) {
+                $finnes = (int) DB::verdi(
+                    "SELECT COUNT(*) FROM articles WHERE slug = :s AND status = 'publisert'",
+                    ['s' => mb_substr($treff[1], 0, 191)]
+                ) > 0;
+            } else {
+                $vareId = Lenker::vareId($adresse);
+                $finnes = $vareId !== null && (int) DB::verdi(
+                    "SELECT COUNT(*) FROM products WHERE id = :i AND status = 'publisert'",
+                    ['i' => $vareId]
+                ) > 0;
+            }
+        } catch (Throwable) {
+            $finnes = true;
+        }
+    }
+}
+if (!$finnes) {
+    http_response_code(404);
 }
 
 // ── Hodet ───────────────────────────────────────────────────────────────
@@ -352,8 +447,8 @@ $html = substr_replace($html, $hode, $start, $slutt + strlen(MERKE_SLUTT) - $sta
 // JSON-LD gaar inn i <head> med samme merke som skriptet bruker
 // (data-lissom-ld), saa nettleseren bytter det ut med sitt eget naar den er
 // ferdig. Teksten gaar inn rett etter <body>; paa forsida limes den
-// ferdigtegnede toppen inn foran den etterpaa (den ligger absolutt over
-// alt, og teksten starter under den). Skriptet i lissom-2108.html fjerner
+// ferdigtegnede toppen inn foran den etterpaa (i vanlig flyt, saa teksten
+// foelger rett under — se bin/forhaandstegn.mjs). Skriptet i lissom-2108.html fjerner
 // teksten naar den ekte skjermen staar. Gaar noe galt, gaar sida ut uten,
 // som foer.
 $robot = null;

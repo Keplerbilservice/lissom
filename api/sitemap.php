@@ -111,6 +111,31 @@ try {
     // De faste sidene gaar ut uansett.
 }
 
+// Artiklene. Sto ikke her — og sidene deres gikk ut som «noindex» — saa
+// Google fant dem aldri. Rettet 14. september 2026, sammen med side.php og
+// Robottekst. Bare de publiserte, med adresse.
+try {
+    $artikler = DB::alle(
+        "SELECT slug, COALESCE(publisert_at, updated_at) AS endret
+           FROM articles
+          WHERE status = 'publisert' AND slug IS NOT NULL AND slug <> ''
+       ORDER BY sortering, id DESC"
+    );
+    foreach ($artikler as $a) {
+        $slug = (string) $a['slug'];
+        if (!preg_match('/^[a-z0-9-]+$/', $slug)) {
+            continue;
+        }
+        $linjer[] = [
+            ROT . '/nyheter/' . $slug,
+            $a['endret'] ? date('Y-m-d', strtotime((string) $a['endret'])) : $idag,
+            'monthly',
+            '0.6',
+        ];
+    }
+} catch (Throwable) {
+}
+
 // Varene i butikken. Hver av dem har sin egen adresse; uten dem her ville
 // ingen kopp blitt funnet, og butikken var én side som skulle rangere paa
 // alt den inneholdt.

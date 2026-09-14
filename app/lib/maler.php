@@ -75,7 +75,7 @@ final class Maler
                 'sum'        => 'Totalsummen',
             ],
         ],
-        // Bestillingen til leverandoren. Migrasjon 182: handlelistene fra
+        // Bestillingen til leverandoren. Migrasjon 184: handlelistene fra
         // medlemmene, slaatt sammen og sendt videre.
         'leverandorbestilling' => [
             'tittel' => 'Bestilling til leverandøren',

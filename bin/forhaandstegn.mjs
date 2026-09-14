@@ -256,16 +256,25 @@ for (const v of BREDDER) {
 }
 await b.close();
 
-// Kopien ligger over sida til den ekte toppen er der. «contain» stopper den
-// fra aa gi sida hoyde, saa ingenting hopper naar den fjernes.
+// Kopien ligger i vanlig flyt, ikke absolutt.
+//
+// Den laa absolutt med «contain:layout», i den tro at sida da ikke fikk
+// hoyde og ingenting hoppet naar kopien ble fjernet. Lighthouse 13.
+// september 2026 sa det motsatte: CLS 1,08 paa forsida (grensen er 0,10),
+// og hele utslaget var <body> som gikk fra null hoyde til full skjerm idet
+// React monterte — Chrome teller det som at alt flyttet seg. Med kopien i
+// flyt har sida hoyde fra foerste bilde, og byttet skjer i samme bilde (se
+// skriptet i lissom-2108.html). Maalt lokalt: absolutt 1,08 → i flyt 0,00.
+// Robotteksten under (app/lib/robottekst.php) mistet «margin-top:100vh»
+// samtidig; den laa der for aa ikke havne under den absolutte kopien.
 //
 // Innpakningene har «display:none» som utgangspunkt, og den som passer
 // bredden faar «display:contents» — ingen egen boks, saa barna ligger
 // noyaktig som om innpakningen ikke fantes.
 const ut = '<style>#lissom-topp>[data-topp]{display:none}'
   + regler.join('') + '</style>\n'
-  + '<div id="lissom-topp" aria-hidden="true" style="position:absolute;'
-  + 'top:0;left:0;width:100%;contain:layout;">\n' + deler.join('\n') + '\n</div>\n';
+  + '<div id="lissom-topp" aria-hidden="true" style="position:relative;'
+  + 'width:100%;">\n' + deler.join('\n') + '\n</div>\n';
 
 fs.writeFileSync(MAAL, ut);
 console.log('forside-topp.html skrevet: ' + Math.round(Buffer.byteLength(ut) / 1024) + ' kB.');

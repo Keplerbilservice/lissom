@@ -21321,6 +21321,24 @@ window.__resources = {
               <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); white-space: pre-wrap; line-height: 1.65;">{{ mkSvar }}</p>
             </div>
           </sc-if>
+          <!-- Taket og noekkelen laa under «Innstillinger» sammen med
+               Google-ID-ene. De er AI-ens, og staar hos den. -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-5); margin-top: var(--space-5);">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Tak for AI-bruk</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Hver tekst AI-en skriver koster noen øre. Når taket er nådd denne måneden, stopper knappene av seg selv.</p>
+              <input value="{{ mkAiTak }}" onChange="{{ mkSettAiTak }}" placeholder="300" style="{{ mkFeltStil }}">
+              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 6px;">{{ mkForbrukTekst }}</div>
+              <div style="height: var(--space-4);"></div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreTak }}" hint-size="auto,40px">Lagre</x-import>
+            </div>
+
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Claude API</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ mkApiTekst }}</p>
+              <div style="font-family: var(--font-mono, monospace); font-size: var(--text-sm); background: var(--clay-100); border-radius: var(--radius-md); padding: 10px 12px; color: var(--text-heading);">claude_api_key</div>
+            </div>
+          </div>
         </sc-if>
 
         <!-- ── Analyse ────────────────────────────────────────────────── -->
@@ -21390,15 +21408,6 @@ window.__resources = {
             </div>
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Tak for AI-bruk</div>
-              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Hver tekst AI-en skriver koster noen øre. Når taket er nådd denne måneden, stopper knappene av seg selv.</p>
-              <input value="{{ mkAiTak }}" onChange="{{ mkSettAiTak }}" placeholder="300" style="{{ mkFeltStil }}">
-              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 6px;">{{ mkForbrukTekst }}</div>
-              <div style="height: var(--space-4);"></div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreTak }}" hint-size="auto,40px">Lagre</x-import>
-            </div>
-
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Min bedrift på Google</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Lim inn adressen til bedriftsprofilen deres. Da ligger den her når vi kobler den mot Google sitt API.</p>
               <input value="{{ mkGoogleBedrift }}" onChange="{{ mkSettGoogleBedrift }}" placeholder="https://g.page/..." style="{{ mkFeltStil }}">
@@ -21406,11 +21415,6 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreBedrift }}" hint-size="auto,40px">Lagre</x-import>
             </div>
 
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Claude API</div>
-              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ mkApiTekst }}</p>
-              <div style="font-family: var(--font-mono, monospace); font-size: var(--text-sm); background: var(--clay-100); border-radius: var(--radius-md); padding: 10px 12px; color: var(--text-heading);">claude_api_key</div>
-            </div>
           </div>
         </sc-if>
 
@@ -36459,6 +36463,23 @@ class Component extends DCLogic {
    * forhaand, og «Betalinger» viser kursene det ene stedet og
    * medlemskapstrekkene det andre.
    */
+  /**
+   * Pillene paa markedsfoeringsskjermen som er egne skjermer.
+   *
+   * Markedsfoering har seks grupper med piller. Fire av pillene gaar ut av
+   * skjermen: SEO, GEO, Send (beskjedene) og e-postoppsettet. Lista brukes
+   * begge veier — markedsfoeringsskjermen gaar hit, og adminSted() finner
+   * tilbake til gruppa og pilla naar man staar paa en av skjermene.
+   */
+  static get MARKED_DOERER() {
+    return {
+      seo:   ['adminseo',       { seoFra: 'marked' }],
+      geo:   ['admingeo',       { geoFra: 'marked' }],
+      send:  ['adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
+      epost: ['adminvarsler'],
+    };
+  }
+
   static get ADMIN_FANER() {
     return {
       'Brukere': [
@@ -36543,23 +36564,39 @@ class Component extends DCLogic {
         // Handlelistene fra medlemmene. Samme skjerm, tredje liste.
         ['Handlelister',  'adminbutikk',     { butikkFane: 'Handlelister' }],
       ],
-      // Markedsforing har faner og ellers ingen undermeny. E-post og SMS er
-      // en egen skjerm, saa raden vises bare der — med veien tilbake. Legger
-      // vi en undermeny paa selve markedsforingsskjermen ogsaa, faar den to
-      // rader med faner over hverandre.
+      // Markedsfoering har sine seks grupper som piller paa selve skjermen,
+      // og ingen fanerad der — to rader over hverandre var det som gjorde
+      // det vanskelig aa finne fram. Raden under er sidemenyens
+      // underpunkter paa telefon: de seks gruppene, saa man kan gaa rett
+      // til «Google» eller «Oppsett» fra menyen.
       'Markedsføring': [
-        ['← Markedsføring', 'adminmarked'],
-        ['E-post og SMS',   'adminvarsler'],
-        // «Maler» sto her. Flyttet til Verkstedet 4. september. Kortet paa
-        // Oversikt gaar dit som for — eieren, 1. september: «jeg vil ha et
-        // eget kort paa oversikt som heter maler».
-        // SEO hoerer hjemme baade her og under Nettsiden. Kom du fra
-        // markedsforingsfanene, byttet hele sidemenyen til «Nettsiden», og
-        // veien tilbake fantes ikke uten aa gaa om menyen paa nytt.
-        ['SEO',             'adminseo',     { seoFra: 'marked' }],
-        // GEO er soskenet til SEO: samme skjerm, andre regler. Den staar
-        // begge steder av samme grunn som SEO gjor det.
-        ['GEO',             'admingeo',     { geoFra: 'marked' }],
+        ['Tavle',    'adminmarked', { mkFane: 'tavle' }],
+        ['Skriv',    'adminmarked', { mkFane: 'artikler' }],
+        ['Artikler', 'adminmarked', { mkFane: 'bank' }],
+        ['Send',     'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
+        ['Google',   'adminseo',    { seoFra: 'marked' }],
+        ['Oppsett',  'adminmarked', { mkFane: 'innstillinger' }],
+      ],
+      // Skjermene som er piller i Markedsfoering, men egne skjermer: SEO og
+      // GEO (Google), beskjedene (Send) og e-postoppsettet (Oppsett). Staar
+      // man der, er dette fanerada — den samme gruppa som pillene viste, og
+      // veien tilbake foerst. Radene heter det gruppa heter, saa
+      // adminSted() kan peke paa dem med gruppenavnet.
+      'Google': [
+        ['← Markedsføring', 'adminmarked', { mkFane: 'tavle' }],
+        ['SEO',             'adminseo',    { seoFra: 'marked' }],
+        ['GEO',             'admingeo',    { geoFra: 'marked' }],
+        ['Analyse',         'adminmarked', { mkFane: 'analyse' }],
+      ],
+      'Send': [
+        ['← Markedsføring', 'adminmarked', { mkFane: 'tavle' }],
+        ['Send',            'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
+      ],
+      'Oppsett': [
+        ['← Markedsføring',      'adminmarked', { mkFane: 'tavle' }],
+        ['Google-ID-er',         'adminmarked', { mkFane: 'innstillinger' }],
+        ['AI og Assistent',      'adminmarked', { mkFane: 'assistent' }],
+        ['E-post- og SMS-server', 'adminvarsler'],
       ],
     };
   }
@@ -36615,20 +36652,23 @@ class Component extends DCLogic {
       // markedsfoeringen.
       case 'adminreferanser':    return p('Verkstedet', 'Verkstedet', 'Referansekunder');
       case 'adminkursvelger':    return p('Oversikt');
-      case 'adminmarked':        return p('Markedsføring');
+      // Omraadet er tomt med vilje: markedsfoeringsskjermen har sine egne
+      // piller, og skal ikke ha en fanerad over dem i tillegg. Fanen er
+      // gruppa man staar i, saa sidemenyen paa telefon lyser riktig.
+      case 'adminmarked':        return p('Markedsføring', '', this.markedGruppe());
       case 'adminseo':
         return st.seoFra === 'marked'
-          ? p('Markedsføring', 'Markedsføring', 'SEO')
+          ? p('Markedsføring', 'Google', 'SEO')
           : p('Verkstedet', 'Nettsiden', 'SEO');
       case 'admingeo':
         return st.geoFra === 'marked'
-          ? p('Markedsføring', 'Markedsføring', 'GEO')
+          ? p('Markedsføring', 'Google', 'GEO')
           : p('Verkstedet', 'Nettsiden', 'GEO');
       case 'adminmobilvis':      return p('Verkstedet', 'Nettsiden', 'Mobilvisning');
       case 'adminfeil':          return p('Verkstedet', 'Nettsiden', 'Feilmeldinger');
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
       case 'adminressurser':     return p('Verkstedet', 'Verkstedet', 'Ressurser');
-      case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
+      case 'adminvarsler':       return p('Markedsføring', 'Oppsett', 'E-post- og SMS-server');
       case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
@@ -36636,6 +36676,8 @@ class Component extends DCLogic {
         if (st.kursFane === 'maler')   return p('Kurs og deltakere', 'Kurs og deltakere', 'Kurs');
         return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle kurs');
       case 'adminbeskjeder':
+        // Kom man fra «Send» i Markedsfoering, er det der man er.
+        if (st.beskjedFra === 'marked') return p('Markedsføring', 'Send', 'Send');
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
           ? p('Kurs og deltakere', 'Kurs og deltakere', 'Beskjeder')
           : p('Brukere', 'Brukere', 'Beskjeder');
@@ -36685,11 +36727,28 @@ class Component extends DCLogic {
     // «forvalg» faar siste ord: en vei inn som med vilje aapner noe skal
     // fortsatt kunne gjore det.
     this.setState(Object.assign(
-      { side: rute, fhRolle: '', fhFra: '' },
+      // «beskjedFra» sier at Beskjeder ble aapnet fra Send i Markedsfoering.
+      // Den skal ikke henge igjen naar man gaar dit fra Brukere etterpaa.
+      { side: rute, fhRolle: '', fhFra: '', beskjedFra: '' },
       this.personRutaTom(),
       forvalg || {}
     ));
     window.scrollTo(0, 0);
+  }
+
+  /**
+   * Gruppa man staar i paa markedsfoeringsskjermen, for sidemenyen.
+   * Lista er den samme som GRUPPER i renderVals — endres den ene, maa den
+   * andre med.
+   */
+  markedGruppe() {
+    const fane = this.state.mkFane || 'tavle';
+    const g = [
+      ['Tavle', ['tavle']], ['Skriv', ['artikler', 'brev', 'sosialt', 'kurs']],
+      ['Artikler', ['bank']], ['Send', ['send']], ['Google', ['seo', 'geo', 'analyse']],
+      ['Oppsett', ['innstillinger', 'assistent', 'epost']],
+    ].find(x => x[1].indexOf(fane) !== -1);
+    return g ? g[0] : 'Tavle';
   }
 
   /** Fanerekka for stedet man staar paa. Tom paa de frittstaaende skjermene. */
@@ -57755,11 +57814,18 @@ class Component extends DCLogic {
         const ai = d.ai || {};
         const fane = this.state.mkFane || 'tavle';
 
+        // «Artikler» og «Kunnskapsbank» var samme artikler med to navn: den
+        // ene lagde en ny, den andre redigerte. Naa heter det man lager
+        // «Artikkel» (under Skriv) og lista «Artikler». «Innstillinger» og
+        // «Assistent» er delt i det som er Googles ID-er og det som er
+        // AI-en. De fire siste er ikke faner her, men doerer til andre
+        // skjermer — de staar i lista saa pillene faar navn.
         const FANER = [
-          ['tavle', 'Tavle'], ['kurs', 'Kursmarkedsføring'], ['artikler', 'Artikler'],
-          ['bank', 'Kunnskapsbank'], ['brev', 'Nyhetsbrev'], ['sosialt', 'Sosiale medier'],
-          ['seo', 'SEO'], ['analyse', 'Analyse'], ['assistent', 'Assistent'],
-          ['innstillinger', 'Innstillinger'],
+          ['tavle', 'Tavle'], ['kurs', 'Kursmarkedsføring'], ['artikler', 'Artikkel'],
+          ['bank', 'Artikler'], ['brev', 'Nyhetsbrev'], ['sosialt', 'Sosiale medier'],
+          ['seo', 'SEO'], ['geo', 'GEO'], ['analyse', 'Analyse'],
+          ['assistent', 'AI og Assistent'], ['innstillinger', 'Google-ID-er'],
+          ['send', 'Send'], ['epost', 'E-post- og SMS-server'],
         ];
 
         // ── Ti faner ble fem grupper ────────────────────────────────────
@@ -57775,16 +57841,35 @@ class Component extends DCLogic {
         //
         // Koster litt mer plass, ikke mindre — PC gaar fra 49 til 122 px —
         // og det er med vilje: gevinsten er fem valg i stedet for ti.
+        //
+        // ── Fem grupper ble seks, sortert etter hva eieren gjoer ────────
+        //
+        // Eieren, 14. september 2026: «jeg syns det er vanskelig aa finne
+        // frem, ulogiske plassering». Gruppene het Innhold, Utsending,
+        // Analyse og Innstillinger — etter verktoeyet, ikke etter jobben.
+        // SEO laa tre steder, GEO og e-postoppsettet var bare aa naa via et
+        // kort paa Tavle, og oppsettet av SMTP laa ved siden av AI-
+        // assistenten. Naa: Skriv (alt AI-en lager utkast til), Artikler
+        // (lista), Send (beskjedene), Google (SEO, GEO, tallene) og Oppsett
+        // (ID-er, noekler, e-postserver). Tegnet paa den ekte skjermen og
+        // godkjent.
         const GRUPPER = [
-          ['Tavle',         ['tavle']],
-          ['Innhold',       ['artikler', 'bank', 'sosialt']],
-          ['Utsending',     ['brev', 'kurs']],
-          ['Analyse',       ['analyse', 'seo']],
-          ['Innstillinger', ['innstillinger', 'assistent']],
+          ['Tavle',    ['tavle']],
+          ['Skriv',    ['artikler', 'brev', 'sosialt', 'kurs']],
+          ['Artikler', ['bank']],
+          ['Send',     ['send']],
+          ['Google',   ['seo', 'geo', 'analyse']],
+          ['Oppsett',  ['innstillinger', 'assistent', 'epost']],
         ];
         const navnPaa = n => (FANER.filter(f => f[0] === n)[0] || [, n])[1];
-        // SEO er en egen skjerm, ikke en fane her. Staar man der, er det
-        // fortsatt «Analyse» som gjelder.
+        // Fire av pillene er egne skjermer, ikke faner her. Se DOERER i
+        // Component.markedDoer() — adminSted() bruker den samme lista til aa
+        // finne tilbake til riktig gruppe naar man staar der.
+        const gaaTil = n => {
+          const doer = Component.MARKED_DOERER[n];
+          if (doer) { this.gaaAdmin(doer[0], doer[1]); return; }
+          this.setState({ mkFane: n });
+        };
         const minGruppe = GRUPPER.filter(g => g[1].indexOf(fane) !== -1)[0] || GRUPPER[0];
         const faneStil = paa => ({
           appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
@@ -57825,18 +57910,20 @@ class Component extends DCLogic {
           // Gaar man til en gruppe, aapnes den foerste fana i den.
           mkGrupper: GRUPPER.map(([g, faner]) => ({
             navn: g, stil: faneStil(minGruppe[0] === g),
-            velg: () => this.setState({ mkFane: faner[0] }),
+            velg: () => gaaTil(faner[0]),
           })),
           // Under staar fanene i gruppa man er i. «Tavle» er alene om sin,
           // saa da staar raden tom og skjules.
           mkHarUnder: minGruppe[1].length > 1,
           mkUnderfaner: minGruppe[1].map(n => ({
             navn: navnPaa(n), stil: velgStil(fane === n),
-            velg: n === 'seo'
-              ? () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); }
-              : () => this.setState({ mkFane: n }),
+            velg: () => gaaTil(n),
           })),
-          mkFaneTittel: (FANER.find(f => f[0] === fane) || [, 'Tavle'])[1],
+          // Overskrifta sier hvor du er: «Skriv · Nyhetsbrev». Gruppene med
+          // én fane heter bare det gruppa heter.
+          mkFaneTittel: minGruppe[1].length > 1
+            ? minGruppe[0] + ' · ' + navnPaa(fane)
+            : minGruppe[0],
           mkErTavle: fane === 'tavle',
           mkErKurs: fane === 'kurs',
           mkErArtikler: fane === 'artikler',

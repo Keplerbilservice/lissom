@@ -91,37 +91,18 @@ final class Varsel
         $liste = is_array($fra) ? $fra : [];
 
         if ($liste === []) {
-            // Adressen som staar i admin. Den har vaert den eneste siden
-            // 9. september.
+            // Én adresse: den som staar i admin (post@lissom.no).
+            //
+            // Historikken: 9. september ble rolleoppslaget (alle med rolle
+            // admin i basen) tatt bort, fordi en ny administrator begynte aa
+            // faa e-post uten at noen hadde bestemt det. 13. september kom
+            // det tilbake — eieren ville varsles selv. 14. september, med
+            // bilde av tre like e-poster i innboksen (to til post@, én til
+            // Monica): «Det holder med å sende 1 stk epost til
+            // post@lissom.no.» Saa: bare adressen i admin. Skal flere ha
+            // dem, settes «admin_eposter» i secrets.php — den lista gaar
+            // foran, som foer.
             $liste = [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))];
-
-            // Og de som er admin i basen, som for 9. september.
-            //
-            // Eieren, 13. september 2026: «jeg vil bli varslet paa epost naar
-            // noen sender meg en besked eller vestillig. Altsaa slik det har
-            // fungert hele tiden.»
-            //
-            // Endringa 9. september tok bort rolleoppslaget helt, og da sluttet
-            // hans egen adresse aa faa dem — de gikk bare til post@lissom.no.
-            // Begge deler staar naa: adressen i admin skal fortsatt faa dem,
-            // og det skal de som er admin.
-            //
-            // Grunnen til at rolleoppslaget ble tatt bort var at en ny
-            // administrator begynte aa faa e-post uten at noen hadde bestemt
-            // det. Den bekymringa staar ved lag — men den loeses med
-            // «admin_eposter» i secrets.php, som slaar begge deler av og
-            // bestemmer lista selv. Den staar foerst, som for.
-            try {
-                foreach (DB::alle(
-                    "SELECT epost FROM members
-                      WHERE rolle = 'admin' AND epost IS NOT NULL AND epost <> ''
-                        AND anonymisert_at IS NULL"
-                ) as $r) {
-                    $liste[] = (string) $r['epost'];
-                }
-            } catch (Throwable $e) {
-                // Uten base staar adressen fra admin alene, som over.
-            }
         }
 
         // Samme adresse skal telle som én, ogsaa naar den staar med ulik

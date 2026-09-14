@@ -6172,7 +6172,7 @@ window.__resources = {
                   </div>
                   <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
                   <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
-                    <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+                    <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" onKeyDown="{{ mdSporTast }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
                     <span style="{{ mdTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import></span>
                   </div>
                   <sc-if value="{{ mdHarSvar }}" hint-placeholder-val="{{ false }}">
@@ -53596,6 +53596,10 @@ class Component extends DCLogic {
           mdSporsmal: this.state.faqSporsmal || '',
           mdEndre: (e) => this.setState({ faqSporsmal: e.target.value }),
           mdSpor: () => this.faqSpor(true),
+          // Enter sender spoersmaalet, som paa Min side og i kalenderen. Feltet
+          // her manglet det. Eieren, 14. september 2026: «Når man søker noe i
+          // søkefeltet krukkemester, så la enter bli til søk».
+          mdSporTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.faqSpor(true); } },
           // Eieren, 11. september 2026: «naar jeg soker saa staar det paa
           // knappen leter i dokumentene, kan du endre til Tenker, og gjerne
           // en liten animasjon».

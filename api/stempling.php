@@ -75,10 +75,18 @@ if (Foresporsel::metode() === 'POST') {
             revider('stemplet_ut', 'member', $id, ['minutter' => $min, 'feiltid' => 1]);
         }
         $navn = trim((string) ($medlem['navn'] ?? '')) ?: 'Et medlem';
+        // Lenkene: e-posten sa «Rett tida under Admin → Medlemmer» uten aa
+        // peke dit. Eieren, 14. september 2026, med bilde fra telefonen:
+        // «i eposten jeg får må det være link». Medlemmet staar oeverst i
+        // lista naar navnet soekes opp; en egen adresse per medlem finnes
+        // ikke i admin.
         $melding = $navn . ' sier at tida på denne økta ble feil.' . "\n\n"
             . ($fra !== '' ? 'Stemplet inn: ' . Booking::norskDato($fra) . "\n" : '')
             . ($min !== null ? 'Registrert: ' . $min . ' minutter' . "\n" : '')
-            . "\nØkta er lukket. Rett tida under Admin → Medlemmer.";
+            . "\nØkta er lukket. Rett tida under Admin → Medlemmer:\n"
+            . 'https://lissom.no/admin/medlemmer' . "\n\n"
+            . "Henvendelsen ligger under Ubesvarte:\n"
+            . 'https://lissom.no/admin/ubesvarte';
         try {
             $sak = DB::settInn('enquiries', [
                 'navn'    => $navn,

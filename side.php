@@ -155,8 +155,28 @@ if ($html === false) {
 }
 
 /** Sender fila ut slik den er, og avslutter. */
-$ut = static function (string $html): never {
+$ut = static function (string $html) use ($lastBackend): never {
     header('Content-Type: text/html; charset=UTF-8');
+    // Testsiden sier at den er det. test.lissom.no er en kopi med ekte
+    // data, og en side som ser helt lik ut er en side noen kommer til aa
+    // booke paa. Merkelappen legges paa serveren, saa den finnes for
+    // skriptet kjoerer og uansett hvilken skjerm som vises. Produksjon
+    // (miljo = produksjon i secrets.php) faar ingenting.
+    try {
+        $lastBackend();
+        if (Config::erUtvikling()) {
+            $merke = '<div style="position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#C99A2E;color:#3b1d10;'
+                . 'font:700 12px/1 system-ui,sans-serif;letter-spacing:.08em;text-align:center;padding:6px 8px;pointer-events:none">'
+                . 'TEST — dette er testsiden. Ingen e-post eller SMS sendes herfra.</div>';
+            $hode = strpos($html, '</head>');
+            $kropp = $hode === false ? false : strpos($html, '<body>', $hode);
+            if ($kropp !== false) {
+                $html = substr_replace($html, '<body>' . $merke, $kropp, strlen('<body>'));
+            }
+        }
+    } catch (Throwable) {
+        // Basen eller secrets mangler: ingen merkelapp, sida gaar ut som den er.
+    }
     // Samme regel som .htaccess ga .html-fila: behold den, men spor forst.
     header('Cache-Control: no-cache, must-revalidate');
     echo $html;

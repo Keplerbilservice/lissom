@@ -532,8 +532,30 @@ final class Utsending
         logg_feil('Varsel feilet', new RuntimeException($grunn . ' (varsel ' . $n['id'] . ')'));
     }
 
+    /**
+     * Testmiljoeet sender ingenting.
+     *
+     * test.lissom.no kjoerer mot en kopi av basen — med ekte medlemmer,
+     * ekte adresser og SMTP-oppsettet fra content_blocks. Hver paaminnelse
+     * og hvert «ferdig brent» ville gaatt til ekte folk fra en testside.
+     * Derfor: er miljoeet noe annet enn produksjon, loggfoeres meldinga og
+     * regnes som sendt. Skal testen faktisk sende, settes
+     * send_i_test => true i secrets.php — og da vet man hva man gjoer.
+     */
+    private static function holdtTilbake(string $slag, string $til, string $hva): bool
+    {
+        if (!Config::erUtvikling() || Config::hent('send_i_test', false)) {
+            return false;
+        }
+        error_log('Lissom test: ' . $slag . ' til ' . $til . ' holdt tilbake (' . $hva . ')');
+        return true;
+    }
+
     private static function sendEpost(string $til, string $emne, string $tekst, ?string $html = null): bool
     {
+        if (self::holdtTilbake('e-post', $til, $emne)) {
+            return true;
+        }
         // Avsenderadressen gaar bade i From-headeren og i konvolutten
         // (MAIL FROM / «-f»). Er den ikke en adresse, er den ikke noe vi skal
         // sende med — da er standardadressen bedre enn en halv linje.
@@ -770,6 +792,9 @@ final class Utsending
      */
     private static function sendSms(string $til, string $tekst): bool
     {
+        if (self::holdtTilbake('SMS', $til, mb_substr($tekst, 0, 40))) {
+            return true;
+        }
         $leverandor = mb_strtolower((string) Config::hent('sms_leverandor', 'sveve'));
 
         return match ($leverandor) {

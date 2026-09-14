@@ -581,7 +581,7 @@ img{max-width:100%;display:block}
      gang til; to like regler er ingen forskjell. -->
 <style>x-dc{display:none!important}</style>
 
-<script src="/ds-bundle.min.js"></script>
+<script src="/ds-bundle.min.js" defer></script>
 
 <!-- React og ReactDOM. De ble hentet forst etter at support.min.js hadde
      lastet ned OG kjort — en hel rundtur som laa og ventet paa slutten av
@@ -1021,25 +1021,27 @@ window.__resources = {
 <!-- Minifisert utgave. Kilden ligger som support.js ved siden av;
      bin/minifiser.mjs lager denne.
 
-     UTEN «defer», med vilje. PageSpeed vil ha det: de to skriptene blokkerer
-     gjengivelsen, og den anslaar 320 ms paa aa slippe dem los. Provd, maalt,
-     og tatt ut igjen:
+     MED «defer», fra 14. september 2026 — begge, ds-bundle og denne.
+
+     Det ble provd 28. august og tatt ut igjen: toppen ble tegnet i
+     reserveskrifta og byttet naar Bitter og Alegreya kom, og den ferdige
+     teksten ble en ny og storre LCP-kandidat (LCP 3520 mot 1432 ms, CLS
+     0,145 mot 0,083). Samme dag fikk reserveskriftene «size-adjust» og
+     «ascent-override» (se «reserveskrift» over), saa de opptar samme plass
+     som de ekte — men «defer» ble aldri provd paa nytt etter det.
+
+     Maalt 14. september, lokalt med den ferdigtegnede toppen, ekte
+     nettverksstrupning (Lighthouse devtools, mobil), to kjoringer hver:
 
                        FCP        LCP        CLS
-       uten defer    1364 ms    1432 ms     0,083
-       med defer      428 ms    3520 ms     0,145
+       uten defer    4,2 s      4,2 s      0,083
+       med defer     1,2 s      2,0 s      0,083
 
-     Fordi skriftene kommer ned rundt 950 ms. Uten «defer» tegnes toppen
-     forst paa 1364 — etter skriftene, i riktig skrift, én gang. Med «defer»
-     tegnes den paa 428, i reserveskrifta, og bytter naar skriftene kommer:
-     teksten flytter seg, og den ferdige teksten blir en ny og storre
-     LCP-kandidat. FCP blir penere, LCP og CLS blir vesentlig verre — og det
-     er LCP Google maaler.
-
-     Skal dette tas igjen en dag, maa reserveskriftene forst faa
-     «size-adjust» og «ascent-override» slik at de opptar noyaktig samme
-     plass. Da flytter ingenting seg naar de ekte kommer. -->
-<script src="./support.min.js"></script>
+     Toppen tegnes naar den kommer, ikke naar skriptene er nede; skriftene
+     bytter uten at noe flytter seg. Oppstarten (boot) venter uansett paa
+     DOMContentLoaded, og ingen skript i kroppen bruker DS eller React foer
+     det — rekkefoelgen er den samme, bare uten aa sperre tegningen. -->
+<script src="./support.min.js" defer></script>
 
 <script>
 // Bytter ut den ferdigtegnede toppen med den ekte, i samme bilde.

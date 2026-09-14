@@ -94,4 +94,8 @@ de ble sagt i.
   lages på nytt): `srcset` i `Media` (bildestørrelser) og `imageAlt` på
   `CourseCard` (alt-tekst på kursbildet, migrasjon 165). Eieren valgte
   dette 11. september 2026 framfor å la kortene beholde kursnavnet som alt.
+- `support.js` (dc-runtime) har én lokal endring som må legges inn igjen
+  etter en ny eksport: `walkIf` kompilerer barna først når betingelsen er
+  sann (lat kompilering av skjermene). Målt 14. september 2026: ~110 ms
+  mindre oppstart på simulert mobil. `bin/minifiser.mjs` lager `.min.js`.
 

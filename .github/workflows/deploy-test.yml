@@ -2,11 +2,15 @@ name: Legg ut testsiden (test.lissom.no)
 
 # Grenen «test» legges ut paa test.lissom.no — en kopi av nettsiden mot en
 # kopi av databasen, der moduler kan proeves mot ekte data foer de merges til
-# main. Mappene ligger utenfor public_html, i ~/test-site/:
+# main. cPanel hos Domene.no laaser dokumentrota under public_html, saa alt
+# ligger i public_html/test.lissom.no/:
 #
-#   ~/test-site/public/          dokumentrota til test.lissom.no
-#   ~/test-site/lissom-app/      backend, cron og migrasjoner
-#   ~/test-site/lissom-secrets/  secrets.php med miljo => test og lissom_test
+#   public_html/test.lissom.no/                 dokumentrota (nettsiden)
+#   public_html/test.lissom.no/lissom-app/      backend, cron og migrasjoner
+#   public_html/test.lissom.no/lissom-secrets/  secrets.php: miljo => test
+#
+# De to siste ligger under dokumentrota og er dermed innenfor nettet —
+# .htaccess svarer 403 paa alt under lissom-app/ og lissom-secrets/.
 #
 # api/_boot.php leter oppover etter naermeste lissom-app/, saa testen finner
 # sin egen backend foer den finner produksjonens. Med miljo => test sender
@@ -45,7 +49,7 @@ jobs:
           password: ${{ secrets.FTP_PASSORD }}
           protocol: ftps
           local-dir: ./
-          server-dir: test-site/public/
+          server-dir: public_html/test.lissom.no/
           exclude: |
             **/.git*
             **/.git*/**
@@ -68,7 +72,7 @@ jobs:
           password: ${{ secrets.FTP_PASSORD }}
           protocol: ftps
           local-dir: ./app/
-          server-dir: test-site/lissom-app/app/
+          server-dir: public_html/test.lissom.no/lissom-app/app/
           exclude: |
             **/secrets.php
             **/.DS_Store
@@ -81,7 +85,7 @@ jobs:
           password: ${{ secrets.FTP_PASSORD }}
           protocol: ftps
           local-dir: ./bin/
-          server-dir: test-site/lissom-app/bin/
+          server-dir: public_html/test.lissom.no/lissom-app/bin/
 
       - name: Legg ut databasemigrasjoner
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -91,7 +95,7 @@ jobs:
           password: ${{ secrets.FTP_PASSORD }}
           protocol: ftps
           local-dir: ./db/migrations/
-          server-dir: test-site/lissom-app/migrations/
+          server-dir: public_html/test.lissom.no/lissom-app/migrations/
 
       # Dokumentene til kortene i verkstedet (håndbøkene og keramikkmalene).
       # Ligger utenfor public_html som resten av app-koden: filene serveres
@@ -106,4 +110,4 @@ jobs:
           password: ${{ secrets.FTP_PASSORD }}
           protocol: ftps
           local-dir: ./db/dokumenter/
-          server-dir: test-site/lissom-app/dokumenter-import/
+          server-dir: public_html/test.lissom.no/lissom-app/dokumenter-import/

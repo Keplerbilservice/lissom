@@ -64,6 +64,11 @@ RewriteRule ^.+/?$ - [F]
 RewriteRule ^tests(/|$) - [F]
 RewriteRule ^api/_boot\.php$ - [F]
 
+# Testsiden (test.lissom.no) har backend og secrets under dokumentrota,
+# fordi cPanel laaser rota under public_html. Ingen av mappene skal kunne
+# naas fra nettet. Paa lissom.no finnes de ikke, og regelen gjoer ingenting.
+RewriteRule ^lissom-(app|secrets)(/|$) - [F]
+
 # Forsida er nettsida, ikke en omvei til den.
 #
 # «/» ble servert av index.html, som er en meta-refresh videre til

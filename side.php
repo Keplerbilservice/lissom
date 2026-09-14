@@ -179,6 +179,30 @@ $ut = static function (string $html) use ($lastBackend): never {
     }
     // Samme regel som .htaccess ga .html-fila: behold den, men spor forst.
     header('Cache-Control: no-cache, must-revalidate');
+
+    // «Spor foerst» — og svar «uendret» naar den er det.
+    //
+    // Sida er 388 kB komprimert, og ingen fikk noen gang beskjed om at den
+    // var den samme som sist: svaret hadde verken ETag eller
+    // Last-Modified, saa nettleseren lastet alt paa nytt hver gang.
+    // Medlemmene er innom daglig for aa stemple inn. ETag-en er en hash av
+    // det som faktisk gaar ut — med robottekst, topp og merkelapp — saa
+    // admin og kunde faar hver sin, og en endring i basen gir en ny.
+    //
+    // Svak («W/»), fordi komprimeringen paa serveren kan legge paa
+    // «-gzip»; sammenlikningen tar hoyde for begge deler.
+    $etag = 'W/"' . hash('xxh128', $html) . '"';
+    header('ETag: ' . $etag);
+    $spurt = (string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? '');
+    if ($spurt !== '') {
+        $rens = static fn (string $e): string => trim(str_replace(['W/', '-gzip'], '', $e), ' "');
+        foreach (explode(',', $spurt) as $kandidat) {
+            if ($rens($kandidat) === $rens($etag)) {
+                http_response_code(304);
+                exit;
+            }
+        }
+    }
     echo $html;
     exit;
 };

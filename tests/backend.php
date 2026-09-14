@@ -18341,6 +18341,49 @@ sjekk('… og vareskjemaet har artikkelnummer, leverandor og «kan bestilles»',
     && str_contains($hlS, '<sc-for list="{{ npLeverandorer }}" as="l"')
     && str_contains($hlS, '<span>Kan bestilles (handlelista)</span>'));
 
+// ── Paaminnelsen for kurset ──────────────────────────────────────
+//
+// Eieren, 14. september 2026, med skjermbildet: «vi gleder oss til aa se deg
+// i morgen, det er feil. Kurset var i dag😱 Det holder med aa skrive vi
+// gleder oss til aa se deg. Ogsaa info om kurset de meldte seg paa? Dato og
+// klokkeslett» — og «husk faa med tid dag to etc dersom aktuelt».
+//
+// Grunnen den sto feil: jobben henter alt som starter innen 30 timer, saa et
+// kurs klokka 17 i dag treffer kjoringa klokka 07 samme morgen.
+//
+// Maalt: jobben kjort mot to kursdatoer. Ett moete ga «Hei Mia! ... tirsdag
+// 15. september, 03:00–06:00»; flerdagerskurset ga «Dag 1: ...» og «Dag 2: ...».
+
+$pmM = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/185_paaminnelsen_sier_ikke_i_morgen.sql');
+sjekk('migrasjon 185 tar «i morgen» ut av paaminnelsen',
+    str_contains($pmM, "SET emne  = 'Påminnelse: {kurs} kl. {tid}',")
+    && str_contains($pmM, 'Hei {fornavn}! Vi gleder oss til å se deg.')
+    && !str_contains($pmM, 'se deg i morgen. Du får'));
+// En tekst eieren har skrevet om selv skal ikke overskrives av en migrasjon.
+sjekk('… og en tekst han har endret selv blir staaende',
+    str_contains($pmM, "AND tekst LIKE 'Hei {navn}! Vi gleder oss til å se deg i morgen.%';"));
+
+$cron = (string) file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+sjekk('paaminnelsen sender fornavn, ikke hele navnet',
+    str_contains($cron, "'fornavn' => fornavnet(\$heleNavnet),")
+    && str_contains($cron, 'function fornavnet(string $navn): string')
+    // «navn» staar igjen for en mal eieren har skrevet om selv.
+    && str_contains($cron, "'navn'    => \$heleNavnet,"));
+sjekk('… og den sier hvilket kurs, hvilken dag og hvilket klokkeslett',
+    str_contains($cron, "'naar'    => \$naar,")
+    && str_contains($cron, 'function paaminnelse_naar(int $oktId, string $startUtc, string $sluttUtc): string'));
+// Gaar kurset over flere dager, staar hver dag for seg. Dagene ligger som
+// samlinger paa kursdatoen — migrasjon 155.
+sjekk('… og flerdagerskurs faar én linje per dag',
+    str_contains($cron, "\$linjer[] = 'Dag ' . ((int) (\$s['nummer'] ?: \$i + 1)) . ': ' . \$s['naar'];")
+    && str_contains($cron, 'if (count($samlinger) > 1) {'));
+// Sluttiden maa hentes for den kan skrives. Uten denne sto bare starten.
+sjekk('… og oekta henter sluttiden sin',
+    str_contains($cron, "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse"));
+sjekk('… og feltene staar i malregisteret',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'fornavn' => 'Fornavnet til deltakeren',")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'naar'    => 'Dagen og klokkeslettet."));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

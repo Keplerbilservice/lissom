@@ -322,7 +322,7 @@ switch ($jobb) {
     // Kurspåminnelse dagen før, og varsling til venteliste.
     case 'paaminnelser':
         $okter = DB::alle(
-            "SELECT cs.id, cs.start_tid, c.tittel, c.sms_paaminnelse
+            "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt'
@@ -341,14 +341,30 @@ switch ($jobb) {
                 ['s' => $okt['id']]
             );
 
+            // Naar kurset er, ferdig skrevet. Eieren, 14. september 2026:
+            // «ogsaa info om kurset de meldte seg paa? Dato og klokkeslett»,
+            // og «husk faa med tid dag to etc dersom aktuelt».
+            //
+            // Gaar kurset over flere dager, ligger dagene som samlinger paa
+            // oekta (migrasjon 155). Da staar de hver for seg. Er det ett
+            // moete, staar dagen og klokkeslettet paa én linje. Foer sto det
+            // «i morgen» — og det var loegn for alle som hadde kurs samme dag,
+            // for paaminnelsen gaar ut inntil 30 timer for.
+            $naar = paaminnelse_naar((int) $okt['id'], (string) $okt['start_tid'], (string) ($okt['slutt_tid'] ?? ''));
+
             foreach ($deltakere as $d) {
+                $heleNavnet = (string) ($d['m_navn'] ?: $d['gjest_navn']);
                 Varsel::mal('kurspaaminnelse', [
                     'epost'   => $d['m_epost'] ?? $d['gjest_epost'],
                     'telefon' => $okt['sms_paaminnelse'] ? ($d['m_telefon'] ?? $d['gjest_telefon']) : null,
                 ], [
-                    'navn' => (string) ($d['m_navn'] ?: $d['gjest_navn']),
-                    'kurs' => (string) $okt['tittel'],
-                    'tid'  => norsk_klokkeslett((string) $okt['start_tid']),
+                    // «navn» staar igjen for en mal eieren har skrevet om selv
+                    // og fortsatt bruker det feltet. Malen vaar bruker fornavn.
+                    'navn'    => $heleNavnet,
+                    'fornavn' => fornavnet($heleNavnet),
+                    'kurs'    => (string) $okt['tittel'],
+                    'tid'     => norsk_klokkeslett((string) $okt['start_tid']),
+                    'naar'    => $naar,
                 ], 'course_session', (int) $okt['id']);
                 $antall++;
             }
@@ -560,4 +576,51 @@ function norsk_klokkeslett(string $utc): string
 {
     $d = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
     return $d->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i');
+}
+
+/**
+ * Forste ord i navnet. «Mia Sørensen» → «Mia».
+ *
+ * Eieren, 14. september 2026: «bruk kun fornavn». Er navnet tomt, staar det
+ * «Hei!» framfor «Hei ,» — et komma uten navn er verre enn ingen tiltale.
+ */
+function fornavnet(string $navn): string
+{
+    $biter = preg_split('/\s+/', trim($navn)) ?: [];
+    return $biter === [] ? '' : (string) $biter[0];
+}
+
+/**
+ * Naar kurset er, ferdig skrevet for e-posten.
+ *
+ * Ett moete:      «onsdag 9. september, 17:00–20:00»
+ * Flere dager:    «Dag 1: onsdag 9. september, 17:00–20:00»
+ *                 «Dag 2: torsdag 10. september, 17:00–20:00»
+ *
+ * Dagene ligger som samlinger paa kursdatoen (migrasjon 155), og de er alt
+ * skrevet ferdig av Samlinger — samme setning som staar paa nettsida og i
+ * kalenderen. Finnes de ikke, er det ett moete, og da regnes linja ut av
+ * oektas egen start og slutt.
+ */
+function paaminnelse_naar(int $oktId, string $startUtc, string $sluttUtc): string
+{
+    $samlinger = DB::harTabell('okt_samlinger') ? Samlinger::forOkt($oktId) : [];
+
+    if (count($samlinger) > 1) {
+        $linjer = [];
+        foreach ($samlinger as $i => $s) {
+            $linjer[] = 'Dag ' . ((int) ($s['nummer'] ?: $i + 1)) . ': ' . $s['naar'];
+        }
+        return implode("\n", $linjer);
+    }
+    if (count($samlinger) === 1) {
+        return (string) $samlinger[0]['naar'];
+    }
+
+    // «onsdag 9. september, 17:00» fra Booking, og sluttiden bak.
+    $linje = Booking::norskDato($startUtc);
+    if ($sluttUtc !== '') {
+        $linje .= '–' . norsk_klokkeslett($sluttUtc);
+    }
+    return $linje;
 }

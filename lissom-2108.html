@@ -16852,7 +16852,7 @@ window.__resources = {
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Tilgang</div>
-        <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Brukere</h1>
+        <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Admin-brukere</h1>
         <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-base); max-width: 64ch; text-wrap: pretty;">Kontoer som kan logge inn i admin. Kundene bruker Vipps og trenger ingenting her. Gi passordet muntlig — ikke på e-post eller SMS.</p>
 
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-bottom: var(--space-8);">
@@ -36408,7 +36408,9 @@ class Component extends DCLogic {
       // oppskriftene og brenningen: noe verkstedet steller med, ikke en
       // gruppe mennesker eller et regnskap. Naa er den en fane under
       // Verkstedet, og hovedmenyen er ti punkter i stedet for elleve.
-      ['Brukere',   'adminbrukere'],
+      // Innloggingene til adminpanelet. Het «Brukere» til 14. september 2026;
+      // da fikk medlemslista det navnet, og disse ble «Admin-brukere».
+      ['Admin-brukere', 'adminbrukere'],
     ];
   }
 
@@ -36546,7 +36548,7 @@ class Component extends DCLogic {
 
     switch (st.side) {
       case 'adminoversikt':      return p('Oversikt');
-      case 'adminbrukere':       return p('Brukere');
+      case 'adminbrukere':       return p('Admin-brukere');
       // Begge adressene lever videre og lander paa den samme skjermen:
       // /admin/deltakere er delt og bokmerket, og en adresse som doer er en
       // daarlig maate aa rydde paa.

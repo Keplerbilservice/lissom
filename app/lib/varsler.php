@@ -477,6 +477,30 @@ final class Utsending
         $feilet = 0;
 
         foreach ($rader as $n) {
+            // ── Ta raden foer den sendes ──────────────────────────────
+            //
+            // Koen toemmes fra to kanter: cron hvert femte minutt, og
+            // Tikk etter hver nettforespoersel. Begge leste «status = ko»
+            // og sendte — og satte «sendt» foerst etterpaa. Overlappet de,
+            // gikk samme e-post to ganger. Eieren, 14. september 2026, med
+            // bilde fra innboksen: «Fått 3 stk mail av samme» — to til
+            // post@, én til Monica.
+            //
+            // Raden tas med én UPDATE som bare treffer om den fortsatt er
+            // urort: forsok telles opp, og send_etter flyttes ti minutter
+            // fram, saa ingen annen plukker den mens den sendes. Treffer
+            // UPDATE-en null rader, har en annen alt tatt den. Gaar
+            // sendinga galt, legger merkFeilet() den tilbake med ny
+            // ventetid, som foer.
+            $krav = DB::oppdater('notifications', [
+                'forsok'     => (int) $n['forsok'] + 1,
+                'send_etter' => gmdate('Y-m-d H:i:s', time() + 600),
+            ], ['id' => $n['id'], 'status' => 'ko', 'forsok' => (int) $n['forsok']]);
+            if ($krav !== 1) {
+                continue;
+            }
+            $n['forsok'] = (int) $n['forsok'] + 1;
+
             try {
                 self::$sisteFeil = '';
                 $ok = $n['kanal'] === 'sms'
@@ -491,10 +515,10 @@ final class Utsending
                     );
 
                 if ($ok) {
+                    // forsok er alt telt opp da raden ble tatt.
                     DB::oppdater('notifications', [
                         'status'   => 'sendt',
                         'sendt_at' => gmdate('Y-m-d H:i:s'),
-                        'forsok'   => (int) $n['forsok'] + 1,
                     ], ['id' => $n['id']]);
                     $sendt++;
                 } else {
@@ -515,7 +539,8 @@ final class Utsending
 
     private static function merkFeilet(array $n, string $grunn): void
     {
-        $forsok = (int) $n['forsok'] + 1;
+        // Forsoket er alt telt opp da raden ble tatt i tomKo().
+        $forsok = (int) $n['forsok'];
         DB::oppdater('notifications', [
             // Under fem forsøk: legg tilbake i køen med økende ventetid.
             'status'      => $forsok >= 5 ? 'feilet' : 'ko',

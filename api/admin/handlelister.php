@@ -161,8 +161,18 @@ function handleliste_bilde(): array
 
     $lev = DB::alle('SELECT id, navn, epost, bestillingsmaate FROM leverandorer WHERE aktiv = 1 ORDER BY navn');
 
+    // Hvor mange som har sendt inn, uansett om prisen er satt. Oppgjoret
+    // under teller bare dem som har en pris — det er noe annet.
+    $harSendt = [];
+    foreach ($linjer as $l) {
+        if ($l['status'] === 'sendt') {
+            $harSendt[(int) $l['member_id']] = true;
+        }
+    }
+
     return [
         'klar'         => true,
+        'antallMedlemmer' => count($harSendt),
         'varer'        => array_values($varer),
         'medlemmer'    => array_values($medlemmer),
         'leverandorer' => array_map(static fn($l) => [
@@ -383,6 +393,18 @@ if ($handling === 'bestill') {
     );
     if ($linjer === []) {
         Svar::feil('Det er ingenting å bestille hos ' . $lev['navn'] . ' nå.');
+    }
+
+    // Bestillingen gjor linjene ferdige. Er prisen ikke satt, faar medlemmet
+    // aldri noe krav — varene ville vaert kjopt inn uten at noen betalte dem.
+    $utenPris = (int) DB::verdi(
+        "SELECT COUNT(*) FROM handleliste_linjer h JOIN products p ON p.id = h.product_id
+          WHERE h.status = 'sendt' AND p.leverandor_id = :l AND h.bestilt_at IS NULL
+            AND h.pris_ore IS NULL",
+        ['l' => $leverandorId]
+    );
+    if ($utenPris > 0) {
+        Svar::feil('Noen varelinjer hos ' . $lev['navn'] . ' mangler pris. Sett prisen først, så blir kravet riktig.');
     }
 
     $perMedlem = [];

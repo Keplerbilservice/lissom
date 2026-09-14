@@ -2474,10 +2474,24 @@ window.__resources = {
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ fsInngangKicker }}</div>
           <h2 style="margin: 0 0 var(--space-8);">{{ fsInngangTittel }}</h2>
           <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="01 · Kurs" title="Lær keramikk" text="Dreiekurs og temakurs for nybegynnere og viderekomne. Alt du trenger er inkludert." image="uploads_74babe95-eb4f-4e34-9b42-1baa429f0d77.jpg" cta-label="Se kurs" on-book="{{ goKurs }}" hint-size="100%,420px"></x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="02 · Events" title="Samle gjengen" text="Datenight, utdrikningslag, bursdager og bedrifter. Vi ordner alt — dere koser dere." image="uploads_shutterstock_2752346251.jpg" cta-label="Se events" on-book="{{ goEvents }}" hint-size="100%,420px"></x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="03 · Paint on Pots" title="Mal ferdig keramikk" text="Velg en kopp eller bolle og mal den her. Vi glaserer og brenner — du henter den ferdig." image="uploads_b7012bbb-b81d-4c66-8614-030285ed4d5e.jpg" cta-label="Les mer" on-book="{{ goPop }}" hint-size="100%,420px"></x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="04 · Medlemskap" title="Fortsett på egen hånd" text="Fast tilgang til verkstedet for deg som har tatt kurs og vil jobbe videre." image="uploads_shutterstock_2829101499.jpg" cta-label="Se medlemskap" on-book="{{ goMedlemskap }}" hint-size="100%,420px"></x-import>
+            <!-- Kortene sier hva vi tilbyr, med ordene folk soeker paa —
+                 dreiekurs, plateteknikk, haandbygging, Paint on Pots,
+                 medlemskap. Foer sto «Laer keramikk» og «Samle gjengen»:
+                 hyggelig, men ingen soeker paa det. Eieren, 14. september
+                 2026 (GO paa del B): «Jeg vil ha folk paa dreiekurs,
+                 plateteknikk, haandbygging … og vi har paint on pots som er
+                 veldig populaert, saa dette maa fram.»
+
+                 Fire kort, ikke fem: rutenettet er fire brede og bryter til
+                 to under 1250 px — et femte kort ville staatt alene paa
+                 siste rad. Plateteknikk og haandbygging deler ett kort;
+                 events har feltet som veksler lenger nede.
+
+                 Ingen priser her — de kommer fra basen, se kurskortene. -->
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="01 · Dreiekurs" title="Dreiekurs" text="To kvelder ved dreieskiva: sentrere, dreie, trimme foten og dekorere. Vi glaserer og brenner. Fra leireklump til ferdig kopp." image="assets_photos_dreiing-naerbilde.jpg" image-alt="Hender former en kopp på dreieskiva hos Lissom Keramikk" cta-label="Se dreiekurs" on-book="{{ goDreiing }}" hint-size="100%,420px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="02 · Plateteknikk og håndbygging" title="Boller og store fat" text="Kjevle ut leira, forme over form, få rene kanter. Én kveld: boller, et stort fat eller en fransk smørklokke." image="assets_photos_plateteknikk-fat.jpg" image-alt="Stort fat laget med plateteknikk hos Lissom Keramikk" cta-label="Se kursene" on-book="{{ goHandbygging }}" hint-size="100%,420px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="03 · Paint on Pots" title="Paint on Pots" text="Velg en ferdigbrent kopp, skål eller figur og mal den slik du vil. Vi glaserer og brenner — klar til henting etter to til fire uker." image="uploads_b7012bbb-b81d-4c66-8614-030285ed4d5e.jpg" image-alt="Paint on Pots: ferdigbrent keramikk som males hos Lissom" cta-label="Les mer" on-book="{{ goPop }}" hint-size="100%,420px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="04 · Medlemskap" title="Medlemskap" text="Egen hylle, dørkode døgnet rundt og timer i verkstedet hver måned. Prøv én måned uten binding." image="uploads_shutterstock_2829101499.jpg" image-alt="Medlem jobber ved dreieskiva i verkstedet hos Lissom" cta-label="Se medlemskap" on-book="{{ goMedlemskap }}" hint-size="100%,420px"></x-import>
           </div>
         </div>
       </section>
@@ -3902,6 +3916,45 @@ window.__resources = {
           </div>
         </div>
       </section>
+
+      <!-- Laget for.
+           Bedriftene verkstedet har laget keramikk for, fra referansekundene
+           i admin. Sto bare paa forsida, i feltet som veksler — og bare naar
+           bryteren der er paa. Her staar de alltid, paa sida der en bedrift
+           leter etter nettopp dette. Ingen kunder: ingen seksjon. -->
+      <sc-if value="{{ beHarReferanser }}" hint-placeholder-val="{{ true }}">
+        <section style="background: var(--clay-100); padding: var(--section-y) var(--space-8);">
+          <div style="max-width: var(--width-content); margin: 0 auto;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ beRefKicker }}</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">{{ beRefTittel }}</h2>
+            <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 56ch; text-wrap: pretty;">{{ beRefIngress }}</p>
+            <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8);">
+              <sc-for list="{{ beReferanser }}" as="r" hint-placeholder-count="3">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;">
+                  <sc-if value="{{ r.harBilde }}" hint-placeholder-val="{{ true }}">
+                    <img data-src="{{ r.bilde }}" alt="{{ r.alt }}" style="width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block;" loading="lazy" decoding="async">
+                  </sc-if>
+                  <div style="padding: var(--space-6); display: flex; flex-direction: column; flex: 1; gap: var(--space-3);">
+                    <sc-if value="{{ r.harLogo }}" hint-placeholder-val="{{ false }}">
+                      <div style="{{ r.logoStil }}" role="img" aria-label="{{ r.navn }}"></div>
+                    </sc-if>
+                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); text-wrap: balance;">{{ r.navn }}</h3>
+                    <sc-if value="{{ r.harTekst }}" hint-placeholder-val="{{ true }}">
+                      <p style="margin: 0; font-size: var(--text-sm); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ r.tekst }}</p>
+                    </sc-if>
+                    <sc-if value="{{ r.harSitat }}" hint-placeholder-val="{{ true }}">
+                      <blockquote style="margin: var(--space-2) 0 0; padding-left: var(--space-4); border-left: 3px solid var(--terracotta-600); font-style: italic; font-size: var(--text-base); line-height: 1.5; color: var(--text-heading);">{{ r.sitat }}<sc-if value="{{ r.harSitatAv }}" hint-placeholder-val="{{ false }}"><span style="display: block; margin-top: var(--space-2); font-style: normal; font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ r.sitatAv }}</span></sc-if></blockquote>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top: var(--space-8);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ bedriftTilSkjema }}" hint-size="auto,56px">{{ beRefKnapp }}</x-import>
+            </div>
+          </div>
+        </section>
+      </sc-if>
 
     </div>
   </sc-if>
@@ -22947,7 +23000,7 @@ const SIDEINNHOLD = {
       { l: 'Kursvelgerlenke', v: 'Trykk her' } ] },
     { navn: 'Velg din inngang', type: 'Fire kort', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Velg din inngang' },
-      { l: 'Overskrift', v: 'Dette kan du gjøre hos oss' } ] },
+      { l: 'Overskrift', v: 'Dreiing, plateteknikk, håndbygging — eller mal ferdig keramikk' } ] },
     { navn: 'Kommende datoer', type: 'Kurs, automatisk', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kurs og events' },
       { l: 'Overskrift', v: 'Kommende datoer' },
@@ -22964,8 +23017,8 @@ const SIDEINNHOLD = {
   // bare det ene virket. De staar naa ett sted, og blokka her peker dit.
   'Kurs og events': [
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
-      { l: 'Kicker', v: 'Kurs og events' },
-      { l: 'Ingress', v: 'Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true },
+      { l: 'Kicker', v: 'Kurs og events i Tønsberg' },
+      { l: 'Ingress', v: 'Lag din egen kopp på dreieskiva, boller og store fat med plateteknikk, eller en fransk smørklokke for hånd. Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du trenger ingen forkunnskaper — finn en dato som passer.', lang: true },
       // Sto med ett tall for alle kategoriene. Dreiing tar 8, resten 12 —
       // ett tall her ville vaert feil for den ene eller den andre. Teksten er
       // tatt bort etter bestilling; feltene staar igjen slik at det kan
@@ -23067,6 +23120,16 @@ const SIDEINNHOLD = {
       { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
       { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
       { l: 'Kort 3 pris', v: 'Fra kr. 990 per person' } ] },
+    // «Laget for»: bedriftene verkstedet har laget keramikk for. Selve
+    // kundene — navn, bilde, tekst, sitat — ligger under Admin →
+    // Referansekunder, samme liste som forsida bruker. Eieren, 14.
+    // september 2026: «Få også med at vi har laget keramikk for flere
+    // bedrifter, Spire Regnskap, Kepler Bilservice og for Grenseløs».
+    { navn: 'Laget for', type: 'Referansekunder, automatisk', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Laget for' },
+      { l: 'Overskrift', v: 'Keramikk med bedriftens eget preg' },
+      { l: 'Ingress', v: 'Vi lager kopper, skåler og servise for bedrifter i Vestfold — dreid og glasert i verkstedet på Teie, med motiv tegnet etter ønske. Restauranter, kontorer og verksteder bruker det til gjestene, til kundene og som gaver.', lang: true },
+      { l: 'Knapp', v: 'Send en forespørsel' } ] },
   ],
   'Om oss': [
     // Overskriften og de to avsnittene sto med en tekst sida ikke lenger
@@ -25758,13 +25821,13 @@ class Component extends DCLogic {
     },
     kurs: {
       fokus: 'keramikkurs Vestfold',
-      tittel: 'Keramikkurs i Tønsberg og Vestfold – se datoer | Lissom',
-      meta: 'Alle kurs og events hos Lissom Keramikk ved Tønsberg: dreiekurs, plateteknikk, workshop, Sip & Clay, Date Night og Paint on Pots. Se datoer og book plass.',
+      tittel: 'Dreiekurs, plateteknikk og håndbygging i Tønsberg | Lissom',
+      meta: 'Keramikkurs på Teie ved Tønsberg: dreiekurs over to kvelder, boller og store fat med plateteknikk, fransk smørklokke. Alt inkludert. Book med Vipps.',
       slug: 'keramikkurs-vestfold',
-      h1: 'Keramikkurs og events i Vestfold',
+      h1: 'Dreiekurs, plateteknikk og håndbygging i Vestfold',
       sekundare: 'dreiekurs, plateteknikk, workshop, sip and clay, date night, paint on pots, keramikkurs Sandefjord, keramikkurs Horten, kurs Tjøme, Andebu, Revetal',
       altTekst: 'Kursdeltakere rundt langbordet i keramikkverkstedet på Teie',
-      ogTittel: 'Keramikkurs i Tønsberg og Vestfold – se datoer | Lissom',
+      ogTittel: 'Dreiekurs, plateteknikk og håndbygging i Tønsberg | Lissom',
       ogBeskrivelse: 'Dreiekurs, bollekurs, workshop og kreative kvelder i Tønsberg. Alt utstyr inkludert. Se datoer og book plass.',
       canonical: 'https://lissom.no/kurs',
       internlenker: 'Forside, Medlemskap, Bedrift og event, Gavekort',
@@ -25899,8 +25962,8 @@ class Component extends DCLogic {
     },
     paintonpots: {
       fokus: 'paint on pots Tønsberg',
-      tittel: 'Paint on Pots – mal keramikk i Tønsberg | Lissom',
-      meta: 'Velg en ferdigbrent kopp eller bolle og mal den selv. Vi glaserer og brenner, du henter den ferdig. Passer også barn. Se datoer og book plass.',
+      tittel: 'Paint on Pots i Tønsberg — mal din egen keramikk | Lissom',
+      meta: 'Paint on Pots: velg en ferdigbrent kopp eller skål og mal den selv. Vi glaserer og brenner. Barn fra 6 år med voksen. Drop-in på Teie ved Tønsberg — book plass.',
       slug: 'paint-on-pots-tonsberg',
       h1: 'Paint on Pots i Tønsberg',
       sekundare: 'male keramikk, aktivitet barn Tønsberg, kreativ time Vestfold',
@@ -25960,7 +26023,7 @@ class Component extends DCLogic {
     medlemskap: {
       fokus: 'keramikkverksted medlemskap Tønsberg',
       tittel: 'Medlemskap i keramikkverksted – Tønsberg/Vestfold | Lissom',
-      meta: 'Fast plass i verkstedet på Teie med egen dørkode og hylle. Leire, glasur og brenning inkludert. Se prisene og meld deg inn i dag.',
+      meta: 'Bli medlem i keramikkverkstedet på Teie: egen hylle, dørkode 24/7 og verkstedtimer hver måned. Prøv én måned uten binding — se prisene og meld deg inn.',
       slug: 'medlemskap-keramikkverksted',
       h1: 'Medlemskap i keramikkverkstedet — Tønsberg',
       sekundare: 'medlemskap keramikk, verkstedplass, keramikk abonnement, dreieskive Vestfold, keramikk som hobby',
@@ -26148,8 +26211,8 @@ class Component extends DCLogic {
     },
     bedrift: {
       fokus: 'teambuilding keramikk Vestfold',
-      tittel: 'Teambuilding med keramikk i Vestfold | Lissom',
-      meta: 'Bedriftsarrangement, julebord eller kick-off i keramikkverkstedet på Teie. Vi setter opp egen kveld for gruppa. Se hva vi tilbyr og send en forespørsel.',
+      tittel: 'Keramikk til bedriften og teambuilding | Lissom Tønsberg',
+      meta: 'Bedriftsevent ved dreieskiva, og keramikk laget for bedrifter i Vestfold — kopper og servise med eget motiv. Se hva vi laget for Grenseløs, Spire Regnskap og Kepler Bilservice.',
       slug: 'teambuilding-keramikk-vestfold',
       h1: 'Teambuilding med keramikk i Vestfold',
       sekundare: 'bedriftsarrangement Tønsberg, julebord Nøtterøy, kick-off Vestfold',
@@ -42371,8 +42434,9 @@ class Component extends DCLogic {
     if ((side === 'adminreferanser' || side === 'adminoversikt') && !this.state.refAdmin) {
       this.hentReferanser();
     }
-    // Referansekundene. Bare paa forsida — det er der de staar.
-    if (side === 'forside' && !this._referanserHentes && !this.state.referanser) {
+    // Referansekundene. Paa forsida, i feltet som veksler — og paa
+    // Bedrift-sida, under «Laget for».
+    if ((side === 'forside' || side === 'bedrift') && !this._referanserHentes && !this.state.referanser) {
       this._referanserHentes = true;
       fetch('/api/referanser.php', { credentials: 'same-origin' })
         .then(r => r.json())
@@ -43100,7 +43164,10 @@ class Component extends DCLogic {
           dkNy: kode, dkWifi: wifi,
         }));
       },
-      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Dreiing': 'Kurs i dreiing', 'Håndbygging': 'Håndbygging', 'Sip & Clay': 'Sip & Clay', 'Date Night': 'Date Night', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
+      // Overskriftene sier teknikkene med navn — det er dem folk soeker paa.
+      // «Finn en dato som passer» sto som standard; ingen soeker paa det.
+      // (Eieren, 14. september 2026, GO paa del B.)
+      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Dreiing': 'Dreiekurs', 'Håndbygging': 'Plateteknikk og håndbygging', 'Sip & Clay': 'Sip & Clay', 'Date Night': 'Date Night', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Dreiekurs, plateteknikk og håndbygging',
       medlemFordeler: [
         'Tilgang til verksted og utstyr',
         'Mulighet til å jobbe med egne prosjekter',
@@ -56337,6 +56404,30 @@ class Component extends DCLogic {
       pvIngress: this.innh('Personvern/0/Ingress'),
       pvSistOppdatert: this.innh('Personvern/0/Sist oppdatert'),
       beKicker: this.innh('Bedrift og event/0/Kicker'),
+      beRefKicker: this.innh('Bedrift og event/2/Kicker'),
+      beRefTittel: this.innh('Bedrift og event/2/Overskrift'),
+      beRefIngress: this.innh('Bedrift og event/2/Ingress'),
+      beRefKnapp: this.innh('Bedrift og event/2/Knapp'),
+      // Referansekundene som kort. Samme liste som forsida — se
+      // rotasjonene() — men her uten bryteren: paa Bedrift-sida hoerer de
+      // hjemme uansett.
+      ...(() => {
+        const kunder = (this.state.referanser || []).filter(k => k.navn).map(k => ({
+          navn: k.navn,
+          bilde: k.bilde || '',
+          harBilde: !!k.bilde,
+          alt: 'Keramikk laget for ' + k.navn,
+          harLogo: !!k.logo,
+          logoStil: k.logo ? 'height: 36px; width: 160px; background: url(' + JSON.stringify(k.logo) + ') left center / contain no-repeat;' : '',
+          tekst: k.tekst || '',
+          harTekst: !!k.tekst,
+          sitat: k.sitat ? '«' + k.sitat + '»' : '',
+          harSitat: !!k.sitat,
+          sitatAv: k.sitatAv || '',
+          harSitatAv: !!k.sitatAv,
+        }));
+        return { beReferanser: kunder, beHarReferanser: kunder.length > 0 };
+      })(),
       beTittel: this.innh('Bedrift og event/0/Overskrift'),
       beTittelKursiv: this.innh('Bedrift og event/0/Overskrift, kursiv del'),
       beIngress: this.innh('Bedrift og event/0/Ingress'),
@@ -59293,6 +59384,10 @@ class Component extends DCLogic {
         if (mal) { this.setState({ side: mal[0], kursFilter: mal[1] || 'Kursene' }); window.scrollTo(0, 0); }
       },
       goEvents: () => { this.setState({ side: 'kurs', kursFilter: 'Events' }); window.scrollTo(0, 0); },
+      // Kortene paa forsida gaar rett til sin kategori paa kurssida. Samme
+      // filter som knappene der — se kursIKategori().
+      goDreiing: () => { this.setState({ side: 'kurs', kursFilter: 'Dreiing' }); window.scrollTo(0, 0); },
+      goHandbygging: () => { this.setState({ side: 'kurs', kursFilter: 'Håndbygging' }); window.scrollTo(0, 0); },
       ...(() => {
         const alle = this.rotasjonene();
         const nr = ((this.state.rotNr || 0) % alle.length + alle.length) % alle.length;

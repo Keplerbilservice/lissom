@@ -275,6 +275,45 @@ if ($d === null && str_starts_with($adresse, '/butikk/')) {
     }
 }
 
+// Artiklene: /nyheter/<slug>. De gikk ut som «noindex» med forsidas tittel
+// — Google fikk aldri se dem, og de sto ikke i sitemapen. Maalt 14.
+// september 2026 mot den ekte sida. Tittel og beskrivelse er artikkelens
+// egne; teksten tegnes av Robottekst::lag() lenger nede.
+if ($d === null && preg_match('~^/nyheter/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
+    try {
+        $lastBackend();
+        $a = DB::en(
+            "SELECT tittel, ingress, bilde, bilde_alt FROM articles
+              WHERE slug = :s AND status = 'publisert'",
+            ['s' => mb_substr($treff[1], 0, 191)]
+        );
+        if ($a !== null) {
+            $navn = trim((string) $a['tittel']);
+            $meta = trim((string) preg_replace('/\s+/u', ' ', (string) ($a['ingress'] ?? '')));
+            if (mb_strlen($meta) > 158) {
+                $kort = mb_substr($meta, 0, 158);
+                $punktum = mb_strrpos($kort, '. ');
+                $meta = ($punktum !== false && $punktum > 60)
+                    ? mb_substr($kort, 0, $punktum + 1)
+                    : trim($kort) . ' …';
+            }
+            $bilde = trim((string) ($a['bilde'] ?? ''));
+            $d = [
+                'tittel'        => $navn . ' | Lissom Keramikk',
+                'meta'          => $meta,
+                'canonical'     => ROT . '/nyheter/' . rawurlencode($treff[1]),
+                'ogTittel'      => $navn,
+                'ogBeskrivelse' => $meta,
+                'delingsbilde'  => $bilde !== '' ? ROT . '/' . ltrim($bilde, '/') : '',
+                'altTekst'      => trim((string) ($a['bilde_alt'] ?? '')) ?: $navn,
+                'index'         => 'Index',
+            ];
+        }
+    } catch (Throwable) {
+        // Basen er nede, eller artikkelen finnes ikke. Da staar hodet som det gjor.
+    }
+}
+
 if ($d === null) {
     $id = $kart['stier'][$adresse] ?? null;
     if ($id !== null && isset($kart['sider'][$id])) {

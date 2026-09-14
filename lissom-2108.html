@@ -17089,7 +17089,7 @@ window.__resources = {
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Medlemmer</h1>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">Brukere</h1>
           </div>
         </div>
 
@@ -36385,7 +36385,10 @@ class Component extends DCLogic {
       // to faner — «Paameldte» og «Kurs» sto begge steder — og det var det
       // tydeligste tegnet paa at de hoerte sammen. Ett punkt naa.
       ['Kurs og deltakere', 'adminomrkurs'],
-      ['Medlemmer', 'adminomrmedlemmer'],
+      // «Medlemmer» het den. Eieren, 14. september 2026: «Menyen som heter
+      // medlemmer er misvisende. Kall den brukere» — lista har ogsaa
+      // kursdeltakere, tidligere medlemmer og adminbrukere.
+      ['Brukere', 'adminomrmedlemmer'],
       // Kassa var et kort paa Oversikt. Eieren staar i den hele dagen — alt
       // som selges over disk, og alt som skal gjoeres opp — og maatte innom
       // Oversikt hver gang. Naa er den et sted, som de andre.
@@ -36424,9 +36427,9 @@ class Component extends DCLogic {
    */
   static get ADMIN_FANER() {
     return {
-      'Medlemmer': [
-        ['← Medlemmer',  'adminomrmedlemmer'],
-        ['Alle medlemmer', 'adminmedlem'],
+      'Brukere': [
+        ['← Brukere',    'adminomrmedlemmer'],
+        ['Alle brukere', 'adminmedlem'],
         ['Kurs',         'admin',            { kursFane: 'interne' }],
         ['Internbutikk', 'adminbutikk',      { butikkFane: 'Medlemssalg' }],
         ['Beskjeder',    'adminbeskjeder',   { motValg: 'Alle aktive medlemmer' }],
@@ -36561,10 +36564,10 @@ class Component extends DCLogic {
       case 'adminnyepameldinger': return p('Oversikt');
       case 'adminmedlemssoknader': return p('Oversikt');
       case 'adminubesvarte':     return p('Oversikt');
-      case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
+      case 'adminomrmedlemmer':  return p('Brukere', '', '');
       case 'adminkursdeltakere': return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Kurs og deltakere', 'Kurs og deltakere', 'Påmeldte');
-      case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Alle medlemmer');
+      case 'adminmedlem':        return p('Brukere', 'Brukere', 'Alle brukere');
       case 'adminoppskrifter':
         return p('Verkstedet', 'Verkstedet',
           st.vstFane === 'vakter' ? 'Vakter'
@@ -36595,22 +36598,22 @@ class Component extends DCLogic {
       case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
-        if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
+        if (st.kursFane === 'interne') return p('Brukere', 'Brukere', 'Kurs');
         if (st.kursFane === 'maler')   return p('Kurs og deltakere', 'Kurs og deltakere', 'Kurs');
         return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle kurs');
       case 'adminbeskjeder':
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
           ? p('Kurs og deltakere', 'Kurs og deltakere', 'Beskjeder')
-          : p('Medlemmer', 'Medlemmer', 'Beskjeder');
+          : p('Brukere', 'Brukere', 'Beskjeder');
       case 'adminokonomi':
         if (st.okonomiFor === 'deltakere') return p('Kurs og deltakere', 'Kurs og deltakere', 'Betalinger');
-        if (st.okonomiFor === 'medlemmer') return p('Medlemmer', 'Medlemmer', 'Betalinger');
+        if (st.okonomiFor === 'medlemmer') return p('Brukere', 'Brukere', 'Betalinger');
         if (st.okonomiFor === 'hengende') return p('Økonomi', 'Økonomi', 'Henger i Vipps');
         return p('Økonomi');
       case 'adminnyttig':
         return st.nyttigFor === 'deltakere'
           ? p('Kurs og deltakere', 'Kurs og deltakere', 'Nyttig info')
-          : p('Medlemmer', 'Medlemmer', 'Nyttig info');
+          : p('Brukere', 'Brukere', 'Nyttig info');
       case 'adminbutikk':
         // Butikken er sitt eget punkt i menyen naa. Internbutikken hoerer
         // fortsatt til medlemmene — det er varene deres.
@@ -40599,7 +40602,7 @@ class Component extends DCLogic {
       // Medlemmer og Paameldte gaar til skjermene som alt finnes. Tallet er
       // det samme som staar paa kortene under «Kurs og deltakere».
       klGaMedlemmer: () => this.gaaAdmin('adminmedlem',
-                                         { medlemFilter: 'Aktive', medlemSok: '' }),
+                                         { medlemFilter: 'Aktive medlemmer', medlemSok: '' }),
       klMedlemmerAntall: String((this.state.adminMedlemmer || [])
         .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length),
       klMedlemmerHar: (this.state.adminMedlemmer || [])
@@ -45876,7 +45879,7 @@ class Component extends DCLogic {
         return {
           erAdminOmraade: true,
           adminNavOmraade: this.adminSideMeny(),
-          omrTittel: 'Medlemmer',
+          omrTittel: 'Brukere',
           omrUnder: 'Alt som gjelder dem som har fast plass i verkstedet: registeret, '
             + 'samlingene deres, internbutikken, beskjedene og det interne innholdet.',
           omrHurtig: [
@@ -48077,7 +48080,7 @@ class Component extends DCLogic {
               return kort('Medlemmer',
                    'Alle som har medlemskap, og timene de har brukt.',
                    m.length || null, 'Se medlemmene',
-                   () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive', medlemSok: '' }));
+                   () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: '' }));
             })(),
 
             // Nettbutikken: som Kassa, bare paa PC. Se kommentaren over.
@@ -48580,15 +48583,16 @@ class Component extends DCLogic {
       // paa — og et slettet ett sto igjen med null treff.
       // «Ubetalte» staar rett etter «Aktive»: det er dem man leter etter naar
       // man kommer hit fra kortet paa Oversikt.
-      medlemFiltre: ['Alle', 'Aktive', 'Ubetalte', 'Sluttet', 'Kursdeltakere', 'Admin']
-        .concat((this.state.adminPlanerRaa || []).map(pl => pl.navn))
-        .concat(this.state.adminPlanerRaa ? [] : ['30 timer', 'Fri tilgang', 'Prøv Lissom'])
-        .concat(['Inne nå']).map(n => {
-        // «Aktive» er startvisningen, ikke «Alle». Lista aapnet med alle
-        // sammen — sluttede, kursdeltakere og adminbrukere om hverandre —
-        // og det man ser etter naar man trykker Medlemmer, er dem som er
-        // medlem naa. «Alle» staar fortsatt som forste filter.
-        const valgt = (this.state.medlemFilter || 'Aktive') === n;
+      // Pillene er kategoriene, ikke alt paa én gang. Eieren, 14. september
+      // 2026, med bilde av «Alle»-lista full av Vipps-kontoer uten kjoep:
+      // «Jeg ønsker en pille for aktive medlemmer, en pille for tidligere
+      // medlemmer, en pille for kursdeltakere og en pille for admin.»
+      // «Alle» og planpillene er borte; «Ubetalte» og «Inne nå» staar fordi
+      // kortene paa Oversikt gaar dit. Kontoene som aldri har kjoept noe
+      // faar sin egen pille, saa de fortsatt kan finnes og slettes — men
+      // de blander seg ikke inn blant medlemmene lenger.
+      medlemFiltre: ['Aktive medlemmer', 'Tidligere medlemmer', 'Kursdeltakere', 'Admin', 'Ubetalte', 'Inne nå', 'Kontoer uten kjøp'].map(n => {
+        const valgt = (this.state.medlemFilter || 'Aktive medlemmer') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
       }),
       sorterNavn: () => this.setState(s => ({ medlemSort: s.medlemSort === 'navn' ? '' : 'navn' })),
@@ -48621,20 +48625,37 @@ class Component extends DCLogic {
         { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 30', andel: 17, status: 'Utløper 3. sep', tone: 'warning' },
         { navn: 'Mari Lunde', epost: 'mari@epost.no', initial: 'ML', abonnement: '30 timer', timer: '0 / 30', andel: 0, status: 'Betaling feilet', tone: 'danger' },
       ])).filter(m => {
-        const fv = this.state.medlemFilter || 'Aktive';
+        const fv = this.state.medlemFilter || 'Aktive medlemmer';
+        // «Alle» er ingen pille lenger, men navnet paa en bruker andre
+        // steder i admin aapner lista med søk paa navnet — da maa alle med.
         if (fv === 'Alle') return true;
         if (fv === 'Inne nå') return !!m.inne;
-        if (fv === 'Aktive') return !!m.erMedlem && !m.erAdmin;
+        if (fv === 'Aktive medlemmer') return !!m.erMedlem && !m.erAdmin;
+        if (fv === 'Tidligere medlemmer') return !!m.harSluttet;
+        if (fv === 'Kontoer uten kjøp') return !m.erMedlem && !m.erAdmin && !m.harSluttet && (m.antallKurs || 0) === 0;
         // Bare de som faktisk skylder. «betalingForfalt» er det samme flagget
         // kortet paa Oversikt teller — leste lista noe annet, kunne kortet
         // sagt seks og lista vist sju. Et medlem som staar som fritatt fra
         // betaling hoerer ikke hjemme her; det var hele poenget med haken.
         if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;
-        if (fv === 'Sluttet') return !!m.harSluttet;
         if (fv === 'Kursdeltakere') return !m.erMedlem && !m.erAdmin && (m.antallKurs || 0) > 0;
         if (fv === 'Admin') return !!m.erAdmin;
         return m.abonnement === fv;
-      }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
+      }).sort((a, b) => {
+        const so = this.state.medlemSort || '';
+        if (so === 'navn') return a.navn.localeCompare(b.navn, 'no');
+        if (so === 'timer') return (b.andel || 0) - (a.andel || 0);
+        // Standard: kategori foerst — medlemskapet (planen), saa dem som har
+        // sluttet, saa kursdeltakere, saa kontoer uten kjoep — og navn
+        // innenfor hver. Eieren, 14. september 2026: «sorteres etter
+        // kategorier som medlemskap, deltakere etc.»
+        const kat = m => m.erAdmin ? '4 Admin'
+          : m.erMedlem ? '0 ' + (m.abonnement || 'Medlem')
+          : m.harSluttet ? '1 Tidligere'
+          : (m.antallKurs || 0) > 0 ? '2 Kursdeltaker'
+          : '3 Konto';
+        return kat(a).localeCompare(kat(b), 'no') || a.navn.localeCompare(b.navn, 'no');
+      }).map(m => Object.assign(m, {
         // Én linje, ikke to felt limt sammen med et punktum som blir
         // staaende alene naar det ene mangler.
         undertekst: [m.gruppe, m.kursTekst].filter(Boolean).join(' · '),
@@ -48881,7 +48902,7 @@ class Component extends DCLogic {
           kursSkjermTittel: fane === 'interne' ? 'Kurs for medlemmer'
             : fane === 'maler' ? 'Kurs'
             : (fane === 'apne' ? 'Kurs og datoer' : 'Alle kurs'),
-          kursSkjermEyebrow: fane === 'interne' ? 'Medlemmer'
+          kursSkjermEyebrow: fane === 'interne' ? 'Brukere'
             : (fane === 'apne' ? 'Kursdeltakere' : 'Administrasjon'),
           // Malfanen er kursene, ikke datoene. Kalenderen og datolista
           // hoerer til «Alle kurs» — her er de bare stoy foran det man kom
@@ -50694,7 +50715,7 @@ class Component extends DCLogic {
             : this.state.okonomiFor === 'hengende' ? 'Betalinger som henger i Vipps'
             : 'Økonomi i ' + maaned,
           okEyebrow: this.state.okonomiFor === 'deltakere' ? 'Kursdeltakere'
-            : this.state.okonomiFor === 'medlemmer' ? 'Medlemmer'
+            : this.state.okonomiFor === 'medlemmer' ? 'Brukere'
             : this.state.okonomiFor === 'hengende' ? 'Trenger et menneske'
             : 'Administrasjon',
           // «Siste betalinger» sto fast over lista. Paa de hengende er det

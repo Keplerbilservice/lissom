@@ -401,11 +401,14 @@ final class Robottekst
     private static function ramme(string $h1, string $meta, string $innhold, bool $forside): string
     {
         $e = [self::class, 'e'];
-        // Paa forsida ligger den ferdigtegnede toppen (#lissom-topp) absolutt
-        // over alt; teksten starter under den.
-        $topp = $forside ? 'margin-top:100vh;' : '';
+        // Her sto «margin-top:100vh» paa forsida, for aa komme under den
+        // ferdigtegnede toppen (#lissom-topp) som laa absolutt over alt. Den
+        // ligger naa i vanlig flyt — se bin/forhaandstegn.mjs — og teksten
+        // foelger rett under den av seg selv. $forside beholdes i signaturen,
+        // saa kallene staar som foer.
+        unset($forside);
         return '<style>'
-            . '#lissom-tekst{max-width:760px;margin:0 auto;padding:40px 24px 64px;font:var(--type-body,400 16px/1.6 "Alegreya Sans",sans-serif);color:var(--text-body,#2E1002);' . $topp . '}'
+            . '#lissom-tekst{max-width:760px;margin:0 auto;padding:40px 24px 64px;font:var(--type-body,400 16px/1.6 "Alegreya Sans",sans-serif);color:var(--text-body,#2E1002)}'
             . '#lissom-tekst h1,#lissom-tekst h2,#lissom-tekst h3{font-family:var(--font-display,"Bitter",serif);color:var(--text-heading,#4D1D12);line-height:1.15;margin:0 0 10px}'
             . '#lissom-tekst h1{font-size:34px}#lissom-tekst h2{font-size:22px;margin-top:34px}#lissom-tekst h3{font-size:18px;margin:18px 0 4px}'
             . '#lissom-tekst p{margin:0 0 12px}#lissom-tekst .lede{font-size:18px;color:var(--text-muted,#6F5D4C)}'

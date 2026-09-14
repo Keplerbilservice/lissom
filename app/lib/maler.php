@@ -75,6 +75,18 @@ final class Maler
                 'sum'        => 'Totalsummen',
             ],
         ],
+        // Bestillingen til leverandoren. Migrasjon 184: handlelistene fra
+        // medlemmene, slaatt sammen og sendt videre.
+        'leverandorbestilling' => [
+            'tittel' => 'Bestilling til leverandøren',
+            'hvor'   => 'Sendes når verkstedet trykker «Bestill hos …» under Nettbutikk → Handlelister.',
+            'felter' => [
+                'nummer'     => 'Bestillingsnummeret, f.eks. B-2609-014',
+                'leverandor' => 'Navnet på leverandøren',
+                'dato'       => 'Dagen bestillingen sendes',
+                'varer'      => 'Varelinjene, delt opp per medlem med navnet over',
+            ],
+        ],
         'butikkordre_pakke' => [
             'tittel' => 'Butikkbestilling — sendes',
             'hvor'   => 'Sendes når kunden valgte «Send som pakke» i kassa.',

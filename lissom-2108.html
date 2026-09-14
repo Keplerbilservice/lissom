@@ -5784,6 +5784,69 @@ window.__resources = {
               </div>
               </sc-if>
 
+              <!-- Handlelista. Internbutikken over selger det som ligger paa
+                   lager, med betaling i kassa med en gang. Dette er den andre
+                   veien: det som maa skaffes. Medlemmet samler opp, sender, og
+                   verkstedet bestiller samlet — eieren, 13. september 2026:
+                   «maalet er aa samle innkjop paa min lissom konto for aa faa
+                   rabatter». Ingen pris staar her: den settes naar
+                   leverandoren har sagt hva den koster. -->
+              <sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">
+              <div id="minside-handleliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
+                <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
+                  <div>
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Handleliste</div>
+                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Det du trenger til neste innkjøp</h3>
+                  </div>
+                  <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
+                    <span style="border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 13px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">{{ hlAntallTekst }}</span>
+                  </sc-if>
+                </div>
+
+                <input type="search" value="{{ hlSok }}" onInput="{{ hlSokEndre }}" placeholder="Søk etter leire, glasur, verktøy …" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-3);">
+
+                <div style="display: flex; flex-direction: column;">
+                  <sc-for list="{{ hlMine }}" as="h" hint-placeholder-count="3">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                      <div style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</div>
+                      <div style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.nummer }}</div>
+                      <div style="flex: none; display: flex; align-items: center; gap: 5px;">
+                        <button type="button" onClick="{{ h.faerre }}" aria-label="Færre" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">−</button>
+                        <span style="min-width: 16px; text-align: center; font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ h.antall }}</span>
+                        <button type="button" onClick="{{ h.flere }}" aria-label="Flere" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">+</button>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <!-- Varene aa velge blant. Staar bare naar du soker eller har
+                     trykket «Legg til vare» — ellers er lista di det du ser. -->
+                <sc-if value="{{ hlVelgApen }}" hint-placeholder-val="{{ false }}">
+                <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md, 10px); padding: var(--space-2) var(--space-4); margin-top: var(--space-3);">
+                  <sc-for list="{{ hlTreff }}" as="t" hint-placeholder-count="3">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                      <div style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ t.navn }}</div>
+                      <div style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ t.nummer }}</div>
+                      <button type="button" onClick="{{ t.legg }}" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px 12px; font: var(--type-body-sm); font-weight: 700;">Legg til</button>
+                    </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5);">
+                  <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ hlSendNa }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">{{ hlSendTekst }}</button>
+                  </sc-if>
+                  <button type="button" onClick="{{ hlVelgVeksle }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Legg til vare</button>
+                </div>
+
+                <sc-if value="{{ hlKvittering }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">Lista er sendt. Du får et Vipps-krav når prisene er klare.</p>
+                </sc-if>
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Lista blir liggende til du sender den. Prisen settes når verkstedet bestiller, og du får et Vipps-krav før varene hentes hjem.</p>
+              </div>
+              </sc-if>
+
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-2); flex-wrap: wrap;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kjøpshistorikk</div>
@@ -18427,10 +18490,12 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ butikkTittel }}</h1>
           </div>
+          <sc-if value="{{ butFaneVarer }}" hint-placeholder-val="{{ true }}">
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="package" on-click="{{ butikkBytt }}" hint-size="auto,44px">{{ butikkBytteKnapp }}</x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ butikkNy }}" hint-size="auto,44px">{{ butikkNyKnapp }}</x-import>
           </div>
+          </sc-if>
         </div>
 
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
@@ -18443,6 +18508,94 @@ window.__resources = {
           </div>
         </sc-if>
 
+
+        <!-- Handlelistene fra medlemmene, slaatt sammen til én bestilling.
+             Eieren, 13. september 2026: «listen som oversendes admin maa slaas
+             sammen til en liste, her maa admin kunne trykke vekk produkter,
+             ikke paa lager. Maa kunne legge inn pris pr varelinje, kunne kreve
+             inn betaling ved vipps.»
+
+             Lista er samlet per artikkelnummer — det er slik den bestilles.
+             Oppgjoret under er delt per medlem — det er slik den betales. -->
+        <sc-if value="{{ butFaneHandlelister }}" hint-placeholder-val="{{ false }}">
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
+          <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Handlelister</span>
+            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ hlaSammendrag }}</span>
+          </div>
+
+          <div style="padding: var(--space-5) var(--space-6);">
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <sc-for list="{{ hlaLevFiltre }}" as="f" hint-placeholder-count="3">
+                <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+              </sc-for>
+            </div>
+
+            <div style="overflow-x: auto;">
+              <sc-for list="{{ hlaVarer }}" as="v" hint-placeholder-count="4">
+                <div style="{{ v.radStil }}">
+                  <div style="flex: none; width: 70px; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ v.nummer }}</div>
+                  <div style="flex: 1; min-width: 180px;">
+                    <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ v.navn }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ v.hvem }}</div>
+                    <div style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700; color: var(--terracotta-600);">{{ v.leverandor }}</div>
+                  </div>
+                  <div style="flex: none; width: 54px; text-align: right; font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ v.antall }}</div>
+                  <input type="text" inputmode="decimal" value="{{ v.pris }}" onChange="{{ v.prisEndre }}" placeholder="0,00" style="flex: none; width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 6px 9px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);">
+                  <div style="flex: none; width: 96px; text-align: right; font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ v.sum }}</div>
+                  <button type="button" onClick="{{ v.vekk }}" title="{{ v.vekkTittel }}" style="flex: none; appearance: none; cursor: pointer; width: 30px; height: 30px; border-radius: var(--radius-pill); border: 2px solid var(--clay-200); background: transparent; color: var(--text-muted); line-height: 1;">{{ v.vekkTegn }}</button>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{ hlaTom }}" hint-placeholder-val="{{ true }}">
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen har sendt inn handlelista si ennå.</p>
+            </sc-if>
+
+            <!-- Oppgjoret: ett kort per medlem, med gebyret paa toppen. -->
+            <div class="lx-cols2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); margin-top: var(--space-6);">
+              <sc-for list="{{ hlaMedlemmer }}" as="m" hint-placeholder-count="3">
+                <div style="background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);">
+                  <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</div>
+                  <div style="display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted);"><span>Varer</span><span>{{ m.varer }}</span></div>
+                  <div style="display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted);"><span>{{ m.gebyrNavn }}</span><span>{{ m.gebyr }}</span></div>
+                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--lissom-brown);">{{ m.sum }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">{{ m.merknad }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; margin-top: var(--space-6);">
+              <button type="button" onClick="{{ hlaKrav }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 10px 20px; font: var(--type-body-sm); font-weight: 700;">Send krav</button>
+              <sc-for list="{{ hlaBestill }}" as="b" hint-placeholder-count="2">
+                <button type="button" onClick="{{ b.send }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 10px 20px; font: var(--type-body-sm); font-weight: 700;">{{ b.navn }}</button>
+              </sc-for>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: var(--text-xs); color: var(--text-muted);">Administrasjonsgebyr
+                <input type="text" inputmode="decimal" value="{{ hlaGebyr }}" onChange="{{ hlaGebyrEndre }}" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);"> %
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leverandorene. Adressen legger verkstedet inn selv; API-valget
+             staar der for den dagen en av dem faar et. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
+          <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Leverandører</div>
+          <div style="padding: var(--space-4) var(--space-6);">
+            <sc-for list="{{ hlaLeverandorer }}" as="l" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
+                <div style="flex: 1; min-width: 140px; font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ l.navn }}</div>
+                <input type="email" value="{{ l.epost }}" onChange="{{ l.epostEndre }}" placeholder="ordre@leverandoren.no" style="flex: 2; min-width: 200px; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 7px 11px; font: var(--type-body-sm); color: var(--text-heading);">
+                <sc-for list="{{ l.maater }}" as="m" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ butFaneVarer }}" hint-placeholder-val="{{ true }}">
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <!-- Varelista bak en lenke paa telefonen.
                Eieren, planens punkt 9: «ordrer foerst, varer bak lenke».
@@ -18684,6 +18837,7 @@ window.__resources = {
             </div>
           </sc-if>
         </div>
+        </sc-if>
       </main>
     </div>
   </sc-if>
@@ -22357,6 +22511,19 @@ window.__resources = {
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
           <input type="checkbox" checked="{{ npKunMedlemmer }}" onChange="{{ vekslNpKunMedlemmer }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
           <span>Kun for medlemmer (internbutikken)</span>
+        </label>
+        <!-- Handlelista, migrasjon 184. Artikkelnummeret er leverandorens
+             eget nummer; det er det som staar i bestillingen. Haken avgjor
+             om varen dukker opp i handlelista paa Min side. -->
+        <input value="{{ npArtikkelnr }}" onChange="{{ settNpArtikkelnr }}" placeholder="Artikkelnummer hos leverandøren" style="{{ skFeltStil }}">
+        <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+          <sc-for list="{{ npLeverandorer }}" as="l" hint-placeholder-count="3">
+            <button type="button" onClick="{{ l.velg }}" style="{{ l.stil }}">{{ l.navn }}</button>
+          </sc-for>
+        </div>
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+          <input type="checkbox" checked="{{ npKanBestilles }}" onChange="{{ vekslNpKanBestilles }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+          <span>Kan bestilles (handlelista)</span>
         </label>
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-1);">
           <button type="button" onClick="{{ npLeggUt }}" style="{{ npKnappStil }}">{{ npHandling }}</button>
@@ -28675,6 +28842,233 @@ class Component extends DCLogic {
    * Hvem som har faatt beskjed regnes ut av meldingskoen paa serveren — vi
    * lagrer det ikke her. To sannheter om det samme spriker for eller siden.
    */
+  // ---------------------------------------------------------------- handlelista
+  //
+  // Eieren, 13. september 2026: «kan vi faa til en handleliste som vises paa
+  // min side medlemmer ... medlemmene maa kunne samle opp og trykk send».
+  //
+  // Internbutikken over selger det som ligger paa lager, med betaling i kassa
+  // med en gang. Handlelista er den andre veien: det som maa skaffes.
+  // Serveren er api/handleliste.php; her er det bare hente, telle og sende.
+
+  /** Varene som kan bestilles, og lista mi. Hentes én gang per skjerm. */
+  hentHandleliste() {
+    if (!this.erPublisert() || !this.state.innlogget || this._hlHentes) return;
+    if (this._hlHentet) return;
+    this._hlHentes = true;
+    fetch('/api/handleliste.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._hlHentes = false;
+        this._hlHentet = true;
+        if (d) this.setState({ hlPaa: !!d.paa, hlVarer: d.varer || [], hlMine: d.mine || [] });
+      })
+      .catch(() => { this._hlHentes = false; });
+  }
+
+  /**
+   * Ett kall, ett svar, ett bilde.
+   *
+   * Serveren svarer alltid med hele lista mi, saa skjermen viser det som
+   * faktisk ble lagret — ikke det vi gjettet at den ville lagre.
+   */
+  hlKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvittering: 'Krever den ekte siden' }); return; }
+    if (this._hlSender) return;
+    this._hlSender = true;
+    fetch('/api/handleliste.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        this._hlSender = false;
+        if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
+        this.setState(Object.assign({ hlMine: d.mine || [] },
+          kropp.handling === 'send' ? { hlKvittering: true, hlSok: '', hlVelgApen: false } : {}));
+      })
+      .catch(() => {
+        this._hlSender = false;
+        this.setState({ kvitteringTone: 'danger', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
+  /** Det kortet paa Min side trenger. */
+  handlelisteVals() {
+    const mine = this.state.hlMine || [];
+    const varer = this.state.hlVarer || [];
+    const sok = (this.state.hlSok || '').trim().toLowerCase();
+    // Lista aapner seg naar du soker, eller naar du har trykket «Legg til
+    // vare». Ellers er det din egen liste du ser — ikke hele katalogen.
+    const apen = sok !== '' || !!this.state.hlVelgApen;
+    const treff = !apen ? [] : varer.filter(v =>
+      sok === '' || (v.navn || '').toLowerCase().includes(sok) || (v.nummer || '').includes(sok));
+    const antall = mine.reduce((n, h) => n + (h.antall || 0), 0);
+    return {
+      hlHarLinjer: mine.length > 0,
+      hlAntallTekst: antall + (antall === 1 ? ' vare' : ' varer'),
+      hlSok: this.state.hlSok || '',
+      hlSokEndre: (e) => this.setState({ hlSok: e.target.value, hlKvittering: false }),
+      hlVelgApen: apen,
+      hlVelgVeksle: () => this.setState(st => ({ hlVelgApen: !st.hlVelgApen, hlKvittering: false })),
+      hlTreff: treff.map(v => ({
+        navn: v.navn,
+        nummer: v.nummer || '',
+        legg: () => this.hlKall({ handling: 'legg', produktId: v.id }),
+      })),
+      hlMine: mine.map(h => ({
+        navn: h.navn,
+        nummer: h.nummer || '',
+        antall: h.antall,
+        flere: () => this.hlKall({ handling: 'antall', linjeId: h.id, antall: (h.antall || 0) + 1 }),
+        faerre: () => this.hlKall({ handling: 'antall', linjeId: h.id, antall: (h.antall || 0) - 1 }),
+      })),
+      hlSendTekst: 'Send til verkstedet',
+      hlSendNa: () => this.hlKall({ handling: 'send' }),
+      hlKvittering: !!this.state.hlKvittering,
+    };
+  }
+
+  // --------------------------------------------- handlelistene i admin
+
+  /** Alle innsendte lister, slaatt sammen. Hentes naar fanen aapnes. */
+  hentHandlelister(tving) {
+    if (!this.erPublisert() || this._hlaHentes) return;
+    if (!tving && this._hlaHentet) return;
+    this._hlaHentes = true;
+    fetch('/api/admin/handlelister.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._hlaHentes = false;
+        this._hlaHentet = true;
+        if (d) this.setState({ hla: d });
+      })
+      .catch(() => { this._hlaHentes = false; });
+  }
+
+  /** Ett kall, ett svar, hele bildet tilbake. Som medlemmets side. */
+  hlaKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvittering: 'Krever den ekte siden' }); return; }
+    if (this._hlaSender) return;
+    this._hlaSender = true;
+    fetch('/api/admin/handlelister.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        this._hlaSender = false;
+        if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
+        const ny = { hla: d };
+        // Kravet og bestillingen sier fra hva som faktisk skjedde. Et krav
+        // som ikke gikk gjennom skal ikke se ut som om det gikk.
+        if (kropp.handling === 'krav') {
+          const sendt = (d.sendt || []).length;
+          const feilet = d.feilet || [];
+          ny.kvitteringTone = feilet.length > 0 ? 'danger' : 'success';
+          ny.kvittering = feilet.length > 0
+            ? feilet.join(' ')
+            : (sendt === 0 ? 'Ingen krav å sende.' : 'Kravet er sendt til ' + sendt + (sendt === 1 ? ' medlem.' : ' medlemmer.'));
+        }
+        if (kropp.handling === 'bestill') {
+          ny.kvitteringTone = 'success';
+          ny.kvittering = 'Bestilling ' + (d.bestilling || '') + ' er sendt til ' + (d.til || 'leverandøren') + '.';
+        }
+        this.setState(ny);
+      })
+      .catch(() => {
+        this._hlaSender = false;
+        this.setState({ kvitteringTone: 'danger', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
+  /** Det fanen «Handlelister» tegner. */
+  handlelisteAdminVals() {
+    const d = this.state.hla || {};
+    const varer = d.varer || [];
+    const lev = d.leverandorer || [];
+    const valgt = this.state.hlaLev || '';
+    const gebyr = d.gebyr === undefined ? 5 : d.gebyr;
+
+    const pille = (aktiv) => ({
+      appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+      borderRadius: 'var(--radius-pill)', padding: '7px 15px',
+      font: 'var(--type-body-sm)', fontWeight: 700,
+      border: aktiv ? '2px solid var(--lissom-brown)' : '2px solid var(--border-subtle)',
+      background: aktiv ? 'var(--lissom-yellow)' : 'var(--surface-card)',
+      color: 'var(--lissom-brown)',
+    });
+
+    const synlige = varer.filter(v => valgt === '' || (v.leverandor || '') === valgt);
+    // Hvor mange som har sendt inn lista si — ikke hvor mange som har faatt
+    // pris. Sto det «0 medlemmer» over en liste med varer, var det galt.
+    const antallMedlemmer = d.antallMedlemmer || 0;
+
+    return {
+      hlaSammendrag: varer.length === 0 ? '' :
+        antallMedlemmer + (antallMedlemmer === 1 ? ' medlem · ' : ' medlemmer · ')
+        + varer.length + (varer.length === 1 ? ' varelinje' : ' varelinjer'),
+      hlaTom: varer.length === 0,
+      hlaLevFiltre: [{ navn: 'Alle leverandører', verdi: '' }]
+        .concat(lev.map(l => ({ navn: l.navn, verdi: l.navn })))
+        .map(f => ({
+          navn: f.navn,
+          stil: pille(valgt === f.verdi),
+          velg: () => this.setState({ hlaLev: f.verdi }),
+        })),
+      hlaVarer: synlige.map(v => ({
+        nummer: v.nummer || '',
+        navn: v.navn,
+        hvem: v.fjernet ? 'Tatt bort — ikke på lager hos leverandøren' : v.hvem,
+        leverandor: v.leverandor || '',
+        antall: v.antall,
+        pris: v.pris || '',
+        sum: v.sum,
+        // Den som er tatt bort staar bleket, slik at den fortsatt er
+        // synlig — admin skal kunne angre uten aa lete.
+        radStil: {
+          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+          borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-3) 0',
+          minWidth: '640px', opacity: v.fjernet ? 0.45 : 1,
+        },
+        prisEndre: (e) => this.hlaKall({ handling: 'pris', produktId: v.produktId, kroner: e.target.value }),
+        vekk: () => this.hlaKall({ handling: v.fjernet ? 'angre' : 'fjern', produktId: v.produktId }),
+        vekkTegn: v.fjernet ? '↺' : '✕',
+        vekkTittel: v.fjernet ? 'Legg tilbake' : 'Ikke på lager',
+      })),
+      hlaMedlemmer: (d.medlemmer || []).map(m => ({
+        navn: m.navn,
+        varer: m.varer,
+        gebyrNavn: 'Gebyr ' + String(gebyr).replace('.', ',') + ' %',
+        gebyr: m.gebyr,
+        sum: m.sum,
+        merknad: m.kravSendt ? 'Krav sendt' : (m.harTlf ? '' : 'Mangler telefonnummer'),
+      })),
+      hlaKrav: () => this.hlaKall({ handling: 'krav' }),
+      hlaBestill: lev.map(l => ({
+        navn: 'Bestill hos ' + l.navn,
+        send: () => this.hlaKall({ handling: 'bestill', leverandorId: l.id }),
+      })),
+      hlaGebyr: String(gebyr).replace('.', ','),
+      hlaGebyrEndre: (e) => this.hlaKall({ handling: 'gebyr', prosent: e.target.value }),
+      hlaLeverandorer: lev.map(l => ({
+        navn: l.navn,
+        epost: l.epost || '',
+        epostEndre: (e) => this.hlaKall({ handling: 'leverandor', id: l.id, epost: e.target.value, bestillingsmaate: l.maate }),
+        maater: [
+          { navn: 'E-post', verdi: 'epost' },
+          { navn: 'API — ikke tilgjengelig ennå', verdi: 'api' },
+        ].map(m => ({
+          navn: m.navn,
+          stil: pille(l.maate === m.verdi),
+          velg: () => this.hlaKall({ handling: 'leverandor', id: l.id, epost: l.epost, bestillingsmaate: m.verdi }),
+        })),
+      })),
+    };
+  }
+
   /**
    * Frys av medlemskap — medlemmets egne soknader.
    *
@@ -32604,6 +32998,10 @@ class Component extends DCLogic {
         mva: s.npMva === false ? 0 : 25,
         bilde: fra ? fra.bilde : '',
         kunMedlemmer: fra && fra.kunMedlemmer ? 'ja' : 'nei',
+        // Handlelista, migrasjon 184.
+        artikkelnr: (s.npArtikkelnr || '').trim(),
+        leverandorId: parseInt(String(s.npLeverandor || 0), 10) || 0,
+        kanBestilles: s.npKanBestilles ? 'ja' : 'nei',
         status: 'publisert',
       }),
     })
@@ -36105,6 +36503,8 @@ class Component extends DCLogic {
       'Nettbutikk': [
         ['Butikken',      'adminbutikk',     { butikkFane: 'Butikken' }],
         ['Internbutikk',  'adminbutikk',     { butikkFane: 'Medlemssalg' }],
+        // Handlelistene fra medlemmene. Samme skjerm, tredje liste.
+        ['Handlelister',  'adminbutikk',     { butikkFane: 'Handlelister' }],
       ],
       // Markedsforing har faner og ellers ingen undermeny. E-post og SMS er
       // en egen skjerm, saa raden vises bare der — med veien tilbake. Legger
@@ -36214,6 +36614,11 @@ class Component extends DCLogic {
       case 'adminbutikk':
         // Butikken er sitt eget punkt i menyen naa. Internbutikken hoerer
         // fortsatt til medlemmene — det er varene deres.
+        // Tre lister paa samme skjerm: butikken, internbutikken og
+        // handlelistene. Stien og den aktive fanen maa si hvilken.
+        if (st.butikkFane === 'Handlelister') {
+          return p('Nettbutikk', 'Nettbutikk', 'Handlelister');
+        }
         return st.butikkFane === 'Medlemssalg'
           ? p('Nettbutikk', 'Nettbutikk', 'Internbutikk')
           : p('Nettbutikk', 'Nettbutikk', 'Butikken');
@@ -41561,6 +41966,9 @@ class Component extends DCLogic {
         if (venteliste && venteliste.okter) ny.adminVlOkter = venteliste.okter;
         if (produkter && produkter.varer) ny.adminProdukter = produkter.varer;
         if (produkter && produkter.internkjop) ny.adminInternkjop = produkter.internkjop;
+        // Leverandorene, migrasjon 184. Varen velger én av dem, og
+        // handlelista bestiller hos den.
+        if (produkter && produkter.leverandorer) ny.leverandorer = produkter.leverandorer;
         if (kurs && kurs.kurs) {
           ny.adminKursRaa = kurs.kurs;
           ny.adminKursListe = kurs.kurs.map(k => this.kursTilRad(k));
@@ -43063,6 +43471,8 @@ class Component extends DCLogic {
               npApen: true, npRediger: true, npId: raa.id, npNavn: raa.tittel,
               npPris: String(raa.pris ?? ''), npAntall: raa.lager === null ? '' : String(raa.lager),
               npBeskrivelse: raa.beskrivelse || '', npKategori: raa.kategori || '',
+              npArtikkelnr: raa.artikkelnr || '', npLeverandor: raa.leverandorId || 0,
+              npKanBestilles: !!raa.kanBestilles,
               npMva: (raa.mva ?? 25) > 0, npKunMedlemmer: true,
             } : {}
           ));
@@ -44022,6 +44432,16 @@ class Component extends DCLogic {
       // vises i det hele tatt; medlemskapet om du er blant dem den gjelder.
       visInternbutikk: this.medlemsvisning() && this.bryterPaa('internbutikk')
         && (!this.erPublisert() || (this.state.butikkvareListe || []).some(v => v.kunMedlemmer)),
+      // Handlelista, under internbutikken. Bryteren styrer om kortet finnes;
+      // serveren svarer «paa» bare naar den staar paa der ogsaa, og uten varer
+      // som kan bestilles staar kortet tomt — da er det bedre aa la vaere.
+      visHandleliste: (() => {
+        const paa = this.medlemsvisning() && this.bryterPaa('handleliste');
+        if (paa && this.erPublisert()) this.hentHandleliste();
+        return paa && (!this.erPublisert()
+          || (this.state.hlPaa && (this.state.hlVarer || []).length > 0));
+      })(),
+      ...this.handlelisteVals(),
       // Interne samlinger: vanlige kurs merket «Kun for medlemmer». De laa
       // som tre faste oppforinger her, og var tomme paa den ekte siden.
       medlemskurs: this.medBildeCss(
@@ -45529,7 +45949,17 @@ class Component extends DCLogic {
       // «Butikk» het den til 4. september. Eieren: «Butikk skal hete
       // Nettbutikk i hele adminsystemet». Fanen inne heter fortsatt
       // «Butikken» — det er lista, ikke stedet.
-      butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk',
+      butikkTittel: this.state.butikkFane === 'Handlelister' ? 'Handlelister'
+        : (this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk'),
+      // Handlelistene er en tredje liste paa samme skjerm. Varene og ordrene
+      // staar da til side — det er to ulike aerend.
+      butFaneHandlelister: (() => {
+        const paa = this.state.butikkFane === 'Handlelister';
+        if (paa && this.erPublisert()) this.hentHandlelister();
+        return paa;
+      })(),
+      butFaneVarer: this.state.butikkFane !== 'Handlelister',
+      ...this.handlelisteAdminVals(),
       butikkListeTittel: this.state.butikkFane === 'Medlemssalg'
         ? 'Varer i internbutikken' : 'Produkter i butikken',
       // Varelista bak en lenke paa telefonen. Knappen staar bare der — se
@@ -49503,13 +49933,33 @@ class Component extends DCLogic {
       // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
       // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
       // peker knappene dit.
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false }),
-      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
       butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
         ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true })
         : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
+      // Handlelista, migrasjon 184. Leverandorene kommer fra basen —
+      // «Ingen» er valget for en vare som ikke skal bestilles noe sted.
+      npArtikkelnr: this.state.npArtikkelnr || '',
+      settNpArtikkelnr: e => this.setState({ npArtikkelnr: e.target.value }),
+      npKanBestilles: !!this.state.npKanBestilles,
+      vekslNpKanBestilles: () => this.setState(st => ({ npKanBestilles: !st.npKanBestilles })),
+      npLeverandorer: [{ id: 0, navn: 'Ingen leverandør' }]
+        .concat((this.state.hla || {}).leverandorer || this.state.leverandorer || [])
+        .map(l => ({
+          navn: l.navn,
+          stil: {
+            appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+            borderRadius: 'var(--radius-pill)', padding: '7px 15px',
+            font: 'var(--type-body-sm)', fontWeight: 700,
+            border: (this.state.npLeverandor || 0) === l.id ? '2px solid var(--lissom-brown)' : '2px solid var(--border-subtle)',
+            background: (this.state.npLeverandor || 0) === l.id ? 'var(--lissom-yellow)' : 'var(--surface-card)',
+            color: 'var(--lissom-brown)',
+          },
+          velg: () => this.setState({ npLeverandor: l.id }),
+        })),
       npTittel: this.state.npRediger ? 'Rediger vare' : 'Ny vare',
       npHandling: this.state.npRediger ? 'Lagre endringer' : 'Legg ut i butikken',
       npNavn: this.state.npNavn || '',
@@ -49726,6 +50176,8 @@ class Component extends DCLogic {
             // Migrasjon 181 setter den av; her kan den slaas paa igjen.
             rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),
                 () => this.vekslBryter('glemtstempling', 'Glemt å stemple ut')),
+            rad('Handlelista', this.bryterPaa('handleliste'),
+                () => this.vekslBryter('handleliste', 'Handlelista')),
             // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
             // store krukkemsker for medlemmer».
             //

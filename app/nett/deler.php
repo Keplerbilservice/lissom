@@ -179,8 +179,9 @@ final class Deler
                 . '<span style="' . $strek . '"></span><span style="' . $strek . '"></span><span style="' . $strek . '"></span></button>';
         }
         if (Nett::bryterPaa('sok')) {
-            $h .= '<a href="/kurs?sok=1" aria-label="Søk" style="width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); cursor: pointer; opacity: 1; background: transparent; color: var(--text-body); border: 2px solid transparent; transition: background var(--duration-base) var(--ease-clay); zoom: ' . ($compact ? 1 : 1.35) . ';" data-hover="background: var(--clay-100);">'
-                . self::ikon('search', 19) . '</a>';
+            // En <button>: nett.css skjuler «header > div > div > button[aria-label="Søk"]» paa telefon.
+            $h .= '<button type="button" data-href="/kurs?sok=1" aria-label="Søk" style="width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); cursor: pointer; opacity: 1; background: transparent; color: var(--text-body); border: 2px solid transparent; transition: background var(--duration-base) var(--ease-clay); zoom: ' . ($compact ? 1 : 1.35) . ';" data-hover="background: var(--clay-100);">'
+                . self::ikon('search', 19) . '</button>';
         }
         // En <button>, ikke en lenke: nett.css sikter paa «header button[…]»
         // naar den gjoer «Kontakt oss» mindre. nett.js foelger data-href.

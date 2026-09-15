@@ -92,6 +92,13 @@ final class Nett
 
     public static function kan(string $adresse): bool
     {
+        // Kurssida sender folk inn i appen med ?dag=, ?alle=1, ?book=1 eller
+        // ?venteliste=1 — da skal appen ha adressen, ikke serversida.
+        foreach (['dag', 'alle', 'book', 'venteliste'] as $n) {
+            if (isset($_GET[$n])) {
+                return false;
+            }
+        }
         $fil = self::fil($adresse);
         return $fil !== null && is_file(__DIR__ . '/sider/' . $fil . '.php');
     }

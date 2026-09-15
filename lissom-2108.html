@@ -2525,7 +2525,7 @@ window.__resources = {
                    kalenderikon ved siden av varigheten, inne i kortet. Se
                    «meta» i ds-bundle.js; tomme felt filtreres bort selv, saa
                    et kurs uten datoer faar ingen tom rad. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
             </sc-for>
           </div>
           <div class="lx-kunmobil">
@@ -2795,7 +2795,7 @@ window.__resources = {
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
               <sc-for list="{{ popDatoer }}" as="k" hint-placeholder-count="2">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
               </sc-for>
             </div>
           </sc-if>
@@ -2953,7 +2953,7 @@ window.__resources = {
       <section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ kursAlle }}" as="k" hint-placeholder-count="8">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
           </sc-for>
         </div>
       </section>
@@ -23826,6 +23826,12 @@ class Component extends DCLogic {
       // en bookingskjerm uten noe aa velge.
       .filter(k => !k.utenDato)
       .map(k => Object.assign({}, k, this.kortDatoer(k), {
+        // Uten datoer er feltet der datoene staar tomt — og kortet sier
+        // ingenting om hva Date Night eller Paint on Pots er. Eieren, 15.
+        // september: «events viser ingen info i kortene». Da staar
+        // kortbeskrivelsen der i stedet (kort_beskrivelse, redigeres i
+        // admin under kurset). Har kurset datoer, vinner datoene.
+        kortTekst: (k.okter || k.datoer || []).some(d => d && d.dag) ? '' : String(k.kortBeskrivelse || '').trim(),
         // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
         // uten noe aa velge er en blindvei.
         //
@@ -24090,6 +24096,7 @@ class Component extends DCLogic {
         status: 'Ta kontakt for dato',
         date: 'Etter avtale',
         duration: '',
+        kortBeskrivelse: kat.kortBeskrivelse || k.kortBeskrivelse || '',
         om: kat.om || k.om,
         plasser: kat.plasser || 0,
         image: kat.bilde || k.image,

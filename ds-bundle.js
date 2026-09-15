@@ -1251,6 +1251,16 @@ function NavBar({
   const [scrolled, setScrolled] = React.useState(false);
   const headRef = React.useRef(null);
   const [headH, setHeadH] = React.useState(168);
+  // Lissom, 14. september 2026: maal hoyden FOER foerste tegning.
+  // 168 er en gjetning; paa telefon er hodet 100. Med gjetningen laa
+  // heroen 68 px for hoyt i det foerste bildet, og hoppet ned naar
+  // ResizeObserver under hadde maalt — det var hele CLS-en (0,083) paa
+  // forsida. useLayoutEffect kjoerer etter at DOM-en er bygd, men foer
+  // nettleseren tegner, saa den ekte hoyden er der fra foerste bilde.
+  // Lokal endring — se CLAUDE.md under «Genererte filer».
+  React.useLayoutEffect(() => {
+    if (overlay && headRef.current) setHeadH(headRef.current.offsetHeight);
+  }, [overlay]);
   const [vw, setVw] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1440);
   React.useEffect(() => {
     const onR = () => setVw(window.innerWidth);
@@ -1653,8 +1663,11 @@ function CourseCard({
       textOverflow: 'ellipsis'
     }
   }, title), /*#__PURE__*/React.createElement("div", {
+    // Kortteksten (tre linjer) under datoene. Lokal endring 15.
+    // september 2026 — se CLAUDE.md om ds-bundle.js.
     style: {
-      height: 40,
+      minHeight: 40,
+      height: text ? 'auto' : 40,
       overflow: 'hidden'
     }
   }, meta.length ? /*#__PURE__*/React.createElement("div", {
@@ -1692,7 +1705,7 @@ function CourseCard({
       lineHeight: 1.4,
       color: 'var(--text-muted)',
       display: '-webkit-box',
-      WebkitLineClamp: 2,
+      WebkitLineClamp: 3,
       WebkitBoxOrient: 'vertical',
       overflow: 'hidden',
       textWrap: 'pretty'

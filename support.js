@@ -647,10 +647,16 @@
     const valGet = compileAttr(el.getAttribute("value") || "");
     const hintRaw = el.getAttribute("hint-placeholder-val");
     const hintGet = hintRaw != null ? compileAttr(hintRaw) : null;
-    const kids = walkChildren(el, host);
+    // Lissom, 14. september 2026: barna kompileres foerst den gangen
+    // betingelsen er sann. Hele nettsida er ett dokument der hver skjerm
+    // er en <sc-if>; foer ble alle skjermene kompilert ved oppstart, selv
+    // om bare forsida skulle vises. Lokal endring — se CLAUDE.md under
+    // «Genererte filer».
+    let kids = null;
     return (vals, ctx, key) => {
       let v = valGet(vals);
       if (v === void 0 && hintGet && ctx?.__streamingNow) v = hintGet(vals);
+      if (v && !kids) kids = walkChildren(el, host);
       return v ? h(
         getReact().Fragment,
         { key },

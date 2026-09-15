@@ -3745,9 +3745,40 @@ window.__resources = {
                  kan bilder staa mellom avsnittene, med bildetekst, alt-tekst,
                  plassering og stoerrelse. En artikkel uten slike bilder
                  tegnes som for: ett avsnitt etter det andre. -->
+            <!-- Avsnitt med «# », «## », «- » eller en tabell tegnes som under
+                 Nyttig info (parseInnhold). Artiklene fra 14. september sto
+                 med «# » rett i teksten paa lissom.no — serveren tegnet
+                 overskrifter for robotene, appen skrev dem over med raa
+                 tekst. Rettet 15. september 2026. -->
             <sc-for list="{{ nyLestBlokker }}" as="bl" hint-placeholder-count="3">
               <sc-if value="{{ bl.erTekst }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: 0 0 var(--space-5); font-size: var(--text-lg); line-height: 1.75; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ bl.tekst }}</p>
+              </sc-if>
+              <sc-if value="{{ bl.erH2 }}" hint-placeholder-val="{{ false }}">
+                <h2 style="margin: var(--space-10) 0 var(--space-5); font-size: var(--text-3xl);">{{ bl.tekst }}</h2>
+              </sc-if>
+              <sc-if value="{{ bl.erH3 }}" hint-placeholder-val="{{ false }}">
+                <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading); margin: var(--space-8) 0 var(--space-4);">{{ bl.tekst }}</h3>
+              </sc-if>
+              <sc-if value="{{ bl.erLabel }}" hint-placeholder-val="{{ false }}">
+                <div style="font-weight: 700; color: var(--text-heading); font-size: var(--text-lg); margin: var(--space-6) 0 var(--space-2);">{{ bl.tekst }}</div>
+              </sc-if>
+              <sc-if value="{{ bl.erAvsnitt }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-5); font-size: var(--text-lg); line-height: 1.75; color: var(--text-body); text-wrap: pretty;">{{ bl.tekst }}</p>
+              </sc-if>
+              <sc-if value="{{ bl.erListe }}" hint-placeholder-val="{{ false }}">
+                <ul style="margin: 0 0 var(--space-5); padding: 0 0 0 var(--space-6); display: flex; flex-direction: column; gap: 6px; font-size: var(--text-lg); line-height: 1.6; color: var(--text-body);">
+                  <sc-for list="{{ bl.punkter }}" as="p" hint-placeholder-count="3">
+                    <li>{{ p }}</li>
+                  </sc-for>
+                </ul>
+              </sc-if>
+              <sc-if value="{{ bl.erTabell }}" hint-placeholder-val="{{ false }}">
+                <div style="max-width: 680px; border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); overflow: hidden; background: var(--surface-card); box-shadow: var(--shadow-sm); margin: 0 0 var(--space-6);">
+                  <sc-for list="{{ bl.rader }}" as="r" hint-placeholder-count="6">
+                    <div style="{{ r.stil }}"><span style="{{ r.c1Stil }}">{{ r.c1 }}</span><span><span style="{{ r.chipStil }}">{{ r.c2 }}</span></span><span style="{{ r.c3Stil }}">{{ r.c3 }}</span></div>
+                  </sc-for>
+                </div>
               </sc-if>
               <sc-if value="{{ bl.erBilde }}" hint-placeholder-val="{{ false }}">
                 <figure class="lx-artfigur" style="{{ bl.figurStil }}">
@@ -54789,7 +54820,14 @@ class Component extends DCLogic {
             const avsnitt = String(lest.innhold || '').split(/\n\s*\n/)
               .map(t => t.trim()).filter(Boolean);
             const bilder = (lest.bilder || []);
-            if (!bilder.length) return avsnitt.map(t => ({ erTekst: true, erBilde: false, tekst: t }));
+            // Et avsnitt som er en mellomtittel, punktliste eller tabell
+            // tegnes som under Nyttig info. Et vanlig avsnitt beholder
+            // linjeskiftene sine (pre-wrap), som foer.
+            const tomt = { erTekst: false, erBilde: false, erH2: false, erH3: false, erLabel: false, erAvsnitt: false, erListe: false, erTabell: false };
+            const tekstBlokker = (t) => /^(#{1,2} |- |\|)/m.test(t)
+              ? this.parseInnhold(t).map(b => Object.assign({}, tomt, b))
+              : [Object.assign({}, tomt, { erTekst: true, tekst: t })];
+            if (!bilder.length) return avsnitt.flatMap(tekstBlokker);
 
             const bredde = { liten: 200, medium: 360, stor: 560 };
             const figur = (b) => {
@@ -54823,7 +54861,7 @@ class Component extends DCLogic {
             const foran = n => bilder.filter(b => (b.etter || 0) === n);
             foran(0).forEach(b => ut.push(somBlokk(b)));
             avsnitt.forEach((t, i) => {
-              ut.push({ erTekst: true, erBilde: false, tekst: t });
+              tekstBlokker(t).forEach(b => ut.push(b));
               foran(i + 1).forEach(b => ut.push(somBlokk(b)));
             });
             // Bilder som peker forbi siste avsnitt staar til slutt.

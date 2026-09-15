@@ -18715,6 +18715,11 @@ window.__resources = {
             <sc-if value="{{ hlaTom }}" hint-placeholder-val="{{ true }}">
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen har sendt inn handlelista si ennå.</p>
             </sc-if>
+            <sc-if value="{{ hlaHarVarer }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; justify-content: flex-end; margin-top: var(--space-4);">
+                <button type="button" onClick="{{ hlaLagrePriser }}" style="{{ hlaLagreStil }}">Lagre</button>
+              </div>
+            </sc-if>
 
             <!-- Oppgjoret: ett kort per medlem, med gebyret paa toppen. -->
             <div class="lx-cols2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); margin-top: var(--space-6);">
@@ -18735,7 +18740,7 @@ window.__resources = {
                 <button type="button" onClick="{{ b.send }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 10px 20px; font: var(--type-body-sm); font-weight: 700;">{{ b.navn }}</button>
               </sc-for>
               <label style="display: flex; align-items: center; gap: 8px; font-size: var(--text-xs); color: var(--text-muted);">Administrasjonsgebyr
-                <input type="text" inputmode="decimal" value="{{ hlaGebyr }}" onChange="{{ hlaGebyrEndre }}" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);"> %
+                <input type="text" inputmode="decimal" value="{{ hlaGebyr }}" onChange="{{ hlaGebyrEndre }}" aria-label="Administrasjonsgebyr i prosent" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);"> %
               </label>
             </div>
           </div>
@@ -18755,6 +18760,15 @@ window.__resources = {
                 </sc-for>
               </div>
             </sc-for>
+            <!-- En ny leverandoer: navn og adresse, «Legg til». -->
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
+              <input type="text" value="{{ hlaNyNavn }}" onChange="{{ hlaNyNavnEndre }}" placeholder="Ny leverandør" aria-label="Navn på ny leverandør" style="flex: 1; min-width: 140px; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 7px 11px; font: var(--type-body-sm); color: var(--text-heading);">
+              <input type="email" value="{{ hlaNyEpost }}" onChange="{{ hlaNyEpostEndre }}" placeholder="ordre@leverandoren.no" aria-label="E-post til ny leverandør" style="flex: 2; min-width: 200px; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 7px 11px; font: var(--type-body-sm); color: var(--text-heading);">
+              <button type="button" onClick="{{ hlaNyLeggTil }}" style="{{ hlaLagreStil }}">Legg til</button>
+            </div>
+            <div style="display: flex; justify-content: flex-end; padding-top: var(--space-2);">
+              <button type="button" onClick="{{ hlaLagreOppsett }}" style="{{ hlaLagreStil }}">Lagre</button>
+            </div>
           </div>
         </div>
         </sc-if>
@@ -29299,7 +29313,7 @@ class Component extends DCLogic {
 
   /** Ett kall, ett svar, hele bildet tilbake. Som medlemmets side. */
   hlaKall(kropp) {
-    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvittering: 'Krever den ekte siden' }); return; }
+    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: '', kvittering: 'Krever den ekte siden' }); return; }
     if (this._hlaSender) return;
     this._hlaSender = true;
     fetch('/api/admin/handlelister.php', {
@@ -29310,7 +29324,7 @@ class Component extends DCLogic {
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
       .then(({ ok, d }) => {
         this._hlaSender = false;
-        if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
+        if (!ok) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: '', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         const ny = { hla: d };
         // Kravet og bestillingen sier fra hva som faktisk skjedde. Et krav
         // som ikke gikk gjennom skal ikke se ut som om det gikk.
@@ -29318,19 +29332,72 @@ class Component extends DCLogic {
           const sendt = (d.sendt || []).length;
           const feilet = d.feilet || [];
           ny.kvitteringTone = feilet.length > 0 ? 'danger' : 'success';
+          ny.kvitteringDetalj = '';
           ny.kvittering = feilet.length > 0
             ? feilet.join(' ')
             : (sendt === 0 ? 'Ingen krav å sende.' : 'Kravet er sendt til ' + sendt + (sendt === 1 ? ' medlem.' : ' medlemmer.'));
         }
         if (kropp.handling === 'bestill') {
           ny.kvitteringTone = 'success';
+          ny.kvitteringDetalj = '';
           ny.kvittering = 'Bestilling ' + (d.bestilling || '') + ' er sendt til ' + (d.til || 'leverandøren') + '.';
         }
         this.setState(ny);
       })
       .catch(() => {
         this._hlaSender = false;
-        this.setState({ kvitteringTone: 'danger', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+        this.setState({ kvitteringTone: 'danger', kvitteringDetalj: '', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
+  /**
+   * Det som er skrevet i feltene, men ikke lagret ennaa.
+   *
+   * Feltene sendte til serveren ved hvert tastetrykk, uten knapp og uten
+   * bekreftelse — og mens ett tegn var paa vei, ble de neste kastet og
+   * feltet skrevet over av svaret. Eieren, 15. september 2026: «naar jeg
+   * endrer inne paa admin handlelister, saa er det ingen lagre knapp?»
+   * Naa: feltene beholder det som skrives, «Lagre» sender, «Lagret» svarer
+   * — som resten av admin.
+   */
+  hlaUtkast() {
+    return this.state.hlaUtkast || { pris: {}, epost: {}, gebyr: null, nyNavn: '', nyEpost: '' };
+  }
+
+  hlaSkriv(del, nokkel, verdi) {
+    const u = this.hlaUtkast();
+    const ny = { ...u };
+    if (nokkel === null) ny[del] = verdi;
+    else ny[del] = { ...u[del], [nokkel]: verdi };
+    this.setState({ hlaUtkast: ny });
+  }
+
+  /**
+   * Sender endringene ett kall om gangen — API-et tar én pris per kall —
+   * og viser bildet fra det siste svaret. Feiler ett, stopper vi der og
+   * sier hva som gikk galt; det som alt er sendt, er lagret.
+   */
+  hlaLagre(kall, etterpaa) {
+    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: 'Krever den ekte siden' }); return; }
+    if (this._hlaSender || kall.length === 0) return;
+    this._hlaSender = true;
+    const send = (kropp) => fetch('/api/admin/handlelister.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    }).then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })));
+    kall.reduce((p, kropp) => p.then(forrige => {
+      if (forrige && !forrige.ok) return forrige;
+      return send(kropp);
+    }), Promise.resolve(null))
+      .then(svar => {
+        this._hlaSender = false;
+        if (!svar.ok) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: svar.d.feil || 'Fikk ikke lagret. Prøv igjen om litt.' }); return; }
+        this.setState({ hla: svar.d, ...etterpaa(svar.d) });
+      })
+      .catch(() => {
+        this._hlaSender = false;
+        this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
       });
   }
 
@@ -29341,6 +29408,24 @@ class Component extends DCLogic {
     const lev = d.leverandorer || [];
     const valgt = this.state.hlaLev || '';
     const gebyr = d.gebyr === undefined ? 5 : d.gebyr;
+    const u = this.hlaUtkast();
+    const lagrePille = {
+      appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+      border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)',
+      borderRadius: 'var(--radius-pill)', padding: '10px 20px', font: 'var(--type-body-sm)', fontWeight: 700,
+    };
+    // Prisene som er endret — bare de sendes.
+    const prisKall = varer
+      .filter(v => u.pris[v.produktId] !== undefined && u.pris[v.produktId] !== (v.pris || ''))
+      .map(v => ({ handling: 'pris', produktId: v.produktId, kroner: u.pris[v.produktId] }));
+    // Gebyret og leverandoerenes adresser.
+    const gebyrTekst = String(gebyr).replace('.', ',');
+    const oppsettKall = []
+      .concat(u.gebyr !== null && u.gebyr !== gebyrTekst ? [{ handling: 'gebyr', prosent: u.gebyr }] : [])
+      .concat(lev
+        .filter(l => u.epost[l.id] !== undefined && u.epost[l.id] !== (l.epost || ''))
+        .map(l => ({ handling: 'leverandor', id: l.id, epost: u.epost[l.id], bestillingsmaate: l.maate })));
+    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, gebyr: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
 
     const pille = (aktiv) => ({
       appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -29361,6 +29446,7 @@ class Component extends DCLogic {
         antallMedlemmer + (antallMedlemmer === 1 ? ' medlem · ' : ' medlemmer · ')
         + varer.length + (varer.length === 1 ? ' varelinje' : ' varelinjer'),
       hlaTom: varer.length === 0,
+      hlaHarVarer: varer.length > 0,
       hlaLevFiltre: [{ navn: 'Alle leverandører', verdi: '' }]
         .concat(lev.map(l => ({ navn: l.navn, verdi: l.navn })))
         .map(f => ({
@@ -29374,7 +29460,6 @@ class Component extends DCLogic {
         hvem: v.fjernet ? 'Tatt bort — ikke på lager hos leverandøren' : v.hvem,
         leverandor: v.leverandor || '',
         antall: v.antall,
-        pris: v.pris || '',
         sum: v.sum,
         // Den som er tatt bort staar bleket, slik at den fortsatt er
         // synlig — admin skal kunne angre uten aa lete.
@@ -29383,7 +29468,8 @@ class Component extends DCLogic {
           borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-3) 0',
           minWidth: '640px', opacity: v.fjernet ? 0.45 : 1,
         },
-        prisEndre: (e) => this.hlaKall({ handling: 'pris', produktId: v.produktId, kroner: e.target.value }),
+        pris: u.pris[v.produktId] !== undefined ? u.pris[v.produktId] : (v.pris || ''),
+        prisEndre: (e) => this.hlaSkriv('pris', v.produktId, e.target.value),
         vekk: () => this.hlaKall({ handling: v.fjernet ? 'angre' : 'fjern', produktId: v.produktId }),
         vekkTegn: v.fjernet ? '↺' : '✕',
         vekkTittel: v.fjernet ? 'Legg tilbake' : 'Ikke på lager',
@@ -29401,12 +29487,28 @@ class Component extends DCLogic {
         navn: 'Bestill hos ' + l.navn,
         send: () => this.hlaKall({ handling: 'bestill', leverandorId: l.id }),
       })),
-      hlaGebyr: String(gebyr).replace('.', ','),
-      hlaGebyrEndre: (e) => this.hlaKall({ handling: 'gebyr', prosent: e.target.value }),
+      hlaGebyr: u.gebyr !== null ? u.gebyr : gebyrTekst,
+      hlaGebyrEndre: (e) => this.hlaSkriv('gebyr', null, e.target.value),
+      // «Lagre» under prisene og under oppsettet. Knappen staar alltid;
+      // er ingenting endret, sier den «Lagret» uten aa sende noe.
+      hlaLagrePriser: () => (prisKall.length ? this.hlaLagre(prisKall, lagret) : this.setState({ kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' })),
+      hlaLagreOppsett: () => (oppsettKall.length ? this.hlaLagre(oppsettKall, lagret) : this.setState({ kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' })),
+      hlaLagreStil: lagrePille,
+      // Ny leverandoer — eieren, 15. september 2026: «jeg vil også kunne
+      // legge til Scan-Form info@scan-form.no».
+      hlaNyNavn: u.nyNavn,
+      hlaNyNavnEndre: (e) => this.hlaSkriv('nyNavn', null, e.target.value),
+      hlaNyEpost: u.nyEpost,
+      hlaNyEpostEndre: (e) => this.hlaSkriv('nyEpost', null, e.target.value),
+      hlaNyLeggTil: () => {
+        if (!u.nyNavn.trim()) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: 'Leverandøren må ha et navn.' }); return; }
+        this.hlaLagre([{ handling: 'nyleverandor', navn: u.nyNavn.trim(), epost: u.nyEpost.trim() }],
+          (d2) => ({ hlaUtkast: { ...this.hlaUtkast(), nyNavn: '', nyEpost: '' }, kvitteringTone: 'success', kvitteringDetalj: 'Du finner den under Leverandører.', kvittering: (d2.lagtTil || 'Leverandøren') + ' er lagt til.' }));
+      },
       hlaLeverandorer: lev.map(l => ({
         navn: l.navn,
-        epost: l.epost || '',
-        epostEndre: (e) => this.hlaKall({ handling: 'leverandor', id: l.id, epost: e.target.value, bestillingsmaate: l.maate }),
+        epost: u.epost[l.id] !== undefined ? u.epost[l.id] : (l.epost || ''),
+        epostEndre: (e) => this.hlaSkriv('epost', l.id, e.target.value),
         maater: [
           { navn: 'E-post', verdi: 'epost' },
           { navn: 'API — ikke tilgjengelig ennå', verdi: 'api' },

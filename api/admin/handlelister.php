@@ -9,6 +9,7 @@
  *   POST handling=krav           ett Vipps-krav per medlem
  *   POST handling=bestill        { leverandorId }          e-post til leverandoren
  *   POST handling=leverandor     { id, epost, bestillingsmaate }
+ *   POST handling=nyleverandor   { navn, epost }             ny leverandoer
  *   POST handling=gebyr          { prosent }
  *
  * Eieren, 13. september 2026: «listen som oversendes admin maa slaas sammen
@@ -261,6 +262,30 @@ if ($handling === 'leverandor') {
     $maate = Foresporsel::tekst('bestillingsmaate') === 'api' ? 'api' : 'epost';
     DB::oppdater('leverandorer', ['epost' => $epost, 'bestillingsmaate' => $maate], ['id' => $id]);
     Svar::ok(handleliste_bilde());
+}
+
+// En ny leverandoer. Eieren, 15. september 2026: «jeg vil også kunne legge
+// til Scan-Form info@scan-form.no». Navnet er unikt (uq_leverandor_navn);
+// finnes det fra foer — ogsaa som deaktivert — vekkes raden i stedet for aa
+// feile, og adressen settes om den er oppgitt.
+if ($handling === 'nyleverandor') {
+    $navn = mb_substr(trim(Foresporsel::tekst('navn')), 0, 191);
+    if ($navn === '') {
+        Svar::feil('Leverandøren må ha et navn.');
+    }
+    $epost = mb_substr(trim(Foresporsel::tekst('epost')), 0, 191);
+    if ($epost !== '' && !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Det er ikke en gyldig e-postadresse.');
+    }
+    $rad = DB::en('SELECT id, epost FROM leverandorer WHERE navn = :n', ['n' => $navn]);
+    if ($rad !== null) {
+        DB::oppdater('leverandorer', ['aktiv' => 1, 'epost' => $epost !== '' ? $epost : (string) $rad['epost']], ['id' => (int) $rad['id']]);
+        $id = (int) $rad['id'];
+    } else {
+        $id = DB::settInn('leverandorer', ['navn' => $navn, 'epost' => $epost, 'bestillingsmaate' => 'epost', 'aktiv' => 1]);
+    }
+    revider('leverandor_ny', 'leverandor', $id, ['navn' => $navn]);
+    Svar::ok(handleliste_bilde() + ['lagtTil' => $navn]);
 }
 
 // ----------------------------------------------------------------- kravet

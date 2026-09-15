@@ -73,7 +73,7 @@ foreach ($bilder as $i => $b) {
 }
 $h .= '</div>';
 // Hero-bildet er LCP paa denne sida; si fra i hodet.
-$hode = '<link rel="preload" as="image" href="' . $e($bilder[0]) . '">' . "\n";
+$hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($bilder[0]) . '">' . "\n";
 
 $nivaa = (string) ($kat['nivaaTekst'] ?: $kort['level']);
 $h .= '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-8) 0 var(--space-3);">' . $e($nivaa) . '</div>'

@@ -44,7 +44,7 @@ $hode = '';
 foreach ($planer as $i => $p) {
     if ($i === 0) {
         $ss = Nett::srcset($p['bilde']);
-        $hode = '<link rel="preload" as="image" href="' . $e($p['bilde']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
+        $hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($p['bilde']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
     }
     $h .= Deler::kurskort(['level' => $p['merke'], 'title' => $p['navn'], 'text' => $p['beskrivelse'], 'price' => $p['pris'], 'duration' => $p['periode'], 'image' => $p['bilde'], 'cta' => 'Les mer', 'href' => '/medlemskap?plan=' . rawurlencode($p['navn']), 'eager' => $i === 0]);
 }

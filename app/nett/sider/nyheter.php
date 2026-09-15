@@ -90,7 +90,7 @@ if ($lest !== null) {
         . '<div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6);">' . $e($dato($lest)) . '</div>';
     if ($bilde !== '') {
         $ss = Nett::srcset($bilde);
-        $hode = '<link rel="preload" as="image" href="' . $e($bilde) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_STOR . '"' : '') . '>' . "\n";
+        $hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($bilde) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_STOR . '"' : '') . '>' . "\n";
         $h .= '<figure style="margin: 0 0 var(--space-8);"><img src="' . $e($bilde) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_STOR . '"' : '') . ' alt="' . $e($bildeAlt) . '" style="width: 100%; max-height: 460px; object-fit: cover; object-position: ' . $e(Nett::fokus($bilde)) . '; border-radius: var(--radius-lg); display: block;" decoding="async">'
             . ($bildeTekst !== '' ? '<figcaption style="margin: 10px 0 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-muted); text-wrap: pretty;">' . $e($bildeTekst) . '</figcaption>' : '')
             . '</figure>';

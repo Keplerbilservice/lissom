@@ -112,7 +112,7 @@ $hode = '';
 foreach ($vist as $i => $k) {
     if ($i === 0 && $k['image'] !== '') {
         $ss = Nett::srcset($k['image']);
-        $hode = '<link rel="preload" as="image" href="' . $e($k['image']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
+        $hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($k['image']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
     }
     $h .= Deler::kurskort($k + ['eager' => $i === 0]);
 }

@@ -1663,8 +1663,11 @@ function CourseCard({
       textOverflow: 'ellipsis'
     }
   }, title), /*#__PURE__*/React.createElement("div", {
+    // Uten datoer staar kortteksten her (tre linjer). Lokal endring 15.
+    // september 2026 — se CLAUDE.md om ds-bundle.js.
     style: {
-      height: 40,
+      minHeight: 40,
+      height: meta.length || !text ? 40 : 'auto',
       overflow: 'hidden'
     }
   }, meta.length ? /*#__PURE__*/React.createElement("div", {
@@ -1702,7 +1705,7 @@ function CourseCard({
       lineHeight: 1.4,
       color: 'var(--text-muted)',
       display: '-webkit-box',
-      WebkitLineClamp: 2,
+      WebkitLineClamp: 3,
       WebkitBoxOrient: 'vertical',
       overflow: 'hidden',
       textWrap: 'pretty'

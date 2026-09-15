@@ -89,13 +89,15 @@ de ble sagt i.
 
 ## Genererte filer
 
-- `ds-bundle.js` er eksportert fra Claude Design, men har tre lokale
+- `ds-bundle.js` er eksportert fra Claude Design, men har fire lokale
   endringer som må legges inn igjen etter en ny eksport (og `.min.js`
   lages på nytt): `srcset` i `Media` (bildestørrelser), `imageAlt` på
   `CourseCard` (alt-tekst på kursbildet, migrasjon 165; eieren valgte
   dette 11. september 2026 framfor å la kortene beholde kursnavnet som
-  alt), og `useLayoutEffect` i `NavBar` som måler hodets høyde før første
-  tegning (14. september 2026: fjernet CLS 0,083 på forsida).
+  alt), `useLayoutEffect` i `NavBar` som måler hodets høyde før første
+  tegning (14. september 2026: fjernet CLS 0,083 på forsida), og
+  tekstfeltet i `CourseCard` som får tre linjer når kortet ikke har datoer
+  (15. september 2026: kortbeskrivelsen på Date Night og Paint on Pots).
 - `support.js` (dc-runtime) har én lokal endring som må legges inn igjen
   etter en ny eksport: `walkIf` kompilerer barna først når betingelsen er
   sann (lat kompilering av skjermene). Målt 14. september 2026: ~110 ms

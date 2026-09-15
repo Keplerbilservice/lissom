@@ -44,6 +44,7 @@ final class Nett
         '/kurs'   => 'kurs',
         '/events' => 'kurs',
         '/nyheter' => 'nyheter',
+        '/nyttig-info' => 'nyttig',
     ];
 
     /** Adressen som tegnes naa — for maler som tegner flere adresser. */

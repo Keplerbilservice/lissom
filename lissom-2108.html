@@ -1708,6 +1708,9 @@ window.__resources = {
   .lx-bryterhoyre label { flex-direction: row-reverse; }
 
   .lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }
+  /* ← Tilbake ligger nederst til venstre; over bunnmenyen naar den vises. */
+  .lx-tilbake { bottom: 16px; }
+  html.lx-laast .lx-tilbake { bottom: 78px; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og
        dytter menyen ut av skjermen. */
@@ -23126,6 +23129,18 @@ window.__resources = {
   </div>
 </sc-if>
 
+<!-- ← Tilbake, overalt. Eieren, 15. september 2026: «Naar jeg klikker inn
+     paa en side, saa maa det alltid vaere en tilbakeknapp som tar meg et
+     steg tilbake ... gjelder globalt». Ett steg i nettleserhistorikken —
+     samme steg som telefonens tilbakeknapp, saa et aapent lag lukkes
+     foerst, deretter skjermen. Kom man rett inn paa sida (ingen historikk
+     her), gaar den til forsida, Min side eller kalenderen. Ikke paa
+     forsida — der er det ingenting aa gaa tilbake til. Ligger over
+     bunnmenyene (html.lx-laast, se skriptet oeverst). -->
+<sc-if value="{{ tilbakeVis }}" hint-placeholder-val="{{ false }}">
+  <button type="button" class="lx-tilbake" onClick="{{ tilbakeGaa }}" aria-label="Tilbake" style="{{ tilbakeStil }}">← Tilbake</button>
+</sc-if>
+
 <!-- «Er du sikker?» foer innstempling. Eieren, 15. september 2026: «man
      maa faa spoersmaal, er du sikker, samme opplegg naar man stempler ut».
      Utstempling har ruta over; dette er den samme for inn — og for dugnad
@@ -25672,6 +25687,7 @@ class Component extends DCLogic {
     this._lagStabel = [];
     if (this._lagTeller === undefined) this._lagTeller = 0;
     history.pushState({ side: this.state.side, idx: ++this._lagTeller }, '', sti + window.location.search);
+    this._dybde = this._lagTeller;
   }
 
   // ── Tilbakeknappen lukker ett lag om gangen ──────────────────────────
@@ -25785,6 +25801,7 @@ class Component extends DCLogic {
       stabel.push(steg);
       try {
         history.pushState(steg, '', window.location.pathname + window.location.search + window.location.hash);
+        this._dybde = steg.idx;
       } catch (e) { stabel.pop(); }
     }
   }
@@ -32114,6 +32131,8 @@ class Component extends DCLogic {
       this.folgRute(rute);
     }
     this._popstate = (e) => {
+      // Hvor dypt vi staar naa — se tilbakeVals().
+      this._dybde = (e && e.state && e.state.idx) || 0;
       // Lagene foerst: landet vi paa et lag-steg, er det bare laget som
       // endrer seg — ikke skjermen. Se lagPopstate().
       if (this.lagPopstate(e)) return;
@@ -33658,6 +33677,34 @@ class Component extends DCLogic {
     // spoersmaal, er du sikker».
     if (inne) { this.setState({ utstApen: true }); return; }
     this.setState({ innstRute: 'inn', innstRessurs: valgt || 0 });
+  }
+
+  /**
+   * ← Tilbake. Dybden er loepenummeret paa historikksteget vi staar paa
+   * (_lagTeller ved siste pushState, e.state.idx ved popstate) — null naar
+   * vi staar der sida ble aapnet. Da finnes det ingenting bak oss i denne
+   * fanen, og knappen gaar til et sted som gir mening i stedet.
+   */
+  tilbakeVals() {
+    const side = this.state.side;
+    const dybde = this._dybde || 0;
+    const admin = this.erAdminSkjerm(side);
+    const medlem = side === 'minside' || side === 'stemple';
+    return {
+      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminkalender',
+      tilbakeGaa: () => {
+        if (dybde > 0) { history.back(); return; }
+        if (admin) { this.gaaAdmin('adminkalender', {}); return; }
+        this.setState({ side: medlem ? 'forside' : 'forside', fhRolle: '', fhFra: '' });
+        window.scrollTo(0, 0);
+      },
+      tilbakeStil: {
+        position: 'fixed', left: 14, zIndex: 530, appearance: 'none', cursor: 'pointer',
+        border: '1px solid rgba(244,235,222,.35)', borderRadius: 999, padding: '10px 16px',
+        font: 'var(--type-body-sm)', fontWeight: 700, background: 'var(--lissom-brown)', color: 'var(--clay-50)',
+        boxShadow: '0 6px 18px rgba(46,16,2,.28)',
+      },
+    };
   }
 
   /** Ruta «Stemple inn naa?» — og de to for dugnad. Én rute, tre tilstander. */
@@ -53198,6 +53245,7 @@ class Component extends DCLogic {
       ...this.innstRute(),
       ...this.dugnadVals(),
       ...this.barnVals(),
+      ...this.tilbakeVals(),
       // Linjene under timestolpen: planen, dugnad og gave — bare naar det
       // finnes noe ut over planen.
       ...(() => {

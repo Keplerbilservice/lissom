@@ -18412,6 +18412,37 @@ sjekk('… og feltene staar i malregisteret',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'fornavn' => 'Fornavnet til deltakeren',")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'naar'    => 'Dagen og klokkeslettet."));
 
+// ── Medlemstallet, og lukkeknappen i ⊙ Synlighet ─────────────────
+//
+// Eieren, 15. september 2026: «medlemmer paa oversikt viser 6 medlemmer,
+// medlemmer paa kalender viser 7 medlemmer??????» — og «jeg vil ikke at admin
+// skal telles som medlem».
+//
+// Pilla paa kalenderen talte alle med medlemskap, admin med. Kortet paa
+// Oversikt teller de samme radene uten admin. Én som er admin har ogsaa
+// medlemskap, og da svarte de to skjermene hver sitt.
+//
+// Maalt i nettleseren, med én admin som ogsaa har status «aktiv»: begge
+// skjermene sier det samme tallet.
+
+$mt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('medlemstallet regnes ett sted, og admin teller ikke',
+    // Pilla paa kalenderen.
+    str_contains($mt, "{ navn: 'Medlemmer', verdi: String(this.medlemsrader()\n                    .filter(x => x.erMedlem && !x.erAdmin).length || ''),")
+    // Kortet paa Oversikt — samme uttrykk, uendret.
+    && str_contains($mt, ".filter(x => x.erMedlem && !x.erAdmin);")
+    // Og ingen teller statusene sine egne steder lenger.
+    && !str_contains($mt, ".filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length"));
+
+// Eieren, 15. september 2026: «denne mangler lukke knapp». Arket lukket seg
+// bare ved trykk paa det moerke utenfor, og med fjorten rader er det ikke
+// alltid noe moerkt aa treffe paa en telefon.
+sjekk('⊙ Synlighet har en lukkeknapp',
+    str_contains($mt, '<button type="button" onClick="{{ synLukk }}" aria-label="Lukk"'));
+// Veien ut som fantes fra for skal fortsatt virke.
+sjekk('… og trykk utenfor lukker fortsatt',
+    str_contains($mt, '<div onClick="{{ synLukk }}" style="position: fixed; inset: 0;'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

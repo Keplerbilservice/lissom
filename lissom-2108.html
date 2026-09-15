@@ -23226,7 +23226,14 @@ window.__resources = {
 <sc-if value="{{ synVises }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ synLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ synStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
-      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Synlighet</div>
+      <!-- Lukkeknapp. Eieren, 15. september 2026: «denne mangler lukke
+           knapp». Arket lukket seg bare ved trykk paa det moerke utenfor —
+           og med tretten rader er det ikke alltid noe moerkt aa treffe paa
+           en telefon. Samme runde knapp som de andre arkene bruker. -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5);">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Synlighet</div>
+        <button type="button" onClick="{{ synLukk }}" aria-label="Lukk" style="appearance: none; background: var(--clay-100); border: none; border-radius: 999px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; line-height: 1; color: var(--text-heading); flex: none;">×</button>
+      </div>
       <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">På nettsiden</div>
       <sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 11px 0; border-bottom: 1px solid var(--border-subtle);">
@@ -41548,10 +41555,14 @@ class Component extends DCLogic {
       // det samme som staar paa kortene under «Kurs og deltakere».
       klGaMedlemmer: () => this.gaaAdmin('adminmedlem',
                                          { medlemFilter: 'Aktive medlemmer', medlemSok: '' }),
-      klMedlemmerAntall: String((this.state.adminMedlemmer || [])
-        .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length),
-      klMedlemmerHar: (this.state.adminMedlemmer || [])
-        .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length > 0,
+      // Samme uttrykk som kortet paa Oversikt og pilla under. Admin teller
+      // ikke — eieren, 15. september 2026: «jeg vil ikke at admin skal telles
+      // som medlem». Sto det tre steder med hver sin regel, svarte skjermene
+      // hver sitt tall.
+      klMedlemmerAntall: String(this.medlemsrader()
+        .filter(x => x.erMedlem && !x.erAdmin).length),
+      klMedlemmerHar: this.medlemsrader()
+        .filter(x => x.erMedlem && !x.erAdmin).length > 0,
       klGaPameldte: () => this.gaaAdmin('adminpameldte', {}),
       klPameldteAntall: String((this.state.adminDeltakere || []).length),
       klPameldteHar: (this.state.adminDeltakere || []).length > 0,
@@ -46850,7 +46861,9 @@ class Component extends DCLogic {
         }
 
         const medlemmer = this.state.adminMedlemmer || [];
-        const aktive = medlemmer.filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length;
+        // Samme uttrykk som de andre stedene medlemmer telles. Admin teller
+        // ikke — eieren, 15. september 2026.
+        const aktive = this.medlemsrader().filter(x => x.erMedlem && !x.erAdmin).length;
         const soknader = (this.state.adminSoknader || []).length;
         const venterSalg = this.galleriListe().filter(g => g.status === 'venter').length;
 
@@ -51448,8 +51461,18 @@ class Component extends DCLogic {
                   velg: () => this.gaaAdmin('adminbutikk', { butikkFane: 'Handlelister' }) },
                 // Eieren, 15. september 2026: «paa kalender — maa ha pille med
                 // medlemmer». Tallet er aktive medlemmer (aktiv, proeve, pause).
-                { navn: 'Medlemmer', verdi: String((this.state.adminMedlemmer || [])
-                    .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length || ''),
+                // Eieren, 15. september 2026: «medlemmer paa oversikt viser 6
+                // medlemmer, medlemmer paa kalender viser 7 medlemmer??????»
+                //
+                // Pilla talte alle med medlemskap — admin med. Kortet paa
+                // Oversikt teller de samme radene UTEN admin, og har gjort
+                // det hele tiden: «ikke admin, og ikke de som bare har vaert
+                // paa kurs». Én av dem som er admin har ogsaa medlemskap, og
+                // da svarte de to skjermene hver sitt.
+                //
+                // Naa er det ett uttrykk som gjelder begge steder.
+                { navn: 'Medlemmer', verdi: String(this.medlemsrader()
+                    .filter(x => x.erMedlem && !x.erAdmin).length || ''),
                   velg: () => this.gaaAdmin('adminmedlem', {}) },
               ].map(x => Object.assign({}, x, {
                 harVerdi: !!x.verdi,

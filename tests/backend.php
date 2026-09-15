@@ -17993,7 +17993,7 @@ sjekk('Kalender: «Send beskjed» ved siden av Chat gaar til Medlemmer → Beskj
 // kort blant de andre som aapner arket — radene staar bare i arket.
 sjekk('… synlighetskortet paa kalenderen er lukket, og aapner arket',
     substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 1
-    && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="6">') === 1
+    && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="5">') === 1
     && str_contains($mkSida, "kort('Synlighet', ")
     && str_contains($mkSida, "() => this.setState({ synlighetApen: true }));"));
 sjekk('… ventelista: navnet staar helt ut, kurset kuttes, «Hele kurset · #1» er borte',

@@ -226,7 +226,10 @@ final class Deler
         if ($bilde !== '') {
             $ss = Nett::srcset($bilde);
             $h .= '<img src="' . $e($bilde) . '"' . ($ss !== '' ? ' srcset="' . $e($ss) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
-                . ' alt="' . $e((string) ($k['imageAlt'] ?? '') !== '' ? (string) $k['imageAlt'] : (string) $k['title']) . '" loading="lazy" decoding="async"'
+                . ' alt="' . $e((string) ($k['imageAlt'] ?? '') !== '' ? (string) $k['imageAlt'] : (string) $k['title']) . '"'
+                // Det foerste kortet paa sida er gjerne det stoerste som tegnes
+                // (LCP): det hentes med en gang; resten venter til de trengs.
+                . (!empty($k['eager']) ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
                 . ' style="width: 100%; aspect-ratio: 16 / 10; height: auto; object-fit: cover; display: block;">';
         } else {
             $h .= '<div style="aspect-ratio: 16 / 10; background: var(--clay-200); display: grid; place-items: center; color: var(--clay-400); font-family: var(--font-sans); font-weight: 700; font-size: 11px; letter-spacing: var(--tracking-micro);">FOTO</div>';

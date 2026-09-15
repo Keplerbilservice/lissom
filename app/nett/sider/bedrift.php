@@ -38,4 +38,6 @@ return [
     // Foresporselsskjemaet er en rute i appen: knappen aapner den der.
     'kropp' => Mal::tegn('Bedrift og event', ['bedriftTilbud' => $tilbud, 'beReferanser' => $kunder, 'beHarReferanser' => $kunder !== [], 'sant' => true], ['bedriftTilSkjema' => '/bedrift?skjema=1']) . "\n" . Deler::bunn(true),
     'aktiv' => '',
+    // Det foerste tilbudskortets bilde er LCP paa sida.
+    'hode'  => '<link rel="preload" as="image" href="uploads_workshop4.jpg">' . "\n",
 ];

@@ -40,8 +40,13 @@ $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var
     . '<h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">' . $e($innh('Medlemskap/0/Overskrift')) . '</h1>'
     . '<p style="margin: 0; color: var(--text-body); font-size: var(--text-lg); max-width: 54ch; text-wrap: pretty;">' . $e($innh('Medlemskap/0/Ingress')) . '</p></div></section>' . "\n";
 $h .= '<section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);"><div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8); align-items: stretch;">';
-foreach ($planer as $p) {
-    $h .= Deler::kurskort(['level' => $p['merke'], 'title' => $p['navn'], 'text' => $p['beskrivelse'], 'price' => $p['pris'], 'duration' => $p['periode'], 'image' => $p['bilde'], 'cta' => 'Les mer', 'href' => '/medlemskap?plan=' . rawurlencode($p['navn'])]);
+$hode = '';
+foreach ($planer as $i => $p) {
+    if ($i === 0) {
+        $ss = Nett::srcset($p['bilde']);
+        $hode = '<link rel="preload" as="image" href="' . $e($p['bilde']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
+    }
+    $h .= Deler::kurskort(['level' => $p['merke'], 'title' => $p['navn'], 'text' => $p['beskrivelse'], 'price' => $p['pris'], 'duration' => $p['periode'], 'image' => $p['bilde'], 'cta' => 'Les mer', 'href' => '/medlemskap?plan=' . rawurlencode($p['navn']), 'eager' => $i === 0]);
 }
 $h .= '</div></section>' . "\n";
 
@@ -112,4 +117,4 @@ $h .= '</div></section>' . "\n";
 $h .= '</div>' . "\n";
 $h .= Deler::bunn(true);
 
-return ['kropp' => $h, 'aktiv' => 'Medlemskap'];
+return ['kropp' => $h, 'aktiv' => 'Medlemskap', 'hode' => $hode];

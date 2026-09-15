@@ -37,4 +37,6 @@ return [
         'popSteg' => $steg, 'popFaq' => $faq, 'sant' => true,
     ], ['goEvents' => '/events', 'goForesporsel' => '/kontakt', 'popTilDatoer' => $popHref, 'book' => $popHref]) . "\n" . Deler::bunn(true),
     'aktiv' => 'Events',
+    // Bildet oeverst er LCP paa sida — samme srcset som i malen.
+    'hode'  => '<link rel="preload" as="image" href="uploads_shutterstock_2830576853.jpg" imagesrcset="uploads_shutterstock_2830576853-400.jpg 400w, uploads_shutterstock_2830576853-800.jpg 800w, uploads_shutterstock_2830576853.jpg 1024w" imagesizes="(max-width: 760px) 100vw, 700px">' . "\n",
 ];

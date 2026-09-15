@@ -108,8 +108,13 @@ $h .= '</div></section>' . "\n";
 // Kortene.
 $h .= '<section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">'
     . '<div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">';
-foreach ($vist as $k) {
-    $h .= Deler::kurskort($k);
+$hode = '';
+foreach ($vist as $i => $k) {
+    if ($i === 0 && $k['image'] !== '') {
+        $ss = Nett::srcset($k['image']);
+        $hode = '<link rel="preload" as="image" href="' . $e($k['image']) . '"' . ($ss !== '' ? ' imagesrcset="' . $e($ss) . '" imagesizes="' . Nett::SIZES_KORT . '"' : '') . '>' . "\n";
+    }
+    $h .= Deler::kurskort($k + ['eager' => $i === 0]);
 }
 $h .= '</div></section>' . "\n";
 
@@ -179,4 +184,5 @@ $h .= Deler::bunn(true);
 return [
     'kropp' => $h,
     'aktiv' => $valgt === 'Events' ? 'Events' : 'Kurs',
+    'hode'  => $hode,
 ];

@@ -29,10 +29,14 @@ foreach (Kort::kurs() as $k) {
         'knapp'     => (string) ($k['cta'] ?? 'Book plass'),
         'href'      => $k['href'],
         'altTekst'  => $k['title'] . ' hos Lissom i Tønsberg',
+        'bildeSti'  => $k['image'],
         'bildeStil' => 'width: 100%; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); background-color: var(--clay-200); background-image: ' . ($k['image'] !== '' ? Nett::cssUrl($k['image']) : 'none') . '; background-size: cover; background-position: ' . Nett::fokus($k['image']) . ';',
     ];
 }
+$forste = $ko[0] ?? null;
 return [
     'kropp' => Mal::tegn('Kursene våre', ['koKurs' => $ko, 'koTomt' => $ko === [], 'sant' => true], ['goKurs' => '/kurs', 'goKalender' => '/kalender']) . "\n" . Deler::bunn(true),
     'aktiv' => 'Kurs',
+    // Det foerste kursbildet er det stoerste paa sida (LCP).
+    'hode'  => $forste !== null && $forste['bildeSti'] !== '' ? '<link rel="preload" as="image" href="' . Nett::e($forste['bildeSti']) . '">' . "\n" : '',
 ];

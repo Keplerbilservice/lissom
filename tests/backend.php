@@ -10298,7 +10298,7 @@ sjekk('… mens kassa og Min side fortsatt staar paa noindex',
 // medlemmer», og etter trykket sto lista «IKKE BETALT · 6 ubetalte ·
 // kr. 14 560,- utestaaende» — samme sum.
 sjekk('«Ubetalt»-kortet gaar til Kassa, ikke til OEkonomi',
-    str_contains($sidaG, "                     () => this.gaaAdmin('adminuttak', {})),"));
+    str_contains($sidaG, "                     () => this.gaaAdmin('adminuttak', {}), 'ubetalt'),"));
 // Lista staar i Kassa, og regnestykket ett sted — se skylderKort().
 sjekk('… og lista den fører til staar der',
     str_contains($sidaG, 'value="{{ ovSkylderVis }}"')
@@ -11859,8 +11859,48 @@ $antSide = substr_count($uKode, '<aside class="lx-adminaside"');
 
 sjekk('verktoeypillene staar paa hver adminskjerm',
     $antTopp > 30 && $antTopp === $antSide);
-sjekk('… og de vises bare paa telefon',
-    str_contains($uKode, '.lx-admtopp { display: flex !important; }'));
+// ── … og fra 15. september staar de i menyen, ikke i stripa ─────────
+//
+// Eieren: «vi bør vel legge verktøy og log ut også inn i samme meny så det
+// blir en struktur på det hele». Raden i stripa er tom, og regelen som slo
+// den paa er tatt bort — den sto med «display: flex !important», som slaar
+// en innebygd stil.
+sjekk('… men raden i stripa er tom paa telefon',
+    str_contains($uKode, 'admToppEkstra: [],')
+    && !str_contains($uKode, '.lx-admtopp { display: flex !important; }')
+    && str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }'));
+sjekk('… og de to radene staar nederst i menyskuffen',
+    str_contains($uKode, 'const bunnrader = [gruppe(\'\', topp.map(v => ({')
+    && str_contains($uKode, 'admMobPunkter: punkter.concat([snarveiBolk]).concat(bunnrader),'));
+// Snarveiene er kort i dashboardet, men dashboardet finnes bare paa
+// kalenderen. I skuffen naar man dem fra alle de ti stedene.
+sjekk('snarveiene staar som en egen bolk i skuffen',
+    str_contains($uKode, "const snarveiBolk = gruppe('Snarveier', this.adminSnarveier().map(x => ({"));
+// Trykk i menyen teller like mye som trykk paa kortet — ellers ville
+// dashboardet ikke laere av det man faktisk bruker.
+sjekk('… og trykk der telles av dashboardet',
+    str_contains($uKode, 'velg: lukkOg(() => { this.kortBrukt(x.nokkel); x.velg(); }),'));
+// ── Én pilleform hele veien ──────────────────────────────────────────
+//
+// Eieren, 15. september 2026: «her maa vi ha samme type piller hele veien».
+// Skuffen hadde tre: brede kort til stedene, smaa piller til snarveiene og
+// en tredje bredde til verktoeyradene. Alt gaar naa gjennom ett uttrykk.
+sjekk('alt i menyskuffen er den samme pilla',
+    str_contains($uKode, 'const skuffPille = (valgt) => ({')
+    && !str_contains($uKode, 'const punktStil = (valgt) => ({')
+    && !str_contains($uKode, 'const underStil = (valgt) => ({'));
+// Samme maal som «Stemple inn» og «Ferie» i stripa rett over — det er den
+// pilla eieren pekte paa.
+sjekk('… i samme maal som Stemple inn og Ferie',
+    (bool) preg_match(
+        '/const skuffPille = \(valgt\) => \(\{.*?fontSize: 12, lineHeight: 1\.2, minHeight: 34, fontWeight: 700,/s',
+        $uKode));
+// Overskrifta er ikke en knapp. En rad som ser ut som en knapp og ikke gjoer
+// noe er verre enn ingen rad.
+$antBolk = substr_count($uKode, '<div style="{{ m.bolkStil }}">{{ m.navn }}</div>');
+sjekk('… og bolkoverskrifta tegnes som tekst, ikke som knapp',
+    $antBolk === $antSide
+    && !str_contains($uKode, 'style="{{ m.knappStil }}"'));
 // «Inne naa» sto mellom Ferie og denne raden fra 9. september 2026. Eieren
 // tok den ut 15. september; verktoeypillene skal fortsatt komme rett etter.
 sjekk('… og de staar rett under Stemple inn og Ferie',
@@ -15268,9 +15308,9 @@ sjekk('… og et nytt medlemskap starter uten avtaletrekk',
 // Fem fra 15. september 2026: «Ovnen» gikk ut. Eieren: «ovnen toemt fjern
 // fra dashboard, den staar allerede lenger opp» — ovnkortet med de tre
 // pillene staar rett over raden, og der kan man ogsaa trykke.
-sjekk('oversiktsrada har fem kort som svarer paa noe',
+sjekk('oversiktsrada har sju kort som svarer paa noe',
     str_contains($byttSida, '<sc-for list="{{ klOversiktKort }}" as="k"')
-    && substr_count($byttSida, "                kort('") === 5
+    && substr_count($byttSida, "                kort('") === 7
     && str_contains($byttSida, "                kort('I dag',")
     && str_contains($byttSida, "                kort('Venter på deg', String(venter), [")
     && str_contains($byttSida, "                kort('Ubetalt', kr(sum), [")
@@ -15304,9 +15344,9 @@ sjekk('… og notatet og paaminnelsene er borte',
 // «Venter paa deg». De fire som ikke har et menypunkt staar som piller.
 sjekk('… og de fire uten menypunkt staar som piller under',
     str_contains($byttSida, '<sc-for list="{{ klSnarveiPiller }}" as="s"')
-    && str_contains($byttSida, "                { navn: 'Chat',        velg: () => this.setState({ klChatVis: true }) },")
-    && str_contains($byttSida, "                { navn: 'Dagsrapport', velg: () => this.setState({ klRapVis: true }) },")
-    && str_contains($byttSida, "                { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },"));
+    && str_contains($byttSida, "                { navn: 'Chat', nokkel: 'chat', velg: () => this.setState({ klChatVis: true }) },")
+    && str_contains($byttSida, "                { navn: 'Dagsrapport', nokkel: 'dagsrapport', velg: () => this.setState({ klRapVis: true }) },")
+    && str_contains($byttSida, "                { navn: 'Årskalender', nokkel: 'arskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },"));
 sjekk('… og de to foerste gaar til skjermene som finnes',
     str_contains($byttSida, "klGaMedlemmer: () => this.gaaAdmin('adminmedlem',")
     && str_contains($byttSida, "klGaPameldte: () => this.gaaAdmin('adminpameldte', {}),"));
@@ -15752,7 +15792,7 @@ sjekk('… og draget bruker den samme terskelen som de andre',
 // de i header menyen paa en fin maate».
 sjekk('… og naas fra kalenderen uten en lenke',
     // Fra 13. september 2026 en pille i snarveisrada under oversiktskortene.
-    str_contains($aarSida, "                { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
+    str_contains($aarSida, "                { navn: 'Årskalender', nokkel: 'arskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
     && str_contains($aarSida, '<sc-for list="{{ klSnarveiPiller }}" as="s"'));
 // Kursene fyller den ikke av seg selv.
 sjekk('… og fylles bare av det eieren skriver selv',
@@ -15863,15 +15903,15 @@ sjekk('«Legg til person» staar som pille ved Venteliste i kalenderen',
 // fortsatt: Dagsrapport, Kasse, Aarskalender, Nye paameldinger, Synk.
 // Rekkefolgen i snarveisrada: Kasse for Aarskalender, som i kortrada for.
 sjekk('… og aarskalenderen staar sist i snarveisrada, etter Kasse',
-    strpos($veiSida, "                { navn: 'Kasse',       velg: () => this.gaaAdmin('adminuttak', {")
-       < strpos($veiSida, "                { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
+    strpos($veiSida, "                { navn: 'Kasse', nokkel: 'kasse', velg: () => this.gaaAdmin('adminuttak', {")
+       < strpos($veiSida, "                { navn: 'Årskalender', nokkel: 'arskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
     && str_contains($veiSida, "klAarApne: () => this.gaaAdmin('adminarskalender', {}),"));
 // «Nye paameldinger» var et kort med tallet som merke. Fra 13. september er
 // det den samme tellinga, som én av linjene i «Venter paa deg» — og kortet
 // gaar til den samme skjermen.
 sjekk('… og nye paameldinger telles i «Venter paa deg»',
     str_contains($veiSida, "            const nye   = (d.nyeste || []).length;")
-    && str_contains($veiSida, "                     () => this.gaaAdmin('adminnyepameldinger', {})),"));
+    && str_contains($veiSida, "                     () => this.gaaAdmin('adminnyepameldinger', {}), 'venter'),"));
 // «ingen link»: raden oeverst er borte.
 sjekk('… og raden med lenka oeverst er borte',
     !str_contains($veiSida, 'aarStripe')
@@ -17694,8 +17734,8 @@ $flytt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Tallet staar i pilla, saa man slipper aa aapne noe for aa se det.
 sjekk('omsetninga staar som to piller paa kalenderen',
-    str_contains($flytt, "                { navn: 'Omsetning i dag', verdi: (d.omsetning || {}).idag || '',")
-    && str_contains($flytt, "                { navn: 'Denne måneden',   verdi: (d.omsetning || {}).maned || '',")
+    str_contains($flytt, "                { navn: 'Omsetning i dag', nokkel: 'omsetningidag', verdi: (d.omsetning || {}).idag || '',")
+    && str_contains($flytt, "                { navn: 'Denne måneden', nokkel: 'dennemaneden', verdi: (d.omsetning || {}).maned || '',")
     && str_contains($flytt, '<sc-if value="{{ s.harVerdi }}"'),
     'maalt: «Omsetning i dag kr. 690,-» og «Denne maaneden kr. 1 320,-»');
 // Trykk gaar dit linjene bak tallet staar.
@@ -17999,8 +18039,8 @@ sjekk('… og skjermen sier det samme som serveren',
 // 3. Kalender, venteliste, pillene med navn og kurs, større plass til
 // navnet på deltaker, fjerne teksten: hele kurset #1». Maalt i Chrome.
 sjekk('Kalender: «Send beskjed» ved siden av Chat gaar til Medlemmer → Beskjeder',
-    str_contains($mkSida, "                { navn: 'Chat',        velg: () => this.setState({ klChatVis: true }) },\n")
-    && str_contains($mkSida, "                { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },"));
+    str_contains($mkSida, "                { navn: 'Chat', nokkel: 'chat', velg: () => this.setState({ klChatVis: true }) },\n")
+    && str_contains($mkSida, "                { navn: 'Send beskjed', nokkel: 'beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },"));
 // Kortet ble lukket 15. september 2026. Eieren: «synlighet paa kalender, maa
 // ligge i et kort, jeg vil at fokus skal vaere paa kalender». Naa er det ett
 // kort blant de andre som aapner arket — radene staar bare i arket.
@@ -18008,7 +18048,7 @@ sjekk('… synlighetskortet paa kalenderen er lukket, og aapner arket',
     substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 1
     && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="5">') === 1
     && str_contains($mkSida, "kort('Synlighet', ")
-    && str_contains($mkSida, "() => this.setState({ synlighetApen: true }));"));
+    && str_contains($mkSida, "() => this.setState({ synlighetApen: true }), 'synlighet');"));
 sjekk('… ventelista: navnet staar helt ut, kurset kuttes, «Hele kurset · #1» er borte',
     str_contains($mkSida, "              under: v.status || '',\n              harUnder: !!v.status,")
     && !str_contains($mkSida, "? 'Hele kurset'")
@@ -18432,7 +18472,7 @@ sjekk('… og feltene staar i malregisteret',
 $mt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('medlemstallet regnes ett sted, og admin teller ikke',
     // Pilla paa kalenderen.
-    str_contains($mt, "{ navn: 'Medlemmer', verdi: String(this.medlemsrader()\n                    .filter(x => x.erMedlem && !x.erAdmin).length || ''),")
+    str_contains($mt, "{ navn: 'Medlemmer', nokkel: 'medlemmer', verdi: String(this.medlemsrader()\n                    .filter(x => x.erMedlem && !x.erAdmin).length || ''),")
     // Kortet paa Oversikt — samme uttrykk, uendret.
     && str_contains($mt, ".filter(x => x.erMedlem && !x.erAdmin);")
     // Og ingen teller statusene sine egne steder lenger.

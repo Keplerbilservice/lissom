@@ -585,6 +585,10 @@ Svar::json([
         'handleliste' => DB::harTabell('handleliste_linjer')
             ? (int) DB::verdi("SELECT COUNT(DISTINCT member_id) FROM handleliste_linjer WHERE status = 'sendt' AND bestilt_at IS NULL")
             : 0,
+        // Butikkordrer som er betalt, men ikke gjort klare eller hentet.
+        // Kortet «Butikk» paa dashboardet viser tallet — eieren,
+        // 15. september 2026: «butikk er en viktig aa ha i dashboard».
+        'butikk' => (int) DB::verdi("SELECT COUNT(*) FROM orders WHERE status = 'betalt'"),
     ],
     // ── De mest populaere kursene ─────────────────────────────────────
     //

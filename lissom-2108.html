@@ -50752,7 +50752,8 @@ class Component extends DCLogic {
             const nye   = (d.nyeste || []).length;
             const varer = ((d.koer || {}).medlemsvarer) || 0;
             const frys  = ((d.koer || {}).frys) || 0;
-            const venter = nye + varer + frys;
+            const dugn  = ((d.koer || {}).dugnad) || 0;
+            const venter = nye + varer + frys + dugn;
 
             const ubetalte = d.ubetalte || [];
             const sum = ubetalte.reduce((a, u) => a + (u.belopOre || 0), 0);
@@ -50796,6 +50797,7 @@ class Component extends DCLogic {
                        nye   ? linje(nye + (nye === 1 ? ' ny påmelding' : ' nye påmeldinger')) : null,
                        varer ? linje(varer + (varer === 1 ? ' vare til godkjenning' : ' varer til godkjenning')) : null,
                        frys  ? linje(frys + (frys === 1 ? ' søknad om frys' : ' søknader om frys')) : null,
+                       dugn  ? linje(dugn + (dugn === 1 ? ' dugnad' : ' dugnader') + ' å svare på') : null,
                        venter ? null : linje('Ingenting venter'),
                      ].filter(Boolean), venter > 0,
                      () => this.gaaAdmin('adminnyepameldinger', {})),
@@ -50870,6 +50872,12 @@ class Component extends DCLogic {
                   velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
                 { navn: 'Denne måneden',   verdi: (d.omsetning || {}).maned || '',
                   velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
+                // Eieren, 15. september 2026: «en pille paa kalender ved
+                // siden av de andre, som viser denne foresporselen». Tallet
+                // er dugnader som venter paa Monica (nye + tid til
+                // godkjenning); trykk gaar til Ubesvarte, der de behandles.
+                { navn: 'Dugnad', verdi: ((d.koer || {}).dugnad) ? String((d.koer || {}).dugnad) : '',
+                  velg: () => this.gaaAdmin('adminubesvarte', {}) },
               ].map(x => Object.assign({}, x, {
                 harVerdi: !!x.verdi,
                 verdiStil: { fontWeight: 800, color: 'var(--lissom-brown)' },

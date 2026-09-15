@@ -25453,6 +25453,18 @@ class Component extends DCLogic {
       // ingen kode og ingen adresse aa lage en av. Det var et loefte
       // systemet ikke holdt.
       { sti: '/stemple',       side: 'stemple' },
+      // Fanene paa Min side har hver sin adresse. Eieren, 15. september
+      // 2026: «Naar jeg klikker inn paa en side, saa maa det alltid vaere en
+      // tilbakeknapp som tar meg et steg tilbake, f.eks. nyttig info ...
+      // gjelder admin og min side». Et fanebytte er dermed et steg i
+      // historikken, og tilbake — knappen nederst eller telefonens — gaar
+      // til fanen man sto paa. Staar foer /min-side: stiForSide() tar det
+      // foerste treffet, og fanen «hjem» er /min-side uten tillegg.
+      { sti: '/min-side/medlemskap', side: 'minside', fane: 'medlemskap' },
+      { sti: '/min-side/butikk',     side: 'minside', fane: 'butikk' },
+      { sti: '/min-side/selg',       side: 'minside', fane: 'selg' },
+      { sti: '/min-side/chat',       side: 'minside', fane: 'chat' },
+      { sti: '/min-side/nyttig',     side: 'minside', fane: 'nyttig' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
       // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
@@ -25549,6 +25561,10 @@ class Component extends DCLogic {
     const treff = Component.STIER.find(r => {
       if (r.side !== side) return false;
       if (r.filter) return r.filter === filter;
+      // Raa tilstand, ikke msFane(): den svarer «hjem» til medlemsdataene er
+      // hentet, og adressen ville blitt skrevet om til /min-side og tilbake
+      // igjen — to steg i historikken for ett trykk.
+      if (r.fane) return r.fane === (this.state.msFane || 'hjem');
       // En oppforing uten filter tar bare det som ikke alt er fanget over.
       if (side === 'booking') return true;
       return true;
@@ -25667,6 +25683,8 @@ class Component extends DCLogic {
       // adressen ble straks skrevet tilbake til varen igjen. Tilbakeknappen
       // satt fast.
       piProdukt: null,
+      // /min-side/<fane> aapner fanen; /min-side er «hjem».
+      ...(rute.side === 'minside' ? { msFane: rute.fane || 'hjem' } : {}),
     });
   }
 
@@ -25845,7 +25863,8 @@ class Component extends DCLogic {
     // Landet paa et skjermsteg: er det den samme skjermen, er vi ferdige —
     // ellers faar ruta ta byttet.
     const r = this.ruteFraAdresse();
-    return !!(r && r.side === this.state.side && !r.kursSlug && !r.nyhetSlug && !r.vareId);
+    return !!(r && r.side === this.state.side && !r.kursSlug && !r.nyhetSlug && !r.vareId
+      && (r.side !== 'minside' || (r.fane || 'hjem') === (this.state.msFane || 'hjem')));
   }
 
   // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
@@ -33689,13 +33708,13 @@ class Component extends DCLogic {
     const side = this.state.side;
     const dybde = this._dybde || 0;
     const admin = this.erAdminSkjerm(side);
-    const medlem = side === 'minside' || side === 'stemple';
     return {
       tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminkalender',
       tilbakeGaa: () => {
         if (dybde > 0) { history.back(); return; }
         if (admin) { this.gaaAdmin('adminkalender', {}); return; }
-        this.setState({ side: medlem ? 'forside' : 'forside', fhRolle: '', fhFra: '' });
+        if (side === 'minside' && this.msFane() !== 'hjem') { this.setState({ msFane: 'hjem' }); window.scrollTo(0, 0); return; }
+        this.setState({ side: 'forside', fhRolle: '', fhFra: '' });
         window.scrollTo(0, 0);
       },
       tilbakeStil: {

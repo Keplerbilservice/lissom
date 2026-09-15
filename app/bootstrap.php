@@ -72,6 +72,7 @@ require APP_DIR . '/lib/dugnad.php';
 require APP_DIR . '/lib/tillegg.php';
 require APP_DIR . '/lib/oppsett.php';
 require APP_DIR . '/lib/kursmal.php';
+require APP_DIR . '/lib/katalog.php';
 require APP_DIR . '/lib/tikk.php';
 require APP_DIR . '/lib/ai.php';
 require APP_DIR . '/lib/pdftekst.php';

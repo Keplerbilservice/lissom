@@ -504,6 +504,33 @@ if (!$ikkeISoket && $d !== null) {
         $robot = null;
     }
 }
+// ── Serversidene ──────────────────────────────────────────────────────
+//
+// Kundesidene tegnes ferdig paa serveren — app/nett/. Eieren, 15.
+// september 2026: «jeg vil ha den beste siden og den beste
+// brukeropplevelsen». Hodet er det samme som over ($d), JSON-LD den samme
+// som Robottekst lager; bare kroppen er en annen: ferdig HTML i stedet for
+// appen. Bare adressene Nett kjenner (Nett::SIDER) gaar denne veien.
+//
+// Gaar tegningen galt — basen, en feil i en mal — gaar appen ut som foer.
+// En side som tegnes tregt er bedre enn en som ikke tegnes.
+if ($d !== null && !$ikkeISoket) {
+    try {
+        $lastBackend();
+        require_once __DIR__ . '/app/nett/nett.php';
+        if (Nett::kan($adresse)) {
+            $side = Nett::tegn($adresse, $d, $robot['ld'] ?? []);
+            if (is_string($side) && $side !== '') {
+                $ut($side);
+            }
+        }
+    } catch (Throwable $e) {
+        if (function_exists('logg')) {
+            logg('NETT', ['adresse' => $adresse, 'feil' => $e->getMessage(), 'fil' => $e->getFile() . ':' . $e->getLine()]);
+        }
+    }
+}
+
 if ($robot !== null) {
     $ld = json_encode($robot['ld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     $hodeSlutt = strpos($html, '</head>');

@@ -1,0 +1,23 @@
+/* Det bare serversidene (app/nett/) trenger. Legges sist i nett.css av
+   bin/nettcss.mjs. Resten av stilene er lest ut av lissom-2108.html. */
+
+/* Menyen i toppen folder seg ut (NavBar i ds-bundle.js legger denne inn
+   fra skriptet). */
+@keyframes dsNavFade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Toppen paa forsida: gjennomsiktig over heroen, hvit naar man ruller —
+   som NavBar med overlay. nett.js setter data-rullet. */
+header[data-nett-topp="overlay"][data-rullet] {
+  background: #fff !important;
+  box-shadow: 0 2px 16px rgba(77,29,18,.12) !important;
+}
+
+/* Menyen paa telefon: skjult til knappen trykkes. */
+nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
+
+/* Koppen i logoen snurrer naar musa er over — som i appen. */
+[data-nett-logo]:hover img[data-logo-cup] { transform: perspective(600px) rotateY(720deg); }
+
+/* Feltene som bytter (events/medlemskap, produktene paa mobil): tones ut
+   og inn av nett.js. */
+[data-nett-rot][data-toner] { opacity: 0 !important; }

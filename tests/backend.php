@@ -3974,8 +3974,8 @@ sjekk('snarveiene i de gule radene er like store paa telefon',
 sjekk('kort med gjenstand i kassa viser en fra-pris',
     substr_count($sida2, "? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')") === 2);
 sjekk('… og serveren regner den ut av den rimeligste varen',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), "'prisFraOre'      => \$fra,")
-    && str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), 'SELECT MIN(pris_ore) FROM products'));
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), "'prisFraOre'      => \$fra,")
+    && str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'SELECT MIN(pris_ore) FROM products'));
 
 // «Velg» paa medlemskapssiden gikk til bookingskjermen, som alltid opprettet
 // en avtale i Vipps — uten valget mellom fast trekk og aa ordne selv
@@ -4084,7 +4084,7 @@ sjekk('ferien bygger paa apningstider, ikke en egen tabell',
 // Det som var nytt: en stengt dag skjuler kursdatoene, ikke bare
 // aapningstidene i bunnteksten.
 sjekk('en stengt dag skjuler kursdatoene paa nettsida',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), 'Ferie::stengt('));
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::stengt('));
 sjekk('… og aapningstidene folger med',
     str_contains(file_get_contents(__DIR__ . '/../app/lib/apent.php'), '$okter = Ferie::utenom($okter);'));
 // Skjult er ikke det samme som stengt: en gammel fane kan sende okt-id-en
@@ -4619,7 +4619,7 @@ sjekk('… uten aa slette de andre',
     str_contains($akurs, '$alle = Kursmal::standardtekster();')
     && str_contains($akurs, "'n' => 'kurs_standardtekster'"));
 sjekk('praktisk informasjon faller tilbake paa standarden ute',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'),
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'),
                  "(string) (Kursmal::forKurs(\$k)['praktisk'] ?? '')"));
 sjekk('lagre-lenka staar bare naar teksten er endret',
     str_contains($sida2, 'harLagre: kategori !== \'\' && naa !== \'\' && naa !== fasit,'));
@@ -5700,7 +5700,9 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
 
 // Tallet maa naa fram til kortet. Uten disse to staar regnestykket der uten
 // at noen ser det.
-$kursFil = file_get_contents(__DIR__ . '/../api/kurs.php');
+// Katalogen laa i api/kurs.php til 15. september 2026; naa i
+// app/lib/katalog.php, saa serversidene (app/nett/) tegner av den samme.
+$kursFil = file_get_contents(__DIR__ . '/../app/lib/katalog.php');
 sjekk('katalogen sender antall opptatte plasser per dato',
     str_contains($kursFil, "'solgt'    => \$solgtKart[(int) \$o['id']] ?? 0,"));
 $stempFil = file_get_contents(__DIR__ . '/../api/stempling.php');
@@ -6310,7 +6312,7 @@ sjekk('nettsida skriver «Kurs i verkstedet», ikke «Fullbooket»',
 // Grunnen maa foelge med helt ut. Regnes den ett sted og vises et annet,
 // kommer de to til aa si forskjellige ting.
 sjekk('… og grunnen sendes med fra serveren',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'),
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'),
                  "'sperret'  => \$sperretKart[(int) \$o['id']] ?? false,"));
 
 // ── Ressursene staar oeverst ───────────────────────────────────────────
@@ -9625,7 +9627,7 @@ sjekk('serveren tar imot kladd, publisert og avlyst',
     str_contains($kursApi, "in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)"));
 // … og nettsida henter bare det som er publisert. Det er dette som gjor at
 // bryteren faktisk tar kurset ned.
-foreach (['api/kurs.php', 'api/venteliste.php', 'app/lib/apent.php', 'app/lib/booking.php'] as $fil) {
+foreach (['app/lib/katalog.php', 'api/venteliste.php', 'app/lib/apent.php', 'app/lib/booking.php'] as $fil) {
     // booking.php skriver spoersmaalet i en enkeltfnuttet streng, saa fnuttene
     // rundt «publisert» staar escapet der. Samme krav, annen skrivemaate.
     $kode = file_get_contents(dirname(__DIR__) . '/' . $fil);
@@ -14508,7 +14510,7 @@ sjekk('… og gjetter ikke lenger paa kursnavn',
     && str_contains($k2Ren, "const skiva = alle.find(r => /dreieskive/i.test(r.navn || ''));")
     && str_contains($k2Ren, 'if (!k || !skiva || k.ressursId !== skiva.id) return;'),
     'maalt: dreiekurset kom med, bordplasskurset samme dag kom ikke');
-$kursApi2 = file_get_contents(dirname(__DIR__) . '/api/kurs.php');
+$kursApi2 = file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php');
 sjekk('… fordi ressursen foelger med kurset naa',
     str_contains($kursApi2, "\$ressursFelt = DB::harKolonne('courses', 'ressurs_id') ? ', ressurs_id' : '';")
     && str_contains($kursApi2, "'ressursId' => (\$k['ressurs_id'] ?? null) === null ? null : (int) \$k['ressurs_id'],"),
@@ -17010,7 +17012,7 @@ sjekk('dreiekurset: slug, 301 og egen tittel/meta paa server og klient',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/side.php'), "'tittel'        => \$egenTittel !== '' ? \$egenTittel : \$navn . ' i Tønsberg | Lissom Keramikk',")
     && str_contains($mkSida, "tittel: egenTittel || navn + ' i Tønsberg | Lissom Keramikk',")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/kurs.php'), "'seoTittel'       => trim((string) (\$k['seo_tittel'] ?? '')),"));
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php'), "'seoTittel'       => trim((string) (\$k['seo_tittel'] ?? '')),"));
 sjekk('LocalBusiness har org.nr og koordinater',
     str_contains($mkLib2 = (string) file_get_contents(dirname(__DIR__) . '/app/lib/robottekst.php'), "'taxID'       => '938280819',")
     && str_contains($mkLib2, "'latitude' => 59.246898, 'longitude' => 10.415572"));
@@ -17049,7 +17051,7 @@ sjekk('… .htaccess, sidekartet, llms.txt og Nyttig info kjenner dem',
 // kurssida (role="img"). Tomt = kursnavnet, som foer.
 sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
     is_file(dirname(__DIR__) . '/db/migrations/165_alt_tekst_paa_kursbildet.sql')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/kurs.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "'bildeAlt'        => 'bilde_alt',")
     && str_contains($mkSida, 'Alt-tekst — hva bildet viser, for den som ikke ser det</label>')
     && substr_count($mkSida, 'image-alt="{{ k.bildeAlt }}"') === 3

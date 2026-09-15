@@ -27,6 +27,7 @@ let feil = 0;
 const si = (ok, t) => { if (!ok) feil++; console.log((ok ? '  OK  ' : '  FEIL') + '  ' + t); };
 
 const { html, blokker, skript } = await lettUtgave(kilde);
+const { LESESKJERMER } = await import('./utenadmin.mjs');
 
 if (!fs.existsSync(maalFil)) {
   si(false, 'lissom-2108-uten-admin.html finnes — kjor «node bin/utenadmin.mjs»');
@@ -40,16 +41,31 @@ if (!fs.existsSync(maalFil)) {
 const skjermer = (s) => [...s.matchAll(/data-screen-label="([^"]+)"/g)].map(m => m[1]);
 const alle = skjermer(kilde);
 const igjen = skjermer(html);
-const offentlige = alle.filter(n => !n.startsWith('Admin'));
+// Lesesidene (LESESKJERMER) tegnes av serveren og klippes ogsaa; skjermen
+// bak hver av dem finnes ved navnet paa sc-if-en i kilden.
+const skjermBak = (n) => {
+  const m = kilde.match(new RegExp('<sc-if value="\\{\\{ ' + n + ' \\}\\}"[^>]*>[\\s\\S]*?data-screen-label="([^"]+)"'));
+  return m ? m[1] : null;
+};
+const lese = LESESKJERMER.map(skjermBak);
+si(lese.every(Boolean), 'hver av de ' + LESESKJERMER.length + ' leseskjermene finnes i kilden'
+   + (lese.every(Boolean) ? '' : ' — mangler: ' + LESESKJERMER.filter((n, i) => !lese[i]).join(', ')));
+const offentlige = alle.filter(n => !n.startsWith('Admin') && !lese.includes(n));
+const admin = alle.filter(n => n.startsWith('Admin'));
 
-si(blokker.length === alle.filter(n => n.startsWith('Admin')).length,
-   blokker.length + ' blokker klippet, ' + alle.filter(n => n.startsWith('Admin')).length + ' adminskjermer finnes');
+si(blokker.length === admin.length + LESESKJERMER.length,
+   blokker.length + ' blokker klippet: ' + admin.length + ' adminskjermer og ' + LESESKJERMER.length + ' leseskjermer');
 si(igjen.length === offentlige.length,
-   'alle ' + offentlige.length + ' offentlige skjermer staar igjen (fant ' + igjen.length + ')');
+   'alle ' + offentlige.length + ' appskjermer staar igjen (fant ' + igjen.length + ')');
 
 const mistet = offentlige.filter(n => igjen.indexOf(n) < 0);
-si(mistet.length === 0, 'ingen offentlig skjerm er borte' + (mistet.length ? ' — mangler: ' + mistet.join(', ') : ''));
+si(mistet.length === 0, 'ingen appskjerm er borte' + (mistet.length ? ' — mangler: ' + mistet.join(', ') : ''));
 si(igjen.every(n => !n.startsWith('Admin')), 'ingen adminskjerm staar igjen');
+si(lese.every(n => !igjen.includes(n)), 'ingen leseskjerm staar igjen');
+si(html.includes('<body data-lett-utgave>'), '<body> er merket data-lett-utgave');
+for (const n of ['erKurs', 'erBooking', 'erKontakt', 'erMedlemskap', 'erBedrift', 'erButikk', 'erKasse', 'erGavekortside', 'erMinside', 'erLogin']) {
+  si(html.includes('{{ ' + n + ' }}'), 'skjermen «' + n + '» — som appen trenger — staar igjen');
+}
 
 // De delte rutene ligger MELLOM adminskjermene. Tar klippingen for mye, er
 // det disse som ryker forst — og da mister nettsida bunnteksten sin.

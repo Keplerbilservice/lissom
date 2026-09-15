@@ -1044,36 +1044,14 @@ window.__resources = {
 <script src="./support.min.js" defer></script>
 
 <script>
-// Bytter ut den ferdigtegnede toppen med den ekte, i samme bilde.
-//
-// side.php limer inn <div id="lissom-topp"> rett etter <body> paa forsida:
-// menylinja og heroen, tegnet ferdig av bin/forhaandstegn.mjs. Nettleseren
-// tegner den med det samme, i stedet for aa staa tom i to og et halvt
-// sekund mens dc-runtime bygger sida.
-//
-// Naar den ekte toppen er i DOM-en, skal kopien vekk. En MutationObserver
-// kalles som en mikrooppgave rett etter endringen og for nettleseren tegner
-// neste bilde — saa det finnes ikke et oyeblikk der begge er synlige.
-// setTimeout eller requestAnimationFrame ville gitt akkurat det.
-//
-// Finnes ingen kopi — alle sider unntatt forsida — gjor dette ingenting
-// med toppen. Robotteksten (lissom-tekst) tas uansett, se rydd().
+// Robotteksten (<main id="lissom-tekst">, fra app/lib/robottekst.php)
+// ligger paa sidene appen tegner og fjernes naar en ekte skjerm staar —
+// hvilken som helst. En MutationObserver kalles som en mikrooppgave rett
+// etter endringen og for nettleseren tegner neste bilde, saa det finnes
+// ikke et oyeblikk der begge er synlige.
 (function () {
-  var EKTE = '[data-screen-label="Forside"] section.lx-hero';
   // Malen ligger fortsatt i DOM-en, skjult inne i <x-dc>, og treffer den
-  // samme velgeren. Ble den regnet med, forsvant kopien med det samme —
-  // for noe var tegnet i det hele tatt. Derfor: bare treff som ikke ligger
-  // inne i malen teller.
-  function ekteFinnes() {
-    var alle = document.querySelectorAll(EKTE);
-    for (var i = 0; i < alle.length; i++) {
-      if (!alle[i].closest('x-dc')) return true;
-    }
-    return false;
-  }
-  // Robotteksten (<main id="lissom-tekst">, fra app/lib/robottekst.php)
-  // ligger paa alle aapne sider og fjernes naar en ekte skjerm staar —
-  // hvilken som helst, ikke bare forsida.
+  // samme velgeren. Derfor: bare treff som ikke ligger inne i malen teller.
   function skjermFinnes() {
     var alle = document.querySelectorAll('[data-screen-label]');
     for (var i = 0; i < alle.length; i++) {
@@ -1083,20 +1061,15 @@ window.__resources = {
   }
   function rydd() {
     var tekst = document.getElementById('lissom-tekst');
-    if (tekst && skjermFinnes()) tekst.remove();
-    var kopi = document.getElementById('lissom-topp');
-    if (!kopi) return !document.getElementById('lissom-tekst');   // ingen kopi: ferdig naar teksten er borte.
-    if (!ekteFinnes()) return false;
-    kopi.remove();
-    return !document.getElementById('lissom-tekst');
+    if (!tekst) return true;
+    if (!skjermFinnes()) return false;
+    tekst.remove();
+    return true;
   }
   function start() {
     if (rydd()) return;
     var o = new MutationObserver(function () { if (rydd()) o.disconnect(); });
     o.observe(document.body, { childList: true, subtree: true });
-    // Reserve: skulle skjermen aldri komme — en feil i oppstarten — blir
-    // kopien staaende framfor at sida blir staaende tom. Den er ekte
-    // innhold, bare uten knapper som virker.
   }
   if (document.body) start();
   else document.addEventListener('DOMContentLoaded', start);
@@ -1290,9 +1263,7 @@ window.__resources = {
      av en utseendeforskyvning paa 0,393.
 
      Her staar de fra foerste byte. Rekkefolgen er den samme som for:
-     dc-runtime la dem sist i hodet, og det er her.
-
-     bin/toppsjekk.mjs kontrollerer at de ikke har flyttet seg tilbake. -->
+     dc-runtime la dem sist i hodet, og det er her. -->
 <style>
   /* Maalene i width- og height-attributtene skal bare gi forholdstallet,
      slik at plassen settes av for bildet er lastet. De skal ikke bestemme
@@ -25428,6 +25399,49 @@ class Component extends DCLogic {
     return this.state.oppskrifter || [];
   }
 
+  // ── Sidene som tegnes paa serveren ──────────────────────────────────
+  //
+  // Forsida, Om oss, nyhetene, kalenderen og de andre lesesidene tegnes
+  // ferdig av serveren (app/nett/), fra de samme malene som staar her.
+  // Kundeutgaven av denne fila (bin/utenadmin.mjs) har derfor ikke de
+  // skjermene med, og et bytte dit er en vanlig sidelasting — ikke et
+  // skjermbytte. I den fulle utgaven, den en innlogget admin faar, staar
+  // skjermene, og appen viser dem selv som foer.
+  //
+  // Det som IKKE er her, bor i appen fortsatt: kurssida med dagvalg og
+  // booking, kontakt- og bedriftsskjemaet, medlemskapsplanen, butikken,
+  // kassa, gavekortet, Min side og admin.
+  static get SERVERSIDER() {
+    return {
+      forside: '/', omoss: '/om-oss', sporsmal: '/sporsmal-og-svar', nyheter: '/nyheter',
+      personvern: '/personvern', vilkar: '/vilkar', kursoversikt: '/kursene-vare',
+      kalender: '/kalender', nyttig: '/nyttig-info', paintonpots: '/paint-on-pots',
+      plakatcone: '/nyttig-info/brennetabell', plakatinfo: '/nyttig-info/medlemsinfo',
+      plakattrivsel: '/nyttig-info/trivselsregler',
+    };
+  }
+
+  /** Er dette kundeutgaven uten leseskjermene? bin/utenadmin.mjs merker <body>. */
+  utenLeseskjermer() {
+    return !!(document.body && document.body.hasAttribute('data-lett-utgave'));
+  }
+
+  // Ett sted aa ta det: skjermen byttes med setState({ side }) over
+  // tretti steder i denne fila. Gaar byttet til en serverside i
+  // kundeutgaven, lastes den sida i stedet — ellers ville en skjerm som
+  // ikke finnes staatt tom.
+  setState(endring, etterpaa) {
+    const side = endring && typeof endring === 'object' ? endring.side : undefined;
+    const sti = side ? Component.SERVERSIDER[side] : undefined;
+    if (sti && side !== this.state.side && this.utenLeseskjermer()) {
+      // En aapnet artikkel har sin egen adresse.
+      const slug = side === 'nyheter' && endring.nyLest ? endring.nyLest.slug : '';
+      window.location.assign(slug ? '/nyheter/' + slug : sti);
+      return;
+    }
+    super.setState(endring, etterpaa);
+  }
+
   // Adressekartet: hvilken sti hoerer til hvilken skjerm.
   //
   // Flere sider deler samme skjerm og skilles bare av et filter — Events og
@@ -32142,6 +32156,13 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
+    // Handlekurven fra forrige sidelasting i samme fane — se componentDidUpdate.
+    try {
+      const k = JSON.parse(sessionStorage.getItem('lissom-kurv') || 'null');
+      if (k && typeof k === 'object' && !Array.isArray(k) && Object.keys(k).length > 0) {
+        this.setState({ kurv: k });
+      }
+    } catch (e) { /* ingen kurv aa hente */ }
     // ── Bommer man med fila ────────────────────────────────────────
     //
     // Eieren, 12. september 2026: slipper du en fil ved siden av «Last
@@ -34343,6 +34364,15 @@ class Component extends DCLogic {
   // bruker, og henvendelsene fra for ligger der de laa.
 
   componentDidUpdate(prevProps, prevState) {
+    // Handlekurven laa bare i minnet. Naar lesesidene tegnes paa serveren,
+    // er et trykk paa «Om oss» i menyen en sidelasting — og kurven skal
+    // vaere der naar de kommer tilbake til butikken. Lagres i fanen
+    // (sessionStorage), som foer: lukker man fanen, er den borte.
+    // (dc-runtime sender ikke prevState hit — derfor egen huskelapp.)
+    if (this._kurvLagret !== this.state.kurv) {
+      this._kurvLagret = this.state.kurv;
+      try { sessionStorage.setItem('lissom-kurv', JSON.stringify(this.state.kurv || {})); } catch (e) { /* da lever den i minnet */ }
+    }
     // Tilbakeknappen: ett steg per lag som aapnes. Se lagSynk().
     this.lagSynk();
     // ... og den staar rett under toppen paa den skjermen som vises naa.

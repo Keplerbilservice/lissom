@@ -430,11 +430,11 @@ final class Robottekst
     private static function ramme(string $h1, string $meta, string $innhold, bool $forside): string
     {
         $e = [self::class, 'e'];
-        // Her sto «margin-top:100vh» paa forsida, for aa komme under den
-        // ferdigtegnede toppen (#lissom-topp) som laa absolutt over alt. Den
-        // ligger naa i vanlig flyt — se bin/forhaandstegn.mjs — og teksten
-        // foelger rett under den av seg selv. $forside beholdes i signaturen,
-        // saa kallene staar som foer.
+        // Her sto «margin-top:100vh» paa forsida, for aa komme under en
+        // ferdigtegnet topp som laa absolutt over alt. Den er borte —
+        // forsida tegnes ferdig av serveren (app/nett/) — og teksten
+        // staar for seg. $forside beholdes i signaturen, saa kallene staar
+        // som foer.
         unset($forside);
         return '<style>'
             . '#lissom-tekst{max-width:760px;margin:0 auto;padding:40px 24px 64px;font:var(--type-body,400 16px/1.6 "Alegreya Sans",sans-serif);color:var(--text-body,#2E1002)}'

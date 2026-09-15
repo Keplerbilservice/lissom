@@ -101,9 +101,8 @@ final class Deler
 
     /**
      * NavBar i ds-bundle.js. Komponenten tegner ULIKT DOM etter bredden —
-     * tre utgaver, valgt med media queries (samme grep som
-     * bin/forhaandstegn.mjs): tight under 1150, compact 1150–1399, full fra
-     * 1400. Alle tre ligger i sida; bare den som passer vises.
+     * tre utgaver, valgt med media queries: tight under 1150, compact
+     * 1150–1399, full fra 1400. Alle tre ligger i sida; bare den som passer vises.
      *
      * @param string $aktiv  navnet paa lenka som lyser («Forside», «Kurs» …)
      * @param bool   $overlay  paa forsida: gjennomsiktig over heroen til man ruller

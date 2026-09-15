@@ -16976,11 +16976,14 @@ sjekk('… side.php legger JSON-LD i hodet og teksten etter <body>, og aldri paa
         return str_contains($s, "\$robot = Robottekst::lag(\$adresse, \$d, \$kart);")
             && str_contains($s, "if (!\$ikkeISoket && \$d !== null) {")
             && str_contains($s, "'<script type=\"application/ld+json\" data-lissom-ld=\"1\">'")
-            && str_contains($s, "'<body>' . \"\\n\" . \$robot['html']");
+            // Rett etter <body …> — taggen kan ha attributter (data-lett-utgave).
+            && str_contains($s, "\$html = \$etterBody(\$html, \"\\n\" . \$robot['html']);")
+            && str_contains($s, "\$kropp = \$hode === false ? false : strpos(\$html, '<body', \$hode);");
     })());
 sjekk('… skriptet fjerner teksten naar en ekte skjerm staar, paa alle sider',
     str_contains($mkSida, "var tekst = document.getElementById('lissom-tekst');")
-    && str_contains($mkSida, "if (tekst && skjermFinnes()) tekst.remove();"));
+    && str_contains($mkSida, "if (!skjermFinnes()) return false;")
+    && str_contains($mkSida, "tekst.remove();"));
 sjekk('… og deployen lint-sjekker side.php',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/.github/workflows/deploy.yml'), 'php -l side.php'));
 sjekk('… llms.txt bruker den samme kurslista',

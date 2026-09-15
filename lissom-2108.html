@@ -35582,6 +35582,18 @@ class Component extends DCLogic {
         // linjer tekst ville vaert et kall for mye.
         if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null,
           beskjedListe: Array.isArray(d.beskjeder) ? d.beskjeder : [] });
+        // Serversida (app/nett/sider/medlemskap.php) sender «Les mer» hit
+        // som /medlemskap?plan=<navn>. Naar planene er kommet, aapnes den —
+        // det samme som aa trykke paa kortet.
+        if (d && d.planer && this.state.side === 'medlemskap') {
+          let navn = '';
+          try { navn = new URLSearchParams(window.location.search).get('plan') || ''; } catch (e) { /* ingen */ }
+          if (navn && !this._planAapnet) {
+            this._planAapnet = true;
+            const pl = this.planer().find(p => p.navn === navn);
+            if (pl) this.apneMedlemskort(Object.assign({}, pl, { mork: !!pl.fremhevet, merke: pl.merke || (pl.engangs ? 'Prøveperiode' : '') }));
+          }
+        }
       })
       .catch(() => { this._medlemskapHentes = false; });
   }

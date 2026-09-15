@@ -45,6 +45,7 @@ final class Nett
         '/events' => 'kurs',
         '/nyheter' => 'nyheter',
         '/nyttig-info' => 'nyttig',
+        '/medlemskap' => 'medlemskap',
     ];
 
     /** Adressen som tegnes naa — for maler som tegner flere adresser. */
@@ -99,7 +100,7 @@ final class Nett
     {
         // Kurssida sender folk inn i appen med ?dag=, ?alle=1, ?book=1 eller
         // ?venteliste=1 — da skal appen ha adressen, ikke serversida.
-        foreach (['dag', 'alle', 'book', 'venteliste'] as $n) {
+        foreach (['dag', 'alle', 'book', 'venteliste', 'plan'] as $n) {
             if (isset($_GET[$n])) {
                 return false;
             }

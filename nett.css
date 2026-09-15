@@ -1529,3 +1529,10 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 /* Feltene som bytter (events/medlemskap, produktene paa mobil): tones ut
    og inn av nett.js. */
 [data-nett-rot][data-toner] { opacity: 0 !important; }
+
+/* Kurskalenderen (/kalender): det appen gjorde etter skjermbredden.
+   Ukestripa staar bare paa telefon; der har dagkortene ingen minstehoeyde
+   og tomme dager er skjult. Se app/nett/sider/kalender.php. */
+@media (max-width: 760px) {
+  :root { --nt-ukestrip: grid; --nt-dagmin: 0px; --nt-tomdag: none; }
+}

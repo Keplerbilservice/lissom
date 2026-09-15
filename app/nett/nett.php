@@ -56,6 +56,10 @@ final class Nett
         '/bedrift' => 'bedrift',
         '/vilkar' => 'vilkar',
         '/ferdigbrent' => 'ferdigbrent',
+        '/kalender' => 'kalender',
+        '/nyttig-info/brennetabell'   => 'plakat',
+        '/nyttig-info/medlemsinfo'    => 'plakat',
+        '/nyttig-info/trivselsregler' => 'plakat',
     ];
 
     /** Adressen som tegnes naa — for maler som tegner flere adresser. */
@@ -86,7 +90,7 @@ final class Nett
     public static function sporring(): array
     {
         $ut = [];
-        foreach (['tema', 'tid', 'kategori'] as $n) {
+        foreach (['tema', 'tid', 'kategori', 'uke'] as $n) {
             $v = $_GET[$n] ?? '';
             if (is_string($v) && $v !== '' && mb_strlen($v) <= 40) {
                 $ut[$n] = $v;

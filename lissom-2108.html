@@ -41671,18 +41671,38 @@ class Component extends DCLogic {
                               kvitteringDetalj: 'Databaseoppdateringer kjøres på lissom.no.' });
               return;
             }
-            if (!venter.length) {
-              // Ingenting aa kjore: sjekk paa nytt, og si hva svaret ble.
-              this._migHentes = false;
-              this.setState({ migStatus: null, kvittering: 'Sjekker databasen …', kvitteringDetalj: '' });
-              this.hentMigrasjoner();
-              return;
-            }
-            if (!window.confirm('Kjøre ' + venter.length + ' oppdatering'
-                + (venter.length === 1 ? '' : 'er') + ' av databasen?\n\n'
-                + venter.join('\n')
-                + '\n\nDet tar noen sekunder. Ingenting slettes.')) return;
-            this.kjorMigrasjoner();
+            // Sjekk alltid paa nytt foerst. Raden ble lest én gang da admin
+            // ble aapnet; kom en deploy etterpaa, sto den fortsatt med «Alt
+            // er oppdatert», og trykket bare sjekket — uten aa kjoere. Eieren,
+            // 15. september 2026: trykket tre ganger, ingenting kjoerte, og
+            // fire oppdateringer laa og ventet. Naa: sjekk, og er det noe,
+            // spoer og kjoer i samme trykk.
+            this._migHentes = false;
+            this.setState({ kvittering: 'Sjekker databasen …', kvitteringDetalj: '' });
+            fetch('/api/migrer.php', { credentials: 'same-origin', cache: 'no-store' })
+              .then(r => r.json().then(d => ({ ok: r.ok, d })))
+              .then(({ ok, d }) => {
+                const m2 = ok && d ? d : { feil: (d && d.feil) || 'Fikk ikke svar.' };
+                this.setState({ migStatus: m2 });
+                if (m2.feil) {
+                  this.setState({ kvittering: 'Fikk ikke sjekket databasen', kvitteringDetalj: m2.feil });
+                  return;
+                }
+                const v2 = m2.mangler || [];
+                if (!v2.length) {
+                  this.setState({ kvittering: 'Alt er oppdatert', kvitteringDetalj: 'Ingen oppdateringer venter.' });
+                  return;
+                }
+                if (!window.confirm('Kjøre ' + v2.length + ' oppdatering'
+                    + (v2.length === 1 ? '' : 'er') + ' av databasen?\n\n'
+                    + v2.join('\n')
+                    + '\n\nDet tar noen sekunder. Ingenting slettes.')) {
+                  this.setState({ kvittering: '', kvitteringDetalj: '' });
+                  return;
+                }
+                this.kjorMigrasjoner();
+              })
+              .catch(() => this.setState({ kvittering: 'Fikk ikke kontakt med serveren', kvitteringDetalj: '' }));
           },
           stil: Object.assign({}, this.adminBunnStil(), {
             fontWeight: venter.length ? 700 : 500,

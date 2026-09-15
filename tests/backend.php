@@ -17713,15 +17713,15 @@ $syn = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Arket staar én gang, blant de andre overleggene — ikke én gang per skjerm.
 //
-// Radene staar derimot to steder fra 13. september 2026: i arket, og som et
-// aapent kort paa adminkalenderen. Eieren: «jeg vil ha på kalender siden,
-// synlighet på siden, slik at jeg her enkelt når alle vis skjul knappene,
-// legg i et kort», og valgte «aapent, i tillegg til arket». Samme kilde,
-// samme lagring — to visninger, ikke to loesninger.
+// Radene sto ogsaa som et aapent kort paa adminkalenderen fra 13. september
+// 2026. Eieren, 15. september: «synlighet paa kalender, maa ligge i et kort,
+// jeg vil at fokus skal vaere paa kalender». Naa er det ett lukket kort som
+// aapner arket — radene staar bare i arket.
 sjekk('synlighetsarket staar bare én gang i malen',
     substr_count($syn, '<sc-if value="{{ synVises }}"') === 1
-    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 2
-    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 2);
+    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 1
+    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 1
+    && str_contains($syn, "kort('Synlighet', "));
 // Ti rader: fem paa nettsiden, fem paa Min side. Maalt i nettleseren.
 // Ble tolv 13. september 2026. Eieren: «jeg vil ha bryter til aa skru av
 // glemte aa stemple for medlemmene. Og den skal og skrus av.» Migrasjon 181

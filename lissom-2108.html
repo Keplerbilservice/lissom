@@ -8201,37 +8201,12 @@ window.__resources = {
             </sc-for>
           </div>
 
-          <!-- Synlighet, som kort paa kalenderen.
-               Eieren, 13. september 2026: «jeg vil ha på kalender siden,
-               synlighet på siden, slik at jeg her enkelt når alle vis skjul
-               knappene, legg i et kort». Valgte «åpent, i tillegg til arket»:
-               de samme radene som «⊙ Synlighet» i Verktøy (synNett og
-               synMin) — samme lagring, samme kvittering — arket staar som
-               foer. To grupper ved siden av hverandre paa PC, under
-               hverandre paa telefon. -->
-          <div style="grid-column: 1 / -1; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Synlighet</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--space-2) var(--space-8);">
-              <div>
-                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">På nettsiden</div>
-                <sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 7px 0; border-bottom: 1px solid var(--border-subtle);">
-                    <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
-                  </div>
-                </sc-for>
-              </div>
-              <div>
-                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">På Min side</div>
-                <sc-for list="{{ synMin }}" as="r" hint-placeholder-count="6">
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 7px 0; border-bottom: 1px solid var(--border-subtle);">
-                    <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-          </div>
+          <!-- Synlighet laa her som et aapent kort med alle bryterne, og
+               tok plassen fra kalenderen. Eieren, 15. september 2026:
+               «synlighet paa kalender, maa ligge i et kort, jeg vil at fokus
+               skal vaere paa kalender». Naa er den ett kort blant de andre
+               (klOversiktKort → «Synlighet»), som aapner ⊙ Synlighet-arket
+               — samme rader, samme lagring. -->
         </div>
 
         <aside style="{{ klAsideStil }}">
@@ -51031,6 +51006,17 @@ class Component extends DCLogic {
                 kort('Ovnen',
                      ovIdag ? 'Tømt ' + to(ovT.getHours()) + ':' + to(ovT.getMinutes()) : 'Ikke tømt',
                      [linje(ovIdag ? 'Tømt av ' + (ov.av || 'et medlem') : 'Ingen har trykket i dag')]),
+                // Synlighet som kort, ikke som et aapent felt med alle
+                // bryterne (eieren, 15. september 2026). Tallet er bryterne
+                // som staar av; trykk aapner arket.
+                (() => {
+                  const il = this.state.innholdLagret || {};
+                  const av = Object.keys(il).filter(k => k.indexOf('Vis/') === 0 && il[k] === 'nei').length
+                    + (il['Banner/pa'] === 'nei' ? 1 : 0);
+                  return kort('Synlighet', av ? av + (av === 1 ? ' bryter av' : ' brytere av') : 'Alt vises',
+                    [linje('Trykk for å slå av og på')], false,
+                    () => this.setState({ synlighetApen: true }));
+                })(),
               ],
               klOversiktRadStil: {
                 gridColumn: '1 / -1', display: 'grid',

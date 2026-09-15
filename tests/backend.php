@@ -5802,19 +5802,20 @@ sjekk('… og Oversikt har fortsatt en adresse',
 // Stemple-pilla har alltid staatt i sidemenyen — det er «Inne naa» som er ny
 // paa stedet. Gevinsten er at tallet naa staar paa hver eneste adminskjerm,
 // ikke bare paa kalenderen.
-sjekk('«Inne naa» staar under Ferie i sidemenyen',
-    str_contains($sida, '<div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>'));
-// Blokka staar én gang per adminskjerm. Staar pilla bare i noen av dem,
-// forsvinner den naar man bytter side.
-sjekk('… paa alle adminskjermene',
-    substr_count($sida, '{{ admInneNavn }}') === substr_count($sida, '{{ admFerieNavn }}'));
-// Ikke en knapp: den sier hvor mange som er inne, og gjor ingenting.
-sjekk('… og den er ikke noe man trykker paa',
-    str_contains($sida, "{ cursor: 'default' }"));
-// Tallet er det samme som resten av systemet teller.
-sjekk('… og tallet kommer fra den tellingen som alt finnes',
-    str_contains($sida, "admInneNavn: 'Inne nå · ' + (this.state.stempling"));
-// Ute av kalenderen, begge to.
+// Eieren, 15. september 2026: «fjern inne naa fra den brune toppmenyen».
+// Pilla sto der fra 9. september, paa alle 36 adminskjermene. Den var ikke
+// en knapp — bare et tall — og stripa gikk alt over tre rader paa telefon.
+sjekk('«Inne naa» er ute av den brune stripa',
+    !str_contains($sida, '<div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>')
+    && !str_contains($sida, 'admInneNavn'));
+// Tallet er ikke borte, bare visningen. Kortet paa kalenderen teller det
+// samme, og Min side viser det til medlemmet.
+sjekk('… men tallet staar fortsatt paa kalenderen',
+    str_contains($sida, "kort('Inne nå', String(inne),"));
+// Stemple-pilla og Ferie blir staaende der de er.
+sjekk('… og Stemple inn og Ferie staar igjen',
+    str_contains($sida, '<button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>')
+    && str_contains($sida, '<button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>'));
 sjekk('… og ingen av dem staar igjen i kalenderen',
     !str_contains($sida, '{{ klInneNaaTekst }}') && !str_contains($sida, '{{ klStempleTekst }}'));
 // Én pille, som bytter funksjon. Den staar i sidemenyen, og ringen foran
@@ -11860,11 +11861,11 @@ sjekk('verktoeypillene staar paa hver adminskjerm',
     $antTopp > 30 && $antTopp === $antSide);
 sjekk('… og de vises bare paa telefon',
     str_contains($uKode, '.lx-admtopp { display: flex !important; }'));
-// «Inne naa» kom inn mellom Ferie og denne raden 9. september 2026 — se
-// «admInneNavn». Verktoeypillene skal fortsatt komme rett etter blokka.
-sjekk('… og de staar rett under Stemple inn, Ferie og Inne naa',
+// «Inne naa» sto mellom Ferie og denne raden fra 9. september 2026. Eieren
+// tok den ut 15. september; verktoeypillene skal fortsatt komme rett etter.
+sjekk('… og de staar rett under Stemple inn og Ferie',
     (bool) preg_match(
-        '/\{\{ admFerieNavn \}\}<\/button>\s*<div [^>]*\{\{ admInneStil \}\}[^>]*>\{\{ admInneNavn \}\}<\/div>\s*<\/div>\s*<div class="lx-admtopp" style="\{\{ admToppEkstraStil \}\}">/',
+        '/\{\{ admFerieNavn \}\}<\/button>\s*<\/div>\s*<div class="lx-admtopp" style="\{\{ admToppEkstraStil \}\}">/',
         $uKode));
 sjekk('… og de er ikke lenger gjemt nederst i menypanelet',
     !str_contains($uKode, 'admMobEkstra'));
@@ -15264,15 +15265,18 @@ sjekk('… og et nytt medlemskap starter uten avtaletrekk',
 // «kan du kombinere det med kalender? Saa kan vi droppe oversikt?» — han fikk
 // tre varianter tegnet og valgte B: seks kort som svarer paa noe, og en smal
 // snarveisrad under med de fire som ikke finnes i menyen.
-sjekk('oversiktsrada har seks kort som svarer paa noe',
+// Fem fra 15. september 2026: «Ovnen» gikk ut. Eieren: «ovnen toemt fjern
+// fra dashboard, den staar allerede lenger opp» — ovnkortet med de tre
+// pillene staar rett over raden, og der kan man ogsaa trykke.
+sjekk('oversiktsrada har fem kort som svarer paa noe',
     str_contains($byttSida, '<sc-for list="{{ klOversiktKort }}" as="k"')
-    && substr_count($byttSida, "                kort('") === 6
+    && substr_count($byttSida, "                kort('") === 5
     && str_contains($byttSida, "                kort('I dag',")
     && str_contains($byttSida, "                kort('Venter på deg', String(venter), [")
     && str_contains($byttSida, "                kort('Ubetalt', kr(sum), [")
     && str_contains($byttSida, "                kort('Inne nå', String(inne),")
     && str_contains($byttSida, "                kort('Siste sju dager',")
-    && str_contains($byttSida, "                kort('Ovnen',"));
+    && !str_contains($byttSida, "                kort('Ovnen',"));
 // Ingen nye kall: alt ligger i adminData, som hentes paa hver adminskjerm.
 sjekk('… og tallene kommer fra det som alt hentes',
     str_contains($byttSida, '            const d = this.state.adminData || {};')

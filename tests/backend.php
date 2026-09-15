@@ -17729,8 +17729,8 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Tretten 14. september: handlelista, migrasjon 184, ogsaa av fra start.
 // Femten 15. september 2026: dugnad og overforing av dugnadstimer,
 // migrasjon 189 — dugnad av fra start.
-sjekk('… og har alle femten bryterne',
-    substr_count($syn, "            rad('") === 15
+sjekk('… og har alle seksten bryterne',
+    substr_count($syn, "            rad('") === 16
     && str_contains($syn, "            rad('Dugnad', this.bryterPaa('dugnad'),")
     && str_contains($syn, "            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
     && str_contains($syn, "            rad('Handlelista', this.bryterPaa('handleliste'),")

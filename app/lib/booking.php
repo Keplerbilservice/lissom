@@ -895,6 +895,9 @@ final class Booking
             $ordre = DB::en('SELECT id FROM orders WHERE payment_id = :p', ['p' => $betaling['id']]);
             if ($ordre !== null) {
                 DB::oppdater('orders', ['status' => 'betalt'], ['id' => $ordre['id']]);
+                // «Ta med barn» (migrasjon 192): tillegget paa ordren blir
+                // aktivt naar pengene er i havn — ikke foer.
+                Tillegg::aktiverForOrdre((int) $ordre['id']);
                 self::sendOrdrebekreftelse((int) $ordre['id']);
                 return true;
             }

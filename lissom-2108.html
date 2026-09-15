@@ -5039,6 +5039,36 @@ window.__resources = {
             </div>
             </sc-if>
 
+            <!-- «Ta med barn». Eieren, 15. september 2026: et tillegg paa
+                 medlemskapet, per kalendermaaned, betalt med Vipps foer det
+                 gjelder. Bryteren «Ta med barn» i ⊙ Synlighet. Ett barn per
+                 tillegg, navn og alder skrives inn, vilkaarene hukes av. -->
+            <sc-if value="{{ barnVis }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Ta med barn</span>
+                <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}"><span style="{{ barnMerkeStil }}">Aktivt · {{ barnAktivMaaned }}</span></sc-if>
+              </div>
+              <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ barnAktivTekst }}</p>
+              </sc-if>
+              <sc-if value="{{ barnIkkeAktivt }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0 0 6px; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet — hele måneden.</p>
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <span style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
+                <ul style="margin: 0 0 var(--space-3); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
+                  <li>Gjelder ut måneden, som medlemskapet</li>
+                  <li>Leire og glasur er ikke inkludert</li>
+                  <li>Barnet er alltid sammen med deg — aldri alene i verkstedet</li>
+                </ul>
+              </sc-if>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ barnKjopValg }}" as="k" hint-placeholder-count="1">
+                  <button type="button" onClick="{{ k.velg }}" style="{{ barnKnappStil }}">Kjøp for {{ k.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
             <!-- Medlemskapet i kortform. Radene, knappene og oppsigelsen
                  staar bak menyvalget Medlemskap — her staar bare hva du har
                  og hva det koster, saa kortet svarer paa det uten aa bli en
@@ -11748,6 +11778,22 @@ window.__resources = {
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Prisen paa «Ta med barn» (migrasjon 192). Ikke et medlemskap,
+             men et tillegg — derfor én rad her, ikke et kort. -->
+        <sc-if value="{{ plBarnVis }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-bottom: var(--space-8); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="flex: 1 1 260px; min-width: 0;">
+              <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">Ta med barn — tillegg per kalendermåned</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Slås av og på under ⊙ Synlighet. Prisen medlemmene betaler med Vipps.</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="text" inputmode="decimal" value="{{ plBarnPris }}" onInput="{{ settPlBarnPris }}" aria-label="Pris per måned" style="width: 80px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+              <span style="font-size: var(--text-sm); color: var(--text-muted);">kr</span>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagrePlBarnPris }}" hint-size="auto,36px">Lagre</x-import>
+            </div>
           </div>
         </sc-if>
 
@@ -23090,6 +23136,39 @@ window.__resources = {
   </div>
 </sc-if>
 
+<!-- «Ta med barn»: foer betalingen. Vilkaarene maa hukes av, navn og alder
+     skrives inn. Eieren, 15. september 2026: «den voksne maa akseptere dette
+     som vilkaar naar de kjoeper». -->
+<sc-if value="{{ barnRuteVis }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ barnRuteLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 540; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ utstStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(460px, 100%); padding: var(--space-7) var(--space-6) var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ta med barn · {{ barnRuteMaaned }}</div>
+      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); line-height: 1.15; margin-bottom: var(--space-3);">Før du betaler</div>
+      <ul style="margin: 0 0 var(--space-4); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
+        <li>Tillegget gjelder ett barn opptil {{ barnMaksAlder }} år, ut {{ barnRuteMaaned }}.</li>
+        <li>Leire og glasur er ikke inkludert.</li>
+        <li>Barnet kan ikke være alene i verkstedet, og må alltid være sammen med en voksen.</li>
+        <li>Du som foresatt sørger for at barnet følger verkstedets ordensregler og HMS-regler.</li>
+      </ul>
+      <div style="display: grid; grid-template-columns: 1fr 88px; gap: 8px; margin-bottom: var(--space-3);">
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: var(--text-xs); font-weight: 700; color: var(--text-heading);">Barnets navn
+          <input type="text" value="{{ barnNavn }}" onInput="{{ settBarnNavn }}" maxlength="120" autocomplete="off" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 11px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);"></label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: var(--text-xs); font-weight: 700; color: var(--text-heading);">Alder
+          <input type="text" inputmode="numeric" value="{{ barnAlder }}" onInput="{{ settBarnAlder }}" maxlength="2" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 11px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);"></label>
+      </div>
+      <label style="display: flex; align-items: flex-start; gap: 10px; background: var(--clay-100); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: var(--space-4); cursor: pointer; font-size: var(--text-xs); color: var(--text-heading);">
+        <input type="checkbox" checked="{{ barnVilkaar }}" onChange="{{ vekslBarnVilkaar }}" style="width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--lissom-brown);">
+        <span>Jeg har lest vilkårene og tar ansvar for at barnet følger ordensreglene og HMS-reglene, og aldri er alene i verkstedet.</span>
+      </label>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ barnKanIkkeBetale }}" on-click="{{ barnBetal }}" hint-size="100%,52px">{{ barnBetalTekst }}</x-import>
+        <button type="button" onClick="{{ barnRuteLukk }}" style="{{ utstFeilStil }}">Avbryt</button>
+      </div>
+      <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Tillegget blir aktivt så snart Vipps har bekreftet betalingen.</p>
+    </div>
+  </div>
+</sc-if>
+
 <!-- ⊙ Synlighet — alle bryterne for hva som vises, paa ett sted.
 
      Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise
@@ -33705,6 +33784,76 @@ class Component extends DCLogic {
     };
   }
 
+  // ── «Ta med barn» ───────────────────────────────────────────────────
+  hentTillegg() {
+    if (!this.erPublisert() || this._tilleggHentes) return;
+    this._tilleggHentes = true;
+    fetch('/api/tillegg-barn.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._tilleggHentes = false; if (d) this.setState({ tillegg: d }); })
+      .catch(() => { this._tilleggHentes = false; });
+  }
+
+  barnVals() {
+    const t = this.state.tillegg;
+    const vis = !!t && !!t.paa && this.medlemsvisning();
+    const a = t && t.aktivt;
+    const rute = this.state.barnRute || '';
+    const navn = String(this.state.barnNavn || '').trim();
+    const alder = String(this.state.barnAlder || '').trim();
+    const kan = navn.length >= 2 && /^\d{1,2}$/.test(alder) && !!this.state.barnVilkaar && !this._barnKjoper;
+    const valg = (t && t.kanKjope) || [];
+    const ruteNavn = (valg.find(k => k.maaned === rute) || {}).navn || '';
+    return {
+      barnVis: vis,
+      barnMaksAlder: (t && t.maksAlder) || 12,
+      barnPris: (t && t.pris) || '',
+      barnAktivt: !!a,
+      barnIkkeAktivt: !a,
+      barnAktivMaaned: a ? a.maanedNavn : '',
+      barnAktivTekst: a
+        ? 'Betalt ' + a.betalt + '. Gjelder ut ' + a.maanedNavn + ' — ' + a.barnNavn + (a.barnAlder !== null ? ' (' + a.barnAlder + ')' : '') + '. Husk: barnet er alltid sammen med deg.'
+        : '',
+      barnMerkeStil: { display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', padding: '4px 9px', borderRadius: 999, background: 'var(--sage-100, #e3e7d9)', color: 'var(--text-heading)' },
+      barnKjopValg: valg.map(k => ({ navn: k.navn, velg: () => this.setState({ barnRute: k.maaned, barnVilkaar: false }) })),
+      barnKnappStil: { appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999, padding: '9px 14px', font: 'var(--type-body-sm)', fontWeight: 700, background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)' },
+      // Ruta.
+      barnRuteVis: rute !== '',
+      barnRuteMaaned: ruteNavn,
+      barnRuteLukk: () => this.setState({ barnRute: '' }),
+      barnNavn: this.state.barnNavn || '',
+      barnAlder: this.state.barnAlder || '',
+      settBarnNavn: (e) => this.setState({ barnNavn: e.target.value }),
+      settBarnAlder: (e) => this.setState({ barnAlder: String(e.target.value).replace(/\D/g, '').slice(0, 2) }),
+      barnVilkaar: !!this.state.barnVilkaar,
+      vekslBarnVilkaar: () => this.setState(st => ({ barnVilkaar: !st.barnVilkaar })),
+      barnKanIkkeBetale: !kan,
+      barnBetalTekst: 'Betal ' + ((t && t.pris) || '') + ' med Vipps',
+      barnBetal: () => {
+        if (!kan) return;
+        this._barnKjoper = true;
+        fetch('/api/tillegg-barn.php', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handling: 'kjop', maaned: rute, barnNavn: navn, barnAlder: alder, vilkaar: 'ja' }),
+        })
+          .then(r => r.json().then(d => ({ ok: r.ok, d })))
+          .then(({ ok, d }) => {
+            this._barnKjoper = false;
+            if (!ok || !d || !d.ok || !d.url) {
+              this.setState({ kvittering: 'Fikk ikke startet betalingen', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+              return;
+            }
+            window.location.href = d.url;
+          })
+          .catch(() => {
+            this._barnKjoper = false;
+            this.setState({ kvittering: 'Fikk ikke startet betalingen', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+          });
+      },
+    };
+  }
+
   /** Verdiene til dugnadskortet paa Min side. */
   dugnadVals() {
     const dg = this.state.dugnad;
@@ -36424,6 +36573,7 @@ class Component extends DCLogic {
         if (d && d.planer) {
           this.setState({
             adminPlanerRaa: d.planer,
+            plBarnPrisRaa: d.tilleggBarnPris,
             // Serveren sier om tekstkolonnene finnes. Uten dette tolket
             // skjermen tomt svar som «ingen har skrevet noe» — og skrev at
             // kortet sto tomt paa nettsiden, mens det sto helt riktig der.
@@ -43246,6 +43396,9 @@ class Component extends DCLogic {
     if (side === 'minside' && this.state.innlogget && !this.state.dugnad) {
       this.hentDugnad();
     }
+    if (side === 'minside' && this.state.innlogget && !this.state.tillegg) {
+      this.hentTillegg();
+    }
     if ((side === 'adminubesvarte' || side === 'adminoversikt') && !this.state.dugnadAdmin) {
       this.hentDugnadAdmin();
     }
@@ -48816,6 +48969,24 @@ class Component extends DCLogic {
       })(),
       erAdminKursdeltakere: side === 'adminkursdeltakere',
       erAdminMedlemskap: side === 'adminmedlemskap',
+      // Prisen paa «Ta med barn» — se api/admin/planer.php.
+      plBarnVis: this.state.plBarnPrisRaa !== null && this.state.plBarnPrisRaa !== undefined,
+      plBarnPris: this.state.plBarnPris !== undefined ? this.state.plBarnPris : String(this.state.plBarnPrisRaa == null ? '' : this.state.plBarnPrisRaa).replace('.', ','),
+      settPlBarnPris: (e) => this.setState({ plBarnPris: e.target.value }),
+      lagrePlBarnPris: () => {
+        const kroner = String(this.state.plBarnPris !== undefined ? this.state.plBarnPris : this.state.plBarnPrisRaa || '').trim();
+        fetch('/api/admin/planer.php', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handling: 'tillegg_barn_pris', kroner }),
+        })
+          .then(r => r.json().then(d => ({ ok: r.ok, d })))
+          .then(({ ok, d }) => {
+            this.setState({ kvittering: ok && d && d.ok ? 'Lagret' : 'Ikke lagret', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+            if (ok && d && d.ok) { this.setState({ plBarnPris: undefined }); this._planerHentes = false; this.hentPlaner(); }
+          })
+          .catch(() => this.setState({ kvittering: 'Ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+      },
       adminNavMedlemskap: this.adminSideMeny(),
       adminNavKursdeltakere: this.adminSideMeny(),
       ...(() => {
@@ -49132,7 +49303,9 @@ class Component extends DCLogic {
       }).map(m => Object.assign(m, {
         // Én linje, ikke to felt limt sammen med et punktum som blir
         // staaende alene naar det ene mangler.
-        undertekst: [m.gruppe, m.kursTekst].filter(Boolean).join(' · '),
+        // «Ta med barn» (15. september 2026): staar paa raden med maaned
+        // og barnets navn, saa verkstedet ser det uten aa aapne personen.
+        undertekst: [m.gruppe, m.kursTekst, m.barn ? 'Barn · ' + m.barn.maanedKort + ' (' + m.barn.barnNavn + (m.barn.barnAlder !== null ? ', ' + m.barn.barnAlder : '') + ')' : ''].filter(Boolean).join(' · '),
         // Et medlemskap kunne bare avsluttes ved at Vipps-avtalen stoppet.
         // En som var meldt inn for haand sto som aktiv i all evighet.
         kanAvslutte: !!m.erMedlem && !m.erAdmin,
@@ -50680,6 +50853,11 @@ class Component extends DCLogic {
                 () => this.vekslBryter('dugnad', 'Dugnad')),
             rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),
                 () => this.vekslBryter('dugnadoverforing', 'Overføring av dugnadstimer')),
+            // Eieren, 15. september 2026: «Ta med barn» paa medlemskapet —
+            // «maa og kunne skrus av og paa og legges sammen de andre».
+            // Migrasjon 192 setter den av.
+            rad('Ta med barn', this.bryterPaa('tilleggbarn'),
+                () => this.vekslBryter('tilleggbarn', 'Ta med barn')),
             // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
             // store krukkemsker for medlemmer».
             //
@@ -52993,6 +53171,7 @@ class Component extends DCLogic {
       vekslStempling: () => this.vekslStempling(),
       ...this.innstRute(),
       ...this.dugnadVals(),
+      ...this.barnVals(),
       // Linjene under timestolpen: planen, dugnad og gave — bare naar det
       // finnes noe ut over planen.
       ...(() => {

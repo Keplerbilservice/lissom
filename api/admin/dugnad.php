@@ -123,7 +123,7 @@ if ($handling === 'godkjenn_tid') {
         'svar'              => $svar ?: ($d['svar'] ?? null),
     ], ['id' => $id]);
     revider('dugnad_tid_godkjent', 'member', $medlemId, ['dugnad' => $id, 'minutter' => $min]);
-    $timer = Stempling::timer($min);
+    $timer = Dugnad::kvarterTimer($min);
     $siFra('dugnad_tid_godkjent', ['timer' => $timer]);
     Svar::ok(['beskjed' => $timer . ' timer er lagt til hos ' . $navn . '.' . ($epost !== '' ? ' E-post er sendt.' : '')]);
 }

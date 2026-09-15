@@ -176,6 +176,12 @@ final class Dugnad
         );
     }
 
+    /** Kvarter som timer, med to desimaler der det trengs: 15 → «0,25», 90 → «1,5». */
+    public static function kvarterTimer(int $minutter): string
+    {
+        return str_replace('.', ',', rtrim(rtrim(number_format($minutter / 60, 2, '.', ''), '0'), '.'));
+    }
+
     /** «1 t 25 min» */
     public static function varighet(int $min): string
     {
@@ -210,8 +216,8 @@ final class Dugnad
             'minutter'  => $status === 'pagar' ? $paagaarMin : (int) ($d['minutter'] ?? 0),
             'varighet'  => self::varighet($status === 'pagar' ? $paagaarMin : (int) ($d['minutter'] ?? 0)),
             'godkjentMinutter' => $d['godkjent_minutter'] !== null ? (int) $d['godkjent_minutter'] : null,
-            'godkjentTimer'    => $d['godkjent_minutter'] !== null ? Stempling::timer((int) $d['godkjent_minutter']) : '',
-            'forslagTimer'     => Stempling::timer(self::kvarter((int) ($d['minutter'] ?? 0))),
+            'godkjentTimer'    => $d['godkjent_minutter'] !== null ? self::kvarterTimer((int) $d['godkjent_minutter']) : '',
+            'forslagTimer'     => self::kvarterTimer(self::kvarter((int) ($d['minutter'] ?? 0))),
         ];
     }
 }

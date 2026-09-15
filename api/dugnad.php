@@ -88,7 +88,7 @@ if (Foresporsel::metode() === 'POST') {
                 'navn'     => $navn,
                 'tekst'    => (string) $aktiv['tekst'],
                 'varighet' => Dugnad::varighet($min),
-                'forslag'  => Stempling::timer(Dugnad::kvarter($min)),
+                'forslag'  => Dugnad::kvarterTimer(Dugnad::kvarter($min)),
             ], 'dugnad', (int) $aktiv['id']);
         } catch (Throwable $e) {
             logg_feil('Fikk ikke sendt dugnadstid til verkstedet', $e);
@@ -109,7 +109,7 @@ Svar::json([
         'id'    => (int) $d['id'],
         'tekst' => (string) $d['tekst'],
         'dag'   => Booking::norskDatoKort((string) $d['godkjent_at']),
-        'timer' => Stempling::timer((int) $d['godkjent_minutter']),
+        'timer' => Dugnad::kvarterTimer((int) $d['godkjent_minutter']),
     ], Dugnad::ferdigeDenneManeden($id)),
     'tilgodeTimer' => Stempling::timer(Dugnad::minutterTilgode($medlem)),
     'overforing'   => Dugnad::overforing(),

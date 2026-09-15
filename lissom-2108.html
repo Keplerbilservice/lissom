@@ -2553,7 +2553,7 @@ window.__resources = {
                feltet, ogsaa en som bare rullet forbi, stoppet dermed
                rotasjonen for godt. Provd: etter én beroering byttet den
                ikke paa 27 sekunder. -->
-          <div class="lx-split" onMouseEnter="{{ rotPause }}" onMouseLeave="{{ rotFortsett }}" onTouchStart="{{ rotPause }}" onTouchEnd="{{ rotFortsett }}" onTouchCancel="{{ rotFortsett }}" style="{{ rotSplitStil }}">
+          <div class="lx-split" data-tone="rot" onMouseEnter="{{ rotPause }}" onMouseLeave="{{ rotFortsett }}" onTouchStart="{{ rotPause }}" onTouchEnd="{{ rotFortsett }}" onTouchCancel="{{ rotFortsett }}" style="{{ rotSplitStil }}">
           <img data-src="{{ rotBilde }}" alt="{{ rotAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">
           <div>
             <sc-if value="{{ rotHarLogo }}" hint-placeholder-val="{{ false }}">
@@ -2668,7 +2668,7 @@ window.__resources = {
           <!-- Paa mobil vises ett produkt om gangen, og de bytter av seg selv.
                Sidescroll krevde at man visste at det laa mer til hoyre. -->
           <div class="lx-kunmobil">
-            <div style="{{ butKortStil }}">
+            <div data-tone="but" style="{{ butKortStil }}">
               <!-- Samme kort som over og som i butikken. Sto som CourseCard,
                    og et kvadratisk produktbilde i en liggende kursramme blir
                    feil beskaaret. -->
@@ -26846,18 +26846,36 @@ class Component extends DCLogic {
 
     this[laas] = true;
     this[maal] = neste;
-    this.setState({ [nokkel + 'Ute']: true });
+    // Toningen ut og inn gaar rett paa elementet, ikke gjennom state.
+    //
+    // Foer var det to setState per bytte: «ute» (tegn alt paa nytt med
+    // opacity 0) og saa «nr» (tegn alt paa nytt igjen). Hver tegning av
+    // hele sida koster ~150 ms paa en mobil, og butikkfeltet bytter hvert
+    // 6. sekund — saa sida fikk aldri fem rolige sekunder, og maalt
+    // «interaktiv» kom foerst etter 25 s (Lighthouse, 15. september 2026).
+    // Naa: opacity 0 settes paa feltet direkte, innholdet byttes med én
+    // setState, og opacity 1 settes direkte igjen. React roerer ikke
+    // opacity — stilen fra toneStil er alltid 1.
+    this.tonSett(nokkel, '0');
     this['_timer' + nokkel] = setTimeout(() => {
       // Leser maalet paa nytt: et trykk underveis kan ha flyttet det.
-      this.setState({ [nokkel + 'Nr']: this[maal], [nokkel + 'Ute']: false });
+      this.setState({ [nokkel + 'Nr']: this[maal] }, () => {
+        requestAnimationFrame(() => this.tonSett(nokkel, '1'));
+      });
       this[laas] = false;
     }, Component.ROT_TONING);
   }
 
+  /** Opacity rett paa feltene som toner (data-tone="rot" / "but"). */
+  tonSett(nokkel, verdi) {
+    document.querySelectorAll('[data-tone="' + nokkel + '"]').forEach(el => { el.style.opacity = verdi; });
+  }
+
   /** Stilen som toner: kalles med resten av boksens egenskaper. */
   toneStil(nokkel, resten) {
+    // Alltid 1: selve toningen settes rett paa elementet i tonBytt.
     return Object.assign({}, resten, {
-      opacity: this.state[nokkel + 'Ute'] ? 0 : 1,
+      opacity: 1,
       transition: 'opacity ' + (Component.ROT_TONING / 1000) + 's var(--ease-clay, ease)',
     });
   }
@@ -32036,11 +32054,16 @@ class Component extends DCLogic {
 
     // Produktene i butikkfeltet bytter bare paa mobil, og raskere — paa
     // desktop staar alle fire ved siden av hverandre.
-    this._rotasjonBut = setInterval(() => {
-      if (kanBytte() && !this._pausebut && this.erSmal()) {
-        this.tonBytt('but', this.forsideProdukter().length);
-      }
-    }, Component.BUT_OPPHOLD);
+    // Foerste bytte etter ROT_OPPHOLD (12 s), ikke BUT_OPPHOLD (6 s): da
+    // faar sida de fem rolige sekundene maalingen krever foer noe tegnes
+    // paa nytt. Deretter hvert 6. sekund som foer.
+    this._rotasjonButStart = setTimeout(() => {
+      this._rotasjonBut = setInterval(() => {
+        if (kanBytte() && !this._pausebut && this.erSmal()) {
+          this.tonBytt('but', this.forsideProdukter().length);
+        }
+      }, Component.BUT_OPPHOLD);
+    }, Component.ROT_OPPHOLD - Component.BUT_OPPHOLD);
     this._resize = () => this.setState({ vw: window.innerWidth });
     window.addEventListener('resize', this._resize);
     // Innloggingen gikk ut. Si fra én gang, og send til innlogging — framfor
@@ -32163,6 +32186,7 @@ class Component extends DCLogic {
     }
     clearInterval(this._rotasjon);
     clearInterval(this._rotasjonBut);
+    clearTimeout(this._rotasjonButStart);
     clearTimeout(this._timerrot);
     clearTimeout(this._timerbut);
     clearInterval(this._kurvPuls);

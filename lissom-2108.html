@@ -8838,6 +8838,13 @@ window.__resources = {
                 </sc-if>
               </div>
             </div>
+            <!-- Sa serveren nei (kursholderen er opptatt, tida er feil …),
+                 staar svaret her til noe endres. Kvitteringsboksen viser det
+                 ogsaa, men den lukker seg etter to sekunder — for kort til aa
+                 lese en hel setning, og dialogen ble bare staaende. -->
+            <sc-if value="{{ klBFeilVises }}" hint-placeholder-val="{{ false }}">
+              <p role="alert" style="margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); font-size: var(--text-sm); line-height: 1.5;">{{ klBFeil }}</p>
+            </sc-if>
             <div style="display: flex; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klBBekreft }}" hint-size="auto,44px">Bekreft og legg inn</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klBAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
@@ -38737,6 +38744,17 @@ class Component extends DCLogic {
    * trodde, ikke det som faktisk staar i basen — og den forskjellen oppdager
    * man forst dagen noe gikk galt.
    */
+  /**
+   * Svaret paa «Bekreft og legg inn». Gikk det, lukkes dialogen. Gikk det
+   * ikke, blir den staaende med serverens grunn synlig (klBFeil) — klKall
+   * har alt lagt den i kvitteringDetalj, og dc-runtime skriver state
+   * synkront, saa den kan leses her.
+   */
+  klBSvar(ok) {
+    if (ok) { this.setState({ klBekreft: null, klBFeil: '' }); return; }
+    this.setState({ klBFeil: this.state.kvitteringDetalj || this.state.kvittering || 'Ble ikke lagret.' });
+  }
+
   klKall(sti, kropp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._klLagrer) return Promise.resolve(false);
@@ -40438,18 +40456,20 @@ class Component extends DCLogic {
             return {
               klBVises: !!b,
               klBTittel: b ? b.kursNavn : '',
+              klBFeil: this.state.klBFeil || '',
+              klBFeilVises: !!this.state.klBFeil,
               klBDato: this.state.klBDato || '',
-              settKlBDato: e => this.setState({ klBDato: e.target.value }),
+              settKlBDato: e => this.setState({ klBDato: e.target.value, klBFeil: '' }),
               klBFra: this.state.klBFra || '',
-              settKlBFra: e => this.setState({ klBFra: e.target.value }),
+              settKlBFra: e => this.setState({ klBFra: e.target.value, klBFeil: '' }),
               klBTil: this.state.klBTil || '',
-              settKlBTil: e => this.setState({ klBTil: e.target.value }),
-              klBHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klBHolder: n }), stil: chipStil(this.state.klBHolder === n, null) })),
-              klBGjentaValg: ['Én gang', 'Hver uke', 'Annenhver uke'].map(n => ({ navn: n, velg: () => this.setState({ klBGjenta: n }), stil: chipStil((this.state.klBGjenta || 'Én gang') === n, null) })),
+              settKlBTil: e => this.setState({ klBTil: e.target.value, klBFeil: '' }),
+              klBHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klBHolder: n, klBFeil: '' }), stil: chipStil(this.state.klBHolder === n, null) })),
+              klBGjentaValg: ['Én gang', 'Hver uke', 'Annenhver uke'].map(n => ({ navn: n, velg: () => this.setState({ klBGjenta: n, klBFeil: '' }), stil: chipStil((this.state.klBGjenta || 'Én gang') === n, null) })),
               klBErGjenta: (this.state.klBGjenta || 'Én gang') !== 'Én gang',
               klBAntall: this.state.klBAntall || '4',
               settKlBAntall: e => this.setState({ klBAntall: e.target.value }),
-              klBAvbryt: () => this.setState({ klBekreft: null }),
+              klBAvbryt: () => this.setState({ klBekreft: null, klBFeil: '' }),
               // Kurset settes opp paa datoen gjennom kurs.php. Gjentas det,
               // gaar det som en serie — da fyller cron paa framover, saa
               // kurset ikke gaar tomt for datoer og forsvinner fra nettsida.
@@ -40475,7 +40495,7 @@ class Component extends DCLogic {
                     handling: 'nydato', kursId: kursId,
                     start: d + ' ' + fra, slutt: til ? d + ' ' + til : '',
                     kursholderId: this.klHolderId(this.state.klBHolder),
-                  }).then(ok => { if (ok) this.setState({ klBekreft: null }); });
+                  }).then(ok => this.klBSvar(ok));
                   return;
                 }
                 // En serie trenger bade start og slutt: regelen sier «torsdager
@@ -40499,7 +40519,7 @@ class Component extends DCLogic {
                   antall: antallGanger,
                   ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),
                   startDato: d,
-                }).then(ok => { if (ok) this.setState({ klBekreft: null }); });
+                }).then(ok => this.klBSvar(ok));
               },
             };
           })(),

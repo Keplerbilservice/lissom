@@ -248,13 +248,17 @@ final class Medlemskap
      * Fri tilgang blir staaende fri: har planen ingen grense, er det
      * ingenting aa legge timer til.
      */
-    public static function timerMedGaver(array $medlem): ?int
+    public static function timerMedGaver(array $medlem): int|float|null
     {
         $tak = self::timerFor($medlem);
         if ($tak === null) {
             return null;
         }
-        return $tak + self::gavetimer((int) ($medlem['id'] ?? 0));
+        // Dugnadstimer legges ogsaa til (eieren, 15. september 2026) — de
+        // rundes til kvarter, saa taket kan bli 31,75. Se Dugnad::minutterTilgode().
+        $dugnad = class_exists('Dugnad') ? Dugnad::minutterTilgode($medlem) : 0;
+        $sum = $tak + self::gavetimer((int) ($medlem['id'] ?? 0)) + $dugnad / 60;
+        return $dugnad % 60 === 0 ? (int) $sum : $sum;
     }
 
     /**

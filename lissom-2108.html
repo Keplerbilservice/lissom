@@ -4904,11 +4904,15 @@ window.__resources = {
                  verkstedet og den andre ut av kontoen din. Han ba den bort:
                  «Log ut fjernes her infra og legges på menyen i bunn». -->
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <!-- Liten pille, ikke stor knapp. Eieren, 15. september 2026:
+                   «den maa vaere mindre saa man ikke trykker feil, og man maa
+                   faa spoersmaal, er du sikker». Spoersmaalet staar i ruta
+                   innstRute; utstempling har alt sin. -->
               <sc-if value="{{ harTimer }}" hint-placeholder-val="{{ true }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="sm" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,36px">{{ stemplingKnapp }}</x-import>
               </sc-if>
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="qr-code" disabled="{{ sant }}" hint-size="auto,52px">Stemple inn</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="qr-code" disabled="{{ sant }}" hint-size="auto,36px">Stemple inn</x-import>
               </sc-if>
             </div>
             <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-3);">{{ stemplingTekst }}</div>
@@ -4967,10 +4971,69 @@ window.__resources = {
                 <div style="{{ timerBarStil }}"></div>
               </div>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ timerUndertekst }}</p>
+              <!-- Hvor timene kommer fra, naar det er mer enn planen: dugnad
+                   og timegave som egne linjer. Eieren, 15. september 2026:
+                   «de maa paa en maate se at det er lagt til tid». -->
+              <sc-if value="{{ timerHarEkstra }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-2);">
+                  <sc-for list="{{ timerLinjer }}" as="l" hint-placeholder-count="3">
+                    <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs); padding: 3px 0; color: var(--text-muted);"><span>{{ l.navn }}</span><strong style="{{ l.stil }}">{{ l.timer }}</strong></div>
+                  </sc-for>
+                </div>
+              </sc-if>
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
                 <div style="border-top: 1px solid var(--terracotta-500); margin-top: var(--space-4); padding-top: var(--space-3);">
                   <div style="font-weight: 700; font-size: var(--text-xs); color: var(--terracotta-600); margin-bottom: 6px;">Timene er brukt opp</div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ aFornyAbo }}" hint-size="auto,36px">Forny</x-import>
+                </div>
+              </sc-if>
+            </div>
+            </sc-if>
+
+            <!-- Dugnad. Eieren, 15. september 2026: medlemmet spoer, Monica
+                 godkjenner, medlemmet stempler inn og ut som dugnad, tida
+                 godkjennes og legges til timene. Kortet finnes bare naar
+                 bryteren «Dugnad» (⊙ Synlighet → Paa Min side) staar paa. -->
+            <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Dugnad</span>
+                <sc-if value="{{ dugMerkeVis }}" hint-placeholder-val="{{ false }}"><span style="{{ dugMerkeStil }}">{{ dugMerke }}</span></sc-if>
+              </div>
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ dugTekstLinje }}</p>
+              <!-- Ingen dugnad i gang: skriv og send. -->
+              <sc-if value="{{ dugKanSporre }}" hint-placeholder-val="{{ true }}">
+                <textarea rows="2" maxlength="500" placeholder="Hva vil du gjøre? F.eks. vaske gulvet og tørke av hyllene i glasurrommet, ca. 1,5 time" value="{{ dugTekst }}" onChange="{{ settDugTekst }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 11px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: 8px;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ dugSend }}" hint-size="auto,36px">Send forespørsel</x-import>
+                </div>
+                <div style="margin-top: var(--space-3); padding: 9px 12px; border-radius: var(--radius-md); background: var(--clay-100); font-size: var(--text-xs); color: var(--text-heading); text-wrap: pretty;">Verkstedet er nøye: jobben skal være godt utført. Tida godkjennes av verkstedet etterpå, og legges da til timene dine.</div>
+              </sc-if>
+              <!-- Sendt, venter paa svar. -->
+              <sc-if value="{{ dugVenter }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">Sendt {{ dugSendt }}. Du får e-post når verkstedet har svart.</div>
+                <button type="button" onClick="{{ dugTrekk }}" style="appearance: none; background: transparent; border: none; padding: 0; margin-top: 6px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Trekk forespørselen</button>
+              </sc-if>
+              <!-- Godkjent: stemple inn dugnad. Groenn, saa den ikke tas for den vanlige. -->
+              <sc-if value="{{ dugKanInn }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ dugApneInn }}" style="{{ dugKnappStil }}">○  Stemple inn dugnad</button>
+                <div style="margin-top: var(--space-3); padding: 9px 12px; border-radius: var(--radius-md); background: var(--clay-100); font-size: var(--text-xs); color: var(--text-heading); text-wrap: pretty;">Stemple inn når du begynner, og ut når du er ferdig. Tida trekkes ikke fra timene dine — den legges til når jobben er godkjent.</div>
+              </sc-if>
+              <!-- Paagaar: stemple ut. -->
+              <sc-if value="{{ dugPagar }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 8px;">Innstemplet dugnad {{ dugInn }} · {{ dugVarighet }}</div>
+                <button type="button" onClick="{{ dugApneUt }}" style="{{ dugKnappUtStil }}">●  Stemple ut dugnad</button>
+              </sc-if>
+              <!-- Til godkjenning. -->
+              <sc-if value="{{ dugTilGodkjenning }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Du jobbet {{ dugVarighet }} {{ dugDag }}. Verkstedet ser over jobben og godkjenner tida — da legges den til timene dine.</div>
+              </sc-if>
+              <!-- Ferdige denne maaneden. -->
+              <sc-if value="{{ dugHarFerdige }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-3);">
+                  <sc-for list="{{ dugFerdige }}" as="d" hint-placeholder-count="2">
+                    <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); padding: 3px 0;"><span>{{ d.dag }} · {{ d.tekst }}</span><strong style="color: var(--sage-600, #5f6a4e); white-space: nowrap;">+{{ d.timer }} t</strong></div>
+                  </sc-for>
                 </div>
               </sc-if>
             </div>
@@ -7274,6 +7337,41 @@ window.__resources = {
             </div>
           </sc-for>
         </div>
+
+        <!-- Dugnad. Eieren, 15. september 2026: forespoerslene godkjennes av
+             Monica foer medlemmet faar stemple inn, og tida godkjennes
+             etterpaa. Begge her, under de ubesvarte — det er henvendelser. -->
+        <sc-if value="{{ dugAdmVis }}" hint-placeholder-val="{{ false }}">
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-top: var(--space-6);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;"><span>Dugnad</span><span style="{{ dugAdmBryterStil }}">{{ dugAdmBryterTekst }}</span></div>
+          <sc-if value="{{ dugAdmTom }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen dugnader venter.</div>
+          </sc-if>
+          <sc-for list="{{ dugAdmListe }}" as="d" hint-placeholder-count="2">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ d.navn }} <span style="{{ d.merkeStil }}">{{ d.merke }}</span></div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ d.naar }}</span>
+              </div>
+              <div style="font-size: var(--text-sm); color: var(--text-body); margin: 4px 0 8px; text-wrap: pretty;">«{{ d.tekst }}»{{ d.tidTekst }}</div>
+              <sc-if value="{{ d.venter }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ d.godkjenn }}" hint-size="auto,36px">Godkjenn</x-import>
+                  <button type="button" onClick="{{ d.avslaa }}" style="{{ dugAdmLenkeStil }}">Avslå</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ d.tilGodkjenning }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <input type="text" inputmode="decimal" aria-label="Timer som legges til" value="{{ d.timerFelt }}" onChange="{{ d.settTimer }}" style="width: 64px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">timer legges til (rundes til kvarter)</span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ d.godkjennTid }}" hint-size="auto,36px">Godkjenn tida</x-import>
+                  <button type="button" onClick="{{ d.avvisTid }}" style="{{ dugAdmLenkeStil }}">Avvis</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
       </main>
     </div>
   </sc-if>
@@ -22964,6 +23062,24 @@ window.__resources = {
   </div>
 </sc-if>
 
+<!-- «Er du sikker?» foer innstempling. Eieren, 15. september 2026: «man
+     maa faa spoersmaal, er du sikker, samme opplegg naar man stempler ut».
+     Utstempling har ruta over; dette er den samme for inn — og for dugnad
+     inn og ut. Én mal, tre tilstander (innstRute). -->
+<sc-if value="{{ innstVis }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ innstLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 540; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ utstStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(420px, 100%); padding: var(--space-7) var(--space-6) var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; text-align: center;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ innstEyebrow }}</div>
+      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); line-height: 1.15;">{{ innstTittel }}</div>
+      <p style="margin: var(--space-3) 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ innstTekst }}</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ innstBekreft }}" hint-size="100%,52px">{{ innstKnapp }}</x-import>
+        <button type="button" onClick="{{ innstLukk }}" style="{{ utstFeilStil }}">Avbryt</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <!-- ⊙ Synlighet — alle bryterne for hva som vises, paa ett sted.
 
      Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise
@@ -25029,7 +25145,9 @@ class Component extends DCLogic {
     const funnet = this.planer().find(p => p.navn === navn);
     if (funnet) {
       if (!harSvar) return funnet;
-      const timer = st.timer.perMnd;
+      // Planens eget tall, ikke taket: taket har gavetimer og dugnad lagt
+      // til (15. september 2026), og de er ikke «timer i maaneden».
+      const timer = st.timer.plan !== undefined ? st.timer.plan : st.timer.perMnd;
       // ── Naar medlemmet har sitt eget timetall ─────────────────────
       //
       // «members.timer_per_mnd» gaar foran planen, og serveren regner
@@ -33429,10 +33547,193 @@ class Component extends DCLogic {
     const alle = st.ressurser || [];
     const valgt = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
     // Utstempling gaar via ruta som viser hvor lenge man var inne. Eieren, 13.
-    // september 2026. Innstempling gaar rett gjennom som for — der er det
-    // ingenting aa bekrefte.
+    // september 2026. Innstempling ogsaa, fra 15. september: «man maa faa
+    // spoersmaal, er du sikker».
     if (inne) { this.setState({ utstApen: true }); return; }
-    this.stemplingKall({ handling: 'inn', ressursId: valgt || 0 }, true);
+    this.setState({ innstRute: 'inn', innstRessurs: valgt || 0 });
+  }
+
+  /** Ruta «Stemple inn naa?» — og de to for dugnad. Én rute, tre tilstander. */
+  innstRute() {
+    const r = this.state.innstRute || '';
+    const d = (this.state.dugnad || {}).aktiv || {};
+    const tekster = {
+      inn: { eyebrow: 'Stemple inn', tittel: 'Stemple inn nå?', tekst: 'Tida trekkes fra timene dine denne måneden. Husk å stemple ut når du går.', knapp: 'Ja, stemple inn' },
+      duginn: { eyebrow: 'Dugnad', tittel: 'Stemple inn dugnad?', tekst: 'Husk å stemple ut når du er ferdig. Tida legges til timene dine når verkstedet har godkjent jobben.', knapp: 'Ja, stemple inn' },
+      dugut: { eyebrow: 'Dugnad', tittel: 'Stemple ut dugnad?', tekst: 'Du var inne i ' + (d.varighet || '') + '. Tida sendes til verkstedet for godkjenning.', knapp: 'Ja, stemple ut' },
+    }[r] || {};
+    return {
+      innstVis: r !== '',
+      innstEyebrow: tekster.eyebrow || '',
+      innstTittel: tekster.tittel || '',
+      innstTekst: tekster.tekst || '',
+      innstKnapp: tekster.knapp || '',
+      innstLukk: () => this.setState({ innstRute: '' }),
+      innstBekreft: () => {
+        this.setState({ innstRute: '' });
+        if (r === 'inn') this.stemplingKall({ handling: 'inn', ressursId: this.state.innstRessurs || 0 }, true);
+        if (r === 'duginn') this.dugnadKall({ handling: 'inn' }, 'Du er stemplet inn som dugnad');
+        if (r === 'dugut') this.dugnadKall({ handling: 'ut' }, 'Takk for dugnaden');
+      },
+    };
+  }
+
+  // ── Dugnad ───────────────────────────────────────────────────────────
+  //
+  // Eieren, 15. september 2026. Medlemmet spoer (tekst), Monica godkjenner
+  // (api/admin/dugnad.php), medlemmet stempler inn og ut som dugnad, og
+  // tida godkjennes foer den legges til timene. Se app/lib/dugnad.php.
+  hentDugnad() {
+    if (!this.erPublisert() || this._dugnadHentes) return;
+    this._dugnadHentes = true;
+    fetch('/api/dugnad.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._dugnadHentes = false; if (d) this.setState({ dugnad: d }); })
+      .catch(() => { this._dugnadHentes = false; });
+  }
+
+  dugnadKall(kropp, tittel) {
+    if (!this.erPublisert() || this._dugnadKaller) return;
+    this._dugnadKaller = true;
+    fetch('/api/dugnad.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._dugnadKaller = false;
+        if (!ok || !d || !d.ok) {
+          this.setState({ kvittering: 'Fikk ikke registrert', kvitteringDetalj: (d && d.feil) || 'Prøv igjen, eller si fra i verkstedet.' });
+          return;
+        }
+        this.setState({ kvittering: tittel, kvitteringDetalj: d.beskjed || '', dugTekst: '' });
+        this._dugnadHentes = false; this.hentDugnad();
+        // Timene kan ha endret seg (godkjent tid legges til taket).
+        this._stemplingHentes = false; this.hentStempling();
+      })
+      .catch(() => {
+        this._dugnadKaller = false;
+        this.setState({ kvittering: 'Fikk ikke registrert', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /** Dugnadene, sett fra verkstedet (Ubesvarte). */
+  hentDugnadAdmin() {
+    if (!this.erPublisert() || this._dugAdmHentes) return;
+    this._dugAdmHentes = true;
+    fetch('/api/admin/dugnad.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._dugAdmHentes = false; this.setState({ dugnadAdmin: d || { dugnader: [] } }); })
+      .catch(() => { this._dugAdmHentes = false; });
+  }
+
+  dugnadAdminKall(kropp) {
+    if (!this.erPublisert() || this._dugAdmKaller) return;
+    this._dugAdmKaller = true;
+    fetch('/api/admin/dugnad.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._dugAdmKaller = false;
+        this.setState({
+          kvittering: ok && d && d.ok ? 'Dugnad' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || 'Prøv igjen.',
+        });
+        this._dugAdmHentes = false; this.hentDugnadAdmin();
+        this._adminHentes = false; this.hentAdmin();
+      })
+      .catch(() => {
+        this._dugAdmKaller = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  dugnadAdminVals() {
+    const da = this.state.dugnadAdmin;
+    const alle = (da && da.dugnader) || [];
+    // Bare det som venter paa Monica, pluss det som paagaar naa.
+    const liste = alle.filter(d => d.status === 'venter' || d.status === 'til_godkjenning' || d.status === 'pagar' || d.status === 'godkjent');
+    const merke = { venter: 'Ny forespørsel', godkjent: 'Godkjent, ikke begynt', pagar: 'Pågår nå', til_godkjenning: 'Tid til godkjenning' };
+    const felt = this.state.dugTimerFelt || {};
+    return {
+      dugAdmVis: !!da && this.erPublisert(),
+      dugAdmTom: liste.length === 0,
+      dugAdmBryterTekst: da && da.paa ? 'På for medlemmene' : 'Av — slå på under ⊙ Synlighet',
+      dugAdmBryterStil: { textTransform: 'none', letterSpacing: 0, color: da && da.paa ? 'var(--sage-600, #5f6a4e)' : 'var(--terracotta-600)' },
+      dugAdmLenkeStil: { appearance: 'none', background: 'transparent', border: 'none', padding: '0 4px', cursor: 'pointer', font: 'var(--type-body-sm)', color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: 3 },
+      dugAdmListe: liste.map(d => ({
+        navn: d.navn,
+        merke: merke[d.status] || d.status,
+        merkeStil: { display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 800, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 999, background: d.status === 'til_godkjenning' || d.status === 'venter' ? 'var(--lissom-yellow)' : 'var(--clay-100)', color: 'var(--lissom-brown)' },
+        naar: d.status === 'til_godkjenning' || d.status === 'pagar' ? d.dag : d.sendt,
+        tekst: d.tekst,
+        tidTekst: d.status === 'til_godkjenning' ? ' · stemplet ' + d.inn + '–' + d.ut + ' = ' + d.varighet
+          : d.status === 'pagar' ? ' · innstemplet ' + d.inn + ', ' + d.varighet + ' så langt' : '',
+        venter: d.status === 'venter',
+        tilGodkjenning: d.status === 'til_godkjenning',
+        timerFelt: felt[d.id] !== undefined ? felt[d.id] : d.forslagTimer,
+        settTimer: (e) => this.setState(st => ({ dugTimerFelt: Object.assign({}, st.dugTimerFelt, { [d.id]: e.target.value }) })),
+        godkjenn: () => this.dugnadAdminKall({ handling: 'godkjenn', id: d.id }),
+        avslaa: () => { if (window.confirm('Avslå dugnaden til ' + d.navn + '? Medlemmet får beskjed.')) this.dugnadAdminKall({ handling: 'avslaa', id: d.id }); },
+        godkjennTid: () => this.dugnadAdminKall({ handling: 'godkjenn_tid', id: d.id, timer: felt[d.id] !== undefined ? felt[d.id] : d.forslagTimer }),
+        avvisTid: () => { if (window.confirm('Ikke legge til tida for ' + d.navn + '? Medlemmet får beskjed.')) this.dugnadAdminKall({ handling: 'avvis_tid', id: d.id }); },
+      })),
+    };
+  }
+
+  /** Verdiene til dugnadskortet paa Min side. */
+  dugnadVals() {
+    const dg = this.state.dugnad;
+    const a = dg && dg.aktiv;
+    const st = a ? a.status : '';
+    const vis = !!dg && !!dg.paa && this.medlemsvisning();
+    const merke = { venter: 'Venter på svar', godkjent: 'Godkjent', pagar: 'Pågår', til_godkjenning: 'Til godkjenning' }[st] || '';
+    const knapp = (bg) => ({
+      appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999,
+      padding: '9px 14px', font: 'var(--type-body-sm)', fontWeight: 700,
+      background: bg, color: '#fff',
+    });
+    return {
+      dugVis: vis,
+      dugMerkeVis: merke !== '',
+      dugMerke: merke,
+      dugMerkeStil: {
+        display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: 'var(--tracking-caps)',
+        textTransform: 'uppercase', padding: '4px 9px', borderRadius: 999,
+        background: st === 'godkjent' || st === 'pagar' ? 'var(--sage-100, #e3e7d9)' : 'var(--clay-100)',
+        color: 'var(--text-heading)',
+      },
+      dugTekstLinje: !a
+        ? 'Vil du bidra i verkstedet — vaske, rydde, sortere glasur? Tida du jobber legges til timene dine når verkstedet har godkjent jobben.'
+        : '«' + a.tekst + '»' + (a.svar ? ' — ' + a.svar : '') + (st === 'godkjent' && a.svart ? ' Godkjent ' + a.svart + '.' : ''),
+      dugKanSporre: vis && !a,
+      dugVenter: st === 'venter',
+      dugSendt: a ? a.sendt : '',
+      dugKanInn: st === 'godkjent',
+      dugPagar: st === 'pagar',
+      dugTilGodkjenning: st === 'til_godkjenning',
+      dugInn: a ? a.inn : '',
+      dugDag: a ? a.dag : '',
+      dugVarighet: a ? a.varighet : '',
+      dugTekst: this.state.dugTekst || '',
+      settDugTekst: (e) => this.setState({ dugTekst: e.target.value }),
+      dugSend: () => {
+        const t = String(this.state.dugTekst || '').trim();
+        if (t.length < 5) { this.setState({ kvittering: 'Skriv hva du vil gjøre', kvitteringDetalj: 'For eksempel «vaske gulvet i glasurrommet».' }); return; }
+        this.dugnadKall({ handling: 'sporr', tekst: t }, 'Forespørselen er sendt');
+      },
+      dugTrekk: () => this.dugnadKall({ handling: 'trekk' }, 'Forespørselen er trukket'),
+      dugApneInn: () => this.setState({ innstRute: 'duginn' }),
+      dugApneUt: () => this.setState({ innstRute: 'dugut' }),
+      dugKnappStil: knapp('var(--sage-500)'),
+      dugKnappUtStil: knapp('var(--lissom-brown)'),
+      dugHarFerdige: !!dg && (dg.ferdige || []).length > 0,
+      dugFerdige: (dg && dg.ferdige) || [],
+    };
   }
 
   /** Stempler ut for ekte, og lukker ruta. */
@@ -42922,6 +43223,12 @@ class Component extends DCLogic {
         && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
     }
+    if (side === 'minside' && this.state.innlogget && !this.state.dugnad) {
+      this.hentDugnad();
+    }
+    if ((side === 'adminubesvarte' || side === 'adminoversikt') && !this.state.dugnadAdmin) {
+      this.hentDugnadAdmin();
+    }
     // Feilrapportene. Hentes paa skjermen som viser dem, og paa Oversikt —
     // der staar det et kort naar noe er meldt inn og ikke sett paa enda.
     if ((side === 'adminfeil' || side === 'adminoversikt') && !this.state.feilData) {
@@ -50212,6 +50519,7 @@ class Component extends DCLogic {
       })),
       ingenOvUbesvarte: this.erPublisert()
         && (this.state.adminForesporsler || []).filter(f => f.status === 'Ubesvart').length === 0,
+      ...this.dugnadAdminVals(),
       ...(() => {
         const m = this.state.migStatus;
         const mangler = (m && m.mangler) || [];
@@ -50344,6 +50652,12 @@ class Component extends DCLogic {
                 () => this.vekslBryter('glemtstempling', 'Glemt å stemple ut')),
             rad('Handlelista', this.bryterPaa('handleliste'),
                 () => this.vekslBryter('handleliste', 'Handlelista')),
+            // Eieren, 15. september 2026: dugnad «maa kunne skrus av og paa
+            // og legges sammen de andre bryterne». Migrasjon 189 setter den av.
+            rad('Dugnad', this.bryterPaa('dugnad'),
+                () => this.vekslBryter('dugnad', 'Dugnad')),
+            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),
+                () => this.vekslBryter('dugnadoverforing', 'Overføring av dugnadstimer')),
             // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
             // store krukkemsker for medlemmer».
             //
@@ -52310,7 +52624,7 @@ class Component extends DCLogic {
 
         return {
           timerIgjen: fri ? 'Fritt' : String(st.timer.igjen).replace('.', ','),
-          timerMaks: fri ? 'ingen timebegrensning' : 'av ' + st.timer.perMnd + ' timer',
+          timerMaks: fri ? 'ingen timebegrensning' : 'av ' + String(st.timer.perMnd).replace('.', ',') + ' timer',
           // «Fri tilgang» sto her som fast tekst. Den navngir en bestemt
           // plan, og sto derfor med feil navn for alle andre planer uten
           // timegrense. Planen medlemmet har sier det selv.
@@ -52641,6 +52955,24 @@ class Component extends DCLogic {
       // knappen paa Min side og den paa «/stemple» kaller den — ett sted som
       // stempler, ikke to som kan komme i utakt.
       vekslStempling: () => this.vekslStempling(),
+      ...this.innstRute(),
+      ...this.dugnadVals(),
+      // Linjene under timestolpen: planen, dugnad og gave — bare naar det
+      // finnes noe ut over planen.
+      ...(() => {
+        const t = (this.state.stempling || {}).timer || {};
+        const plan = t.plan == null ? null : Number(t.plan);
+        const gaver = Number(t.gaver || 0);
+        const dugMin = Number(t.dugnadMin || 0);
+        const linjer = [];
+        if (plan !== null && (gaver > 0 || dugMin > 0)) {
+          linjer.push({ navn: 'Medlemskapet ditt', timer: plan + ' t', stil: { color: 'var(--text-heading)' } });
+          if (dugMin > 0) linjer.push({ navn: '+ Dugnad (godkjent)', timer: '+' + String(Math.round(dugMin / 60 * 100) / 100).replace('.', ',') + ' t', stil: { color: 'var(--sage-600, #5f6a4e)' } });
+          if (gaver > 0) linjer.push({ navn: '+ Timegave fra verkstedet', timer: '+' + gaver + ' t', stil: { color: 'var(--sage-600, #5f6a4e)' } });
+          if ((this.state.dugnad || {}).overforing && dugMin > 0) linjer.push({ navn: 'Dugnadstimer du ikke bruker, tas med til neste måned.', timer: '', stil: {} });
+        }
+        return { timerHarEkstra: linjer.length > 0, timerLinjer: linjer };
+      })(),
       // Dialogen sto i skjemamodus og tegnet tre tomme rader — «Vennens navn»
       // uten noe felt aa skrive i — og «Send invitasjon» satte en bryter i
       // nettleseren. Verkstedet fikk aldri vite at noen hadde invitert en

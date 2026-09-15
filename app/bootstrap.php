@@ -68,6 +68,7 @@ require APP_DIR . '/lib/veileder.php';
 require APP_DIR . '/lib/medlemskap.php';
 require APP_DIR . '/lib/medlemsordre.php';
 require APP_DIR . '/lib/frys.php';
+require APP_DIR . '/lib/dugnad.php';
 require APP_DIR . '/lib/oppsett.php';
 require APP_DIR . '/lib/kursmal.php';
 require APP_DIR . '/lib/tikk.php';

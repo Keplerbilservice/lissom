@@ -2673,7 +2673,10 @@ sjekk('… men bare fra gaver som fortsatt staar',
     && str_contains($medlFil2, 'AND g.gyldig_til >= :idag'));
 // Ett sted, ikke to: Min side og medlemslista leser den samme regelen.
 sjekk('… og Min side og admin leser den samme regelen',
-    str_contains($medlFil2, 'public static function timerMedGaver(array $medlem): ?int')
+    // Dugnadstimer kom til 15. september 2026 (migrasjon 189) — rundet til
+    // kvarter, saa taket kan vaere 31,75.
+    str_contains($medlFil2, 'public static function timerMedGaver(array $medlem): int|float|null')
+    && str_contains($medlFil2, 'Dugnad::minutterTilgode($medlem)')
     && str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
                     '$perMnd = Medlemskap::timerMedGaver($medlem);')
     && substr_count(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
@@ -6160,7 +6163,9 @@ if (DB::harKolonne('check_ins', 'ressurs_id') && DB::harTabell('ressurser')) {
 }
 sjekk('valget staar paa Min side, der medlemmet stempler inn',
     str_contains($sida2, 'msRessursValg:')
-    && str_contains($sida2, "{ handling: 'inn', ressursId: valgt || 0 }"));
+    // Valget foelger med gjennom ruta «Stemple inn naa?» (15. september 2026).
+    && str_contains($sida2, "this.setState({ innstRute: 'inn', innstRessurs: valgt || 0 });")
+    && str_contains($sida2, "this.stemplingKall({ handling: 'inn', ressursId: this.state.innstRessurs || 0 }, true);"));
 // En ressurs som er slettet eller slaatt av skal ikke gjore at innstemplinga
 // mislykkes — medlemmet staar med telefonen i haanda i dora.
 sjekk('… og en ukjent ressurs stopper ikke innstemplinga',
@@ -14419,8 +14424,10 @@ sjekk('doerkoden staar som en liten pille ved navnet',
     'ikke i et eget kort etter fem andre');
 
 // ── Verkstedet ditt ───────────────────────────────────────────────
+// Dugnadskortet (15. september 2026) ligger mellom timene og medlemskapet,
+// saa avstanden fra stolpen til «mittAbo» ble lengre.
 sjekk('stempling, timer og medlemskap staar i ett kort',
-    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,4000}\{\{ mittAbo \}\}/s', $msRen),
+    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,12000}\{\{ mittAbo \}\}/s', $msRen),
     'tre steder ble ett');
 // ── Kortet finner ikke paa en plan ────────────────────────────────
 //
@@ -17718,8 +17725,12 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // glemte aa stemple for medlemmene. Og den skal og skrus av.» Migrasjon 181
 // setter den av; herfra kan den slaas paa igjen.
 // Tretten 14. september: handlelista, migrasjon 184, ogsaa av fra start.
-sjekk('… og har alle tretten bryterne',
-    substr_count($syn, "            rad('") === 13
+// Femten 15. september 2026: dugnad og overforing av dugnadstimer,
+// migrasjon 189 — dugnad av fra start.
+sjekk('… og har alle femten bryterne',
+    substr_count($syn, "            rad('") === 15
+    && str_contains($syn, "            rad('Dugnad', this.bryterPaa('dugnad'),")
+    && str_contains($syn, "            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
     && str_contains($syn, "            rad('Handlelista', this.bryterPaa('handleliste'),")
     && str_contains($syn, "            rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),")
     && str_contains($syn, "            rad('Banneret under toppbildet',")
@@ -17902,10 +17913,14 @@ sjekk('… mens «Feil tid — si fra» staar uansett',
 // lukket oekta (0 aapne igjen) og la én henvendelse av typen «Feil
 // stemplingstid» i admin.
 $stemplApi = (string) file_get_contents(dirname(__DIR__) . '/api/stempling.php');
-sjekk('utstempling gaar via ruta, innstempling rett gjennom',
+// Innstempling ogsaa via ei rute fra 15. september 2026. Eieren: «man maa
+// faa spoersmaal, er du sikker, samme opplegg naar man stempler ut».
+sjekk('utstempling og innstempling gaar begge via ei rute',
     str_contains($sida, "if (inne) { this.setState({ utstApen: true }); return; }")
-    && str_contains($sida, "this.stemplingKall({ handling: 'inn', ressursId: valgt || 0 }, true);")
-    && str_contains($sida, '<sc-if value="{{ utstVis }}"'));
+    && str_contains($sida, "this.setState({ innstRute: 'inn', innstRessurs: valgt || 0 });")
+    && str_contains($sida, '<sc-if value="{{ utstVis }}"')
+    && str_contains($sida, '<sc-if value="{{ innstVis }}"')
+    && str_contains($sida, "tittel: 'Stemple inn nå?'"));
 sjekk('… og ruta sier hvor lenge, med tallene serveren alt sender',
     str_contains($sida, "utstLenge: 'Du var inne i ' + lenge,")
     && str_contains($sida, "utstFra: 'Stemplet inn ' + siden + '. Tida trekkes fra timene dine denne måneden.',"));

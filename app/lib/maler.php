@@ -431,5 +431,42 @@ final class Maler
                 'beskjed' => 'Det medlemmet skrev',
             ],
         ],
+
+        // ── Dugnad (migrasjon 189/190) ──────────────────────────────
+        'intern_dugnad_sporsmal' => [
+            'tittel' => 'Til deg: dugnad — noen vil bidra',
+            'hvor'   => 'Sendes til verkstedet når et medlem ber om å jobbe dugnad.',
+            'felter' => ['navn' => 'Navnet på medlemmet', 'tekst' => 'Det medlemmet vil gjøre'],
+        ],
+        'intern_dugnad_ferdig' => [
+            'tittel' => 'Til deg: dugnad — tid til godkjenning',
+            'hvor'   => 'Sendes til verkstedet når medlemmet stempler ut fra dugnad.',
+            'felter' => [
+                'navn'     => 'Navnet på medlemmet',
+                'tekst'    => 'Det medlemmet gjorde',
+                'varighet' => 'Stemplet tid, f.eks. «1 t 25 min»',
+                'forslag'  => 'Tida rundet til kvarter, i timer',
+            ],
+        ],
+        'dugnad_godkjent' => [
+            'tittel' => 'Dugnad godkjent',
+            'hvor'   => 'Sendes til medlemmet når du godkjenner forespørselen.',
+            'felter' => ['fornavn' => 'Fornavnet', 'tekst' => 'Det medlemmet vil gjøre', 'svar' => 'Det du skrev, eller tom'],
+        ],
+        'dugnad_avslatt' => [
+            'tittel' => 'Dugnad avslått',
+            'hvor'   => 'Sendes til medlemmet når du avslår forespørselen.',
+            'felter' => ['fornavn' => 'Fornavnet', 'tekst' => 'Det medlemmet ville gjøre', 'svar' => 'Det du skrev, eller tom'],
+        ],
+        'dugnad_tid_godkjent' => [
+            'tittel' => 'Dugnadstid lagt til',
+            'hvor'   => 'Sendes til medlemmet når du godkjenner tida.',
+            'felter' => ['fornavn' => 'Fornavnet', 'tekst' => 'Det medlemmet gjorde', 'timer' => 'Timene som ble lagt til', 'svar' => 'Det du skrev, eller tom'],
+        ],
+        'dugnad_tid_avvist' => [
+            'tittel' => 'Dugnadstid ikke godkjent',
+            'hvor'   => 'Sendes til medlemmet når du ikke godkjenner tida.',
+            'felter' => ['fornavn' => 'Fornavnet', 'tekst' => 'Det medlemmet gjorde', 'svar' => 'Det du skrev, eller tom'],
+        ],
     ];
 }

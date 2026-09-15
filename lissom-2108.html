@@ -1696,8 +1696,11 @@ window.__resources = {
     .lx-admmob { display: flex !important; }
     /* Verktoeypillene under logoen: Se nettsiden, oppdateringer, Vipps,
        meld feil og logg ut. Paa stor skjerm staar de i sidemenyen, som
-       alltid er framme — da er raden overfloedig og skjules over. */
-    .lx-admtopp { display: flex !important; }
+       alltid er framme — da er raden overfloedig og skjules over.
+       Paa telefon staar de naa nederst i menyskuffen — eieren,
+       15. september 2026: «vi boer vel legge verktoy og log ut ogsaa inn i
+       samme meny saa det blir en struktur paa det hele». Raden er tom, og
+       regelen som slo den paa er tatt bort, saa den ikke tar luft. */
     /* Bunnmenyen. Seks valg, ikon og tekst — eieren valgte alternativ A
        4. september. Den staar «fixed» mot bunnen, saa hovedinnholdet maa
        ha plass under seg: 58 px meny, luft, og hjemknappen paa iPhone.
@@ -6516,7 +6519,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -6638,7 +6640,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -6881,7 +6885,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -7003,7 +7006,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -7073,7 +7078,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -7195,7 +7199,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -7252,7 +7258,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -7374,7 +7379,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -7470,7 +7477,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -7592,7 +7598,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -7668,7 +7676,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -7790,7 +7797,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -8021,7 +8030,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -8141,7 +8149,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -8215,6 +8225,21 @@ window.__resources = {
 
                Ingen nye kall: alt ligger i adminData, som hentes paa hver
                adminskjerm fra for. Se klOversiktKort. -->
+          <!-- Dashboardet bak en knapp paa telefon. Eieren, 15. september
+               2026: «paa mobil maa dette dashboardet skjules, saa en knapp
+               vis dasboard». Paa PC staar knappen ikke i det hele tatt. -->
+          <sc-if value="{{ klDashKnapp }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ klDashVeksle }}" style="{{ klDashKnappStil }}">
+              <span>{{ klDashNavn }}</span>
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <sc-if value="{{ klDashHarVarsel }}" hint-placeholder-val="{{ true }}">
+                  <span style="{{ klDashVarselStil }}">{{ klDashVarselTall }}</span>
+                </sc-if>
+                {{ klDashPil }}
+              </span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ klDashApen }}" hint-placeholder-val="{{ true }}">
           <div style="{{ klOversiktRadStil }}">
             <sc-for list="{{ klOversiktKort }}" as="k" hint-placeholder-count="6">
               <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
@@ -8233,6 +8258,7 @@ window.__resources = {
               <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}<sc-if value="{{ s.harVerdi }}" hint-placeholder-val="{{ false }}"><span style="{{ s.verdiStil }}">{{ s.verdi }}</span></sc-if></button>
             </sc-for>
           </div>
+          </sc-if>
 
           <!-- Synlighet laa her som et aapent kort med alle bryterne, og
                tok plassen fra kalenderen. Eieren, 15. september 2026:
@@ -9687,7 +9713,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -9809,7 +9834,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -9927,7 +9954,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -10049,7 +10075,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -10227,7 +10255,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -10349,7 +10376,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -10516,7 +10545,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -10638,7 +10666,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -11336,7 +11366,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -11458,7 +11487,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -11642,7 +11673,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -11764,7 +11794,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -12054,7 +12086,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -12176,7 +12207,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -13236,7 +13269,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -13358,7 +13390,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -13600,7 +13634,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -13722,7 +13755,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -13930,7 +13965,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -14052,7 +14086,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -14221,7 +14257,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -14343,7 +14378,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -14603,7 +14640,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -14720,7 +14756,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -14833,7 +14871,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -14950,7 +14987,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -15051,7 +15090,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -15168,7 +15206,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -15286,7 +15326,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -15408,7 +15447,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -15488,7 +15529,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -15610,7 +15650,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -15974,7 +16016,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -16096,7 +16137,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -16258,7 +16301,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -16380,7 +16422,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -16885,7 +16929,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -17007,7 +17050,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -17120,7 +17165,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -17242,7 +17286,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -18154,7 +18200,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -18276,7 +18321,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -18515,7 +18562,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -18637,7 +18683,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -19044,7 +19092,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -19166,7 +19213,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -19397,7 +19446,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -19514,7 +19562,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -19648,7 +19698,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -19770,7 +19819,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -20332,7 +20383,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -20454,7 +20504,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -20883,7 +20935,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -21005,7 +21056,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -21788,7 +21841,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -21910,7 +21962,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -22119,7 +22173,6 @@ window.__resources = {
         <div style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
-          <div title="Hvor mange som er i verkstedet nå" style="{{ admInneStil }}">{{ admInneNavn }}</div>
         </div>
         <!-- Verktoeyene, alltid synlige paa telefon.
              Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
@@ -22236,7 +22289,9 @@ window.__resources = {
             </div>
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
-                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
                 <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
                   <div style="{{ m.underStil }}">
                     <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
@@ -23226,7 +23281,14 @@ window.__resources = {
 <sc-if value="{{ synVises }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ synLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ synStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
-      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Synlighet</div>
+      <!-- Lukkeknapp. Eieren, 15. september 2026: «denne mangler lukke
+           knapp». Arket lukket seg bare ved trykk paa det moerke utenfor —
+           og med tretten rader er det ikke alltid noe moerkt aa treffe paa
+           en telefon. Samme runde knapp som de andre arkene bruker. -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5);">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Synlighet</div>
+        <button type="button" onClick="{{ synLukk }}" aria-label="Lukk" style="appearance: none; background: var(--clay-100); border: none; border-radius: 999px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; line-height: 1; color: var(--text-heading); flex: none;">×</button>
+      </div>
       <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">På nettsiden</div>
       <sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 11px 0; border-bottom: 1px solid var(--border-subtle);">
@@ -29153,10 +29215,15 @@ class Component extends DCLogic {
     // migrasjon 179 har.
     const slag = o ? (o.slag || 'tomt') : '';
     const TITTEL = { tomt: 'Ovnen er tømt', raabrann: 'Råbrann er satt', glasurbrann: 'Glasurbrann er satt' };
+    // Paa telefon maa de tre pillene faa plass paa én linje. Eieren,
+    // 15. september 2026: «feltet raabrann satt glassur satt maa gjoeres
+    // lavere, faa pillene paa en linje». Smalere polstring og litt mindre
+    // skrift der; paa PC staar de som for.
+    const smal = this.erSmal();
     const pille = (aktiv) => ({
       appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-      borderRadius: 'var(--radius-pill)', padding: '10px 20px',
-      font: 'var(--type-body-sm)', fontWeight: 700,
+      borderRadius: 'var(--radius-pill)', padding: smal ? '7px 10px' : '10px 20px',
+      font: 'var(--type-body-sm)', fontSize: smal ? '11.5px' : undefined, fontWeight: 700,
       border: aktiv ? '2px solid var(--lissom-brown)' : '2px solid var(--border-subtle)',
       background: aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)',
       color: aktiv ? 'var(--clay-50)' : 'var(--lissom-brown)',
@@ -29172,17 +29239,18 @@ class Component extends DCLogic {
       ovnKortStil: {
         background: 'var(--surface-card)',
         border: '2px solid ' + (usett ? 'var(--yellow-500, #E6B800)' : 'var(--lissom-brown)'),
-        borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
+        borderRadius: 'var(--radius-lg)',
+        padding: smal ? 'var(--space-3) var(--space-4)' : 'var(--space-5) var(--space-6)',
         // Luft over, ikke bare under. Eieren, 13. september 2026, med et
         // bilde av Min side: kortet laa klistret inntil «Spør Krukkemester»
         // over seg. Samme avstand paa begge sider, som kortene ellers.
-        marginTop: 'var(--space-6)',
-        marginBottom: 'var(--space-6)',
+        marginTop: smal ? 'var(--space-3)' : 'var(--space-6)',
+        marginBottom: smal ? 'var(--space-3)' : 'var(--space-6)',
       },
       // Pillene under statusen. Streken over dem staar bare naar det er en
       // status aa skille dem fra.
       ovnRadStil: Object.assign(
-        { display: 'flex', flexWrap: 'wrap', gap: '10px' },
+        { display: 'flex', flexWrap: smal ? 'nowrap' : 'wrap', gap: smal ? '6px' : '10px' },
         o ? { marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)' } : {}
       ),
       ovnTomtNaa: () => this.ovnKall('tomt'),
@@ -29299,6 +29367,208 @@ class Component extends DCLogic {
         this.hlKall({ handling: 'onske', tekst: t });
       },
     };
+  }
+
+  /**
+   * Snarveiene paa kalenderen.
+   *
+   * Én liste, tre steder: piller paa PC, kort i dashboardet paa telefon, og
+   * rader i menyen. Sto de tre stedene hver for seg, ville de skilt lag.
+   */
+  adminSnarveier() {
+    const d = this.state.adminData || {};
+    return [
+                { navn: 'Chat', nokkel: 'chat', velg: () => this.setState({ klChatVis: true }) },
+                // Eieren, 13. september 2026: «legge til send beskjed ved
+                // siden av chat pillen i kalender … komme til samme sted som
+                // medlemmer, beskjeder». Samme skjerm og samme forvalg som
+                // fanen «Beskjeder» under Medlemmer (ADMIN_FANER).
+                { navn: 'Send beskjed', nokkel: 'beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
+                { navn: 'Dagsrapport', nokkel: 'dagsrapport', velg: () => this.setState({ klRapVis: true }) },
+                // Samme rute som snarveien hadde: kassa aapnes med tom kurv.
+                { navn: 'Kasse', nokkel: 'kasse', velg: () => this.gaaAdmin('adminuttak', {
+                    utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
+                    utBelop: '', utSalgBeskjed: '',
+                  }) },
+                { navn: 'Årskalender', nokkel: 'arskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },
+                // Omsetninga sto som et kort paa Oversikt. Eieren,
+                // 13. september 2026: «Okonomi og omsetning kan staa paa
+                // kalender som piller». Tallet staar i pilla, saa man slipper
+                // aa aapne noe for aa se det; trykk gaar til Okonomi, der
+                // linjene bak tallet staar.
+                { navn: 'Omsetning i dag', nokkel: 'omsetningidag', verdi: (d.omsetning || {}).idag || '',
+                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
+                { navn: 'Denne måneden', nokkel: 'dennemaneden', verdi: (d.omsetning || {}).maned || '',
+                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
+                // Eieren, 15. september 2026: «en pille paa kalender ved
+                // siden av de andre, som viser denne foresporselen». Tallet
+                // er dugnader som venter paa Monica (nye + tid til
+                // godkjenning); trykk gaar til Ubesvarte, der de behandles.
+                { navn: 'Dugnad', nokkel: 'dugnad', varsel: true, verdi: ((d.koer || {}).dugnad) ? String((d.koer || {}).dugnad) : '',
+                  velg: () => this.gaaAdmin('adminubesvarte', {}) },
+                // Eieren, 15. september 2026: «en pille paa kalender, som
+                // aapner handlelista for videre haandtering». Tallet er
+                // medlemmer som har sendt inn lista si; trykk gaar til
+                // Nettbutikk → Handlelister, der den slaas sammen og prises.
+                { navn: 'Handleliste', nokkel: 'handleliste', varsel: true, verdi: ((d.koer || {}).handleliste) ? String((d.koer || {}).handleliste) : '',
+                  velg: () => this.gaaAdmin('adminbutikk', { butikkFane: 'Handlelister' }) },
+                // Eieren, 15. september 2026: «paa kalender — maa ha pille med
+                // medlemmer». Tallet er aktive medlemmer (aktiv, proeve, pause).
+                // Eieren, 15. september 2026: «medlemmer paa oversikt viser 6
+                // medlemmer, medlemmer paa kalender viser 7 medlemmer??????»
+                //
+                // Pilla talte alle med medlemskap — admin med. Kortet paa
+                // Oversikt teller de samme radene UTEN admin, og har gjort
+                // det hele tiden: «ikke admin, og ikke de som bare har vaert
+                // paa kurs». Én av dem som er admin har ogsaa medlemskap, og
+                // da svarte de to skjermene hver sitt.
+                //
+                // Naa er det ett uttrykk som gjelder begge steder.
+                { navn: 'Medlemmer', nokkel: 'medlemmer', verdi: String(this.medlemsrader()
+                    .filter(x => x.erMedlem && !x.erAdmin).length || ''),
+                  velg: () => this.gaaAdmin('adminmedlem', {}) },
+            ];
+  }
+
+  // ------------------------------------------------ dashboardet laerer
+  //
+  // Eieren, 15. september 2026: «kan dashboard ogsaa laere? At det viser de
+  // knappene her som brukes mest i hele admin?» — og reglene han satte:
+  // «de som har aktive varslinger, deretter de mest brukte. Om de ikke brukes
+  // paa 1 maaned saa fjernes de slik at lista holdes saa ren».
+  //
+  // Serveren er api/admin/kortbruk.php. Den teller bare; rekkefoelgen
+  // avgjoeres her, fordi det er her vi vet hvilke kort som har et varsel naa.
+
+  /**
+   * Staar dashboardet aapent?
+   *
+   * Har du ikke trykket i denne oekta, gjelder det du valgte sist. Valget er
+   * en vane paa denne telefonen, ikke noe serveren trenger aa vite — derfor
+   * nettleserens eget minne, og derfor gaar alt som for om det er stengt av.
+   */
+  dashApenNa() {
+    if (this.state.dashApen !== undefined) return !!this.state.dashApen;
+    try { return window.localStorage.getItem('lissom_dash') === 'ja'; } catch (e) { return false; }
+  }
+
+  /** Mine tall. Hentes én gang per skjerm. */
+  hentKortbruk() {
+    if (!this.erPublisert() || this._kbHentes || this._kbHentet) return;
+    this._kbHentes = true;
+    fetch('/api/admin/kortbruk.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._kbHentes = false;
+        this._kbHentet = true;
+        if (d && d.bruk) this.setState({ kortbruk: d.bruk });
+      })
+      .catch(() => { this._kbHentes = false; });
+  }
+
+  /**
+   * Ett trykk telt.
+   *
+   * Tallet oppdateres med det samme paa skjermen, saa rekkefoelgen ikke
+   * henger etter et helt kall. Gaar kallet i vasken, staar det lokale tallet
+   * igjen til neste henting — kortet virket uansett, og det er det viktige.
+   */
+  kortBrukt(nokkel) {
+    if (!nokkel) return;
+    this.setState(st => {
+      const b = Object.assign({}, st.kortbruk || {});
+      b[nokkel] = { antall: ((b[nokkel] || {}).antall || 0) + 1, dagerSiden: 0 };
+      return { kortbruk: b };
+    });
+    if (!this.erPublisert()) return;
+    fetch('/api/admin/kortbruk.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'bruk', kort: nokkel }),
+    }).catch(() => {});
+  }
+
+  /** Begynn tellingen paa nytt. */
+  kortbrukNullstill() {
+    this.setState({ kortbruk: {} });
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/kortbruk.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'null' }),
+    })
+      .then(() => this.setState({ kvitteringTone: 'success', kvittering: 'Dashboardet begynner på nytt' }))
+      .catch(() => {});
+  }
+
+  /**
+   * Kortene i den rekkefoelgen dashboardet skal vise dem.
+   *
+   * Paa PC staar kortene som for, og snarveiene som piller under — der er
+   * det plass. Paa telefon er alt kort, og rekkefoelgen er eierens:
+   *
+   *   1. alt som har et aktivt varsel, i den faste rekkefoelgen de staar i.
+   *      Et varsel er et kort som er merket «rod» eller en snarvei med et
+   *      tall i seg — dugnad, handleliste, ubetalt.
+   *   2. saa de mest brukte, etter hvor mange ganger de er trykket.
+   *   3. har et kort ikke vaert brukt paa 30 dager, faller det ut og ligger
+   *      i menyen. Et varsel henter det tilbake med en gang.
+   *
+   * Et kort som aldri er brukt faller ikke ut — det har ingen dato aa bli
+   * gammelt av, og maa faa en sjanse til aa bli tatt i bruk.
+   */
+  dashKort(kortene, snarveier) {
+    if (!this.erSmal()) return kortene;
+
+    const bruk = this.state.kortbruk || {};
+    const tall = (n) => ((bruk[n] || {}).antall || 0);
+    const dager = (n) => (bruk[n] ? (bruk[n].dagerSiden || 0) : -1);
+
+    // Paa telefon er kortene smaa og like: navn og tall, ingen detaljlinje.
+    // Eieren, 15. september 2026: «3 kan vaere fint, men de maa vises
+    // symetrisk», og «de maa ha lik hoeyde!». Rutenettet gir like hoeyder;
+    // dette gir likt innhold, saa ingen rad blir hoeyere enn naboen.
+    const smaltKort = (k, rod) => Object.assign({}, k, {
+      linjer: [], harLinjer: false,
+      stil: {
+        appearance: 'none', textAlign: 'left', cursor: 'pointer',
+        background: 'var(--surface-card)', boxSizing: 'border-box', minWidth: 0,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        border: '1px solid ' + (rod ? 'var(--terracotta-400, #D98E63)' : 'var(--border-subtle)'),
+        borderRadius: 'var(--radius-lg)', padding: '7px 9px',
+      },
+      tallStil: {
+        font: 'var(--type-body)', fontSize: 'var(--text-sm)', fontWeight: 800,
+        lineHeight: 1.15, color: rod ? 'var(--terracotta-600)' : 'var(--lissom-brown)',
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      },
+    });
+
+    // Snarveiene blir kort med samme form som de andre. Et beloep er ikke et
+    // varsel — bare det som venter paa svar er det.
+    const somKort = snarveier.map(sn => smaltKort({
+      merke: sn.navn,
+      tall: sn.verdi || 'Åpne',
+      rod: !!sn.varsel,
+      nokkel: sn.nokkel || '',
+      velg: () => { this.kortBrukt(sn.nokkel); sn.velg(); },
+    }, !!sn.varsel));
+
+    const alle = kortene.map(k => smaltKort(k, !!k.rod)).concat(somKort);
+    const varsel = (k) => !!k.rod;
+
+    return alle
+      // Trinn 3: ute av syne naar den verken haster eller har vaert brukt.
+      .filter(k => varsel(k) || dager(k.nokkel) < 0 || dager(k.nokkel) <= 30)
+      // Trinn 1 og 2: varsler foerst, saa mest brukt. Innbyrdes beholder de
+      // rekkefoelgen de staar i, saa like kort ikke bytter plass tilfeldig.
+      .map((k, i) => ({ k, i }))
+      .sort((a, b) => {
+        if (varsel(a.k) !== varsel(b.k)) return varsel(a.k) ? -1 : 1;
+        const d = tall(b.k.nokkel) - tall(a.k.nokkel);
+        return d !== 0 ? d : a.i - b.i;
+      })
+      .map(x => x.k);
   }
 
   // --------------------------------------------- handlelistene i admin
@@ -38243,50 +38513,77 @@ class Component extends DCLogic {
     // Velger man noe, er menyen ferdig med jobben sin.
     const lukkOg = (fn) => () => { this.setState({ admMobApen: false }); fn(); };
 
-    const punktStil = (valgt) => ({
-      appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-      width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-md)',
-      font: 'var(--type-body-sm)', fontWeight: valgt ? 700 : 600,
-      background: valgt ? 'var(--lissom-yellow)' : 'rgba(244,235,222,.09)',
+    // ── Én pilleform i hele skuffen ──────────────────────────────────
+    //
+    // Eieren, 15. september 2026: «her må vi ha samme type piller hele veien,
+    // så kom med forslag» — og av de tre valgte han standardpilla: samme mål
+    // som «Stemple inn» og «Ferie» i stripa rett over, 34 px høy.
+    //
+    // Skuffen hadde tre former: stedene var brede kort med runde hjørner,
+    // snarveiene små piller, og verktøyradene en tredje bredde. Nå er alt
+    // det samme, og det eneste som skiller dem er hvor de står, og at stedet
+    // du er i er gult.
+    //
+    // Snarveiene ligger åpent, ikke bak en egen «Snarveier»-pille. Eieren
+    // spurte 15. september om de burde det; målt på 390 px er hele menyen
+    // 529 px og får plass uten å rulle, så å folde dem bort sparer ingen
+    // rulling — det koster bare ett trykk til på hver snarvei.
+    const bolkStil = {
+      gridColumn: '1 / -1', font: 'var(--type-eyebrow)', fontSize: 'var(--text-xs)',
+      letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
+      color: 'rgba(244,235,222,.62)', padding: '8px 2px 0',
+    };
+    const skuffPille = (valgt) => ({
+      appearance: 'none', cursor: 'pointer', textAlign: 'left', flex: '0 0 auto',
+      padding: '8px 14px', borderRadius: 'var(--radius-pill)',
+      fontSize: 12, lineHeight: 1.2, minHeight: 34, fontWeight: 700,
+      whiteSpace: 'nowrap',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-start',
+      border: '1px solid rgba(244,235,222,.28)',
+      background: valgt ? 'var(--lissom-yellow)' : 'transparent',
       color: valgt ? 'var(--lissom-brown)' : 'var(--clay-100)',
     });
-    const underStil = (valgt) => ({
-      appearance: 'none', cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap',
-      padding: '8px 13px', borderRadius: 'var(--radius-pill)',
-      font: 'var(--type-body-sm)', fontSize: 13, fontWeight: valgt ? 700 : 500,
-      border: '1px solid rgba(244,235,222,.24)',
-      background: valgt ? 'var(--clay-100)' : 'transparent',
-      color: valgt ? 'var(--lissom-brown)' : 'var(--clay-200)',
+    // Radene flyter som piller gjør — de tar den plassen teksten trenger, og
+    // bryter til neste linje når den er brukt opp.
+    const pilleradStil = (venstre) => ({
+      display: 'flex', flexWrap: 'wrap', gap: 6,
+      padding: venstre ? '2px 0 4px 10px' : '2px 0 4px',
+    });
+    // En gruppe piller er én rad i skuffen: den kan ha en overskrift over
+    // seg, og den har alltid pillene sine under.
+    const gruppe = (navn, piller, venstre) => ({
+      navn: navn || '',
+      erBolk: !!navn,
+      bolkStil: navn ? bolkStil : {},
+      stil: { gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 4 },
+      harUnder: piller.length > 0,
+      underStil: pilleradStil(!!venstre),
+      under: piller,
     });
 
-    const punkter = Component.ADMIN_MENY.map(([navn, rute, forvalg]) => {
-      const valgt = navn === sted.meny;
-      // «← Deltakere» og de andre tilbakeradene er veien ut av en fanerekke.
-      // I menyen er de det samme som raden over dem.
-      const faner = (Component.ADMIN_FANER[navn] || [])
-        .filter(([fnavn]) => fnavn.indexOf('\u2190') !== 0);
-      return {
+    // «← Deltakere» og de andre tilbakeradene er veien ut av en fanerekke.
+    // I menyen er de det samme som raden over dem.
+    const faner = (Component.ADMIN_FANER[sted.meny] || [])
+      .filter(([fnavn]) => fnavn.indexOf('\u2190') !== 0);
+
+    const punkter = [
+      // Stedene. Ett trykk, og du er der.
+      gruppe('', Component.ADMIN_MENY.map(([navn, rute, forvalg]) => ({
         navn,
         velg: lukkOg(() => this.gaaAdmin(rute, forvalg)),
-        knappStil: punktStil(valgt),
-        // To spalter, saa hele menyen faar plass paa en telefonskjerm uten
-        // aa rulle. Stedet du staar i tar begge spaltene — det er der
-        // underpunktene henger.
-        stil: {
-          display: 'flex', flexDirection: 'column', gap: 6,
-          gridColumn: (valgt && faner.length) ? '1 / -1' : 'auto',
-        },
-        // Underpunktene staar bare under det omraadet man er i. Alle ti
-        // brettet ut samtidig er ikke en oversikt, det er en liste paa 40.
-        harUnder: valgt && faner.length > 0,
-        underStil: { display: 'flex', flexWrap: 'wrap', gap: 6, padding: '2px 0 6px 10px' },
-        under: faner.map(([fnavn, frute, fforvalg]) => ({
-          navn: fnavn,
-          velg: lukkOg(() => this.gaaAdmin(frute, fforvalg)),
-          stil: underStil(fnavn === sted.fane),
-        })),
-      };
-    });
+        stil: skuffPille(navn === sted.meny),
+      })), false),
+    ];
+    // Fanene staar bare under det omraadet man er i. Alle ti brettet ut
+    // samtidig er ikke en oversikt, det er en liste paa 40. De staar litt
+    // inn, saa man ser at de hoerer til den gule pilla over.
+    if (faner.length) {
+      punkter.push(gruppe('', faner.map(([fnavn, frute, fforvalg]) => ({
+        navn: fnavn,
+        velg: lukkOg(() => this.gaaAdmin(frute, fforvalg)),
+        stil: skuffPille(fnavn === sted.fane),
+      })), true));
+    }
 
     // Radene i menyen som ikke er steder: innstemplinga oeverst, og
     // vedlikehold, Vipps-testen og utlogginga nederst. De hentes ut av
@@ -38378,12 +38675,45 @@ class Component extends DCLogic {
       };
     });
 
+    // ── Snarveiene og verktøyene inn i den samme skuffen ───────
+    //
+    // Eieren, 15. september 2026: «vi bør vel legge verktøy og log ut også
+    // inn i samme meny så det blir en struktur på det hele».
+    //
+    // Pillene lå i den brune stripa og tok to rader av skjermen paa hver
+    // eneste adminskjerm. Nå står de nederst i menyen, ett trykk unna
+    // uansett hvor man er. Det er de samme radene med de samme handlingene
+    // — de er flyttet, ikke laget på nytt. På stor skjerm står de som før
+    // i sidemenyen; denne skuffen finnes bare paa telefon.
+    // Snarveiene står som kort i dashboardet — men bare på kalenderen.
+    // Her når man dem fra alle de ti stedene, og tallet følger med, saa man
+    // ser at noe venter uten aa aapne noe.
+    const snarveiBolk = gruppe('Snarveier', this.adminSnarveier().map(x => ({
+      navn: x.verdi ? x.navn + ' ' + x.verdi : x.navn,
+      velg: lukkOg(() => { this.kortBrukt(x.nokkel); x.velg(); }),
+      // Det som venter paa svar staar i gult, som det gjoer i dashboardet.
+      // Et beloep er ikke et varsel.
+      stil: Object.assign({}, skuffPille(false),
+        x.varsel && x.verdi ? { borderColor: 'var(--lissom-yellow)', color: 'var(--lissom-yellow)' } : {}),
+    })), false);
+    // ⚙ Verktøy åpner det samme arket som pilla gjorde. Eieren,
+    // 12. september 2026: «disse samler du i en pille» — de fem radene
+    // ligger fortsatt bak én rad, den har bare flyttet inn i menyen.
+    const bunnrader = [gruppe('', topp.map(v => ({
+      navn: v.navn,
+      velg: v.velg,
+      stil: Object.assign({}, skuffPille(false),
+        (v.stil && v.stil.color === 'var(--lissom-yellow)') ? { color: 'var(--lissom-yellow)', borderColor: 'var(--lissom-yellow)' } : {}),
+    })), false)];
+
     return {
       vkRader: vkRader,
       vkVises: !!this.state.verktoyApen,
       vkLukk: () => this.setState({ verktoyApen: false }),
       vkStopp: e => e.stopPropagation(),
-      admToppEkstra: topp,
+      // Raden er tom: de to pillene står nå nederst i menyen. Bindingen
+      // blir stående, saa markupen er den samme paa alle skjermene.
+      admToppEkstra: [],
       admToppEkstraStil: {
         width: '100%', boxSizing: 'border-box',
         // Eieren, 12. september: «Og samle pillene med et penere oppsett».
@@ -38401,7 +38731,7 @@ class Component extends DCLogic {
       // Lukker du skuffen, legger verkstedlista seg sammen igjen. Ellers
       // sto den utslaatt neste gang du aapnet, uten at du ba om det.
       admMobVeksle: () => this.setState(s => ({ admMobApen: !s.admMobApen, menyInneApen: false })),
-      admMobPunkter: punkter,
+      admMobPunkter: punkter.concat([snarveiBolk]).concat(bunnrader),
       admMobLinjeStil: {
         flex: '1 1 auto', minWidth: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', gap: 'var(--space-4)',
@@ -39942,8 +40272,11 @@ class Component extends DCLogic {
           // nå, men gjøre de mindre og penere». Én bredde i alle visninger, og
           // kortene under staar paa én linje i stedet for to.
           klSideGridStil: this.erSmal() ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' } : { display: 'grid', gridTemplateColumns: '250px minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' },
+          // Order 0 paa telefon, ikke 2: dashboardet skal staa OVER kalenderen.
+          // Eieren, 15. september 2026, spurt om hvor knappen skulle staa:
+          // «over kalenderen». Kalenderen har order 1, sidespalta 3.
           klToppKortStil: this.erSmal()
-            ? { display: 'grid', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', order: 2 }
+            ? { display: 'grid', gap: 'var(--space-3)', marginBottom: 'var(--space-3)', order: 0 }
             : { gridColumn: '1 / -1', gridRow: '1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' },
           klAsideStil: this.erSmal()
             ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', order: 3 }
@@ -41548,10 +41881,14 @@ class Component extends DCLogic {
       // det samme som staar paa kortene under «Kurs og deltakere».
       klGaMedlemmer: () => this.gaaAdmin('adminmedlem',
                                          { medlemFilter: 'Aktive medlemmer', medlemSok: '' }),
-      klMedlemmerAntall: String((this.state.adminMedlemmer || [])
-        .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length),
-      klMedlemmerHar: (this.state.adminMedlemmer || [])
-        .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length > 0,
+      // Samme uttrykk som kortet paa Oversikt og pilla under. Admin teller
+      // ikke — eieren, 15. september 2026: «jeg vil ikke at admin skal telles
+      // som medlem». Sto det tre steder med hver sin regel, svarte skjermene
+      // hver sitt tall.
+      klMedlemmerAntall: String(this.medlemsrader()
+        .filter(x => x.erMedlem && !x.erAdmin).length),
+      klMedlemmerHar: this.medlemsrader()
+        .filter(x => x.erMedlem && !x.erAdmin).length > 0,
       klGaPameldte: () => this.gaaAdmin('adminpameldte', {}),
       klPameldteAntall: String((this.state.adminDeltakere || []).length),
       klPameldteHar: (this.state.adminDeltakere || []).length > 0,
@@ -41600,9 +41937,9 @@ class Component extends DCLogic {
       //
       // Eieren, 9. september 2026: «pillen inne naa, den vbil jeg skal
       // flyttes i det brune sidemenyen og underferie», og om stemple-pilla:
-      // «Den flyttes ogsaa». Begge staar naa i sidemenyen — se
-      // stemplingPiller() og «admInneNavn» — og dermed paa hver eneste
-      // adminskjerm, ikke bare kalenderen.
+      // «Den flyttes ogsaa». Stemple-pilla staar der fortsatt — se
+      // stemplingPiller(). «Inne naa» tok han ut igjen 15. september; tallet
+      // staar paa kortet i kalenderen.
       klIcsVises: !!this.state.klIcsVis,
       klIcsApne: () => this.setState({ klIcsVis: true }),
       klIcsLukk: () => this.setState({ klIcsVis: false }),
@@ -46850,7 +47187,9 @@ class Component extends DCLogic {
         }
 
         const medlemmer = this.state.adminMedlemmer || [];
-        const aktive = medlemmer.filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length;
+        // Samme uttrykk som de andre stedene medlemmer telles. Admin teller
+        // ikke — eieren, 15. september 2026.
+        const aktive = this.medlemsrader().filter(x => x.erMedlem && !x.erAdmin).length;
         const soknader = (this.state.adminSoknader || []).length;
         const venterSalg = this.galleriListe().filter(g => g.status === 'venter').length;
 
@@ -51287,6 +51626,8 @@ class Component extends DCLogic {
           // finnes i menyen staar som piller under, se klSnarveiPiller.
           ...(() => {
             const d = this.state.adminData || {};
+            // Tellingen bak rekkefoelgen paa telefonen.
+            if (this.erPublisert()) this.hentKortbruk();
             const kr = (ore) => 'kr. ' + String(Math.round(ore / 100))
               .replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + ',-';
 
@@ -51313,6 +51654,9 @@ class Component extends DCLogic {
 
             const inne = this.state.stempling ? this.state.stempling.inne.antall : 0;
             const uka = ((d.bookinger || {}).sisteUke) || 0;
+            // Butikkordrer som er betalt, men ikke gjort klare. Telles i
+            // api/admin/oversikt.php sammen med de andre koene.
+            const butikkordrer = ((d.koer || {}).butikk) || 0;
 
             // Ovnen: den samme raden «Ovn er tomt» skriver, og den samme
             // linja kortet paa Min side viser. Ingen ny telling.
@@ -51321,10 +51665,15 @@ class Component extends DCLogic {
             const to = x => (x < 10 ? '0' : '') + x;
             const ovIdag = ovT && ovT.toDateString() === idag;
 
-            const kort = (merke, tall, linjer, rod, velg) => ({
-              merke, tall, linjer, rod: !!rod,
+            // «nokkel» er den faste noekkelen kortet telles paa — se
+            // api/admin/kortbruk.php. Den foelger kortet, ikke teksten:
+            // doepes «Ubetalt» om, staar tellingen der den staar.
+            const kort = (merke, tall, linjer, rod, velg, nokkel) => ({
+              merke, tall, linjer, rod: !!rod, nokkel: nokkel || '',
               harLinjer: linjer.length > 0,
-              velg: velg || (() => {}),
+              // Hvert trykk telles. Gaar tellingen i vasken, skjer resten
+              // likevel — kortet skal virke selv om serveren ikke svarer.
+              velg: velg ? () => { this.kortBrukt(nokkel); velg(); } : (() => {}),
               stil: {
                 appearance: 'none', textAlign: 'left', cursor: velg ? 'pointer' : 'default',
                 background: 'var(--surface-card)', boxSizing: 'border-box', minWidth: 0,
@@ -51338,12 +51687,14 @@ class Component extends DCLogic {
             });
             const linje = (t) => ({ tekst: t });
 
-            return {
-              klOversiktKort: [
+            const snarveier = this.adminSnarveier();
+
+            const kortene = [
                 kort('I dag',
                      dagens.length ? dagens.length + (dagens.length === 1 ? ' kurs' : ' kurs') : 'Ingen kurs',
                      dagens.slice(0, 3).map(k => linje(
-                       k.klokke + ' ' + k.tittel + ' \u00b7 ' + k.pameldte + ' av ' + k.kapasitet))),
+                       k.klokke + ' ' + k.tittel + ' \u00b7 ' + k.pameldte + ' av ' + k.kapasitet)),
+                     false, null, 'idag'),
                 kort('Venter på deg', String(venter), [
                        nye   ? linje(nye + (nye === 1 ? ' ny påmelding' : ' nye påmeldinger')) : null,
                        varer ? linje(varer + (varer === 1 ? ' vare til godkjenning' : ' varer til godkjenning')) : null,
@@ -51351,7 +51702,7 @@ class Component extends DCLogic {
                        dugn  ? linje(dugn + (dugn === 1 ? ' dugnad' : ' dugnader') + ' å svare på') : null,
                        venter ? null : linje('Ingenting venter'),
                      ].filter(Boolean), venter > 0,
-                     () => this.gaaAdmin('adminnyepameldinger', {})),
+                     () => this.gaaAdmin('adminnyepameldinger', {}), 'venter'),
                 // Til Kassa, ikke til OEkonomi.
                 //
                 // Eieren, 13. september 2026: «naar jeg trykker paa ubetalt
@@ -51374,14 +51725,25 @@ class Component extends DCLogic {
                        medl    ? linje(medl + (medl === 1 ? ' medlem' : ' medlemmer')) : null,
                        sum     ? null : linje('Alt er betalt'),
                      ].filter(Boolean), sum > 0,
-                     () => this.gaaAdmin('adminuttak', {})),
+                     () => this.gaaAdmin('adminuttak', {}), 'ubetalt'),
                 kort('Inne nå', String(inne),
-                     [linje(inne ? 'i verkstedet nå' : 'Ingen innstemplet')]),
+                     [linje(inne ? 'i verkstedet nå' : 'Ingen innstemplet')], false, null, 'innenaa'),
                 kort('Siste sju dager',
-                     uka + (uka === 1 ? ' påmelding' : ' påmeldinger'), [linje('betalt')]),
-                kort('Ovnen',
-                     ovIdag ? 'Tømt ' + to(ovT.getHours()) + ':' + to(ovT.getMinutes()) : 'Ikke tømt',
-                     [linje(ovIdag ? 'Tømt av ' + (ov.av || 'et medlem') : 'Ingen har trykket i dag')]),
+                     uka + (uka === 1 ? ' påmelding' : ' påmeldinger'), [linje('betalt')], false, null, 'sjudager'),
+                // Paamelding og Butikk, 15. september 2026. Eieren: «i det
+                // store feltet er det fint aa vise, i dag, ubetalt, venter
+                // paa meg, og paamelding», og «butikk er en viktig aa ha i
+                // dashboard».
+                kort('Påmelding', String(nye),
+                     [linje(nye ? 'nye siden sist' : 'ingen nye')], nye > 0,
+                     () => this.gaaAdmin('adminnyepameldinger', {}), 'paamelding'),
+                kort('Butikk', String(butikkordrer),
+                     [linje(butikkordrer ? 'ordrer til behandling' : 'ingen ordrer venter')], butikkordrer > 0,
+                     () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' }), 'butikk'),
+                // «Ovnen» sto her som kort. Eieren, 15. september 2026: «ovnen
+                // toemt fjern fra dashboard, den staar allerede lenger opp».
+                // Ovnkortet med de tre pillene staar rett over, og sier det
+                // samme — og der kan man trykke.
                 // Synlighet som kort, ikke som et aapent felt med alle
                 // bryterne (eieren, 15. september 2026). Tallet er bryterne
                 // som staar av; trykk aapner arket.
@@ -51391,15 +51753,69 @@ class Component extends DCLogic {
                     + (il['Banner/pa'] === 'nei' ? 1 : 0);
                   return kort('Synlighet', av ? av + (av === 1 ? ' bryter av' : ' brytere av') : 'Alt vises',
                     [linje('Trykk for å slå av og på')], false,
-                    () => this.setState({ synlighetApen: true }));
+                    () => this.setState({ synlighetApen: true }), 'synlighet');
                 })(),
-              ],
-              klOversiktRadStil: {
-                gridColumn: '1 / -1', display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))',
-                gap: 'var(--space-3)',
+            ];
+
+            return {
+              klOversiktKort: this.dashKort(kortene, snarveier),
+              // ── Dashboardet bak en knapp paa telefon ──────────────────
+              //
+              // Eieren, 15. september 2026: «paa mobil maa dette dashboardet
+              // skjules, saa en knapp vis dasboard». Paa PC staar alt framme
+              // som for — der er det plass.
+              //
+              // Merket paa knappen er summen av det som venter, saa man ser
+              // at det ligger noe der uten aa aapne.
+              klDashKnapp: this.erSmal(),
+              klDashApen: !this.erSmal() || this.dashApenNa(),
+              klDashNavn: this.dashApenNa() ? 'Skjul dashboard' : 'Vis dashboard',
+              klDashPil: this.dashApenNa() ? '⌃' : '⌄',
+              klDashVeksle: () => {
+                const paa = !this.dashApenNa();
+                this.setState({ dashApen: paa });
+                // Valget er en vane paa denne telefonen, ikke noe serveren
+                // trenger aa vite. Feiler lagringa, gaar alt som for.
+                try { window.localStorage.setItem('lissom_dash', paa ? 'ja' : 'nei'); } catch (e) {}
               },
-              klOversiktMerkeStil: {
+              klDashVarselTall: String(kortene.filter(k => k.rod).length
+                + snarveier.filter(x => x.varsel && x.verdi).length || ''),
+              klDashHarVarsel: kortene.filter(k => k.rod).length
+                + snarveier.filter(x => x.varsel && x.verdi).length > 0,
+              klDashKnappStil: {
+                gridColumn: '1 / -1', order: 0, appearance: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 'var(--space-3)', width: '100%', boxSizing: 'border-box',
+                background: 'var(--surface-card)', border: '2px solid var(--lissom-brown)',
+                borderRadius: 'var(--radius-pill)', padding: '10px 16px',
+                font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--lissom-brown)',
+              },
+              klDashVarselStil: {
+                background: 'var(--terracotta-600)', color: 'var(--clay-50)',
+                borderRadius: 'var(--radius-pill)', padding: '1px 9px',
+                fontSize: 'var(--text-xs)', fontWeight: 800,
+              },
+              // Tre like kolonner paa telefon — eieren, 15. september: «3 kan
+              // vaere fint, men de maa vises symetrisk». «minmax(0, 1fr)» og
+              // ikke bare «1fr»: uten nullpunktet vokser en kolonne forbi sin
+              // andel naar beloepet er langt, og da blir kortene ulike.
+              klOversiktRadStil: {
+                gridColumn: '1 / -1', order: 0, display: 'grid',
+                gridTemplateColumns: this.erSmal()
+                  ? 'repeat(3, minmax(0, 1fr))'
+                  : 'repeat(auto-fit, minmax(168px, 1fr))',
+                gridAutoRows: '1fr',
+                gap: this.erSmal() ? '6px' : 'var(--space-3)',
+              },
+              // Paa telefon faar navnet gaa over to linjer framfor aa bli
+              // kuttet: «Omsetning i dag» er ikke til aa kjenne igjen med
+              // «…» bak. Minstehoyden holder alle kortene like.
+              klOversiktMerkeStil: this.erSmal() ? {
+                font: 'var(--type-eyebrow)', fontSize: '9.5px',
+                letterSpacing: '.04em', wordSpacing: '.12em', textTransform: 'uppercase',
+                color: 'var(--text-muted)', display: 'block',
+                lineHeight: 1.25, minHeight: '2.5em', overflowWrap: 'anywhere',
+              } : {
                 font: 'var(--type-eyebrow)', letterSpacing: 'var(--tracking-caps)',
                 textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4,
                 display: 'block',
@@ -51411,47 +51827,10 @@ class Component extends DCLogic {
               // De fire snarveiene som ikke finnes som menypunkt. Kasse og
               // Aarskalender gjor det, men eieren valgte aa beholde alle fire
               // her — se variant B, 13. september 2026.
-              klSnarveiPiller: [
-                { navn: 'Chat',        velg: () => this.setState({ klChatVis: true }) },
-                // Eieren, 13. september 2026: «legge til send beskjed ved
-                // siden av chat pillen i kalender … komme til samme sted som
-                // medlemmer, beskjeder». Samme skjerm og samme forvalg som
-                // fanen «Beskjeder» under Medlemmer (ADMIN_FANER).
-                { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
-                { navn: 'Dagsrapport', velg: () => this.setState({ klRapVis: true }) },
-                // Samme rute som snarveien hadde: kassa aapnes med tom kurv.
-                { navn: 'Kasse',       velg: () => this.gaaAdmin('adminuttak', {
-                    utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
-                    utBelop: '', utSalgBeskjed: '',
-                  }) },
-                { navn: 'Årskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },
-                // Omsetninga sto som et kort paa Oversikt. Eieren,
-                // 13. september 2026: «Okonomi og omsetning kan staa paa
-                // kalender som piller». Tallet staar i pilla, saa man slipper
-                // aa aapne noe for aa se det; trykk gaar til Okonomi, der
-                // linjene bak tallet staar.
-                { navn: 'Omsetning i dag', verdi: (d.omsetning || {}).idag || '',
-                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
-                { navn: 'Denne måneden',   verdi: (d.omsetning || {}).maned || '',
-                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
-                // Eieren, 15. september 2026: «en pille paa kalender ved
-                // siden av de andre, som viser denne foresporselen». Tallet
-                // er dugnader som venter paa Monica (nye + tid til
-                // godkjenning); trykk gaar til Ubesvarte, der de behandles.
-                { navn: 'Dugnad', verdi: ((d.koer || {}).dugnad) ? String((d.koer || {}).dugnad) : '',
-                  velg: () => this.gaaAdmin('adminubesvarte', {}) },
-                // Eieren, 15. september 2026: «en pille paa kalender, som
-                // aapner handlelista for videre haandtering». Tallet er
-                // medlemmer som har sendt inn lista si; trykk gaar til
-                // Nettbutikk → Handlelister, der den slaas sammen og prises.
-                { navn: 'Handleliste', verdi: ((d.koer || {}).handleliste) ? String((d.koer || {}).handleliste) : '',
-                  velg: () => this.gaaAdmin('adminbutikk', { butikkFane: 'Handlelister' }) },
-                // Eieren, 15. september 2026: «paa kalender — maa ha pille med
-                // medlemmer». Tallet er aktive medlemmer (aktiv, proeve, pause).
-                { navn: 'Medlemmer', verdi: String((this.state.adminMedlemmer || [])
-                    .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length || ''),
-                  velg: () => this.gaaAdmin('adminmedlem', {}) },
-              ].map(x => Object.assign({}, x, {
+              klSnarveiPiller: snarveier.map(x => Object.assign({}, x, {
+                // Trykk paa pilla teller like mye som trykk paa kortet —
+                // ellers ville PC-bruken vaere usynlig for dashboardet.
+                velg: () => { this.kortBrukt(x.nokkel); x.velg(); },
                 harVerdi: !!x.verdi,
                 verdiStil: { fontWeight: 800, color: 'var(--lissom-brown)' },
                 stil: {
@@ -51464,8 +51843,11 @@ class Component extends DCLogic {
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                 },
               })),
+              // Paa telefon staar snarveiene som kort i dashboardet, ikke
+              // som piller under. Da staar de samme tingene ett sted.
               klSnarveiPilleRadStil: {
-                gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap',
+                gridColumn: '1 / -1', order: 0, display: this.erSmal() ? 'none' : 'flex',
+                flexWrap: 'wrap',
                 gap: 'var(--space-2)', marginTop: 'calc(var(--space-3) * -1)',
               },
             };
@@ -58637,26 +59019,18 @@ class Component extends DCLogic {
           admFerieNavn: st.ferieNavn,
           admFerieVelg: st.ferieVelg,
           admFerieStil: smal ? kompakt(st.ferieStil) : st.ferieStil,
-          // ── «Inne naa», under Ferie ──────────────────────────────────
+          // ── «Inne naa» er ute av den brune stripa ────────────────────
           //
-          // Eieren, 9. september 2026: «pillen inne naa, den vbil jeg skal
-          // flyttes i det brune sidemenyen og underferie». Den sto i
-          // kalenderen; naa staar den her, og dermed paa hver eneste
-          // adminskjerm — ikke bare den ene.
+          // Eieren, 15. september 2026: «fjern inne naa fra den brune
+          // toppmenyen».
           //
-          // Ikke en knapp. Den sier hvor mange som er i verkstedet; den
-          // gjor ingenting naar du trykker. Derfor «cursor: default», og
-          // ingen «onClick».
+          // Den sto der fra 9. september, paa hver eneste adminskjerm. Den
+          // var ikke en knapp — bare et tall — og tok plass i en stripe som
+          // paa telefon alt gikk over tre rader.
           //
-          // Tallet er det samme som blokka «I verkstedet naa» lenger nede
-          // teller, og det samme Min side viser — this.state.stempling.
-          // Ingen ny telling ved siden av den som finnes.
-          admInneNavn: 'Inne nå · ' + (this.state.stempling
-            ? this.state.stempling.inne.antall : 0),
-          admInneStil: Object.assign(
-            smal ? kompakt(st.ferieStil) : Object.assign({}, st.ferieStil),
-            { cursor: 'default' }
-          ),
+          // Tallet er ikke borte: kortet «Inne naa» paa kalenderen teller
+          // det samme, og Min side viser det til medlemmet. Ingen ny
+          // telling ble fjernet, bare en visning.
         };
       })(),
 

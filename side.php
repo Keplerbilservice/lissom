@@ -517,7 +517,11 @@ if (!$ikkeISoket && $d !== null) {
 if ($d !== null && !$ikkeISoket) {
     try {
         $lastBackend();
-        require_once __DIR__ . '/app/nett/nett.php';
+        // Nettsidas rot (der lissom-2108.html, nett.css og bildene ligger).
+        // Paa webhotellet ligger app/ utenfor public_html, saa Nett kan
+        // ikke regne seg fram til rota fra sin egen plassering.
+        if (!defined('NETT_ROT')) { define('NETT_ROT', __DIR__); }
+        require_once APP_DIR . '/nett/nett.php';
         if (Nett::kan($adresse)) {
             $side = Nett::tegn($adresse, $d, $robot['ld'] ?? []);
             if (is_string($side) && $side !== '') {

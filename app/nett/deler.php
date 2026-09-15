@@ -32,7 +32,7 @@ final class Deler
     {
         static $cache = [];
         if (!isset($cache[$navn])) {
-            $svg = @file_get_contents(dirname(__DIR__, 2) . '/icons/' . basename($navn) . '.svg');
+            $svg = @file_get_contents(Nett::rot() . '/icons/' . basename($navn) . '.svg');
             $cache[$navn] = is_string($svg) ? preg_replace('~<!--.*?-->\s*~s', '', $svg) : '';
         }
         $svg = str_replace('<svg', '<svg width="100%" height="100%" stroke-width="' . $strek . '"', (string) $cache[$navn]);

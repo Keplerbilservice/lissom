@@ -43,6 +43,12 @@ final class Nett
         '/' => 'forside',
     ];
 
+    /** Nettsidas rot — der lissom-2108.html, nett.css, ikonene og bildene ligger. */
+    public static function rot(): string
+    {
+        return defined('NETT_ROT') ? (string) NETT_ROT : dirname(__DIR__, 2);
+    }
+
     /** @var array<string,string>|null content_blocks, alt som er lagret */
     private static ?array $lagret = null;
     /** @var array<string,string>|null innhold-standard.json */
@@ -106,7 +112,7 @@ final class Nett
             return $l[$nokkel];
         }
         if (self::$standard === null) {
-            $j = json_decode((string) @file_get_contents(dirname(__DIR__, 2) . '/innhold-standard.json'), true);
+            $j = json_decode((string) @file_get_contents(self::rot() . '/innhold-standard.json'), true);
             self::$standard = is_array($j) ? $j : [];
         }
         return (string) (self::$standard[$nokkel] ?? '');
@@ -169,7 +175,7 @@ final class Nett
             return $kart;
         }
         $kart = [];
-        $html = @file_get_contents(dirname(__DIR__, 2) . '/lissom-2108.html');
+        $html = @file_get_contents(self::rot() . '/lissom-2108.html');
         if (is_string($html) && preg_match('~window\.__bildekart = (\{.*?\});~s', $html, $m) === 1) {
             $j = json_decode($m[1], true);
             if (is_array($j)) {
@@ -220,14 +226,14 @@ final class Nett
     /** nett.css, lest én gang per foresporsel. */
     private static function css(): string
     {
-        $css = @file_get_contents(dirname(__DIR__, 2) . '/nett.css');
+        $css = @file_get_contents(self::rot() . '/nett.css');
         return is_string($css) ? $css : '';
     }
 
     /** Skriptet til serversidene — meny, samtykke, rotasjoner. */
     private static function skript(): string
     {
-        $js = @file_get_contents(dirname(__DIR__, 2) . '/nett.js');
+        $js = @file_get_contents(self::rot() . '/nett.js');
         return is_string($js) ? $js : '';
     }
 

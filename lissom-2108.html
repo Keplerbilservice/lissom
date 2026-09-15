@@ -23826,12 +23826,13 @@ class Component extends DCLogic {
       // en bookingskjerm uten noe aa velge.
       .filter(k => !k.utenDato)
       .map(k => Object.assign({}, k, this.kortDatoer(k), {
-        // Uten datoer er feltet der datoene staar tomt — og kortet sier
-        // ingenting om hva Date Night eller Paint on Pots er. Eieren, 15.
-        // september: «events viser ingen info i kortene». Da staar
-        // kortbeskrivelsen der i stedet (kort_beskrivelse, redigeres i
-        // admin under kurset). Har kurset datoer, vinner datoene.
-        kortTekst: (k.okter || k.datoer || []).some(d => d && d.dag) ? '' : String(k.kortBeskrivelse || '').trim(),
+        // Eventkortene baerer kortbeskrivelsen (kort_beskrivelse, redigeres
+        // i admin under kurset) under datoene. Eieren, 15. september:
+        // «events viser ingen info i kortene» — og for Sip & Clay, som har
+        // dato: «baade dato og tekst». Et kurs uten datoer faar ogsaa
+        // teksten, saa feltet ikke staar tomt.
+        kortTekst: (k.tema === 'Events' || !(k.okter || k.datoer || []).some(d => d && d.dag))
+          ? String(k.kortBeskrivelse || '').trim() : '',
         // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
         // uten noe aa velge er en blindvei.
         //

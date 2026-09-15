@@ -1663,11 +1663,11 @@ function CourseCard({
       textOverflow: 'ellipsis'
     }
   }, title), /*#__PURE__*/React.createElement("div", {
-    // Uten datoer staar kortteksten her (tre linjer). Lokal endring 15.
+    // Kortteksten (tre linjer) under datoene. Lokal endring 15.
     // september 2026 — se CLAUDE.md om ds-bundle.js.
     style: {
       minHeight: 40,
-      height: meta.length || !text ? 40 : 'auto',
+      height: text ? 'auto' : 40,
       overflow: 'hidden'
     }
   }, meta.length ? /*#__PURE__*/React.createElement("div", {

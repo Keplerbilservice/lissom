@@ -15,3 +15,9 @@ WHERE slug = 'date-night' AND (kort_beskrivelse IS NULL OR kort_beskrivelse = ''
 
 UPDATE courses SET kort_beskrivelse = 'Paint on Pots passer enten du kommer alene eller er en større gruppe.'
 WHERE slug = 'paint-on-pots' AND (kort_beskrivelse IS NULL OR kort_beskrivelse = '');
+
+-- Sip & Clay fikk sin 15. september ogsaa («jeg vil ha lignende tekst paa
+-- sip & clay»). Har kurset datoer, staar datoene paa kortet; teksten staar
+-- der naar datoene tar slutt — og paa kurssida som reserve.
+UPDATE courses SET kort_beskrivelse = 'Er dere en gjeng — utdrikningslag, venninnekveld eller et event på jobben? Da kan Sip & Clay være midt i blinken.'
+WHERE slug = 'sip-and-clay' AND (kort_beskrivelse IS NULL OR kort_beskrivelse = '');

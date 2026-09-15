@@ -5289,8 +5289,169 @@ window.__resources = {
                    piksler mellom seg. Her staar det som gjelder om aa bruke
                    den, og veien videre til guidene. -->
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Dørkoden står øverst på siden. Ikke del den med andre enn medlemmer.</p>
-              <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; margin-top: var(--space-3); cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Nyttig info — guider og tips →</button>
             </div>
+
+            <!-- Guidene, artiklene og lenkene fra Nyttig info — som kort
+                 rett her. Eieren, 15. september 2026: «nyttig info paa min
+                 side aapner kortene direkte». Samme lister som den aapne
+                 sida (plakatKort, nyttigArtikler, nyttigeLenker). -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); align-items: stretch; margin-top: var(--space-6);">
+              <sc-for list="{{ plakatKort }}" as="p" hint-placeholder-count="3">
+                <div role="button" tabindex="0" onClick="{{ p.velg }}" style="display: flex; flex-direction: column; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); cursor: pointer;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.eyebrow }}</div>
+                  <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin: var(--space-2) 0;">{{ p.navn }}</h3>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ p.om }}</p>
+                  <span style="margin-top: auto; font-weight: 700; color: var(--lissom-brown); font-size: var(--text-sm);">Åpne →</span>
+                </div>
+              </sc-for>
+              <sc-for list="{{ nyttigArtikler }}" as="a" hint-placeholder-count="1">
+                <div role="button" tabindex="0" onClick="{{ a.velg }}" style="display: flex; flex-direction: column; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); cursor: pointer;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ a.dato }}</div>
+                  <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin: var(--space-2) 0;">{{ a.tittel }}</h3>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ a.ingress }}</p>
+                  <span style="margin-top: auto; font-weight: 700; color: var(--lissom-brown); font-size: var(--text-sm);">Les artikkelen →</span>
+                </div>
+              </sc-for>
+              <sc-for list="{{ nyttigeLenker }}" as="l" hint-placeholder-count="1">
+                <a href="{{ l.url }}" target="_blank" rel="noopener" style="display: flex; flex-direction: column; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); text-decoration: none;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Ressurs</div>
+                  <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin: var(--space-2) 0;">{{ l.navn }} ↗</h3>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ l.om }}</p>
+                </a>
+              </sc-for>
+            </div>
+            <sc-if value="{{ mdHarNoe }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-6);">
+                  <sc-if value="{{ mdHarKort }}" hint-placeholder-val="{{ true }}">
+                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7); margin-bottom: var(--space-6);">
+                      <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                        <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">For medlemmer</h2>
+                        <span style="{{ mdLaasStil }}">Kun for innloggede</span>
+                      </div>
+                      <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.</p>
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch;">
+                        <sc-for list="{{ mdKort }}" as="k" hint-placeholder-count="4">
+                          <div style="{{ k.kortStil }}">
+                            <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
+                            <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 4px;">{{ k.antall }}</div>
+                            <!-- Hvert dokument som sitt eget lille kort, som i
+                                 admin. Eieren, 10. september 2026: «jeg vil at
+                                 alle dokumenterne skal faa smaa kort med tydelig
+                                 navn paa hva det er, dette inni hvert
+                                 hovedkort». -->
+                            <sc-if value="{{ k.harFiler }}" hint-placeholder-val="{{ true }}">
+                              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                                <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
+                                  <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
+                                    <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                                    <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                                  </button>
+                                </sc-for>
+                              </div>
+                            </sc-if>
+                            <!-- Kort i kortet: malene under «Keramikk maler».
+                                 Eieren, 11. september 2026: «en og en mal maa
+                                 vaere et eget kort». Bildet av det ferdige
+                                 resultatet oeverst, navnet og «Mal 01» under.
+                                 Trykk aapner filene i malen rett i kortet;
+                                 trykk igjen lukker. -->
+                            <sc-if value="{{ k.harUnderkort }}" hint-placeholder-val="{{ false }}">
+                              <!-- Soek og grupper, som i admin. -->
+                              <input value="{{ k.sok }}" onChange="{{ k.sokEndre }}" placeholder="Søk i malene" style="width: 100%; box-sizing: border-box; margin-top: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--surface-card); color: var(--text-heading);">
+                              <sc-if value="{{ k.sokTomt }}" hint-placeholder-val="{{ false }}">
+                                <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-muted);">Ingen dokumenter ennå.</div>
+                              </sc-if>
+                              <sc-for list="{{ k.grupper }}" as="g" hint-placeholder-count="2">
+                              <sc-if value="{{ g.harNavn }}" hint-placeholder-val="{{ true }}">
+                                <div style="margin-top: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ g.navn }}</div>
+                              </sc-if>
+                              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                                <sc-for list="{{ g.kort }}" as="u" hint-placeholder-count="3">
+                                  <div style="{{ u.kortStil }}">
+                                    <button type="button" onClick="{{ u.veksle }}" style="{{ u.knappStil }}">
+                                      <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
+                                        <img data-src="{{ u.bilde }}" alt="{{ u.navn }}" loading="lazy" decoding="async" style="{{ u.bildeStil }}">
+                                      </sc-if>
+                                      <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ u.navn }}</span>
+                                      <sc-if value="{{ u.harUnder }}" hint-placeholder-val="{{ true }}">
+                                        <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 2px;">{{ u.under }}</span>
+                                      </sc-if>
+                                      <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 4px;">{{ u.antall }}</span>
+                                      <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ u.pil }}</span>
+                                    </button>
+                                    <sc-if value="{{ u.apen }}" hint-placeholder-val="{{ false }}">
+                                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);">
+                                        <sc-for list="{{ u.filer }}" as="f" hint-placeholder-count="2">
+                                          <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
+                                            <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                                            <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                                            <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                                          </button>
+                                        </sc-for>
+                                      </div>
+                                      <!-- Stegbildene som stripe, som i admin. -->
+                                      <sc-if value="{{ u.harSteg }}" hint-placeholder-val="{{ false }}">
+                                        <div style="display: flex; gap: var(--space-3); overflow-x: auto; margin-top: var(--space-3); -webkit-overflow-scrolling: touch;">
+                                          <sc-for list="{{ u.steg }}" as="st" hint-placeholder-count="3">
+                                            <button type="button" onClick="{{ st.apne }}" style="{{ st.stil }}">
+                                              <img data-src="{{ st.bilde }}" alt="{{ st.navn }}" loading="lazy" decoding="async" style="{{ st.bildeStil }}">
+                                              <span style="font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">{{ st.navn }}</span>
+                                            </button>
+                                          </sc-for>
+                                        </div>
+                                      </sc-if>
+                                    </sc-if>
+                                  </div>
+                                </sc-for>
+                              </div>
+                              </sc-for>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <!-- Spor verkstedet, om eieren har slaatt den paa. AI-en leser
+                       bare kortene som staar over — ingenting annet.
+                       Navnet: eieren, 11. september 2026: «Jeg vil også endre
+                       navn fra spør verkstedet til, spør o store krukkemester».
+                       Skrevet som han skrev det. Gjelder overalt den vises:
+                       her, i kalenderen og i adminfanen. -->
+                  <sc-if value="{{ mdFaq }}" hint-placeholder-val="{{ false }}">
+                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
+                      <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                        <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør o store krukkemester</h2>
+                        <span style="{{ mdLaasStil }}">Kun for innloggede</span>
+                      </div>
+                      <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
+                      <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+                        <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" onKeyDown="{{ mdSporTast }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+                        <span style="{{ mdTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import></span>
+                      </div>
+                      <sc-if value="{{ mdHarSvar }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-5);">
+                          <div style="font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ mdSvar }}</div>
+                          <sc-if value="{{ mdHarKilder }}" hint-placeholder-val="{{ false }}">
+                            <!-- «Hentet fra Monicas kunnskapsbase».
+                                 Eieren, 11. september 2026: «naar den finner noe, saa staar
+                                 det hentet fra f eks haandbok, kan den heller staa hentet fra
+                                 Monicas kunnskapsbase?» Spurt om dokumentnavnet skulle bli
+                                 staaende under, valgte han bare linja. Navnene kommer fortsatt
+                                 fra serveren — de avgjor om linja staar i det hele tatt, saa
+                                 den staar bare naar svaret faktisk kom fra et dokument. -->
+                            <div style="margin-top: var(--space-4);">
+                              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</span>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+              </div>
+            </sc-if>
+
             <!-- «Påfyll» sto her.
 
                  Kortet hadde én ting i seg: «Gavekort — valgfritt beløp», og
@@ -6169,139 +6330,11 @@ window.__resources = {
              innlogging.
              Har eieren ikke slaatt paa noe, staar ikke blokka her i det hele
              tatt — ingen tom overskrift. -->
-        <sc-if value="{{ mdHarNoe }}" hint-placeholder-val="{{ false }}">
-          <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
-            <div style="max-width: var(--width-content); margin: 0 auto;">
-              <sc-if value="{{ mdHarKort }}" hint-placeholder-val="{{ true }}">
-                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7); margin-bottom: var(--space-6);">
-                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
-                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">For medlemmer</h2>
-                    <span style="{{ mdLaasStil }}">Kun for innloggede</span>
-                  </div>
-                  <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.</p>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch;">
-                    <sc-for list="{{ mdKort }}" as="k" hint-placeholder-count="4">
-                      <div style="{{ k.kortStil }}">
-                        <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
-                        <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 4px;">{{ k.antall }}</div>
-                        <!-- Hvert dokument som sitt eget lille kort, som i
-                             admin. Eieren, 10. september 2026: «jeg vil at
-                             alle dokumenterne skal faa smaa kort med tydelig
-                             navn paa hva det er, dette inni hvert
-                             hovedkort». -->
-                        <sc-if value="{{ k.harFiler }}" hint-placeholder-val="{{ true }}">
-                          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
-                            <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
-                              <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
-                                <span style="{{ f.typeStil }}">{{ f.type }}</span>
-                                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
-                                <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
-                              </button>
-                            </sc-for>
-                          </div>
-                        </sc-if>
-                        <!-- Kort i kortet: malene under «Keramikk maler».
-                             Eieren, 11. september 2026: «en og en mal maa
-                             vaere et eget kort». Bildet av det ferdige
-                             resultatet oeverst, navnet og «Mal 01» under.
-                             Trykk aapner filene i malen rett i kortet;
-                             trykk igjen lukker. -->
-                        <sc-if value="{{ k.harUnderkort }}" hint-placeholder-val="{{ false }}">
-                          <!-- Soek og grupper, som i admin. -->
-                          <input value="{{ k.sok }}" onChange="{{ k.sokEndre }}" placeholder="Søk i malene" style="width: 100%; box-sizing: border-box; margin-top: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--surface-card); color: var(--text-heading);">
-                          <sc-if value="{{ k.sokTomt }}" hint-placeholder-val="{{ false }}">
-                            <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-muted);">Ingen dokumenter ennå.</div>
-                          </sc-if>
-                          <sc-for list="{{ k.grupper }}" as="g" hint-placeholder-count="2">
-                          <sc-if value="{{ g.harNavn }}" hint-placeholder-val="{{ true }}">
-                            <div style="margin-top: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ g.navn }}</div>
-                          </sc-if>
-                          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
-                            <sc-for list="{{ g.kort }}" as="u" hint-placeholder-count="3">
-                              <div style="{{ u.kortStil }}">
-                                <button type="button" onClick="{{ u.veksle }}" style="{{ u.knappStil }}">
-                                  <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
-                                    <img data-src="{{ u.bilde }}" alt="{{ u.navn }}" loading="lazy" decoding="async" style="{{ u.bildeStil }}">
-                                  </sc-if>
-                                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ u.navn }}</span>
-                                  <sc-if value="{{ u.harUnder }}" hint-placeholder-val="{{ true }}">
-                                    <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 2px;">{{ u.under }}</span>
-                                  </sc-if>
-                                  <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 4px;">{{ u.antall }}</span>
-                                  <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ u.pil }}</span>
-                                </button>
-                                <sc-if value="{{ u.apen }}" hint-placeholder-val="{{ false }}">
-                                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);">
-                                    <sc-for list="{{ u.filer }}" as="f" hint-placeholder-count="2">
-                                      <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
-                                        <span style="{{ f.typeStil }}">{{ f.type }}</span>
-                                        <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
-                                        <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
-                                      </button>
-                                    </sc-for>
-                                  </div>
-                                  <!-- Stegbildene som stripe, som i admin. -->
-                                  <sc-if value="{{ u.harSteg }}" hint-placeholder-val="{{ false }}">
-                                    <div style="display: flex; gap: var(--space-3); overflow-x: auto; margin-top: var(--space-3); -webkit-overflow-scrolling: touch;">
-                                      <sc-for list="{{ u.steg }}" as="st" hint-placeholder-count="3">
-                                        <button type="button" onClick="{{ st.apne }}" style="{{ st.stil }}">
-                                          <img data-src="{{ st.bilde }}" alt="{{ st.navn }}" loading="lazy" decoding="async" style="{{ st.bildeStil }}">
-                                          <span style="font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">{{ st.navn }}</span>
-                                        </button>
-                                      </sc-for>
-                                    </div>
-                                  </sc-if>
-                                </sc-if>
-                              </div>
-                            </sc-for>
-                          </div>
-                          </sc-for>
-                        </sc-if>
-                      </div>
-                    </sc-for>
-                  </div>
-                </div>
-              </sc-if>
-
-              <!-- Spor verkstedet, om eieren har slaatt den paa. AI-en leser
-                   bare kortene som staar over — ingenting annet.
-                   Navnet: eieren, 11. september 2026: «Jeg vil også endre
-                   navn fra spør verkstedet til, spør o store krukkemester».
-                   Skrevet som han skrev det. Gjelder overalt den vises:
-                   her, i kalenderen og i adminfanen. -->
-              <sc-if value="{{ mdFaq }}" hint-placeholder-val="{{ false }}">
-                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
-                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
-                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør o store krukkemester</h2>
-                    <span style="{{ mdLaasStil }}">Kun for innloggede</span>
-                  </div>
-                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
-                  <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
-                    <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" onKeyDown="{{ mdSporTast }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
-                    <span style="{{ mdTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import></span>
-                  </div>
-                  <sc-if value="{{ mdHarSvar }}" hint-placeholder-val="{{ false }}">
-                    <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-5);">
-                      <div style="font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ mdSvar }}</div>
-                      <sc-if value="{{ mdHarKilder }}" hint-placeholder-val="{{ false }}">
-                        <!-- «Hentet fra Monicas kunnskapsbase».
-                             Eieren, 11. september 2026: «naar den finner noe, saa staar
-                             det hentet fra f eks haandbok, kan den heller staa hentet fra
-                             Monicas kunnskapsbase?» Spurt om dokumentnavnet skulle bli
-                             staaende under, valgte han bare linja. Navnene kommer fortsatt
-                             fra serveren — de avgjor om linja staar i det hele tatt, saa
-                             den staar bare naar svaret faktisk kom fra et dokument. -->
-                        <div style="margin-top: var(--space-4);">
-                          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</span>
-                        </div>
-                      </sc-if>
-                    </div>
-                  </sc-if>
-                </div>
-              </sc-if>
-            </div>
-          </section>
-        </sc-if>
+        <!-- Medlemsdokumentene («For medlemmer») sto her, nederst paa den
+             aapne sida. Eieren, 15. september 2026: «nyttig info paa min side
+             aapner kortene direkte» — de staar naa i fanen Nyttig info paa
+             Min side, som han ba om 10. september ogsaa. Flyttet, ikke
+             kopiert. -->
       </sc-if>
 
       <sc-if value="{{ artikkelApen }}" hint-placeholder-val="{{ false }}">
@@ -43515,7 +43548,9 @@ class Component extends DCLogic {
     if (side === 'adminnyttig' && !this.state.bevisListe) {
       this.hentBevis();
     }
-    if (side === 'nyttig' && !this.state.offentligNyttig) {
+    // Min side ogsaa: guidene og lenkene staar i fanen Nyttig info der
+    // (15. september 2026).
+    if ((side === 'nyttig' || side === 'minside') && !this.state.offentligNyttig) {
       this.hentNyttig();
     }
 
@@ -60451,9 +60486,11 @@ class Component extends DCLogic {
       adminNavStil: (this.state.vw || 1400) < 980
         ? { display: 'flex', flexDirection: 'row', gap: 4, overflowX: 'auto', overscrollBehaviorX: 'contain', flex: 1 }
         : { display: 'flex', flexDirection: 'column', gap: 2 },
-      ordensregerApen: !!this.state.ordensApen,
-      ordensPilRotasjon: this.state.ordensApen ? 'rotate(180deg)' : 'rotate(0deg)',
-      vekslOrdensregler: () => this.setState(s => ({ ordensApen: !s.ordensApen })),
+      // Aapne fra start. Eieren, 15. september 2026: kortene i Nyttig info
+      // skal aapne direkte. Trykk paa overskrifta lukker som foer.
+      ordensregerApen: this.state.ordensApen !== false,
+      ordensPilRotasjon: this.state.ordensApen !== false ? 'rotate(180deg)' : 'rotate(0deg)',
+      vekslOrdensregler: () => this.setState(s => ({ ordensApen: s.ordensApen === false })),
       heroGradientMove: (e) => {
         const el = e.currentTarget, r = el.getBoundingClientRect();
         const x = e.clientX - r.left, y = e.clientY - r.top;

@@ -17988,12 +17988,14 @@ sjekk('… og skjermen sier det samme som serveren',
 sjekk('Kalender: «Send beskjed» ved siden av Chat gaar til Medlemmer → Beskjeder',
     str_contains($mkSida, "                { navn: 'Chat',        velg: () => this.setState({ klChatVis: true }) },\n")
     && str_contains($mkSida, "                { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },"));
-sjekk('… synlighetskortet paa kalenderen har de samme radene som arket i Verktøy, i full bredde og to kolonner',
-    substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 2
+// Kortet ble lukket 15. september 2026. Eieren: «synlighet paa kalender, maa
+// ligge i et kort, jeg vil at fokus skal vaere paa kalender». Naa er det ett
+// kort blant de andre som aapner arket — radene staar bare i arket.
+sjekk('… synlighetskortet paa kalenderen er lukket, og aapner arket',
+    substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 1
     && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="6">') === 1
-    && str_contains($mkSida, '<div style="grid-column: 1 / -1; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);">')
-    && str_contains($mkSida, 'grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--space-2) var(--space-8);')
-    && str_contains($mkSida, "      ...(side === 'adminkalender' && !this.state.dok ? (this.dokHent(), {}) : {}),"));
+    && str_contains($mkSida, "kort('Synlighet', ")
+    && str_contains($mkSida, "() => this.setState({ synlighetApen: true }));"));
 sjekk('… ventelista: navnet staar helt ut, kurset kuttes, «Hele kurset · #1» er borte',
     str_contains($mkSida, "              under: v.status || '',\n              harUnder: !!v.status,")
     && !str_contains($mkSida, "? 'Hele kurset'")

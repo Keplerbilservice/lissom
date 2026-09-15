@@ -51084,6 +51084,11 @@ class Component extends DCLogic {
                 // Nettbutikk → Handlelister, der den slaas sammen og prises.
                 { navn: 'Handleliste', verdi: ((d.koer || {}).handleliste) ? String((d.koer || {}).handleliste) : '',
                   velg: () => this.gaaAdmin('adminbutikk', { butikkFane: 'Handlelister' }) },
+                // Eieren, 15. september 2026: «paa kalender — maa ha pille med
+                // medlemmer». Tallet er aktive medlemmer (aktiv, proeve, pause).
+                { navn: 'Medlemmer', verdi: String((this.state.adminMedlemmer || [])
+                    .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length || ''),
+                  velg: () => this.gaaAdmin('adminmedlem', {}) },
               ].map(x => Object.assign({}, x, {
                 harVerdi: !!x.verdi,
                 verdiStil: { fontWeight: 800, color: 'var(--lissom-brown)' },

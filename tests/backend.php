@@ -7237,8 +7237,10 @@ sjekk('… mens resten av bunnteksten staar som for',
 // «Gjelder: Date Night», og «Antall personer» er ikke der.
 sjekk('kurssida aapner det enkle skjemaet',
     str_contains($sida, "this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,\n          ktEmne: k.title || k.tittel || '' });"));
+// Tre steder fra 15. september 2026: det tredje er ?skjema=1 fra
+// serversidene (app/nett/), som aapner det samme skjemaet ved oppstart.
 sjekk('… og gruppeskjemaet aapnes bare fra gruppelenka',
-    substr_count($sida, 'fsApen: true') === 2
+    substr_count($sida, 'fsApen: true') === 3
     && str_contains($sida, 'goForesporsel: () => this.apneForesporsel(),'));
 sjekk('… kurset foelger med som emne til serveren',
     str_contains($sida, "type: (s.ktEmne || '').trim() || 'Kontaktskjema',"));
@@ -8051,7 +8053,9 @@ sjekk('… og bookingskjemaet staar ikke under den',
 sjekk('… og kortet bygges ett sted',
     str_contains($sida, 'apneMedlemskort(o) {')
     && str_contains($sida, 'const visMer = () => this.apneMedlemskort(o);')
-    && substr_count($sida, 'this.apneMedlemskort(') === 2);
+    // Tre fra 15. september 2026: det tredje er /medlemskap?plan= fra
+    // serversida, som aapner kortet naar planene er kommet.
+    && substr_count($sida, 'this.apneMedlemskort(') === 3);
 
 // ── Kunden ser bare Vipps ─────────────────────────────────────────────
 //

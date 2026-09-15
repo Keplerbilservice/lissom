@@ -171,6 +171,28 @@
       d.head.appendChild(g);
     }
   }
+  // Personvern: «Ditt svar paa besoeksmaaling» — staar bare naar noen har
+  // svart, og sier hva de svarte. «Endre svaret mitt» nullstiller, som
+  // angreSamtykke() i appen, og boksen kommer opp igjen.
+  var endre = d.querySelector('[data-nett-handling="endreAnalyse"]');
+  if (endre) {
+    var blokk = endre.parentElement, svar = samtykke();
+    var m0 = window.lissomMaal || {};
+    if (!svar || !(m0.ga || m0.gtm)) { blokk.style.display = 'none'; }
+    else {
+      var p = blokk.querySelector('p');
+      if (p) p.textContent = svar === 'ja'
+        ? 'Du har sagt ja til at vi måler besøket. Vil du ombestemme deg, stopper målingen med en gang du trykker under.'
+        : 'Du har sagt nei, og ingenting blir målt. Trykker du under, kan du svare på nytt.';
+      endre.addEventListener('click', function () {
+        try { localStorage.removeItem('lissom-analyse'); } catch (e) {}
+        try { window['ga-disable-' + (m0.ga || '')] = true; } catch (e) {}
+        blokk.style.display = 'none';
+        var b2 = d.querySelector('[data-nett-samtykke]'); if (b2) b2.removeAttribute('hidden');
+      });
+    }
+  }
+
   var boks = d.querySelector('[data-nett-samtykke]');
   if (boks) {
     var m = window.lissomMaal || {};

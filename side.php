@@ -514,7 +514,9 @@ if (!$ikkeISoket && $d !== null) {
 //
 // Gaar tegningen galt — basen, en feil i en mal — gaar appen ut som foer.
 // En side som tegnes tregt er bedre enn en som ikke tegnes.
-if ($d !== null && !$ikkeISoket) {
+// Ogsaa adresser uten oppfoering i seo-kart.json (/ferdigbrent): da uten
+// egen tittel, og utenfor soeket — som appen ville gitt dem.
+if (true) {
     try {
         $lastBackend();
         // Nettsidas rot (der lissom-2108.html, nett.css og bildene ligger).
@@ -523,7 +525,7 @@ if ($d !== null && !$ikkeISoket) {
         if (!defined('NETT_ROT')) { define('NETT_ROT', __DIR__); }
         require_once APP_DIR . '/nett/nett.php';
         if (Nett::kan($adresse)) {
-            $side = Nett::tegn($adresse, $d, $robot['ld'] ?? []);
+            $side = Nett::tegn($adresse, $d ?? ['index' => 'noindex'], $robot['ld'] ?? []);
             if (is_string($side) && $side !== '') {
                 $ut($side);
             }

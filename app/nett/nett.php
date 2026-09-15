@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/deler.php';
 require_once __DIR__ . '/kort.php';
+require_once __DIR__ . '/mal.php';
 
 final class Nett
 {
@@ -46,6 +47,15 @@ final class Nett
         '/nyheter' => 'nyheter',
         '/nyttig-info' => 'nyttig',
         '/medlemskap' => 'medlemskap',
+        '/om-oss' => 'omoss',
+        '/sporsmal-og-svar' => 'sporsmal',
+        '/personvern' => 'personvern',
+        '/kursene-vare' => 'kursoversikt',
+        '/paint-on-pots' => 'paintonpots',
+        '/kontakt' => 'kontakt',
+        '/bedrift' => 'bedrift',
+        '/vilkar' => 'vilkar',
+        '/ferdigbrent' => 'ferdigbrent',
     ];
 
     /** Adressen som tegnes naa — for maler som tegner flere adresser. */
@@ -100,7 +110,7 @@ final class Nett
     {
         // Kurssida sender folk inn i appen med ?dag=, ?alle=1, ?book=1 eller
         // ?venteliste=1 — da skal appen ha adressen, ikke serversida.
-        foreach (['dag', 'alle', 'book', 'venteliste', 'plan'] as $n) {
+        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema'] as $n) {
             if (isset($_GET[$n])) {
                 return false;
             }

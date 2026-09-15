@@ -32195,6 +32195,13 @@ class Component extends DCLogic {
     if (rute) {
       this.folgRute(rute);
     }
+    // Serversidene (app/nett/) sender «Send forespoersel» hit som
+    // /kontakt?skjema=1 og /bedrift?skjema=1: ruta med skjemaet aapnes med
+    // det samme, som om man hadde trykket paa knappen.
+    if (rute && /[?&]skjema=1/.test(window.location.search)) {
+      if (rute.side === 'kontakt') this.setState({ ktApen: true, ktSendt2: false, ktFeil: null });
+      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
+    }
     this._popstate = (e) => {
       // Hvor dypt vi staar naa — se tilbakeVals().
       this._dybde = (e && e.state && e.state.idx) || 0;

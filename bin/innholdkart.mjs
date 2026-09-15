@@ -58,3 +58,15 @@ Object.keys(SIDEINNHOLD).forEach(side => {
 
 fs.writeFileSync(path.join(ROT, 'innhold-standard.json'), JSON.stringify(ut, null, 1) + '\n');
 console.log(felter + ' felter skrevet til innhold-standard.json');
+
+// Salgsvilkaarene: «const RAA = [ … ];» i renderVals (skjermen «Vilkår»).
+// Serversida /vilkar tegner dem fra vilkar.json — samme tekst, ett sted.
+const iRaa = kilde.indexOf('const RAA = [');
+if (iRaa < 0) throw new Error('Fant ikke «const RAA = [» i lissom-2108.html');
+const RAA = eval('(' + balansert(kilde, kilde.indexOf('[', iRaa)) + ')');
+const avsn = x => typeof x === 'string'
+  ? { harH: false, h: '', t: x, harPunkter: false, punkter: [] }
+  : { harH: !!x.h, h: x.h || '', t: x.t || '', harPunkter: !!(x.punkter || []).length, punkter: (x.punkter || []).map(t => ({ t })) };
+const vilkar = RAA.map((rad, n) => ({ nr: String(n + 1) + ')', h: rad[0], avsnitt: rad[1].map(avsn), ank: rad[2] || ('vilkar-' + (n + 1)), bolk: rad[3] || '', harBolk: !!rad[3] }));
+fs.writeFileSync(path.join(ROT, 'vilkar.json'), JSON.stringify(vilkar, null, 1) + '\n');
+console.log(vilkar.length + ' punkter skrevet til vilkar.json');

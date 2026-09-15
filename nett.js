@@ -145,6 +145,9 @@
   // Ingen maaling foer noen har sagt ja — samme noekkel («lissom-analyse»)
   // og samme rekkefoelge (consent default → update → config) som i appen.
   function samtykke() { try { return localStorage.getItem('lissom-analyse') || ''; } catch (e) { return 'nei'; } }
+  var felt = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];
+  var sett = function (v) { var o = {}; for (var i = 0; i < felt.length; i++) o[felt[i]] = v; return o; };
+  var samtykkeSendt = false;
   function maal() {
     var m = window.lissomMaal || {};
     var ga = /^G-[A-Z0-9]{6,20}$/i.test(m.ga || '') ? m.ga : '';
@@ -153,8 +156,14 @@
     if (samtykke() !== 'ja') return;
     window.dataLayer = window.dataLayer || [];
     if (typeof window.gtag !== 'function') { window.gtag = function () { window.dataLayer.push(arguments); }; }
-    var felt = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];
-    var sett = function (v) { var o = {}; for (var i = 0; i < felt.length; i++) o[felt[i]] = v; return o; };
+    if (samtykkeSendt) {
+      // Sa nei og saa ja igjen paa samme side: taggene er lastet alt, bare
+      // samtykket skal skrus paa igjen.
+      window.gtag('consent', 'update', sett('granted'));
+      try { window['ga-disable-' + ga] = false; } catch (e) {}
+      return;
+    }
+    samtykkeSendt = true;
     window.gtag('consent', 'default', sett('denied'));
     window.gtag('consent', 'update', sett('granted'));
     if (ga) {
@@ -187,6 +196,9 @@
       endre.addEventListener('click', function () {
         try { localStorage.removeItem('lissom-analyse'); } catch (e) {}
         try { window['ga-disable-' + (m0.ga || '')] = true; } catch (e) {}
+        // Og si fra til Google, som gaAv() i appen: «ga-disable» stopper
+        // Analytics, men Tag Manager og Ads leser samtykket.
+        try { if (typeof window.gtag === 'function' && samtykkeSendt) window.gtag('consent', 'update', sett('denied')); } catch (e) {}
         blokk.style.display = 'none';
         var b2 = d.querySelector('[data-nett-samtykke]'); if (b2) b2.removeAttribute('hidden');
       });

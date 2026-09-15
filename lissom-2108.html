@@ -25537,6 +25537,11 @@ class Component extends DCLogic {
     // som den er. Ellers ville den blitt skrevet om til /kurs i mellomtiden,
     // og den som delte lenken hadde sendt folk til feil sted.
     if (this._ventendeSlug) return null;
+    // Samme for en artikkel som hentes: /nyheter/<adresse> ble skrevet om til
+    // /nyheter mens den lastet, og saa til artikkelen igjen — to steg, og
+    // tilbake havnet paa /nyheter med artikkelen fortsatt aapen, som straks
+    // skrev adressen tilbake. Tilbake satt fast. (Revisjon 15. september 2026.)
+    if (this._ventendeNyhet) return null;
 
     // Et kurs med egen adresse skal ha den i feltet, ikke /booking.
     if (side === 'booking') {
@@ -25654,6 +25659,7 @@ class Component extends DCLogic {
     }
 
     if (rute.nyhetSlug) {
+      this._ventendeNyhet = true;
       this.setState({ side: 'nyheter', nyLest: null });
       this.hentNyhet(rute.nyhetSlug);
       return;
@@ -25685,6 +25691,8 @@ class Component extends DCLogic {
       piProdukt: null,
       // /min-side/<fane> aapner fanen; /min-side er «hjem».
       ...(rute.side === 'minside' ? { msFane: rute.fane || 'hjem' } : {}),
+      // /nyheter uten adresse er lista — en aapen artikkel lukkes.
+      ...(rute.side === 'nyheter' ? { nyLest: null } : {}),
     });
   }
 
@@ -29642,6 +29650,7 @@ class Component extends DCLogic {
     })
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
+        this._ventendeNyhet = false;
         if (d && d.artikkel) {
           this.setState({ side: 'nyheter', nyLest: d.artikkel });
           window.scrollTo(0, 0);
@@ -29651,7 +29660,7 @@ class Component extends DCLogic {
         // artikkelside som ser ut som noe er i stykker.
         this.setState({ side: 'ikkefunnet' });
       })
-      .catch(() => { /* nettet svarte ikke; lista staar */ });
+      .catch(() => { this._ventendeNyhet = false; /* nettet svarte ikke; lista staar */ });
   }
 
   /**
@@ -33713,7 +33722,7 @@ class Component extends DCLogic {
       tilbakeGaa: () => {
         if (dybde > 0) { history.back(); return; }
         if (admin) { this.gaaAdmin('adminkalender', {}); return; }
-        if (side === 'minside' && this.msFane() !== 'hjem') { this.setState({ msFane: 'hjem' }); window.scrollTo(0, 0); return; }
+        if (side === 'minside' && (this.state.msFane || 'hjem') !== 'hjem') { this.setState({ msFane: 'hjem' }); window.scrollTo(0, 0); return; }
         this.setState({ side: 'forside', fhRolle: '', fhFra: '' });
         window.scrollTo(0, 0);
       },

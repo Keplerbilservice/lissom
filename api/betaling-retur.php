@@ -14,8 +14,14 @@ require __DIR__ . '/_boot.php';
 Foresporsel::krevMetode('GET');
 
 $referanse = Foresporsel::tekst('ref');
+// Hvor kunden skal tilbake. Forsida som foer — eller en side hos oss, naar
+// kjoepet ble gjort der («Ta med barn» sendes tilbake til Min side). Bare
+// en sti som begynner med én skraastrek, saa ingen kan sende folk ut av
+// nettstedet gjennom adressen.
+$til = Foresporsel::tekst('til');
+$til = preg_match('#^/[a-z0-9\-/]*$#', $til) === 1 ? $til : '/';
 $tilbake = static fn(string $utfall, string $ekstra = ''): never =>
-    Svar::omdiriger(Config::nettsted() . '/#betaling=' . $utfall . $ekstra);
+    Svar::omdiriger(Config::nettsted() . $til . '#betaling=' . $utfall . $ekstra);
 
 if ($referanse === '') {
     $tilbake('ukjent');

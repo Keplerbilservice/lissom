@@ -2673,7 +2673,10 @@ sjekk('… men bare fra gaver som fortsatt staar',
     && str_contains($medlFil2, 'AND g.gyldig_til >= :idag'));
 // Ett sted, ikke to: Min side og medlemslista leser den samme regelen.
 sjekk('… og Min side og admin leser den samme regelen',
-    str_contains($medlFil2, 'public static function timerMedGaver(array $medlem): ?int')
+    // Dugnadstimer kom til 15. september 2026 (migrasjon 189) — rundet til
+    // kvarter, saa taket kan vaere 31,75.
+    str_contains($medlFil2, 'public static function timerMedGaver(array $medlem): int|float|null')
+    && str_contains($medlFil2, 'Dugnad::minutterTilgode($medlem)')
     && str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
                     '$perMnd = Medlemskap::timerMedGaver($medlem);')
     && substr_count(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
@@ -3971,8 +3974,8 @@ sjekk('snarveiene i de gule radene er like store paa telefon',
 sjekk('kort med gjenstand i kassa viser en fra-pris',
     substr_count($sida2, "? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')") === 2);
 sjekk('… og serveren regner den ut av den rimeligste varen',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), "'prisFraOre'      => \$fra,")
-    && str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), 'SELECT MIN(pris_ore) FROM products'));
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), "'prisFraOre'      => \$fra,")
+    && str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'SELECT MIN(pris_ore) FROM products'));
 
 // «Velg» paa medlemskapssiden gikk til bookingskjermen, som alltid opprettet
 // en avtale i Vipps — uten valget mellom fast trekk og aa ordne selv
@@ -4081,7 +4084,7 @@ sjekk('ferien bygger paa apningstider, ikke en egen tabell',
 // Det som var nytt: en stengt dag skjuler kursdatoene, ikke bare
 // aapningstidene i bunnteksten.
 sjekk('en stengt dag skjuler kursdatoene paa nettsida',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), 'Ferie::stengt('));
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::stengt('));
 sjekk('… og aapningstidene folger med',
     str_contains(file_get_contents(__DIR__ . '/../app/lib/apent.php'), '$okter = Ferie::utenom($okter);'));
 // Skjult er ikke det samme som stengt: en gammel fane kan sende okt-id-en
@@ -4616,7 +4619,7 @@ sjekk('… uten aa slette de andre',
     str_contains($akurs, '$alle = Kursmal::standardtekster();')
     && str_contains($akurs, "'n' => 'kurs_standardtekster'"));
 sjekk('praktisk informasjon faller tilbake paa standarden ute',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'),
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'),
                  "(string) (Kursmal::forKurs(\$k)['praktisk'] ?? '')"));
 sjekk('lagre-lenka staar bare naar teksten er endret',
     str_contains($sida2, 'harLagre: kategori !== \'\' && naa !== \'\' && naa !== fasit,'));
@@ -5697,7 +5700,9 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
 
 // Tallet maa naa fram til kortet. Uten disse to staar regnestykket der uten
 // at noen ser det.
-$kursFil = file_get_contents(__DIR__ . '/../api/kurs.php');
+// Katalogen laa i api/kurs.php til 15. september 2026; naa i
+// app/lib/katalog.php, saa serversidene (app/nett/) tegner av den samme.
+$kursFil = file_get_contents(__DIR__ . '/../app/lib/katalog.php');
 sjekk('katalogen sender antall opptatte plasser per dato',
     str_contains($kursFil, "'solgt'    => \$solgtKart[(int) \$o['id']] ?? 0,"));
 $stempFil = file_get_contents(__DIR__ . '/../api/stempling.php');
@@ -6160,7 +6165,9 @@ if (DB::harKolonne('check_ins', 'ressurs_id') && DB::harTabell('ressurser')) {
 }
 sjekk('valget staar paa Min side, der medlemmet stempler inn',
     str_contains($sida2, 'msRessursValg:')
-    && str_contains($sida2, "{ handling: 'inn', ressursId: valgt || 0 }"));
+    // Valget foelger med gjennom ruta «Stemple inn naa?» (15. september 2026).
+    && str_contains($sida2, "this.setState({ innstRute: 'inn', innstRessurs: valgt || 0 });")
+    && str_contains($sida2, "this.stemplingKall({ handling: 'inn', ressursId: this.state.innstRessurs || 0 }, true);"));
 // En ressurs som er slettet eller slaatt av skal ikke gjore at innstemplinga
 // mislykkes — medlemmet staar med telefonen i haanda i dora.
 sjekk('… og en ukjent ressurs stopper ikke innstemplinga',
@@ -6305,7 +6312,7 @@ sjekk('nettsida skriver «Kurs i verkstedet», ikke «Fullbooket»',
 // Grunnen maa foelge med helt ut. Regnes den ett sted og vises et annet,
 // kommer de to til aa si forskjellige ting.
 sjekk('… og grunnen sendes med fra serveren',
-    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'),
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'),
                  "'sperret'  => \$sperretKart[(int) \$o['id']] ?? false,"));
 
 // ── Ressursene staar oeverst ───────────────────────────────────────────
@@ -7230,8 +7237,10 @@ sjekk('… mens resten av bunnteksten staar som for',
 // «Gjelder: Date Night», og «Antall personer» er ikke der.
 sjekk('kurssida aapner det enkle skjemaet',
     str_contains($sida, "this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,\n          ktEmne: k.title || k.tittel || '' });"));
+// Tre steder fra 15. september 2026: det tredje er ?skjema=1 fra
+// serversidene (app/nett/), som aapner det samme skjemaet ved oppstart.
 sjekk('… og gruppeskjemaet aapnes bare fra gruppelenka',
-    substr_count($sida, 'fsApen: true') === 2
+    substr_count($sida, 'fsApen: true') === 3
     && str_contains($sida, 'goForesporsel: () => this.apneForesporsel(),'));
 sjekk('… kurset foelger med som emne til serveren',
     str_contains($sida, "type: (s.ktEmne || '').trim() || 'Kontaktskjema',"));
@@ -8044,7 +8053,9 @@ sjekk('… og bookingskjemaet staar ikke under den',
 sjekk('… og kortet bygges ett sted',
     str_contains($sida, 'apneMedlemskort(o) {')
     && str_contains($sida, 'const visMer = () => this.apneMedlemskort(o);')
-    && substr_count($sida, 'this.apneMedlemskort(') === 2);
+    // Tre fra 15. september 2026: det tredje er /medlemskap?plan= fra
+    // serversida, som aapner kortet naar planene er kommet.
+    && substr_count($sida, 'this.apneMedlemskort(') === 3);
 
 // ── Kunden ser bare Vipps ─────────────────────────────────────────────
 //
@@ -9620,7 +9631,7 @@ sjekk('serveren tar imot kladd, publisert og avlyst',
     str_contains($kursApi, "in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)"));
 // … og nettsida henter bare det som er publisert. Det er dette som gjor at
 // bryteren faktisk tar kurset ned.
-foreach (['api/kurs.php', 'api/venteliste.php', 'app/lib/apent.php', 'app/lib/booking.php'] as $fil) {
+foreach (['app/lib/katalog.php', 'api/venteliste.php', 'app/lib/apent.php', 'app/lib/booking.php'] as $fil) {
     // booking.php skriver spoersmaalet i en enkeltfnuttet streng, saa fnuttene
     // rundt «publisert» staar escapet der. Samme krav, annen skrivemaate.
     $kode = file_get_contents(dirname(__DIR__) . '/' . $fil);
@@ -14419,8 +14430,10 @@ sjekk('doerkoden staar som en liten pille ved navnet',
     'ikke i et eget kort etter fem andre');
 
 // ── Verkstedet ditt ───────────────────────────────────────────────
+// Dugnadskortet (15. september 2026) ligger mellom timene og medlemskapet,
+// saa avstanden fra stolpen til «mittAbo» ble lengre.
 sjekk('stempling, timer og medlemskap staar i ett kort',
-    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,4000}\{\{ mittAbo \}\}/s', $msRen),
+    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,12000}\{\{ mittAbo \}\}/s', $msRen),
     'tre steder ble ett');
 // ── Kortet finner ikke paa en plan ────────────────────────────────
 //
@@ -14472,7 +14485,9 @@ sjekk('kortet navngir raden timene ble regnet av',
     && str_contains($k2Ren, "|| (harSvar ? fraTimene : ((this.state.minAvtale || {}).plan || ''));"),
     'maalt: kortet sier ikke lenger «Mini 15 · Fritt» naar medlemsraden er tom');
 sjekk('… og timetallet kommer alltid fra stemplingssvaret',
-    str_contains($k2Ren, 'const timer = st.timer.perMnd;')
+    // Planens eget tall (timer.plan) fra 15. september 2026: taket har
+    // gavetimer og dugnad lagt til, og de er ikke «timer i maaneden».
+    str_contains($k2Ren, 'const timer = st.timer.plan !== undefined ? st.timer.plan : st.timer.perMnd;')
     && str_contains($k2Ren, 'return Object.assign({}, funnet, { timer: timer, periode: tekst, detalj: tekst });'),
     'planlista sier hva planen gir, serveren hva DETTE medlemmet har');
 sjekk('… og et eget timetall sier at det er et eget timetall',
@@ -14499,7 +14514,7 @@ sjekk('… og gjetter ikke lenger paa kursnavn',
     && str_contains($k2Ren, "const skiva = alle.find(r => /dreieskive/i.test(r.navn || ''));")
     && str_contains($k2Ren, 'if (!k || !skiva || k.ressursId !== skiva.id) return;'),
     'maalt: dreiekurset kom med, bordplasskurset samme dag kom ikke');
-$kursApi2 = file_get_contents(dirname(__DIR__) . '/api/kurs.php');
+$kursApi2 = file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php');
 sjekk('… fordi ressursen foelger med kurset naa',
     str_contains($kursApi2, "\$ressursFelt = DB::harKolonne('courses', 'ressurs_id') ? ', ressurs_id' : '';")
     && str_contains($kursApi2, "'ressursId' => (\$k['ressurs_id'] ?? null) === null ? null : (int) \$k['ressurs_id'],"),
@@ -16961,11 +16976,14 @@ sjekk('… side.php legger JSON-LD i hodet og teksten etter <body>, og aldri paa
         return str_contains($s, "\$robot = Robottekst::lag(\$adresse, \$d, \$kart);")
             && str_contains($s, "if (!\$ikkeISoket && \$d !== null) {")
             && str_contains($s, "'<script type=\"application/ld+json\" data-lissom-ld=\"1\">'")
-            && str_contains($s, "'<body>' . \"\\n\" . \$robot['html']");
+            // Rett etter <body …> — taggen kan ha attributter (data-lett-utgave).
+            && str_contains($s, "\$html = \$etterBody(\$html, \"\\n\" . \$robot['html']);")
+            && str_contains($s, "\$kropp = \$hode === false ? false : strpos(\$html, '<body', \$hode);");
     })());
 sjekk('… skriptet fjerner teksten naar en ekte skjerm staar, paa alle sider',
     str_contains($mkSida, "var tekst = document.getElementById('lissom-tekst');")
-    && str_contains($mkSida, "if (tekst && skjermFinnes()) tekst.remove();"));
+    && str_contains($mkSida, "if (!skjermFinnes()) return false;")
+    && str_contains($mkSida, "tekst.remove();"));
 sjekk('… og deployen lint-sjekker side.php',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/.github/workflows/deploy.yml'), 'php -l side.php'));
 sjekk('… llms.txt bruker den samme kurslista',
@@ -17001,7 +17019,7 @@ sjekk('dreiekurset: slug, 301 og egen tittel/meta paa server og klient',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/side.php'), "'tittel'        => \$egenTittel !== '' ? \$egenTittel : \$navn . ' i Tønsberg | Lissom Keramikk',")
     && str_contains($mkSida, "tittel: egenTittel || navn + ' i Tønsberg | Lissom Keramikk',")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/kurs.php'), "'seoTittel'       => trim((string) (\$k['seo_tittel'] ?? '')),"));
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php'), "'seoTittel'       => trim((string) (\$k['seo_tittel'] ?? '')),"));
 sjekk('LocalBusiness har org.nr og koordinater',
     str_contains($mkLib2 = (string) file_get_contents(dirname(__DIR__) . '/app/lib/robottekst.php'), "'taxID'       => '938280819',")
     && str_contains($mkLib2, "'latitude' => 59.246898, 'longitude' => 10.415572"));
@@ -17040,7 +17058,7 @@ sjekk('… .htaccess, sidekartet, llms.txt og Nyttig info kjenner dem',
 // kurssida (role="img"). Tomt = kursnavnet, som foer.
 sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
     is_file(dirname(__DIR__) . '/db/migrations/165_alt_tekst_paa_kursbildet.sql')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/kurs.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "'bildeAlt'        => 'bilde_alt',")
     && str_contains($mkSida, 'Alt-tekst — hva bildet viser, for den som ikke ser det</label>')
     && substr_count($mkSida, 'image-alt="{{ k.bildeAlt }}"') === 3
@@ -17704,22 +17722,26 @@ $syn = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Arket staar én gang, blant de andre overleggene — ikke én gang per skjerm.
 //
-// Radene staar derimot to steder fra 13. september 2026: i arket, og som et
-// aapent kort paa adminkalenderen. Eieren: «jeg vil ha på kalender siden,
-// synlighet på siden, slik at jeg her enkelt når alle vis skjul knappene,
-// legg i et kort», og valgte «aapent, i tillegg til arket». Samme kilde,
-// samme lagring — to visninger, ikke to loesninger.
+// Radene sto ogsaa som et aapent kort paa adminkalenderen fra 13. september
+// 2026. Eieren, 15. september: «synlighet paa kalender, maa ligge i et kort,
+// jeg vil at fokus skal vaere paa kalender». Naa er det ett lukket kort som
+// aapner arket — radene staar bare i arket.
 sjekk('synlighetsarket staar bare én gang i malen',
     substr_count($syn, '<sc-if value="{{ synVises }}"') === 1
-    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 2
-    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 2);
+    && substr_count($syn, '<sc-for list="{{ synNett }}" as="r"') === 1
+    && substr_count($syn, '<sc-for list="{{ synMin }}" as="r"') === 1
+    && str_contains($syn, "kort('Synlighet', "));
 // Ti rader: fem paa nettsiden, fem paa Min side. Maalt i nettleseren.
 // Ble tolv 13. september 2026. Eieren: «jeg vil ha bryter til aa skru av
 // glemte aa stemple for medlemmene. Og den skal og skrus av.» Migrasjon 181
 // setter den av; herfra kan den slaas paa igjen.
 // Tretten 14. september: handlelista, migrasjon 184, ogsaa av fra start.
-sjekk('… og har alle tretten bryterne',
-    substr_count($syn, "            rad('") === 13
+// Femten 15. september 2026: dugnad og overforing av dugnadstimer,
+// migrasjon 189 — dugnad av fra start.
+sjekk('… og har alle seksten bryterne',
+    substr_count($syn, "            rad('") === 16
+    && str_contains($syn, "            rad('Dugnad', this.bryterPaa('dugnad'),")
+    && str_contains($syn, "            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
     && str_contains($syn, "            rad('Handlelista', this.bryterPaa('handleliste'),")
     && str_contains($syn, "            rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),")
     && str_contains($syn, "            rad('Banneret under toppbildet',")
@@ -17902,10 +17924,14 @@ sjekk('… mens «Feil tid — si fra» staar uansett',
 // lukket oekta (0 aapne igjen) og la én henvendelse av typen «Feil
 // stemplingstid» i admin.
 $stemplApi = (string) file_get_contents(dirname(__DIR__) . '/api/stempling.php');
-sjekk('utstempling gaar via ruta, innstempling rett gjennom',
+// Innstempling ogsaa via ei rute fra 15. september 2026. Eieren: «man maa
+// faa spoersmaal, er du sikker, samme opplegg naar man stempler ut».
+sjekk('utstempling og innstempling gaar begge via ei rute',
     str_contains($sida, "if (inne) { this.setState({ utstApen: true }); return; }")
-    && str_contains($sida, "this.stemplingKall({ handling: 'inn', ressursId: valgt || 0 }, true);")
-    && str_contains($sida, '<sc-if value="{{ utstVis }}"'));
+    && str_contains($sida, "this.setState({ innstRute: 'inn', innstRessurs: valgt || 0 });")
+    && str_contains($sida, '<sc-if value="{{ utstVis }}"')
+    && str_contains($sida, '<sc-if value="{{ innstVis }}"')
+    && str_contains($sida, "tittel: 'Stemple inn nå?'"));
 sjekk('… og ruta sier hvor lenge, med tallene serveren alt sender',
     str_contains($sida, "utstLenge: 'Du var inne i ' + lenge,")
     && str_contains($sida, "utstFra: 'Stemplet inn ' + siden + '. Tida trekkes fra timene dine denne måneden.',"));
@@ -17971,12 +17997,14 @@ sjekk('… og skjermen sier det samme som serveren',
 sjekk('Kalender: «Send beskjed» ved siden av Chat gaar til Medlemmer → Beskjeder',
     str_contains($mkSida, "                { navn: 'Chat',        velg: () => this.setState({ klChatVis: true }) },\n")
     && str_contains($mkSida, "                { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },"));
-sjekk('… synlighetskortet paa kalenderen har de samme radene som arket i Verktøy, i full bredde og to kolonner',
-    substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 2
-    && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="6">') === 1
-    && str_contains($mkSida, '<div style="grid-column: 1 / -1; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);">')
-    && str_contains($mkSida, 'grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--space-2) var(--space-8);')
-    && str_contains($mkSida, "      ...(side === 'adminkalender' && !this.state.dok ? (this.dokHent(), {}) : {}),"));
+// Kortet ble lukket 15. september 2026. Eieren: «synlighet paa kalender, maa
+// ligge i et kort, jeg vil at fokus skal vaere paa kalender». Naa er det ett
+// kort blant de andre som aapner arket — radene staar bare i arket.
+sjekk('… synlighetskortet paa kalenderen er lukket, og aapner arket',
+    substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 1
+    && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="5">') === 1
+    && str_contains($mkSida, "kort('Synlighet', ")
+    && str_contains($mkSida, "() => this.setState({ synlighetApen: true }));"));
 sjekk('… ventelista: navnet staar helt ut, kurset kuttes, «Hele kurset · #1» er borte',
     str_contains($mkSida, "              under: v.status || '',\n              harUnder: !!v.status,")
     && !str_contains($mkSida, "? 'Hele kurset'")

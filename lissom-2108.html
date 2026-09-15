@@ -1044,36 +1044,14 @@ window.__resources = {
 <script src="./support.min.js" defer></script>
 
 <script>
-// Bytter ut den ferdigtegnede toppen med den ekte, i samme bilde.
-//
-// side.php limer inn <div id="lissom-topp"> rett etter <body> paa forsida:
-// menylinja og heroen, tegnet ferdig av bin/forhaandstegn.mjs. Nettleseren
-// tegner den med det samme, i stedet for aa staa tom i to og et halvt
-// sekund mens dc-runtime bygger sida.
-//
-// Naar den ekte toppen er i DOM-en, skal kopien vekk. En MutationObserver
-// kalles som en mikrooppgave rett etter endringen og for nettleseren tegner
-// neste bilde — saa det finnes ikke et oyeblikk der begge er synlige.
-// setTimeout eller requestAnimationFrame ville gitt akkurat det.
-//
-// Finnes ingen kopi — alle sider unntatt forsida — gjor dette ingenting
-// med toppen. Robotteksten (lissom-tekst) tas uansett, se rydd().
+// Robotteksten (<main id="lissom-tekst">, fra app/lib/robottekst.php)
+// ligger paa sidene appen tegner og fjernes naar en ekte skjerm staar —
+// hvilken som helst. En MutationObserver kalles som en mikrooppgave rett
+// etter endringen og for nettleseren tegner neste bilde, saa det finnes
+// ikke et oyeblikk der begge er synlige.
 (function () {
-  var EKTE = '[data-screen-label="Forside"] section.lx-hero';
   // Malen ligger fortsatt i DOM-en, skjult inne i <x-dc>, og treffer den
-  // samme velgeren. Ble den regnet med, forsvant kopien med det samme —
-  // for noe var tegnet i det hele tatt. Derfor: bare treff som ikke ligger
-  // inne i malen teller.
-  function ekteFinnes() {
-    var alle = document.querySelectorAll(EKTE);
-    for (var i = 0; i < alle.length; i++) {
-      if (!alle[i].closest('x-dc')) return true;
-    }
-    return false;
-  }
-  // Robotteksten (<main id="lissom-tekst">, fra app/lib/robottekst.php)
-  // ligger paa alle aapne sider og fjernes naar en ekte skjerm staar —
-  // hvilken som helst, ikke bare forsida.
+  // samme velgeren. Derfor: bare treff som ikke ligger inne i malen teller.
   function skjermFinnes() {
     var alle = document.querySelectorAll('[data-screen-label]');
     for (var i = 0; i < alle.length; i++) {
@@ -1083,20 +1061,15 @@ window.__resources = {
   }
   function rydd() {
     var tekst = document.getElementById('lissom-tekst');
-    if (tekst && skjermFinnes()) tekst.remove();
-    var kopi = document.getElementById('lissom-topp');
-    if (!kopi) return !document.getElementById('lissom-tekst');   // ingen kopi: ferdig naar teksten er borte.
-    if (!ekteFinnes()) return false;
-    kopi.remove();
-    return !document.getElementById('lissom-tekst');
+    if (!tekst) return true;
+    if (!skjermFinnes()) return false;
+    tekst.remove();
+    return true;
   }
   function start() {
     if (rydd()) return;
     var o = new MutationObserver(function () { if (rydd()) o.disconnect(); });
     o.observe(document.body, { childList: true, subtree: true });
-    // Reserve: skulle skjermen aldri komme — en feil i oppstarten — blir
-    // kopien staaende framfor at sida blir staaende tom. Den er ekte
-    // innhold, bare uten knapper som virker.
   }
   if (document.body) start();
   else document.addEventListener('DOMContentLoaded', start);
@@ -1290,9 +1263,7 @@ window.__resources = {
      av en utseendeforskyvning paa 0,393.
 
      Her staar de fra foerste byte. Rekkefolgen er den samme som for:
-     dc-runtime la dem sist i hodet, og det er her.
-
-     bin/toppsjekk.mjs kontrollerer at de ikke har flyttet seg tilbake. -->
+     dc-runtime la dem sist i hodet, og det er her. -->
 <style>
   /* Maalene i width- og height-attributtene skal bare gi forholdstallet,
      slik at plassen settes av for bildet er lastet. De skal ikke bestemme
@@ -3036,7 +3007,6 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <button type="button" onClick="{{ goTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-6);">← {{ tilbakeTekst }}</button>
 
           <div class="lx-split" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-10); align-items: start;">
             <div>
@@ -3702,11 +3672,14 @@ window.__resources = {
         </div>
       </section>
 
-      <!-- Én artikkel i full lengde -->
+      <!-- Én artikkel i full lengde. «← Tilbake til nyheter» sto oeverst
+           her; borte 15. september 2026 — knappen nederst (tilbakeVals)
+           gjoer det samme, og eieren ville ha én tilbake per side. Samme
+           for «← Tilbake til Nyttig info» paa plakatene og artikkelen under
+           Nyttig info, og «← Alle kurs» paa kurssida. -->
       <sc-if value="{{ nyApen }}" hint-placeholder-val="{{ false }}">
         <section style="background: var(--surface-card); padding: 0 var(--space-8) var(--section-y);">
           <div style="max-width: 720px; margin: 0 auto;">
-            <button type="button" onClick="{{ nyLukk }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: 0 -8px var(--space-6); cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">← Tilbake til nyheter</button>
             <!-- Forhaandsvisning. Bare den som er logget inn som admin kan
                  komme hit, og da skal det vaere umulig aa tro at artikkelen
                  ligger ute. -->
@@ -3740,9 +3713,40 @@ window.__resources = {
                  kan bilder staa mellom avsnittene, med bildetekst, alt-tekst,
                  plassering og stoerrelse. En artikkel uten slike bilder
                  tegnes som for: ett avsnitt etter det andre. -->
+            <!-- Avsnitt med «# », «## », «- » eller en tabell tegnes som under
+                 Nyttig info (parseInnhold). Artiklene fra 14. september sto
+                 med «# » rett i teksten paa lissom.no — serveren tegnet
+                 overskrifter for robotene, appen skrev dem over med raa
+                 tekst. Rettet 15. september 2026. -->
             <sc-for list="{{ nyLestBlokker }}" as="bl" hint-placeholder-count="3">
               <sc-if value="{{ bl.erTekst }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: 0 0 var(--space-5); font-size: var(--text-lg); line-height: 1.75; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ bl.tekst }}</p>
+              </sc-if>
+              <sc-if value="{{ bl.erH2 }}" hint-placeholder-val="{{ false }}">
+                <h2 style="margin: var(--space-10) 0 var(--space-5); font-size: var(--text-3xl);">{{ bl.tekst }}</h2>
+              </sc-if>
+              <sc-if value="{{ bl.erH3 }}" hint-placeholder-val="{{ false }}">
+                <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading); margin: var(--space-8) 0 var(--space-4);">{{ bl.tekst }}</h3>
+              </sc-if>
+              <sc-if value="{{ bl.erLabel }}" hint-placeholder-val="{{ false }}">
+                <div style="font-weight: 700; color: var(--text-heading); font-size: var(--text-lg); margin: var(--space-6) 0 var(--space-2);">{{ bl.tekst }}</div>
+              </sc-if>
+              <sc-if value="{{ bl.erAvsnitt }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-5); font-size: var(--text-lg); line-height: 1.75; color: var(--text-body); text-wrap: pretty;">{{ bl.tekst }}</p>
+              </sc-if>
+              <sc-if value="{{ bl.erListe }}" hint-placeholder-val="{{ false }}">
+                <ul style="margin: 0 0 var(--space-5); padding: 0 0 0 var(--space-6); display: flex; flex-direction: column; gap: 6px; font-size: var(--text-lg); line-height: 1.6; color: var(--text-body);">
+                  <sc-for list="{{ bl.punkter }}" as="p" hint-placeholder-count="3">
+                    <li>{{ p }}</li>
+                  </sc-for>
+                </ul>
+              </sc-if>
+              <sc-if value="{{ bl.erTabell }}" hint-placeholder-val="{{ false }}">
+                <div style="max-width: 680px; border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); overflow: hidden; background: var(--surface-card); box-shadow: var(--shadow-sm); margin: 0 0 var(--space-6);">
+                  <sc-for list="{{ bl.rader }}" as="r" hint-placeholder-count="6">
+                    <div style="{{ r.stil }}"><span style="{{ r.c1Stil }}">{{ r.c1 }}</span><span><span style="{{ r.chipStil }}">{{ r.c2 }}</span></span><span style="{{ r.c3Stil }}">{{ r.c3 }}</span></div>
+                  </sc-for>
+                </div>
               </sc-if>
               <sc-if value="{{ bl.erBilde }}" hint-placeholder-val="{{ false }}">
                 <figure class="lx-artfigur" style="{{ bl.figurStil }}">
@@ -4904,11 +4908,15 @@ window.__resources = {
                  verkstedet og den andre ut av kontoen din. Han ba den bort:
                  «Log ut fjernes her infra og legges på menyen i bunn». -->
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <!-- Liten pille, ikke stor knapp. Eieren, 15. september 2026:
+                   «den maa vaere mindre saa man ikke trykker feil, og man maa
+                   faa spoersmaal, er du sikker». Spoersmaalet staar i ruta
+                   innstRute; utstempling har alt sin. -->
               <sc-if value="{{ harTimer }}" hint-placeholder-val="{{ true }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="sm" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,36px">{{ stemplingKnapp }}</x-import>
               </sc-if>
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="qr-code" disabled="{{ sant }}" hint-size="auto,52px">Stemple inn</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="qr-code" disabled="{{ sant }}" hint-size="auto,36px">Stemple inn</x-import>
               </sc-if>
             </div>
             <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-3);">{{ stemplingTekst }}</div>
@@ -4967,12 +4975,101 @@ window.__resources = {
                 <div style="{{ timerBarStil }}"></div>
               </div>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ timerUndertekst }}</p>
+              <!-- Hvor timene kommer fra, naar det er mer enn planen: dugnad
+                   og timegave som egne linjer. Eieren, 15. september 2026:
+                   «de maa paa en maate se at det er lagt til tid». -->
+              <sc-if value="{{ timerHarEkstra }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-2);">
+                  <sc-for list="{{ timerLinjer }}" as="l" hint-placeholder-count="3">
+                    <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs); padding: 3px 0; color: var(--text-muted);"><span>{{ l.navn }}</span><strong style="{{ l.stil }}">{{ l.timer }}</strong></div>
+                  </sc-for>
+                </div>
+              </sc-if>
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
                 <div style="border-top: 1px solid var(--terracotta-500); margin-top: var(--space-4); padding-top: var(--space-3);">
                   <div style="font-weight: 700; font-size: var(--text-xs); color: var(--terracotta-600); margin-bottom: 6px;">Timene er brukt opp</div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ aFornyAbo }}" hint-size="auto,36px">Forny</x-import>
                 </div>
               </sc-if>
+            </div>
+            </sc-if>
+
+            <!-- Dugnad. Eieren, 15. september 2026: medlemmet spoer, Monica
+                 godkjenner, medlemmet stempler inn og ut som dugnad, tida
+                 godkjennes og legges til timene. Kortet finnes bare naar
+                 bryteren «Dugnad» (⊙ Synlighet → Paa Min side) staar paa. -->
+            <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Dugnad</span>
+                <sc-if value="{{ dugMerkeVis }}" hint-placeholder-val="{{ false }}"><span style="{{ dugMerkeStil }}">{{ dugMerke }}</span></sc-if>
+              </div>
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ dugTekstLinje }}</p>
+              <!-- Ingen dugnad i gang: skriv og send. -->
+              <sc-if value="{{ dugKanSporre }}" hint-placeholder-val="{{ true }}">
+                <textarea rows="2" maxlength="500" placeholder="Hva vil du gjøre? F.eks. vaske gulvet og tørke av hyllene i glasurrommet, ca. 1,5 time" value="{{ dugTekst }}" onChange="{{ settDugTekst }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 11px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: 8px;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ dugSend }}" hint-size="auto,36px">Send forespørsel</x-import>
+                </div>
+                <div style="margin-top: var(--space-3); padding: 9px 12px; border-radius: var(--radius-md); background: var(--clay-100); font-size: var(--text-xs); color: var(--text-heading); text-wrap: pretty;">Verkstedet er nøye: jobben skal være godt utført. Tida godkjennes av verkstedet etterpå, og legges da til timene dine.</div>
+              </sc-if>
+              <!-- Sendt, venter paa svar. -->
+              <sc-if value="{{ dugVenter }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">Sendt {{ dugSendt }}. Du får e-post når verkstedet har svart.</div>
+                <button type="button" onClick="{{ dugTrekk }}" style="appearance: none; background: transparent; border: none; padding: 0; margin-top: 6px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Trekk forespørselen</button>
+              </sc-if>
+              <!-- Godkjent: stemple inn dugnad. Groenn, saa den ikke tas for den vanlige. -->
+              <sc-if value="{{ dugKanInn }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ dugApneInn }}" style="{{ dugKnappStil }}">○  Stemple inn dugnad</button>
+                <div style="margin-top: var(--space-3); padding: 9px 12px; border-radius: var(--radius-md); background: var(--clay-100); font-size: var(--text-xs); color: var(--text-heading); text-wrap: pretty;">Stemple inn når du begynner, og ut når du er ferdig. Tida trekkes ikke fra timene dine — den legges til når jobben er godkjent.</div>
+              </sc-if>
+              <!-- Paagaar: stemple ut. -->
+              <sc-if value="{{ dugPagar }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 8px;">Innstemplet dugnad {{ dugInn }} · {{ dugVarighet }}</div>
+                <button type="button" onClick="{{ dugApneUt }}" style="{{ dugKnappUtStil }}">●  Stemple ut dugnad</button>
+              </sc-if>
+              <!-- Til godkjenning. -->
+              <sc-if value="{{ dugTilGodkjenning }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Du jobbet {{ dugVarighet }} {{ dugDag }}. Verkstedet ser over jobben og godkjenner tida — da legges den til timene dine.</div>
+              </sc-if>
+              <!-- Ferdige denne maaneden. -->
+              <sc-if value="{{ dugHarFerdige }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-3);">
+                  <sc-for list="{{ dugFerdige }}" as="d" hint-placeholder-count="2">
+                    <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); padding: 3px 0;"><span>{{ d.dag }} · {{ d.tekst }}</span><strong style="color: var(--sage-600, #5f6a4e); white-space: nowrap;">+{{ d.timer }} t</strong></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            </sc-if>
+
+            <!-- «Ta med barn». Eieren, 15. september 2026: et tillegg paa
+                 medlemskapet, per kalendermaaned, betalt med Vipps foer det
+                 gjelder. Bryteren «Ta med barn» i ⊙ Synlighet. Ett barn per
+                 tillegg, navn og alder skrives inn, vilkaarene hukes av. -->
+            <sc-if value="{{ barnVis }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Ta med barn</span>
+                <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}"><span style="{{ barnMerkeStil }}">Aktivt · {{ barnAktivMaaned }}</span></sc-if>
+              </div>
+              <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ barnAktivTekst }}</p>
+              </sc-if>
+              <sc-if value="{{ barnIkkeAktivt }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0 0 6px; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet — hele måneden.</p>
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <span style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
+                <ul style="margin: 0 0 var(--space-3); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
+                  <li>Gjelder ut måneden, som medlemskapet</li>
+                  <li>Leire og glasur er ikke inkludert</li>
+                  <li>Barnet er alltid sammen med deg — aldri alene i verkstedet</li>
+                </ul>
+              </sc-if>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ barnKjopValg }}" as="k" hint-placeholder-count="1">
+                  <button type="button" onClick="{{ k.velg }}" style="{{ barnKnappStil }}">Kjøp for {{ k.navn }}</button>
+                </sc-for>
+              </div>
             </div>
             </sc-if>
 
@@ -5189,15 +5286,176 @@ window.__resources = {
                  forklaringa og veien videre til guidene, og hoerer hjemme bak
                  Nyttig info sammen med resten av det interne. -->
             <sc-if value="{{ msFaneNyttig }}" hint-placeholder-val="{{ false }}">
-            <div onClick="{{ goNyttig }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; cursor: pointer; transition: box-shadow var(--duration-fast, .15s) ease, transform var(--duration-fast, .15s) ease;" style-hover="box-shadow: var(--shadow-md, 0 6px 20px rgba(45,20,12,.1)); transform: translateY(-2px);">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; transition: box-shadow var(--duration-fast, .15s) ease, transform var(--duration-fast, .15s) ease;" style-hover="box-shadow: var(--shadow-md, 0 6px 20px rgba(45,20,12,.1)); transform: translateY(-2px);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Intern info</div>
               <!-- Tallet sto her ogsaa. Doerkodepilla staar oeverst paa den
                    samme skjermen, saa koden sto to ganger med to hundre
                    piksler mellom seg. Her staar det som gjelder om aa bruke
                    den, og veien videre til guidene. -->
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Dørkoden står øverst på siden. Ikke del den med andre enn medlemmer.</p>
-              <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; margin-top: var(--space-3); cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Nyttig info — guider og tips →</button>
             </div>
+
+            <!-- Guidene, artiklene og lenkene fra Nyttig info — som kort
+                 rett her. Eieren, 15. september 2026: «nyttig info paa min
+                 side aapner kortene direkte». Samme lister som den aapne
+                 sida (plakatKort, nyttigArtikler, nyttigeLenker). -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); align-items: stretch; margin-top: var(--space-6);">
+              <sc-for list="{{ plakatKort }}" as="p" hint-placeholder-count="3">
+                <div role="button" tabindex="0" onClick="{{ p.velg }}" style="display: flex; flex-direction: column; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); cursor: pointer;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.eyebrow }}</div>
+                  <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin: var(--space-2) 0;">{{ p.navn }}</h3>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ p.om }}</p>
+                  <span style="margin-top: auto; font-weight: 700; color: var(--lissom-brown); font-size: var(--text-sm);">Åpne →</span>
+                </div>
+              </sc-for>
+              <sc-for list="{{ nyttigArtikler }}" as="a" hint-placeholder-count="1">
+                <div role="button" tabindex="0" onClick="{{ a.velg }}" style="display: flex; flex-direction: column; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); cursor: pointer;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ a.dato }}</div>
+                  <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin: var(--space-2) 0;">{{ a.tittel }}</h3>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ a.ingress }}</p>
+                  <span style="margin-top: auto; font-weight: 700; color: var(--lissom-brown); font-size: var(--text-sm);">Les artikkelen →</span>
+                </div>
+              </sc-for>
+              <sc-for list="{{ nyttigeLenker }}" as="l" hint-placeholder-count="1">
+                <a href="{{ l.url }}" target="_blank" rel="noopener" style="display: flex; flex-direction: column; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); text-decoration: none;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Ressurs</div>
+                  <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin: var(--space-2) 0;">{{ l.navn }} ↗</h3>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ l.om }}</p>
+                </a>
+              </sc-for>
+            </div>
+            <sc-if value="{{ mdHarNoe }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-6);">
+                  <sc-if value="{{ mdHarKort }}" hint-placeholder-val="{{ true }}">
+                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7); margin-bottom: var(--space-6);">
+                      <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                        <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">For medlemmer</h2>
+                        <span style="{{ mdLaasStil }}">Kun for innloggede</span>
+                      </div>
+                      <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.</p>
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch;">
+                        <sc-for list="{{ mdKort }}" as="k" hint-placeholder-count="4">
+                          <div style="{{ k.kortStil }}">
+                            <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
+                            <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 4px;">{{ k.antall }}</div>
+                            <!-- Hvert dokument som sitt eget lille kort, som i
+                                 admin. Eieren, 10. september 2026: «jeg vil at
+                                 alle dokumenterne skal faa smaa kort med tydelig
+                                 navn paa hva det er, dette inni hvert
+                                 hovedkort». -->
+                            <sc-if value="{{ k.harFiler }}" hint-placeholder-val="{{ true }}">
+                              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                                <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
+                                  <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
+                                    <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                                    <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                                  </button>
+                                </sc-for>
+                              </div>
+                            </sc-if>
+                            <!-- Kort i kortet: malene under «Keramikk maler».
+                                 Eieren, 11. september 2026: «en og en mal maa
+                                 vaere et eget kort». Bildet av det ferdige
+                                 resultatet oeverst, navnet og «Mal 01» under.
+                                 Trykk aapner filene i malen rett i kortet;
+                                 trykk igjen lukker. -->
+                            <sc-if value="{{ k.harUnderkort }}" hint-placeholder-val="{{ false }}">
+                              <!-- Soek og grupper, som i admin. -->
+                              <input value="{{ k.sok }}" onChange="{{ k.sokEndre }}" placeholder="Søk i malene" style="width: 100%; box-sizing: border-box; margin-top: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--surface-card); color: var(--text-heading);">
+                              <sc-if value="{{ k.sokTomt }}" hint-placeholder-val="{{ false }}">
+                                <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-muted);">Ingen dokumenter ennå.</div>
+                              </sc-if>
+                              <sc-for list="{{ k.grupper }}" as="g" hint-placeholder-count="2">
+                              <sc-if value="{{ g.harNavn }}" hint-placeholder-val="{{ true }}">
+                                <div style="margin-top: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ g.navn }}</div>
+                              </sc-if>
+                              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                                <sc-for list="{{ g.kort }}" as="u" hint-placeholder-count="3">
+                                  <div style="{{ u.kortStil }}">
+                                    <button type="button" onClick="{{ u.veksle }}" style="{{ u.knappStil }}">
+                                      <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
+                                        <img data-src="{{ u.bilde }}" alt="{{ u.navn }}" loading="lazy" decoding="async" style="{{ u.bildeStil }}">
+                                      </sc-if>
+                                      <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ u.navn }}</span>
+                                      <sc-if value="{{ u.harUnder }}" hint-placeholder-val="{{ true }}">
+                                        <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 2px;">{{ u.under }}</span>
+                                      </sc-if>
+                                      <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 4px;">{{ u.antall }}</span>
+                                      <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ u.pil }}</span>
+                                    </button>
+                                    <sc-if value="{{ u.apen }}" hint-placeholder-val="{{ false }}">
+                                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);">
+                                        <sc-for list="{{ u.filer }}" as="f" hint-placeholder-count="2">
+                                          <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
+                                            <span style="{{ f.typeStil }}">{{ f.type }}</span>
+                                            <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
+                                            <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
+                                          </button>
+                                        </sc-for>
+                                      </div>
+                                      <!-- Stegbildene som stripe, som i admin. -->
+                                      <sc-if value="{{ u.harSteg }}" hint-placeholder-val="{{ false }}">
+                                        <div style="display: flex; gap: var(--space-3); overflow-x: auto; margin-top: var(--space-3); -webkit-overflow-scrolling: touch;">
+                                          <sc-for list="{{ u.steg }}" as="st" hint-placeholder-count="3">
+                                            <button type="button" onClick="{{ st.apne }}" style="{{ st.stil }}">
+                                              <img data-src="{{ st.bilde }}" alt="{{ st.navn }}" loading="lazy" decoding="async" style="{{ st.bildeStil }}">
+                                              <span style="font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">{{ st.navn }}</span>
+                                            </button>
+                                          </sc-for>
+                                        </div>
+                                      </sc-if>
+                                    </sc-if>
+                                  </div>
+                                </sc-for>
+                              </div>
+                              </sc-for>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <!-- Spor verkstedet, om eieren har slaatt den paa. AI-en leser
+                       bare kortene som staar over — ingenting annet.
+                       Navnet: eieren, 11. september 2026: «Jeg vil også endre
+                       navn fra spør verkstedet til, spør o store krukkemester».
+                       Skrevet som han skrev det. Gjelder overalt den vises:
+                       her, i kalenderen og i adminfanen. -->
+                  <sc-if value="{{ mdFaq }}" hint-placeholder-val="{{ false }}">
+                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
+                      <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                        <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør o store krukkemester</h2>
+                        <span style="{{ mdLaasStil }}">Kun for innloggede</span>
+                      </div>
+                      <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
+                      <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+                        <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" onKeyDown="{{ mdSporTast }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+                        <span style="{{ mdTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import></span>
+                      </div>
+                      <sc-if value="{{ mdHarSvar }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-5);">
+                          <div style="font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ mdSvar }}</div>
+                          <sc-if value="{{ mdHarKilder }}" hint-placeholder-val="{{ false }}">
+                            <!-- «Hentet fra Monicas kunnskapsbase».
+                                 Eieren, 11. september 2026: «naar den finner noe, saa staar
+                                 det hentet fra f eks haandbok, kan den heller staa hentet fra
+                                 Monicas kunnskapsbase?» Spurt om dokumentnavnet skulle bli
+                                 staaende under, valgte han bare linja. Navnene kommer fortsatt
+                                 fra serveren — de avgjor om linja staar i det hele tatt, saa
+                                 den staar bare naar svaret faktisk kom fra et dokument. -->
+                            <div style="margin-top: var(--space-4);">
+                              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</span>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+              </div>
+            </sc-if>
+
             <!-- «Påfyll» sto her.
 
                  Kortet hadde én ting i seg: «Gavekort — valgfritt beløp», og
@@ -5805,7 +6063,15 @@ window.__resources = {
                   </sc-if>
                 </div>
 
+                <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ true }}">
                 <input type="search" value="{{ hlSok }}" onInput="{{ hlSokEndre }}" placeholder="Søk etter leire, glasur, verktøy …" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-3);">
+                </sc-if>
+                <!-- Oenske i fritekst. Eieren, 15. september 2026: medlemmene
+                     skal kunne skrive selv, ikke bare velge blant varene. -->
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: var(--space-3);">
+                  <input type="text" value="{{ hlOnske }}" onInput="{{ hlOnskeEndre }}" placeholder="Skriv et ønske, f.eks. hvit steingods 10 kg" maxlength="191" style="flex: 1; min-width: 0; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading);">
+                  <button type="button" onClick="{{ hlOnskeLegg }}" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 14px; font: var(--type-body-sm); font-weight: 700;">Legg til</button>
+                </div>
 
                 <div style="display: flex; flex-direction: column;">
                   <sc-for list="{{ hlMine }}" as="h" hint-placeholder-count="3">
@@ -5839,7 +6105,9 @@ window.__resources = {
                   <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
                     <button type="button" onClick="{{ hlSendNa }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">{{ hlSendTekst }}</button>
                   </sc-if>
+                  <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ true }}">
                   <button type="button" onClick="{{ hlVelgVeksle }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Legg til vare</button>
+                  </sc-if>
                 </div>
 
                 <sc-if value="{{ hlKvittering }}" hint-placeholder-val="{{ false }}">
@@ -6066,145 +6334,16 @@ window.__resources = {
              innlogging.
              Har eieren ikke slaatt paa noe, staar ikke blokka her i det hele
              tatt — ingen tom overskrift. -->
-        <sc-if value="{{ mdHarNoe }}" hint-placeholder-val="{{ false }}">
-          <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
-            <div style="max-width: var(--width-content); margin: 0 auto;">
-              <sc-if value="{{ mdHarKort }}" hint-placeholder-val="{{ true }}">
-                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7); margin-bottom: var(--space-6);">
-                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
-                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">For medlemmer</h2>
-                    <span style="{{ mdLaasStil }}">Kun for innloggede</span>
-                  </div>
-                  <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Dokumentene fra verkstedet. Trykk for å åpne, eller skriv ut.</p>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch;">
-                    <sc-for list="{{ mdKort }}" as="k" hint-placeholder-count="4">
-                      <div style="{{ k.kortStil }}">
-                        <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.3;">{{ k.navn }}</div>
-                        <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 4px;">{{ k.antall }}</div>
-                        <!-- Hvert dokument som sitt eget lille kort, som i
-                             admin. Eieren, 10. september 2026: «jeg vil at
-                             alle dokumenterne skal faa smaa kort med tydelig
-                             navn paa hva det er, dette inni hvert
-                             hovedkort». -->
-                        <sc-if value="{{ k.harFiler }}" hint-placeholder-val="{{ true }}">
-                          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
-                            <sc-for list="{{ k.filer }}" as="f" hint-placeholder-count="2">
-                              <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
-                                <span style="{{ f.typeStil }}">{{ f.type }}</span>
-                                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
-                                <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
-                              </button>
-                            </sc-for>
-                          </div>
-                        </sc-if>
-                        <!-- Kort i kortet: malene under «Keramikk maler».
-                             Eieren, 11. september 2026: «en og en mal maa
-                             vaere et eget kort». Bildet av det ferdige
-                             resultatet oeverst, navnet og «Mal 01» under.
-                             Trykk aapner filene i malen rett i kortet;
-                             trykk igjen lukker. -->
-                        <sc-if value="{{ k.harUnderkort }}" hint-placeholder-val="{{ false }}">
-                          <!-- Soek og grupper, som i admin. -->
-                          <input value="{{ k.sok }}" onChange="{{ k.sokEndre }}" placeholder="Søk i malene" style="width: 100%; box-sizing: border-box; margin-top: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--surface-card); color: var(--text-heading);">
-                          <sc-if value="{{ k.sokTomt }}" hint-placeholder-val="{{ false }}">
-                            <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-muted);">Ingen dokumenter ennå.</div>
-                          </sc-if>
-                          <sc-for list="{{ k.grupper }}" as="g" hint-placeholder-count="2">
-                          <sc-if value="{{ g.harNavn }}" hint-placeholder-val="{{ true }}">
-                            <div style="margin-top: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ g.navn }}</div>
-                          </sc-if>
-                          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
-                            <sc-for list="{{ g.kort }}" as="u" hint-placeholder-count="3">
-                              <div style="{{ u.kortStil }}">
-                                <button type="button" onClick="{{ u.veksle }}" style="{{ u.knappStil }}">
-                                  <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ true }}">
-                                    <img data-src="{{ u.bilde }}" alt="{{ u.navn }}" loading="lazy" decoding="async" style="{{ u.bildeStil }}">
-                                  </sc-if>
-                                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ u.navn }}</span>
-                                  <sc-if value="{{ u.harUnder }}" hint-placeholder-val="{{ true }}">
-                                    <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 2px;">{{ u.under }}</span>
-                                  </sc-if>
-                                  <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: left; margin-top: 4px;">{{ u.antall }}</span>
-                                  <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ u.pil }}</span>
-                                </button>
-                                <sc-if value="{{ u.apen }}" hint-placeholder-val="{{ false }}">
-                                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);">
-                                    <sc-for list="{{ u.filer }}" as="f" hint-placeholder-count="2">
-                                      <button type="button" onClick="{{ f.apne }}" style="{{ f.stil }}">
-                                        <span style="{{ f.typeStil }}">{{ f.type }}</span>
-                                        <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); text-align: left; line-height: 1.3; overflow-wrap: break-word;">{{ f.navn }}</span>
-                                        <span style="display: block; margin-top: auto; padding-top: var(--space-3); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">Åpne →</span>
-                                      </button>
-                                    </sc-for>
-                                  </div>
-                                  <!-- Stegbildene som stripe, som i admin. -->
-                                  <sc-if value="{{ u.harSteg }}" hint-placeholder-val="{{ false }}">
-                                    <div style="display: flex; gap: var(--space-3); overflow-x: auto; margin-top: var(--space-3); -webkit-overflow-scrolling: touch;">
-                                      <sc-for list="{{ u.steg }}" as="st" hint-placeholder-count="3">
-                                        <button type="button" onClick="{{ st.apne }}" style="{{ st.stil }}">
-                                          <img data-src="{{ st.bilde }}" alt="{{ st.navn }}" loading="lazy" decoding="async" style="{{ st.bildeStil }}">
-                                          <span style="font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">{{ st.navn }}</span>
-                                        </button>
-                                      </sc-for>
-                                    </div>
-                                  </sc-if>
-                                </sc-if>
-                              </div>
-                            </sc-for>
-                          </div>
-                          </sc-for>
-                        </sc-if>
-                      </div>
-                    </sc-for>
-                  </div>
-                </div>
-              </sc-if>
-
-              <!-- Spor verkstedet, om eieren har slaatt den paa. AI-en leser
-                   bare kortene som staar over — ingenting annet.
-                   Navnet: eieren, 11. september 2026: «Jeg vil også endre
-                   navn fra spør verkstedet til, spør o store krukkemester».
-                   Skrevet som han skrev det. Gjelder overalt den vises:
-                   her, i kalenderen og i adminfanen. -->
-              <sc-if value="{{ mdFaq }}" hint-placeholder-val="{{ false }}">
-                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-7);">
-                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
-                    <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Spør o store krukkemester</h2>
-                    <span style="{{ mdLaasStil }}">Kun for innloggede</span>
-                  </div>
-                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">Still et spørsmål, så svarer vi fra dokumentene over.</p>
-                  <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
-                    <input value="{{ mdSporsmal }}" onChange="{{ mdEndre }}" onKeyDown="{{ mdSporTast }}" placeholder="Skriv spørsmålet ditt" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
-                    <span style="{{ mdTenkerStil }}"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdSpor }}" hint-size="auto,44px">{{ mdKnapp }}</x-import></span>
-                  </div>
-                  <sc-if value="{{ mdHarSvar }}" hint-placeholder-val="{{ false }}">
-                    <div style="margin-top: var(--space-5); background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-5);">
-                      <div style="font-size: var(--text-base); color: var(--text-body); line-height: 1.65; white-space: pre-wrap; text-wrap: pretty;">{{ mdSvar }}</div>
-                      <sc-if value="{{ mdHarKilder }}" hint-placeholder-val="{{ false }}">
-                        <!-- «Hentet fra Monicas kunnskapsbase».
-                             Eieren, 11. september 2026: «naar den finner noe, saa staar
-                             det hentet fra f eks haandbok, kan den heller staa hentet fra
-                             Monicas kunnskapsbase?» Spurt om dokumentnavnet skulle bli
-                             staaende under, valgte han bare linja. Navnene kommer fortsatt
-                             fra serveren — de avgjor om linja staar i det hele tatt, saa
-                             den staar bare naar svaret faktisk kom fra et dokument. -->
-                        <div style="margin-top: var(--space-4);">
-                          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Hentet fra Monicas kunnskapsbase</span>
-                        </div>
-                      </sc-if>
-                    </div>
-                  </sc-if>
-                </div>
-              </sc-if>
-            </div>
-          </section>
-        </sc-if>
+        <!-- Medlemsdokumentene («For medlemmer») sto her, nederst paa den
+             aapne sida. Eieren, 15. september 2026: «nyttig info paa min side
+             aapner kortene direkte» — de staar naa i fanen Nyttig info paa
+             Min side, som han ba om 10. september ogsaa. Flyttet, ikke
+             kopiert. -->
       </sc-if>
 
       <sc-if value="{{ artikkelApen }}" hint-placeholder-val="{{ false }}">
         <section style="background: var(--clay-50); padding: var(--space-12) var(--space-8) var(--section-y);">
           <div style="max-width: 880px; margin: 0 auto;">
-            <button type="button" onClick="{{ lukkArtikkel }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-8);">← Tilbake til Nyttig info</button>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ artikkel.dato }}</div>
             <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ artikkel.tittel }}</h1>
             <p style="margin: 0 0 var(--space-8); font-size: var(--text-lg); line-height: 1.65; color: var(--text-body); text-wrap: pretty;">{{ artikkel.ingress }}</p>
@@ -6260,7 +6399,6 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: 940px; margin: 0 auto;">
-          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
           <div class="lx-plakat-kropp" style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 64px 48px 48px;">
             <div style="text-align: center; margin-bottom: var(--space-10);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Brennetabell · Orton-coner</div>
@@ -6307,7 +6445,6 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: 940px; margin: 0 auto;">
-          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
           <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
@@ -6337,7 +6474,6 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: 940px; margin: 0 auto;">
-          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
           <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
@@ -7274,6 +7410,41 @@ window.__resources = {
             </div>
           </sc-for>
         </div>
+
+        <!-- Dugnad. Eieren, 15. september 2026: forespoerslene godkjennes av
+             Monica foer medlemmet faar stemple inn, og tida godkjennes
+             etterpaa. Begge her, under de ubesvarte — det er henvendelser. -->
+        <sc-if value="{{ dugAdmVis }}" hint-placeholder-val="{{ false }}">
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-top: var(--space-6);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;"><span>Dugnad</span><span style="{{ dugAdmBryterStil }}">{{ dugAdmBryterTekst }}</span></div>
+          <sc-if value="{{ dugAdmTom }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen dugnader venter.</div>
+          </sc-if>
+          <sc-for list="{{ dugAdmListe }}" as="d" hint-placeholder-count="2">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ d.navn }} <span style="{{ d.merkeStil }}">{{ d.merke }}</span></div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ d.naar }}</span>
+              </div>
+              <div style="font-size: var(--text-sm); color: var(--text-body); margin: 4px 0 8px; text-wrap: pretty;">«{{ d.tekst }}»{{ d.tidTekst }}</div>
+              <sc-if value="{{ d.venter }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ d.godkjenn }}" hint-size="auto,36px">Godkjenn</x-import>
+                  <button type="button" onClick="{{ d.avslaa }}" style="{{ dugAdmLenkeStil }}">Avslå</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ d.tilGodkjenning }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <input type="text" inputmode="decimal" aria-label="Timer som legges til" value="{{ d.timerFelt }}" onChange="{{ d.settTimer }}" style="width: 64px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">timer legges til (rundes til kvarter)</span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ d.godkjennTid }}" hint-size="auto,36px">Godkjenn tida</x-import>
+                  <button type="button" onClick="{{ d.avvisTid }}" style="{{ dugAdmLenkeStil }}">Avvis</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
       </main>
     </div>
   </sc-if>
@@ -8063,37 +8234,12 @@ window.__resources = {
             </sc-for>
           </div>
 
-          <!-- Synlighet, som kort paa kalenderen.
-               Eieren, 13. september 2026: «jeg vil ha på kalender siden,
-               synlighet på siden, slik at jeg her enkelt når alle vis skjul
-               knappene, legg i et kort». Valgte «åpent, i tillegg til arket»:
-               de samme radene som «⊙ Synlighet» i Verktøy (synNett og
-               synMin) — samme lagring, samme kvittering — arket staar som
-               foer. To grupper ved siden av hverandre paa PC, under
-               hverandre paa telefon. -->
-          <div style="grid-column: 1 / -1; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Synlighet</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--space-2) var(--space-8);">
-              <div>
-                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">På nettsiden</div>
-                <sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 7px 0; border-bottom: 1px solid var(--border-subtle);">
-                    <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
-                  </div>
-                </sc-for>
-              </div>
-              <div>
-                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">På Min side</div>
-                <sc-for list="{{ synMin }}" as="r" hint-placeholder-count="6">
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 7px 0; border-bottom: 1px solid var(--border-subtle);">
-                    <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-          </div>
+          <!-- Synlighet laa her som et aapent kort med alle bryterne, og
+               tok plassen fra kalenderen. Eieren, 15. september 2026:
+               «synlighet paa kalender, maa ligge i et kort, jeg vil at fokus
+               skal vaere paa kalender». Naa er den ett kort blant de andre
+               (klOversiktKort → «Synlighet»), som aapner ⊙ Synlighet-arket
+               — samme rader, samme lagring. -->
         </div>
 
         <aside style="{{ klAsideStil }}">
@@ -8692,6 +8838,13 @@ window.__resources = {
                 </sc-if>
               </div>
             </div>
+            <!-- Sa serveren nei (kursholderen er opptatt, tida er feil …),
+                 staar svaret her til noe endres. Kvitteringsboksen viser det
+                 ogsaa, men den lukker seg etter to sekunder — for kort til aa
+                 lese en hel setning, og dialogen ble bare staaende. -->
+            <sc-if value="{{ klBFeilVises }}" hint-placeholder-val="{{ false }}">
+              <p role="alert" style="margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); font-size: var(--text-sm); line-height: 1.5;">{{ klBFeil }}</p>
+            </sc-if>
             <div style="display: flex; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klBBekreft }}" hint-size="auto,44px">Bekreft og legg inn</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klBAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
@@ -11640,6 +11793,22 @@ window.__resources = {
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Prisen paa «Ta med barn» (migrasjon 192). Ikke et medlemskap,
+             men et tillegg — derfor én rad her, ikke et kort. -->
+        <sc-if value="{{ plBarnVis }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-bottom: var(--space-8); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="flex: 1 1 260px; min-width: 0;">
+              <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">Ta med barn — tillegg per kalendermåned</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Slås av og på under ⊙ Synlighet. Prisen medlemmene betaler med Vipps.</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="text" inputmode="decimal" value="{{ plBarnPris }}" onInput="{{ settPlBarnPris }}" aria-label="Pris per måned" style="width: 80px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+              <span style="font-size: var(--text-sm); color: var(--text-muted);">kr</span>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagrePlBarnPris }}" hint-size="auto,36px">Lagre</x-import>
+            </div>
           </div>
         </sc-if>
 
@@ -18553,6 +18722,11 @@ window.__resources = {
             <sc-if value="{{ hlaTom }}" hint-placeholder-val="{{ true }}">
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen har sendt inn handlelista si ennå.</p>
             </sc-if>
+            <sc-if value="{{ hlaHarVarer }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; justify-content: flex-end; margin-top: var(--space-4);">
+                <button type="button" onClick="{{ hlaLagrePriser }}" style="{{ hlaLagreStil }}">Lagre</button>
+              </div>
+            </sc-if>
 
             <!-- Oppgjoret: ett kort per medlem, med gebyret paa toppen. -->
             <div class="lx-cols2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); margin-top: var(--space-6);">
@@ -18573,7 +18747,7 @@ window.__resources = {
                 <button type="button" onClick="{{ b.send }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 10px 20px; font: var(--type-body-sm); font-weight: 700;">{{ b.navn }}</button>
               </sc-for>
               <label style="display: flex; align-items: center; gap: 8px; font-size: var(--text-xs); color: var(--text-muted);">Administrasjonsgebyr
-                <input type="text" inputmode="decimal" value="{{ hlaGebyr }}" onChange="{{ hlaGebyrEndre }}" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);"> %
+                <input type="text" inputmode="decimal" value="{{ hlaGebyr }}" onChange="{{ hlaGebyrEndre }}" aria-label="Administrasjonsgebyr i prosent" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);"> %
               </label>
             </div>
           </div>
@@ -18593,6 +18767,15 @@ window.__resources = {
                 </sc-for>
               </div>
             </sc-for>
+            <!-- En ny leverandoer: navn og adresse, «Legg til». -->
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
+              <input type="text" value="{{ hlaNyNavn }}" onChange="{{ hlaNyNavnEndre }}" placeholder="Ny leverandør" aria-label="Navn på ny leverandør" style="flex: 1; min-width: 140px; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 7px 11px; font: var(--type-body-sm); color: var(--text-heading);">
+              <input type="email" value="{{ hlaNyEpost }}" onChange="{{ hlaNyEpostEndre }}" placeholder="ordre@leverandoren.no" aria-label="E-post til ny leverandør" style="flex: 2; min-width: 200px; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 7px 11px; font: var(--type-body-sm); color: var(--text-heading);">
+              <button type="button" onClick="{{ hlaNyLeggTil }}" style="{{ hlaLagreStil }}">Legg til</button>
+            </div>
+            <div style="display: flex; justify-content: flex-end; padding-top: var(--space-2);">
+              <button type="button" onClick="{{ hlaLagreOppsett }}" style="{{ hlaLagreStil }}">Lagre</button>
+            </div>
           </div>
         </div>
         </sc-if>
@@ -22964,6 +23147,69 @@ window.__resources = {
   </div>
 </sc-if>
 
+<!-- ← Tilbake, overalt. Eieren, 15. september 2026: «Naar jeg klikker inn
+     paa en side, saa maa det alltid vaere en tilbakeknapp som tar meg et
+     steg tilbake ... gjelder globalt». Ett steg i nettleserhistorikken —
+     samme steg som telefonens tilbakeknapp, saa et aapent lag lukkes
+     foerst, deretter skjermen. Kom man rett inn paa sida (ingen historikk
+     her), gaar den til forsida, Min side eller kalenderen. Ikke paa
+     forsida — der er det ingenting aa gaa tilbake til. Ligger over
+     bunnmenyene (html.lx-laast, se skriptet oeverst). -->
+<sc-if value="{{ tilbakeVis }}" hint-placeholder-val="{{ false }}">
+  <button type="button" class="lx-tilbake" onClick="{{ tilbakeGaa }}" aria-label="Tilbake" title="Tilbake" style="{{ tilbakeStil }}">←</button>
+</sc-if>
+
+<!-- «Er du sikker?» foer innstempling. Eieren, 15. september 2026: «man
+     maa faa spoersmaal, er du sikker, samme opplegg naar man stempler ut».
+     Utstempling har ruta over; dette er den samme for inn — og for dugnad
+     inn og ut. Én mal, tre tilstander (innstRute). -->
+<sc-if value="{{ innstVis }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ innstLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 540; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ utstStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(420px, 100%); padding: var(--space-7) var(--space-6) var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; text-align: center;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ innstEyebrow }}</div>
+      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); line-height: 1.15;">{{ innstTittel }}</div>
+      <p style="margin: var(--space-3) 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ innstTekst }}</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ innstBekreft }}" hint-size="100%,52px">{{ innstKnapp }}</x-import>
+        <button type="button" onClick="{{ innstLukk }}" style="{{ utstFeilStil }}">Avbryt</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- «Ta med barn»: foer betalingen. Vilkaarene maa hukes av, navn og alder
+     skrives inn. Eieren, 15. september 2026: «den voksne maa akseptere dette
+     som vilkaar naar de kjoeper». -->
+<sc-if value="{{ barnRuteVis }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ barnRuteLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 540; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ utstStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(460px, 100%); padding: var(--space-7) var(--space-6) var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ta med barn · {{ barnRuteMaaned }}</div>
+      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); line-height: 1.15; margin-bottom: var(--space-3);">Før du betaler</div>
+      <ul style="margin: 0 0 var(--space-4); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
+        <li>Tillegget gjelder ett barn opptil {{ barnMaksAlder }} år, ut {{ barnRuteMaaned }}.</li>
+        <li>Leire og glasur er ikke inkludert.</li>
+        <li>Barnet kan ikke være alene i verkstedet, og må alltid være sammen med en voksen.</li>
+        <li>Du som foresatt sørger for at barnet følger verkstedets ordensregler og HMS-regler.</li>
+      </ul>
+      <div style="display: grid; grid-template-columns: 1fr 88px; gap: 8px; margin-bottom: var(--space-3);">
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: var(--text-xs); font-weight: 700; color: var(--text-heading);">Barnets navn
+          <input type="text" value="{{ barnNavn }}" onInput="{{ settBarnNavn }}" maxlength="120" autocomplete="off" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 11px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);"></label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: var(--text-xs); font-weight: 700; color: var(--text-heading);">Alder
+          <input type="text" inputmode="numeric" value="{{ barnAlder }}" onInput="{{ settBarnAlder }}" maxlength="2" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 11px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);"></label>
+      </div>
+      <label style="display: flex; align-items: flex-start; gap: 10px; background: var(--clay-100); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: var(--space-4); cursor: pointer; font-size: var(--text-xs); color: var(--text-heading);">
+        <input type="checkbox" checked="{{ barnVilkaar }}" onChange="{{ vekslBarnVilkaar }}" style="width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--lissom-brown);">
+        <span>Jeg har lest vilkårene og tar ansvar for at barnet følger ordensreglene og HMS-reglene, og aldri er alene i verkstedet.</span>
+      </label>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ barnKanIkkeBetale }}" on-click="{{ barnBetal }}" hint-size="100%,52px">{{ barnBetalTekst }}</x-import>
+        <button type="button" onClick="{{ barnRuteLukk }}" style="{{ utstFeilStil }}">Avbryt</button>
+      </div>
+      <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Tillegget blir aktivt så snart Vipps har bekreftet betalingen.</p>
+    </div>
+  </div>
+</sc-if>
+
 <!-- ⊙ Synlighet — alle bryterne for hva som vises, paa ett sted.
 
      Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise
@@ -23760,9 +24006,20 @@ class Component extends DCLogic {
   aapneKursSlug(slug) {
     const kort = this.kursKort().find(k => k.slug === slug);
     if (!kort) return false;
+    // Serversida (app/nett/sider/kursside.php) sender folk hit med dagen
+    // de trykket paa: /kurs/<slug>?dag=onsdag 16. september — og ?alle=1
+    // naar de ba om aa se alle datoene. Da staar det valgt naar appen er
+    // oppe, og de fortsetter der de var.
+    let dag = '', alle = false;
+    try {
+      const q = new URLSearchParams(window.location.search);
+      dag = q.get('dag') || '';
+      alle = q.get('alle') === '1';
+    } catch (e) { /* ingen sporring */ }
     this.setState({
       side: 'booking', fra: 'kurs', valgtKurs: kort,
       bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null,
+      bDag: dag || null, bAlleDatoer: alle,
       ventelisteBekreftet: null,
     });
     return true;
@@ -25029,7 +25286,9 @@ class Component extends DCLogic {
     const funnet = this.planer().find(p => p.navn === navn);
     if (funnet) {
       if (!harSvar) return funnet;
-      const timer = st.timer.perMnd;
+      // Planens eget tall, ikke taket: taket har gavetimer og dugnad lagt
+      // til (15. september 2026), og de er ikke «timer i maaneden».
+      const timer = st.timer.plan !== undefined ? st.timer.plan : st.timer.perMnd;
       // ── Naar medlemmet har sitt eget timetall ─────────────────────
       //
       // «members.timer_per_mnd» gaar foran planen, og serveren regner
@@ -25161,6 +25420,49 @@ class Component extends DCLogic {
     return this.state.oppskrifter || [];
   }
 
+  // ── Sidene som tegnes paa serveren ──────────────────────────────────
+  //
+  // Forsida, Om oss, nyhetene, kalenderen og de andre lesesidene tegnes
+  // ferdig av serveren (app/nett/), fra de samme malene som staar her.
+  // Kundeutgaven av denne fila (bin/utenadmin.mjs) har derfor ikke de
+  // skjermene med, og et bytte dit er en vanlig sidelasting — ikke et
+  // skjermbytte. I den fulle utgaven, den en innlogget admin faar, staar
+  // skjermene, og appen viser dem selv som foer.
+  //
+  // Det som IKKE er her, bor i appen fortsatt: kurssida med dagvalg og
+  // booking, kontakt- og bedriftsskjemaet, medlemskapsplanen, butikken,
+  // kassa, gavekortet, Min side og admin.
+  static get SERVERSIDER() {
+    return {
+      forside: '/', omoss: '/om-oss', sporsmal: '/sporsmal-og-svar', nyheter: '/nyheter',
+      personvern: '/personvern', vilkar: '/vilkar', kursoversikt: '/kursene-vare',
+      kalender: '/kalender', nyttig: '/nyttig-info', paintonpots: '/paint-on-pots',
+      plakatcone: '/nyttig-info/brennetabell', plakatinfo: '/nyttig-info/medlemsinfo',
+      plakattrivsel: '/nyttig-info/trivselsregler',
+    };
+  }
+
+  /** Er dette kundeutgaven uten leseskjermene? bin/utenadmin.mjs merker <body>. */
+  utenLeseskjermer() {
+    return !!(document.body && document.body.hasAttribute('data-lett-utgave'));
+  }
+
+  // Ett sted aa ta det: skjermen byttes med setState({ side }) over
+  // tretti steder i denne fila. Gaar byttet til en serverside i
+  // kundeutgaven, lastes den sida i stedet — ellers ville en skjerm som
+  // ikke finnes staatt tom.
+  setState(endring, etterpaa) {
+    const side = endring && typeof endring === 'object' ? endring.side : undefined;
+    const sti = side ? Component.SERVERSIDER[side] : undefined;
+    if (sti && side !== this.state.side && this.utenLeseskjermer()) {
+      // En aapnet artikkel har sin egen adresse.
+      const slug = side === 'nyheter' && endring.nyLest ? endring.nyLest.slug : '';
+      window.location.assign(slug ? '/nyheter/' + slug : sti);
+      return;
+    }
+    super.setState(endring, etterpaa);
+  }
+
   // Adressekartet: hvilken sti hoerer til hvilken skjerm.
   //
   // Flere sider deler samme skjerm og skilles bare av et filter — Events og
@@ -25223,6 +25525,18 @@ class Component extends DCLogic {
       // ingen kode og ingen adresse aa lage en av. Det var et loefte
       // systemet ikke holdt.
       { sti: '/stemple',       side: 'stemple' },
+      // Fanene paa Min side har hver sin adresse. Eieren, 15. september
+      // 2026: «Naar jeg klikker inn paa en side, saa maa det alltid vaere en
+      // tilbakeknapp som tar meg et steg tilbake, f.eks. nyttig info ...
+      // gjelder admin og min side». Et fanebytte er dermed et steg i
+      // historikken, og tilbake — knappen nederst eller telefonens — gaar
+      // til fanen man sto paa. Staar foer /min-side: stiForSide() tar det
+      // foerste treffet, og fanen «hjem» er /min-side uten tillegg.
+      { sti: '/min-side/medlemskap', side: 'minside', fane: 'medlemskap' },
+      { sti: '/min-side/butikk',     side: 'minside', fane: 'butikk' },
+      { sti: '/min-side/selg',       side: 'minside', fane: 'selg' },
+      { sti: '/min-side/chat',       side: 'minside', fane: 'chat' },
+      { sti: '/min-side/nyttig',     side: 'minside', fane: 'nyttig' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
       // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
@@ -25295,6 +25609,11 @@ class Component extends DCLogic {
     // som den er. Ellers ville den blitt skrevet om til /kurs i mellomtiden,
     // og den som delte lenken hadde sendt folk til feil sted.
     if (this._ventendeSlug) return null;
+    // Samme for en artikkel som hentes: /nyheter/<adresse> ble skrevet om til
+    // /nyheter mens den lastet, og saa til artikkelen igjen — to steg, og
+    // tilbake havnet paa /nyheter med artikkelen fortsatt aapen, som straks
+    // skrev adressen tilbake. Tilbake satt fast. (Revisjon 15. september 2026.)
+    if (this._ventendeNyhet) return null;
 
     // Et kurs med egen adresse skal ha den i feltet, ikke /booking.
     if (side === 'booking') {
@@ -25319,6 +25638,10 @@ class Component extends DCLogic {
     const treff = Component.STIER.find(r => {
       if (r.side !== side) return false;
       if (r.filter) return r.filter === filter;
+      // Raa tilstand, ikke msFane(): den svarer «hjem» til medlemsdataene er
+      // hentet, og adressen ville blitt skrevet om til /min-side og tilbake
+      // igjen — to steg i historikken for ett trykk.
+      if (r.fane) return r.fane === (this.state.msFane || 'hjem');
       // En oppforing uten filter tar bare det som ikke alt er fanget over.
       if (side === 'booking') return true;
       return true;
@@ -25408,6 +25731,7 @@ class Component extends DCLogic {
     }
 
     if (rute.nyhetSlug) {
+      this._ventendeNyhet = true;
       this.setState({ side: 'nyheter', nyLest: null });
       this.hentNyhet(rute.nyhetSlug);
       return;
@@ -25437,6 +25761,10 @@ class Component extends DCLogic {
       // adressen ble straks skrevet tilbake til varen igjen. Tilbakeknappen
       // satt fast.
       piProdukt: null,
+      // /min-side/<fane> aapner fanen; /min-side er «hjem».
+      ...(rute.side === 'minside' ? { msFane: rute.fane || 'hjem' } : {}),
+      // /nyheter uten adresse er lista — en aapen artikkel lukkes.
+      ...(rute.side === 'nyheter' ? { nyLest: null } : {}),
     });
   }
 
@@ -25457,6 +25785,7 @@ class Component extends DCLogic {
     this._lagStabel = [];
     if (this._lagTeller === undefined) this._lagTeller = 0;
     history.pushState({ side: this.state.side, idx: ++this._lagTeller }, '', sti + window.location.search);
+    this._dybde = this._lagTeller;
   }
 
   // ── Tilbakeknappen lukker ett lag om gangen ──────────────────────────
@@ -25570,6 +25899,7 @@ class Component extends DCLogic {
       stabel.push(steg);
       try {
         history.pushState(steg, '', window.location.pathname + window.location.search + window.location.hash);
+        this._dybde = steg.idx;
       } catch (e) { stabel.pop(); }
     }
   }
@@ -25613,7 +25943,8 @@ class Component extends DCLogic {
     // Landet paa et skjermsteg: er det den samme skjermen, er vi ferdige —
     // ellers faar ruta ta byttet.
     const r = this.ruteFraAdresse();
-    return !!(r && r.side === this.state.side && !r.kursSlug && !r.nyhetSlug && !r.vareId);
+    return !!(r && r.side === this.state.side && !r.kursSlug && !r.nyhetSlug && !r.vareId
+      && (r.side !== 'minside' || (r.fane || 'hjem') === (this.state.msFane || 'hjem')));
   }
 
   // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
@@ -28916,6 +29247,7 @@ class Component extends DCLogic {
         this._hlSender = false;
         if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this.setState(Object.assign({ hlMine: d.mine || [] },
+          kropp.handling === 'onske' ? { hlOnske: '' } : {},
           kropp.handling === 'send' ? { hlKvittering: true, hlSok: '', hlVelgApen: false } : {}));
       })
       .catch(() => {
@@ -28957,6 +29289,15 @@ class Component extends DCLogic {
       hlSendTekst: 'Send til verkstedet',
       hlSendNa: () => this.hlKall({ handling: 'send' }),
       hlKvittering: !!this.state.hlKvittering,
+      // Varene aa velge blant finnes ikke alltid; da staar bare oensket.
+      hlHarVarer: varer.length > 0,
+      hlOnske: this.state.hlOnske || '',
+      hlOnskeEndre: (e) => this.setState({ hlOnske: e.target.value, hlKvittering: false }),
+      hlOnskeLegg: () => {
+        const t = String(this.state.hlOnske || '').trim();
+        if (t.length < 2) { this.setState({ kvitteringTone: 'danger', kvittering: 'Skriv hva du ønsker deg' }); return; }
+        this.hlKall({ handling: 'onske', tekst: t });
+      },
     };
   }
 
@@ -28979,7 +29320,7 @@ class Component extends DCLogic {
 
   /** Ett kall, ett svar, hele bildet tilbake. Som medlemmets side. */
   hlaKall(kropp) {
-    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvittering: 'Krever den ekte siden' }); return; }
+    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: '', kvittering: 'Krever den ekte siden' }); return; }
     if (this._hlaSender) return;
     this._hlaSender = true;
     fetch('/api/admin/handlelister.php', {
@@ -28990,7 +29331,7 @@ class Component extends DCLogic {
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
       .then(({ ok, d }) => {
         this._hlaSender = false;
-        if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
+        if (!ok) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: '', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         const ny = { hla: d };
         // Kravet og bestillingen sier fra hva som faktisk skjedde. Et krav
         // som ikke gikk gjennom skal ikke se ut som om det gikk.
@@ -28998,19 +29339,72 @@ class Component extends DCLogic {
           const sendt = (d.sendt || []).length;
           const feilet = d.feilet || [];
           ny.kvitteringTone = feilet.length > 0 ? 'danger' : 'success';
+          ny.kvitteringDetalj = '';
           ny.kvittering = feilet.length > 0
             ? feilet.join(' ')
             : (sendt === 0 ? 'Ingen krav å sende.' : 'Kravet er sendt til ' + sendt + (sendt === 1 ? ' medlem.' : ' medlemmer.'));
         }
         if (kropp.handling === 'bestill') {
           ny.kvitteringTone = 'success';
+          ny.kvitteringDetalj = '';
           ny.kvittering = 'Bestilling ' + (d.bestilling || '') + ' er sendt til ' + (d.til || 'leverandøren') + '.';
         }
         this.setState(ny);
       })
       .catch(() => {
         this._hlaSender = false;
-        this.setState({ kvitteringTone: 'danger', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+        this.setState({ kvitteringTone: 'danger', kvitteringDetalj: '', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
+  /**
+   * Det som er skrevet i feltene, men ikke lagret ennaa.
+   *
+   * Feltene sendte til serveren ved hvert tastetrykk, uten knapp og uten
+   * bekreftelse — og mens ett tegn var paa vei, ble de neste kastet og
+   * feltet skrevet over av svaret. Eieren, 15. september 2026: «naar jeg
+   * endrer inne paa admin handlelister, saa er det ingen lagre knapp?»
+   * Naa: feltene beholder det som skrives, «Lagre» sender, «Lagret» svarer
+   * — som resten av admin.
+   */
+  hlaUtkast() {
+    return this.state.hlaUtkast || { pris: {}, epost: {}, gebyr: null, nyNavn: '', nyEpost: '' };
+  }
+
+  hlaSkriv(del, nokkel, verdi) {
+    const u = this.hlaUtkast();
+    const ny = { ...u };
+    if (nokkel === null) ny[del] = verdi;
+    else ny[del] = { ...u[del], [nokkel]: verdi };
+    this.setState({ hlaUtkast: ny });
+  }
+
+  /**
+   * Sender endringene ett kall om gangen — API-et tar én pris per kall —
+   * og viser bildet fra det siste svaret. Feiler ett, stopper vi der og
+   * sier hva som gikk galt; det som alt er sendt, er lagret.
+   */
+  hlaLagre(kall, etterpaa) {
+    if (!this.erPublisert()) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: 'Krever den ekte siden' }); return; }
+    if (this._hlaSender || kall.length === 0) return;
+    this._hlaSender = true;
+    const send = (kropp) => fetch('/api/admin/handlelister.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    }).then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })));
+    kall.reduce((p, kropp) => p.then(forrige => {
+      if (forrige && !forrige.ok) return forrige;
+      return send(kropp);
+    }), Promise.resolve(null))
+      .then(svar => {
+        this._hlaSender = false;
+        if (!svar.ok) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: svar.d.feil || 'Fikk ikke lagret. Prøv igjen om litt.' }); return; }
+        this.setState({ hla: svar.d, ...etterpaa(svar.d) });
+      })
+      .catch(() => {
+        this._hlaSender = false;
+        this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
       });
   }
 
@@ -29021,6 +29415,24 @@ class Component extends DCLogic {
     const lev = d.leverandorer || [];
     const valgt = this.state.hlaLev || '';
     const gebyr = d.gebyr === undefined ? 5 : d.gebyr;
+    const u = this.hlaUtkast();
+    const lagrePille = {
+      appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+      border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)',
+      borderRadius: 'var(--radius-pill)', padding: '10px 20px', font: 'var(--type-body-sm)', fontWeight: 700,
+    };
+    // Prisene som er endret — bare de sendes.
+    const prisKall = varer
+      .filter(v => u.pris[v.produktId] !== undefined && u.pris[v.produktId] !== (v.pris || ''))
+      .map(v => ({ handling: 'pris', produktId: v.produktId, kroner: u.pris[v.produktId] }));
+    // Gebyret og leverandoerenes adresser.
+    const gebyrTekst = String(gebyr).replace('.', ',');
+    const oppsettKall = []
+      .concat(u.gebyr !== null && u.gebyr !== gebyrTekst ? [{ handling: 'gebyr', prosent: u.gebyr }] : [])
+      .concat(lev
+        .filter(l => u.epost[l.id] !== undefined && u.epost[l.id] !== (l.epost || ''))
+        .map(l => ({ handling: 'leverandor', id: l.id, epost: u.epost[l.id], bestillingsmaate: l.maate })));
+    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, gebyr: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
 
     const pille = (aktiv) => ({
       appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -29041,6 +29453,7 @@ class Component extends DCLogic {
         antallMedlemmer + (antallMedlemmer === 1 ? ' medlem · ' : ' medlemmer · ')
         + varer.length + (varer.length === 1 ? ' varelinje' : ' varelinjer'),
       hlaTom: varer.length === 0,
+      hlaHarVarer: varer.length > 0,
       hlaLevFiltre: [{ navn: 'Alle leverandører', verdi: '' }]
         .concat(lev.map(l => ({ navn: l.navn, verdi: l.navn })))
         .map(f => ({
@@ -29054,7 +29467,6 @@ class Component extends DCLogic {
         hvem: v.fjernet ? 'Tatt bort — ikke på lager hos leverandøren' : v.hvem,
         leverandor: v.leverandor || '',
         antall: v.antall,
-        pris: v.pris || '',
         sum: v.sum,
         // Den som er tatt bort staar bleket, slik at den fortsatt er
         // synlig — admin skal kunne angre uten aa lete.
@@ -29063,7 +29475,8 @@ class Component extends DCLogic {
           borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-3) 0',
           minWidth: '640px', opacity: v.fjernet ? 0.45 : 1,
         },
-        prisEndre: (e) => this.hlaKall({ handling: 'pris', produktId: v.produktId, kroner: e.target.value }),
+        pris: u.pris[v.produktId] !== undefined ? u.pris[v.produktId] : (v.pris || ''),
+        prisEndre: (e) => this.hlaSkriv('pris', v.produktId, e.target.value),
         vekk: () => this.hlaKall({ handling: v.fjernet ? 'angre' : 'fjern', produktId: v.produktId }),
         vekkTegn: v.fjernet ? '↺' : '✕',
         vekkTittel: v.fjernet ? 'Legg tilbake' : 'Ikke på lager',
@@ -29081,12 +29494,28 @@ class Component extends DCLogic {
         navn: 'Bestill hos ' + l.navn,
         send: () => this.hlaKall({ handling: 'bestill', leverandorId: l.id }),
       })),
-      hlaGebyr: String(gebyr).replace('.', ','),
-      hlaGebyrEndre: (e) => this.hlaKall({ handling: 'gebyr', prosent: e.target.value }),
+      hlaGebyr: u.gebyr !== null ? u.gebyr : gebyrTekst,
+      hlaGebyrEndre: (e) => this.hlaSkriv('gebyr', null, e.target.value),
+      // «Lagre» under prisene og under oppsettet. Knappen staar alltid;
+      // er ingenting endret, sier den «Lagret» uten aa sende noe.
+      hlaLagrePriser: () => (prisKall.length ? this.hlaLagre(prisKall, lagret) : this.setState({ kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' })),
+      hlaLagreOppsett: () => (oppsettKall.length ? this.hlaLagre(oppsettKall, lagret) : this.setState({ kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' })),
+      hlaLagreStil: lagrePille,
+      // Ny leverandoer — eieren, 15. september 2026: «jeg vil også kunne
+      // legge til Scan-Form info@scan-form.no».
+      hlaNyNavn: u.nyNavn,
+      hlaNyNavnEndre: (e) => this.hlaSkriv('nyNavn', null, e.target.value),
+      hlaNyEpost: u.nyEpost,
+      hlaNyEpostEndre: (e) => this.hlaSkriv('nyEpost', null, e.target.value),
+      hlaNyLeggTil: () => {
+        if (!u.nyNavn.trim()) { this.setState({ kvitteringTone: 'danger', kvitteringDetalj: 'Ingenting ble lagret.', kvittering: 'Leverandøren må ha et navn.' }); return; }
+        this.hlaLagre([{ handling: 'nyleverandor', navn: u.nyNavn.trim(), epost: u.nyEpost.trim() }],
+          (d2) => ({ hlaUtkast: { ...this.hlaUtkast(), nyNavn: '', nyEpost: '' }, kvitteringTone: 'success', kvitteringDetalj: 'Du finner den under Leverandører.', kvittering: (d2.lagtTil || 'Leverandøren') + ' er lagt til.' }));
+      },
       hlaLeverandorer: lev.map(l => ({
         navn: l.navn,
-        epost: l.epost || '',
-        epostEndre: (e) => this.hlaKall({ handling: 'leverandor', id: l.id, epost: e.target.value, bestillingsmaate: l.maate }),
+        epost: u.epost[l.id] !== undefined ? u.epost[l.id] : (l.epost || ''),
+        epostEndre: (e) => this.hlaSkriv('epost', l.id, e.target.value),
         maater: [
           { navn: 'E-post', verdi: 'epost' },
           { navn: 'API — ikke tilgjengelig ennå', verdi: 'api' },
@@ -29381,6 +29810,7 @@ class Component extends DCLogic {
     })
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
+        this._ventendeNyhet = false;
         if (d && d.artikkel) {
           this.setState({ side: 'nyheter', nyLest: d.artikkel });
           window.scrollTo(0, 0);
@@ -29390,7 +29820,7 @@ class Component extends DCLogic {
         // artikkelside som ser ut som noe er i stykker.
         this.setState({ side: 'ikkefunnet' });
       })
-      .catch(() => { /* nettet svarte ikke; lista staar */ });
+      .catch(() => { this._ventendeNyhet = false; /* nettet svarte ikke; lista staar */ });
   }
 
   /**
@@ -31835,6 +32265,13 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
+    // Handlekurven fra forrige sidelasting i samme fane — se componentDidUpdate.
+    try {
+      const k = JSON.parse(sessionStorage.getItem('lissom-kurv') || 'null');
+      if (k && typeof k === 'object' && !Array.isArray(k) && Object.keys(k).length > 0) {
+        this.setState({ kurv: k });
+      }
+    } catch (e) { /* ingen kurv aa hente */ }
     // ── Bommer man med fila ────────────────────────────────────────
     //
     // Eieren, 12. september 2026: slipper du en fil ved siden av «Last
@@ -31888,7 +32325,16 @@ class Component extends DCLogic {
     if (rute) {
       this.folgRute(rute);
     }
+    // Serversidene (app/nett/) sender «Send forespoersel» hit som
+    // /kontakt?skjema=1 og /bedrift?skjema=1: ruta med skjemaet aapnes med
+    // det samme, som om man hadde trykket paa knappen.
+    if (rute && /[?&]skjema=1/.test(window.location.search)) {
+      if (rute.side === 'kontakt') this.setState({ ktApen: true, ktSendt2: false, ktFeil: null });
+      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
+    }
     this._popstate = (e) => {
+      // Hvor dypt vi staar naa — se tilbakeVals().
+      this._dybde = (e && e.state && e.state.idx) || 0;
       // Lagene foerst: landet vi paa et lag-steg, er det bare laget som
       // endrer seg — ikke skjermen. Se lagPopstate().
       if (this.lagPopstate(e)) return;
@@ -32066,6 +32512,11 @@ class Component extends DCLogic {
     }, Component.ROT_OPPHOLD - Component.BUT_OPPHOLD);
     this._resize = () => this.setState({ vw: window.innerWidth });
     window.addEventListener('resize', this._resize);
+    // Tilbakeknappen foelger toppen naar man ruller. Se tilbakePlasser().
+    this._tilbakeRull = () => this.tilbakePlasser();
+    window.addEventListener('scroll', this._tilbakeRull, { passive: true });
+    window.addEventListener('resize', this._tilbakeRull);
+    this.tilbakePlasser();
     // Innloggingen gikk ut. Si fra én gang, og send til innlogging — framfor
     // aa la eieren staa og trykke paa knapper som ikke kan virke.
     this._utlogget = () => {
@@ -33429,10 +33880,342 @@ class Component extends DCLogic {
     const alle = st.ressurser || [];
     const valgt = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
     // Utstempling gaar via ruta som viser hvor lenge man var inne. Eieren, 13.
-    // september 2026. Innstempling gaar rett gjennom som for — der er det
-    // ingenting aa bekrefte.
+    // september 2026. Innstempling ogsaa, fra 15. september: «man maa faa
+    // spoersmaal, er du sikker».
     if (inne) { this.setState({ utstApen: true }); return; }
-    this.stemplingKall({ handling: 'inn', ressursId: valgt || 0 }, true);
+    this.setState({ innstRute: 'inn', innstRessurs: valgt || 0 });
+  }
+
+  /**
+   * ← Tilbake. Dybden er loepenummeret paa historikksteget vi staar paa
+   * (_lagTeller ved siste pushState, e.state.idx ved popstate) — null naar
+   * vi staar der sida ble aapnet. Da finnes det ingenting bak oss i denne
+   * fanen, og knappen gaar til et sted som gir mening i stedet.
+   */
+  tilbakeVals() {
+    const side = this.state.side;
+    const dybde = this._dybde || 0;
+    const admin = this.erAdminSkjerm(side);
+    return {
+      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminkalender',
+      tilbakeGaa: () => {
+        if (dybde > 0) { history.back(); return; }
+        if (admin) { this.gaaAdmin('adminkalender', {}); return; }
+        if (side === 'minside' && (this.state.msFane || 'hjem') !== 'hjem') { this.setState({ msFane: 'hjem' }); window.scrollTo(0, 0); return; }
+        this.setState({ side: 'forside', fhRolle: '', fhFra: '' });
+        window.scrollTo(0, 0);
+      },
+      // Liten og rund, oeverst til venstre rett under toppen. Eieren,
+      // 15. september 2026: «den kan godt vaere mindre ... jeg vil ikke
+      // flytte paa noen logo». Hoeyden maales — se tilbakePlasser().
+      tilbakeStil: {
+        position: 'fixed', left: 12, top: this._tilbakeTopp || 96, zIndex: 530, appearance: 'none', cursor: 'pointer',
+        width: 38, height: 38, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        border: '1px solid rgba(244,235,222,.35)', borderRadius: '50%',
+        font: '700 20px/1 var(--font-display)', background: 'var(--lissom-brown)', color: 'var(--clay-50)',
+        boxShadow: '0 4px 14px rgba(46,16,2,.28)',
+      },
+    };
+  }
+
+  /**
+   * Hvor hoeyt oppe knappen skal staa: rett under det som ligger oeverst
+   * paa skjermen akkurat naa — testbaandet, den gule toppen, adminlinja.
+   * Toppen er ikke lik overalt: paa kundesidene er den fast (sticky), paa
+   * Min side og i admin ruller den bort. Derfor maales det som faktisk
+   * staar oeverst (elementFromPoint), og maales paa nytt naar man ruller.
+   * Finnes det ingen linje der, staar knappen 10 px fra kanten.
+   */
+  tilbakeTopp() {
+    const x = Math.round(window.innerWidth / 2);
+    let y = 0, topp = 0;
+    // Testbaandet oeverst paa test.lissom.no ligger oppaa toppen og slipper
+    // trykk gjennom seg (pointer-events: none), saa elementFromPoint ser
+    // det ikke. Det tar ikke plass, men knappen skal ikke gjemme seg bak det.
+    for (const d of document.body.children) {
+      if (d.tagName === 'DIV' && d.style.position === 'fixed' && d.style.top === '0px' && d.offsetHeight < 50) topp = d.offsetHeight;
+    }
+    for (let i = 0; i < 3; i++) {
+      const el = document.elementFromPoint(x, y + 3);
+      if (!el || el === document.documentElement || el === document.body || el.classList.contains('lx-tilbake')) break;
+      // Linja er det ytterste elementet som er (nesten) like bredt som
+      // skjermen, ikke for hoeyt, og som begynner der forrige linje sluttet
+      // — ikke innhold som tilfeldigvis krysser punktet.
+      let linje = null;
+      for (let e = el; e && e !== document.body; e = e.parentElement) {
+        const r = e.getBoundingClientRect();
+        if (r.width >= window.innerWidth * 0.95 && r.height >= 20 && r.height <= 240 && r.top >= y - 4 && r.top <= y + 3 && r.bottom > y + 3) linje = r;
+      }
+      if (!linje) break;
+      topp = Math.max(topp, linje.bottom);
+      y = linje.bottom;
+    }
+    return Math.round(topp) + 10;
+  }
+
+  /** Setter hoeyden rett paa knappen — ingen ny tegning for aa rulle. */
+  tilbakePlasser() {
+    if (this._tilbakeRaf) return;
+    this._tilbakeRaf = requestAnimationFrame(() => {
+      this._tilbakeRaf = 0;
+      const k = document.querySelector('.lx-tilbake');
+      if (!k) return;
+      const t = this.tilbakeTopp();
+      if (t !== this._tilbakeTopp) { this._tilbakeTopp = t; k.style.top = t + 'px'; }
+    });
+  }
+
+  /** Ruta «Stemple inn naa?» — og de to for dugnad. Én rute, tre tilstander. */
+  innstRute() {
+    const r = this.state.innstRute || '';
+    const d = (this.state.dugnad || {}).aktiv || {};
+    const tekster = {
+      inn: { eyebrow: 'Stemple inn', tittel: 'Stemple inn nå?', tekst: 'Tida trekkes fra timene dine denne måneden. Husk å stemple ut når du går.', knapp: 'Ja, stemple inn' },
+      duginn: { eyebrow: 'Dugnad', tittel: 'Stemple inn dugnad?', tekst: 'Husk å stemple ut når du er ferdig. Tida legges til timene dine når verkstedet har godkjent jobben.', knapp: 'Ja, stemple inn' },
+      dugut: { eyebrow: 'Dugnad', tittel: 'Stemple ut dugnad?', tekst: 'Du var inne i ' + (d.varighet || '') + '. Tida sendes til verkstedet for godkjenning.', knapp: 'Ja, stemple ut' },
+    }[r] || {};
+    return {
+      innstVis: r !== '',
+      innstEyebrow: tekster.eyebrow || '',
+      innstTittel: tekster.tittel || '',
+      innstTekst: tekster.tekst || '',
+      innstKnapp: tekster.knapp || '',
+      innstLukk: () => this.setState({ innstRute: '' }),
+      innstBekreft: () => {
+        this.setState({ innstRute: '' });
+        if (r === 'inn') this.stemplingKall({ handling: 'inn', ressursId: this.state.innstRessurs || 0 }, true);
+        if (r === 'duginn') this.dugnadKall({ handling: 'inn' }, 'Du er stemplet inn som dugnad');
+        if (r === 'dugut') this.dugnadKall({ handling: 'ut' }, 'Takk for dugnaden');
+      },
+    };
+  }
+
+  // ── Dugnad ───────────────────────────────────────────────────────────
+  //
+  // Eieren, 15. september 2026. Medlemmet spoer (tekst), Monica godkjenner
+  // (api/admin/dugnad.php), medlemmet stempler inn og ut som dugnad, og
+  // tida godkjennes foer den legges til timene. Se app/lib/dugnad.php.
+  hentDugnad() {
+    if (!this.erPublisert() || this._dugnadHentes) return;
+    this._dugnadHentes = true;
+    fetch('/api/dugnad.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._dugnadHentes = false; if (d) this.setState({ dugnad: d }); })
+      .catch(() => { this._dugnadHentes = false; });
+  }
+
+  dugnadKall(kropp, tittel) {
+    if (!this.erPublisert() || this._dugnadKaller) return;
+    this._dugnadKaller = true;
+    fetch('/api/dugnad.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._dugnadKaller = false;
+        if (!ok || !d || !d.ok) {
+          this.setState({ kvittering: 'Fikk ikke registrert', kvitteringDetalj: (d && d.feil) || 'Prøv igjen, eller si fra i verkstedet.' });
+          return;
+        }
+        this.setState({ kvittering: tittel, kvitteringDetalj: d.beskjed || '', dugTekst: '' });
+        this._dugnadHentes = false; this.hentDugnad();
+        // Timene kan ha endret seg (godkjent tid legges til taket).
+        this._stemplingHentes = false; this.hentStempling();
+      })
+      .catch(() => {
+        this._dugnadKaller = false;
+        this.setState({ kvittering: 'Fikk ikke registrert', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /** Dugnadene, sett fra verkstedet (Ubesvarte). */
+  hentDugnadAdmin() {
+    if (!this.erPublisert() || this._dugAdmHentes) return;
+    this._dugAdmHentes = true;
+    fetch('/api/admin/dugnad.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._dugAdmHentes = false; this.setState({ dugnadAdmin: d || { dugnader: [] } }); })
+      .catch(() => { this._dugAdmHentes = false; });
+  }
+
+  dugnadAdminKall(kropp) {
+    if (!this.erPublisert() || this._dugAdmKaller) return;
+    this._dugAdmKaller = true;
+    fetch('/api/admin/dugnad.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._dugAdmKaller = false;
+        this.setState({
+          kvittering: ok && d && d.ok ? 'Dugnad' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || 'Prøv igjen.',
+        });
+        this._dugAdmHentes = false; this.hentDugnadAdmin();
+        this._adminHentes = false; this.hentAdmin();
+      })
+      .catch(() => {
+        this._dugAdmKaller = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  dugnadAdminVals() {
+    const da = this.state.dugnadAdmin;
+    const alle = (da && da.dugnader) || [];
+    // Bare det som venter paa Monica, pluss det som paagaar naa.
+    const liste = alle.filter(d => d.status === 'venter' || d.status === 'til_godkjenning' || d.status === 'pagar' || d.status === 'godkjent');
+    const merke = { venter: 'Ny forespørsel', godkjent: 'Godkjent, ikke begynt', pagar: 'Pågår nå', til_godkjenning: 'Tid til godkjenning' };
+    const felt = this.state.dugTimerFelt || {};
+    return {
+      dugAdmVis: !!da && this.erPublisert(),
+      dugAdmTom: liste.length === 0,
+      dugAdmBryterTekst: da && da.paa ? 'På for medlemmene' : 'Av — slå på under ⊙ Synlighet',
+      dugAdmBryterStil: { textTransform: 'none', letterSpacing: 0, color: da && da.paa ? 'var(--sage-600, #5f6a4e)' : 'var(--terracotta-600)' },
+      dugAdmLenkeStil: { appearance: 'none', background: 'transparent', border: 'none', padding: '0 4px', cursor: 'pointer', font: 'var(--type-body-sm)', color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: 3 },
+      dugAdmListe: liste.map(d => ({
+        navn: d.navn,
+        merke: merke[d.status] || d.status,
+        merkeStil: { display: 'inline-block', marginLeft: 6, fontSize: 11, fontWeight: 800, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 999, background: d.status === 'til_godkjenning' || d.status === 'venter' ? 'var(--lissom-yellow)' : 'var(--clay-100)', color: 'var(--lissom-brown)' },
+        naar: d.status === 'til_godkjenning' || d.status === 'pagar' ? d.dag : d.sendt,
+        tekst: d.tekst,
+        tidTekst: d.status === 'til_godkjenning' ? ' · stemplet ' + d.inn + '–' + d.ut + ' = ' + d.varighet
+          : d.status === 'pagar' ? ' · innstemplet ' + d.inn + ', ' + d.varighet + ' så langt' : '',
+        venter: d.status === 'venter',
+        tilGodkjenning: d.status === 'til_godkjenning',
+        timerFelt: felt[d.id] !== undefined ? felt[d.id] : d.forslagTimer,
+        settTimer: (e) => this.setState(st => ({ dugTimerFelt: Object.assign({}, st.dugTimerFelt, { [d.id]: e.target.value }) })),
+        godkjenn: () => this.dugnadAdminKall({ handling: 'godkjenn', id: d.id }),
+        avslaa: () => { if (window.confirm('Avslå dugnaden til ' + d.navn + '? Medlemmet får beskjed.')) this.dugnadAdminKall({ handling: 'avslaa', id: d.id }); },
+        godkjennTid: () => this.dugnadAdminKall({ handling: 'godkjenn_tid', id: d.id, timer: felt[d.id] !== undefined ? felt[d.id] : d.forslagTimer }),
+        avvisTid: () => { if (window.confirm('Ikke legge til tida for ' + d.navn + '? Medlemmet får beskjed.')) this.dugnadAdminKall({ handling: 'avvis_tid', id: d.id }); },
+      })),
+    };
+  }
+
+  // ── «Ta med barn» ───────────────────────────────────────────────────
+  hentTillegg() {
+    if (!this.erPublisert() || this._tilleggHentes) return;
+    this._tilleggHentes = true;
+    fetch('/api/tillegg-barn.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._tilleggHentes = false; if (d) this.setState({ tillegg: d }); })
+      .catch(() => { this._tilleggHentes = false; });
+  }
+
+  barnVals() {
+    const t = this.state.tillegg;
+    const vis = !!t && !!t.paa && this.medlemsvisning();
+    const a = t && t.aktivt;
+    const rute = this.state.barnRute || '';
+    const navn = String(this.state.barnNavn || '').trim();
+    const alder = String(this.state.barnAlder || '').trim();
+    const kan = navn.length >= 2 && /^\d{1,2}$/.test(alder) && !!this.state.barnVilkaar && !this._barnKjoper;
+    const valg = (t && t.kanKjope) || [];
+    const ruteNavn = (valg.find(k => k.maaned === rute) || {}).navn || '';
+    return {
+      barnVis: vis,
+      barnMaksAlder: (t && t.maksAlder) || 12,
+      barnPris: (t && t.pris) || '',
+      barnAktivt: !!a,
+      barnIkkeAktivt: !a,
+      barnAktivMaaned: a ? a.maanedNavn : '',
+      barnAktivTekst: a
+        ? 'Betalt ' + a.betalt + '. Gjelder ut ' + a.maanedNavn + ' — ' + a.barnNavn + (a.barnAlder !== null ? ' (' + a.barnAlder + ')' : '') + '. Husk: barnet er alltid sammen med deg.'
+        : '',
+      barnMerkeStil: { display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', padding: '4px 9px', borderRadius: 999, background: 'var(--sage-100, #e3e7d9)', color: 'var(--text-heading)' },
+      barnKjopValg: valg.map(k => ({ navn: k.navn, velg: () => this.setState({ barnRute: k.maaned, barnVilkaar: false }) })),
+      barnKnappStil: { appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999, padding: '9px 14px', font: 'var(--type-body-sm)', fontWeight: 700, background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)' },
+      // Ruta.
+      barnRuteVis: rute !== '',
+      barnRuteMaaned: ruteNavn,
+      barnRuteLukk: () => this.setState({ barnRute: '' }),
+      barnNavn: this.state.barnNavn || '',
+      barnAlder: this.state.barnAlder || '',
+      settBarnNavn: (e) => this.setState({ barnNavn: e.target.value }),
+      settBarnAlder: (e) => this.setState({ barnAlder: String(e.target.value).replace(/\D/g, '').slice(0, 2) }),
+      barnVilkaar: !!this.state.barnVilkaar,
+      vekslBarnVilkaar: () => this.setState(st => ({ barnVilkaar: !st.barnVilkaar })),
+      barnKanIkkeBetale: !kan,
+      barnBetalTekst: 'Betal ' + ((t && t.pris) || '') + ' med Vipps',
+      barnBetal: () => {
+        if (!kan) return;
+        this._barnKjoper = true;
+        fetch('/api/tillegg-barn.php', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handling: 'kjop', maaned: rute, barnNavn: navn, barnAlder: alder, vilkaar: 'ja' }),
+        })
+          .then(r => r.json().then(d => ({ ok: r.ok, d })))
+          .then(({ ok, d }) => {
+            this._barnKjoper = false;
+            if (!ok || !d || !d.ok || !d.url) {
+              this.setState({ kvittering: 'Fikk ikke startet betalingen', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+              return;
+            }
+            window.location.href = d.url;
+          })
+          .catch(() => {
+            this._barnKjoper = false;
+            this.setState({ kvittering: 'Fikk ikke startet betalingen', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+          });
+      },
+    };
+  }
+
+  /** Verdiene til dugnadskortet paa Min side. */
+  dugnadVals() {
+    const dg = this.state.dugnad;
+    const a = dg && dg.aktiv;
+    const st = a ? a.status : '';
+    const vis = !!dg && !!dg.paa && this.medlemsvisning();
+    const merke = { venter: 'Venter på svar', godkjent: 'Godkjent', pagar: 'Pågår', til_godkjenning: 'Til godkjenning' }[st] || '';
+    const knapp = (bg) => ({
+      appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999,
+      padding: '9px 14px', font: 'var(--type-body-sm)', fontWeight: 700,
+      background: bg, color: '#fff',
+    });
+    return {
+      dugVis: vis,
+      dugMerkeVis: merke !== '',
+      dugMerke: merke,
+      dugMerkeStil: {
+        display: 'inline-block', fontSize: 11, fontWeight: 800, letterSpacing: 'var(--tracking-caps)',
+        textTransform: 'uppercase', padding: '4px 9px', borderRadius: 999,
+        background: st === 'godkjent' || st === 'pagar' ? 'var(--sage-100, #e3e7d9)' : 'var(--clay-100)',
+        color: 'var(--text-heading)',
+      },
+      dugTekstLinje: !a
+        ? 'Vil du bidra i verkstedet — vaske, rydde, sortere glasur? Tida du jobber legges til timene dine når verkstedet har godkjent jobben.'
+        : '«' + a.tekst + '»' + (a.svar ? ' — ' + a.svar : '') + (st === 'godkjent' && a.svart ? ' Godkjent ' + a.svart + '.' : ''),
+      dugKanSporre: vis && !a,
+      dugVenter: st === 'venter',
+      dugSendt: a ? a.sendt : '',
+      dugKanInn: st === 'godkjent',
+      dugPagar: st === 'pagar',
+      dugTilGodkjenning: st === 'til_godkjenning',
+      dugInn: a ? a.inn : '',
+      dugDag: a ? a.dag : '',
+      dugVarighet: a ? a.varighet : '',
+      dugTekst: this.state.dugTekst || '',
+      settDugTekst: (e) => this.setState({ dugTekst: e.target.value }),
+      dugSend: () => {
+        const t = String(this.state.dugTekst || '').trim();
+        if (t.length < 5) { this.setState({ kvittering: 'Skriv hva du vil gjøre', kvitteringDetalj: 'For eksempel «vaske gulvet i glasurrommet».' }); return; }
+        this.dugnadKall({ handling: 'sporr', tekst: t }, 'Forespørselen er sendt');
+      },
+      dugTrekk: () => this.dugnadKall({ handling: 'trekk' }, 'Forespørselen er trukket'),
+      dugApneInn: () => this.setState({ innstRute: 'duginn' }),
+      dugApneUt: () => this.setState({ innstRute: 'dugut' }),
+      dugKnappStil: knapp('var(--sage-500)'),
+      dugKnappUtStil: knapp('var(--lissom-brown)'),
+      dugHarFerdige: !!dg && (dg.ferdige || []).length > 0,
+      dugFerdige: (dg && dg.ferdige) || [],
+    };
   }
 
   /** Stempler ut for ekte, og lukker ruta. */
@@ -33690,8 +34473,19 @@ class Component extends DCLogic {
   // bruker, og henvendelsene fra for ligger der de laa.
 
   componentDidUpdate(prevProps, prevState) {
+    // Handlekurven laa bare i minnet. Naar lesesidene tegnes paa serveren,
+    // er et trykk paa «Om oss» i menyen en sidelasting — og kurven skal
+    // vaere der naar de kommer tilbake til butikken. Lagres i fanen
+    // (sessionStorage), som foer: lukker man fanen, er den borte.
+    // (dc-runtime sender ikke prevState hit — derfor egen huskelapp.)
+    if (this._kurvLagret !== this.state.kurv) {
+      this._kurvLagret = this.state.kurv;
+      try { sessionStorage.setItem('lissom-kurv', JSON.stringify(this.state.kurv || {})); } catch (e) { /* da lever den i minnet */ }
+    }
     // Tilbakeknappen: ett steg per lag som aapnes. Se lagSynk().
     this.lagSynk();
+    // ... og den staar rett under toppen paa den skjermen som vises naa.
+    if (this.erPublisert()) this.tilbakePlasser();
     // Byttet man side uten aa laste paa nytt, telles den. Se maalSide().
     this.maalSide();
     // Aapnet man et kurs eller en vare, telles det. Se maalVare().
@@ -34934,6 +35728,18 @@ class Component extends DCLogic {
         // linjer tekst ville vaert et kall for mye.
         if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null,
           beskjedListe: Array.isArray(d.beskjeder) ? d.beskjeder : [] });
+        // Serversida (app/nett/sider/medlemskap.php) sender «Les mer» hit
+        // som /medlemskap?plan=<navn>. Naar planene er kommet, aapnes den —
+        // det samme som aa trykke paa kortet.
+        if (d && d.planer && this.state.side === 'medlemskap') {
+          let navn = '';
+          try { navn = new URLSearchParams(window.location.search).get('plan') || ''; } catch (e) { /* ingen */ }
+          if (navn && !this._planAapnet) {
+            this._planAapnet = true;
+            const pl = this.planer().find(p => p.navn === navn);
+            if (pl) this.apneMedlemskort(Object.assign({}, pl, { mork: !!pl.fremhevet, merke: pl.merke || (pl.engangs ? 'Prøveperiode' : '') }));
+          }
+        }
       })
       .catch(() => { this._medlemskapHentes = false; });
   }
@@ -36103,6 +36909,7 @@ class Component extends DCLogic {
         if (d && d.planer) {
           this.setState({
             adminPlanerRaa: d.planer,
+            plBarnPrisRaa: d.tilleggBarnPris,
             // Serveren sier om tekstkolonnene finnes. Uten dette tolket
             // skjermen tomt svar som «ingen har skrevet noe» — og skrev at
             // kortet sto tomt paa nettsiden, mens det sto helt riktig der.
@@ -37937,6 +38744,17 @@ class Component extends DCLogic {
    * trodde, ikke det som faktisk staar i basen — og den forskjellen oppdager
    * man forst dagen noe gikk galt.
    */
+  /**
+   * Svaret paa «Bekreft og legg inn». Gikk det, lukkes dialogen. Gikk det
+   * ikke, blir den staaende med serverens grunn synlig (klBFeil) — klKall
+   * har alt lagt den i kvitteringDetalj, og dc-runtime skriver state
+   * synkront, saa den kan leses her.
+   */
+  klBSvar(ok) {
+    if (ok) { this.setState({ klBekreft: null, klBFeil: '' }); return; }
+    this.setState({ klBFeil: this.state.kvitteringDetalj || this.state.kvittering || 'Ble ikke lagret.' });
+  }
+
   klKall(sti, kropp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._klLagrer) return Promise.resolve(false);
@@ -39638,18 +40456,20 @@ class Component extends DCLogic {
             return {
               klBVises: !!b,
               klBTittel: b ? b.kursNavn : '',
+              klBFeil: this.state.klBFeil || '',
+              klBFeilVises: !!this.state.klBFeil,
               klBDato: this.state.klBDato || '',
-              settKlBDato: e => this.setState({ klBDato: e.target.value }),
+              settKlBDato: e => this.setState({ klBDato: e.target.value, klBFeil: '' }),
               klBFra: this.state.klBFra || '',
-              settKlBFra: e => this.setState({ klBFra: e.target.value }),
+              settKlBFra: e => this.setState({ klBFra: e.target.value, klBFeil: '' }),
               klBTil: this.state.klBTil || '',
-              settKlBTil: e => this.setState({ klBTil: e.target.value }),
-              klBHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klBHolder: n }), stil: chipStil(this.state.klBHolder === n, null) })),
-              klBGjentaValg: ['Én gang', 'Hver uke', 'Annenhver uke'].map(n => ({ navn: n, velg: () => this.setState({ klBGjenta: n }), stil: chipStil((this.state.klBGjenta || 'Én gang') === n, null) })),
+              settKlBTil: e => this.setState({ klBTil: e.target.value, klBFeil: '' }),
+              klBHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klBHolder: n, klBFeil: '' }), stil: chipStil(this.state.klBHolder === n, null) })),
+              klBGjentaValg: ['Én gang', 'Hver uke', 'Annenhver uke'].map(n => ({ navn: n, velg: () => this.setState({ klBGjenta: n, klBFeil: '' }), stil: chipStil((this.state.klBGjenta || 'Én gang') === n, null) })),
               klBErGjenta: (this.state.klBGjenta || 'Én gang') !== 'Én gang',
               klBAntall: this.state.klBAntall || '4',
               settKlBAntall: e => this.setState({ klBAntall: e.target.value }),
-              klBAvbryt: () => this.setState({ klBekreft: null }),
+              klBAvbryt: () => this.setState({ klBekreft: null, klBFeil: '' }),
               // Kurset settes opp paa datoen gjennom kurs.php. Gjentas det,
               // gaar det som en serie — da fyller cron paa framover, saa
               // kurset ikke gaar tomt for datoer og forsvinner fra nettsida.
@@ -39675,7 +40495,7 @@ class Component extends DCLogic {
                     handling: 'nydato', kursId: kursId,
                     start: d + ' ' + fra, slutt: til ? d + ' ' + til : '',
                     kursholderId: this.klHolderId(this.state.klBHolder),
-                  }).then(ok => { if (ok) this.setState({ klBekreft: null }); });
+                  }).then(ok => this.klBSvar(ok));
                   return;
                 }
                 // En serie trenger bade start og slutt: regelen sier «torsdager
@@ -39699,7 +40519,7 @@ class Component extends DCLogic {
                   antall: antallGanger,
                   ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),
                   startDato: d,
-                }).then(ok => { if (ok) this.setState({ klBekreft: null }); });
+                }).then(ok => this.klBSvar(ok));
               },
             };
           })(),
@@ -42922,6 +43742,15 @@ class Component extends DCLogic {
         && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
     }
+    if (side === 'minside' && this.state.innlogget && !this.state.dugnad) {
+      this.hentDugnad();
+    }
+    if (side === 'minside' && this.state.innlogget && !this.state.tillegg) {
+      this.hentTillegg();
+    }
+    if ((side === 'adminubesvarte' || side === 'adminoversikt') && !this.state.dugnadAdmin) {
+      this.hentDugnadAdmin();
+    }
     // Feilrapportene. Hentes paa skjermen som viser dem, og paa Oversikt —
     // der staar det et kort naar noe er meldt inn og ikke sett paa enda.
     if ((side === 'adminfeil' || side === 'adminoversikt') && !this.state.feilData) {
@@ -43060,7 +43889,9 @@ class Component extends DCLogic {
     if (side === 'adminnyttig' && !this.state.bevisListe) {
       this.hentBevis();
     }
-    if (side === 'nyttig' && !this.state.offentligNyttig) {
+    // Min side ogsaa: guidene og lenkene staar i fanen Nyttig info der
+    // (15. september 2026).
+    if ((side === 'nyttig' || side === 'minside') && !this.state.offentligNyttig) {
       this.hentNyttig();
     }
 
@@ -44583,11 +45414,13 @@ class Component extends DCLogic {
       // Handlelista, under internbutikken. Bryteren styrer om kortet finnes;
       // serveren svarer «paa» bare naar den staar paa der ogsaa, og uten varer
       // som kan bestilles staar kortet tomt — da er det bedre aa la vaere.
+      // Kortet staar der saa lenge bryteren er paa — ogsaa uten varer.
+      // Eieren, 15. september 2026: «handlelista kan jo vaere tom,
+      // medlemmene skal legge inn oensker her, saa den maa vaere synlig».
       visHandleliste: (() => {
         const paa = this.medlemsvisning() && this.bryterPaa('handleliste');
         if (paa && this.erPublisert()) this.hentHandleliste();
-        return paa && (!this.erPublisert()
-          || (this.state.hlPaa && (this.state.hlVarer || []).length > 0));
+        return paa && (!this.erPublisert() || !!this.state.hlPaa);
       })(),
       ...this.handlelisteVals(),
       // Interne samlinger: vanlige kurs merket «Kun for medlemmer». De laa
@@ -48487,6 +49320,24 @@ class Component extends DCLogic {
       })(),
       erAdminKursdeltakere: side === 'adminkursdeltakere',
       erAdminMedlemskap: side === 'adminmedlemskap',
+      // Prisen paa «Ta med barn» — se api/admin/planer.php.
+      plBarnVis: this.state.plBarnPrisRaa !== null && this.state.plBarnPrisRaa !== undefined,
+      plBarnPris: this.state.plBarnPris !== undefined ? this.state.plBarnPris : String(this.state.plBarnPrisRaa == null ? '' : this.state.plBarnPrisRaa).replace('.', ','),
+      settPlBarnPris: (e) => this.setState({ plBarnPris: e.target.value }),
+      lagrePlBarnPris: () => {
+        const kroner = String(this.state.plBarnPris !== undefined ? this.state.plBarnPris : this.state.plBarnPrisRaa || '').trim();
+        fetch('/api/admin/planer.php', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handling: 'tillegg_barn_pris', kroner }),
+        })
+          .then(r => r.json().then(d => ({ ok: r.ok, d })))
+          .then(({ ok, d }) => {
+            this.setState({ kvittering: ok && d && d.ok ? 'Lagret' : 'Ikke lagret', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+            if (ok && d && d.ok) { this.setState({ plBarnPris: undefined }); this._planerHentes = false; this.hentPlaner(); }
+          })
+          .catch(() => this.setState({ kvittering: 'Ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+      },
       adminNavMedlemskap: this.adminSideMeny(),
       adminNavKursdeltakere: this.adminSideMeny(),
       ...(() => {
@@ -48803,7 +49654,9 @@ class Component extends DCLogic {
       }).map(m => Object.assign(m, {
         // Én linje, ikke to felt limt sammen med et punktum som blir
         // staaende alene naar det ene mangler.
-        undertekst: [m.gruppe, m.kursTekst].filter(Boolean).join(' · '),
+        // «Ta med barn» (15. september 2026): staar paa raden med maaned
+        // og barnets navn, saa verkstedet ser det uten aa aapne personen.
+        undertekst: [m.gruppe, m.kursTekst, m.barn ? 'Barn · ' + m.barn.maanedKort + ' (' + m.barn.barnNavn + (m.barn.barnAlder !== null ? ', ' + m.barn.barnAlder : '') + ')' : ''].filter(Boolean).join(' · '),
         // Et medlemskap kunne bare avsluttes ved at Vipps-avtalen stoppet.
         // En som var meldt inn for haand sto som aktiv i all evighet.
         kanAvslutte: !!m.erMedlem && !m.erAdmin,
@@ -50212,6 +51065,7 @@ class Component extends DCLogic {
       })),
       ingenOvUbesvarte: this.erPublisert()
         && (this.state.adminForesporsler || []).filter(f => f.status === 'Ubesvart').length === 0,
+      ...this.dugnadAdminVals(),
       ...(() => {
         const m = this.state.migStatus;
         const mangler = (m && m.mangler) || [];
@@ -50344,6 +51198,17 @@ class Component extends DCLogic {
                 () => this.vekslBryter('glemtstempling', 'Glemt å stemple ut')),
             rad('Handlelista', this.bryterPaa('handleliste'),
                 () => this.vekslBryter('handleliste', 'Handlelista')),
+            // Eieren, 15. september 2026: dugnad «maa kunne skrus av og paa
+            // og legges sammen de andre bryterne». Migrasjon 189 setter den av.
+            rad('Dugnad', this.bryterPaa('dugnad'),
+                () => this.vekslBryter('dugnad', 'Dugnad')),
+            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),
+                () => this.vekslBryter('dugnadoverforing', 'Overføring av dugnadstimer')),
+            // Eieren, 15. september 2026: «Ta med barn» paa medlemskapet —
+            // «maa og kunne skrus av og paa og legges sammen de andre».
+            // Migrasjon 192 setter den av.
+            rad('Ta med barn', this.bryterPaa('tilleggbarn'),
+                () => this.vekslBryter('tilleggbarn', 'Ta med barn')),
             // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
             // store krukkemsker for medlemmer».
             //
@@ -50438,7 +51303,8 @@ class Component extends DCLogic {
             const nye   = (d.nyeste || []).length;
             const varer = ((d.koer || {}).medlemsvarer) || 0;
             const frys  = ((d.koer || {}).frys) || 0;
-            const venter = nye + varer + frys;
+            const dugn  = ((d.koer || {}).dugnad) || 0;
+            const venter = nye + varer + frys + dugn;
 
             const ubetalte = d.ubetalte || [];
             const sum = ubetalte.reduce((a, u) => a + (u.belopOre || 0), 0);
@@ -50482,6 +51348,7 @@ class Component extends DCLogic {
                        nye   ? linje(nye + (nye === 1 ? ' ny påmelding' : ' nye påmeldinger')) : null,
                        varer ? linje(varer + (varer === 1 ? ' vare til godkjenning' : ' varer til godkjenning')) : null,
                        frys  ? linje(frys + (frys === 1 ? ' søknad om frys' : ' søknader om frys')) : null,
+                       dugn  ? linje(dugn + (dugn === 1 ? ' dugnad' : ' dugnader') + ' å svare på') : null,
                        venter ? null : linje('Ingenting venter'),
                      ].filter(Boolean), venter > 0,
                      () => this.gaaAdmin('adminnyepameldinger', {})),
@@ -50515,6 +51382,17 @@ class Component extends DCLogic {
                 kort('Ovnen',
                      ovIdag ? 'Tømt ' + to(ovT.getHours()) + ':' + to(ovT.getMinutes()) : 'Ikke tømt',
                      [linje(ovIdag ? 'Tømt av ' + (ov.av || 'et medlem') : 'Ingen har trykket i dag')]),
+                // Synlighet som kort, ikke som et aapent felt med alle
+                // bryterne (eieren, 15. september 2026). Tallet er bryterne
+                // som staar av; trykk aapner arket.
+                (() => {
+                  const il = this.state.innholdLagret || {};
+                  const av = Object.keys(il).filter(k => k.indexOf('Vis/') === 0 && il[k] === 'nei').length
+                    + (il['Banner/pa'] === 'nei' ? 1 : 0);
+                  return kort('Synlighet', av ? av + (av === 1 ? ' bryter av' : ' brytere av') : 'Alt vises',
+                    [linje('Trykk for å slå av og på')], false,
+                    () => this.setState({ synlighetApen: true }));
+                })(),
               ],
               klOversiktRadStil: {
                 gridColumn: '1 / -1', display: 'grid',
@@ -50556,6 +51434,23 @@ class Component extends DCLogic {
                   velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
                 { navn: 'Denne måneden',   verdi: (d.omsetning || {}).maned || '',
                   velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
+                // Eieren, 15. september 2026: «en pille paa kalender ved
+                // siden av de andre, som viser denne foresporselen». Tallet
+                // er dugnader som venter paa Monica (nye + tid til
+                // godkjenning); trykk gaar til Ubesvarte, der de behandles.
+                { navn: 'Dugnad', verdi: ((d.koer || {}).dugnad) ? String((d.koer || {}).dugnad) : '',
+                  velg: () => this.gaaAdmin('adminubesvarte', {}) },
+                // Eieren, 15. september 2026: «en pille paa kalender, som
+                // aapner handlelista for videre haandtering». Tallet er
+                // medlemmer som har sendt inn lista si; trykk gaar til
+                // Nettbutikk → Handlelister, der den slaas sammen og prises.
+                { navn: 'Handleliste', verdi: ((d.koer || {}).handleliste) ? String((d.koer || {}).handleliste) : '',
+                  velg: () => this.gaaAdmin('adminbutikk', { butikkFane: 'Handlelister' }) },
+                // Eieren, 15. september 2026: «paa kalender — maa ha pille med
+                // medlemmer». Tallet er aktive medlemmer (aktiv, proeve, pause).
+                { navn: 'Medlemmer', verdi: String((this.state.adminMedlemmer || [])
+                    .filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length || ''),
+                  velg: () => this.gaaAdmin('adminmedlem', {}) },
               ].map(x => Object.assign({}, x, {
                 harVerdi: !!x.verdi,
                 verdiStil: { fontWeight: 800, color: 'var(--lissom-brown)' },
@@ -52310,7 +53205,7 @@ class Component extends DCLogic {
 
         return {
           timerIgjen: fri ? 'Fritt' : String(st.timer.igjen).replace('.', ','),
-          timerMaks: fri ? 'ingen timebegrensning' : 'av ' + st.timer.perMnd + ' timer',
+          timerMaks: fri ? 'ingen timebegrensning' : 'av ' + String(st.timer.perMnd).replace('.', ',') + ' timer',
           // «Fri tilgang» sto her som fast tekst. Den navngir en bestemt
           // plan, og sto derfor med feil navn for alle andre planer uten
           // timegrense. Planen medlemmet har sier det selv.
@@ -52641,6 +53536,26 @@ class Component extends DCLogic {
       // knappen paa Min side og den paa «/stemple» kaller den — ett sted som
       // stempler, ikke to som kan komme i utakt.
       vekslStempling: () => this.vekslStempling(),
+      ...this.innstRute(),
+      ...this.dugnadVals(),
+      ...this.barnVals(),
+      ...this.tilbakeVals(),
+      // Linjene under timestolpen: planen, dugnad og gave — bare naar det
+      // finnes noe ut over planen.
+      ...(() => {
+        const t = (this.state.stempling || {}).timer || {};
+        const plan = t.plan == null ? null : Number(t.plan);
+        const gaver = Number(t.gaver || 0);
+        const dugMin = Number(t.dugnadMin || 0);
+        const linjer = [];
+        if (plan !== null && (gaver > 0 || dugMin > 0)) {
+          linjer.push({ navn: 'Medlemskapet ditt', timer: plan + ' t', stil: { color: 'var(--text-heading)' } });
+          if (dugMin > 0) linjer.push({ navn: '+ Dugnad (godkjent)', timer: '+' + String(Math.round(dugMin / 60 * 100) / 100).replace('.', ',') + ' t', stil: { color: 'var(--sage-600, #5f6a4e)' } });
+          if (gaver > 0) linjer.push({ navn: '+ Timegave fra verkstedet', timer: '+' + gaver + ' t', stil: { color: 'var(--sage-600, #5f6a4e)' } });
+          if ((this.state.dugnad || {}).overforing && dugMin > 0) linjer.push({ navn: 'Dugnadstimer du ikke bruker, tas med til neste måned.', timer: '', stil: {} });
+        }
+        return { timerHarEkstra: linjer.length > 0, timerLinjer: linjer };
+      })(),
       // Dialogen sto i skjemamodus og tegnet tre tomme rader — «Vennens navn»
       // uten noe felt aa skrive i — og «Send invitasjon» satte en bryter i
       // nettleseren. Verkstedet fikk aldri vite at noen hadde invitert en
@@ -54142,7 +55057,14 @@ class Component extends DCLogic {
             const avsnitt = String(lest.innhold || '').split(/\n\s*\n/)
               .map(t => t.trim()).filter(Boolean);
             const bilder = (lest.bilder || []);
-            if (!bilder.length) return avsnitt.map(t => ({ erTekst: true, erBilde: false, tekst: t }));
+            // Et avsnitt som er en mellomtittel, punktliste eller tabell
+            // tegnes som under Nyttig info. Et vanlig avsnitt beholder
+            // linjeskiftene sine (pre-wrap), som foer.
+            const tomt = { erTekst: false, erBilde: false, erH2: false, erH3: false, erLabel: false, erAvsnitt: false, erListe: false, erTabell: false };
+            const tekstBlokker = (t) => /^(#{1,2} |- |\|)/m.test(t)
+              ? this.parseInnhold(t).map(b => Object.assign({}, tomt, b))
+              : [Object.assign({}, tomt, { erTekst: true, tekst: t })];
+            if (!bilder.length) return avsnitt.flatMap(tekstBlokker);
 
             const bredde = { liten: 200, medium: 360, stor: 560 };
             const figur = (b) => {
@@ -54176,7 +55098,7 @@ class Component extends DCLogic {
             const foran = n => bilder.filter(b => (b.etter || 0) === n);
             foran(0).forEach(b => ut.push(somBlokk(b)));
             avsnitt.forEach((t, i) => {
-              ut.push({ erTekst: true, erBilde: false, tekst: t });
+              tekstBlokker(t).forEach(b => ut.push(b));
               foran(i + 1).forEach(b => ut.push(somBlokk(b)));
             });
             // Bilder som peker forbi siste avsnitt staar til slutt.
@@ -59913,9 +60835,11 @@ class Component extends DCLogic {
       adminNavStil: (this.state.vw || 1400) < 980
         ? { display: 'flex', flexDirection: 'row', gap: 4, overflowX: 'auto', overscrollBehaviorX: 'contain', flex: 1 }
         : { display: 'flex', flexDirection: 'column', gap: 2 },
-      ordensregerApen: !!this.state.ordensApen,
-      ordensPilRotasjon: this.state.ordensApen ? 'rotate(180deg)' : 'rotate(0deg)',
-      vekslOrdensregler: () => this.setState(s => ({ ordensApen: !s.ordensApen })),
+      // Aapne fra start. Eieren, 15. september 2026: kortene i Nyttig info
+      // skal aapne direkte. Trykk paa overskrifta lukker som foer.
+      ordensregerApen: this.state.ordensApen !== false,
+      ordensPilRotasjon: this.state.ordensApen !== false ? 'rotate(180deg)' : 'rotate(0deg)',
+      vekslOrdensregler: () => this.setState(s => ({ ordensApen: s.ordensApen === false })),
       heroGradientMove: (e) => {
         const el = e.currentTarget, r = el.getBoundingClientRect();
         const x = e.clientX - r.left, y = e.clientY - r.top;

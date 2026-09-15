@@ -1,0 +1,435 @@
+[
+ {
+  "nr": "1)",
+  "h": "Avtalen",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Avtalen består av disse salgsbetingelsene, opplysninger gitt i bestillingsløsningen og eventuelt særskilt avtalte vilkår. Ved eventuell motstrid mellom opplysningene, går det som særskilt er avtalt mellom partene foran, så fremt det ikke strider mot ufravikelig lovgivning.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Avtalen vil i tillegg bli utfylt av relevante lovbestemmelser som regulerer kjøp mellom næringsdrivende og forbrukere.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-1",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "2)",
+  "h": "Partene",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, Teie, organisasjonsnummer 938 280 819, og betegnes i det følgende som selger/selgeren.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Kjøper er den forbrukeren som foretar bestillingen, og betegnes i det følgende som kjøper/kjøperen.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-2",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "3)",
+  "h": "Pris",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Den oppgitte prisen for varen, tjenesten, kurset eller medlemskapet er den totale prisen kjøper skal betale. Denne prisen inkluderer alle avgifter og tilleggskostnader. Ytterligere kostnader som selger før kjøpet ikke har informert om, skal kjøper ikke bære.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-3",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "4)",
+  "h": "Avtaleinngåelse",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Avtalen er bindende for begge parter når kjøper har sendt sin bestilling til selgeren.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Avtalen er likevel ikke bindende dersom det har forekommet skrive- eller tastefeil i tilbudet fra selgeren eller i kjøperens bestilling, og den annen part innså eller burde ha innsett at det forelå en slik feil.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-4",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "5)",
+  "h": "Betaling",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Betaling skjer i henhold til valgt betalingsløsning ved bestilling. Ved fakturabetaling gjelder betalingsfristen som fremgår av fakturaen.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Ved manglende betaling kan kravet bli sendt til inkasso i henhold til gjeldende regelverk.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-5",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "6)",
+  "h": "Levering",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Levering av varer anses skjedd når kjøper eller kjøpers representant har overtatt varen.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "For kurs, arrangementer og medlemskap anses leveringen skjedd ved bekreftet plass eller aktivert medlemskap.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-6",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "7)",
+  "h": "Risikoen for varen",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Risikoen for varen går over på kjøper når varen er levert i henhold til punkt 6.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-7",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "8)",
+  "h": "Angrerett",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "For kjøp av varer gjelder angrerett i henhold til angrerettloven.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "For kurs, arrangementer og andre tjenester som er knyttet til en bestemt dato eller tidsperiode, gjelder de unntak fra angreretten som følger av angrerettloven.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-8",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "9)",
+  "h": "Forsinkelse og manglende levering",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Dersom selger ikke leverer varen eller tjenesten i henhold til avtalen, gjelder forbrukerkjøpslovens regler om forsinkelse og manglende levering.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-9",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "10)",
+  "h": "Mangel ved varen",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Dersom det foreligger en mangel ved varen, gjelder forbrukerkjøpslovens regler om reklamasjon, retting, omlevering, prisavslag, heving og erstatning.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-10",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "11)",
+  "h": "Selgerens rettigheter ved kjøperens mislighold",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Dersom kjøper ikke betaler eller oppfyller sine forpliktelser etter avtalen, kan selger etter gjeldende lovgivning kreve oppfyllelse, heve avtalen eller kreve erstatning.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-11",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "12)",
+  "h": "Garanti",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Eventuelle garantier kommer i tillegg til kjøperens lovbestemte rettigheter.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-12",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "13)",
+  "h": "Personopplysninger",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Lissom Keramikk & Håndverk AS behandler personopplysninger i samsvar med gjeldende personvernlovgivning. Opplysninger brukes kun i den utstrekning det er nødvendig for å gjennomføre avtalen og driften av virksomheten.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-13",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "14)",
+  "h": "Konfliktløsning",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Klager rettes til selger innen rimelig tid. Partene skal forsøke å løse tvister i minnelighet.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Dersom dette ikke lykkes, kan kjøper kontakte Forbrukerrådet for mekling.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-14",
+  "bolk": "",
+  "harBolk": false
+ },
+ {
+  "nr": "15)",
+  "h": "Kurs og arrangementer",
+  "avsnitt": [
+   {
+    "harH": false,
+    "h": "",
+    "t": "Påmelding til kurs, workshops, arrangementer og andre aktiviteter hos Lissom Keramikk & Håndverk AS er bindende med mindre annet er oppgitt i kursbeskrivelsen.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Ved avbestilling senere enn 2 dager før kursstart refunderes normalt ikke kursavgiften.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Manglende oppmøte gir ikke rett til refusjon eller erstatningsundervisning.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Deltakere plikter å følge instruksjoner fra kursleder og gjeldende HMS-regler.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Lissom Keramikk & Håndverk AS behandler deltakernes arbeider med stor forsiktighet, men kan ikke holdes ansvarlig for skader, sprekker, deformasjoner, glasurfeil eller andre forhold som kan oppstå under tørking, brenning, glasering eller annen bearbeiding av keramikk.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Lissom Keramikk & Håndverk AS forbeholder seg retten til å avlyse eller flytte kurs ved sykdom, force majeure eller for få påmeldte deltakere. Ved avlysning refunderes innbetalt kursavgift i sin helhet.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-kurs",
+  "bolk": "Tilleggsvilkår for kurs, arrangementer og medlemskap",
+  "harBolk": true
+ },
+ {
+  "nr": "16)",
+  "h": "Medlemskap",
+  "avsnitt": [
+   {
+    "harH": true,
+    "h": "Prøvemedlemskap",
+    "t": "Prøvemedlemskap har ingen bindingstid og ingen oppsigelsestid.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": true,
+    "h": "Årsmedlemskap",
+    "t": "Årsmedlemskap har 12 måneders bindingstid fra oppstartsdato.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Etter utløpt bindingstid løper medlemskapet videre automatisk med én måneds oppsigelsestid.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": true,
+    "h": "Øvrige medlemskap",
+    "t": "Alle øvrige medlemskap har to måneders bindingstid fra oppstartsdato.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Etter utløpt bindingstid gjelder én måneds oppsigelsestid.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": true,
+    "h": "Oppsigelse",
+    "t": "Oppsigelse skal skje skriftlig til post@lissom.no.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Oppsigelsestiden regnes fra første dag i påfølgende måned etter at oppsigelsen er mottatt.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Medlemsavgift faktureres ut oppsigelsesperioden.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": true,
+    "h": "HMS og ordensreglement",
+    "t": "Medlemmer plikter å sette seg inn i og følge gjeldende HMS-regler, sikkerhetsrutiner og ordensreglement.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Medlemmer er ansvarlige for forsvarlig bruk av lokaler, verktøy, utstyr og materialer.",
+    "harPunkter": false,
+    "punkter": []
+   },
+   {
+    "harH": true,
+    "h": "Mislighold",
+    "t": "Lissom Keramikk & Håndverk AS forbeholder seg retten til å avslutte medlemskap med umiddelbar virkning og uten varsel dersom medlemmet:",
+    "harPunkter": true,
+    "punkter": [
+     {
+      "t": "Bryter HMS-regler eller ordensreglement."
+     },
+     {
+      "t": "Utsetter andre personer eller utstyr for fare."
+     },
+     {
+      "t": "Unnlater å betale medlemsavgift."
+     },
+     {
+      "t": "Opptrer truende, krenkende eller uakseptabelt overfor ansatte eller andre medlemmer."
+     },
+     {
+      "t": "På annen måte misligholder medlemsavtalen eller virksomhetens retningslinjer."
+     }
+    ]
+   },
+   {
+    "harH": false,
+    "h": "",
+    "t": "Ved slik avslutning refunderes ikke innbetalt medlemsavgift.",
+    "harPunkter": false,
+    "punkter": []
+   }
+  ],
+  "ank": "vilkar-medlem",
+  "bolk": "",
+  "harBolk": false
+ }
+]

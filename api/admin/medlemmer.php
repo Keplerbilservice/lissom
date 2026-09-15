@@ -1962,6 +1962,8 @@ foreach (DB::alle(
     $brukt[(int) $r['member_id']] = (int) $r['min'];
 }
 
+// «Ta med barn» (migrasjon 192): aktivt tillegg denne maaneden, per medlem.
+$tilleggBarn = Tillegg::aktiveNaa();
 $inne = [];
 // Hvor mange kurs hver av dem har betalt for.
 //
@@ -2104,6 +2106,9 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'erAdmin'    => $m['rolle'] === 'admin'
                     || ($m['telefon'] !== null && in_array(normaliser_telefon((string) $m['telefon']), $nodluker, true)),
     'medlemskap' => $m['medlemskap_type'],
+    // Eieren, 15. september 2026: «husk her maa vi ogsaa vise det paa admin
+    // medlemmer saa admin ser dette».
+    'barn'       => isset($tilleggBarn[(int) $m['id']]) ? Tillegg::ut($tilleggBarn[(int) $m['id']]) : null,
     'status'     => $m['status'],
     'startDato'  => $m['start_dato'],
     // Planen bestemmer timetallet, medlemsraden overstyrer. «timer_per_mnd»

@@ -70,11 +70,25 @@ const ROT = path.resolve(import.meta.dirname, '..');
 const KILDE = path.join(ROT, 'lissom-2108.html');
 const MAAL = path.join(ROT, 'lissom-2108-uten-admin.html');
 
+/**
+ * Lesesidene som serveren tegner ferdig (app/nett/sider/). Malene deres
+ * maa staa i lissom-2108.html — det er derfra serveren leser dem — men
+ * kunden trenger dem ikke i appen: et trykk paa «Om oss» i menyen der er
+ * en sidelasting (Component.SERVERSIDER i nettsida). Samme navn som i
+ * app/nett/nett.php SIDER, bare som sc-if-verdien skjermen staar bak.
+ */
+export const LESESKJERMER = [
+  'erForside', 'erOmOss', 'erSporsmal', 'erNyheter', 'erPersonvern', 'erVilkar',
+  'erKursoversikt', 'erKalenderside', 'erNyttig', 'erPop',
+  'erPlakatCone', 'erPlakatInfo', 'erPlakatTrivsel',
+];
+
 export function utenAdmin(kilde) {
   const blokker = [];
   let ut = kilde;
   // Bakfra, saa posisjonene foran ikke flytter seg underveis.
-  const aapninger = [...kilde.matchAll(/\n {2}<sc-if value="\{\{ (erAdmin[A-Za-z0-9_]*) \}\}"/g)];
+  const aapninger = [...kilde.matchAll(/\n {2}<sc-if value="\{\{ (er[A-Za-z0-9_]*) \}\}"/g)]
+    .filter(m => m[1].startsWith('erAdmin') || LESESKJERMER.includes(m[1]));
   for (const m of aapninger.reverse()) {
     const slutt = ut.indexOf('\n  </sc-if>', m.index);
     if (slutt < 0) {
@@ -82,9 +96,16 @@ export function utenAdmin(kilde) {
     }
     const til = slutt + '\n  </sc-if>'.length;
     blokker.push({ navn: m[1], bytes: Buffer.byteLength(ut.slice(m.index, til)) });
-    ut = ut.slice(0, m.index) + '\n  <!-- ' + m[1] + ': sendes bare til innlogget admin -->'
+    ut = ut.slice(0, m.index) + '\n  <!-- ' + m[1] + (m[1].startsWith('erAdmin')
+      ? ': sendes bare til innlogget admin -->'
+      : ': tegnes av serveren, se app/nett/ -->')
        + ut.slice(til);
   }
+  // Merket nettsida kjenner kundeutgaven paa (utenLeseskjermer()).
+  if (!/\r?\n<body>\r?\n/.test(ut)) {
+    throw new Error('Fant ikke <body> aa merke');
+  }
+  ut = ut.replace(/(\r?\n)<body>(\r?\n)/, '$1<body data-lett-utgave>$2');
   return { html: ut, blokker: blokker.reverse() };
 }
 
@@ -139,7 +160,8 @@ if (import.meta.filename === process.argv[1]) {
   const { html, blokker, skript } = await lettUtgave(kilde);
   fs.writeFileSync(MAAL, html);
   const kb = (n) => Math.round(n / 1024);
-  console.log(blokker.length + ' adminskjermer klippet bort.');
+  console.log(blokker.filter(b => b.navn.startsWith('erAdmin')).length + ' adminskjermer og '
+    + blokker.filter(b => !b.navn.startsWith('erAdmin')).length + ' leseskjermer klippet bort.');
   console.log('  skriptet         ' + kb(skript.for) + ' kB → ' + kb(skript.etter) + ' kB');
   console.log('  full utgave      ' + kb(Buffer.byteLength(kilde)) + ' kB');
   console.log('  uten admin       ' + kb(Buffer.byteLength(html)) + ' kB'

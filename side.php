@@ -48,9 +48,21 @@ const SIDE_FIL  = __DIR__ . '/lissom-2108.html';
 // bin/utenadmin.mjs, kontrollert av bin/adminsjekk.mjs.
 const SIDE_LETT = __DIR__ . '/lissom-2108-uten-admin.html';
 const SIDE_KART = __DIR__ . '/seo-kart.json';
-// Toppen av forsida, tegnet ferdig av bin/forhaandstegn.mjs.
-const SIDE_TOPP = __DIR__ . '/forside-topp.html';
 const ROT       = 'https://lissom.no';
+
+// Setter noe inn rett etter <body …>. Etter </head>, ikke bare etter
+// foerste «<body» i fila: ordet staar ogsaa i en kommentar og i et skript
+// lenger oppe. Taggen kan ha attributter — kundeutgaven er merket
+// «<body data-lett-utgave>» av bin/utenadmin.mjs.
+$etterBody = static function (string $html, string $inn): string {
+    $hode = strpos($html, '</head>');
+    $kropp = $hode === false ? false : strpos($html, '<body', $hode);
+    $slutt = $kropp === false ? false : strpos($html, '>', $kropp);
+    if ($slutt === false) {
+        return $html;
+    }
+    return substr_replace($html, $inn, $slutt + 1, 0);
+};
 
 // Markorene rundt hodet som byttes. De staar i lissom-2108.html og er det
 // eneste bindeleddet mellom denne fila og den — endres de der, sier
@@ -155,7 +167,7 @@ if ($html === false) {
 }
 
 /** Sender fila ut slik den er, og avslutter. */
-$ut = static function (string $html) use ($lastBackend): never {
+$ut = static function (string $html) use ($lastBackend, $etterBody): never {
     header('Content-Type: text/html; charset=UTF-8');
     // Testsiden sier at den er det. test.lissom.no er en kopi med ekte
     // data, og en side som ser helt lik ut er en side noen kommer til aa
@@ -168,11 +180,7 @@ $ut = static function (string $html) use ($lastBackend): never {
             $merke = '<div style="position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#C99A2E;color:#3b1d10;'
                 . 'font:700 12px/1 system-ui,sans-serif;letter-spacing:.08em;text-align:center;padding:6px 8px;pointer-events:none">'
                 . 'TEST — dette er testsiden. Ingen e-post eller SMS sendes herfra.</div>';
-            $hode = strpos($html, '</head>');
-            $kropp = $hode === false ? false : strpos($html, '<body>', $hode);
-            if ($kropp !== false) {
-                $html = substr_replace($html, '<body>' . $merke, $kropp, strlen('<body>'));
-            }
+            $html = $etterBody($html, $merke);
         }
     } catch (Throwable) {
         // Basen eller secrets mangler: ingen merkelapp, sida gaar ut som den er.
@@ -490,11 +498,9 @@ $html = substr_replace($html, $hode, $start, $slutt + strlen(MERKE_SLUTT) - $sta
 //
 // JSON-LD gaar inn i <head> med samme merke som skriptet bruker
 // (data-lissom-ld), saa nettleseren bytter det ut med sitt eget naar den er
-// ferdig. Teksten gaar inn rett etter <body>; paa forsida limes den
-// ferdigtegnede toppen inn foran den etterpaa (i vanlig flyt, saa teksten
-// foelger rett under — se bin/forhaandstegn.mjs). Skriptet i lissom-2108.html fjerner
-// teksten naar den ekte skjermen staar. Gaar noe galt, gaar sida ut uten,
-// som foer.
+// ferdig. Teksten gaar inn rett etter <body>. Skriptet i lissom-2108.html
+// fjerner teksten naar den ekte skjermen staar. Gaar noe galt, gaar sida ut
+// uten, som foer.
 $robot = null;
 if (!$ikkeISoket && $d !== null) {
     try {
@@ -504,6 +510,39 @@ if (!$ikkeISoket && $d !== null) {
         $robot = null;
     }
 }
+// ── Serversidene ──────────────────────────────────────────────────────
+//
+// Kundesidene tegnes ferdig paa serveren — app/nett/. Eieren, 15.
+// september 2026: «jeg vil ha den beste siden og den beste
+// brukeropplevelsen». Hodet er det samme som over ($d), JSON-LD den samme
+// som Robottekst lager; bare kroppen er en annen: ferdig HTML i stedet for
+// appen. Bare adressene Nett kjenner (Nett::SIDER) gaar denne veien.
+//
+// Gaar tegningen galt — basen, en feil i en mal — gaar appen ut som foer.
+// En side som tegnes tregt er bedre enn en som ikke tegnes.
+// Ogsaa adresser uten oppfoering i seo-kart.json (/ferdigbrent): da uten
+// egen tittel, og utenfor soeket — som appen ville gitt dem.
+if (true) {
+    try {
+        $lastBackend();
+        // Nettsidas rot (der lissom-2108.html, nett.css og bildene ligger).
+        // Paa webhotellet ligger app/ utenfor public_html, saa Nett kan
+        // ikke regne seg fram til rota fra sin egen plassering.
+        if (!defined('NETT_ROT')) { define('NETT_ROT', __DIR__); }
+        require_once APP_DIR . '/nett/nett.php';
+        if (Nett::kan($adresse)) {
+            $side = Nett::tegn($adresse, $d ?? ['index' => 'noindex'], $robot['ld'] ?? []);
+            if (is_string($side) && $side !== '') {
+                $ut($side);
+            }
+        }
+    } catch (Throwable $e) {
+        if (function_exists('logg')) {
+            logg('NETT', ['adresse' => $adresse, 'feil' => $e->getMessage(), 'fil' => $e->getFile() . ':' . $e->getLine()]);
+        }
+    }
+}
+
 if ($robot !== null) {
     $ld = json_encode($robot['ld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     $hodeSlutt = strpos($html, '</head>');
@@ -513,75 +552,7 @@ if ($robot !== null) {
         $html = substr_replace($html, '<script type="application/ld+json" data-lissom-ld="1">' . $ld . '</script>' . "\n", $hodeSlutt, 0);
     }
     if ($robot['html'] !== '') {
-        $hodeSlutt = strpos($html, '</head>');
-        $kropp = $hodeSlutt === false ? false : strpos($html, '<body>', $hodeSlutt);
-        if ($kropp !== false) {
-            $html = substr_replace($html, '<body>' . "\n" . $robot['html'], $kropp, strlen('<body>'));
-        }
-    }
-}
-
-// ── Toppen av forsida, ferdig tegnet ────────────────────────────────────
-//
-// Nettsida er én fil som dc-runtime bygger om til React etter at den er
-// lastet. Fram til det er ferdig staar <x-dc> med «display:none», og den
-// besokende ser ingenting. PageSpeed 28. august, mobil: tid til foerste
-// byte 130 ms, forsinkelse for gjengivelse 2450 ms.
-//
-// Menylinja og heroen — alt over skjermkanten — ligger derfor ferdig tegnet
-// i forside-topp.html, laget av bin/forhaandstegn.mjs fra den samme malen
-// og de samme stilene. Den limes inn rett etter <body>, nettleseren tegner
-// den med det samme, og skriptet i hodet bytter den mot den ekte i samme
-// bilde naar dc-runtime er ferdig.
-//
-// Bare forsida. De andre sidene har sine egne topper, og de er ikke tegnet.
-//
-// Mangler fila, gaar sida ut uten. Da er den treg, ikke odelagt.
-if ($adresse === '/') {
-    $topp = @file_get_contents(SIDE_TOPP);
-    if (is_string($topp) && $topp !== '') {
-        // Teksten eieren har skrevet under Nettsiden → Innhold.
-        //
-        // Det som staar i fila er verdien slik den var da den ble bygget.
-        // Hvert felt er merket «data-innh="Forside/0/Overskrift"», og
-        // innholdet byttes mot det som ligger i basen. Endrer eieren
-        // teksten, endres ogsaa forhaandstegningen — uten ny bygging.
-        //
-        // «??» og ikke «||», samme regel som innh() i nettsida: tommer
-        // eieren et felt med vilje, skal teksten bort, ikke komme tilbake.
-        try {
-            $lastBackend();
-            $rader = DB::alle(
-                "SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'Forside/0/%'"
-            );
-            $lagret = [];
-            foreach ($rader as $r) { $lagret[(string) $r['nokkel']] = (string) $r['verdi']; }
-            if ($lagret !== []) {
-                $topp = (string) preg_replace_callback(
-                    '~(<span class="sc-interp" data-innh="([^"]*)">)(.*?)(</span>)~su',
-                    static function (array $m) use ($lagret): string {
-                        $n = htmlspecialchars_decode($m[2], ENT_QUOTES);
-                        if (!array_key_exists($n, $lagret)) { return $m[0]; }
-                        return $m[1]
-                             . htmlspecialchars($lagret[$n], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-                             . $m[4];
-                    },
-                    $topp
-                );
-            }
-        } catch (Throwable) {
-            // Basen er nede. Da staar teksten fra byggingen, og den er
-            // riktig helt til noen har endret den.
-        }
-
-        // Etter </head>, ikke bare etter foerste «<body>» i fila: ordet
-        // staar ogsaa i en kommentar og i et skript lenger oppe, og en
-        // strpos uten startpunkt traff kommentaren.
-        $hode = strpos($html, '</head>');
-        $kropp = $hode === false ? false : strpos($html, '<body>', $hode);
-        if ($kropp !== false) {
-            $html = substr_replace($html, '<body>' . "\n" . $topp, $kropp, strlen('<body>'));
-        }
+        $html = $etterBody($html, "\n" . $robot['html']);
     }
 }
 

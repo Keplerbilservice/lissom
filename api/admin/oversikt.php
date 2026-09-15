@@ -575,6 +575,16 @@ Svar::json([
         'frys' => DB::harTabell('medlem_frys')
             ? (int) DB::verdi("SELECT COUNT(*) FROM medlem_frys WHERE status = 'sokt'")
             : 0,
+        // Dugnad som venter paa Monica: nye foresporsler og tid til
+        // godkjenning (migrasjon 189). Pilla paa kalenderen viser tallet.
+        'dugnad' => DB::harTabell('dugnad')
+            ? (int) DB::verdi("SELECT COUNT(*) FROM dugnad WHERE status IN ('venter','til_godkjenning')")
+            : 0,
+        // Handlelister som er sendt inn og ikke bestilt (migrasjon 184): antall
+        // medlemmer med linjer som venter. Pilla paa kalenderen viser tallet.
+        'handleliste' => DB::harTabell('handleliste_linjer')
+            ? (int) DB::verdi("SELECT COUNT(DISTINCT member_id) FROM handleliste_linjer WHERE status = 'sendt' AND bestilt_at IS NULL")
+            : 0,
     ],
     // ── De mest populaere kursene ─────────────────────────────────────
     //

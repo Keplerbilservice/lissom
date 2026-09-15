@@ -9,6 +9,7 @@
  *   POST handling=krav           ett Vipps-krav per medlem
  *   POST handling=bestill        { leverandorId }          e-post til leverandoren
  *   POST handling=leverandor     { id, epost, bestillingsmaate }
+ *   POST handling=nyleverandor   { navn, epost }             ny leverandoer
  *   POST handling=gebyr          { prosent }
  *
  * Eieren, 13. september 2026: «listen som oversendes admin maa slaas sammen
@@ -67,16 +68,18 @@ function handleliste_kroner(int $ore): string
 function handleliste_linjer(): array
 {
     return DB::alle(
+        // Oensker i fritekst (migrasjon 191) har ingen vare: LEFT JOIN, og
+        // teksten staar der tittelen ellers staar.
         "SELECT h.id, h.member_id, h.product_id, h.antall, h.status, h.pris_ore, h.order_id,
-                p.tittel, p.artikkelnr, p.leverandor_id,
+                COALESCE(p.tittel, h.tekst) AS tittel, COALESCE(p.artikkelnr, '') AS artikkelnr, p.leverandor_id,
                 m.navn AS medlemsnavn, m.telefon,
                 l.navn AS leverandor
            FROM handleliste_linjer h
-           JOIN products p ON p.id = h.product_id
+      LEFT JOIN products p ON p.id = h.product_id
            JOIN members  m ON m.id = h.member_id
       LEFT JOIN leverandorer l ON l.id = p.leverandor_id
           WHERE h.status IN ('sendt', 'fjernet')
-          ORDER BY p.artikkelnr, p.tittel, m.navn"
+          ORDER BY (h.product_id IS NULL), p.artikkelnr, p.tittel, h.tekst, m.navn"
     );
 }
 
@@ -101,12 +104,14 @@ function handleliste_bilde(): array
     // Samlet per vare — det er slik den bestilles.
     $varer = [];
     foreach ($linjer as $l) {
-        $n = (int) $l['product_id'];
+        // Et oenske er sin egen linje: negativ «produktId» = linje-id, saa
+        // fjern/pris/angre treffer akkurat den (se handleliste_hvor()).
+        $n = $l['product_id'] === null ? -(int) $l['id'] : (int) $l['product_id'];
         if (!isset($varer[$n])) {
             $varer[$n] = [
                 'produktId'  => $n,
                 'nummer'     => (string) $l['artikkelnr'],
-                'navn'       => (string) $l['tittel'],
+                'navn'       => (string) $l['tittel'] . ($l['product_id'] === null ? ' (ønske)' : ''),
                 'leverandor' => (string) ($l['leverandor'] ?? ''),
                 'antall'     => 0,
                 'prisOre'    => $l['pris_ore'] === null ? null : (int) $l['pris_ore'],
@@ -194,16 +199,25 @@ Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling');
 
+/** WHERE-biten som treffer en vare (alle linjene) eller ett oenske (én linje). */
+function handleliste_hvor(int $produktId): array
+{
+    return $produktId < 0
+        ? ['sql' => 'id = :p AND product_id IS NULL', 'p' => -$produktId]
+        : ['sql' => 'product_id = :p', 'p' => $produktId];
+}
+
 if ($handling === 'fjern' || $handling === 'angre') {
     $produktId = Foresporsel::heltall('produktId');
     $til = $handling === 'fjern' ? 'fjernet' : 'sendt';
     $fra = $handling === 'fjern' ? 'sendt' : 'fjernet';
+    $hvor = handleliste_hvor($produktId);
     DB::kjor(
         "UPDATE handleliste_linjer SET status = :til
-          WHERE product_id = :p AND status = :fra AND order_id IS NULL",
-        ['til' => $til, 'p' => $produktId, 'fra' => $fra]
+          WHERE {$hvor['sql']} AND status = :fra AND order_id IS NULL",
+        ['til' => $til, 'p' => $hvor['p'], 'fra' => $fra]
     );
-    revider('handleliste_' . $handling, 'product', $produktId);
+    revider('handleliste_' . $handling, $produktId < 0 ? 'handleliste_onske' : 'product', abs($produktId));
     Svar::ok(handleliste_bilde());
 }
 
@@ -213,10 +227,11 @@ if ($handling === 'pris') {
     if ($kroner < 0 || $kroner > 100000) {
         Svar::feil('Prisen må være mellom null og 100 000 kroner.');
     }
+    $hvor = handleliste_hvor($produktId);
     DB::kjor(
         "UPDATE handleliste_linjer SET pris_ore = :pris
-          WHERE product_id = :p AND status = 'sendt' AND order_id IS NULL",
-        ['pris' => (int) round($kroner * 100), 'p' => $produktId]
+          WHERE {$hvor['sql']} AND status = 'sendt' AND order_id IS NULL",
+        ['pris' => (int) round($kroner * 100), 'p' => $hvor['p']]
     );
     Svar::ok(handleliste_bilde());
 }
@@ -249,6 +264,30 @@ if ($handling === 'leverandor') {
     Svar::ok(handleliste_bilde());
 }
 
+// En ny leverandoer. Eieren, 15. september 2026: «jeg vil også kunne legge
+// til Scan-Form info@scan-form.no». Navnet er unikt (uq_leverandor_navn);
+// finnes det fra foer — ogsaa som deaktivert — vekkes raden i stedet for aa
+// feile, og adressen settes om den er oppgitt.
+if ($handling === 'nyleverandor') {
+    $navn = mb_substr(trim(Foresporsel::tekst('navn')), 0, 191);
+    if ($navn === '') {
+        Svar::feil('Leverandøren må ha et navn.');
+    }
+    $epost = mb_substr(trim(Foresporsel::tekst('epost')), 0, 191);
+    if ($epost !== '' && !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Det er ikke en gyldig e-postadresse.');
+    }
+    $rad = DB::en('SELECT id, epost FROM leverandorer WHERE navn = :n', ['n' => $navn]);
+    if ($rad !== null) {
+        DB::oppdater('leverandorer', ['aktiv' => 1, 'epost' => $epost !== '' ? $epost : (string) $rad['epost']], ['id' => (int) $rad['id']]);
+        $id = (int) $rad['id'];
+    } else {
+        $id = DB::settInn('leverandorer', ['navn' => $navn, 'epost' => $epost, 'bestillingsmaate' => 'epost', 'aktiv' => 1]);
+    }
+    revider('leverandor_ny', 'leverandor', $id, ['navn' => $navn]);
+    Svar::ok(handleliste_bilde() + ['lagtTil' => $navn]);
+}
+
 // ----------------------------------------------------------------- kravet
 //
 // Ett krav per medlem, ikke ett per vare. Kravet er en helt vanlig ordre med
@@ -276,8 +315,8 @@ if ($handling === 'krav') {
         }
 
         $linjer = DB::alle(
-            "SELECT h.id, h.antall, h.pris_ore, p.tittel, p.id AS pid
-               FROM handleliste_linjer h JOIN products p ON p.id = h.product_id
+            "SELECT h.id, h.antall, h.pris_ore, COALESCE(p.tittel, h.tekst) AS tittel, p.id AS pid
+               FROM handleliste_linjer h LEFT JOIN products p ON p.id = h.product_id
               WHERE h.member_id = :m AND h.status = 'sendt'
                 AND h.pris_ore IS NOT NULL AND h.order_id IS NULL",
             ['m' => $medlemId]
@@ -315,7 +354,7 @@ if ($handling === 'krav') {
             foreach ($linjer as $l) {
                 DB::settInn('order_lines', [
                     'order_id'   => $id,
-                    'product_id' => (int) $l['pid'],
+                    'product_id' => $l['pid'] === null ? null : (int) $l['pid'],
                     'tittel'     => (string) $l['tittel'],
                     'antall'     => (int) $l['antall'],
                     'pris_ore'   => (int) $l['pris_ore'],

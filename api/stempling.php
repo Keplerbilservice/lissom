@@ -314,6 +314,12 @@ Svar::json([
     'timer' => [
         'brukt'    => Stempling::timer($brukt),
         'bruktMin' => $brukt,
+        // Hvor taket kommer fra: planen, gavetimer og godkjent dugnad. Min
+        // side viser dem som egne linjer (eieren, 15. september 2026: «de
+        // maa paa en maate se at det er lagt til tid»).
+        'plan'      => Medlemskap::timerFor($medlem),
+        'gaver'     => Medlemskap::gavetimer($id),
+        'dugnadMin' => Dugnad::minutterTilgode($medlem),
         // NULL betyr fri tilgang — hverken planen eller medlemsraden setter
         // en grense. Da er det ingenting aa telle ned mot.
         'perMnd'   => $perMnd,

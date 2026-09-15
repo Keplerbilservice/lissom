@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
-krev_admin();
+$jeg = krev_admin();
 
 /**
  * Kolonnene migrasjon 032 la til.
@@ -70,6 +70,9 @@ if (Foresporsel::metode() === 'GET') {
         // kjort. Uten dette ser skjermen komplett ut, og feilen dukker
         // forst opp naar noen trykker Lagre.
         'tekstMulig' => $harTekst(),
+        // «Ta med barn» (migrasjon 192): prisen ligger i innstillinger, ikke i
+        // koden. Redigeres paa denne skjermen, under planene.
+        'tilleggBarnPris' => Tillegg::klar() ? Tillegg::prisOre() / 100 : null,
         'planer' => array_map(static fn($p) => [
             'navn'      => (string) $p['navn'],
             'pris'      => (int) $p['pris_ore'] / 100,
@@ -123,6 +126,24 @@ $brukesAv = static function (string $navn): int {
         ['a' => $navn, 'b' => $navn]
     );
 };
+
+// Prisen paa «Ta med barn». Eieren, 15. september 2026: 599,- per maaned.
+if ($handling === 'tillegg_barn_pris') {
+    if (!Tillegg::klar()) {
+        Svar::feil('Kjør oppdatering 192 først.');
+    }
+    $kroner = (float) str_replace(',', '.', Foresporsel::tekst('kroner'));
+    if ($kroner < 1 || $kroner > 100000) {
+        Svar::feil('Prisen må være mellom 1 og 100 000 kroner.');
+    }
+    DB::kjor(
+        'INSERT INTO innstillinger (nokkel, verdi, endret_av) VALUES (:n, :v, :a)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
+        ['n' => 'tillegg_barn_pris_ore', 'v' => (string) (int) round($kroner * 100), 'a' => (int) $jeg['id']]
+    );
+    revider('tillegg_barn_pris', null, null, ['kroner' => $kroner]);
+    Svar::ok(['beskjed' => 'Prisen på «Ta med barn» er ' . Booking::kroner((int) round($kroner * 100)) . ' per måned.']);
+}
 
 if ($handling === 'lagre') {
     $navn    = mb_substr(trim((string) ($kropp['navn'] ?? '')), 0, 64);

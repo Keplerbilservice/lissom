@@ -1708,9 +1708,6 @@ window.__resources = {
   .lx-bryterhoyre label { flex-direction: row-reverse; }
 
   .lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }
-  /* ← Tilbake ligger nederst til venstre; over bunnmenyen naar den vises. */
-  .lx-tilbake { bottom: 16px; }
-  html.lx-laast .lx-tilbake { bottom: 78px; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og
        dytter menyen ut av skjermen. */
@@ -23167,7 +23164,7 @@ window.__resources = {
      forsida — der er det ingenting aa gaa tilbake til. Ligger over
      bunnmenyene (html.lx-laast, se skriptet oeverst). -->
 <sc-if value="{{ tilbakeVis }}" hint-placeholder-val="{{ false }}">
-  <button type="button" class="lx-tilbake" onClick="{{ tilbakeGaa }}" aria-label="Tilbake" style="{{ tilbakeStil }}">← Tilbake</button>
+  <button type="button" class="lx-tilbake" onClick="{{ tilbakeGaa }}" aria-label="Tilbake" title="Tilbake" style="{{ tilbakeStil }}">←</button>
 </sc-if>
 
 <!-- «Er du sikker?» foer innstempling. Eieren, 15. september 2026: «man
@@ -32367,6 +32364,11 @@ class Component extends DCLogic {
     }, Component.ROT_OPPHOLD - Component.BUT_OPPHOLD);
     this._resize = () => this.setState({ vw: window.innerWidth });
     window.addEventListener('resize', this._resize);
+    // Tilbakeknappen foelger toppen naar man ruller. Se tilbakePlasser().
+    this._tilbakeRull = () => this.tilbakePlasser();
+    window.addEventListener('scroll', this._tilbakeRull, { passive: true });
+    window.addEventListener('resize', this._tilbakeRull);
+    this.tilbakePlasser();
     // Innloggingen gikk ut. Si fra én gang, og send til innlogging — framfor
     // aa la eieren staa og trykke paa knapper som ikke kan virke.
     this._utlogget = () => {
@@ -33755,13 +33757,64 @@ class Component extends DCLogic {
         this.setState({ side: 'forside', fhRolle: '', fhFra: '' });
         window.scrollTo(0, 0);
       },
+      // Liten og rund, oeverst til venstre rett under toppen. Eieren,
+      // 15. september 2026: «den kan godt vaere mindre ... jeg vil ikke
+      // flytte paa noen logo». Hoeyden maales — se tilbakePlasser().
       tilbakeStil: {
-        position: 'fixed', left: 14, zIndex: 530, appearance: 'none', cursor: 'pointer',
-        border: '1px solid rgba(244,235,222,.35)', borderRadius: 999, padding: '10px 16px',
-        font: 'var(--type-body-sm)', fontWeight: 700, background: 'var(--lissom-brown)', color: 'var(--clay-50)',
-        boxShadow: '0 6px 18px rgba(46,16,2,.28)',
+        position: 'fixed', left: 12, top: this._tilbakeTopp || 96, zIndex: 530, appearance: 'none', cursor: 'pointer',
+        width: 38, height: 38, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        border: '1px solid rgba(244,235,222,.35)', borderRadius: '50%',
+        font: '700 20px/1 var(--font-display)', background: 'var(--lissom-brown)', color: 'var(--clay-50)',
+        boxShadow: '0 4px 14px rgba(46,16,2,.28)',
       },
     };
+  }
+
+  /**
+   * Hvor hoeyt oppe knappen skal staa: rett under det som ligger oeverst
+   * paa skjermen akkurat naa — testbaandet, den gule toppen, adminlinja.
+   * Toppen er ikke lik overalt: paa kundesidene er den fast (sticky), paa
+   * Min side og i admin ruller den bort. Derfor maales det som faktisk
+   * staar oeverst (elementFromPoint), og maales paa nytt naar man ruller.
+   * Finnes det ingen linje der, staar knappen 10 px fra kanten.
+   */
+  tilbakeTopp() {
+    const x = Math.round(window.innerWidth / 2);
+    let y = 0, topp = 0;
+    // Testbaandet oeverst paa test.lissom.no ligger oppaa toppen og slipper
+    // trykk gjennom seg (pointer-events: none), saa elementFromPoint ser
+    // det ikke. Det tar ikke plass, men knappen skal ikke gjemme seg bak det.
+    for (const d of document.body.children) {
+      if (d.tagName === 'DIV' && d.style.position === 'fixed' && d.style.top === '0px' && d.offsetHeight < 50) topp = d.offsetHeight;
+    }
+    for (let i = 0; i < 3; i++) {
+      const el = document.elementFromPoint(x, y + 3);
+      if (!el || el === document.documentElement || el === document.body || el.classList.contains('lx-tilbake')) break;
+      // Linja er det ytterste elementet som er (nesten) like bredt som
+      // skjermen, ikke for hoeyt, og som begynner der forrige linje sluttet
+      // — ikke innhold som tilfeldigvis krysser punktet.
+      let linje = null;
+      for (let e = el; e && e !== document.body; e = e.parentElement) {
+        const r = e.getBoundingClientRect();
+        if (r.width >= window.innerWidth * 0.95 && r.height >= 20 && r.height <= 240 && r.top >= y - 4 && r.top <= y + 3 && r.bottom > y + 3) linje = r;
+      }
+      if (!linje) break;
+      topp = Math.max(topp, linje.bottom);
+      y = linje.bottom;
+    }
+    return Math.round(topp) + 10;
+  }
+
+  /** Setter hoeyden rett paa knappen — ingen ny tegning for aa rulle. */
+  tilbakePlasser() {
+    if (this._tilbakeRaf) return;
+    this._tilbakeRaf = requestAnimationFrame(() => {
+      this._tilbakeRaf = 0;
+      const k = document.querySelector('.lx-tilbake');
+      if (!k) return;
+      const t = this.tilbakeTopp();
+      if (t !== this._tilbakeTopp) { this._tilbakeTopp = t; k.style.top = t + 'px'; }
+    });
   }
 
   /** Ruta «Stemple inn naa?» — og de to for dugnad. Én rute, tre tilstander. */
@@ -34274,6 +34327,8 @@ class Component extends DCLogic {
   componentDidUpdate(prevProps, prevState) {
     // Tilbakeknappen: ett steg per lag som aapnes. Se lagSynk().
     this.lagSynk();
+    // ... og den staar rett under toppen paa den skjermen som vises naa.
+    if (this.erPublisert()) this.tilbakePlasser();
     // Byttet man side uten aa laste paa nytt, telles den. Se maalSide().
     this.maalSide();
     // Aapnet man et kurs eller en vare, telles det. Se maalVare().

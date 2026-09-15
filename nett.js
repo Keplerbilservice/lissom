@@ -123,6 +123,24 @@
     for (var i = 0; i < but.length; i++) { if (i === n) but[i].removeAttribute('hidden'); else but[i].setAttribute('hidden', ''); }
   });
 
+  /* ── Appen, i bakgrunnen ────────────────────────────────────────────── */
+  // «Book», «Min side» og kassa er appen (lissom-2108.html). Den hentes
+  // naar sida er ferdig lest og nettleseren har ro, saa den ligger i
+  // bufferen naar noen trykker — og ikke foer: som <link rel="prefetch"> i
+  // hodet tok den baandbredde fra bildene (maalt 15. september 2026: heroen
+  // paa PC 1,9 s senere). Ikke paa spare-data eller treg linje.
+  function hentApp() {
+    try {
+      var c = navigator.connection || {};
+      if (c.saveData || /2g/.test(c.effectiveType || '')) return;
+    } catch (e) {}
+    var l = d.createElement('link'); l.rel = 'prefetch'; l.href = '/booking'; l.as = 'document';
+    d.head.appendChild(l);
+  }
+  window.addEventListener('load', function () {
+    if ('requestIdleCallback' in window) requestIdleCallback(hentApp, { timeout: 8000 }); else setTimeout(hentApp, 4000);
+  });
+
   /* ── Samtykke og maaling ────────────────────────────────────────────── */
   // Ingen maaling foer noen har sagt ja — samme noekkel («lissom-analyse»)
   // og samme rekkefoelge (consent default → update → config) som i appen.

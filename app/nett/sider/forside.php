@@ -225,5 +225,10 @@ $rotJson = json_encode(array_map(static fn(array $r): array => [
 return [
     'kropp'  => $h,
     'aktiv'  => 'Forside',
+    // Bildet i hjertet er det stoerste som tegnes paa PC (LCP). Det ligger
+    // som bakgrunn i en div, saa nettleseren finner det foerst naar CSS-en
+    // er lest — med mindre vi sier fra her. Bare paa PC: paa telefon er
+    // hjertet skjult, og der skal ikke bildet lastes i det hele tatt.
+    'hode'   => '<link rel="preload" as="image" href="' . $e($heroBilde) . '" media="(min-width: 761px)">' . "\n",
     'skript' => 'window.lissomRot = ' . str_replace('</', '<\/', (string) $rotJson) . ';',
 ];

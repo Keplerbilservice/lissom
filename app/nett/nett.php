@@ -71,13 +71,53 @@ final class Nett
         if (!self::kan($adresse)) {
             return null;
         }
+        // Ferdig tegnet for kort tid siden? Da gaar den samme ut igjen.
+        //
+        // Sida spoer basen etter katalogen, aapningstidene, varene og
+        // innholdet — 30–40 spoerringer. Maalt paa test.lissom.no 15.
+        // september 2026: tid til foerste byte 150–860 ms, og 1,9 s i ett
+        // maal paa PC. Appens HTML var statisk og gikk ut paa ~130 ms. Med
+        // bufferen gaar de fleste besoek ut paa samme tid; det som er nytt i
+        // basen (en plass som ble tatt, en tekst som ble endret) er ute
+        // innen ett minutt.
+        $buffer = self::bufferFil($adresse);
+        if ($buffer !== null && is_file($buffer) && filemtime($buffer) > time() - self::BUFFER_SEK) {
+            $lest = @file_get_contents($buffer);
+            if (is_string($lest) && $lest !== '') {
+                return $lest;
+            }
+        }
+
         $fil = __DIR__ . '/sider/' . self::SIDER[$adresse] . '.php';
-        /** @var array{kropp:string,aktiv:string,overlay?:bool,skript?:string} $side */
+        /** @var array{kropp:string,aktiv:string,hode?:string,skript?:string} $side */
         $side = (static function () use ($fil): array {
             return require $fil;
         })();
 
-        return self::dokument($adresse, $seo, $ld, $side);
+        $html = self::dokument($adresse, $seo, $ld, $side);
+        if ($buffer !== null) {
+            // Skriv til en midlertidig fil og bytt: en leser skal aldri faa
+            // en halv fil.
+            $tmp = $buffer . '.' . getmypid() . '.tmp';
+            if (@file_put_contents($tmp, $html) !== false) {
+                @rename($tmp, $buffer);
+            }
+        }
+        return $html;
+    }
+
+    /** Hvor lenge en tegnet side gaar ut igjen som den er. */
+    public const BUFFER_SEK = 60;
+
+    /** Fila sida bufres i, eller null naar det ikke finnes noe sted aa skrive. */
+    private static function bufferFil(string $adresse): ?string
+    {
+        $mappe = sys_get_temp_dir();
+        if (!is_dir($mappe) || !is_writable($mappe)) {
+            return null;
+        }
+        // Miljoeet er med: test og produksjon kan dele tmp paa webhotellet.
+        return $mappe . '/lissom-nett-' . hash('xxh128', Config::miljo() . '|' . Config::nettsted() . '|' . $adresse) . '.html';
     }
 
     // ── Innholdet eieren redigerer ──────────────────────────────────────
@@ -267,11 +307,6 @@ final class Nett
             }
         }
 
-        // Appen hentes i bakgrunnen naar sida er lest, saa «Book» og «Min
-        // side» svarer med en gang. Lav prioritet: den skal ikke konkurrere
-        // med bildene paa sida.
-        $app = '/booking';
-
         $gaId = trim((string) (self::lagret()['Marked/GA-id'] ?? ''));
         $gtmId = trim((string) (self::lagret()['Marked/GTM-id'] ?? ''));
         $maal = json_encode(['ga' => $gaId, 'gtm' => $gtmId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -312,7 +347,7 @@ final class Nett
             . '<link rel="preload" href="/fonts/alegreya-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>' . "\n"
             . '<link rel="preload" href="/fonts/bitter-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>' . "\n"
             . "<style>\n" . self::css() . "\n</style>\n"
-            . '<link rel="prefetch" href="' . $e($app) . '" as="document">' . "\n"
+            . (string) ($side['hode'] ?? '')
             . "</head>\n<body>\n"
             . $side['kropp']
             . Deler::samtykke()

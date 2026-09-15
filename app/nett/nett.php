@@ -47,6 +47,20 @@ final class Nett
 
     /** Adressen som tegnes naa — for maler som tegner flere adresser. */
     public static string $adresse = '/';
+    /** Kursets adresse (slug) naar adressen er /kurs/<slug>. */
+    public static string $slug = '';
+
+    /** Fila som tegner adressen, eller null. Kurssidene kjennes paa moensteret. */
+    private static function fil(string $adresse): ?string
+    {
+        if (isset(self::SIDER[$adresse])) {
+            return self::SIDER[$adresse];
+        }
+        if (preg_match('~^/kurs/([a-z0-9-]+)$~i', $adresse) === 1) {
+            return 'kursside';
+        }
+        return null;
+    }
 
     /**
      * Sporringen som betyr noe for sida (filtrene paa kurssida), renset:
@@ -78,7 +92,8 @@ final class Nett
 
     public static function kan(string $adresse): bool
     {
-        return isset(self::SIDER[$adresse]) && is_file(__DIR__ . '/sider/' . self::SIDER[$adresse] . '.php');
+        $fil = self::fil($adresse);
+        return $fil !== null && is_file(__DIR__ . '/sider/' . $fil . '.php');
     }
 
     /**
@@ -111,11 +126,17 @@ final class Nett
             }
         }
 
-        $fil = __DIR__ . '/sider/' . self::SIDER[$adresse] . '.php';
-        /** @var array{kropp:string,aktiv:string,hode?:string,skript?:string} $side */
-        $side = (static function () use ($fil): array {
+        $fil = __DIR__ . '/sider/' . self::fil($adresse) . '.php';
+        self::$slug = preg_match('~^/kurs/([a-z0-9-]+)$~i', $adresse, $m) === 1 ? $m[1] : '';
+        /** @var array{kropp:string,aktiv:string,hode?:string,skript?:string}|null $side */
+        $side = (static function () use ($fil): ?array {
             return require $fil;
         })();
+        // Malen fant ikke det den skulle tegne (et kurs som ikke finnes):
+        // appen tar over, som foer, og svarer 404 der.
+        if ($side === null) {
+            return null;
+        }
 
         $html = self::dokument($adresse, $seo, $ld, $side);
         if ($buffer !== null) {

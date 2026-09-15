@@ -272,6 +272,12 @@ final class Kort
         return self::ledigTekst((int) ($neste['ledige'] ?? 0), (int) ($neste['plasser'] ?: $kapasitet), !empty($neste['sperret']));
     }
 
+    /** Plassteksten for én dato — ledigTekst() i nettsida. */
+    public static function ledigFor(array $d, int $kapasitet): string
+    {
+        return self::ledigTekst((int) ($d['ledige'] ?? 0), (int) (($d['plasser'] ?? 0) ?: $kapasitet), !empty($d['sperret']));
+    }
+
     private static function ledigTekst(int $l, int $kap, bool $sperret): string
     {
         if ($sperret && $l <= 0) {

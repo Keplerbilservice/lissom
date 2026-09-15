@@ -24014,9 +24014,20 @@ class Component extends DCLogic {
   aapneKursSlug(slug) {
     const kort = this.kursKort().find(k => k.slug === slug);
     if (!kort) return false;
+    // Serversida (app/nett/sider/kursside.php) sender folk hit med dagen
+    // de trykket paa: /kurs/<slug>?dag=onsdag 16. september — og ?alle=1
+    // naar de ba om aa se alle datoene. Da staar det valgt naar appen er
+    // oppe, og de fortsetter der de var.
+    let dag = '', alle = false;
+    try {
+      const q = new URLSearchParams(window.location.search);
+      dag = q.get('dag') || '';
+      alle = q.get('alle') === '1';
+    } catch (e) { /* ingen sporring */ }
     this.setState({
       side: 'booking', fra: 'kurs', valgtKurs: kort,
       bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null,
+      bDag: dag || null, bAlleDatoer: alle,
       ventelisteBekreftet: null,
     });
     return true;

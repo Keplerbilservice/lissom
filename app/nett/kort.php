@@ -71,8 +71,11 @@ final class Kort
             if (($k['tema'] ?? '') === 'Kun for medlemmer') {
                 continue;
             }
+            $KATEGORI = ['Sip & Clay' => 'Events', 'Date Night' => 'Events', 'Paint on pots' => 'Events', 'Paint on Pots' => 'Events', 'Workshop' => 'Håndbygging', 'Plateteknikk' => 'Håndbygging'];
+            $tema = $KATEGORI[(string) $k['tema']] ?? (str_starts_with(mb_strtolower((string) $k['tittel']), 'paint on pots') ? 'Events' : '') ?: ((string) $k['tema'] ?: 'Kurs');
             $d = [
                 'level' => (string) ($k['tema'] ?: ($k['type'] === 'event' ? 'Event' : 'Kurs')),
+                'tema'  => $tema,
                 'title' => (string) $k['tittel'],
                 'image' => (string) ($k['bilde'] ?: self::FOTO . 'handbygging.jpg'),
             ];
@@ -102,6 +105,12 @@ final class Kort
         $felles = [
             'slug'     => $slug,
             'level'    => (string) $d['level'],
+            'tema'     => (string) ($d['tema'] ?? ''),
+            'temaer'   => self::undertemaer((string) $d['title'], (string) ($kat['tema'] ?? '')),
+            'type'     => (string) ($kat['type'] ?? ''),
+            'folgerApningstid' => !empty($kat['folgerApningstid']),
+            'kunKontakt' => $datoer === [],
+            'plasser'  => (int) ($kat['plasser'] ?? 0),
             'title'    => (string) $d['title'],
             'price'    => $pris,
             'image'    => (string) (($kat['bilde'] ?? '') !== '' ? $kat['bilde'] : $d['image']),
@@ -128,6 +137,105 @@ final class Kort
             'duration' => (string) ($kat['varighetVist'] ?? ''),
             'cta'      => $status === 'Fullbooket' ? 'Les mer' : 'Book plass',
         ];
+    }
+
+    /** undertemaer() i nettsida: Sip & Clay, Date Night og Paint on Pots kjennes paa navnet. */
+    private static function undertemaer(string $tittel, string $tema): array
+    {
+        $ut = [];
+        $t = mb_strtolower($tittel);
+        foreach (['Sip & Clay', 'Date Night', 'Paint on Pots'] as $m) {
+            if ($tema === $m || str_contains($t, mb_strtolower($m))) {
+                $ut[] = $m;
+            }
+        }
+        if (in_array('Paint on Pots', $ut, true)) {
+            $ut[] = 'Paint on pots';
+        }
+        return $ut;
+    }
+
+    // ── Kurssida: filter og rekkefoelge, som filtrerKurs() i nettsida ──────
+
+    private const KURSRANG = ['Dreiing', 'Håndbygging', 'Events'];
+    private const KATEGORI_ELDRE = ['Workshop' => 'Håndbygging', 'Plateteknikk' => 'Håndbygging', 'Event' => 'Events', 'Sip & Clay' => 'Events', 'Date Night' => 'Events', 'Paint on pots' => 'Events'];
+
+    /** Kategorien slik den staar paa kortet — kategoriVist() i nettsida. */
+    public static function kategoriVist(string $tema, string $tittel): string
+    {
+        $t = trim($tema);
+        if ($t === '') {
+            return str_starts_with(mb_strtolower($tittel), 'paint on pots') ? 'Events' : '';
+        }
+        if (in_array($t, ['Dreiing', 'Håndbygging', 'Events', 'Kun for medlemmer'], true)) {
+            return $t === 'Kun for medlemmer' ? 'Kun medlemmer' : $t;
+        }
+        return self::KATEGORI_ELDRE[$t] ?? $t;
+    }
+
+    /** kursIKategori() i nettsida. */
+    public static function iKategori(array $liste, string $f): array
+    {
+        if ($f === '' || $f === 'Alle' || $f === 'Vis alle') {
+            return $liste;
+        }
+        if ($f === 'Kursene') {
+            $utenom = ['Events', 'Event', 'Sip & Clay', 'Date Night', 'Kun medlemmer', 'Kun for medlemmer'];
+            return array_values(array_filter($liste, static fn(array $k): bool => !in_array($k['tema'] ?: $k['level'], $utenom, true) && empty($k['folgerApningstid'])));
+        }
+        if ($f === 'Kurs') {
+            return array_values(array_filter($liste, static fn(array $k): bool => !in_array($k['tema'] ?: $k['level'], ['Events', 'Event'], true)));
+        }
+        return array_values(array_filter($liste, static fn(array $k): bool => ($k['tema'] ?: $k['level']) === $f || in_array($f, $k['temaer'] ?? [], true)));
+    }
+
+    /** Naar paa dagen en oekt gaar: Helg og/eller Dagtid/Kveldstid — tidsbaas() i nettsida. */
+    private static function tidsbaas(string $startUtc): array
+    {
+        try {
+            $d = (new DateTimeImmutable($startUtc, new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Oslo'));
+        } catch (Throwable) {
+            return [];
+        }
+        $ut = [];
+        if ((int) $d->format('N') >= 6) { $ut[] = 'Helg'; }
+        $ut[] = (int) $d->format('G') < 16 ? 'Dagtid' : 'Kveldstid';
+        return $ut;
+    }
+
+    /** medValgtTid() i nettsida: kortet med bare oektene som passer, eller null. */
+    public static function medValgtTid(array $k, string $naar): ?array
+    {
+        if (!empty($k['kunKontakt'])) {
+            return $k;
+        }
+        $treff = array_values(array_filter($k['okter'] ?? [], static fn(array $o): bool => in_array($naar, self::tidsbaas((string) ($o['startUtc'] ?? '')), true)));
+        if ($treff === []) {
+            return null;
+        }
+        $status = self::plasstekst($treff, (int) ($k['plasser'] ?? 0));
+        return array_merge($k, ['okter' => $treff, 'date' => self::kortDatoer($treff), 'status' => $status, 'cta' => $status === 'Fullbooket' ? 'Les mer' : 'Book plass']);
+    }
+
+    /** filtrerKurs() + sorterKurs() i nettsida. */
+    public static function filtrert(string $kategori, ?string $naar): array
+    {
+        $ut = self::iKategori(self::kurs(), $kategori);
+        if ($naar !== null && $naar !== '') {
+            $ut = array_values(array_filter(array_map(static fn(array $k): ?array => self::medValgtTid($k, $naar), $ut)));
+        }
+        $rang = static function (array $k): int {
+            $i = array_search(self::kategoriVist((string) ($k['tema'] ?: $k['level']), (string) $k['title']), self::KURSRANG, true);
+            return $i === false ? count(self::KURSRANG) : (int) $i;
+        };
+        usort($ut, static function (array $a, array $b) use ($rang): int {
+            $r = $rang($a) <=> $rang($b);
+            if ($r !== 0) { return $r; }
+            $d = self::foersteOkt($a) <=> self::foersteOkt($b);
+            if ($d !== 0) { return $d; }
+            return strcoll((string) $a['title'], (string) $b['title']);
+        });
+        return $ut;
     }
 
     /** Tre datoer paa kortet: «9. sep · 16. sep · 7. okt +9». */

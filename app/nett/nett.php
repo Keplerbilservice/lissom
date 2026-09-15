@@ -40,8 +40,30 @@ final class Nett
 {
     /** Adressene som tegnes her, og fila under sider/ som tegner dem. */
     public const SIDER = [
-        '/' => 'forside',
+        '/'       => 'forside',
+        '/kurs'   => 'kurs',
+        '/events' => 'kurs',
     ];
+
+    /** Adressen som tegnes naa — for maler som tegner flere adresser. */
+    public static string $adresse = '/';
+
+    /**
+     * Sporringen som betyr noe for sida (filtrene paa kurssida), renset:
+     * bare kjente noekler, i fast rekkefoelge. Brukes i bufferen ogsaa.
+     * @return array<string,string>
+     */
+    public static function sporring(): array
+    {
+        $ut = [];
+        foreach (['tema', 'tid'] as $n) {
+            $v = $_GET[$n] ?? '';
+            if (is_string($v) && $v !== '' && mb_strlen($v) <= 40) {
+                $ut[$n] = $v;
+            }
+        }
+        return $ut;
+    }
 
     /** Nettsidas rot — der lissom-2108.html, nett.css, ikonene og bildene ligger. */
     public static function rot(): string
@@ -80,7 +102,8 @@ final class Nett
         // bufferen gaar de fleste besoek ut paa samme tid; det som er nytt i
         // basen (en plass som ble tatt, en tekst som ble endret) er ute
         // innen ett minutt.
-        $buffer = self::bufferFil($adresse);
+        self::$adresse = $adresse;
+        $buffer = self::bufferFil($adresse . '?' . http_build_query(self::sporring()));
         if ($buffer !== null && is_file($buffer) && filemtime($buffer) > time() - self::BUFFER_SEK) {
             $lest = @file_get_contents($buffer);
             if (is_string($lest) && $lest !== '') {

@@ -5868,7 +5868,15 @@ window.__resources = {
                   </sc-if>
                 </div>
 
+                <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ true }}">
                 <input type="search" value="{{ hlSok }}" onInput="{{ hlSokEndre }}" placeholder="Søk etter leire, glasur, verktøy …" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-3);">
+                </sc-if>
+                <!-- Oenske i fritekst. Eieren, 15. september 2026: medlemmene
+                     skal kunne skrive selv, ikke bare velge blant varene. -->
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: var(--space-3);">
+                  <input type="text" value="{{ hlOnske }}" onInput="{{ hlOnskeEndre }}" placeholder="Skriv et ønske, f.eks. hvit steingods 10 kg" maxlength="191" style="flex: 1; min-width: 0; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading);">
+                  <button type="button" onClick="{{ hlOnskeLegg }}" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 14px; font: var(--type-body-sm); font-weight: 700;">Legg til</button>
+                </div>
 
                 <div style="display: flex; flex-direction: column;">
                   <sc-for list="{{ hlMine }}" as="h" hint-placeholder-count="3">
@@ -5902,7 +5910,9 @@ window.__resources = {
                   <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
                     <button type="button" onClick="{{ hlSendNa }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">{{ hlSendTekst }}</button>
                   </sc-if>
+                  <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ true }}">
                   <button type="button" onClick="{{ hlVelgVeksle }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Legg til vare</button>
+                  </sc-if>
                 </div>
 
                 <sc-if value="{{ hlKvittering }}" hint-placeholder-val="{{ false }}">
@@ -29034,6 +29044,7 @@ class Component extends DCLogic {
         this._hlSender = false;
         if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this.setState(Object.assign({ hlMine: d.mine || [] },
+          kropp.handling === 'onske' ? { hlOnske: '' } : {},
           kropp.handling === 'send' ? { hlKvittering: true, hlSok: '', hlVelgApen: false } : {}));
       })
       .catch(() => {
@@ -29075,6 +29086,15 @@ class Component extends DCLogic {
       hlSendTekst: 'Send til verkstedet',
       hlSendNa: () => this.hlKall({ handling: 'send' }),
       hlKvittering: !!this.state.hlKvittering,
+      // Varene aa velge blant finnes ikke alltid; da staar bare oensket.
+      hlHarVarer: varer.length > 0,
+      hlOnske: this.state.hlOnske || '',
+      hlOnskeEndre: (e) => this.setState({ hlOnske: e.target.value, hlKvittering: false }),
+      hlOnskeLegg: () => {
+        const t = String(this.state.hlOnske || '').trim();
+        if (t.length < 2) { this.setState({ kvitteringTone: 'danger', kvittering: 'Skriv hva du ønsker deg' }); return; }
+        this.hlKall({ handling: 'onske', tekst: t });
+      },
     };
   }
 
@@ -44890,11 +44910,13 @@ class Component extends DCLogic {
       // Handlelista, under internbutikken. Bryteren styrer om kortet finnes;
       // serveren svarer «paa» bare naar den staar paa der ogsaa, og uten varer
       // som kan bestilles staar kortet tomt — da er det bedre aa la vaere.
+      // Kortet staar der saa lenge bryteren er paa — ogsaa uten varer.
+      // Eieren, 15. september 2026: «handlelista kan jo vaere tom,
+      // medlemmene skal legge inn oensker her, saa den maa vaere synlig».
       visHandleliste: (() => {
         const paa = this.medlemsvisning() && this.bryterPaa('handleliste');
         if (paa && this.erPublisert()) this.hentHandleliste();
-        return paa && (!this.erPublisert()
-          || (this.state.hlPaa && (this.state.hlVarer || []).length > 0));
+        return paa && (!this.erPublisert() || !!this.state.hlPaa);
       })(),
       ...this.handlelisteVals(),
       // Interne samlinger: vanlige kurs merket «Kun for medlemmer». De laa
@@ -50878,6 +50900,12 @@ class Component extends DCLogic {
                 // godkjenning); trykk gaar til Ubesvarte, der de behandles.
                 { navn: 'Dugnad', verdi: ((d.koer || {}).dugnad) ? String((d.koer || {}).dugnad) : '',
                   velg: () => this.gaaAdmin('adminubesvarte', {}) },
+                // Eieren, 15. september 2026: «en pille paa kalender, som
+                // aapner handlelista for videre haandtering». Tallet er
+                // medlemmer som har sendt inn lista si; trykk gaar til
+                // Nettbutikk → Handlelister, der den slaas sammen og prises.
+                { navn: 'Handleliste', verdi: ((d.koer || {}).handleliste) ? String((d.koer || {}).handleliste) : '',
+                  velg: () => this.gaaAdmin('adminbutikk', { butikkFane: 'Handlelister' }) },
               ].map(x => Object.assign({}, x, {
                 harVerdi: !!x.verdi,
                 verdiStil: { fontWeight: 800, color: 'var(--lissom-brown)' },

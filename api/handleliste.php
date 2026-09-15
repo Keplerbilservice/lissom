@@ -39,9 +39,10 @@ $mine = static function () use ($klar, $medlemId): array {
         return [];
     }
     $rader = DB::alle(
-        "SELECT h.id, h.antall, p.tittel, p.artikkelnr
+        "SELECT h.id, h.antall, COALESCE(p.tittel, h.tekst) AS tittel, COALESCE(p.artikkelnr, '') AS artikkelnr,
+                h.product_id IS NULL AS onske
            FROM handleliste_linjer h
-           JOIN products p ON p.id = h.product_id
+      LEFT JOIN products p ON p.id = h.product_id
           WHERE h.member_id = :m AND h.status = 'apen'
           ORDER BY h.id",
         ['m' => $medlemId]
@@ -51,6 +52,8 @@ $mine = static function () use ($klar, $medlemId): array {
         'navn'   => (string) $r['tittel'],
         'nummer' => (string) $r['artikkelnr'],
         'antall' => (int) $r['antall'],
+        // Skrevet av medlemmet selv, ikke en vare (migrasjon 191).
+        'onske'  => (bool) $r['onske'],
     ], $rader);
 };
 
@@ -82,6 +85,20 @@ if (!$paa) {
 }
 
 $handling = Foresporsel::tekst('handling');
+
+// Et oenske i fritekst. Eieren, 15. september 2026: «medlemmene skal legge
+// inn oensker her». Ingen vare bak — teksten er hele linja.
+if ($handling === 'onske') {
+    $tekst = trim(mb_substr(Foresporsel::tekst('tekst'), 0, 191));
+    if (mb_strlen($tekst) < 2) {
+        Svar::feil('Skriv hva du ønsker deg — for eksempel «hvit steingods, 10 kg».');
+    }
+    if (!DB::harKolonne('handleliste_linjer', 'tekst')) {
+        Svar::feil('Ønsker i fritekst krever oppdatering 191. Kjør oppdateringen først.');
+    }
+    DB::settInn('handleliste_linjer', ['member_id' => $medlemId, 'tekst' => $tekst]);
+    Svar::ok(['mine' => $mine()]);
+}
 
 if ($handling === 'legg') {
     $produktId = Foresporsel::heltall('produktId');

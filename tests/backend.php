@@ -14479,7 +14479,9 @@ sjekk('kortet navngir raden timene ble regnet av',
     && str_contains($k2Ren, "|| (harSvar ? fraTimene : ((this.state.minAvtale || {}).plan || ''));"),
     'maalt: kortet sier ikke lenger «Mini 15 · Fritt» naar medlemsraden er tom');
 sjekk('… og timetallet kommer alltid fra stemplingssvaret',
-    str_contains($k2Ren, 'const timer = st.timer.perMnd;')
+    // Planens eget tall (timer.plan) fra 15. september 2026: taket har
+    // gavetimer og dugnad lagt til, og de er ikke «timer i maaneden».
+    str_contains($k2Ren, 'const timer = st.timer.plan !== undefined ? st.timer.plan : st.timer.perMnd;')
     && str_contains($k2Ren, 'return Object.assign({}, funnet, { timer: timer, periode: tekst, detalj: tekst });'),
     'planlista sier hva planen gir, serveren hva DETTE medlemmet har');
 sjekk('… og et eget timetall sier at det er et eget timetall',

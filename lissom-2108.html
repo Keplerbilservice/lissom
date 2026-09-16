@@ -38770,15 +38770,23 @@ class Component extends DCLogic {
         alignItems: 'start', gap: 6,
         marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
         borderTop: '1px solid rgba(244,235,222,.18)',
-        maxHeight: '72vh', overflowY: 'auto', overscrollBehavior: 'contain',
-        // Luft nederst, saa de siste pillene kommer fram over bunnmenyen.
+        // Ingen hoyde satt, og ingen rulling inne i skuffen.
         //
         // Eieren, 16. september 2026: «pillene i bunnen legger seg under
-        // menyen». Bunnmenyen staar «fixed» mot skjermkanten, og skuffen
-        // endte under den. Hovedfeltet har hatt den samme klaringa siden
-        // bunnmenyen kom — se «.lx-adminaside + main» i stilarket; skuffen
-        // manglet den. Samme regnestykke: 58 px meny, luft, og hjemknappen
-        // paa iPhone.
+        // menyen» — og etter foerste forsoek: «legger seg under bunn menyen
+        // jeg kommer ikke til knaplene bak».
+        //
+        // Skuffen hadde tak paa 72vh og rullet inni seg selv. «vh» regner
+        // med URL-linja paa iPhone, saa taket ble hoyere enn det som faktisk
+        // vises: paa eierens telefon stakk skuffen ~188 px ned under
+        // bunnmenyen, mens klaringa var 76. Da hjelper det ikke aa dra i
+        // skuffen — de to siste pillene laa under menyen uansett.
+        //
+        // Naa er skuffen saa hoy som innholdet, og sida ruller i stedet.
+        // Da finnes det ingen «vh» aa regne feil paa. Klaringa staar igjen,
+        // saa siste rad ogsaa er fri naar sida ikke har noe aa rulle paa:
+        // 58 px meny, luft, og hjemknappen paa iPhone — samme regnestykke
+        // som «.lx-adminaside + main» i stilarket.
         paddingBottom: 'calc(58px + 18px + env(safe-area-inset-bottom, 0px))',
       },
     };

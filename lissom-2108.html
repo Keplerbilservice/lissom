@@ -59681,7 +59681,10 @@ class Component extends DCLogic {
         // lista sto med tittel, pris og Vipps-nummer, og ikke ett bilde.
         // Samme maate som miniatyrene i varelista, se bildeStil der.
         bildeStil: {
-          width: 84, height: 64, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+          // 84x64 var en miniatyr. Eieren, 16. september 2026, valgte
+          // stoerre ved siden av teksten — han skal kunne se hva han
+          // godkjenner, ikke bare at det finnes et bilde.
+          width: 140, height: 110, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
           border: '1px solid var(--border-subtle)', background: 'var(--clay-100)',
           backgroundImage: "url('" + (g.bilde || FOTO + 'butikken.jpg') + "')",
           backgroundSize: 'cover', backgroundPosition: 'center',

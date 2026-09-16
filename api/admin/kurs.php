@@ -585,6 +585,24 @@ switch ($handling) {
         if ($start === null) {
             Svar::feil('Skriv datoen som 2026-09-02 17:30.');
         }
+        // Ligger kurset alt paa denne datoen og tida, sier vi det.
+        //
+        // Eieren, 16. september 2026, med et bilde av dialogen: «naa faar jeg
+        // ikke lagret kurs jeg legger ut ... faar beskjed om at Noe gikk galt
+        // og kurset ikke er lagt ut».
+        //
+        // «uq_okt_kurs_start» (course_id, start_tid) kom med migrasjon 014 og
+        // sperrer to oekter paa samme kurs til samme klokkeslett. Uten denne
+        // sjekken doede innleggingen paa PDO-unntaket i DB::settInn, og
+        // feilhaandtereren i bootstrap svarte «Noe gikk galt. Proev igjen,
+        // eller ta kontakt med oss.» — som ikke sier hva som er i veien.
+        // Maalt 16. september: foerste kall gikk gjennom, andre gav HTTP 500
+        // med «Duplicate entry '1-2026-11-25 16:00:00' for key
+        // uq_okt_kurs_start».
+        if (DB::en('SELECT id FROM course_sessions WHERE course_id = :k AND start_tid = :s',
+                   ['k' => $kursId, 's' => $start]) !== null) {
+            Svar::feil('Kurset går alt på denne datoen og tida. Velg en annen.');
+        }
 
         $nyOkt = [
             'course_id' => $kursId,

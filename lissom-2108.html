@@ -34881,6 +34881,30 @@ class Component extends DCLogic {
     }));
   }
 
+  /**
+   * Det tomme kursoppsettet, steg 1 av tolv.
+   *
+   * Sto som et objekt inne i omraadeskjermen, og var den eneste veien til
+   * det fulle oppsettet. Naa staar det her, saa kalenderen og kursskjermen
+   * kan bruke det samme — ett sted, ikke to like.
+   */
+  nyttKursSteg1() {
+    return {
+      kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
+      kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kPublisert: true,
+      kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
+      kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+      kRessursId: 0,
+      kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
+      kGjenstandIKassa: false,
+      kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
+      kGjentak: 'Ingen', kAntall: '',
+      kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
+      kDatoer: [{ dato: '', fra: '', til: '' }],
+    };
+  }
+
   kursData() {
     if (this.state.adminKursListe) return this.state.adminKursListe;
     if (this.erPublisert()) return [];
@@ -47174,20 +47198,7 @@ class Component extends DCLogic {
             })).length;
           const planer = this.state.adminPlanerRaa
             || (this.erPublisert() ? [] : [{}, {}]);
-          const nyttKurs = {
-            kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kPublisert: true,
-            kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
-            kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
-            kRessursId: 0,
-            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
-            kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
-            kGjenstandIKassa: false,
-            kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
-            kGjentak: 'Ingen', kAntall: '',
-            kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
-            kDatoer: [{ dato: '', fra: '', til: '' }],
-          };
+          const nyttKurs = this.nyttKursSteg1();
           const nyttMedlemskap = {
             plRed: {
               foer: '', navn: '', pris: '', timer: '', binding: '0',
@@ -52353,7 +52364,23 @@ class Component extends DCLogic {
         'Lukk'
       ),
       mobPamApen: !!this.state.mobPamApen,
-      mobNyttKurs: () => this.setState({ nkApen: true, nkMalApen: false, nkMal: 'Nytt fra bunnen', nkType: 'Kurs', nkNavn: '', nkPris: '', nkPlasser: '8', nkBeskrivelse: '' }),
+      // «Nytt kurs» gaar til det fulle oppsettet, ikke til hurtigruta.
+      //
+      // Eieren, 16. september 2026: «det ser ikke ut til at denne nytt kurs
+      // pillen aapner nytt kurs», «men er det et helt nytt kurs som
+      // opprettes? Tror ikke det», og «medlemmer og kurs og nytt kurs, her
+      // faar jeg opprettet nytt kurs med bilder etc. men ikke knappen nytt
+      // kurs som er paa kalender. Denne er feil».
+      //
+      // Maalt 16. september: hurtigruta lagde et ekte kurs i basen, men et
+      // tomt et — bilde NULL, beskrivelse NULL, kort_beskrivelse NULL — og
+      // satte status «publisert» med det samme. Kurset laa altsaa ute for
+      // kundene uten bilde og uten tekst.
+      //
+      // Samme knapp staar to steder: paa kalenderen og oeverst paa
+      // kursskjermen under «Aapne kurs». Begge gaar hit naa. Det er det
+      // samme oppsettet omraadekortet «Lag et nytt kurs» alt gikk til.
+      mobNyttKurs: () => this.gaaAdmin('admin', this.nyttKursSteg1()),
       nkApen: !!this.state.nkApen,
       nkLukk: () => this.setState({ nkApen: false }),
       nkMal: this.state.nkMal || 'Nytt fra bunnen',

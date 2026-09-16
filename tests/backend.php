@@ -17370,6 +17370,55 @@ sjekk('… og CSP-en slipper gjennom Tag Manager og Google Ads',
         return str_contains($h, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net")
             && str_contains($h, "frame-src 'self' https://www.googletagmanager.com https://td.doubleclick.net https://tagassistant.google.com;");
     })());
+
+// ── Meta-pikselen (Facebook og Instagram) ────────────────────────────
+//
+// Eieren, 16. september 2026: «jeg vil også annonsere på instagram /
+// facebook» — GO paa piksel bak samtykket med Advanced Matching. Piksel-ID
+// under Markedsføring → Oppsett (Marked/Meta-piksel, 15–16 siffer), lastet
+// etter samme «ja» som Google og ved siden av den, Googles hendelser
+// oversatt til Metas (purchase → Purchase med value/currency), e-post og
+// telefon gitt til pikselen som hasher dem selv, samtykket trukket med
+// «revoke» naar noen ombestemmer seg. Testsiden faar ikke ID-en. Maalt i
+// Chrome (puppeteer mot lokal rigg): ingen fbevents.js foer «ja»; etter
+// «ja» PageView mot facebook.com/tr; Purchase med value/currency,
+// content_ids og ud[em]/ud[ph] som SHA-256 av normalisert e-post/telefon.
+// Og: et «consent revoke» FOER skriptet er lastet holder alt tilbake, ogsaa
+// «grant» som kommer etter i koeen — derfor ingen revoke ved lasting.
+// Pikselen lastes uansett bare etter «ja», saa det er ingenting aa holde.
+$metaMarked = (string) file_get_contents(dirname(__DIR__) . '/api/admin/marked.php');
+sjekk('Meta-piksel: ID-en lagres som Marked/Meta-piksel, bare som 15–16 siffer',
+    str_contains($metaMarked, "if (\$meta !== '' && preg_match('/^\d{15,16}\$/', \$meta) !== 1) {")
+    && str_contains($metaMarked, "\$lagre('Marked/Meta-piksel', \$meta);")
+    && str_contains($metaMarked, "'metaPiksel'  => \$metaPiksel,")
+    && str_contains($mkSida, 'placeholder="123456789012345" inputmode="numeric"')
+    && str_contains($mkSida, '>Meta-piksel</div>'));
+sjekk('… lastes etter samtykke, uten revoke foer init (det laaser koeen), og hendelsene oversettes',
+    str_contains($mkSida, "const harMeta = /^\d{15,16}\$/.test(meta) && !this._metaSatt;")
+    && !str_contains($mkSida, "window.fbq('consent', 'revoke');\n      let hvem = null;")
+    && str_contains($mkSida, "      if (md) window.fbq('init', id, md); else window.fbq('init', id);\n      window.fbq('consent', 'grant');\n      window.fbq('track', 'PageView');")
+    && str_contains($mkSida, "        if (m) window.fbq('track', m.navn, m.felter);")
+    && str_contains($mkSida, "      page_view: 'PageView', purchase: 'Purchase', generate_lead: 'Lead',")
+    && str_contains($mkSida, "      if (md) { try { window.fbq('init', this._metaId, md); } catch (e) { /* da gaar kjopet uten */ } }")
+    && str_contains($mkSida, "        window.fbq('consent', av ? 'revoke' : 'grant');")
+    && str_contains($mkSida, "      || /^\d{15,16}\$/.test(String(i['Marked/Meta-piksel'] || '').trim());"));
+sjekk('… ogsaa paa serversidene, og testsiden faar ingen ID',
+    (static function (): bool {
+        $n = (string) file_get_contents(dirname(__DIR__) . '/nett.js');
+        $p = (string) file_get_contents(dirname(__DIR__) . '/app/nett/nett.php');
+        $i = (string) file_get_contents(dirname(__DIR__) . '/api/innhold.php');
+        $h = (string) file_get_contents(dirname(__DIR__) . '/.htaccess');
+        return str_contains($n, "    var meta = /^\d{15,16}\$/.test(m.meta || '') ? m.meta : '';\n    if (!ga && !gtm && !meta) return;")
+            && str_contains($n, "        window.fbq('init', meta);\n        window.fbq('consent', 'grant');\n        window.fbq('track', 'PageView');")
+            && !str_contains($n, "window.fbq('consent', 'revoke');\n        window.fbq('init', meta);")
+            && str_contains($n, "if (typeof window.fbq === 'function' && samtykkeSendt) window.fbq('consent', 'revoke');")
+            && str_contains($n, "if (samtykke() === '' && (m.ga || m.gtm || m.meta)) boks.removeAttribute('hidden');")
+            && str_contains($p, "\$maal = json_encode(['ga' => \$gaId, 'gtm' => \$gtmId, 'meta' => \$metaId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);")
+            && str_contains($p, "unset(\$ut['Marked/GA-id'], \$ut['Marked/GTM-id'], \$ut['Marked/Meta-piksel']);")
+            && str_contains($i, "unset(\$ut['Marked/GA-id'], \$ut['Marked/GTM-id'], \$ut['Marked/Meta-piksel']);")
+            && str_contains($h, "https://cdn.vippsmobilepay.com https://connect.facebook.net; style-src")
+            && str_contains($h, "https://pagead2.googlesyndication.com https://www.facebook.com https://connect.facebook.net; frame-src");
+    })());
 // Maalt live 11. september 2026: CSP-en stoppet region1.analytics.google.com
 // /g/collect og stats.g.doubleclick.net — innsendingen til Analytics.
 sjekk('… og CSP-en slipper selve innsendingen til Analytics gjennom (EU-region)',

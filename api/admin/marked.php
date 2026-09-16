@@ -268,6 +268,7 @@ if (Foresporsel::metode() === 'GET') {
     // stedet for aa vise en graf uten tall bak.
     $gaId = trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/GA-id'"));
     $gtmId = trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/GTM-id'"));
+    $metaPiksel = trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/Meta-piksel'"));
 
     // Det vi vet selv, uten Google: hva folk faktisk har booket og kjopt.
     $mestBookede = DB::alle(
@@ -328,6 +329,7 @@ if (Foresporsel::metode() === 'GET') {
         'innstillinger' => [
             'gaId'        => $gaId,
             'gtmId'       => $gtmId,
+            'metaPiksel'  => $metaPiksel,
             'aiTak'       => AI::tak(),
             'googleBedrift' => trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/Google-bedrift'")),
         ],
@@ -409,6 +411,16 @@ switch (Foresporsel::tekst('handling')) {
                 Svar::feil('Container-ID-en ser ikke riktig ut. Den skal se ut som GTM-ABC1234.');
             }
             $lagre('Marked/GTM-id', strtoupper($gtm));
+        }
+
+        if (array_key_exists('metaPiksel', $kropp)) {
+            $meta = trim((string) $kropp['metaPiksel']);
+            // Meta-pikselen (Facebook og Instagram). Et tall paa 15–16
+            // siffer; tom kobler fra. (Eieren, 16. september 2026.)
+            if ($meta !== '' && preg_match('/^\d{15,16}$/', $meta) !== 1) {
+                Svar::feil('Piksel-ID-en ser ikke riktig ut. Den skal være et tall på 15–16 siffer, og står i Meta Business Suite under Hendelsesbehandling.');
+            }
+            $lagre('Marked/Meta-piksel', $meta);
         }
 
         if (array_key_exists('aiTak', $kropp)) {

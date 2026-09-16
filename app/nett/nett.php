@@ -209,7 +209,7 @@ final class Nett
         }
         // Testsiden maaler ingenting — se api/innhold.php.
         if (Config::erUtvikling()) {
-            unset($ut['Marked/GA-id'], $ut['Marked/GTM-id']);
+            unset($ut['Marked/GA-id'], $ut['Marked/GTM-id'], $ut['Marked/Meta-piksel']);
         }
         return self::$lagret = $ut;
     }
@@ -494,7 +494,8 @@ final class Nett
 
         $gaId = trim((string) (self::lagret()['Marked/GA-id'] ?? ''));
         $gtmId = trim((string) (self::lagret()['Marked/GTM-id'] ?? ''));
-        $maal = json_encode(['ga' => $gaId, 'gtm' => $gtmId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $metaId = trim((string) (self::lagret()['Marked/Meta-piksel'] ?? ''));
+        $maal = json_encode(['ga' => $gaId, 'gtm' => $gtmId, 'meta' => $metaId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return '<!DOCTYPE html>' . "\n"
             . '<html lang="nb">' . "\n<head>\n"

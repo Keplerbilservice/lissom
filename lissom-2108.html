@@ -21968,6 +21968,17 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreGtm }}" hint-size="auto,40px">Lagre</x-import>
             </div>
 
+            <!-- Meta-pikselen (Facebook og Instagram). Eieren, 16. september
+                 2026: «jeg vil også annonsere på instagram / facebook».
+                 Lastes etter samme samtykke som Google, ved siden av. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Meta-piksel</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Piksel-ID-en står i Meta Business Suite under Hendelsesbehandling → Datakilder. Den er et tall på 15–16 siffer. Pikselen lastes først når den besøkende har sagt ja til besøksmåling — samme regel som Google.</p>
+              <input value="{{ mkMetaPiksel }}" onChange="{{ mkSettMetaPiksel }}" placeholder="123456789012345" inputmode="numeric" style="{{ mkFeltStil }}">
+              <div style="height: var(--space-4);"></div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMeta }}" hint-size="auto,40px">Lagre</x-import>
+            </div>
+
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Min bedrift på Google</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Lim inn adressen til bedriftsprofilen deres. Da ligger den her når vi kobler den mot Google sitt API.</p>
@@ -29051,18 +29062,27 @@ class Component extends DCLogic {
         });
       }
     } catch (e) { /* en maaling som feiler skal aldri stoppe valget */ }
+    // Meta har sitt eget samtykkesignal, og leser det for hvert kall —
+    // saa ogsaa pikselen stopper der og da.
+    try {
+      if (this._metaSatt && typeof window.fbq === 'function') {
+        window.fbq('consent', av ? 'revoke' : 'grant');
+      }
+    } catch (e) { /* som over */ }
   }
 
   /**
-   * Finnes det noe aa maale med — en Analytics-ID eller en Tag
-   * Manager-container? Samtykkelinja og angrevalget gjelder begge.
+   * Finnes det noe aa maale med — en Analytics-ID, en Tag
+   * Manager-container eller en Meta-piksel? Samtykkelinja og angrevalget
+   * gjelder alle tre.
    * Eieren, 11. september 2026: «har vi google tag manager?» — «JA JEG VIL
    * HA DET TIL Å VIRKE». GO paa oppsettet.
    */
   harMaaling() {
     const i = this.state.innholdLagret || {};
     return /^G-[A-Z0-9]{6,20}$/i.test(String(i['Marked/GA-id'] || '').trim())
-      || /^GTM-[A-Z0-9]{4,12}$/i.test(String(i['Marked/GTM-id'] || '').trim());
+      || /^GTM-[A-Z0-9]{4,12}$/i.test(String(i['Marked/GTM-id'] || '').trim())
+      || /^\d{15,16}$/.test(String(i['Marked/Meta-piksel'] || '').trim());
   }
 
   /**
@@ -29104,6 +29124,13 @@ class Component extends DCLogic {
         window.dataLayer.push(Object.assign({ event: navn }, felter || {}));
         gikk = true;
       }
+      // Meta faar det samme, med sine egne navn — se metaNavn(). Ett navn
+      // som Meta ikke kjenner, gaar bare til Google.
+      if (this._metaSatt && typeof window.fbq === 'function') {
+        const m = this.metaNavn(navn, felter);
+        if (m) window.fbq('track', m.navn, m.felter);
+        gikk = true;
+      }
       return gikk;
     } catch (e) { return false; }
   }
@@ -29136,11 +29163,18 @@ class Component extends DCLogic {
    * «Innsamling av brukeroppgitte data». Ellers kastes feltet i dora.
    */
   maalHvem(hvem) {
+    const epost = String((hvem && hvem.epost) || '').trim().toLowerCase();
+    const tlf = this.e164((hvem && hvem.telefon) || '');
+    // Meta: samme opplysninger, gitt paa nytt til pikselen som alt er
+    // startet — den som kjopte var ikke kjent da sida lastet. Meta
+    // hasher i nettleseren, som Google. Se metaHvem().
+    if (this._metaSatt && typeof window.fbq === 'function') {
+      const md = this.metaHvem(hvem);
+      if (md) { try { window.fbq('init', this._metaId, md); } catch (e) { /* da gaar kjopet uten */ } }
+    }
     if (typeof window.gtag !== 'function') return;
     const ut = {};
-    const epost = String((hvem && hvem.epost) || '').trim().toLowerCase();
     if (epost.indexOf('@') > 0) ut.email = epost;
-    const tlf = this.e164((hvem && hvem.telefon) || '');
     if (tlf) ut.phone_number = tlf;
     if (!Object.keys(ut).length) return;
     try { window.gtag('set', 'user_data', ut); } catch (e) { /* da gaar hendelsen uten */ }
@@ -29274,7 +29308,7 @@ class Component extends DCLogic {
    * renderVals(), altsaa for componentDidUpdate.
    */
   maalSide() {
-    if (!this._gaSatt && !this._gtmSatt) return;
+    if (!this._gaSatt && !this._gtmSatt && !this._metaSatt) return;
     const sti = window.location.pathname + window.location.search;
     if (this._maaltSti === undefined) { this._maaltSti = sti; return; }
     if (sti === this._maaltSti) return;
@@ -29393,19 +29427,36 @@ class Component extends DCLogic {
     document.addEventListener('visibilitychange', this._utgaveFokus);
   }
 
-  settOppAnalyse(idFra, gtmFra) {
+  settOppAnalyse(idFra, gtmFra, metaFra) {
     if (!this.erPublisert()) return;
     const lagret = this.state.innholdLagret || {};
     const id = String(idFra || lagret['Marked/GA-id'] || '').trim();
     const gtm = String(gtmFra || lagret['Marked/GTM-id'] || '').trim();
+    const meta = String(metaFra || lagret['Marked/Meta-piksel'] || '').trim();
     const harGa = /^G-[A-Z0-9]{6,20}$/i.test(id) && !this._gaSatt;
     const harGtm = /^GTM-[A-Z0-9]{4,12}$/i.test(gtm) && !this._gtmSatt;
-    if (!harGa && !harGtm) return;
+    const harMeta = /^\d{15,16}$/.test(meta) && !this._metaSatt;
+    if (!harGa && !harGtm && !harMeta) return;
     if ((this.state.side || '').indexOf('admin') === 0) return;
     // Ingen maaling for noen har sagt ja. Gtag legger igjen
     // informasjonskapsler med det samme det lastes, saa det holder ikke aa
-    // laste det og la vaere aa bruke det. Samme regel for Tag Manager.
+    // laste det og la vaere aa bruke det. Samme regel for Tag Manager og
+    // for Meta-pikselen.
     if (this.samtykke() !== 'ja') return;
+
+    // Meta-pikselen (Facebook og Instagram) staar for seg selv: den
+    // trenger ikke dataLayer eller gtag, og skal lastes ogsaa naar Google
+    // ikke er satt opp. (Eieren, 16. september 2026: «jeg vil også
+    // annonsere på instagram / facebook».)
+    if (harMeta) {
+      this._metaSatt = true;
+      this._metaId = meta;
+      this.metaLast(meta);
+    }
+    if (!harGa && !harGtm) {
+      if (this._ventendeKjop) { this.maalKjop(this._ventendeKjop); }
+      return;
+    }
     window.dataLayer = window.dataLayer || [];
     // Stubben maa staa foer begge to: samtykkesignalet under gaar i
     // dataLayer, og Tag Manager leser det samme koeen som Analytics.
@@ -29462,6 +29513,93 @@ class Component extends DCLogic {
 
     // Et kjop som ventet paa at dette skulle bli klart, telles naa.
     if (this._ventendeKjop) { this.maalKjop(this._ventendeKjop); }
+  }
+
+  /**
+   * Last Meta-pikselen — etter «ja», og bare da.
+   *
+   * Ingen «consent revoke» foerst: pikselen lastes aldri foer noen har
+   * sagt ja, saa det er ingenting aa holde tilbake — og maalt i Chrome
+   * 16. september 2026: ligger «revoke» i koeen foer skriptet er lastet,
+   * blir ALT etter den staaende, ogsaa «grant», og ingenting sendes noen
+   * gang. «grant» sies likevel, saa det staar svart paa hvitt hva pikselen
+   * har lov til; «revoke» brukes naar noen ombestemmer seg — se gaAv().
+   *
+   * Det den vet om kunden — e-posten som ble lagt igjen for turen til
+   * Vipps, eller kontoen — gaar med i init, saa kjopet som telles rett
+   * etterpaa kan kobles til annonseklikket ogsaa naar Safari har kastet
+   * informasjonskapselen. Se metaHvem().
+   *
+   * Snutten under er Metas offisielle, skrevet ut i stedet for minifisert
+   * saa den kan leses: en koe (fbq) som samler kallene til skriptet er
+   * lastet, og saa tar skriptet over koeen.
+   */
+  metaLast(id) {
+    try {
+      if (typeof window.fbq !== 'function') {
+        const n = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+        if (!window._fbq) window._fbq = n;
+        n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
+        window.fbq = n;
+        const s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://connect.facebook.net/en_US/fbevents.js';
+        document.head.appendChild(s);
+      }
+      let hvem = null;
+      try { hvem = JSON.parse(sessionStorage.getItem('lissom_kjoper') || 'null'); } catch (_) { hvem = null; }
+      if (!hvem || (!hvem.epost && !hvem.telefon)) {
+        hvem = { epost: this.state.medlemEpost || '', telefon: this.state.medlemTelefon || '' };
+      }
+      const md = this.metaHvem(hvem);
+      if (md) window.fbq('init', id, md); else window.fbq('init', id);
+      window.fbq('consent', 'grant');
+      window.fbq('track', 'PageView');
+    } catch (e) { /* en maaling som feiler skal aldri stoppe sida */ }
+  }
+
+  /**
+   * Hvem som handler, slik Meta vil ha det: «em» og «ph», som pikselen
+   * selv normaliserer og hasher (SHA-256) i nettleseren for noe sendes.
+   * Telefon uten pluss, med landkode — «4794134601». Ingenting av dette
+   * gaar noen vei uten samtykke: uten «ja» finnes ikke window.fbq.
+   */
+  metaHvem(hvem) {
+    const ut = {};
+    const epost = String((hvem && hvem.epost) || '').trim().toLowerCase();
+    if (epost.indexOf('@') > 0) ut.em = epost;
+    const tlf = this.e164((hvem && hvem.telefon) || '');
+    if (tlf) ut.ph = tlf.slice(1);
+    return Object.keys(ut).length ? ut : null;
+  }
+
+  /**
+   * Googles hendelsesnavn oversatt til Metas standardhendelser. Det som
+   * ikke har et navn hos Meta (booking_fullfort og de andre
+   * Ads-navnene, «click», «scroll») sendes ikke — Purchase dekker det.
+   * Beloep og valuta folger med der de finnes, og varene som content_ids
+   * saa Meta kan skille kurs fra gavekort fra medlemskap.
+   */
+  metaNavn(navn, felter) {
+    const NAVN = {
+      page_view: 'PageView', purchase: 'Purchase', generate_lead: 'Lead',
+      view_item: 'ViewContent', add_to_cart: 'AddToCart',
+      begin_checkout: 'InitiateCheckout', add_payment_info: 'AddPaymentInfo',
+      sign_up: 'CompleteRegistration',
+    };
+    const m = NAVN[navn];
+    if (!m) return null;
+    const f = felter || {};
+    const ut = {};
+    if (f.value !== undefined && f.value !== null && f.value !== '') ut.value = Number(f.value) || 0;
+    if (f.currency) ut.currency = f.currency;
+    if (Array.isArray(f.items) && f.items.length) {
+      ut.content_ids = f.items.map(i => String(i.item_id || i.item_name || '')).filter(Boolean);
+      ut.content_type = 'product';
+      const navnet = f.items.map(i => i.item_name).filter(Boolean).join(', ');
+      if (navnet) ut.content_name = navnet;
+    }
+    return { navn: m, felter: ut };
   }
 
   // ── «Ovn er tømt» ───────────────────────────────────────────────────
@@ -31879,7 +32017,8 @@ class Component extends DCLogic {
           // «ja» paa samtykkelinja, for der er ID-en alt kjent. Alle senere
           // besok gikk utelt. Den leses naa fra svaret vi nettopp fikk.
           this.settOppAnalyse((this.state.innholdLagret || {})['Marked/GA-id'] || d.innhold['Marked/GA-id'],
-                              (this.state.innholdLagret || {})['Marked/GTM-id'] || d.innhold['Marked/GTM-id']);
+                              (this.state.innholdLagret || {})['Marked/GTM-id'] || d.innhold['Marked/GTM-id'],
+                              (this.state.innholdLagret || {})['Marked/Meta-piksel'] || d.innhold['Marked/Meta-piksel']);
         }
       })
       .catch(() => {});
@@ -60331,6 +60470,9 @@ class Component extends DCLogic {
           mkGtmId: this.state.mkGtmId ?? ((d.innstillinger || {}).gtmId || ''),
           mkSettGtmId: e => this.setState({ mkGtmId: e.target.value }),
           mkLagreGtm: () => this.markedKall({ handling: 'innstilling', gtmId: this.state.mkGtmId ?? '' }),
+          mkMetaPiksel: this.state.mkMetaPiksel ?? ((d.innstillinger || {}).metaPiksel || ''),
+          mkSettMetaPiksel: e => this.setState({ mkMetaPiksel: e.target.value }),
+          mkLagreMeta: () => this.markedKall({ handling: 'innstilling', metaPiksel: this.state.mkMetaPiksel ?? '' }),
           mkAiTak: this.state.mkAiTak ?? String((d.innstillinger || {}).aiTak || ''),
           mkSettAiTak: e => this.setState({ mkAiTak: e.target.value }),
           mkLagreTak: () => this.markedKall({ handling: 'innstilling', aiTak: this.state.mkAiTak ?? '' }),

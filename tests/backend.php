@@ -14296,8 +14296,11 @@ sjekk('pillene i admin har to maal og ikke femten',
     && str_contains($sidaP, '.lx-adminaside ~ main .lx-topprad button {')
     && str_contains($sidaP, '    min-height: 48px !important;'),
     'maalt: 32 px x 923, 48 px x 19');
+// Kalenderens topprad fikk ogsaa «lx-kaltopp» 16. september 2026, da
+// «Denne måneden» flyttet opp ved siden av tittelen. Den er fortsatt en
+// topprad — telles med «class="lx-topprad» uten sluttfnutt.
 sjekk('… og hovedhandlinga oeverst er merket paa hver adminskjerm',
-    substr_count($sidaP, 'class="lx-topprad"') === 11,
+    substr_count($sidaP, 'class="lx-topprad') === 11,
     'elleve topprader med knapp');
 // Runde ikonknapper staar i samme rad som pillene og maa vaere like hoeye.
 // Fanepillene sto med bredde etter ordet. Eieren saa tre varianter av
@@ -17827,14 +17830,27 @@ echo "\n== Omsetninga som piller, og banneret dit teksten redigeres ==\n";
 $flytt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Tallet staar i pilla, saa man slipper aa aapne noe for aa se det.
-sjekk('omsetninga staar som to piller paa kalenderen',
+// «Denne måneden» flyttet opp 16. september 2026. Eieren: «pilla denne
+// måneden vil jeg flytte opp ved siden av det administrasjon kalender
+// teksten», og «jeg ønsker ikke at siden skal bli lenger». Den staar naa i
+// kalenderens topprad, ikke blant snarveiene. «Omsetning i dag» staar som
+// foer.
+sjekk('omsetning i dag staar som pille paa kalenderen',
     str_contains($flytt, "                { navn: 'Omsetning i dag', nokkel: 'omsetningidag', verdi: (d.omsetning || {}).idag || '',")
-    && str_contains($flytt, "                { navn: 'Denne måneden', nokkel: 'dennemaneden', verdi: (d.omsetning || {}).maned || '',")
     && str_contains($flytt, '<sc-if value="{{ s.harVerdi }}"'),
-    'maalt: «Omsetning i dag kr. 690,-» og «Denne maaneden kr. 1 320,-»');
-// Trykk gaar dit linjene bak tallet staar.
+    'maalt: «Omsetning i dag kr. 690,-»');
+// Tallet staar i topprada, og kortet er ikke en handlingsknapp: egen klasse,
+// saa de 48 pikslene og den fulle bredda i toppradregelen ikke treffer.
+sjekk('… og «Denne måneden» staar ved siden av tittelen',
+    str_contains($flytt, 'class="lx-topprad lx-kaltopp"')
+    && str_contains($flytt, '<button type="button" class="lx-mndkort" onClick="{{ mndVelg }}"')
+    && str_contains($flytt, '.lx-adminaside ~ main .lx-topprad button.lx-mndkort {')
+    && str_contains($flytt, '      flex-wrap: nowrap !important;'),
+    'maalt paa 390 px: samme rad som «Kalender», og sida ble 13 px kortere');
+// Trykk gaar dit linjene bak tallet staar — fra begge to.
 sjekk('… og trykk gaar til Økonomi',
-    substr_count($flytt, "                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },") === 2);
+    substr_count($flytt, "                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },") === 1
+    && str_contains($flytt, "          mndVelg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }),"));
 
 // Banner-redigeringa er flyttet, ikke kopiert. Den laa paa Oversikt; naa staar
 // den der resten av teksten paa nettsida redigeres.

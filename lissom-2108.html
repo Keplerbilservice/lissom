@@ -1648,11 +1648,43 @@ window.__resources = {
     }
   }
 
+  /* «Denne måneden» ved siden av tittelen paa kalenderen.
+     -----------------------------------------------------
+     Eieren, 16. september 2026: «pilla denne måneden vil jeg flytte opp ved
+     siden av det administrasjon kalender teksten», og da den la seg under
+     paa telefon: «nei, jeg sa ikke under. Jeg sa ved siden av. Grunnen er
+     åpenbar, jeg ønsker ikke at siden skal bli lenger».
+
+     Kortet er ikke en handlingsknapp, og skal ikke ha de 48 pikslene og den
+     fulle bredda som toppradas knapper faar. Klassen staar etter «button» i
+     velgeren og veier tyngre, saa den vinner over begge. */
+  .lx-adminaside ~ main .lx-topprad button.lx-mndkort {
+    width: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 6px 12px !important;
+    border-radius: var(--radius-lg) !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    flex: 0 0 auto;
+  }
+
   @media (max-width: 560px) {
     .lx-adminaside ~ main .lx-topprad x-import,
     .lx-adminaside ~ main .lx-topprad .sc-host-x,
     .lx-adminaside ~ main .lx-topprad button {
       width: 100% !important;
+    }
+    /* Rada skal ikke brekke: da blir sida lengre, og det var nettopp det
+       eieren ikke ville. Tittelen krymper i stedet. */
+    .lx-adminaside ~ main .lx-kaltopp {
+      flex-wrap: nowrap !important;
+      align-items: center;
+      gap: var(--space-4);
+    }
+    .lx-adminaside ~ main .lx-kaltopp button.lx-mndkort {
+      width: auto !important;
     }
     .lx-adminaside ~ main .lx-topprad > div:last-child {
       width: 100%;
@@ -7667,8 +7699,14 @@ window.__resources = {
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemsvarer</div>
             <sc-for list="{{ gVenter }}" as="g" hint-placeholder-count="2">
               <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="display: flex; gap: var(--space-4); align-items: flex-start;">
+                <div style="{{ g.bildeStil }}"></div>
+                <div style="min-width: 0;">
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
+                <div style="font-size: var(--text-sm); color: var(--text-body); margin-top: 4px; text-wrap: pretty;">{{ g.tekst }}</div>
+                </div>
+                </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px;">
                   <button type="button" onClick="{{ g.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
                   <button type="button" onClick="{{ g.avvis }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Avvis</button>
@@ -8456,11 +8494,19 @@ window.__resources = {
         </sc-if>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div class="lx-topprad" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
-          <div>
+        <div class="lx-topprad lx-kaltopp" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
+          <div style="min-width: 0;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
           </div>
+          <!-- «Denne måneden» ved siden av tittelen. Eieren, 16. september
+               2026. Kortet staar bare naar det er omsetning aa vise. -->
+          <sc-if value="{{ mndHar }}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="lx-mndkort" onClick="{{ mndVelg }}" style="{{ mndStil }}">
+              <span style="{{ mndMerkeStil }}">{{ mndMerke }}</span>
+              <span style="{{ mndTallStil }}">{{ mndTall }}</span>
+            </button>
+          </sc-if>
         </div>
         <!-- Ovnkortet — det samme som medlemmene har paa Min side. Eieren,
              12. september 2026: «admin må også ha denne knappen på kalender
@@ -19198,9 +19244,15 @@ window.__resources = {
           </sc-if>
           <sc-for list="{{ gVenter }}" as="g" hint-placeholder-count="2">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <!-- Bildet av varen, ogsaa her. Eieren, 16. september 2026:
+                   «poenget med å godkjenne må jo være å se produktet!!!!» -->
+              <div style="display: flex; gap: var(--space-4); align-items: flex-start; min-width: 0;">
+              <div style="{{ g.bildeStil }}"></div>
               <div style="min-width: 0;">
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
+                <div style="font-size: var(--text-sm); color: var(--text-body); margin-top: 4px; text-wrap: pretty;">{{ g.tekst }}</div>
+              </div>
               </div>
               <div class="lx-pillerad" style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                 <button type="button" onClick="{{ g.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
@@ -29899,8 +29951,11 @@ class Component extends DCLogic {
                 // linjene bak tallet staar.
                 { navn: 'Omsetning i dag', nokkel: 'omsetningidag', verdi: (d.omsetning || {}).idag || '',
                   velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
-                { navn: 'Denne måneden', nokkel: 'dennemaneden', verdi: (d.omsetning || {}).maned || '',
-                  velg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }) },
+                // «Denne måneden» staar ikke her lenger. Eieren, 16. september
+                // 2026: «pilla denne måneden vil jeg flytte opp ved siden av
+                // det administrasjon kalender teksten». Den tegnes naa i
+                // topprada paa kalenderskjermen — se mndKort. Samme tall,
+                // samme vei til Økonomi.
                 // Eieren, 15. september 2026: «en pille paa kalender ved
                 // siden av de andre, som viser denne foresporselen». Tallet
                 // er dugnader som venter paa Monica (nye + tid til
@@ -52439,7 +52494,44 @@ class Component extends DCLogic {
               // at det ligger noe der uten aa aapne.
               klDashKnapp: this.erSmal(),
               klDashApen: !this.erSmal() || this.dashApenNa(),
-              klDashNavn: this.dashApenNa() ? 'Skjul dashboard' : 'Vis dashboard',
+              // ── «Denne måneden», oeverst ved siden av tittelen ──────────────
+      //
+      // Eieren, 16. september 2026: «pilla denne måneden vil jeg flytte opp
+      // ved siden av det administrasjon kalender teksten».
+      //
+      // Den sto blant snarveiene, og forsvant nedover i rutenettet paa
+      // telefon. Samme tall og samme vei til Økonomi som for — bare flyttet.
+      // Formen er den samme som dashbordkortene: ramme, merkelapp over,
+      // tallet under.
+      ...(() => {
+        const beloep = ((this.state.adminData || {}).omsetning || {}).maned || '';
+        return {
+          mndHar: beloep !== '',
+          mndMerke: 'Denne måneden',
+          mndTall: beloep,
+          mndVelg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }),
+          mndStil: {
+            appearance: 'none', textAlign: 'left', cursor: 'pointer',
+            background: 'var(--surface-card)', boxSizing: 'border-box',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)', padding: '8px 14px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+            // Paa telefon brekker topprada, og kortet ble en full bredde med
+            // teksten midtstilt. Det skal hugge innholdet sitt og staa til
+            // venstre, som tittelen over.
+            alignItems: 'flex-start', alignSelf: 'flex-start',
+          },
+          mndMerkeStil: {
+            fontSize: 11, letterSpacing: 'var(--tracking-caps)',
+            textTransform: 'uppercase', color: 'var(--text-muted)',
+          },
+          mndTallStil: {
+            font: 'var(--type-body)', fontWeight: 800, lineHeight: 1.15,
+            color: 'var(--lissom-brown)', whiteSpace: 'nowrap',
+          },
+        };
+      })(),
+      klDashNavn: this.dashApenNa() ? 'Skjul dashboard' : 'Vis dashboard',
               klDashPil: this.dashApenNa() ? '⌃' : '⌄',
               klDashVeksle: () => {
                 const paa = !this.dashApenNa();
@@ -59584,6 +59676,19 @@ class Component extends DCLogic {
       })),
       harMineSalg: (this.state.mineSalg || []).length > 0,
       gVenter: this.galleriListe().filter(g => g.status === 'venter').map(g => Object.assign({}, g, {
+        // Bildet av varen. Eieren, 16. september 2026: «poenget med å
+        // godkjenne må jo være å se produktet!!!!» — og han hadde rett:
+        // lista sto med tittel, pris og Vipps-nummer, og ikke ett bilde.
+        // Samme maate som miniatyrene i varelista, se bildeStil der.
+        bildeStil: {
+          // 84x64 var en miniatyr. Eieren, 16. september 2026, valgte
+          // stoerre ved siden av teksten — han skal kunne se hva han
+          // godkjenner, ikke bare at det finnes et bilde.
+          width: 140, height: 110, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)', background: 'var(--clay-100)',
+          backgroundImage: "url('" + (g.bilde || FOTO + 'butikken.jpg') + "')",
+          backgroundSize: 'cover', backgroundPosition: 'center',
+        },
         godkjenn: () => this.salgKall({ handling: 'godkjenn', id: g.id }),
         avvis: () => {
           const grunn = window.prompt('Hvorfor legges den ikke ut? Selgeren får denne teksten.', '');

@@ -207,6 +207,10 @@ final class Nett
             }
             $ut[$n] = (string) $r['verdi'];
         }
+        // Testsiden maaler ingenting — se api/innhold.php.
+        if (Config::erUtvikling()) {
+            unset($ut['Marked/GA-id'], $ut['Marked/GTM-id']);
+        }
         return self::$lagret = $ut;
     }
 

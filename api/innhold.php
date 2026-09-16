@@ -34,6 +34,15 @@ foreach ($rader as $r) {
     $ut[$r['nokkel']] = $r['verdi'];
 }
 
+// Testsiden maaler ingenting. test.lissom.no er en kopi av basen, med den
+// samme maale-ID-en — saa et proevekjop der ville staatt som et ekte salg i
+// Google Analytics og Google Ads. ID-ene strykes foer de gaar ut, saa
+// nettsida aldri faar noe aa laste. Samme regel i app/nett/nett.php for
+// sidene serveren tegner. (Eieren, 16. september 2026.)
+if (Config::erUtvikling()) {
+    unset($ut['Marked/GA-id'], $ut['Marked/GTM-id']);
+}
+
 // Ingen mellomlagring.
 //
 // Her sto «max-age=60». Det sparte databasen for ett lite oppslag, og kostet

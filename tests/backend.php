@@ -11397,7 +11397,8 @@ sjekk('… to av gangen, med en knapp for resten',
 // Lukker du skuffen, legger lista seg sammen igjen. Ellers sto den utslaatt
 // neste gang du aapnet, uten at du ba om det.
 sjekk('… og lista legger seg sammen naar skuffen lukkes',
-    str_contains($sida, 'admMobVeksle: () => this.setState(s => ({ admMobApen: !s.admMobApen, menyInneApen: false })),'));
+    str_contains($sida, 'admMobVeksle: () => this.setState(s => ({')
+    && str_contains($sida, 'admMobApen: !s.admMobApen, menyInneApen: false,'));
 sjekk('… over de elleve stedene, ikke under',
     strpos($sida, '{{ admMobVerkStil }}') < strpos($sida, '<sc-for list="{{ admMobPunkter }}"'));
 
@@ -11917,16 +11918,19 @@ $antBolk = substr_count($uKode, '<div style="{{ m.bolkStil }}">{{ m.navn }}</div
 //
 // Maalt paa 360x580, 390x620, 390x700 og 402x720, rullet helt ned:
 // «⌁ Logg ut» slutter 171 px over bunnmenyen paa alle fire.
-sjekk('skuffen har ikke lenger et tak som kan bli hoyere enn skjermen',
+sjekk('skuffen har ikke lenger et tak i prosent',
     !str_contains($uKode, "maxHeight: '72vh', overflowY: 'auto', overscrollBehavior: 'contain',"));
-sjekk('… og den har klaring under seg, saa bunnmenyen ikke dekker pillene',
-    str_contains($uKode, "paddingBottom: 'calc(58px + 18px + env(safe-area-inset-bottom, 0px))',")
-    && str_contains($sidaB, '.lx-adminaside + main {'));
-// Rullinga skjer i #dc-root naar bunnmenyen staar der. Forsvinner den
-// regelen, staar skuffen uten noe aa rulle i.
-sjekk('… og det er #dc-root som ruller naar bunnmenyen staar der',
-    str_contains($sidaB, '.lx-laast, .lx-laast body { height: 100vh; height: 100dvh; overflow: hidden; }')
-    && str_contains($sidaB, '.lx-laast #dc-root {'));
+// Tredje forsoek, og det eneste som holder: hoyden maales mot bunnmenyen.
+// «vh» bommet fordi URL-linja paa iPhone teller med; aa la sida rulle bommet
+// fordi den ikke gjoer det paa eierens telefon.
+sjekk('… den maaler hoyden sin mot bunnmenyen naar den aapnes',
+    str_contains($uKode, '  skuffPlass() {')
+    && str_contains($uKode, "const stripe = document.querySelector('.lx-admmob');")
+    && str_contains($uKode, "const bunn = document.querySelector('.lx-bunnmeny');")
+    && str_contains($uKode, 'admMobPlass: !s.admMobApen ? this.skuffPlass() : 0,'));
+sjekk('… og skuffen ruller selv',
+    str_contains($uKode, "maxHeight: this.state.admMobPlass ? this.state.admMobPlass + 'px' : '60vh',")
+    && str_contains($uKode, "overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',"));
 sjekk('… og bolkoverskrifta tegnes som tekst, ikke som knapp',
     $antBolk === $antSide
     && !str_contains($uKode, 'style="{{ m.knappStil }}"'));

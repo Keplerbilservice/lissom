@@ -38545,6 +38545,30 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * Hvor hoy skuffen kan vaere, maalt mot bunnmenyen.
+   *
+   * Stripa over skuffen er ikke like hoy paa alle skjermer — staar man et
+   * sted med langt navn, brytes den i to linjer. Og bunnmenyen staar «fixed»
+   * mot skjermkanten, som paa iPhone ligger der URL-linja slutter.
+   *
+   * Begge deler kan leses av skjermen naar skuffen aapnes. Da slipper vi aa
+   * gjette i prosent — det var «vh» som bommet to ganger 16. september.
+   */
+  skuffPlass() {
+    try {
+      const stripe = document.querySelector('.lx-admmob');
+      if (!stripe) return 0;
+      const bunn = document.querySelector('.lx-bunnmeny');
+      const nede = bunn ? bunn.getBoundingClientRect().top : window.innerHeight;
+      // 32 px gaar fra: 16 er skuffens egen toppmarg (marginTop i
+      // admMobPanelStil, var(--space-4)), 16 er luft mellom siste pille og
+      // bunnmenyen. Aldri under 160: da er det bedre aa rulle i en liten
+      // skuff enn aa ha en som ikke kan aapnes.
+      return Math.max(160, Math.round(nede - stripe.getBoundingClientRect().bottom - 32));
+    } catch (e) { return 0; }
+  }
+
   adminMobilMeny() {
     const sted = this.adminSted();
     const apen = !!this.state.admMobApen;
@@ -38768,7 +38792,12 @@ class Component extends DCLogic {
       admMobKnappTekst: apen ? 'Lukk' : 'Meny',
       // Lukker du skuffen, legger verkstedlista seg sammen igjen. Ellers
       // sto den utslaatt neste gang du aapnet, uten at du ba om det.
-      admMobVeksle: () => this.setState(s => ({ admMobApen: !s.admMobApen, menyInneApen: false })),
+      admMobVeksle: () => this.setState(s => ({
+        admMobApen: !s.admMobApen, menyInneApen: false,
+        // Maales i det man aapner: stripa staar der alt, saa vi vet hvor
+        // skuffen begynner, og bunnmenyen hvor den maa slutte.
+        admMobPlass: !s.admMobApen ? this.skuffPlass() : 0,
+      })),
       admMobPunkter: punkter.concat([snarveiBolk]).concat(bunnrader),
       admMobLinjeStil: {
         flex: '1 1 auto', minWidth: 0, display: 'flex', alignItems: 'center',
@@ -38792,24 +38821,29 @@ class Component extends DCLogic {
         alignItems: 'start', gap: 6,
         marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
         borderTop: '1px solid rgba(244,235,222,.18)',
-        // Ingen hoyde satt, og ingen rulling inne i skuffen.
+        // Skuffen ruller selv, og hoyden er MAALT — ikke satt i prosent.
         //
-        // Eieren, 16. september 2026: «pillene i bunnen legger seg under
-        // menyen» — og etter foerste forsoek: «legger seg under bunn menyen
-        // jeg kommer ikke til knaplene bak».
+        // Eieren, 16. september 2026, i tre omganger: «pillene i bunnen
+        // legger seg under menyen», «legger seg under bunn menyen jeg kommer
+        // ikke til knaplene bak», og til slutt: «denne siden på mobil, får
+        // ikke scrollet den».
         //
-        // Skuffen hadde tak paa 72vh og rullet inni seg selv. «vh» regner
-        // med URL-linja paa iPhone, saa taket ble hoyere enn det som faktisk
-        // vises: paa eierens telefon stakk skuffen ~188 px ned under
-        // bunnmenyen, mens klaringa var 76. Da hjelper det ikke aa dra i
-        // skuffen — de to siste pillene laa under menyen uansett.
+        // Foerst hadde skuffen tak paa 72vh og rullet inni seg selv. «vh»
+        // regner med URL-linja paa iPhone, saa taket ble hoyere enn det som
+        // vises, og de to siste pillene laa under bunnmenyen uansett hvor
+        // mye man dro.
         //
-        // Naa er skuffen saa hoy som innholdet, og sida ruller i stedet.
-        // Da finnes det ingen «vh» aa regne feil paa. Klaringa staar igjen,
-        // saa siste rad ogsaa er fri naar sida ikke har noe aa rulle paa:
-        // 58 px meny, luft, og hjemknappen paa iPhone — samme regnestykke
-        // som «.lx-adminaside + main» i stilarket.
-        paddingBottom: 'calc(58px + 18px + env(safe-area-inset-bottom, 0px))',
+        // Saa tok jeg bort taket og rullinga, og stolte paa at #dc-root
+        // ruller. Det gjoer den her, men ikke paa eierens telefon — og da
+        // satt han med en skuff som ikke lot seg dra i det hele tatt.
+        //
+        // Naa ruller skuffen selv igjen, og hoyden maales mot bunnmenyen
+        // naar skuffen aapnes: se skuffPlass(). Ingen prosent aa regne feil
+        // paa, og ingen gjetting paa hvor hoy stripa over er.
+        maxHeight: this.state.admMobPlass ? this.state.admMobPlass + 'px' : '60vh',
+        overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
+        // Luft nederst, saa siste rad kommer helt fri naar man har rullet ned.
+        paddingBottom: 'var(--space-4)',
       },
     };
   }

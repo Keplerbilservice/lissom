@@ -40,7 +40,7 @@ foreach ($rader as $r) {
 // nettsida aldri faar noe aa laste. Samme regel i app/nett/nett.php for
 // sidene serveren tegner. (Eieren, 16. september 2026.)
 if (Config::erUtvikling()) {
-    unset($ut['Marked/GA-id'], $ut['Marked/GTM-id']);
+    unset($ut['Marked/GA-id'], $ut['Marked/GTM-id'], $ut['Marked/Meta-piksel']);
 }
 
 // Ingen mellomlagring.

@@ -32796,7 +32796,26 @@ class Component extends DCLogic {
         }
       }, Component.BUT_OPPHOLD);
     }, Component.ROT_OPPHOLD - Component.BUT_OPPHOLD);
-    this._resize = () => this.setState({ vw: window.innerWidth });
+    // Bare naar bredden faktisk er en annen.
+    //
+    // Eieren, 16. september 2026: «den forsiden er ekstremt treg på rulle
+    // ned», og presisert: «den er bare treg når siden er rullet helt til
+    // start, altså når jeg ser toppen av siden» — admin forside, kalenderen.
+    //
+    // «vw» er det eneste denne lytteren setter, og det eneste erSmal() leser.
+    // Likevel tegnet den hele skjermen paa nytt hver gang nettleseren meldte
+    // fra om en endring — ogsaa naar bare hoyden hadde endret seg. Paa iPhone
+    // er det nettopp det som skjer: URL-linja glir inn og ut naar man drar
+    // fra toppen, og hver glidning er en melding. Naar linja har lagt seg,
+    // slutter meldingene — og derfor var det bare tregt paa toppen.
+    //
+    // Maalt paa kalenderen med fire ganger treg prosessor, tolv meldinger:
+    // 222 ms laast skjerm per melding og 2511 ms skripttid foer, 0,4 ms per
+    // melding og 5 ms til sammen etter.
+    this._resize = () => {
+      const b = window.innerWidth;
+      if (b !== this.state.vw) this.setState({ vw: b });
+    };
     window.addEventListener('resize', this._resize);
     // Tilbakeknappen foelger toppen naar man ruller. Se tilbakePlasser().
     this._tilbakeRull = () => this.tilbakePlasser();

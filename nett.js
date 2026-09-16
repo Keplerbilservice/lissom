@@ -152,7 +152,8 @@
     var m = window.lissomMaal || {};
     var ga = /^G-[A-Z0-9]{6,20}$/i.test(m.ga || '') ? m.ga : '';
     var gtm = /^GTM-[A-Z0-9]{4,12}$/i.test(m.gtm || '') ? m.gtm.toUpperCase() : '';
-    if (!ga && !gtm) return;
+    var meta = /^\d{15,16}$/.test(m.meta || '') ? m.meta : '';
+    if (!ga && !gtm && !meta) return;
     if (samtykke() !== 'ja') return;
     window.dataLayer = window.dataLayer || [];
     if (typeof window.gtag !== 'function') { window.gtag = function () { window.dataLayer.push(arguments); }; }
@@ -161,6 +162,7 @@
       // samtykket skal skrus paa igjen.
       window.gtag('consent', 'update', sett('granted'));
       try { window['ga-disable-' + ga] = false; } catch (e) {}
+      try { if (meta && typeof window.fbq === 'function') window.fbq('consent', 'grant'); } catch (e) {}
       return;
     }
     samtykkeSendt = true;
@@ -179,6 +181,27 @@
       g.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtm);
       d.head.appendChild(g);
     }
+    // Meta-pikselen (Facebook og Instagram), som metaLast() i appen. Ingen
+    // «revoke» foer init: lastet foerst etter «ja», og et «revoke» i koeen
+    // foer skriptet er lastet holder alt tilbake — ogsaa «grant» (maalt
+    // 16. september 2026). Serversidene har ingen kunde aa kjenne igjen,
+    // saa init gaar uten opplysninger.
+    if (meta) {
+      try {
+        if (typeof window.fbq !== 'function') {
+          var n = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+          if (!window._fbq) window._fbq = n;
+          n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
+          window.fbq = n;
+          var f = d.createElement('script'); f.async = true;
+          f.src = 'https://connect.facebook.net/en_US/fbevents.js';
+          d.head.appendChild(f);
+        }
+        window.fbq('init', meta);
+        window.fbq('consent', 'grant');
+        window.fbq('track', 'PageView');
+      } catch (e) {}
+    }
   }
   // Personvern: «Ditt svar paa besoeksmaaling» — staar bare naar noen har
   // svart, og sier hva de svarte. «Endre svaret mitt» nullstiller, som
@@ -187,7 +210,7 @@
   if (endre) {
     var blokk = endre.parentElement, svar = samtykke();
     var m0 = window.lissomMaal || {};
-    if (!svar || !(m0.ga || m0.gtm)) { blokk.style.display = 'none'; }
+    if (!svar || !(m0.ga || m0.gtm || m0.meta)) { blokk.style.display = 'none'; }
     else {
       var p = blokk.querySelector('p');
       if (p) p.textContent = svar === 'ja'
@@ -199,6 +222,7 @@
         // Og si fra til Google, som gaAv() i appen: «ga-disable» stopper
         // Analytics, men Tag Manager og Ads leser samtykket.
         try { if (typeof window.gtag === 'function' && samtykkeSendt) window.gtag('consent', 'update', sett('denied')); } catch (e) {}
+        try { if (typeof window.fbq === 'function' && samtykkeSendt) window.fbq('consent', 'revoke'); } catch (e) {}
         blokk.style.display = 'none';
         var b2 = d.querySelector('[data-nett-samtykke]'); if (b2) b2.removeAttribute('hidden');
       });
@@ -208,7 +232,7 @@
   var boks = d.querySelector('[data-nett-samtykke]');
   if (boks) {
     var m = window.lissomMaal || {};
-    if (samtykke() === '' && (m.ga || m.gtm)) boks.removeAttribute('hidden');
+    if (samtykke() === '' && (m.ga || m.gtm || m.meta)) boks.removeAttribute('hidden');
     var svar = function (v) { try { localStorage.setItem('lissom-analyse', v); } catch (e) {} boks.setAttribute('hidden', ''); if (v === 'ja') maal(); };
     var ja = boks.querySelector('[data-nett-samtykke-ja]'), nei = boks.querySelector('[data-nett-samtykke-nei]');
     if (ja) ja.addEventListener('click', function () { svar('ja'); });

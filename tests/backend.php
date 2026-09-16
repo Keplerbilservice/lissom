@@ -11081,8 +11081,10 @@ sjekk('… og radene starter fra toppen',
 // Eieren, 7. september: «i kalender maa vi lage en annen visning. kan du
 // legge hvem er i verkstedet paa sidemenyen?» Feltet nederst i menyen sa
 // «I verkstedet naa» og et tall; tallet svarer ikke paa hvem.
+// 36 -> 37 den 16. september 2026: skjermen «Til godkjenning» kom til.
+// Tallet er antall adminskjermer — sidemenyen er den samme paa alle.
 sjekk('navnene staar i sidemenyen',
-    substr_count($sida, '<sc-for list="{{ admMenyInne }}" as="i"') === 36
+    substr_count($sida, '<sc-for list="{{ admMenyInne }}" as="i"') === 37
     && str_contains($sida, 'admMenyInne: raa.slice(0, 6).map(r => ({'));
 // Eieren, 7. september: forst «paa pc, flytt i verkstedet naa til rett under
 // meld inn feil, saa log ut nedenfor der» — men menyen er lengre enn
@@ -11093,8 +11095,8 @@ sjekk('navnene staar i sidemenyen',
 // Menylista er derfor delt i to — over og under blokka — og «Logg ut» tegnes
 // for seg nederst. Pillene oeverst paa telefon leser fortsatt hele lista.
 sjekk('… rett under «Kurs og deltakere»',
-    substr_count($sida, '<sc-for list="{{ adminNavResten }}" as="a"') === 36
-    && substr_count($sida, '<sc-for list="{{ adminNavUt }}" as="a"') === 36
+    substr_count($sida, '<sc-for list="{{ adminNavResten }}" as="a"') === 37
+    && substr_count($sida, '<sc-for list="{{ adminNavUt }}" as="a"') === 37
     && str_contains($sida, "return 'Kurs og deltakere';")
     && str_contains($sida, 'const i = uten.findIndex(r => r.navn === Component.ADMIN_VERKSTED_ETTER);')
     && str_contains($sida, 'return i < 0 ? uten : uten.slice(0, i + 1);')
@@ -11396,14 +11398,14 @@ sjekk('… ogsaa i kalenderens sidemeny',
 // ikoner uten plass til navn. Eieren, 7. september: «paa mobil, boer dette
 // legges i bunnmenyen» — og av de tre veiene: «A — oeverst i skuffen».
 sjekk('navnene staar oeverst i menyskuffen paa telefon',
-    substr_count($sida, '<div style="{{ admMobVerkStil }}">') === 36
+    substr_count($sida, '<div style="{{ admMobVerkStil }}">') === 37
     && str_contains($sida, '<div style="{{ admMobVerkEtikettStil }}">I verkstedet nå</div>'));
 // Eieren, 7. september: «paa mobil, i verkstedet naa vis 2 stk og trykk for
 // fler om det er fler». Skuffen skal aapne paa menyen, ikke paa en liste.
 sjekk('… to av gangen, med en knapp for resten',
     str_contains($sida, 'const vist = apen ? raa : raa.slice(0, 2);')
     && str_contains($sida, "admMobMer: raa.length > 2 ? '+ ' + (raa.length - 2) + ' til' : '',")
-    && substr_count($sida, 'onClick="{{ admMobMerVelg }}"') === 36);
+    && substr_count($sida, 'onClick="{{ admMobMerVelg }}"') === 37);
 // Lukker du skuffen, legger lista seg sammen igjen. Ellers sto den utslaatt
 // neste gang du aapnet, uten at du ba om det.
 sjekk('… og lista legger seg sammen naar skuffen lukkes',

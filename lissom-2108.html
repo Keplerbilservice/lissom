@@ -7481,6 +7481,272 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- ── Til godkjenning ──────────────────────────────────────────────
+       Eieren, 16. september 2026: «du kan godt kalle den til godkjenning og
+       putte alle de andre som trenger godkjenning inn i samme sted», og GO
+       paa forslaget.
+
+       Fire ting laa fire steder: medlemsvarer paa Nettbutikk, soeknader om
+       frys paa medlemsskjermen, dugnad under Ubesvarte meldinger og
+       medlemskapsforespoerslene paa sin egen skjerm.
+
+       Dette er en vei til dem, ikke en flytting: alle fire staar fortsatt
+       der de sto. Listene er de samme — gVenter, frysAdmListe, dugAdmListe
+       og soknader — og knappene kaller de samme funksjonene. Ingen ny
+       godkjenning er laget. -->
+  <sc-if value="{{ erAdminGodkjenning }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – til godkjenning" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til kalenderen" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til kalenderen" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavGodkjenning }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <!-- Hvem som er i verkstedet, rett under «Kurs og deltakere».
+               Eieren, 7. september 2026: forst «paa pc, flytt i verkstedet naa
+               til rett under meld inn feil, saa log ut nedenfor der» — men
+               menyen er lengre enn skjermen, og maalt startet blokka da paa
+               997 px paa en skjerm som er 780 hoy. Saa: «flytt i verkstedet
+               naa til under kurs og deltakere, kun pc».
+               Derfor er menylista delt i to: det som staar over blokka, og
+               resten under. «Logg ut» staar nederst som for.
+               «Kun pc»: dette feltet er skjult paa telefon (se
+               «.lx-adminaside .lx-admstatus» i stilarket) — der staar navnene
+               oeverst i menyskuffen. Se admMenyInne. -->
+          <div class="lx-admstatus" style="{{ admMenyBlokkStil }}">
+            <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+            <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+              <div style="{{ admMenyRadStil }}">
+                <div style="{{ admMenyLinjeStil }}">
+                  <span style="{{ admMenyPrikkStil }}"></span>
+                  <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                  <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                </div>
+                <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+            </sc-if>
+            <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+              <div style="{{ admMenyLinjeStil }}">
+                <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
+              </div>
+            </sc-if>
+          </div>
+          <sc-for list="{{ adminNavResten }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <sc-for list="{{ adminNavUt }}" as="a" hint-placeholder-count="1">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <!-- Hvem som er i verkstedet, oeverst i skuffen.
+                 Bunnfeltet i sidemenyen er skjult paa telefon — der er menyen
+                 en rad i bunnen med seks faste ikoner, og den har ikke plass
+                 til navn. Eieren, 7. september 2026: «paa mobil, boer dette
+                 legges i bunnmenyen», og etter aa ha sett de tre veiene:
+                 «A — oeverst i skuffen». Da moeter navnene deg med det samme,
+                 uten aa rulle forbi de elleve stedene. Samme verdier som paa
+                 PC — se admMenyInne. -->
+            <div style="{{ admMobVerkStil }}">
+              <div style="{{ admMobVerkEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMobInne }}" as="i" hint-placeholder-count="2">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMobHarMer }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ admMobMerVelg }}" style="{{ admMobMerStil }}">{{ admMobMer }}</button>
+              </sc-if>
+              <sc-if value="{{ admMobInneTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}">
+                  <span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}
+                </div>
+              </sc-if>
+            </div>
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <sc-if value="{{ m.erBolk }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ m.bolkStil }}">{{ m.navn }}</div>
+                </sc-if>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0; font-size: var(--text-4xl);">Til godkjenning</h1>
+        </div>
+
+        <sc-if value="{{ godkjIngenting }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-bottom: var(--space-6);">
+            <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingenting venter på godkjenning nå.</div>
+          </div>
+        </sc-if>
+
+        <!-- Medlemsvarer. Samme liste og samme knapper som paa Nettbutikk —
+             se gVenter. Den staar fortsatt der ogsaa. -->
+        <sc-if value="{{ godkjHarVarer }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-bottom: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemsvarer</div>
+            <sc-for list="{{ gVenter }}" as="g" hint-placeholder-count="2">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px;">
+                  <button type="button" onClick="{{ g.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
+                  <button type="button" onClick="{{ g.avvis }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Avvis</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Soeknader om frys. Samme liste som paa medlemsskjermen —
+             se frysAdmListe. Svarfeltet staar der, som for. -->
+        <sc-if value="{{ godkjHarFrys }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-bottom: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Søknader om frys</div>
+            <sc-for list="{{ frysAdmListe }}" as="f" hint-placeholder-count="2">
+              <sc-if value="{{ f.venter }}" hint-placeholder-val="{{ true }}">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ f.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.linje }}</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px;">
+                  <button type="button" onClick="{{ f.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
+                  <button type="button" onClick="{{ f.avslag }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Ikke godkjenn</button>
+                </div>
+              </div>
+              </sc-if>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Dugnad. Samme liste og samme knapper som under Ubesvarte
+             meldinger — se dugAdmListe. -->
+        <sc-if value="{{ godkjHarDugnad }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-bottom: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Dugnad</div>
+            <sc-for list="{{ godkjDugnadListe }}" as="d" hint-placeholder-count="2">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ d.navn }} <span style="{{ d.merkeStil }}">{{ d.merke }}</span></div>
+                <div style="font-size: var(--text-sm); color: var(--text-body); margin: 4px 0 8px; text-wrap: pretty;">«{{ d.tekst }}»{{ d.tidTekst }}</div>
+                <sc-if value="{{ d.venter }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <button type="button" onClick="{{ d.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
+                    <button type="button" onClick="{{ d.avslaa }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Avslå</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ d.tilGodkjenning }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <input type="text" inputmode="decimal" aria-label="Timer som legges til" value="{{ d.timerFelt }}" onChange="{{ d.settTimer }}" style="width: 64px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                    <button type="button" onClick="{{ d.godkjennTid }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn tida</button>
+                    <button type="button" onClick="{{ d.avvisTid }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Avvis</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Medlemskapsforespoersler. Samme liste og samme knapper som paa
+             sin egen skjerm — se soknader. -->
+        <sc-if value="{{ godkjHarSoknader }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-bottom: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemskapsforespørsler</div>
+            <sc-for list="{{ soknader }}" as="s" hint-placeholder-count="2">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ s.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ s.kontakt }} · {{ s.type }} · sendt {{ s.sendt }}</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px;">
+                  <button type="button" onClick="{{ s.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
+                  <button type="button" onClick="{{ s.avsla }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Avslå</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </main>
+    </div>
+  </sc-if>
+
+
   <!-- ── Videokurs ────────────────────────────────────────────────────
        Ikke bygget. Skjermen staar her fordi kortet under «Kurs og
        medlemskap» maa foere et sted — en knapp som ikke gjor noe er verre
@@ -25701,6 +25967,7 @@ class Component extends DCLogic {
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
       { sti: '/admin/medlemssoknader',    side: 'adminmedlemssoknader' },
       { sti: '/admin/ubesvarte',          side: 'adminubesvarte' },
+      { sti: '/admin/godkjenning',         side: 'admingodkjenning' },
       { sti: '/admin/butikk',       side: 'adminbutikk' },
       { sti: '/admin/okonomi',      side: 'adminokonomi' },
       { sti: '/admin/beskjeder',    side: 'adminbeskjeder' },
@@ -29476,6 +29743,14 @@ class Component extends DCLogic {
                 // Nettbutikk → Handlelister, der den slaas sammen og prises.
                 { navn: 'Handleliste', nokkel: 'handleliste', varsel: true, verdi: ((d.koer || {}).handleliste) ? String((d.koer || {}).handleliste) : '',
                   velg: () => this.gaaAdmin('adminbutikk', { butikkFane: 'Handlelister' }) },
+                // Eieren, 16. september 2026: «du kan godt kalle den til
+                // godkjenning og putte alle de andre som trenger godkjenning
+                // inn i samme sted». Tallet er alt som venter paa et ja eller
+                // nei: medlemsvarer, soeknader om frys, dugnad og
+                // medlemskapsforespoersler. Se godkjenningVals().
+                { navn: 'Til godkjenning', nokkel: 'tilgodkjenning', varsel: true,
+                  verdi: this.godkjenningVals().godkjTall,
+                  velg: () => this.gaaAdmin('admingodkjenning', {}) },
                 // Eieren, 15. september 2026: «paa kalender — maa ha pille med
                 // medlemmer». Tallet er aktive medlemmer (aktiv, proeve, pause).
                 // Eieren, 15. september 2026: «medlemmer paa oversikt viser 6
@@ -36585,6 +36860,37 @@ class Component extends DCLogic {
    * admindata. Uten dette svarte serveren 401 fire ganger paa selve
    * innloggingssida, og sperren under sendte den bort fra seg selv.
    */
+  /**
+   * Alt som venter paa et ja eller nei, talt ett sted.
+   *
+   * Eieren, 16. september 2026: «du kan godt kalle den til godkjenning og
+   * putte alle de andre som trenger godkjenning inn i samme sted».
+   *
+   * Tallene leses fra de samme kildene som skjermene deres bruker. Ingen ny
+   * telling: blir noe godkjent et annet sted, faller tallet her av seg selv.
+   */
+  godkjenningVals() {
+    const varer = this.galleriListe().filter(g => g.status === 'venter');
+    const frys = (this.state.frysAdmin || []).filter(f => f.venter);
+    const dugnad = (((this.state.dugnadAdmin || {}).dugnader) || [])
+      .filter(d => d.status === 'venter' || d.status === 'til_godkjenning');
+    const soknader = (this.state.adminSoknader || []).length;
+    const sum = varer.length + frys.length + dugnad.length + soknader;
+    return {
+      // Dugnadslista er den samme som under Ubesvarte meldinger, filtrert
+      // ned til det som faktisk venter paa et svar. Frys og medlemsvarer
+      // bruker listene sine direkte — se frysAdmListe og gVenter.
+      godkjDugnadListe: this.dugnadAdminVals().dugAdmListe
+        .filter(d => d.venter || d.tilGodkjenning),
+      godkjHarVarer: varer.length > 0,
+      godkjHarFrys: frys.length > 0,
+      godkjHarDugnad: dugnad.length > 0,
+      godkjHarSoknader: soknader > 0,
+      godkjIngenting: sum === 0,
+      godkjTall: sum ? String(sum) : '',
+    };
+  }
+
   erAdminSkjerm(side) {
     return String(side || '').indexOf('admin') === 0 && side !== 'adminlogin';
   }
@@ -37853,6 +38159,7 @@ class Component extends DCLogic {
       case 'adminnyepameldinger': return p('Oversikt');
       case 'adminmedlemssoknader': return p('Oversikt');
       case 'adminubesvarte':     return p('Oversikt');
+      case 'admingodkjenning':  return p('Oversikt');
       case 'adminomrmedlemmer':  return p('Brukere', '', '');
       case 'adminkursdeltakere': return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Kurs og deltakere', 'Kurs og deltakere', 'Påmeldte');
@@ -44258,7 +44565,7 @@ class Component extends DCLogic {
     if (side === 'minside' && this.state.innlogget && !this.state.tillegg) {
       this.hentTillegg();
     }
-    if ((side === 'adminubesvarte' || side === 'adminoversikt') && !this.state.dugnadAdmin) {
+    if ((side === 'adminubesvarte' || side === 'adminoversikt' || side === 'admingodkjenning') && !this.state.dugnadAdmin) {
       this.hentDugnadAdmin();
     }
     // Feilrapportene. Hentes paa skjermen som viser dem, og paa Oversikt —
@@ -44284,7 +44591,7 @@ class Component extends DCLogic {
       this.hentRessurser();
     }
     // Soknadene om frys, paa medlemsskjermen i admin.
-    if (side === 'adminmedlem' && !this.state.frysAdmin) {
+    if ((side === 'adminmedlem' || side === 'admingodkjenning') && !this.state.frysAdmin) {
       this.hentFrysAdmin();
     }
     // Dublettene i medlemslista, samme sted.
@@ -55041,6 +55348,9 @@ class Component extends DCLogic {
       erAdminMedlemssoknader: side === 'adminmedlemssoknader',
       adminNavMedlemssoknader: this.adminSideMeny(),
       erAdminUbesvarte: side === 'adminubesvarte',
+      erAdminGodkjenning: side === 'admingodkjenning',
+      adminNavGodkjenning: this.adminSideMeny(),
+      ...this.godkjenningVals(),
       adminNavUbesvarte: this.adminSideMeny(),
       adminNavNyttig: this.adminSideMeny(),
       goNyttig: () => { this.setState({ side: 'nyttig', artikkelValgt: null }); window.scrollTo(0, 0); },

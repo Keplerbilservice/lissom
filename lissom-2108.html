@@ -18895,87 +18895,6 @@ window.__resources = {
             </div>
             <span class="lx-bryterhoyre"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ gAutoEtikett }}" checked="{{ gAutoPaa }}" on-change="{{ gAutoVeksl }}" hint-size="auto,28px"></x-import></span>
           </div>
-          <!-- Salgskampanjen. Var salgsuka med tre tekstfelt; naa bilde, fri
-               merkelapp, valgfri pris, egen knappetekst — og hver kampanje
-               lagres, saa den kan hentes fram igjen. Eieren, 13. september
-               2026, valgte «GO — bygg alt». Se api/admin/kampanjer.php. -->
-          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
-            <!-- Bryteren staar ikke her. Eieren, 13. september 2026: «Husk vis
-                 paa forside og skal staa samlet med det andre» — alle
-                 av-og-paa-brytere staar i ⊙ Synlighet, og en kopi her ville
-                 vaert to brytere for det samme. Linja under sier hvor den er,
-                 og hva som gjelder naa. -->
-            <div style="margin-bottom: var(--space-4);">
-              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Salgskampanje på forsiden</div>
-              <div style="font-size: var(--text-xs); color: var(--text-muted);">Banneret under kursene. {{ kampanjeStatus }}</div>
-            </div>
-
-            <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-4);">
-              <sc-if value="{{ kmpHarBilde }}" hint-placeholder-val="{{ true }}">
-                <img data-src="{{ kmpBilde }}" alt="" loading="lazy" decoding="async" style="width: 116px; height: 78px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-              </sc-if>
-              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                <button type="button" onClick="{{ kmpVelgBilde }}" style="{{ kmpPilleStil }}">{{ kmpBildeKnapp }}</button>
-                <sc-if value="{{ kmpHarBilde }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ kmpFjernBilde }}" style="{{ kmpPilleStil }}">Fjern bilde</button>
-                </sc-if>
-              </div>
-            </div>
-
-            <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
-              <input value="{{ kmpMerke }}" onChange="{{ settKmpMerke }}" placeholder="Merkelapp, f.eks. Høstsalg · 20.–26. oktober" style="{{ skFeltStil }}">
-              <input value="{{ kmpTittel }}" onChange="{{ settKmpTittel }}" placeholder="Overskrift" style="{{ skFeltStil }}">
-            </div>
-            <div style="margin-top: var(--space-4);">
-              <input value="{{ kmpTekst }}" onChange="{{ settKmpTekst }}" placeholder="Teksten under overskriften" style="{{ skFeltStil }}">
-            </div>
-            <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
-              <input value="{{ kmpPris }}" onChange="{{ settKmpPris }}" placeholder="Pris i kroner, f.eks. 350" style="{{ skFeltStil }}">
-              <input value="{{ kmpKnapp }}" onChange="{{ settKmpKnapp }}" placeholder="Knappetekst, f.eks. Se utvalget" style="{{ skFeltStil }}">
-            </div>
-
-            <div style="margin-top: var(--space-4);">
-              <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);">Knappen går til</div>
-              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                <sc-for list="{{ kmpMaalValg }}" as="mv" hint-placeholder-count="6">
-                  <button type="button" onClick="{{ mv.velg }}" style="{{ mv.stil }}">{{ mv.navn }}</button>
-                </sc-for>
-              </div>
-            </div>
-
-            <div class="lx-pillerad" style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-              <button type="button" onClick="{{ kmpLagre }}" style="{{ kmpLagreStil }}">Lagre kampanjen</button>
-              <button type="button" onClick="{{ kmpNyMal }}" style="{{ kmpPilleStil }}">Lagre som ny mal</button>
-              <sc-if value="{{ kmpHarBeskjed }}" hint-placeholder-val="{{ false }}">
-                <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">{{ kmpBeskjed }}</span>
-              </sc-if>
-            </div>
-          </div>
-
-          <div style="padding: var(--space-4) var(--space-6) 0;">
-            <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Lagrede kampanjer</div>
-          </div>
-          <sc-if value="{{ kmpIngen }}" hint-placeholder-val="{{ false }}">
-            <div style="padding: var(--space-4) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">{{ kmpIngenTekst }}</div>
-          </sc-if>
-          <sc-for list="{{ kmpListe }}" as="km" hint-placeholder-count="3">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
-              <div style="display: flex; align-items: center; gap: var(--space-3); min-width: 0;">
-                <sc-if value="{{ km.harBilde }}" hint-placeholder-val="{{ true }}">
-                  <img data-src="{{ km.bilde }}" alt="" loading="lazy" decoding="async" style="width: 54px; height: 38px; object-fit: cover; border-radius: var(--radius-sm);">
-                </sc-if>
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ km.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ km.detalj }}</div>
-                </div>
-              </div>
-              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                <button type="button" onClick="{{ km.vis }}" style="{{ km.visStil }}">{{ km.visTekst }}</button>
-                <button type="button" onClick="{{ km.rediger }}" style="{{ kmpPilleStil }}">Rediger</button>
-                <button type="button" onClick="{{ km.slett }}" style="{{ kmpPilleStil }}">Slett</button>
-              </div>
-            </div>
-          </sc-for>
           <sc-if value="{{ gIngenVenter }}" hint-placeholder-val="{{ false }}">
             <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingen bidrag venter nå.</div>
           </sc-if>
@@ -19112,6 +19031,100 @@ window.__resources = {
               </div>
             </sc-for>
           </div>
+            <!-- Salgskampanjen staar for seg, der godkjenningsfeltet laa.
+                 ------------------------------------------------------
+                 Den laa inne i kortet «Medlemssalg — venter paa
+                 godkjenning», mellom overskrifta og knappene man skal
+                 trykke paa. Maalt paa 390x700: 767 px til «Salgskampanje
+                 paa forsiden», 1496 til «Lagrede kampanjer», og foerst
+                 etter det kom varene som ventet. 1300 piksler kampanje
+                 mellom «godkjenn» og Godkjenn.
+
+                 Eieren, 16. september 2026, valgte aa flytte den ned hit.
+                 En kampanje paa forsida er ikke godkjenningsarbeid. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <!-- Salgskampanjen. Var salgsuka med tre tekstfelt; naa bilde, fri
+               merkelapp, valgfri pris, egen knappetekst — og hver kampanje
+               lagres, saa den kan hentes fram igjen. Eieren, 13. september
+               2026, valgte «GO — bygg alt». Se api/admin/kampanjer.php. -->
+          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+            <!-- Bryteren staar ikke her. Eieren, 13. september 2026: «Husk vis
+                 paa forside og skal staa samlet med det andre» — alle
+                 av-og-paa-brytere staar i ⊙ Synlighet, og en kopi her ville
+                 vaert to brytere for det samme. Linja under sier hvor den er,
+                 og hva som gjelder naa. -->
+            <div style="margin-bottom: var(--space-4);">
+              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Salgskampanje på forsiden</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Banneret under kursene. {{ kampanjeStatus }}</div>
+            </div>
+
+            <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <sc-if value="{{ kmpHarBilde }}" hint-placeholder-val="{{ true }}">
+                <img data-src="{{ kmpBilde }}" alt="" loading="lazy" decoding="async" style="width: 116px; height: 78px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              </sc-if>
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ kmpVelgBilde }}" style="{{ kmpPilleStil }}">{{ kmpBildeKnapp }}</button>
+                <sc-if value="{{ kmpHarBilde }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ kmpFjernBilde }}" style="{{ kmpPilleStil }}">Fjern bilde</button>
+                </sc-if>
+              </div>
+            </div>
+
+            <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+              <input value="{{ kmpMerke }}" onChange="{{ settKmpMerke }}" placeholder="Merkelapp, f.eks. Høstsalg · 20.–26. oktober" style="{{ skFeltStil }}">
+              <input value="{{ kmpTittel }}" onChange="{{ settKmpTittel }}" placeholder="Overskrift" style="{{ skFeltStil }}">
+            </div>
+            <div style="margin-top: var(--space-4);">
+              <input value="{{ kmpTekst }}" onChange="{{ settKmpTekst }}" placeholder="Teksten under overskriften" style="{{ skFeltStil }}">
+            </div>
+            <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
+              <input value="{{ kmpPris }}" onChange="{{ settKmpPris }}" placeholder="Pris i kroner, f.eks. 350" style="{{ skFeltStil }}">
+              <input value="{{ kmpKnapp }}" onChange="{{ settKmpKnapp }}" placeholder="Knappetekst, f.eks. Se utvalget" style="{{ skFeltStil }}">
+            </div>
+
+            <div style="margin-top: var(--space-4);">
+              <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);">Knappen går til</div>
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <sc-for list="{{ kmpMaalValg }}" as="mv" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ mv.velg }}" style="{{ mv.stil }}">{{ mv.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div class="lx-pillerad" style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+              <button type="button" onClick="{{ kmpLagre }}" style="{{ kmpLagreStil }}">Lagre kampanjen</button>
+              <button type="button" onClick="{{ kmpNyMal }}" style="{{ kmpPilleStil }}">Lagre som ny mal</button>
+              <sc-if value="{{ kmpHarBeskjed }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">{{ kmpBeskjed }}</span>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="padding: var(--space-4) var(--space-6) 0;">
+            <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Lagrede kampanjer</div>
+          </div>
+          <sc-if value="{{ kmpIngen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">{{ kmpIngenTekst }}</div>
+          </sc-if>
+          <sc-for list="{{ kmpListe }}" as="km" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: var(--space-3); min-width: 0;">
+                <sc-if value="{{ km.harBilde }}" hint-placeholder-val="{{ true }}">
+                  <img data-src="{{ km.bilde }}" alt="" loading="lazy" decoding="async" style="width: 54px; height: 38px; object-fit: cover; border-radius: var(--radius-sm);">
+                </sc-if>
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ km.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ km.detalj }}</div>
+                </div>
+              </div>
+              <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ km.vis }}" style="{{ km.visStil }}">{{ km.visTekst }}</button>
+                <button type="button" onClick="{{ km.rediger }}" style="{{ kmpPilleStil }}">Rediger</button>
+                <button type="button" onClick="{{ km.slett }}" style="{{ kmpPilleStil }}">Slett</button>
+              </div>
+            </div>
+          </sc-for>
+            </div>
           </div>
         </div>
         </sc-if>

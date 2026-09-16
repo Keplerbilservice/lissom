@@ -42,7 +42,14 @@ function gave_tittel(array $g): string
 if (Foresporsel::metode() === 'GET') {
     $rader = DB::alle(
         'SELECT g.*, m.navn AS mottaker_navn,
-                (SELECT COUNT(*) FROM medlemsgave_bruk b WHERE b.gave_id = g.id) AS brukt
+                (SELECT COUNT(*) FROM medlemsgave_bruk b WHERE b.gave_id = g.id) AS brukt,
+                -- Hvem som loeste den inn, ikke bare hvor mange. Eieren,
+                -- 16. september 2026: «vis hvem som loeste inn, ikke bare
+                -- tallet». Rekkefolgen er den de loeste den inn i.
+                (SELECT GROUP_CONCAT(mb.navn ORDER BY b2.created_at SEPARATOR \', \')
+                   FROM medlemsgave_bruk b2
+                   JOIN members mb ON mb.id = b2.member_id
+                  WHERE b2.gave_id = g.id) AS innloest_av
            FROM medlemsgaver g
       LEFT JOIN members m ON m.id = g.member_id
        ORDER BY g.id DESC
@@ -59,6 +66,7 @@ if (Foresporsel::metode() === 'GET') {
         'utloept'   => (string) $g['gyldig_til'] < $idag,
         'trukket'   => $g['status'] === 'trukket',
         'brukt'     => (int) $g['brukt'],
+        'innloestAv' => (string) ($g['innloest_av'] ?? ''),
     ], $rader)]);
 }
 

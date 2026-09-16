@@ -17154,6 +17154,22 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="gift" on-click="{{ gSend }}" hint-size="auto,44px">Send gaven</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ gAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
             </div>
+            <!-- Gavene som alt er gitt. Eieren, 16. september 2026: «det er
+                 jo ingen steder jeg kan se dette?» Lista kommer fra
+                 api/admin/gaver.php, som har svart paa dette hele tiden. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
+              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Gaver du har gitt</div>
+              <sc-if value="{{ gaveListeTom }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); color: var(--text-muted);">Ingen gaver gitt ennå.</div>
+              </sc-if>
+              <sc-for list="{{ gaveListe }}" as="gv" hint-placeholder-count="3">
+                <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ gv.tittel }} <span style="{{ gv.merkeStil }}">{{ gv.merke }}</span></div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ gv.mottaker }} · gyldig til {{ gv.gyldigTil }}</div>
+                  <div style="{{ gv.innloestStil }}">{{ gv.innloest }}</div>
+                </div>
+              </sc-for>
+            </div>
           </div>
         </sc-if>
 
@@ -17915,6 +17931,22 @@ window.__resources = {
             <div style="display: flex; gap: var(--space-3); align-items: center; border-top: 2px solid var(--lissom-brown); padding-top: var(--space-4);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="gift" on-click="{{ gSend }}" hint-size="auto,44px">Send gaven</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ gAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
+            <!-- Gavene som alt er gitt. Eieren, 16. september 2026: «det er
+                 jo ingen steder jeg kan se dette?» Lista kommer fra
+                 api/admin/gaver.php, som har svart paa dette hele tiden. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
+              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Gaver du har gitt</div>
+              <sc-if value="{{ gaveListeTom }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); color: var(--text-muted);">Ingen gaver gitt ennå.</div>
+              </sc-if>
+              <sc-for list="{{ gaveListe }}" as="gv" hint-placeholder-count="3">
+                <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ gv.tittel }} <span style="{{ gv.merkeStil }}">{{ gv.merke }}</span></div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ gv.mottaker }} · gyldig til {{ gv.gyldigTil }}</div>
+                  <div style="{{ gv.innloestStil }}">{{ gv.innloest }}</div>
+                </div>
+              </sc-for>
             </div>
           </div>
         </sc-if>
@@ -36932,6 +36964,26 @@ class Component extends DCLogic {
       });
   }
 
+  /**
+   * Gavene verkstedet har gitt, og hvem som har loest dem inn.
+   *
+   * Eieren, 16. september 2026, med to like e-poster om den samme gaven:
+   * «har hun fatt to timer? ??» — og da: «det er jo ingen steder jeg kan se
+   * dette?» Han hadde rett. Serveren har svart paa dette hele tiden
+   * (api/admin/gaver.php), men ingen skjerm spurte.
+   */
+  hentGaver() {
+    if (!this.erPublisert() || this._gaverHentes) return;
+    this._gaverHentes = true;
+    fetch('/api/admin/gaver.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._gaverHentes = false;
+        if (d && d.gaver) this.setState({ adminGaver: d.gaver });
+      })
+      .catch(() => { this._gaverHentes = false; });
+  }
+
   hentAdminSalg() {
     if (!this.erPublisert() || this._adminSalgHentes) return;
     this._adminSalgHentes = true;
@@ -44758,6 +44810,9 @@ class Component extends DCLogic {
     }
     // Godkjenningslista staar flere steder enn Butikk. Hentes
     // paa alle admin-sider — det er ett lite oppslag.
+    if ((side === 'adminmedlem' || side === 'adminkursdeltakere') && !this.state.adminGaver) {
+      this.hentGaver();
+    }
     if (this.erAdminSkjerm(side) && !this.state.adminSalg) {
       this.hentAdminSalg();
     }
@@ -55487,6 +55542,34 @@ class Component extends DCLogic {
       erAdminMedlemssoknader: side === 'adminmedlemssoknader',
       adminNavMedlemssoknader: this.adminSideMeny(),
       erAdminUbesvarte: side === 'adminubesvarte',
+      // ── Gaver du har gitt ───────────────────────────────────────────
+      //
+      // Eieren, 16. september 2026: «det er jo ingen steder jeg kan se
+      // dette?» Skjermen «Gi gave» var bare et skjema — gavene forsvant i
+      // det de var sendt. Serveren har hatt lista hele tiden.
+      //
+      // Navnene, ikke bare tallet: eieren, samme dag, «vis hvem som løste
+      // inn, ikke bare tallet». Se innloest_av i api/admin/gaver.php.
+      gaveListeTom: (this.state.adminGaver || []).length === 0,
+      gaveListe: (this.state.adminGaver || []).map(g => ({
+        tittel: g.tittel,
+        mottaker: g.mottaker,
+        gyldigTil: g.gyldigTil,
+        merke: g.trukket ? 'Trukket' : (g.utloept ? 'Utløpt' : ''),
+        harMerke: !!(g.trukket || g.utloept),
+        innloest: g.innloestAv ? 'Løst inn av ' + g.innloestAv : 'Ikke løst inn',
+        innloestStil: {
+          fontSize: 'var(--text-xs)',
+          color: g.innloestAv ? 'var(--sage-600, #5f6a4e)' : 'var(--text-muted)',
+          fontWeight: g.innloestAv ? 700 : 400,
+        },
+        merkeStil: {
+          display: (g.trukket || g.utloept) ? 'inline-block' : 'none', fontSize: 11, fontWeight: 800,
+          letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
+          padding: '3px 8px', borderRadius: 999,
+          background: 'var(--clay-100)', color: 'var(--text-muted)',
+        },
+      })),
       erAdminGodkjenning: side === 'admingodkjenning',
       adminNavGodkjenning: this.adminSideMeny(),
       ...this.godkjenningVals(),

@@ -11898,6 +11898,14 @@ sjekk('… i samme maal som Stemple inn og Ferie',
 // Overskrifta er ikke en knapp. En rad som ser ut som en knapp og ikke gjoer
 // noe er verre enn ingen rad.
 $antBolk = substr_count($uKode, '<div style="{{ m.bolkStil }}">{{ m.navn }}</div>');
+// Bunnmenyen staar «fixed» mot skjermkanten. Hovedfeltet har hatt klaringa
+// si siden bunnmenyen kom; skuffen manglet den, og de siste pillene havnet
+// under. Eieren, 16. september 2026: «pillene i bunnen legger seg under
+// menyen». Maalt paa 360x580, 390x620, 390x700 og 402x720: «⌁ Logg ut»
+// slutter 61–89 px over bunnmenyen, ikke under den.
+sjekk('skuffen har klaring under seg, saa bunnmenyen ikke dekker pillene',
+    str_contains($uKode, "paddingBottom: 'calc(58px + 18px + env(safe-area-inset-bottom, 0px))',")
+    && str_contains($sidaB, '.lx-adminaside + main {'));
 sjekk('… og bolkoverskrifta tegnes som tekst, ikke som knapp',
     $antBolk === $antSide
     && !str_contains($uKode, 'style="{{ m.knappStil }}"'));
@@ -18486,6 +18494,38 @@ sjekk('⊙ Synlighet har en lukkeknapp',
 // Veien ut som fantes fra for skal fortsatt virke.
 sjekk('… og trykk utenfor lukker fortsatt',
     str_contains($mt, '<div onClick="{{ synLukk }}" style="position: fixed; inset: 0;'));
+
+// ── Lukkeknappen blir liggende, og arket holder seg innenfor skjermen ──
+//
+// Eieren, 16. september 2026: «jeg naar ikke lukke knappen, maa flyttes ned».
+// «vh» regner med URL-linja paa iPhone, saa 92vh ble hoyere enn det som
+// vises, og det midtstilte arket la toppen sin — med knappen — under
+// URL-linja. Han valgte «fest den oeverst» av tre.
+//
+// Maalt paa 390x620 og 390x700, med arket rullet helt ned: knappen staar
+// stille paa 49 og 52 px, og ingen rader skinner gjennom over den.
+sjekk('⊙ Synlighet: lukkeknappen blir liggende naar man ruller',
+    str_contains($mt, 'style="position: sticky; top: calc(var(--space-6) * -1); z-index: 1; background: var(--surface-card); display: flex;'));
+sjekk('… og arket kappes av det som faktisk vises',
+    str_contains($mt, '.lx-synark { max-height: 92vh; max-height: 92dvh; }')
+    && str_contains($mt, 'class="lx-synark"')
+    // Hoyden staar ett sted. Sto den ogsaa innebygd paa kortet, ville den
+    // slaatt regelen — innebygd stil vinner over klassen.
+    && str_contains($mt, 'class="lx-synark" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; overflow-y: auto;">'));
+
+// ── Sesjonsvakta sier ikke fra lenger ────────────────────────────────
+//
+// Eieren, 16. september 2026, med bilde av innloggingsskjermen: «du er
+// logget ut pop up, fjernes her». Sesjonen loeper ut som for, og skjermen
+// foelger med til innlogginga — det er bare ruta som er borte.
+//
+// Maalt i nettleseren: logget inn, tok bort cookien, ventet ut vakta —
+// skjermen gikk til innlogging uten at noe sto der.
+sjekk('sesjonsvakta viser ingen rute naar tida er ute',
+    !str_contains($mt, 'Av sikkerhetsgrunner logges du ut etter tre timer.'));
+// Utlogginga selv skal fortsatt skje, og skjermen foelge med.
+sjekk('… men den logger fortsatt ut og sender til innlogginga',
+    str_contains($mt, "              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemPlan: '',\n              side: 'login',\n            });"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

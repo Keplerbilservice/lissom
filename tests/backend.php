@@ -10078,20 +10078,30 @@ sjekk('… mens butikkens egne faner staar',
 //
 // Maalt: 6,9 -> 2,7 skjermer med lista lukket. PC uendret, 2 524 px foer
 // og etter.
-sjekk('ordrene staar foerst paa telefonen',
-    str_contains($sidaG, '    .lx-butordre { order: 1; }')
-    && str_contains($sidaG, '    .lx-butvarer { order: 3; }'));
+//
+// Snudd 16. september 2026. Eieren: «jeg må komme til å legge ut og
+// redigere mine produkter som er i butikken», og «funker ikke på
+// telefonen nå». Maalt paa 390x700 med den gamle rekkefolgen laa
+// «PRODUKTER I BUTIKKEN» paa 1083 px — under skjermkanten, og lukket.
+// Naa staar produktene foerst og aapne, ordrene under.
+sjekk('produktene staar foerst paa telefonen',
+    str_contains($sidaG, '    .lx-butvarer { order: 2; }')
+    && str_contains($sidaG, '    .lx-butordre { order: 3; }'));
 // «order» snur dem i visningen uten aa flytte noe i markupen, saa PC staar
 // noeyaktig som foer.
 sjekk('… uten at markupen er flyttet',
     strpos($sidaG, 'class="lx-butvarer"') < strpos($sidaG, 'class="lx-butordre"'));
-sjekk('… og varelista staar bak en lenke, bare der',
+sjekk('… og knappen som lukker lista staar bare der',
     str_contains($sidaG, '  .lx-butvis { display: none; }')
-    && str_contains($sidaG, '    .lx-butvis   { display: block !important; order: 2; }')
+    && str_contains($sidaG, '    .lx-butvis   { display: block !important; order: 1; }')
     && str_contains($sidaG, '    .lx-butvarer[data-apen="false"] { display: none !important; }'));
+// Aapen fra start, men knappen skal fortsatt lukke. «=== false» og ikke
+// «!»: med «!» ville foerste trykk satt true paa noe som alt var aapent.
+sjekk('… og lista er aapen fra start',
+    str_contains($sidaG, 'butVarerApen: this.state.butVarerApen !== false,'));
 // Tallet i knappen: man skal se at varene er der uten aa aapne dem.
 sjekk('… med tallet paa varene i knappen',
-    str_contains($sidaG, "butVarerVeksle: () => this.setState({ butVarerApen: !this.state.butVarerApen }),")
+    str_contains($sidaG, "butVarerVeksle: () => this.setState({ butVarerApen: this.state.butVarerApen === false }),")
     && str_contains($sidaG, "+ ((this.state.butikkvarer || this.state.adminProdukter || []).length) + ')'"));
 
 // ── Punkt 7: kursskjermen paa telefonen ────────────────────────────────

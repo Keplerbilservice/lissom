@@ -18857,108 +18857,24 @@ window.__resources = {
         </sc-if>
 
         <sc-if value="{{ butFaneVarer }}" hint-placeholder-val="{{ true }}">
-        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
-          <!-- Varelista bak en lenke paa telefonen.
-               Eieren, planens punkt 9: «ordrer foerst, varer bak lenke».
-               Lista var 4 483 av 5 820 piksler paa en 390 px skjerm — sju
-               skjermer aa dra forbi for aa se om noen har bestilt noe.
-               Knappen staar bare paa telefonen; paa stoerre skjerm staar
-               lista der den alltid har staatt, ved siden av ordrene. -->
-          <button type="button" class="lx-butvis" onClick="{{ butVarerVeksle }}" style="{{ butVarerKnappStil }}">{{ butVarerKnapp }}</button>
-          <div class="lx-butvarer" data-apen="{{ butVarerApen }}" style="{{ butVarerStil }}">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ butikkListeTittel }}</div>
-            <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
-              <!-- Raden brekker framfor aa skli ut til hoyre.
-                   Den sto som et rutenett med fast minstebredde inne i en
-                   boks som er smalere enn det paa en vanlig skjerm. Da laa
-                   knappene utenfor kanten, og lista maatte dras sidelengs
-                   for aa naa dem — noe ingenting fortalte at den kunne. -->
-              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <button type="button" onClick="{{ v.byttBilde }}" aria-label="Bytt bilde" style="{{ v.bildeStil }}"></button>
-                <div onClick="{{ v.velg }}" style="flex: 1 1 180px; min-width: 0; cursor: pointer;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ v.prisOgAntall }}</div>
-                </div>
-                <div style="flex: 0 0 auto;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
-                </div>
-                <!-- Hver linje skal kunne endres og fjernes der den staar. -->
-                <div class="lx-pillerad" style="display: flex; gap: var(--space-2); align-items: center; margin-left: auto; flex-wrap: wrap;">
-                  <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ v.bildeKnapp }}</button>
-                  <button type="button" onClick="{{ v.velg }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">Rediger</button>
-                  <button class="lx-radpille" type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
-                </div>
-              </div>
-            </sc-for>
-          </div>
+        <!-- Godkjenning av medlemssalg, oeverst paa skjermen.
+             ---------------------------------------------------
+             Laa foerst paa en skjerm som ikke hadde noe med saken aa gjore
+             — det er varer i butikken. Saa laa den nederst i ordrespalta.
 
-          <div class="lx-butordre" style="display: flex; flex-direction: column; gap: var(--space-6);">
-          <!-- Her sto kortet «Synlighet paa nettsiden» med to brytere som
-               BEGGE alt fantes paa Oversikt: «Banneret under toppbildet»
-               (Banner/pa) og «Kursvelger-lenken paa forsiden» (kursvelger,
-               under et annet navn). Eieren, 13. september 2026: «ikke lag
-               dobbelt, men flytt og fjern fra gammel plassering».
-               Kursvelgerbryteren her leste dessuten feil: den sto av naar
-               lenken var skjult paa mobil, selv om bryteren var paa — den
-               las «visKursvelger», som er bryteren OG mobilvisninga.
-               Begge staar naa i «⊙ Synlighet». -->
+             Eieren, 16. september 2026: «finner ikke ut hvor jeg godkjenner
+             butikkvarer for medlemmene», og deretter: «ja over fane som du
+             anbefaler».
 
-          <!-- Kursvelgeren sto her, som en boks med en lenke videre. Den
-               staar naa som kort oeverst paa Oversikt, sammen med de andre
-               verktoyene. To veier inn til det samme er én for mye. -->
+             Maalt 16. september, med feltet der det laa:
+               PC 1440x900     1901 px ned (sida er 2959, vinduet 900)
+               telefon 390x700 5412 px ned (sida er 7138, vinduet 700)
+             Paa telefon var det nesten aatte skjermer med rulling. Det ble
+             verre samme dag, da produktene ble flyttet oeverst og
+             ordrespalta gikk ned.
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Uttak i internbutikken</div>
-            <sc-if value="{{ ingenInternkjop }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen medlemskjøp ennå.</div>
-            </sc-if>
-            <sc-for list="{{ internkjop }}" as="k" hint-placeholder-count="4">
-              <div onClick="{{ k.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.hva }} · {{ k.tid }}</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: var(--space-3);">
-                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap;">{{ k.sum }}</span>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="success" hint-size="auto,24px">Betalt</x-import>
-                </div>
-              </div>
-            </sc-for>
-
-            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-top: 1px solid var(--border-subtle);">Varer i internbutikken</div>
-            <sc-if value="{{ ingenInternvarerAdmin }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen varer er merket «kun medlemmer». Legg dem inn under Butikk, og huk av for kun medlemmer.</div>
-            </sc-if>
-            <sc-for list="{{ internvarerAdmin }}" as="v" hint-placeholder-count="4">
-              <div onClick="{{ v.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }} · {{ v.lager }}</div>
-                </div>
-                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap;">{{ v.pris }}</div>
-              </div>
-            </sc-for>
-            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ npApneIntern }}" hint-size="100%,40px">Legg til vare</x-import>
-            </div>
-          </div>
-
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Ordre</div>
-            <sc-for list="{{ ordrer }}" as="o" hint-placeholder-count="4">
-              <div onClick="{{ o.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.nr }} · {{ o.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.hva }}</div>
-                </div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ o.tone }}" hint-size="auto,24px">{{ o.status }}</x-import>
-              </div>
-            </sc-for>
-          </div>
-          </div>
-        </div>
-              <!-- Godkjenning av medlemssalg. Laa paa en skjerm som ikke
-             har noe med saken aa gjore — det er varer i butikken. -->
+             Naa staar det rett under fanerada, over produktene, paa alle
+             skjermer. -->
         <div style="background: var(--surface-card); border: 2px solid var(--terracotta-500); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
           <div style="padding: var(--space-5) var(--space-6); background: var(--terracotta-500); color: var(--clay-50); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Medlemssalg — venter på godkjenning</span>
@@ -19097,6 +19013,106 @@ window.__resources = {
               </sc-for>
             </div>
           </sc-if>
+        </div>
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
+          <!-- Varelista bak en lenke paa telefonen.
+               Eieren, planens punkt 9: «ordrer foerst, varer bak lenke».
+               Lista var 4 483 av 5 820 piksler paa en 390 px skjerm — sju
+               skjermer aa dra forbi for aa se om noen har bestilt noe.
+               Knappen staar bare paa telefonen; paa stoerre skjerm staar
+               lista der den alltid har staatt, ved siden av ordrene. -->
+          <button type="button" class="lx-butvis" onClick="{{ butVarerVeksle }}" style="{{ butVarerKnappStil }}">{{ butVarerKnapp }}</button>
+          <div class="lx-butvarer" data-apen="{{ butVarerApen }}" style="{{ butVarerStil }}">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ butikkListeTittel }}</div>
+            <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
+              <!-- Raden brekker framfor aa skli ut til hoyre.
+                   Den sto som et rutenett med fast minstebredde inne i en
+                   boks som er smalere enn det paa en vanlig skjerm. Da laa
+                   knappene utenfor kanten, og lista maatte dras sidelengs
+                   for aa naa dem — noe ingenting fortalte at den kunne. -->
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <button type="button" onClick="{{ v.byttBilde }}" aria-label="Bytt bilde" style="{{ v.bildeStil }}"></button>
+                <div onClick="{{ v.velg }}" style="flex: 1 1 180px; min-width: 0; cursor: pointer;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ v.prisOgAntall }}</div>
+                </div>
+                <div style="flex: 0 0 auto;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
+                </div>
+                <!-- Hver linje skal kunne endres og fjernes der den staar. -->
+                <div class="lx-pillerad" style="display: flex; gap: var(--space-2); align-items: center; margin-left: auto; flex-wrap: wrap;">
+                  <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ v.bildeKnapp }}</button>
+                  <button type="button" onClick="{{ v.velg }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">Rediger</button>
+                  <button class="lx-radpille" type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div class="lx-butordre" style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <!-- Her sto kortet «Synlighet paa nettsiden» med to brytere som
+               BEGGE alt fantes paa Oversikt: «Banneret under toppbildet»
+               (Banner/pa) og «Kursvelger-lenken paa forsiden» (kursvelger,
+               under et annet navn). Eieren, 13. september 2026: «ikke lag
+               dobbelt, men flytt og fjern fra gammel plassering».
+               Kursvelgerbryteren her leste dessuten feil: den sto av naar
+               lenken var skjult paa mobil, selv om bryteren var paa — den
+               las «visKursvelger», som er bryteren OG mobilvisninga.
+               Begge staar naa i «⊙ Synlighet». -->
+
+          <!-- Kursvelgeren sto her, som en boks med en lenke videre. Den
+               staar naa som kort oeverst paa Oversikt, sammen med de andre
+               verktoyene. To veier inn til det samme er én for mye. -->
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Uttak i internbutikken</div>
+            <sc-if value="{{ ingenInternkjop }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen medlemskjøp ennå.</div>
+            </sc-if>
+            <sc-for list="{{ internkjop }}" as="k" hint-placeholder-count="4">
+              <div onClick="{{ k.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.hva }} · {{ k.tid }}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: var(--space-3);">
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap;">{{ k.sum }}</span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="success" hint-size="auto,24px">Betalt</x-import>
+                </div>
+              </div>
+            </sc-for>
+
+            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-top: 1px solid var(--border-subtle);">Varer i internbutikken</div>
+            <sc-if value="{{ ingenInternvarerAdmin }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen varer er merket «kun medlemmer». Legg dem inn under Butikk, og huk av for kun medlemmer.</div>
+            </sc-if>
+            <sc-for list="{{ internvarerAdmin }}" as="v" hint-placeholder-count="4">
+              <div onClick="{{ v.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }} · {{ v.lager }}</div>
+                </div>
+                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap;">{{ v.pris }}</div>
+              </div>
+            </sc-for>
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ npApneIntern }}" hint-size="100%,40px">Legg til vare</x-import>
+            </div>
+          </div>
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Ordre</div>
+            <sc-for list="{{ ordrer }}" as="o" hint-placeholder-count="4">
+              <div onClick="{{ o.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.nr }} · {{ o.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.hva }}</div>
+                </div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ o.tone }}" hint-size="auto,24px">{{ o.status }}</x-import>
+              </div>
+            </sc-for>
+          </div>
+          </div>
         </div>
         </sc-if>
       </main>

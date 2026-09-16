@@ -1678,6 +1678,13 @@ window.__resources = {
   .lx-bryterhoyre { margin-left: auto; }
   .lx-bryterhoyre label { flex-direction: row-reverse; }
 
+  /* ⊙ Synlighet: arket maa aldri bli hoyere enn det som faktisk vises.
+     «vh» regner med URL-linja paa iPhone, saa 92vh ble hoyere enn skjermen,
+     og det midtstilte arket la toppen sin — med lukkeknappen — under
+     URL-linja. «dvh» er det som faktisk vises. Linja over staar igjen for
+     nettlesere som ikke kjenner «dvh». */
+  .lx-synark { max-height: 92vh; max-height: 92dvh; }
+
   .lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og
@@ -23280,12 +23287,19 @@ window.__resources = {
      hver rad, og hva den gjoer, er det samme som for. -->
 <sc-if value="{{ synVises }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ synLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
-    <div onClick="{{ synStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
+    <div onClick="{{ synStopp }}" class="lx-synark" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; overflow-y: auto;">
       <!-- Lukkeknapp. Eieren, 15. september 2026: «denne mangler lukke
            knapp». Arket lukket seg bare ved trykk paa det moerke utenfor —
            og med tretten rader er det ikke alltid noe moerkt aa treffe paa
            en telefon. Samme runde knapp som de andre arkene bruker. -->
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5);">
+      <!-- Lukkeknappen blir liggende naar man ruller. Eieren,
+           16. september 2026: «jeg naar ikke lukke knappen, maa flyttes ned»
+           — og av de tre valgte han aa feste den oeverst. Maalt paa
+           telefon: arket er 952 px innhold i et vindu paa 620, saa raden
+           rullet ut av syne med det samme man dro i bryterne.
+           Negativ toppmarg + egen polstring dekker kortets egen luft, saa
+           bryterne ikke skinner gjennom naar de gaar under. -->
+      <div style="position: sticky; top: calc(var(--space-6) * -1); z-index: 1; background: var(--surface-card); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin: calc(var(--space-6) * -1) 0 var(--space-5); padding: var(--space-6) 0 var(--space-3);">
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Synlighet</div>
         <button type="button" onClick="{{ synLukk }}" aria-label="Lukk" style="appearance: none; background: var(--clay-100); border: none; border-radius: 999px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; line-height: 1; color: var(--text-heading); flex: none;">×</button>
       </div>
@@ -32623,11 +32637,13 @@ class Component extends DCLogic {
         .then(r => r.json())
         .then(d => {
           if (d && !d.innlogget) {
+            // Ingen melding her. Eieren, 16. september 2026, med bilde av
+            // innloggingsskjermen: «du er logget ut pop up, fjernes her».
+            // Sesjonen loeper ut som foer, og skjermen foelger med til
+            // innlogginga — det er bare ruta som er borte.
             this.setState({
               innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemPlan: '',
               side: 'login',
-              kvittering: 'Du er logget ut',
-              kvitteringDetalj: 'Av sikkerhetsgrunner logges du ut etter tre timer. Logg inn med Vipps for aa fortsette.',
             });
           }
         })
@@ -38755,6 +38771,15 @@ class Component extends DCLogic {
         marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
         borderTop: '1px solid rgba(244,235,222,.18)',
         maxHeight: '72vh', overflowY: 'auto', overscrollBehavior: 'contain',
+        // Luft nederst, saa de siste pillene kommer fram over bunnmenyen.
+        //
+        // Eieren, 16. september 2026: «pillene i bunnen legger seg under
+        // menyen». Bunnmenyen staar «fixed» mot skjermkanten, og skuffen
+        // endte under den. Hovedfeltet har hatt den samme klaringa siden
+        // bunnmenyen kom — se «.lx-adminaside + main» i stilarket; skuffen
+        // manglet den. Samme regnestykke: 58 px meny, luft, og hjemknappen
+        // paa iPhone.
+        paddingBottom: 'calc(58px + 18px + env(safe-area-inset-bottom, 0px))',
       },
     };
   }

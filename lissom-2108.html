@@ -8866,7 +8866,10 @@ window.__resources = {
                   <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
                 </sc-for>
                 <sc-if value="{{ klBErGjenta }}" hint-placeholder-val="{{ false }}">
-                  <input value="{{ klBAntall }}" onChange="{{ settKlBAntall }}" style="width: 56px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <!-- «onInput» og ikke «onChange»: «change» kommer foerst
+                       naar feltet forlates, og tegner skjermen seg paa nytt
+                       for det, er det man skrev borte. -->
+                  <input value="{{ klBAntall }}" onInput="{{ settKlBAntall }}" style="width: 56px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   <span style="font-size: var(--text-sm); color: var(--text-muted);">ganger</span>
                 </sc-if>
               </div>
@@ -40852,7 +40855,20 @@ class Component extends DCLogic {
               klBHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klBHolder: n, klBFeil: '' }), stil: chipStil(this.state.klBHolder === n, null) })),
               klBGjentaValg: ['Én gang', 'Hver uke', 'Annenhver uke'].map(n => ({ navn: n, velg: () => this.setState({ klBGjenta: n, klBFeil: '' }), stil: chipStil((this.state.klBGjenta || 'Én gang') === n, null) })),
               klBErGjenta: (this.state.klBGjenta || 'Én gang') !== 'Én gang',
-              klBAntall: this.state.klBAntall || '4',
+              // «??» og ikke «||».
+              //
+              // Eieren, 16. september 2026, med bilde av dialogen: «ser du
+              // det staar 4? Dette faar jeg ikke redigert. Jeg vil legge ut
+              // hele aaret».
+              //
+              // Med «||» ble alt falskt til '4' — ogsaa den tomme strengen.
+              // Toemte man feltet for aa skrive et nytt tall, sto det 4 igjen
+              // med det samme, og man kom aldri videre. Feltet i «Ny
+              // kursdato» har vaert skrevet slik hele tida (ndAntall ?? '').
+              //
+              // Taket er 52 ganger, saa hele aaret gaar: «Hver uke» 52, eller
+              // «Annenhver uke» 26. Tomt felt betyr fortsatt 4, som for.
+              klBAntall: this.state.klBAntall ?? '4',
               settKlBAntall: e => this.setState({ klBAntall: e.target.value }),
               klBAvbryt: () => this.setState({ klBekreft: null, klBFeil: '' }),
               // Kurset settes opp paa datoen gjennom kurs.php. Gjentas det,

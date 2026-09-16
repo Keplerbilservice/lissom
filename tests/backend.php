@@ -18534,6 +18534,32 @@ sjekk('… og arket kappes av det som faktisk vises',
     // slaatt regelen — innebygd stil vinner over klassen.
     && str_contains($mt, 'class="lx-synark" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; overflow-y: auto;">'));
 
+// ── Antallsfeltet i «Sett opp kurset» kan skrives i ──────────────────
+//
+// Eieren, 16. september 2026, med bilde av dialogen: «ser du det staar 4?
+// Dette faar jeg ikke redigert. Jeg vil legge ut hele aaret».
+//
+// Verdien ble lest med «||», saa alt falskt ble til '4' — ogsaa den tomme
+// strengen. Toemte man feltet for aa skrive et nytt tall, sto det 4 igjen med
+// det samme. Det samme feltet i «Ny kursdato» har vaert skrevet med «??»
+// hele tida.
+//
+// Ikke maalt i nettleseren: draget som aapner dialogen lot seg ikke utloese
+// i testnettleseren.
+sjekk('antallsfeltet i «Sett opp kurset» kan toemmes og skrives i',
+    str_contains($mt, "klBAntall: this.state.klBAntall ?? '4',")
+    && !str_contains($mt, "klBAntall: this.state.klBAntall || '4',"));
+// «change» kommer foerst naar feltet forlates. Tegner skjermen seg paa nytt
+// for det, er det man skrev borte.
+sjekk('… og hver tast lagres, ikke foerst naar feltet forlates',
+    str_contains($mt, '<input value="{{ klBAntall }}" onInput="{{ settKlBAntall }}"'));
+// Naboen skal fortsatt vaere skrevet riktig — det var den som viste veien.
+sjekk('… og feltet i «Ny kursdato» er uendret',
+    str_contains($mt, "ndAntall: this.state.ndAntall ?? '',"));
+// Hele aaret skal gaa: 52 ganger hver uke, 26 annenhver.
+sjekk('… og taket er 52 ganger, saa hele aaret gaar',
+    str_contains($mt, "Math.max(1, Math.min(52, parseInt(this.state.klBAntall || '4', 10) || 4))"));
+
 // ── Skjermen tegnes bare naar bredden faktisk er en annen ────────────
 //
 // Eieren, 16. september 2026: «den forsiden er ekstremt treg på rulle ned»,

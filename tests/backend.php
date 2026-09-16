@@ -6537,8 +6537,12 @@ sjekk('… og tallet paa Oversikt teller de samme',
 // Eieren, 31. august: «jeg faar ikke scrollet tilbake, da virker det som
 // siden under er den som scroller». Det er nettopp det som skjer: naar ruta
 // er rullet helt til topps, fortsetter fingeren ned i sida bak.
+// Fra 16. september er det én igjen, ikke to: menyskuffen sluttet aa rulle
+// inni seg selv (se «skuffen har ikke lenger et tak» lenger nede), og da har
+// den ikke noe aa stoppe heller. Vakta som teller ruller som FAKTISK ruller,
+// staar rett under — det er den som fanger et nytt overlegg uten stopp.
 sjekk('rullinga stopper i ruta, den gaar ikke ned i sida bak',
-    substr_count($sida, "overscrollBehavior: 'contain'") >= 2);
+    substr_count($sida, "overscrollBehavior: 'contain'") >= 1);
 // Han spurte om det fantes flere: «er det flere slike scenario eller sjekket
 // og fikset du alle?». Det gjorde det — sju overlegg til med samme feil. Her
 // telles de i stedet for aa ramses opp, saa et nytt overlegg uten stopp blir
@@ -11898,14 +11902,31 @@ sjekk('… i samme maal som Stemple inn og Ferie',
 // Overskrifta er ikke en knapp. En rad som ser ut som en knapp og ikke gjoer
 // noe er verre enn ingen rad.
 $antBolk = substr_count($uKode, '<div style="{{ m.bolkStil }}">{{ m.navn }}</div>');
-// Bunnmenyen staar «fixed» mot skjermkanten. Hovedfeltet har hatt klaringa
-// si siden bunnmenyen kom; skuffen manglet den, og de siste pillene havnet
-// under. Eieren, 16. september 2026: «pillene i bunnen legger seg under
-// menyen». Maalt paa 360x580, 390x620, 390x700 og 402x720: «⌁ Logg ut»
-// slutter 61–89 px over bunnmenyen, ikke under den.
-sjekk('skuffen har klaring under seg, saa bunnmenyen ikke dekker pillene',
+// Bunnmenyen staar «fixed» mot skjermkanten, og de siste pillene havnet
+// under den. Eieren, 16. september 2026: «pillene i bunnen legger seg under
+// menyen» — og etter foerste forsoek: «legger seg under bunn menyen jeg
+// kommer ikke til knaplene bak».
+//
+// Foerste forsoek ga skuffen klaring under seg, men beholdt taket paa 72vh
+// og rullinga inni skuffen. «vh» regner med URL-linja paa iPhone, saa taket
+// ble hoyere enn det som vises: paa eierens telefon stakk skuffen ~188 px
+// ned under bunnmenyen, mens klaringa var 76.
+//
+// Naa er taket borte. Skuffen er saa hoy som innholdet, og #dc-root ruller
+// — se «.lx-laast» i stilarket. Da finnes det ingen «vh» aa regne feil paa.
+//
+// Maalt paa 360x580, 390x620, 390x700 og 402x720, rullet helt ned:
+// «⌁ Logg ut» slutter 171 px over bunnmenyen paa alle fire.
+sjekk('skuffen har ikke lenger et tak som kan bli hoyere enn skjermen',
+    !str_contains($uKode, "maxHeight: '72vh', overflowY: 'auto', overscrollBehavior: 'contain',"));
+sjekk('… og den har klaring under seg, saa bunnmenyen ikke dekker pillene',
     str_contains($uKode, "paddingBottom: 'calc(58px + 18px + env(safe-area-inset-bottom, 0px))',")
     && str_contains($sidaB, '.lx-adminaside + main {'));
+// Rullinga skjer i #dc-root naar bunnmenyen staar der. Forsvinner den
+// regelen, staar skuffen uten noe aa rulle i.
+sjekk('… og det er #dc-root som ruller naar bunnmenyen staar der',
+    str_contains($sidaB, '.lx-laast, .lx-laast body { height: 100vh; height: 100dvh; overflow: hidden; }')
+    && str_contains($sidaB, '.lx-laast #dc-root {'));
 sjekk('… og bolkoverskrifta tegnes som tekst, ikke som knapp',
     $antBolk === $antSide
     && !str_contains($uKode, 'style="{{ m.knappStil }}"'));

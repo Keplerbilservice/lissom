@@ -18534,6 +18534,22 @@ sjekk('… og arket kappes av det som faktisk vises',
     // slaatt regelen — innebygd stil vinner over klassen.
     && str_contains($mt, 'class="lx-synark" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; overflow-y: auto;">'));
 
+// ── Skjermen tegnes bare naar bredden faktisk er en annen ────────────
+//
+// Eieren, 16. september 2026: «den forsiden er ekstremt treg på rulle ned»,
+// og presisert: «den er bare treg når siden er rullet helt til start» —
+// admin forside, kalenderen.
+//
+// Lytteren satte «vw» hver gang nettleseren meldte fra om en endring, ogsaa
+// naar bare hoyden hadde endret seg. Paa iPhone glir URL-linja inn og ut
+// naar man drar fra toppen, og hver glidning er en melding.
+//
+// Maalt paa kalenderen med fire ganger treg prosessor, tolv meldinger:
+// 222 ms per melding og 2511 ms skripttid foer, 0,4 ms og 5 ms etter.
+sjekk('skjermen tegnes bare naar bredden faktisk er en annen',
+    str_contains($mt, "      const b = window.innerWidth;\n      if (b !== this.state.vw) this.setState({ vw: b });")
+    && !str_contains($mt, 'this._resize = () => this.setState({ vw: window.innerWidth });'));
+
 // ── Sesjonsvakta sier ikke fra lenger ────────────────────────────────
 //
 // Eieren, 16. september 2026, med bilde av innloggingsskjermen: «du er

@@ -165,16 +165,50 @@ final class Varsel
         $emne  = self::flett((string) ($mal['emne'] ?? ''), $felter);
         $tekst = self::flett((string) $mal['tekst'], $felter);
 
-        $antall = 0;
-        foreach (self::adminEposter() as $adresse) {
-            if (self::epost($adresse, $emne, $tekst, $refType, $refId, 'intern') > 0) {
-                $antall++;
-            }
-        }
-        if ($antall === 0) {
+        // ── Én beskjed per hendelse ───────────────────────────────────
+        //
+        // Eieren, 16. september 2026, med to like «Gave løst inn: 1 ekstra
+        // time» i innboksen samme minutt: «sperr dobbel e-post uansett
+        // årsak».
+        //
+        // Det var to ting som kunne gi to: flere adresser i «admin_eposter»
+        // som alle havner i samme innboks, og det samme kallet to ganger.
+        // Begge er stengt her.
+        //
+        // Koen selv kunne det ikke: tomKo() tar raden med én UPDATE som bare
+        // treffer om den er urort, foer den sendes. Det ble maalt 16.
+        // september — én innloesning gav én rad.
+        //
+        // Samme regel som eieren satte 14. september 2026, med bilde av tre
+        // like e-poster: «Det holder med å sende 1 stk epost til
+        // post@lissom.no.»
+        $adresser = self::adminEposter();
+        if ($adresser === []) {
             logg_feil('Fant ingen adresse å varsle admin på: ' . $emne);
+            return 0;
         }
-        return $antall;
+
+        // Er beskjeden om en hendelse vi kan kjenne igjen — en gave, en
+        // ordre, en soeknad — gaar den ut én gang for den hendelsen. Ligger
+        // den alt i koen eller er sendt, er det ingenting mer aa gjore.
+        if ($refType !== null && $refId !== null && DB::verdi(
+            "SELECT id FROM notifications
+              WHERE emne = :e AND ref_type = :t AND ref_id = :i
+                AND status IN ('ko', 'sendt')
+              LIMIT 1",
+            ['e' => mb_substr($emne, 0, 191), 't' => $refType, 'i' => $refId]
+        ) !== null) {
+            logg('Hoppet over dobbel beskjed til admin', ['emne' => $emne, 'ref' => $refType . '#' . $refId]);
+            return 0;
+        }
+
+        // Én adresse: den foerste. Staar det flere i «admin_eposter», er det
+        // fortsatt én beskjed per hendelse — det er det eieren ba om.
+        if (self::epost($adresser[0], $emne, $tekst, $refType, $refId, 'intern') > 0) {
+            return 1;
+        }
+        logg_feil('Fikk ikke lagt beskjed til admin i kø: ' . $emne);
+        return 0;
     }
 
     /**

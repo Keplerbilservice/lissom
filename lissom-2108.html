@@ -38625,8 +38625,29 @@ class Component extends DCLogic {
 
     // «← Deltakere» og de andre tilbakeradene er veien ut av en fanerekke.
     // I menyen er de det samme som raden over dem.
+    //
+    // Og det samme gjelder en fane som gaar NOEYAKTIG dit stedspilla over
+    // den gaar. Eieren, 16. september 2026: \u00abn\u00e5 er det 3 knapper med butikk.
+    // Butikken, nettbutikk og internbutikk. Alle ser like ut og jeg finner
+    // ikke hvor jeg kan redigere nettbutikken ut til kunde\u00bb. \u00abNettbutikk\u00bb og
+    // \u00abButikken\u00bb pekte begge paa adminbutikk med fanen \u00abButikken\u00bb, og begge
+    // sto gule samtidig \u2014 to piller for ett sted.
+    //
+    // Bare her i skuffen. Fanerada inne paa skjermen kommer fra den samme
+    // lista, og der maa \u00abButikken\u00bb staa: uten den finnes det ingen vei
+    // tilbake fra Internbutikk eller Handlelister. Maalt paa 390 px: den
+    // rada er synlig paa telefon ogsaa.
+    //
+    // Regelen er generell, ikke en lapp paa butikken. Gaatt gjennom alle ti
+    // omraadene 16. september 2026: \u00abNettbutikk \u2192 Butikken\u00bb er den eneste
+    // som treffer. \u00abMarkedsf\u00f8ring \u2192 Tavle\u00bb gaar til samme skjerm, men med
+    // { mkFane: 'tavle' } mot stedspillas ingenting, og blir staaende.
+    const stedsrad = Component.ADMIN_MENY.find(([navn]) => navn === sted.meny);
+    const samme = (a, b) => JSON.stringify(a || {}) === JSON.stringify(b || {});
     const faner = (Component.ADMIN_FANER[sted.meny] || [])
-      .filter(([fnavn]) => fnavn.indexOf('\u2190') !== 0);
+      .filter(([fnavn]) => fnavn.indexOf('\u2190') !== 0)
+      .filter(([, frute, fforvalg]) => !stedsrad
+        || frute !== stedsrad[1] || !samme(fforvalg, stedsrad[2]));
 
     const punkter = [
       // Stedene. Ett trykk, og du er der.

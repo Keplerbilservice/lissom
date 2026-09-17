@@ -12615,10 +12615,39 @@ sjekk('serveren kan bytte plan uten aa melde inn paa nytt',
 // hoerer til planen.
 $bytt = substr($medApi, (int) strpos($medApi, "if (\$handling === 'bytt-plan') {"));
 $bytt = substr($bytt, 0, (int) strpos($bytt, '// ── Nullstill medlemmet'));
+// Et medlem som alt er inne skal ikke meldes inn paa nytt: status og
+// startdato roeres ikke, saa en i pause ikke blir aktiv igjen og «medlem
+// siden mai» ikke blir «siden i dag». De to feltene staar derfor ikke i
+// selve endringa — bare i blokka som gjelder den som IKKE er medlem.
+$endringBlokk = substr($bytt, (int) strpos($bytt, '$endring = ['));
+$endringBlokk = substr($endringBlokk, 0, (int) strpos($endringBlokk, '];'));
 sjekk('… og bytter medlemskapet, ikke status eller startdato',
     str_contains($bytt, "'medlemskap_type' => \$type,")
-    && !str_contains($bytt, "'status'")
-    && !str_contains($bytt, "'start_dato'"));
+    && !str_contains($endringBlokk, 'status')
+    && !str_contains($endringBlokk, 'start_dato'));
+// ── Den som ikke var medlem i det hele tatt ───────────────────────
+//
+// Eieren, 17. september 2026, om Ellen, som hadde betalt med Vipps: «Naa
+// ligger ellen ikke paa medlemmer men som uten medlskap. Og jeg kan ikke
+// legge til. Hun har betalt !!»
+//
+// Brikkene sto der, men byttet satte bare planen og lot statusen staa paa
+// «ingen». Hun ble staaende utenfor medlemslista med et medlemskap paa seg,
+// ingenting synlig skjedde, og det fantes ingen annen vei inn fra ruta.
+sjekk('… og den som ikke er medlem blir det',
+    str_contains($bytt, "\$erMedlem = in_array((string) \$m['status'], ['prove', 'aktiv', 'pause'], true);")
+    && str_contains($bytt, 'if (!$erMedlem) {')
+    && str_contains($bytt, "\$endring['status']     = \$engangs ? 'prove' : 'aktiv';")
+    && str_contains($bytt, "\$endring['start_dato'] = date('Y-m-d');"));
+// «staar paa X fra for» er sant bare naar hen faktisk ER medlem. Sto typen
+// der uten statusen — som hos Ellen — svarte serveren det, og gjorde ingenting.
+sjekk('… og «fra før» stopper ikke en innmelding',
+    str_contains($bytt, 'if ($fra === $type && $erMedlem) {'));
+// Bindinga skrives paa avtaleraden naar medlemmet selv godkjenner trekket i
+// Vipps. En innmelding herfra lager ingen slik rad — og da skal det staa,
+// ikke oppdages den dagen noen vil si opp.
+sjekk('… og sier at bindingstid ikke er registrert',
+    str_contains($bytt, 'Det er ikke registrert bindingstid'));
 // En engangsplan varer en maaned. Uten sluttdato ble «Prov Lissom» et
 // gratis medlemskap uten ende; byttes det motsatt vei, maa den gamle
 // sluttdatoen bort, ellers stopper medlemskapet paa proeveperiodens dato.
@@ -12659,10 +12688,18 @@ $sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // paa nytt. Planene kommer med det samme svaret som medlemslista.
 sjekk('personruta tilbyr medlemskapene fra basen',
     str_contains($sidaB, "personPlanValg: this.brikkeliste(\n            (this.state.adminPlaner || []).map(pl => pl.navn),"));
-// Knappen staar bare naar noe faktisk er valgt om.
+// Knappen staar naar noe faktisk er valgt om — og alltid paa en som ikke er
+// medlem, saa lenge et medlemskap er valgt. En som sto med en type men uten
+// status hadde ellers ingen knapp i det hele tatt.
 sjekk('… og knappen staar forst naar noe er valgt om',
-    str_contains($sidaB, 'personPlanEndret: personPlanNaa !== personPlanFra,')
+    str_contains($sidaB, 'personPlanEndret: !!personPlanNaa')
+    && str_contains($sidaB, '&& (personPlanNaa !== personPlanFra || !personErMedlem),')
     && str_contains($sidaB, '<sc-if value="{{ personPlanEndret }}"'));
+// Og den sier hva den gjor: et bytte paa et medlem, en innmelding paa en
+// som ikke er det.
+sjekk('… og knappen sier innmelding naar det er en innmelding',
+    str_contains($sidaB, "personPlanKnapp: personErMedlem ? 'Bytt medlemskap' : 'Meld inn som medlem',")
+    && str_contains($sidaB, "const personErMedlem = ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1;"));
 sjekk('… og knappen kaller «bytt-plan»',
     str_contains($sidaB, "this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)"));
 // Her sto ruta aapen etterpaa, og ble hentet paa nytt. Eieren, 7. september

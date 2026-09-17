@@ -2355,6 +2355,49 @@ sjekk('listene hentes paa nytt etter en sammenslaaing',
     str_contains($sida, 'dubletter: null, adminMedlemmer: null,')
     && str_contains($sida, 'this.hentDubletter();'));
 
+// ── Naar regelen tar feil: to mennesker, én e-post ───────────────────────
+//
+// Eieren, 17. september 2026, med bilde av skjermen: «Ellen har betalt med
+// vipps, det er ikke samme som Monica, men hun brukte hennes data».
+//
+// «To personer deler ikke innboks» holder nesten alltid. Her betalte den ene
+// med Vipps og oppga en e-post som alt sto paa en annen rad, og to mennesker
+// sto som «SAMME PERSON» — med sammenslaaing som eneste knapp, og ingen
+// maate aa si fra paa. Paret ble staaende for alltid.
+$m196 = file_get_contents(dirname(__DIR__) . '/db/migrations/196_ikke_samme_person.sql');
+sjekk('paret som ikke er det samme mennesket har et sted aa staa',
+    str_contains($m196, 'CREATE TABLE IF NOT EXISTS dublett_ikke_samme')
+    && str_contains($m196, 'UNIQUE KEY uq_ikke_samme (medlem_lav, medlem_hoy)'));
+// Lav og hoy: paret er det samme uansett hvilken vei det ble lest, og den
+// unike noekkelen skal fange begge.
+sjekk('det samme paret noteres bare én gang',
+    str_contains($dubFil, "min(\$a, \$b) . ':' . max(\$a, \$b)")
+    && str_contains($dubFil, 'ON DUPLICATE KEY UPDATE medlem_lav = medlem_lav'));
+// Ingenting flyttes og ingenting slettes — radene skal staa som de er.
+sjekk('«ikke samme person» rorer ingen av radene',
+    str_contains($dubFil, "if (\$handling === 'ikke-samme') {")
+    && !str_contains($dubFil, "DB::oppdater('members', \$navn"));
+// Tabellen kommer med migrasjon 196. Er den ikke kjort, er det bedre aa si
+// hva som mangler enn aa la kallet doe paa en tabell som ikke finnes.
+sjekk('mangler tabellen, sies det hva som mangler',
+    str_contains($dubFil, "if (!DB::harTabell('dublett_ikke_samme')) {")
+    && str_contains($dubFil, 'Kjør vedlikeholdet fra menyen nederst til venstre.'));
+// Gruppa skal forsvinne fra lista — det er hele poenget.
+sjekk('paret kommer ikke opp igjen',
+    str_contains($dubFil, '$ikkeSamme = ikkeSammePar();')
+    && str_contains($dubFil, 'erIkkeSamme($ikkeSamme, $m[\'id\'], $annen)'));
+// En tredje rad kan godt vaere den samme som begge to. Da staar gruppa.
+sjekk('bare den som er sagt fra om mot alle de andre gaar ut',
+    str_contains($dubFil, 'if ($annen !== $m[\'id\'] && !erIkkeSamme('));
+// Knappen staar paa de samme radene som sammenslaaingen, ogsaa paa en admin:
+// aa si at to er forskjellige flytter ingenting.
+sjekk('knappen staar der, ogsaa paa en administrator',
+    str_contains($sida, 'kanSkille: i > 0,')
+    && str_contains($sida, '>Ikke samme person</button>'));
+// Heller ikke dette gjor man ved et uhell.
+sjekk('«ikke samme person» spor forst',
+    str_contains($sida, "if (!window.confirm('Er «' + m.navn + '» og «'"));
+
 // ── Kommentarer som ikke lenger stemte ───────────────────────────────────
 //
 // Fire kommentarer sa at noe ikke var koblet opp, med koden som kobler det

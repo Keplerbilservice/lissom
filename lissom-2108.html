@@ -17790,6 +17790,16 @@ window.__resources = {
                         <sc-if value="{{ r.kanSlaas }}" hint-placeholder-val="{{ false }}">
                           <button type="button" onClick="{{ r.slaaSammen }}" style="appearance: none; border: 1.5px solid var(--lissom-brown); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); white-space: nowrap;">Slå inn i den over</button>
                         </sc-if>
+                        <!-- Naar regelen tar feil.
+                             Samme e-post er nesten alltid samme menneske, men
+                             ikke alltid: betaler den ene med Vipps og oppgir
+                             en e-post som alt staar paa en annen rad, staar
+                             to mennesker som ett. Uten denne knappen var det
+                             ingen vei ut — paret ble staaende, med
+                             sammenslaaing som eneste handling. -->
+                        <sc-if value="{{ r.kanSkille }}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{ r.ikkeSamme }}" style="appearance: none; border: 1px solid var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); white-space: nowrap;">Ikke samme person</button>
+                        </sc-if>
                       </div>
                     </sc-for>
                   </div>
@@ -30465,6 +30475,35 @@ class Component extends DCLogic {
         this._dubHentes = false;
         this.hentDubletter();
         this.hentAdmin();
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke',
+        kvitteringDetalj: 'Ingen forbindelse. Prøv igjen.' }));
+  }
+
+  /**
+   * «Dette er to personer.»
+   *
+   * Samme e-post er nesten alltid samme menneske — men bare nesten: betaler
+   * den ene med Vipps og oppgir en e-post som alt staar paa en annen rad,
+   * staar to mennesker som ett. Ingenting flyttes og ingenting slettes;
+   * paret noteres, og forsvinner fra lista.
+   */
+  dublettIkkeSamme(en, to) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/dubletter.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'ikke-samme', en, to }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        this.setState({
+          kvittering: (d && d.ok) ? 'Notert som to personer' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          dubletter: null,
+        });
+        this._dubHentes = false;
+        this.hentDubletter();
       })
       .catch(() => this.setState({ kvittering: 'Gikk ikke',
         kvitteringDetalj: 'Ingen forbindelse. Prøv igjen.' }));
@@ -50525,7 +50564,9 @@ class Component extends DCLogic {
                   + (sikre === grupper.length ? '' : ' · ' + sikre + ' sikre'),
               dubForklaring: 'Den som beholdes får alt som hang på den andre — bookinger, '
                 + 'betalinger, timer og kursbevis. Raden som slås inn slettes ikke; den '
-                + 'anonymiseres, så regnskapet beholder det som må stå der.',
+                + 'anonymiseres, så regnskapet beholder det som må stå der. Er det to '
+                + 'forskjellige personer som har havnet sammen, sier du fra med «Ikke '
+                + 'samme person» — da står begge radene urørt, og paret kommer ikke opp igjen.',
               dubGrupper: grupper.map(g => ({
                 tittel: (g.medlemmer[0] || {}).navn || '',
                 grunn: g.grunn,
@@ -50544,6 +50585,11 @@ class Component extends DCLogic {
                   // En administrator slaas ikke bort. Endepunktet nekter
                   // uansett; knappen staar ikke der, saa ingen prover.
                   kanSlaas: i > 0 && !m.erAdmin,
+                  // Aa si at to er forskjellige kan gjores paa hvem som
+                  // helst av dem — ogsaa en administrator. Ingenting flyttes
+                  // og ingenting slettes; det er bare en beskjed om at
+                  // regelen tok feil her.
+                  kanSkille: i > 0,
                   beholdStil: merke(false),
                   stil: {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -50558,6 +50604,12 @@ class Component extends DCLogic {
                         + ((g.medlemmer[0] || {}).navn || '') + '»?\n\n'
                         + 'Alt som hører til flyttes over. Raden slettes ikke, den anonymiseres.')) return;
                     this.dublettKall((g.medlemmer[0] || {}).id, m.id);
+                  },
+                  ikkeSamme: () => {
+                    if (!window.confirm('Er «' + m.navn + '» og «'
+                        + ((g.medlemmer[0] || {}).navn || '') + '» to forskjellige personer?\n\n'
+                        + 'Begge radene blir stående som de er, og paret kommer ikke opp igjen.')) return;
+                    this.dublettIkkeSamme((g.medlemmer[0] || {}).id, m.id);
                   },
                 })),
               })),

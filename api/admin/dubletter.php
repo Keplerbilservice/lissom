@@ -7,6 +7,7 @@ declare(strict_types=1);
  *
  *   GET                          gruppene som ser ut til aa vaere samme person
  *   POST handling=slaa-sammen    { behold, fjern }
+ *   POST handling=ikke-samme     { en, to }  — to mennesker, ikke ett
  *
  * ── Hvorfor dette finnes ──────────────────────────────────────────────
  *
@@ -22,7 +23,10 @@ declare(strict_types=1);
  * To niveauer, og de behandles ulikt:
  *
  *   sikker  Samme e-post, eller samme telefonnummer. To personer deler ikke
- *           innboks eller mobil.
+ *           innboks eller mobil — nesten alltid. Eieren, 17. september 2026:
+ *           «Ellen har betalt med vipps, det er ikke samme som Monica, men
+ *           hun brukte hennes data». Da sier mennesket fra med «ikke-samme»,
+ *           og paret kommer ikke opp igjen.
  *   mulig   Bare samme navn. «Anne Hansen» er ikke ett menneske, og disse
  *           staar derfor som forslag som maa leses foer de slaas sammen.
  *
@@ -64,6 +68,40 @@ function medlemspekere(): array
     return Medlemskap::pekere();
 }
 
+/**
+ * Parene et menneske har sett paa og sagt fra om: de er IKKE den samme.
+ *
+ * Eieren, 17. september 2026, med bilde av skjermen: «Ellen har betalt med
+ * vipps, det er ikke samme som Monica, men hun brukte hennes data».
+ *
+ * Regelen over — «to personer deler ikke innboks» — holder nesten alltid, og
+ * her holdt den ikke: den ene betalte med Vipps og oppga en e-post som alt
+ * sto paa en annen rad. Da sto de som «samme person», med en knapp som ville
+ * slaatt to mennesker sammen, og ingen maate aa si fra paa.
+ *
+ * Nokkelen er «lav:hoy», saa paret er det samme uansett hvilken vei det ble
+ * lest.
+ *
+ * @return array<string,true>
+ */
+function ikkeSammePar(): array
+{
+    if (!DB::harTabell('dublett_ikke_samme')) {
+        return [];
+    }
+    $ut = [];
+    foreach (DB::alle('SELECT medlem_lav, medlem_hoy FROM dublett_ikke_samme') as $r) {
+        $ut[(int) $r['medlem_lav'] . ':' . (int) $r['medlem_hoy']] = true;
+    }
+    return $ut;
+}
+
+/** Er disse to sagt fra om? Rekkefolgen spiller ingen rolle. */
+function erIkkeSamme(array $par, int $a, int $b): bool
+{
+    return isset($par[min($a, $b) . ':' . max($a, $b)]);
+}
+
 // ---------------------------------------------------------------- lesing
 if (Foresporsel::metode() === 'GET') {
     $rader = DB::alle(
@@ -73,6 +111,8 @@ if (Foresporsel::metode() === 'GET') {
           WHERE anonymisert_at IS NULL
        ORDER BY id"
     );
+
+    $ikkeSamme = ikkeSammePar();
 
     $navnNok = static fn(string $n): string
         => trim(preg_replace('/\s+/u', ' ', mb_strtolower($n)) ?? '');
@@ -212,6 +252,23 @@ if (Foresporsel::metode() === 'GET') {
                 $medlemmer[] = $etMedlem($etterId[$id]);
             }
         }
+        // Ute er den som er sagt fra om mot alle de andre i gruppa. Er det to
+        // igjen som hoerer sammen, staar gruppa — den tredje raden kan godt
+        // vaere den samme som begge.
+        if ($ikkeSamme !== []) {
+            $ider = array_column($medlemmer, 'id');
+            $medlemmer = array_values(array_filter(
+                $medlemmer,
+                static function (array $m) use ($ider, $ikkeSamme): bool {
+                    foreach ($ider as $annen) {
+                        if ($annen !== $m['id'] && !erIkkeSamme($ikkeSamme, $m['id'], $annen)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            ));
+        }
         if (count($medlemmer) < 2) {
             continue;
         }
@@ -255,7 +312,53 @@ if (Foresporsel::metode() === 'GET') {
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 
-if (Foresporsel::tekst('handling') !== 'slaa-sammen') {
+$handling = Foresporsel::tekst('handling');
+
+// ------------------------------------------------- «dette er to personer»
+//
+// Ingenting flyttes og ingenting slettes: paret noteres som to mennesker, og
+// forsvinner fra lista. Det er det eneste som kan gjores naar regelen over
+// tar feil — raden til hver av dem skal staa som den er.
+if ($handling === 'ikke-samme') {
+    if (!DB::harTabell('dublett_ikke_samme')) {
+        Svar::feil('«Ikke samme person» krever en oppdatering av databasen. '
+                 . 'Kjør vedlikeholdet fra menyen nederst til venstre.');
+    }
+    $en = Foresporsel::heltall('en');
+    $to = Foresporsel::heltall('to');
+    if ($en <= 0 || $to <= 0 || $en === $to) {
+        Svar::feil('Velg de to radene som ikke er den samme personen.');
+    }
+    $navn = [];
+    foreach ([$en, $to] as $i) {
+        $rad = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $i]);
+        if ($rad === null) {
+            Svar::feil('Fant ikke begge medlemmene.', 404);
+        }
+        $navn[$i] = (string) $rad['navn'];
+    }
+    $lav = min($en, $to);
+    $hoy = max($en, $to);
+    // «ON DUPLICATE KEY»: trykker noen to ganger, er det fortsatt det samme
+    // svaret. Det er ikke en feil aa si det samme to ganger.
+    DB::kjor(
+        'INSERT INTO dublett_ikke_samme (medlem_lav, medlem_hoy, av)
+              VALUES (:l, :h, :a)
+         ON DUPLICATE KEY UPDATE medlem_lav = medlem_lav',
+        ['l' => $lav, 'h' => $hoy, 'a' => (int) $jeg['id']]
+    );
+    revider('dublett_ikke_samme', 'member', $lav, [
+        'annen' => $hoy,
+        'navn'  => array_values($navn),
+        'av'    => (int) $jeg['id'],
+    ]);
+    Svar::ok([
+        'beskjed' => '«' . $navn[$en] . '» og «' . $navn[$to] . '» står som to '
+                   . 'personer. Paret kommer ikke opp igjen, og radene er urørt.',
+    ]);
+}
+
+if ($handling !== 'slaa-sammen') {
     Svar::feil('Ukjent handling.');
 }
 

@@ -12756,6 +12756,19 @@ sjekk('… og flyttingen spor forst',
     str_contains($sidaB, "if (!window.confirm('Flytte medlemskapet «'")
     && str_contains($sidaB, 'Tidligere avtaler blir stående. Rollen er ikke rørt'));
 
+// ── Brikkene maa finnes for den som ikke er medlem ───────────────────
+//
+// Eieren, 17. september 2026, med Ellens rute oppe: «Hun staar som ikke
+// medlem, og jeg kan ikke endre status fra ikke medlem».
+//
+// Valget MELDER inn — det ble rettet dagen for — men brikkene laa inne i
+// blokka «sc-if personErMedlem», som bare staar naar personen alt ER medlem.
+// For den som ikke var det, fantes de altsaa ikke. Naa staar de alene, uten
+// betaling, avtale og avslutning, som hoerer til et medlemskap som finnes.
+sjekk('den som ikke er medlem har brikker aa velge',
+    str_contains($sidaB, '<sc-if value="{{ personKanMeldesInn }}"')
+    && str_contains($sidaB, "personKanMeldesInn: !!p.id\n            && ['prove', 'aktiv', 'pause'].indexOf(p.status) === -1,"));
+
 echo "\n== Soek i medlemslista ==\n";
 // Eieren, 17. september 2026, etter en kveld med aa lete etter det samme
 // mennesket: «Naa finner jeg henne ikke i det hele tatt», «Ingen som finner

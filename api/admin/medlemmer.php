@@ -707,6 +707,137 @@ if (Foresporsel::metode() === 'POST') {
         ]);
     }
 
+    // ── Flytt medlemskapet til rett person ─────────────────────────
+    //
+    // Eieren, 17. september 2026: «Hun meldte seg inn som nytt medlem med
+    // mini 15», «hun brukte daten til monica», og «hun betalte med vipps og
+    // alt, saa hvordan i haelvette kunne dette skje».
+    //
+    // Slik: medlemskapet folger den som er INNLOGGET, ikke den som betaler.
+    // api/bli-medlem.php begynner med krev_medlem(), og planen, avtalen og
+    // betalingen legges paa den kontoen nettleseren sto paa. Melder én seg
+    // inn fra en annens innlogging, havner alt sammen der. Ingen feil slo
+    // til; systemet gjorde det det ble bedt om.
+    //
+    // Og saa fantes det ingen vei tilbake. Det eneste verktoyet som liknet
+    // var «Slaa inn i den over» under «Samme person flere ganger» — men den
+    // slaar sammen to MENNESKER og skjuler den ene. Da forsvant hun.
+    //
+    // Her flyttes medlemskapet, avtalen og medlemsbetalingene fra én rad til
+    // en annen. Ingen slaas sammen, ingen skjules, og det kan flyttes
+    // tilbake samme vei.
+    if ($handling === 'flytt-medlemskap') {
+        $fraId = Foresporsel::heltall('fra');
+        $tilId = Foresporsel::heltall('til');
+        if ($fraId <= 0 || $tilId <= 0 || $fraId === $tilId) {
+            Svar::feil('Velg hvem medlemskapet skal flyttes fra, og hvem det skal til.');
+        }
+        $fraM = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $fraId]);
+        $tilM = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $tilId]);
+        if ($fraM === null || $tilM === null) {
+            Svar::feil('Fant ikke begge personene.', 404);
+        }
+        if ($tilM['anonymisert_at'] !== null) {
+            Svar::feil('Den raden er ryddet bort, og kan ikke ta imot et medlemskap.');
+        }
+
+        $medlemStatus = ['prove', 'aktiv', 'pause'];
+        if (!in_array((string) $fraM['status'], $medlemStatus, true)
+            && (string) ($fraM['medlemskap_type'] ?? '') === '') {
+            Svar::feil(($fraM['navn'] ?: 'Personen') . ' har ikke noe medlemskap å flytte.');
+        }
+        // To medlemskap paa én rad finnes ikke. Skal det likevel flyttes, maa
+        // det som staar der avsluttes forst — det er et valg, ikke noe dette
+        // gjor selv.
+        if (in_array((string) $tilM['status'], $medlemStatus, true)) {
+            Svar::feil(($tilM['navn'] ?: 'Personen') . ' står alt på «'
+                     . ($tilM['medlemskap_type'] ?: 'et medlemskap')
+                     . '». Avslutt det først hvis medlemskapet skal flyttes hit.');
+        }
+
+        $felter = ['medlemskap_type', 'status', 'start_dato', 'slutt_dato', 'timer_per_mnd'];
+        if (DB::harKolonne('members', 'betaler_ikke')) {
+            $felter[] = 'betaler_ikke';
+            $felter[] = 'betaler_ikke_grunn';
+        }
+
+        [$avtaler, $betalinger] = DB::iTransaksjon(
+            static function () use ($fraId, $tilId, $fraM, $felter): array {
+                $til = [];
+                $tom = [];
+                foreach ($felter as $f) {
+                    $til[$f] = $fraM[$f] ?? null;
+                    $tom[$f] = $f === 'status' ? 'ingen'
+                        : ($f === 'betaler_ikke' ? 0 : null);
+                }
+                DB::oppdater('members', $til, ['id' => $tilId]);
+                DB::oppdater('members', $tom, ['id' => $fraId]);
+
+                // Avtalen folger medlemskapet. Fullmakten i Vipps gjor den
+                // ikke — den staar paa den som godkjente den, og det staar i
+                // svaret.
+                $avtaler = DB::kjor(
+                    'UPDATE subscriptions SET member_id = :ny WHERE member_id = :gml',
+                    ['ny' => $tilId, 'gml' => $fraId]
+                )->rowCount();
+
+                // Bare medlemsbetalingene. Et kurs eller en gave kjopt fra
+                // den samme kontoen er fortsatt kjopt der.
+                $betalinger = DB::kjor(
+                    "UPDATE payments SET member_id = :ny
+                      WHERE member_id = :gml AND formal = 'medlemskap'",
+                    ['ny' => $tilId, 'gml' => $fraId]
+                )->rowCount();
+
+                return [$avtaler, $betalinger];
+            }
+        );
+
+        revider('medlemskap_flyttet', 'member', $tilId, [
+            'fra'         => $fraId,
+            'fraNavn'     => (string) $fraM['navn'],
+            'type'        => (string) ($fraM['medlemskap_type'] ?? ''),
+            'avtaler'     => $avtaler,
+            'betalinger'  => $betalinger,
+            'av'          => (int) $jeg['id'],
+        ]);
+        revider('medlemskap_flyttet_bort', 'member', $fraId, [
+            'til'     => $tilId,
+            'tilNavn' => (string) $tilM['navn'],
+            'type'    => (string) ($fraM['medlemskap_type'] ?? ''),
+            'av'      => (int) $jeg['id'],
+        ]);
+
+        // Staar det en fullmakt i Vipps, trekkes pengene fortsatt fra den
+        // som godkjente den. Det kan vi ikke endre herfra, og da skal det
+        // staa — ikke oppdages naar neste trekk kommer.
+        $fastTrekk = DB::en(
+            "SELECT id FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv'
+                AND vipps_agreement_id IS NOT NULL AND vipps_agreement_id <> ''
+              LIMIT 1",
+            ['m' => $tilId]
+        ) !== null;
+
+        Svar::ok([
+            'beskjed' => 'Medlemskapet står nå på ' . ($tilM['navn'] ?: 'den andre raden')
+                . '. ' . ($fraM['navn'] ?: 'Den forrige raden') . ' står urørt ellers — '
+                . 'ingen er slått sammen og ingenting er slettet.'
+                . ($avtaler > 0
+                    ? ' ' . ($avtaler === 1 ? 'Avtalen' : $avtaler . ' avtaler') . ' fulgte med.'
+                    : '')
+                . ($betalinger > 0
+                    ? ' ' . ($betalinger === 1 ? 'Én medlemsbetaling' : $betalinger . ' medlemsbetalinger')
+                      . ' fulgte med.'
+                    : '')
+                . ($fastTrekk
+                    ? ' Merk: fast trekk i Vipps er godkjent av den som betalte, og trekkes'
+                      . ' fortsatt derfra. Skal pengene komme fra den nye, må avtalen sies opp'
+                      . ' og en ny settes opp fra Min side.'
+                    : ''),
+        ]);
+    }
+
     if ($handling === 'bytt-plan') {
         $id = Foresporsel::heltall('medlemId');
         $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
@@ -1648,6 +1779,11 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'kursbevis_endret'      => 'Kursbevis rettet',
             'venteliste_gitt_plass' => 'Fikk plass fra ventelista',
             'medlem_meldt_inn'      => 'Meldt inn som medlem',
+            // Flyttingen skal staa med ord paa begge radene: den ene fikk
+            // medlemskapet, den andre ga det fra seg. «Medlemskap flyttet»
+            // alene sier ikke hvilken vei.
+            'medlemskap_flyttet'      => 'Medlemskapet flyttet hit fra en annen person',
+            'medlemskap_flyttet_bort' => 'Medlemskapet flyttet til en annen person',
             'medlem_avsluttet'      => 'Medlemskapet avsluttet',
             'medlem_notat'          => 'Notat endret',
             default                 => ucfirst(str_replace('_', ' ', $h)),

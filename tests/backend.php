@@ -12702,13 +12702,35 @@ $flytt = substr($medApi, (int) strpos($medApi, "if (\$handling === 'flytt-medlem
 $flytt = substr($flytt, 0, (int) strpos($flytt, "if (\$handling === 'bytt-plan') {"));
 // Alt eller ingenting: medlemsraden, avtalen og betalingene hoerer sammen.
 sjekk('… og flyttingen er alt eller ingenting',
-    str_contains($flytt, 'DB::iTransaksjon(')
-    && str_contains($flytt, "UPDATE subscriptions SET member_id = :ny WHERE member_id = :gml")
-    && str_contains($flytt, "WHERE member_id = :gml AND formal = 'medlemskap'"));
-// Bare medlemsbetalingene. Et kurs eller en gave kjopt fra den samme kontoen
-// er fortsatt kjopt der.
-sjekk('… og kursbetalinger blir liggende',
-    str_contains($flytt, "AND formal = 'medlemskap'"));
+    str_contains($flytt, 'DB::iTransaksjon('));
+// ── Bare avtalen som gjelder NAA ─────────────────────────────────────
+//
+// Eieren, 17. september 2026, med bilde av Monicas rute: tre avtaler under
+// hverandre — «Mini 15, gjor opp selv, Aktiv, opprettet 17. september», og to
+// av hennes egne fra 3. september, «Basis 30, utlopt» og «Mini 15, stoppet».
+//
+// Den forste er den som ble satt opp fra hennes innlogging. De to andre er
+// Monicas egen historikk. En flytting som tok «alle avtaler paa raden» ville
+// dratt dem med — og det var nettopp det den gjorde til aa begynne med.
+sjekk('… og bare avtalen som loeper flyttes',
+    str_contains($flytt, "WHERE member_id = :m AND status = 'aktiv'")
+    && str_contains($flytt, 'UPDATE subscriptions SET member_id = :ny WHERE id = :a AND member_id = :gml'));
+// Betalingene folger avtalen gjennom «subscription_id» (migrasjon 022) —
+// ikke gjennom «alle medlemsbetalinger paa raden», som er det samme hullet
+// en gang til.
+sjekk('… og betalingene folger avtalen, ikke raden',
+    str_contains($flytt, "AND formal = 'medlemskap'\n                            AND subscription_id = :a"));
+// Og svaret sier hva som ble staaende igjen.
+sjekk('… og sier hva som ble staaende igjen',
+    str_contains($flytt, "'SELECT COUNT(*) FROM subscriptions WHERE member_id = :m',")
+    && str_contains($flytt, 'sin egen historikk.'));
+// ── Rollen ───────────────────────────────────────────────────────────
+//
+// Eieren, 17. september 2026: «Jeg maa spoerre saa jeg ikke gjor ellen til
+// admin». Et medlemskap er ikke en tilgang.
+sjekk('… og rollen flyttes ikke med',
+    !str_contains($flytt, "'rolle'")
+    && str_contains($flytt, 'Rollen er ikke rørt'));
 // To medlemskap paa én rad finnes ikke.
 sjekk('… og en som alt er medlem kan ikke ta imot et til',
     str_contains($flytt, "if (in_array((string) \$tilM['status'], \$medlemStatus, true)) {")
@@ -12731,7 +12753,8 @@ sjekk('… og bare de uten medlemskap kan velges',
     str_contains($sidaB, "&& MEDL.indexOf(m.status) === -1"));
 // Dette gjor man ikke ved et uhell.
 sjekk('… og flyttingen spor forst',
-    str_contains($sidaB, "if (!window.confirm('Flytte medlemskapet «'"));
+    str_contains($sidaB, "if (!window.confirm('Flytte medlemskapet «'")
+    && str_contains($sidaB, 'Tidligere avtaler blir stående. Rollen er ikke rørt'));
 
 echo "\n== Innloggingen som gikk ut midt i dagen ==\n";
 // Eieren, 17. september 2026: «jeg faar fortsatt denne jaevla meldinga hver

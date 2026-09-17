@@ -48095,6 +48095,18 @@ class Component extends DCLogic {
         const personPlanFra = p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : '';
         const personPlanNaa = this.state.personPlan === null || this.state.personPlan === undefined
           ? personPlanFra : this.state.personPlan;
+        // Er hen medlem i det hele tatt?
+        //
+        // Eieren, 17. september 2026, om Ellen, som hadde betalt: «Naa ligger
+        // ellen ikke paa medlemmer men som uten medlskap. Og jeg kan ikke
+        // legge til.»
+        //
+        // Brikkene under «Medlemskap» staar paa alle, ogsaa den som ikke er
+        // medlem. Men de het «Bytt medlemskap», og knappen kom bare naar
+        // brikka ble en ANNEN enn den som sto der fra for. En som ikke var
+        // medlem, men alt hadde en type paa seg, hadde da ingen knapp i det
+        // hele tatt — og ingen annen vei inn fra ruta man staar i.
+        const personErMedlem = ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1;
         return {
           visPerson: !!this.state.personFor,
           personHenter: !!this.state.personFor && !d,
@@ -48248,19 +48260,29 @@ class Component extends DCLogic {
             personPlanNaa, e => this.setState({ personPlan: e.target.value })),
           // Knappen staar bare naar noe faktisk er valgt om. Ellers ser det
           // ut som om det er noe aa lagre hver gang ruta aapnes.
-          personPlanEndret: personPlanNaa !== personPlanFra,
-          personPlanKnapp: 'Bytt medlemskap',
+          // Knappen staar naar noe er valgt om — og alltid paa en som ikke
+          // er medlem, saa lenge et medlemskap er valgt. Da er det ikke et
+          // bytte, det er en innmelding.
+          personPlanEndret: !!personPlanNaa
+            && (personPlanNaa !== personPlanFra || !personErMedlem),
+          personPlanKnapp: personErMedlem ? 'Bytt medlemskap' : 'Meld inn som medlem',
           // Beloepet folger med byttet naar avtalen er vaar egen. Eieren,
           // 4. september: «det gaar ikke aa endre sum» — planen ble byttet,
           // men prisen sto stille, fordi den leses av avtalen naar den
           // loeper. Har Vipps fullmakten, er det Vipps som eier beloepet, og
           // da kan vi ikke skrive det om herfra.
-          personPlanHjelp: 'Byttet endrer hvilket medlemskap ' + fornavn
-            + ' står på, og beløpet følger med. Det opprettes ingen Vipps-avtale '
-            + '— og har hen godkjent fast trekk, trekker Vipps fortsatt det gamle '
-            + 'beløpet til avtalen sies opp.',
+          personPlanHjelp: personErMedlem
+            ? 'Byttet endrer hvilket medlemskap ' + fornavn
+              + ' står på, og beløpet følger med. Det opprettes ingen Vipps-avtale '
+              + '— og har hen godkjent fast trekk, trekker Vipps fortsatt det gamle '
+              + 'beløpet til avtalen sies opp.'
+            : fornavn + ' står ikke som medlem. Velger du et medlemskap her, blir hen '
+              + 'medlem fra i dag — samme vilkår som alle andre meldt inn for hånd: '
+              + 'det opprettes ingen Vipps-avtale, og bindingstid registreres først '
+              + 'når hen selv godkjenner fast trekk i Vipps.',
           lagrePersonPlan: () => {
-            if (personPlanNaa === personPlanFra || !personPlanNaa) { return; }
+            if (!personPlanNaa) { return; }
+            if (personPlanNaa === personPlanFra && personErMedlem) { return; }
             // «behold» — uten den lukker medlemKall ruta, og da ville
             // oppfriskningen under aapnet den igjen med det samme.
             this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)

@@ -720,8 +720,26 @@ if (Foresporsel::metode() === 'POST') {
             Svar::feil('Velg hvilket medlemskap det skal byttes til.');
         }
 
+        // ── Er hen medlem i det hele tatt? ─────────────────────────
+        //
+        // Eieren, 17. september 2026, om Ellen, som hadde betalt med Vipps:
+        // «Naa ligger ellen ikke paa medlemmer men som uten medlskap. Og jeg
+        // kan ikke legge til. Hun har betalt !!»
+        //
+        // Brikkene under «Medlemskap» i personruta staar paa alle, ogsaa den
+        // som ikke er medlem. Men byttet satte bare planen og lot statusen
+        // staa: hun ble staaende som «ingen», altsaa utenfor medlemslista,
+        // med et medlemskap paa seg. Ingenting synlig skjedde, og det fantes
+        // ingen annen vei inn fra ruta man staar i.
+        //
+        // Er hen ikke medlem, er dette en innmelding — det samme «meld-inn»
+        // gjor: status og startdato settes. Er hen medlem fra for, roeres de
+        // ikke; da er det fortsatt bare planen som byttes, og «medlem siden
+        // mai» blir ikke «siden i dag».
+        $erMedlem = in_array((string) $m['status'], ['prove', 'aktiv', 'pause'], true);
+
         $fra = (string) ($m['medlemskap_type'] ?? '');
-        if ($fra === $type) {
+        if ($fra === $type && $erMedlem) {
             Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . ' står på ' . $type . ' fra før.']);
         }
 
@@ -729,17 +747,23 @@ if (Foresporsel::metode() === 'POST') {
         // loepende plan, skal den gamle sluttdatoen bort — ellers stopper
         // medlemskapet paa en dato som hoerte til proeveperioden.
         $engangs = (int) ($plan['engangs'] ?? 0) === 1;
-        DB::oppdater('members', [
+        $endring = [
             'medlemskap_type' => $type,
             'slutt_dato'      => $engangs ? date('Y-m-d', strtotime('+1 month')) : null,
             // «timer_per_mnd» settes ikke. Den staar paa medlemmet som en
             // overstyring for én person; er den tom, bestemmer planen. Se
             // Medlemskap::timerFor(). Kopierte vi timetallet inn her, ville
             // medlemmet beholdt det gamle den dagen planen endres.
-        ], ['id' => $id]);
+        ];
+        if (!$erMedlem) {
+            $endring['status']     = $engangs ? 'prove' : 'aktiv';
+            $endring['start_dato'] = date('Y-m-d');
+        }
+        DB::oppdater('members', $endring, ['id' => $id]);
 
-        revider('medlem_plan_byttet', 'member', $id,
-                ['fra' => $fra, 'til' => $type, 'av' => (int) $jeg['id']]);
+        revider($erMedlem ? 'medlem_plan_byttet' : 'medlem_meldt_inn', 'member', $id,
+                ['fra' => $fra, 'til' => $type, 'via' => 'personruta',
+                 'av' => (int) $jeg['id']]);
 
         // ── Avtalen maa folge med, ellers endrer ikke prisen seg ────
         //
@@ -775,9 +799,20 @@ if (Foresporsel::metode() === 'POST') {
         // Med fullmakt i Vipps er det Vipps som eier beloepet. Vi kan ikke
         // skrive det om herfra, og det skal staa i klartekst — ikke
         // oppdages naar pengene kommer.
+        // Ble hen medlem naa, skal svaret si nettopp det — «byttet fra» er
+        // ikke det som skjedde, og bindinga er verdt et ord: den skrives paa
+        // avtaleraden naar medlemmet selv setter opp trekket i Vipps, og en
+        // innmelding herfra lager ingen slik rad. Samme vilkaar som alle
+        // andre meldt inn for haand, men det skal staa, ikke oppdages.
         Svar::ok([
-            'beskjed' => ($m['navn'] ?: 'Medlemmet') . ' står nå på ' . $type . '.'
-                . ($fra !== '' ? ' Byttet fra ' . $fra . '.' : '')
+            'beskjed' => ($m['navn'] ?: 'Medlemmet')
+                . ($erMedlem ? ' står nå på ' : ' er medlem nå, på ') . $type . '.'
+                . ($erMedlem && $fra !== '' ? ' Byttet fra ' . $fra . '.' : '')
+                . (!$erMedlem && $avtale === null
+                    ? ' Det er ikke registrert bindingstid — den settes på avtalen når'
+                      . ' medlemmet selv betaler eller godkjenner fast trekk i Vipps.'
+                      . ' Oppsigelsestida følger medlemskapet som for alle andre.'
+                    : '')
                 . ($engangs
                     ? ' Det er en engangsperiode, og den varer én måned.'
                     : '')

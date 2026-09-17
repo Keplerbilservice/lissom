@@ -755,14 +755,44 @@ if (Foresporsel::metode() === 'POST') {
                      . '». Avslutt det først hvis medlemskapet skal flyttes hit.');
         }
 
+        // «rolle» staar IKKE i lista.
+        //
+        // Eieren, 17. september 2026: «Jeg maa spoerre saa jeg ikke gjor ellen
+        // til admin». Nei — den som gir fra seg medlemskapet beholder rollen
+        // sin, og den som faar det beholder sin. Et medlemskap er ikke en
+        // tilgang.
         $felter = ['medlemskap_type', 'status', 'start_dato', 'slutt_dato', 'timer_per_mnd'];
         if (DB::harKolonne('members', 'betaler_ikke')) {
             $felter[] = 'betaler_ikke';
             $felter[] = 'betaler_ikke_grunn';
         }
 
+        // ── Bare avtalen som gjelder NAA ──────────────────────────────
+        //
+        // Eieren, 17. september 2026, med bilde av Monicas rute: tre avtaler
+        // under hverandre — «Mini 15, gjor opp selv, Aktiv, opprettet 17.
+        // september», og to av hennes egne fra 3. september, «Basis 30,
+        // utlopt» og «Mini 15, stoppet».
+        //
+        // Den forste er den som ble satt opp fra hennes innlogging og skal
+        // flyttes. De to andre er Monicas egen historikk, og den skal bli
+        // staaende der den ble gjort. En flytting som tok «alle avtaler paa
+        // raden» ville dratt dem med.
+        //
+        // Derfor: den avtalen som loeper. Betalingene folger den gjennom
+        // «subscription_id» (migrasjon 022) — ikke gjennom «alle
+        // medlemsbetalinger paa raden», som er det samme hullet en gang til.
+        $avtale = DB::en(
+            "SELECT id FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv'
+           ORDER BY id DESC LIMIT 1",
+            ['m' => $fraId]
+        );
+        $avtaleId = $avtale === null ? 0 : (int) $avtale['id'];
+        $harSubKol = DB::harKolonne('payments', 'subscription_id');
+
         [$avtaler, $betalinger] = DB::iTransaksjon(
-            static function () use ($fraId, $tilId, $fraM, $felter): array {
+            static function () use ($fraId, $tilId, $fraM, $felter, $avtaleId, $harSubKol): array {
                 $til = [];
                 $tom = [];
                 foreach ($felter as $f) {
@@ -773,21 +803,30 @@ if (Foresporsel::metode() === 'POST') {
                 DB::oppdater('members', $til, ['id' => $tilId]);
                 DB::oppdater('members', $tom, ['id' => $fraId]);
 
+                if ($avtaleId === 0) {
+                    return [0, 0];
+                }
+
                 // Avtalen folger medlemskapet. Fullmakten i Vipps gjor den
                 // ikke — den staar paa den som godkjente den, og det staar i
                 // svaret.
                 $avtaler = DB::kjor(
-                    'UPDATE subscriptions SET member_id = :ny WHERE member_id = :gml',
-                    ['ny' => $tilId, 'gml' => $fraId]
+                    'UPDATE subscriptions SET member_id = :ny WHERE id = :a AND member_id = :gml',
+                    ['ny' => $tilId, 'a' => $avtaleId, 'gml' => $fraId]
                 )->rowCount();
 
-                // Bare medlemsbetalingene. Et kurs eller en gave kjopt fra
-                // den samme kontoen er fortsatt kjopt der.
-                $betalinger = DB::kjor(
-                    "UPDATE payments SET member_id = :ny
-                      WHERE member_id = :gml AND formal = 'medlemskap'",
-                    ['ny' => $tilId, 'gml' => $fraId]
-                )->rowCount();
+                // Betalingene som hoerer til nettopp den avtalen. Et kurs,
+                // en gave eller et tidligere medlemskap betalt fra den samme
+                // kontoen er fortsatt betalt der.
+                $betalinger = 0;
+                if ($harSubKol) {
+                    $betalinger = DB::kjor(
+                        "UPDATE payments SET member_id = :ny
+                          WHERE member_id = :gml AND formal = 'medlemskap'
+                            AND subscription_id = :a",
+                        ['ny' => $tilId, 'gml' => $fraId, 'a' => $avtaleId]
+                    )->rowCount();
+                }
 
                 return [$avtaler, $betalinger];
             }
@@ -808,6 +847,12 @@ if (Foresporsel::metode() === 'POST') {
             'av'      => (int) $jeg['id'],
         ]);
 
+        // Hva som ble staaende igjen — den forrige eierens egen historikk.
+        $eldre = (int) DB::verdi(
+            'SELECT COUNT(*) FROM subscriptions WHERE member_id = :m',
+            ['m' => $fraId]
+        );
+
         // Staar det en fullmakt i Vipps, trekkes pengene fortsatt fra den
         // som godkjente den. Det kan vi ikke endre herfra, og da skal det
         // staa — ikke oppdages naar neste trekk kommer.
@@ -824,12 +869,18 @@ if (Foresporsel::metode() === 'POST') {
                 . '. ' . ($fraM['navn'] ?: 'Den forrige raden') . ' står urørt ellers — '
                 . 'ingen er slått sammen og ingenting er slettet.'
                 . ($avtaler > 0
-                    ? ' ' . ($avtaler === 1 ? 'Avtalen' : $avtaler . ' avtaler') . ' fulgte med.'
+                    ? ' Avtalen som løper fulgte med'
+                      . ($betalinger > 0
+                        ? ', og ' . ($betalinger === 1 ? 'betalingen' : $betalinger . ' betalinger')
+                          . ' som hører til den.'
+                        : '. Ingen betaling var knyttet til den.')
+                    : ' Det løp ingen avtale, så bare medlemskapet er flyttet.')
+                . ($eldre > 0
+                    ? ' ' . ($eldre === 1 ? 'Én tidligere avtale' : $eldre . ' tidligere avtaler')
+                      . ' står igjen der de ble gjort — de er ' . ($fraM['navn'] ?: 'den forrige')
+                      . ' sin egen historikk.'
                     : '')
-                . ($betalinger > 0
-                    ? ' ' . ($betalinger === 1 ? 'Én medlemsbetaling' : $betalinger . ' medlemsbetalinger')
-                      . ' fulgte med.'
-                    : '')
+                . ' Rollen er ikke rørt: den som er administrator blir det, og den andre blir ikke det.'
                 . ($fastTrekk
                     ? ' Merk: fast trekk i Vipps er godkjent av den som betalte, og trekkes'
                       . ' fortsatt derfra. Skal pengene komme fra den nye, må avtalen sies opp'

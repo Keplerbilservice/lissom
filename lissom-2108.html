@@ -48387,8 +48387,8 @@ class Component extends DCLogic {
                 velg: () => {
                   if (!window.confirm('Flytte medlemskapet «' + (p.medlemskap || '') + '» fra «'
                       + (p.navn || '') + '» til «' + (m.navn || '') + '»?\n\n'
-                      + 'Avtalen og medlemsbetalingene følger med. Ingen slås sammen, '
-                      + 'og begge radene blir stående.')) return;
+                      + 'Avtalen som løper, og betalingen som hører til den, følger med. '
+                      + 'Tidligere avtaler blir stående. Rollen er ikke rørt, og ingen slås sammen.')) return;
                   this.medlemKall({ handling: 'flytt-medlemskap', fra: p.id, til: m.id }, true)
                     .then(ok => { if (ok) { this.setState({ personFlyttSok: '' }); this.lukkPersonruta(); } });
                 },

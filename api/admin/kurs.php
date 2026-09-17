@@ -599,9 +599,70 @@ switch ($handling) {
         // Maalt 16. september: foerste kall gikk gjennom, andre gav HTTP 500
         // med «Duplicate entry '1-2026-11-25 16:00:00' for key
         // uq_okt_kurs_start».
-        if (DB::en('SELECT id FROM course_sessions WHERE course_id = :k AND start_tid = :s',
-                   ['k' => $kursId, 's' => $start]) !== null) {
-            Svar::feil('Kurset går alt på denne datoen og tida. Velg en annen.');
+        //
+        // ── Den avlyste datoen som ingen kunne se ───────────────────────
+        //
+        // Eieren, 17. september 2026, med bilde av dialogen paa 25. november:
+        // «faar beskjed om at det allerede er et kurs der, men det er det
+        // ikke».
+        //
+        // Og det var det ikke. Avlyste datoer er ute av kalenderen siden 8.
+        // september — raden blir staaende i basen som «avlyst», og den unike
+        // noekkelen holdt plassen. Ingenting aa se, ingen vei videre: kurset
+        // kunne ikke settes opp paa nytt paa den datoen det ble avlyst.
+        //
+        // «Er det slettet, maa ogsaa databasen toemmes saa det ikke okkuperer
+        // plassen.» En avlyst dato ingen har meldt seg paa er tom paa samme
+        // maate som en dato som slettes i «slettdato»: ingen booking peker
+        // paa den, ingenting gaar tapt. Da slettes den her, og plassen er
+        // ledig.
+        //
+        // Er noen meldt paa, blir raden staaende — bookingen og betalingen
+        // peker paa den, og de er bokfoeringspliktige. Da sier vi hva som er
+        // i veien, framfor «velg en annen».
+        $sperre = DB::en(
+            'SELECT id, status FROM course_sessions WHERE course_id = :k AND start_tid = :s',
+            ['k' => $kursId, 's' => $start]
+        );
+        if ($sperre !== null && (string) $sperre['status'] === 'avlyst') {
+            $sperreId = (int) $sperre['id'];
+            $pameldte = (int) DB::verdi(
+                "SELECT COUNT(*) FROM bookings
+                  WHERE course_session_id = :o AND status IN ('betalt','reservert')",
+                ['o' => $sperreId]
+            );
+            if ($pameldte === 0) {
+                // Samme opprydding som i «slettdato», og av samme grunn:
+                //
+                // Avbestilte paameldinger peker fortsatt paa datoen, og
+                // kolonnen har ingen fremmednoekkel — basen sier ikke fra, og
+                // raden ville blitt staaende og pekt paa noe som ikke finnes.
+                // Vi loesner den med vilje, saa bilaget beholder kurset og
+                // beloepet sitt.
+                DB::kjor(
+                    'UPDATE bookings SET course_session_id = NULL WHERE course_session_id = :o',
+                    ['o' => $sperreId]
+                );
+                // Ventelista loesnes ogsaa: de venter paa KURSET, og staar da
+                // paa de andre datoene — den nye medregnet.
+                if (DB::harTabell('waitlist')) {
+                    DB::kjor(
+                        'UPDATE waitlist SET course_session_id = NULL WHERE course_session_id = :o',
+                        ['o' => $sperreId]
+                    );
+                }
+                DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $sperreId]);
+                revider('dato_slettet', 'course_session', $sperreId, [
+                    'kurs' => $kursId, 'naar' => $start, 'via' => 'avlyst_plass_frigjort',
+                ]);
+                $sperre = null;
+            }
+        }
+        if ($sperre !== null) {
+            Svar::feil((string) $sperre['status'] === 'avlyst'
+                ? 'Datoen ble avlyst, og påmeldingene står fortsatt på den. '
+                  . 'Datoen kan ikke lages på nytt før de er ute — velg et annet klokkeslett så lenge.'
+                : 'Kurset går alt på denne datoen og tida. Velg en annen.');
         }
 
         $nyOkt = [

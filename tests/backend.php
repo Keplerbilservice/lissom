@@ -12683,6 +12683,35 @@ sjekk('… og nullstillinga staar med ord, ikke handlingsnavnet',
 sjekk('… og en ukjent plan avvises',
     str_contains($bytt, "Svar::feil('Velg hvilket medlemskap det skal byttes til.');"));
 
+// ── Innmeldingen skal ikke ta over en annens rad ─────────────────────────
+//
+// «meld-inn» slaar opp paa telefon og e-post og tar raden den treffer. Deler
+// to mennesker en e-post — den ene betaler med Vipps og oppgir en adresse som
+// alt staar paa en annen rad — ble den andres rad tatt over: navnet
+// overskrevet, medlemskapet og startdatoen satt til den nyes. Ett menneske
+// forsvant, og det sto ingen steder.
+//
+// Eieren, 17. september 2026, om det paret: «Ellen har betalt med vipps, det
+// er ikke samme som monica men hun brukte hennes data» — og senere, da raden
+// var vekk: «Naa finner jeg henne ikke i det hele tatt».
+sjekk('innmeldingen tar ikke over en rad med et annet navn',
+    str_contains($medApi, '$traff = static function (?array $rad) use ($navn, $navnNok, &$enAnnen): ?array {')
+    && str_contains($medApi, '$navnNok($paaRaden) !== $navnNok($navn)')
+    && str_contains($medApi, '$enAnnen = $paaRaden;'));
+// Begge oppslagene gaar gjennom vakta — telefonen er ikke tryggere enn
+// e-posten: verkstedets eget nummer staar som plassholder paa gjesterader.
+sjekk('… og vakta staar paa bade telefon og e-post',
+    str_contains($medApi, "\$fra = \$traff(DB::en('SELECT * FROM members WHERE telefon = :t LIMIT 1',")
+    && str_contains($medApi, "\$fra = \$traff(DB::en('SELECT * FROM members WHERE epost = :e LIMIT 1',"));
+// Velges personen i skjermen, har et menneske pekt paa raden. Da er det den
+// raden, uansett hva den heter.
+sjekk('… men et valgt medlem gaar rett gjennom',
+    str_contains($medApi, "if (\$id > 0) {\n        \$fra = DB::en('SELECT * FROM members WHERE id = :i', ['i' => \$id]);"));
+// Og det skal staa hva som skjedde — ikke oppdages senere.
+sjekk('… og svaret sier at den andre raden er urort',
+    str_contains($medApi, '» står med de samme opplysningene fra før,')
+    && str_contains($medApi, 'slår du dem sammen under «Samme person flere ganger».'));
+
 $sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // Valgene skal vaere de samme som nettsida tilbyr, ikke en liste skrevet av
 // paa nytt. Planene kommer med det samme svaret som medlemslista.

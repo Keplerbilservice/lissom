@@ -1314,6 +1314,40 @@ if (Foresporsel::metode() === 'POST') {
 
     // Samme person to ganger er verre enn ingen. Er hen alt i basen — som
     // gjest paa et kurs, eller innlogget med Vipps — brukes den raden.
+    //
+    // ── Men bare naar det ER den samme personen ────────────────────────
+    //
+    // Oppslaget gaar paa e-post og telefon alene, og tar raden det treffer.
+    // Deler to mennesker en e-post — det skjer: den ene betaler med Vipps og
+    // oppgir en adresse som alt staar paa en annen rad — ble den andres rad
+    // tatt over her: navnet hennes overskrevet, medlemskapet og startdatoen
+    // satt til den nyes. Ett menneske forsvant, og det sto ingen steder.
+    //
+    // Eieren, 17. september 2026, om nettopp det paret: «Ellen har betalt med
+    // vipps, det er ikke samme som monica men hun brukte hennes data».
+    //
+    // Staar det et annet navn paa raden vi traff, er det ikke vaart aa
+    // avgjore at de er den samme. Da lages en egen rad, og svaret sier hvorfor
+    // — «Samme person flere ganger» fanger dem opp, og der staar bade
+    // sammenslaaingen og «Ikke samme person».
+    //
+    // Velges personen i skjermen (medlemId), er det et menneske som har pekt
+    // paa raden. Da er det den raden, uansett hva den heter.
+    $navnNok = static fn(string $n): string
+        => trim(preg_replace('/\s+/u', ' ', mb_strtolower($n)) ?? '');
+    $enAnnen = null;
+    $traff = static function (?array $rad) use ($navn, $navnNok, &$enAnnen): ?array {
+        if ($rad === null) {
+            return null;
+        }
+        $paaRaden = trim((string) ($rad['navn'] ?? ''));
+        if ($navn !== '' && $paaRaden !== '' && $navnNok($paaRaden) !== $navnNok($navn)) {
+            $enAnnen = $paaRaden;
+            return null;
+        }
+        return $rad;
+    };
+
     $fra = null;
     if ($id > 0) {
         $fra = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
@@ -1321,10 +1355,12 @@ if (Foresporsel::metode() === 'POST') {
             Svar::feil('Fant ikke personen.', 404);
         }
     } elseif ($telefon !== '') {
-        $fra = DB::en('SELECT * FROM members WHERE telefon = :t LIMIT 1', ['t' => $telefon]);
+        $fra = $traff(DB::en('SELECT * FROM members WHERE telefon = :t LIMIT 1',
+                             ['t' => $telefon]));
     }
     if ($fra === null && $epost !== '') {
-        $fra = DB::en('SELECT * FROM members WHERE epost = :e LIMIT 1', ['e' => $epost]);
+        $fra = $traff(DB::en('SELECT * FROM members WHERE epost = :e LIMIT 1',
+                             ['e' => $epost]));
     }
 
     // En proveperiode er engangs og varer en maaned. Uten sluttdato sto den
@@ -1378,6 +1414,11 @@ if (Foresporsel::metode() === 'POST') {
         'id'      => $medlemId,
         'nytt'    => $nytt,
         'beskjed' => ($nytt ? 'Medlemmet er lagt inn.' : 'Personen sto der fra før og er nå medlem.')
+                   . ($enAnnen !== null
+                        ? ' «' . $enAnnen . '» står med de samme opplysningene fra før,'
+                          . ' så raden hennes er ikke rørt. Er det den samme personen,'
+                          . ' slår du dem sammen under «Samme person flere ganger».'
+                        : '')
                    . ($fri
                         ? ' Medlemmet står som fritatt fra betaling, og lyser ikke rødt i lista.'
                         : ' Betalingen går ikke av seg selv — den avtaler dere selv.'),

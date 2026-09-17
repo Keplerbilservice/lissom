@@ -17141,6 +17141,31 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-if>
+            <!-- Medlemskap paa en som ikke er medlem.
+                 Eieren, 17. september 2026, med Ellens rute oppe: «Hun staar som
+                 ikke medlem, og jeg kan ikke endre status fra ikke medlem».
+                 Brikkene under «Medlemskap» ligger inne i blokka over, som bare
+                 staar naar personen ER medlem. For den som ikke er det, fantes de
+                 altsaa ikke — og da hjalp det ikke at valget melder inn.
+                 Her staar de alene: velg et medlemskap, og hen blir medlem fra i
+                 dag. Betaling, avtale og avslutning hoerer til et medlemskap som
+                 finnes, og staar derfor fortsatt bare i blokka over. -->
+            <sc-if value="{{ personKanMeldesInn }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Medlemskap</div>
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ personPlanValg }}" as="v" hint-placeholder-count="4">
+                    <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                  </sc-for>
+                </div>
+                <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personPlanHjelp }}</div>
+                <sc-if value="{{ personPlanEndret }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-3);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonPlan }}" hint-size="auto,36px">{{ personPlanKnapp }}</x-import>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
 
             <!-- Glemt aa stemple ut.
                  Eieren, 2. september: «Naar et medlem glemmer aa stemple ut, kan vi
@@ -18441,6 +18466,31 @@ window.__resources = {
                       <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Begynn på nytt</div>
                       <div style="margin-bottom: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personNullstillHjelp }}</div>
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ nullstillPerson }}" hint-size="auto,36px">{{ personNullstillKnapp }}</x-import>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+              <!-- Medlemskap paa en som ikke er medlem.
+                   Eieren, 17. september 2026, med Ellens rute oppe: «Hun staar som
+                   ikke medlem, og jeg kan ikke endre status fra ikke medlem».
+                   Brikkene under «Medlemskap» ligger inne i blokka over, som bare
+                   staar naar personen ER medlem. For den som ikke er det, fantes de
+                   altsaa ikke — og da hjalp det ikke at valget melder inn.
+                   Her staar de alene: velg et medlemskap, og hen blir medlem fra i
+                   dag. Betaling, avtale og avslutning hoerer til et medlemskap som
+                   finnes, og staar derfor fortsatt bare i blokka over. -->
+              <sc-if value="{{ personKanMeldesInn }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Medlemskap</div>
+                  <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <sc-for list="{{ personPlanValg }}" as="v" hint-placeholder-count="4">
+                      <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personPlanHjelp }}</div>
+                  <sc-if value="{{ personPlanEndret }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonPlan }}" hint-size="auto,36px">{{ personPlanKnapp }}</x-import>
                     </div>
                   </sc-if>
                 </div>
@@ -48276,6 +48326,12 @@ class Component extends DCLogic {
           // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
           // den samme som medlemslista og kortet paa Oversikt bruker.
           personErMedlem: ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1,
+          // Brikkene under «Medlemskap» ligger inne i blokka som bare staar
+          // naar personen ER medlem. Den som ikke er det hadde dermed ingen
+          // brikker — og da hjalp det ikke at et valgt medlemskap melder inn.
+          // Se blokka «Medlemskap paa en som ikke er medlem» i malen.
+          personKanMeldesInn: !!p.id
+            && ['prove', 'aktiv', 'pause'].indexOf(p.status) === -1,
           personBetalingMerke: this.betalingsPille(p.betaling).merke,
           personBetalingTekst: p.betalingTekst || '',
           personBetalingStil: this.betalingsPille(p.betaling, true).stil,

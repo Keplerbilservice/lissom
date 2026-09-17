@@ -202,6 +202,34 @@ final class Varsel
             return 0;
         }
 
+        // ── Den samme beskjeden to ganger ─────────────────────────────
+        //
+        // Eieren, 17. september 2026, med to like «Ny vare til godkjenning —
+        // Eirin har lagt ut «Skål» til kr. 400» i innboksen, samme minutt.
+        //
+        // Sperren over gaar paa hendelsen: samme «ref_type#ref_id». La
+        // medlemmet ut den samme varen to ganger — et dobbelttrykk paa
+        // «Legg ut» — ble det to rader i «member_sales», to ulike id-er, og
+        // dermed to beskjeder som slapp gjennom. For den som leser innboksen
+        // er de to helt like.
+        //
+        // «uansett aarsak», sa eieren 16. september. Da er det innholdet som
+        // maa avgjore: er bade emnet og teksten den samme som noe vi alt har
+        // sendt de siste femten minuttene, er det en dublett. Ulike
+        // hendelser med samme emne staar fortsatt hver for seg — teksten
+        // navngir varen, gaven eller ordren.
+        if (DB::en(
+            "SELECT id FROM notifications
+              WHERE kanal = 'epost' AND emne = :e AND tekst = :t
+                AND status IN ('ko', 'sendt')
+                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)
+              LIMIT 1",
+            ['e' => mb_substr($emne, 0, 191), 't' => $tekst]
+        ) !== null) {
+            logg('Hoppet over en helt lik beskjed til admin', ['emne' => $emne]);
+            return 0;
+        }
+
         // Én adresse: den foerste. Staar det flere i «admin_eposter», er det
         // fortsatt én beskjed per hendelse — det er det eieren ba om.
         if (self::epost($adresser[0], $emne, $tekst, $refType, $refId, 'intern') > 0) {

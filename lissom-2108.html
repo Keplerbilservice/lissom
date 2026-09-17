@@ -17088,6 +17088,28 @@ window.__resources = {
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ avsluttPerson }}" hint-size="auto,36px">Avslutt medlemskapet</x-import>
                     </div>
                   </sc-if>
+                  <!-- Flytt medlemskapet til rett person.
+                       Eieren, 17. september 2026: «hun brukte daten til monica» — én
+                       meldte seg inn og betalte fra en annens innlogging, og medlemskapet
+                       havnet der. Det fantes ingen vei tilbake, saa det eneste verktoyet
+                       som liknet var «Slaa inn i den over» — som slaar sammen to
+                       MENNESKER og skjuler den ene.
+                       Her flyttes medlemskapet alene. Ingen slaas sammen. -->
+                  <sc-if value="{{ personKanFlytte }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                      <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Er medlemskapet en annens?</div>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personFlyttHjelp }}</p>
+                      <input value="{{ personFlyttSok }}" onInput="{{ settPersonFlyttSok }}" placeholder="Skriv navnet på rett person" style="{{ pkFeltStil }}">
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                        <sc-for list="{{ personFlyttValg }}" as="v" hint-placeholder-count="3">
+                          <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ personFlyttTomt }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">{{ personFlyttTomtTekst }}</div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
                 </div>
                 <label style="{{ personFriEtikett }}">
                   <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
@@ -18228,6 +18250,28 @@ window.__resources = {
                     <sc-if value="{{ personKanAvslutte }}" hint-placeholder-val="{{ false }}">
                       <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ avsluttPerson }}" hint-size="auto,36px">Avslutt medlemskapet</x-import>
+                      </div>
+                    </sc-if>
+                    <!-- Flytt medlemskapet til rett person.
+                         Eieren, 17. september 2026: «hun brukte daten til monica» — én
+                         meldte seg inn og betalte fra en annens innlogging, og medlemskapet
+                         havnet der. Det fantes ingen vei tilbake, saa det eneste verktoyet
+                         som liknet var «Slaa inn i den over» — som slaar sammen to
+                         MENNESKER og skjuler den ene.
+                         Her flyttes medlemskapet alene. Ingen slaas sammen. -->
+                    <sc-if value="{{ personKanFlytte }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                        <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Er medlemskapet en annens?</div>
+                        <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personFlyttHjelp }}</p>
+                        <input value="{{ personFlyttSok }}" onInput="{{ settPersonFlyttSok }}" placeholder="Skriv navnet på rett person" style="{{ pkFeltStil }}">
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                          <sc-for list="{{ personFlyttValg }}" as="v" hint-placeholder-count="3">
+                            <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                          </sc-for>
+                        </div>
+                        <sc-if value="{{ personFlyttTomt }}" hint-placeholder-val="{{ false }}">
+                          <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">{{ personFlyttTomtTekst }}</div>
+                        </sc-if>
                       </div>
                     </sc-if>
                     <!-- Avtalen medlemmet mangler. Se den samme blokka i
@@ -48300,6 +48344,64 @@ class Component extends DCLogic {
                 this.lukkPersonruta();
               });
           },
+          // ── Flytt medlemskapet til rett person ────────────────────
+          //
+          // Eieren, 17. september 2026: «Hun meldte seg inn som nytt medlem
+          // med mini 15», «hun brukte daten til monica», «hun betalte med
+          // vipps og alt, saa hvordan i haelvette kunne dette skje».
+          //
+          // Medlemskapet folger den som er INNLOGGET, ikke den som betaler:
+          // api/bli-medlem.php begynner med krev_medlem(). Melder én seg inn
+          // fra en annens innlogging, havner plan, avtale og betaling der.
+          //
+          // Det fantes ingen vei tilbake, og det eneste som liknet var
+          // «Slaa inn i den over» — som slaar sammen to MENNESKER og skjuler
+          // den ene. Derfor forsvant hun.
+          //
+          // Lista er de samme menneskene som staar i medlemslista, og bare
+          // de som ikke alt er medlem: to medlemskap paa én rad finnes ikke.
+          personKanFlytte: personErMedlem,
+          personFlyttHjelp: 'Meldte noen seg inn fra ' + fornavn
+            + ' sin innlogging, står medlemskapet her. Flytt det til rett person — '
+            + 'ingen slås sammen, og begge radene blir stående.',
+          personFlyttSok: this.state.personFlyttSok || '',
+          settPersonFlyttSok: e => this.setState({ personFlyttSok: e.target.value }),
+          ...(() => {
+            const q = (this.state.personFlyttSok || '').trim().toLowerCase();
+            const MEDL = ['prove', 'aktiv', 'pause'];
+            const kandidater = q.length < 2 ? [] : (this.state.adminMedlemmer || [])
+              .filter(m => Number(m.id) !== Number(p.id)
+                && MEDL.indexOf(m.status) === -1
+                && ((m.navn || '') + ' ' + (m.epost || '')).toLowerCase().indexOf(q) !== -1)
+              .slice(0, 6);
+            return {
+              personFlyttValg: kandidater.map(m => ({
+                navn: m.navn || m.epost || ('#' + m.id),
+                // Stilen staar her, ikke i en «chipStil» fra et annet
+                // omraade: brikkene i denne ruta skal ikke slutte aa virke
+                // den dagen en hjelper flyttes.
+                stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)',
+                        fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)',
+                        border: '1.5px solid var(--border-subtle)', background: 'var(--surface-card)',
+                        color: 'var(--text-heading)', whiteSpace: 'nowrap' },
+                velg: () => {
+                  if (!window.confirm('Flytte medlemskapet «' + (p.medlemskap || '') + '» fra «'
+                      + (p.navn || '') + '» til «' + (m.navn || '') + '»?\n\n'
+                      + 'Avtalen og medlemsbetalingene følger med. Ingen slås sammen, '
+                      + 'og begge radene blir stående.')) return;
+                  this.medlemKall({ handling: 'flytt-medlemskap', fra: p.id, til: m.id }, true)
+                    .then(ok => { if (ok) { this.setState({ personFlyttSok: '' }); this.lukkPersonruta(); } });
+                },
+              })),
+              // Tomt sier hvorfor det er tomt. Ellers ser det ut som om
+              // personen ikke finnes, naar det er soeket som er for kort —
+              // eller hen alt er medlem, og da kan ingenting flyttes dit.
+              personFlyttTomt: q.length >= 2 && kandidater.length === 0,
+              personFlyttTomtTekst: 'Ingen uten medlemskap passer på «'
+                + (this.state.personFlyttSok || '').trim()
+                + '». Den som alt er medlem kan ikke ta imot et til.',
+            };
+          })(),
           // ── Avslutt medlemskapet, der medlemskapet staar ───────────
           //
           // Eieren, 8. september 2026: «hvordan kan jeg deaktivere et

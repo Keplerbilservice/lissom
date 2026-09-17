@@ -12683,6 +12683,91 @@ sjekk('… og nullstillinga staar med ord, ikke handlingsnavnet',
 sjekk('… og en ukjent plan avvises',
     str_contains($bytt, "Svar::feil('Velg hvilket medlemskap det skal byttes til.');"));
 
+echo "\n== Flytt medlemskapet til rett person ==\n";
+// Eieren, 17. september 2026: «Hun meldte seg inn som nytt medlem med mini
+// 15», «hun brukte daten til monica», «hun betalte med vipps og alt, saa
+// hvordan i haelvette kunne dette skje».
+//
+// Slik: medlemskapet folger den som er INNLOGGET, ikke den som betaler —
+// api/bli-medlem.php begynner med krev_medlem(). Melder én seg inn fra en
+// annens innlogging, havner plan, avtale og betaling der.
+sjekk('innmeldingen gaar paa den innloggede, og det er derfor dette trengs',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'),
+                 '$medlem = krev_medlem();'));
+// Og saa fantes det ingen vei tilbake: det eneste verktoyet som liknet var
+// sammenslaaingen, som slaar sammen to MENNESKER og skjuler den ene.
+sjekk('medlemskapet kan flyttes uten aa slaa sammen noen',
+    str_contains($medApi, "if (\$handling === 'flytt-medlemskap') {"));
+$flytt = substr($medApi, (int) strpos($medApi, "if (\$handling === 'flytt-medlemskap') {"));
+$flytt = substr($flytt, 0, (int) strpos($flytt, "if (\$handling === 'bytt-plan') {"));
+// Alt eller ingenting: medlemsraden, avtalen og betalingene hoerer sammen.
+sjekk('… og flyttingen er alt eller ingenting',
+    str_contains($flytt, 'DB::iTransaksjon(')
+    && str_contains($flytt, "UPDATE subscriptions SET member_id = :ny WHERE member_id = :gml")
+    && str_contains($flytt, "WHERE member_id = :gml AND formal = 'medlemskap'"));
+// Bare medlemsbetalingene. Et kurs eller en gave kjopt fra den samme kontoen
+// er fortsatt kjopt der.
+sjekk('… og kursbetalinger blir liggende',
+    str_contains($flytt, "AND formal = 'medlemskap'"));
+// To medlemskap paa én rad finnes ikke.
+sjekk('… og en som alt er medlem kan ikke ta imot et til',
+    str_contains($flytt, "if (in_array((string) \$tilM['status'], \$medlemStatus, true)) {")
+    && str_contains($flytt, 'Avslutt det først hvis medlemskapet skal flyttes hit.'));
+// Fullmakten i Vipps staar paa den som godkjente den. Det kan vi ikke endre
+// herfra, og da skal det staa — ikke oppdages naar neste trekk kommer.
+sjekk('… og sier fra at fast trekk fortsatt gaar fra den som betalte',
+    str_contains($flytt, 'fast trekk i Vipps er godkjent av den som betalte'));
+// Begge radene skal si hva som skjedde, og hvilken vei.
+sjekk('… og begge radene faar det i endringsloggen',
+    str_contains($flytt, "revider('medlemskap_flyttet', 'member', \$tilId,")
+    && str_contains($flytt, "revider('medlemskap_flyttet_bort', 'member', \$fraId,")
+    && str_contains($medApi, "'medlemskap_flyttet'      => 'Medlemskapet flyttet hit fra en annen person',"));
+// I skjermen: bare paa en som faktisk har et medlemskap, og bare de som ikke
+// alt er medlem kan velges.
+sjekk('ruta tilbyr flyttingen der medlemskapet staar',
+    str_contains($sidaB, 'personKanFlytte: personErMedlem,')
+    && str_contains($sidaB, "handling: 'flytt-medlemskap', fra: p.id, til: m.id"));
+sjekk('… og bare de uten medlemskap kan velges',
+    str_contains($sidaB, "&& MEDL.indexOf(m.status) === -1"));
+// Dette gjor man ikke ved et uhell.
+sjekk('… og flyttingen spor forst',
+    str_contains($sidaB, "if (!window.confirm('Flytte medlemskapet «'"));
+
+echo "\n== Innloggingen som gikk ut midt i dagen ==\n";
+// Eieren, 17. september 2026: «jeg faar fortsatt denne jaevla meldinga hver
+// gang jeg skal logge meg inn» — «Du er logget ut. Innloggingen varer i tre
+// timer.»
+//
+// Raden ble skjovet ved bruk, men cookien ble satt ÉN gang, ved innlogging,
+// med utloep tre timer fram. Nettleseren kastet den presis tre timer etter
+// innlogging, uansett hvor mye man hadde brukt sida. «Tre timer uten
+// aktivitet» var i praksis «tre timer».
+$sesj = file_get_contents(dirname(__DIR__) . '/app/lib/session.php');
+sjekk('cookien skyves sammen med sesjonen',
+    str_contains($sesj, '$skjovet = DB::kjor(')
+    && str_contains($sesj, 'if ($skjovet->rowCount() > 0 && !headers_sent()) {')
+    && str_contains($sesj, 'self::settCookie($token, time() + self::VARIGHET_TIMER * 3600);'));
+// Bare naar raden faktisk ble skjovet — ellers skriver vi en header ved hvert
+// eneste sidevisning.
+sjekk('… men bare naar den faktisk ble skjovet',
+    str_contains($sesj, 'AND siste_bruk < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE)'));
+
+echo "\n== To like e-poster om det samme ==\n";
+// Eieren, 17. september 2026, med to like «Ny vare til godkjenning — Eirin
+// har lagt ut «Skål» til kr. 400» samme minutt.
+//
+// Sperren gikk paa hendelsen — «ref_type#ref_id». La medlemmet ut den samme
+// varen to ganger, ble det to rader, to id-er, og to beskjeder som slapp
+// gjennom. For den som leser innboksen er de helt like.
+$vars = file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+sjekk('to helt like beskjeder til admin blir én',
+    str_contains($vars, "WHERE kanal = 'epost' AND emne = :e AND tekst = :t")
+    && str_contains($vars, 'INTERVAL 15 MINUTE'));
+// Ulike hendelser med samme emne staar fortsatt hver for seg — teksten
+// navngir varen, gaven eller ordren.
+sjekk('… men teksten maa ogsaa vaere den samme',
+    str_contains($vars, "['e' => mb_substr(\$emne, 0, 191), 't' => \$tekst]"));
+
 // ── Innmeldingen skal ikke ta over en annens rad ─────────────────────────
 //
 // «meld-inn» slaar opp paa telefon og e-post og tar raden den treffer. Deler

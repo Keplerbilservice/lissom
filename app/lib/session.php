@@ -92,7 +92,7 @@ final class Sesjon
         // Skyv utløpet framover, men høyst hvert femte minutt — ellers skriver
         // vi til databasen ved hvert eneste sidevisning. Fem minutter er kort
         // nok til at en aktiv bruker aldri faller ut av en tretimersfrist.
-        DB::kjor(
+        $skjovet = DB::kjor(
             'UPDATE sessions
                 SET siste_bruk = UTC_TIMESTAMP(),
                     expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL :t HOUR)
@@ -100,6 +100,27 @@ final class Sesjon
                 AND siste_bruk < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE)',
             ['t' => self::VARIGHET_TIMER, 'h' => $rad['token_hash']]
         );
+
+        // ── Cookien maa skyves med ────────────────────────────────────
+        //
+        // Eieren, 17. september 2026: «jeg faar fortsatt denne jaevla
+        // meldinga hver gang jeg skal logge meg inn» — «Du er logget ut.
+        // Innloggingen varer i tre timer.»
+        //
+        // Raden over ble skjovet ved bruk, men cookien ble satt ÉN gang, ved
+        // innlogging, med utloep tre timer fram. Nettleseren kastet den
+        // altsaa presis tre timer etter innlogging, uansett hvor mye man
+        // hadde brukt sida. «Tre timer uten aktivitet» var i praksis «tre
+        // timer», og den som jobber en hel dag ble kastet ut midt i.
+        //
+        // Naa foelger cookien raden. Bare naar raden faktisk ble skjovet —
+        // ellers skriver vi en header ved hvert eneste sidevisning.
+        //
+        // «headers_sent»: kallet kommer tidlig i alle endepunktene, men det
+        // skal ikke koste en advarsel midt i et svar om noen kaller det sent.
+        if ($skjovet->rowCount() > 0 && !headers_sent()) {
+            self::settCookie($token, time() + self::VARIGHET_TIMER * 3600);
+        }
 
         unset($rad['token_hash']);
         return self::$medlem = $rad;

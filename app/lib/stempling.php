@@ -358,6 +358,96 @@ final class Stempling
      *
      * @return array{ok: bool, feil?: string, minutter?: int, id?: int}
      */
+    /**
+     * Legger inn en oekt som aldri ble stemplet.
+     *
+     * Eieren, 17. september 2026: «Eirin har ikke stemplet inn eller ut i dag
+     * og jeg maa registrere 2,5 timer paa henne men det gaar jo ikke».
+     *
+     * Det gikk ikke. «Glemt aa stemple ut» retter klokkeslettet paa en oekt
+     * som finnes — den kan ikke lage en. Sto ingen oekt der, fantes det ingen
+     * vei inn i det hele tatt, og timene ble borte for medlemmet.
+     *
+     * Her lages den: dato, fra og til, i norsk tid. Samme rad som en vanlig
+     * innstempling, med minuttene regnet ut som ved utstempling — det er den
+     * samme oekta, bare skrevet inn etterpaa.
+     *
+     * Hva den ikke gjor: den gaar ikke over midnatt. En oekt som krysser
+     * doegnet er sjelden nok til at den kan legges inn som to, og en dato som
+     * betyr to doegn er lett aa lese feil naar man er ferdig for dagen.
+     *
+     * @return array{ok:bool,feil?:string,id?:int,minutter?:int}
+     */
+    public static function leggInnOkt(int $medlemId, string $dato, string $fra, string $til): array
+    {
+        $dato = trim($dato);
+        $fra  = trim($fra);
+        $til  = trim($til);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dato) !== 1) {
+            return ['ok' => false, 'feil' => 'Velg datoen økta gjaldt.'];
+        }
+        $klokke = '/^([01]\d|2[0-3]):[0-5]\d$/';
+        if (preg_match($klokke, $fra) !== 1 || preg_match($klokke, $til) !== 1) {
+            return ['ok' => false, 'feil' => 'Skriv klokkeslettene som for eksempel 18:30.'];
+        }
+
+        $sone = self::oslo();
+        $start = DateTimeImmutable::createFromFormat('Y-m-d H:i', $dato . ' ' . $fra, $sone);
+        $slutt = DateTimeImmutable::createFromFormat('Y-m-d H:i', $dato . ' ' . $til, $sone);
+        if ($start === false || $slutt === false) {
+            return ['ok' => false, 'feil' => 'Fikk ikke lest datoen og klokkeslettene.'];
+        }
+        $start = $start->setTime((int) substr($fra, 0, 2), (int) substr($fra, 3, 2));
+        $slutt = $slutt->setTime((int) substr($til, 0, 2), (int) substr($til, 3, 2));
+
+        if ($slutt <= $start) {
+            return ['ok' => false, 'feil' => 'Hen må ha gått etter at hen kom. '
+                . 'Gikk økta over midnatt, legg den inn som to.'];
+        }
+        // En dag i verkstedet, ikke et doegn. Et feiltrykk som gir tolv timer
+        // spiser en hel maaned av timekontoen, og det oppdages foerst naar
+        // medlemmet ikke slipper inn.
+        $minutter = (int) round(($slutt->getTimestamp() - $start->getTimestamp()) / 60);
+        if ($minutter > 12 * 60) {
+            return ['ok' => false, 'feil' => 'Over tolv timer på én økt. Sjekk klokkeslettene.'];
+        }
+        // Framover i tid er alltid en skrivefeil.
+        if ($slutt > new DateTimeImmutable('now', $sone)) {
+            return ['ok' => false, 'feil' => 'Økta slutter fram i tid. Sjekk datoen og klokkeslettet.'];
+        }
+
+        $innUtc = $start->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $utUtc  = $slutt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+
+        // To oekter kan ikke overlappe hverandre. Da ville timene talt dobbelt,
+        // og ingen kunne sett hvilken av dem som var den ekte.
+        $kolliderer = DB::en(
+            'SELECT id FROM check_ins
+              WHERE member_id = :m
+                AND inn_tid < :ut
+                AND COALESCE(ut_tid, UTC_TIMESTAMP()) > :inn
+              LIMIT 1',
+            ['m' => $medlemId, 'ut' => $utUtc, 'inn' => $innUtc]
+        );
+        if ($kolliderer !== null) {
+            return ['ok' => false, 'feil' => 'Det står alt en økt på den tida. '
+                . 'Rett den i stedet, eller velg andre klokkeslett.'];
+        }
+
+        $rad = [
+            'member_id' => $medlemId,
+            'inn_tid'   => $innUtc,
+            'ut_tid'    => $utUtc,
+            'minutter'  => $minutter,
+        ];
+        if (DB::harKolonne('check_ins', 'ressurs_id')) {
+            $rad['ressurs_id'] = null;
+        }
+        $id = (int) DB::settInn('check_ins', $rad);
+
+        return ['ok' => true, 'id' => $id, 'minutter' => $minutter];
+    }
+
     public static function rettUtKlokke(int $medlemId, string $klokke): array
     {
         $klokke = trim($klokke);

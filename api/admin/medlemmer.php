@@ -1429,6 +1429,45 @@ if (Foresporsel::metode() === 'POST') {
                              . '. Økta teller ' . Stempling::varighet((int) ($svar['minutter'] ?? 0)) . '.']);
     }
 
+    // ── Timer som aldri ble stemplet ──────────────────────────────────
+    //
+    // Eieren, 17. september 2026: «Eirin har ikke stemplet inn eller ut i dag
+    // og jeg maa registrere 2,5 timer paa henne men det gaar jo ikke».
+    //
+    // «stempling» over retter klokkeslettet paa en oekt som FINNES. Sto det
+    // ingen oekt der, fantes det ingen vei inn, og timene ble borte for
+    // medlemmet. Her legges oekta inn: dato, fra og til, i norsk tid.
+    if ($handling === 'timer') {
+        $id = Foresporsel::heltall('medlemId');
+        $medlem = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($medlem === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        $svar = Stempling::leggInnOkt(
+            $id,
+            trim(Foresporsel::tekst('dato')),
+            trim(Foresporsel::tekst('fra')),
+            trim(Foresporsel::tekst('til'))
+        );
+        if (!$svar['ok']) {
+            Svar::feil((string) ($svar['feil'] ?? 'Fikk ikke lagt inn økta.'));
+        }
+
+        revider('stempling_lagt_inn', 'member', $id, [
+            'okt'      => $svar['id'] ?? 0,
+            'dato'     => Foresporsel::tekst('dato'),
+            'fra'      => Foresporsel::tekst('fra'),
+            'til'      => Foresporsel::tekst('til'),
+            'minutter' => $svar['minutter'] ?? 0,
+            'av'       => (int) $jeg['id'],
+        ]);
+
+        Svar::ok(['beskjed' => ($medlem['navn'] ?: 'Medlemmet') . ' har fått '
+                             . Stempling::varighet((int) ($svar['minutter'] ?? 0))
+                             . ' på ' . Foresporsel::tekst('dato') . '.']);
+    }
+
     // ── Knytt en gjestepaamelding til kontoen ─────────────────────────
     //
     // Bestilte noen plassen for de opprettet konto — eller la verkstedet dem
@@ -1830,6 +1869,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'kursbevis_endret'      => 'Kursbevis rettet',
             'venteliste_gitt_plass' => 'Fikk plass fra ventelista',
             'medlem_meldt_inn'      => 'Meldt inn som medlem',
+            'stempling_lagt_inn'    => 'Timer lagt inn for hånd',
             // Flyttingen skal staa med ord paa begge radene: den ene fikk
             // medlemskapet, den andre ga det fra seg. «Medlemskap flyttet»
             // alene sier ikke hvilken vei.
@@ -2180,6 +2220,12 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
     ]);
 }
 
+// Taket paa lista.
+//
+// Eieren, 17. september 2026: «Naa finner jeg henne ikke i det hele tatt».
+// Skjermen soeker i det den har faatt, og med 500 rader sortert paa navn
+// kunne en person falle utenfor uten at noe sa fra. Hver Vipps-innlogging
+// lager en rad, saa tallet vokser av seg selv.
 $sok = Foresporsel::tekst('sok');
 $hvor = 'anonymisert_at IS NULL';
 $param = [];
@@ -2201,7 +2247,7 @@ $medlemmer = DB::alle(
        FROM members
       WHERE {$hvor}
       ORDER BY navn
-      LIMIT 500",
+      LIMIT 2000",
     $param
 );
 

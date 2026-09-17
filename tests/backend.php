@@ -12756,6 +12756,71 @@ sjekk('… og flyttingen spor forst',
     str_contains($sidaB, "if (!window.confirm('Flytte medlemskapet «'")
     && str_contains($sidaB, 'Tidligere avtaler blir stående. Rollen er ikke rørt'));
 
+echo "\n== Soek i medlemslista ==\n";
+// Eieren, 17. september 2026, etter en kveld med aa lete etter det samme
+// mennesket: «Naa finner jeg henne ikke i det hele tatt», «Ingen som finner
+// ellen», og til slutt: «Lag den jaevla soekefeltet ogsaa».
+//
+// Lista viser én kategori om gangen, og det finnes ingen «Alle»-pille. Staar
+// en person i en annen kategori enn den du ser paa, er hen usynlig — selv om
+// raden ligger i basen.
+sjekk('lista har et soekefelt',
+    str_contains($sidaB, 'placeholder="Søk i alle — navn, e-post eller telefon"')
+    && str_contains($sidaB, 'settMedlemSok: e => this.setState({ medlemSok: e.target.value }),'));
+// Soeket gaar foran pilla — det er hele poenget med aa soke.
+sjekk('… og soeket gaar paa tvers av kategoriene',
+    str_contains($sidaB, "const sok = (this.state.medlemSok || '').trim().toLowerCase();")
+    && str_contains($sidaB, 'if (sok !== \'\') {'));
+// Navn, e-post og telefon. Den som har begge delene skal kunne finnes paa
+// nummeret sitt, ikke bare naar nummeret staar som reserve for e-posten.
+sjekk('… og leter i navn, e-post og telefon',
+    str_contains($sidaB, "return [m.navn, m.epost, m.tlf, m.telefon]")
+    && str_contains($sidaB, "tlf: m.telefon || '',"));
+// Taket paa lista: hver Vipps-innlogging lager en rad, og med 500 kunne en
+// person falle utenfor uten at noe sa fra.
+sjekk('… og lista henter flere enn 500',
+    str_contains($medApi, 'LIMIT 2000'));
+
+echo "\n== Timer som aldri ble stemplet ==\n";
+// Eieren, 17. september 2026: «Eirin har ikke stemplet inn eller ut i dag og
+// jeg maa registrere 2,5 timer paa henne men det gaar jo ikke».
+//
+// «Glemt aa stemple ut» retter klokkeslettet paa en oekt som FINNES. Sto det
+// ingen oekt der, fantes det ingen vei inn, og timene ble borte for medlemmet.
+$stemp = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');
+sjekk('en oekt kan legges inn etterpaa',
+    str_contains($stemp, 'public static function leggInnOkt(int $medlemId, string $dato, string $fra, string $til): array')
+    && str_contains($medApi, "if (\$handling === 'timer') {"));
+// Minuttene regnes ut som ved utstempling — det er den samme oekta, bare
+// skrevet inn etterpaa.
+sjekk('… og den teller som en vanlig oekt',
+    str_contains($stemp, "'minutter'  => \$minutter,")
+    && str_contains($stemp, "'ut_tid'    => \$utUtc,"));
+// To oekter kan ikke overlappe: da ville timene talt dobbelt, og ingen kunne
+// sett hvilken av dem som var den ekte.
+sjekk('… og to oekter kan ikke overlappe',
+    str_contains($stemp, 'AND COALESCE(ut_tid, UTC_TIMESTAMP()) > :inn')
+    && str_contains($stemp, 'Det står alt en økt på den tida.'));
+// Et feiltrykk som gir tolv timer spiser en hel maaned av timekontoen.
+sjekk('… og et feiltrykk paa tolv timer stoppes',
+    str_contains($stemp, 'Over tolv timer på én økt.')
+    && str_contains($stemp, 'Økta slutter fram i tid.'));
+// Klokkeslettene er norsk tid, raden er UTC — som alt annet i basen.
+sjekk('… og norsk tid lagres som UTC',
+    str_contains($stemp, "\$innUtc = \$start->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');"));
+// Feltet staar ogsaa naar det ikke finnes noen oekt aa rette — det er
+// nettopp da det trengs.
+sjekk('… og feltet staar ogsaa uten en oekt aa rette',
+    str_contains($sidaB, 'personTimerHjelp:')
+    && strpos($sidaB, 'personTimerHjelp:') < strpos($sidaB, 'personHarGlemt: false'));
+// Og hva det blir, sagt hoyt for man trykker.
+sjekk('… og sier hvor lenge det blir for du trykker',
+    str_contains($sidaB, "personTimerVarighetTekst: min > 0"));
+// Handlingen staar med ord i endringsloggen.
+sjekk('… og staar med ord i endringsloggen',
+    str_contains($medApi, "revider('stempling_lagt_inn', 'member', \$id,")
+    && str_contains($medApi, "'stempling_lagt_inn'    => 'Timer lagt inn for hånd',"));
+
 echo "\n== Innloggingen som gikk ut midt i dagen ==\n";
 // Eieren, 17. september 2026: «jeg faar fortsatt denne jaevla meldinga hver
 // gang jeg skal logge meg inn» — «Du er logget ut. Innloggingen varer i tre

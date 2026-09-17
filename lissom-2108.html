@@ -17161,6 +17161,26 @@ window.__resources = {
                 </div>
               </div>
             </sc-if>
+            <!-- Timer som aldri ble stemplet.
+                 Eieren, 17. september 2026: «Eirin har ikke stemplet inn eller ut i
+                 dag og jeg maa registrere 2,5 timer paa henne men det gaar jo
+                 ikke».
+                 «Glemt aa stemple ut» over retter en oekt som FINNES. Sto det ingen
+                 der, fantes det ingen vei inn — og timene ble borte for medlemmet.
+                 Denne staar alltid, ogsaa naar det ikke er noe aa rette. -->
+            <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Legg inn timer for hånd</div>
+              <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personTimerHjelp }}</p>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <input type="date" aria-label="Datoen økta gjaldt" value="{{ personTimerDato }}" onChange="{{ settPersonTimerDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                <input type="text" inputmode="numeric" maxlength="5" placeholder="18:30" aria-label="Fra klokka" value="{{ personTimerFra }}" onChange="{{ settPersonTimerFra }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                <input type="text" inputmode="numeric" maxlength="5" placeholder="21:00" aria-label="Til klokka" value="{{ personTimerTil }}" onChange="{{ settPersonTimerTil }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonTimer }}" hint-size="auto,36px">Legg inn timene</x-import>
+              </div>
+              <sc-if value="{{ personTimerVarighet }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">{{ personTimerVarighetTekst }}</div>
+              </sc-if>
+            </div>
             
             <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                  innmeldingsskjemaet: sto det noe der, kunne det ikke endres
@@ -18445,6 +18465,26 @@ window.__resources = {
                   </div>
                 </div>
               </sc-if>
+              <!-- Timer som aldri ble stemplet.
+                   Eieren, 17. september 2026: «Eirin har ikke stemplet inn eller ut i
+                   dag og jeg maa registrere 2,5 timer paa henne men det gaar jo
+                   ikke».
+                   «Glemt aa stemple ut» over retter en oekt som FINNES. Sto det ingen
+                   der, fantes det ingen vei inn — og timene ble borte for medlemmet.
+                   Denne staar alltid, ogsaa naar det ikke er noe aa rette. -->
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Legg inn timer for hånd</div>
+                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personTimerHjelp }}</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <input type="date" aria-label="Datoen økta gjaldt" value="{{ personTimerDato }}" onChange="{{ settPersonTimerDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="text" inputmode="numeric" maxlength="5" placeholder="18:30" aria-label="Fra klokka" value="{{ personTimerFra }}" onChange="{{ settPersonTimerFra }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                  <input type="text" inputmode="numeric" maxlength="5" placeholder="21:00" aria-label="Til klokka" value="{{ personTimerTil }}" onChange="{{ settPersonTimerTil }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonTimer }}" hint-size="auto,36px">Legg inn timene</x-import>
+                </div>
+                <sc-if value="{{ personTimerVarighet }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">{{ personTimerVarighetTekst }}</div>
+                </sc-if>
+              </div>
               
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
@@ -18464,6 +18504,17 @@ window.__resources = {
           <!-- «medlemsliste» er ankeret personruta ruller tilbake til naar
                den lukkes eller lagres. Se lukkPerson og lagrePersonKontakt. -->
           <div id="medlemsliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+            <!-- Soek i hele lista.
+                 Pillene viser én kategori om gangen, og det finnes ingen
+                 «Alle». Sto personen i en annen kategori enn den man saa paa,
+                 var hen usynlig. Naar det staar noe her, gjelder ikke pilla —
+                 da letes det i alle, paa navn, e-post og telefon. -->
+            <div style="padding: var(--space-4) var(--space-6) 0;">
+              <input value="{{ medlemSok }}" onInput="{{ settMedlemSok }}" placeholder="Søk i alle — navn, e-post eller telefon" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <sc-if value="{{ medlemSokAktivt }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Søket går på tvers av kategoriene. <button type="button" onClick="{{ tomMedlemSok }}" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Tøm søket</button></div>
+              </sc-if>
+            </div>
             <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
               <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
                 <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
@@ -35312,6 +35363,14 @@ class Component extends DCLogic {
    * Kolonet settes inn selv, saa «1430» blir «14:30» — det er slik folk
    * skriver et klokkeslett paa en telefon.
    */
+  /** Dagens dato som «2026-09-17», i nettleserens egen tid. */
+  idagIso() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+      + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
   klokkeslettFelt(raa) {
     const t = String(raa == null ? '' : raa).replace(/[^\d:]/g, '').replace(/:+/g, ':');
     // Skrevet med kolon: la det staa, men klipp til fire siffer.
@@ -44566,6 +44625,10 @@ class Component extends DCLogic {
       id: m.id,
       navn: m.navn || '(uten navn)',
       epost: m.epost || m.telefon || '',
+      // Nummeret staar for seg ogsaa, ikke bare som reserve for e-posten:
+      // soekefeltet over lista leter i navn, e-post OG telefon, og den som
+      // har begge delene skal kunne finnes paa nummeret sitt.
+      tlf: m.telefon || '',
       initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
       erAdmin: !!m.erAdmin,
       // Raden bygges som et NYTT objekt, ikke en kopi av svaret: alt som
@@ -48721,6 +48784,65 @@ class Component extends DCLogic {
           // naa, eller den som tok slutt det siste doegnet. Er den eldre, staar
           // feltet ikke her.
           ...(() => {
+            const fornavn = (p.navn || '').split(' ')[0] || 'personen';
+            return {
+              // ── Timer som aldri ble stemplet ──────────────────────
+              //
+              // Eieren, 17. september 2026: «Eirin har ikke stemplet inn
+              // eller ut i dag og jeg maa registrere 2,5 timer paa henne men
+              // det gaar jo ikke».
+              //
+              // Feltet over retter en oekt som finnes. Dette lager en.
+              // Datoen staar paa i dag til noe annet velges, saa det vanlige
+              // tilfellet — «hun var her i kveld» — er tre tastetrykk.
+              personTimerHjelp: 'Var ' + fornavn + ' her uten å stemple inn? '
+                + 'Skriv dagen og klokkeslettene, så legges økta inn som om den var stemplet.',
+              personTimerDato: this.state.personTimerDato || this.idagIso(),
+              settPersonTimerDato: e => this.setState({ personTimerDato: e.target.value }),
+              personTimerFra: this.state.personTimerFra || '',
+              settPersonTimerFra: e => this.setState({ personTimerFra: this.klokkeslettFelt(e.target.value) }),
+              personTimerTil: this.state.personTimerTil || '',
+              settPersonTimerTil: e => this.setState({ personTimerTil: this.klokkeslettFelt(e.target.value) }),
+              ...(() => {
+                // Hvor lenge det blir, sagt hoyt for man trykker. «2,5 timer»
+                // er det eieren skal kjenne igjen — ikke «150 minutter».
+                const kl = /^([01]\d|2[0-3]):[0-5]\d$/;
+                const f = this.state.personTimerFra || '';
+                const t = this.state.personTimerTil || '';
+                if (!kl.test(f) || !kl.test(t)) {
+                  return { personTimerVarighet: false, personTimerVarighetTekst: '' };
+                }
+                const min = (Number(t.slice(0, 2)) * 60 + Number(t.slice(3)))
+                          - (Number(f.slice(0, 2)) * 60 + Number(f.slice(3)));
+                return {
+                  personTimerVarighet: min > 0,
+                  personTimerVarighetTekst: min > 0
+                    ? 'Det blir ' + (min % 60 === 0
+                        ? (min / 60) + (min === 60 ? ' time' : ' timer')
+                        : String(min / 60).replace('.', ',') + ' timer')
+                      + '.'
+                    : '',
+                };
+              })(),
+              lagrePersonTimer: () => {
+                const kl = /^([01]\d|2[0-3]):[0-5]\d$/;
+                const dato = this.state.personTimerDato || this.idagIso();
+                const f = this.state.personTimerFra || '';
+                const t = this.state.personTimerTil || '';
+                if (!kl.test(f) || !kl.test(t)) {
+                  this.setState({ kvittering: 'Skriv klokkeslettene',
+                                  kvitteringDetalj: 'For eksempel 18:30 og 21:00.' });
+                  return;
+                }
+                this.medlemKall({ handling: 'timer', medlemId: p.id, dato, fra: f, til: t }, true)
+                  .then(ok => {
+                    if (!ok) return;
+                    this.setState({ personTimerFra: '', personTimerTil: '' });
+                  });
+              },
+            };
+          })(),
+          ...(() => {
             const st = p.stempling;
             if (!st) {
               return { personHarGlemt: false, personStemplingTekst: '', personStemplingTid: '',
@@ -50827,6 +50949,12 @@ class Component extends DCLogic {
       // kortene paa Oversikt gaar dit. Kontoene som aldri har kjoept noe
       // faar sin egen pille, saa de fortsatt kan finnes og slettes — men
       // de blander seg ikke inn blant medlemmene lenger.
+      // Soekefeltet over pillene. Staar det noe der, er pillene slaatt av —
+      // se filteret i «medlemmer» lenger nede.
+      medlemSok: this.state.medlemSok || '',
+      settMedlemSok: e => this.setState({ medlemSok: e.target.value }),
+      medlemSokAktivt: (this.state.medlemSok || '').trim() !== '',
+      tomMedlemSok: () => this.setState({ medlemSok: '' }),
       medlemFiltre: ['Aktive medlemmer', 'Tidligere medlemmer', 'Kursdeltakere', 'Admin', 'Ubetalte', 'Inne nå', 'Kontoer uten kjøp'].map(n => {
         const valgt = (this.state.medlemFilter || 'Aktive medlemmer') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
@@ -50861,6 +50989,25 @@ class Component extends DCLogic {
         { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 30', andel: 17, status: 'Utløper 3. sep', tone: 'warning' },
         { navn: 'Mari Lunde', epost: 'mari@epost.no', initial: 'ML', abonnement: '30 timer', timer: '0 / 30', andel: 0, status: 'Betaling feilet', tone: 'danger' },
       ])).filter(m => {
+        // ── Soeket gaar foran pillene ──────────────────────────────────
+        //
+        // Eieren, 17. september 2026, etter en kveld med aa lete etter det
+        // samme mennesket: «Naa finner jeg henne ikke i det hele tatt»,
+        // «Ingen som finner ellen», og til slutt: «Lag den jaevla soekefeltet
+        // ogsaa».
+        //
+        // Lista viser én kategori om gangen, og det finnes ingen «Alle»-pille.
+        // Staar en person i en annen kategori enn den du ser paa, er hen
+        // usynlig — selv om raden ligger i basen. Serveren har hatt soek hele
+        // tida («sok» i api/admin/medlemmer.php); skjermen spurte bare aldri.
+        //
+        // Naar det staar noe i feltet, gjelder ikke pilla. Da leter vi i ALLE,
+        // paa navn, e-post og telefon — det er hele poenget med aa soke.
+        const sok = (this.state.medlemSok || '').trim().toLowerCase();
+        if (sok !== '') {
+          return [m.navn, m.epost, m.tlf, m.telefon]
+            .filter(Boolean).join(' ').toLowerCase().indexOf(sok) !== -1;
+        }
         const fv = this.state.medlemFilter || 'Aktive medlemmer';
         // «Alle» er ingen pille lenger, men navnet paa en bruker andre
         // steder i admin aapner lista med søk paa navnet — da maa alle med.

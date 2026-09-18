@@ -76,6 +76,15 @@ if ($navn === '')    { $navn = (string) $medlem['navn']; }
 if ($telefon === '') { $telefon = (string) ($medlem['telefon'] ?? ''); }
 if ($epost === '')   { $epost = (string) ($medlem['epost'] ?? ''); }
 
+// Er e-posten og nummeret en annens, er det en annen som fyller ut — ikke
+// den innloggede. Se Medlemskap::annenPerson() (17. september 2026).
+$annen = Medlemskap::annenPerson($medlem, $epost, $telefon);
+if ($annen !== null) {
+    revider('innmelding_annen_person', 'member', (int) $medlem['id'],
+        ['plan' => $type, 'via' => 'bli-medlem']);
+    Svar::feil($annen);
+}
+
 if ($navn === '') {
     Svar::feil('Vi trenger navnet ditt.');
 }

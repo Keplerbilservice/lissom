@@ -61,6 +61,66 @@ final class Medlemskap
     public const VILKAAR_VERSJON = '2026-09-03';
 
     /**
+     * Er det en ANNEN person enn den innloggede som fyller ut?
+     *
+     * 17. september 2026: Ellen meldte seg inn paa Mini 15 fra en nettleser
+     * der Monica (admin) var logget inn. Kortet var fylt ut med Monicas
+     * konto; Ellen skrev sin e-post og sitt nummer oppaa. Serveren tok det
+     * som en rettelse av Monicas kontaktopplysninger, og la avtalen og
+     * betalingen paa Monica. Retten opp for haand i basen samme kveld.
+     *
+     * Regelen: staar det en e-post OG et nummer som begge er andre enn
+     * kontoens, er det ikke en rettelse — det er en annen person. Det samme
+     * gjelder om e-posten eller nummeret alt tilhoerer et annet medlem.
+     * Da skal ingenting skrives paa den innloggede kontoen, uansett om den
+     * er admin eller et vanlig medlem. Eieren, 17. september: «fiks saa
+     * dette ikke kan skje igjen, verken om man er logget inn som admin
+     * eller et annet medlem».
+     *
+     * Én rettelse (bare ny e-post, eller bare nytt nummer) er fortsatt lov
+     * — det var det feltene paa kortet ble laget for, 3. september.
+     *
+     * @param array<string,mixed> $medlem Den innloggede.
+     * @return string|null Beskjeden til kunden, eller null naar det er henne.
+     */
+    public static function annenPerson(array $medlem, string $epost, string $telefon): ?string
+    {
+        $id      = (int) ($medlem['id'] ?? 0);
+        $epost   = mb_strtolower(trim($epost));
+        $siffer  = preg_replace('/[^0-9]/', '', $telefon) ?? '';
+        $siffer  = strlen($siffer) >= 8 ? substr($siffer, -8) : '';
+        $minE    = mb_strtolower(trim((string) ($medlem['epost'] ?? '')));
+        $minT    = preg_replace('/[^0-9]/', '', (string) ($medlem['telefon'] ?? '')) ?? '';
+        $minT    = strlen($minT) >= 8 ? substr($minT, -8) : '';
+
+        $annenE = $epost !== '' && $epost !== $minE;
+        $annenT = $siffer !== '' && $siffer !== $minT;
+
+        $annen = $annenE && $annenT;
+        if (!$annen && $annenE && $id > 0) {
+            $annen = DB::en(
+                'SELECT id FROM members WHERE LOWER(epost) = :e AND id <> :i AND anonymisert_at IS NULL LIMIT 1',
+                ['e' => $epost, 'i' => $id]
+            ) !== null;
+        }
+        if (!$annen && $annenT && $id > 0) {
+            $annen = DB::en(
+                "SELECT id FROM members
+                  WHERE telefon IS NOT NULL AND id <> :i AND anonymisert_at IS NULL
+                    AND RIGHT(REGEXP_REPLACE(telefon, '[^0-9]', ''), 8) = :t LIMIT 1",
+                ['t' => $siffer, 'i' => $id]
+            ) !== null;
+        }
+        if (!$annen) {
+            return null;
+        }
+        $navn = trim((string) ($medlem['navn'] ?? ''));
+        return 'Opplysningene hører ikke til kontoen du er logget inn på'
+            . ($navn !== '' ? ' (' . $navn . ')' : '')
+            . '. Er det ikke deg som skal bli medlem: logg ut, og meld deg inn på nytt fra medlemskapssiden.';
+    }
+
+    /**
      * En plan som kan VELGES naa.
      *
      * «aktiv = 0» betyr at planen er tatt ut av salg. Skal noen melde seg

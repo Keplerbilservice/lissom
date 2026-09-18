@@ -18966,6 +18966,45 @@ sjekk('sesjonsvakta viser ingen rute naar tida er ute',
 sjekk('… men den logger fortsatt ut og sender til innlogginga',
     str_contains($mt, "              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemPlan: '',\n              side: 'login',\n            });"));
 
+// ── En annen person paa en innlogget konto ───────────────────────────
+//
+// 17. september 2026: Ellen meldte seg inn paa Mini 15 fra en nettleser
+// der Monica (admin) var innlogget. Serveren tok Ellens e-post og nummer
+// som en rettelse av Monicas konto, og la avtalen og betalingen paa
+// Monica. Eieren: «fiks saa dette ikke kan skje igjen, verken om man er
+// logget inn som admin eller et annet medlem».
+//
+// Regelen sitter i Medlemskap::annenPerson() og brukes av api/medlemskap.php
+// («start»), api/bli-medlem.php og Medlemsordre::finnMedlem().
+$apMonica = DB::settInn('members', ['vipps_sub' => 'test-ap-monica', 'navn' => 'Test Monica',
+    'epost' => 'ap-monica@example.com', 'telefon' => '+4790000011', 'rolle' => 'admin']);
+$apEllen  = DB::settInn('members', ['vipps_sub' => 'test-ap-ellen', 'navn' => 'Test Ellen',
+    'epost' => 'ap-ellen@example.com', 'telefon' => '+4790000022']);
+$apM = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $apMonica]);
+sjekk('annen person: egne opplysninger slipper gjennom',
+    Medlemskap::annenPerson($apM, 'ap-monica@example.com', '900 00 011') === null);
+sjekk('annen person: én rettelse (ny e-post ingen eier) slipper gjennom',
+    Medlemskap::annenPerson($apM, 'ap-monica-ny@example.com', '+47 900 00 011') === null);
+sjekk('annen person: e-post og nummer som begge er andre, stoppes',
+    Medlemskap::annenPerson($apM, 'ap-ukjent@example.com', '+4790000099') !== null);
+sjekk('annen person: bare e-posten til et annet medlem, stoppes',
+    Medlemskap::annenPerson($apM, 'ap-ellen@example.com', '') !== null);
+sjekk('annen person: bare nummeret til et annet medlem, stoppes',
+    Medlemskap::annenPerson($apM, '', '90000022') !== null);
+sjekk('annen person: beskjeden sier hvem som er innlogget',
+    str_contains((string) Medlemskap::annenPerson($apM, 'ap-ellen@example.com', '+4790000022'), 'Test Monica'));
+// Innmeldingen via /meld-inn: ordren baerer Ellens opplysninger, Monica er
+// innlogget. Da skal ordren IKKE knyttes til Monica.
+$apOrdre  = ['id' => 0, 'epost' => 'ap-ellen@example.com', 'telefon' => '+4790000022'];
+$apFunnet = Medlemsordre::finnMedlem($apOrdre, $apM);
+sjekk('meld-inn: en annens ordre knyttes ikke til den innloggede',
+    $apFunnet !== null && (int) $apFunnet['id'] === (int) $apEllen,
+    'fikk ' . json_encode($apFunnet['id'] ?? null));
+$apEgen = ['id' => 0, 'epost' => 'ap-monica@example.com', 'telefon' => '+4790000011'];
+sjekk('meld-inn: egen ordre knyttes til den innloggede som foer',
+    (int) (Medlemsordre::finnMedlem($apEgen, $apM)['id'] ?? 0) === (int) $apMonica);
+DB::kjor('DELETE FROM members WHERE id IN (' . (int) $apMonica . ',' . (int) $apEllen . ')');
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

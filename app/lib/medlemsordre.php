@@ -142,14 +142,20 @@ final class Medlemsordre
      * Hvem ordren gjelder, hvis vi kjenner henne. Ellers null.
      *
      * Innmeldingen krever ikke innlogging lenger. Er hun logget inn, er det
-     * henne. Ellers ser vi etter telefonnummeret og e-posten hun oppga.
+     * henne — med mindre ordren baerer en annens e-post og nummer. Da er det
+     * en annen som fyller ut paa en innlogget maskin (17. september 2026:
+     * Ellen paa Monicas konto), og ordren gaar etter opplysningene i den,
+     * ikke etter oekten. Se Medlemskap::annenPerson(). Ellers ser vi etter
+     * telefonnummeret og e-posten hun oppga.
      *
      * @param array<string,mixed> $ordre
      * @return array<string,mixed>|null
      */
     public static function finnMedlem(array $ordre, ?array $innlogget = null): ?array
     {
-        if ($innlogget !== null && (int) ($innlogget['id'] ?? 0) > 0) {
+        if ($innlogget !== null && (int) ($innlogget['id'] ?? 0) > 0
+            && Medlemskap::annenPerson($innlogget,
+                (string) ($ordre['epost'] ?? ''), (string) ($ordre['telefon'] ?? '')) === null) {
             self::knyttTil((int) $ordre['id'], (int) $innlogget['id']);
             return $innlogget;
         }

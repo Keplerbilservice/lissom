@@ -3437,6 +3437,18 @@ window.__resources = {
                        Feltene betyr noe: medlemsvarslene gaar til
                        members.epost, og nummeret Vipps faar ved betaling er
                        members.telefon. Se api/medlemskap.php, «start». -->
+                  <!-- Hvem kortet gjelder. 17. september 2026: Ellen meldte
+                       seg inn fra en nettleser der Monica var innlogget, og
+                       feltene sto ferdig fylt med Monicas konto. Serveren
+                       stopper det naa (Medlemskap::annenPerson), men hun
+                       skal se det FOER hun skriver — med en «Logg ut»-pille
+                       som holder henne paa dette kortet. -->
+                  <sc-if value="{{ visBmInnlogget }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">
+                      <span>{{ bmInnloggetLinje }}</span>
+                      <button type="button" onClick="{{ bmLoggUt }}" style="{{ bmLoggUtStil }}">Logg ut</button>
+                    </div>
+                  </sc-if>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bmEpost }}" on-change="{{ settBmEpost }}" hint-size="100%,66px"></x-import>
                   <div style="height: var(--space-4);"></div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47 000 00 000" value="{{ bmTelefon }}" on-change="{{ settBmTelefon }}" hint-size="100%,66px"></x-import>
@@ -46842,6 +46854,30 @@ class Component extends DCLogic {
           visVippsTrygt: paaMedlemskap || this.erBetaltKurs(),
           visMedlemsFornyLinje: !!utloept,
           medlemsFornyLinje: 'Medlemskapet ditt løper ikke lenger. Forny det her, så er du i gang igjen.',
+          // ── Hvem kortet gjelder ──────────────────────────────────
+          //
+          // Er noen innlogget, staar navnet her, med en pille som logger
+          // ut og blir paa kortet. Se kommentaren ved feltene i malen.
+          visBmInnlogget: !!this.state.innlogget,
+          bmInnloggetLinje: 'Du er logget inn som '
+            + ((this.state.vippsNavn || this.state.medlemEpost || 'en annen konto').trim())
+            + '. Ikke deg? Logg ut, så melder du deg inn med dine egne opplysninger.',
+          bmLoggUt: () => {
+            const bli = () => this.setState({
+              innlogget: false, erAdminBruker: false, erRegnskapBruker: false,
+              erMedlemBruker: false, medlemPlan: '', soknadStatus: null,
+              vippsNavn: '', medlemEpost: '', medlemTelefon: '',
+              minAvtale: null, bmEpost: '', bmTelefon: '', bmFeil: null,
+            });
+            if (!this.erPublisert()) { bli(); return; }
+            fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })
+              .then(bli).catch(bli);
+          },
+          bmLoggUtStil: {
+            appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px',
+            font: 'var(--type-body-sm)', fontWeight: 700, flex: '0 0 auto',
+            border: '2px solid var(--lissom-brown)', background: 'transparent', color: 'var(--lissom-brown)',
+          },
           medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')
             + (pl.pris ? ' · ' + pl.pris : ''),
           // Summen over Vipps-knappen. Den sier «Betal med Vipps» og har

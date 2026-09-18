@@ -217,6 +217,18 @@ switch (Foresporsel::tekst('handling')) {
         // medlemskapet i kassa sender dem ikke, og da roeres kontoen ikke.
         $epost   = mb_substr(Foresporsel::tekst('epost'), 0, 191);
         $telefon = mb_substr(Foresporsel::tekst('telefon'), 0, 32);
+        // ── En annen person paa en innlogget konto ─────────────────
+        //
+        // 17. september 2026: Ellen skrev sin e-post og sitt nummer i
+        // feltene mens Monica var innlogget. Da ble Monicas konto
+        // «rettet» til Ellen, og avtalen og betalingen havnet paa Monica.
+        // Se Medlemskap::annenPerson().
+        $annen = Medlemskap::annenPerson($medlem, $epost, $telefon);
+        if ($annen !== null) {
+            revider('innmelding_annen_person', 'member', (int) $medlem['id'],
+                ['plan' => $planNavn, 'via' => 'medlemskap']);
+            Svar::feil($annen);
+        }
         $endring = [];
         if ($epost !== '') {
             if (!filter_var($epost, FILTER_VALIDATE_EMAIL)) {

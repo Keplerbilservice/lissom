@@ -1,5 +1,5 @@
 {
-  "laget": "2026-09-16",
+  "laget": "2026-09-18",
   "om": "Laget av bin/seokart.mjs. Rediger lissom-2108.html, ikke denne.",
   "stier": {
     "/": "forside",
@@ -86,6 +86,7 @@
     "/admin/nye-pameldinger",
     "/admin/medlemssoknader",
     "/admin/ubesvarte",
+    "/admin/godkjenning",
     "/admin/butikk",
     "/admin/okonomi",
     "/admin/beskjeder",
@@ -252,7 +253,7 @@
     "paintonpots": {
       "fokus": "paint on pots Tønsberg",
       "tittel": "Paint on Pots i Tønsberg — mal din egen keramikk | Lissom",
-      "meta": "Paint on Pots: velg en ferdigbrent kopp eller skål og mal den selv. Vi glaserer og brenner. Barn fra 6 år med voksen. Drop-in på Teie ved Tønsberg — book plass.",
+      "meta": "Paint on Pots: velg en ferdigbrent kopp eller skål og mal den selv – vi glaserer og brenner. Barn fra 6 år med voksen. Drop-in på Teie ved Tønsberg.",
       "slug": "paint-on-pots-tonsberg",
       "h1": "Paint on Pots i Tønsberg",
       "sekundare": "male keramikk, aktivitet barn Tønsberg, kreativ time Vestfold",
@@ -477,7 +478,7 @@
     "bedrift": {
       "fokus": "teambuilding keramikk Vestfold",
       "tittel": "Keramikk til bedriften og teambuilding | Lissom Tønsberg",
-      "meta": "Bedriftsevent ved dreieskiva, og keramikk laget for bedrifter i Vestfold — kopper og servise med eget motiv. Se hva vi laget for Grenseløs, Spire Regnskap og Kepler Bilservice.",
+      "meta": "Bedriftsevent ved dreieskiva og keramikk med eget motiv for bedrifter i Vestfold. Se hva vi laget for Grenseløs, Spire Regnskap og Kepler Bilservice.",
       "slug": "teambuilding-keramikk-vestfold",
       "h1": "Teambuilding med keramikk i Vestfold",
       "sekundare": "bedriftsarrangement Tønsberg, julebord Nøtterøy, kick-off Vestfold",

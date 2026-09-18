@@ -44,7 +44,10 @@ $h .= Deler::topp('');
 $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
     . '<div style="max-width: var(--width-content); margin: 0 auto;">'
     . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Fra verkstedet</div>'
-    . '<h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">Nyheter og guider</h1>'
+    // Én H1 per side. Staar en artikkel aapen, er artikkeltittelen H1-en;
+    // da tegnes seksjonsoverskriften likt, men som avsnitt — Google skal
+    // ikke maatte velge mellom «Nyheter og guider» og tittelen (18. september 2026).
+    . '<' . ($lest === null ? 'h1' : 'p') . ' style="margin: 0 0 var(--space-5); font: var(--type-h1); font-size: var(--text-5xl); font-family: var(--font-display); letter-spacing: var(--tracking-display); color: var(--text-heading);">Nyheter og guider</' . ($lest === null ? 'h1' : 'p') . '>'
     . '<p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 60ch; text-wrap: pretty;">Det vi skriver om leire, brenning, glasur og livet i verkstedet.</p>';
 if ($kategorier !== []) {
     $h .= '<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-8);">';

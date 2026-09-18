@@ -33569,16 +33569,14 @@ class Component extends DCLogic {
     window.addEventListener('scroll', this._tilbakeRull, { passive: true });
     window.addEventListener('resize', this._tilbakeRull);
     this.tilbakePlasser();
-    // Innloggingen gikk ut. Si fra én gang, og send til innlogging — framfor
-    // aa la eieren staa og trykke paa knapper som ikke kan virke.
+    // Innloggingen gikk ut. Send til innlogging — framfor aa la eieren staa
+    // og trykke paa knapper som ikke kan virke. Uten melding: eieren, 18.
+    // september 2026, om «Du er logget ut» naar han trykket Admin: «jeg
+    // ønsker ikke å se denne beskjeden, så den må fjernes».
     this._utlogget = () => {
       if (this._sierUtlogget) return;
       this._sierUtlogget = true;
-      this.setState({
-        innlogget: false,
-        kvittering: 'Du er logget ut',
-        kvitteringDetalj: 'Innloggingen varer i tre timer. Logg inn på nytt, så kan du fortsette.',
-      });
+      this.setState({ innlogget: false });
       if (this.erAdminSkjerm(this.state.side)) {
         setTimeout(() => { this.setState({ side: 'adminlogin' }); window.scrollTo(0, 0); }, 1200);
       }

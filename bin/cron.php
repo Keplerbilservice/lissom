@@ -441,9 +441,12 @@ switch ($jobb) {
                     // e-post — Varsel::mal() ordner det selv.
                     'telefon' => $okt['sms_paaminnelse'] ? ($d['m_telefon'] ?? $d['gjest_telefon']) : null,
                 ], [
-                    'navn'  => (string) ($d['m_navn'] ?: $d['gjest_navn']),
-                    'kurs'  => (string) $okt['tittel'],
-                    'lenke' => $lenke,
+                    'navn'    => (string) ($d['m_navn'] ?: $d['gjest_navn']),
+                    // Fornavnet, som i paaminnelsen. Eieren, 18. september
+                    // 2026: «Bruk kun fornavn, det gjør du i alle maler forøvrig.»
+                    'fornavn' => fornavnet((string) ($d['m_navn'] ?: $d['gjest_navn'])),
+                    'kurs'    => (string) $okt['tittel'],
+                    'lenke'   => $lenke,
                 ], 'course_session', (int) $okt['id']);
                 $antall++;
             }

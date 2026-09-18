@@ -156,9 +156,10 @@ final class Maler
         ],
         'anmeldelse' => [
             'tittel' => 'Be om en anmeldelse',
-            'hvor'   => 'Sendes noen dager etter kurset.',
+            'hvor'   => 'Sendes noen timer etter kurset, til dem som betalte.',
             'felter' => [
-                'navn'  => 'Navnet på deltakeren',
+                'fornavn' => 'Fornavnet til deltakeren',
+                'navn'  => 'Hele navnet',
                 'kurs'  => 'Kurset de var på',
                 'lenke' => 'Lenken de legger igjen ordene på',
             ],

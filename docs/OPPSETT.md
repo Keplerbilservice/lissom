@@ -76,10 +76,10 @@ cPanel → **Domains** → **Create A New Domain** → **Registered Domain**:
 
 | Felt | Verdi |
 |---|---|
-| Domain | `ny.lissom.no` |
+| Domain | det midlertidige underdomenet |
 | Share document root | **ikke** huket av |
 
-Dokumentroten ble `~/public_html/ny.lissom.no`. cPanel tillot ikke en sti
+Dokumentroten ble en undermappe av `~/public_html`. cPanel tillot ikke en sti
 utenfor `public_html` for underdomener.
 
 Det fungerer: Apache leser bare `.htaccess` fra dokumentroten og nedover, aldri
@@ -94,7 +94,7 @@ Men det gir én felle å huske på, se neste avsnitt.
 utenfor det som serveres. PHP-en der kan ikke lenger kjøres fra nettet.
 
 Avsnittet under sto igjen med den gamle teksten, og advarte mot å slette
-`public_html/ny.lissom.no`. Den mappa finnes ikke lenger.
+underdomenemappa. Den mappa finnes ikke lenger.
 
 Det som gjenstår er opprydding, ikke sikkerhet:
 
@@ -329,10 +329,8 @@ portal.vipps.no → **Utvikler** → testsalgsenheten.
 
 | Hva | Adresse |
 |---|---|
-| Redirect-URI (Login) | `https://ny.lissom.no/api/vipps-callback.php` |
+| Redirect-URI (Login) | `https://lissom.no/api/vipps-callback.php` |
 
-Bruk `ny.lissom.no` mens vi tester. Adressen byttes til `lissom.no` samtidig
-med DNS-omleggingen, og må da også oppdateres i portalen.
 | Salgsvilkår | `https://lissom.no/vilkar.html` |
 | Personvern | `https://lissom.no/personvern.html` |
 
@@ -477,7 +475,7 @@ er innlogget som admin.
 
 ## 8. Flytte siden til lissom.no
 
-Til nå ligger den nye siden på `ny.lissom.no`, og en gammel WordPress på
+Til nå ligger den nye siden på det midlertidige underdomenet, og en gammel WordPress på
 `lissom.no`. Dette er byttet.
 
 Rekkefølgen er ikke tilfeldig. Vipps-innlogging, betalingsreturer og
@@ -499,7 +497,7 @@ motsvarighet, bør sendes videre til forsida framfor å bli en feilside.
 I `~/lissom-secrets/secrets.php`:
 
 ```php
-'tillatte_opphav' => ['https://ny.lissom.no', 'https://lissom.no', 'https://www.lissom.no'],
+'tillatte_opphav' => ['https://lissom.no', 'https://www.lissom.no'],
 ```
 
 Denne alene endrer ingenting utad. Den gjør bare at admin kan lagre fra begge
@@ -527,11 +525,11 @@ Filene ble derfor flyttet i stedet:
 
 1. Filbehandler → Innstillinger → **Vis skjulte filer**. Uten dette blir
    `.htaccess` liggende igjen, og ingen adresser på siden virker.
-2. Alt i `public_html` unntatt `ny.lissom.no` og `.well-known` ble flyttet til
+2. Alt i `public_html` unntatt det midlertidige underdomenet og `.well-known` ble flyttet til
    `~/gammel-wordpress`. Ingenting slettet.
-3. Alt i `public_html/ny.lissom.no` ble flyttet opp til `public_html`.
+3. Alt i underdomenemappa ble flyttet opp til `public_html`.
 4. `server-dir` i `.github/workflows/deploy.yml` ble endret fra
-   `public_html/ny.lissom.no/` til `public_html/`.
+   underdomenemappa til `public_html/`.
 
 Punkt 4 må gjøres **etter** at filene er flyttet. Gjøres den før, legger neste
 publisering filene i public_html ved siden av WordPress.
@@ -559,17 +557,6 @@ opphavssjekken. Gjør den **etter** steg 3, ikke før.
 - Lagre noe i admin. Da vet du at opphavssjekken er i orden.
 - `https://www.lissom.no` skal havne på `https://lissom.no`.
 
-### 6. Send ny.lissom.no videre
-
-Nå peker begge adressene på det samme, og det er to nettsteder med samme
-innhold i Googles øyne. Legg dette øverst i `.htaccess`, rett etter
-`RewriteEngine On`:
-
-```apache
-RewriteCond %{HTTP_HOST} ^ny\.lissom\.no$ [NC]
-RewriteRule ^(.*)$ https://lissom.no/$1 [R=301,L,NE]
-```
-
 ### 7. Fortell Google
 
 - Search Console → Sitemaps → send inn `https://lissom.no/sitemap.xml`.
@@ -579,7 +566,7 @@ RewriteRule ^(.*)$ https://lissom.no/$1 [R=301,L,NE]
 ### 8. Rydd bort WordPress
 
 Vent noen dager. Er alt stabilt, slett WordPress-filene i `public_html` —
-**bortsett fra mappa `ny.lissom.no`**, som inneholder den levende siden.
+**bortsett fra underdomenemappa**, som inneholder den levende siden.
 
 En WordPress som står uten oppdateringer er en vanlig vei inn for angripere,
 og her ville den delt konto med betalingsdata. Derfor skal den bort — men

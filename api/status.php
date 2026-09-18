@@ -7,7 +7,7 @@
  * «det virker ikke» er et vanskelig utgangspunkt for feilsøking.
  *
  * Krever nøkkelen fra secrets.php:
- *   https://ny.lissom.no/api/status.php?nokkel=...
+ *   https://lissom.no/api/status.php?nokkel=...
  *
  * Uten riktig nøkkel svarer den 404. Da røper den ikke engang at den finnes.
  * Den viser aldri hemmeligheter — kun om de er fylt ut eller ikke.

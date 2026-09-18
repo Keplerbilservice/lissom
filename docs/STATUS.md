@@ -116,7 +116,7 @@ tests/flyt.sh             10 sjekker, alle grønne
 ```
 
 Fra 22. august kjøres nettsiden også mot den ekte backend-en lokalt, med
-`ny.lissom.no` pekt på en lokal PHP-server. Det er slik forespørselsskjemaet,
+det midlertidige underdomenet pekt på en lokal PHP-server. Det er slik forespørselsskjemaet,
 innloggingen og admin-sidene er verifisert — ikke bare at koden er
 syntaktisk riktig, men at flyten faktisk virker fra skjerm til database.
 
@@ -135,7 +135,7 @@ kjørt, og kurspåminnelser er verifisert med en økt som starter dagen etter.
 
 Fram til nå er hver endring i frontend verifisert med syntakssjekk og
 telling av tagger — jeg har aldri sett siden tegnet opp, fordi jeg ikke når
-ny.lissom.no herfra.
+det midlertidige underdomenet herfra.
 
 Nå kjøres siden i en ekte nettleser lokalt (Chromium via Playwright), og
 skjermbilder tas på mobilbredde. Det avdekket med én gang to feil som ingen
@@ -199,7 +199,7 @@ til `~/gammel-wordpress`, utenfor det som publiseres. Den serveres altså ikke
 lenger, og PHP-en der kan ikke kjøres fra nettet. Det var den delen som hastet.
 
 Punktet her sto igjen med den gamle teksten, inkludert advarselen om at
-`public_html/ny.lissom.no` måtte spares. Den mappa finnes ikke lenger, og en
+underdomenemappa måtte spares. Den mappa finnes ikke lenger, og en
 advarsel om å spare noe som ikke er der, er verre enn ingen advarsel.
 
 Igjen står to ting, ingen av dem akutte:

@@ -3,7 +3,7 @@
 # Hele betalingskjeden, ende til ende, mot en stubbet Vipps.
 #
 # Bygger opp samme mappestruktur som webhotellet — nettsiden i
-# public_html/ny.lissom.no, koden i lissom-app ved siden av — starter en
+# public_html, koden i lissom-app ved siden av — starter en
 # webserver og en Vipps-stubbe, og kjorer gjennom booking, retur og webhook.
 #
 #   tests/flyt.sh
@@ -33,8 +33,8 @@ opprydding() {
 trap opprydding EXIT
 
 # --- Bygg opp serverens mappestruktur ------------------------------------
-mkdir -p "$T/public_html/ny.lissom.no" "$T/lissom-app" "$T/lissom-secrets"
-cp -r api "$T/public_html/ny.lissom.no/api"
+mkdir -p "$T/public_html" "$T/lissom-app" "$T/lissom-secrets"
+cp -r api "$T/public_html/api"
 cp -r app "$T/lissom-app/app"
 cp -r db/migrations "$T/lissom-app/migrations"
 rm -f "$T/lissom-app/app/secrets.php"
@@ -43,12 +43,12 @@ php -r '
 $s = require "'"$ROT"'/app/secrets.php";
 $s["vipps_base"] = "http://127.0.0.1:'"$PORT_VIPPS"'";
 $s["vipps_webhook_secret"] = "'"$HEMMELIGHET"'";
-$s["nettsted"] = "https://ny.lissom.no";
+$s["nettsted"] = "https://lissom.no";
 $s["miljo"] = "test";
 file_put_contents("'"$T"'/lissom-secrets/secrets.php", "<?php return " . var_export($s, true) . ";");
 ' || { echo "Fant ikke app/secrets.php — sett den opp forst."; exit 1; }
 
-php -S "127.0.0.1:$PORT_WEB" -t "$T/public_html/ny.lissom.no" >/dev/null 2>&1 &
+php -S "127.0.0.1:$PORT_WEB" -t "$T/public_html" >/dev/null 2>&1 &
 PID_WEB=$!
 php -S "127.0.0.1:$PORT_VIPPS" tests/vipps-stub.php >/dev/null 2>&1 &
 PID_VIPPS=$!
@@ -59,7 +59,7 @@ for _ in $(seq 1 20); do
 done
 
 B="http://127.0.0.1:$PORT_WEB/api"
-ORIG="Origin: https://ny.lissom.no"
+ORIG="Origin: https://lissom.no"
 
 # --- Testmedlem og sesjon -------------------------------------------------
 TOKEN=$(php -r '

@@ -6,8 +6,8 @@
  * kommandolinjen. Uten dette maatte hver endring importeres for haand i
  * phpMyAdmin — tungvint, og lett aa gjore i feil rekkefolge.
  *
- *   https://ny.lissom.no/api/migrer.php?nokkel=...          viser hva som mangler
- *   https://ny.lissom.no/api/migrer.php?nokkel=...&kjor=ja  kjorer dem
+ *   https://lissom.no/api/migrer.php?nokkel=...          viser hva som mangler
+ *   https://lissom.no/api/migrer.php?nokkel=...&kjor=ja  kjorer dem
  *
  * Krever samme nokkel som helsesjekken. Uten den: 404, og den roper ikke at
  * den finnes. Kjorer aldri noe uten at «kjor=ja» er oppgitt.

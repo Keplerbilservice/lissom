@@ -7,7 +7,7 @@
  * havner i feilloggen, som er tungvint aa komme til. Denne sida gjor de samme
  * kallene og viser hva Vipps faktisk svarer.
  *
- *   https://ny.lissom.no/api/vipps-test.php?nokkel=...
+ *   https://lissom.no/api/vipps-test.php?nokkel=...
  *
  * Krever samme nokkel som helsesjekken. Oppretter en betaling paa én krone for
  * aa se om det gaar, og avbryter den umiddelbart — ingen penger flyttes.

@@ -113,6 +113,36 @@ if ($tilEpost !== '') {
     if (!filter_var($tilEpost, FILTER_VALIDATE_EMAIL)) {
         Svar::feil('Adressen ser ikke riktig ut.');
     }
+    // ?mal=anmeldelse sender en av malene i stedet for den faste testteksten,
+    // fylt ut med eksempelverdier — ogsaa naar malen er slaatt av. Eieren, 18.
+    // september 2026, foer anmeldelsesmalen ble aktivert: «vis meg teksten som
+    // sendes ut». Da skal han se den ekte e-posten, ikke en beskrivelse av den.
+    $malNavn = Foresporsel::tekst('mal');
+    if ($malNavn !== '') {
+        $mal = DB::harTabell('notification_templates')
+            ? DB::en('SELECT * FROM notification_templates WHERE navn = :n', ['n' => $malNavn])
+            : null;
+        if ($mal === null) {
+            Svar::feil('Fant ingen mal som heter «' . $malNavn . '».');
+        }
+        $jeg = Sesjon::medlem() ?? [];
+        $kurs = DB::verdi('SELECT tittel FROM courses ORDER BY id DESC LIMIT 1');
+        $felter = [
+            'navn'    => (string) ($jeg['navn'] ?? 'Kari'),
+            'fornavn' => explode(' ', trim((string) ($jeg['navn'] ?? 'Kari')))[0],
+            'kurs'    => (string) ($kurs ?: 'Nybegynner dreiekurs'),
+            'lenke'   => (string) (Config::hent('anmeldelse_lenke', '') ?: Config::nettsted()),
+        ];
+        $id = Varsel::epost(
+            $tilEpost,
+            '[TEST] ' . Varsel::flett((string) ($mal['emne'] ?? ''), $felter),
+            Varsel::flett((string) $mal['tekst'], $felter),
+            null,
+            null,
+            (string) ($mal['gruppe'] ?? 'system')
+        );
+        $svar['mal_test'] = ['mal' => $malNavn, 'aktiv' => (int) ($mal['aktiv'] ?? 0) === 1, 'felter' => $felter];
+    } else {
     $id = Varsel::epost(
         $tilEpost,
         'Testmelding fra lissom.no',
@@ -120,6 +150,7 @@ if ($tilEpost !== '') {
         . "Kom den fram, virker e-postutsendingen.\n\n"
         . "Sendt " . gmdate('c') . " UTC."
     );
+    }
     // Send den med en gang framfor aa vente paa koen.
     $resultat = Utsending::tomKo(5);
     $rad = DB::en('SELECT status, forsok, feilmelding FROM notifications WHERE id = :id', ['id' => $id]);

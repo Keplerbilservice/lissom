@@ -17854,8 +17854,42 @@ sjekk('bildet vises i ruta, ikke filnavnet',
     'maalt paa 390 px: bildet fyller ruta');
 // Punktene ligger over bildet, saa hun peker paa det hun ser.
 sjekk('… og de ni punktene ligger oppaa bildet',
-    str_contains($vis172, 'position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);'),
+    str_contains($vis172, 'position: absolute; top: 0; left: 0; right: 0; bottom: 34px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);'),
     'maalt: ni knapper paa 85 x 85 px');
+
+// ── Bildet maa kunne byttes ──────────────────────────────────────────
+//
+// Eirin, 19. september 2026: «naar det staar klikk her for aa bytte bilde
+// saa skjer det ikke noe».
+//
+// Rutenettet sto med «inset: 0» og dekket hele ruta, ogsaa filfeltet under.
+// Hvert trykk traff en knapp — og en knapp inne i en etikett hindrer at
+// filvelgeren aapner seg. Foerste bilde gikk inn, for da fantes ikke
+// rutenettet; etterpaa kunne det aldri byttes.
+//
+// Maalt i Chromium, paa den samme strukturen: foer laa en fokusknapp under
+// musa midt paa stripa og filvelgeren aapnet seg ikke; naa ligger stripa
+// der, filvelgeren aapner seg, og fokuspunktet virker fortsatt.
+sjekk('… og stripa nederst bytter bildet',
+    str_contains($vis172, 'z-index: 3; padding: 6px 8px; background: rgba(77, 29, 18, .72); color: var(--clay-50); font-size: var(--text-xs); font-weight: 600; text-align: center; cursor: pointer;">Trykk her for å bytte bilde</span>')
+    && !str_contains($vis172, 'pointer-events: none;">Trykk for å bytte bilde'),
+    'maalt i Chromium: filvelgeren aapner seg');
+
+// ── Ruta maa toemmes helt naar skjemaet er sendt ─────────────────────
+//
+// Eirin, 19. september 2026: «naar man har lasta opp et bilde saa blir det
+// ikke borte igjen. Saa jeg tror det blir liggende oppaa hverandre der
+// inne».
+//
+// «skBildeNavn» ble nullstilt, saa teksten «Velg produktbilde» kom tilbake
+// — men «skBildeUrl» sto igjen, og det er den som tegner bakgrunnen. Teksten
+// laa altsaa oppaa det forrige bildet. Fokuspunktet ble med til neste
+// produkt ogsaa.
+sjekk('bildet forsvinner naar produktet er sendt inn',
+    str_contains($vis172, "              skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%',"));
+// Blob-adressen frigis, ellers ligger fila i minnet saa lenge sida er aapen.
+sjekk('… og fila slippes ut av minnet',
+    str_contains($vis172, '            if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }'));
 // Valget gikk ingen steder for: settFokus() lagrer gjennom
 // api/admin/bilder.php, som krever admin.
 sjekk('… og valget foelger med produktet',

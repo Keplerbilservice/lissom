@@ -35,7 +35,10 @@ Rate::sjekk('medlemsordre', maks: 10, vindu: 3600);
 $innlogget = Sesjon::medlem();
 
 $type     = mb_substr(Foresporsel::tekst('type'), 0, 64);
-$betaling = Foresporsel::tekst('betaling') === 'engang' ? 'engang' : 'trekk';
+// «verksted» slippes gjennom hit; Medlemsordre::opprett() avgjor om planen
+// tillater det, og gjor det om til «trekk» hvis ikke.
+$betalingRaa = Foresporsel::tekst('betaling');
+$betaling = in_array($betalingRaa, ['engang', 'verksted'], true) ? $betalingRaa : 'trekk';
 $navn     = mb_substr(Foresporsel::tekst('navn'), 0, 191);
 $epost    = mb_substr(Foresporsel::tekst('epost'), 0, 191);
 $telefon  = mb_substr(Foresporsel::tekst('telefon'), 0, 32);

@@ -138,6 +138,7 @@ if (Foresporsel::metode() === 'GET') {
             // «Gjenstanden betales i verkstedet» (migrasjon 074). Paint on
             // Pots: plassen bookes, gjenstanden slaas inn i kassa.
             'gjenstandIKassa' => (bool) ($k['gjenstand_i_kassa'] ?? 0),
+            'utenForskudd'    => (bool) ($k['uten_forskudd'] ?? 0),
             // Hva kurset legger beslag paa i verkstedet (migrasjon 103).
             // Null betyr ingen delt grense — da gjelder bare plasstallet.
             'ressursId'       => (int) ($k['ressurs_id'] ?? 0),
@@ -437,6 +438,10 @@ switch ($handling) {
             'tillegg'         => 'tillegg',
             'varighetTekst'   => 'varighet_tekst',
             'gjenstandIKassa' => 'gjenstand_i_kassa',
+            // «Kan bookes uten forskuddsbetaling» (migrasjon 197). Paa for
+            // alle kurs fra start; her slaas den av paa dem som skal betales
+            // i forkant.
+            'utenForskudd'    => 'uten_forskudd',
         ];
         foreach ($tekstfelter as $inn => $kolonne) {
             if (!array_key_exists($inn, Foresporsel::kropp()) || !DB::harKolonne('courses', $kolonne)) {
@@ -450,7 +455,7 @@ switch ($handling) {
                 $verdi = implode("\n", Medlemskap::punkter($verdi));
             }
             // En hake er 0 eller 1, aldri NULL.
-            if ($kolonne === 'gjenstand_i_kassa') {
+            if ($kolonne === 'gjenstand_i_kassa' || $kolonne === 'uten_forskudd') {
                 $data[$kolonne] = ($verdi === 'ja' || $verdi === '1') ? 1 : 0;
                 continue;
             }

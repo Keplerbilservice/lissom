@@ -41,6 +41,8 @@ final class Katalog
             ? ', nivaa_intern, nivaa_tekst, kort_beskrivelse, lager_du, med_hjem, ferdig_tid, tillegg, varighet_tekst' : '';
         // «Gjenstanden betales i verkstedet». Kom med migrasjon 074.
         $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kassa' : '';
+        // «Kan bookes uten forskuddsbetaling». Kom med migrasjon 197.
+        $forskuddFelt = DB::harKolonne('courses', 'uten_forskudd') ? ', uten_forskudd' : '';
         // «Datoene lages av aapningstidene» — Paint on Pots. Kom med
         // migrasjon 079. Foer laa den inni gjenstand_i_kassa, som gjorde to jobber.
         $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? ', folger_apningstid' : '';
@@ -68,7 +70,7 @@ final class Katalog
             : 0;
 
         $kurs = DB::alle(
-            "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}{$ressursFelt}
+            "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$forskuddFelt}{$apenFelt}{$vinduFelt}{$ressursFelt}
                FROM courses
               WHERE status = 'publisert' AND {$hvor}
               ORDER BY type, tittel"
@@ -135,6 +137,11 @@ final class Katalog
                 'utenDatoOk' => (bool) ($k['vis_uten_dato'] ?? 0),
                 'pris'    => Booking::kroner((int) $k['pris_ore']),
                 'prisOre' => (int) $k['pris_ore'],
+                // Kan plassen bookes og betales ved oppmoete? Paa for alle
+                // fra start (migrasjon 197). Gratis kurs har ingenting aa
+                // betale, og da finnes ikke valget.
+                'utenForskudd' => (int) $k['pris_ore'] > 0
+                    && (int) ($k['uten_forskudd'] ?? 0) === 1,
                 'om'      => $k['beskrivelse'],
                 // Nivaaet kunden leser, varigheten regnet av oektene, og tekstene.
                 //

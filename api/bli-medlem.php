@@ -129,14 +129,33 @@ if (!$vilkaar) {
 // kan uansett ikke ha fast trekk, og faar det ikke her heller.
 $betaling = Medlemskap::kreverFastTrekk($plan) ? 'trekk' : 'selv';
 
+// ── Betaler i verkstedet ───────────────────────────────────────────────
+//
+// Eieren, 19. september 2026: «det maa gaa an aa bestille uten aa betale med
+// vipps, samme vilkaar, men at de betaler ved oppmoete, kontant eller vipps»
+// — og for medlemskap skal valget staa AV til noen slaar det paa. Derfor
+// «uten_forskudd» paa planen, med standard 0 (migrasjon 197).
+//
+// Planen avgjor, som med fast trekk over: en gammel fane eller et kall rett
+// til serveren skal ikke kunne hoppe over betalingen paa et medlemskap som
+// krever den.
+if ($betaling !== 'trekk' && Foresporsel::tekst('betaling') === 'verksted') {
+    if ((int) ($plan['uten_forskudd'] ?? 0) !== 1) {
+        Svar::feil('Dette medlemskapet må betales når du melder deg inn.');
+    }
+    $betaling = 'verksted';
+}
+
 // Betalingsavtalen, for soknaden lagres.
 //
 // Gaar den ikke gjennom, skal det heller ikke ligge igjen en soknad — da
 // ville den blitt godkjent senere uten at noe kunne trekkes.
 try {
-    $avtale = $betaling === 'trekk'
-        ? Medlemskap::startAvtale($medlem, $type)
-        : Medlemskap::startEngangs($medlem, $type);
+    $avtale = match ($betaling) {
+        'trekk'    => Medlemskap::startAvtale($medlem, $type),
+        'verksted' => Medlemskap::startIVerkstedet($medlem, $type),
+        default    => Medlemskap::startEngangs($medlem, $type),
+    };
 } catch (RuntimeException $e) {
     Svar::feil($e->getMessage());
 }
@@ -205,6 +224,9 @@ if ($gammel !== null) {
 // lukker fana — laa lenka bare i basen, og ingen fikk den. Eieren,
 // 5. september: «eposten de som bestiller årsmedlemskap får forteller
 // ingenting om at de må godkjenne», og «jeg får jo ikke inn pengene mine».
+// Den som skal betale i verkstedet faar den samme kvitteringa som «ordner
+// selv» — begge betaler én periode om gangen. Forskjellen staar i «{belop}»-
+// setninga malen har fra for, og i beskjeden svaret gir paa skjermen.
 Varsel::mal($betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',
     ['epost' => $epost], [
         'navn'  => $navn,
@@ -221,9 +243,14 @@ Varsel::mal($betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner
 // ordnet det» — eieren, 2. september: «denne staar som ubetalt, mens eposten
 // du sendte meg sier ... Betaling: gjor opp selv». Begge var sanne: hun
 // betaler én periode om gangen, og hadde ikke betalt enda.
-$betalingTekst = $betaling === 'trekk'
-    ? 'fast trekk i Vipps'
-    : 'betaler i Vipps én periode om gangen';
+$betalingTekst = match ($betaling) {
+    'trekk'    => 'fast trekk i Vipps',
+    // Ikke «gjor opp selv»: pengene er ikke kommet, og verkstedet skal kreve
+    // dem inn over disken. Sier e-posten noe annet, blir hen staaende
+    // ubetalt uten at noen vet hvorfor.
+    'verksted' => 'betaler i verkstedet — ikke betalt enda',
+    default    => 'betaler i Vipps én periode om gangen',
+};
 
 Varsel::malTilAdmin('intern_nytt_medlem', [
     'navn'     => $navn,
@@ -251,6 +278,18 @@ revider('medlemsinnmelding', 'membership_application', $id, ['type' => $type, 'b
 // gjore opp selv, er det ingen avtale, og da blir hen staaende paa sida.
 // «url» sender medlemmet til Vipps. Nettsida videresender dit med det samme;
 // medlemskapet blir aktivt naar Vipps sier at pengene er i havn.
+// Betaler hen i verkstedet, er det ingen Vipps aa sende noen til, og
+// medlemskapet gjelder alt. Da skal svaret si nettopp det — ikke «betal i
+// Vipps», som er en beskjed om aa gjore noe som ikke finnes.
+if ($betaling === 'verksted') {
+    Svar::ok([
+        'status'  => 'medlem',
+        'url'     => null,
+        'beskjed' => 'Du er medlem fra i dag. ' . Booking::kroner((int) $plan['pris_ore'])
+                   . ' betaler du neste gang du er i verkstedet — kontant eller Vipps.',
+    ]);
+}
+
 Svar::ok([
     'status'  => 'betaler',
     'url'     => $avtale['url'],

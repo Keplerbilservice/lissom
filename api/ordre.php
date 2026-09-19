@@ -47,12 +47,18 @@ if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
 $rader = [];
 $sum = 0;
 
+// «uten_forskudd» kommer med migrasjon 197. Er den ikke kjort, finnes valget
+// ikke, og alt gaar som for. Utenfor loekka: kolonnen skifter ikke mellom to
+// varer i den samme kurven.
+$forskuddKol = DB::harKolonne('products', 'uten_forskudd')
+    ? 'uten_forskudd' : '0 AS uten_forskudd';
+
 foreach ($linjer as $l) {
     $id = (int) ($l['id'] ?? 0);
     $antall = max(1, min(50, (int) ($l['antall'] ?? 1)));
 
     $vare = DB::en(
-        "SELECT id, tittel, pris_ore, lager, kun_medlemmer
+        "SELECT id, tittel, pris_ore, lager, kun_medlemmer, {$forskuddKol}
            FROM products WHERE id = :i AND status = 'publisert'",
         ['i' => $id]
     );
@@ -71,6 +77,39 @@ foreach ($linjer as $l) {
     $rader[] = ['vare' => $vare, 'antall' => $antall];
 }
 
+// ── Betaler ved henting ───────────────────────────────────────────────
+//
+// Eieren, 19. september 2026, om kurs, butikk og medlemskap: «det maa gaa an
+// aa bestille uten aa betale med vipps, samme vilkaar, men at de betaler ved
+// oppmoete, kontant eller vipps».
+//
+// Ordren blir staaende som «ny» uten betalingsrad. Naar kunden henter og
+// betaler, settes den til betalt med maate — de samme knappene som en ordre
+// betalt paa forhaand faar.
+//
+// To ting maa stemme, og begge avgjores her, ikke i nettleseren:
+//
+//   Alle varene maa tillate det. Én vare som krever forskudd gjor det for
+//   hele kurven — ellers ville en dyr ting sluppet gjennom fordi den laa
+//   sammen med en billig.
+//
+//   Varene maa hentes. Skal pakken sendes, er det ingen disk aa betale over,
+//   og porto for noe som ikke er gjort opp er verkstedets tap.
+$alleTillater = true;
+foreach ($rader as $r) {
+    if ((int) ($r['vare']['uten_forskudd'] ?? 0) !== 1) {
+        $alleTillater = false;
+        break;
+    }
+}
+$vedHenting = Foresporsel::tekst('betaling') === 'henting';
+if ($vedHenting && trim(Foresporsel::tekst('gavekort')) !== '') {
+    Svar::feil('Gavekortet trekkes når du betaler. Betal med Vipps nå, eller ta bort koden.');
+}
+if ($vedHenting && !$alleTillater) {
+    Svar::feil('En av varene må betales når du bestiller. Ta den ut, eller betal med Vipps nå.');
+}
+
 if ($sum <= 0) {
     Svar::feil('Bestillingen har ingen sum.');
 }
@@ -87,6 +126,12 @@ if ($sum <= 0) {
 // koster. Se api/betal.php for det ene stedet der det motsatte gjelder, og
 // hvorfor.
 $levering = Foresporsel::tekst('levering') === 'pakke' ? 'pakke' : 'hent';
+
+// Skal pakken sendes, er det ingen disk aa betale over. Da faller «betal ved
+// henting» bort, uansett hva nettleseren sendte.
+if ($vedHenting && $levering === 'pakke') {
+    Svar::feil('Skal varene sendes, må de betales når du bestiller.');
+}
 $fraktOre = 0;
 $adresse = $postnr = $poststed = null;
 
@@ -157,7 +202,11 @@ $leveringsfelt = DB::harKolonne('orders', 'levering')
        'adresse' => $adresse ?: null, 'postnr' => $postnr ?: null, 'poststed' => $poststed ?: null]
     : [];
 
-$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt, $leveringsfelt, $fraktOre): array {
+$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt, $leveringsfelt, $fraktOre, $vedHenting): array {
+    // Betales det ved henting, finnes det ingenting aa betale i Vipps — og
+    // da skal det heller ikke ligge en betalingsrad og vente paa en webhook
+    // som aldri kommer.
+    $paymentId = null;
     $betalingsfelt = [
         'vipps_reference' => $referanse,
         'type'            => 'epayment',
@@ -175,7 +224,9 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
         $betalingsfelt['gavekort_id'] = $gavekortId;
         $betalingsfelt['gavekort_ore'] = $gavekortOre;
     }
-    $paymentId = DB::settInn('payments', $betalingsfelt);
+    if (!$vedHenting) {
+        $paymentId = DB::settInn('payments', $betalingsfelt);
+    }
 
     $ordreId = DB::settInn('orders', [
         'ordrenr'       => $ordrenr,
@@ -186,7 +237,8 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
         'sum_ore'       => $sum,
         'status'        => 'ny',
         'payment_id'    => $paymentId,
-    ] + $gavefelt + $leveringsfelt);
+    ] + $gavefelt + $leveringsfelt
+      + (($vedHenting && DB::harKolonne('orders', 'uten_forskudd')) ? ['uten_forskudd' => 1] : []));
 
     // Frakten som en egen linje. Da stemmer linjene med summen paa ordren,
     // og kvitteringen viser hva portoen kostet framfor aa gjemme den i
@@ -215,6 +267,32 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
 
     return ['ordreId' => $ordreId, 'paymentId' => $paymentId];
 });
+
+// ── Betales ved henting: ferdig her ───────────────────────────────────
+//
+// Ingen tur innom Vipps, ingen betalingsrad. Ordren staar som «ny» til
+// kunden henter og gjor opp, og da settes den til betalt med maate — de
+// samme knappene en ordre betalt paa forhaand faar.
+//
+// Gavekort og henting gaar ikke sammen: kortet trekkes fra betalingsraden,
+// og det finnes ingen her. Det sies over kassa framfor aa bli oppdaget naar
+// kunden staar der og kortet ikke er brukt.
+if ($vedHenting) {
+    Booking::sendOrdrebekreftelse($opprettet['ordreId']);
+    revider('ordre_opprettet', 'order', $opprettet['ordreId'],
+            ['sum_ore' => $sum, 'uten_forskudd' => 1]);
+    Svar::ok([
+        'url'       => null,
+        'referanse' => '',
+        'ordrenr'   => $ordrenr,
+        'sum'       => Booking::kroner($sum),
+        'gavekort'  => Booking::kroner(0),
+        'aBetale'   => Booking::kroner($sum),
+        'ferdig'    => true,
+        'beskjed'   => 'Vi legger varene til side. Du betaler ' . Booking::kroner($sum)
+                     . ' når du henter dem — kontant eller Vipps.',
+    ]);
+}
 
 // Dekker gavekortet hele kjopet, er det ingenting aa betale. Aa sende noen
 // til Vipps for null kroner ville vaert en omvei til en feilmelding.

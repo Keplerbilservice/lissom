@@ -3370,10 +3370,25 @@ window.__resources = {
                   <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
                   </sc-if>
+                  <!-- Betal ved oppmoete.
+                       Eieren, 19. september 2026: «det maa gaa an aa bestille
+                       uten aa betale med vipps, samme vilkaar, men at de
+                       betaler ved oppmoete, kontant eller vipps».
+                       Knappen staar bare der kurset tillater det — haken
+                       «Kan bookes uten forskuddsbetaling» staar paa fra start
+                       (migrasjon 197), og slaas av paa kurs som skal betales
+                       i forkant. Vilkaarene er de samme: den samme haken
+                       sperrer begge knappene. -->
+                  <sc-if value="{{ visOppmote }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBookingOppmote }}" hint-size="100%,52px">Betal ved oppmøte</x-import>
+                      <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">{{ oppmoteHjelp }}</p>
+                    </div>
+                  </sc-if>
                   
                   <sc-if value="{{ erBookKvittert }}" hint-placeholder-val="{{ true }}">
                     <div style="background: var(--sage-50, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-6);">
-                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">Betalingen er gjennomført</div>
+                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">{{ bookKvittEtikett }}</div>
                       <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Du har plass på {{ bookOrdreTittel }}</h3>
                       <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body);">{{ bookOrdreDato }} · {{ bookOrdreSum }}</p>
                       <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-heading); text-wrap: pretty;">{{ bookBekreftelse }}</p>
@@ -3478,6 +3493,18 @@ window.__resources = {
                   </sc-if>
                   <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ bmVilkaarMangler }}" on-click="{{ medlemsBetalKnapp }}" hint-size="100%,52px">{{ medlemsBetalTekst }}</x-import>
+                  </sc-if>
+                  <!-- Betal i verkstedet.
+                       Staar bare paa et medlemskap som har haken paa — og den
+                       staar AV for alle fra start (migrasjon 197). Fast trekk
+                       gaar foran: der er fullmakten hele poenget, og da
+                       finnes valget ikke. Vilkaarshaken sperrer begge
+                       knappene likt. -->
+                  <sc-if value="{{ visMedlemVerksted }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" disabled="{{ bmVilkaarMangler }}" on-click="{{ medlemVerkstedKnapp }}" hint-size="100%,52px">Betal i verkstedet</x-import>
+                      <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">{{ medlemVerkstedHjelp }}</p>
+                    </div>
                   </sc-if>
                   <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ bmVilkar }}</p>
                 </sc-if>
@@ -4743,6 +4770,18 @@ window.__resources = {
               </sc-if>
               <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">{{ kaKnapp }}</x-import>
+              </sc-if>
+              <!-- Betal ved henting.
+                   Varene hentes i verkstedet uansett, saa dette er bare
+                   spoersmaal om naar pengene kommer. Knappen staar bare naar
+                   ALLE varene i kurven tillater det, og bare naar de skal
+                   hentes — skal pakken sendes, er det ingen disk aa betale
+                   over. Serveren avviser begge deler ogsaa. -->
+              <sc-if value="{{ visHenting }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ betalVedHenting }}" hint-size="100%,52px">Betal ved henting</x-import>
+                  <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">{{ hentingHjelp }}</p>
+                </div>
               </sc-if>
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">Du betaler med {{ valgtBetaling }}. Alle priser er inkl. mva der mva gjelder.</p>
               <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
@@ -12262,6 +12301,20 @@ window.__resources = {
                     Fast trekk i Vipps — medlemmet godkjenner en avtale og trekkes automatisk
                   </label>
                   <div style="font-size: var(--text-xs); color: var(--text-muted); margin: -6px 0 0 30px; text-wrap: pretty;">Er denne av, betaler medlemmet én gang som en vanlig Vipps-betaling, og verkstedet må kreve inn hver periode selv.</div>
+                  <!-- «Da vil jeg ogsa ha det pa butikk og medlemskap, men pa
+                       medlemskap skal default vaere av, pa de andre pa»
+                       — eieren, 19. september 2026. Haken star av for nye planer:
+                       et medlemskap skal normalt betales nar det tegnes. Kryss den
+                       av, og «Bli medlem» faar knappen «Betal i verkstedet» ved
+                       siden av Vipps-knappen. Medlemskapet starter med en gang,
+                       og belopet kreves inn nar medlemmet er innom.
+                       Fast trekk og betaling i verkstedet kan ikke gaa sammen —
+                       en avtale i Vipps maa godkjennes i appen. -->
+                  <label style="{{ plAvkryss }}">
+                    <input type="checkbox" checked="{{ plUtenForskudd }}" onChange="{{ vekslPlUtenForskudd }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Kan tegnes uten forskuddsbetaling — medlemmet betaler i verkstedet
+                  </label>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin: -6px 0 0 30px; text-wrap: pretty;">Gjelder ikke sammen med fast trekk. Medlemskapet starter med en gang, og beløpet står som ubetalt til noen registrerer det.</div>
                   <label style="{{ plAvkryss }}">
                     <input type="checkbox" checked="{{ plEngangs }}" onChange="{{ vekslPlEngangs }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                     Prøveperiode — trekkes én gang og stopper av seg selv
@@ -12700,6 +12753,16 @@ window.__resources = {
                       <p style="margin: 0; font-size: var(--text-xs); color: var(--text-body); text-wrap: pretty;">{{ kGjenstandAdvarsel }}</p>
                     </div>
                   </sc-if>
+                  <!-- Betal ved oppmoete.
+                       Eieren, 19. september 2026: «det maa gaa an aa bestille
+                       uten aa betale med vipps, samme vilkaar, men at de
+                       betaler ved oppmoete, kontant eller vipps». Haken staar
+                       PAA for alle kurs fra start (migrasjon 197) — her slaas
+                       den av paa kurs som skal betales i forkant. -->
+                  <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading); margin-top: var(--space-4);">
+                    <input type="checkbox" checked="{{ kUtenForskudd }}" onChange="{{ toggleKUtenForskudd }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer; flex-shrink: 0; margin-top: 2px;">
+                    <span>Kan bookes uten forskuddsbetaling<br><span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kUtenForskuddHjelp }}</span></span>
+                  </label>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
@@ -23341,6 +23404,15 @@ window.__resources = {
           <input type="checkbox" checked="{{ npKunMedlemmer }}" onChange="{{ vekslNpKunMedlemmer }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
           <span>Kun for medlemmer (internbutikken)</span>
         </label>
+        <!-- Betal ved henting.
+             Eieren, 19. september 2026: det samme valget som paa kurs, og
+             paa fra start. Varene hentes i verkstedet uansett, saa dette er
+             bare spoersmaal om naar pengene kommer. Kassa tilbyr det bare
+             naar ALLE varene i kurven tillater det. -->
+        <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+          <input type="checkbox" checked="{{ npUtenForskudd }}" onChange="{{ vekslNpUtenForskudd }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer; flex-shrink: 0; margin-top: 2px;">
+          <span>Kan bestilles uten forskuddsbetaling<br><span style="font-size: var(--text-xs); color: var(--text-muted);">Kassa får knappen «Betal ved henting». Varen legges til side, og betales når den hentes.</span></span>
+        </label>
         <!-- Handlelista, migrasjon 184. Artikkelnummeret er leverandorens
              eget nummer; det er det som staar i bestillingen. Haken avgjor
              om varen dukker opp i handlelista paa Min side. -->
@@ -24998,6 +25070,10 @@ class Component extends DCLogic {
         // oppstart; de har hver sin knapp og hver sin side.
         folgerApningstid: !!kat.folgerApningstid,
         prisOre: kat.prisOre,
+        // Kan plassen betales ved oppmoete? Kursets egen hake, fra
+        // katalogen. Uten den her sto knappen aldri paa bookingsiden —
+        // den leser kortet, ikke katalogen.
+        utenForskudd: !!kat.utenForskudd,
         // Samme regel her som paa kortene over: er gjenstanden det som
         // koster, er det fra-prisen som skal staa.
         price: kat.gjenstandIKassa
@@ -25038,6 +25114,9 @@ class Component extends DCLogic {
       // sto rett over hverandre og var uenige.
       plasser: kat.plasser || 0,
       prisOre: kat.prisOre,
+      // Se grenen over: haken foelger med kortet, ellers finnes den ikke
+      // der bookingsiden leser.
+      utenForskudd: !!kat.utenForskudd,
       // «price» settes lenger nede — Paint on Pots har en egen regel, og to
       // noekler med samme navn i samme objekt gir at den siste vinner.
       // Hele oktlista folger med kortet. «man. 24. aug» kan ikke regnes paa,
@@ -28928,6 +29007,9 @@ class Component extends DCLogic {
     // gjelder DET medlemskapet man velger, ikke det samme til alle.
     if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '',
       fastTrekk: !!p.fastTrekk,
+      // «Betal i verkstedet». Serveren har alt trukket fra planene som
+      // krever fast trekk — se api/medlemskap.php.
+      utenForskudd: !!p.utenForskudd,
       binding: p.binding === undefined ? 2 : p.binding,
       oppsigelse: p.oppsigelse === undefined ? 1 : p.oppsigelse }));
     return [{ navn: 'Prøv Lissom' }, { navn: 'Basis 30' },
@@ -29002,7 +29084,14 @@ class Component extends DCLogic {
    * @param {string} [valgt] Planen, naar den kommer fra et kort og ikke
    *                         har rukket aa staa i state enda.
    */
-  sendMedlemssoknad(valgt) {
+  /**
+   * Melder inn.
+   *
+   * «verksted» sier at medlemskapet skal begynne naa og gjores opp over
+   * disken. Planen avgjor om det gaar — serveren avviser det paa et
+   * medlemskap som ikke har haken.
+   */
+  sendMedlemssoknad(valgt, betaling) {
     const type = (valgt || this.bmValgt() || '').trim();
     // Ingen plan, ingen ordre. Serveren nekter ogsaa — se
     // Medlemsordre::opprett() — men skjermen skal si det foer turen.
@@ -29031,7 +29120,7 @@ class Component extends DCLogic {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: type,
-        betaling: this.bmBetalingsvalgt(),
+        betaling: betaling === 'verksted' ? 'verksted' : this.bmBetalingsvalgt(),
         epost: epost,
         // Nummeret staar paa medlemskapskortet, ikke i skjemaet paa Min
         // side. Er det tomt, bruker serveren det Vipps ga oss — se
@@ -29060,10 +29149,18 @@ class Component extends DCLogic {
           window.location.href = d.url;
           return;
         }
-        // Serveren svarer alltid med en adresse til Vipps — innmeldingen ER
-        // betalingen, det finnes ingen soknad til behandling lenger. Kommer
-        // det ingen adresse, er noe galt, og da skal det staa at noe er galt
-        // framfor at «soknaden er sendt».
+        // Betales det i verkstedet, finnes det ingen Vipps aa sende noen
+        // til — medlemskapet gjelder alt. Da skal svaret si nettopp det.
+        if (betaling === 'verksted') {
+          this.setState({ bmFeil: null, kvittering: 'Du er medlem fra i dag',
+                          kvitteringDetalj: d.beskjed
+                            || 'Du betaler neste gang du er i verkstedet.' });
+          return;
+        }
+        // Ellers svarer serveren alltid med en adresse til Vipps —
+        // innmeldingen ER betalingen, det finnes ingen soknad til behandling
+        // lenger. Kommer det ingen adresse, er noe galt, og da skal det staa
+        // at noe er galt framfor at «soknaden er sendt».
         this.setState({ bmFeil: 'Fikk ikke sendt deg videre til Vipps. Prøv igjen om litt.' });
       })
       .catch(() => {
@@ -29133,7 +29230,14 @@ class Component extends DCLogic {
   }
 
   // Ekte butikkjop: oppretter ordren og sender kunden til Vipps.
-  kjopKurv() {
+  /**
+   * Bestiller handlekurven.
+   *
+   * «henting» sier at kunden vil betale naar hen henter varene. Serveren
+   * avgjor om det gaar: alle varene maa tillate det, og pakken kan ikke
+   * sendes — det er ingen disk aa betale over.
+   */
+  kjopKurv(betaling) {
     const kurv = this.state.kurv || {};
     const varer = this.state.butikkvareListe || [];
 
@@ -29209,6 +29313,7 @@ class Component extends DCLogic {
         // skjermen, og serveren visste hverken at det var en pakke eller hvor
         // den skulle. Beloepet legges paa av serveren, ikke herfra.
         levering: this.erPakke() ? 'pakke' : 'hent',
+        betaling: betaling === 'henting' ? 'henting' : '',
         adresse: (this.state.levAdresse || '').trim(),
         postnr: (this.state.levPostnr || '').trim(),
         poststed: (this.state.levPoststed || '').trim(),
@@ -34531,6 +34636,7 @@ class Component extends DCLogic {
         // Tomt antall betyr «ikke lagerstyrt», ikke «tomt paa lager».
         lager: (s.npAntall || '').trim(),
         kunMedlemmer: s.npKunMedlemmer ? 'ja' : 'nei',
+        utenForskudd: s.npUtenForskudd ? 'ja' : 'nei',
         kategori: (s.npKategori || '').trim(),
         mva: s.npMva === false ? 0 : 25,
         bilde: fra ? fra.bilde : '',
@@ -34649,6 +34755,7 @@ class Component extends DCLogic {
       ferdigTid: this.state.kFerdigTid || '', tillegg: this.state.kTillegg || '',
       varighetTekst: this.state.kVarighetTekst || '',
       gjenstandIKassa: this.state.kGjenstandIKassa ? 'ja' : 'nei',
+      utenForskudd: this.state.kUtenForskudd ? 'ja' : 'nei',
       mva: this.state.kMva ? '25 % mva' : 'Uten mva',
       // SMS er av med mindre noen uttrykkelig har slaatt den paa. Her sto
       // det «!== false» naar SMS-leverandoeren manglet, og det gjor undefined
@@ -34719,7 +34826,8 @@ class Component extends DCLogic {
         ...['punkter', 'laerer', 'praktisk', 'allergener',
             'passerNivaa', 'passerHvem', 'metode', 'varighet',
             'nivaaIntern', 'nivaaTekst', 'kortBeskrivelse', 'lagerDu',
-            'medHjem', 'ferdigTid', 'tillegg', 'varighetTekst', 'gjenstandIKassa']
+            'medHjem', 'ferdigTid', 'tillegg', 'varighetTekst', 'gjenstandIKassa',
+            'utenForskudd']
           .reduce((m, n) => {
             if (Object.prototype.hasOwnProperty.call(rad, n)) m[n] = rad[n] || '';
             return m;
@@ -35630,6 +35738,7 @@ class Component extends DCLogic {
       kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
       kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
       kGjenstandIKassa: false,
+      kUtenForskudd: true,
       kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
       kGjentak: 'Ingen', kAntall: '',
       kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -37394,6 +37503,7 @@ class Component extends DCLogic {
       kFerdigTid: raa.ferdigTid || '', kTillegg: raa.tillegg || '',
       kVarighetTekst: raa.varighetTekst || '',
       kGjenstandIKassa: !!raa.gjenstandIKassa,
+      kUtenForskudd: !!raa.utenForskudd,
       // Gjentakelsen staar i regelen paa serveren, ikke i kortteksten.
       // Ligger det en regel der, er det den som gjelder.
       ...(() => {
@@ -44058,7 +44168,18 @@ class Component extends DCLogic {
   // Er du ikke innlogget, sendes du dit forst. Bookingskjemaet i designet har
   // ingen felter for navn, e-post og telefon — Vipps Login gir oss dem, og de
   // blir riktige uten at noen maa skrive dem inn.
-  bookOgBetal() {
+  /**
+   * Booker plassen.
+   *
+   * Eieren, 19. september 2026: «det maa gaa an aa bestille uten aa betale
+   * med vipps, samme vilkaar, men at de betaler ved oppmoete, kontant eller
+   * vipps».
+   *
+   * «oppmote» sier at kunden vil betale naar hen kommer. Kurset avgjor om det
+   * gaar — serveren avviser det paa et kurs som krever betaling i forkant, og
+   * knappen staar bare der kurset tillater det.
+   */
+  bookOgBetal(betaling) {
     // Den forste datoen staar forhandsvalgt i grensesnittet, men bOktId settes
     // forst naar noen faktisk klikker. Uten dette fikk den som godtok det
     // forhandsvalgte «Velg en dato forst» — datoen sto jo rett foran dem.
@@ -44130,6 +44251,7 @@ class Component extends DCLogic {
         telefon: (this.state.bTelefon || '').trim(),
         harAllergier: this.state.bAllergiKryss ? 'ja' : 'nei',
         allergier: this.state.bAllergiKryss ? allergier : '',
+        betaling: betaling === 'oppmote' ? 'oppmote' : '',
       }),
     })
       .then(r => r.json())
@@ -44147,8 +44269,11 @@ class Component extends DCLogic {
           window.location.href = d.url; // her overtar Vipps
           return;
         }
-        // Gratis medlemsarrangement — ingen betaling.
-        this.setState({ bookJobber: false, bookKvittert: true, bookOrdre: false });
+        // Ingen tur innom Vipps: et gratis medlemsarrangement, eller en
+        // plass som skal betales ved oppmoete. Kvitteringa sier hvilken av
+        // delene det var — den som skal betale senere maa vite det.
+        this.setState({ bookJobber: false, bookKvittert: true, bookOrdre: false,
+                        bookVedOppmote: betaling === 'oppmote' });
       })
       .catch(() => {
         this.setState({ bookJobber: false, kvittering: 'Fikk ikke kontakt med serveren. Prov igjen.' });
@@ -45725,6 +45850,7 @@ class Component extends DCLogic {
               npArtikkelnr: raa.artikkelnr || '', npLeverandor: raa.leverandorId || 0,
               npKanBestilles: !!raa.kanBestilles,
               npMva: (raa.mva ?? 25) > 0, npKunMedlemmer: true,
+              npUtenForskudd: !!raa.utenForskudd,
             } : {}
           ));
           window.scrollTo(0, 0);
@@ -46777,6 +46903,7 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
+            kUtenForskudd: true,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
           kGjentak: 'Ingen', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -46951,6 +47078,55 @@ class Component extends DCLogic {
               this.sendMedlemssoknad(navn);
             }
           },
+          // ── Betal i verkstedet ────────────────────────────────
+          //
+          // Eieren, 19. september 2026: «paa medlemskap skal default vaere
+          // av, paa de andre paa». Haken staar paa planen; serveren avviser
+          // valget paa et medlemskap som ikke har den.
+          //
+          // Samme vei som knappen over, bare med «verksted» som
+          // betalingsmaate — det er de samme vilkaarene, og det var hele
+          // poenget.
+          visMedlemVerksted: (() => {
+            const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt());
+            return !!(pl && pl.utenForskudd);
+          })(),
+          medlemVerkstedHjelp: 'Medlemskapet starter i dag. Du betaler neste gang '
+            + 'du er i verkstedet — kontant eller Vipps.',
+          medlemVerkstedKnapp: () => {
+            const k = this.state.valgtKurs || {};
+            const navn = k.title || k.tittel || '';
+            const epost = (this.state.bmEpost === undefined
+              ? (this.state.medlemEpost || '') : this.state.bmEpost).trim();
+            const telefon = (this.state.bmTelefon === undefined
+              ? (this.state.medlemTelefon || '') : this.state.bmTelefon).trim();
+            // De samme kontrollene som knappen over. «Samme vilkaar» gjelder
+            // ogsaa det vi krever av kunden — ikke bare det hen faar.
+            if (!this.state.bmVilkaarOk) {
+              this.setState({ bmFeil: 'Du må godta medlemsvilkårene for å bli medlem.' });
+              return;
+            }
+            if (!epost || epost.indexOf('@') < 1) {
+              this.setState({ bmFeil: 'Vi trenger en gyldig e-postadresse.' });
+              return;
+            }
+            if (!telefon) {
+              this.setState({ bmFeil: 'Vi trenger et mobilnummer.' });
+              return;
+            }
+            if (!this.erPublisert()) {
+              this.setState({ bmFeil: null, kvittering: 'Du er medlem fra i dag',
+                              kvitteringDetalj: 'Du betaler neste gang du er i verkstedet.' });
+              return;
+            }
+            this.setState({ bmFeil: null, bmType: navn });
+            // Alltid samme vei, ogsaa for en som har vaert medlem for:
+            // ordren lages paa serveren, og /meld-inn setter medlemskapet i
+            // gang. Den som ER medlem stoppes der med «Du er alt medlem» —
+            // slik hen skal. startAbonnement() gaar til Vipps, og det er
+            // nettopp turen dit som ikke skal tas her.
+            this.sendMedlemssoknad(navn, 'verksted');
+          },
         };
       })(),
       kontaktKursKnapp: () => {
@@ -47072,6 +47248,29 @@ class Component extends DCLogic {
       // Vipps sin egen knapp sier «Betal med Vipps» og kan ikke endres. Er du
       // ikke innlogget, staar det her i stedet — rett over knappen, der man
       // ser det for man trykker.
+      // ── Betal ved oppmoete ──────────────────────────────────────────
+      //
+      // Eieren, 19. september 2026: «det maa gaa an aa bestille uten aa
+      // betale med vipps, samme vilkaar, men at de betaler ved oppmoete,
+      // kontant eller vipps».
+      //
+      // «utenForskudd» kommer fra katalogen (app/lib/katalog.php): kursets
+      // egen hake, og bare naar plassen koster noe. Et gratis arrangement har
+      // ingenting aa betale, og da finnes ikke valget.
+      //
+      // Innlogging kreves som for. Serveren kjenner ingen gjester paa et
+      // kurs, og en plass uten et menneske bak er ikke en plass.
+      // Kvitteringa maa si hva som faktisk skjedde. «Betalingen er
+      // gjennomfoert» over en plass som skal gjores opp ved oppmoete er
+      // feil beskjed til den kunden — og den som leser den, kommer uten
+      // penger.
+      bookKvittEtikett: this.state.bookVedOppmote
+        ? 'Plassen er reservert' : 'Betalingen er gjennomført',
+      visOppmote: !!this.state.innlogget
+        && !!(this.state.valgtKurs || {}).utenForskudd
+        && (this.state.valgtKurs || {}).tema !== 'Medlemskap',
+      oppmoteHjelp: 'Plassen er din nå. Du betaler ' + this.bookSum()
+        + ' når du kommer — kontant eller Vipps.',
       bookBetalLinje: !this.state.innlogget
         ? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()
         : 'Du betaler ' + this.bookSum(),
@@ -47109,6 +47308,16 @@ class Component extends DCLogic {
         } else {
           this.bookOgBetal();
         }
+      },
+      // Den samme veien, bare med beskjed om at pengene kommer senere.
+      // Vilkaarshaken sperrer begge knappene likt — det er de samme
+      // vilkaarene, og «samme vilkaar» var hele poenget.
+      bekreftBookingOppmote: () => {
+        if (!this.erPublisert()) {
+          this.setState({ bookKvittert: true, bookOrdre: false, bookVedOppmote: true });
+          return;
+        }
+        this.bookOgBetal('oppmote');
       },
       bookBekreftelse: (() => {
         const k = this.state.valgtKurs || {};
@@ -47277,6 +47486,31 @@ class Component extends DCLogic {
         } else {
           this.betalKurv(linjer);
         }
+      },
+      // ── Betal ved henting ───────────────────────────────────────────
+      //
+      // Alle varene maa tillate det: én vare som krever forskudd gjor det for
+      // hele kurven, ellers ville en dyr ting sluppet gjennom fordi den laa
+      // sammen med en billig. Og pakken kan ikke sendes — det er ingen disk
+      // aa betale over. Serveren avviser begge deler ogsaa; dette er bare for
+      // aa slippe turen dit.
+      visHenting: (() => {
+        const k = this.state.kurv || {};
+        const navn = Object.keys(k);
+        if (!navn.length || !this.state.innlogget || this.erPakke()) return false;
+        return navn.every(n2 => {
+          const v = this.kurvVare(n2);
+          return !!(v && v.utenForskudd);
+        });
+      })(),
+      hentingHjelp: 'Vi legger varene til side. Du betaler når du henter dem — kontant eller Vipps.',
+      betalVedHenting: () => {
+        if (!this.erPublisert()) {
+          this.setState({ kvittering: 'Bestillingen er registrert',
+                          kvitteringDetalj: 'Du betaler når du henter varene.' });
+          return;
+        }
+        this.kjopKurv('henting');
       },
       harVippsBetaling: !!this.state.vippsBetaling,
       vippsSumVis: this.state.vippsSum || '',
@@ -48017,7 +48251,7 @@ class Component extends DCLogic {
           const nyttMedlemskap = {
             plRed: {
               foer: '', navn: '', pris: '', timer: '', binding: '0',
-              engangs: false, aktiv: true, fastTrekk: false, sortering: '0',
+              engangs: false, aktiv: true, fastTrekk: false, utenForskudd: false, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
             },
@@ -48159,6 +48393,7 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
+            kUtenForskudd: true,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                 kGjentak: 'Ingen', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -52184,6 +52419,7 @@ class Component extends DCLogic {
                   timer: fri ? '' : String(pl.timer),
                   binding: String(pl.binding || 0), engangs: !!pl.engangs, aktiv: !!pl.aktiv,
                   fastTrekk: !!pl.fastTrekk,
+                  utenForskudd: !!pl.utenForskudd,
                   sortering: String(pl.sortering || 0),
                   merke: pl.merke || '', undertekst: pl.undertekst || '',
                   beskrivelse: pl.beskrivelse || '', punkter: String(pl.punkter || ''),
@@ -52206,7 +52442,7 @@ class Component extends DCLogic {
           plNy: () => {
             this.setState({ side: 'adminmedlemskap', plRed: {
               foer: '', navn: '', pris: '', timer: '', binding: '0',
-              engangs: false, aktiv: true, fastTrekk: false, sortering: '0',
+              engangs: false, aktiv: true, fastTrekk: false, utenForskudd: false, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
               langtekst: '', viktig: '',
@@ -52259,6 +52495,7 @@ class Component extends DCLogic {
 
           plEngangs: !!(red && red.engangs),     vekslPlEngangs: veksle('engangs'),
           plFastTrekk: !!(red && red.fastTrekk), vekslPlFastTrekk: veksle('fastTrekk'),
+          plUtenForskudd: !!(red && red.utenForskudd), vekslPlUtenForskudd: veksle('utenForskudd'),
           plAktiv: !!(red && red.aktiv),         vekslPlAktiv: veksle('aktiv'),
           plFremhevet: !!(red && red.fremhevet), vekslPlFremhevet: veksle('fremhevet'),
 
@@ -52280,6 +52517,8 @@ class Component extends DCLogic {
               // i kallet. Sto det ikke her, ville haken sett ut som den
               // virket og ikke lagret noe.
               fastTrekk: !!d.fastTrekk,
+              // Samme her: «uten_forskudd» skrives bare naar feltet foelger med.
+              utenForskudd: !!d.utenForskudd,
               sortering: parseInt(d.sortering, 10) || 0,
               merke: d.merke || '', undertekst: d.undertekst || '',
               beskrivelse: d.beskrivelse || '', punkter: d.punkter || '',
@@ -52429,13 +52668,18 @@ class Component extends DCLogic {
       // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
       // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
       // peker knappene dit.
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
-      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npUtenForskudd: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npUtenForskudd: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
       butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
-        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true })
-        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false })),
+        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npUtenForskudd: true })
+        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npUtenForskudd: true })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
+      // «Da vil jeg ogsa ha det pa butikk og medlemskap, men pa medlemskap skal
+      // default vaere av, pa de andre pa» — 19. september 2026. Haken star pa for
+      // nye varer, og kassa far knappen «Betal ved henting» for varer som har den.
+      npUtenForskudd: !!this.state.npUtenForskudd,
+      vekslNpUtenForskudd: () => this.setState(st => ({ npUtenForskudd: !st.npUtenForskudd })),
       // Handlelista, migrasjon 184. Leverandorene kommer fra basen —
       // «Ingen» er valget for en vare som ikke skal bestilles noe sted.
       npArtikkelnr: this.state.npArtikkelnr || '',
@@ -53505,6 +53749,7 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
+            kUtenForskudd: true,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       // Hva som skjer naar et kurs som finnes faar nytt navn.
@@ -53615,6 +53860,14 @@ class Component extends DCLogic {
 
           kGjenstandIKassa: !!st.kGjenstandIKassa,
           toggleKGjenstand: () => this.setState(x => ({ kGjenstandIKassa: !x.kGjenstandIKassa })),
+          kUtenForskudd: !!st.kUtenForskudd,
+          toggleKUtenForskudd: () => this.setState(x => ({ kUtenForskudd: !x.kUtenForskudd })),
+          kUtenForskuddHjelp: st.kUtenForskudd
+            ? 'Bookingsiden får en knapp til: «Betal ved oppmøte». Plassen holdes, '
+              + 'og du krever inn pengene over disken — de står i «Ikke betalt» til '
+              + 'du huker av for Kontant eller Vipps.'
+            : 'Kurset må betales med Vipps når noen melder seg på. Slå den på for '
+              + 'å la folk betale når de kommer.',
           kGjenstandHjelp: st.kGjenstandIKassa
             ? 'Prisen over er plassen. Gjenstanden velger kunden i verkstedet og '
               + 'betaler den i kassa, som en butikkvare — lageret trekkes, og salget '

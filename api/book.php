@@ -90,7 +90,11 @@ try {
         // Gavekortet fra feltet paa bookingsiden. Det var ikke koblet til
         // noe, saa koden ble skrevet inn og kunden betalte full pris.
         Foresporsel::tekst('gavekort'),
-        $allergier !== '' ? $allergier : null
+        $allergier !== '' ? $allergier : null,
+        // «Betal ved oppmoete». Kurset avgjor om det gaar — se
+        // Booking::reserverOgBetal(), som avviser det paa et kurs som krever
+        // betaling i forkant.
+        Foresporsel::tekst('betaling') === 'oppmote'
     );
 } catch (RuntimeException $e) {
     // Meldingene herfra er skrevet for aa vises til kunden.
@@ -99,7 +103,8 @@ try {
 
 revider('booking_opprettet', 'booking', $r['bookingId'], ['okt' => $oktId, 'antall' => $antall]);
 
-// Gratis medlemsarrangement: ingen betaling, ferdig med en gang.
+// Ferdig med en gang, uten en tur innom Vipps: et gratis medlemsarrangement,
+// eller en plass som skal betales ved oppmoete.
 if ($r['redirectUrl'] === '') {
     Svar::ok(['betaling' => false, 'bookingId' => $r['bookingId']]);
 }

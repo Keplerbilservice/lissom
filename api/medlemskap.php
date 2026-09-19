@@ -28,6 +28,11 @@ $planer = static fn(): array => array_map(static fn($p) => [
     'engangs'  => (bool) $p['engangs'],
     // Krever planen fast trekk, faar ikke medlemmet velge betalingsmaate.
     'fastTrekk' => Medlemskap::kreverFastTrekk($p),
+    // Kan medlemskapet tegnes uten aa betale i forkant? Av for alle til noen
+    // slaar det paa (migrasjon 197). Fast trekk gaar foran: der er
+    // fullmakten hele poenget, og da finnes ikke valget.
+    'utenForskudd' => !Medlemskap::kreverFastTrekk($p)
+        && (int) ($p['uten_forskudd'] ?? 0) === 1,
     // Teksten kunden leser. Den staar i basen fordi verkstedet skal kunne
     // skrive den om selv — «for 30 dager» sier ingenting om de ti timene.
     'merke'      => (string) ($p['merke'] ?? ''),

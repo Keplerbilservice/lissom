@@ -18981,6 +18981,157 @@ sjekk('meld-inn: egen ordre knyttes til den innloggede som foer',
     (int) (Medlemsordre::finnMedlem($apEgen, $apM)['id'] ?? 0) === (int) $apMonica);
 DB::kjor('DELETE FROM members WHERE id IN (' . (int) $apMonica . ',' . (int) $apEllen . ')');
 
+// ── Bestille uten aa betale i forkant ────────────────────────────────
+//
+// Eieren, 19. september 2026: «det maa gaa an aa bestille uten aa betale med
+// vipps, samme vilkaar, men at de betaler ved oppmoete, kontant eller vipps»
+// — foerst om kurs, saa: «da vil jeg ogsaa ha det paa butikk og medlemskap,
+// men paa medlemskap skal default vaere av, paa de andre paa».
+//
+// Migrasjon 197. Uten den finnes ikke valget, og alt skal gaa som foer —
+// derfor staar proevene bak DB::harKolonne(), som resten av suiten gjor.
+echo "\n== Betal ved oppmote ==\n";
+
+$ufMig = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/197_uten_forskudd.sql');
+sjekk('kurs kan bookes uten forskudd fra start',
+    str_contains($ufMig, "ALTER TABLE courses\n  ADD COLUMN IF NOT EXISTS uten_forskudd TINYINT(1) NOT NULL DEFAULT 1"));
+sjekk('varer ogsaa',
+    str_contains($ufMig, "ALTER TABLE products\n  ADD COLUMN IF NOT EXISTS uten_forskudd TINYINT(1) NOT NULL DEFAULT 1"));
+// «paa medlemskap skal default vaere av».
+sjekk('medlemskap staar AV til noen slaar det paa',
+    str_contains($ufMig, "ALTER TABLE membership_plans\n  ADD COLUMN IF NOT EXISTS uten_forskudd TINYINT(1) NOT NULL DEFAULT 0"));
+// Uten denne ville innmeldinga stoppet i basen, ikke i koden.
+sjekk('«verksted» er en lovlig betalingsmaate paa medlemsordren',
+    str_contains($ufMig, "MODIFY COLUMN betaling ENUM('trekk','engang','verksted')"));
+
+if (DB::harKolonne('courses', 'uten_forskudd')) {
+    // Riggen lages her, og ryddes bort igjen nederst. Slutter en kjoring
+    // midt i, skal neste kjoring likevel begynne paa bar bakke — «slug» er
+    // unik, og en rad som ble liggende ville stoppet innsettinga.
+    DB::kjor("DELETE FROM bookings WHERE course_id IN
+                  (SELECT id FROM courses WHERE slug IN ('testoppmote','testkrever'))");
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN
+                  (SELECT id FROM courses WHERE slug IN ('testoppmote','testkrever'))");
+    DB::kjor("DELETE FROM courses WHERE slug IN ('testoppmote','testkrever')");
+
+    // Kurset som tillater det. Raden skal bli den samme som en verkstedet
+    // lager for haand: «reservert» uten frist, og ingen betalingsrad.
+    $ufKurs = DB::settInn('courses', ['slug' => 'testoppmote', 'tittel' => 'Testoppmøte',
+        'type' => 'kurs', 'pris_ore' => 120000, 'kapasitet' => 10, 'status' => 'publisert',
+        'uten_forskudd' => 1]);
+    $ufOkt = DB::settInn('course_sessions', ['course_id' => $ufKurs,
+        'start_tid' => gmdate('Y-m-d', time() + 864000) . ' 17:00:00', 'kapasitet' => 10]);
+    $ufR = Booking::reserverOgBetal($ufOkt, 1, 'Test Oppmote', 'oppmote@example.com',
+        '+4791234500', $medlemId, null, '', null, true);
+    sjekk('ingen tur innom Vipps', $ufR['redirectUrl'] === '' && $ufR['bookingId'] > 0);
+    $ufB = DB::en('SELECT status, reservert_til, payment_id, uten_forskudd FROM bookings WHERE id = :i',
+        ['i' => $ufR['bookingId']]);
+    sjekk('plassen staar som reservert', (string) $ufB['status'] === 'reservert');
+    // Ingen frist: plassen er kundens til noen gjor noe med den. En frist
+    // ville sluppet plassen midt paa natta, og kunden kom til et fullt kurs.
+    sjekk('… uten frist som slipper den igjen', $ufB['reservert_til'] === null);
+    sjekk('… og uten en betalingsrad som venter paa en webhook', $ufB['payment_id'] === null);
+    sjekk('… og merket, saa deltakerlista kan se hva slags rad det er',
+        (int) $ufB['uten_forskudd'] === 1);
+    sjekk('kvittering lagt i ko',
+        (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type='booking' AND ref_id=:i",
+            ['i' => $ufR['bookingId']]) > 0);
+
+    // Kurset som IKKE tillater det. En gammel fane eller et kall rett til
+    // serveren skal ikke kunne hoppe over betalinga.
+    $ufKrev = DB::settInn('courses', ['slug' => 'testkrever', 'tittel' => 'Testkrever',
+        'type' => 'kurs', 'pris_ore' => 120000, 'kapasitet' => 10, 'status' => 'publisert',
+        'uten_forskudd' => 0]);
+    $ufKrevOkt = DB::settInn('course_sessions', ['course_id' => $ufKrev,
+        'start_tid' => gmdate('Y-m-d', time() + 864000) . ' 17:00:00', 'kapasitet' => 10]);
+    try {
+        Booking::reserverOgBetal($ufKrevOkt, 1, 'Test Krever', 'krever@example.com',
+            '+4791234501', $medlemId, null, '', null, true);
+        sjekk('kurset avgjor, ikke nettleseren', false, 'slapp gjennom');
+    } catch (RuntimeException $e) {
+        sjekk('kurset avgjor, ikke nettleseren',
+            str_contains($e->getMessage(), 'må betales når du melder deg på'), $e->getMessage());
+    }
+
+    DB::kjor('DELETE FROM bookings WHERE course_id IN (:a, :b)', ['a' => $ufKurs, 'b' => $ufKrev]);
+    DB::kjor('DELETE FROM course_sessions WHERE course_id IN (:a, :b)', ['a' => $ufKurs, 'b' => $ufKrev]);
+    DB::kjor('DELETE FROM courses WHERE id IN (:a, :b)', ['a' => $ufKurs, 'b' => $ufKrev]);
+}
+
+// Medlemskapet som gjores opp over disken. Fast trekk gaar foran: der er
+// fullmakten i Vipps hele poenget, og da finnes valget ikke.
+$ufMed = (string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('fast trekk og betaling i verkstedet gaar ikke sammen',
+    str_contains($ufMed, "if (self::kreverFastTrekk(\$plan)) {\n            throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');"));
+sjekk('… og planen avgjor, ikke nettleseren',
+    str_contains($ufMed, "if ((int) (\$plan['uten_forskudd'] ?? 0) !== 1) {\n            throw new RuntimeException('Dette medlemskapet må betales når du melder deg inn.');"));
+// Avtalen som lages har ingen fullmakt i Vipps, og da maa «neste_trekk» staa
+// tom: ellers ville cron bedt om et trekk det ikke finnes avtale for — og det
+// er nettopp den 404-en som fylte feilloggen i september.
+sjekk('avtalen i verkstedet har ingen fullmakt og intet neste trekk',
+    str_contains($ufMed, "'vipps_agreement_id' => null,\n                'status'             => 'aktiv',\n                'neste_trekk'        => null,"));
+
+// ── Butikken: hele kurven, og bare til henting ───────────────────────
+//
+// Én vare som krever forskudd gjor det for hele kurven — ellers ville en dyr
+// ting sluppet gjennom fordi den laa sammen med en billig. Og skal pakken
+// sendes, er det ingen disk aa betale over.
+$ufOrdre = (string) file_get_contents(dirname(__DIR__) . '/api/ordre.php');
+sjekk('én vare som krever forskudd stopper hele kurven',
+    str_contains($ufOrdre, "if (\$vedHenting && !\$alleTillater) {"));
+sjekk('pakke kan ikke betales ved henting',
+    str_contains($ufOrdre, "if (\$vedHenting && \$levering === 'pakke') {"));
+// Gavekortet trekkes fra betalingsraden, og den finnes ikke her. Det sies
+// over kassa framfor aa bli oppdaget naar kunden staar der.
+sjekk('gavekort og henting gaar ikke sammen',
+    str_contains($ufOrdre, "if (\$vedHenting && trim(Foresporsel::tekst('gavekort')) !== '') {"));
+sjekk('ingen betalingsrad naar det betales ved henting',
+    str_contains($ufOrdre, "if (!\$vedHenting) {\n        \$paymentId = DB::settInn('payments', \$betalingsfelt);\n    }"));
+
+// ── Innmeldinga ──────────────────────────────────────────────────────
+$ufBli = (string) file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('planen avgjor om medlemskapet kan tegnes uten forskudd',
+    str_contains($ufBli, "if (\$betaling !== 'trekk' && Foresporsel::tekst('betaling') === 'verksted') {")
+    && str_contains($ufBli, "if ((int) (\$plan['uten_forskudd'] ?? 0) !== 1) {"));
+// «Gjor opp selv» og «ikke betalt enda» er to forskjellige ting. Sier
+// beskjeden til verkstedet det foerste, blir hen staaende ubetalt uten at
+// noen vet hvorfor.
+sjekk('verkstedet faar vite at det ikke er betalt',
+    str_contains($ufBli, "'verksted' => 'betaler i verkstedet — ikke betalt enda',"));
+
+// ── Kvitteringa maa si hva som gjenstaar ─────────────────────────────
+//
+// «{betaling}» er tom for den som har betalt, saa den endrer ingenting for
+// dem. For den som skal betale senere er den hele poenget.
+sjekk('kvitteringa paa kurset sier hva som betales ved oppmote',
+    str_contains($ufMig, "WHERE navn = 'ordrebekreftelse'\n   AND tekst NOT LIKE '%{betaling}%'"));
+sjekk('… og butikkvitteringa det samme for henting',
+    str_contains($ufMig, "WHERE navn = 'butikkordre'\n   AND tekst NOT LIKE '%{betaling}%'"));
+sjekk('feltet staar i Maler, saa verkstedet kan flytte det',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+        "'betaling' => 'Setningen om betaling ved oppmøte',"));
+
+// ── Skjermen ─────────────────────────────────────────────────────────
+//
+// Knappen skal staa der kurset tillater det, og kvitteringa maa si hva som
+// faktisk skjedde: «Betalingen er gjennomfort» over en plass som skal gjores
+// opp ved oppmoete er feil beskjed, og den som leser den kommer uten penger.
+sjekk('kvitteringa sier at plassen er reservert, ikke betalt',
+    str_contains($mt, "      bookKvittEtikett: this.state.bookVedOppmote\n        ? 'Plassen er reservert' : 'Betalingen er gjennomført',"));
+// Kortet maa baere haken. Bookingsiden leser kortet, ikke katalogen — uten
+// dette sto knappen aldri der.
+sjekk('haken foelger med kurskortet fra katalogen',
+    substr_count($mt, 'utenForskudd: !!kat.utenForskudd,') === 2);
+// Hele kurven, og bare til henting. Serveren avviser det samme paa nytt.
+sjekk('kassa tilbyr henting bare naar alle varene tillater det',
+    str_contains($mt, "        if (!navn.length || !this.state.innlogget || this.erPakke()) return false;"));
+// Nye kurs og varer staar PAA, nye medlemskap staar AV.
+sjekk('nytt kurs staar paa',  substr_count($mt, 'kUtenForskudd: true,') === 4);
+sjekk('ny vare staar paa',    substr_count($mt, "npUtenForskudd: true") === 4);
+sjekk('nytt medlemskap staar av',
+    substr_count($mt, "fastTrekk: false, utenForskudd: false, sortering: '0',") === 2);
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

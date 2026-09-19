@@ -2145,6 +2145,16 @@ window.__resources = {
   }
 
   .lx-kortmer { display: none; }
+  /* Bookingskjermen har tre barn i rutenettet: toppen, resten og boksen.
+     Paa skjerm skal de to foerste ligge under hverandre i venstre spalte, og
+     boksen staa ved siden av — akkurat som da venstre spalte var ett stykke.
+     Rekkefoelgen paa mobil staar i @media under. Samme som nett.css. */
+  .lx-kurs > .lx-kurs-topp   { grid-column: 1; grid-row: 1; }
+  .lx-kurs > .lx-kurs-resten { grid-column: 1; grid-row: 2; }
+  .lx-kurs > .lx-kurs-boks   { grid-column: 2; grid-row: 1 / span 2; }
+  .lx-kurs summary::-webkit-details-marker { display: none; }
+  .lx-kurs details[open] > summary span[aria-hidden] { transform: rotate(180deg); }
+  .lx-kurs summary span[aria-hidden] { transition: transform var(--duration-fast, 150ms) ease; }
   @media (max-width: 760px) {
     .lx-korthva  { display: none !important; }
     .lx-kortnavn { display: none !important; }
@@ -2202,6 +2212,19 @@ window.__resources = {
     .lx-foto { height: 320px !important; }
     .lx-fotokol { height: auto !important; }
     .lx-split { grid-template-columns: 1fr !important; }
+    /* Bookingskjermen: pris og datoer foer den lange teksten.
+       De to spaltene faller sammen her, og boksen — som er hoeyre spalte —
+       havnet sist. Eieren, 19. september 2026, med bilde fra to telefoner:
+       «paa min telefon ser det slik ut, veldig bra. Mens paa andre telefoner
+       staar det feil». Det var ikke telefonene; det var at serversida hadde
+       faatt denne rekkefoelgen og appen ikke.
+       Samme regler som «.lx-kurs» i nett.css. De to utgavene skal se like ut,
+       og bin/toutgaversjekk.mjs slaar ut naar de ikke gjor det. */
+    .lx-kurs > * { grid-column: 1 !important; grid-row: auto !important; }
+    .lx-kurs > .lx-kurs-topp   { order: 1; }
+    .lx-kurs > .lx-kurs-boks   { order: 2; position: static !important; }
+    .lx-kurs > .lx-kurs-resten { order: 3; }
+    .lx-kurs { gap: var(--space-6) !important; }
     /* Et bilde som flyter ved siden av teksten trenger plass paa hver
        side. Paa en telefon er det ikke plass til begge deler: da staar
        bildet i full bredde over avsnittet, som de andre. */
@@ -3068,8 +3091,15 @@ window.__resources = {
       <section style="background: var(--clay-50); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
 
-          <div class="lx-split" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-10); align-items: start;">
-            <div>
+          <!-- Eieren, 19. september 2026, med bilde fra to telefoner: «paa min
+               telefon ser det slik ut, veldig bra. Mens paa andre telefoner
+               staar det feil». Det var ikke to telefoner, det var de to
+               utgavene av kurset: serversida hadde faatt boksen flyttet opp,
+               denne hadde den ikke.
+               Samme deling som app/nett/sider/kursside.php: toppen, boksen,
+               resten. Se «.lx-kurs» i stilarket. -->
+          <div class="lx-split lx-kurs" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-10); align-items: start;">
+            <div class="lx-kurs-topp">
               <div role="img" aria-label="{{ bBildeAlt }}" style="position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden;">
                 <sc-for list="{{ bKarusell }}" as="ki" hint-placeholder-count="1">
                   <div style="{{ ki.stil }}"></div>
@@ -3118,11 +3148,18 @@ window.__resources = {
               <sc-if value="{{ bOmHarIngress }}" hint-placeholder-val="{{ false }}">
                 <p style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: 1.35; color: var(--text-heading); max-width: 46ch; text-wrap: balance;">{{ bOmIngress }}</p>
               </sc-if>
-              <!-- Ti like avsnitt paa rad blir en vegg. Det foerste staar
-                   stort som en inngang, resten i broedtekst med luft. -->
-              <sc-for list="{{ bOmAvsnitt }}" as="a" hint-placeholder-count="2">
-                <p style="{{ a.stil }}">{{ a.tekst }}</p>
-              </sc-for>
+              <!-- Har kurset ingen ingress, laaner vi det foerste avsnittet.
+                   Det er der kurset forklares kortest, og noe maa staa over
+                   boksen. Samme regel som serversida. -->
+              <sc-if value="{{ bOmHarLead }}" hint-placeholder-val="{{ false }}">
+                <p style="{{ bOmLeadStil }}">{{ bOmLead }}</p>
+              </sc-if>
+
+              <!-- Her slutter toppen. Paa mobil kommer boksen med pris og
+                   datoer naa; paa skjerm staar den til hoeyre, og dette er
+                   bare neste rad i samme spalte. -->
+              </div><div class="lx-kurs-resten">
+
               <!-- Linja og faktaboksene hoerer til kursene.
                    Sida brukes ogsaa naar man klikker seg inn paa et
                    medlemskap, og der sa boksen «Varighet · 30 timer i
@@ -3170,6 +3207,14 @@ window.__resources = {
               <sc-if value="{{ bHarLesMer }}" hint-placeholder-val="{{ true }}">
               <details style="margin-top: var(--space-6); max-width: 60ch; border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
                 <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--terracotta-600); min-height: 44px;">{{ bLesMerTekst }}<span aria-hidden="true" style="font-size: var(--text-lg);">⌄</span></summary>
+              <!-- Ti like avsnitt paa rad blir en vegg. Medlemskapene har
+                   seks som sier omtrent det samme. Eieren, 19. september
+                   2026: «det er naar vi klikker inn og skal til book det er
+                   mye scrolling». Det foerste staar over boksen; resten her,
+                   som paa serversida. -->
+              <sc-for list="{{ bOmResten }}" as="a" hint-placeholder-count="2">
+                <p style="{{ a.stil }}">{{ a.tekst }}</p>
+              </sc-for>
               <sc-if value="{{ bVisPasserFor }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: var(--space-2) 0 0; font-size: var(--text-base); color: var(--text-body); max-width: 56ch; text-wrap: pretty;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
               </sc-if>
@@ -3259,7 +3304,7 @@ window.__resources = {
               </sc-if>
             </div>
 
-            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
+            <div class="lx-kurs-boks" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
               <div style="display: flex; align-items: baseline; gap: 8px 10px; margin-bottom: var(--space-6); flex-wrap: wrap;">
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: min(var(--text-4xl), 10vw); color: var(--text-heading); white-space: nowrap;" class="lx-pris">{{ bPris }}</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ bPrisNote }}</span>
@@ -47471,9 +47516,33 @@ class Component extends DCLogic {
             if (halen) { ingress = halen.charAt(0).toUpperCase() + halen.slice(1); deler.shift(); }
           }
         }
+        // ── Én tekst over boksen, resten under ────────────────────────
+        //
+        // Har kurset en ingress, er det den. Har det ikke det, laaner vi det
+        // foerste avsnittet — det er der kurset forklares kortest, og noe
+        // maa staa over boksen med pris og datoer.
+        //
+        // Medlemskapene har seks avsnitt som sier omtrent det samme; fem av
+        // dem havner bak «Les mer». Kursene har som regel ett eller to.
+        const lead = ingress ? '' : (deler.length ? deler[0] : '');
+        const resten = ingress ? deler : deler.slice(1);
+        const avsnittStil = (i) => ({
+          margin: '0 0 var(--space-5)',
+          color: i === 0 ? 'var(--text-heading)' : 'var(--text-body)',
+          fontSize: i === 0 ? 'var(--text-lg)' : 'var(--text-base)',
+          lineHeight: i === 0 ? 1.6 : 1.75,
+          maxWidth: '58ch',
+          textWrap: 'pretty',
+        });
         return {
           bOmIngress: ingress,
           bOmHarIngress: !!ingress,
+          bOmLead: lead,
+          bOmHarLead: !!lead,
+          bOmLeadStil: avsnittStil(0),
+          // Avsnittene som staar under boksen. Er ingressen laant fra det
+          // foerste, begynner resten paa det andre.
+          bOmResten: resten.map((t, i) => ({ tekst: t, stil: avsnittStil(ingress ? i : i + 1) })),
           bOmAvsnitt: deler.map((t, i) => ({
             tekst: t,
             stil: {

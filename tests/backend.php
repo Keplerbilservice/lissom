@@ -19276,6 +19276,54 @@ sjekk('«Betal ved oppmote» staar urort',
     && str_contains($mt, "      visOppmote: !!(this.state.valgtKurs || {}).utenForskudd"));
 
 
+// ── De to utgavene av kurset skal aldri skille lag ───────────────────
+//
+// Eieren, 19. september 2026, med bilde fra to telefoner: «paa min telefon
+// ser det slik ut, veldig bra. Mens paa andre telefoner staar det feil» —
+// og etterpaa: «du maa soerge for at det aldri er to utgaver, det er jo
+// helt feil».
+//
+// Det var ikke to telefoner. Serversida hadde faatt boksen flyttet opp,
+// appen hadde den ikke. Utgavene kan ikke slaas sammen uten aa gi opp
+// enten Google eller bookingen, men de kan holdes i takt — og
+// bin/toutgaversjekk.mjs slaar ut naar de ikke er det.
+echo "\n== De to utgavene av kurset ==\n";
+
+$tuFil = dirname(__DIR__) . '/bin/toutgaversjekk.mjs';
+sjekk('vakta mot to ulike utgaver finnes', is_file($tuFil));
+$tuApp = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$tuPhp = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
+
+// Begge utgavene deler venstre spalte i to, saa boksen kan staa imellom.
+foreach ([['kursside.php', $tuPhp], ['lissom-2108.html', $tuApp]] as [$navn, $tekst]) {
+    sjekk('spalta er delt i ' . $navn,
+        str_contains($tekst, 'class="lx-split lx-kurs"')
+        && str_contains($tekst, 'class="lx-kurs-topp"')
+        && str_contains($tekst, 'class="lx-kurs-resten"')
+        && str_contains($tekst, 'class="lx-kurs-boks"'));
+}
+// Rekkefoelgen paa mobil maa staa i BEGGE stilarkene. Staar den bare i det
+// ene, havner boksen nederst i den ene utgaven — som var nettopp feilen.
+foreach ([['nett.css', 'nett.css'], ['appens stilark', 'lissom-2108.html']] as [$navn, $fil]) {
+    $t = (string) file_get_contents(dirname(__DIR__) . '/' . $fil);
+    sjekk('rekkefoelgen paa mobil staar i ' . $navn,
+        str_contains($t, '.lx-kurs > .lx-kurs-topp   { order: 1; }')
+        && str_contains($t, '.lx-kurs > .lx-kurs-boks   { order: 2; position: static !important; }')
+        && str_contains($t, '.lx-kurs > .lx-kurs-resten { order: 3; }'));
+}
+// Medlemskapene har seks avsnitt som sier omtrent det samme. Ett staar over
+// boksen, resten bak «Les mer» — begge steder.
+sjekk('avsnittene under det foerste staar bak «Les mer» paa serversida',
+    str_contains($tuPhp, "\$detaljer = \$restTekst;"));
+sjekk('… og i appen',
+    str_contains($tuApp, "          bOmResten: resten.map((t, i) => ({ tekst: t, stil: avsnittStil(ingress ? i : i + 1) })),"));
+// Maalt lokalt, med appen kjort mot ekte katalogdata: medlemskapsskjermen
+// gikk fra 3518 til 2716 px, og boksen fra cirka 2000 px nede til 580 —
+// innenfor den foerste skjermen.
+sjekk('det foerste avsnittet staar igjen over boksen',
+    str_contains($tuApp, "        const lead = ingress ? '' : (deler.length ? deler[0] : '');"));
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

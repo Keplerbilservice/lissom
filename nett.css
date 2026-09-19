@@ -1218,6 +1218,18 @@ img{max-width:100%;display:block}
   }
 
   .lx-kortmer { display: none; }
+  /* Kurssida har tre barn i rutenettet: toppen, resten og bookingboksen.
+     Paa skjerm skal de to foerste ligge under hverandre i venstre spalte,
+     og boksen staa ved siden av — akkurat som da venstre spalte var ett
+     stykke. Rekkefoelgen paa mobil staar i @media under. */
+  .lx-kurs > .lx-kurs-topp   { grid-column: 1; grid-row: 1; }
+  .lx-kurs > .lx-kurs-resten { grid-column: 1; grid-row: 2; }
+  .lx-kurs > .lx-kurs-boks   { grid-column: 2; grid-row: 1 / span 2; }
+  /* Pila i «Les mer om kurset» snur naar den er aapen. Safari trenger at
+     den gamle trekanten tas bort for seg. */
+  .lx-kurs summary::-webkit-details-marker { display: none; }
+  .lx-kurs details[open] > summary span[aria-hidden] { transform: rotate(180deg); }
+  .lx-kurs summary span[aria-hidden] { transition: transform var(--duration-fast, 150ms) ease; }
   @media (max-width: 760px) {
     .lx-korthva  { display: none !important; }
     .lx-kortnavn { display: none !important; }
@@ -1275,6 +1287,21 @@ img{max-width:100%;display:block}
     .lx-foto { height: 320px !important; }
     .lx-fotokol { height: auto !important; }
     .lx-split { grid-template-columns: 1fr !important; }
+    /* Kurssida: pris og datoer foer den lange teksten.
+       Eieren, 19. september 2026, med bilde av kurssida paa mobil: «kan du
+       komprimere all denne teksten inn i et kort eller noe, blir for langt
+       aa scrolle». Maalt paa iPhone: 3475 px, 5,2 skjermer, og boksen med
+       pris og datoer laa cirka 1800 px nede.
+       Grunnen var at de to spaltene faller sammen her, og boksen — som er
+       hoeyre spalte — havner sist. Venstre spalte er derfor delt i to, og
+       rekkefoelgen settes her: toppen, boksen, resten.
+       Boksen slutter aa vaere klebrig: den staar i loepet av sida naa, og
+       en boks som foelger med i en enkelt spalte tar bare plass. */
+    .lx-kurs > * { grid-column: 1 !important; grid-row: auto !important; }
+    .lx-kurs > .lx-kurs-topp   { order: 1; }
+    .lx-kurs > .lx-kurs-boks   { order: 2; position: static !important; }
+    .lx-kurs > .lx-kurs-resten { order: 3; }
+    .lx-kurs { gap: var(--space-6) !important; }
     /* Et bilde som flyter ved siden av teksten trenger plass paa hver
        side. Paa en telefon er det ikke plass til begge deler: da staar
        bildet i full bredde over avsnittet, som de andre. */

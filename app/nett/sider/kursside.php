@@ -64,8 +64,22 @@ $h = '<div role="main" data-screen-label="Booking">' . "\n";
 $h .= Deler::topp($erEvent ? 'Events' : 'Kurs');
 $h .= '<section style="background: var(--clay-50); padding: var(--space-10) var(--space-8) var(--section-y);">'
     . '<div style="max-width: var(--width-content); margin: 0 auto;">'
-    . '<div class="lx-split" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-10); align-items: start;">'
-    . '<div>';
+    . '<div class="lx-split lx-kurs" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-10); align-items: start;">'
+    // ── Toppen: bildet, merkelappene, tittelen og ingressen ───────────
+    //
+    // Eieren, 19. september 2026, med bilde av kurssida paa mobil: «kan du
+    // komprimere all denne teksten inn i et kort eller noe, blir for langt
+    // aa scrolle».
+    //
+    // Maalt paa iPhone var sida 3475 px — 5,2 skjermer. Pris og datoer laa
+    // cirka 1800 px nede, under alt av tekst, fordi de to spaltene faller
+    // sammen paa mobil og boksen havner sist.
+    //
+    // Derfor er venstre spalte delt i to: det som skal staa foer boksen, og
+    // resten. Paa skjerm ligger begge i spalte én som foer, og boksen staar
+    // ved siden av. Paa mobil er rekkefoelgen topp, boks, resten — se
+    // «.lx-kurs» i nett.css.
+    . '<div class="lx-kurs-topp">';
 // Bildet. Er det flere, ligger de oppaa hverandre og bytter (nett.js).
 $h .= '<div role="img" aria-label="' . $e($bildeAlt) . '" data-nett-karusell="' . (int) ($kat['sekunder'] ?? 5) . '" style="position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden;">';
 foreach ($bilder as $i => $b) {
@@ -75,8 +89,23 @@ $h .= '</div>';
 // Hero-bildet er LCP paa denne sida; si fra i hodet.
 $hode = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($bilder[0]) . '">' . "\n";
 
+// ── Merkelappene, i stedet for én linje med nivaa ─────────────────────
+//
+// Nivaaet sto alene over tittelen, og de samme opplysningene sto en gang
+// til i faktaboksene under. Naa staar nivaa, varighet og antall plasser
+// paa én linje — tre opplysninger paa plassen én tok.
 $nivaa = (string) ($kat['nivaaTekst'] ?: $kort['level']);
-$h .= '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-8) 0 var(--space-3);">' . $e($nivaa) . '</div>'
+$plasserN = $kunKontakt ? 0 : (int) ($kat['plasser'] ?? 0);
+$flis = array_values(array_filter([
+    $nivaa,
+    (string) ($kort['duration'] ?? ''),
+    $plasserN > 0 ? 'Maks ' . $plasserN : '',
+]));
+$h .= '<div style="display: flex; flex-wrap: wrap; gap: 8px; margin: var(--space-8) 0 var(--space-4);">';
+foreach ($flis as $f) {
+    $h .= '<span style="display: inline-flex; align-items: center; padding: 6px 12px; border-radius: var(--radius-pill); background: var(--clay-100); font: var(--type-label); font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">' . $e($f) . '</span>';
+}
+$h .= '</div>'
     . '<h1 style="margin: 0 0 var(--space-5); font-size: var(--text-4xl);">' . $e($tittel) . '</h1>';
 
 // Beskrivelsen: ingress og avsnitt, som bOmAvsnitt i nettsida.
@@ -93,29 +122,47 @@ if (count($deler) > 1 && $tittel !== '') {
         }
     }
 }
+// ── Én tekst over boksen, resten under ────────────────────────────────
+//
+// Har kurset en ingress, er det den. Har det ikke det, laaner vi det
+// foerste avsnittet — det er der kurset forklares kortest. Resten foelger
+// under boksen, for den som vil lese videre.
 if ($ingress !== '') {
     $h .= '<p style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: 1.35; color: var(--text-heading); max-width: 46ch; text-wrap: balance;">' . $e($ingress) . '</p>';
+} elseif ($deler !== []) {
+    $h .= '<p style="margin: 0 0 var(--space-6); color: var(--text-heading); font-size: var(--text-lg); line-height: 1.6; max-width: 58ch; text-wrap: pretty;">' . $e((string) array_shift($deler)) . '</p>';
 }
+
+// Her slutter toppen. Paa mobil kommer bookingboksen naa; paa skjerm staar
+// den til hoeyre, og dette er bare neste rad i samme spalte.
+$h .= '</div><div class="lx-kurs-resten">';
+
 foreach ($deler as $i => $t) {
     $h .= '<p style="margin: 0 0 var(--space-5); color: ' . ($i === 0 ? 'var(--text-heading)' : 'var(--text-body)') . '; font-size: ' . ($i === 0 ? 'var(--text-lg)' : 'var(--text-base)') . '; line-height: ' . ($i === 0 ? '1.6' : '1.75') . '; max-width: 58ch; text-wrap: pretty;">' . $e($t) . '</p>';
 }
 
-// Passer for — bPasserFor.
+// «Passer for» er den samme setninga for hvert kurs paa samme nivaa, og
+// den sto rett over en hakeliste som sa det samme igjen. Den staar naa
+// under «Les mer om kurset», sammen med de andre lange avsnittene.
 $passerFor = ['Nybegynner' => 'Deg som aldri har prøvd leire før — ingen forkunnskaper nødvendig.', 'Event' => 'Alle — ingen erfaring nødvendig. Kom som du er, vi viser deg resten.'][$kort['level']] ?? 'Alle — ingen forkunnskaper nødvendig.';
-$h .= '<p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-heading); max-width: 56ch;"><strong>Passer for:</strong> ' . $e($passerFor) . '</p>';
 
-// Faktaboksene — bFaktaRader.
+// ── Fakta som linjer, ikke som bokser ─────────────────────────────────
+//
+// Fire bokser i et rutenett tok 312 px paa en telefon — og «Nivaa» og
+// «Varighet» sto alt som merkelapper over tittelen. Det som er igjen er
+// det boksene hadde som var sitt eget, og som linjer tar det under 130.
 $kortAv = static fn(string $t): string => trim((string) preg_split('/[.\n]/', $t)[0]);
 $fakta = array_values(array_filter([
-    ['Nivå', (string) ($kat['nivaaTekst'] ?? '')],
-    ['Varighet', (string) ($kort['duration'] ?? '')],
     ['Du lærer', (string) ($kat['laererKort'] ?: $kortAv((string) ($kat['laerer'] ?? '')))],
     ['Med hjem', $kortAv((string) ($kat['medHjem'] ?? ''))],
+    ['Ferdig', $kortAv((string) ($kat['ferdigTid'] ?? ''))],
 ], static fn(array $f): bool => $f[1] !== ''));
 if ($fakta !== []) {
-    $h .= '<div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;">';
+    $h .= '<div style="display: flex; flex-direction: column; gap: 8px; margin: 0 0 var(--space-6); max-width: 58ch;">';
     foreach ($fakta as [$merke, $verdi]) {
-        $h .= '<div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);"><div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">' . $e($merke) . '</div><div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">' . $e($verdi) . '</div></div>';
+        $h .= '<div style="display: flex; gap: 12px; align-items: baseline;">'
+            . '<span style="flex: 0 0 96px; font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">' . $e($merke) . '</span>'
+            . '<span style="font-size: var(--text-base); color: var(--text-heading); text-wrap: pretty;">' . $e($verdi) . '</span></div>';
     }
     $h .= '</div>';
 }
@@ -127,7 +174,7 @@ if ($punkter === []) {
         ? ['Ingen erfaring nødvendig — vi viser deg alt underveis.', 'Leire, materialer, glasering og brenning er inkludert.', 'Passer venninnekvelder, utdrikningslag, bedrifter og par.', 'Arbeidene brennes og er klare til henting etter to til fire uker.']
         : ['Leire, verktøy, glasur og brenning er inkludert.', 'Ingen forkunnskaper nødvendig.'];
 }
-$plasser = $kunKontakt ? 0 : (int) ($kat['plasser'] ?? 0);
+$plasser = $plasserN;
 if ($plasser > 0) {
     array_unshift($punkter, 'Maks ' . $plasser . ' deltakere.');
 }
@@ -137,12 +184,23 @@ foreach ($punkter as $p) {
 }
 $h .= '</div>';
 
+// ── Det lange stoffet, bak ett trykk ──────────────────────────────────
+//
+// «Dette laerer du», «Dette faar du med hjem» og «Naar er den ferdig» sa
+// det samme som faktalinjene over, bare i flere setninger. De er ikke
+// borte — de staar her, og <details> trenger verken JavaScript eller en
+// egen knapp for aa virke.
+//
+// Google leser innholdet uansett: teksten staar i sida, den er bare ikke
+// brettet ut. Det samme gjelder skjermlesere, som kan aapne den selv.
+$detaljer = '';
+
 // Seksjonene fra kursoppsettet — bSeksjoner.
 foreach ([['Dette lærer du', (string) ($kat['laerer'] ?? '')], ['Dette får du med hjem', (string) ($kat['medHjem'] ?? '')], ['Når er den ferdig', (string) ($kat['ferdigTid'] ?? '')], ['Praktisk informasjon', (string) ($kat['praktisk'] ?? '')], ['Allergener og kommentarer', (string) ($kat['allergener'] ?? '')]] as [$st, $tekst]) {
     if (trim($tekst) === '') {
         continue;
     }
-    $h .= '<div style="margin-top: var(--space-8); max-width: 60ch;"><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($st) . '</div>'
+    $detaljer .= '<div style="margin-top: var(--space-6); max-width: 60ch;"><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($st) . '</div>'
         . '<p style="margin: 0; font-size: var(--text-base); line-height: 1.7; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">' . $e(trim($tekst)) . '</p></div>';
 }
 
@@ -157,12 +215,24 @@ foreach (['passerNivaa', 'passerHvem', 'metode', 'varighet'] as $felt) {
         }
     }
 }
+$detaljer .= '<div style="margin-top: var(--space-6); max-width: 60ch;"><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Passer for</div>'
+    . '<p style="margin: 0 0 var(--space-3); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">' . $e($passerFor) . '</p>';
 if ($merker !== []) {
-    $h .= '<div style="margin-top: var(--space-8); max-width: 60ch;"><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Passer for</div><div style="display: flex; gap: 8px; flex-wrap: wrap;">';
+    $detaljer .= '<div style="display: flex; gap: 8px; flex-wrap: wrap;">';
     foreach ($merker as $m) {
-        $h .= '<span style="display: inline-flex; align-items: center; padding: 5px 12px; border-radius: var(--radius-pill); background: var(--clay-100); border: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-heading);">' . $e($m) . '</span>';
+        $detaljer .= '<span style="display: inline-flex; align-items: center; padding: 5px 12px; border-radius: var(--radius-pill); background: var(--clay-100); border: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-heading);">' . $e($m) . '</span>';
     }
-    $h .= '</div></div>';
+    $detaljer .= '</div>';
+}
+$detaljer .= '</div>';
+
+// Er det noe der, faar det en knapp. Er det ikke det, staar ingen knapp
+// som aapner et tomrom.
+if (trim($detaljer) !== '') {
+    $h .= '<details style="margin-top: var(--space-6); max-width: 60ch; border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">'
+        . '<summary style="cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--terracotta-600); min-height: 44px;">'
+        . 'Les mer om kurset<span aria-hidden="true" style="font-size: var(--text-lg);">⌄</span></summary>'
+        . $detaljer . '</details>';
 }
 
 // Samlingene paa foerste dato — bSamlinger.
@@ -216,7 +286,7 @@ if ($naar !== '') {
 }
 $oppsummering = implode(' · ', array_filter([$naar, (string) ($kort['duration'] ?? ''), (string) ($kat['nivaaTekst'] ?? '')]));
 
-$h .= '<div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">'
+$h .= '<div class="lx-kurs-boks" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">'
     . '<div style="display: flex; align-items: baseline; gap: 8px 10px; margin-bottom: var(--space-6); flex-wrap: wrap;"><span style="font-family: var(--font-display); font-weight: 800; font-size: min(var(--text-4xl), 10vw); color: var(--text-heading); white-space: nowrap;" class="lx-pris">' . $e($pris) . '</span><span style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($prisNote) . '</span></div>'
     . ($rabattTeaser !== '' ? '<div style="font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600; margin: -8px 0 var(--space-5);">' . $e($rabattTeaser) . '</div>' : '')
     . '<div style="font-size: var(--text-sm); color: var(--text-body); margin: -8px 0 var(--space-5);">' . $e($oppsummering) . '</div>';

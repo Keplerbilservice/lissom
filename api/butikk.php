@@ -16,6 +16,11 @@ Foresporsel::krevMetode('GET');
 $medlem = Sesjon::medlem();
 $hvor = $medlem === null ? 'kun_medlemmer = 0' : '1';
 
+// «uten_forskudd» kommer med migrasjon 197. Er den ikke kjort, skal butikken
+// staa som for — ikke falle paa «Unknown column».
+$forskuddKol = DB::harKolonne('products', 'uten_forskudd')
+    ? 'uten_forskudd' : '0 AS uten_forskudd';
+
 // Frakten. Sto som «kr. 89,-» fire steder i nettleseren og kom aldri hit;
 // naa staar tallet i basen, og kassa henter det derfra. Da kan ikke skjermen
 // og betalingen si hver sin ting.
@@ -24,7 +29,8 @@ $fraktOre = (int) (DB::harTabell('innstillinger')
     : 0);
 
 $varer = DB::alle(
-    "SELECT id, tittel, beskrivelse, bilde, kategori, pris_ore, lager, kun_medlemmer
+    "SELECT id, tittel, beskrivelse, bilde, kategori, pris_ore, lager, kun_medlemmer,
+            {$forskuddKol}
        FROM products
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY kun_medlemmer, kategori, tittel"
@@ -42,6 +48,10 @@ Svar::json(['varer' => array_map(static fn($v) => [
     'bilde'        => $v['bilde'],
     'kategori'     => $v['kategori'],
     'pris'         => Booking::kroner((int) $v['pris_ore']),
+    // Kan varen bestilles og betales ved henting? Paa for alle fra start
+    // (migrasjon 197). Kassa tilbyr det bare naar ALLE varene i kurven
+    // tillater det — se api/ordre.php.
+    'utenForskudd' => (int) ($v['uten_forskudd'] ?? 0) === 1,
     'prisOre'      => (int) $v['pris_ore'],
     'utsolgt'      => $v['lager'] !== null && (int) $v['lager'] <= 0,
     'kunMedlemmer' => (bool) $v['kun_medlemmer'],

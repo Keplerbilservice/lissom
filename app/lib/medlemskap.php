@@ -1000,6 +1000,78 @@ final class Medlemskap
     }
 
     /**
+     * Medlemskap som gjores opp i verkstedet.
+     *
+     * Eieren, 19. september 2026: «det maa gaa an aa bestille uten aa betale
+     * med vipps, samme vilkaar, men at de betaler ved oppmoete, kontant eller
+     * vipps» — og for medlemskap skal valget staa AV til noen slaar det paa.
+     *
+     * Samme rad som «jeg ordner det selv», med ett unntak: den er aktiv med
+     * det samme, og ingen betaling er startet. Bindinga settes som ellers —
+     * det er de samme vilkaarene, ikke et mildere sett.
+     *
+     * «neste_trekk» staar tom. Uten den henter tilTrekk() den aldri, og cron
+     * kan ikke be Vipps om et trekk paa en avtale det ikke finnes fullmakt
+     * for.
+     *
+     * Pengene: medlemmet staar som ubetalt til noen huker av i Kassa — se
+     * betalingsstatus(), som uten avtale og uten betaling svarer «ingen
+     * betaling registrert». Det er nettopp der verkstedet skal se hen.
+     *
+     * @param array<string,mixed> $medlem
+     * @return array{id:int}
+     */
+    public static function startIVerkstedet(array $medlem, string $planNavn): array
+    {
+        $plan = self::plan($planNavn);
+        if ($plan === null) {
+            throw new RuntimeException('Fant ikke medlemskapet.');
+        }
+        if (self::kreverFastTrekk($plan)) {
+            throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');
+        }
+        if ((int) ($plan['uten_forskudd'] ?? 0) !== 1) {
+            throw new RuntimeException('Dette medlemskapet må betales når du melder deg inn.');
+        }
+
+        $engangs = (int) ($plan['engangs'] ?? 0) === 1;
+        $binding = (int) $plan['binding_mnd'];
+        $medlemId = (int) $medlem['id'];
+
+        return DB::iTransaksjon(static function () use ($plan, $planNavn, $medlemId, $engangs, $binding): array {
+            $id = DB::settInn('subscriptions', [
+                'member_id'          => $medlemId,
+                'plan'               => $planNavn,
+                'pris_ore'           => (int) $plan['pris_ore'],
+                // Ingen fullmakt i Vipps. NULL og ikke tom streng: kolonnen
+                // er unik, og to tomme strenger er to like verdier.
+                'vipps_agreement_id' => null,
+                'status'             => 'aktiv',
+                'neste_trekk'        => null,
+                'binding_til'        => $binding > 0
+                    ? (new DateTimeImmutable('now'))->modify('+' . $binding . ' months')->format('Y-m-d')
+                    : null,
+            ]);
+
+            // Medlemskapet gjelder fra i dag. Har hen vaert medlem for,
+            // roeres ikke startdatoen — «medlem siden mai» skal ikke bli
+            // «siden i dag» fordi hen meldte seg inn paa nytt.
+            $fra = DB::en('SELECT start_dato FROM members WHERE id = :m', ['m' => $medlemId]) ?? [];
+            $felter = [
+                'status'          => $engangs ? 'prove' : 'aktiv',
+                'medlemskap_type' => $planNavn,
+                'start_dato'      => ($fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),
+            ];
+            if ($engangs) {
+                $felter['slutt_dato'] = gmdate('Y-m-d', strtotime('+1 month'));
+            }
+            DB::oppdater('members', $felter, ['id' => $medlemId]);
+
+            return ['id' => (int) $id];
+        });
+    }
+
+    /**
      * Slaar paa et medlemskap som er betalt med én betaling.
      *
      * Kalles fra Booking::markerBetalt(). Ingen trekkdato settes — det er

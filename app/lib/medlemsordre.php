@@ -66,7 +66,18 @@ final class Medlemsordre
         // Aarsmedlemskapet kan bare betales med fast trekk. Staar det noe
         // annet i forespoerselen, er det planen som gjelder — ikke onsket.
         $maa = Medlemskap::kreverFastTrekk($plan);
-        $betaling = $maa ? 'trekk' : ($betaling === 'engang' ? 'engang' : 'trekk');
+        // «verksted» — medlemskapet begynner naa, og gjores opp over disken.
+        // Eieren, 19. september 2026, om kurs, butikk og medlemskap: «det maa
+        // gaa an aa bestille uten aa betale med vipps ... men at de betaler
+        // ved oppmoete». Paa medlemskap staar valget AV til noen slaar det
+        // paa — «uten_forskudd» paa planen, standard 0 (migrasjon 197).
+        //
+        // Planen avgjor, som med fast trekk: staar det noe annet i
+        // forespoerselen, er det planen som gjelder.
+        $iVerkstedet = !$maa && $betaling === 'verksted'
+            && (int) ($plan['uten_forskudd'] ?? 0) === 1;
+        $betaling = $maa ? 'trekk'
+            : ($iVerkstedet ? 'verksted' : ($betaling === 'engang' ? 'engang' : 'trekk'));
 
         $token = bin2hex(random_bytes(16));
 

@@ -135,6 +135,29 @@ if (er_aktivt_medlem($medlem) && (string) ($medlem['rolle'] ?? '') !== 'admin') 
     );
 }
 
+// ── Betales i verkstedet: ferdig her ──────────────────────────────────
+//
+// Ingen tur innom Vipps. Medlemskapet gjelder fra i dag, og pengene kreves
+// inn over disken — medlemmet staar som ubetalt til noen huker av i Kassa.
+// Valget er lagret paa ordren, og bare naar planen tillater det; se
+// Medlemsordre::opprett().
+if ((string) ($ordre['betaling'] ?? '') === 'verksted') {
+    try {
+        Medlemskap::startIVerkstedet($medlem, $planNavn);
+    } catch (Throwable $e) {
+        logg_feil('Innmelding i verkstedet feilet for ordre ' . $ordre['id'], $e);
+        $side('Vi fikk ikke satt i gang medlemskapet',
+              'Si fra til oss på ' . $kontakt . ', så ordner vi det.');
+    }
+    Medlemsordre::merkFullfort((int) $ordre['id']);
+    $side(
+        'Velkommen som medlem!',
+        'Medlemskapet ditt gjelder fra i dag. ' . Booking::kroner((int) $plan['pris_ore'])
+        . ' betaler du neste gang du er i verkstedet — kontant eller Vipps.',
+        'Til Min side', '/min-side'
+    );
+}
+
 try {
     // Fast trekk gir en avtale aa godkjenne. «Ordner selv» gir én betaling.
     // Hvilken av dem staar paa planen, ikke paa onsket — se

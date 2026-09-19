@@ -73,6 +73,9 @@ final class Maler
                 'ordre'      => 'Bestillingsnummeret, f.eks. B-260901-C4D7EC',
                 'varelinjer' => 'Varene, én per linje, med antall og pris',
                 'sum'        => 'Totalsummen',
+                // Tom for den som har betalt. Valgte kunden «betal ved
+                // henting», står summen og måten her.
+                'betaling' => 'Setningen om betaling ved henting',
             ],
         ],
         // Bestillingen til leverandoren. Migrasjon 184: handlelistene fra
@@ -111,6 +114,9 @@ final class Maler
                 // skrevet om for haand ikke skal miste innholdet sitt.
                 'ordre' => 'Kurset og datoen i ett (fra før)',
                 'belop' => 'Det som ble betalt',
+                // Tom for den som har betalt. Valgte kunden «betal ved
+                // oppmøte», står summen og måten her.
+                'betaling' => 'Setningen om betaling ved oppmøte',
             ],
         ],
         'avbestilling' => [

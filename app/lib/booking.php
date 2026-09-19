@@ -664,7 +664,10 @@ final class Booking
         ?int $medlemId,
         ?string $folgeMedlem = null,
         string $gavekortKode = '',
-        ?string $allergier = null
+        ?string $allergier = null,
+        // «Betal ved oppmoete». Kunden ber om det; kurset avgjor om det gaar,
+        // og det avgjores her, av databasen — ikke av det nettleseren sendte.
+        bool $utenForskudd = false
     ): array {
         // Prisen paa datoen gaar foran kursets, naar den er satt. COALESCE
         // og ikke to sporringer: da er det ett sted prisen kommer fra, og
@@ -676,10 +679,14 @@ final class Booking
         // hen maler naar hen staar der.
         $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa')
             ? 'c.gjenstand_i_kassa' : '0 AS gjenstand_i_kassa';
+        // «Kan bookes uten forskuddsbetaling» (migrasjon 197). Er den ikke
+        // kjort, finnes valget ikke, og alt gaar som for.
+        $forskuddFelt = DB::harKolonne('courses', 'uten_forskudd')
+            ? 'c.uten_forskudd' : '0 AS uten_forskudd';
         $okt = DB::en(
             'SELECT cs.id, cs.course_id, cs.start_tid,
                     c.tittel, ' . $egenPris . ' AS pris_ore, c.type, c.tema, c.slug,
-                    ' . $kassaFelt . '
+                    ' . $kassaFelt . ', ' . $forskuddFelt . '
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.id = :id
@@ -708,6 +715,27 @@ final class Booking
         // medlemmer» til alle som ikke var det.
         $gratis = (int) $okt['pris_ore'] === 0;
         $apentForAlle = (int) ($okt['gjenstand_i_kassa'] ?? 0) === 1;
+
+        // ── Betaler ved oppmoete ──────────────────────────────────────
+        //
+        // Eieren, 19. september 2026: «det maa gaa an aa bestille uten aa
+        // betale med vipps, samme vilkaar, men at de betaler ved oppmoete,
+        // kontant eller vipps».
+        //
+        // Raden blir den samme som en verkstedet lager selv: «reservert»
+        // uten «reservert_til», altsaa en plass som holdes til noen gjor noe
+        // med den, og ingen betalingsrad. Naar hen kommer og betaler, settes
+        // den til «betalt» med maate — det er knappene som alt staar i
+        // deltakerlista og i «Ikke betalt»-kortet.
+        //
+        // Kurset avgjor, ikke nettleseren: en gammel fane eller et kall rett
+        // til serveren skal ikke kunne hoppe over betalingen paa et kurs som
+        // krever den. Samme regel som fast trekk i api/bli-medlem.php.
+        $oppmote = $utenForskudd && !$gratis
+            && (int) ($okt['uten_forskudd'] ?? 0) === 1;
+        if ($utenForskudd && !$gratis && !$oppmote) {
+            throw new RuntimeException('Dette kurset må betales når du melder deg på.');
+        }
         if ($gratis && !$apentForAlle && $medlemId === null) {
             throw new RuntimeException('Dette arrangementet er kun for medlemmer.');
         }
@@ -743,7 +771,7 @@ final class Booking
         $reservasjon = DB::iTransaksjon(static function () use (
             $okt, $oktId, $antall, $navn, $epost, $telefon, $medlemId,
             $folgeMedlem, $gratis, $belop, $aBetale, $gavekortId, $gavekortOre, $rabatt, $referanse,
-            $allergier
+            $allergier, $oppmote
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.
@@ -752,7 +780,7 @@ final class Booking
             }
 
             $paymentId = null;
-            if (!$gratis) {
+            if (!$gratis && !$oppmote) {
                 $felt = [
                     'vipps_reference' => $referanse,
                     'type'            => 'epayment',
@@ -786,9 +814,15 @@ final class Booking
                 'status'            => $gratis ? 'betalt' : 'reservert',
                 'payment_id'        => $paymentId,
                 'folge_medlem'      => $folgeMedlem,
-                'reservert_til'     => $gratis ? null
+                // Fristen gjelder den som er paa vei til Vipps. Den som skal
+                // betale ved oppmoete har ingen — plassen er hens til noen
+                // gjor noe med den, akkurat som en lagt inn for haand.
+                'reservert_til'     => ($gratis || $oppmote) ? null
                     : gmdate('Y-m-d H:i:s', time() + self::RESERVASJON_MINUTTER * 60),
             ];
+            if ($oppmote && DB::harKolonne('bookings', 'uten_forskudd')) {
+                $felter['uten_forskudd'] = 1;
+            }
 
             // Kolonnen kommer med migrasjon 057. Er den ikke kjort, skal en
             // booking fortsatt gaa gjennom — vi mister opplysningen, ikke
@@ -813,7 +847,7 @@ final class Booking
             return ['bookingId' => $bookingId, 'paymentId' => $paymentId];
         });
 
-        if ($gratis) {
+        if ($gratis || $oppmote) {
             self::sendBekreftelse($reservasjon['bookingId']);
             return ['redirectUrl' => '', 'referanse' => '', 'bookingId' => $reservasjon['bookingId']];
         }
@@ -971,6 +1005,17 @@ final class Booking
             'naar'  => $naar,
             'ordre' => (string) $b['tittel'] . ($naar !== '' ? ' — ' . $naar : ''),
             'belop' => self::kroner((int) $b['belop_ore']),
+            // ── Hva som skjer med pengene ─────────────────────────────
+            //
+            // Tomt naar det er gjort opp — da sier malen alt som trengs.
+            // Valgte kunden aa betale ved oppmoete, maa summen og maaten
+            // staa i kvitteringa: hen har ikke betalt noe, og skal vite hva
+            // som venter. Migrasjon 197 legger «{betaling}» bakerst i malen,
+            // men bare hvis den ikke er skrevet om for haand.
+            'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1
+                ? 'Du betaler ' . self::kroner((int) $b['belop_ore'])
+                  . ' ved oppmøte — kontant eller Vipps.'
+                : '',
         ], 'booking', $bookingId);
 
         // ── Og en beskjed til verkstedet ──────────────────────────────
@@ -1366,6 +1411,13 @@ final class Booking
                 'varelinjer' => implode("\n", $liste),
                 'sum'        => self::kroner((int) $o['sum_ore']),
                 'adresse'    => $adresse !== '' ? 'Sendes til: ' . $adresse : '',
+                // Tom for den som har betalt. Valgte kunden aa betale naar
+                // hen henter, maa summen og maaten staa her — hen har ikke
+                // betalt noe, og skal vite hva som venter.
+                'betaling'   => (int) ($o['uten_forskudd'] ?? 0) === 1
+                    ? 'Du betaler ' . self::kroner((int) $o['sum_ore'])
+                      . ' når du henter — kontant eller Vipps.'
+                    : '',
             ], 'order', $ordreId);
 
         // En gave krever en handling i verkstedet: pakke inn og skrive

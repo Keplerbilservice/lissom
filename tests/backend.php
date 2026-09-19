@@ -19361,6 +19361,38 @@ sjekk('varselet gaar én gang per vare',
         '// Én adresse: den foerste. Staar det flere i «admin_eposter», er det'));
 
 
+// ── En vare kan ikke gjemme seg bak en manglende medlemsrad ──────────
+//
+// Eieren, 19. september 2026, etter at skjermen begynte aa hente lista paa
+// nytt: «ingenting til godkjenning». Seks e-poster hadde gaatt ut.
+//
+// Admin-lista koblet mot «members» med en indre kobling. Finnes ikke
+// medlemsraden — slettet, slaatt sammen — forsvinner varen ut av lista
+// uten et ord, og kan hverken godkjennes eller avvises. Den samme
+// koblingen sto i oppslaget bak knappene, saa selv en vare man saa ville
+// svart «Fant ikke varen».
+echo "\n== Varer uten medlemsrad ==\n";
+
+$msFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/medlemssalg.php');
+sjekk('lista skjuler ikke varer uten medlemsrad',
+    str_contains($msFil, "       FROM member_sales ms\n       LEFT JOIN members m ON m.id = ms.member_id\n      ORDER BY ms.status = 'til_godkjenning' DESC"));
+sjekk('… og knappene finner dem ogsaa',
+    str_contains($msFil, "       FROM member_sales ms\n       LEFT JOIN members m ON m.id = ms.member_id\n      WHERE ms.id = :i"));
+sjekk('… ingen indre kobling staar igjen',
+    !preg_match('/\n\s+JOIN members m ON m\.id = ms\.member_id/', $msFil));
+// Navnet mangler da, men varen skal staa.
+sjekk('mangler navnet, staar det «Ukjent medlem»',
+    str_contains($msFil, "    'medlem'   => \$r['medlemsnavn'] ?: 'Ukjent medlem',"));
+// Beskjeden til selgeren er allerede stengt mot manglende adresse.
+sjekk('… og selgeren varsles bare naar vi har en adresse',
+    str_contains($msFil, "    if (!empty(\$rad['epost'])) {"));
+
+// Butikken skal fortsatt ikke vise varer fra anonymiserte medlemmer.
+sjekk('butikklista filtrerer fortsatt bort anonymiserte',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php'),
+        "WHERE ms.status = 'publisert' AND m.anonymisert_at IS NULL"));
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

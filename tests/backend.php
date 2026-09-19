@@ -19324,6 +19324,43 @@ sjekk('det foerste avsnittet staar igjen over boksen',
     str_contains($tuApp, "        const lead = ingress ? '' : (deler.length ? deler[0] : '');"));
 
 
+// ── Godkjenningslista maa hentes paa nytt ────────────────────────────
+//
+// Eieren, 19. september 2026: «eirin har lagt inn flere produkter til
+// godkjenning, vi har faatt 6 eposter til godkjenning, men saa er det bare
+// en ting til godkjenning».
+//
+// Varslene var riktige. Varsler::malTilAdmin() sender én beskjed per
+// hendelse — seks e-poster var seks varer, og alle laa i basen med
+// «til_godkjenning». Feilen var at skjermen hentet lista én gang og aldri
+// igjen: kallet sto bak «&& !this.state.adminSalg».
+echo "\n== Varer til godkjenning ==\n";
+
+$gkFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Den gamle betingelsen skal vaere borte.
+sjekk('lista laases ikke til den foerste hentinga',
+    !str_contains($gkFil, "if (this.erAdminSkjerm(side) && !this.state.adminSalg) {"));
+// Men den kan ikke bare fjernes: dette er renderVals(), som kjores ved hver
+// tegning. Uten noe som stopper den ble det 56 kall paa oppstart — maalt i
+// nettleseren for det ble rettet. Derfor skjermen.
+sjekk('… men henter én gang per skjermbytte, ikke per tegning',
+    str_contains($gkFil, "    if (this.erAdminSkjerm(side) && this._adminSalgSide !== side) {\n      this._adminSalgSide = side;\n      this.hentAdminSalg();\n    }"));
+// To kall samtidig skal fortsatt ikke gaa.
+sjekk('… og to hentinger samtidig er fortsatt stengt',
+    str_contains($gkFil, "    if (!this.erPublisert() || this._adminSalgHentes) return;\n    this._adminSalgHentes = true;"));
+
+// Serveren har aldri vaert problemet: den henter alt, uten grense.
+$gkApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/medlemssalg.php');
+sjekk('serveren gir hele lista, uten grense',
+    str_contains($gkApi, "ORDER BY ms.status = 'til_godkjenning' DESC, ms.id DESC")
+    && !str_contains($gkApi, 'LIMIT'));
+// Og varselet gaar én gang per vare, ikke én per adresse.
+sjekk('varselet gaar én gang per vare',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php'),
+        '// Én adresse: den foerste. Staar det flere i «admin_eposter», er det'));
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

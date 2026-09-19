@@ -137,8 +137,13 @@ if ($ingress !== '') {
 // den til hoeyre, og dette er bare neste rad i samme spalte.
 $h .= '</div><div class="lx-kurs-resten">';
 
+// Avsnittene som ikke fikk staa over boksen. Medlemskapene har seks som
+// sier omtrent det samme — de hoerer hjemme bak «Les mer», sammen med det
+// andre lange stoffet. Eieren, 19. september 2026, om medlemskapsskjermen:
+// «det er naar vi klikker inn og skal til book det er mye scrolling».
+$restTekst = '';
 foreach ($deler as $i => $t) {
-    $h .= '<p style="margin: 0 0 var(--space-5); color: ' . ($i === 0 ? 'var(--text-heading)' : 'var(--text-body)') . '; font-size: ' . ($i === 0 ? 'var(--text-lg)' : 'var(--text-base)') . '; line-height: ' . ($i === 0 ? '1.6' : '1.75') . '; max-width: 58ch; text-wrap: pretty;">' . $e($t) . '</p>';
+    $restTekst .= '<p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.75; max-width: 58ch; text-wrap: pretty;">' . $e($t) . '</p>';
 }
 
 // «Passer for» er den samme setninga for hvert kurs paa samme nivaa, og
@@ -193,7 +198,7 @@ $h .= '</div>';
 //
 // Google leser innholdet uansett: teksten staar i sida, den er bare ikke
 // brettet ut. Det samme gjelder skjermlesere, som kan aapne den selv.
-$detaljer = '';
+$detaljer = $restTekst;
 
 // Seksjonene fra kursoppsettet — bSeksjoner.
 foreach ([['Dette lærer du', (string) ($kat['laerer'] ?? '')], ['Dette får du med hjem', (string) ($kat['medHjem'] ?? '')], ['Når er den ferdig', (string) ($kat['ferdigTid'] ?? '')], ['Praktisk informasjon', (string) ($kat['praktisk'] ?? '')], ['Allergener og kommentarer', (string) ($kat['allergener'] ?? '')]] as [$st, $tekst]) {

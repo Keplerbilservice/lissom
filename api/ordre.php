@@ -90,6 +90,13 @@ foreach ($linjer as $l) {
 //   Varene maa hentes. Skal pakken sendes, er det ingen disk aa betale over,
 //   og porto for noe som ikke er gjort opp er verkstedets tap.
 $oppmotePaa = Oppmote::butikk();
+// Hvor mange ting ordren gjelder. Staar i teksten Vipps faar, saa en
+// transaksjon kan kjennes igjen uten aa slaa opp ordrenummeret.
+$antallVarer = 0;
+foreach ($rader as $r) {
+    $antallVarer += (int) $r['antall'];
+}
+
 $vedHenting = Foresporsel::tekst('betaling') === 'henting';
 if ($vedHenting && trim(Foresporsel::tekst('gavekort')) !== '') {
     Svar::feil('Gavekortet trekkes når du betaler. Betal med Vipps nå, eller ta bort koden.');
@@ -306,7 +313,13 @@ try {
     $betaling = Vipps::opprettBetaling(
         $referanse,
         $aBetale,
-        'Lissom — bestilling ' . $ordrenr,
+        // Ordrenummeret, hvor mange ting det gjelder, og hvem. Varene
+        // selv faar ikke plass, og ville uansett vaert kuttet paa midten.
+        Vipps::beskrivelse(
+            'Lissom — bestilling ' . $ordrenr,
+            $antallVarer > 1 ? $antallVarer . ' varer' : '1 vare',
+            $navn
+        ),
         Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
         $telefon
     );

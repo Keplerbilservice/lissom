@@ -19495,6 +19495,72 @@ sjekk('butikklista filtrerer fortsatt bort anonymiserte',
         "WHERE ms.status = 'publisert' AND m.anonymisert_at IS NULL"));
 
 
+// ── Teksten Vipps faar ───────────────────────────────────────────────
+//
+// Eieren, 19. september 2026, med en rad paa kr 1 490 under Okonomi: «kan
+// du bekrefte at det stemmer? Sjekk hva som er trukket fra vipps» — og da
+// det viste seg at vi ikke sendte noe som sa hvem eller hva: «er det mulig
+// at vi kan se i vipps transaksjonen hva de betaler for? Og hvem som
+// betalte?»
+//
+// Foer sto det bare kurstittelen, eller «Lissom — bestilling 1042». To
+// paameldinger paa det samme kurset var ikke til aa skille fra hverandre i
+// Vipps, og ingen av dem sa hvem det gjaldt.
+echo "\n== Teksten Vipps faar ==\n";
+
+// Halen er det som skiller to like betalinger, saa den skal alltid staa.
+$vbKort = Vipps::beskrivelse('Nybegynner dreiekurs',
+    'onsdag 12. september, 17:30', '2 plasser', 'Mia Sørensen');
+sjekk('kurset, datoen, antallet og navnet staar i teksten',
+    $vbKort === 'Nybegynner dreiekurs · onsdag 12. september, 17:30 · 2 plasser · Mia Sørensen',
+    $vbKort);
+// Vipps kutter etter hundre tegn. Da skal det vaere tittelen som kortes —
+// den kjenner man igjen paa begynnelsen; navnet gjor man ikke.
+$vbLang = Vipps::beskrivelse(str_repeat('Veldig langt kursnavn ', 6),
+    'onsdag 12. september, 17:30', '1 plass', 'Mia Sørensen');
+sjekk('… og blir det for langt, er det tittelen som kortes',
+    mb_strlen($vbLang) <= Vipps::BESKRIVELSE_MAKS
+    && str_ends_with($vbLang, '· onsdag 12. september, 17:30 · 1 plass · Mia Sørensen')
+    && str_contains($vbLang, '…'),
+    mb_strlen($vbLang) . ' tegn: ' . $vbLang);
+// Et tomt ledd skal ikke bli til en skillestrek uten noe bak.
+sjekk('… og tomme ledd faller bort',
+    Vipps::beskrivelse('Lissom gavekort', '') === 'Lissom gavekort'
+    && Vipps::beskrivelse('Lissom gavekort', '  ') === 'Lissom gavekort');
+
+// Hvert sted som ber om penger skal si hva det gjelder og hvem.
+$vbSteder = [
+    'app/lib/booking.php'          => 'kursbooking',
+    'api/ordre.php'                => 'butikkordre',
+    'api/betal.php'                => 'betaling med QR',
+    'app/lib/medlemskap.php'       => 'medlemskap',
+    'api/gavekort.php'             => 'gavekort',
+    'api/tillegg-barn.php'         => 'ta med barn',
+    'api/admin/handlelister.php'   => 'handlelista',
+    'api/admin/uttak.php'          => 'uttak i verkstedet',
+];
+foreach ($vbSteder as $vbFil => $vbHva) {
+    sjekk('… ' . $vbHva . ' sender en beskrivelse med navn',
+        str_contains((string) file_get_contents(dirname(__DIR__) . '/' . $vbFil),
+            'Vipps::beskrivelse('),
+        $vbFil);
+}
+// Et barns navn har ingenting aa gjore hos en betalingsleverandor som
+// ikke trenger det. Maaneden og medlemmets navn skiller betalingen fra
+// alle andre; verkstedet har barnets navn i medlem_tillegg.
+sjekk('barnets navn sendes ikke til Vipps',
+    !str_contains((string) file_get_contents(dirname(__DIR__) . '/api/tillegg-barn.php'),
+        "                \$barnNavn,\n"));
+// Kursbookingen er den som hadde minst fra for: bare tittelen.
+sjekk('kursbookingen sender ikke lenger bare tittelen',
+    !str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+        "mb_substr(\$okt['tittel'], 0, 100)"));
+// Vipps kutter selv paa hundre; vaar egen grense maa vaere den samme.
+sjekk('grensa er den samme som Vipps sin',
+    Vipps::BESKRIVELSE_MAKS === 100
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
+        "'paymentDescription'=> mb_substr(\$beskrivelse, 0, 100),"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

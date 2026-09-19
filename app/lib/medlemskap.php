@@ -981,7 +981,10 @@ final class Medlemskap
             $betaling = Vipps::opprettBetaling(
                 $referanse,
                 (int) $plan['pris_ore'],
-                'Medlemskap hos Lissom — ' . $planNavn,
+                Vipps::beskrivelse(
+                    'Medlemskap hos Lissom — ' . $planNavn,
+                    (string) ($medlem['navn'] ?? '')
+                ),
                 Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
                 $medlem['telefon'] ?? null
             );

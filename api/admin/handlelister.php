@@ -376,7 +376,7 @@ if ($handling === 'krav') {
             Vipps::opprettBetaling(
                 $referanse,
                 $sum,
-                'Handleliste — Lissom Keramikk',
+                Vipps::beskrivelse('Handleliste — Lissom Keramikk', (string) $m['navn']),
                 Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
                 $telefon,
                 true

@@ -381,6 +381,12 @@ final class Vipps
     public const BESKRIVELSE_MAKS = 100;
 
     /**
+     * Et gjentakende trekk gaar mot et annet API, og der er grensa 45.
+     * Se belastAvtale() — «description», ikke «paymentDescription».
+     */
+    public const TREKK_BESKRIVELSE_MAKS = 45;
+
+    /**
      * Teksten som foelger betalingen til Vipps.
      *
      * Eieren, 19. september 2026, med en rad paa kr 1 490 under Okonomi:
@@ -403,6 +409,22 @@ final class Vipps
      */
     public static function beskrivelse(string $hoved, string ...$deler): string
     {
+        return self::beskrivelseInnenfor(self::BESKRIVELSE_MAKS, $hoved, ...$deler);
+    }
+
+    /**
+     * Det samme, for et API med en annen grense.
+     *
+     * De gjentakende trekkene gaar ikke gjennom opprettBetaling() i det hele
+     * tatt, men gjennom belastAvtale() — og der kutter Vipps etter 45 tegn,
+     * ikke 100. Eieren, 19. september 2026, om medlemskap og butikk:
+     * «gjelder dette medlemskap og butikker ogsaa».
+     *
+     * Det er de maanedlige trekkene det er flest av. Sto de uten navn, var
+     * det nettopp de betalingene som var vanskeligst aa kjenne igjen.
+     */
+    public static function beskrivelseInnenfor(int $maks, string $hoved, string ...$deler): string
+    {
         $hale = '';
         foreach ($deler as $d) {
             $d = trim($d);
@@ -412,14 +434,14 @@ final class Vipps
         }
 
         $hoved = trim($hoved);
-        $plass = self::BESKRIVELSE_MAKS - mb_strlen($hale);
+        $plass = $maks - mb_strlen($hale);
         if ($plass < mb_strlen($hoved)) {
             // Under to tegn er det ingenting igjen aa korte til, og et
             // ensomt «…» sier mindre enn ingenting.
             $hoved = $plass > 1 ? rtrim(mb_substr($hoved, 0, $plass - 1)) . '…' : '';
         }
 
-        return mb_substr($hoved . $hale, 0, self::BESKRIVELSE_MAKS);
+        return mb_substr($hoved . $hale, 0, $maks);
     }
 
     /**

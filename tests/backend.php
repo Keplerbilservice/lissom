@@ -19509,6 +19509,7 @@ sjekk('butikklista filtrerer fortsatt bort anonymiserte',
 echo "\n== Teksten Vipps faar ==\n";
 
 // Halen er det som skiller to like betalinger, saa den skal alltid staa.
+$vbVipps = (string) file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
 $vbKort = Vipps::beskrivelse('Nybegynner dreiekurs',
     'onsdag 12. september, 17:30', '2 plasser', 'Mia Sørensen');
 sjekk('kurset, datoen, antallet og navnet staar i teksten',
@@ -19545,6 +19546,36 @@ foreach ($vbSteder as $vbFil => $vbHva) {
             'Vipps::beskrivelse('),
         $vbFil);
 }
+// ── De maanedlige trekkene ───────────────────────────────────────────
+//
+// Eieren, 19. september 2026: «gjelder dette medlemskap og butikker ogsaa».
+//
+// Et medlemskap med fast trekk gaar ikke gjennom opprettBetaling() i det
+// hele tatt, men gjennom belastAvtale() — et annet API, med 45 tegn i
+// stedet for 100. Der sto det bare «Medlemskap Aarsmedlemskap», uten navn,
+// og det er de trekkene det er flest av.
+$vbTrekk = Vipps::beskrivelseInnenfor(Vipps::TREKK_BESKRIVELSE_MAKS,
+    'Medlemskap Årsmedlemskap', 'Mia Sørensen');
+sjekk('det maanedlige trekket sier hvem det gjelder',
+    $vbTrekk === 'Medlemskap Årsmedlemskap · Mia Sørensen', $vbTrekk);
+// Grensa paa et trekk er Vipps sin egen, og en annen enn paa en betaling.
+sjekk('… innenfor de 45 tegnene Vipps gir et trekk',
+    Vipps::TREKK_BESKRIVELSE_MAKS === 45
+    && str_contains($vbVipps, "'description'     => mb_substr(\$beskrivelse, 0, 45),"));
+// Ogsaa her er navnet det som overlever; plannavnet kjenner man igjen paa
+// begynnelsen.
+$vbTrekkLang = Vipps::beskrivelseInnenfor(Vipps::TREKK_BESKRIVELSE_MAKS,
+    'Medlemskap Ubegrenset tilgang til verkstedet', 'Kristoffer Andreas Bergqvist');
+sjekk('… og navnet staar ogsaa naar plannavnet er langt',
+    mb_strlen($vbTrekkLang) <= 45
+    && str_ends_with($vbTrekkLang, '· Kristoffer Andreas Bergqvist'),
+    mb_strlen($vbTrekkLang) . ' tegn: ' . $vbTrekkLang);
+sjekk('… og trekket henter navnet fra avtalen',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+        "                    (string) (\$avtale['navn'] ?? '')")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+        'SELECT s.*, m.navn, m.epost, m.telefon'));
+
 // Et barns navn har ingenting aa gjore hos en betalingsleverandor som
 // ikke trenger det. Maaneden og medlemmets navn skiller betalingen fra
 // alle andre; verkstedet har barnets navn i medlem_tillegg.

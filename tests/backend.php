@@ -19238,6 +19238,44 @@ sjekk('… og faktaboksene er blitt linjer',
     && !str_contains($ksFil, "class=\"lx-cols4\" style=\"display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;\""));
 
 
+// ── Bookingskjermen i appen ser ut som kurssida ──────────────────────
+//
+// Eieren, 19. september 2026, etter at serversida ble kortet ned: «naar vi
+// trykker paa datoen saa viser den en del annen tekst», og «dreiekurs har
+// den lange teksten».
+//
+// Kurset finnes i to utgaver — /kurs/<slug> tegnet av serveren, og denne
+// skjermen i appen. Serversida ble kortet ned; denne sto igjen som foer.
+// Da ble spranget mellom dem stoerre, ikke mindre.
+echo "\n== Bookingskjermen foelger kurssida ==\n";
+
+sjekk('merkelapper i stedet for nivaalinja',
+    str_contains($mt, '<sc-if value="{{ bVisFliser }}"')
+    && str_contains($mt, '<sc-for list="{{ bFliser }}" as="fl"'));
+sjekk('… og medlemskapene beholder linja si',
+    str_contains($mt, "      bVisFliser: this.state.fra !== 'medlemskap' && (() => {")
+    && str_contains($mt, "      bVisNivaaLinje: this.state.fra === 'medlemskap' || !(() => {"));
+// Nivaa og varighet sto bade i merkelappene og i faktaboksene.
+sjekk('faktalinjene har bare det som er sitt eget',
+    str_contains($mt, "        { merke: 'Ferdig', verdi: kort(k.ferdigTid) },")
+    && !str_contains($mt, "        { merke: 'Nivå', verdi: k.nivaaTekst || '' },"));
+sjekk('… og de er linjer, ikke bokser',
+    !str_contains($mt, '<sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="4">'));
+// Det lange stoffet bak ett trykk, som paa serversida.
+sjekk('det lange stoffet ligger bak «Les mer»',
+    str_contains($mt, '<sc-if value="{{ bHarLesMer }}" hint-placeholder-val="{{ true }}">')
+    && str_contains($mt, 'min-height: 44px;">{{ bLesMerTekst }}<span aria-hidden="true"'));
+sjekk('… og knappen heter det riktige paa medlemskap',
+    str_contains($mt, "      bLesMerTekst: this.state.fra === 'medlemskap' ? 'Les mer om medlemskapet' : 'Les mer om kurset',"));
+// En knapp som aapner et tomrom er verre enn ingen knapp.
+sjekk('… og staar bare naar det er noe bak den',
+    str_contains($mt, "          bHarLesMer: this.state.fra !== 'medlemskap'\n            || seksjoner.length > 0 || passer.length > 0,"));
+// Det vi lagde tidligere samme dag skal staa urort.
+sjekk('«Betal ved oppmote» staar urort',
+    str_contains($mt, '>Betal ved oppmøte</x-import>')
+    && str_contains($mt, "      visOppmote: !!(this.state.valgtKurs || {}).utenForskudd"));
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

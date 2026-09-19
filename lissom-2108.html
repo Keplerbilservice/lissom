@@ -47266,8 +47266,19 @@ class Component extends DCLogic {
       // penger.
       bookKvittEtikett: this.state.bookVedOppmote
         ? 'Plassen er reservert' : 'Betalingen er gjennomført',
-      visOppmote: !!this.state.innlogget
-        && !!(this.state.valgtKurs || {}).utenForskudd
+      //
+      // ── Innlogging er ikke et vilkaar for aa SE knappen ──────────────
+      //
+      // Her sto «innlogget» som et krav, og da saa ingen andre enn de som
+      // alt var logget inn den i det hele tatt. Eieren, 19. september 2026,
+      // om kona som stod paa lissom.no: «vises ikke betal i verkstedet».
+      //
+      // Vipps-knappen ved siden av krever heller ikke at man er logget inn
+      // for aa staa der — bookOgBetal() legger det hun har fylt ut i
+      // sessionStorage, sender henne til Vipps Login og tilbake hit. Den
+      // veien er den samme for begge knappene, saa vilkaaret for aa se dem
+      // maa ogsaa vaere det.
+      visOppmote: !!(this.state.valgtKurs || {}).utenForskudd
         && (this.state.valgtKurs || {}).tema !== 'Medlemskap',
       oppmoteHjelp: 'Plassen er din nå. Du betaler ' + this.bookSum()
         + ' når du kommer — kontant eller Vipps.',
@@ -47497,7 +47508,10 @@ class Component extends DCLogic {
       visHenting: (() => {
         const k = this.state.kurv || {};
         const navn = Object.keys(k);
-        if (!navn.length || !this.state.innlogget || this.erPakke()) return false;
+        // Ikke «innlogget»: kjopKurv() sender den som ikke er det til
+        // innlogging, akkurat som Vipps-knappen ved siden av. Sto kravet
+        // her, saa ingen andre enn de innloggede knappen i det hele tatt.
+        if (!navn.length || this.erPakke()) return false;
         return navn.every(n2 => {
           const v = this.kurvVare(n2);
           return !!(v && v.utenForskudd);

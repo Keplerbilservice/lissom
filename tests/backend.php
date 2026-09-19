@@ -19124,7 +19124,22 @@ sjekk('haken foelger med kurskortet fra katalogen',
     substr_count($mt, 'utenForskudd: !!kat.utenForskudd,') === 2);
 // Hele kurven, og bare til henting. Serveren avviser det samme paa nytt.
 sjekk('kassa tilbyr henting bare naar alle varene tillater det',
-    str_contains($mt, "        if (!navn.length || !this.state.innlogget || this.erPakke()) return false;"));
+    str_contains($mt, "        if (!navn.length || this.erPakke()) return false;"));
+// ── Innlogging er ikke et vilkaar for aa SE knappene ─────────────────
+//
+// Her sto «innlogget» som et krav begge steder, og da saa ingen andre enn
+// de som alt var logget inn knappene i det hele tatt. Eieren, 19. september
+// 2026, om kona som stod paa lissom.no og skulle melde seg paa et kurs:
+// «vises ikke betal i verkstedet».
+//
+// Vipps-knappene ved siden av krever heller ikke innlogging for aa staa
+// der: bookOgBetal() og kjopKurv() sender den som ikke er logget inn til
+// Vipps Login og tilbake. Veien er den samme for begge knappene, saa
+// vilkaaret for aa se dem maa ogsaa vaere det.
+sjekk('kursknappen staar der ogsaa for den som ikke er logget inn',
+    str_contains($mt, "      visOppmote: !!(this.state.valgtKurs || {}).utenForskudd\n        && (this.state.valgtKurs || {}).tema !== 'Medlemskap',"));
+sjekk('… og kassaknappen likedan',
+    !str_contains($mt, "if (!navn.length || !this.state.innlogget || this.erPakke())"));
 // Nye kurs og varer staar PAA, nye medlemskap staar AV.
 sjekk('nytt kurs staar paa',  substr_count($mt, 'kUtenForskudd: true,') === 4);
 sjekk('ny vare staar paa',    substr_count($mt, "npUtenForskudd: true") === 4);

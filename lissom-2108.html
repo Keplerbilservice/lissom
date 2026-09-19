@@ -3250,7 +3250,12 @@ window.__resources = {
                    dagen — tre om gangen, resten bak en knapp — og tidene den
                    dagen staar under. Har dagen bare én tid, er den valgt med
                    det samme, og trinn to staar ikke i veien. -->
-              <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg dato</div>
+              <!-- Ankeret kursida paa serveren sikter paa.
+                   Trykker man en dato paa /kurs/<slug>, gaar turen over i
+                   appen med «?dag=» — et helt sideskifte. Uten et sted aa
+                   sikte paa lander man oeverst, og maa rulle ned igjen til
+                   der man akkurat sto. Se rullTilDatoene(). -->
+              <div id="booking-datoer" style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg dato</div>
                 <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-6);">
                   <sc-for list="{{ bookingDager }}" as="d" hint-placeholder-count="3">
                     <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">
@@ -24748,7 +24753,49 @@ class Component extends DCLogic {
       bDag: dag || null, bAlleDatoer: alle,
       ventelisteBekreftet: null,
     });
+    // Kom hun fra datolista paa serversida, skal hun lande PAA datoene.
+    if (dag || alle) this.rullTilDatoene();
     return true;
+  }
+
+  /**
+   * Ruller ned til datovelgeren i bookingen.
+   *
+   * Eieren, 19. september 2026, om kona som stod paa lissom.no: «naar hun
+   * velger dato saa hopper siden til start».
+   *
+   * Grunnen er at det ER et sideskifte. Kurssida paa /kurs/<slug> tegnes av
+   * serveren — den kommer opp med det samme og er den Google leser. Datoene
+   * der er lenker, og trykker man en av dem, tar appen over adressen
+   * («?dag=», se Nett::kan()). En ny side begynner oeverst, og appen er
+   * 1,5 MB som skal lastes og starte foerst. Den som alt har appen i
+   * bufferen merker det knapt; den som ikke har det, ser sida hoppe til
+   * toppen og maa rulle ned igjen til akkurat der hun sto.
+   *
+   * Vi kan ikke fjerne sideskiftet uten aa ta datoene bort fra serversida,
+   * og da mister Google dem. Men vi kan bestemme HVOR hun lander.
+   *
+   * Elementet finnes ikke i samme oeyeblikk: skjermen tegnes etter
+   * setState, og kortet kan komme fra katalogen enda senere. Derfor
+   * proever vi om igjen noen ganger, og gir opp stille — en rulling som
+   * ikke skjer er en liten skuffelse, en feil er noe verre.
+   *
+   * «- 90» er den faste toppen, samme tallet som hoppTilAbo() bruker.
+   */
+  rullTilDatoene() {
+    let forsok = 0;
+    const gaa = () => {
+      const el = document.getElementById('booking-datoer');
+      if (el) {
+        const y = el.getBoundingClientRect().top + window.scrollY - 90;
+        // Ikke «smooth»: hun kommer fra en ny side og har ikke sett toppen.
+        // En rulling hun ikke har bedt om skal ikke vises fram.
+        window.scrollTo(0, Math.max(0, Math.round(y)));
+        return;
+      }
+      if (++forsok < 60) window.requestAnimationFrame(gaa);
+    };
+    window.requestAnimationFrame(gaa);
   }
 
   /**

@@ -19182,6 +19182,62 @@ sjekk('… og proever om igjen til skjermen er tegnet',
     str_contains($mt, "      if (++forsok < 60) window.requestAnimationFrame(gaa);"));
 
 
+// ── Kurssida paa mobil: pris og datoer foer den lange teksten ────────
+//
+// Eieren, 19. september 2026, med bilde av kurssida paa mobil: «kan du
+// komprimere all denne teksten inn i et kort eller noe, blir for langt aa
+// scrolle». Og etter forslaget: «rull ut paa alle kurs og events og la
+// dette bli ny standard for nye kurs».
+//
+// Maalt i en mobilnettleser: kursinnholdet gikk fra 2210 px til 1575 px,
+// og boksen med pris og datoer fra 1600 px nede til 524. Kurssida er
+// datadrevet fra katalogen, saa dette gjelder hvert kurs og hvert event
+// som finnes — og hvert som blir laget.
+echo "\n== Kurssida paa mobil ==\n";
+
+$ksFil = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
+$ncFil = (string) file_get_contents(dirname(__DIR__) . '/nett.css');
+
+// Venstre spalte er delt i to, saa boksen kan staa imellom paa mobil.
+sjekk('rutenettet paa kurssida er merket',
+    str_contains($ksFil, "'<div class=\"lx-split lx-kurs\""));
+sjekk('… og venstre spalte er delt i to',
+    str_contains($ksFil, "'<div class=\"lx-kurs-topp\">'")
+    && str_contains($ksFil, "\$h .= '</div><div class=\"lx-kurs-resten\">';"));
+sjekk('… og bookingboksen er merket',
+    str_contains($ksFil, "'<div class=\"lx-kurs-boks\""));
+
+// Paa skjerm skal de to foerste ligge under hverandre til venstre og
+// boksen ved siden av — akkurat som da spalta var ett stykke.
+sjekk('paa skjerm staar boksen i egen spalte',
+    str_contains($ncFil, '.lx-kurs > .lx-kurs-boks   { grid-column: 2; grid-row: 1 / span 2; }'));
+// Paa mobil: topp, boks, resten. Uten dette havner boksen sist, som foer.
+sjekk('paa mobil kommer boksen foer den lange teksten',
+    str_contains($ncFil, '.lx-kurs > .lx-kurs-topp   { order: 1; }')
+    && str_contains($ncFil, '.lx-kurs > .lx-kurs-boks   { order: 2; position: static !important; }')
+    && str_contains($ncFil, '.lx-kurs > .lx-kurs-resten { order: 3; }'));
+
+// De lange avsnittene sa det samme som faktalinjene, bare i flere
+// setninger. De er ikke borte — de staar bak ett trykk, i sida, saa
+// Google og skjermlesere naar dem uten JavaScript.
+sjekk('det lange stoffet ligger bak «Les mer om kurset»',
+    str_contains($ksFil, "'Les mer om kurset<span aria-hidden=\"true\""));
+sjekk('… og seksjonene skrives dit, ikke rett ut paa sida',
+    str_contains($ksFil, "    \$detaljer .= '<div style=\"margin-top: var(--space-6); max-width: 60ch;\"><div style=\"font: var(--type-eyebrow);")
+    && !str_contains($ksFil, "['Dette lærer du', (string) (\$kat['laerer'] ?? '')]] as [\$st, \$tekst]) {\n    if (trim(\$tekst) === '') {\n        continue;\n    }\n    \$h .="));
+// «Passer for» sto rett over en hakeliste som sa det samme igjen.
+sjekk('«Passer for» staar bare ett sted',
+    substr_count($ksFil, '<strong>Passer for:</strong>') === 0);
+
+// Nivaa og varighet sto bade over tittelen og i faktaboksene. Naa staar de
+// som merkelapper, og faktalinjene har bare det som er sitt eget.
+sjekk('nivaa, varighet og plasser staar som merkelapper',
+    str_contains($ksFil, "\$plasserN > 0 ? 'Maks ' . \$plasserN : '',"));
+sjekk('… og faktaboksene er blitt linjer',
+    str_contains($ksFil, "    ['Ferdig', \$kortAv((string) (\$kat['ferdigTid'] ?? ''))],")
+    && !str_contains($ksFil, "class=\"lx-cols4\" style=\"display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;\""));
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

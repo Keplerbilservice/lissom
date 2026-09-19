@@ -5882,16 +5882,27 @@ window.__resources = {
                       <label style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px; border: 2px dashed var(--lissom-brown); background-color: var(--clay-100); background-image: {{ skBildeCss }}; background-size: cover; background-position: {{ skFokus }}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: var(--space-4); text-align: center;">
                         <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ settSkBilde }}" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 1;">
                         <sc-if value="{{ harSkBilde }}" hint-placeholder-val="{{ false }}">
-                          <!-- Punktene ligger over bildet, i et rutenett som
-                               dekker hele ruta. Da peker hun paa den delen av
-                               bildet hun vil ha i midten, ikke paa en tom
-                               firkant under. -->
-                          <div style="position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4px; padding: 8px; z-index: 2;">
+                          <!-- Punktene ligger over bildet. Da peker hun paa
+                               den delen av bildet hun vil ha i midten, ikke
+                               paa en tom firkant under.
+                               Rutenettet slutter over den moerke stripa
+                               nederst. Foer dekket det hele ruta, ogsaa
+                               filfeltet under: da traff hvert eneste trykk en
+                               knapp, og en knapp inne i en «label» hindrer at
+                               filvelgeren aapner seg. Eirin, 19. september
+                               2026: «naar det staar klikk her for aa bytte
+                               bilde saa skjer det ikke noe» — foerste bilde
+                               gikk inn, for da fantes ikke rutenettet, og
+                               etterpaa kunne det aldri byttes. -->
+                          <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 34px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4px; padding: 8px; z-index: 2;">
                             <sc-for list="{{ skFokusValg }}" as="f" hint-placeholder-count="9">
                               <button type="button" onClick="{{ f.velg }}" aria-label="{{ f.navn }}" style="{{ f.stil }}"></button>
                             </sc-for>
                           </div>
-                          <span style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 6px 8px; background: rgba(77, 29, 18, .72); color: var(--clay-50); font-size: var(--text-xs); pointer-events: none;">Trykk for å bytte bilde</span>
+                          <!-- Stripa er stedet bildet byttes. Den er ikke en
+                               knapp, men et vanlig felt i etiketten, og da er
+                               det etiketten som aapner filvelgeren. -->
+                          <span style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 6px 8px; background: rgba(77, 29, 18, .72); color: var(--clay-50); font-size: var(--text-xs); font-weight: 600; text-align: center; cursor: pointer;">Trykk her for å bytte bilde</span>
                         </sc-if>
                         <sc-if value="{{ skIkkeBilde }}" hint-placeholder-val="{{ true }}">
                           <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Velg produktbilde</span>
@@ -60522,11 +60533,26 @@ class Component extends DCLogic {
               this.setState({ skSender: false, skFeil: (d && d.feil) || 'Noe gikk galt. Prøv igjen.' });
               return;
             }
+            // ── Ruta maa toemmes helt ─────────────────────────────
+            //
+            // Eirin, 19. september 2026: «naar man har lasta opp et bilde saa
+            // blir det ikke borte igjen. Saa jeg tror det blir liggende oppaa
+            // hverandre der inne».
+            //
+            // Hun saa riktig. «skBildeNavn» ble nullstilt, og da kom teksten
+            // «Velg produktbilde» tilbake — men «skBildeUrl» sto igjen, og
+            // det er den som tegner bakgrunnen. Teksten laa altsaa oppaa det
+            // forrige bildet. Fokuspunktet ble ogsaa med til neste produkt.
+            //
+            // Blob-adressen frigis, ellers blir fila liggende i minnet saa
+            // lenge sida er aapen.
             this._skFil = null;
+            if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }
             this.setState({
               skSender: false, skFeil: null, gDelSendt: true,
               skNavn: '', skTekst: '', skPris: '', skAntall: '', skProdusent: '',
-              skVipps: '', skKontakt: '', skKategori: '', skBildeNavn: '',
+              skVipps: '', skKontakt: '', skKategori: '',
+              skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%',
               b1: false, b2: false, b3: false,
               kvittering: 'Sendt til godkjenning', kvitteringDetalj: d.beskjed || '',
             });

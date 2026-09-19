@@ -7927,6 +7927,41 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
+
+        <!-- Hvor varene ble av.
+             Eieren, 19. september 2026, med bilde av kortet paa Nettbutikk:
+             «denne infoen finner jeg under nettbutikk, men jeg vil det skal
+             vises i kortet til godkjenning».
+             Skjermen viste bare det som ventet. Var det ingenting der, sto
+             det «Ingenting venter paa godkjenning naa» — og det var alt man
+             fikk vite. Det var nettopp den beskjeden som moette ham 19.
+             september etter seks e-poster om varer til godkjenning: de var
+             der, men publisert eller skjult, og denne skjermen kjente bare
+             den ene av de tre tilstandene.
+             Listene er de samme som paa Nettbutikk — gPubliserte og
+             gSkjulte. Ingen ny telling og ingen ny henting; godkjenner eller
+             skjuler du en vare her, endrer begge skjermer seg. -->
+        <sc-if value="{{ gHarPubliserte }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-bottom: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Ute i butikken</div>
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+              <sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-heading);">{{ g.tittel }}<button type="button" onClick="{{ g.skjul }}" title="Skjul fra nettsiden" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Skjul</button><button type="button" onClick="{{ g.slett }}" title="Slett varen og bildet for godt" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Slett</button></span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ gHarSkjulte }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-bottom: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Skjult og avvist</div>
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+              <sc-for list="{{ gSkjulte }}" as="g" hint-placeholder-count="3">
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-muted);">{{ g.tittel }}<button type="button" onClick="{{ g.leggUt }}" title="Legg varen ut i butikken igjen" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700;">Legg ut igjen</button><button type="button" onClick="{{ g.slett }}" title="Slett varen og bildet for godt" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Slett</button></span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </main>
     </div>
   </sc-if>

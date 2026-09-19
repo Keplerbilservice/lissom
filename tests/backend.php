@@ -19592,6 +19592,42 @@ sjekk('grensa er den samme som Vipps sin',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
         "'paymentDescription'=> mb_substr(\$beskrivelse, 0, 100),"));
 
+// ── «Til godkjenning» sier ogsaa hvor varene ble av ──────────────────
+//
+// Eieren, 19. september 2026, med bilde av kortet paa Nettbutikk: «denne
+// infoen finner jeg under nettbutikk, men jeg vil det skal vises i kortet
+// til godkjenning».
+//
+// Skjermen viste bare det som ventet. Var det ingenting der, sto det
+// «Ingenting venter paa godkjenning naa» — og det var alt man fikk vite.
+// Det var nettopp den beskjeden som moette ham samme dag etter seks
+// e-poster om varer til godkjenning: varene var der, men publisert eller
+// skjult, og skjermen kjente bare den ene av de tre tilstandene.
+echo "\n== Til godkjenning viser hvor varene ble av ==\n";
+
+$tgSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+// Begge gruppene staar naa paa «Til godkjenning» OG paa Nettbutikk. Det er
+// den samme lista begge steder, saa de kan ikke komme i utakt.
+sjekk('«Ute i butikken» staar paa begge skjermene',
+    substr_count($tgSida, '<sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">') === 2);
+sjekk('«Skjult og avvist» ogsaa',
+    substr_count($tgSida, '<sc-for list="{{ gSkjulte }}" as="g" hint-placeholder-count="3">') === 2);
+// Overskriftene skal si hva gruppa er, paa den nye skjermen.
+sjekk('… med hver sin overskrift paa godkjenningsskjermen',
+    str_contains($tgSida, 'uppercase; color: var(--text-muted);">Ute i butikken</div>')
+    && substr_count($tgSida, 'uppercase; color: var(--text-muted);">Skjult og avvist</div>') === 1);
+// Knappene er de samme. «Legg ut igjen» er den samme ruta som «Godkjenn» —
+// ingen ny serverhandling, saa en vare tatt ned ved et uhell kan hentes
+// tilbake fra begge skjermer.
+sjekk('… og knappene er de samme',
+    substr_count($tgSida, 'title="Legg varen ut i butikken igjen"') === 2
+    && substr_count($tgSida, 'title="Skjul fra nettsiden"') === 2);
+// Gruppene tegnes bare naar de har noe. En tom overskrift er verre enn
+// ingen — da ser det ut som noe er i stykker.
+sjekk('… og gruppene staar bare naar de har noe',
+    substr_count($tgSida, '<sc-if value="{{ gHarPubliserte }}"') === 2
+    && substr_count($tgSida, '<sc-if value="{{ gHarSkjulte }}"') === 2);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

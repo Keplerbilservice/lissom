@@ -3076,7 +3076,24 @@ window.__resources = {
                 </sc-for>
                 <div style="{{ bGradientStil }}"></div>
               </div>
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-8) 0 var(--space-3);">{{ bNivaa }}</div>
+              <!-- Merkelappene, i stedet for én linje med nivaa.
+                   Eieren, 19. september 2026, etter at serversida ble kortet
+                   ned: «naar vi trykker paa datoen saa viser den en del annen
+                   tekst». Grunnen var at kurset finnes i to utgaver —
+                   serversida og denne — og bare den ene var endret. Naa gjor
+                   de det samme: nivaa, varighet og plasser paa én linje, paa
+                   plassen nivaaet alene tok. Medlemskapene har ingen av
+                   delene, og staar som foer. -->
+              <sc-if value="{{ bVisFliser }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: var(--space-8) 0 var(--space-4);">
+                  <sc-for list="{{ bFliser }}" as="fl" hint-placeholder-count="3">
+                    <span style="display: inline-flex; align-items: center; padding: 6px 12px; border-radius: var(--radius-pill); background: var(--clay-100); font: var(--type-label); font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ fl }}</span>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ bVisNivaaLinje }}" hint-placeholder-val="{{ false }}">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-8) 0 var(--space-3);">{{ bNivaa }}</div>
+              </sc-if>
               <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-4xl);">{{ bTittel }}</h1>
               <!-- Avsnittene i beskrivelsen skal staa som de er skrevet.
                    Teksten sto som ett avsnitt uansett hvor mange som var
@@ -3118,15 +3135,17 @@ window.__resources = {
                    forkunnskaper nodvendig». Bare paa medlemskapene; paa
                    kursene er Nivaa, Varighet, Du laerer og Med hjem felt som
                    fylles ut i kursoppsettet. -->
-              <sc-if value="{{ bVisPasserFor }}" hint-placeholder-val="{{ true }}">
-                <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-heading); max-width: 56ch;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
-              </sc-if>
+              <!-- Fakta som linjer, ikke som bokser. Fire bokser tok 312 px
+                   paa en telefon, og «Nivaa» og «Varighet» staar alt som
+                   merkelapper over tittelen. Som linjer tar resten under 130.
+                   «Passer for»-linja sto rett over hakelista som sier det
+                   samme igjen; den staar naa under «Les mer om kurset». -->
               <sc-if value="{{ bVisFakta }}" hint-placeholder-val="{{ true }}">
-                <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;">
-                  <sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="4">
-                    <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">{{ f.merke }}</div>
-                      <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ f.verdi }}</div>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin: 0 0 var(--space-6); max-width: 58ch;">
+                  <sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="3">
+                    <div style="display: flex; gap: 12px; align-items: baseline;">
+                      <span style="flex: 0 0 96px; font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ f.merke }}</span>
+                      <span style="font-size: var(--text-base); color: var(--text-heading); text-wrap: pretty;">{{ f.verdi }}</span>
                     </div>
                   </sc-for>
                 </div>
@@ -3140,6 +3159,20 @@ window.__resources = {
                 </sc-for>
               </div>
 
+              <!-- ── Det lange stoffet, bak ett trykk ──────────────────
+                   Samme grep som serversida fikk. «Dette laerer du» og
+                   «Dette faar du med hjem» sier det samme som faktalinjene
+                   over, bare i flere setninger. De er ikke borte: <details>
+                   trenger verken JavaScript eller en egen knapp, teksten
+                   staar i sida, og skjermlesere naar den som foer.
+                   Medlemskapene har sine egne seksjoner og staar som de er —
+                   de faar den samme knappen, for det er den samme skjermen. -->
+              <sc-if value="{{ bHarLesMer }}" hint-placeholder-val="{{ true }}">
+              <details style="margin-top: var(--space-6); max-width: 60ch; border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--terracotta-600); min-height: 44px;">{{ bLesMerTekst }}<span aria-hidden="true" style="font-size: var(--text-lg);">⌄</span></summary>
+              <sc-if value="{{ bVisPasserFor }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: var(--space-2) 0 0; font-size: var(--text-base); color: var(--text-body); max-width: 56ch; text-wrap: pretty;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
+              </sc-if>
               <!-- Seksjonene fra kursoppsettet (migrasjon 065).
                    Hver av dem staar bare naar verkstedet har skrevet noe.
                    Et kurs uten dem ser ut noeyaktig som for. -->
@@ -3171,7 +3204,7 @@ window.__resources = {
                    setningen lenger opp paa samme side, og to verdier med
                    samme navn kan bare vaere én av dem. -->
               <sc-if value="{{ bHarMerker }}" hint-placeholder-val="{{ false }}">
-                <div style="margin-top: var(--space-8); max-width: 60ch;">
+                <div style="margin-top: var(--space-6); max-width: 60ch;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Passer for</div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <sc-for list="{{ bMerker }}" as="m" hint-placeholder-count="3">
@@ -3179,6 +3212,8 @@ window.__resources = {
                     </sc-for>
                   </div>
                 </div>
+              </sc-if>
+              </details>
               </sc-if>
 
               <!-- Samlingene, naar kurset gaar over flere dager.
@@ -28548,10 +28583,12 @@ class Component extends DCLogic {
   bFaktaRader() {
       const k = this.state.valgtKurs || {};
       const kort = t => String(t || '').split(/[.\n]/)[0].trim();
+      // «Nivaa» og «Varighet» staar som merkelapper over tittelen fra
+      // 19. september 2026 — de sto her OG der, og linjene skal bare ha det
+      // som er sitt eget. Samme utvalg som serversida, saa de to utgavene
+      // av kurset sier det samme.
       return [
-        { merke: 'Nivå', verdi: k.nivaaTekst || '' },
-        { merke: 'Varighet', verdi: k.duration || '' },
-        // Boksene er smale. «Innføring i plateteknikk og dekor» staar her;
+        // Linjene er smale. «Innføring i plateteknikk og dekor» staar her;
         // hele setningen staar under «Dette lærer du». Foerste setning av
         // den lange teksten brakk boksen i fem linjer.
         { merke: 'Du lærer', verdi: k.laererKort || kort(k.laererTekst) },
@@ -28560,6 +28597,7 @@ class Component extends DCLogic {
         // én ting, og det forste har ikke lenger et felt i kursoppsettet —
         // da hadde boksen blitt staaende paa en tekst ingen kunne rette.
         { merke: 'Med hjem', verdi: kort(k.medHjem) },
+        { merke: 'Ferdig', verdi: kort(k.ferdigTid) },
       ].filter(f => f.verdi !== '');
   }
 
@@ -48057,15 +48095,7 @@ class Component extends DCLogic {
           .map(x => x.trim()).filter(Boolean).map(x => merker[x] || x);
         const passer = liste(k.passerNivaa).concat(liste(k.passerHvem))
           .concat(liste(k.metode)).concat(liste(k.varighet));
-        return {
-          // Sju avsnitt ble fem. «Dette lager du» sto rett over «Dette faar
-          // du med hjem» og sa det samme; «Godt aa vite» sto rett under
-          // «Praktisk informasjon» og sa det samme. Eieren, 30. august: «en
-          // praktisk informasjon og en dette faar du med hjem, rydd resten».
-          //
-          // Feltene er borte fra kursoppsettet ogsaa. Teksten som staar
-          // lagret paa kursene blir liggende, den vises bare ikke lenger.
-          bSeksjoner: [
+        const seksjoner = [
             ['Dette lærer du', k.laererTekst || k.laerer],
             ['Dette får du med hjem', k.medHjem],
             ['Når er den ferdig', k.ferdigTid],
@@ -48074,16 +48104,30 @@ class Component extends DCLogic {
           ].filter(([, t]) => String(t || '').trim() !== '')
            .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim(),
                                         erTekst: true, erListe: false, punkter: [] }))
-           // «Viktig aa vite» (migrasjon 127) er en LISTE. Den sto som én
-           // klump med linjeskift inni, og linjeskift midt i et avsnitt ser ut
-           // som et uhell. Naa tegnes den som punkter — samme form som «Dette
-           // faar du» lenger opp paa sida.
            .concat((k.viktig || []).length
              ? [{ tittel: 'Viktig å vite', tekst: '', erTekst: false,
                   erListe: true, punkter: k.viktig }]
-             : []),
+             : []);
+        return {
+          // Sju avsnitt ble fem. «Dette lager du» sto rett over «Dette faar
+          // du med hjem» og sa det samme; «Godt aa vite» sto rett under
+          // «Praktisk informasjon» og sa det samme. Eieren, 30. august: «en
+          // praktisk informasjon og en dette faar du med hjem, rydd resten».
+          //
+          // Feltene er borte fra kursoppsettet ogsaa. Teksten som staar
+          // lagret paa kursene blir liggende, den vises bare ikke lenger.
+          // «Viktig aa vite» (migrasjon 127) er en LISTE. Den sto som én
+          // klump med linjeskift inni, og linjeskift midt i et avsnitt ser ut
+          // som et uhell. Naa tegnes den som punkter — samme form som «Dette
+          // faar du» lenger opp paa sida. Se «seksjoner» over.
+          bSeksjoner: seksjoner,
           bHarMerker: passer.length > 0,
           bMerker: passer,
+          // Knappen staar bare naar det er noe bak den. Et kurs har alltid
+          // «Passer for»; et medlemskap har det ikke, og da maa det finnes
+          // seksjoner eller merker — ellers aapner knappen et tomrom.
+          bHarLesMer: this.state.fra !== 'medlemskap'
+            || seksjoner.length > 0 || passer.length > 0,
         };
       })(),
 
@@ -60025,6 +60069,35 @@ class Component extends DCLogic {
       // en tom rad med luft under seg.
       bVisFakta: this.state.fra !== 'medlemskap' && this.bFaktaRader().length > 0,
       bVisPasserFor: this.state.fra !== 'medlemskap',
+      // ── Merkelappene over tittelen ─────────────────────────────────
+      //
+      // Nivaa, varighet og antall plasser paa én linje. Tre opplysninger paa
+      // plassen nivaaet alene tok, og de samme som serversida viser.
+      //
+      // Medlemskapene har verken varighet eller plasser, og «nivaa» betyr
+      // ikke noe der. De beholder linja de hadde — se bVisNivaaLinje.
+      bFliser: (() => {
+        if (this.state.fra === 'medlemskap') return [];
+        const k = this.state.valgtKurs || {};
+        const p = parseInt(k.plasser, 10) || 0;
+        return [k.nivaaTekst || k.level || '', k.duration || '', p > 0 ? 'Maks ' + p : '']
+          .map(x => String(x).trim()).filter(Boolean);
+      })(),
+      bVisFliser: this.state.fra !== 'medlemskap' && (() => {
+        const k = this.state.valgtKurs || {};
+        return !!((k.nivaaTekst || k.level || '').trim() || (k.duration || '').trim()
+               || (parseInt(k.plasser, 10) || 0) > 0);
+      })(),
+      bVisNivaaLinje: this.state.fra === 'medlemskap' || !(() => {
+        const k = this.state.valgtKurs || {};
+        return !!((k.nivaaTekst || k.level || '').trim() || (k.duration || '').trim()
+               || (parseInt(k.plasser, 10) || 0) > 0);
+      })(),
+      // Knappen staar bare naar det er noe bak den. Et kurs uten seksjoner,
+      // uten merker og uten «Passer for» skal ikke faa en knapp som aapner
+      // et tomrom.
+      bLesMerTekst: this.state.fra === 'medlemskap' ? 'Les mer om medlemskapet' : 'Les mer om kurset',
+
       bPasserFor: (() => {
         const k = this.state.valgtKurs || {};
         // Markupen skriver «Passer for:» foran. Staar det i verdien ogsaa,

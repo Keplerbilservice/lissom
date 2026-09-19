@@ -37481,6 +37481,29 @@ class Component extends DCLogic {
   }
 
   hentAdminSalg() {
+    // ── Lista maa hentes paa nytt, ikke bare foerste gang ────────────
+    //
+    // Eieren, 19. september 2026: «eirin har lagt inn flere produkter til
+    // godkjenning, vi har faatt 6 eposter til godkjenning, men saa er det
+    // bare en ting til godkjenning».
+    //
+    // Varslene var riktige: malTilAdmin() sender én per hendelse, saa seks
+    // e-poster var seks varer. De laa der ogsaa. Men kallet sto bak
+    // «&& !this.state.adminSalg» — lista ble hentet én gang, og aldri
+    // igjen. Sto admin-skjermen aapen mens Eirin la ut varene, viste den
+    // det som fantes da den ble aapnet. Bare en full oppfriskning av sida
+    // hjalp.
+    //
+    // Naa hentes den hver gang en adminskjerm aapnes.
+    //
+    // Her sto det foerst en sperre paa tjue sekunder, saa det ikke skulle
+    // bli et kall per klikk. Den var feil: man gaar inn paa godkjenning
+    // rett etter at man har lest e-posten, godt innenfor tjue sekunder —
+    // og da ville lista vaert like gammel som for. Lista er noen titalls
+    // rader; ett lite kall naar en adminskjerm aapnes er billigere enn en
+    // vare som blir staaende usett.
+    //
+    // «_adminSalgHentes» staar igjen og hindrer to kall samtidig.
     if (!this.erPublisert() || this._adminSalgHentes) return;
     this._adminSalgHentes = true;
     fetch('/api/admin/medlemssalg.php', { credentials: 'same-origin', cache: 'no-store' })
@@ -45329,7 +45352,24 @@ class Component extends DCLogic {
     if ((side === 'adminmedlem' || side === 'adminkursdeltakere') && !this.state.adminGaver) {
       this.hentGaver();
     }
-    if (this.erAdminSkjerm(side) && !this.state.adminSalg) {
+    // ── Én henting per skjermbytte ───────────────────────────────────
+    //
+    // Her sto «&& !this.state.adminSalg»: lista ble hentet én gang og
+    // aldri igjen. Eieren, 19. september 2026: «vi har faatt 6 eposter til
+    // godkjenning, men saa er det bare en ting til godkjenning» — de fem
+    // andre laa der, men skjermen viste lista slik den var da den ble
+    // aapnet.
+    //
+    // Men betingelsen kan ikke bare fjernes: dette er renderVals(), som
+    // kjores ved hver tegning. Uten noe som stopper den ble det 56 kall paa
+    // oppstart — maalt 19. september, for det ble rettet.
+    //
+    // Derfor skjermen: gaar man inn paa en adminskjerm, hentes lista én
+    // gang. Blir man staaende, skjer det ingenting mer. Gaar man ut og inn
+    // igjen — som man gjor naar man har lest e-posten — hentes den paa
+    // nytt.
+    if (this.erAdminSkjerm(side) && this._adminSalgSide !== side) {
+      this._adminSalgSide = side;
       this.hentAdminSalg();
     }
     if ((side === 'adminoversikt' || side === 'adminferdigbrent')

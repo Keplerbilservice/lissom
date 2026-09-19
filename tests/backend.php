@@ -18988,74 +18988,145 @@ DB::kjor('DELETE FROM members WHERE id IN (' . (int) $apMonica . ',' . (int) $ap
 // — foerst om kurs, saa: «da vil jeg ogsaa ha det paa butikk og medlemskap,
 // men paa medlemskap skal default vaere av, paa de andre paa».
 //
-// Migrasjon 197. Uten den finnes ikke valget, og alt skal gaa som foer —
-// derfor staar proevene bak DB::harKolonne(), som resten av suiten gjor.
+// Migrasjon 197 lagde valget; migrasjon 198 flyttet det.
+//
+// Eieren, 19. september 2026: «Vi har jo alle som skal vise og skru av og
+// paa paa synlighet», «Ja, og flytt hakene dit ogsaa», «Alt styres kun fra
+// Synlighet». Hakene per kurs, per vare og per plan er borte, kolonnene med
+// dem, og tre rader i content_blocks avgjor for alle.
 echo "\n== Betal ved oppmote ==\n";
 
 $ufMig = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/197_uten_forskudd.sql');
-sjekk('kurs kan bookes uten forskudd fra start',
-    str_contains($ufMig, "ALTER TABLE courses\n  ADD COLUMN IF NOT EXISTS uten_forskudd TINYINT(1) NOT NULL DEFAULT 1"));
-sjekk('varer ogsaa',
-    str_contains($ufMig, "ALTER TABLE products\n  ADD COLUMN IF NOT EXISTS uten_forskudd TINYINT(1) NOT NULL DEFAULT 1"));
+$ufMig198 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/198_oppmote_en_bryter.sql');
+sjekk('kurs staar paa fra start',
+    str_contains($ufMig198, "SELECT 'Vis/oppmotekurs', 'ja'"));
+sjekk('butikken ogsaa',
+    str_contains($ufMig198, "SELECT 'Vis/oppmotebutikk', 'ja'"));
 // «paa medlemskap skal default vaere av».
 sjekk('medlemskap staar AV til noen slaar det paa',
-    str_contains($ufMig, "ALTER TABLE membership_plans\n  ADD COLUMN IF NOT EXISTS uten_forskudd TINYINT(1) NOT NULL DEFAULT 0"));
+    str_contains($ufMig198, "SELECT 'Vis/oppmotemedlemskap', 'nei'"));
+// Sto kolonnene igjen, ville to steder sagt hva som gjelder — og bare ett
+// av dem blitt lest.
+sjekk('hakene per kurs, vare og plan er borte fra basen',
+    str_contains($ufMig198, 'ALTER TABLE courses          DROP COLUMN IF EXISTS uten_forskudd;')
+    && str_contains($ufMig198, 'ALTER TABLE products         DROP COLUMN IF EXISTS uten_forskudd;')
+    && str_contains($ufMig198, 'ALTER TABLE membership_plans DROP COLUMN IF EXISTS uten_forskudd;'));
+// Raden paa bookinga og ordren sier hva KUNDEN valgte. Den er ikke en
+// innstilling, og skal bli staaende.
+sjekk('men merket paa bookinga og ordren blir staaende',
+    !str_contains($ufMig198, 'ALTER TABLE bookings')
+    && !str_contains($ufMig198, 'ALTER TABLE orders'));
 // Uten denne ville innmeldinga stoppet i basen, ikke i koden.
 sjekk('«verksted» er en lovlig betalingsmaate paa medlemsordren',
     str_contains($ufMig, "MODIFY COLUMN betaling ENUM('trekk','engang','verksted')"));
 
-if (DB::harKolonne('courses', 'uten_forskudd')) {
-    // Riggen lages her, og ryddes bort igjen nederst. Slutter en kjoring
-    // midt i, skal neste kjoring likevel begynne paa bar bakke — «slug» er
-    // unik, og en rad som ble liggende ville stoppet innsettinga.
-    DB::kjor("DELETE FROM bookings WHERE course_id IN
-                  (SELECT id FROM courses WHERE slug IN ('testoppmote','testkrever'))");
-    DB::kjor("DELETE FROM course_sessions WHERE course_id IN
-                  (SELECT id FROM courses WHERE slug IN ('testoppmote','testkrever'))");
-    DB::kjor("DELETE FROM courses WHERE slug IN ('testoppmote','testkrever')");
+// Skjermen og serveren maa vaere enige om hva som gjelder naar raden
+// mangler. Sa de hver sin ting, ville knappen staatt der uten aa virke.
+sjekk('skjermen leser bryterne med samme regel som serveren',
+    str_contains($mt, "  oppmotePaa(nokkel) {\n    const v = (this.state.innholdLagret || {})['Vis/oppmote' + nokkel];\n    return nokkel === 'medlemskap' ? v === 'ja' : v !== 'nei';\n  }"));
+$ufLib = (string) file_get_contents(dirname(__DIR__) . '/app/lib/oppmote.php');
+sjekk('… kurs og butikk paa naar raden mangler, medlemskap av',
+    str_contains($ufLib, "return self::verdi('kurs') !== 'nei';")
+    && str_contains($ufLib, "return self::verdi('butikk') !== 'nei';")
+    && str_contains($ufLib, "return self::verdi('medlemskap') === 'ja';"));
+// Tre rader i ⊙ Synlighet, og ingen andre steder.
+sjekk('bryterne staar i ⊙ Synlighet',
+    str_contains($mt, "            rad('Kurs og arrangementer', this.oppmotePaa('kurs'),")
+    && str_contains($mt, "            rad('Butikken', this.oppmotePaa('butikk'),")
+    && str_contains($mt, "            rad('Medlemskap', this.oppmotePaa('medlemskap'),"));
+sjekk('… og hakene i kurs-, vare- og planskjemaet er fjernet',
+    !str_contains($mt, 'kUtenForskudd')
+    && !str_contains($mt, 'npUtenForskudd')
+    && !str_contains($mt, 'plUtenForskudd'));
 
-    // Kurset som tillater det. Raden skal bli den samme som en verkstedet
-    // lager for haand: «reservert» uten frist, og ingen betalingsrad.
-    $ufKurs = DB::settInn('courses', ['slug' => 'testoppmote', 'tittel' => 'Testoppmøte',
-        'type' => 'kurs', 'pris_ore' => 120000, 'kapasitet' => 10, 'status' => 'publisert',
-        'uten_forskudd' => 1]);
-    $ufOkt = DB::settInn('course_sessions', ['course_id' => $ufKurs,
-        'start_tid' => gmdate('Y-m-d', time() + 864000) . ' 17:00:00', 'kapasitet' => 10]);
-    $ufR = Booking::reserverOgBetal($ufOkt, 1, 'Test Oppmote', 'oppmote@example.com',
-        '+4791234500', $medlemId, null, '', null, true);
-    sjekk('ingen tur innom Vipps', $ufR['redirectUrl'] === '' && $ufR['bookingId'] > 0);
-    $ufB = DB::en('SELECT status, reservert_til, payment_id, uten_forskudd FROM bookings WHERE id = :i',
-        ['i' => $ufR['bookingId']]);
-    sjekk('plassen staar som reservert', (string) $ufB['status'] === 'reservert');
-    // Ingen frist: plassen er kundens til noen gjor noe med den. En frist
-    // ville sluppet plassen midt paa natta, og kunden kom til et fullt kurs.
-    sjekk('… uten frist som slipper den igjen', $ufB['reservert_til'] === null);
-    sjekk('… og uten en betalingsrad som venter paa en webhook', $ufB['payment_id'] === null);
-    sjekk('… og merket, saa deltakerlista kan se hva slags rad det er',
-        (int) $ufB['uten_forskudd'] === 1);
-    sjekk('kvittering lagt i ko',
-        (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type='booking' AND ref_id=:i",
-            ['i' => $ufR['bookingId']]) > 0);
+// Bryteren i praksis: ett kurs, og de to svarene den kan gi.
+//
+// Verdien som staar settes tilbake nederst — proevene skal ikke endre
+// verkstedets eget valg.
+$ufFor = DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/oppmotekurs'");
+$ufSett = static function (string $verdi): void {
+    DB::kjor("INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/oppmotekurs', :v)
+              ON DUPLICATE KEY UPDATE verdi = :v2", ['v' => $verdi, 'v2' => $verdi]);
+    // Bufferet lever én forespoersel; her kjorer alt i samme prosess.
+    Oppmote::glem();
+};
 
-    // Kurset som IKKE tillater det. En gammel fane eller et kall rett til
-    // serveren skal ikke kunne hoppe over betalinga.
-    $ufKrev = DB::settInn('courses', ['slug' => 'testkrever', 'tittel' => 'Testkrever',
-        'type' => 'kurs', 'pris_ore' => 120000, 'kapasitet' => 10, 'status' => 'publisert',
-        'uten_forskudd' => 0]);
-    $ufKrevOkt = DB::settInn('course_sessions', ['course_id' => $ufKrev,
-        'start_tid' => gmdate('Y-m-d', time() + 864000) . ' 17:00:00', 'kapasitet' => 10]);
-    try {
-        Booking::reserverOgBetal($ufKrevOkt, 1, 'Test Krever', 'krever@example.com',
-            '+4791234501', $medlemId, null, '', null, true);
-        sjekk('kurset avgjor, ikke nettleseren', false, 'slapp gjennom');
-    } catch (RuntimeException $e) {
-        sjekk('kurset avgjor, ikke nettleseren',
-            str_contains($e->getMessage(), 'må betales når du melder deg på'), $e->getMessage());
+// Riggen lages her, og ryddes bort igjen nederst. Slutter en kjoring midt i,
+// skal neste kjoring likevel begynne paa bar bakke — «slug» er unik, og en
+// rad som ble liggende ville stoppet innsettinga.
+DB::kjor("DELETE FROM bookings WHERE course_id IN
+              (SELECT id FROM courses WHERE slug = 'testoppmote')");
+DB::kjor("DELETE FROM course_sessions WHERE course_id IN
+              (SELECT id FROM courses WHERE slug = 'testoppmote')");
+DB::kjor("DELETE FROM courses WHERE slug = 'testoppmote'");
+
+$ufKurs = DB::settInn('courses', ['slug' => 'testoppmote', 'tittel' => 'Testoppmøte',
+    'type' => 'kurs', 'pris_ore' => 120000, 'kapasitet' => 10, 'status' => 'publisert']);
+$ufOkt = DB::settInn('course_sessions', ['course_id' => $ufKurs,
+    'start_tid' => gmdate('Y-m-d', time() + 864000) . ' 17:00:00', 'kapasitet' => 10]);
+
+// Bryteren paa. Raden skal bli den samme som en verkstedet lager for haand:
+// «reservert» uten frist, og ingen betalingsrad.
+$ufSett('ja');
+$ufR = Booking::reserverOgBetal($ufOkt, 1, 'Test Oppmote', 'oppmote@example.com',
+    '+4791234500', $medlemId, null, '', null, true);
+sjekk('ingen tur innom Vipps', $ufR['redirectUrl'] === '' && $ufR['bookingId'] > 0);
+$ufB = DB::en('SELECT status, reservert_til, payment_id, uten_forskudd FROM bookings WHERE id = :i',
+    ['i' => $ufR['bookingId']]);
+sjekk('plassen staar som reservert', (string) $ufB['status'] === 'reservert');
+// Ingen frist: plassen er kundens til noen gjor noe med den. En frist
+// ville sluppet plassen midt paa natta, og kunden kom til et fullt kurs.
+sjekk('… uten frist som slipper den igjen', $ufB['reservert_til'] === null);
+sjekk('… og uten en betalingsrad som venter paa en webhook', $ufB['payment_id'] === null);
+sjekk('… og merket, saa deltakerlista kan se hva slags rad det er',
+    (int) $ufB['uten_forskudd'] === 1);
+sjekk('kvittering lagt i ko',
+    (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type='booking' AND ref_id=:i",
+        ['i' => $ufR['bookingId']]) > 0);
+
+// Bryteren av. En gammel fane eller et kall rett til serveren skal ikke
+// kunne hoppe over betalinga.
+$ufSett('nei');
+try {
+    Booking::reserverOgBetal($ufOkt, 1, 'Test Krever', 'krever@example.com',
+        '+4791234501', $medlemId, null, '', null, true);
+    sjekk('bryteren avgjor, ikke nettleseren', false, 'slapp gjennom');
+} catch (RuntimeException $e) {
+    sjekk('bryteren avgjor, ikke nettleseren',
+        str_contains($e->getMessage(), 'må betales når du melder deg på'), $e->getMessage());
+}
+// Katalogen sier det samme som serveren: er bryteren av, staar ikke knappen
+// paa kortet heller. Sa de to hver sin ting, ville knappen staatt der uten
+// aa virke.
+$ufKort = null;
+foreach (Katalog::offentlig(false) as $ufK) {
+    if (($ufK['slug'] ?? '') === 'testoppmote') {
+        $ufKort = $ufK;
+        break;
     }
+}
+sjekk('kurskortet mister knappen naar bryteren er av',
+    $ufKort !== null && empty($ufKort['utenForskudd']),
+    $ufKort === null ? 'fant ikke kurset i katalogen' : 'knappen sto der');
+$ufSett('ja');
+$ufKort = null;
+foreach (Katalog::offentlig(false) as $ufK) {
+    if (($ufK['slug'] ?? '') === 'testoppmote') {
+        $ufKort = $ufK;
+        break;
+    }
+}
+sjekk('… og faar den tilbake naar den slaas paa',
+    $ufKort !== null && !empty($ufKort['utenForskudd']));
 
-    DB::kjor('DELETE FROM bookings WHERE course_id IN (:a, :b)', ['a' => $ufKurs, 'b' => $ufKrev]);
-    DB::kjor('DELETE FROM course_sessions WHERE course_id IN (:a, :b)', ['a' => $ufKurs, 'b' => $ufKrev]);
-    DB::kjor('DELETE FROM courses WHERE id IN (:a, :b)', ['a' => $ufKurs, 'b' => $ufKrev]);
+DB::kjor('DELETE FROM bookings WHERE course_id = :a', ['a' => $ufKurs]);
+DB::kjor('DELETE FROM course_sessions WHERE course_id = :a', ['a' => $ufKurs]);
+DB::kjor('DELETE FROM courses WHERE id = :a', ['a' => $ufKurs]);
+if ($ufFor === null) {
+    DB::kjor("DELETE FROM content_blocks WHERE nokkel = 'Vis/oppmotekurs'");
+    Oppmote::glem();
+} else {
+    $ufSett((string) $ufFor);
 }
 
 // Medlemskapet som gjores opp over disken. Fast trekk gaar foran: der er
@@ -19063,8 +19134,8 @@ if (DB::harKolonne('courses', 'uten_forskudd')) {
 $ufMed = (string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('fast trekk og betaling i verkstedet gaar ikke sammen',
     str_contains($ufMed, "if (self::kreverFastTrekk(\$plan)) {\n            throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');"));
-sjekk('… og planen avgjor, ikke nettleseren',
-    str_contains($ufMed, "if ((int) (\$plan['uten_forskudd'] ?? 0) !== 1) {\n            throw new RuntimeException('Dette medlemskapet må betales når du melder deg inn.');"));
+sjekk('… og bryteren avgjor, ikke nettleseren',
+    str_contains($ufMed, "if (!Oppmote::medlemskap()) {\n            throw new RuntimeException('Dette medlemskapet må betales når du melder deg inn.');"));
 // Avtalen som lages har ingen fullmakt i Vipps, og da maa «neste_trekk» staa
 // tom: ellers ville cron bedt om et trekk det ikke finnes avtale for — og det
 // er nettopp den 404-en som fylte feilloggen i september.
@@ -19073,12 +19144,12 @@ sjekk('avtalen i verkstedet har ingen fullmakt og intet neste trekk',
 
 // ── Butikken: hele kurven, og bare til henting ───────────────────────
 //
-// Én vare som krever forskudd gjor det for hele kurven — ellers ville en dyr
-// ting sluppet gjennom fordi den laa sammen med en billig. Og skal pakken
-// sendes, er det ingen disk aa betale over.
+// Bryteren gjelder hele butikken. Og skal pakken sendes, er det ingen disk
+// aa betale over.
 $ufOrdre = (string) file_get_contents(dirname(__DIR__) . '/api/ordre.php');
-sjekk('én vare som krever forskudd stopper hele kurven',
-    str_contains($ufOrdre, "if (\$vedHenting && !\$alleTillater) {"));
+sjekk('bryteren avgjor for hele kurven',
+    str_contains($ufOrdre, '$oppmotePaa = Oppmote::butikk();')
+    && str_contains($ufOrdre, "if (\$vedHenting && !\$oppmotePaa) {"));
 sjekk('pakke kan ikke betales ved henting',
     str_contains($ufOrdre, "if (\$vedHenting && \$levering === 'pakke') {"));
 // Gavekortet trekkes fra betalingsraden, og den finnes ikke her. Det sies
@@ -19090,9 +19161,9 @@ sjekk('ingen betalingsrad naar det betales ved henting',
 
 // ── Innmeldinga ──────────────────────────────────────────────────────
 $ufBli = (string) file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
-sjekk('planen avgjor om medlemskapet kan tegnes uten forskudd',
+sjekk('bryteren avgjor om medlemskapet kan tegnes uten forskudd',
     str_contains($ufBli, "if (\$betaling !== 'trekk' && Foresporsel::tekst('betaling') === 'verksted') {")
-    && str_contains($ufBli, "if ((int) (\$plan['uten_forskudd'] ?? 0) !== 1) {"));
+    && str_contains($ufBli, 'if (!Oppmote::medlemskap()) {'));
 // «Gjor opp selv» og «ikke betalt enda» er to forskjellige ting. Sier
 // beskjeden til verkstedet det foerste, blir hen staaende ubetalt uten at
 // noen vet hvorfor.
@@ -19140,11 +19211,8 @@ sjekk('kursknappen staar der ogsaa for den som ikke er logget inn',
     str_contains($mt, "      visOppmote: !!(this.state.valgtKurs || {}).utenForskudd\n        && (this.state.valgtKurs || {}).tema !== 'Medlemskap',"));
 sjekk('… og kassaknappen likedan',
     !str_contains($mt, "if (!navn.length || !this.state.innlogget || this.erPakke())"));
-// Nye kurs og varer staar PAA, nye medlemskap staar AV.
-sjekk('nytt kurs staar paa',  substr_count($mt, 'kUtenForskudd: true,') === 4);
-sjekk('ny vare staar paa',    substr_count($mt, "npUtenForskudd: true") === 4);
-sjekk('nytt medlemskap staar av',
-    substr_count($mt, "fastTrekk: false, utenForskudd: false, sortering: '0',") === 2);
+// Ett sted, og bare ett: hakene i kurs-, vare- og planskjemaet er fjernet,
+// og kolonnene de skrev til med dem. Se proevene over migrasjon 198 over.
 
 
 // ── Datovalget paa serversida sender deg ikke til toppen ─────────────

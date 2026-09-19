@@ -665,8 +665,8 @@ final class Booking
         ?string $folgeMedlem = null,
         string $gavekortKode = '',
         ?string $allergier = null,
-        // «Betal ved oppmoete». Kunden ber om det; kurset avgjor om det gaar,
-        // og det avgjores her, av databasen — ikke av det nettleseren sendte.
+        // «Betal ved oppmoete». Kunden ber om det; bryteren i ⊙ Synlighet
+        // avgjor om det gaar, og det avgjores her — ikke av nettleseren.
         bool $utenForskudd = false
     ): array {
         // Prisen paa datoen gaar foran kursets, naar den er satt. COALESCE
@@ -679,14 +679,10 @@ final class Booking
         // hen maler naar hen staar der.
         $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa')
             ? 'c.gjenstand_i_kassa' : '0 AS gjenstand_i_kassa';
-        // «Kan bookes uten forskuddsbetaling» (migrasjon 197). Er den ikke
-        // kjort, finnes valget ikke, og alt gaar som for.
-        $forskuddFelt = DB::harKolonne('courses', 'uten_forskudd')
-            ? 'c.uten_forskudd' : '0 AS uten_forskudd';
         $okt = DB::en(
             'SELECT cs.id, cs.course_id, cs.start_tid,
                     c.tittel, ' . $egenPris . ' AS pris_ore, c.type, c.tema, c.slug,
-                    ' . $kassaFelt . ', ' . $forskuddFelt . '
+                    ' . $kassaFelt . '
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.id = :id
@@ -728,11 +724,11 @@ final class Booking
         // den til «betalt» med maate — det er knappene som alt staar i
         // deltakerlista og i «Ikke betalt»-kortet.
         //
-        // Kurset avgjor, ikke nettleseren: en gammel fane eller et kall rett
-        // til serveren skal ikke kunne hoppe over betalingen paa et kurs som
-        // krever den. Samme regel som fast trekk i api/bli-medlem.php.
-        $oppmote = $utenForskudd && !$gratis
-            && (int) ($okt['uten_forskudd'] ?? 0) === 1;
+        // Bryteren avgjor, ikke nettleseren: en gammel fane eller et kall
+        // rett til serveren skal ikke kunne hoppe over betalingen naar
+        // ⊙ Synlighet sier at kurs skal betales paa forhaand. Samme regel som
+        // fast trekk i api/bli-medlem.php.
+        $oppmote = $utenForskudd && !$gratis && Oppmote::kurs();
         if ($utenForskudd && !$gratis && !$oppmote) {
             throw new RuntimeException('Dette kurset må betales når du melder deg på.');
         }

@@ -12386,20 +12386,6 @@ window.__resources = {
                     Fast trekk i Vipps — medlemmet godkjenner en avtale og trekkes automatisk
                   </label>
                   <div style="font-size: var(--text-xs); color: var(--text-muted); margin: -6px 0 0 30px; text-wrap: pretty;">Er denne av, betaler medlemmet én gang som en vanlig Vipps-betaling, og verkstedet må kreve inn hver periode selv.</div>
-                  <!-- «Da vil jeg ogsa ha det pa butikk og medlemskap, men pa
-                       medlemskap skal default vaere av, pa de andre pa»
-                       — eieren, 19. september 2026. Haken star av for nye planer:
-                       et medlemskap skal normalt betales nar det tegnes. Kryss den
-                       av, og «Bli medlem» faar knappen «Betal i verkstedet» ved
-                       siden av Vipps-knappen. Medlemskapet starter med en gang,
-                       og belopet kreves inn nar medlemmet er innom.
-                       Fast trekk og betaling i verkstedet kan ikke gaa sammen —
-                       en avtale i Vipps maa godkjennes i appen. -->
-                  <label style="{{ plAvkryss }}">
-                    <input type="checkbox" checked="{{ plUtenForskudd }}" onChange="{{ vekslPlUtenForskudd }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-                    Kan tegnes uten forskuddsbetaling — medlemmet betaler i verkstedet
-                  </label>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin: -6px 0 0 30px; text-wrap: pretty;">Gjelder ikke sammen med fast trekk. Medlemskapet starter med en gang, og beløpet står som ubetalt til noen registrerer det.</div>
                   <label style="{{ plAvkryss }}">
                     <input type="checkbox" checked="{{ plEngangs }}" onChange="{{ vekslPlEngangs }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                     Prøveperiode — trekkes én gang og stopper av seg selv
@@ -12838,16 +12824,6 @@ window.__resources = {
                       <p style="margin: 0; font-size: var(--text-xs); color: var(--text-body); text-wrap: pretty;">{{ kGjenstandAdvarsel }}</p>
                     </div>
                   </sc-if>
-                  <!-- Betal ved oppmoete.
-                       Eieren, 19. september 2026: «det maa gaa an aa bestille
-                       uten aa betale med vipps, samme vilkaar, men at de
-                       betaler ved oppmoete, kontant eller vipps». Haken staar
-                       PAA for alle kurs fra start (migrasjon 197) — her slaas
-                       den av paa kurs som skal betales i forkant. -->
-                  <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading); margin-top: var(--space-4);">
-                    <input type="checkbox" checked="{{ kUtenForskudd }}" onChange="{{ toggleKUtenForskudd }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer; flex-shrink: 0; margin-top: 2px;">
-                    <span>Kan bookes uten forskuddsbetaling<br><span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kUtenForskuddHjelp }}</span></span>
-                  </label>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
@@ -23489,15 +23465,6 @@ window.__resources = {
           <input type="checkbox" checked="{{ npKunMedlemmer }}" onChange="{{ vekslNpKunMedlemmer }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
           <span>Kun for medlemmer (internbutikken)</span>
         </label>
-        <!-- Betal ved henting.
-             Eieren, 19. september 2026: det samme valget som paa kurs, og
-             paa fra start. Varene hentes i verkstedet uansett, saa dette er
-             bare spoersmaal om naar pengene kommer. Kassa tilbyr det bare
-             naar ALLE varene i kurven tillater det. -->
-        <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-          <input type="checkbox" checked="{{ npUtenForskudd }}" onChange="{{ vekslNpUtenForskudd }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer; flex-shrink: 0; margin-top: 2px;">
-          <span>Kan bestilles uten forskuddsbetaling<br><span style="font-size: var(--text-xs); color: var(--text-muted);">Kassa får knappen «Betal ved henting». Varen legges til side, og betales når den hentes.</span></span>
-        </label>
         <!-- Handlelista, migrasjon 184. Artikkelnummeret er leverandorens
              eget nummer; det er det som staar i bestillingen. Haken avgjor
              om varen dukker opp i handlelista paa Min side. -->
@@ -24047,6 +24014,19 @@ window.__resources = {
       </sc-for>
       <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-top: var(--space-6);">På Min side</div>
       <sc-for list="{{ synMin }}" as="r" hint-placeholder-count="5">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 11px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
+        </div>
+      </sc-for>
+      <!-- «Betal ved oppmøte» — de tre stedene valget gjelder.
+           Eieren, 19. september 2026: «Vi har jo alle som skal vise og skru
+           av og paa paa synlighet», «Ja, og flytt hakene dit ogsaa», «Alt
+           styres kun fra Synlighet». Hakene i kursredigeringa, vareskjemaet
+           og planredigeringa er fjernet; dette er stedet. -->
+      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-top: var(--space-6);">Betal ved oppmøte</div>
+      <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kunden kan bestille uten å betale med Vipps, og gjør opp i verkstedet — kontant eller Vipps. Beløpet står som ubetalt til noen registrerer det.</p>
+      <sc-for list="{{ synOppmote }}" as="r" hint-placeholder-count="3">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 11px 0; border-bottom: 1px solid var(--border-subtle);">
           <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
@@ -26912,6 +26892,37 @@ class Component extends DCLogic {
     this.lagreInnhold(
       { ['Vis/' + nokkel]: paa ? 'nei' : 'ja' },
       navn + (paa ? ' er skjult' : ' vises igjen')
+    );
+  }
+
+  /**
+   * «Betal ved oppmøte» — én bryter per sted, og ingen andre steder.
+   *
+   * Eieren, 19. september 2026: «La du disse bryterne et annet sted enn
+   * avtalt sted?», «Vi har jo alle som skal vise og skru av og paa paa
+   * synlighet», «Ja, og flytt hakene dit ogsaa» — og paa spoersmaalet om
+   * unntak per kurs: «Alt styres kun fra Synlighet».
+   *
+   * Hakene i kursredigeringa, vareskjemaet og planredigeringa er borte.
+   * Kolonnene de skrev til er droppet (migrasjon 198), og serveren leser de
+   * samme tre radene herfra — se app/lib/oppmote.php. Regelen for hva som
+   * gjelder naar raden mangler maa vaere den SAMME de to stedene, ellers
+   * sier skjermen og serveren hver sin ting.
+   *
+   * Kurs og butikk: paa naar raden mangler. Medlemskap: av. Et medlemskap
+   * loeper hver maaned, og det skal vaere et bevisst valg aa la det begynne
+   * uten at noe er betalt — samme regel som Vis/autogodkjenn.
+   */
+  oppmotePaa(nokkel) {
+    const v = (this.state.innholdLagret || {})['Vis/oppmote' + nokkel];
+    return nokkel === 'medlemskap' ? v === 'ja' : v !== 'nei';
+  }
+
+  vekslOppmote(nokkel, navn) {
+    const paa = this.oppmotePaa(nokkel);
+    this.lagreInnhold(
+      { ['Vis/oppmote' + nokkel]: paa ? 'nei' : 'ja' },
+      'Betal ved oppmøte — ' + navn + (paa ? ' er slått av' : ' er slått på')
     );
   }
 
@@ -34766,7 +34777,6 @@ class Component extends DCLogic {
         // Tomt antall betyr «ikke lagerstyrt», ikke «tomt paa lager».
         lager: (s.npAntall || '').trim(),
         kunMedlemmer: s.npKunMedlemmer ? 'ja' : 'nei',
-        utenForskudd: s.npUtenForskudd ? 'ja' : 'nei',
         kategori: (s.npKategori || '').trim(),
         mva: s.npMva === false ? 0 : 25,
         bilde: fra ? fra.bilde : '',
@@ -34885,7 +34895,6 @@ class Component extends DCLogic {
       ferdigTid: this.state.kFerdigTid || '', tillegg: this.state.kTillegg || '',
       varighetTekst: this.state.kVarighetTekst || '',
       gjenstandIKassa: this.state.kGjenstandIKassa ? 'ja' : 'nei',
-      utenForskudd: this.state.kUtenForskudd ? 'ja' : 'nei',
       mva: this.state.kMva ? '25 % mva' : 'Uten mva',
       // SMS er av med mindre noen uttrykkelig har slaatt den paa. Her sto
       // det «!== false» naar SMS-leverandoeren manglet, og det gjor undefined
@@ -34956,8 +34965,7 @@ class Component extends DCLogic {
         ...['punkter', 'laerer', 'praktisk', 'allergener',
             'passerNivaa', 'passerHvem', 'metode', 'varighet',
             'nivaaIntern', 'nivaaTekst', 'kortBeskrivelse', 'lagerDu',
-            'medHjem', 'ferdigTid', 'tillegg', 'varighetTekst', 'gjenstandIKassa',
-            'utenForskudd']
+            'medHjem', 'ferdigTid', 'tillegg', 'varighetTekst', 'gjenstandIKassa']
           .reduce((m, n) => {
             if (Object.prototype.hasOwnProperty.call(rad, n)) m[n] = rad[n] || '';
             return m;
@@ -35868,7 +35876,6 @@ class Component extends DCLogic {
       kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
       kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
       kGjenstandIKassa: false,
-      kUtenForskudd: true,
       kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
       kGjentak: 'Ingen', kAntall: '',
       kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -37656,7 +37663,6 @@ class Component extends DCLogic {
       kFerdigTid: raa.ferdigTid || '', kTillegg: raa.tillegg || '',
       kVarighetTekst: raa.varighetTekst || '',
       kGjenstandIKassa: !!raa.gjenstandIKassa,
-      kUtenForskudd: !!raa.utenForskudd,
       // Gjentakelsen staar i regelen paa serveren, ikke i kortteksten.
       // Ligger det en regel der, er det den som gjelder.
       ...(() => {
@@ -46020,7 +46026,6 @@ class Component extends DCLogic {
               npArtikkelnr: raa.artikkelnr || '', npLeverandor: raa.leverandorId || 0,
               npKanBestilles: !!raa.kanBestilles,
               npMva: (raa.mva ?? 25) > 0, npKunMedlemmer: true,
-              npUtenForskudd: !!raa.utenForskudd,
             } : {}
           ));
           window.scrollTo(0, 0);
@@ -47073,7 +47078,6 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
-            kUtenForskudd: true,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
           kGjentak: 'Ingen', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -47251,8 +47255,9 @@ class Component extends DCLogic {
           // ── Betal i verkstedet ────────────────────────────────
           //
           // Eieren, 19. september 2026: «paa medlemskap skal default vaere
-          // av, paa de andre paa». Haken staar paa planen; serveren avviser
-          // valget paa et medlemskap som ikke har den.
+          // av, paa de andre paa», og 19. september: «Alt styres kun fra
+          // Synlighet». Bryteren staar i ⊙ Synlighet → Betal ved oppmøte →
+          // Medlemskap; serveren avviser valget naar den er av.
           //
           // Samme vei som knappen over, bare med «verksted» som
           // betalingsmaate — det er de samme vilkaarene, og det var hele
@@ -47424,9 +47429,10 @@ class Component extends DCLogic {
       // betale med vipps, samme vilkaar, men at de betaler ved oppmoete,
       // kontant eller vipps».
       //
-      // «utenForskudd» kommer fra katalogen (app/lib/katalog.php): kursets
-      // egen hake, og bare naar plassen koster noe. Et gratis arrangement har
-      // ingenting aa betale, og da finnes ikke valget.
+      // «utenForskudd» kommer fra katalogen (app/lib/katalog.php): bryteren
+      // ⊙ Synlighet → Betal ved oppmøte → Kurs og arrangementer, og bare naar
+      // plassen koster noe. Et gratis arrangement har ingenting aa betale, og
+      // da finnes ikke valget.
       //
       // Innlogging kreves som for. Serveren kjenner ingen gjester paa et
       // kurs, og en plass uten et menneske bak er ikke en plass.
@@ -48465,7 +48471,7 @@ class Component extends DCLogic {
           const nyttMedlemskap = {
             plRed: {
               foer: '', navn: '', pris: '', timer: '', binding: '0',
-              engangs: false, aktiv: true, fastTrekk: false, utenForskudd: false, sortering: '0',
+              engangs: false, aktiv: true, fastTrekk: false, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
             },
@@ -48607,7 +48613,6 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
-            kUtenForskudd: true,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                 kGjentak: 'Ingen', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -52633,7 +52638,6 @@ class Component extends DCLogic {
                   timer: fri ? '' : String(pl.timer),
                   binding: String(pl.binding || 0), engangs: !!pl.engangs, aktiv: !!pl.aktiv,
                   fastTrekk: !!pl.fastTrekk,
-                  utenForskudd: !!pl.utenForskudd,
                   sortering: String(pl.sortering || 0),
                   merke: pl.merke || '', undertekst: pl.undertekst || '',
                   beskrivelse: pl.beskrivelse || '', punkter: String(pl.punkter || ''),
@@ -52656,7 +52660,7 @@ class Component extends DCLogic {
           plNy: () => {
             this.setState({ side: 'adminmedlemskap', plRed: {
               foer: '', navn: '', pris: '', timer: '', binding: '0',
-              engangs: false, aktiv: true, fastTrekk: false, utenForskudd: false, sortering: '0',
+              engangs: false, aktiv: true, fastTrekk: false, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
               langtekst: '', viktig: '',
@@ -52709,7 +52713,6 @@ class Component extends DCLogic {
 
           plEngangs: !!(red && red.engangs),     vekslPlEngangs: veksle('engangs'),
           plFastTrekk: !!(red && red.fastTrekk), vekslPlFastTrekk: veksle('fastTrekk'),
-          plUtenForskudd: !!(red && red.utenForskudd), vekslPlUtenForskudd: veksle('utenForskudd'),
           plAktiv: !!(red && red.aktiv),         vekslPlAktiv: veksle('aktiv'),
           plFremhevet: !!(red && red.fremhevet), vekslPlFremhevet: veksle('fremhevet'),
 
@@ -52731,8 +52734,6 @@ class Component extends DCLogic {
               // i kallet. Sto det ikke her, ville haken sett ut som den
               // virket og ikke lagret noe.
               fastTrekk: !!d.fastTrekk,
-              // Samme her: «uten_forskudd» skrives bare naar feltet foelger med.
-              utenForskudd: !!d.utenForskudd,
               sortering: parseInt(d.sortering, 10) || 0,
               merke: d.merke || '', undertekst: d.undertekst || '',
               beskrivelse: d.beskrivelse || '', punkter: d.punkter || '',
@@ -52882,18 +52883,13 @@ class Component extends DCLogic {
       // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
       // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
       // peker knappene dit.
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npUtenForskudd: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
-      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npUtenForskudd: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
       butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
-        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npUtenForskudd: true })
-        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npUtenForskudd: true })),
+        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true })
+        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
-      // «Da vil jeg ogsa ha det pa butikk og medlemskap, men pa medlemskap skal
-      // default vaere av, pa de andre pa» — 19. september 2026. Haken star pa for
-      // nye varer, og kassa far knappen «Betal ved henting» for varer som har den.
-      npUtenForskudd: !!this.state.npUtenForskudd,
-      vekslNpUtenForskudd: () => this.setState(st => ({ npUtenForskudd: !st.npUtenForskudd })),
       // Handlelista, migrasjon 184. Leverandorene kommer fra basen —
       // «Ingen» er valget for en vare som ikke skal bestilles noe sted.
       npArtikkelnr: this.state.npArtikkelnr || '',
@@ -53156,6 +53152,18 @@ class Component extends DCLogic {
             // og skriver sitt eget sted.
             rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,
                 () => this.dokKall({ handling: 'veksle-faq' })),
+          ],
+          // ── Betal ved oppmøte ──────────────────────────────────
+          //
+          // Tre rader, ett sted. Se oppmotePaa() over for hvorfor de ikke
+          // bruker bryterPaa(): medlemskap staar AV naar raden mangler.
+          synOppmote: [
+            rad('Kurs og arrangementer', this.oppmotePaa('kurs'),
+                () => this.vekslOppmote('kurs', 'kurs og arrangementer')),
+            rad('Butikken', this.oppmotePaa('butikk'),
+                () => this.vekslOppmote('butikk', 'butikken')),
+            rad('Medlemskap', this.oppmotePaa('medlemskap'),
+                () => this.vekslOppmote('medlemskap', 'medlemskap')),
           ],
           synVises: !!this.state.synlighetApen,
           synAapne: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },
@@ -53963,7 +53971,6 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
-            kUtenForskudd: true,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       // Hva som skjer naar et kurs som finnes faar nytt navn.
@@ -54074,14 +54081,6 @@ class Component extends DCLogic {
 
           kGjenstandIKassa: !!st.kGjenstandIKassa,
           toggleKGjenstand: () => this.setState(x => ({ kGjenstandIKassa: !x.kGjenstandIKassa })),
-          kUtenForskudd: !!st.kUtenForskudd,
-          toggleKUtenForskudd: () => this.setState(x => ({ kUtenForskudd: !x.kUtenForskudd })),
-          kUtenForskuddHjelp: st.kUtenForskudd
-            ? 'Bookingsiden får en knapp til: «Betal ved oppmøte». Plassen holdes, '
-              + 'og du krever inn pengene over disken — de står i «Ikke betalt» til '
-              + 'du huker av for Kontant eller Vipps.'
-            : 'Kurset må betales med Vipps når noen melder seg på. Slå den på for '
-              + 'å la folk betale når de kommer.',
           kGjenstandHjelp: st.kGjenstandIKassa
             ? 'Prisen over er plassen. Gjenstanden velger kunden i verkstedet og '
               + 'betaler den i kassa, som en butikkvare — lageret trekkes, og salget '

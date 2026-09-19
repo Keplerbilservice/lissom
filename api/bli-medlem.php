@@ -133,14 +133,13 @@ $betaling = Medlemskap::kreverFastTrekk($plan) ? 'trekk' : 'selv';
 //
 // Eieren, 19. september 2026: «det maa gaa an aa bestille uten aa betale med
 // vipps, samme vilkaar, men at de betaler ved oppmoete, kontant eller vipps»
-// — og for medlemskap skal valget staa AV til noen slaar det paa. Derfor
-// «uten_forskudd» paa planen, med standard 0 (migrasjon 197).
+// — og for medlemskap skal valget staa AV til noen slaar det paa. Bryteren
+// ligger i ⊙ Synlighet → Betal ved oppmøte → Medlemskap (migrasjon 198).
 //
-// Planen avgjor, som med fast trekk over: en gammel fane eller et kall rett
-// til serveren skal ikke kunne hoppe over betalingen paa et medlemskap som
-// krever den.
+// Bryteren avgjor, som fast trekk over: en gammel fane eller et kall rett til
+// serveren skal ikke kunne hoppe over betalingen naar den staar av.
 if ($betaling !== 'trekk' && Foresporsel::tekst('betaling') === 'verksted') {
-    if ((int) ($plan['uten_forskudd'] ?? 0) !== 1) {
+    if (!Oppmote::medlemskap()) {
         Svar::feil('Dette medlemskapet må betales når du melder deg inn.');
     }
     $betaling = 'verksted';

@@ -70,6 +70,7 @@ require APP_DIR . '/lib/medlemsordre.php';
 require APP_DIR . '/lib/frys.php';
 require APP_DIR . '/lib/dugnad.php';
 require APP_DIR . '/lib/tillegg.php';
+require APP_DIR . '/lib/oppmote.php';
 require APP_DIR . '/lib/oppsett.php';
 require APP_DIR . '/lib/kursmal.php';
 require APP_DIR . '/lib/katalog.php';

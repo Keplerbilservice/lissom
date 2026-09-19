@@ -22,7 +22,8 @@ $hent = static fn(): array => array_map(static fn($r) => [
     'tittel'   => $r['tittel'],
     'tekst'    => $r['beskrivelse'],
     'laget'    => 'Laget av ' . ($r['produsent'] ?: 'et medlem'),
-    'medlem'   => $r['medlemsnavn'],
+    // Er medlemsraden borte, mangler navnet — men varen skal staa.
+    'medlem'   => $r['medlemsnavn'] ?: 'Ukjent medlem',
     'bilde'    => $r['bilde'] ? '/api/bilde.php?salg=' . rawurlencode((string) $r['bilde']) : null,
     'pris'     => Booking::kroner((int) $r['pris_ore']),
     'kategori' => $r['kategori'] ?: 'Annet',
@@ -32,9 +33,22 @@ $hent = static fn(): array => array_map(static fn($r) => [
     'levering' => 'Leveres etter avtale',
     'status'   => $r['status'],
 ], DB::alle(
+    // ── LEFT JOIN, ikke JOIN ──────────────────────────────────────────
+    //
+    // Eieren, 19. september 2026: «vi har faatt 6 eposter til godkjenning,
+    // men saa er det bare en ting til godkjenning» — og etter at skjermen
+    // begynte aa hente lista paa nytt: «ingenting til godkjenning».
+    //
+    // Med en indre kobling forsvinner en vare helt ut av lista dersom
+    // medlemsraden ikke finnes — slettet, slaatt sammen, eller hva det
+    // maatte vaere. Varen ligger i basen med «til_godkjenning», e-posten
+    // gikk ut, og likevel er den ikke aa se noe sted. Da kan den heller
+    // aldri godkjennes eller avvises.
+    //
+    // En vare skal ikke kunne gjemme seg bak en manglende medlemsrad.
     "SELECT ms.*, m.navn AS medlemsnavn
        FROM member_sales ms
-       JOIN members m ON m.id = ms.member_id
+       LEFT JOIN members m ON m.id = ms.member_id
       ORDER BY ms.status = 'til_godkjenning' DESC, ms.id DESC"
 ));
 
@@ -47,8 +61,12 @@ Foresporsel::krevSammeOpphav();
 
 $id  = Foresporsel::heltall('id');
 $rad = DB::en(
+    // Samme grunn som i lista over: uten LEFT JOIN svarer denne «Fant ikke
+    // varen» paa noe som staar der. Da kunne den hverken godkjennes eller
+    // avvises — den ville bare bli liggende.
     'SELECT ms.*, m.navn, m.epost, m.telefon
-       FROM member_sales ms JOIN members m ON m.id = ms.member_id
+       FROM member_sales ms
+       LEFT JOIN members m ON m.id = ms.member_id
       WHERE ms.id = :i',
     ['i' => $id]
 );

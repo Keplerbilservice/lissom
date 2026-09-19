@@ -70,12 +70,11 @@ final class Medlemsordre
         // Eieren, 19. september 2026, om kurs, butikk og medlemskap: «det maa
         // gaa an aa bestille uten aa betale med vipps ... men at de betaler
         // ved oppmoete». Paa medlemskap staar valget AV til noen slaar det
-        // paa — «uten_forskudd» paa planen, standard 0 (migrasjon 197).
+        // paa — ⊙ Synlighet → Betal ved oppmøte → Medlemskap (migrasjon 198).
         //
-        // Planen avgjor, som med fast trekk: staar det noe annet i
-        // forespoerselen, er det planen som gjelder.
-        $iVerkstedet = !$maa && $betaling === 'verksted'
-            && (int) ($plan['uten_forskudd'] ?? 0) === 1;
+        // Bryteren avgjor, som fast trekk gjor det: staar det noe annet i
+        // forespoerselen, er det bryteren som gjelder.
+        $iVerkstedet = !$maa && $betaling === 'verksted' && Oppmote::medlemskap();
         $betaling = $maa ? 'trekk'
             : ($iVerkstedet ? 'verksted' : ($betaling === 'engang' ? 'engang' : 'trekk'));
 

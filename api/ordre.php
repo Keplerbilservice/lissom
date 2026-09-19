@@ -47,18 +47,12 @@ if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
 $rader = [];
 $sum = 0;
 
-// «uten_forskudd» kommer med migrasjon 197. Er den ikke kjort, finnes valget
-// ikke, og alt gaar som for. Utenfor loekka: kolonnen skifter ikke mellom to
-// varer i den samme kurven.
-$forskuddKol = DB::harKolonne('products', 'uten_forskudd')
-    ? 'uten_forskudd' : '0 AS uten_forskudd';
-
 foreach ($linjer as $l) {
     $id = (int) ($l['id'] ?? 0);
     $antall = max(1, min(50, (int) ($l['antall'] ?? 1)));
 
     $vare = DB::en(
-        "SELECT id, tittel, pris_ore, lager, kun_medlemmer, {$forskuddKol}
+        "SELECT id, tittel, pris_ore, lager, kun_medlemmer
            FROM products WHERE id = :i AND status = 'publisert'",
         ['i' => $id]
     );
@@ -89,25 +83,19 @@ foreach ($linjer as $l) {
 //
 // To ting maa stemme, og begge avgjores her, ikke i nettleseren:
 //
-//   Alle varene maa tillate det. Én vare som krever forskudd gjor det for
-//   hele kurven — ellers ville en dyr ting sluppet gjennom fordi den laa
-//   sammen med en billig.
+//   Bryteren maa staa paa. ⊙ Synlighet → Betal ved oppmøte → Butikken
+//   (migrasjon 198) gjelder hele butikken; nettleseren kan ikke overstyre
+//   den med en gammel fane eller et kall rett til serveren.
 //
 //   Varene maa hentes. Skal pakken sendes, er det ingen disk aa betale over,
 //   og porto for noe som ikke er gjort opp er verkstedets tap.
-$alleTillater = true;
-foreach ($rader as $r) {
-    if ((int) ($r['vare']['uten_forskudd'] ?? 0) !== 1) {
-        $alleTillater = false;
-        break;
-    }
-}
+$oppmotePaa = Oppmote::butikk();
 $vedHenting = Foresporsel::tekst('betaling') === 'henting';
 if ($vedHenting && trim(Foresporsel::tekst('gavekort')) !== '') {
     Svar::feil('Gavekortet trekkes når du betaler. Betal med Vipps nå, eller ta bort koden.');
 }
-if ($vedHenting && !$alleTillater) {
-    Svar::feil('En av varene må betales når du bestiller. Ta den ut, eller betal med Vipps nå.');
+if ($vedHenting && !$oppmotePaa) {
+    Svar::feil('Bestillingen må betales nå. Betal med Vipps for å fullføre.');
 }
 
 if ($sum <= 0) {

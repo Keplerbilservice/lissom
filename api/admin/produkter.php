@@ -60,9 +60,6 @@ if (Foresporsel::metode() === 'GET') {
         'mva'          => (int) $v['mva_prosent'],
         'lager'        => $v['lager'] === null ? null : (int) $v['lager'],
         'kunMedlemmer' => (bool) $v['kun_medlemmer'],
-        // «Kan bestilles uten forskuddsbetaling» (migrasjon 197). Paa for
-        // alle varer fra start.
-        'utenForskudd' => (bool) ($v['uten_forskudd'] ?? 0),
         'status'       => $v['status'],
         // Handlelista, migrasjon 184. Er den ikke kjoert, staar feltene tomme
         // og skjemaet viser dem som tomme — det er riktig svar da.
@@ -173,12 +170,6 @@ $data = [
     'status'        => in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'utsolgt'], true)
                         ? Foresporsel::tekst('status') : 'publisert',
 ];
-
-// Haken staar bare naar migrasjon 197 er kjort. Uten den skal en vare
-// fortsatt kunne lagres — vi mister valget, ikke varen.
-if (DB::harKolonne('products', 'uten_forskudd')) {
-    $data['uten_forskudd'] = Foresporsel::tekst('utenForskudd') === 'ja' ? 1 : 0;
-}
 
 // Handlelista, migrasjon 184. Artikkelnummeret er leverandorens eget nummer,
 // og det er det som staar i bestillingen — derfor foelger det varen og ikke

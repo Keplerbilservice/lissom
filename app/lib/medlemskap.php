@@ -1030,7 +1030,7 @@ final class Medlemskap
         if (self::kreverFastTrekk($plan)) {
             throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');
         }
-        if ((int) ($plan['uten_forskudd'] ?? 0) !== 1) {
+        if (!Oppmote::medlemskap()) {
             throw new RuntimeException('Dette medlemskapet må betales når du melder deg inn.');
         }
 

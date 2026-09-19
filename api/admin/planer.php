@@ -90,7 +90,6 @@ if (Foresporsel::metode() === 'GET') {
             // fikk vipps, ingen godkjennelse i vipps, bare en helt vanlig
             // maate aa betale med vipps».
             'fastTrekk' => Medlemskap::kreverFastTrekk($p),
-            'utenForskudd' => (bool) ($p['uten_forskudd'] ?? 0),
             'sortering' => (int) $p['sortering'],
             'aktiv'     => (bool) $p['aktiv'],
             'medlemmer' => $brukt[(string) $p['navn']] ?? 0,
@@ -180,10 +179,6 @@ if ($handling === 'lagre') {
         // igjen hver gang planen ble lagret. AArsmedlemskapet krever fast
         // trekk, og det ville falt bort i det noen rettet en skrivefeil.
         'krever_fast_trekk' => !empty($kropp['fastTrekk']) ? 1 : 0,
-        // «Kan tegnes uten forskuddsbetaling» (migrasjon 197). Av for alle
-        // fra start: et medlemskap loeper hver maaned, og det skal vaere et
-        // bevisst valg aa la det begynne uten at noe er betalt.
-        'uten_forskudd'     => !empty($kropp['utenForskudd']) ? 1 : 0,
         'sortering'   => (int) ($kropp['sortering'] ?? 0),
         'merke'       => mb_substr(trim((string) ($kropp['merke'] ?? '')), 0, 40),
         'undertekst'  => mb_substr(trim((string) ($kropp['undertekst'] ?? '')), 0, 120),
@@ -210,11 +205,6 @@ if ($handling === 'lagre') {
     if (!array_key_exists('fastTrekk', $kropp)
         || !DB::harKolonne('membership_plans', 'krever_fast_trekk')) {
         unset($felter['krever_fast_trekk']);
-    }
-
-    if (!array_key_exists('utenForskudd', $kropp)
-        || !DB::harKolonne('membership_plans', 'uten_forskudd')) {
-        unset($felter['uten_forskudd']);
     }
 
     // Staar migrasjonen ukjort, lagrer vi det vi kan i stedet for aa la alt

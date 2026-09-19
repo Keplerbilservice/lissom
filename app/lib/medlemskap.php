@@ -1656,7 +1656,14 @@ final class Medlemskap
             $trekkId = Vipps::belastAvtale(
                 (string) $avtale['vipps_agreement_id'],
                 (int) $avtale['pris_ore'],
-                'Medlemskap ' . $avtale['plan'],
+                // Navnet med, innenfor Vipps sine 45 tegn paa et trekk.
+                // Uten det sa et maanedlig trekk bare hvilken plan det
+                // gjaldt — og det er nettopp de trekkene det er flest av.
+                Vipps::beskrivelseInnenfor(
+                    Vipps::TREKK_BESKRIVELSE_MAKS,
+                    'Medlemskap ' . $avtale['plan'],
+                    (string) ($avtale['navn'] ?? '')
+                ),
                 $forfall,
                 $nokkel
             );

@@ -19147,6 +19147,41 @@ sjekk('nytt medlemskap staar av',
     substr_count($mt, "fastTrekk: false, utenForskudd: false, sortering: '0',") === 2);
 
 
+// ── Datovalget paa serversida sender deg ikke til toppen ─────────────
+//
+// Eieren, 19. september 2026, om kona som stod paa lissom.no: «naar hun
+// velger dato saa hopper siden til start».
+//
+// Det ER et sideskifte: /kurs/<slug> tegnes av serveren, datoene der er
+// lenker, og «?dag=» gir adressen til appen — se Nett::kan(). En ny side
+// begynner oeverst. Vi kan ikke fjerne skiftet uten aa ta datoene bort fra
+// serversida, og da mister Google dem. Men vi kan bestemme hvor hun lander.
+echo "\n== Datovalget lander paa datoene ==\n";
+
+// Serversida maa fortsatt peke inn i appen med dagen.
+$dvSide = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
+sjekk('datoene paa kurssida er lenker med dagen',
+    str_contains($dvSide, "'?dag=' . rawurlencode(\$rad['dag'])"));
+// Og appen maa faktisk faa adressen naar «?dag=» staar der.
+sjekk('«?dag=» gir adressen til appen',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/nett/nett.php'),
+        "foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema'] as \$n) {"));
+
+// Ankeret appen sikter paa. Uten id-en treffer rullingen ingenting, og da
+// staar hun oeverst igjen uten at noe sier fra.
+sjekk('datovelgeren i bookingen har et anker',
+    str_contains($mt, '<div id="booking-datoer"'));
+sjekk('… og appen ruller dit naar man kommer inn med dagen',
+    str_contains($mt, "    if (dag || alle) this.rullTilDatoene();"));
+sjekk('… til det samme ankeret',
+    str_contains($mt, "      const el = document.getElementById('booking-datoer');"));
+// Skjermen tegnes etter setState, og kortet kan komme fra katalogen enda
+// senere. Uten flere forsok ville rullingen bommet paa en treg telefon —
+// som er nettopp den telefonen som trenger den.
+sjekk('… og proever om igjen til skjermen er tegnet',
+    str_contains($mt, "      if (++forsok < 60) window.requestAnimationFrame(gaa);"));
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -377,6 +377,51 @@ final class Vipps
              . ($tekst !== '' ? ': ' . $tekst : '.');
     }
 
+    /** Vipps kutter «paymentDescription» etter hundre tegn. */
+    public const BESKRIVELSE_MAKS = 100;
+
+    /**
+     * Teksten som foelger betalingen til Vipps.
+     *
+     * Eieren, 19. september 2026, med en rad paa kr 1 490 under Okonomi:
+     * «kan du bekrefte at det stemmer? Sjekk hva som er trukket fra vipps» —
+     * og da det viste seg at vi ikke sender noe som sier hvem eller hva:
+     * «er det mulig at vi kan se i vipps transaksjonen hva de betaler for?
+     * Og hvem som betalte?»
+     *
+     * Foer sto det bare kurstittelen, eller «Lissom — bestilling 1042».
+     * Det sier ikke hvilken dato, hvor mange plasser, eller hvem. Skal en
+     * transaksjon i Vipps kunne kjennes igjen uten aa slaa opp referansen,
+     * maa den baere det selv.
+     *
+     * Halen — datoen, antallet, navnet — er det som skiller to like
+     * betalinger fra hverandre, saa den staar. Blir det for langt, er det
+     * tittelen som kortes; den kjenner man igjen paa begynnelsen.
+     *
+     * Teksten vises ogsaa i kundens egen Vipps-app. Derfor staar det den
+     * ville skrevet selv: kurset, datoen, antallet — og sitt eget navn.
+     */
+    public static function beskrivelse(string $hoved, string ...$deler): string
+    {
+        $hale = '';
+        foreach ($deler as $d) {
+            $d = trim($d);
+            if ($d !== '') {
+                $hale .= ' · ' . $d;
+            }
+        }
+
+        $hoved = trim($hoved);
+        $plass = self::BESKRIVELSE_MAKS - mb_strlen($hale);
+        if ($plass < mb_strlen($hoved)) {
+            // Under to tegn er det ingenting igjen aa korte til, og et
+            // ensomt «…» sier mindre enn ingenting.
+            $hoved = $plass > 1 ? rtrim(mb_substr($hoved, 0, $plass - 1)) . '…' : '';
+        }
+
+        return mb_substr($hoved . $hale, 0, self::BESKRIVELSE_MAKS);
+    }
+
     /**
      * Oppretter en betaling og returnerer adressen brukeren skal sendes til.
      *

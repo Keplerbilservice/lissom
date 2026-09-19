@@ -108,7 +108,14 @@ if (Foresporsel::metode() === 'POST') {
         $betaling = Vipps::opprettBetaling(
             $referanse,
             $prisOre,
-            'Lissom — ta med barn, ' . Tillegg::maanedNavn($maaned),
+            // Barnets navn staar IKKE her. Maaneden og medlemmets navn
+            // skiller betalingen fra alle andre, og et barns navn har
+            // ingenting aa gjore hos en betalingsleverandor som ikke
+            // trenger det. Verkstedet har det i medlem_tillegg.
+            Vipps::beskrivelse(
+                'Lissom — ta med barn, ' . Tillegg::maanedNavn($maaned),
+                $navn
+            ),
             Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse) . '&til=' . rawurlencode('/min-side'),
             $telefon !== '' ? $telefon : null
         );

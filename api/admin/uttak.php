@@ -551,7 +551,9 @@ if ($handling === 'vippsqr') {
         $svar = Vipps::opprettBetaling(
             $referanse,
             $sum,
-            $tittel . ' — Lissom Keramikk',
+            // «Vipps-QR» er ikke et navn; det skrives bare naar noen har
+            // ført inn hvem det gjelder.
+            Vipps::beskrivelse($tittel . ' — Lissom Keramikk', $kunde),
             Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse)
         );
     } catch (Throwable $e) {

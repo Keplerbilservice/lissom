@@ -97,7 +97,9 @@ try {
     $svar = Vipps::opprettBetaling(
         $referanse,
         $sum,
-        $tittel . ' — Lissom Keramikk',
+        // Navnet staar bare naar noen har skrevet det inn. «Betalt med
+        // QR» er ikke et navn, og hjelper ingen i Vipps.
+        Vipps::beskrivelse($tittel . ' — Lissom Keramikk', $navn),
         Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse)
     );
 } catch (Throwable $e) {

@@ -863,7 +863,15 @@ final class Booking
             $betaling = Vipps::opprettBetaling(
                 $referanse,
                 $aBetale,
-                mb_substr($okt['tittel'], 0, 100),
+                // Kurset, naar det er, hvor mange plasser og hvem. Uten
+                // dette sto det bare kurstittelen i Vipps — og to paameldinger
+                // paa det samme kurset var ikke til aa skille fra hverandre.
+                Vipps::beskrivelse(
+                    (string) $okt['tittel'],
+                    self::norskDato((string) $okt['start_tid']),
+                    $antall > 1 ? $antall . ' plasser' : '1 plass',
+                    $navn
+                ),
                 Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
                 $telefon
             );

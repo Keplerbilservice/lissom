@@ -537,7 +537,28 @@ final class Nett
             . "</head>\n<body>\n"
             . $side['kropp']
             . Deler::samtykke()
-            . '<script>window.lissomMaal = ' . $maal . ";\n" . self::skript() . "\n" . (string) ($side['skript'] ?? '') . "</script>\n"
+            // ── Sidas egne data FOER det felles skriptet ─────────────
+            //
+            // Eieren, 20. september 2026: «er det slik at referanse
+            // karusellen har stoppet aa rullere paa forsiden?» Den hadde
+            // det, og hadde gjort det stille.
+            //
+            // nett.js leser «window.lissomRot» med det samme:
+            //
+            //     var rot = window.lissomRot || [];
+            //     felt('rot', rot.length, 12000, ...);
+            //
+            // og felt() gir opp paa «antall < 2». Sto sidas eget skript
+            // ETTER, var lista tom naar det ble lest — ingen klokke, ingen
+            // feilmelding, og prikkene fikk aldri en klikk-haandterer
+            // heller. Maalt paa lissom.no: feltet byttet ikke paa 48
+            // sekunder, og 12 000 ms-klokka ble aldri satt.
+            //
+            // Produktkarusellen paa mobil overlevde fordi den teller
+            // DOM-elementer i stedet for en variabel.
+            //
+            // bin/karusellsjekk.mjs passer paa rekkefoelgen.
+            . '<script>window.lissomMaal = ' . $maal . ";\n" . (string) ($side['skript'] ?? '') . "\n" . self::skript() . "</script>\n"
             . "</body>\n</html>\n";
     }
 }

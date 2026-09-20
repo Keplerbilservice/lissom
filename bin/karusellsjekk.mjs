@@ -64,6 +64,40 @@ sjekk('… og bruker lengden til aa bestemme om feltet skal rullere',
 sjekk('… og gir opp paa under to kort',
       js.includes('if (!el || antall < 2) return;'));
 
+// ── Bare referansekunder ─────────────────────────────────────────────
+//
+// Eieren, 20. september 2026: «i samme karusellen saa ligger det og andre
+// ting, kan du soerge for at det kun er referansekunder i denne». Events og
+// Medlemskap sto som to faste kort foran kundene. Events er tatt helt av
+// forsida; Medlemskap staar fra foer som eget kort under «Velg din inngang».
+//
+// De to utgavene av forsida — serversida og appen — maa vaere enige om det.
+const app = les('lissom-2108.html');
+// Kommentarene strippes foerst. Ordet «faste» staar i forklaringa over
+// metoden, og en sjekk som leser den forklaringa maaler ingenting.
+const rotasjonene = ((app.match(/\n  rotasjonene\(\) \{[\s\S]*?\n  \}\n/) || [''])[0])
+  .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+
+sjekk('serversida bygger rotasjonen tom og fyller den med kunder',
+      /\$rot = \[\];/.test(forside));
+sjekk('… og har ingen faste kort i den',
+      !/\$rot = \[\s*\n\s*\['merke' =>/.test(forside)
+      && !forside.includes("'merke' => 'Events'")
+      && !forside.includes("'merke' => 'Medlemskap'"));
+sjekk('appen gjor det samme',
+      rotasjonene.trim() !== ''
+      && !rotasjonene.includes('faste.concat(')
+      && !rotasjonene.includes('const faste')
+      && !rotasjonene.includes("stikktittel: 'Events'")
+      && !rotasjonene.includes("stikktittel: 'Medlemskap'"),
+      'rotasjonene() skal bare returnere referansekundene');
+sjekk('… og begge lar seksjonen staa borte naar det ikke er noen kunder',
+      forside.includes('if ($rot !== []) {') && app.includes('rotVises: alle.length > 0,'));
+// En kunde har en lenke til seg selv, ikke to knapper. Staar de igjen, leter
+// skriptet etter markup som ikke finnes.
+sjekk('knappene som hoerte til de faste er borte fra begge',
+      !js.includes("q('knapper')") && !app.includes('rotHarKnapper'));
+
 // ── Produktkarusellen ────────────────────────────────────────────────
 //
 // Den teller DOM-elementer i stedet for en variabel, og var derfor uberoert

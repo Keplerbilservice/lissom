@@ -59,9 +59,9 @@
   });
 
   /* ── Feltene som bytter ─────────────────────────────────────────────── */
-  // Events/medlemskap/kundene: 12 s per felt, 0,8 s toning. Produktene paa
-  // mobil: 6 s. Stopper naar musa eller fingeren er over, og for godt
-  // naar noen trykker paa en prikk — som tonBytt() i appen.
+  // Referansekundene: 12 s per felt, 0,8 s toning. Produktene paa mobil:
+  // 6 s. Stopper naar musa eller fingeren er over, og for godt naar noen
+  // trykker paa en prikk — som tonBytt() i appen.
   var rolig = false;
   try { rolig = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
@@ -111,10 +111,9 @@
     var logo = q('logo'); logo.style.display = r.logo ? 'block' : 'none';
     logo.style.backgroundImage = r.logo ? 'url("' + r.logo + '")' : ''; logo.setAttribute('aria-label', 'Logoen til ' + r.stikktittel);
     var u = q('undertekst'); u.textContent = r.undertekst || ''; u.style.display = r.undertekst ? 'block' : 'none';
-    var kn = q('knapper'); kn.style.display = r.knappA ? 'flex' : 'none';
-    var a = q('knappA'), b = q('knappB');
-    if (a) { a.firstChild.nodeValue = r.knappA; a.href = r.hrefA || '#'; }
-    if (b) { b.textContent = r.knappB; b.href = r.hrefB || '#'; }
+    // Knappene sto her. De hoerte til Events og Medlemskap, som ikke er i
+    // feltet lenger — eieren, 20. september 2026: «kan du soerge for at det
+    // kun er referansekunder i denne». En kunde har en lenke, ikke knapper.
     var l = q('lenke'); l.style.display = r.lenke ? 'inline-block' : 'none'; l.href = r.lenke || '#'; l.textContent = r.lenkeTekst || '';
   });
 

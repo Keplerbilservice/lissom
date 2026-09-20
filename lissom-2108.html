@@ -2599,6 +2599,12 @@ window.__resources = {
 
            De to faste har knapper; kundene har en logo og en lenke til seg
            selv. Feltet tegner det som finnes. -->
+      <!-- Referansekundene. Eieren, 20. september 2026: «kan du soerge for
+           at det kun er referansekunder i denne». Events og Medlemskap sto
+           her som to faste kort foran dem; de er borte. Er det ingen kunder
+           — eller er bryteren av — staar ikke seksjonen i det hele tatt.
+           En tom bilderamme er verre enn ingenting. -->
+      <sc-if value="{{ rotVises }}" hint-placeholder-val="{{ true }}">
       <section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <!-- «onTouchEnd» og «onTouchCancel» maa staa.
 
@@ -2621,12 +2627,6 @@ window.__resources = {
             <sc-if value="{{ rotHarTekst }}" hint-placeholder-val="{{ true }}">
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ rotTekst }}</p>
             </sc-if>
-            <sc-if value="{{ rotHarKnapper }}" hint-placeholder-val="{{ true }}">
-              <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" icon-after="arrow-right" on-click="{{ rotKnappA }}" hint-size="auto,48px">{{ rotKnappANavn }}</x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ rotKnappB }}" hint-size="auto,48px">{{ rotKnappBNavn }}</x-import>
-              </div>
-            </sc-if>
             <sc-if value="{{ rotHarLenke }}" hint-placeholder-val="{{ false }}">
               <a href="{{ rotLenke }}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ rotLenkeTekst }}</a>
             </sc-if>
@@ -2640,6 +2640,7 @@ window.__resources = {
           </div>
         </div>
       </section>
+      </sc-if>
 
       <!-- Referansekundene sto her, i en egen seksjon med sin egen
            rotasjon og sine egne prikker — det samme oppsettet to ganger paa
@@ -28008,36 +28009,26 @@ class Component extends DCLogic {
   }
 
   rotasjonene() {
-    const faste = [
-      {
-        merke: 'Events',
-        stikktittel: 'Events',
-        tittel: 'En kveld de kommer til å snakke om',
-        tekst: 'Date Night, Sip & Clay og private events. Perfekt for utdrikningslag, bedrifter, bursdager og venninnekvelder — ingen trenger erfaring, og vi ordner alt.',
-        bilde: 'uploads_shutterstock_2767913113-1.jpg',
-        alt: 'Sip & Clay hos Lissom',
-        knappA: 'Se events',
-        knappB: 'Send forespørsel',
-      },
-      {
-        merke: 'Medlemskap',
-        stikktittel: 'Medlemskap',
-        tittel: 'Verkstedet, når det passer deg',
-        tekst: 'Fast plass i verkstedet med egen dørkode. Du stempler inn på mobilen og jobber videre når du vil — leire, glasur og brenning er en del av medlemskapet. Krever kurs eller erfaring fra før.',
-        bilde: 'uploads_shutterstock_2829104351.jpg',
-        alt: 'Et nytt medlem far provemedlemskapet sitt i verkstedet',
-        knappA: 'Se medlemskap',
-        knappB: 'Se medlemskap',
-      },
-    ];
-
+    // Bare referansekundene.
+    //
+    // Events og Medlemskap sto her som to faste kort foran dem. Eieren,
+    // 20. september 2026: «i samme karusellen saa ligger det og andre ting,
+    // kan du soerge for at det kun er referansekunder i denne».
+    //
+    // Medlemskap staar fra foer som eget kort under «Velg din inngang», saa
+    // det mistet ingenting. Events sto bare her — og paa spoersmaalet om
+    // hvor det skulle: «ta Events helt av forsida». Det finnes fortsatt i
+    // menyen og paa kurssida med filteret «Events».
+    //
+    // Serversida gjor det samme; se app/nett/sider/forside.php, og
+    // bin/karusellsjekk.mjs som passer paa at de to er enige.
     if (!this.bryterPaa('referanser')) {
-      return faste;
+      return [];
     }
 
-    // Kundene har ingen to knapper — de har en lenke til seg selv, og en
-    // logo. Feltet under tegner det som finnes og hopper over resten.
-    const kunder = (this.state.referanser || []).filter(k => k.navn && k.bilde).map(k => ({
+    // Kundene har ingen knapper — de har en logo, et sitat og en lenke til
+    // seg selv. Feltet tegner det som finnes og hopper over resten.
+    return (this.state.referanser || []).filter(k => k.navn && k.bilde).map(k => ({
       merke: k.navn,
       stikktittel: k.navn,
       // Sitatet er det sterkeste naar det finnes. Ellers sier vi hva det er.
@@ -28050,8 +28041,6 @@ class Component extends DCLogic {
       lenkeTekst: 'Se ' + k.navn + ' →',
       undertekst: k.sitatAv || '',
     }));
-
-    return faste.concat(kunder);
   }
 
   // Bytter til neste, eller til en bestemt. Teksten tones ut for den byttes,
@@ -63147,27 +63136,20 @@ class Component extends DCLogic {
       goHandbygging: () => { this.setState({ side: 'kurs', kursFilter: 'Håndbygging' }); window.scrollTo(0, 0); },
       ...(() => {
         const alle = this.rotasjonene();
-        const nr = ((this.state.rotNr || 0) % alle.length + alle.length) % alle.length;
-        const r = alle[nr];
-        // Knappene hoerer til de to faste. En referansekunde har ingen —
-        // den har en lenke til seg selv.
-        const handling = [
-          [() => this.goNaa('kurs', 'Events'), () => this.apneForesporsel()],
-          [() => this.goNaa('medlemskap'), () => this.goNaa('medlemskap')],
-        ][nr] || [() => {}, () => {}];
+        // Ingen kunder, ingen seksjon. Uten dette blir «nr» NaN paa en tom
+        // liste, og «r.stikktittel» kaster — hele forsida med seg.
+        const r = alle.length
+          ? alle[((this.state.rotNr || 0) % alle.length + alle.length) % alle.length]
+          : { stikktittel: '', tittel: '', tekst: '', bilde: '', alt: '' };
 
         return {
+          rotVises: alle.length > 0,
           rotStikktittel: r.stikktittel,
           rotTittel: r.tittel,
           rotTekst: r.tekst,
           rotHarTekst: !!r.tekst,
           rotBilde: r.bilde,
           rotAlt: r.alt,
-          rotKnappANavn: r.knappA || '',
-          rotKnappBNavn: r.knappB || '',
-          rotKnappA: handling[0],
-          rotKnappB: handling[1],
-          rotHarKnapper: !!r.knappA,
           // Kundene: logoen over navnet, lenken under teksten, og hvem
           // sitatet er fra naar det staar et.
           rotHarLogo: !!r.logo,

@@ -119,17 +119,20 @@ $h .= '<div class="lx-kunmobil">'
     . Deler::knapp($innh('Forside/2/Knapp på mobil'), ['href' => '/kurs', 'variant' => 'ink', 'iconAfter' => 'arrow-right', 'full' => true])
     . '</div></div></section>' . "\n";
 
-// ── Events, medlemskap og kundene — feltet som bytter ────────────────────
-$rot = [
-    ['merke' => 'Events', 'stikktittel' => 'Events', 'tittel' => 'En kveld de kommer til å snakke om',
-     'tekst' => 'Date Night, Sip & Clay og private events. Perfekt for utdrikningslag, bedrifter, bursdager og venninnekvelder — ingen trenger erfaring, og vi ordner alt.',
-     'bilde' => 'uploads_shutterstock_2767913113-1.jpg', 'alt' => 'Sip & Clay hos Lissom',
-     'knappA' => 'Se events', 'hrefA' => '/events', 'knappB' => 'Send forespørsel', 'hrefB' => '/kontakt'],
-    ['merke' => 'Medlemskap', 'stikktittel' => 'Medlemskap', 'tittel' => 'Verkstedet, når det passer deg',
-     'tekst' => 'Fast plass i verkstedet med egen dørkode. Du stempler inn på mobilen og jobber videre når du vil — leire, glasur og brenning er en del av medlemskapet. Krever kurs eller erfaring fra før.',
-     'bilde' => 'uploads_shutterstock_2829104351.jpg', 'alt' => 'Et nytt medlem far provemedlemskapet sitt i verkstedet',
-     'knappA' => 'Se medlemskap', 'hrefA' => '/medlemskap', 'knappB' => 'Se medlemskap', 'hrefB' => '/medlemskap'],
-];
+// ── Referansekundene — feltet som bytter ────────────────────────────────
+//
+// Eieren, 20. september 2026: «i samme karusellen saa ligger det og andre
+// ting, kan du soerge for at det kun er referansekunder i denne».
+//
+// Events og Medlemskap sto her ogsaa, som to faste kort foran kundene.
+// Medlemskap staar fra foer som eget kort under «Velg din inngang», saa det
+// mistet ingenting. Events sto bare her — og paa spoersmaalet om hvor det
+// skulle: «ta Events helt av forsida». Det finnes fortsatt i toppmenyen og
+// paa /events.
+//
+// Knappene fulgte de to faste. En kunde har ingen knapper — den har en logo,
+// et sitat og en lenke til seg selv — saa de er borte fra markupen ogsaa.
+$rot = [];
 if (Nett::bryterPaa('referanser') && DB::harTabell('referansekunder')) {
     $logoFelt = DB::harKolonne('referansekunder', 'logo') ? 'logo,' : '';
     foreach (DB::alle("SELECT navn, bilde, {$logoFelt} tekst, sitat, sitat_av, lenke FROM referansekunder WHERE aktiv = 1 AND samtykke = 1 ORDER BY sortering, navn") as $r) {
@@ -143,25 +146,25 @@ if (Nett::bryterPaa('referanser') && DB::harTabell('referansekunder')) {
             'undertekst' => (string) ($r['sitat_av'] ?? '')];
     }
 }
-$r0 = $rot[0];
-$h .= '<section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
-    . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease);">'
-    . '<img data-rot="bilde" src="' . $e($r0['bilde']) . '" alt="' . $e($r0['alt']) . '" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">'
-    . '<div>'
-    . '<div data-rot="logo" role="img" style="display: none; width: 132px; height: 60px; margin-bottom: var(--space-4); background-size: contain; background-repeat: no-repeat; background-position: left center;"></div>'
-    . '<div data-rot="stikktittel" style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($r0['stikktittel']) . '</div>'
-    . '<h2 data-rot="tittel" style="margin: 0 0 var(--space-5);">' . $e($r0['tittel']) . '</h2>'
-    . '<div data-rot="undertekst" style="display: none; margin: calc(var(--space-5) * -1) 0 var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);"></div>'
-    . '<p data-rot="tekst" style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">' . $e($r0['tekst']) . '</p>'
-    . '<div data-rot="knapper" style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">'
-    . Deler::knapp($r0['knappA'], ['href' => $r0['hrefA'], 'variant' => 'ink', 'iconAfter' => 'arrow-right', 'attr' => 'data-rot="knappA"'])
-    . Deler::knapp($r0['knappB'], ['href' => $r0['hrefB'], 'variant' => 'secondary', 'attr' => 'data-rot="knappB"'])
-    . '</div>'
-    . '<a data-rot="lenke" href="#" target="_blank" rel="noopener noreferrer" style="display: none; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;"></a>';
-if (count($rot) > 1) {
-    $h .= '<div style="display: flex; gap: 10px; margin-top: var(--space-8);">' . Deler::prikker(array_column($rot, 'merke'), 'rot') . '</div>';
+// Ingen kunder, ingen seksjon. Et tomt felt med en tom bilderamme er verre
+// enn ingenting — og «$rot[0]» finnes ikke aa tegne det foerste kortet med.
+if ($rot !== []) {
+    $r0 = $rot[0];
+    $h .= '<section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
+        . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease);">'
+        . '<img data-rot="bilde" src="' . $e($r0['bilde']) . '" alt="' . $e($r0['alt']) . '" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">'
+        . '<div>'
+        . '<div data-rot="logo" role="img" style="display: none; width: 132px; height: 60px; margin-bottom: var(--space-4); background-size: contain; background-repeat: no-repeat; background-position: left center;"></div>'
+        . '<div data-rot="stikktittel" style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($r0['stikktittel']) . '</div>'
+        . '<h2 data-rot="tittel" style="margin: 0 0 var(--space-5);">' . $e($r0['tittel']) . '</h2>'
+        . '<div data-rot="undertekst" style="display: none; margin: calc(var(--space-5) * -1) 0 var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);"></div>'
+        . '<p data-rot="tekst" style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">' . $e($r0['tekst']) . '</p>'
+        . '<a data-rot="lenke" href="#" target="_blank" rel="noopener noreferrer" style="display: none; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;"></a>';
+    if (count($rot) > 1) {
+        $h .= '<div style="display: flex; gap: 10px; margin-top: var(--space-8);">' . Deler::prikker(array_column($rot, 'merke'), 'rot') . '</div>';
+    }
+    $h .= '</div></div></section>' . "\n";
 }
-$h .= '</div></div></section>' . "\n";
 
 // ── Salgskampanjen ───────────────────────────────────────────────────────
 if (Nett::bryterPaa('salgsuke') && !Nett::mobilSkjult('salgsuke')) {
@@ -215,10 +218,10 @@ $h .= '</div></section>' . "\n";
 $h .= '</div>' . "\n";
 $h .= Deler::bunn(true);
 
-// Rotasjonene til skriptet: tekstene i feltet som bytter.
+// Rotasjonene til skriptet: tekstene i feltet som bytter. «knappA» og
+// «knappB» staar ikke lenger her — en referansekunde har ingen knapper.
 $rotJson = json_encode(array_map(static fn(array $r): array => [
     'stikktittel' => $r['stikktittel'], 'tittel' => $r['tittel'], 'tekst' => $r['tekst'], 'bilde' => $r['bilde'], 'alt' => $r['alt'],
-    'knappA' => $r['knappA'] ?? '', 'hrefA' => $r['hrefA'] ?? '', 'knappB' => $r['knappB'] ?? '', 'hrefB' => $r['hrefB'] ?? '',
     'logo' => $r['logo'] ?? '', 'lenke' => $r['lenke'] ?? '', 'lenkeTekst' => $r['lenkeTekst'] ?? '', 'undertekst' => $r['undertekst'] ?? '',
 ], $rot), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 

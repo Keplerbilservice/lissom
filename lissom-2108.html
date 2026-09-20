@@ -38703,6 +38703,17 @@ class Component extends DCLogic {
       // samme arbeidet sett paa lang sikt — ikke inne i den, for kalenderen
       // handler om datoer og denne om maaneder.
       ['Årskalender', 'adminarskalender'],
+      // Alt som venter paa et ja eller nei, samlet.
+      //
+      // Eieren, 16. september 2026: «du kan godt kalle den til godkjenning og
+      // putte alle de andre som trenger godkjenning inn i samme sted». Men
+      // skjermen sto ikke i menyen: eneste vei dit var pilla paa Kalender, og
+      // paa PC maatte man altsaa innom kalenderen for aa se hva som ventet.
+      //
+      // Eieren, 20. september 2026, etter en gjennomgang av hvor ting staar:
+      // «er dere flere ting som vises paa ulogiske steder?» — dette var ett
+      // av dem. Pilla paa Kalender blir staaende; den viser tallet.
+      ['Til godkjenning', 'admingodkjenning'],
       // Kursene og dem som gaar paa dem er det samme arbeidet: hva verkstedet
       // tilbyr, og hvem som kommer. De sto som to punkter og delte allerede
       // to faner — «Paameldte» og «Kurs» sto begge steder — og det var det
@@ -38922,7 +38933,11 @@ class Component extends DCLogic {
       case 'adminnyepameldinger': return p('Oversikt');
       case 'adminmedlemssoknader': return p('Oversikt');
       case 'adminubesvarte':     return p('Oversikt');
-      case 'admingodkjenning':  return p('Oversikt');
+      // Et sted som de andre naa, saa raden lyser naar man staar der.
+      // Sto den som «Oversikt», lyste Oversikt mens man sto paa
+      // godkjenningsskjermen — samme feil Kassa hadde for den ble et
+      // menypunkt.
+      case 'admingodkjenning':  return p('Til godkjenning');
       case 'adminomrmedlemmer':  return p('Brukere', '', '');
       case 'adminkursdeltakere': return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Kurs og deltakere', 'Kurs og deltakere', 'Påmeldte');

@@ -19628,6 +19628,36 @@ sjekk('… og gruppene staar bare naar de har noe',
     substr_count($tgSida, '<sc-if value="{{ gHarPubliserte }}"') === 2
     && substr_count($tgSida, '<sc-if value="{{ gHarSkjulte }}"') === 2);
 
+// ── «Til godkjenning» er et sted som de andre ────────────────────────
+//
+// Eieren, 20. september 2026, etter en gjennomgang av hvor ting staar:
+// «er dere flere ting som vises paa ulogiske steder?»
+//
+// Skjermen samler alt som venter paa et ja eller nei — eieren, 16.
+// september: «du kan godt kalle den til godkjenning og putte alle de andre
+// som trenger godkjenning inn i samme sted» — men den sto ikke i menyen.
+// Eneste vei dit var pilla paa Kalender, saa paa PC maatte man innom
+// kalenderen for aa se hva som ventet.
+echo "\n== Til godkjenning staar i menyen ==\n";
+
+$tgMeny = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('skjermen har et fast punkt i adminmenyen',
+    str_contains($tgMeny, "      ['Til godkjenning', 'admingodkjenning'],"));
+// Ved siden av kalenderne: det er der man staar naar man ser over dagen.
+sjekk('… rett etter Aarskalender',
+    strpos($tgMeny, "['Årskalender', 'adminarskalender'],")
+    < strpos($tgMeny, "['Til godkjenning', 'admingodkjenning'],")
+    && strpos($tgMeny, "['Til godkjenning', 'admingodkjenning'],")
+    < strpos($tgMeny, "['Kurs og deltakere', 'adminomrkurs'],"));
+// Sto den som «Oversikt», lyste Oversikt mens man sto paa
+// godkjenningsskjermen — samme feil Kassa hadde for den ble et menypunkt.
+sjekk('… og raden lyser naar man staar der',
+    str_contains($tgMeny, "      case 'admingodkjenning':  return p('Til godkjenning');")
+    && !str_contains($tgMeny, "      case 'admingodkjenning':  return p('Oversikt');"));
+// Pilla paa Kalender blir staaende: den er den som baerer tallet.
+sjekk('… og pilla paa Kalender staar som for',
+    str_contains($tgMeny, "                { navn: 'Til godkjenning', nokkel: 'tilgodkjenning', varsel: true,"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

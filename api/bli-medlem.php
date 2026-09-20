@@ -261,7 +261,12 @@ Varsel::malTilAdmin('intern_nytt_medlem', [
     'melding'  => $melding !== '' ? "\nMelding:\n" . $melding . "\n" : '',
 ], 'membership_application', $id);
 
-foreach (Config::adminNumre() as $nr) {
+// SMS-en til verkstedet gaar bare naar SMS faktisk kan sendes. Uten
+// leverandoer ble den til en e-post nummer to til den samme innboksen
+// («Varsel maa sendes for haand: Nytt medlem») — eieren, 20. september
+// 2026: «admin faar fortsatt to epostvarsler». Varsel::mal() stanser den
+// ogsaa selv; dette er beltet i tillegg til bukseselene.
+foreach (Varsel::smsMulig() ? Config::adminNumre() : [] as $nr) {
     Varsel::mal('intern_nytt_medlem_sms', ['telefon' => $nr], [
         'navn'     => $navn,
         'type'     => $type,

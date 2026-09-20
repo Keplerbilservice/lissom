@@ -12845,6 +12845,31 @@ sjekk('to helt like beskjeder til admin blir én',
 sjekk('… men teksten maa ogsaa vaere den samme',
     str_contains($vars, "['e' => mb_substr(\$emne, 0, 191), 't' => \$tekst]"));
 
+// ── E-post nummer to ved en innmelding ───────────────────────────────────
+//
+// Eieren, 20. september 2026: «admin faar fortsatt to epostvarsler».
+//
+// Ved en innmelding gaar «Nytt medlem: …» paa e-post og «intern_nytt_
+// medlem_sms» paa SMS til admin-numrene. Uten SMS-leverandoer havnet SMS-en
+// i «ingen vei fram»-sporet i Varsel::mal(), og ble til en e-post til: «Varsel
+// maa sendes for haand: Nytt medlem» — samme beskjed, samme innboks, og en
+// oppfordring til verkstedet om aa sende SMS til seg selv.
+sjekk('en intern SMS som ikke kan gaa blir ikke en e-post til',
+    str_contains($vars, "if (str_starts_with(\$malNavn, 'intern_')) {\n            logg('Intern SMS kunne ikke sendes — e-posten er alt sendt', ['mal' => \$malNavn]);\n            return;\n        }"));
+// … og den stanses der den lages ogsaa. To sperrer for det samme: det er
+// «uansett aarsak».
+$bliApi2 = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('innmeldingen sender ikke SMS til verkstedet uten SMS-leverandoer',
+    str_contains($bliApi2, "foreach (Varsel::smsMulig() ? Config::adminNumre() : [] as \$nr) {"));
+// Sperren mot to helt like beskjeder gjaldt bare dem som kom av en mal. De
+// som lages i koden — tilAdmin() — gikk utenom.
+$posTilAdmin = strpos($vars, 'public static function tilAdmin(');
+$posMalTilAdmin = strpos($vars, 'public static function malTilAdmin(');
+sjekk('tilAdmin() har den samme sperren mot to helt like beskjeder',
+    $posTilAdmin !== false && $posMalTilAdmin !== false
+    && substr_count(substr($vars, $posTilAdmin, $posMalTilAdmin - $posTilAdmin),
+        "WHERE kanal = 'epost' AND emne = :e AND tekst = :t") === 1);
+
 // ── Innmeldingen skal ikke ta over en annens rad ─────────────────────────
 //
 // «meld-inn» slaar opp paa telefon og e-post og tar raden den treffer. Deler

@@ -130,6 +130,27 @@ final class Varsel
      */
     public static function tilAdmin(string $emne, string $tekst, ?string $refType = null, ?int $refId = null): int
     {
+        // ── Den samme beskjeden to ganger ─────────────────────────────
+        //
+        // Sperren malTilAdmin() har hatt siden 17. september 2026 gjaldt
+        // bare beskjeder av en mal. De som lages i koden — «Varsel maa
+        // sendes for haand …» — gikk utenom, og kunne komme to ganger naar
+        // det samme kallet kom to ganger. Eieren, 16. september: «sperr
+        // dobbel e-post uansett aarsak». Da gjelder den her ogsaa: er baade
+        // emnet og teksten det samme som noe vi alt har lagt i koen de siste
+        // femten minuttene, er det en dublett.
+        if (DB::en(
+            "SELECT id FROM notifications
+              WHERE kanal = 'epost' AND emne = :e AND tekst = :t
+                AND status IN ('ko', 'sendt')
+                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)
+              LIMIT 1",
+            ['e' => mb_substr($emne, 0, 191), 't' => $tekst]
+        ) !== null) {
+            logg('Hoppet over en helt lik beskjed til admin', ['emne' => $emne]);
+            return 0;
+        }
+
         $antall = 0;
         foreach (self::adminEposter() as $adresse) {
             // «intern» staar ikke i noen gruppe, og faar derfor ingen
@@ -321,6 +342,24 @@ final class Varsel
         }
 
         if ($viaEpost || $viaSms) {
+            return;
+        }
+
+        // ── En SMS til verkstedet selv, uten SMS ──────────────────────
+        //
+        // Eieren, 20. september 2026: «admin faar fortsatt to epostvarsler».
+        //
+        // Ved en innmelding gaar det én e-post til verkstedet
+        // («Nytt medlem: …») og én SMS til admin-numrene («intern_nytt_
+        // medlem_sms»). Er SMS ikke satt opp, kom SMS-en hit — og ble til
+        // e-post nummer to: «Varsel maa sendes for haand: Nytt medlem», med
+        // den samme beskjeden en gang til, til den samme innboksen. Den ba
+        // verkstedet sende en SMS til seg selv.
+        //
+        // Beskjeden til verkstedet er alt gitt paa e-post. En intern SMS som
+        // ikke kan gaa, skal bare loggfoeres — ikke bli en e-post til.
+        if (str_starts_with($malNavn, 'intern_')) {
+            logg('Intern SMS kunne ikke sendes — e-posten er alt sendt', ['mal' => $malNavn]);
             return;
         }
 

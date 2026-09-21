@@ -5981,7 +5981,7 @@ window.__resources = {
                       <input value="{{ skTekst }}" onChange="{{ settSk.tekst }}" placeholder="Kort beskrivelse *" style="{{ skFeltStil }}">
                       <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
                         <input value="{{ skPris }}" onChange="{{ settSk.pris }}" placeholder="Pris i kr *" style="{{ skFeltStil }}">
-                        <input value="{{ skAntall }}" onChange="{{ settSk.antall }}" placeholder="Antall tilgjengelig *" style="{{ skFeltStil }}">
+                        <input value="{{ skAntall }}" onChange="{{ settSk.antall }}" placeholder="Antall tilgjengelig" style="{{ skFeltStil }}">
                       </div>
                       <input value="{{ skProdusent }}" onChange="{{ settSk.produsent }}" placeholder="Navn på produsent *" style="{{ skFeltStil }}">
                       <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
@@ -6034,6 +6034,18 @@ window.__resources = {
                     <div style="display: flex; flex-direction: column;">
                       <sc-for list="{{ mineSalg }}" as="v" hint-placeholder-count="3">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
+                          <!-- Bildet av varen.
+                               Eirin, 20. september 2026, med bilde av denne
+                               lista: «da er det umulig aa vite hvilken av de
+                               to nest nederste jeg skal ta ned». To
+                               kronelysestaker til 400 kroner sto med samme
+                               navn, samme pris og samme merke — og ingenting
+                               annet aa skille dem paa.
+                               Bildet laa i dataene raden bygges av hele
+                               tiden; det ble bare aldri tegnet. Utsnittet er
+                               det hun selv pekte ut da hun la varen ut. -->
+                          <div style="display: flex; gap: var(--space-3); align-items: flex-start; min-width: 0;">
+                          <div style="{{ v.bildeStil }}"></div>
                           <div style="min-width: 0;">
                             <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.tittel }}</div>
                             <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.pris }}</div>
@@ -6045,6 +6057,7 @@ window.__resources = {
                             <sc-if value="{{ v.kanTrekke }}" hint-placeholder-val="{{ true }}">
                               <button type="button" onClick="{{ v.trekk }}" style="appearance: none; background: transparent; border: none; padding: 6px 0 0; cursor: pointer; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline;">Ta den ned</button>
                             </sc-if>
+                          </div>
                           </div>
                           <span style="{{ v.merkeStil }}">{{ v.statusTekst }}</span>
                         </div>
@@ -6524,6 +6537,9 @@ window.__resources = {
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.badge }}</div>
                 <div onClick="{{ p.visInfo }}" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); cursor: pointer;">{{ p.title }}</div>
                 <p class="lx-varetekst" style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ p.detalj }}</p>
+                <sc-if value="{{ p.harAntall }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.antallTekst }}</div>
+                </sc-if>
                 <div class="lx-varebunn" style="margin-top: auto; padding-top: var(--space-3); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ p.pris }}</span>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ p.velgHandling }}" hint-size="auto,36px">{{ p.cta }}</x-import>
@@ -21530,6 +21546,11 @@ window.__resources = {
             <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); white-space: nowrap;">{{ spPris }}</span>
           </div>
           <p style="margin: var(--space-4) 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ spTekst }}</p>
+          <!-- Har selgeren flere like, staar det. Ellers ikke: «1 stk» sier
+               ingenting man ikke visste av at varen ligger ute. -->
+          <sc-if value="{{ spHarAntall }}" hint-placeholder-val="{{ false }}">
+            <div style="margin: calc(var(--space-5) * -1) 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">{{ spAntall }}</div>
+          </sc-if>
           <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-5);">
             <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Levering</div>
             <div style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ spLevering }}</div>
@@ -24984,6 +25005,11 @@ class Component extends DCLogic {
       badge: v.kategori || '',
       kategori: v.kategori || 'Annet',
       utsolgt: !!v.utsolgt,
+      // «Antall tilgjengelig» hoerer til medlemmenes varer. Butikkens egne
+      // har «lager», som styrer «utsolgt» — et annet tall, og et som
+      // stemmer av seg selv fordi kassa trekker fra.
+      harAntall: false,
+      antallTekst: '',
     };
   }
 
@@ -55032,6 +55058,20 @@ class Component extends DCLogic {
           // Navnet paa den som laget den — det er hele poenget med
           // kolleksjonen. Sto som «Laget av medlem» paa alt.
           badge: g.laget || 'Laget av medlem', kategori: g.kategori, erMedlem: true,
+          // Har hun flere like, staar det. Ellers ikke — «1 stk» sier
+          // ingenting man ikke visste.
+          //
+          // Eirin, 20. september 2026: «naar jeg legger ting inn saa maa jeg
+          // legge inn antall tilgjengelige av produktet. Men i selve
+          // butikken kommer det jo ikke opp at det finnes flere av samme
+          // produkt.» Tallet ble lagret og sendt hit, og vist ingen steder.
+          //
+          // Det telles ikke ned av seg selv: handelen gaar direkte mellom
+          // kjoeper og selger over Vipps, og Lissom faar aldri vite at noe
+          // er solgt. Derfor er feltet valgfritt, og selgeren retter tallet
+          // selv naar hun vil.
+          harAntall: (g.antall || 1) > 1,
+          antallTekst: (g.antall || 1) + ' stk til salgs',
           cta: 'Se produkt',
           velgHandling: () => this.setState({ salgApen: g.id }),
         }));
@@ -60435,10 +60475,12 @@ class Component extends DCLogic {
       lukkSalg: () => this.setState({ salgApen: null }),
       ...(() => {
         const p = this.galleriListe().find(g => g.id === this.state.salgApen);
-        if (!p) return { spTittel: '', spBildeCss: 'none', spFokus: 'center' };
+        if (!p) return { spTittel: '', spBildeCss: 'none', spFokus: 'center', spHarAntall: false, spAntall: '' };
         return {
           spTittel: p.tittel, spTekst: p.tekst, spLaget: p.laget, spPris: p.pris,
           spTelefon: p.vipps, spLevering: p.levering,
+          spHarAntall: (p.antall || 1) > 1,
+          spAntall: (p.antall || 1) + ' stk til salgs',
           spBildeCss: "url('" + p.bilde + "')",
           spFokus: p.fokus || this.fokusFor(p.bilde || ''),
         };
@@ -60534,7 +60576,6 @@ class Component extends DCLogic {
         if (!s.skNavn) mangler.push('produktnavn');
         if (!s.skTekst) mangler.push('beskrivelse');
         if (!s.skPris) mangler.push('pris');
-        if (!s.skAntall) mangler.push('antall');
         if (!s.skProdusent) mangler.push('produsentnavn');
         if (!s.skVipps) mangler.push('vippsnummer');
         if (!s.skKontakt) mangler.push('kontaktinfo');
@@ -60602,6 +60643,17 @@ class Component extends DCLogic {
       // nye: pilla maa ha en farge som passer statusen, og en avvist vare
       // maa kunne si hvorfor.
       mineSalg: (this.state.mineSalg || []).map(v => Object.assign({}, v, {
+        // Bildet, saa to varer med samme navn kan skilles fra hverandre.
+        // Eirin, 20. september 2026: «da er det umulig aa vite hvilken av de
+        // to nest nederste jeg skal ta ned». Utsnittet er det hun valgte da
+        // hun la varen ut — samme fokuspunkt som butikken bruker.
+        bildeStil: {
+          width: 56, height: 56, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)', background: 'var(--clay-100)',
+          backgroundImage: v.bilde ? "url('" + v.bilde + "')" : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: v.fokus || this.fokusFor(v.bilde || ''),
+        },
         statusTekst: { til_godkjenning: 'Til godkjenning', publisert: 'Ute i butikken', avvist: 'Ikke lagt ut', skjult: 'Tatt ned', solgt: 'Solgt' }[v.status] || v.status,
         // Grunnen kommer fra Monica, skrevet da hun avviste varen. Staar den
         // tom, sier vi ingenting framfor «Ikke lagt ut: ».

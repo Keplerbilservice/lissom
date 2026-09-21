@@ -9197,80 +9197,13 @@ window.__resources = {
         <div style="{{ klNyDragStil }}">{{ klNyDragNavn }}</div>
       </sc-if>
 
-      <!-- Kurset, redigert i en rute midt paa skjermen.
-           Ruta laa ved kortet du trykket paa, saa du saa hvilket kurs du
-           holdt paa med. Det kostet mer enn det ga: trykket du paa et kort
-           ute til hoeyre eller langt nede, aapnet ruta der — og eieren
-           meldte det tre ganger.
-
-             31. august   «pop up, maa aapnes lenger opp saa jeg ser skjermen»
-             1. september «hele systemet har en tendens til aa aapne pop up
-                           eller nye vinduer utenfor skjermbildet om jeg er
-                           langt nede paa siden»
-             4. september med bilde av ruta nede i hoeyre hjoerne:
-                          «kan du bekrefte at sant ikke skjer igjen? at alt
-                           aapnes midt paa skjermen»
-
-           To ganger ble det rettet ved aa klemme ruta innenfor kanten. Det
-           fjernet ikke aarsaken, bare det verste utslaget. Naa staar den
-           midt paa skjermen, som alle de andre rutene i systemet — og da
-           finnes ikke feilen lenger.
-
-           Navnet paa kurset staar oeverst i ruta, saa man fortsatt ser hva
-           man holder paa med. Lagrelinja staar rett over feltene og kommer
-           foerst naar noe faktisk er endret. -->
-      <sc-if value="{{ klKursRedVises }}" hint-placeholder-val="{{ false }}">
-        <div onClick="{{ klKursRedLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.28); z-index: 77;"></div>
-        <div onClick="{{ klStopp }}" style="{{ klKursRedStil }}">
-          <div style="position: sticky; top: 0; z-index: 2; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle); border-radius: 22px 22px 0 0; padding: var(--space-5) var(--space-6) var(--space-3);">
-            <div style="display: flex; align-items: baseline; gap: var(--space-3);">
-              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kurset</span>
-              <button type="button" onClick="{{ klKursRedLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 0 2px;">×</button>
-            </div>
-            <h3 style="margin: 2px 0 2px; font-size: var(--text-xl);">{{ klKursRedNavn }}</h3>
-            <div style="font-size: var(--text-xs); color: var(--text-muted);">Endringen gjelder kurset. {{ klKursRedDatoer }}.</div>
-            <sc-if value="{{ klKursRedEndret }}" hint-placeholder-val="{{ true }}">
-              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); background: var(--lissom-yellow); border-radius: var(--radius-md); padding: 9px 12px;">
-                <span style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">{{ klKursRedEndretTekst }}</span>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="check" on-click="{{ klKursRedLagre }}" hint-size="auto,36px">Lagre endringer</x-import>
-              </div>
-            </sc-if>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4) var(--space-6) var(--space-6);">
-            <sc-for list="{{ klKursRedFelt }}" as="f" hint-placeholder-count="6">
-              <div>
-                <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">{{ f.etikett }}</label>
-                <sc-if value="{{ f.erTekst }}" hint-placeholder-val="{{ true }}">
-                  <input value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="{{ f.mal }}" style="{{ f.feltStil }}">
-                </sc-if>
-                <sc-if value="{{ f.erLang }}" hint-placeholder-val="{{ false }}">
-                  <textarea value="{{ f.verdi }}" onChange="{{ f.endre }}" rows="3" placeholder="{{ f.mal }}" style="{{ f.feltStil }}"></textarea>
-                </sc-if>
-                <!-- Hva et tomt felt betyr.
-                     Kursoppsettet viser standardteksten som graa hjelpetekst;
-                     her sto bare en tom boks. Samme felt, to skjermer, og
-                     bare den ene forklarte seg. Eieren, 31. august: «jeg
-                     forstaar ikke alle de tomme feltene». Det var ingenting
-                     aa forstaa det ut fra. -->
-                <sc-if value="{{ f.harMal }}" hint-placeholder-val="{{ false }}">
-                  <div style="margin-top: 4px; font-size: var(--text-xs); color: var(--text-muted);">{{ f.malMerke }}</div>
-                </sc-if>
-                <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
-                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <sc-for list="{{ f.valg }}" as="br" hint-placeholder-count="3">
-                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
-                    </sc-for>
-                  </div>
-                </sc-if>
-                <sc-if value="{{ f.erHake }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ f.veksle }}" style="{{ f.hakeStil }}">{{ f.hakeTekst }}</button>
-                </sc-if>
-              </div>
-            </sc-for>
-          </div>
-        </div>
-      </sc-if>
+      <!-- Her sto en egen rute som redigerte kurset i kalenderen, med 21
+           tekstfelt og uten bilder, datoer og sletting. Eieren, 21.
+           september 2026: «poenget med dette var at de skal vaere fult
+           redigerbare». Et trykk paa kortet aapner naa det komplette
+           kursoppsettet — det samme som under Kurs og deltakere — med
+           «Tilbake til kalenderen» oeverst. Ett skjema, ikke to som kan si
+           hver sin ting om det samme kurset. Se klApneKursFullt. -->
 
       <sc-if value="{{ klAngreVises }}" hint-placeholder-val="{{ false }}">
         <div style="position: fixed; left: 50%; transform: translateX(-50%); bottom: 28px; z-index: 90; display: flex; align-items: center; gap: var(--space-4); background: var(--lissom-brown); color: var(--clay-50); border-radius: var(--radius-pill); padding: 10px 12px 10px 22px; box-shadow: var(--shadow-lg);">
@@ -12785,7 +12718,7 @@ window.__resources = {
                  rulle helt ned for aa komme deg ut igjen — eller ut av hele
                  skjermen, og da var du ikke lenger i kurslista. -->
             <div class="lx-pillerad" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
-              <button class="lx-radpille" type="button" onClick="{{ kTilbakeListe }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">← Tilbake til kurslista</button>
+              <button class="lx-radpille" type="button" onClick="{{ kTilbakeListe }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kTilbakeTekst }}</button>
               <!-- Datoene til kurset staar lenger nede paa skjermen, i lista
                    som alt finnes. Sto det ikke noe om det her, var det ikke
                    til aa vite at de var der. -->
@@ -12913,6 +12846,19 @@ window.__resources = {
                   <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ kForeslaaTekst }}" hint-size="auto,40px">{{ kForeslaaMerke }}</x-import>
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kForeslaaHjelp }}</span>
+                  </div>
+                  <!-- Kortteksten.
+                       Feltet ble tatt ut 30. august («kort beskrivelse og
+                       dette lager du kan fjernes») — da sto den som en
+                       andre beskrivelse paa kurssiden. 15. september fikk
+                       den ny jobb: setningen paa kortet under «Vaare kurs»
+                       (migrasjon 186). Siden da kunne ingen rette den noe
+                       sted; Keramikk Workshop sto med smoerklokkas tekst til
+                       21. september. Naa staar feltet her igjen. -->
+                  <div style="margin-top: var(--space-5);">
+                    <label for="k-kort" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kort beskrivelse</label>
+                    <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Én setning som står på kortet under «Våre kurs». Kunden ser den før de åpner kurset.</p>
+                    <input id="k-kort" value="{{ kKortBeskrivelse }}" onChange="{{ settKKortBeskrivelse }}" maxlength="500" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   </div>
                 </div>
 
@@ -34955,6 +34901,7 @@ class Component extends DCLogic {
                nyeKurs: nytt.publisert === false ? nye : nye.concat([pub]),
                kvittering: navn + ' er lagret' };
     });
+    if (!behold) this.kTilbakeDitDuKom();
   }
 
   lagreKurs(rad, okter, behold) {
@@ -35171,6 +35118,7 @@ class Component extends DCLogic {
             this._adminHentes = false;
             this.hentAdmin();
             this.hentKatalog();
+            if (!behold) this.kTilbakeDitDuKom();
           }));
       })
       .catch(() => {
@@ -35671,7 +35619,7 @@ class Component extends DCLogic {
     if (!this.erPublisert() || !this.state.innlogget) return;
     if (!this.erAdminSkjerm(this.state.side) || document.hidden) return;
     if (this.state.klDrag) return;
-    if (this.state.kRed || this.state.detalj || this.state.klKursRedId) return;
+    if (this.state.kRed || this.state.detalj) return;
 
     // Kalenderen henter maaned for maaned. Bare merkene nullstilles, ikke
     // dataene: da staar det som er tegnet til det nye svaret kommer, og
@@ -37659,10 +37607,13 @@ class Component extends DCLogic {
    * skjemaet tegnes over lista, saa uten rullingen sto man igjen med
    * foelelsen av at knappen ikke virket.
    */
-  apneKursRed(k, i) {
+  apneKursRed(k, i, fraKalender) {
     // Bildene ligger paa den raa kursraden fra serveren, ikke paa kortet.
     const raa = (this.state.adminKursRaa || []).find(x => x.tittel === k.navn) || {};
     this.setState({
+      // Hvor «Tilbake» gaar. Fra kurslista er det lista; fra kalenderen er
+      // det kalenderen. Se klApneKursFullt og kTilbakeDitDuKom.
+      kFraKalender: fraKalender === true,
       kBilder: (raa.bilder && raa.bilder.length ? raa.bilder : (raa.bilde ? [raa.bilde] : [])).slice(0, 3),
       kRed: true, kSteg: 1, kIndeks: i,
       // Id-en til den raa raden, saa skjemaet kan si hva det gjor med
@@ -41555,212 +41506,8 @@ class Component extends DCLogic {
           klSideInterneHar: this.kursData().some(k => k.type === 'Kun medlemmer'),
           klSideInterneTom: !this.kursData().some(k => k.type === 'Kun medlemmer'),
           klSideKurs: this.klSideKort(this.kursData().filter(k => k.type !== 'Kun medlemmer')),
-          // ── Kurset, redigert der det staar ──────────────────────────────
-          //
-          // Kortene i kurslista kunne bare dras. Ville du rette en pris eller
-          // en tekst, matte du ut av kalenderen, inn i kursoppsettet, finne
-          // kurset igjen og tilbake. Naa aapner et klikk kurset der det staar.
-          //
-          // Endringen gjelder kurset, ikke datoen: alle planlagte datoer og
-          // nettsida foelger med, fordi de leser kurset. Det er hele poenget
-          // — én pris ett sted.
-          ...(() => {
-            const red = this.state.klKursRedId
-              ? (this.state.adminKursRaa || []).find(x => x.id === this.state.klKursRedId)
-              : null;
-            if (!red) {
-              return { klKursRedVises: false, klKursRedFelt: [], klKursRedNavn: '',
-                       klKursRedStil: { display: 'none' }, klKursRedEndret: false,
-                       klKursRedEndretTekst: '', klKursRedLagre: () => {},
-                       klKursRedLukk: () => {}, klKursRedDatoer: '' };
-            }
-            const naa = this.state.klKursVerdier || {};
-            const start = this.state.klKursStart || {};
-            const sett = (n, v) => this.setState(st => ({
-              klKursVerdier: Object.assign({}, st.klKursVerdier, { [n]: v }),
-            }));
-            // Standardteksten for kategorien kurset staar i.
-            //
-            // Samme kilde som kursoppsettet bruker — «red.mal», som serveren
-            // regner ut i Kursmal::forKurs(). Da kan de to skjermene ikke si
-            // hver sin ting om hva som kommer paa nettsida.
-            //
-            // Bare feltene som faktisk HAR en standard staar her. De andre er
-            // tomme fordi de er tomme, og da skal det ikke staa noe som lover
-            // at nettsida fyller inn noe.
-            const MAL_FELT = {
-              om: 'beskrivelse', laerer: 'laerer', medHjem: 'medHjem',
-              nivaaTekst: 'nivaaTekst', punkter: 'punkter',
-              praktisk: 'praktisk', ferdigTid: 'ferdigTid',
-            };
-            const mal = red.mal || {};
-            const kortet = (t, n) => {
-              const r = String(t || '').replace(/\s+/g, ' ').trim();
-              return r.length > n ? r.slice(0, n - 1).trim() + '…' : r;
-            };
-            const felt = (nokkel, etikett, type, valg) => ({
-              nokkel: nokkel, etikett: etikett,
-              // Plassholderen er selve teksten, kortet ned. Merket under sier
-              // hva som skjer med den — om den brukes, eller er overstyrt.
-              mal: kortet(mal[MAL_FELT[nokkel]] || '', 150),
-              harMal: String(mal[MAL_FELT[nokkel]] || '').trim() !== '',
-              malMerke: String(naa[nokkel] === undefined ? '' : naa[nokkel]).trim() === ''
-                ? 'Står tomt: nettsiden viser teksten over'
-                : 'Egen tekst. Den står foran den anbefalte.',
-              erTekst: type === 'tekst', erLang: type === 'lang',
-              erValg: type === 'valg', erHake: type === 'hake',
-              verdi: naa[nokkel] === undefined ? '' : String(naa[nokkel]),
-              paa: naa[nokkel] === 'ja',
-              valg: (valg || []).map(v => ({ verdi: v[0], navn: v[1] })),
-              endre: e => sett(nokkel, e.target.value),
-              veksle: () => sett(nokkel, naa[nokkel] === 'ja' ? 'nei' : 'ja'),
-              feltStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '9px 12px', font: 'var(--type-body-sm)', background: 'var(--clay-50)', color: 'var(--text-heading)' },
-              hakeStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700, background: naa[nokkel] === 'ja' ? 'var(--lissom-yellow)' : 'var(--surface-card)', color: 'var(--lissom-brown)' },
-              hakeTekst: naa[nokkel] === 'ja' ? 'På' : 'Av',
-            });
-            const felter = [
-              felt('tittel', 'Navn på kurset', 'tekst'),
-              felt('type', 'Type', 'valg', [['kurs', 'Kurs'], ['event', 'Event'], ['workshop', 'Workshop']]),
-              felt('tema', 'Tema', 'tekst'),
-              felt('pris', 'Pris i kroner', 'tekst'),
-              felt('kapasitet', 'Plasser', 'tekst'),
-              felt('status', 'Status', 'valg', [['publisert', 'Publisert'], ['kladd', 'Kladd'], ['avlyst', 'Avlyst']]),
-              // Hvem som holder kurset. Tomt betyr verkstedets standard —
-              // ikke «ingen». Datoene arver valget naar de settes opp, og en
-              // enkelt kveld kan fortsatt overstyres i kalenderen.
-              felt('kursholderId', 'Kursholder', 'valg',
-                   [['0', 'Verkstedets standard']].concat(
-                     ((this.state.adminKursholdere || []).filter(h => h.aktiv)
-                       .map(h => [String(h.id), h.navn])))),
-              felt('visUtenDato', 'Vis på nettsiden uten datoer', 'hake'),
-              felt('sms', 'SMS-påminnelse', 'hake'),
-              felt('gjenstandIKassa', 'Gjenstanden betales i verkstedet', 'hake'),
-              felt('nivaaIntern', 'Nivå internt', 'valg', [['nybegynner', 'Nybegynner'], ['videregaende', 'Viderekomne']]),
-              felt('nivaaTekst', 'Nivå slik kunden leser det', 'tekst'),
-              felt('om', 'Beskrivelse', 'lang'),
-              felt('punkter', 'Punkter, ett per linje', 'lang'),
-              felt('laerer', 'Dette lærer du', 'lang'),
-              felt('medHjem', 'Dette får du med hjem', 'lang'),
-              felt('ferdigTid', 'Når er det ferdig', 'lang'),
-              felt('praktisk', 'Praktisk informasjon', 'lang'),
-              felt('passerHvem', 'Passer for', 'lang'),
-              felt('allergener', 'Allergener', 'lang'),
-              felt('bekreftelse', 'Tekst i bekreftelsen', 'lang'),
-            ];
-            // ── Fem felter er tatt bort her ────────────────────────────
-            //
-            // Ruta var bygget ved aa ramse opp hver kolonne kurset har, og
-            // viste derfor ogsaa dem eieren alt hadde bedt om aa bli kvitt i
-            // kursoppsettet. Da sier de to skjermene forskjellige ting om det
-            // samme kurset. Eieren, 31. august: «hva er disse feltene godt
-            // for?» — og ja til aa gjore ruta lik oppsettet.
-            //
-            //   kortBeskrivelse  «kort beskrivelse og dette lager du kan
-            //   lagerDu           fjernes» — 30. august
-            //   tillegg          «en praktisk informasjon og en dette faar du
-            //                     med hjem, rydd resten» — samme dag
-            //   passerNivaa      staar ingen steder paa nettsida
-            //   metode           regnes ut av kategorien i metodeAvKategori().
-            //                    Skrev du noe her, ble det overskrevet neste
-            //                    gang kurset ble lagret fra oppsettet.
-            //   instruktor       fritekstnavnet paa kursbeviset. Se under.
-            //
-            // Teksten som ligger lagret blir staaende og vises som for. Det
-            // er feltene som er borte, ikke innholdet — og lagringa sender
-            // fortsatt verdiene videre urort.
-            //
-            // ── Om «instruktor» spesielt ───────────────────────────────
-            //
-            // api/kursbevis.php leser «courses.instruktor», et fritekstfelt,
-            // og faller tilbake paa Monica naar det er tomt. Den leser IKKE
-            // kursholderen som velges i kursoppsettet — den staar i
-            // «courses.kursholder_id» og peker til kursholdere-tabellen.
-            //
-            // Eieren, 31. august: «dersom noen andre holder kurset saa er vel
-            // dette valgt i kursoppsettet? Saa da henter det her infra». Ja,
-            // det burde det. Slik det er naa foelger beviset ikke det valget.
-            //
-            // Valget hans var aa fjerne fritekstfeltet og la beviset staa med
-            // Monica til de faktisk leier inn noen — alle kursene holdes av
-            // henne. Kolonnen og verdiene blir liggende. Skal det kobles
-            // ordentlig, maa beviset lese kursholderen paa oekta (en enkelt
-            // kveld kan ha en annen enn kurset ellers), og kursholdere maa
-            // faa et signaturfelt: tabellen har navn, rolle, epost, telefon
-            // og timesats, men ingen signatur — saa et riktig navn ville
-            // fortsatt faatt Monicas signatur under seg.
-            const endret = felter.filter(f => (naa[f.nokkel] || '') !== (start[f.nokkel] || ''));
-            return {
-              klKursRedVises: true,
-              klKursRedNavn: start.tittel || red.tittel || '',
-              klKursRedDatoer: (red.datoerFramover || 0) > 0
-                ? (red.datoerFramover === 1 ? 'Én planlagt dato følger med'
-                                            : red.datoerFramover + ' planlagte datoer følger med')
-                : 'Ingen planlagte datoer ennå',
-              klKursRedFelt: felter,
-              klKursRedEndret: endret.length > 0,
-              klKursRedEndretTekst: endret.length === 1
-                ? 'Du har endret «' + endret[0].etikett.toLowerCase() + '»'
-                : 'Du har endret ' + endret.length + ' felt',
-              // Ruta legger seg ved kortet paa en stor skjerm, saa du ser
-              // hvilket kurs du holder paa med.
-              //
-              // Paa telefonen er den full bredde uansett, og da kjoper det
-              // ingenting — det koster bare skjerm. Trykker du paa et kort
-              // midt paa sida, aapnet ruta der, og klemmen under garanterer
-              // bare 200 piksler synlig: eieren, 31. august, «pop up, maa
-              // aapnes lenger opp saa jeg ser skjermen». Der starter den naa
-              // oeverst, tolv piksler ned, uansett hvor du trykket.
-              // «overscrollBehavior: contain» stopper rullinga i ruta.
-              // Uten den fortsetter fingeren ned i sida bak naar ruta er
-              // rullet helt til topps — eieren, 31. august: «jeg faar ikke
-              // scrollet tilbake, da virker det som siden under er den som
-              // scroller». Det er nettopp det som skjer.
-              // Ruta staar midt paa skjermen.
-              //
-              // Den laa ved kortet du trykket paa. Trykte du langt nede
-              // eller ute til hoeyre, aapnet den der — halve ruta utenfor
-              // kanten, og knappene umulige aa naa. Eieren, 4. september:
-              // «den aapner seg jo ikke saa jeg ser hele ruten og kan
-              // faktisk ikke klikke meg videre».
-              //
-              // To ganger foer ble det rettet ved aa klemme ruta innenfor
-              // skjermen — 31. august og 1. september. Klemmen fjernet ikke
-              // aarsaken. Midt paa skjermen finnes feilen ikke: ruta kan
-              // ikke havne utenfor en kant den ikke naar.
-              //
-              // «maxHeight: 86vh» med «overflow: auto» gjor at et langt kurs
-              // ruller inni ruta og ikke sprenger den. «overscrollBehavior:
-              // contain» stopper rullinga der, saa fingeren ikke fortsetter
-              // ned i sida bak — eieren, 31. august: «jeg faar ikke scrollet
-              // tilbake, da virker det som siden under er den som scroller».
-              klKursRedStil: {
-                position: 'fixed', zIndex: 78,
-                left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-                width: 'min(460px, calc(100vw - 24px))',
-                maxHeight: '86vh', overflow: 'auto',
-                overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
-                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-                borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
-              },
-              klKursRedLukk: () => this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null }),
-              klKursRedLagre: () => {
-                // Bare det som er endret, pluss de to serveren alltid trenger:
-                // tittelen, og statusen — den skrives ubetinget, saa uten den
-                // ville et lagret kurs falt til kladd og forsvunnet fra nettsida.
-                const kropp = { handling: 'lagre', id: red.id,
-                                tittel: naa.tittel || start.tittel || '',
-                                status: naa.status || start.status || 'kladd' };
-                endret.forEach(f => { kropp[f.nokkel] = naa[f.nokkel] || ''; });
-                if (!String(kropp.tittel).trim()) {
-                  this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Kurset må ha et navn.' });
-                  return;
-                }
-                this.klKall('/api/admin/kurs.php', kropp).then(ok => {
-                  if (ok) this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null });
-                });
-              },
-            };
-          })(),
+          // Kurset redigeres ikke lenger i en egen rute her — et trykk paa
+          // kortet aapner det komplette kursoppsettet. Se klApneKursFullt.
           // Beskjedene i toppen.
           //
           // Her sto tre oppdiktede meldinger fra designverktoyet — «Silje
@@ -43271,51 +43018,41 @@ class Component extends DCLogic {
   }
 
   /**
-   * Aapner et kurs for redigering, der kortet staar.
+   * Aapner det komplette kursoppsettet paa ett kurs, fra kalenderen.
    *
-   * Verdiene leses av «adminKursRaa» — kurset slik det staar i basen — og
-   * legges i to kopier: én som redigeres, og én som staar urort. «Lagre»
-   * sender forskjellen, saa et felt skjermen ikke kjenner ikke toemmes, og
-   * et felt ingen roerte ikke skrives paa nytt.
+   * Kortene i sidemenyen aapnet foer en egen rute med 21 tekstfelt — uten
+   * bilder, datoer og sletting; de laa bare under Kurs og deltakere. Eieren,
+   * 21. september 2026: «poenget med dette var at de skal vaere fult
+   * redigerbare». Naa aapnes det samme oppsettet som der, med «Tilbake til
+   * kalenderen» oeverst, og Lagre, Avbryt og Slett tar deg tilbake hit.
+   *
+   * @param {string} navn Kursnavnet slik det staar paa kortet.
    */
-  klApneKursRed(kort, ev) {
-    const raa = (this.state.adminKursRaa || []).find(x => x.tittel === kort.navn);
-    if (!raa) {
+  klApneKursFullt(navn) {
+    const liste = this.kursData();
+    const i = liste.findIndex(k => k.navn === navn);
+    if (i < 0) {
       this.setState({ kvittering: 'Fant ikke kurset',
                       kvitteringDetalj: 'Last siden på nytt, så henter vi kurslista igjen.' });
       return;
     }
-    const jaNei = v => (v ? 'ja' : 'nei');
-    const start = {
-      tittel: raa.tittel || '', type: raa.type || 'kurs', tema: raa.tema || '',
-      pris: String(raa.pris == null ? '' : raa.pris),
-      kapasitet: String(raa.kapasitet == null ? '' : raa.kapasitet),
-      status: raa.status || 'kladd',
-      visUtenDato: jaNei(raa.visUtenDato), sms: jaNei(raa.sms === true),
-      gjenstandIKassa: jaNei(raa.gjenstandIKassa),
-      kursholderId: String(raa.kursholderId || 0),
-      nivaaIntern: raa.nivaaIntern || 'nybegynner', nivaaTekst: raa.nivaaTekst || '',
-      varighetTekst: raa.varighetTekst || '', instruktor: raa.instruktor || '',
-      kortBeskrivelse: raa.kortBeskrivelse || '', om: raa.om || '',
-      punkter: raa.punkter || '', laerer: raa.laerer || '', lagerDu: raa.lagerDu || '',
-      medHjem: raa.medHjem || '', ferdigTid: raa.ferdigTid || '', tillegg: raa.tillegg || '',
-      praktisk: raa.praktisk || '', passerHvem: raa.passerHvem || '',
-      passerNivaa: raa.passerNivaa || '', metode: raa.metode || '',
-      allergener: raa.allergener || '', bekreftelse: raa.bekreftelse || '',
-    };
-    // Ruta staar midt paa skjermen.
-    //
-    // Her ble musepekeren lest av og lagt i «klKursRedPos», og ruta plassert
-    // der. Trykte du paa et kort langt nede eller ute til hoeyre, aapnet ruta
-    // der — og halve ruta havnet utenfor kanten. Eieren meldte det tre
-    // ganger, sist 4. september med bilde: «den aapner seg jo ikke saa jeg
-    // ser hele ruten og kan faktisk ikke klikke meg videre».
-    //
-    // Posisjonen leses ikke lenger. Blir den staaende, lever den videre som
-    // et felt ingen bruker, og neste som leser koden tror ruta foelger
-    // pekeren. Se «klKursRedStil», som naa sentrerer.
-    this.setState({ klKursRedId: raa.id,
-                    klKursStart: start, klKursVerdier: Object.assign({}, start) });
+    const k = liste[i];
+    this.setState({ side: 'admin', kursFane: k.type === 'Kun medlemmer' ? 'interne' : 'alle',
+                    datoerFor: '', klMeny: null, klValgtId: null });
+    this.apneKursRed(k, i, true);
+    window.scrollTo(0, 0);
+  }
+
+  /**
+   * Tilbake dit kursoppsettet ble aapnet fra, naar det lukkes.
+   *
+   * @return {boolean} true naar det var kalenderen, og vi gikk dit.
+   */
+  kTilbakeDitDuKom() {
+    if (!this.state.kFraKalender) return false;
+    this.setState({ kFraKalender: false, side: 'adminkalender' });
+    window.scrollTo(0, 0);
+    return true;
   }
 
   /**
@@ -43434,13 +43171,10 @@ class Component extends DCLogic {
   }
 
   klApneKurs(evt) {
-    const base = (evt.tittel || '').split(' · ')[0];
-    const liste = this.kursData();
-    const i = liste.findIndex(k => k.navn === base);
-    if (i < 0) { this.setState({ klValgtId: evt.id, klFlyttVis: false, klBekreftAvlys: false, klMeny: null }); return; }
-    const k = liste[i];
-    this.setState({ side: 'admin', klMeny: null, klValgtId: null, kFokus: true, kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: (k.pris || '').replace(/[^\d ]/g, '').trim(), kPlasser: ((k.pameldte || '').split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms === true, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) });
-    window.scrollTo(0, 0);
+    // Fra «Rediger hele kurset» paa en dato. Gikk foer gjennom en egen,
+    // eldre feltliste uten bilder og seksjonene fra oppsettet; naa samme
+    // vei som kortet i sidemenyen.
+    this.klApneKursFullt((evt.tittel || '').split(' · ')[0]);
   }
 
   klBrukFlytt(f) {
@@ -43894,7 +43628,7 @@ class Component extends DCLogic {
       // tekst, matte du ut av kalenderen og inn i kursoppsettet.
       if (!d || !d.moved) {
         this.setState({ klNyDrag: null, klDrar: null });
-        this.klApneKursRed(kurs, mv);
+        this.klApneKursFullt(kurs.navn);
         return;
       }
       const els = document.elementsFromPoint(mv.clientX, mv.clientY);
@@ -54110,11 +53844,13 @@ class Component extends DCLogic {
           // brukes bare ikke lenger.
 
 
-          // «Kort beskrivelse» og «Dette lager du» har ikke lenger felt i
-          // oppsettet — se merknaden i seksjon 08. Verdiene ligger igjen i
-          // state og gaar med i lagringa, saa teksten som staar paa kurs
-          // fra foer blir staaende. Settere og malforslag er borte; det er
-          // ingen som skriver i dem lenger.
+          // «Dette lager du» har ikke lenger felt i oppsettet — se merknaden
+          // i seksjon 08. Verdien ligger igjen i state og gaar med i
+          // lagringa, saa teksten som staar paa kurs fra foer blir staaende.
+          //
+          // Kortteksten er tilbake (seksjon 05) — se merknaden der.
+          kKortBeskrivelse: st.kKortBeskrivelse ?? '',
+          settKKortBeskrivelse: e => this.setState({ kKortBeskrivelse: e.target.value }),
 
           kMedHjem: st.kMedHjem ?? '',
           settKMedHjem: e => this.setState({ kMedHjem: e.target.value }),
@@ -54732,12 +54468,16 @@ class Component extends DCLogic {
       // kortet med.
       kNesteSteg: () => { this.setState(s => ({ kSteg: Math.min(3, (s.kSteg ?? 1) + 1) })); this.rullTilKursoppsettet(); },
       kForrigeSteg: () => { this.setState(s => ({ kSteg: Math.max(1, (s.kSteg ?? 1) - 1) })); this.rullTilKursoppsettet(); },
-      kAvbryt: () => this.setState({ kRed: false }),
+      kAvbryt: () => { this.setState({ kRed: false }); this.kTilbakeDitDuKom(); },
       // Ut av skjemaet og opp til lista igjen. «Avbryt» staar nederst, etter
       // tolv seksjoner, og gjor det samme — men den som aapnet et kurs for
       // aa se paa noe skal slippe aa rulle helt ned for aa komme seg ut.
+      //
+      // Kom du fra kalenderen, er det dit du gaar. Se klApneKursFullt.
+      kTilbakeTekst: this.state.kFraKalender ? '← Tilbake til kalenderen' : '← Tilbake til kurslista',
       kTilbakeListe: () => {
         this.setState({ kRed: false, datoerFor: '' });
+        if (this.kTilbakeDitDuKom()) return null;
         const el = document.getElementById('ov-kortrutenett') || document.getElementById('admin-datoer');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return el;
@@ -54770,6 +54510,7 @@ class Component extends DCLogic {
             + 'blir kurset avlyst i stedet — da må du gi beskjed og refundere selv.')) return;
         this.setState({ kRed: false });
         this.kursKall({ handling: 'slett', id: kurs.id });
+        this.kTilbakeDitDuKom();
       },
       // «Lagre endringene» staar bare naar kurset alt ligger ute. Et nytt
       // kurs skal gjennom alle tre stegene foer det publiseres.

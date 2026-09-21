@@ -151,7 +151,7 @@ if (Nett::bryterPaa('referanser') && DB::harTabell('referansekunder')) {
 if ($rot !== []) {
     $r0 = $rot[0];
     $h .= '<section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
-        . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease);">'
+        . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease); background: var(--clay-50);">'
         . '<img data-rot="bilde" src="' . $e($r0['bilde']) . '" alt="' . $e($r0['alt']) . '" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">'
         . '<div>'
         . '<div data-rot="logo" role="img" style="display: none; width: 132px; height: 60px; margin-bottom: var(--space-4); background-size: contain; background-repeat: no-repeat; background-position: left center; mix-blend-mode: multiply;"></div>'

@@ -25,7 +25,7 @@ $kategorier = ['Vis alle', 'Dreiing', 'Håndbygging', 'Events'];
 $valgt = isset($sp['tema']) && in_array($sp['tema'], $kategorier, true) ? $sp['tema'] : ($erEvents ? 'Events' : 'Kursene');
 $erAlle = $valgt === 'Vis alle';
 // Naar paa dagen — kursTid i nettsida.
-$tider = ['Dagtid', 'Kveldstid', 'Helg'];
+$tider = ['Dagtid', 'Kveldstid', 'Helg', 'Barn'];
 $naar = isset($sp['tid']) && in_array($sp['tid'], $tider, true) ? $sp['tid'] : null;
 
 $base = $erEvents ? '/events' : '/kurs';
@@ -65,10 +65,10 @@ $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var
 $h .= '<div style="margin-bottom: var(--space-5);">'
     . '<div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Når på dagen passer det best for deg?</div>'
     . '<div style="display: flex; gap: 8px; flex-wrap: wrap;">';
-foreach ([null, 'Dagtid', 'Kveldstid', 'Helg'] as $t) {
+foreach ([null, 'Dagtid', 'Kveldstid', 'Helg', 'Barn'] as $t) {
     $paa = $naar === $t;
     // Trykk paa den som er valgt, tar den bort — som i appen.
-    $h .= $tag($t ?? 'Når som helst', $paa, $lenke($valgt, $paa ? null : $t));
+    $h .= $tag($t === null ? 'Når som helst' : ($t === 'Barn' ? 'Passer for barn' : $t), $paa, $lenke($valgt, $paa ? null : $t));
 }
 $h .= '</div></div>';
 // Kategoriene: de som har noe aa vise, pluss den som er valgt.
@@ -90,7 +90,7 @@ foreach ($kategorier as $navn) {
 $h .= '</div>';
 if ($vist === []) {
     $tom = $naar !== null
-        ? 'Ingen kurs ' . (['Dagtid' => 'på dagtid', 'Kveldstid' => 'på kveldstid', 'Helg' => 'i helgen'][$naar] ?? '') . ' akkurat nå.'
+        ? 'Ingen kurs ' . (['Dagtid' => 'på dagtid', 'Kveldstid' => 'på kveldstid', 'Helg' => 'i helgen', 'Barn' => 'som passer for barn'][$naar] ?? '') . ' akkurat nå.'
         : 'Ingen kurs i denne kategorien akkurat nå.';
     $h .= '<div style="margin-top: var(--space-6); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">'
         . '<span style="font-size: var(--text-base); color: var(--text-body);">' . $e($tom) . '</span>'

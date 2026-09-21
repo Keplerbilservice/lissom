@@ -349,6 +349,13 @@ final class Katalog
                     // datoene likt; UTC-datoen kan ligge i feil maaned.
                     'maaned'   => (new DateTimeImmutable((string) $o['start_tid'], new DateTimeZone('UTC')))
                         ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m'),
+                    // Dagen, «2026-11-25», i norsk tid — kalenderen i
+                    // datovelgeren trenger den for aa sette ringen paa riktig
+                    // rute. Eieren, 21. september 2026: «en kalender som kommer
+                    // opp som jeg kan bla i, som viser en fet dato man kan
+                    // klikke paa der det er kurs».
+                    'dagIso'   => (new DateTimeImmutable((string) $o['start_tid'], new DateTimeZone('UTC')))
+                        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d'),
                     'ledige'   => $ledigeKart[(int) $o['id']] ?? 0,
                     // Plassene denne oekta har tatt. Se solgtePlasserFlere().
                     'solgt'    => $solgtKart[(int) $o['id']] ?? 0,
@@ -452,16 +459,13 @@ final class Katalog
         return $ut;
     }
 
-    /**
-     * Navnet paa en maaned i datovelgeren: «nov», og «jan 2027» naar aaret
-     * er et annet enn det foerste datoen ligger i.
-     */
-    public static function maanedNavn(string $ym, string $forsteYm): string
+    /** Tittelen paa en maaned i kalenderen: «November 2026». */
+    public static function maanedTittel(string $ym): string
     {
-        $navn = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+        $navn = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni', 'Juli', 'August',
+                 'September', 'Oktober', 'November', 'Desember'];
         $m = (int) substr($ym, 5, 2);
-        $n = $navn[$m - 1] ?? $ym;
-        return substr($ym, 0, 4) === substr($forsteYm, 0, 4) ? $n : $n . ' ' . substr($ym, 0, 4);
+        return ($navn[$m - 1] ?? $ym) . ' ' . substr($ym, 0, 4);
     }
 
     public static function rabatter(): array

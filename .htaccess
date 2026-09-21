@@ -311,6 +311,12 @@ RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
 # gamle sendes videre paa samme maate som bolleadressen over.
 RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]
 
+# /personvernerklaering/ finnes ikke, men Google proever den (Search Console
+# 21. september 2026: 404). Hvor lenka kom fra er ikke funnet — ingen fil i
+# repoet peker dit. Sida heter /personvern. Samme grep som for kursadressene
+# over: 301, saa den som kommer den veien lander riktig.
+RewriteRule ^personvernerklaering/?$ /personvern [R=301,L]
+
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
 # Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle

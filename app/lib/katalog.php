@@ -36,6 +36,9 @@ final class Katalog
         // Kom med migrasjon 044. Uten sjekken faller hele katalogen naar den ikke er
         // kjoert — og det er katalogen kundene ser.
         $bilderFelt   = DB::harKolonne('courses', 'bilder') ? ', bilder' : '';
+        // «Dette kan du lage» — karusellen hentet fra andre kurs. Kom med
+        // migrasjon 200.
+        $karusellFelt = DB::harKolonne('courses', 'karusell_fra') ? ', karusell_fra' : '';
         // Kursnivaa, tekstene og varigheten. Kom med migrasjon 072.
         $tekstFelt = DB::harKolonne('courses', 'nivaa_tekst')
             ? ', nivaa_intern, nivaa_tekst, kort_beskrivelse, lager_du, med_hjem, ferdig_tid, tillegg, varighet_tekst' : '';
@@ -68,7 +71,7 @@ final class Katalog
             : 0;
 
         $kurs = DB::alle(
-            "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}{$ressursFelt}
+            "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$karusellFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}{$ressursFelt}
                FROM courses
               WHERE status = 'publisert' AND {$hvor}
               ORDER BY type, tittel"
@@ -288,6 +291,12 @@ final class Katalog
                     $l = json_decode((string) $raa, true);
                     return is_array($l) ? array_values(array_filter(array_map('strval', $l))) : [];
                 })($k['bilder'] ?? null),
+                // «Dette kan du lage» (migrasjon 200): id-ene til kursene
+                // karusellen skal hente bilde og korttekst fra, i rekkefoelge.
+                // Selve oppslaget gjoeres der sida tegnes — begge utgavene av
+                // kurssida har hele katalogen for haanden, og da er det ett
+                // oppslag, ikke to lister som kan bli uenige.
+                'karusellFra' => self::karusellFra($k['karusell_fra'] ?? null),
                 'datoer'  => array_map(static fn($o) => [
                     'oktId'  => (int) $o['id'],
                     // Paint on Pots og lignende er lagt ut paa aapningstidene: det er
@@ -365,6 +374,76 @@ final class Katalog
      * selv, mens serveren trakk full pris — naa leser begge det samme.
      * @return list<array{min:int,prosent:float,gjelder:mixed}>
      */
+    /**
+     * Kurs-id-ene i «karusell_fra», slik de ligger i basen: JSON-liste,
+     * i rekkefoelge. Tom eller uleselig gir tom liste.
+     *
+     * @return list<int>
+     */
+    public static function karusellFra(?string $raa): array
+    {
+        $l = json_decode((string) $raa, true);
+        if (!is_array($l)) {
+            return [];
+        }
+        $ut = [];
+        foreach ($l as $v) {
+            $n = (int) $v;
+            if ($n > 0 && !in_array($n, $ut, true)) {
+                $ut[] = $n;
+            }
+        }
+        return $ut;
+    }
+
+    /**
+     * «Dette kan du lage»: rutene i karusellen paa ett kurs, hentet fra
+     * andre kurs i katalogen.
+     *
+     * Eieren, 21. september 2026: et kurs som viser «alt som kan lages» —
+     * bilde og korttekst fra kursene han haker av i kursoppsettet, i den
+     * rekkefoelgen. Ett kurs uten bilde faller bort; det finnes ikke noe aa
+     * vise. Kurs som ikke lenger er publisert faller ogsaa bort — de er ikke
+     * i katalogen.
+     *
+     * @param array<string,mixed>      $kat      Kurset som viser karusellen.
+     * @param list<array<string,mixed>> $alle    Katalogen (Katalog::offentlig).
+     * @param callable(array):string   $bildeFor Bildet for et katalogkurs naar
+     *   det ikke har lastet opp noe selv — kurstypens bilde, slik lista viser
+     *   det. Tom streng naar det ikke finnes.
+     * @return list<array{id:int,slug:string,tittel:string,tekst:string,bilde:string}>
+     */
+    public static function detteKanDuLage(array $kat, array $alle, callable $bildeFor): array
+    {
+        $ider = (array) ($kat['karusellFra'] ?? []);
+        if ($ider === []) {
+            return [];
+        }
+        $perId = [];
+        foreach ($alle as $k) {
+            $perId[(int) ($k['id'] ?? 0)] = $k;
+        }
+        $ut = [];
+        foreach ($ider as $id) {
+            $k = $perId[(int) $id] ?? null;
+            if ($k === null) {
+                continue;
+            }
+            $bilde = (string) (($k['bilder'][0] ?? '') ?: ($k['bilde'] ?? '') ?: $bildeFor($k));
+            if ($bilde === '') {
+                continue;
+            }
+            $ut[] = [
+                'id'     => (int) $k['id'],
+                'slug'   => (string) $k['slug'],
+                'tittel' => (string) $k['tittel'],
+                'tekst'  => trim((string) ($k['kortBeskrivelse'] ?? '')),
+                'bilde'  => $bilde,
+            ];
+        }
+        return $ut;
+    }
+
     public static function rabatter(): array
     {
         return array_map(static fn($r) => [

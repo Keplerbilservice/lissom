@@ -60,6 +60,20 @@ if ($bilder === []) {
 }
 $bildeAlt = trim((string) ($kat['bildeAlt'] ?? '')) ?: $tittel;
 
+// «Dette kan du lage» (migrasjon 200). Har verkstedet haket av andre kurs
+// i kursoppsettet, er det deres bilde og korttekst som staar i karusellen
+// — ikke kursets egne bilder. Samme oppslag som appen gjoer i bKarusell.
+// Bildet et kurs uten egne bilder faar, er det lista viser for det.
+$kortPerSlug = [];
+foreach (Kort::kurs() as $kk) {
+    $kortPerSlug[(string) $kk['slug']] = $kk;
+}
+$lage = Katalog::detteKanDuLage($kat, Katalog::offentlig(false), static fn(array $k): string =>
+    (string) ($kortPerSlug[(string) ($k['slug'] ?? '')]['image'] ?? ''));
+if ($lage !== []) {
+    $bilder = array_map(static fn(array $r): string => $r['bilde'], $lage);
+}
+
 $h = '<div role="main" data-screen-label="Booking">' . "\n";
 $h .= Deler::topp($erEvent ? 'Events' : 'Kurs');
 $h .= '<section style="background: var(--clay-50); padding: var(--space-10) var(--space-8) var(--section-y);">'
@@ -83,7 +97,19 @@ $h .= '<section style="background: var(--clay-50); padding: var(--space-10) var(
 // Bildet. Er det flere, ligger de oppaa hverandre og bytter (nett.js).
 $h .= '<div role="img" aria-label="' . $e($bildeAlt) . '" data-nett-karusell="' . (int) ($kat['sekunder'] ?? 5) . '" style="position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden;">';
 foreach ($bilder as $i => $b) {
-    $h .= '<div style="position: absolute; inset: 0; background-image: ' . Nett::cssUrl($b) . '; background-size: cover; background-position: ' . $e(Nett::fokus($b, 'center 32%')) . '; opacity: ' . ($i === 0 ? 1 : 0) . '; transition: opacity 1.2s ease;"></div>';
+    $h .= '<div style="position: absolute; inset: 0; background-image: ' . Nett::cssUrl($b) . '; background-size: cover; background-position: ' . $e(Nett::fokus($b, 'center 32%')) . '; opacity: ' . ($i === 0 ? 1 : 0) . '; transition: opacity 1.2s ease;">';
+    // Teksten over bildet, naar bildet er et annet kurs sitt. Samme
+    // stykke som i appen (skjermen «Booking», bKarusell) — endres det ene,
+    // maa det andre med.
+    if ($lage !== []) {
+        $r = $lage[$i];
+        $h .= '<div style="position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-8) var(--space-6) var(--space-5); background: linear-gradient(to top, rgba(46,16,2,.86), rgba(46,16,2,0)); color: var(--clay-50);">'
+            . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; opacity: .85; margin-bottom: 6px;">Dette kan du lage · ' . ($i + 1) . ' av ' . count($lage) . '</div>'
+            . '<div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: 1.2; margin-bottom: 6px;">' . $e($r['tittel']) . '</div>'
+            . ($r['tekst'] !== '' ? '<div style="font-size: var(--text-base); line-height: 1.45; max-width: 54ch;">' . $e($r['tekst']) . '</div>' : '')
+            . '</div>';
+    }
+    $h .= '</div>';
 }
 $h .= '</div>';
 // Hero-bildet er LCP paa denne sida; si fra i hodet.

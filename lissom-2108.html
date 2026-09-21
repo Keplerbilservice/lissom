@@ -3103,7 +3103,19 @@ window.__resources = {
             <div class="lx-kurs-topp">
               <div role="img" aria-label="{{ bBildeAlt }}" style="position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: var(--radius-lg); overflow: hidden;">
                 <sc-for list="{{ bKarusell }}" as="ki" hint-placeholder-count="1">
-                  <div style="{{ ki.stil }}"></div>
+                  <div style="{{ ki.stil }}">
+                    <!-- «Dette kan du lage»: bildet er et annet kurs sitt, og
+                         da staar navnet og kortteksten over det. Samme
+                         stykke som i app/nett/sider/kursside.php — endres
+                         det ene, maa det andre med. -->
+                    <sc-if value="{{ ki.harTekst }}" hint-placeholder-val="{{ false }}">
+                      <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-8) var(--space-6) var(--space-5); background: linear-gradient(to top, rgba(46,16,2,.86), rgba(46,16,2,0)); color: var(--clay-50);">
+                        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; opacity: .85; margin-bottom: 6px;">{{ ki.merke }}</div>
+                        <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: 1.2; margin-bottom: 6px;">{{ ki.tittel }}</div>
+                        <div style="font-size: var(--text-base); line-height: 1.45; max-width: 54ch;">{{ ki.tekst }}</div>
+                      </div>
+                    </sc-if>
+                  </div>
                 </sc-for>
                 <div style="{{ bGradientStil }}"></div>
               </div>
@@ -13278,6 +13290,25 @@ window.__resources = {
                   <span style="font-size: var(--text-sm); color: var(--text-muted); width: 40px; text-align: right;">{{ kStyrke }} %</span>
                 </div>
                 <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">0 % = ingen gradient. Legger en jevn, mørk tone over hele bildet.</p>
+
+                <!-- «Dette kan du lage» (migrasjon 200).
+                     Eieren, 21. september 2026: et kurs som viser alt som
+                     kan lages — bilde og korttekst fra de andre kursene, i
+                     en karusell. Ikke alle i kategorien (Tre paa rad skal
+                     ut), og Workshop skal fronte — derfor haker, ikke
+                     kategori, og rekkefoelgen er den man haker av i. -->
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-6);">
+                  <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette kan du lage — hent bilder og tekst fra andre kurs</label>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hak av kursene som skal vises i karusellen øverst på kurssiden, med sitt bilde og sin korttekst. Rekkefølgen er den du haker av i — det første fronter. Ingen haker: kursets egne bilder vises som før.</p>
+                  <sc-if value="{{ kLageTom }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Ingen andre kurs i denne kategorien ennå.</p>
+                  </sc-if>
+                  <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ kLageValg }}" as="lv" hint-placeholder-count="4">
+                      <button type="button" onClick="{{ lv.veksle }}" style="{{ lv.stil }}">{{ lv.navn }}</button>
+                    </sc-for>
+                  </div>
+                </div>
               </div>
               </sc-if>
             </div>
@@ -25228,6 +25259,8 @@ class Component extends DCLogic {
       // bildet som sto i designfila.
       image: kat.bilde || k.image,
       bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
+      // «Dette kan du lage» — id-ene til kursene karusellen henter fra.
+      karusellFra: kat.karusellFra || [],
       // «torsdag 3. september, 17:00» staar alene paa kortet, ikke midt i en
       // setning. Da skal den begynne med stor bokstav.
       date: (() => {
@@ -34886,6 +34919,8 @@ class Component extends DCLogic {
       sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
       gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
       bilder: (this.state.kBilder || []).filter(Boolean),
+      // «Dette kan du lage» — sendes med saa lenge skjemaet kjenner feltet.
+      karusellFra: (this.state.kKarusellFra || []).slice(),
     };
     if (this.erPublisert()) {
       this.lagreKurs(nytt, okter, behold);
@@ -34934,6 +34969,9 @@ class Component extends DCLogic {
               || TEMA[rad.type] || (eksisterende && eksisterende.tema) || 'Kurs',
         // Bildene fra steg 3. Tomme ruter faller bort; foerste er hovedbildet.
         bilder: (rad.bilder || []).filter(Boolean),
+        // «Dette kan du lage» (migrasjon 200). Bare naar raden har feltet —
+        // serveren skriver bare det som er med i kallet.
+        ...(Object.prototype.hasOwnProperty.call(rad, 'karusellFra') ? { karusellFra: rad.karusellFra || [] } : {}),
         pris: parseInt(String(rad.pris).replace(/[^\d]/g, ''), 10) || 0,
         kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 8,
         sms: rad.sms === true ? 'ja' : 'nei',
@@ -35857,6 +35895,7 @@ class Component extends DCLogic {
       kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
       kRessursId: 0,
       kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kKarusellFra: [],
       kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
       kGjenstandIKassa: false,
       kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -37645,6 +37684,8 @@ class Component extends DCLogic {
       kNivaaTekst: raa.nivaaTekst || '',
       kKortBeskrivelse: raa.kortBeskrivelse || '',
       kBildeAlt: raa.bildeAlt || '',
+      // «Dette kan du lage» — id-ene, i rekkefoelge (migrasjon 200).
+      kKarusellFra: (raa.karusellFra || []).slice(),
       kLagerDu: raa.lagerDu || '', kMedHjem: raa.medHjem || '',
       kFerdigTid: raa.ferdigTid || '', kTillegg: raa.tillegg || '',
       kVarighetTekst: raa.varighetTekst || '',
@@ -54417,6 +54458,41 @@ class Component extends DCLogic {
       kSekunder: this.state.kSekunder ?? '5',
       settKSekunder: (e) => this.setState({ kSekunder: e.target.value }),
       toggleKFade: () => this.setState(s => ({ kFade: s.kFade === false ? true : false })),
+      // «Dette kan du lage»: kursene i samme kategori, som brikker. En
+      // avhaket brikke viser nummeret sitt — det er rekkefoelgen i
+      // karusellen. Kurset selv staar ikke i lista.
+      ...(() => {
+        const valgt = (this.state.kKarusellFra || []).slice();
+        const egenId = this.state.kRaaId || 0;
+        const kat = this.state.kKategori || '';
+        const kandidater = (this.state.adminKursRaa || [])
+          .filter(x => x.id !== egenId && x.status !== 'avlyst'
+                    && this.kategoriFor(x.tema || '', x.type) === kat)
+          .sort((a, b) => String(a.tittel).localeCompare(String(b.tittel), 'nb'));
+        return {
+          kLageTom: kandidater.length === 0,
+          kLageValg: kandidater.map(x => {
+            const nr = valgt.indexOf(x.id);
+            const paa = nr >= 0;
+            return {
+              navn: (paa ? (nr + 1) + ' · ' : '') + x.tittel,
+              veksle: () => this.setState(st => {
+                const l = (st.kKarusellFra || []).slice();
+                const i = l.indexOf(x.id);
+                if (i >= 0) l.splice(i, 1); else l.push(x.id);
+                return { kKarusellFra: l };
+              }),
+              stil: {
+                appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+                padding: '9px 16px', borderRadius: 'var(--radius-pill)', minHeight: 40,
+                border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                background: paa ? 'var(--lissom-brown)' : 'var(--clay-50)',
+                color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
+              },
+            };
+          }),
+        };
+      })(),
       kFadeTekst: this.state.kFade === false ? 'Fade inn/ut: Av' : 'Fade inn/ut: På',
       kFadeStil: {
         appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '9px 16px', font: 'var(--type-body-sm)', fontWeight: 600,
@@ -62680,12 +62756,25 @@ class Component extends DCLogic {
       bBildeAlt: ((this.state.valgtKurs || {}).bildeAlt || '').trim() || ((this.state.valgtKurs || {}).title || ''),
       bKarusell: (() => {
         const k = this.state.valgtKurs || {};
-        const bilder = (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'handbygging.jpg']);
+        // «Dette kan du lage» (migrasjon 200): har verkstedet haket av
+        // andre kurs i kursoppsettet, er det deres bilde og korttekst som
+        // staar her, i den rekkefoelgen — ikke kursets egne bilder. Samme
+        // oppslag som Katalog::detteKanDuLage gjoer for serversida: kurs
+        // uten bilde og kurs som ikke ligger ute, faller bort.
+        const lage = (k.karusellFra || []).map(id => this.kursKort().find(c => c.katId === id))
+          .filter(c => c && c.image)
+          .map(c => ({ src: c.image, tittel: c.title, tekst: c.kortBeskrivelse || '' }));
+        const bilder = lage.length ? lage.map(r => r.src)
+          : (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'handbygging.jpg']);
         const sek = parseFloat(k.sekunder) || 5;
         const fade = k.fade !== false;
         const idx = Math.floor((this.state.karTikk || 0) / sek) % bilder.length;
         return bilder.map((src, i) => ({
           src,
+          harTekst: lage.length > 0,
+          merke: 'Dette kan du lage · ' + (i + 1) + ' av ' + bilder.length,
+          tittel: lage.length ? lage[i].tittel : '',
+          tekst: lage.length ? lage[i].tekst : '',
           // «center 32%» staar som foer for alle bilder ingen har valgt
           // utsnitt for. Har verkstedet valgt et punkt, gjaldt det bare i
           // admin — kurssida viste sitt eget uansett.

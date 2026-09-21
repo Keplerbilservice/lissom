@@ -319,6 +319,9 @@ RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]
 # repoet peker dit. Sida heter /personvern. Samme grep som for kursadressene
 # over: 301, saa den som kommer den veien lander riktig.
 RewriteRule ^personvernerklaering/?$ /personvern [R=301,L]
+# /om-lissom/ fra det gamle WordPress-nettstedet faar fortsatt klikk fra
+# Google (Search Console 21. september 2026: 2 klikk, 52 visninger).
+RewriteRule ^om-lissom/?$ /om-oss [R=301,L]
 
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
@@ -357,8 +360,11 @@ RewriteRule ^avmelding/?$ /api/avmelding.php [L,QSA]
 # av bin/guidepakke.mjs (eieren, 11. september 2026, SEO-instruksen). Bare
 # naar fila finnes — /nyttig-info/brennetabell og de andre plakatene er
 # skjermer i nettsida og gaar videre til side.php som foer.
+# Fra 21. september 2026 gaar de gjennom guide.php, som legger paa
+# samtykkeboksen og maalingen (GA4, Ads, Meta) — guidene var de eneste
+# sidene uten, og de fanger nasjonale soek.
 RewriteCond %{DOCUMENT_ROOT}/guider/$1.html -f
-RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guider/$1.html [L]
+RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]
 
 RewriteRule ^$ /side.php [L]
 

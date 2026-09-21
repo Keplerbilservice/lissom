@@ -458,6 +458,18 @@ final class Nett
         return is_string($css) ? $css : '';
     }
 
+    /**
+     * Maale-ID-ene som window.lissomMaal — ogsaa til guidene (guide.php),
+     * som ellers ikke gaar gjennom dokument().
+     */
+    public static function maalJson(): string
+    {
+        $gaId = trim((string) (self::lagret()['Marked/GA-id'] ?? ''));
+        $gtmId = trim((string) (self::lagret()['Marked/GTM-id'] ?? ''));
+        $metaId = trim((string) (self::lagret()['Marked/Meta-piksel'] ?? ''));
+        return (string) json_encode(['ga' => $gaId, 'gtm' => $gtmId, 'meta' => $metaId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
     /** Skriptet til serversidene — meny, samtykke, rotasjoner. */
     private static function skript(): string
     {
@@ -495,10 +507,7 @@ final class Nett
             }
         }
 
-        $gaId = trim((string) (self::lagret()['Marked/GA-id'] ?? ''));
-        $gtmId = trim((string) (self::lagret()['Marked/GTM-id'] ?? ''));
-        $metaId = trim((string) (self::lagret()['Marked/Meta-piksel'] ?? ''));
-        $maal = json_encode(['ga' => $gaId, 'gtm' => $gtmId, 'meta' => $metaId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $maal = self::maalJson();
 
         return '<!DOCTYPE html>' . "\n"
             . '<html lang="nb">' . "\n<head>\n"

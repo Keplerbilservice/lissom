@@ -122,6 +122,42 @@
     for (var i = 0; i < but.length; i++) { if (i === n) but[i].removeAttribute('hidden'); else but[i].setAttribute('hidden', ''); }
   });
 
+  /* ── Bildene paa kurssida ───────────────────────────────────────────── */
+  // app/nett/sider/kursside.php legger bildene oppaa hverandre med
+  // «data-nett-karusell=<sekunder>» paa ramma, og har gjort det siden
+  // serversidene kom. Men ingenting leste attributtet: bildene byttet
+  // aldri, fordi appen ikke tar over kurssida — den aapnes foerst naar
+  // noen trykker paa en dato. Maalt 21. september 2026 paa
+  // /kurs/handbygging: samme bilde etter 16 sekunder.
+  //
+  // Da eieren samme dag ba om «Dette kan du lage» — ett kurs som viser
+  // bilde og tekst fra de andre — var byttet selve poenget. Samme regler
+  // som feltene over: stopper naar musa eller fingeren er over, og staar
+  // i ro for den som har bedt om mindre bevegelse. Toningen ligger alt
+  // paa hvert bilde (transition: opacity 1.2s).
+  var kar = d.querySelectorAll('[data-nett-karusell]');
+  for (var ki = 0; ki < kar.length; ki++) {
+    (function (ramme) {
+      var bilder = [];
+      for (var j = 0; j < ramme.children.length; j++) {
+        if (ramme.children[j].style && ramme.children[j].style.backgroundImage) bilder.push(ramme.children[j]);
+      }
+      if (bilder.length < 2 || rolig) return;
+      var sek = parseInt(ramme.getAttribute('data-nett-karusell'), 10) || 5;
+      var nr = 0, pause = false;
+      ramme.addEventListener('mouseenter', function () { pause = true; });
+      ramme.addEventListener('mouseleave', function () { pause = false; });
+      ramme.addEventListener('touchstart', function () { pause = true; }, { passive: true });
+      ramme.addEventListener('touchend', function () { pause = false; }, { passive: true });
+      ramme.addEventListener('touchcancel', function () { pause = false; }, { passive: true });
+      setInterval(function () {
+        if (pause || d.hidden) return;
+        nr = (nr + 1) % bilder.length;
+        for (var i = 0; i < bilder.length; i++) bilder[i].style.opacity = i === nr ? '1' : '0';
+      }, Math.max(2, sek) * 1000);
+    })(kar[ki]);
+  }
+
   /* ── Appen, i bakgrunnen ────────────────────────────────────────────── */
   // «Book», «Min side» og kassa er appen (lissom-2108.html). Den hentes
   // naar sida er ferdig lest og nettleseren har ro, saa den ligger i

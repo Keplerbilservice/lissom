@@ -33662,7 +33662,8 @@ class Component extends DCLogic {
     // det samme, som om man hadde trykket paa knappen.
     if (rute && /[?&]skjema=1/.test(window.location.search)) {
       if (rute.side === 'kontakt') this.setState({ ktApen: true, ktSendt2: false, ktFeil: null });
-      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
+      // Forsida ogsaa: «Er dere en gruppe … Les mer» paa serversida.
+      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs' || rute.side === 'forside') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
     }
     this._popstate = (e) => {
       // Hvor dypt vi staar naa — se tilbakeVals().

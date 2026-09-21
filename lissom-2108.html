@@ -27948,9 +27948,10 @@ class Component extends DCLogic {
   // klokka — maa lese samme tall. Sto de hver for seg, ville en endring ett
   // sted gitt et halvtonet bytte.
   static get ROT_TONING() { return 800; }
-  // 6 s: eieren, 21. september 2026, «de skal rullere likt, jeg tenker 6
-  // sekunder er passe» — sto paa 12. Samme tall i nett.js (felt('rot', …)).
-  static get ROT_OPPHOLD() { return 6000; }
+  // 10 s: eieren, 21. september 2026 — foerst «6 sekunder er passe», saa
+  // samme kveld «oekes til 10 sekunder». Sto paa 12. Samme tall i nett.js
+  // (felt('rot', …)).
+  static get ROT_OPPHOLD() { return 10000; }
   // Produktene er ett bilde og to linjer tekst — raskere aa lese enn feltet
   // over, og de bytter deretter.
   static get BUT_OPPHOLD() { return 6000; }
@@ -33829,8 +33830,7 @@ class Component extends DCLogic {
     // desktop staar alle fire ved siden av hverandre.
     // Foerste bytte etter ROT_OPPHOLD, ikke foer: da faar sida de fem
     // rolige sekundene maalingen krever foer noe tegnes paa nytt. Deretter
-    // hvert 6. sekund som foer. (Med ROT_OPPHOLD = BUT_OPPHOLD = 6 s er
-    // ventetida null, og klokka starter med det samme.)
+    // hvert 6. sekund som foer.
     this._rotasjonButStart = setTimeout(() => {
       this._rotasjonBut = setInterval(() => {
         if (kanBytte() && !this._pausebut && this.erSmal()) {

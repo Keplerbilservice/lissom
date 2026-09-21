@@ -450,8 +450,14 @@ if (!$fullbooket && !$kunKontakt) {
         . '<p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du velger tid, antall og betaler med Vipps i neste steg.</p>';
 }
 if ($kunKontakt) {
-    $h .= '<div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-6); margin-bottom: var(--space-6);"><div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Etter avtale</div><p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Dette setter vi opp når det passer dere. Send oss en melding med når dere tenker, så finner vi en kveld sammen.</p></div>'
-        . Deler::knapp('Kontakt oss', ['href' => '/kontakt', 'size' => 'lg', 'full' => true])
+    // Kurs uten datoer: venteliste eller forespoersel. Eieren, 21. september
+    // 2026. Begge knappene gaar inn i appen: ?venteliste=1 aapner
+    // ventelisteskjemaet, ?skjema=1 forespoerselen. Samme tekster som i
+    // appen (skjermen «Booking», visKontaktKurs).
+    $h .= '<div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-6); margin-bottom: var(--space-6);"><div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ingen datoer ennå</div><p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Vil du settes på venteliste? Da gir vi deg beskjed så snart vi setter opp en dato.</p></div>'
+        . Deler::knapp('Sett meg på venteliste', ['href' => $appHref . '?venteliste=1', 'size' => 'lg', 'full' => true])
+        . '<div style="height: var(--space-3);"></div>'
+        . Deler::knapp('Send oss en forespørsel', ['href' => $appHref . '?skjema=1', 'variant' => 'secondary', 'size' => 'lg', 'full' => true])
         . '<p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du betaler ingenting nå. Vi svarer så fort vi kan.</p>';
 }
 if ($fullbooket) {

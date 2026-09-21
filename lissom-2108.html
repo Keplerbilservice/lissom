@@ -3636,12 +3636,37 @@ window.__resources = {
               </sc-if>
               <!-- Kurs som settes opp naar noen sporr. Her sto hele
                    bookingskjemaet og en knapp som ikke gjorde noe. -->
+              <!-- Kurs uten datoer: venteliste eller forespoersel.
+                   Eieren, 21. september 2026: «om det ikke er noen datoer paa
+                   noen kurs, saa maa vi henvende til forespoersel, eller vil
+                   du settes paa venteliste?». Ventelista er den som finnes
+                   (api/venteliste.php tar kursId uten oektId); forespoerselen
+                   er skjemaet «Send en forespoersel». Samme som
+                   app/nett/sider/kursside.php. -->
               <sc-if value="{{ visKontaktKurs }}" hint-placeholder-val="{{ false }}">
                 <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-6); margin-bottom: var(--space-6);">
-                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Etter avtale</div>
-                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Dette setter vi opp når det passer dere. Send oss en melding med når dere tenker, så finner vi en kveld sammen.</p>
+                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ingen datoer ennå</div>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Vil du settes på venteliste? Da gir vi deg beskjed så snart vi setter opp en dato.</p>
                 </div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ kontaktKursKnapp }}" hint-size="100%,52px">Kontakt oss</x-import>
+                <sc-if value="{{ bVlSkjemaLukket }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ bVlApne }}" hint-size="100%,52px">Sett meg på venteliste</x-import>
+                  <div style="height: var(--space-3);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ goForesporsel }}" hint-size="100%,52px">Send oss en forespørsel</x-import>
+                </sc-if>
+                <sc-if value="{{ bVlSkjemaApen }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ vlNavn }}" on-change="{{ settVlNavn }}" hint-size="100%,66px"></x-import>
+                  <div style="height: var(--space-4);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ vlEpost }}" on-change="{{ settVlEpost }}" hint-size="100%,66px"></x-import>
+                  <div style="height: var(--space-4);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47" value="{{ vlTlf }}" on-change="{{ settVlTlf }}" hint-size="100%,66px"></x-import>
+                  <sc-if value="{{ vlFeil }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600;">{{ vlFeil }}</p>
+                  </sc-if>
+                  <div style="height: var(--space-6);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ bekreftVenteliste }}" hint-size="100%,52px">Sett meg på venteliste</x-import>
+                  <div style="height: var(--space-3);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="lg" full-width="{{ sant }}" on-click="{{ bVlLukk }}" hint-size="100%,52px">Avbryt</x-import>
+                </sc-if>
                 <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du betaler ingenting nå. Vi svarer så fort vi kan.</p>
               </sc-if>
               <sc-if value="{{ erFullbooket }}" hint-placeholder-val="{{ true }}">
@@ -24853,16 +24878,18 @@ class Component extends DCLogic {
     // naar de sto i kalenderen (?alle=1 er den gamle adressen, og aapner
     // kalenderen). Da staar det valgt naar appen er oppe, og de fortsetter
     // der de var.
-    let dag = '', kal = '';
+    let dag = '', kal = '', vl = false;
     try {
       const q = new URLSearchParams(window.location.search);
       dag = q.get('dag') || '';
       kal = q.get('kal') || (q.get('alle') === '1' ? 'forste' : '');
+      // «Sett meg paa venteliste» paa et kurs uten datoer, fra serversida.
+      vl = q.get('venteliste') === '1';
     } catch (e) { /* ingen sporring */ }
     this.setState({
       side: 'booking', fra: 'kurs', valgtKurs: kort,
       bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null,
-      bDag: dag || null, bKal: kal,
+      bDag: dag || null, bKal: kal, bVlApen: vl,
       ventelisteBekreftet: null,
     });
     // Kom hun fra datolista paa serversida, skal hun lande PAA datoene.
@@ -33662,8 +33689,9 @@ class Component extends DCLogic {
     // det samme, som om man hadde trykket paa knappen.
     if (rute && /[?&]skjema=1/.test(window.location.search)) {
       if (rute.side === 'kontakt') this.setState({ ktApen: true, ktSendt2: false, ktFeil: null });
-      // Forsida ogsaa: «Er dere en gruppe … Les mer» paa serversida.
-      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs' || rute.side === 'forside') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
+      // Forsida ogsaa: «Er dere en gruppe … Les mer» paa serversida — og
+      // kurssida: «Send oss en forespoersel» paa et kurs uten datoer.
+      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs' || rute.side === 'forside' || rute.side === 'booking') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
     }
     this._popstate = (e) => {
       // Hvor dypt vi staar naa — se tilbakeVals().
@@ -47189,6 +47217,12 @@ class Component extends DCLogic {
         this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,
           ktEmne: k.title || k.tittel || '' });
       },
+      // Ventelisteskjemaet paa et kurs uten datoer: bak en knapp, saa boksen
+      // ikke starter med tre tomme felt.
+      bVlSkjemaApen: !!this.state.bVlApen,
+      bVlSkjemaLukket: !this.state.bVlApen,
+      bVlApne: () => this.setState({ bVlApen: true, vlFeil: null }),
+      bVlLukk: () => this.setState({ bVlApen: false, vlFeil: null }),
       erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis'
              && !(this.state.valgtKurs && this.state.valgtKurs.kunKontakt)
              && this.state.fra !== 'medlemskap',
@@ -47236,10 +47270,14 @@ class Component extends DCLogic {
               // Bare nye paameldinger telles. Den som melder seg paa igjen,
               // er ikke en ny interessent.
               if (!d.gjentakelse) this.maal('join_waitlist', { item_name: kat.tittel || '' });
+              // Uten dato er det datoen vi gir beskjed om, ikke en ledig plass.
+              const utenDato = !!k.kunKontakt;
               this.setState({
-                vlNavn: '', vlEpost: '', vlTlf: '', vlFeil: null,
+                vlNavn: '', vlEpost: '', vlTlf: '', vlFeil: null, bVlApen: false,
                 kvittering: d.gjentakelse ? 'Du står allerede på ventelisten' : 'Du står nå på ventelisten',
-                kvitteringDetalj: 'Plass nummer ' + d.posisjon + '. Vi gir beskjed på e-post hvis det blir ledig. Du betaler ingenting før plassen er din.',
+                kvitteringDetalj: utenDato
+                  ? 'Plass nummer ' + d.posisjon + '. Vi gir beskjed på e-post så snart vi setter opp en dato. Du betaler ingenting før plassen er din.'
+                  : 'Plass nummer ' + d.posisjon + '. Vi gir beskjed på e-post hvis det blir ledig. Du betaler ingenting før plassen er din.',
               });
             })
             .catch(() => this.setState({ vlFeil: 'Fikk ikke kontakt med serveren. Prøv igjen.' }));
@@ -56143,7 +56181,7 @@ class Component extends DCLogic {
           this.setState({
             side: 'booking', fra: 'paintonpots', valgtKurs: this.medServerdata(base),
             bookOrdre: false, bookKvittert: false,
-            bDato: null, bOktId: null, bDag: '', bKal: '',
+            bDato: null, bOktId: null, bDag: '', bKal: '', bVlApen: false,
             ventelisteBekreftet: null,
           });
           window.scrollTo(0, 0);

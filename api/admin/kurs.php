@@ -130,6 +130,9 @@ if (Foresporsel::metode() === 'GET') {
             'nivaaTekst'      => (string) ($k['nivaa_tekst'] ?? ''),
             'kortBeskrivelse' => (string) ($k['kort_beskrivelse'] ?? ''),
             'bildeAlt'        => (string) ($k['bilde_alt'] ?? ''),
+            // «Dette kan du lage» (migrasjon 200): kurs-id-ene karusellen
+            // henter bilde og korttekst fra, i rekkefoelge. Tom = egne bilder.
+            'karusellFra'     => Katalog::karusellFra($k['karusell_fra'] ?? null),
             'lagerDu'         => (string) ($k['lager_du'] ?? ''),
             'medHjem'         => (string) ($k['med_hjem'] ?? ''),
             'ferdigTid'       => (string) ($k['ferdig_tid'] ?? ''),
@@ -502,6 +505,20 @@ switch ($handling) {
             if (DB::harKolonne('courses', 'bilder')) {
                 $data['bilder'] = $rene ? json_encode(array_values($rene), JSON_UNESCAPED_SLASHES) : null;
             }
+        }
+
+        // «Dette kan du lage» (migrasjon 200). Bare naar feltet er med, av
+        // samme grunn som bildene. Bare hele tall, aldri kurset selv, og
+        // hvert kurs én gang — rekkefoelgen er den skjemaet sendte.
+        if (array_key_exists('karusellFra', Foresporsel::kropp()) && DB::harKolonne('courses', 'karusell_fra')) {
+            $ider = [];
+            foreach ((array) (Foresporsel::kropp()['karusellFra'] ?? []) as $v) {
+                $n = (int) $v;
+                if ($n > 0 && $n !== $id && !in_array($n, $ider, true)) {
+                    $ider[] = $n;
+                }
+            }
+            $data['karusell_fra'] = $ider ? json_encode($ider) : null;
         }
 
         if ($id > 0) {

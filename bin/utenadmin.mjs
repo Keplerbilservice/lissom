@@ -80,6 +80,8 @@ const MAAL = path.join(ROT, 'lissom-2108-uten-admin.html');
 export const LESESKJERMER = [
   'erForside', 'erOmOss', 'erSporsmal', 'erNyheter', 'erPersonvern', 'erVilkar',
   'erKursoversikt', 'erKalenderside', 'erNyttig', 'erPop',
+  // Kurslista (/kurs, /events) fra 21. september 2026 — steg 1 i ryddinga.
+  'erKurs',
   'erPlakatCone', 'erPlakatInfo', 'erPlakatTrivsel',
 ];
 

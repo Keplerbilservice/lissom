@@ -1343,6 +1343,18 @@ window.__resources = {
     [style*="lx-tenker"] { animation: none !important; }
   }
 
+  /* Bookingskjermen toner inn naar den kommer — fra den tomme sida mens
+     kurset hentes, eller fra kurssida. Kort nok til aa ikke vaere venting,
+     lang nok til aa ikke blinke. */
+  @keyframes lx-ton-inn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .lx-ton-inn { animation: lx-ton-inn .45s ease both; }
+  @media (prefers-reduced-motion: reduce) {
+    .lx-ton-inn { animation: none; }
+  }
+
   @keyframes lx-kopp-snurr {
     0%   { transform: perspective(600px) rotateY(0deg); }
     40%  { transform: perspective(600px) rotateY(720deg); }
@@ -3085,7 +3097,7 @@ window.__resources = {
   </sc-if>
 
   <sc-if value="{{ erBooking }}" hint-placeholder-val="{{ true }}">
-    <div role="main" data-screen-label="Booking">
+    <div role="main" data-screen-label="Booking" class="lx-ton-inn">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Kurs" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
 
 
@@ -4083,6 +4095,18 @@ window.__resources = {
         </div>
       </section>
     </div>
+  </sc-if>
+
+  <!-- Mellom to sider. Den som kommer rett inn paa /kurs/<slug> (fra en
+       lenke, en annonse eller serversida) foer katalogen er hentet, sto
+       foer paa kurslista i et sekund. Kurslista er en serverside naa
+       (steg 1 i ryddinga, 21. september 2026). Eieren ville ikke ha noen
+       venteskjerm («fade inn/ut i stedet, saa det ikke oppleves som
+       venting»): her staar bare sidas egen bakgrunn, og bookingskjermen
+       toner inn naar kurset er klart (.lx-ton-inn). Kurset aapnes naar
+       katalogen kommer (_ventendeSlug). -->
+  <sc-if value="{{ erLaster }}" hint-placeholder-val="{{ false }}">
+    <div role="main" data-screen-label="Henter kurset" aria-busy="true" style="background: var(--clay-50); min-height: 100vh;"></div>
   </sc-if>
 
   <sc-if value="{{ erVilkar }}" hint-placeholder-val="{{ false }}">
@@ -26426,6 +26450,9 @@ class Component extends DCLogic {
   static get SERVERSIDER() {
     return {
       forside: '/', omoss: '/om-oss', sporsmal: '/sporsmal-og-svar', nyheter: '/nyheter',
+      // Kurslista ogsaa (eieren, 21. september 2026: ett sted for kortene).
+      // Filteret foelger med i adressen — se setState().
+      kurs: '/kurs',
       personvern: '/personvern', vilkar: '/vilkar', kursoversikt: '/kursene-vare',
       kalender: '/kalender', nyttig: '/nyttig-info', paintonpots: '/paint-on-pots',
       plakatcone: '/nyttig-info/brennetabell', plakatinfo: '/nyttig-info/medlemsinfo',
@@ -26448,8 +26475,20 @@ class Component extends DCLogic {
     if (sti && side !== this.state.side && this.utenLeseskjermer()) {
       // En aapnet artikkel har sin egen adresse.
       const slug = side === 'nyheter' && endring.nyLest ? endring.nyLest.slug : '';
-      window.location.assign(slug ? '/nyheter/' + slug : sti);
-      return;
+      // Kurslista med filter: Events har sin egen adresse, temaene er
+      // ?tema= — samme som pillene paa serversida (app/nett/sider/kurs.php).
+      const filter = side === 'kurs' ? (endring.kursFilter || this.state.kursFilter || '') : '';
+      const kursSti = filter === 'Events' ? '/events'
+        : (filter && filter !== 'Kursene') ? '/kurs?tema=' + encodeURIComponent(filter) : '/kurs';
+      const maal = slug ? '/nyheter/' + slug : (side === 'kurs' ? kursSti : sti);
+      // Staar vi alt paa den adressen — serveren klarte ikke tegne sida og
+      // side.php falt tilbake paa appen — er en ny lasting bare en ny runde.
+      // Da tegnes skjermen her som foer (full utgave) eller staar tom (lett
+      // utgave), framfor aa laste i ring.
+      if (maal.split('?')[0] !== window.location.pathname) {
+        window.location.assign(maal);
+        return;
+      }
     }
     super.setState(endring, etterpaa);
   }
@@ -26714,11 +26753,12 @@ class Component extends DCLogic {
         this._ventendeSlug = null;
         return;
       }
-      // Katalogen er ikke lastet ennaa. Vis kurslista imens, og aapne kurset
-      // naar den kommer — framfor en tom bookingskjerm eller en 404 paa noe
-      // som finnes.
+      // Katalogen er ikke lastet ennaa. Vis venteskjermen imens, og aapne
+      // kurset naar den kommer — framfor en tom bookingskjerm eller en 404
+      // paa noe som finnes. (Sto paa kurslista foer; den er en serverside
+      // naa, og et bytte dit ville lastet /kurs og mistet adressen.)
       this._ventendeSlug = rute.kursSlug;
-      this.setState({ side: 'kurs', kursFilter: 'Kursene' });
+      this.setState({ side: 'laster' });
       return;
     }
 
@@ -57312,6 +57352,8 @@ class Component extends DCLogic {
         };
       })(),
       erIkkeFunnet: side === 'ikkefunnet',
+      // Venteskjermen: rett inn paa /kurs/<slug> foer katalogen er lastet.
+      erLaster: side === 'laster',
 
       // Samtykkelinja vises bare naar den trengs: paa den publiserte siden,
       // utenfor admin, naar det finnes en maale-ID aa spore med, og naar den

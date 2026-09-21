@@ -40753,7 +40753,13 @@ class Component extends DCLogic {
     // tegnet ukesvisningen dem likevel: den bygger hendelsene selv.
     const alle = this.klAlle(y, m)
       .filter(e => e.type !== 'verksted' && e.type !== 'brenning')
-      .filter(e => !(e.holder && skjulH[e.holder]));
+      .filter(e => !(e.holder && skjulH[e.holder]))
+      // Plasser ingen har booket vises ikke («auto» = fra_apningstid, som
+      // Paint on Pots sine tider). Fire tider hver onsdag og torsdag ville
+      // druknet de ekte avtalene. Eieren, 21. september 2026: «det vises
+      // ikke i kalender admin foer det er noen som melder seg paa haaper
+      // jeg?». Booker noen, staar den tida der som foer.
+      .filter(e => !(e.auto && !((e.pameldt || 0) > 0)));
     const farge = e => (modus === 'holder' && e.holder ? (hInfo[e.holder] || info.verksted) : info[e.type]);
     const pill = (e, blokk) => {
       const f = farge(e);

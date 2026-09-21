@@ -59,8 +59,8 @@
   });
 
   /* ── Feltene som bytter ─────────────────────────────────────────────── */
-  // Referansekundene: 6 s per felt (eieren, 21. september 2026: «6 sekunder
-  // er passe» — sto paa 12), 0,8 s toning. Produktene paa mobil:
+  // Referansekundene: 10 s per felt (eieren, 21. september 2026: «6 sekunder
+  // er passe», og samme kveld «økes til 10 sekunder» — sto paa 12), 0,8 s toning. Produktene paa mobil:
   // 6 s. Stopper naar musa eller fingeren er over, og for godt naar noen
   // trykker paa en prikk — som tonBytt() i appen.
   var rolig = false;
@@ -102,7 +102,7 @@
   }
 
   var rot = window.lissomRot || [];
-  felt('rot', rot.length, 6000, function (n) {
+  felt('rot', rot.length, 10000, function (n) {
     var r = rot[n], el = d.querySelector('[data-nett-rot="rot"]');
     var q = function (s) { return el.querySelector('[data-rot="' + s + '"]'); };
     var bilde = q('bilde'); bilde.src = r.bilde; bilde.alt = r.alt;

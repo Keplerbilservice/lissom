@@ -1526,13 +1526,64 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
 /** Falls back to a labelled clay block when no photograph is supplied. */
 function Media({
   src,
-  alt
+  alt,
+  images,
+  seconds
 }) {
   // Kortet viser fotoet i 254 til 400 piksler. Uten srcset lastet det ned
   // hele originalen paa 1200 og kastet det meste. Lista over hvilke
   // stoerrelser som finnes ligger i sida — se window.lissomSrcset.
   const srcSett = (typeof window !== 'undefined' && window.lissomSrcset)
     ? window.lissomSrcset(src) : '';
+  // Flere bilder («Dette kan du lage», eieren 21. september 2026: kortet
+  // skal rullere som kurssida): de ligger oppaa det foerste og bytter
+  // hvert n-te sekund. Stopper under musa/fingeren, staar i ro naar fana
+  // er skjult og for den som har bedt om mindre bevegelse — samme regler
+  // som nett.js paa serversidene. Lokal endring — se CLAUDE.md.
+  const lag = Array.isArray(images) && images.length >= 2 ? images : null;
+  const [nr, setNr] = React.useState(0);
+  const [pause, setPause] = React.useState(false);
+  React.useEffect(() => {
+    if (!lag) return undefined;
+    let rolig = false;
+    try { rolig = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    if (rolig) return undefined;
+    const sek = Math.max(2, parseFloat(seconds) || 5);
+    const t = setInterval(() => {
+      if (pause || document.hidden) return;
+      setNr(n => (n + 1) % lag.length);
+    }, sek * 1000);
+    return () => clearInterval(t);
+  }, [lag ? lag.join('|') : '', seconds, pause]);
+  if (src && lag) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: { position: 'relative', overflow: 'hidden' },
+      onMouseEnter: () => setPause(true),
+      onMouseLeave: () => setPause(false),
+      onTouchStart: () => setPause(true),
+      onTouchEnd: () => setPause(false),
+      onTouchCancel: () => setPause(false)
+    }, lag.map((b, i) => {
+      const ss = (typeof window !== 'undefined' && window.lissomSrcset) ? window.lissomSrcset(b) : '';
+      return /*#__PURE__*/React.createElement("img", {
+        key: b + i,
+        src: b,
+        srcSet: ss || undefined,
+        sizes: ss ? (window.LISSOM_SIZES_KORT || undefined) : undefined,
+        alt: i === 0 ? (alt || '') : '',
+        'aria-hidden': i === 0 ? undefined : 'true',
+        loading: "lazy",
+        decoding: "async",
+        style: i === 0 ? {
+          width: '100%', aspectRatio: '16 / 10', height: 'auto', objectFit: 'cover', display: 'block',
+          opacity: nr === 0 ? 1 : 0, transition: 'opacity 1.2s ease'
+        } : {
+          position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+          opacity: nr === i ? 1 : 0, transition: 'opacity 1.2s ease'
+        }
+      });
+    }));
+  }
   if (src) return /*#__PURE__*/React.createElement("img", {
     src: src,
     srcSet: srcSett || undefined,
@@ -1576,6 +1627,10 @@ function CourseCard({
   // Lagt inn lokalt 11. september 2026 (SEO-instruksen) — se CLAUDE.md om
   // ds-bundle.js: dette maa legges inn igjen etter en ny eksport.
   imageAlt,
+  // Flere bilder som bytter («Dette kan du lage»). Lokal endring 21.
+  // september 2026 — se CLAUDE.md om ds-bundle.js.
+  images,
+  seconds,
   ctaLabel = 'Book plass',
   onBook,
   style,
@@ -1598,7 +1653,9 @@ function CourseCard({
     }
   }, /*#__PURE__*/React.createElement(Media, {
     src: image,
-    alt: imageAlt || title
+    alt: imageAlt || title,
+    images: images,
+    seconds: seconds
   }), status || seats != null ? (() => {
     const label = status || (seats <= 3 ? seats + ' plasser igjen' : 'Ledig');
     const urgent = /igjen|få plasser/i.test(label);

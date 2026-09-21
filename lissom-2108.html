@@ -2579,7 +2579,7 @@ window.__resources = {
                    kalenderikon ved siden av varigheten, inne i kortet. Se
                    «meta» i ds-bundle.js; tomme felt filtreres bort selv, saa
                    et kurs uten datoer faar ingen tom rad. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" images="{{ k.karusellBilder }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
             </sc-for>
           </div>
           <div class="lx-kunmobil">
@@ -2850,7 +2850,7 @@ window.__resources = {
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
               <sc-for list="{{ popDatoer }}" as="k" hint-placeholder-count="2">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" images="{{ k.karusellBilder }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
               </sc-for>
             </div>
           </sc-if>
@@ -3008,7 +3008,7 @@ window.__resources = {
       <section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ kursAlle }}" as="k" hint-placeholder-count="8">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}" text="{{ k.kortTekst }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" images="{{ k.karusellBilder }}" image-alt="{{ k.bildeAlt }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
           </sc-for>
         </div>
       </section>
@@ -24872,6 +24872,23 @@ class Component extends DCLogic {
    * adressen /kurs/<slug>, som maa kunne finne kortet uten aa vite noe om
    * hvilket filter som staar paa akkurat naa.
    */
+  /**
+   * «Dette kan du lage» for ett kurs: bilde, tittel og korttekst fra
+   * kursene som er haket av i kursoppsettet, i den rekkefoelgen. Samme
+   * oppslag som Katalog::detteKanDuLage paa serveren. Brukes av kurssida
+   * (bKarusell) og av kortene (kursKort), saa de viser det samme.
+   */
+  detteKanDuLage(k) {
+    const design = (this._kursListe || []);
+    return ((k && k.karusellFra) || []).map(id => (this.state.katalog || []).find(c => c.id === id))
+      .filter(Boolean)
+      .map(c => {
+        const d = design.find(x => (x.title || '').toLowerCase() === (c.tittel || '').toLowerCase());
+        const src = (c.bilder && c.bilder[0]) || c.bilde || (d && d.image) || (FOTO + 'handbygging.jpg');
+        return { src, tittel: c.tittel, tekst: c.kortBeskrivelse || '' };
+      });
+  }
+
   kursKort() {
     this._kursListe = this.medUndertemaer([
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Arbeidene er klare til henting etter to til fire uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
@@ -24894,7 +24911,15 @@ class Component extends DCLogic {
       .map((k, i) => ({ k, i, n: naar(k) }))
       // Stabil: to kurs paa samme dag beholder rekkefolgen de hadde.
       .sort((a, b) => (a.n - b.n) || (a.i - b.i))
-      .map(x => x.k);
+      .map(x => x.k)
+      // Kortet ruller «Dette kan du lage»-bildene, som paa forsida paa
+      // serversida (Kort::kurs). Det foerste er kortets bilde.
+      .map(k => {
+        const lage = this.detteKanDuLage(k);
+        if (lage.length < 2) return k;
+        const bilder = lage.map(r => r.src).filter((s, i, a) => a.indexOf(s) === i);
+        return Object.assign({}, k, { image: bilder[0], karusellBilder: bilder });
+      });
     return this._alleKort;
   }
 
@@ -63077,14 +63102,7 @@ class Component extends DCLogic {
         // kurset, 21. september 2026). Bildet for et kurs uten egne bilder
         // er det kortet ville hatt — designlistas, ellers haandbygging —
         // som Kort::standardBilde paa serveren.
-        const design = (this._kursListe || []);
-        const lage = (k.karusellFra || []).map(id => (this.state.katalog || []).find(c => c.id === id))
-          .filter(Boolean)
-          .map(c => {
-            const d = design.find(x => (x.title || '').toLowerCase() === (c.tittel || '').toLowerCase());
-            const src = (c.bilder && c.bilder[0]) || c.bilde || (d && d.image) || (FOTO + 'handbygging.jpg');
-            return { src, tittel: c.tittel, tekst: c.kortBeskrivelse || '' };
-          });
+        const lage = this.detteKanDuLage(k);
         const bilder = lage.length ? lage.map(r => r.src)
           : (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'handbygging.jpg']);
         const sek = parseFloat(k.sekunder) || 5;

@@ -320,21 +320,52 @@ $h .= '<div class="lx-kurs-boks" style="background: var(--surface-card); border:
 
 $appHref = '/kurs/' . rawurlencode($slug);
 if (!$fullbooket && !$kunKontakt) {
-    // Dagene — bookingDager. Tre om gangen; resten bak ?alle=1.
+    // Dagene — bookingDager. Tre om gangen; resten maaned for maaned bak
+    // ?mnd=2026-11. Eieren, 21. september 2026, med 48 datoer paa
+    // Haandbygging: «vis flere datoer, ikke 48 datoer». Foer laa alle bak
+    // ?alle=1, i én lang liste. Samme deling som i appen (bookingDager).
     $dager = [];
     foreach ($datoer as $d) {
         $navn = (string) (($d['dag'] ?? '') ?: ($d['dato'] ?? ''));
         $ledig = Kort::ledigFor($d, (int) ($kat['plasser'] ?? 0));
-        $dager[$navn] ??= ['dag' => $navn, 'tider' => []];
+        $dager[$navn] ??= ['dag' => $navn, 'tider' => [], 'maaned' => (string) ($d['maaned'] ?? '')];
         $dager[$navn]['tider'][] = ['klokke' => (string) ($d['klokke'] ?? ''), 'full' => (int) ($d['ledige'] ?? 0) <= 0, 'plasser' => $ledig, 'samlinger' => count((array) ($d['samlinger'] ?? [])) > 1 ? count($d['samlinger']) . ' samlinger' : ''];
     }
     $dager = array_values($dager);
-    $alle = isset($_GET['alle']);
-    $synlige = $alle ? $dager : array_slice($dager, 0, 3);
-    $skjult = count($dager) - count($synlige);
+    $forsteTre = array_slice($dager, 0, 3);
+    $resten = array_slice($dager, 3);
+    // Maanedene det finnes datoer i utover de tre foerste, i rekkefoelge.
+    $maaneder = [];
+    foreach ($resten as $r) {
+        if ($r['maaned'] !== '' && !in_array($r['maaned'], $maaneder, true)) {
+            $maaneder[] = $r['maaned'];
+        }
+    }
+    // ?alle=1 er den gamle adressen; den aapner naa den foerste maaneden.
+    $valgtMnd = (string) ($_GET['mnd'] ?? '');
+    if (($valgtMnd === '' && isset($_GET['alle'])) || ($valgtMnd !== '' && !in_array($valgtMnd, $maaneder, true))) {
+        $valgtMnd = $maaneder[0] ?? '';
+    }
+    $iMaaneden = $valgtMnd === '' ? [] : array_values(array_filter($resten, static fn(array $r): bool => $r['maaned'] === $valgtMnd));
+    $synlige = array_merge($forsteTre, $iMaaneden);
+    $skjult = count($resten);
     $h .= '<div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg dato</div>'
         . '<div style="display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-6);">';
+    $forsteYm = (string) ($dager[0]['maaned'] ?? '');
     foreach ($synlige as $i => $rad) {
+        if ($i === count($forsteTre) && $valgtMnd !== '') {
+            // Maanedene som piller. Den valgte er fylt; de andre er lenker
+            // til samme side med ?mnd=.
+            $h .= '<div style="display: flex; gap: 6px; flex-wrap: wrap; padding-top: var(--space-2);">';
+            foreach ($maaneder as $ym) {
+                $paa = $ym === $valgtMnd;
+                $pille = 'display: inline-flex; align-items: center; min-height: 36px; padding: 6px 14px; border-radius: var(--radius-pill); font: var(--type-body-sm); font-weight: 700; text-decoration: none; border: 1px solid ' . ($paa ? 'var(--lissom-brown)' : 'var(--border-subtle)') . '; background: ' . ($paa ? 'var(--lissom-brown)' : 'var(--surface-card)') . '; color: ' . ($paa ? 'var(--clay-50)' : 'var(--text-heading)') . ';';
+                $h .= $paa
+                    ? '<span style="' . $pille . '">' . $e(Katalog::maanedNavn($ym, $forsteYm)) . '</span>'
+                    : '<a href="' . $e($appHref . '?mnd=' . rawurlencode($ym)) . '" style="' . $pille . '">' . $e(Katalog::maanedNavn($ym, $forsteYm)) . '</a>';
+            }
+            $h .= '</div>';
+        }
         $full = array_reduce($rad['tider'], static fn(bool $c, array $t): bool => $c && $t['full'], true);
         $best = null;
         foreach ($rad['tider'] as $t) { if (!$t['full']) { $best = $t; break; } }
@@ -352,8 +383,9 @@ if (!$fullbooket && !$kunKontakt) {
             ? '<div style="' . $stil . '" aria-disabled="true">' . $inni . '</div>'
             : '<a href="' . $e($appHref . '?dag=' . rawurlencode($rad['dag'])) . '" style="' . $stil . '">' . $inni . '</a>';
     }
-    if ($skjult > 0) {
-        $h .= '<a href="' . $e($appHref . '?alle=1') . '" style="appearance: none; cursor: pointer; width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: var(--radius-md); min-height: 44px; border: 1px dashed var(--border-subtle); background: transparent; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: none; display: flex; align-items: center; justify-content: center;">' . ($skjult === 1 ? 'Vis én dato til' : 'Vis ' . $skjult . ' datoer til') . '</a>';
+    if ($skjult > 0 && $valgtMnd === '') {
+        // Bare de tre staar: knappen aapner den foerste maaneden etter dem.
+        $h .= '<a href="' . $e($appHref . '?mnd=' . rawurlencode($maaneder[0] ?? '')) . '" style="appearance: none; cursor: pointer; width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: var(--radius-md); min-height: 44px; border: 1px dashed var(--border-subtle); background: transparent; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: none; display: flex; align-items: center; justify-content: center;">Vis flere datoer</a>';
     }
     $h .= '</div>';
     $h .= Deler::knapp('Velg dato og book', ['href' => $appHref . '?book=1', 'size' => 'lg', 'full' => true])

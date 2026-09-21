@@ -341,6 +341,14 @@ final class Katalog
                     // Raa starttid slik den staar i basen. Kalenderen trenger den for
                     // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
                     'startUtc' => $o['start_tid'],
+                    // Maaneden, «2026-11», i norsk tid. Datovelgeren viser
+                    // datoene maaned for maaned naar det er mange av dem —
+                    // eieren, 21. september 2026, med 48 datoer paa
+                    // Haandbygging: «vis flere datoer, ikke 48 datoer».
+                    // Regnes her, ett sted, saa serversida og appen deler
+                    // datoene likt; UTC-datoen kan ligge i feil maaned.
+                    'maaned'   => (new DateTimeImmutable((string) $o['start_tid'], new DateTimeZone('UTC')))
+                        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m'),
                     'ledige'   => $ledigeKart[(int) $o['id']] ?? 0,
                     // Plassene denne oekta har tatt. Se solgtePlasserFlere().
                     'solgt'    => $solgtKart[(int) $o['id']] ?? 0,
@@ -442,6 +450,18 @@ final class Katalog
             ];
         }
         return $ut;
+    }
+
+    /**
+     * Navnet paa en maaned i datovelgeren: «nov», og «jan 2027» naar aaret
+     * er et annet enn det foerste datoen ligger i.
+     */
+    public static function maanedNavn(string $ym, string $forsteYm): string
+    {
+        $navn = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+        $m = (int) substr($ym, 5, 2);
+        $n = $navn[$m - 1] ?? $ym;
+        return substr($ym, 0, 4) === substr($forsteYm, 0, 4) ? $n : $n . ' ' . substr($ym, 0, 4);
     }
 
     public static function rabatter(): array

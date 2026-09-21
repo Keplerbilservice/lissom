@@ -24551,6 +24551,7 @@ class Component extends DCLogic {
       // «ogsaaSkjult»: ogsaa kurs uten datoer som ikke skal staa i lista —
       // for adressen /kurs/<slug>?venteliste=1 fra serversida (aapneKursSlug).
       .filter(k => ogsaaSkjult || (k.datoer || []).length > 0 || k.utenDatoOk)
+      .map(k => ogsaaSkjult && !(k.datoer || []).length && !k.utenDatoOk ? Object.assign({}, k, { ogsaaSkjult: true }) : k)
       // Interne kurs hoerer hjemme paa Min side, ikke i den offentlige lista.
       // Da denne metoden ble skrevet, tok den med alt fra katalogen — og
       // medlemsarrangementene dukket opp for alle.
@@ -24578,6 +24579,7 @@ class Component extends DCLogic {
         return {
           slug: k.slug || '',
           katId: k.id,
+          ogsaaSkjult: !!k.ogsaaSkjult,
           prisOre: k.prisOre,
           level: k.tema || (k.type === 'event' ? 'Event' : 'Kurs'),
           tema: tema,
@@ -24699,7 +24701,9 @@ class Component extends DCLogic {
     // Noen kurs settes opp naar noen sporr, og har ikke datoer liggende ute.
     // De skal likevel staa paa nettsida — Date Night forsvant helt da datoene
     // tok slutt, og da fantes tilbudet ikke lenger for den som lette.
-    if (datoer.length === 0 && kat.utenDatoOk) {
+    // «ogsaaSkjult» (serverKurs for aapneKursSlug): et skjult kurs paa sin
+    // egen adresse faar det samme som et med «vis uten datoer».
+    if (datoer.length === 0 && (kat.utenDatoOk || k.ogsaaSkjult)) {
       return Object.assign({}, k, {
         // Adressen kurset har. Uten den kan ikke kortet foere til en side
         // som er verdt aa dele — og Google har ingenting aa vise fram ut

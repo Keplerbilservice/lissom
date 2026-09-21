@@ -154,7 +154,10 @@ if ($rot !== []) {
         . '<div class="lx-split" data-tone="rot" data-nett-rot="rot" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center; opacity: 1; transition: opacity 0.8s var(--ease-clay, ease); background: var(--clay-50);">'
         . '<img data-rot="bilde" src="' . $e($r0['bilde']) . '" alt="' . $e($r0['alt']) . '" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">'
         . '<div>'
-        . '<div data-rot="logo" role="img" style="display: none; width: 132px; height: 60px; margin-bottom: var(--space-4); background-size: contain; background-repeat: no-repeat; background-position: left center; mix-blend-mode: multiply;"></div>'
+        // Logoen til den foerste kunden staar fra foerste tegning. Den sto som
+        // «display: none» og fikk bilde foerst naar nett.js byttet kort, 12 s
+        // senere — eieren, 21. september 2026: «kepler logoen mangler».
+        . '<div data-rot="logo" role="img"' . ((string) ($r0['logo'] ?? '') !== '' ? ' aria-label="' . $e('Logoen til ' . $r0['stikktittel']) . '"' : '') . ' style="display: ' . ((string) ($r0['logo'] ?? '') !== '' ? 'block' : 'none') . '; width: 132px; height: 60px; margin-bottom: var(--space-4); background-size: contain; background-repeat: no-repeat; background-position: left center; mix-blend-mode: multiply;' . ((string) ($r0['logo'] ?? '') !== '' ? ' background-image: ' . Nett::cssUrl((string) $r0['logo']) . ';' : '') . '"></div>'
         . '<div data-rot="stikktittel" style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">' . $e($r0['stikktittel']) . '</div>'
         . '<h2 data-rot="tittel" style="margin: 0 0 var(--space-5);">' . $e($r0['tittel']) . '</h2>'
         . '<div data-rot="undertekst" style="display: none; margin: calc(var(--space-5) * -1) 0 var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);"></div>'

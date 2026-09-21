@@ -49,6 +49,48 @@ final class Samlinger
     }
 
     /**
+     * Er kursholderen faktisk opptatt av denne oekta i tidsrommet?
+     *
+     * Et flerdagerskurs staar som én rad fra foerste dag til siste — loerdag
+     * 09:30 til soendag 13:00 — men natta imellom er ingen opptatt. Kollisjons-
+     * sjekken i api/admin/kurs.php sammenliknet mot hele spennet, og nektet
+     * derfor et haandbyggingskurs loerdag 13:00 fordi «Monica staar allerede
+     * paa dreiekurs loerdag 09:30». Eieren, 21. september 2026.
+     *
+     * Har oekta samlinger, er det samlingenes egne dager og klokkeslett som
+     * teller. Uten samlinger (én dag) gjelder raden som foer: da svarer
+     * denne true, og spoerringen som fant raden har alt avgjort det.
+     *
+     * @param string $startUtc 'Y-m-d H:i:s' i UTC
+     * @param string $sluttUtc 'Y-m-d H:i:s' i UTC
+     */
+    public static function opptattMellom(int $oktId, string $startUtc, string $sluttUtc): bool
+    {
+        $samlinger = self::forOkt($oktId);
+        if (count($samlinger) < 2) {
+            return true;
+        }
+        $utc = new DateTimeZone('UTC');
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $start = new DateTimeImmutable($startUtc, $utc);
+        $slutt = new DateTimeImmutable($sluttUtc, $utc);
+        foreach ($samlinger as $s) {
+            $dato = (string) ($s['dato'] ?? '');
+            if ($dato === '') {
+                continue;
+            }
+            $fra = (string) ($s['fra'] ?? '') ?: '00:00';
+            $til = (string) ($s['til'] ?? '') ?: '23:59';
+            $a = new DateTimeImmutable($dato . ' ' . $fra, $oslo);
+            $b = new DateTimeImmutable($dato . ' ' . $til, $oslo);
+            if ($a < $slutt && $b > $start) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Én samling, slik den vises.
      *
      * @param array<string, mixed> $r

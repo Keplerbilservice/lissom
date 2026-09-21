@@ -263,7 +263,12 @@ $holderOpptatt = static function (?int $holder, string $start, ?string $slutt, i
                OR (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
                     WHERE b.course_session_id = cs.id
                       AND b.status IN ('betalt', 'reservert')) > 0)";
-    $rad = DB::en(
+    // Et flerdagerskurs staar som én rad fra foerste dag til siste, saa
+    // spoerringen treffer ogsaa natta og ettermiddagen mellom samlingene.
+    // Derfor leses de faa kandidatene ut, og hver sjekkes mot sine egne
+    // dager og klokkeslett — se Samlinger::opptattMellom.
+    $rad = null;
+    foreach (DB::alle(
         "SELECT cs.id, cs.start_tid, c.tittel
            FROM course_sessions cs
            JOIN courses c ON c.id = cs.course_id
@@ -274,9 +279,14 @@ $holderOpptatt = static function (?int $holder, string $start, ?string $slutt, i
             AND COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 1 HOUR) > :start
             {$ledigTid}
           ORDER BY cs.start_tid
-          LIMIT 1",
+          LIMIT 20",
         ['h' => $holder, 'u' => $utenom, 'slutt' => $slutt, 'start' => $start]
-    );
+    ) as $kandidat) {
+        if (Samlinger::opptattMellom((int) $kandidat['id'], $start, $slutt)) {
+            $rad = $kandidat;
+            break;
+        }
+    }
     return $rad === null ? null : [
         'tittel' => (string) $rad['tittel'],
         'naar'   => Booking::norskDato((string) $rad['start_tid']),

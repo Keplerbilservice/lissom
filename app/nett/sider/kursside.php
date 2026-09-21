@@ -436,6 +436,10 @@ if (!$fullbooket && !$kunKontakt) {
             . '<span><span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--lissom-brown); vertical-align: -2px; margin-right: 5px;"></span>Valgt</span>'
             . '<span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border-subtle); vertical-align: -1px; margin-right: 5px;"></span>Fullbooket</span>'
             . '</div></div>';
+        // Angrer man, skal de tre anbefalte datoene kunne faas tilbake.
+        // Eieren, 21. september 2026: «det maa ogsaa vaere mulig aa lukke
+        // datovelgeren, om man likevel vil velge fra de anbefalte datoene».
+        $h .= '<a href="' . $e($appHref) . '" style="appearance: none; cursor: pointer; width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: var(--radius-md); min-height: 44px; border: 1px dashed var(--border-subtle); background: transparent; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: none; display: flex; align-items: center; justify-content: center;">Lukk kalenderen</a>';
         // Dagen som er valgt, under kalenderen.
         if ($dager !== []) {
             $h .= $tegnRad($dager[0], true);

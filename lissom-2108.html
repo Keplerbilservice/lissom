@@ -63152,6 +63152,15 @@ class Component extends DCLogic {
           rotSplitStil: this.toneStil('rot', {
             maxWidth: 'var(--width-content)', margin: '0 auto', display: 'grid',
             gridTemplateColumns: '0.75fr 1.25fr', gap: 'var(--space-16)', alignItems: 'center',
+            // Samme farge som seksjonen bak, med vilje. Feltet toner med
+            // «opacity», og det gir sin egen stablingskontekst: logoens
+            // «multiply» (rotLogoStil) blander da bare mot det som ligger
+            // INNE i feltet — og der var det ingenting, saa det hvite i
+            // JPG-en sto som en boks til toningen var ferdig. Eieren, 21.
+            // september 2026: «viser foerst med hvit bakgrunn i et sekund,
+            // foer den forsvinner». Med flata her, blander den mot den.
+            // Samme i forside.php.
+            background: 'var(--clay-50)',
           }),
           rotPrikker: this.tonePrikker('rot', alle.map(x => x.merke)),
           rotFlere: alle.length > 1,

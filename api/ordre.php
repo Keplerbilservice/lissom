@@ -219,6 +219,10 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
         $betalingsfelt['gavekort_id'] = $gavekortId;
         $betalingsfelt['gavekort_ore'] = $gavekortOre;
     }
+    // Sporingen fra nettleseren (migrasjon 203) — kjoepet maales fra serveren.
+    if (DB::harKolonne('payments', 'sporing')) {
+        $betalingsfelt['sporing'] = Maaling::sporingFraNettleser() ?: null;
+    }
     if (!$vedHenting) {
         $paymentId = DB::settInn('payments', $betalingsfelt);
     }

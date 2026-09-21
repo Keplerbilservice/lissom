@@ -79,6 +79,10 @@ final class Config
         //
         // Fila gjelder fortsatt foran: staar den der, er det den som teller.
         'vipps_webhook_secret',
+        // Kjøp målt fra serveren (app/lib/maaling.php): GA4 sin API-hemmelighet
+        // og Metas Conversions API-token. Legges inn under Markedsføring →
+        // Måling; skal aldri i content_blocks, som alle kan lese.
+        'maal_ga_api_secret', 'maal_meta_token',
     ];
 
     /** @var array<string,string>|null */

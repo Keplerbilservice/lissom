@@ -241,6 +241,19 @@
         window.fbq('track', 'PageView');
       } catch (e) {}
     }
+    // «Se kurset» paa kurssida (window.lissomVare fra kursside.php) — det
+    // foerste trinnet i trakta, som appen sender med view_item/ViewContent.
+    // Forsvant da kurssidene ble serversider; tilbake 21. september 2026.
+    var vare = window.lissomVare;
+    if (vare && vare.item_name) {
+      var verdi = Math.round((Number(vare.price) || 0) * 100) / 100;
+      try { if (ga) window.gtag('event', 'view_item', { currency: 'NOK', value: verdi, items: [vare] }); } catch (e) {}
+      try {
+        if (meta && typeof window.fbq === 'function') {
+          window.fbq('track', 'ViewContent', { value: verdi, currency: 'NOK', content_ids: [String(vare.item_id || vare.item_name)], content_type: 'product', content_name: vare.item_name });
+        }
+      } catch (e) {}
+    }
   }
   // Personvern: «Ditt svar paa besoeksmaaling» — staar bare naar noen har
   // svart, og sier hva de svarte. «Endre svaret mitt» nullstiller, som

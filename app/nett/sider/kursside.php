@@ -472,9 +472,21 @@ $h .= '</div></div></div></section>' . "\n";
 $h .= '</div>' . "\n";
 $h .= Deler::bunn(true);
 
+// «Se kurset» til GA4 (view_item) og Meta (ViewContent), som appen sendte
+// foer kurssida ble serverside. nett.js sender den etter samtykke, med
+// samme felter som appens kursSomVare(): navn, pris i kroner.
+$vare = [
+    'item_id'   => (string) ($kat['slug'] ?? $slug),
+    'item_name' => $tittel,
+    'price'     => $gratis ? 0 : (float) $grunn,
+    'quantity'  => 1,
+];
+$vareJson = json_encode($vare, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
 return [
-    'kropp' => $h,
-    'aktiv' => $erEvent ? 'Events' : 'Kurs',
-    'hode'  => $hode,
+    'kropp'  => $h,
+    'aktiv'  => $erEvent ? 'Events' : 'Kurs',
+    'hode'   => $hode,
+    'skript' => 'window.lissomVare = ' . str_replace('</', '<\/', (string) $vareJson) . ';',
 ];
 

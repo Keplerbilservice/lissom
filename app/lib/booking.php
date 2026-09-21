@@ -792,6 +792,11 @@ final class Booking
                     $felt['gavekort_id'] = $gavekortId;
                     $felt['gavekort_ore'] = $gavekortOre;
                 }
+                // Sporingen fra nettleseren (migrasjon 203), saa kjoepet kan
+                // maales fra serveren naar Vipps sier at pengene er i havn.
+                if (DB::harKolonne('payments', 'sporing')) {
+                    $felt['sporing'] = Maaling::sporingFraNettleser() ?: null;
+                }
                 $paymentId = DB::settInn('payments', $felt);
             }
 
@@ -902,7 +907,8 @@ final class Booking
      */
     public static function markerBetalt(string $referanse): bool
     {
-        return (bool) DB::iTransaksjon(static function () use ($referanse): bool {
+        $betaltId = 0;
+        $ok = (bool) DB::iTransaksjon(static function () use ($referanse, &$betaltId): bool {
             $betaling = DB::en(
                 'SELECT id, status, belop_ore FROM payments WHERE vipps_reference = :r FOR UPDATE',
                 ['r' => $referanse]
@@ -912,6 +918,8 @@ final class Booking
             }
 
             DB::oppdater('payments', ['status' => 'betalt'], ['id' => $betaling['id']]);
+            // Til maalingen etter transaksjonen — se under.
+            $betaltId = (int) $betaling['id'];
 
             // Gavekortet trekkes her, ikke naar ordren ble opprettet. En
             // handlekurv som blir forlatt i Vipps skal ikke spise av saldoen.
@@ -961,6 +969,13 @@ final class Booking
 
             return false;
         });
+        // Kjoepet til GA4 og Meta, fra serveren — etter at transaksjonen er
+        // i havn, og bare den ene gangen betalingen gaar fra venter til
+        // betalt. Feiler stille (app/lib/maaling.php).
+        if ($ok && $betaltId > 0) {
+            Maaling::kjop($betaltId);
+        }
+        return $ok;
     }
 
     /** Legger kvitteringen i varselkøen. Cron sender den. */

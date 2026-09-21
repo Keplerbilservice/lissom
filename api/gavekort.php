@@ -59,7 +59,7 @@ if ($mEpost !== '' && !filter_var($mEpost, FILTER_VALIDATE_EMAIL)) {
 $referanse = Vipps::nyReferanse('GAV');
 
 $opprettet = DB::iTransaksjon(static function () use ($belop, $mNavn, $mEpost, $hilsen, $medlem, $referanse): array {
-    $paymentId = DB::settInn('payments', [
+    $betalingsfelt = [
         'vipps_reference' => $referanse,
         'type'            => 'epayment',
         'formal'          => 'gavekort',
@@ -67,7 +67,12 @@ $opprettet = DB::iTransaksjon(static function () use ($belop, $mNavn, $mEpost, $
         'belop_ore'       => $belop * 100,
         'status'          => 'opprettet',
         'idempotency_key' => Vipps::uuid(),
-    ]);
+    ];
+    // Sporingen fra nettleseren (migrasjon 203) — kjoepet maales fra serveren.
+    if (DB::harKolonne('payments', 'sporing')) {
+        $betalingsfelt['sporing'] = Maaling::sporingFraNettleser() ?: null;
+    }
+    $paymentId = DB::settInn('payments', $betalingsfelt);
 
     // Koden settes forst ved betaling. Her far kortet en midlertidig,
     // ubrukelig plassholder — kolonnen er paakrevd og unik.

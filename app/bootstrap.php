@@ -80,6 +80,7 @@ require APP_DIR . '/lib/pdftekst.php';
 require APP_DIR . '/lib/dokumenter.php';
 require APP_DIR . '/lib/robottekst.php';
 require APP_DIR . '/lib/avmelding.php';
+require APP_DIR . '/lib/maaling.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i
 // feilloggen på webhotellet i stedet.

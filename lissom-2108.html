@@ -21836,6 +21836,24 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMeta }}" hint-size="auto,40px">Lagre</x-import>
             </div>
 
+            <!-- Kjoep maalt fra serveren (app/lib/maaling.php). Eieren, 21.
+                 september 2026: Google Ads hadde ingen nylige konverteringer
+                 og Meta 0 kjoep, fordi kjoepet bare ble maalt i nettleseren
+                 paa returen fra Vipps. Noeklene lagres i innstillinger-
+                 tabellen og sendes aldri tilbake hit — feltene staar tomme. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kjøp fra serveren</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Når Vipps sier at pengene er i havn, sender serveren kjøpet til Google Analytics og Meta selv – også når kunden aldri kommer tilbake til nettsiden. Bare for kunder som har sagt ja til måling.</p>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkMaalStatus }}</div>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">GA4 API-hemmelighet</label>
+              <input type="password" autocomplete="new-password" value="{{ mkMaalGa }}" onChange="{{ mkSettMaalGa }}" placeholder="{{ mkMaalGaPlass }}" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Google Analytics → Admin → Datastrømmer → lissom.no → «Measurement Protocol API secrets» → Opprett.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Meta Conversions API-token</label>
+              <input type="password" autocomplete="new-password" value="{{ mkMaalMeta }}" onChange="{{ mkSettMaalMeta }}" placeholder="{{ mkMaalMetaPlass }}" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Meta Events Manager → pikselen → Innstillinger → Conversions API → «Generer tilgangstoken». Skriv «slett» for å fjerne en nøkkel.</p>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMaal }}" hint-size="auto,40px">Lagre</x-import>
+            </div>
+
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Min bedrift på Google</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Lim inn adressen til bedriftsprofilen deres. Da ligger den her når vi kobler den mot Google sitt API.</p>
@@ -29152,7 +29170,12 @@ class Component extends DCLogic {
       // som Meta ikke kjenner, gaar bare til Google.
       if (this._metaSatt && typeof window.fbq === 'function') {
         const m = this.metaNavn(navn, felter);
-        if (m) window.fbq('track', m.navn, m.felter);
+        // Kjoepet sendes ogsaa fra serveren (app/lib/maaling.php) med
+        // event_id = transaction_id; da slaar Meta de to sammen.
+        if (m) {
+          const eid = navn === 'purchase' && felter && felter.transaction_id ? { eventID: String(felter.transaction_id) } : undefined;
+          if (eid) window.fbq('track', m.navn, m.felter, eid); else window.fbq('track', m.navn, m.felter);
+        }
         gikk = true;
       }
       return gikk;
@@ -30682,9 +30705,39 @@ class Component extends DCLogic {
       .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
+  /** Status for kjoepsmaalingen fra serveren (api/admin/maaling.php). */
+  hentMaaling() {
+    if (!this.erPublisert() || this._maalingHentes) return;
+    this._maalingHentes = true;
+    fetch('/api/admin/maaling.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._maalingHentes = false; if (d) this.setState({ mkMaal: d }); })
+      .catch(() => { this._maalingHentes = false; });
+  }
+
+  maalingKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Lagret' }); return; }
+    fetch('/api/admin/maaling.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          mkMaalGa: '', mkMaalMeta: '',
+          ...(ok && d ? { mkMaal: d } : {}),
+        });
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
   hentMarked() {
     if (!this.erPublisert() || this._markedHentes) return;
     this._markedHentes = true;
+    this.hentMaaling();
     fetch('/api/admin/marked.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
@@ -43791,6 +43844,14 @@ class Component extends DCLogic {
         // Ingen tur innom Vipps: et gratis medlemsarrangement, eller en
         // plass som skal betales ved oppmoete. Kvitteringa sier hvilken av
         // delene det var — den som skal betale senere maa vite det.
+        //
+        // Plassen er bestilt naa, og det er dette Google og Meta skal telle
+        // — det finnes ingen retur fra Vipps aa maale paa. Id «B<booking>»
+        // saa den ikke kolliderer med betalingene («L<betaling>»).
+        if (betaling === 'oppmote' && d.bookingId) {
+          const hvem = { epost: (this.state.bEpost || this.state.medlemEpost || '').trim(), telefon: (this.state.bTelefon || this.state.medlemTelefon || '').trim() };
+          this.maal('purchase', this.traktFelter(vare, { transaction_id: 'B' + d.bookingId }), hvem);
+        }
         this.setState({ bookJobber: false, bookKvittert: true, bookOrdre: false,
                         bookVedOppmote: betaling === 'oppmote' });
       })
@@ -61178,6 +61239,28 @@ class Component extends DCLogic {
           mkMetaPiksel: this.state.mkMetaPiksel ?? ((d.innstillinger || {}).metaPiksel || ''),
           mkSettMetaPiksel: e => this.setState({ mkMetaPiksel: e.target.value }),
           mkLagreMeta: () => this.markedKall({ handling: 'innstilling', metaPiksel: this.state.mkMetaPiksel ?? '' }),
+          // Kjoep fra serveren — noeklene (api/admin/maaling.php).
+          ...(() => {
+            const m = this.state.mkMaal;
+            const status = !m ? 'Henter status …'
+              : !m.harSporing ? 'Krever oppdatering 203 – kjør vedlikeholdet fra menyen nederst til venstre.'
+              : 'GA4: ' + (m.harGaSecret ? 'nøkkel lagt inn' : 'nøkkel mangler') + ' · Meta: ' + (m.harMetaToken ? 'token lagt inn' : 'token mangler')
+                + ' · siste 30 dager: ' + m.medSporing30 + ' av ' + m.betalte30 + ' betalinger med samtykke.';
+            return {
+              mkMaalStatus: status,
+              mkMaalGa: this.state.mkMaalGa ?? '',
+              mkSettMaalGa: e => this.setState({ mkMaalGa: e.target.value }),
+              mkMaalGaPlass: m && m.harGaSecret ? '•••••••• (lagt inn)' : 'Lim inn hemmeligheten',
+              mkMaalMeta: this.state.mkMaalMeta ?? '',
+              mkSettMaalMeta: e => this.setState({ mkMaalMeta: e.target.value }),
+              mkMaalMetaPlass: m && m.harMetaToken ? '•••••••• (lagt inn)' : 'Lim inn tokenet',
+              mkLagreMaal: () => this.maalingKall({
+                handling: 'lagre',
+                maal_ga_api_secret: (this.state.mkMaalGa || '').trim(),
+                maal_meta_token: (this.state.mkMaalMeta || '').trim(),
+              }),
+            };
+          })(),
           mkAiTak: this.state.mkAiTak ?? String((d.innstillinger || {}).aiTak || ''),
           mkSettAiTak: e => this.setState({ mkAiTak: e.target.value }),
           mkLagreTak: () => this.markedKall({ handling: 'innstilling', aiTak: this.state.mkAiTak ?? '' }),

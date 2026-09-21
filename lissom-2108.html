@@ -3375,6 +3375,7 @@ window.__resources = {
                         <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border-subtle); vertical-align: -1px; margin-right: 5px;"></span>Fullbooket</span>
                       </div>
                     </div>
+                    <button type="button" onClick="{{ bKalLukk }}" style="{{ bFlereDatoerStil }}">Lukk kalenderen</button>
                   </sc-if>
                   <sc-for list="{{ bookingDager }}" as="d" hint-placeholder-count="3">
                     <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">
@@ -35829,6 +35830,16 @@ class Component extends DCLogic {
   // bruker, og henvendelsene fra for ligger der de laa.
 
   componentDidUpdate(prevProps, prevState) {
+    // Kalenderen i datovelgeren lukkes naar man gaar ut av kurset — ellers
+    // sto den aapen neste gang det samme kurset ble aapnet. Eieren, 21.
+    // september 2026: «naar jeg gaar ut av et kurs … saa skal datovelgeren
+    // lukkes». (dc-runtime sender ikke prevState — derfor egen huskelapp,
+    // som for kurven under.)
+    const kalNokkel = this.state.side === 'booking' ? String((this.state.valgtKurs || {}).slug || (this.state.valgtKurs || {}).title || '') : '';
+    if (this._kalFor !== kalNokkel) {
+      this._kalFor = kalNokkel;
+      if (this.state.bKal) this.setState({ bKal: '' });
+    }
     // Handlekurven laa bare i minnet. Naar lesesidene tegnes paa serveren,
     // er et trykk paa «Om oss» i menyen en sidelasting — og kurven skal
     // vaere der naar de kommer tilbake til butikken. Lagres i fanen
@@ -48217,7 +48228,11 @@ class Component extends DCLogic {
                 velg: () => {
                   if (full) return;
                   const en = rad.tider.length === 1 ? rad.tider[0] : null;
-                  this.setState(Object.assign({ bDag: rad.dag }, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
+                  // Valget er tatt: kalenderen lukkes, og dagen staar i
+                  // lista som valgt. Eieren, 21. september 2026: «naar
+                  // jeg har valgt en annen dato, saa skal datovelgeren
+                  // lukkes».
+                  this.setState(Object.assign({ bDag: rad.dag, bKal: '' }, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
                 },
               });
             }
@@ -48230,6 +48245,11 @@ class Component extends DCLogic {
               bKalNeste: () => { if (neste) this.setState({ bKal: neste }); },
               bKalUkedager: ['ma', 'ti', 'on', 'to', 'fr', 'lø', 'sø'].map(n => ({ navn: n })),
               bKalRuter: ruter,
+              // Angrer man, skal de tre anbefalte datoene kunne faas tilbake.
+              // Eieren, 21. september 2026: «det maa ogsaa vaere mulig aa
+              // lukke datovelgeren, om man likevel vil velge fra de
+              // anbefalte datoene som vises».
+              bKalLukk: () => this.setState({ bKal: '' }),
             };
           })(),
           bookingDager: synlige.map((rad, i) => {
@@ -63113,6 +63133,13 @@ class Component extends DCLogic {
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'left center',
+            // Logoene lastes opp som JPG med hvit bakgrunn (Bilder::fraFil
+            // fyller hvitt og lagrer JPEG — ingen gjennomsiktighet). Paa
+            // den kremfargede flata sto de i en hvit boks. Med «multiply»
+            // blir det hvite til flata bak, og bare selve logoen staar
+            // igjen. Eieren, 21. september 2026: «logoene som vises paa
+            // referansekunder, fjern bakgrunnen». Samme i forside.php.
+            mixBlendMode: 'multiply',
           },
           rotLogoAlt: 'Logoen til ' + r.merke,
           rotHarUndertekst: !!r.undertekst,

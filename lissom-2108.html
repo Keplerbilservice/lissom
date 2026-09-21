@@ -59852,7 +59852,12 @@ class Component extends DCLogic {
             ['butikk', 'Butikken'], ['medlemsbutikk', 'Medlemmenes varer'],
             ['kurs', 'Kursene'], ['events', 'Events'],
             ['medlemskap', 'Medlemskap'], ['gavekort', 'Gavekort'],
-          ].map(([v, navn]) => ({
+          ].concat(
+            // Ett bestemt kurs: knappen gaar rett til kurssida. Eieren, 21.
+            // september 2026 (Juleverksted-banneret). Samme oppslag som
+            // api/admin/kampanjer.php: «kurs/<slug>».
+            (this.state.katalog || []).filter(c => c.slug).map(c => ['kurs/' + c.slug, 'Kurssida: ' + c.tittel])
+          ).map(([v, navn]) => ({
             navn, velg: () => this.endreKampanje({ maal: v }),
             stil: pille((r.maal || 'butikk') === v),
           })),

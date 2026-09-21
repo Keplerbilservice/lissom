@@ -138,7 +138,13 @@ if ($handling === 'lagre') {
     // vaert en aapen omdirigering paa forsiden.
     $maal = Foresporsel::tekst('maal', 'butikk');
     if (!in_array($maal, ['butikk', 'medlemsbutikk', 'kurs', 'events', 'medlemskap', 'gavekort'], true)) {
-        $maal = 'butikk';
+        // «kurs/<slug>»: rett til ett kurs sin side (eieren, 21. september
+        // 2026: Juleverksted-banneret). Bare kurs som finnes — slug-en slaas
+        // opp, saa knappen aldri peker paa noe som ikke er der.
+        $slug = preg_match('~^kurs/([a-z0-9-]{1,120})$~', $maal, $t) === 1 ? $t[1] : '';
+        $finnes = $slug !== '' && DB::harKolonne('courses', 'slug')
+            && (int) DB::verdi('SELECT COUNT(*) FROM courses WHERE slug = :s', ['s' => $slug]) > 0;
+        $maal = $finnes ? 'kurs/' . $slug : 'butikk';
     }
 
     $data = [

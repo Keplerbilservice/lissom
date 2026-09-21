@@ -141,6 +141,9 @@ final class Kort
             'image'    => (string) (($kat['bilde'] ?? '') !== '' ? $kat['bilde'] : $d['image']),
             'imageAlt' => (string) ($kat['bildeAlt'] ?? ''),
             'text'     => trim((string) ($kat['kortBeskrivelse'] ?? '')),
+            // Hvem kurset passer for («barn,familie,…» fra kursoppsettet).
+            // Filteret «Passer for barn» paa /kurs leser det.
+            'passerHvem' => (string) ($kat['passerHvem'] ?? ''),
             'href'     => '/kurs/' . rawurlencode($slug),
             'okter'    => $datoer,
         ];
@@ -231,6 +234,13 @@ final class Kort
     /** medValgtTid() i nettsida: kortet med bare oektene som passer, eller null. */
     public static function medValgtTid(array $k, string $naar): ?array
     {
+        // «Passer for barn» staar i samme rad som Dagtid/Kveldstid/Helg, men
+        // er ikke et tidspunkt: det er kursene som er merket for barn i
+        // kursoppsettet (Passer for → Barn med voksen). Eieren, 21. september
+        // 2026: «kan vi legge til knappen, passer for barn?»
+        if ($naar === 'Barn') {
+            return in_array('barn', array_map('trim', explode(',', mb_strtolower((string) ($k['passerHvem'] ?? '')))), true) ? $k : null;
+        }
         if (!empty($k['kunKontakt'])) {
             return $k;
         }

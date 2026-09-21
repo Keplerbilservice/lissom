@@ -25581,6 +25581,12 @@ class Component extends DCLogic {
    * Returnerer null naar ingen av datoene passer.
    */
   medValgtTid(k, naar) {
+    // «Passer for barn»: kursene som er merket for barn i kursoppsettet
+    // (Passer for → Barn med voksen). Ikke et tidspunkt, men samme rad.
+    // Samme regel som Kort::medValgtTid paa serveren.
+    if (naar === 'Barn') {
+      return String(k.passerHvem || '').toLowerCase().split(',').map(s => s.trim()).indexOf('barn') !== -1 ? k : null;
+    }
     // Kurs som settes opp naar noen sporr har ingen tid enda. Tiden er opp
     // til dere, saa de faller ikke ut av et tidsvalg.
     if (k.kunKontakt) return k;
@@ -46364,8 +46370,11 @@ class Component extends DCLogic {
           // den valgte knappen én gang til — men ingen gjetter seg til den.
           // Rada under hadde en synlig knapp for det samme, og to rader rett
           // over hverandre skal ikke virke forskjellig.
-          kursTidFiltre: [null, 'Dagtid', 'Kveldstid', 'Helg'].map(navn => ({
-            navn: navn || 'Når som helst',
+          // «Barn» er ikke et tidspunkt, men staar i samme rad — eieren, 21.
+          // september 2026: «kan vi legge til knappen, passer for barn?».
+          // Se medValgtTid().
+          kursTidFiltre: [null, 'Dagtid', 'Kveldstid', 'Helg', 'Barn'].map(navn => ({
+            navn: navn === null ? 'Når som helst' : (navn === 'Barn' ? 'Passer for barn' : navn),
             valgt: naar === navn || (navn === null && !naar),
             velg: () => this.setState({ kursTid: naar === navn ? null : navn }),
           })),
@@ -46373,7 +46382,7 @@ class Component extends DCLogic {
           // ser ut som en feil framfor et svar.
           kursIngenTreff: this.filtrerKurs(alle).length === 0,
           kursTomTekst: naar
-            ? 'Ingen kurs ' + ({ Dagtid: 'på dagtid', Kveldstid: 'på kveldstid', Helg: 'i helgen' }[naar] || '') + ' akkurat nå.'
+            ? 'Ingen kurs ' + ({ Dagtid: 'på dagtid', Kveldstid: 'på kveldstid', Helg: 'i helgen', Barn: 'som passer for barn' }[naar] || '') + ' akkurat nå.'
             : 'Ingen kurs i denne kategorien akkurat nå.',
           // Rada med kategorier hoerer til kurssida. Events er
           // hver sin side, naadd fra menyen, og der er det ingenting aa

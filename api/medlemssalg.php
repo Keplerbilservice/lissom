@@ -6,6 +6,7 @@
  *   GET ?mine=ja           mine egne, uansett status (krever innlogging)
  *   POST (multipart)       legg ut en vare — gaar til godkjenning
  *   POST handling=trekk    ta ned min egen vare
+ *   POST handling=rediger  endre min egen vare
  *
  * Salget er en avtale mellom kjoper og selger. Betalingen gaar direkte til
  * selgerens eget Vippsnummer; Lissom formidler, og rorer aldri pengene. Derfor
@@ -98,6 +99,34 @@ if ((string) ($medlem['rolle'] ?? '') !== 'admin'
 // derfor i $_POST, ikke i JSON-kroppen.
 $felt = static fn(string $n): string => trim((string) ($_POST[$n] ?? ''));
 
+// ── Endre en vare som alt ligger der ────────────────────────────────
+//
+// Eieren, 21. september 2026: «de maa ogsaa kunne redigeres», «priser etc
+// maa kunne endres».
+//
+// Det kom av forrige endring: «antall tilgjengelig» ble noe selgeren skal
+// holde oppdatert selv — handelen gaar direkte over Vipps, saa ingenting
+// teller ned av seg selv — men hun hadde ingen vei til aa endre det. Eller
+// prisen. Eller noe annet.
+//
+// Ingen ny godkjenning. Eieren, samme dag, paa spoersmaalet om en endret
+// vare skulle tilbake i koen: «nei, hun endrer fritt». Statusen roeres
+// derfor ikke: det som laa ute blir liggende, det som ventet fortsetter aa
+// vente, og det som var tatt ned blir staaende nede.
+//
+// Samme felter, samme kontroller som en ny vare. Forskjellen er at varen
+// maa vaere hennes, at bildet kan staa urort, og at antallsgrensa ikke
+// gjelder — hun legger ikke ut noe nytt.
+$rediger = ($_POST['handling'] ?? Foresporsel::tekst('handling')) === 'rediger';
+$fra = null;
+if ($rediger) {
+    $redigerId = (int) ($_POST['id'] ?? Foresporsel::heltall('id'));
+    $fra = DB::en('SELECT * FROM member_sales WHERE id = :i', ['i' => $redigerId]);
+    if ($fra === null || (int) $fra['member_id'] !== (int) $medlem['id']) {
+        Svar::feil('Fant ikke varen din.', 404);
+    }
+}
+
 $tittel    = mb_substr($felt('tittel'), 0, 191);
 $produsent = mb_substr($felt('produsent'), 0, 96);
 $tekst     = mb_substr($felt('tekst'), 0, 2000);
@@ -131,15 +160,22 @@ if ($pris < 1 || $pris > 100000) {
     Svar::feil('Prisen må være mellom 1 og 100 000 kroner.');
 }
 
-$antallMine = (int) DB::verdi(
-    "SELECT COUNT(*) FROM member_sales WHERE member_id = :m AND status IN ('til_godkjenning','publisert')",
-    ['m' => $medlem['id']]
-);
-if ($antallMine >= MAKS_PER_MEDLEM) {
-    Svar::feil('Du har ' . $antallMine . ' varer ute alt. Ta ned noen for du legger ut flere.');
+// Grensa gjelder det som legges UT. Retter hun prisen paa noe som alt
+// ligger der, legger hun ikke ut noe nytt — og da ville den sperra bare
+// staatt i veien for en som har fylt opp.
+if (!$rediger) {
+    $antallMine = (int) DB::verdi(
+        "SELECT COUNT(*) FROM member_sales WHERE member_id = :m AND status IN ('til_godkjenning','publisert')",
+        ['m' => $medlem['id']]
+    );
+    if ($antallMine >= MAKS_PER_MEDLEM) {
+        Svar::feil('Du har ' . $antallMine . ' varer ute alt. Ta ned noen for du legger ut flere.');
+    }
 }
 
-$bilde = null;
+// Sender hun ikke et nytt bilde, beholder varen det den har. Uten dette
+// ville en rettet pris toemt bilderuta i butikken.
+$bilde = $rediger ? (string) ($fra['bilde'] ?? '') : null;
 if (isset($_FILES['bilde']) && ($_FILES['bilde']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
     try {
         $bilde = Bilder::taImot($_FILES['bilde'], 'medlemssalg');
@@ -193,6 +229,27 @@ $rad = [
 ];
 if (DB::harKolonne('member_sales', 'fokus')) {
     $rad['fokus'] = $fokus;
+}
+
+// ── Endring: samme felter, samme rad ────────────────────────────────
+//
+// «member_id» og «status» staar ikke i oppdateringa. Den foerste kan ikke
+// endres, og den andre skal ikke: eieren, 21. september 2026, «nei, hun
+// endrer fritt» — en vare som ligger ute blir liggende.
+//
+// Verkstedet varsles ikke. Et varsel per prisjustering ville druknet dem
+// som faktisk venter paa et ja eller nei. Endringa staar i revisjonssporet.
+if ($rediger) {
+    unset($rad['member_id'], $rad['status']);
+    DB::oppdater('member_sales', $rad, ['id' => $redigerId]);
+    revider('medlemssalg_endret', 'member_sale', $redigerId, [
+        'tittel' => $tittel,
+        'fra'    => ['tittel' => $fra['tittel'], 'pris_ore' => (int) $fra['pris_ore'], 'antall' => (int) $fra['antall']],
+    ]);
+    Svar::ok([
+        'id'      => $redigerId,
+        'beskjed' => '«' . $tittel . '» er oppdatert.',
+    ]);
 }
 
 $id = DB::settInn('member_sales', $rad);

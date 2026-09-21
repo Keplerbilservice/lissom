@@ -19683,6 +19683,56 @@ sjekk('… og raden lyser naar man staar der',
 sjekk('… og pilla paa Kalender staar som for',
     str_contains($tgMeny, "                { navn: 'Til godkjenning', nokkel: 'tilgodkjenning', varsel: true,"));
 
+// ── Medlemmet kan endre sin egen vare ────────────────────────────────
+//
+// Eieren, 21. september 2026: «de maa ogsaa kunne redigeres», «priser etc
+// maa kunne endres».
+//
+// Det kom av at «antall tilgjengelig» ble noe selgeren skal holde
+// oppdatert selv — handelen gaar direkte over Vipps, saa ingenting teller
+// ned av seg selv — men hun hadde ingen vei til aa endre det. Serveren
+// kunne bare legge ut og ta ned.
+echo "\n== Medlemmet endrer sin egen vare ==\n";
+
+$rdApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
+$rdSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('serveren tar imot en endring',
+    str_contains($rdApi, " *   POST handling=rediger  endre min egen vare")
+    && str_contains($rdApi, "\$rediger = (\$_POST['handling'] ?? Foresporsel::tekst('handling')) === 'rediger';"));
+// En annens vare skal ikke kunne endres, samme sperre som «trekk» har.
+sjekk('… bare sin egen',
+    str_contains($rdApi, "    if (\$fra === null || (int) \$fra['member_id'] !== (int) \$medlem['id']) {\n        Svar::feil('Fant ikke varen din.', 404);"));
+// Eieren, samme dag: «nei, hun endrer fritt». Statusen roeres ikke — det
+// som ligger ute blir liggende.
+sjekk('… uten ny godkjenning',
+    str_contains($rdApi, "    unset(\$rad['member_id'], \$rad['status']);"));
+// Retter hun prisen, legger hun ikke ut noe nytt. Sto sperra der, ville
+// den stoppet en som hadde fylt opp.
+sjekk('… og antallsgrensa gjelder bare nye varer',
+    str_contains($rdApi, "if (!\$rediger) {\n    \$antallMine = (int) DB::verdi("));
+// Uten dette ville en rettet pris toemt bilderuta i butikken.
+sjekk('… og bildet staar naar hun ikke sender et nytt',
+    str_contains($rdApi, "\$bilde = \$rediger ? (string) (\$fra['bilde'] ?? '') : null;"));
+
+// Skjermen: knappen paa raden, og skjemaet som fylles.
+sjekk('hver vare har en «Endre»-knapp',
+    str_contains($rdSida, '<button type="button" onClick="{{ v.endre }}"'));
+sjekk('… som fyller skjemaet og sier hva man holder paa med',
+    str_contains($rdSida, '            skRedigerer: v.id,')
+    && str_contains($rdSida, "      skSkjemaTittel: this.state.skRedigerer ? 'Endre varen' : 'Selg keramikk',"));
+// Bildet og bekreftelsene hoerer til en NY vare. Aa be om dem igjen for en
+// prisjustering er aa be om det samme svaret to ganger.
+sjekk('… og krever ikke bilde og bekreftelser paa nytt',
+    str_contains($rdSida, "        if (!s.skRedigerer) {\n          if (!this._skFil) mangler.push('bilde');"));
+sjekk('… og sender endringa som en endring',
+    str_contains($rdSida, "          skjema.append('handling', 'rediger');"));
+// «Takk! Produktet er sendt inn og venter paa godkjenning» stemmer ikke
+// naar hun bare rettet en pris.
+sjekk('… og sier «Lagret», ikke «Sendt til godkjenning»',
+    str_contains($rdSida, "              skSender: false, skFeil: null, gDelSendt: !endret,")
+    && str_contains($rdSida, "              kvittering: endret ? 'Lagret' : 'Sendt til godkjenning',"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

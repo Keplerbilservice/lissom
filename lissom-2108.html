@@ -5927,7 +5927,13 @@ window.__resources = {
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
               <div id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Medlemsfordel</div>
-                <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Selg keramikk</h3>
+                <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ skSkjemaTittel }}</h3>
+                <!-- Veien ut av en redigering man ikke vil fullfore. Uten
+                     den maatte hun laste sida paa nytt for aa bli kvitt
+                     skjemaet med den andre varen i. -->
+                <sc-if value="{{ skRedigerer }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ skAvbrytRediger }}" style="appearance: none; background: transparent; border: none; padding: 0 0 var(--space-3); cursor: pointer; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline;">Avbryt — legg ut en ny i stedet</button>
+                </sc-if>
                 <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Selg arbeider du har laget hos Lissom, i nettbutikken under «Laget av medlemmene». Kjøper betaler direkte til deg med Vipps. Monica godkjenner alle produkter før de publiseres.</p>
                 <sc-if value="{{ gDelSendt }}" hint-placeholder-val="{{ false }}">
                   <div style="background: var(--sage-100, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-5); font-size: var(--text-sm); color: var(--text-heading);">Takk! Produktet er sendt inn og venter på godkjenning. Du får beskjed når det er publisert.</div>
@@ -6054,9 +6060,16 @@ window.__resources = {
                             <sc-if value="{{ v.harGrunn }}" hint-placeholder-val="{{ false }}">
                               <div style="margin-top: 4px; font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ v.grunn }}</div>
                             </sc-if>
-                            <sc-if value="{{ v.kanTrekke }}" hint-placeholder-val="{{ true }}">
-                              <button type="button" onClick="{{ v.trekk }}" style="appearance: none; background: transparent; border: none; padding: 6px 0 0; cursor: pointer; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline;">Ta den ned</button>
-                            </sc-if>
+                            <!-- Eieren, 21. september 2026: «de maa ogsaa
+                                 kunne redigeres», «priser etc maa kunne
+                                 endres». Skjemaet over fylles med varen; se
+                                 «endre» i mineSalg. -->
+                            <div style="display: flex; gap: var(--space-4); align-items: center;">
+                              <button type="button" onClick="{{ v.endre }}" style="appearance: none; background: transparent; border: none; padding: 6px 0 0; cursor: pointer; font-size: var(--text-xs); color: var(--lissom-brown); font-weight: 700; text-decoration: underline;">Endre</button>
+                              <sc-if value="{{ v.kanTrekke }}" hint-placeholder-val="{{ true }}">
+                                <button type="button" onClick="{{ v.trekk }}" style="appearance: none; background: transparent; border: none; padding: 6px 0 0; cursor: pointer; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline;">Ta den ned</button>
+                              </sc-if>
+                            </div>
                           </div>
                           </div>
                           <span style="{{ v.merkeStil }}">{{ v.statusTekst }}</span>
@@ -60568,7 +60581,22 @@ class Component extends DCLogic {
         this.setState({ skBildeNavn: f.name, skBildeUrl: this._skUrl, skFeil: null });
       },
       skSender: !!this.state.skSender,
-      skSendKnapp: this.state.skSender ? 'Sender …' : 'Send til godkjenning',
+      skSendKnapp: this.state.skSender ? 'Sender …'
+        : (this.state.skRedigerer ? 'Lagre endringene' : 'Send til godkjenning'),
+      // Skjemaet er det samme; overskriften og avbryt-veien sier hva man
+      // holder paa med.
+      skRedigerer: !!this.state.skRedigerer,
+      skSkjemaTittel: this.state.skRedigerer ? 'Endre varen' : 'Selg keramikk',
+      skAvbrytRediger: () => {
+        if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }
+        this._skFil = null;
+        this.setState({
+          skRedigerer: null, skFeil: null,
+          skNavn: '', skTekst: '', skPris: '', skAntall: '', skProdusent: '',
+          skVipps: '', skKontakt: '', skKategori: '',
+          skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%',
+        });
+      },
       skSend: () => {
         const s = this.state;
         if (s.skSender) return;
@@ -60580,14 +60608,29 @@ class Component extends DCLogic {
         if (!s.skVipps) mangler.push('vippsnummer');
         if (!s.skKontakt) mangler.push('kontaktinfo');
         if (!s.skKategori) mangler.push('kategori');
-        if (!this._skFil) mangler.push('bilde');
-        if (!s.b1 || !s.b2 || !s.b3) mangler.push('bekreftelsene');
+        // ── Ved endring ───────────────────────────────────────────
+        //
+        // Eieren, 21. september 2026: «de maa ogsaa kunne redigeres»,
+        // «priser etc maa kunne endres».
+        //
+        // Bildet er ikke paakrevd: sender hun ikke et nytt, beholder varen
+        // det den har. Og bekreftelsene er alt gitt da varen ble lagt ut —
+        // aa be om dem paa nytt for en prisjustering er aa be om det samme
+        // svaret to ganger.
+        if (!s.skRedigerer) {
+          if (!this._skFil) mangler.push('bilde');
+          if (!s.b1 || !s.b2 || !s.b3) mangler.push('bekreftelsene');
+        }
         if (mangler.length) { this.setState({ skFeil: 'Mangler: ' + mangler.join(', ') + '.' }); return; }
 
         if (!this.erPublisert()) { this.setState({ skFeil: null, gDelSendt: true }); return; }
 
         // Multipart, fordi skjemaet har med et bilde.
         const skjema = new FormData();
+        if (s.skRedigerer) {
+          skjema.append('handling', 'rediger');
+          skjema.append('id', String(s.skRedigerer));
+        }
         skjema.append('tittel', s.skNavn);
         skjema.append('tekst', s.skTekst);
         skjema.append('pris', s.skPris);
@@ -60622,13 +60665,20 @@ class Component extends DCLogic {
             // lenge sida er aapen.
             this._skFil = null;
             if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }
+            // En endring er ikke en innsending. «gDelSendt» bytter hele
+            // skjemaet mot «Takk! Produktet er sendt inn og venter paa
+            // godkjenning» — og det stemmer ikke naar hun bare rettet en
+            // pris. Da lukkes redigeringa, og lista under viser det nye.
+            const endret = !!s.skRedigerer;
             this.setState({
-              skSender: false, skFeil: null, gDelSendt: true,
+              skSender: false, skFeil: null, gDelSendt: !endret,
+              skRedigerer: null,
               skNavn: '', skTekst: '', skPris: '', skAntall: '', skProdusent: '',
               skVipps: '', skKontakt: '', skKategori: '',
               skBildeNavn: '', skBildeUrl: '', skFokus: '50% 50%',
               b1: false, b2: false, b3: false,
-              kvittering: 'Sendt til godkjenning', kvitteringDetalj: d.beskjed || '',
+              kvittering: endret ? 'Lagret' : 'Sendt til godkjenning',
+              kvitteringDetalj: d.beskjed || '',
             });
             this._mineSalgHentes = false;
             this.hentMineSalg();
@@ -60678,6 +60728,37 @@ class Component extends DCLogic {
         })(),
         tone: { publisert: 'success', til_godkjenning: 'warning', avvist: 'danger' }[v.status] || 'neutral',
         kanTrekke: v.status === 'publisert' || v.status === 'til_godkjenning',
+        // ── Endre varen ───────────────────────────────────────────
+        //
+        // Eieren, 21. september 2026: «de maa ogsaa kunne redigeres»,
+        // «priser etc maa kunne endres».
+        //
+        // Skjemaet over er det samme; det fylles med det som staar, og
+        // «Send til godkjenning» blir «Lagre endringene». Bildet lastes
+        // ikke ned igjen — ruta viser det varen har, og sender hun ikke et
+        // nytt, beholder den det.
+        endre: () => {
+          this._skFil = null;
+          if (this._skUrl) { URL.revokeObjectURL(this._skUrl); this._skUrl = null; }
+          this.setState({
+            skRedigerer: v.id,
+            skNavn: v.tittel || '',
+            skTekst: v.tekst || '',
+            skPris: String(parseInt(String(v.pris || '').replace(/\D+/g, ''), 10) || ''),
+            skAntall: (v.antall || 1) > 1 ? String(v.antall) : '',
+            // «laget» er «Laget av Eirin»; feltet spor om navnet alene.
+            skProdusent: String(v.laget || '').replace(/^Laget av /, ''),
+            skVipps: v.vipps || '',
+            skKontakt: v.kontakt || '',
+            skKategori: v.kategori || '',
+            skBildeNavn: v.bilde ? 'Bildet du valgte' : '',
+            skBildeUrl: v.bilde || '',
+            skFokus: v.fokus || '50% 50%',
+            skFeil: null, gDelSendt: false,
+          });
+          const el = document.getElementById('minside-salg');
+          if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
         trekk: () => {
           if (!window.confirm('Ta ned «' + v.tittel + '»?')) return;
           const f = new FormData();

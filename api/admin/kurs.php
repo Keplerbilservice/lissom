@@ -1202,6 +1202,18 @@ switch ($handling) {
                 );
             }
         }
+        // «plass»: en tid noen KAN komme, ikke en avtale — som Paint on Pots
+        // sine plasser. Merkes med fra_apningstid = 1, som de plassene
+        // aapningstidene lager selv: kalenderen i admin slaar dem sammen og
+        // viser dem foerst naar noen har booket, og kursholderen regnes ikke
+        // som opptatt av dem. Eieren, 21. september 2026: «det vises ikke i
+        // kalender admin foer det er noen som melder seg paa haaper jeg?».
+        // Ryddingen i Apent::leggUtPaaApneTider roerer bare kurs som selv
+        // foelger aapningstidene, saa en plass lagt inn her blir staaende.
+        if (array_key_exists('plass', $kropp) && DB::harKolonne('course_sessions', 'fra_apningstid')) {
+            $v = $kropp['plass'];
+            $endring['fra_apningstid'] = ($v === true || $v === 'ja' || $v === 1 || $v === '1') ? 1 : 0;
+        }
         if ($endring !== []) {
             DB::oppdater('course_sessions', $endring, ['id' => $oktId]);
         }

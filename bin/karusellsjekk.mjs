@@ -9,7 +9,7 @@
  * nett.js leser «window.lissomRot» med det samme det kjorer:
  *
  *     var rot = window.lissomRot || [];
- *     felt('rot', rot.length, 12000, ...);
+ *     felt('rot', rot.length, 6000, ...);
  *
  * og felt() gir opp paa «antall < 2». Nett::dokument() la sidas eget skript
  * ETTER det felles, saa lista var tom naar den ble lest. Feltet sto stille,
@@ -60,7 +60,7 @@ sjekk('forsida sender fortsatt window.lissomRot',
 sjekk('nett.js leser den ved oppstart',
       js.includes('var rot = window.lissomRot || [];'));
 sjekk('… og bruker lengden til aa bestemme om feltet skal rullere',
-      /felt\('rot', rot\.length, 12000/.test(js));
+      /felt\('rot', rot\.length, 6000/.test(js));
 sjekk('… og gir opp paa under to kort',
       js.includes('if (!el || antall < 2) return;'));
 

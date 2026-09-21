@@ -3351,6 +3351,15 @@ window.__resources = {
               <div id="booking-datoer" style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg dato</div>
                 <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-6);">
                   <sc-for list="{{ bookingDager }}" as="d" hint-placeholder-count="3">
+                    <!-- Maanedene, naar resten av datoene er aapnet. Samme
+                         rad som paa serversida (kursside.php). -->
+                    <sc-if value="{{ d.visMaaneder }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap; padding-top: var(--space-2);">
+                        <sc-for list="{{ d.maaneder }}" as="m" hint-placeholder-count="4">
+                          <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
                     <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">
                       <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
                         <span style="font-weight: 700; font-size: var(--text-base);">{{ d.dag }}</span>
@@ -24822,23 +24831,24 @@ class Component extends DCLogic {
     const kort = this.kursKort().find(k => k.slug === slug);
     if (!kort) return false;
     // Serversida (app/nett/sider/kursside.php) sender folk hit med dagen
-    // de trykket paa: /kurs/<slug>?dag=onsdag 16. september — og ?alle=1
-    // naar de ba om aa se alle datoene. Da staar det valgt naar appen er
-    // oppe, og de fortsetter der de var.
-    let dag = '', alle = false;
+    // de trykket paa: /kurs/<slug>?dag=onsdag 16. september — og ?mnd=2026-11
+    // naar de sto i en maaned i datovelgeren (?alle=1 er den gamle
+    // adressen, og aapner den foerste maaneden). Da staar det valgt naar
+    // appen er oppe, og de fortsetter der de var.
+    let dag = '', mnd = '';
     try {
       const q = new URLSearchParams(window.location.search);
       dag = q.get('dag') || '';
-      alle = q.get('alle') === '1';
+      mnd = q.get('mnd') || (q.get('alle') === '1' ? 'forste' : '');
     } catch (e) { /* ingen sporring */ }
     this.setState({
       side: 'booking', fra: 'kurs', valgtKurs: kort,
       bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null,
-      bDag: dag || null, bAlleDatoer: alle,
+      bDag: dag || null, bMaaned: mnd,
       ventelisteBekreftet: null,
     });
     // Kom hun fra datolista paa serversida, skal hun lande PAA datoene.
-    if (dag || alle) this.rullTilDatoene();
+    if (dag || mnd) this.rullTilDatoene();
     return true;
   }
 
@@ -32619,6 +32629,9 @@ class Component extends DCLogic {
       // tidene under den man velger, og da kan de to ikke ligge i den samme
       // strengen. Serveren regner dem ut — se api/kurs.php.
       dag: d.dag || '',
+      // Maaneden («2026-11», norsk tid) — datovelgeren viser resten av
+      // datoene maaned for maaned. Se bookingDager.
+      maaned: d.maaned || '',
       klokke: d.klokke || '',
       klokkeStart: d.klokkeStart || '',
       // Gaar kurset over flere dager, skal det staa paa datoen du velger —
@@ -48101,7 +48114,7 @@ class Component extends DCLogic {
         rene.forEach(d => {
           const navn = dagenTil(d);
           let rad = dager.find(x => x.dag === navn);
-          if (!rad) { rad = { dag: navn, tider: [] }; dager.push(rad); }
+          if (!rad) { rad = { dag: navn, tider: [], maaned: d.maaned || '' }; dager.push(rad); }
           rad.tider.push(d);
         });
 
@@ -48112,10 +48125,26 @@ class Component extends DCLogic {
           || (valgtTid ? dagenTil(valgtTid) : (dager[0] ? dager[0].dag : ''));
         const dagRad = dager.find(x => x.dag === valgtDag) || dager[0] || { tider: [] };
 
+        // Tre dager foerst. Resten maaned for maaned: «Vis flere datoer»
+        // aapner en rad med maaneder, og datoene i den valgte maaneden
+        // staar under. Eieren, 21. september 2026, med 48 datoer paa
+        // Haandbygging: «vis flere datoer, ikke 48 datoer». Samme deling
+        // som serversida (app/nett/sider/kursside.php).
         const VIS = 3;
-        const apen = !!this.state.bAlleDatoer;
-        const synlige = apen ? dager : dager.filter((x, i) => i < VIS || x.dag === valgtDag);
-        const skjult = dager.length - synlige.length;
+        const forsteTre = dager.slice(0, VIS);
+        const resten = dager.slice(VIS);
+        const maaneder = [];
+        resten.forEach(r => { if (r.maaned && maaneder.indexOf(r.maaned) === -1) maaneder.push(r.maaned); });
+        let valgtMnd = this.state.bMaaned || '';
+        if (valgtMnd === 'forste' || (valgtMnd && maaneder.indexOf(valgtMnd) === -1)) valgtMnd = maaneder[0] || '';
+        // Dagen som er valgt skal alltid staa — ogsaa naar den ligger i en
+        // annen maaned enn den som er aapen.
+        const iMaaneden = resten.filter(x => x.maaned === valgtMnd || x.dag === valgtDag);
+        const synlige = forsteTre.concat(iMaaneden);
+        const skjult = resten.length;
+        const forsteYm = (dager[0] || {}).maaned || '';
+        const MND = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+        const mndNavn = ym => (MND[parseInt(ym.slice(5, 7), 10) - 1] || ym) + (ym.slice(0, 4) === forsteYm.slice(0, 4) ? '' : ' ' + ym.slice(0, 4));
 
         const knappStil = (valgt, full) => ({
           appearance: 'none', cursor: full ? 'not-allowed' : 'pointer', textAlign: 'left',
@@ -48132,11 +48161,25 @@ class Component extends DCLogic {
         const ledigstPaa = (rad) => rad.tider.find(t => !t.full) || rad.tider[0] || {};
 
         return {
-          bookingDager: synlige.map(rad => {
+          bookingDager: synlige.map((rad, i) => {
             const full = rad.tider.every(t => t.full);
             const best = ledigstPaa(rad);
             return {
               dag: rad.dag,
+              // Maanedsrada staar rett foer den foerste dagen etter de tre.
+              visMaaneder: i === forsteTre.length && valgtMnd !== '',
+              maaneder: maaneder.map(ym => ({
+                navn: mndNavn(ym),
+                velg: () => this.setState({ bMaaned: ym }),
+                stil: {
+                  appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
+                  minHeight: 36, padding: '6px 14px', borderRadius: 'var(--radius-pill)',
+                  font: 'var(--type-body-sm)', fontWeight: 700,
+                  border: '1px solid ' + (ym === valgtMnd ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                  background: ym === valgtMnd ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                  color: ym === valgtMnd ? 'var(--clay-50)' : 'var(--text-heading)',
+                },
+              })),
               // Under dagen: klokkeslettet naar det bare er ett, ellers hvor
               // mange tider man kan velge mellom.
               under: rad.tider.length === 1
@@ -48155,9 +48198,9 @@ class Component extends DCLogic {
               },
             };
           }),
-          bHarFlereDatoer: !apen && skjult > 0,
-          bFlereDatoerTekst: skjult === 1 ? 'Vis én dato til' : 'Vis ' + skjult + ' datoer til',
-          bVisFlereDatoer: () => this.setState({ bAlleDatoer: true }),
+          bHarFlereDatoer: valgtMnd === '' && skjult > 0,
+          bFlereDatoerTekst: 'Vis flere datoer',
+          bVisFlereDatoer: () => this.setState({ bMaaned: maaneder[0] || '' }),
           bFlereDatoerStil: {
             appearance: 'none', cursor: 'pointer', width: '100%',
             padding: '12px 16px', borderRadius: 'var(--radius-md)', minHeight: 44,
@@ -56010,7 +56053,7 @@ class Component extends DCLogic {
           this.setState({
             side: 'booking', fra: 'paintonpots', valgtKurs: this.medServerdata(base),
             bookOrdre: false, bookKvittert: false,
-            bDato: null, bOktId: null, bDag: '', bAlleDatoer: false,
+            bDato: null, bOktId: null, bDag: '', bMaaned: '',
             ventelisteBekreftet: null,
           });
           window.scrollTo(0, 0);

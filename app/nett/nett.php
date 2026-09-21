@@ -90,10 +90,10 @@ final class Nett
     public static function sporring(): array
     {
         $ut = [];
-        // «mnd» er maaneden i datovelgeren paa kurssida (?mnd=2026-11). Sto
-        // den ikke her, ble sida hentet fra bufferen uten maaned — maalt
-        // 21. september 2026: ?mnd=2026-11 ga den samme sida som uten.
-        foreach (['tema', 'tid', 'kategori', 'uke', 'mnd'] as $n) {
+        // «kal» er maaneden kalenderen i datovelgeren paa kurssida viser
+        // (?kal=2026-11). Sto den ikke her, ble sida hentet fra bufferen
+        // uten maaned — maalt 21. september 2026 med forgjengeren ?mnd=.
+        foreach (['tema', 'tid', 'kategori', 'uke', 'kal'] as $n) {
             $v = $_GET[$n] ?? '';
             if (is_string($v) && $v !== '' && mb_strlen($v) <= 40) {
                 $ut[$n] = $v;

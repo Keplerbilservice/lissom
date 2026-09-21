@@ -32,17 +32,11 @@ foreach (Katalog::offentlig(false) as $k) {
 if ($kat === null) {
     return null;
 }
-// Kortet: nivaa-ord, tema, status, pris slik lista viser dem.
-$kort = null;
-foreach (Kort::kurs() as $k) {
-    if ($k['slug'] === $slug) {
-        $kort = $k;
-        break;
-    }
-}
+// Kortet: nivaa-ord, tema, status, pris slik lista viser dem — ogsaa for
+// et kurs som er skjult i lista (Kort::forSlug), som da faar «Ingen datoer
+// ennaa» og venteliste som Date Night.
+$kort = Kort::forSlug($slug);
 if ($kort === null) {
-    // Kurset finnes, men vises ikke i lista (ingen datoer, ikke «vis uten
-    // dato»). Appen tegner det som foer.
     return null;
 }
 

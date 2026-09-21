@@ -24312,7 +24312,14 @@ class Component extends DCLogic {
    * leses — da proever vi igjen naar den kommer.
    */
   aapneKursSlug(slug) {
-    const kort = this.kursKort().find(k => k.slug === slug);
+    let kort = this.kursKort().find(k => k.slug === slug);
+    if (!kort) {
+      // Et skjult kurs (publisert, uten datoer, ikke «vis uten datoer»)
+      // har kurssida si paa serveren likevel (Kort::forSlug), med
+      // venteliste og forespoersel som gaar hit. Da maa kortet finnes
+      // her ogsaa — uten aa staa i noen liste.
+      kort = this.medBooking(this.serverKurs(this._kursListe || [], true)).find(k => k.slug === slug);
+    }
     if (!kort) return false;
     // Serversida (app/nett/sider/kursside.php) sender folk hit med dagen
     // de trykket paa: /kurs/<slug>?dag=onsdag 16. september — og ?kal=2026-11
@@ -24536,12 +24543,14 @@ class Component extends DCLogic {
   // Lista i denne fila er designdata. Uten dette ville et kurs opprettet i
   // admin havnet i katalogen, men aldri dukket opp paa nettsiden — og
   // kursadministrasjonen vaert en blindvei.
-  serverKurs(designListe) {
+  serverKurs(designListe, ogsaaSkjult) {
     const kjente = (designListe || []).map(k => (k.title || k.tittel || '').toLowerCase());
 
     return (this.state.katalog || [])
       .filter(k => kjente.indexOf(k.tittel.toLowerCase()) === -1)
-      .filter(k => (k.datoer || []).length > 0 || k.utenDatoOk)
+      // «ogsaaSkjult»: ogsaa kurs uten datoer som ikke skal staa i lista —
+      // for adressen /kurs/<slug>?venteliste=1 fra serversida (aapneKursSlug).
+      .filter(k => ogsaaSkjult || (k.datoer || []).length > 0 || k.utenDatoOk)
       // Interne kurs hoerer hjemme paa Min side, ikke i den offentlige lista.
       // Da denne metoden ble skrevet, tok den med alt fra katalogen — og
       // medlemsarrangementene dukket opp for alle.

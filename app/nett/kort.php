@@ -119,9 +119,43 @@ final class Kort
         return self::$alle = array_map(static fn(array $x): array => $x['k'], $med);
     }
 
+    /**
+     * Kortet for ett kurs paa dets egen adresse — ogsaa naar kurset ikke
+     * staar i lista. Et publisert kurs uten datoer og uten «vis uten
+     * datoer» er skjult i listene, men adressen finnes (Google, gamle
+     * lenker, kampanjebanneret). Foer svarte den 200 med appens «Siden
+     * finnes ikke» — en myk 404. Naa faar den kurssida med «Ingen datoer
+     * ennaa» og venteliste, som Date Night. Eieren, 21. september 2026.
+     */
+    public static function forSlug(string $slug): ?array
+    {
+        foreach (self::kurs() as $k) {
+            if (($k['slug'] ?? '') === $slug) {
+                return $k;
+            }
+        }
+        $katalog = Katalog::offentlig(false);
+        foreach ($katalog as $kat) {
+            if ((string) ($kat['slug'] ?? '') !== $slug || ($kat['tema'] ?? '') === 'Kun for medlemmer') {
+                continue;
+            }
+            $d = [
+                'level' => (string) ($kat['tema'] ?: ($kat['type'] === 'event' ? 'Event' : 'Kurs')),
+                'tema'  => (string) ($kat['tema'] ?: 'Kurs'),
+                'title' => (string) $kat['tittel'],
+                'image' => (string) ($kat['bilde'] ?: self::FOTO . 'handbygging.jpg'),
+            ];
+            return self::medServerdata($d, $kat, $katalog, true);
+        }
+        return null;
+    }
+
     /** medServerdata() + medBooking() i nettsida, for ett kort. */
-    /** @param list<array<string,mixed>> $katalog Katalog::offentlig(false), hentet én gang i kurs(). */
-    private static function medServerdata(array $d, array $kat, array $katalog): ?array
+    /**
+     * @param list<array<string,mixed>> $katalog Katalog::offentlig(false), hentet én gang i kurs().
+     * @param bool $ogsaaSkjult Ogsaa et kurs uten datoer som ikke skal staa i lista (forSlug).
+     */
+    private static function medServerdata(array $d, array $kat, array $katalog, bool $ogsaaSkjult = false): ?array
     {
         $datoer = $kat['datoer'] ?? [];
         $pris = !empty($kat['gjenstandIKassa'])
@@ -163,7 +197,7 @@ final class Kort
             $felles['sekunder'] = (int) ($kat['sekunder'] ?? 5);
         }
         if ($datoer === []) {
-            if (empty($kat['utenDatoOk'])) {
+            if (empty($kat['utenDatoOk']) && !$ogsaaSkjult) {
                 return null;   // utenDato
             }
             return $felles + [

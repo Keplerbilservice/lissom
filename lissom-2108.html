@@ -62761,9 +62761,20 @@ class Component extends DCLogic {
         // staar her, i den rekkefoelgen — ikke kursets egne bilder. Samme
         // oppslag som Katalog::detteKanDuLage gjoer for serversida: kurs
         // uten bilde og kurs som ikke ligger ute, faller bort.
-        const lage = (k.karusellFra || []).map(id => this.kursKort().find(c => c.katId === id))
-          .filter(c => c && c.image)
-          .map(c => ({ src: c.image, tittel: c.title, tekst: c.kortBeskrivelse || '' }));
+        //
+        // Oppslaget gaar i katalogen, ikke i kortene: et kurs uten datoer
+        // har ikke noe kort, men skal fortsatt kunne vises her (Bolle-
+        // kurset, 21. september 2026). Bildet for et kurs uten egne bilder
+        // er det kortet ville hatt — designlistas, ellers haandbygging —
+        // som Kort::standardBilde paa serveren.
+        const design = (this._kursListe || []);
+        const lage = (k.karusellFra || []).map(id => (this.state.katalog || []).find(c => c.id === id))
+          .filter(Boolean)
+          .map(c => {
+            const d = design.find(x => (x.title || '').toLowerCase() === (c.tittel || '').toLowerCase());
+            const src = (c.bilder && c.bilder[0]) || c.bilde || (d && d.image) || (FOTO + 'handbygging.jpg');
+            return { src, tittel: c.tittel, tekst: c.kortBeskrivelse || '' };
+          });
         const bilder = lage.length ? lage.map(r => r.src)
           : (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'handbygging.jpg']);
         const sek = parseFloat(k.sekunder) || 5;

@@ -63,13 +63,9 @@ $bildeAlt = trim((string) ($kat['bildeAlt'] ?? '')) ?: $tittel;
 // «Dette kan du lage» (migrasjon 200). Har verkstedet haket av andre kurs
 // i kursoppsettet, er det deres bilde og korttekst som staar i karusellen
 // — ikke kursets egne bilder. Samme oppslag som appen gjoer i bKarusell.
-// Bildet et kurs uten egne bilder faar, er det lista viser for det.
-$kortPerSlug = [];
-foreach (Kort::kurs() as $kk) {
-    $kortPerSlug[(string) $kk['slug']] = $kk;
-}
-$lage = Katalog::detteKanDuLage($kat, Katalog::offentlig(false), static fn(array $k): string =>
-    (string) ($kortPerSlug[(string) ($k['slug'] ?? '')]['image'] ?? ''));
+// Bildet et kurs uten egne bilder faar, er det kortet ville vist — ogsaa
+// naar kurset ikke har noe kort akkurat naa (ingen datoer).
+$lage = Katalog::detteKanDuLage($kat, Katalog::offentlig(false), [Kort::class, 'standardBilde']);
 if ($lage !== []) {
     $bilder = array_map(static fn(array $r): string => $r['bilde'], $lage);
 }

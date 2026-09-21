@@ -33,6 +33,31 @@ final class Kort
     private static ?array $alle = null;
 
     /**
+     * Bildet et katalogkurs vises med naar det ikke har lastet opp noe
+     * selv: designlistas bilde for de fem som staar der, ellers
+     * haandbyggingsbildet — de samme reglene som kortene i kurs() bruker.
+     *
+     * Ligger for seg fordi «Dette kan du lage» trenger bildet ogsaa for kurs
+     * som ikke har noe kort akkurat naa: 21. september 2026 ble alle datoer
+     * uten paameldte tatt bort, og Bolle-kurset — uten egne bilder og uten
+     * datoer — falt ut av karusellen paa Haandbygging (4 av 5).
+     */
+    public static function standardBilde(array $kat): string
+    {
+        $egen = (string) ($kat['bilde'] ?? '');
+        if ($egen !== '') {
+            return $egen;
+        }
+        $tittel = mb_strtolower((string) ($kat['tittel'] ?? ''));
+        foreach (self::DESIGN as $d) {
+            if (mb_strtolower($d['title']) === $tittel) {
+                return (string) $d['image'];
+            }
+        }
+        return self::FOTO . 'handbygging.jpg';
+    }
+
+    /**
      * Alle kurskortene, i den rekkefoelgen de gaar — som kursKort() i nettsida.
      * @return list<array<string,mixed>>
      */

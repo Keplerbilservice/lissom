@@ -78,10 +78,10 @@ const MAAL = path.join(ROT, 'lissom-2108-uten-admin.html');
  * app/nett/nett.php SIDER, bare som sc-if-verdien skjermen staar bak.
  */
 export const LESESKJERMER = [
-  'erForside', 'erOmOss', 'erSporsmal', 'erNyheter', 'erPersonvern', 'erVilkar',
-  'erKursoversikt', 'erKalenderside', 'erNyttig', 'erPop',
-  // Kurslista (/kurs, /events) fra 21. september 2026 — steg 1 i ryddinga.
-  'erKurs',
+  // Forside, kurslista, nyheter og nyttig info er slettet fra kilden
+  // (21. september 2026) — de finnes bare som serversider.
+  'erOmOss', 'erSporsmal', 'erPersonvern', 'erVilkar',
+  'erKursoversikt', 'erKalenderside', 'erPop',
   'erPlakatCone', 'erPlakatInfo', 'erPlakatTrivsel',
 ];
 

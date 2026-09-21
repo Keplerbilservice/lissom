@@ -63,7 +63,7 @@ si(mistet.length === 0, 'ingen appskjerm er borte' + (mistet.length ? ' — mang
 si(igjen.every(n => !n.startsWith('Admin')), 'ingen adminskjerm staar igjen');
 si(lese.every(n => !igjen.includes(n)), 'ingen leseskjerm staar igjen');
 si(html.includes('<body data-lett-utgave>'), '<body> er merket data-lett-utgave');
-for (const n of ['erKurs', 'erBooking', 'erKontakt', 'erMedlemskap', 'erBedrift', 'erButikk', 'erKasse', 'erGavekortside', 'erMinside', 'erLogin']) {
+for (const n of ['erBooking', 'erKontakt', 'erMedlemskap', 'erBedrift', 'erButikk', 'erKasse', 'erGavekortside', 'erMinside', 'erLogin']) {
   si(html.includes('{{ ' + n + ' }}'), 'skjermen «' + n + '» — som appen trenger — staar igjen');
 }
 

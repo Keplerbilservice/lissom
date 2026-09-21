@@ -139,9 +139,12 @@
   var kar = d.querySelectorAll('[data-nett-karusell]');
   for (var ki = 0; ki < kar.length; ki++) {
     (function (ramme) {
+      // Paa kurssida er bildene bakgrunner; paa kortene (Deler::kurskort,
+      // «Dette kan du lage» paa forsida og /kurs) er de <img data-nett-bilde>.
       var bilder = [];
       for (var j = 0; j < ramme.children.length; j++) {
-        if (ramme.children[j].style && ramme.children[j].style.backgroundImage) bilder.push(ramme.children[j]);
+        var b = ramme.children[j];
+        if (b.hasAttribute('data-nett-bilde') || (b.style && b.style.backgroundImage)) bilder.push(b);
       }
       if (bilder.length < 2 || rolig) return;
       var sek = parseInt(ramme.getAttribute('data-nett-karusell'), 10) || 5;

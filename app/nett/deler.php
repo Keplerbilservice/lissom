@@ -219,8 +219,13 @@ final class Deler
             . ' transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay); cursor: pointer;'
             . ' background: var(--surface-card); border: 1px solid var(--border-subtle); display: flex; flex-direction: column;' . $ekstraStil . '"'
             . ' data-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">';
-        // Bildet.
-        $h .= '<div style="position: relative;">';
+        // Bildet. Har kortet flere («Dette kan du lage», Kort::kurs), ligger
+        // de oppaa det foerste og bytter — nett.js leser data-nett-karusell,
+        // som paa kurssida. Det foerste bildet er et vanlig <img> som foer,
+        // saa LCP og srcset er som de var.
+        $bilder = array_values(array_filter((array) ($k['bilder'] ?? []), 'is_string'));
+        $karusell = count($bilder) >= 2;
+        $h .= '<div style="position: relative;' . ($karusell ? ' overflow: hidden;' : '') . '"' . ($karusell ? ' data-nett-karusell="' . (int) ($k['sekunder'] ?? 5) . '"' : '') . '>';
         $bilde = (string) ($k['image'] ?? '');
         if ($bilde !== '') {
             $ss = Nett::srcset($bilde);
@@ -229,7 +234,15 @@ final class Deler
                 // Det foerste kortet paa sida er gjerne det stoerste som tegnes
                 // (LCP): det hentes med en gang; resten venter til de trengs.
                 . (!empty($k['eager']) ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
-                . ' style="width: 100%; aspect-ratio: 16 / 10; height: auto; object-fit: cover; display: block;">';
+                . ' style="width: 100%; aspect-ratio: 16 / 10; height: auto; object-fit: cover; display: block;' . ($karusell ? ' transition: opacity 1.2s ease;' : '') . '"' . ($karusell ? ' data-nett-bilde' : '') . '>';
+            if ($karusell) {
+                foreach (array_slice($bilder, 1) as $b) {
+                    $ss2 = Nett::srcset($b);
+                    $h .= '<img src="' . $e($b) . '"' . ($ss2 !== '' ? ' srcset="' . $e($ss2) . '" sizes="' . Nett::SIZES_KORT . '"' : '')
+                        . ' alt="" aria-hidden="true" loading="lazy" decoding="async" data-nett-bilde'
+                        . ' style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 1.2s ease;">';
+                }
+            }
         } else {
             $h .= '<div style="aspect-ratio: 16 / 10; background: var(--clay-200); display: grid; place-items: center; color: var(--clay-400); font-family: var(--font-sans); font-weight: 700; font-size: 11px; letter-spacing: var(--tracking-micro);">FOTO</div>';
         }

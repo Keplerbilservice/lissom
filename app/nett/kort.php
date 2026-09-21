@@ -147,6 +147,17 @@ final class Kort
             'href'     => '/kurs/' . rawurlencode($slug),
             'okter'    => $datoer,
         ];
+        // «Dette kan du lage» ogsaa paa kortet. Eieren, 21. september 2026:
+        // «kortet haandbyggekurs, som rullerer bilder, det maa ogsaa rullere
+        // paa forsiden i kortet». Samme bilder, i samme rekkefoelge, som
+        // karusellen paa kurssida — det foerste er kortets bilde, resten
+        // ligger oppaa og bytter (Deler::kurskort + nett.js).
+        $lage = Katalog::detteKanDuLage($kat, Katalog::offentlig(false), [self::class, 'standardBilde']);
+        if (count($lage) >= 2) {
+            $felles['bilder'] = array_values(array_unique(array_map(static fn(array $r): string => $r['bilde'], $lage)));
+            $felles['image'] = $felles['bilder'][0];
+            $felles['sekunder'] = (int) ($kat['sekunder'] ?? 5);
+        }
         if ($datoer === []) {
             if (empty($kat['utenDatoOk'])) {
                 return null;   // utenDato

@@ -79,7 +79,7 @@ final class Kort
             if ($kat === null) {
                 continue;   // utenDato: kan ikke bookes, vises ikke
             }
-            $kort = self::medServerdata($d, $kat);
+            $kort = self::medServerdata($d, $kat, $katalog);
             if ($kort !== null) {
                 $ut[] = $kort;
             }
@@ -104,7 +104,7 @@ final class Kort
                 'title' => (string) $k['tittel'],
                 'image' => (string) ($k['bilde'] ?: self::FOTO . 'handbygging.jpg'),
             ];
-            $kort = self::medServerdata($d, $k);
+            $kort = self::medServerdata($d, $k, $katalog);
             if ($kort !== null) {
                 $ut[] = $kort;
             }
@@ -120,7 +120,8 @@ final class Kort
     }
 
     /** medServerdata() + medBooking() i nettsida, for ett kort. */
-    private static function medServerdata(array $d, array $kat): ?array
+    /** @param list<array<string,mixed>> $katalog Katalog::offentlig(false), hentet én gang i kurs(). */
+    private static function medServerdata(array $d, array $kat, array $katalog): ?array
     {
         $datoer = $kat['datoer'] ?? [];
         $pris = !empty($kat['gjenstandIKassa'])
@@ -152,7 +153,10 @@ final class Kort
         // paa forsiden i kortet». Samme bilder, i samme rekkefoelge, som
         // karusellen paa kurssida — det foerste er kortets bilde, resten
         // ligger oppaa og bytter (Deler::kurskort + nett.js).
-        $lage = Katalog::detteKanDuLage($kat, Katalog::offentlig(false), [self::class, 'standardBilde']);
+        // Katalogen sendes inn: et nytt Katalog::offentlig() per kort ga
+        // 12 × 0,35 s = fire sekunder foer foerste byte paa hver side med
+        // kort (maalt 21. september 2026, uten buffer).
+        $lage = Katalog::detteKanDuLage($kat, $katalog, [self::class, 'standardBilde']);
         if (count($lage) >= 2) {
             $felles['bilder'] = array_values(array_unique(array_map(static fn(array $r): string => $r['bilde'], $lage)));
             $felles['image'] = $felles['bilder'][0];

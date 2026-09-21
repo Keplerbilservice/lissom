@@ -22,7 +22,24 @@ final class Katalog
      *   til den som er innlogget som medlem.
      * @return list<array<string,mixed>>
      */
+    /** @var array<int,list<array<string,mixed>>> katalogen per forespoersel, per publikum */
+    private static array $minne = [];
+
     public static function offentlig(bool $erMedlem): array
+    {
+        // Én gang per forespoersel. Serversidene spoer flere ganger (kortene,
+        // kurssida, «Dette kan du lage»), og hvert kall koster ~0,35 s —
+        // maalt 21. september 2026: fire sekunder foer foerste byte. Ingen
+        // skriver til basen og leser katalogen igjen i samme forespoersel;
+        // api/kurs.php er den eneste andre som spoer.
+        if (isset(self::$minne[(int) $erMedlem])) {
+            return self::$minne[(int) $erMedlem];
+        }
+        return self::$minne[(int) $erMedlem] = self::bygg($erMedlem);
+    }
+
+    /** @return list<array<string,mixed>> */
+    private static function bygg(bool $erMedlem): array
     {
         $hvor = $erMedlem ? '1' : "COALESCE(tema, '') <> 'Kun for medlemmer'";
 

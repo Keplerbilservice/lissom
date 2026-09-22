@@ -26745,20 +26745,27 @@ class Component extends DCLogic {
   /**
    * Faar dette medlemmet selge egne arbeider?
    *
-   * Eieren, 12. september 2026: «kun års medlemmer». Planen kommer fra
-   * api/meg.php (medlemskap_type), og kjennes igjen paa navnet slik det
-   * staar i basen. De andre ser ikke «Selg» i det hele tatt — ingen pille,
-   * ingen fane, ingen bunnmeny. Serveren sperrer det samme i
-   * api/medlemssalg.php. Utenfor den ekte sida vises alt, som ellers.
+   * Eieren, 22. september 2026: «Jeg vil at alle medlemskap skal faa denne
+   * muligheten, men ikke prøv lissom.»
+   *
+   * Svaret regnes ikke ut her. Det sto «=== 'Årsmedlemskap'» paa denne
+   * linja, og den samme sammenligningen sto i api/medlemssalg.php — to
+   * utgaver av én regel, med hver sin maate aa ta feil paa. Naa staar den i
+   * Medlemskap::kanSelge() paa serveren, og api/meg.php sender svaret hit.
+   * De som ikke har den ser ikke «Selg» i det hele tatt — ingen pille, ingen
+   * fane, ingen bunnmeny.
+   *
+   * Admin er innenfor, men det staar i regelen paa serveren — ikke i en
+   * regel til her. Eieren, 12. september 2026: «jeg får ikke solgt på min
+   * side i allefall» — admin-kontoen staar ikke paa noen plan, og da var
+   * fanen borte for den som skulle proeve den.
+   *
+   * Utenfor den ekte sida vises alt, som ellers.
    */
   kanSelge() {
     if (!this.medlemsvisning()) return false;
     if (!this.erPublisert()) return true;
-    // Admin er innenfor, som paa serveren. Eieren, 12. september 2026: «jeg
-    // får ikke solgt på min side i allefall» — admin-kontoen staar ikke som
-    // aarsmedlem, og da var fanen borte for den som skulle proeve den.
-    if (this.state.erAdminBruker) return true;
-    return (this.state.medlemPlan || '').trim() === 'Årsmedlemskap';
+    return !!this.state.medlemKanSelge;
   }
 
   /**
@@ -28253,9 +28260,15 @@ class Component extends DCLogic {
           // medlemskapet er noe verkstedet godkjenner.
           erMedlemBruker: !!d.erMedlem,
           soknadStatus: d.soknadStatus || null,
-          // Planen medlemmet staar paa. «Selg» paa Min side er bare for
-          // aarsmedlemmene — se kanSelge().
-          medlemPlan: (d.medlem && d.medlem.medlemskap) || '',
+          // Faar hen selge egne arbeider? Regnet ut av serveren, i
+          // Medlemskap::kanSelge() — se kanSelge() her.
+          //
+          // Her sto «medlemPlan» ved siden av, plan-navnet raatt. Det fantes
+          // bare for at kanSelge() skulle sammenligne det med
+          // «Årsmedlemskap». Naa som regelen bor paa serveren har feltet
+          // ingen leser, og et felt uten leser er en felle for den neste som
+          // tror det betyr noe.
+          medlemKanSelge: !!d.kanSelge,
           medlemEpost: (d.medlem && d.medlem.epost) || '',
           // Nummeret fra kontoen, saa den som er logget inn slipper aa
           // skrive det paa nytt for hver paamelding.
@@ -33406,7 +33419,7 @@ class Component extends DCLogic {
             // Sesjonen loeper ut som foer, og skjermen foelger med til
             // innlogginga — det er bare ruta som er borte.
             this.setState({
-              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemPlan: '',
+              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemKanSelge: false,
               side: 'login',
             });
           }
@@ -43854,7 +43867,7 @@ class Component extends DCLogic {
     fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })
       .then(() => {
         this.setState({
-          innlogget: false, erAdminBruker: false, erMedlemBruker: false, medlemPlan: '',
+          innlogget: false, erAdminBruker: false, erMedlemBruker: false, medlemKanSelge: false,
           soknadStatus: null, vippsNavn: '', side: 'forside',
           kvittering: 'Du er logget ut',
         });
@@ -46773,7 +46786,7 @@ class Component extends DCLogic {
           bmLoggUt: () => {
             const bli = () => this.setState({
               innlogget: false, erAdminBruker: false, erRegnskapBruker: false,
-              erMedlemBruker: false, medlemPlan: '', soknadStatus: null,
+              erMedlemBruker: false, medlemKanSelge: false, soknadStatus: null,
               vippsNavn: '', medlemEpost: '', medlemTelefon: '',
               minAvtale: null, bmEpost: '', bmTelefon: '', bmFeil: null,
             });

@@ -166,6 +166,46 @@ final class Medlemskap
     }
 
     /**
+     * Faar dette medlemmet selge sine egne arbeider?
+     *
+     * Eieren, 22. september 2026: «Jeg vil at alle medlemskap skal faa denne
+     * muligheten, men ikke proev lissom.»
+     *
+     * Regelen gaar ikke etter navn. Det sto «=== 'Aarsmedlemskap'» to steder
+     * — i api/medlemssalg.php og i kanSelge() paa skjermen — og et navn er
+     * det skjoreste vi har aa henge en rettighet paa. Da «30 timer» ble doept
+     * om til «Basis 30» traff reglene som gikk etter navn ingen. Migrasjon
+     * 034 sa det allerede: «Denne gaar ikke etter navn. Den ser paa hva
+     * planen ER: er den engangs, er det proeveperioden.»
+     *
+     * Saa: et loepende medlemskap gir salg, en proevemaaned gjor det ikke.
+     * «Proev Lissom» er den eneste planen med «engangs = 1». Legger
+     * verkstedet inn et nytt medlemskap i morgen, foelger det regelen av seg
+     * selv — ingen kode aa huske paa.
+     *
+     * Admin er innenfor som ellers. Eieren, 12. september 2026: «jeg faar
+     * ikke solgt paa min side i allefall» — admin-kontoen staar ikke paa noen
+     * plan, og da var doera lukket for den som skulle proeve den.
+     *
+     * Staar medlemmet paa en plan som ikke finnes i basen, er svaret nei.
+     * Vi vet da ikke om den er engangs, og en rettighet skal ikke falle ut
+     * av det vi ikke vet.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function kanSelge(array $medlem): bool
+    {
+        if ((string) ($medlem['rolle'] ?? '') === 'admin') {
+            return true;
+        }
+        if (!er_aktivt_medlem($medlem)) {
+            return false;
+        }
+        $plan = self::planUansett(trim((string) ($medlem['medlemskap_type'] ?? '')));
+        return $plan !== null && (int) ($plan['engangs'] ?? 0) === 0;
+    }
+
+    /**
      * Alle tabellene som peker paa et medlem, lest av basen selv.
      *
      * Lista skrives ikke for haand. Den som legger til en tabell med

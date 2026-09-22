@@ -8022,17 +8022,37 @@ sjekk('… og setter den paa aarsmedlemskapet',
     str_contains($mig124, 'WHERE binding_mnd >= 12')
     && str_contains($mig124, "punkter NOT LIKE '%Selg egne arbeider gjennom lissom.no%'"));
 if (DB::harTabell('membership_plans')) {
-    // Sto som «Selg egne arbeider» — ordrett den formuleringa migrasjon 124
-    // satte inn. Eieren skrev punktlista om selv i migrasjon 128, og linja
-    // heter naa «Mulighet til aa selge egne arbeider gjennom lissom.no».
-    // Paastanden er hvilken PLAN som har den, ikke hvordan den er formulert.
-    $med = DB::alle(
-        "SELECT navn, punkter FROM membership_plans
+    // Sto som «salgslinja staar bare paa aarsmedlemskapet». Det var sant fra
+    // 2. september til 22. september 2026, da eieren snudde: «Jeg vil at alle
+    // medlemskap skal faa denne muligheten, men ikke prøv lissom.»
+    //
+    // Migrasjon 205 tar den gamle formuleringa ut overalt og setter to nye
+    // linjer paa hvert loepende medlemskap. Paastanden er den samme som foer
+    // — hvilke PLANER som har den — bare med den nye grensa.
+    $gammel = DB::alle(
+        "SELECT navn FROM membership_plans
           WHERE punkter LIKE '%elg egne arbeider%' OR punkter LIKE '%elge egne arbeider%'"
     );
-    sjekk('salgslinja staar bare paa aarsmedlemskapet i basen',
-        count($med) === 1 && str_contains((string) $med[0]['navn'], 'rsmedlemskap'),
-        count($med) . ' plan(er): ' . implode(', ', array_column($med, 'navn')));
+    sjekk('den gamle salgslinja staar ikke igjen paa noen plan',
+        $gammel === [],
+        count($gammel) . ' plan(er): ' . implode(', ', array_column($gammel, 'navn')));
+
+    // Hver loepende plan skal ha begge linjene; proevemaaneden ingen av dem.
+    $planer = DB::alle('SELECT navn, engangs, punkter FROM membership_plans');
+    $mangler = [];
+    $urett   = [];
+    foreach ($planer as $pl) {
+        $har = str_contains((string) $pl['punkter'], 'Tilgang til egen nettbutikk')
+            && str_contains((string) $pl['punkter'], 'Dine egne produkter i vår butikk på Teie');
+        $noe = str_contains((string) $pl['punkter'], 'Tilgang til egen nettbutikk')
+            || str_contains((string) $pl['punkter'], 'Dine egne produkter i vår butikk på Teie');
+        if ((int) $pl['engangs'] === 0 && !$har)  { $mangler[] = (string) $pl['navn']; }
+        if ((int) $pl['engangs'] === 1 && $noe)   { $urett[]   = (string) $pl['navn']; }
+    }
+    sjekk('begge linjene staar paa hvert loepende medlemskap',
+        $mangler === [], 'mangler paa: ' . implode(', ', $mangler));
+    sjekk('… og proevemaaneden har dem ikke',
+        $urett === [], 'staar feilaktig paa: ' . implode(', ', $urett));
 }
 
 // ── Medlemskapskortet: info forst, «Velg» etterpaa ────────────────────
@@ -17744,27 +17764,68 @@ sjekk('… aarsmedlemskapet telles naar avtalen ble aktiv ved retur, og bare da'
             && str_contains($mkSida, "if (/[?&]avtale=1/.test(sok) && /[?&]kjop=A\\d+/.test(sok)) {")
             && str_contains($mkSida, "const rest = sok.replace(/&(kjop|belop|slag)=[^&]*/g, '');");
     })());
-// ── «Selg» bare for aarsmedlemmene ───────────────────────────────────────
+// ── «Selg» for alle loepende medlemskap, ikke proevemaaneden ─────────────
 //
-// Eieren, 12. september 2026: «jeg vil at det er kun års medlemmer som skal
-// få denne, kan du fikse dette, og aktivere den?» Planen kommer fra
-// api/meg.php, nettsida skjuler pille, fane og bunnmeny for de andre, og
-// serveren sperrer innlegging. Migrasjon 170 slaar begge bryterne paa.
-sjekk('Selg egne arbeider: bare planen «Årsmedlemskap» ser pille, fane og bunnmeny',
-    str_contains($mkSida, "medlemPlan: (d.medlem && d.medlem.medlemskap) || '',")
-    && str_contains($mkSida, "    return (this.state.medlemPlan || '').trim() === 'Årsmedlemskap';")
+// Eieren, 22. september 2026: «Jeg vil at alle medlemskap skal faa denne
+// muligheten, men ikke prøv lissom.» Foer det sto den bare paa
+// aarsmedlemskapet (12. september: «kun års medlemmer»).
+//
+// Regelen sto to steder og gikk etter plan-navnet begge steder. Naa bor den
+// i Medlemskap::kanSelge(), api/meg.php sender svaret ut, og skjermen spor
+// ikke om noe selv. Migrasjon 170 slaar begge bryterne paa.
+sjekk('Selg egne arbeider: skjermen spoer serveren, den regner ikke ut selv',
+    str_contains($mkSida, "          medlemKanSelge: !!d.kanSelge,")
+    && str_contains($mkSida, "    return !!this.state.medlemKanSelge;")
+    // Plan-navnet skal ikke ligge igjen som et felt ingen leser.
+    && !str_contains($mkSida, "medlemPlan: (d.medlem && d.medlem.medlemskap) || '',")
+    && !str_contains($mkSida, "(this.state.medlemPlan || '').trim() === 'Årsmedlemskap'")
     && str_contains($mkSida, "if (f === 'selg' && !this.kanSelge()) return 'hjem';")
     && str_contains($mkSida, "          msFaneSelg:       f === 'selg' && this.kanSelge(),\n          msKanSelge:       this.kanSelge(),")
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msPlSelg.velg }}"') === 1
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msBmSelg.velg }}"') === 1
     && str_contains($mkSida, "visSalgSkjema: this.kanSelge() && this.bryterPaa('medlemssalg'),"));
-sjekk('… serveren avviser innlegging fra andre enn aarsmedlemmer, og migrasjon 170 slaar bryterne paa',
+// Proevemaaneden kjennes paa «engangs = 1», ikke paa navnet. Da taaler
+// regelen at verkstedet doper om en plan eller legger til en ny.
+sjekk('… og regelen bor ett sted, og gaar etter engangs — ikke etter navn',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+        "    public static function kanSelge(array \$medlem): bool\n"
+        . "    {\n"
+        . "        if ((string) (\$medlem['rolle'] ?? '') === 'admin') {\n"
+        . "            return true;\n"
+        . "        }\n"
+        . "        if (!er_aktivt_medlem(\$medlem)) {\n"
+        . "            return false;\n"
+        . "        }\n"
+        . "        \$plan = self::planUansett(trim((string) (\$medlem['medlemskap_type'] ?? '')));\n"
+        . "        return \$plan !== null && (int) (\$plan['engangs'] ?? 0) === 0;\n"
+        . "    }")
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/meg.php'),
+        "    'kanSelge'       => Medlemskap::kanSelge(\$m),"));
+sjekk('… serveren avviser innlegging fra proevemaaneden, og migrasjon 170 slaar bryterne paa',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php'),
-        "    && trim((string) (\$medlem['medlemskap_type'] ?? '')) !== 'Årsmedlemskap') {\n    Svar::feil('Salg av egne arbeider er for årsmedlemmer.', 403);")
+        "if (!Medlemskap::kanSelge(\$medlem)) {\n    Svar::feil('Salg av egne arbeider krever et løpende medlemskap.', 403);")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
         "INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/medlemssalg', 'ja')\nON DUPLICATE KEY UPDATE verdi = 'ja';")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
         "VALUES ('Vis/salgsskjema', 'ja')"));
+// ── Teksten paa medlemskapene ────────────────────────────────────────────
+//
+// Eieren, 22. september 2026: «Tilgang til egen nettbutikk» og «Dine egne
+// produkter i vaar butikk paa teie». Begge linjene skal paa hvert loepende
+// medlemskap, og den gamle formuleringa ut overalt.
+$mig205 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/205_nettbutikk_paa_alle_lopende_medlemskap.sql');
+sjekk('de to linjene legges paa hvert loepende medlemskap, og den gamle tas ut',
+    str_contains($mig205, "'Tilgang til egen nettbutikk')\n WHERE engangs = 0")
+    && str_contains($mig205, "'Dine egne produkter i vår butikk på Teie')\n WHERE engangs = 0")
+    && str_contains($mig205, "WHERE punkter LIKE '%elg%egne arbeider gjennom lissom.no%';")
+    // Proevemaaneden skal ikke faa dem. Ingen av de to spor etter noe annet
+    // enn «engangs = 0», saa «Prøv Lissom» staar utenfor uten aa nevnes.
+    && substr_count($mig205, 'WHERE engangs = 0') === 2
+    && !str_contains($mig205, 'Prøv Lissom'));
+sjekk('… og langteksten lover ikke lenger salget som noe bare aarsmedlemmer faar',
+    str_contains($mig205, "'En ekstra fordel med Årsmedlemskap er muligheten til å selge egne arbeider")
+    && str_contains($mig205, 'Med et løpende medlemskap får du din egen nettbutikk på lissom.no'));
 
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //

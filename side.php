@@ -242,6 +242,10 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
         // seo_tittel og seo_meta kom med migrasjon 164 (dreiekurset). Tomme
         // for de andre kursene — da gjelder det som alltid har gjeldt.
         $egne = DB::harKolonne('courses', 'seo_tittel') ? 'seo_tittel, seo_meta' : 'NULL AS seo_tittel, NULL AS seo_meta';
+        // bilder (migrasjon 044) og karusell_fra (200): til forhaandslastingen
+        // av det foerste bildet appen viser — se $forhaandsbilde under.
+        $egne .= DB::harKolonne('courses', 'bilder') ? ', bilder' : ', NULL AS bilder';
+        $egne .= DB::harKolonne('courses', 'karusell_fra') ? ', karusell_fra' : ', NULL AS karusell_fra';
         $k = DB::en(
             "SELECT tittel, beskrivelse, bilde, {$egne} FROM courses
               WHERE slug = :s AND status = 'publisert'
@@ -266,7 +270,33 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
                       . 'og brenning er inkludert. Se ledige datoer og book plass.';
             }
             $bilde = trim((string) ($k['bilde'] ?? ''));
+            // Det foerste bildet appen tegner paa bookingskjermen — samme
+            // regel som bKarusell i appen og kursside.php: «Dette kan du
+            // lage» (foerste kurs i karusell_fra) foer kursets egne bilder
+            // foer hovedbildet. Forhaandslastes i hodet, se $hode. Bare
+            // filer i rota (uploads_…, assets_…); har kurset ingen, staar
+            // appen med designlistas bilde, og det gjetter vi ikke paa.
+            $forhaandsbilde = '';
+            $ider = json_decode((string) ($k['karusell_fra'] ?? ''), true);
+            $forsteId = is_array($ider) ? (int) ($ider[0] ?? 0) : 0;
+            if ($forsteId > 0) {
+                $forhaandsbilde = trim((string) DB::verdi(
+                    "SELECT bilde FROM courses WHERE id = :i AND status = 'publisert'",
+                    ['i' => $forsteId]
+                ));
+            }
+            if ($forhaandsbilde === '') {
+                $liste = json_decode((string) ($k['bilder'] ?? ''), true);
+                $forhaandsbilde = is_array($liste) ? trim((string) ($liste[0] ?? '')) : '';
+            }
+            if ($forhaandsbilde === '') {
+                $forhaandsbilde = $bilde;
+            }
+            if (preg_match('~^[a-z0-9_.\-]+\.(jpe?g|png|webp)$~i', $forhaandsbilde) !== 1) {
+                $forhaandsbilde = '';
+            }
             $d = [
+                'forhaandsbilde' => $forhaandsbilde,
                 'tittel'        => $egenTittel !== '' ? $egenTittel : $navn . ' i Tønsberg | Lissom Keramikk',
                 'meta'          => $meta,
                 'canonical'     => ROT . '/kurs/' . rawurlencode($treff[1]),
@@ -486,6 +516,14 @@ $hode = MERKE_START . "\n"
         . '<meta property="og:image:height" content="675">' . "\n")
     . '<meta property="og:image:alt" content="' . $e($ogAlt) . '">' . "\n"
     . '<meta name="twitter:card" content="summary_large_image">' . "\n"
+    // Kursbildet, naar appen skal tegne bookingskjermen (?book=, ?dag= …).
+    // Det er det stoerste paa skjermen (LCP), og uten dette fant
+    // nettleseren det foerst etter at hele appen var lest og tegnet.
+    // PageSpeed 22. september 2026. Serversida gjoer det samme i
+    // kursside.php.
+    . ((string) ($d['forhaandsbilde'] ?? '') !== ''
+        ? '<link rel="preload" as="image" fetchpriority="high" href="/' . $e((string) $d['forhaandsbilde']) . '">' . "\n"
+        : '')
     . MERKE_SLUTT;
 
 $html = substr_replace($html, $hode, $start, $slutt + strlen(MERKE_SLUTT) - $start);

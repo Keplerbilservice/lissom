@@ -44,43 +44,74 @@ $LISSOM_SECRETS = require $hemmeligheter;
 
 require_once APP_DIR . '/lib/foresporsel.php';
 require APP_DIR . '/config.php';
-require APP_DIR . '/lib/db.php';
-require APP_DIR . '/lib/http.php';
-require APP_DIR . '/lib/nett.php';
+
+/**
+ * Klassene lastes naar de brukes.
+ *
+ * Her sto 34 «require» paa rad, og hver eneste foresporsel leste alle
+ * sammen — 764 kB PHP for aa svare paa noe som helst. api/meg.php svarer
+ * med 19 byte og lastet likevel Vipps, AI, PDF-lesing, dokumenter,
+ * robottekster og maaling.
+ *
+ * Maalt 22. september 2026: api/meg.php brukte 0,16–0,26 s, mens en
+ * statisk fil fra samme server gaar paa 0,05 s. Den faste avgiften traff
+ * hvert eneste kall, og appen gjor ni av dem naar bookingsida aapnes.
+ *
+ * De tre filene under definerer globale FUNKSJONER — logg(), krev_admin(),
+ * http_post_json(). Dem finner ingen autolaster, for den leter etter
+ * klassenavn. foresporsel.php er alt lastet over, av samme grunn.
+ *
+ * Kartet er skrevet ut, ikke gjettet fram av filnavnet: «ratelimit.php»
+ * inneholder Rate, og «varsler.php» inneholder baade Varsel og Utsending.
+ * bin/autolastsjekk.mjs passer paa at det stemmer med filene paa disken.
+ */
+spl_autoload_register(static function (string $klasse): void {
+    static $kart = [
+        'AI' => 'ai.php',
+        'Apent' => 'apent.php',
+        'Artikler' => 'artikler.php',
+        'Avmelding' => 'avmelding.php',
+        'Bilder' => 'bilder.php',
+        'Booking' => 'booking.php',
+        'DB' => 'db.php',
+        'Dokumenter' => 'dokumenter.php',
+        'Dugnad' => 'dugnad.php',
+        'Ferie' => 'ferie.php',
+        'Foresporsel' => 'http.php',
+        'Frys' => 'frys.php',
+        'Katalog' => 'katalog.php',
+        'Kursholder' => 'kursholder.php',
+        'Kursmal' => 'kursmal.php',
+        'Lenker' => 'lenker.php',
+        'Maaling' => 'maaling.php',
+        'Maler' => 'maler.php',
+        'Medlemskap' => 'medlemskap.php',
+        'Medlemsordre' => 'medlemsordre.php',
+        'Oppmote' => 'oppmote.php',
+        'Oppsett' => 'oppsett.php',
+        'Pdftekst' => 'pdftekst.php',
+        'Rate' => 'ratelimit.php',
+        'Robottekst' => 'robottekst.php',
+        'Samlinger' => 'samlinger.php',
+        'Serier' => 'serier.php',
+        'Sesjon' => 'session.php',
+        'Stempling' => 'stempling.php',
+        'Svar' => 'http.php',
+        'Tikk' => 'tikk.php',
+        'Tillegg' => 'tillegg.php',
+        'Utsending' => 'varsler.php',
+        'Varsel' => 'varsler.php',
+        'Veileder' => 'veileder.php',
+        'Vipps' => 'vipps.php',
+    ];
+    if (isset($kart[$klasse])) {
+        require APP_DIR . '/lib/' . $kart[$klasse];
+    }
+});
+
 require APP_DIR . '/lib/logg.php';
-require APP_DIR . '/lib/session.php';
+require APP_DIR . '/lib/nett.php';
 require APP_DIR . '/lib/auth.php';
-require APP_DIR . '/lib/ratelimit.php';
-require APP_DIR . '/lib/varsler.php';
-require APP_DIR . '/lib/maler.php';
-require APP_DIR . '/lib/vipps.php';
-require APP_DIR . '/lib/lenker.php';
-require APP_DIR . '/lib/kursholder.php';
-require APP_DIR . '/lib/booking.php';
-require APP_DIR . '/lib/stempling.php';
-require APP_DIR . '/lib/apent.php';
-require APP_DIR . '/lib/ferie.php';
-require APP_DIR . '/lib/bilder.php';
-require APP_DIR . '/lib/serier.php';
-require APP_DIR . '/lib/samlinger.php';
-require APP_DIR . '/lib/artikler.php';
-require APP_DIR . '/lib/veileder.php';
-require APP_DIR . '/lib/medlemskap.php';
-require APP_DIR . '/lib/medlemsordre.php';
-require APP_DIR . '/lib/frys.php';
-require APP_DIR . '/lib/dugnad.php';
-require APP_DIR . '/lib/tillegg.php';
-require APP_DIR . '/lib/oppmote.php';
-require APP_DIR . '/lib/oppsett.php';
-require APP_DIR . '/lib/kursmal.php';
-require APP_DIR . '/lib/katalog.php';
-require APP_DIR . '/lib/tikk.php';
-require APP_DIR . '/lib/ai.php';
-require APP_DIR . '/lib/pdftekst.php';
-require APP_DIR . '/lib/dokumenter.php';
-require APP_DIR . '/lib/robottekst.php';
-require APP_DIR . '/lib/avmelding.php';
-require APP_DIR . '/lib/maaling.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i
 // feilloggen på webhotellet i stedet.

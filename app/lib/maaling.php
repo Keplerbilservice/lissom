@@ -93,6 +93,28 @@ final class Maaling
         }
     }
 
+    /**
+     * Sender et betalt kjøp til Meta på nytt som TESThendelse (testkoden fra
+     * «Test hendelser» i Hendelsesadministrasjon). Går ikke til GA4, og
+     * telles ikke hos Meta — men viser hvilke felter serveren sender.
+     * Svaret fra Meta kommer tilbake, så admin kan vise det.
+     * @return array{status:int,kropp:string}
+     */
+    public static function testTilMeta(int $betalingId, string $testkode): array
+    {
+        self::$test = ['kode' => $testkode, 'svar' => ['status' => 0, 'kropp' => 'Ikke sendt: betalingen mangler samtykke, nøkkel eller Meta-ID.']];
+        try {
+            self::sendKjop($betalingId);
+        } finally {
+            $svar = self::$test['svar'];
+            self::$test = null;
+        }
+        return $svar;
+    }
+
+    /** @var array{kode:string,svar:array{status:int,kropp:string}}|null */
+    private static ?array $test = null;
+
     private static function sendKjop(int $betalingId): void
     {
         if (!DB::harKolonne('payments', 'sporing')) {
@@ -117,6 +139,12 @@ final class Maaling
         }
         $id = 'L' . $betalingId;
 
+        if (self::$test !== null) {
+            // Testen: bare Meta, og med en annen id enn det ekte kjøpet, så
+            // den ikke slås sammen med det.
+            self::tilMeta($sporing, 'TEST-' . $id, $belop, $formal, $vare, $hvem);
+            return;
+        }
         self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem);
         self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem);
     }
@@ -308,11 +336,18 @@ final class Maaling
             ],
         ];
         $url = 'https://graph.facebook.com/v21.0/' . rawurlencode($pikselId) . '/events';
-        $kropp = http_build_query([
+        $felt = [
             'data'         => json_encode([$hendelse], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'access_token' => $token,
-        ]);
+        ];
+        if (self::$test !== null) {
+            $felt['test_event_code'] = self::$test['kode'];
+        }
+        $kropp = http_build_query($felt);
         $svar = http_kall($url, 'POST', $kropp, ['Content-Type: application/x-www-form-urlencoded'], 6);
+        if (self::$test !== null) {
+            self::$test['svar'] = ['status' => (int) $svar['status'], 'kropp' => mb_substr((string) $svar['kropp'], 0, 500)];
+        }
         if ($svar['status'] < 200 || $svar['status'] >= 300) {
             logg_feil('Meta svarte ' . $svar['status'] . ' på kjøp ' . $id . ': ' . mb_substr($svar['kropp'], 0, 300));
         }

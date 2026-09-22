@@ -5,6 +5,9 @@
  *   GET                   om nøklene er lagt inn, og hvor mange kjøp som er
  *                         målt siste 30 dager
  *   POST handling=lagre   { maal_ga_api_secret?, maal_meta_token? }
+ *   POST handling=test    { betalingId, testkode } — sender kjøpet på nytt
+ *                         til Meta som testhendelse (Hendelsesadministrasjon
+ *                         → Test hendelser), så en ser feltene som går ut
  *
  * Nøklene forlater aldri serveren: GET sier bare om de finnes. Et tomt felt
  * i POST betyr «ikke rør», «slett» betyr fjern — som passordene under
@@ -22,6 +25,16 @@ const MAAL_FELTER = ['maal_ga_api_secret', 'maal_meta_token'];
 
 if (Foresporsel::metode() === 'POST') {
     Foresporsel::krevSammeOpphav();
+    if (Foresporsel::tekst('handling') === 'test') {
+        $betalingId = (int) Foresporsel::tekst('betalingId');
+        $testkode = trim((string) Foresporsel::tekst('testkode'));
+        if ($betalingId <= 0 || preg_match('~^TEST[0-9]{3,10}$~', $testkode) !== 1) {
+            Svar::feil('Oppgi betaling og testkode (TEST…).');
+        }
+        $svar = Maaling::testTilMeta($betalingId, $testkode);
+        revider('maaling_test', null, null, ['betaling' => $betalingId]);
+        Svar::json(['ok' => $svar['status'] >= 200 && $svar['status'] < 300, 'meta' => $svar] + status());
+    }
     if (Foresporsel::tekst('handling') !== 'lagre') {
         Svar::feil('Ukjent handling.');
     }

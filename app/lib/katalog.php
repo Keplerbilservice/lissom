@@ -39,8 +39,29 @@ final class Katalog
     }
 
     /** @return list<array<string,mixed>> */
+    /**
+     * Hvor lang tid hvert steg i bygg() tok, i millisekunder.
+     *
+     * Fylles mens katalogen bygges og leses av «?tid=1» i api/kurs.php.
+     * Staar tom naar katalogen ikke er bygget i denne forespoerselen.
+     *
+     * @var array<string,float>
+     */
+    private static array $faser = [];
+
+    /** @return array<string,float> */
+    public static function faser(): array
+    {
+        return self::$faser;
+    }
+
     private static function bygg(bool $erMedlem): array
     {
+        $klokke = microtime(true);
+        $fase = static function (string $navn) use (&$klokke): void {
+            self::$faser[$navn] = round((microtime(true) - $klokke) * 1000, 1);
+            $klokke = microtime(true);
+        };
         $hvor = $erMedlem ? '1' : "COALESCE(tema, '') <> 'Kun for medlemmer'";
 
         // Kolonna kommer med migrasjon 029. Er den ikke kjort, skal kurslista vises
@@ -128,16 +149,21 @@ final class Katalog
             }
         }
 
+        $fase('okter');
         $alleOkter  = array_merge(...(array_values($okterPerKurs) ?: [[]]));
         $oktIder    = array_map(static fn(array $o): int => (int) $o['id'], $alleOkter);
         $ledigeKart = Booking::ledigePlasserFlere($oktIder);
+        $fase('ledige');
         // Maa leses etter ledigePlasserFlere: den regner det ut, denne henter svaret.
         $sperretKart = Booking::sperretAvAnnet($oktIder);
+        $fase('sperret');
         // Hvor mange plasser oekta selv har tatt. «Dreieskivene denne uka» paa Min
         // side viser tallet; «ledige» kan ikke brukes til det, for den er alt
         // trukket ned av alt annet som deler ressursen.
         $solgtKart   = Booking::solgtePlasserFlere($oktIder);
+        $fase('solgt');
         $samlingKart = Samlinger::forOkter($oktIder);
+        $fase('samlinger');
 
         $ut = [];
         foreach ($kurs as $k) {
@@ -398,6 +424,7 @@ final class Katalog
 
         // Fokuspunktene: hvilken del av hvert bilde ramma skal sentreres paa.
 
+        $fase('visning');
         return $ut;
     }
 

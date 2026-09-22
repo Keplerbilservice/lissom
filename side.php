@@ -147,15 +147,29 @@ if (str_starts_with($sti, '/admin') || str_starts_with($sti, '/min-side')) {
     if (function_exists('logg')) {
         logg('SIDE', [
             'ba_om'   => $sti,
-            'fil'     => $erAdmin ? 'med admin' : 'uten admin',
+            'fil'     => ($erAdmin && (static function (string $s): bool { return $s === '/admin' || str_starts_with($s, '/admin/'); })((string) parse_url($sti ?: '/', PHP_URL_PATH)))
+                ? 'med admin' : 'uten admin',
             'cookie'  => ($_COOKIE[SIDE_COOKIE] ?? '') !== '' ? 'ja' : 'nei',
             'kom_fra' => (string) ($_SERVER['HTTP_REFERER'] ?? ''),
         ]);
     }
 }
 
+// Adminutgaven er 2,8 MB stoerre enn kundeutgaven, og adminskjermene finnes
+// bare under /admin. Fram til naa fikk en innlogget admin hele fila paa hver
+// eneste side — ogsaa naar han skulle booke et kurs.
+//
+// Eieren, 22. september 2026: «naar jeg skal booke kurs, saa gaar det veldig
+// lang tid ... det gaar 10-120 sekunder». Maalt paa hans maskin: dokumentet
+// 4 018 kB og 5,3 sekunder nedlasting, mot 1 175 kB for en kunde.
+//
+// Valget tas per sidelasting, saa /admin faar fortsatt alt. Gaar han inn i
+// admin fra en kundeside, laster appen sida paa nytt i stedet for aa bytte
+// skjerm — se synkAdresse() i lissom-2108.html. Uten det ville skjermen vaert
+// tom, for den er klippet bort her.
+$adminSide = (static function (string $s): bool { return $s === '/admin' || str_starts_with($s, '/admin/'); })((string) parse_url($sti ?: '/', PHP_URL_PATH));
 $html = false;
-if (!$erAdmin) {
+if (!$erAdmin || !$adminSide) {
     $html = @file_get_contents(SIDE_LETT);
 }
 if ($html === false) {

@@ -2593,7 +2593,14 @@ window.__resources = {
     obs = new MutationObserver(function () { if (klar()) bort(); });
     obs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-busy'] });
   } catch (e) { bort(); return; }
-  setTimeout(bort, 20000);
+  // Sikkerhetsnettet. En feil i appen skal aldri laase nettsida bak en gul
+  // flate — men naar appen bare er treg, er det nettopp da lastesida skal
+  // staa. Har runtime kommet i gang (#dc-root finnes), tegner den paa noe,
+  // og da ventes det lenger. Har den ikke det etter 20 sekunder, er noe galt.
+  setTimeout(function () {
+    if (document.getElementById('dc-root')) setTimeout(bort, 40000);
+    else bort();
+  }, 20000);
 })();
 </script>
 <x-dc>
@@ -26345,6 +26352,14 @@ class Component extends DCLogic {
     const sti = this.stiForSide();
     if (!sti) return;
     if (window.location.pathname.replace(/\/+$/, '') === sti.replace(/\/+$/, '')) return;
+    // Kundeutgaven har ikke adminskjermene i seg — de er klippet bort av
+    // bin/utenadmin.mjs. Byttet vi skjerm her, ville siden blitt staaende
+    // blank (maalt: 0 tegn). Da henter vi sida paa nytt i stedet, og
+    // serveren sender adminutgaven fordi adressen begynner med /admin.
+    if (sti.indexOf('/admin') === 0 && document.body.hasAttribute('data-lett-utgave')) {
+      window.location.href = sti + window.location.search;
+      return;
+    }
     // Loepenummeret er til lagene (se lagSynk): et nytt skjermbytte ligger
     // foran alt som var aapent paa den forrige skjermen.
     this._lagStabel = [];

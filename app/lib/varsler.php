@@ -593,7 +593,8 @@ final class Utsending
                         (string) $n['tekst'],
                         // Kolonna kom med migrasjon 062. Er den ikke der, er
                         // meldingen ren tekst, som den alltid har vaert.
-                        isset($n['html']) && trim((string) $n['html']) !== '' ? (string) $n['html'] : null
+                        isset($n['html']) && trim((string) $n['html']) !== '' ? (string) $n['html'] : null,
+                        (int) $n['id']
                     );
 
                 if ($ok) {
@@ -652,7 +653,7 @@ final class Utsending
         return true;
     }
 
-    private static function sendEpost(string $til, string $emne, string $tekst, ?string $html = null): bool
+    private static function sendEpost(string $til, string $emne, string $tekst, ?string $html = null, int $varselId = 0): bool
     {
         if (self::holdtTilbake('e-post', $til, $emne)) {
             return true;
@@ -675,6 +676,24 @@ final class Utsending
             'Content-Transfer-Encoding' => '8bit',
             'X-Mailer'                  => 'lissom.no',
         ];
+
+        // ── Én identitet per varsel ───────────────────────────────────
+        //
+        // Eieren, 22. september 2026, om «Ny paamelding»: «admin faar to
+        // eposter» — meldt mange ganger. Koen viste én rad, sendt én gang.
+        // Meldingene gikk ut UTEN Message-ID, saa mottakersystemet lagde en
+        // ny for hver kopi som kom fram (videresending, POP-henting, kopi i
+        // «Sendt» naar avsender og mottaker er samme konto). To kopier av
+        // samme melding sto da som to ulike e-poster.
+        //
+        // Med en fast Message-ID per rad i koen ser Gmail, Outlook og
+        // webmail at det er den samme, og viser den én gang. Og en melding
+        // uten Message-ID er i seg selv et spam-signal.
+        if ($varselId > 0) {
+            $domene = parse_url(Config::nettsted(), PHP_URL_HOST) ?: 'lissom.no';
+            $headere['Message-ID'] = '<varsel-' . $varselId . '.'
+                . substr(hash('sha256', $varselId . '|' . $til . '|' . $emne), 0, 12) . '@' . $domene . '>';
+        }
 
         // Ingen linjeskift i en headerverdi.
         //

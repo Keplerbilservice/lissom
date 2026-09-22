@@ -277,20 +277,27 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
             // filer i rota (uploads_…, assets_…); har kurset ingen, staar
             // appen med designlistas bilde, og det gjetter vi ikke paa.
             $forhaandsbilde = '';
+            if (!defined('NETT_ROT')) { define('NETT_ROT', __DIR__); }
+            require_once APP_DIR . '/nett/kort.php';
             $ider = json_decode((string) ($k['karusell_fra'] ?? ''), true);
             $forsteId = is_array($ider) ? (int) ($ider[0] ?? 0) : 0;
             if ($forsteId > 0) {
-                $forhaandsbilde = trim((string) DB::verdi(
-                    "SELECT bilde FROM courses WHERE id = :i AND status = 'publisert'",
+                $fra = DB::en(
+                    "SELECT tittel, bilde FROM courses WHERE id = :i AND status = 'publisert'",
                     ['i' => $forsteId]
-                ));
+                );
+                if ($fra !== null) {
+                    $forhaandsbilde = Kort::standardBilde(['bilde' => trim((string) ($fra['bilde'] ?? '')), 'tittel' => (string) $fra['tittel']]);
+                }
             }
             if ($forhaandsbilde === '') {
                 $liste = json_decode((string) ($k['bilder'] ?? ''), true);
                 $forhaandsbilde = is_array($liste) ? trim((string) ($liste[0] ?? '')) : '';
             }
             if ($forhaandsbilde === '') {
-                $forhaandsbilde = $bilde;
+                // Kursets eget hovedbilde, ellers designlistas for tittelen,
+                // ellers haandbygging.jpg — som appen (k.image) og kortet.
+                $forhaandsbilde = Kort::standardBilde(['bilde' => $bilde, 'tittel' => $navn]);
             }
             if (preg_match('~^[a-z0-9_.\-]+\.(jpe?g|png|webp)$~i', $forhaandsbilde) !== 1) {
                 $forhaandsbilde = '';

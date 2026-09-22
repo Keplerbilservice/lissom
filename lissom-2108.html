@@ -1375,16 +1375,10 @@ window.__resources = {
   #lx-laster .lx-cup { position: absolute; left: 50%; bottom: 38px; transform: translateX(-50%); width: 150px; height: 162px; }
   #lx-laster .lx-cupSvg { width: 100%; height: 100%; display: block; animation: lx-wobble .5s ease-in-out infinite; transform-origin: 50% 100%; }
   @keyframes lx-wobble { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.012); } }
-  /* Ett kast tar 1,1 s. Den forrige brukte 4,2, og da rakk de fleste aldri
-     aa se koppen bli ferdig for appen var tegnet. */
-  #lx-laster .lx-clay { animation: lx-throw 1.1s ease-in-out infinite; }
-  @keyframes lx-throw {
-    0% { d: path("M28,130 C24,114 32,100 44,98 C50,94 54,92 60,92 C66,92 70,94 76,98 C88,100 96,114 92,130 Z"); }
-    26% { d: path("M38,130 C34,114 36,86 44,70 C50,66 55,64 60,64 C65,64 70,66 76,70 C84,86 86,114 82,130 Z"); }
-    50% { d: path("M36,130 C34,100 36,58 38,36 C46,40 53,42 60,42 C67,42 74,40 82,36 C84,58 86,100 84,130 Z"); }
-    58% { d: path("M36,130 C31,118 28,104 28,92 C28,78 34,66 37,46 C38,40 38,36 36,33 C45,36 75,36 84,33 C82,36 82,40 83,46 C86,66 92,78 92,92 C92,104 89,118 84,130 Z"); }
-    68% { d: path("M35,130 C27,122 23,108 23,92 C23,74 32,64 36,48 C38,41 36,35 33,29 C42,32 78,32 87,29 C84,35 82,41 84,48 C88,64 97,74 97,92 C97,108 93,122 85,130 Z"); }
-    82%, 100% { d: path("M34,130 C24,124 18,110 18,92 C18,72 30,62 34,50 C36,42 34,34 30,26 C40,31 80,31 90,26 C86,34 84,42 86,50 C90,62 102,72 102,92 C102,110 96,124 86,130 Z"); } }
+  /* Ett kast tar 1,1 s — den foerste utgaven brukte 4,2, og da rakk de
+     fleste aldri aa se koppen bli ferdig for appen var tegnet. Formen
+     morfes av <animate> inne i SVG-en, ikke av CSS: «d: path()» i en
+     @keyframes virker bare i Chrome, saa paa iPhone sto klumpen stille. */
   #lx-laster .lx-rings line { stroke: rgba(43,14,7,.28); stroke-width: 2; stroke-linecap: round; animation: lx-rings 1.1s ease-in-out infinite; }
   #lx-laster .lx-rings line:nth-child(2) { animation-delay: .04s; stroke: rgba(255,222,120,.22); }
   #lx-laster .lx-rings line:nth-child(3) { animation-delay: .08s; }
@@ -2530,7 +2524,7 @@ window.__resources = {
     <div class="lx-scene">
       <div class="lx-wheel"></div>
       <div class="lx-spin"><i></i></div>
-      <div class="lx-cup"><svg class="lx-cupSvg" viewBox="0 0 120 130" aria-hidden="true"><defs><linearGradient id="lx-clayG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8A4527"/><stop offset=".45" stop-color="#6B3018"/><stop offset="1" stop-color="#4D1D12"/></linearGradient><clipPath id="lx-clayClip"><path class="lx-clay"/></clipPath></defs><path class="lx-clay" fill="url(#lx-clayG)"/><g clip-path="url(#lx-clayClip)"><g class="lx-rings"><line x1="22" y1="68" x2="98" y2="68"/><line x1="22" y1="88" x2="98" y2="88"/><line x1="22" y1="108" x2="98" y2="108"/></g><path class="lx-sheen" d="M34,36 C28,66 28,100 38,124 C42,126 46,126 45,122 C37,98 37,66 41,38 Z"/></g><ellipse class="lx-mouth" cx="60" cy="28" rx="27" ry="5"/></svg></div>
+      <div class="lx-cup"><svg class="lx-cupSvg" viewBox="0 0 120 130" aria-hidden="true"><defs><linearGradient id="lx-clayG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8A4527"/><stop offset=".45" stop-color="#6B3018"/><stop offset="1" stop-color="#4D1D12"/></linearGradient><clipPath id="lx-clayClip"><path class="lx-clay" d="M28,130 C25,122 24,112 28,105 C32,99 38,97 46,96 C46,95 47,94 48,94 C52,92 68,92 72,94 C73,94 74,95 76,96 C84,97 88,99 92,105 C96,112 95,122 92,130 Z"><animate attributeName="d" dur="1.1s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.26;0.5;0.58;0.68;0.82;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0 0 1 1" values="M28,130 C25,122 24,112 28,105 C32,99 38,97 46,96 C46,95 47,94 48,94 C52,92 68,92 72,94 C73,94 74,95 76,96 C84,97 88,99 92,105 C96,112 95,122 92,130 Z;M38,130 C35,120 34,104 38,92 C40,84 42,76 46,71 C47,69 48,68 50,67 C54,64 66,64 70,67 C72,68 73,69 74,71 C78,76 80,84 82,92 C86,104 85,120 82,130 Z;M36,130 C35,116 34,84 36,62 C37,52 37,42 38,37 C39,35 40,34 42,34 C48,37 72,37 78,34 C80,34 81,35 82,37 C83,42 83,52 84,62 C86,84 85,116 84,130 Z;M36,130 C31,118 28,104 28,92 C28,78 34,66 37,46 C38,40 38,36 36,33 C45,36 75,36 84,33 C82,36 82,40 83,46 C86,66 92,78 92,92 C92,104 89,118 84,130 Z;M35,130 C27,122 23,108 23,92 C23,74 32,64 36,48 C38,41 36,35 33,29 C42,32 78,32 87,29 C84,35 82,41 84,48 C88,64 97,74 97,92 C97,108 93,122 85,130 Z;M34,130 C24,124 18,110 18,92 C18,72 30,62 34,50 C36,42 34,34 30,26 C40,31 80,31 90,26 C86,34 84,42 86,50 C90,62 102,72 102,92 C102,110 96,124 86,130 Z;M34,130 C24,124 18,110 18,92 C18,72 30,62 34,50 C36,42 34,34 30,26 C40,31 80,31 90,26 C86,34 84,42 86,50 C90,62 102,72 102,92 C102,110 96,124 86,130 Z"/></path></clipPath></defs><path class="lx-clay" fill="url(#lx-clayG)" d="M28,130 C25,122 24,112 28,105 C32,99 38,97 46,96 C46,95 47,94 48,94 C52,92 68,92 72,94 C73,94 74,95 76,96 C84,97 88,99 92,105 C96,112 95,122 92,130 Z"><animate attributeName="d" dur="1.1s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.26;0.5;0.58;0.68;0.82;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0 0 1 1" values="M28,130 C25,122 24,112 28,105 C32,99 38,97 46,96 C46,95 47,94 48,94 C52,92 68,92 72,94 C73,94 74,95 76,96 C84,97 88,99 92,105 C96,112 95,122 92,130 Z;M38,130 C35,120 34,104 38,92 C40,84 42,76 46,71 C47,69 48,68 50,67 C54,64 66,64 70,67 C72,68 73,69 74,71 C78,76 80,84 82,92 C86,104 85,120 82,130 Z;M36,130 C35,116 34,84 36,62 C37,52 37,42 38,37 C39,35 40,34 42,34 C48,37 72,37 78,34 C80,34 81,35 82,37 C83,42 83,52 84,62 C86,84 85,116 84,130 Z;M36,130 C31,118 28,104 28,92 C28,78 34,66 37,46 C38,40 38,36 36,33 C45,36 75,36 84,33 C82,36 82,40 83,46 C86,66 92,78 92,92 C92,104 89,118 84,130 Z;M35,130 C27,122 23,108 23,92 C23,74 32,64 36,48 C38,41 36,35 33,29 C42,32 78,32 87,29 C84,35 82,41 84,48 C88,64 97,74 97,92 C97,108 93,122 85,130 Z;M34,130 C24,124 18,110 18,92 C18,72 30,62 34,50 C36,42 34,34 30,26 C40,31 80,31 90,26 C86,34 84,42 86,50 C90,62 102,72 102,92 C102,110 96,124 86,130 Z;M34,130 C24,124 18,110 18,92 C18,72 30,62 34,50 C36,42 34,34 30,26 C40,31 80,31 90,26 C86,34 84,42 86,50 C90,62 102,72 102,92 C102,110 96,124 86,130 Z"/></path><g clip-path="url(#lx-clayClip)"><g class="lx-rings"><line x1="22" y1="68" x2="98" y2="68"/><line x1="22" y1="88" x2="98" y2="88"/><line x1="22" y1="108" x2="98" y2="108"/></g><path class="lx-sheen" d="M34,36 C28,66 28,100 38,124 C42,126 46,126 45,122 C37,98 37,66 41,38 Z"/></g><ellipse class="lx-mouth" cx="60" cy="28" rx="27" ry="5"/></svg></div>
       <div class="lx-hand lx-l"></div><div class="lx-hand lx-r"></div>
     </div>
     <p class="lx-h1">Vi dreier opp siden din</p>
@@ -2547,6 +2541,19 @@ window.__resources = {
   // laase nettsida bak en gul flate.
   var el = document.getElementById('lx-laster');
   if (!el) return;
+  // Ber nettleseren om mindre bevegelse, staar koppen ferdig og stille.
+  // CSS-en gjor sitt i @media, men SMIL lar seg ikke stoppe derfra — den maa
+  // settes paa pause, og formen settes til den ferdige.
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var svg = el.querySelector('.lx-cupSvg');
+      if (svg && svg.pauseAnimations) svg.pauseAnimations();
+      var klump = el.querySelectorAll('.lx-clay');
+      for (var k = 0; k < klump.length; k++) {
+        klump[k].setAttribute('d', 'M34,130 C24,124 18,110 18,92 C18,72 30,62 34,50 C36,42 34,34 30,26 C40,31 80,31 90,26 C86,34 84,42 86,50 C90,62 102,72 102,92 C102,110 96,124 86,130 Z');
+      }
+    }
+  } catch (e) {}
   var ferdig = false;
   function bort() {
     if (ferdig) return;

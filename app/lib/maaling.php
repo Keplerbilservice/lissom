@@ -111,53 +111,78 @@ final class Maaling
         $NAVN = ['booking' => 'Kurs eller event', 'ordre' => 'Butikk', 'gavekort' => 'Gavekort', 'medlemskap' => 'Medlemskap'];
         $vare = $NAVN[$formal] ?? $formal;
         $belop = round(((int) $b['belop_ore']) / 100, 2);
-        [$epost, $telefon, $tittel] = self::hvem($formal, $betalingId);
-        if ($tittel !== '') {
-            $vare = $tittel;
+        $hvem = self::hvem($formal, $betalingId);
+        if ($hvem['tittel'] !== '') {
+            $vare = $hvem['tittel'];
         }
         $id = 'L' . $betalingId;
 
-        self::tilGa4($sporing, $id, $belop, $formal, $vare, $epost, $telefon);
-        self::tilMeta($sporing, $id, $belop, $formal, $vare, $epost, $telefon);
+        self::tilGa4($sporing, $id, $belop, $formal, $vare, $hvem);
+        self::tilMeta($sporing, $id, $belop, $formal, $vare, $hvem);
     }
 
     /**
      * Hvem som kjøpte, og hva. Bare til hashing — sendes aldri i klartekst.
-     * @return array{0:string,1:string,2:string}
+     *
+     * Jo mer Meta og Google kan kjenne kjøperen igjen på, jo flere kjøp blir
+     * tilskrevet annonsen (Metas «hendelsesmatchkvalitet»): e-post og telefon
+     * teller mest, så navn, land og en kunde-id. Alt hashes før det sendes.
+     *
+     * @return array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string}
      */
     private static function hvem(string $formal, int $betalingId): array
     {
-        $epost = '';
-        $telefon = '';
-        $tittel = '';
+        $ut = ['epost' => '', 'telefon' => '', 'navn' => '', 'medlem' => 0, 'tittel' => '', 'slug' => ''];
+        $r = null;
         if ($formal === 'booking') {
             $r = DB::en(
-                'SELECT COALESCE(m.epost, b.gjest_epost) AS epost, COALESCE(m.telefon, b.gjest_telefon) AS telefon, c.tittel
+                'SELECT COALESCE(m.epost, b.gjest_epost) AS epost, COALESCE(m.telefon, b.gjest_telefon) AS telefon,
+                        COALESCE(NULLIF(m.navn, \'\'), b.gjest_navn) AS navn, b.member_id AS medlem, c.tittel, c.slug
                    FROM bookings b
                    JOIN courses c ON c.id = b.course_id
               LEFT JOIN members m ON m.id = b.member_id
                   WHERE b.payment_id = :p',
                 ['p' => $betalingId]
             );
-            if ($r !== null) {
-                [$epost, $telefon, $tittel] = [(string) ($r['epost'] ?? ''), (string) ($r['telefon'] ?? ''), (string) ($r['tittel'] ?? '')];
-            }
         } elseif ($formal === 'ordre') {
             $r = DB::en(
-                'SELECT COALESCE(m.epost, o.kunde_epost) AS epost, COALESCE(m.telefon, o.kunde_telefon) AS telefon
+                'SELECT COALESCE(m.epost, o.kunde_epost) AS epost, COALESCE(m.telefon, o.kunde_telefon) AS telefon,
+                        COALESCE(NULLIF(m.navn, \'\'), o.kunde_navn) AS navn, o.member_id AS medlem
                    FROM orders o LEFT JOIN members m ON m.id = o.member_id WHERE o.payment_id = :p',
                 ['p' => $betalingId]
             );
-            if ($r !== null) {
-                [$epost, $telefon] = [(string) ($r['epost'] ?? ''), (string) ($r['telefon'] ?? '')];
-            }
         } elseif ($formal === 'gavekort') {
-            $r = DB::en('SELECT kjoper_epost FROM gift_cards WHERE payment_id = :p', ['p' => $betalingId]);
-            if ($r !== null) {
-                $epost = (string) ($r['kjoper_epost'] ?? '');
-            }
+            $r = DB::en('SELECT kjoper_epost AS epost, kjoper_navn AS navn FROM gift_cards WHERE payment_id = :p', ['p' => $betalingId]);
+        } elseif ($formal === 'medlemskap') {
+            $r = DB::en(
+                'SELECT m.epost, m.telefon, m.navn, m.id AS medlem
+                   FROM payments p JOIN members m ON m.id = p.member_id WHERE p.id = :p',
+                ['p' => $betalingId]
+            );
         }
-        return [$epost, $telefon, $tittel];
+        if ($r !== null) {
+            foreach (['epost', 'telefon', 'navn', 'tittel', 'slug'] as $k) {
+                $ut[$k] = (string) ($r[$k] ?? '');
+            }
+            $ut['medlem'] = (int) ($r['medlem'] ?? 0);
+        }
+        return $ut;
+    }
+
+    /**
+     * Fornavn og etternavn, slik Meta og Google vil ha dem før hashing: små
+     * bokstaver, uten mellomrom rundt. Siste ord er etternavnet.
+     * @return array{0:string,1:string}
+     */
+    private static function navnDeler(string $navn): array
+    {
+        $deler = preg_split('~\s+~', mb_strtolower(trim($navn))) ?: [];
+        $deler = array_values(array_filter($deler, static fn(string $d): bool => $d !== ''));
+        if (count($deler) < 2) {
+            return [$deler[0] ?? '', ''];
+        }
+        $etter = array_pop($deler);
+        return [implode(' ', $deler), $etter];
     }
 
     private static function gaId(): string
@@ -173,7 +198,8 @@ final class Maaling
     }
 
     /** GA4 Measurement Protocol: purchase med samme transaction_id som nettleseren. */
-    private static function tilGa4(array $sporing, string $id, float $belop, string $formal, string $vare, string $epost, string $telefon): void
+    /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
+    private static function tilGa4(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): void
     {
         $gaId = self::gaId();
         $hemmelighet = trim((string) Config::hent('maal_ga_api_secret', ''));
@@ -199,13 +225,21 @@ final class Maaling
         // Brukeroppgitte data, hashet — samme som gtag('set','user_data') i
         // nettleseren, så Google kan kjenne igjen kjøperen på tvers av enheter.
         $ud = [];
-        $e = self::normEpost($epost);
+        $e = self::normEpost($hvem['epost']);
         if ($e !== '') {
             $ud['sha256_email_address'] = hash('sha256', $e);
         }
-        $t = self::e164($telefon);
+        $t = self::e164($hvem['telefon']);
         if ($t !== '') {
             $ud['sha256_phone_number'] = hash('sha256', $t);
+        }
+        [$fornavn, $etternavn] = self::navnDeler($hvem['navn']);
+        if ($fornavn !== '' && $etternavn !== '') {
+            $ud['address'] = [[
+                'sha256_first_name' => hash('sha256', $fornavn),
+                'sha256_last_name'  => hash('sha256', $etternavn),
+                'country'           => 'NO',
+            ]];
         }
         if ($ud !== []) {
             $kropp['user_data'] = $ud;
@@ -220,7 +254,8 @@ final class Maaling
     }
 
     /** Meta Conversions API: Purchase med event_id lik pikselens eventID. */
-    private static function tilMeta(array $sporing, string $id, float $belop, string $formal, string $vare, string $epost, string $telefon): void
+    /** @param array{epost:string,telefon:string,navn:string,medlem:int,tittel:string,slug:string} $hvem */
+    private static function tilMeta(array $sporing, string $id, float $belop, string $formal, string $vare, array $hvem): void
     {
         $pikselId = self::metaId();
         $token = trim((string) Config::hent('maal_meta_token', ''));
@@ -235,20 +270,34 @@ final class Maaling
         if (!empty($sporing['fbc'])) {
             $bruker['fbc'] = (string) $sporing['fbc'];
         }
-        $e = self::normEpost($epost);
+        $e = self::normEpost($hvem['epost']);
         if ($e !== '') {
             $bruker['em'] = [hash('sha256', $e)];
         }
-        $t = self::e164($telefon);
+        $t = self::e164($hvem['telefon']);
         if ($t !== '') {
             $bruker['ph'] = [hash('sha256', ltrim($t, '+'))];
+        }
+        [$fornavn, $etternavn] = self::navnDeler($hvem['navn']);
+        if ($fornavn !== '') {
+            $bruker['fn'] = [hash('sha256', $fornavn)];
+        }
+        if ($etternavn !== '') {
+            $bruker['ln'] = [hash('sha256', $etternavn)];
+        }
+        $bruker['country'] = [hash('sha256', 'no')];
+        if ($hvem['medlem'] > 0) {
+            // Kunde-id: medlemsnummeret, hashet — samme kjøper på tvers av
+            // enheter, uten at nummeret forlater serveren.
+            $bruker['external_id'] = [hash('sha256', 'lissom-medlem-' . $hvem['medlem'])];
         }
         $hendelse = [
             'event_name'       => 'Purchase',
             'event_time'       => time(),
             'event_id'         => $id,
             'action_source'    => 'website',
-            'event_source_url' => Config::nettsted() . '/',
+            // Kurssida for en booking — samme adresse som pikselens ViewContent.
+            'event_source_url' => Config::nettsted() . ($formal === 'booking' && $hvem['slug'] !== '' ? '/kurs/' . $hvem['slug'] : '/'),
             'user_data'        => $bruker,
             'custom_data'      => [
                 'value'        => $belop,

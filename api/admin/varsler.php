@@ -139,6 +139,32 @@ if (Foresporsel::tekst('stopp') === 'ja') {
         : $antall . ' melding' . ($antall === 1 ? '' : 'er') . ' ble avbrutt og sendes ikke.';
 }
 
+// ── Hva som faktisk gikk ut for én hendelse ─────────────────────────
+//
+// Eieren, 22. september 2026: «jeg fikk en epost med bekreftelse, mens
+// admin får to eposter» — meldt mange ganger. Uten aa se koen er det bare
+// gjetting. ?ref=booking&id=23 lister alt som ble lagt i koen for den
+// hendelsen: kanal, mottaker, mal, emne, status og tidspunkt.
+$refType = trim((string) Foresporsel::tekst('ref'));
+$refId   = (int) Foresporsel::tekst('id');
+if ($refType !== '' && $refId > 0) {
+    $svar['hendelse'] = array_map(static fn(array $r): array => [
+        'id'       => (int) $r['id'],
+        'kanal'    => (string) $r['kanal'],
+        'mottaker' => (string) $r['mottaker'],
+        'mal'      => (string) ($r['mal'] ?? ''),
+        'emne'     => (string) ($r['emne'] ?? ''),
+        'status'   => (string) $r['status'],
+        'forsok'   => (int) $r['forsok'],
+        'feil'     => (string) ($r['feilmelding'] ?? ''),
+        'laget'    => (string) $r['created_at'],
+        'sendt'    => (string) ($r['sendt_at'] ?? ''),
+    ], DB::alle(
+        'SELECT * FROM notifications WHERE ref_type = :t AND ref_id = :i ORDER BY id',
+        ['t' => $refType, 'i' => $refId]
+    ));
+}
+
 $svar['ko'] = [
     'venter' => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko'"),
     'sendt'  => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'sendt'"),

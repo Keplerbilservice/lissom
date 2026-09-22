@@ -539,11 +539,14 @@ final class Nett
             . '<meta property="og:image:alt" content="' . $e($ogAlt) . '">' . "\n"
             . '<meta name="twitter:card" content="summary_large_image">' . "\n"
             . $ldTekst
+            // Bare fontene over folden forhaandslastes: overskrifta (Bitter 800
+            // + 600 kursiv) og ingressen (Alegreya Sans 400). De to andre
+            // (Alegreya 700, Bitter 700) hentes naar CSS-en finner dem — de
+            // konkurrerte med selve sida om linja paa treg 4G. PageSpeed 22.
+            // september 2026; nett.css har font-display: swap fra samme dag.
             . '<link rel="preload" href="/fonts/bitter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>' . "\n"
             . '<link rel="preload" href="/fonts/alegreya-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>' . "\n"
             . '<link rel="preload" href="/fonts/bitter-latin-600-italic.woff2" as="font" type="font/woff2" crossorigin>' . "\n"
-            . '<link rel="preload" href="/fonts/alegreya-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>' . "\n"
-            . '<link rel="preload" href="/fonts/bitter-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>' . "\n"
             . "<style>\n" . self::css() . "\n</style>\n"
             . (string) ($side['hode'] ?? '')
             . "</head>\n<body>\n"

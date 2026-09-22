@@ -1355,6 +1355,61 @@ window.__resources = {
     .lx-ton-inn { animation: none; }
   }
 
+  /* ── Lastesiden ─────────────────────────────────────────────────────
+     Eierens egen tegning (Claude Design, 22. september 2026). Staar
+     foerst i <body>, utenfor <x-dc>, saa den er paa skjermen mens
+     nettleseren leser resten av fila og runtime kompilerer. Skriptet rett
+     under den fjerner den naar en ekte skjerm finnes — «Henter kurset»
+     (aria-busy) teller ikke. Fontene og logoen er nettsidas egne. */
+  #lx-laster { position: fixed; inset: 0; z-index: 2147483000; background: #FFCF38; display: flex; align-items: center; justify-content: center; overflow: hidden; font-family: 'Alegreya Sans', sans-serif; transition: opacity .35s ease; }
+  #lx-laster.lx-ut { opacity: 0; pointer-events: none; }
+  #lx-laster .lx-wrap { display: flex; flex-direction: column; align-items: center; gap: 26px; text-align: center; padding: 24px; }
+  #lx-laster .lx-mark { height: 96px; width: auto; display: block; }
+  #lx-laster .lx-scene { width: 220px; height: 200px; position: relative; }
+  #lx-laster .lx-wheel { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); width: 170px; height: 26px; background: #4D1D12; border-radius: 50%/50%; }
+  #lx-laster .lx-wheel::after { content: ""; position: absolute; inset: 4px 14px; border-radius: 50%/50%; background: radial-gradient(ellipse at 50% 40%, #6B3320, #4D1D12 70%); }
+  #lx-laster .lx-spin { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); width: 130px; height: 14px; border-radius: 50%/50%; overflow: hidden; }
+  #lx-laster .lx-spin i { position: absolute; top: 6px; left: 0; width: 200%; height: 2px; background: repeating-linear-gradient(90deg, rgba(246,230,206,.5) 0 14px, transparent 14px 34px); animation: lx-belt .5s linear infinite; }
+  @keyframes lx-belt { to { transform: translateX(-34px); } }
+  #lx-laster .lx-cup { position: absolute; left: 50%; bottom: 38px; transform: translateX(-50%); width: 120px; height: 130px; }
+  #lx-laster .lx-cupSvg { width: 100%; height: 100%; display: block; animation: lx-wobble .5s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes lx-wobble { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.012); } }
+  #lx-laster .lx-clay { animation: lx-throw 4.2s ease-in-out infinite; }
+  @keyframes lx-throw {
+    0% { d: path("M28,130 C24,114 32,100 44,98 C50,94 54,92 60,92 C66,92 70,94 76,98 C88,100 96,114 92,130 Z"); }
+    24% { d: path("M40,130 C36,116 38,92 46,80 C51,78 55,76 60,76 C65,76 69,78 74,80 C82,92 84,116 80,130 Z"); }
+    46% { d: path("M36,130 C35,104 37,70 40,52 C47,56 53,58 60,58 C67,58 73,56 80,52 C83,70 85,104 84,130 Z"); }
+    64% { d: path("M32,130 C26,110 26,74 30,50 C40,55 50,57 55,57 C68,57 78,55 84,50 C88,74 88,110 82,130 Z"); }
+    80%, 100% { d: path("M24,130 C22,108 22,76 22,58 C22,53 30,52 55,52 C75,52 86,53 86,58 C86,76 88,108 86,130 Z"); } }
+  #lx-laster .lx-solid { fill: #4D1D12; animation: lx-throw 4.2s ease-in-out infinite, lx-solidify 4.2s ease-in-out infinite; }
+  @keyframes lx-solidify { 0%, 72% { opacity: 0; } 84%, 100% { opacity: 1; } }
+  #lx-laster .lx-rings line { stroke: rgba(43,14,7,.28); stroke-width: 2; stroke-linecap: round; animation: lx-rings 4.2s ease-in-out infinite; }
+  #lx-laster .lx-rings line:nth-child(2) { animation-delay: .12s; stroke: rgba(255,222,120,.22); }
+  #lx-laster .lx-rings line:nth-child(3) { animation-delay: .24s; }
+  @keyframes lx-rings { 0%, 16% { transform: translateY(46px); opacity: 0; } 38% { opacity: 1; } 66% { transform: translateY(0); opacity: 1; } 80%, 100% { transform: translateY(0); opacity: 0; } }
+  #lx-laster .lx-sheen { fill: rgba(255,222,140,.28); animation: lx-sheen 4.2s ease-in-out infinite; }
+  @keyframes lx-sheen { 0%, 38% { opacity: 0; } 58%, 70% { opacity: 1; } 82%, 100% { opacity: 0; } }
+  #lx-laster .lx-mouth { fill: rgba(20,6,2,.5); animation: lx-mouth 4.2s ease-in-out infinite; }
+  @keyframes lx-mouth { 0%, 36% { opacity: 0; transform: translateY(20px) scale(.6); } 58%, 70% { opacity: 1; transform: translateY(0) scale(1); } 82%, 100% { opacity: 0; transform: translateY(0) scale(1); } }
+  #lx-laster .lx-handle { fill: none; stroke: #4D1D12; stroke-width: 9; transform-box: fill-box; transform-origin: 0% 50%; animation: lx-handle 4.2s ease-in-out infinite; }
+  @keyframes lx-handle { 0%, 76% { transform: scale(0); opacity: 0; } 86% { transform: scale(1.08); opacity: 1; } 92%, 100% { transform: scale(1); opacity: 1; } }
+  #lx-laster .lx-hand { position: absolute; bottom: 64px; width: 30px; height: 44px; border: 6px solid #4D1D12; border-radius: 50%; border-top-color: transparent; border-bottom-color: transparent; opacity: .9; animation: lx-hands 4.2s ease-in-out infinite; }
+  #lx-laster .lx-hand.lx-l { left: 26px; border-right-color: transparent; transform: rotate(-12deg); }
+  #lx-laster .lx-hand.lx-r { right: 26px; border-left-color: transparent; transform: rotate(12deg); }
+  @keyframes lx-hands { 0% { translate: 0 26px; } 30% { translate: 0 6px; } 58% { translate: 0 -4px; } 78%, 100% { translate: 0 30px; opacity: 0; } }
+  #lx-laster .lx-h1 { font: 800 22px/1.2 'Bitter', serif; color: #4D1D12; margin: 0; letter-spacing: .01em; }
+  #lx-laster .lx-msg { font: 500 14px/1.5 'Alegreya Sans', sans-serif; color: #4D1D12; margin: 0; letter-spacing: .06em; text-transform: uppercase; }
+  #lx-laster .lx-msg span { display: inline-block; animation: lx-dots 1.5s steps(4, end) infinite; overflow: hidden; vertical-align: bottom; white-space: nowrap; width: 0; }
+  @keyframes lx-dots { to { width: 1.3em; } }
+  @media (prefers-reduced-motion: reduce) {
+    #lx-laster .lx-clay, #lx-laster .lx-solid, #lx-laster .lx-rings line, #lx-laster .lx-sheen, #lx-laster .lx-mouth, #lx-laster .lx-handle, #lx-laster .lx-cupSvg, #lx-laster .lx-hand, #lx-laster .lx-spin i, #lx-laster .lx-msg span { animation: none; }
+    #lx-laster .lx-clay { d: path("M24,130 C22,108 22,76 22,58 C22,53 30,52 55,52 C75,52 86,53 86,58 C86,76 88,108 86,130 Z"); }
+    #lx-laster .lx-solid, #lx-laster .lx-handle { opacity: 1; }
+    #lx-laster .lx-handle { transform: scale(1); }
+    #lx-laster .lx-mouth, #lx-laster .lx-sheen, #lx-laster .lx-rings line { opacity: 0; }
+    #lx-laster .lx-msg span { width: 1.3em; }
+  }
+
   @keyframes lx-kopp-snurr {
     0%   { transform: perspective(600px) rotateY(0deg); }
     40%  { transform: perspective(600px) rotateY(720deg); }
@@ -2469,6 +2524,52 @@ window.__resources = {
 </style>
 </head>
 <body data-lett-utgave>
+<!-- Lastesiden: eierens tegning, se stilen «Lastesiden» i <head>. Teksten er hans. -->
+<div id="lx-laster" aria-hidden="true">
+  <div class="lx-wrap">
+    <img class="lx-mark" src="logo-lockup.svg" alt="" width="425" height="232">
+    <div class="lx-scene">
+      <div class="lx-wheel"></div>
+      <div class="lx-spin"><i></i></div>
+      <div class="lx-cup"><svg class="lx-cupSvg" viewBox="0 0 120 130" aria-hidden="true"><defs><linearGradient id="lx-clayG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8A4527"/><stop offset=".45" stop-color="#6B3018"/><stop offset="1" stop-color="#4D1D12"/></linearGradient><clipPath id="lx-clayClip"><path class="lx-clay"/></clipPath></defs><circle class="lx-handle" cx="96" cy="78" r="13"/><path class="lx-clay" fill="url(#lx-clayG)"/><g clip-path="url(#lx-clayClip)"><g class="lx-rings"><line x1="30" y1="70" x2="90" y2="70"/><line x1="30" y1="86" x2="90" y2="86"/><line x1="30" y1="104" x2="90" y2="104"/></g><path class="lx-sheen" d="M40,50 C36,72 36,102 42,124 C46,126 50,126 49,122 C43,100 43,74 47,52 Z"/></g><path class="lx-clay lx-solid"/><ellipse class="lx-mouth" cx="60" cy="45" rx="20" ry="5"/></svg></div>
+      <div class="lx-hand lx-l"></div><div class="lx-hand lx-r"></div>
+    </div>
+    <p class="lx-h1">Vi dreier opp siden din</p>
+    <p class="lx-msg">Et øyeblikk<span>…</span></p>
+  </div>
+</div>
+<script>
+(function () {
+  // Tas bort naar appen har tegnet en ekte skjerm: et [data-screen-label]
+  // (alle skjermene har det, ogsaa admin) som ikke er «Henter kurset»
+  // (aria-busy). Bare under #dc-root — det runtime tegner. Den raa malen i
+  // <x-dc> har de samme attributtene, men er ikke tegnet (display:none). Toner ut paa .35 s, saa fjernes den.
+  // Sikkerhetsnett: uansett borte etter 20 s — en feil i appen skal aldri
+  // laase nettsida bak en gul flate.
+  var el = document.getElementById('lx-laster');
+  if (!el) return;
+  var ferdig = false;
+  function bort() {
+    if (ferdig) return;
+    ferdig = true;
+    if (obs) obs.disconnect();
+    el.classList.add('lx-ut');
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
+  }
+  function klar() {
+    var alle = document.querySelectorAll('#dc-root [data-screen-label]');
+    for (var i = 0; i < alle.length; i++) { if (!alle[i].hasAttribute('aria-busy')) return true; }
+    return false;
+  }
+  var obs = null;
+  if (klar()) { bort(); return; }
+  try {
+    obs = new MutationObserver(function () { if (klar()) bort(); });
+    obs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-busy'] });
+  } catch (e) { bort(); return; }
+  setTimeout(bort, 20000);
+})();
+</script>
 <x-dc>
 <helmet>
   <!-- Stilarkene ligger inne i <head>, lagt der av bin/inline-css.php.

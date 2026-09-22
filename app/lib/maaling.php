@@ -346,7 +346,12 @@ final class Maaling
         $kropp = http_build_query($felt);
         $svar = http_kall($url, 'POST', $kropp, ['Content-Type: application/x-www-form-urlencoded'], 6);
         if (self::$test !== null) {
-            self::$test['svar'] = ['status' => (int) $svar['status'], 'kropp' => mb_substr((string) $svar['kropp'], 0, 500)];
+            self::$test['svar'] = [
+                'status' => (int) $svar['status'],
+                'kropp'  => mb_substr((string) $svar['kropp'], 0, 500),
+                // Det som gikk ut, uten verdier: adressen og hvilke felter.
+                'sendt'  => ['url' => $hendelse['event_source_url'], 'felter' => array_keys($bruker)],
+            ];
         }
         if ($svar['status'] < 200 || $svar['status'] >= 300) {
             logg_feil('Meta svarte ' . $svar['status'] . ' på kjøp ' . $id . ': ' . mb_substr($svar['kropp'], 0, 300));

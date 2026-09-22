@@ -23790,6 +23790,23 @@ window.__resources = {
 <script type="text/x-dc" data-dc-script data-props="{&quot;visGronnPrikk&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Innhold&quot;},&quot;timestatus&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Nesten tom&quot;,&quot;Tom&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Min side&quot;}}">
 const FOTO = 'assets_photos_';
 
+// Norsk tid for et Date-objekt, som lokal Date (aar/maaned/dag/time i
+// Oslo). Tilsvarer «new Date(d.toLocaleString('en-US', { timeZone:
+// 'Europe/Oslo' }))», men uten aa lage en ny Intl-formatter per kall —
+// det kostet ~0,4 ms per dato, og kalenderen gjorde det for hver okt i
+// katalogen (700+) for hver tegning. Maalt 22. september 2026: 302 ms
+// selvtid i iOslo per oppstart paa PC, ganger fire paa mobil.
+const OSLO_FORMAT = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Oslo', hourCycle: 'h23',
+  year: 'numeric', month: 'numeric', day: 'numeric',
+  hour: 'numeric', minute: 'numeric', second: 'numeric',
+});
+function iOsloTid(d) {
+  const p = {};
+  for (const del of OSLO_FORMAT.formatToParts(d)) p[del.type] = del.value;
+  return new Date(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+}
+
 const SIDEINNHOLD = {
   // Blokkene staar i samme rekkefolge som seksjonene paa sida, og feltene
   // er de som faktisk finnes der. Lista beskrev tidligere en forside som var
@@ -24990,23 +25007,12 @@ class Component extends DCLogic {
   // er det norske: uke 1 er den med forste torsdag i januar.
   ukeFraKatalog(nr) {
     const DAG = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
-    const iOslo = (d) => new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
-
-    const isoUke = (d) => {
-      const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
-      const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
-      return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
-    };
-
     const dager = DAG.map(d => ({ dag: d, dato: '', poster: [] }));
 
-    (this.state.katalog || []).forEach(k => {
-      if (!this.visesIKalenderen(k)) return;
-      (k.datoer || []).forEach(o => {
-        if (!o.startUtc) return;
-        const d = iOslo(new Date(String(o.startUtc).replace(' ', 'T') + 'Z'));
-        if (isoUke(d) !== nr) return;
+    // Oktene er alt regnet om til norsk tid og uketall — én gang per
+    // katalog (kalenderIndeks), ikke for hver tegning.
+    this.kalenderIndeks().forEach(({ k, o, d, uke }) => {
+        if (uke !== nr) return;
         const i = (d.getDay() + 6) % 7;
         const pad = (n) => String(n).padStart(2, '0');
         dager[i].dato = String(d.getDate());
@@ -25024,7 +25030,6 @@ class Component extends DCLogic {
           oktId: o.oktId || null,
           dato: o.dato || null,
         });
-      });
     });
 
     // Datoer ogsaa paa de tomme dagene, ellers staar halve uka uten tall.
@@ -25053,19 +25058,44 @@ class Component extends DCLogic {
 
   /** Ukenumrene framover som har minst én okt, i rekkefolge. */
   okterEtterUke(fra) {
-    const naa = new Date();
+    const naa = Date.now();
     const uker = [];
-    (this.state.katalog || []).forEach(k => {
+    this.kalenderIndeks().forEach(({ utc, uke }) => {
+      if (utc < naa) return;
+      if (uke >= fra && uker.indexOf(uke) === -1) uker.push(uke);
+    });
+    return uker.sort((a, b) => a - b);
+  }
+
+  /**
+   * Oktene i katalogen som hoerer hjemme i kalenderen, hver med norsk tid
+   * og ISO-uke — regnet én gang per katalog. Katalogen byttes ut som helhet
+   * naar den hentes (hentKatalog → setState), saa referansen er noekkelen.
+   *
+   * Foer regnet ukeFraKatalog() og okterEtterUke() dette paa nytt for hver
+   * tegning, med et toLocaleString-kall per okt. Med 700+ okter i
+   * katalogen var det 0,8 s per tegning paa PC — og fire ganger det paa
+   * mobil. PageSpeed 22. september 2026.
+   *
+   * @return {Array<{k:object,o:object,utc:number,d:Date,uke:number}>}
+   */
+  kalenderIndeks() {
+    const katalog = this.state.katalog || [];
+    if (this._kalIndeks && this._kalIndeksKatalog === katalog) return this._kalIndeks;
+    const ut = [];
+    katalog.forEach(k => {
       if (!this.visesIKalenderen(k)) return;
       (k.datoer || []).forEach(o => {
         if (!o.startUtc) return;
-        const d = new Date(String(o.startUtc).replace(' ', 'T') + 'Z');
-        if (d < naa) return;
-        const u = this.isoUke(new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' })));
-        if (u >= fra && uker.indexOf(u) === -1) uker.push(u);
+        const raa = new Date(String(o.startUtc).replace(' ', 'T') + 'Z');
+        if (isNaN(raa.getTime())) return;
+        const d = iOsloTid(raa);
+        ut.push({ k, o, utc: raa.getTime(), d, uke: this.isoUke(d) });
       });
     });
-    return uker.sort((a, b) => a - b);
+    this._kalIndeks = ut;
+    this._kalIndeksKatalog = katalog;
+    return ut;
   }
 
   isoUke(d) {
@@ -25077,7 +25107,7 @@ class Component extends DCLogic {
 
   ukeNaa() {
     if (!this.erPublisert()) return 35;
-    const naa = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    const naa = iOsloTid(new Date());
     const t = new Date(Date.UTC(naa.getFullYear(), naa.getMonth(), naa.getDate()));
     t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
     const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
@@ -25085,7 +25115,7 @@ class Component extends DCLogic {
   }
 
   mandagIUke(nr) {
-    const naa = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    const naa = iOsloTid(new Date());
     const jan4 = new Date(naa.getFullYear(), 0, 4);
     const mandagUke1 = new Date(jan4);
     mandagUke1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
@@ -25107,7 +25137,7 @@ class Component extends DCLogic {
   osloTid(utc) {
     const d = new Date(String(utc).replace(' ', 'T') + 'Z');
     if (isNaN(d.getTime())) return null;
-    return new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    return iOsloTid(d);
   }
 
   /**

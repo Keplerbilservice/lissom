@@ -85,14 +85,16 @@ if (Foresporsel::tekst('handling') === 'trekk' || ($_POST['handling'] ?? '') ===
 
 // ---- legg ut en vare
 //
-// Bare aarsmedlemmene. Eieren, 12. september 2026: «jeg vil at det er kun
-// års medlemmer som skal få denne». Nettsida skjuler «Selg» for de andre,
-// men et skjema kan sendes utenom skjermen — saa sperra staar her ogsaa.
-// Kjennes igjen paa plan-navnet, slik det staar paa medlemmet. Admin er
-// innenfor som ellers.
-if ((string) ($medlem['rolle'] ?? '') !== 'admin'
-    && trim((string) ($medlem['medlemskap_type'] ?? '')) !== 'Årsmedlemskap') {
-    Svar::feil('Salg av egne arbeider er for årsmedlemmer.', 403);
+// Alle med et loepende medlemskap. Eieren, 22. september 2026: «Jeg vil at
+// alle medlemskap skal faa denne muligheten, men ikke proev lissom.»
+//
+// Det sto «kun aarsmedlemmer» her foer — eieren, 12. september 2026 — og
+// regelen gikk etter plan-navnet. Naa er den ett sted, i
+// Medlemskap::kanSelge(), og gaar etter om planen er engangs. Nettsida
+// skjuler «Selg» for dem som ikke har den, men et skjema kan sendes utenom
+// skjermen — saa sperra staar her ogsaa.
+if (!Medlemskap::kanSelge($medlem)) {
+    Svar::feil('Salg av egne arbeider krever et løpende medlemskap.', 403);
 }
 
 // Skjemaet sendes som multipart fordi det har med et bilde. Feltene ligger

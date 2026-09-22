@@ -50,6 +50,11 @@ Svar::json([
     // staa tydelig at det bor settes.
     'adminUtenPassord'   => Sesjon::adminUtenPassord(),
     'erMedlem'       => er_aktivt_medlem($m),
+    // Faar hen selge egne arbeider? Regelen bor i Medlemskap::kanSelge() og
+    // skal ikke skrives to ganger. Skjermen sammenlignet plan-navn paa egen
+    // haand — «=== 'Årsmedlemskap'» — og da var det to utgaver av samme
+    // regel, med hver sin maate aa ta feil paa. Naa spor den serveren.
+    'kanSelge'       => Medlemskap::kanSelge($m),
     'soknadStatus'   => $soknad ? (string) $soknad['status'] : null,
     'medlem'    => [
         'id'        => (int) $m['id'],

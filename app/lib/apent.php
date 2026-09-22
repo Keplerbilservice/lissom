@@ -29,8 +29,27 @@ declare(strict_types=1);
 
 final class Apent
 {
-    /** Hvor mange dager fram vi svarer for. */
-    public const DAGER_FRAM = 14;
+    /**
+     * Hvor mange dager fram vi svarer for.
+     *
+     * Sto paa 14 til 22. september 2026. Da lagde den 428 aapne plasser paa
+     * Paint on Pots — 428 av 601 oekter i hele katalogen — og det er de
+     * oektene som gjor utregningen av ledige plasser dyr: den kobler hver
+     * oekt mot alle andre som deler ressurs i samme tidsrom, og den
+     * koblingen vokser med kvadratet.
+     *
+     * Maalt paa lissom.no: api/kurs.php brukte 290–456 ms, og 258–406 ms av
+     * dem gikk til akkurat den utregningen. JSON-kodingen av hele svaret
+     * tok 1,5 ms til sammenlikning.
+     *
+     * Sju dager halverer antallet. Eieren valgte det 22. september 2026,
+     * framfor aa roere selve spoerringen — den avgjor om et kurs er fullt,
+     * og har kostet nok feil alt.
+     *
+     * Plassene i dag 8–14 forsvinner av seg selv neste gang
+     * leggUtPaaApneTider() gaar. De som er booket blir staaende.
+     */
+    public const DAGER_FRAM = 7;
 
     /**
      * Hvor lenge én plass varer.

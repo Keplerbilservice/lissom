@@ -121,8 +121,47 @@ final class DB
      * koden en tabell som migrasjonen ikke har laget ennaa, staar begge og
      * venter paa hverandre — og eieren er laast ute. Derfor spor vi.
      */
+    /**
+     * Hele skjemaet, i én sporring.
+     *
+     * harTabell() og harKolonne() spurte information_schema hver for seg, og
+     * svaret ble husket til forespoerselen var over. Én kolonne = én tur til
+     * basen. Katalogen alene ber om 29 kolonner og 9 tabeller — 38 turer for
+     * aa tegne forsida, til noe som ikke endrer seg mellom utrullinger.
+     *
+     * Maalt 22. september 2026: api/kurs.php brukte 0,43–0,69 s varm og
+     * 2,5–2,9 s kald, for 17 kB JSON. Statiske filer fra samme server gaar
+     * paa 0,05 s, saa det er ikke linja.
+     *
+     * Naa leses alle tabeller og kolonner én gang, foerste gang noen spor.
+     * Svaret er det samme; det er antall turer som gaar fra 38 til 1.
+     */
+    private static function lesSkjema(): void
+    {
+        if (self::$skjema !== []) {
+            return;
+        }
+        // Merket, saa en base uten treff ikke leses om og om igjen.
+        self::$skjema['*'] = true;
+        try {
+            foreach (self::alle(
+                'SELECT TABLE_NAME t, COLUMN_NAME k FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()'
+            ) as $r) {
+                self::$skjema['T:' . $r['t']] = true;
+                self::$skjema['K:' . $r['t'] . '.' . $r['k']] = true;
+            }
+        } catch (Throwable) {
+            // Gaar den ikke, svarer de to under som foer — én sporring hver.
+            // Merket blir staaende, saa vi ikke proever den store paa nytt for
+            // hver sjekk.
+            self::$skjema = ['*' => true];
+        }
+    }
+
     public static function harTabell(string $tabell): bool
     {
+        self::lesSkjema();
         $n = 'T:' . $tabell;
         if (!array_key_exists($n, self::$skjema)) {
             // information_schema framfor «SHOW TABLES LIKE ?»: MariaDB godtar
@@ -144,6 +183,7 @@ final class DB
     /** Finnes kolonnen? Samme grunn som over. */
     public static function harKolonne(string $tabell, string $kolonne): bool
     {
+        self::lesSkjema();
         $n = 'K:' . $tabell . '.' . $kolonne;
         if (!array_key_exists($n, self::$skjema)) {
             try {

@@ -223,92 +223,19 @@ $holderId = static function (string $felt): ?int {
     return $id;
 };
 
-/**
- * Staar kursholderen alt et annet sted paa den tida?
- *
- * Registeret over kursholdere fantes lenge uten aa vaere koblet til noe, og
- * da kunne ingen dobbeltbookes fordi ingen var bookede. Naa hoerer
- * kursholderen til datoen, og da kan den samme personen settes paa to kurs
- * som gaar samtidig. Det oppdages foerst den kvelden begge skal gaa.
- *
- * Sjekken er en overlapp i tid: to okter kolliderer naar den ene begynner
- * foer den andre slutter, og slutter etter at den andre begynner. Mangler
- * sluttida, regnes okta som én time — det er bedre enn aa la den gaa fri.
- *
- * Avlyste okter teller ikke. De gaar ikke.
- *
- * @return array{tittel: string, naar: string}|null Den som kolliderer.
- */
-$holderOpptatt = static function (?int $holder, string $start, ?string $slutt, int $utenom): ?array {
-    if ($holder === null || !DB::harKolonne('course_sessions', 'kursholder_id')) {
-        return null;
-    }
-    $slutt = $slutt ?? date('Y-m-d H:i:s', strtotime($start) + 3600);
-    // En ledig tid gjor ingen opptatt.
-    //
-    // Paint on Pots ble lagt ut automatisk paa hver eneste
-    // aapningstid. Det er tilbud — «her kan noen komme» — ikke avtaler.
-    // Talte de med her, ville hver aapningstid gjort kursholderen «opptatt»,
-    // og verkstedet kunne ikke satt opp et kurs paa sine egne aapne kvelder.
-    // Det er nettopp da de skal settes opp: doeren er aapen og noen er der.
-    //
-    // Har noen booket, teller den likevel. Da er den en avtale med et
-    // menneske, og to ting samtidig er en ekte kollisjon.
-    $apenKol = [];
-    if (DB::harKolonne('course_sessions', 'fra_apningstid')) {
-        $apenKol[] = 'cs.fra_apningstid = 1';
-    }
-    $ledigTid = $apenKol === [] ? '' :
-        "AND (NOT (" . implode(' OR ', $apenKol) . ")
-               OR (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
-                    WHERE b.course_session_id = cs.id
-                      AND b.status IN ('betalt', 'reservert')) > 0)";
-    // Et flerdagerskurs staar som én rad fra foerste dag til siste, saa
-    // spoerringen treffer ogsaa natta og ettermiddagen mellom samlingene.
-    // Derfor leses de faa kandidatene ut, og hver sjekkes mot sine egne
-    // dager og klokkeslett — se Samlinger::opptattMellom.
-    $rad = null;
-    foreach (DB::alle(
-        "SELECT cs.id, cs.start_tid, c.tittel
-           FROM course_sessions cs
-           JOIN courses c ON c.id = cs.course_id
-          WHERE cs.kursholder_id = :h
-            AND cs.id <> :u
-            AND cs.status <> 'avlyst'
-            AND cs.start_tid < :slutt
-            AND COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 1 HOUR) > :start
-            {$ledigTid}
-          ORDER BY cs.start_tid
-          LIMIT 20",
-        ['h' => $holder, 'u' => $utenom, 'slutt' => $slutt, 'start' => $start]
-    ) as $kandidat) {
-        if (Samlinger::opptattMellom((int) $kandidat['id'], $start, $slutt)) {
-            $rad = $kandidat;
-            break;
-        }
-    }
-    return $rad === null ? null : [
-        'tittel' => (string) $rad['tittel'],
-        'naar'   => Booking::norskDato((string) $rad['start_tid']),
-    ];
-};
-
-/** Feilmeldingen naar kursholderen er opptatt. Samme ord alle tre stedene. */
-$holderNavnAv = static function (?int $id): string {
-    if ($id === null) {
-        return 'Kursholderen';
-    }
-    $n = DB::verdi('SELECT navn FROM kursholdere WHERE id = :i', ['i' => $id]);
-    return $n !== null && (string) $n !== '' ? (string) $n : 'Kursholderen';
-};
-
-$krevLedigHolder = static function (?array $kollisjon, string $navn): void {
-    if ($kollisjon === null) {
-        return;
-    }
-    Svar::feil($navn . ' står allerede på «' . $kollisjon['tittel'] . '» '
-        . $kollisjon['naar'] . '. Velg en annen kursholder, eller flytt den andre datoen først.');
-};
+// Her sto sperren mot aa sette samme kursholder paa to okter som gaar
+// samtidig — $holderOpptatt, $holderNavnAv og $krevLedigHolder, kalt fra
+// «nydato», «endredato» og «dato».
+//
+// Den ble laget fordi en dobbeltbooking ellers foerst oppdages den kvelden
+// begge skal gaa. Men verkstedet har én kursholder, og hun er alltid
+// kursholderen. «Velg en annen kursholder» var derfor et raad uten
+// innhold: sperren kunne aldri opplyse om noe, bare hindre — og den hindret
+// datoer eieren med vilje ville ha ute. Eieren, 22. september 2026: «det er
+// alltid Monica som er kursholder» og «den er helt unodvendig».
+//
+// Kommer det flere kursholdere, hoerer sjekken hjemme der man SER begge —
+// i kalenderen, som en merknad paa dagen, ikke som et nei i innleggingen.
 
 /** «2026-09-02 17:30» i norsk tid → «2026-09-02 15:30:00» UTC for lagring. */
 $tilUtc = static function (string $norsk): ?string {
@@ -713,12 +640,6 @@ switch ($handling) {
                 : Kursholder::forKurs($kursId);
         }
 
-        // Samme person kan ikke staa paa to kurs som gaar samtidig.
-        $krevLedigHolder(
-            $holderOpptatt($nyOkt['kursholder_id'] ?? null, $start, $slutt, 0),
-            $holderNavnAv($nyOkt['kursholder_id'] ?? null)
-        );
-
         $oktId = DB::settInn('course_sessions', $nyOkt);
 
         // Gaar kurset over flere dager, lagres dagene som samlinger — dag én
@@ -996,15 +917,6 @@ switch ($handling) {
             Svar::feil('Slutt må være etter start.');
         }
 
-        // Flyttes datoen inn i noe kursholderen alt staar paa, sies det her.
-        if (DB::harKolonne('course_sessions', 'kursholder_id')) {
-            $hId = DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $oktId]);
-            $krevLedigHolder(
-                $holderOpptatt($hId !== null ? (int) $hId : null, $start, $slutt, $oktId),
-                $holderNavnAv($hId !== null ? (int) $hId : null)
-            );
-        }
-
         DB::oppdater(
             'course_sessions',
             ['start_tid' => $start, 'slutt_tid' => $slutt],
@@ -1190,24 +1102,13 @@ switch ($handling) {
         // det er en gyldig tilstand — ikke alt har en kursholder.
         if (array_key_exists('kursholderId', $kropp) && DB::harKolonne('course_sessions', 'kursholder_id')) {
             $endring['kursholder_id'] = $holderId('kursholderId');
-            // Tidene okta faktisk gaar paa — ikke dem som sendes inn, for
-            // dette kallet endrer ikke tid.
-            $naar = DB::en('SELECT start_tid, slutt_tid FROM course_sessions WHERE id = :i',
-                           ['i' => $oktId]);
-            if ($naar !== null) {
-                $krevLedigHolder(
-                    $holderOpptatt($endring['kursholder_id'], (string) $naar['start_tid'],
-                                   $naar['slutt_tid'] !== null ? (string) $naar['slutt_tid'] : null, $oktId),
-                    $holderNavnAv($endring['kursholder_id'])
-                );
-            }
         }
         // «plass»: en tid noen KAN komme, ikke en avtale — som Paint on Pots
         // sine plasser. Merkes med fra_apningstid = 1, som de plassene
         // aapningstidene lager selv: kalenderen i admin slaar dem sammen og
-        // viser dem foerst naar noen har booket, og kursholderen regnes ikke
-        // som opptatt av dem. Eieren, 21. september 2026: «det vises ikke i
-        // kalender admin foer det er noen som melder seg paa haaper jeg?».
+        // viser dem foerst naar noen har booket. Eieren, 21. september 2026:
+        // «det vises ikke i kalender admin foer det er noen som melder seg
+        // paa haaper jeg?».
         // Ryddingen i Apent::leggUtPaaApneTider roerer bare kurs som selv
         // foelger aapningstidene, saa en plass lagt inn her blir staaende.
         if (array_key_exists('plass', $kropp) && DB::harKolonne('course_sessions', 'fra_apningstid')) {

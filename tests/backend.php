@@ -2005,20 +2005,9 @@ $kursFil6 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 
 // ── Resten av fase 6 ─────────────────────────────────────────────────────
 //
-// Kursholderkonflikten. Registeret var lenge ikke koblet til noe, og da kunne
-// ingen dobbeltbookes fordi ingen var bookede. Naa hoerer kursholderen til
-// datoen, og den samme personen kunne settes paa to kurs som gaar samtidig.
-// Det oppdages foerst den kvelden begge skal gaa.
-sjekk('kursholderen kan ikke staa paa to kurs samtidig',
-    str_contains($kursFil6, '$holderOpptatt = static function')
-    && str_contains($kursFil6, 'AND cs.start_tid < :slutt')
-    && str_contains($kursFil6, 'AND COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 1 HOUR) > :start'));
-// Alle tre veiene en kursholder kan bli opptatt paa.
-sjekk('konflikten sjekkes paa ny dato, bytte av kursholder og flytting',
-    substr_count($kursFil6, '$krevLedigHolder(') === 3);
-// Avlyste okter gaar ikke, og skal ikke sperre noe.
-sjekk('en avlyst okt sperrer ikke kursholderen',
-    str_contains($kursFil6, "AND cs.status <> 'avlyst'\n            AND cs.start_tid < :slutt"));
+// Kursholderkonflikten sto her, med tre proever. Den er tatt ut 22. september
+// 2026 — se «Kursholderen sperres ikke av seg selv» lenger nede, som passer
+// paa at den blir borte.
 
 // De sju daglige oppgavene, fra kalenderen.
 foreach ([
@@ -2154,27 +2143,29 @@ sjekk('bare delingsbildet mangler en webp-tvilling', (static function (): bool {
     return true;
 })());
 
-// ── En ledig tid gjor ingen opptatt ──────────────────────────────────────
+// ── Kursholderen sperres ikke av seg selv ────────────────────────────────
 //
-// Eieren: «jeg vil at Paint on Pots skal vaere mulig aa booke naar det er
-// kurs, ikke vises som opptatt».
+// Her sto tre proever paa at samme kursholder ikke kunne settes paa to okter
+// som gikk samtidig. Verkstedet har én kursholder, og hun er alltid
+// kursholderen — da kunne sperren aldri opplyse om noe, bare hindre datoer
+// eieren med vilje ville ha ute. Eieren, 22. september 2026: «det er alltid
+// Monica som er kursholder» og «den er helt unodvendig».
 //
-// Konfliktsjekken fra fase 6 talte hver eneste oekt kursholderen sto paa —
-// ogsaa de Paint on Pots-tidene som legges ut automatisk paa hver
-// aapningstid. Setter noen en kursholder paa dem, ville verkstedet ikke
-// kunnet legge et kurs paa sine egne aapne kvelder. Det er nettopp da de skal
-// settes opp: doeren er aapen og noen er der.
+// Proeven staar igjen, men snudd: sperren skal vaere borte, og skal ikke
+// snike seg inn igjen uten at noen ser det.
 $kursFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
-sjekk('en tom aapningstid gjor ikke kursholderen opptatt',
-    str_contains($kursFil2, "\$apenKol[] = 'cs.fra_apningstid = 1';")
-    && str_contains($kursFil2, '"AND (NOT (" . implode(\' OR \', $apenKol) . ")'));
-// Har noen booket, er den en avtale med et menneske, og to ting samtidig er
-// en ekte kollisjon.
-sjekk('en booket aapningstid teller likevel som opptatt',
-    str_contains($kursFil2, "AND b.status IN ('betalt', 'reservert')) > 0)"));
-// Og en ekte kollisjon mellom to kurs skal fortsatt stoppes.
-sjekk('to kurs paa samme kursholder og tid stoppes fortsatt',
-    str_contains($kursFil2, 'staar allerede paa') || str_contains($kursFil2, 'står allerede på'));
+sjekk('ingen sperre mot samme kursholder paa to okter samtidig',
+    !str_contains($kursFil2, '$krevLedigHolder(')
+    && !str_contains($kursFil2, '$holderOpptatt = static')
+    && !str_contains($kursFil2, 'staar allerede paa')
+    && !str_contains($kursFil2, 'står allerede på'));
+// Hjelperen i Samlinger fantes bare for den sperren.
+sjekk('samlinger har ingen opptattMellom igjen',
+    !str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/samlinger.php'), 'opptattMellom'));
+// Kursholderen skal fortsatt kunne settes og endres paa en dato.
+sjekk('kursholder kan fortsatt velges paa en dato',
+    str_contains($kursFil2, "\$endring['kursholder_id'] = \$holderId('kursholderId');")
+    && str_contains($kursFil2, "\$nyOkt['kursholder_id'] = array_key_exists('kursholderId'"));
 
 // ── To kurs med samme navn ───────────────────────────────────────────────
 //

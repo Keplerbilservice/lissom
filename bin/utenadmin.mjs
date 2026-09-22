@@ -65,6 +65,7 @@
 import fs from 'fs';
 import path from 'path';
 import { minify } from 'terser';
+import * as acorn from 'acorn';
 
 const ROT = path.resolve(import.meta.dirname, '..');
 const KILDE = path.join(ROT, 'lissom-2108.html');
@@ -150,21 +151,143 @@ export async function utenKommentarer(html) {
   };
 }
 
-/** Hele byggingen: adminskjermene bort, saa kommentarene ut av skriptet. */
+/**
+ * Verdiene for skjermer kunden ikke har, ut av skriptet.
+ *
+ * ── Hvorfor ───────────────────────────────────────────────────────────
+ *
+ * PageSpeed 22. september 2026, Book-sida paa mobil: fila var 1547 kB
+ * (408 kB komprimert), og av skriptets 1006 kB var 917 kB det ene
+ * objektet renderVals() bygger — verdiene for ALLE skjermene, ogsaa de 30
+ * adminskjermene som alt er klippet ut av malen over. Kunden lastet ned
+ * dem, nettleseren leste dem, og runtime regnet dem ut for hver tegning.
+ * 677 kB av objektet (74 %) gav noekler ingen kundeskjerm bruker.
+ *
+ * ── Hvordan ───────────────────────────────────────────────────────────
+ *
+ * Objektet er «const vals = { … }» i renderVals(): en lang liste av
+ * egenskaper og «...spredninger» (IIFE-er og this.metode()-kall) som hver
+ * gir en haandfull noekler. For hver av dem finner vi noeklene den gir
+ * (rekursivt gjennom return-objektene), og sjekker om noen av dem staar i
+ * en «{{ … }}» i den malen som er igjen. Gir blokken bare noekler malen
+ * aldri nevner, tas den ut.
+ *
+ * Det er strengt: en blokk beholdes hvis én noekkel brukes, og hvis
+ * noeklene ikke lar seg lese ut sikkert (et kall vi ikke kan folge, en
+ * beregnet noekkel). Etterpaa kontrolleres det at hver identifikator malen
+ * bruker som fantes som noekkel foer, fortsatt finnes — ellers stoppes
+ * byggingen. Kilden i lissom-2108.html roeres ikke; admin faar alt.
+ */
+export function utenAdminVals(html) {
+  const j = html.lastIndexOf('</x-dc>');
+  const m = /<script[^>]*data-dc-script[^>]*>/.exec(html.slice(j));
+  const slutt = html.lastIndexOf('</script>');
+  if (j < 0 || !m || slutt < 0) return { html, blokker: 0, for: 0, etter: 0 };
+  const fra = j + m.index + m[0].length;
+  const src = html.slice(fra, slutt);
+
+  const ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script' });
+  const cls = ast.body.find(n => n.type === 'ClassDeclaration');
+  if (!cls) throw new Error('Fant ikke klassen i skriptet');
+  const metoder = new Map(cls.body.body.map(x => [x.key.name || x.key.value, x]));
+  const rv = metoder.get('renderVals');
+  const decl = rv && rv.value.body.body.find(n => n.type === 'VariableDeclaration' && n.declarations[0].id.name === 'vals');
+  const obj = decl && decl.declarations[0].init;
+  if (!obj || obj.type !== 'ObjectExpression') throw new Error('Fant ikke «const vals = { … }» i renderVals');
+
+  // Alle return-setninger i en funksjonskropp, uten aa gaa inn i indre funksjoner.
+  const alleReturns = (block) => {
+    const ut = [];
+    (function gaa(n) {
+      if (!n || typeof n.type !== 'string') return;
+      if (n.type === 'ReturnStatement') { ut.push(n); return; }
+      if (n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression' || n.type === 'FunctionDeclaration') return;
+      for (const k of Object.keys(n)) { const v = n[k]; if (Array.isArray(v)) v.forEach(gaa); else if (v && typeof v.type === 'string') gaa(v); }
+    })(block);
+    return ut;
+  };
+  // Noeklene et uttrykk gir. «?» foran betyr: kan ikke leses sikkert.
+  const noekler = (node, dybde = 0) => {
+    const ut = new Set();
+    if (!node || dybde > 6) { ut.add('?dyp'); return ut; }
+    if (node.type === 'ObjectExpression') {
+      for (const p of node.properties) {
+        if (p.type === 'Property') ut.add(p.computed ? '?beregnet' : (p.key.name || String(p.key.value)));
+        else if (p.type === 'SpreadElement') for (const k of noekler(p.argument, dybde + 1)) ut.add(k);
+        else ut.add('?' + p.type);
+      }
+    } else if (node.type === 'CallExpression') {
+      const c = node.callee;
+      if (c.type === 'ArrowFunctionExpression' || c.type === 'FunctionExpression') {
+        const kropp = c.body.type === 'BlockStatement' ? c.body : { type: 'BlockStatement', body: [{ type: 'ReturnStatement', argument: c.body }] };
+        for (const st of alleReturns(kropp)) for (const k of noekler(st.argument, dybde + 1)) ut.add(k);
+      } else if (c.type === 'MemberExpression' && c.object.type === 'ThisExpression' && !c.computed && metoder.get(c.property.name)) {
+        for (const st of alleReturns(metoder.get(c.property.name).value.body)) for (const k of noekler(st.argument, dybde + 1)) ut.add(k);
+      } else ut.add('?kall');
+    } else if (node.type === 'ConditionalExpression') {
+      for (const k of noekler(node.consequent, dybde + 1)) ut.add(k);
+      for (const k of noekler(node.alternate, dybde + 1)) ut.add(k);
+    } else if (node.type === 'LogicalExpression') {
+      for (const k of noekler(node.left, dybde + 1)) ut.add(k);
+      for (const k of noekler(node.right, dybde + 1)) ut.add(k);
+    } else ut.add('?' + node.type);
+    return ut;
+  };
+
+  // Identifikatorene malen bruker.
+  const mal = html.slice(html.indexOf('<body'), j);
+  const brukt = new Set();
+  for (const t of mal.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)) {
+    for (const id of t[1].matchAll(/[A-Za-z_$][A-Za-z0-9_$]*/g)) brukt.add(id[0]);
+  }
+
+  const behold = [];
+  const alleFoer = new Set();
+  let fjernet = 0, fjernetBytes = 0;
+  for (const p of obj.properties) {
+    const ks = [...noekler(p.type === 'Property' ? { type: 'ObjectExpression', properties: [p] } : p.argument)];
+    ks.filter(k => !k.startsWith('?')).forEach(k => alleFoer.add(k));
+    const usikker = ks.some(k => k.startsWith('?')) || ks.length === 0;
+    const brukes = ks.some(k => brukt.has(k));
+    if (usikker || brukes) behold.push(p);
+    else { fjernet++; fjernetBytes += p.end - p.start; }
+  }
+
+  // Objektet bygges opp igjen av det som beholdes, med kildeteksten urort.
+  const nyObj = '{\n' + behold.map(p => src.slice(p.start, p.end)).join(',\n') + ',\n    }';
+  const nySrc = src.slice(0, obj.start) + nyObj + src.slice(obj.end);
+
+  // Kontroll 1: skriptet skal fortsatt kunne leses.
+  const ast2 = acorn.parse(nySrc, { ecmaVersion: 2022, sourceType: 'script' });
+  // Kontroll 2: alt malen bruker som var en noekkel foer, er en noekkel naa.
+  const cls2 = ast2.body.find(n => n.type === 'ClassDeclaration');
+  const metoder2 = new Map(cls2.body.body.map(x => [x.key.name || x.key.value, x]));
+  const obj2 = metoder2.get('renderVals').value.body.body.find(n => n.type === 'VariableDeclaration' && n.declarations[0].id.name === 'vals').declarations[0].init;
+  const alleEtter = new Set();
+  for (const p of obj2.properties) [...noekler(p.type === 'Property' ? { type: 'ObjectExpression', properties: [p] } : p.argument)].filter(k => !k.startsWith('?')).forEach(k => alleEtter.add(k));
+  const mangler = [...brukt].filter(id => alleFoer.has(id) && !alleEtter.has(id));
+  if (mangler.length) throw new Error('Verdier malen bruker forsvant fra skriptet: ' + mangler.slice(0, 10).join(', '));
+
+  return { html: html.slice(0, fra) + nySrc + html.slice(slutt), blokker: fjernet, for: Buffer.byteLength(src), etter: Buffer.byteLength(nySrc), bytes: fjernetBytes };
+}
+
+/** Hele byggingen: adminskjermene bort, verdiene deres ut av skriptet, saa kommentarene ut. */
 export async function lettUtgave(kilde) {
   const { html, blokker } = utenAdmin(kilde);
-  const k = await utenKommentarer(html);
-  return { html: k.html, blokker, skript: k };
+  const v = utenAdminVals(html);
+  const k = await utenKommentarer(v.html);
+  return { html: k.html, blokker, vals: v, skript: k };
 }
 
 if (import.meta.filename === process.argv[1]) {
   const kilde = fs.readFileSync(KILDE, 'utf8');
-  const { html, blokker, skript } = await lettUtgave(kilde);
+  const { html, blokker, vals, skript } = await lettUtgave(kilde);
   fs.writeFileSync(MAAL, html);
   const kb = (n) => Math.round(n / 1024);
   console.log(blokker.filter(b => b.navn.startsWith('erAdmin')).length + ' adminskjermer og '
     + blokker.filter(b => !b.navn.startsWith('erAdmin')).length + ' leseskjermer klippet bort.');
-  console.log('  skriptet         ' + kb(skript.for) + ' kB → ' + kb(skript.etter) + ' kB');
+  console.log('  verdier          ' + vals.blokker + ' blokker kunden ikke bruker ut av renderVals (' + kb(vals.bytes) + ' kB)');
+  console.log('  skriptet         ' + kb(vals.for) + ' kB → ' + kb(vals.etter) + ' kB → ' + kb(skript.etter) + ' kB');
   console.log('  full utgave      ' + kb(Buffer.byteLength(kilde)) + ' kB');
   console.log('  uten admin       ' + kb(Buffer.byteLength(html)) + ' kB'
     + '   (' + kb(Buffer.byteLength(kilde) - Buffer.byteLength(html)) + ' kB mindre)');

@@ -238,15 +238,47 @@ final class Meta
             );
         }
 
+        // Sidens eget token, ikke systembrukerens.
+        //
+        // Instagram-veien gaar gjennom kontoens egen id og godtar
+        // systembruker-tokenet. En Facebook-side gjor ikke det: Graph svarte
+        // kode 200 «Appen mangler tillatelse til aa publisere» paa
+        // /{side}/photos, ogsaa med pages_manage_posts paa tokenet. Sida vil
+        // ha et side-token, og det hentes fra sida selv.
+        //
+        // Maalt 23. september 2026, foerste gang noe ble lagt ut: Instagram
+        // gikk gjennom, Facebook stoppet her.
         $ut = self::kall('POST', self::sideId() . '/photos', [
             'url'     => $bildeUrl,
             'message' => mb_substr($tekst, 0, 5000),
-        ]);
+        ], self::sideToken());
         $id = (string) ($ut['post_id'] ?? $ut['id'] ?? '');
         if ($id === '') {
             throw new RuntimeException('Facebook publiserte ikke innlegget.');
         }
         return ['id' => $id, 'lenke' => 'https://www.facebook.com/' . $id];
+    }
+
+    /**
+     * Sidens eget token, hentet med systembrukerens.
+     *
+     * Hentes én gang per foresporsel. Feiler det, gaar vi videre med
+     * systembruker-tokenet — da sier Meta fra selv, og feilmeldinga blir
+     * den samme som for.
+     */
+    private static function sideToken(): ?string
+    {
+        static $token = null;
+        if ($token !== null) {
+            return $token === '' ? null : $token;
+        }
+        try {
+            $svar = self::kall('GET', self::sideId(), ['fields' => 'access_token']);
+            $token = trim((string) ($svar['access_token'] ?? ''));
+        } catch (Throwable) {
+            $token = '';
+        }
+        return $token === '' ? null : $token;
     }
 
     // ── Selve kallet ─────────────────────────────────────────────────
@@ -260,7 +292,7 @@ final class Meta
      * @param array<string,string> $felter
      * @return array<string,mixed>
      */
-    private static function kall(string $metode, string $sti, array $felter = []): array
+    private static function kall(string $metode, string $sti, array $felter = [], ?string $token = null): array
     {
         $url = self::BASE . self::versjon() . '/' . ltrim($sti, '/');
         $kropp = null;
@@ -272,7 +304,7 @@ final class Meta
         }
 
         $svar = http_kall($url, $metode, $kropp, array_filter([
-            'Authorization: Bearer ' . self::token(),
+            'Authorization: Bearer ' . ($token ?? self::token()),
             $metode === 'GET' ? null : 'Content-Type: application/x-www-form-urlencoded',
         ]), 30);
 
@@ -291,8 +323,9 @@ final class Meta
                 $kode === 190 => 'Tokenet er utløpt eller trukket tilbake. Hent et nytt '
                                . 'System User-token i Meta Business Manager — det utløper ikke.',
                 $kode === 200 || $kode === 10 => 'Appen mangler tillatelse til å publisere. '
-                               . 'Sjekk at Instagram-kontoen står som Instagram Tester i appen, '
-                               . 'og at invitasjonen er godtatt.',
+                               . 'Tokenet trenger instagram_content_publish for Instagram og '
+                               . 'pages_manage_posts for Facebook-sida — og systembrukeren må ha '
+                               . 'tilgang til begge i Meta Business Manager.',
                 $kode === 100 => 'Meta kjente ikke igjen noe i kallet: ' . $melding,
                 $kode === 4 || $kode === 32 => 'For mange innlegg på kort tid. Instagram tillater '
                                . '25 innlegg i døgnet. Vent litt.',

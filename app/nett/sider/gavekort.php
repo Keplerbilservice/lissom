@@ -51,6 +51,8 @@ $kropp = (string) preg_replace('~<button type="button"([^>]*data-nett-handling="
 return [
     'kropp' => $kropp . "\n" . Deler::bunn(true),
     'aktiv' => '',
-    // Vipps sin knapp, som i appen (cdn.vippsmobilepay.com er aapnet i CSP).
-    'hode'  => '<script async src="https://cdn.vippsmobilepay.com/js/button/button.js"></script>' . "\n",
+    // Vipps-knappens skript lastes av nett.js naar sida er ferdig: skriptet
+    // henter egne skrifter, og i hodet holdt de overskriften igjen (LCP 4,5 s
+    // simulert mobil, 23. september 2026). Til da staar vaar egen knapp.
+    'hode'  => '',
 ];

@@ -332,6 +332,15 @@
       f.addEventListener('focus', function () { f.style.borderColor = 'var(--lissom-brown)'; f.style.boxShadow = 'var(--shadow-focus)'; });
       f.addEventListener('blur', function () { f.style.borderColor = 'var(--border-default)'; f.style.boxShadow = 'none'; });
     });
+    // Skriptet til Vipps-knappen hentes foerst naar sida er ferdig tegnet
+    // (se gavekort.php) — det tar med seg egne skrifter.
+    var gvVipps = function () {
+      if (d.querySelector('script[src*="cdn.vippsmobilepay.com"]')) return;
+      var s = d.createElement('script'); s.async = true;
+      s.src = 'https://cdn.vippsmobilepay.com/js/button/button.js';
+      d.head.appendChild(s);
+    };
+    if (d.readyState === 'complete') gvVipps(); else window.addEventListener('load', gvVipps);
     // Vipps-knappen naar skriptet er klart — ellers staar vaar egen, som i appen.
     if (window.customElements && customElements.whenDefined) {
       customElements.whenDefined('vipps-mobilepay-button').then(function () {

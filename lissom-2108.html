@@ -21705,11 +21705,17 @@ window.__resources = {
                 <div>
                   <label style="{{ abEtikett }}">Ingress — de to linjene som står under overskriften</label>
                   <textarea value="{{ abIngress }}" onChange="{{ settAbIngress }}" rows="2" style="{{ abFeltStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhAbIngressSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhAbIngressMerke }}</button>
+                  </div>
                 </div>
                 <div>
                   <label style="{{ abEtikett }}">Tekst</label>
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted);"># overskrift · ## mellomtittel · - punkt for lister</p>
                   <textarea value="{{ abInnhold }}" onChange="{{ settAbInnhold }}" rows="18" style="{{ abTekstStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhAbInnholdSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhAbInnholdMerke }}</button>
+                  </div>
                 </div>
                 <!-- Bildene inne i teksten.
                      En artikkel hadde ett bilde, og det sto over teksten.
@@ -54405,6 +54411,9 @@ class Component extends DCLogic {
         const vare = () => ({ Vare: this.state.npNavn || '', Pris: this.state.npPris || '' });
         const art  = () => ({ Overskrift: this.state.artTittel || '', Ingress: this.state.artIngress || '' });
         const evt  = () => ({ Navn: this.state.klRNavn || '' });
+        const artbank = () => ({ Overskrift: this.state.abTittel || '',
+                                 Kategori: this.state.abKategori || '',
+                                 Ingress: this.state.abIngress || '' });
         const h = (statefelt, navn, omfelt, hvor, form, kontekst) => this.felthjelp({
           statefelt, felt: navn, hvor, form,
           om: (this.state[omfelt] || '').trim(),
@@ -54435,6 +54444,10 @@ class Component extends DCLogic {
           fhArtIngressSkriv: h('artIngress', 'Ingress', 'artTittel', 'artikkelen', 'avsnitt', art).skriv,
           fhArtInnholdMerke: h('artInnhold', 'Brødtekst', 'artTittel', 'artikkelen', 'avsnitt', art).merke,
           fhArtInnholdSkriv: h('artInnhold', 'Brødtekst', 'artTittel', 'artikkelen', 'avsnitt', art).skriv,
+          fhAbIngressMerke: h('abIngress', 'Ingress', 'abTittel', 'artikkelen', 'avsnitt', artbank).merke,
+          fhAbIngressSkriv: h('abIngress', 'Ingress', 'abTittel', 'artikkelen', 'avsnitt', artbank).skriv,
+          fhAbInnholdMerke: h('abInnhold', 'Brødtekst', 'abTittel', 'artikkelen', 'avsnitt', artbank).merke,
+          fhAbInnholdSkriv: h('abInnhold', 'Brødtekst', 'abTittel', 'artikkelen', 'avsnitt', artbank).skriv,
           fhKlRBeskrivelseMerke: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).merke,
           fhKlRBeskrivelseSkriv: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).skriv,
         };

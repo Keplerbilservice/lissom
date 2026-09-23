@@ -372,6 +372,28 @@ final class Kursmal
         if ($kategori !== '') {
             $mal = array_merge($mal, self::standardtekster()[$kategori] ?? []);
         }
+
+        // Date Night er en opplevelse, ikke et kurs der man lager noe aa ta
+        // med hjem. Eieren, 23. september 2026: «de får ikke med seg noe, de
+        // får kun en hyggelig kveld, kjenne leirens sensuelle form bli til».
+        // Den delte Events-malen (og Sip & Clay) lover glasering, brenning og
+        // henting — derfor egne tekster her, etter standardtekstene for
+        // kategorien, saa ingen «klar til henting» kommer tilbake den veien.
+        // Tomt «medHjem»/«ferdigTid» skjuler faktalinjene og seksjonene.
+        // Tekstene er godkjent av eieren samme dag.
+        if (mb_strtolower($tittel) === 'date night') {
+            $mal = array_merge($mal, [
+                'laererKort' => 'Å forme leiren med hendene',
+                'laerer'     => 'Dere får kjenne leiren i hendene og se formen bli til – vi viser dere hvordan underveis.',
+                'lagerDu'    => '',
+                'medHjem'    => '',
+                'ferdigTid'  => '',
+                'punkter'    => "Ingen erfaring nødvendig — vi viser deg alt underveis.\n"
+                    . "Leire og verktøy er inkludert.\n"
+                    . "Passer venninnekvelder, utdrikningslag, bedrifter og par.\n"
+                    . "Én kveld – ingenting å ta med hjem, bare en god opplevelse.",
+            ]);
+        }
         return $mal;
     }
 

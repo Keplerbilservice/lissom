@@ -3935,6 +3935,20 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ ukeTomGaa }}" hint-size="auto,40px">{{ ukeTomKnapp }}</x-import>
             </div>
           </sc-if>
+          <!-- Paint on Pots, oeverst i stedet for i rutenettet. Tittel og
+               tekst staar hver for seg fordi Mal escaper alt i «{{ }}» — en
+               <b> i teksten ville vist seg som tekst. Hvorfor stripa finnes,
+               staar i app/nett/sider/kalender.php. -->
+          <sc-if value="{{ popHarStripe }}" hint-placeholder-val="{{ true }}">
+            <a onClick="{{ popStripeGaa }}" style="{{ popStripeStil }}">
+              <span style="font-size: 19px; line-height: 1.3; flex: none;">🎨</span>
+              <span>
+                <span style="display: block; font-size: var(--text-base); font-weight: 700; line-height: 1.4;">{{ popTittel }}</span>
+                <span style="display: block; font-size: var(--text-base); line-height: 1.4;">{{ popTekst }}</span>
+                <span style="display: block; font-size: var(--text-sm); opacity: .78; margin-top: 2px;">{{ popLenke }} →</span>
+              </span>
+            </a>
+          </sc-if>
           <!-- Uka i ett bilde.
                Paa en telefon fikk bare tre av de sju dagskortene plass, og
                resten laa i en stripe man maatte dra sidelengs. Ingenting sa

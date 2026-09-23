@@ -21,6 +21,34 @@ foreach (Kort::kurs() as $k) {
     $kurs[$k['slug']] = $k;
 }
 $katalog = array_values(array_filter(Katalog::offentlig(false), static fn(array $k): bool => ($k['tema'] ?? '') !== 'Kun for medlemmer'));
+
+// ── Paint on Pots staar oeverst, ikke i rutenettet ──────────────────────
+//
+// Eieren, 23. september 2026: «naar jeg er paa forsiden, og trykker meg inn
+// paa kalender, saa ser jeg masse paint on pots, jeg vil ikke at de vises i
+// kalenderen paa denne maaten, men jeg vil at den overste viser paint on
+// pots tilgjengelig i dag».
+//
+// Det gaar fire ganger om dagen, to dager i uka. Maalt samme dag: 8 av
+// 10–15 oppforinger i hver uke, og de ekte kursene druknet. Uke 44 hadde
+// ti oppforinger, hvorav aatte var den samme drop-in-en.
+//
+// Det tas ogsaa ut av UKELISTA, ikke bare rutenettet. 22 av 56 uker hadde
+// bare Paint on Pots — sto de igjen i pilene, kunne kunden bla seg inn i 22
+// tomme uker, og det er darligere enn i dag.
+//
+// Og: eieren, om tidene — «dersom jeg ikke er saa opptatt av tider paa paint
+// on pots, men at de maa komme i dette tidsrommet». Derfor slaas sittingene
+// sammen til tidsrom i stripa: 10:00 og 11:30 blir «10–13».
+$POP = 'paint-on-pots';
+$popKurs = null;
+foreach ($katalog as $k) {
+    if (($k['slug'] ?? '') === $POP) {
+        $popKurs = $k;
+        break;
+    }
+}
+$katalog = array_values(array_filter($katalog, static fn(array $k): bool => ($k['slug'] ?? '') !== $POP));
 $uker = [];
 $naaUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 foreach ($katalog as $k) {
@@ -85,6 +113,112 @@ foreach ($dager as $i => &$d) {
 }
 unset($d);
 
+// ── Stripa: Paint on Pots i dag ────────────────────────────────────────
+//
+// Sittingene varer halvannen time og ligger rygg mot rygg — 10:00, 11:30 og
+// 17:00, 18:30. To som henger sammen er ett tidsrom man stikker innom, ikke
+// to avtaler man velger mellom.
+//
+// Plassene henger fortsatt paa hver sitting, tolv om gangen. Et tidsrom er
+// derfor ledig saa lenge én sitting i det har plass, og fullt naar ingen
+// har det. Uten det skillet ville sida invitert folk til en formiddag som
+// er utsolgt: torsdag 24. september er 10:00 og 11:30 fulle mens 17:00 og
+// 18:30 er aapne.
+//
+// Teksten staar i to felt og ikke som én streng med <b> i: Mal escaper alt
+// som gaar gjennom «{{ }}», saa taggen ville vist seg som tekst paa sida.
+$popTittel = '';
+$popTekst  = '';
+$popFull = false;
+if ($popKurs !== null) {
+    $klokke = static function (int $min): string {
+        $t = intdiv($min, 60);
+        return $min % 60 === 0 ? (string) $t : $t . '.' . str_pad((string) ($min % 60), 2, '0', STR_PAD_LEFT);
+    };
+    /** Sittingene paa én dag, slaatt sammen til tidsrom. */
+    $tidsrom = static function (array $okter) use ($klokke): array {
+        usort($okter, static fn(array $a, array $b): int => $a['m'] <=> $b['m']);
+        $ut = [];
+        foreach ($okter as $o) {
+            $slutt = $o['m'] + 90;
+            $siste = $ut === [] ? null : $ut[count($ut) - 1];
+            if ($siste !== null && $o['m'] <= $siste['slutt']) {
+                $ut[count($ut) - 1]['slutt'] = max($siste['slutt'], $slutt);
+                $ut[count($ut) - 1]['ledig'] = $siste['ledig'] || $o['ledig'];
+                continue;
+            }
+            $ut[] = ['start' => $o['m'], 'slutt' => $slutt, 'ledig' => $o['ledig']];
+        }
+        return array_map(static fn(array $v): array => [
+            'tekst' => $klokke($v['start']) . '–' . $klokke($v['slutt']),
+            'ledig' => $v['ledig'],
+        ], $ut);
+    };
+
+    // Dagene framover, hver med sine sittinger. Det som er passert i dag
+    // teller ikke — en stripe som byr paa klokka ti klokka tolv er feil.
+    $perDag = [];
+    foreach ($popKurs['datoer'] ?? [] as $o) {
+        if (empty($o['startUtc'])) {
+            continue;
+        }
+        $d = (new DateTimeImmutable((string) $o['startUtc'], new DateTimeZone('UTC')))->setTimezone($oslo);
+        if ($d <= $naa) {
+            continue;
+        }
+        $dag = $d->format('Y-m-d');
+        $perDag[$dag][] = [
+            'm'     => (int) $d->format('G') * 60 + (int) $d->format('i'),
+            'ledig' => (int) ($o['ledige'] ?? 0) > 0,
+            'd'     => $d,
+        ];
+    }
+    ksort($perDag);
+
+    $liste = static function (array $rom): string {
+        $t = array_map(static fn(array $v): string => $v['tekst'], $rom);
+        $sist = array_pop($t);
+        return $t === [] ? $sist : implode(', ', $t) . ' eller ' . $sist;
+    };
+    $DAGNAVN = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
+
+    $idag = $naa->format('Y-m-d');
+    if (isset($perDag[$idag])) {
+        $rom    = $tidsrom($perDag[$idag]);
+        $ledige = array_values(array_filter($rom, static fn(array $v): bool => $v['ledig']));
+        $fulle  = array_values(array_filter($rom, static fn(array $v): bool => !$v['ledig']));
+        if ($ledige !== []) {
+            $popTittel = 'Paint on Pots i dag.';
+            $popTekst  = 'Stikk innom mellom ' . $liste($ledige) . '.'
+                . ($fulle !== []
+                    ? ' (' . $liste($fulle) . ' er fullt.)'
+                    : ' Ingen booking nødvendig.');
+        }
+    }
+
+    if ($popTittel === '') {
+        // Ikke i dag, eller utsolgt: si rytmen, og naar det er plass igjen.
+        $neste = '';
+        foreach ($perDag as $dag => $okter) {
+            if ($dag === $idag) {
+                continue;
+            }
+            $rom = array_values(array_filter($tidsrom($okter), static fn(array $v): bool => $v['ledig']));
+            if ($rom !== []) {
+                $d = $okter[0]['d'];
+                $neste = $DAGNAVN[(int) $d->format('N') - 1] . ' ' . $d->format('j') . '. '
+                       . $MND[(int) $d->format('n') - 1] . ', ' . $liste($rom);
+                break;
+            }
+        }
+        $popFull = true;
+        $popTittel = isset($perDag[$idag])
+            ? 'Paint on Pots er fullt i dag.'
+            : 'Paint on Pots går onsdag og torsdag, 10–13 og 17–20.';
+        $popTekst = $neste !== '' ? 'Neste dag med ledig plass er ' . $neste . '.' : '';
+    }
+}
+
 // «Svar paa tre korte spoersmaal …» — kvLokketekst i nettsida, av kursveilederen.
 $lokketekst = 'Svar på noen korte spørsmål, så foreslår vi kurset for deg.';
 try {
@@ -105,11 +239,22 @@ return [
         'ukeAntall' => count($uker) > 1 ? count($uker) . ' uker med kurs framover' : '',
         'ukeStripStil' => 'display: var(--nt-ukestrip, none); grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: var(--space-5);',
         'kvLokketekst' => $lokketekst,
+        // Stripa over rutenettet. Gul naar det er plass i dag, dempet ellers.
+        'popTittel'    => $popTittel,
+        'popTekst'     => $popTekst,
+        'popHarStripe' => $popTittel !== '',
+        'popLenke'     => 'Se hvordan det foregår',
+        'popStripeStil' => 'display: flex; align-items: flex-start; gap: var(--space-3); '
+            . 'border-radius: var(--radius-md); padding: 13px 16px; margin-bottom: var(--space-5); '
+            . 'text-decoration: none; background: '
+            . ($popFull ? 'var(--surface-card); border: 1px solid var(--border-subtle); color: var(--text-body)'
+                        : 'var(--lissom-yellow); color: var(--lissom-brown)') . ';',
         'sant' => true,
     ], [
         'ukeForrige' => $forrige !== null ? '/kalender?uke=' . $forrige : 'js:ingen',
         'ukeNeste'   => $neste !== null ? '/kalender?uke=' . $neste : 'js:ingen',
         'ukeTomGaa' => '/kurs', 'goKurs' => '/kurs', 'kvApne' => '/kurs#kursvelger',
+        'popStripeGaa' => '/paint-on-pots',
     ]) . "\n" . Deler::bunn(true),
     'aktiv' => 'Kalender',
 ];

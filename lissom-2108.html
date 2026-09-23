@@ -3135,8 +3135,11 @@ window.__resources = {
                   </sc-if>
                   <sc-if value="{{ bVelgerTid }}" hint-placeholder-val="{{ false }}">
                     <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
-                      <input type="time" step="900" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}" aria-label="Når vil du komme?" style="appearance: none; font: inherit; font-weight: 700; padding: 11px 14px; min-height: 44px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); background: var(--surface); color: var(--text-heading);" />
+                      <input type="time" step="900" min="{{ bTidMin }}" max="{{ bTidMaks }}" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}" aria-label="Når vil du komme?" style="appearance: none; font: inherit; font-weight: 700; padding: 11px 14px; min-height: 44px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); background: var(--surface); color: var(--text-heading);" />
                     </div>
+                    <sc-if value="{{ bTidUtenfor }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-500);">{{ bTidUtenforTekst }}</p>
+                    </sc-if>
                     <sc-if value="{{ bTidFull }}" hint-placeholder-val="{{ false }}">
                       <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-500);">{{ bTidForslagTekst }}</p>
                       <sc-if value="{{ bTidHarForslag }}" hint-placeholder-val="{{ true }}">
@@ -44817,6 +44820,27 @@ class Component extends DCLogic {
       });
       return;
     }
+    // Bare i tida hun faktisk er der. Eieren, 23. september 2026: «velg
+    // tidspunk, må kun være mulig i tiden jeg er der».
+    //
+    // «min» og «max» paa feltet sperrer hjulet og pilene, men et tidsfelt kan
+    // skrives i for haand. Serveren avviser det samme — Apent::oktForTid() —
+    // men da har kunden alt fylt ut resten og trykket. Her stoppes det mens
+    // det fortsatt er et valg.
+    if (velgerTid) {
+      const liste = this.state.bTidListe || [];
+      if (liste.length > 0 && !liste.some(x => x.tid === tid)) {
+        const fra = liste[0].tid;
+        const til = liste[liste.length - 1].tid;
+        this.setState({
+          kvittering: 'Verkstedet er ikke åpent da.',
+          kvitteringDetalj: fra === til
+            ? 'Den eneste tida som er ledig denne dagen er ' + fra + '.'
+            : 'Velg et tidspunkt mellom ' + fra + ' og ' + til + '.',
+        });
+        return;
+      }
+    }
     if (!velgerTid && !oktId) {
       this.setState({
         kvittering: 'Denne datoen kan ikke bookes.',
@@ -48962,6 +48986,42 @@ class Component extends DCLogic {
           bVisTidsknapper: !this.folgerApningstid(),
           bTidVerdi: String(this.state.bTid || ''),
           bTidSett: (e) => this.setState({ bTid: String((e && e.target && e.target.value) || '') }),
+          // ── Bare i tida hun faktisk er der ──────────────────────────
+          //
+          // Eieren, 23. september 2026: «velg tidspunk, må kun være mulig i
+          // tiden jeg er der, dette må du endre».
+          //
+          // Feltet tok imot hva som helst. Serveren avviste et tidspunkt
+          // utenfor aapningstida, men foerst etter at kunden hadde fylt ut
+          // resten og trykket — og da er det ikke et valg lenger, det er en
+          // beskjed om at du valgte feil.
+          //
+          // «min» og «max» staar paa feltet, og nettleseren sperrer pilene
+          // og hjulet. Men et tidsfelt kan fortsatt skrives i for haand paa
+          // en maskin, og et hjul paa telefon foelger ikke alltid grensene —
+          // saa teksten under er den som faktisk holder, og knappen sperres.
+          bTidMin: ((this.state.bTidListe || [])[0] || {}).tid || '',
+          bTidMaks: ((this.state.bTidListe || [])[(this.state.bTidListe || []).length - 1] || {}).tid || '',
+          // Sto tida utenfor, skal det staa HVORFOR. «Vi stenger 13:00, og
+          // plassen varer to timer» forklarer at siste oppmoete er 11:00 —
+          // ellers ser 12:00 ut som en tid innenfor aapningstida som likevel
+          // ble avvist.
+          bTidUtenfor: (() => {
+            const t = String(this.state.bTid || '');
+            const liste = this.state.bTidListe || [];
+            return !!t && liste.length > 0 && !liste.some(x => x.tid === t);
+          })(),
+          bTidUtenforTekst: (() => {
+            const liste = this.state.bTidListe || [];
+            if (!liste.length) return '';
+            const fra = liste[0].tid;
+            const til = liste[liste.length - 1].tid;
+            const varer = String(this.katalogKurs().plassVarighet || '');
+            return fra === til
+              ? 'Den eneste tida som er ledig denne dagen er ' + fra + '.'
+              : 'Du kan komme mellom ' + fra + ' og ' + til + '.'
+                + (varer ? ' Plassen varer ' + varer + ', så det siste oppmøtet er ' + til + '.' : '');
+          })(),
           // Lengden staar ikke skrevet her. Den kommer fra serveren, av
           // Apent::PLASS_MINUTTER — sto den som tekst, ville feltet sagt
           // halvannen time den dagen plassen ble to.

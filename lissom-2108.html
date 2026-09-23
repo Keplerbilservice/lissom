@@ -23165,7 +23165,13 @@ window.__resources = {
         </div>
         <p style="margin: var(--space-3) 0 var(--space-5); font-size: var(--text-base); line-height: 1.6; color: var(--text-body); text-wrap: pretty;">{{ piTekst }}</p>
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-body);">
-          <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>{{ piMerknad }}</span></div>
+          <!-- Merknaden finnes bare for «Matsikret» og «Kunstobjekt».
+               Uten denne sc-if sto et ✓ helt alene over de to andre
+               punktene paa hver eneste vase, krukke og skaal — et hakk
+               uten tekst. Sett 23. september 2026 paa /butikk/26-vase. -->
+          <sc-if value="{{ piHarMerknad }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>{{ piMerknad }}</span></div>
+          </sc-if>
           <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>Dreid for hånd i verkstedet på Teie — farge og form varierer litt fra bildet</span></div>
           <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>Hent i butikken på Teie, eller få den sendt. Betal med Vipps.</span></div>
         </div>
@@ -55101,6 +55107,7 @@ class Component extends DCLogic {
           // eller få den sendt.»
           piMerknad: p ? (p.badge === 'Matsikret' ? 'Matsikret glasur — tåler oppvaskmaskin'
             : p.badge === 'Kunstobjekt' ? 'Dekorglasur — ment som pynt, ikke til mat' : '') : '',
+          piHarMerknad: !!(p && (p.badge === 'Matsikret' || p.badge === 'Kunstobjekt')),
           piBildeCss: p ? "url('" + p.image + "')" : 'none',
           piFokus: p ? this.fokusFor(p.image || p.bilde || '') : 'center',
           piLeggIKurv: () => { if (p && !p.utsolgt) { this.leggTil(p.id ? '#' + p.id : p.title); this.setState({ piProdukt: null }); } },

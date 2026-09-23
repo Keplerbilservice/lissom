@@ -267,6 +267,316 @@ final class Apent
     }
 
     /**
+     * Er dette et kurs som foelger aapningstidene?
+     */
+    public static function folgerApningstid(int $kursId): bool
+    {
+        $felt = DB::harKolonne('courses', 'folger_apningstid')
+            ? 'folger_apningstid'
+            : (DB::harKolonne('courses', 'gjenstand_i_kassa') ? 'gjenstand_i_kassa' : null);
+        if ($felt === null) {
+            return false;
+        }
+        return (int) DB::verdi(
+            "SELECT COALESCE({$felt}, 0) FROM courses WHERE id = :i AND status = 'publisert'",
+            ['i' => $kursId]
+        ) === 1;
+    }
+
+    /**
+     * Kvarterene man kan komme paa, en dag.
+     *
+     * Eieren, 23. september 2026: «kan vi vise dagene paa kurset slik som i
+     * kalender, men ogsaa mulig aa booke tid i dette mellomrommet? Her vil
+     * jeg ikke ha faste piller som viser alle timene, men dato og tid, er det
+     * fult maa den foreslaa neste ledige.»
+     *
+     * Foer dette var plassene ferdig utklipte oekter — 10:00, 11:30 — og man
+     * kunne bare velge en av dem. Naa er hvert kvarter inne i den aapne tida
+     * et mulig oppmoete.
+     *
+     * ── Hele lengden, eller ingenting ─────────────────────────────────
+     *
+     * Siste starttid i et vindu 10:00–13:00 er 11:30. Regelen sto fra for i
+     * utleggingen: «her ble resten av vinduet klippet til det som var igjen,
+     * og en aapen periode 10-13 ga en halvtime 12:30-13. Kunden velger et
+     * tidspunkt og har bordet halvannen time — da skal det ikke ligge en
+     * halvtime paa lista som ser ut som de andre.» Den gjelder like fullt
+     * naar kvarterene er frie.
+     *
+     * ── Ingen rader lages her ─────────────────────────────────────────
+     *
+     * Dette er et oppslag, ikke en bestilling. Oekta lages forst naar noen
+     * faktisk booker — se oktForTid(). Ellers kunne hvem som helst fylt
+     * course_sessions ved aa laste en side om igjen, og kalenderen ville
+     * druknet slik den gjorde av drop-in.
+     *
+     * @return array{vindu: string, tider: list<array{tid:string,ledige:int}>}
+     *         «vindu» er «10:00–13:00» i norsk tid, eller '' naar det er
+     *         stengt. «tider» er kvarterene med plass til $antall.
+     */
+    public static function ledigeKvarter(int $kursId, string $dato, int $antall = 1): array
+    {
+        $tomt = ['vindu' => '', 'tider' => []];
+        if (!self::folgerApningstid($kursId)) {
+            return $tomt;
+        }
+
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc  = new DateTimeZone('UTC');
+        $naa  = new DateTimeImmutable('now', $oslo);
+
+        $vinduer = self::vinduer($naa)[$dato] ?? [];
+        if ($vinduer === []) {
+            return $tomt;
+        }
+
+        // Spennet slik det vises: fra det forste aapner til det siste lukker.
+        // Staar det to vinduer paa dagen — kurs 10-13 og innstempling 18-21 —
+        // er det fortsatt ett spenn som beskriver dagen; tidene under sier
+        // hvor hullet er.
+        $forst = $vinduer[0]['fra'];
+        $sist  = $vinduer[count($vinduer) - 1]['til'];
+
+        $tider = [];
+        foreach ($vinduer as $v) {
+            $start = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
+            $slutt = new DateTimeImmutable($dato . ' ' . $v['til'], $oslo);
+            // En periode som har begynt staar fortsatt aapen, men ingen
+            // booker et kvarter som gikk for fem minutter siden.
+            if ($start <= $naa) {
+                $start = self::nesteKvarter($naa);
+            }
+            while ($start < $slutt) {
+                $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+                if ($til > $slutt) {
+                    break;
+                }
+                $ledige = Booking::ledigeIVindu(
+                    $kursId,
+                    $start->setTimezone($utc)->format('Y-m-d H:i:s'),
+                    $til->setTimezone($utc)->format('Y-m-d H:i:s')
+                );
+                if ($ledige >= $antall) {
+                    $tider[] = ['tid' => $start->format('H:i'), 'ledige' => $ledige];
+                }
+                $start = $start->modify('+15 minutes');
+            }
+        }
+
+        return ['vindu' => $forst . "\u{2013}" . $sist, 'tider' => $tider];
+    }
+
+    /**
+     * Forste kvarter med plass, fra og med en dag.
+     *
+     * Eieren: «er det fult maa den foreslaa neste ledige». Den leter framover
+     * dag for dag, og gir opp etter DAGER_FRAM — er det fullt saa lenge, er
+     * ikke svaret et klokkeslett, men at hun maa ta en telefon.
+     *
+     * @return array{dato:string,tid:string}|null
+     */
+    public static function forsteLedige(int $kursId, string $fraDato, int $antall = 1): ?array
+    {
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $dag  = new DateTimeImmutable($fraDato, $oslo);
+        for ($i = 0; $i < self::DAGER_FRAM; $i++) {
+            $d = $dag->modify('+' . $i . ' days')->format('Y-m-d');
+            $svar = self::ledigeKvarter($kursId, $d, $antall);
+            if ($svar['tider'] !== []) {
+                return ['dato' => $d, 'tid' => $svar['tider'][0]['tid']];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Oekta som begynner akkurat da — funnet, eller laget.
+     *
+     * Bestillingen sender et klokkeslett, ikke en oekt-id. Resten av huset
+     * regner fortsatt med en oekt: bookings peker paa en, deltakerlista leser
+     * tida av den, kalenderen tegner den, og Vipps-teksten henter datoen
+     * derfra. 108 steder leser «cs.start_tid». Lot vi bookingen baere tida si
+     * selv, maatte alle sammen laere det nye.
+     *
+     * Derfor dette: raden lages i det oeyeblikket noen faktisk booker, med
+     * det klokkeslettet kunden valgte. Da stemmer alt det andre av seg selv.
+     *
+     * ── Hvorfor den ikke lages under bla ──────────────────────────────
+     *
+     * Bare herfra, inne i bookingen. Lagde oppslaget rader, kunne hvem som
+     * helst fylt course_sessions ved aa laste en side om igjen — og
+     * kalenderen ville druknet slik den gjorde av drop-in.
+     *
+     * ── Hva som avvises ───────────────────────────────────────────────
+     *
+     * Tida maa vaere et kvarter, den maa ligge fram i tid, den maa ligge inne
+     * i et aapent vindu, og hele lengden maa faa plass. Alt sammen proeves
+     * her og ikke bare paa skjermen: et skjema kan sendes utenom skjermen.
+     *
+     * @param string $tidOslo «Y-m-d H:i» i norsk tid
+     * @throws RuntimeException naar tida ikke kan bookes
+     */
+    public static function oktForTid(int $kursId, string $tidOslo): int
+    {
+        if (!self::folgerApningstid($kursId)) {
+            throw new RuntimeException('Dette kurset har faste datoer.');
+        }
+
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc  = new DateTimeZone('UTC');
+        $naa  = new DateTimeImmutable('now', $oslo);
+
+        try {
+            $start = new DateTimeImmutable($tidOslo, $oslo);
+        } catch (Throwable $e) {
+            throw new RuntimeException('Velg et tidspunkt.');
+        }
+        if ((int) $start->format('i') % 15 !== 0 || (int) $start->format('s') !== 0) {
+            throw new RuntimeException('Velg et helt kvarter.');
+        }
+        if ($start <= $naa) {
+            throw new RuntimeException('Tidspunktet har passert. Velg et nytt.');
+        }
+
+        $slutt = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+        $dato  = $start->format('Y-m-d');
+
+        // Inne i et aapent vindu, med hele lengden.
+        $passer = false;
+        foreach (self::vinduer($naa)[$dato] ?? [] as $v) {
+            $vFra = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
+            $vTil = new DateTimeImmutable($dato . ' ' . $v['til'], $oslo);
+            if ($start >= $vFra && $slutt <= $vTil) {
+                $passer = true;
+                break;
+            }
+        }
+        if (!$passer) {
+            throw new RuntimeException('Verkstedet er ikke åpent så lenge da. Velg et annet tidspunkt.');
+        }
+
+        $startUtc = $start->setTimezone($utc)->format('Y-m-d H:i:s');
+        $sluttUtc = $slutt->setTimezone($utc)->format('Y-m-d H:i:s');
+
+        // Finnes raden fra for — to som booker samme kvarter deler oekt —
+        // brukes den. Ellers ville plasstallet ligget spredt paa to rader som
+        // sier det samme.
+        $fra = DB::en(
+            "SELECT id FROM course_sessions
+              WHERE course_id = :k AND start_tid = :s AND status = 'planlagt'",
+            ['k' => $kursId, 's' => $startUtc]
+        );
+        if ($fra !== null) {
+            return (int) $fra['id'];
+        }
+
+        $felt = [
+            'course_id' => $kursId,
+            'start_tid' => $startUtc,
+            'slutt_tid' => $sluttUtc,
+            'status'    => 'planlagt',
+        ];
+        // Merket skiller den fra en oekt noen har lagt inn for haand. Det er
+        // ogsaa det ledigeRegnet() leser for aa vite at den bare holder det
+        // som faktisk er booket, ikke et helt plasstall.
+        if (DB::harKolonne('course_sessions', 'fra_apningstid')) {
+            $felt['fra_apningstid'] = 1;
+        }
+        return DB::settInn('course_sessions', $felt);
+    }
+
+    /**
+     * Neste kvarter.    /**
+     * Neste kvarter.    /**
+     * Neste kvarter. Ingen booker et kvarter som begynte for fem minutter
+     * siden.
+     */
+    private static function nesteKvarter(DateTimeImmutable $t): DateTimeImmutable
+    {
+        $min = (int) $t->format('i');
+        $opp = (int) (ceil(($min + 1) / 15) * 15);
+        return $opp >= 60
+            ? $t->setTime((int) $t->format('H'), 0)->modify('+1 hour')
+            : $t->setTime((int) $t->format('H'), $opp);
+    }
+
+    /**
+     * Vinduene doeren staar aapen i, dato for dato.
+     *
+     * Sto inne i leggUtPaaApneTider() og bare der. Da bestillingen skulle
+     * kunne tilby et hvilket som helst kvarter — eieren, 23. september 2026:
+     * «er det fult maa den foreslaa neste ledige» — trengte to veier det
+     * samme svaret, og da skal det ikke regnes to steder.
+     *
+     * Tidene er norsk tid, «HH:MM», under datoen de hoerer til.
+     *
+     * @return array<string, list<array{fra:string,til:string}>>
+     */
+    private static function vinduer(DateTimeImmutable $naa): array
+    {
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $naa  = $naa->setTimezone($oslo);
+        $idag = $naa->format('Y-m-d');
+
+        // ── Vinduene doeren staar aapen i ──────────────────────────────────
+        //
+        // Hele dagen, fra det forste begynner til det siste slutter. Det er
+        // det samme spennet som staar i bunnteksten paa nettsiden.
+        //
+        // Timene mellom to kurs teller med. Lissom 27. august: «husk tiden
+        // som er mellom kurs ogsaa skal vaere tilgjengelig aa booke» — gaar
+        // det et kurs 10-13 og et til 16-19, er hun der hele dagen, og da
+        // skal noen kunne sette seg ned klokka 14.
+        //
+        // Her ble hullet stengt en periode. Det var feil vei: det gjorde en
+        // dag hun uansett er i huset mindre bookbar enn en dag hun kommer
+        // innom en time.
+        $alt = self::dager();
+        $vinduer = [];
+        foreach ($alt['dager'] as $d) {
+            if ($d['stengt'] || $d['fra'] === null || $d['til'] === null) {
+                continue;
+            }
+            $vinduer[(string) $d['dato']] = [['fra' => (string) $d['fra'], 'til' => (string) $d['til']]];
+        }
+
+        // Stemplet inn: doeren staar aapen naa, uansett hva kalenderen sier.
+        // Er dagen ikke aapen fra for, aapnes den tre timer fram. Er den
+        // aapen, men slutter for, forlenges den — noen ER der.
+        $bemannet = Stempling::verkstedetBemannet();
+        if ($bemannet['apen']) {
+            $fra = self::nesteKvarter($naa);
+            $til = $fra->modify('+3 hours');
+            if ($til->format('Y-m-d') !== $idag) {
+                $til = $naa->setTime(23, 45);
+            }
+            if ($til > $fra) {
+                $vinduer[$idag][] = ['fra' => $fra->format('H:i'), 'til' => $til->format('H:i')];
+
+                // Henger innstemplinga sammen med dagen fra for, er det én
+                // periode. Er den ikke det — kurs 10-13, stemplet inn 18 —
+                // staar de hver for seg: hun var der om formiddagen og er
+                // der naa, men ikke i mellomtida.
+                usort($vinduer[$idag], static fn(array $a, array $b): int => strcmp($a['fra'], $b['fra']));
+                $slaatt = [];
+                foreach ($vinduer[$idag] as $v2) {
+                    $siste = $slaatt === [] ? null : array_key_last($slaatt);
+                    if ($siste !== null && $v2['fra'] <= $slaatt[$siste]['til']) {
+                        $slaatt[$siste]['til'] = max($slaatt[$siste]['til'], $v2['til']);
+                        continue;
+                    }
+                    $slaatt[] = $v2;
+                }
+                $vinduer[$idag] = array_values($slaatt);
+            }
+        }
+
+
+        return $vinduer;
+    }
+
+    /**
      * Paint on Pots og lignende, lagt ut paa de aapne tidene.
      *
      * Lissom ba om at Paint on Pots skal kunne bookes naar hun allerede er
@@ -320,67 +630,7 @@ final class Apent
         $naa  = $naaInn !== null ? $naaInn->setTimezone($oslo) : new DateTimeImmutable('now', $oslo);
         $idag = $naa->format('Y-m-d');
 
-        /** Neste kvarter. Ingen booker et kvarter som begynte for fem minutter siden. */
-        $nesteKvarter = static function (DateTimeImmutable $t): DateTimeImmutable {
-            $min = (int) $t->format('i');
-            $opp = (int) (ceil(($min + 1) / 15) * 15);
-            return $opp >= 60
-                ? $t->setTime((int) $t->format('H'), 0)->modify('+1 hour')
-                : $t->setTime((int) $t->format('H'), $opp);
-        };
-
-        // ── Vinduene doeren staar aapen i ──────────────────────────────────
-        //
-        // Hele dagen, fra det forste begynner til det siste slutter. Det er
-        // det samme spennet som staar i bunnteksten paa nettsiden.
-        //
-        // Timene mellom to kurs teller med. Lissom 27. august: «husk tiden
-        // som er mellom kurs ogsaa skal vaere tilgjengelig aa booke» — gaar
-        // det et kurs 10-13 og et til 16-19, er hun der hele dagen, og da
-        // skal noen kunne sette seg ned klokka 14.
-        //
-        // Her ble hullet stengt en periode. Det var feil vei: det gjorde en
-        // dag hun uansett er i huset mindre bookbar enn en dag hun kommer
-        // innom en time.
-        $alt = self::dager();
-        $vinduer = [];
-        foreach ($alt['dager'] as $d) {
-            if ($d['stengt'] || $d['fra'] === null || $d['til'] === null) {
-                continue;
-            }
-            $vinduer[(string) $d['dato']] = [['fra' => (string) $d['fra'], 'til' => (string) $d['til']]];
-        }
-
-        // Stemplet inn: doeren staar aapen naa, uansett hva kalenderen sier.
-        // Er dagen ikke aapen fra for, aapnes den tre timer fram. Er den
-        // aapen, men slutter for, forlenges den — noen ER der.
-        $bemannet = Stempling::verkstedetBemannet();
-        if ($bemannet['apen']) {
-            $fra = $nesteKvarter($naa);
-            $til = $fra->modify('+3 hours');
-            if ($til->format('Y-m-d') !== $idag) {
-                $til = $naa->setTime(23, 45);
-            }
-            if ($til > $fra) {
-                $vinduer[$idag][] = ['fra' => $fra->format('H:i'), 'til' => $til->format('H:i')];
-
-                // Henger innstemplinga sammen med dagen fra for, er det én
-                // periode. Er den ikke det — kurs 10-13, stemplet inn 18 —
-                // staar de hver for seg: hun var der om formiddagen og er
-                // der naa, men ikke i mellomtida.
-                usort($vinduer[$idag], static fn(array $a, array $b): int => strcmp($a['fra'], $b['fra']));
-                $slaatt = [];
-                foreach ($vinduer[$idag] as $v2) {
-                    $siste = $slaatt === [] ? null : array_key_last($slaatt);
-                    if ($siste !== null && $v2['fra'] <= $slaatt[$siste]['til']) {
-                        $slaatt[$siste]['til'] = max($slaatt[$siste]['til'], $v2['til']);
-                        continue;
-                    }
-                    $slaatt[] = $v2;
-                }
-                $vinduer[$idag] = array_values($slaatt);
-            }
-        }
+        $vinduer = self::vinduer($naa);
 
         $laget = 0;
         $fjernet = 0;
@@ -431,7 +681,7 @@ final class Apent
                     // En periode som har begynt staar fortsatt aapen. Da
                     // begynner plassen naa, ikke i formiddag.
                     if ($start <= $naa) {
-                        $start = $nesteKvarter($naa);
+                        $start = self::nesteKvarter($naa);
                     }
                     while ($start < $slutt && $paaDagen < $takPerDag) {
                         $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');

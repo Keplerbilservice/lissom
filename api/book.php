@@ -15,6 +15,15 @@ Foresporsel::krevSammeOpphav();
 Rate::sjekk('book', maks: 15, vindu: 600);
 
 $oktId  = Foresporsel::heltall('oktId');
+// Kurs som foelger aapningstidene sender et klokkeslett, ikke en oekt.
+//
+// Eieren, 23. september 2026: «her vil jeg ikke ha faste piller som viser
+// alle timene, men dato og tid». Paint on Pots har ingen ferdige oekter aa
+// peke paa lenger — kunden velger et kvarter inne i den aapne tida, og raden
+// lages i det oeyeblikket bookingen gaar gjennom.
+$kursId  = Foresporsel::heltall('kursId');
+$tidOslo = trim(Foresporsel::tekst('tid'));
+$laget   = 0;
 $antall = max(1, min(10, Foresporsel::heltall('antall', 1)));
 $navn   = mb_substr(Foresporsel::tekst('navn'), 0, 191);
 $epost  = mb_substr(Foresporsel::tekst('epost'), 0, 191);
@@ -34,7 +43,7 @@ if ($medlem !== null) {
     $telefon = $telefon !== '' ? $telefon : (string) ($medlem['telefon'] ?? '');
 }
 
-if ($oktId <= 0) {
+if ($oktId <= 0 && ($kursId <= 0 || $tidOslo === '')) {
     Svar::feil('Velg en dato først.');
 }
 if ($navn === '') {
@@ -59,6 +68,42 @@ if (Foresporsel::tekst('harAllergier') === 'ja' && $allergier === '') {
 // Ferie. Datoen er borte fra nettsida, men skjult er ikke det samme som
 // stengt — en gammel fane eller en delt lenke kan sende okt-id-en hit lenge
 // etter at dagen ble merket. Da skal den stoppes her.
+// Klokkeslettet gjores om til en oekt foer resten av kontrollene: alt under
+// — ferie, tema, pris, plass — leser oekta, og skal lese den samme enten
+// kunden valgte en ferdig dato eller et kvarter.
+//
+// Raden lages her og ikke inne i Booking::reserverOgBetal(), som slaar opp
+// oekta foer den aapner en transaksjon. Gaar noe galt etterpaa, ryddes den
+// bort igjen nederst — en tom oekt ingen har booket har ingenting i
+// kalenderen aa gjore.
+if ($oktId <= 0) {
+    try {
+        $oktId = Apent::oktForTid($kursId, $tidOslo);
+        $laget = $oktId;
+        // Ryddes bort igjen om noe under svikter — ogsaa ved en fatal feil.
+        //
+        // Sperren staar i spoerringa, ikke i en variabel: raden tas bare naar
+        // ingen har booket den. Rakk noen andre aa ta det samme kvarteret
+        // mens dette sto paa, blir den staaende. En tom oekt ingen har
+        // booket har derimot ingenting i kalenderen aa gjore — det var slik
+        // drop-in druknet den.
+        register_shutdown_function(static function () use ($laget): void {
+            try {
+                DB::kjor(
+                    'DELETE FROM course_sessions
+                      WHERE id = :i
+                        AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.course_session_id = :i2)',
+                    ['i' => $laget, 'i2' => $laget]
+                );
+            } catch (Throwable $e) {
+                // Opprydding skal aldri velte et svar som alt er sendt.
+            }
+        });
+    } catch (RuntimeException $e) {
+        Svar::feil($e->getMessage());
+    }
+}
+
 if (Ferie::stengt((string) DB::verdi(
     'SELECT start_tid FROM course_sessions WHERE id = :id', ['id' => $oktId]
 ))) {

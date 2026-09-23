@@ -43,10 +43,17 @@ final class Apent
     /**
      * Hvor lenge én plass varer.
      *
-     * Lissom 27. august: «endre ... paint on pots fra 2 timer, til
-     * 1,5 timer».
+     * Eieren, 23. september 2026: «endre tekst og varighet til 2 timer».
+     *
+     * Den sto paa to timer til 27. august, da Lissom ba om det motsatte:
+     * «endre ... paint on pots fra 2 timer, til 1,5 timer». Naa er den
+     * tilbake.
+     *
+     * Tallet staar ett sted. Teksten kunden leser regnes av det — se
+     * katalog.php, som gjor minutter om til ord — saa de to kan ikke si hver
+     * sitt.
      */
-    public const PLASS_MINUTTER = 90;
+    public const PLASS_MINUTTER = 120;
 
     /**
      * Hoyst saa mange plasser per dag.
@@ -55,8 +62,8 @@ final class Apent
      * Kortet paa sida er ett uansett — dagene og tidene staar inne i
      * bestillingen — saa taket er ikke for aa spare plass paa skjermen.
      *
-     * Aatte plasser à halvannen time er tolv timer. Det er lengre enn en dag
-     * i verkstedet noen gang varer, og da er det aapningstida som setter
+     * Aatte plasser à to timer er seksten timer. Det er lengre enn en dag i
+     * verkstedet noen gang varer, og da er det aapningstida som setter
      * grensa, ikke dette tallet. Sto det lavere, ville kvelden falt bort paa
      * en lang dag.
      */
@@ -267,6 +274,36 @@ final class Apent
     }
 
     /**
+     * Plassene admin ikke skal se.
+     *
+     * Eieren, 23. september 2026: «ikke vise i admin før det er booking».
+     *
+     * Plassene lages av aapningstidene, hver dag, framover. De er et TILBUD —
+     * «doera staar aapen her» — ikke noe som skjer. Sto de i adminkalenderen
+     * og i datolista, fylte de skjermen med rader ingen skal gjore noe med,
+     * og de virkelige kursene druknet mellom dem. Det var slik drop-in saa
+     * ut: 54 linjer i uke 36 mot ni kurs, og «jeg er fittelei av aa si ting
+     * hundre ganger».
+     *
+     * I det oeyeblikket noen booker, er den ikke lenger et tilbud. Da er det
+     * en avtale verkstedet skal vite om, og da staar den der som alt annet.
+     *
+     * Merk hva dette IKKE gjor: raden blir staaende i basen, og nettsida
+     * viser den som for. Dette er bare hva admin faar se.
+     *
+     * Brukes som et ledd i en WHERE. «$cs» er aliaset paa course_sessions.
+     */
+    public static function skjulUtenBooking(string $cs = 'cs'): string
+    {
+        if (!DB::harKolonne('course_sessions', 'fra_apningstid')) {
+            return '1 = 1';
+        }
+        return "(COALESCE({$cs}.fra_apningstid, 0) = 0
+                 OR EXISTS (SELECT 1 FROM bookings b_sk
+                             WHERE b_sk.course_session_id = {$cs}.id))";
+    }
+
+    /**
      * Er dette et kurs som foelger aapningstidene?
      */
     public static function folgerApningstid(int $kursId): bool
@@ -300,7 +337,7 @@ final class Apent
      * Siste starttid i et vindu 10:00–13:00 er 11:30. Regelen sto fra for i
      * utleggingen: «her ble resten av vinduet klippet til det som var igjen,
      * og en aapen periode 10-13 ga en halvtime 12:30-13. Kunden velger et
-     * tidspunkt og har bordet halvannen time — da skal det ikke ligge en
+     * tidspunkt og har bordet i to timer — da skal det ikke ligge en
      * halvtime paa lista som ser ut som de andre.» Den gjelder like fullt
      * naar kvarterene er frie.
      *
@@ -586,7 +623,7 @@ final class Apent
      * i gjenstand_i_kassa, som gjorde to jobber paa én gang: «gjenstanden
      * betales i verkstedet» OG «datoene lages av aapningstidene».
      *
-     * Plassene klippes ut av den aapne tida, halvannen time om gangen —
+     * Plassene klippes ut av den aapne tida, to timer om gangen —
      * ogsaa timene mellom to kurs, for da er hun der. Er verkstedet stemplet
      * inn paa en dag det ellers ikke skjer noe, aapnes det tre timer fram.
      *
@@ -663,7 +700,7 @@ final class Apent
 
             // ── Hva som skal staa ute ──────────────────────────────────────
             //
-            // Den aapne tida klippes i plasser paa halvannen time, saa folk
+            // Den aapne tida klippes i plasser paa to timer, saa folk
             // har noe aa velge mellom paa en lang dag.
             //
             // Hoyst PLASSER_PER_DAG per dag — se konstanten: taket ligger
@@ -690,7 +727,7 @@ final class Apent
                         // Her ble resten av vinduet klippet til det som var
                         // igjen, og en aapen periode 10-13 ga en halvtime
                         // 12:30-13. Kunden velger et tidspunkt og har bordet
-                        // halvannen time — da skal det ikke ligge en halvtime
+                        // to timer — da skal det ikke ligge en halvtime
                         // paa lista som ser ut som de andre.
                         if ($til > $slutt) {
                             break;

@@ -115,7 +115,7 @@ unset($d);
 
 // ── Stripa: Paint on Pots i dag ────────────────────────────────────────
 //
-// Sittingene varer halvannen time og ligger rygg mot rygg — 10:00, 11:30 og
+// Sittingene varer to timer og ligger rygg mot rygg — 10:00, 12:00 og
 // 17:00, 18:30. To som henger sammen er ett tidsrom man stikker innom, ikke
 // to avtaler man velger mellom.
 //

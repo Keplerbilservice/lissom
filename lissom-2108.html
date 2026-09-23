@@ -41345,14 +41345,14 @@ class Component extends DCLogic {
     // ── Plassene som er klippet av aapningstida ──────────────────────────
     //
     // Paint on Pots foelger aapningstida, og den klippes i plasser
-    // paa halvannen time (Apent::PLASS_MINUTTER). Gaar det et kurs 10-13, er
+    // paa to timer (Apent::PLASS_MINUTTER). Gaar det et kurs 10-13, er
     // verkstedet aapent 10-13, og begge to legges ut som to plasser: 10:00 og
     // 11:30. I kalenderen ble det to like linjer under hverandre — og med to
     // kurs som foelger tida, fire. Eieren, 29. august: «jeg vil ikke at det
     // skal splittes».
     //
     // Plassene slaas sammen til én linje her, i visningen. Bookingen roeres
-    // ikke: kunden velger fortsatt et tidspunkt og har bordet halvannen time.
+    // ikke: kunden velger fortsatt et tidspunkt og har bordet i to timer.
     // Trykk paa linja, saa staar tidene der hver for seg.
     //
     // Tid mellom to kurs deler ikke linja. Eieren, 29. august: «selv om det er
@@ -46962,7 +46962,7 @@ class Component extends DCLogic {
         // den samme rada, og «Vis alle» gjor jobben til begge.
         //
         // Et fast tilbud sto her ogsaa, og hoerer ikke hjemme i en kategorirad
-        // over kurs: det er ikke et kurs, men halvannen time i verkstedet med ditt
+        // over kurs: det er ikke et kurs, men to timer i verkstedet med ditt
         // eget arbeid. Det har sitt eget menypunkt.
         //
         // Sidene ligger der de laa, i toppmenyen. Det er bare knappene i
@@ -48962,9 +48962,17 @@ class Component extends DCLogic {
           bVisTidsknapper: !this.folgerApningstid(),
           bTidVerdi: String(this.state.bTid || ''),
           bTidSett: (e) => this.setState({ bTid: String((e && e.target && e.target.value) || '') }),
+          // Lengden staar ikke skrevet her. Den kommer fra serveren, av
+          // Apent::PLASS_MINUTTER — sto den som tekst, ville feltet sagt
+          // halvannen time den dagen plassen ble to.
           bTidHjelp: this.state.bTidHenter
             ? 'Henter tidene \u2026'
-            : (String(this.state.bTidFeil || '') || 'Du har plassen i halvannen time fra tidspunktet du velger.'),
+            : (String(this.state.bTidFeil || '') || (() => {
+                const varer = String(this.katalogKurs().plassVarighet || '');
+                return varer
+                  ? 'Du har plassen i ' + varer + ' fra tidspunktet du velger.'
+                  : 'Du har plassen en stund fra tidspunktet du velger.';
+              })()),
           // Full dag: si hva som er neste, og la den tas med ett trykk.
           bTidFull: !this.state.bTidHenter
             && !!this.state.bTidDato
@@ -52577,7 +52585,7 @@ class Component extends DCLogic {
 
         // ── Tidene som foelger aapningstida ─────────────────────────────
         //
-        // Paint on Pots klippes i plasser paa halvannen time. En
+        // Paint on Pots klippes i plasser paa to timer. En
         // aapen dag blir seks like linjer under hverandre. Kalenderen slaar
         // dem sammen til én — «6 tider» — og denne lista gjor det samme, med
         // den samme regelen: bare oekter en regel har laget, og bare naar de

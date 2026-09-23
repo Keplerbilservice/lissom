@@ -78,6 +78,7 @@ $fulltKol  = DB::harKolonne('course_sessions', 'vis_fullt')
 // er — uten tildelt holder — framfor aa vise en som ikke er her lenger.
 $holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id AND h.aktiv = 1' : '';
 
+$utenBooking = Apent::skjulUtenBooking('cs');
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, cs.course_id,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
@@ -86,6 +87,10 @@ $okter = DB::alle(
        JOIN courses c ON c.id = cs.course_id
        {$holderBli}
       WHERE cs.start_tid >= :fra AND cs.start_tid < :til
+        -- En aapen plass ingen har booket er et tilbud, ikke noe som skjer.
+        -- Eieren, 23. september 2026: «ikke vise i admin før det er booking».
+        -- Regelen staar i Apent::skjulUtenBooking().
+        AND {$utenBooking}
    ORDER BY cs.start_tid",
     ['fra' => $fra, 'til' => $til]
 );

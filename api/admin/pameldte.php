@@ -114,6 +114,9 @@ if ($oktId <= 0) {
            FROM course_sessions cs
            JOIN courses c ON c.id = cs.course_id
           WHERE cs.status <> 'avlyst' AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
+            -- Se Apent::skjulUtenBooking(): en aapen plass ingen har booket
+            -- staar ikke her. Den er et tilbud, ikke en avtale.
+            AND " . Apent::skjulUtenBooking('cs') . "
           ORDER BY cs.start_tid"
     );
 

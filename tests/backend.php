@@ -17942,6 +17942,47 @@ sjekk('… og sender kurset og tida, ikke en oekt',
     str_contains($skjerm, '    const kursId = velgerTid ? this.kursIdNaa() : 0;')
     && str_contains($skjerm, "        tid: tid && tidDato ? (tidDato + ' ' + tid) : '',"));
 
+// ── To timer, og ingenting i admin for det er booket ─────────────────────
+//
+// Eieren, 23. september 2026: «endre tekst og varighet til 2 timer, ikke vise
+// i admin før det er booking».
+//
+// Lengden sto paa to timer til 27. august, da Lissom ba om det motsatte:
+// «endre ... paint on pots fra 2 timer, til 1,5 timer». Naa er den tilbake.
+$apent2  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/apent.php');
+$malFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php');
+$kalFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$pamFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
+$kursFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$skjerm2 = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('plassen varer to timer, og tallet staar ett sted',
+    str_contains($apent2, '    public const PLASS_MINUTTER = 120;')
+    && str_contains($malFil, "                'varighetTekst'   => 'To timer fra tidspunktet du velger',"));
+
+// Teksten kunden leser skal regnes av tallet, ikke skrives ved siden av det.
+sjekk('… og teksten i tidsfeltet regnes av lengden, ikke skrevet ut',
+    str_contains($skjerm2, "                const varer = String(this.katalogKurs().plassVarighet || '');")
+    && !str_contains($skjerm2, "'Du har plassen i halvannen time fra tidspunktet du velger.'"));
+
+// En aapen plass ingen har booket er et tilbud, ikke noe som skjer. Sto de i
+// admin, druknet de virkelige kursene mellom dem — slik drop-in gjorde.
+sjekk('regelen for hva admin skjuler staar ett sted',
+    str_contains($apent2, "    public static function skjulUtenBooking(string \$cs = 'cs'): string")
+    && str_contains($apent2, "                 OR EXISTS (SELECT 1 FROM bookings b_sk\n                             WHERE b_sk.course_session_id = {\$cs}.id))")
+    // Uten kolonna finnes det ingen aapne plasser aa skjule.
+    && str_contains($apent2, "            return '1 = 1';"));
+
+sjekk('… og alle tre stedene i admin bruker den',
+    str_contains($kalFil, "\$utenBooking = Apent::skjulUtenBooking('cs');")
+    && str_contains($kalFil, '        AND {$utenBooking}')
+    && str_contains($pamFil, "            AND \" . Apent::skjulUtenBooking('cs') . \"")
+    && str_contains($kursFil, "                 AND ' . Apent::skjulUtenBooking('cs') . '"));
+
+// Tallet paa kortet og lista under maa si det samme.
+sjekk('… ogsaa tellingen av datoer framover',
+    str_contains($kursFil, "                AND \" . Apent::skjulUtenBooking('cs') . \"\n           GROUP BY course_id"));
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme

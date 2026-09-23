@@ -6262,19 +6262,31 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     }
 }
 
-// ── Et planlagt kurs holder plassene sine ──────────────────────────────
+// ── Et planlagt kurs holder bare det som faktisk er booket ─────────────
 //
-// Eieren, 30. august: «det maa ikke vaere mulig aa booke drop in eller
-// dreieskive paa forhaand for medlemmer naar det er planlagt kurs. Da er de
-// ressursene booket og opptatt med kurs.»
+// Eieren, 23. september 2026: «jeg vil at det kun skal vises om opptatt om
+// det er 12 paa kurs, altsaa faktiske paameldte».
 //
-// Spurt om et kurs med faerre plasser enn ressursen har: «kurset holder av
-// sine plasser». Et dreiekurs paa aatte tar altsaa alle aatte skivene, ogsaa
-// for noen har meldt seg paa.
+// Her holdt kurset HELE plasstallet sitt saa lenge det varte, ogsaa for noen
+// hadde meldt seg paa — eieren, 30. august: «det maa ikke vaere mulig aa
+// booke drop in eller dreieskive paa forhaand for medlemmer naar det er
+// planlagt kurs».
+//
+// Folgen sto paa nettsida 23. september: Paint on Pots var «Kurs i
+// verkstedet» onsdag og torsdag uten at én person hadde meldt seg paa noe.
+// Aapningstida ER de timene det gaar et kurs, saa kurset dekket til hele
+// vinduet det selv gjorde bookbart.
 if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     $kurs = DB::en(
         "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.ressurs_id,
-                COALESCE(cs.kapasitet, c.kapasitet) AS kap
+                COALESCE(cs.kapasitet, c.kapasitet) AS kap,
+                COALESCE(cs.manuelt_opptatt, 0)
+                + COALESCE((SELECT SUM(b.antall) FROM bookings b
+                             WHERE b.course_session_id = cs.id
+                               AND (b.status = 'betalt'
+                                    OR (b.status = 'reservert'
+                                        AND (b.reservert_til IS NULL
+                                             OR b.reservert_til > UTC_TIMESTAMP())))), 0) AS opptatt
            FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
           WHERE cs.status = 'planlagt' AND cs.fra_apningstid = 0
             AND c.ressurs_id IS NOT NULL AND cs.slutt_tid IS NOT NULL
@@ -6292,7 +6304,6 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     );
     if ($kurs !== null) {
         $tak = Booking::verkstedTak()[(int) $kurs['ressurs_id']] ?? 0;
-        // De aapne plassene som ligger inni kursets tid.
         $aapne = DB::alle(
             'SELECT cs.id FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
               WHERE cs.fra_apningstid = 1 AND cs.status = \'planlagt\'
@@ -6303,27 +6314,25 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
         );
         if ($aapne !== [] && $tak > 0) {
             $led = Booking::ledigePlasserFlere(array_column($aapne, 'id'));
-            $ventet = max(0, $tak - (int) $kurs['kap']);
-            sjekk('en aapen plass er stengt mens kurset gaar',
+            // Taket minus det kurset FAKTISK legger beslag paa, aldri mer enn
+            // den aapne plassen selv har rom til.
+            $ventet = max(0, min((int) $kurs['kap'], $tak - (int) $kurs['opptatt']));
+            sjekk('en aapen plass er stengt bare av dem som faktisk er paameldt',
                 max($led) === $ventet,
                 'ventet ' . $ventet . ' ledige (' . $tak . ' minus kursets '
-                . $kurs['kap'] . '), fikk ' . max($led));
+                . $kurs['opptatt'] . ' paameldte), fikk ' . max($led));
+            // Selve poenget: et kurs uten paameldte sperrer ingenting.
+            if ((int) $kurs['opptatt'] === 0) {
+                sjekk('… og et kurs uten paameldte sperrer ingenting',
+                    max($led) > 0,
+                    'kurset har ingen paameldte, men den aapne plassen sto paa '
+                    . max($led) . ' ledige');
+            }
         }
-        // Men kurset selv skal ikke sperre for seg selv: det er nettopp det
-        // som skjer om en tom aapen plass paa aatte holder plasstallet sitt
-        // ogsaa. Da tar de to livet av hverandre.
+        // Kurset skal ikke sperre for seg selv heller.
         $egen = Booking::ledigePlasserFlere([(int) $kurs['id']])[(int) $kurs['id']];
-        sjekk('… men kurset sperrer ikke for seg selv',
+        sjekk('… og kurset sperrer ikke for seg selv',
             $egen > 0, 'kurset sto med ' . $egen . ' ledige');
-
-        // Og kunden skal faa vite hvorfor. «Fullbooket» paa en aapen time
-        // der det ikke er én booking, men et kurs, gir en telefon fra en som
-        // ikke ser noen i verkstedet.
-        if (isset($aapne) && $aapne !== [] && ($ventet ?? 1) === 0) {
-            $sp = Booking::sperretAvAnnet(array_column($aapne, 'id'));
-            sjekk('… og en stengt aapen time sier at det gaar kurs',
-                in_array(true, $sp, true), 'ingen av dem er merket sperret');
-        }
     }
 }
 
@@ -17911,10 +17920,23 @@ sjekk('plassregelen staar ett sted, og brukes begge veier',
     && str_contains($bookFil, "        \$aktiv2 = self::aktivSql('b2');")
     && str_contains($bookFil, '    public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int'));
 
-// De aapne plassene holder bare det som er booket — ellers ville en tom aapen
-// plass sperret dreiekurset ved siden av.
-sjekk('et tidsrom regnes med samme unntak som en oekt',
-    str_contains($bookFil, "                        CASE WHEN cs2.fra_apningstid = 1 THEN 0\n                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,"));
+// Ingenting holder et plasstall det ikke har solgt.
+//
+// Eieren, 23. september 2026: «jeg vil at det kun skal vises om opptatt om det
+// er 12 paa kurs, altsaa faktiske paameldte». Da trengs hverken GREATEST rundt
+// plasstallet eller unntaket for de aapne plassene — alle tre stedene teller
+// det samme: manuelt opptatte plasser pluss aktive bookinger.
+//
+// Foerste utgave av denne proeven sa «ingen GREATEST i fila». Den er der
+// fortsatt, to steder — «GREATEST(0, ...)» som holder et regnestykke over
+// null, og det er noe helt annet. Proeven er rettet, ikke koden.
+sjekk('ingenting holder et plasstall det ikke har solgt',
+    !str_contains($bookFil, 'CASE WHEN cs2.fra_apningstid = 1 THEN 0')
+    && !str_contains($bookFil, 'ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END')
+    && substr_count($bookFil, 'COALESCE(cs2.manuelt_opptatt, 0)') === 3
+    // De to som er igjen er bunnstopp, ikke plassreservasjon.
+    && substr_count($bookFil, 'GREATEST(0,') === 2
+    && substr_count($bookFil, 'GREATEST(') === 2);
 
 sjekk('oppslaget svarer med vindu, tider og neste ledige',
     str_contains($tiderFil, "\$svar = Apent::ledigeKvarter(\$kursId, \$dato, \$antall);")

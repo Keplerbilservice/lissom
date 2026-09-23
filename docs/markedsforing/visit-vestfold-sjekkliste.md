@@ -45,3 +45,13 @@ Adresse: https://events-submission.newmindmedia.com/vestfold
 - [ ] Nye datoer lagt ut på lissom.no? Send et nytt skjema — kalenderen
       oppdateres ikke av seg selv.
 - [ ] Datoer avlyst? Skriv til info@visitvestfold.com så de tar dem ut.
+
+## Sendt til Visit Vestfold (oppdateres hver gang)
+
+Den månedlige rutinen «Lissom: nye datoer til Visit Vestfold» sammenligner
+lista under med lissom.no/api/kurs.php og sier fra om nye datoer.
+
+| Arrangement | Slug | Datoer sendt | Når |
+|---|---|---|---|
+| Sip & Clay | sip-and-clay | 2026-10-10, 2026-12-05, 2027-02-06, 2027-04-10 | 23. sep 2026 |
+| Date Night | date-night | 2026-10-29, 2026-11-19, 2026-12-17, 2027-01-28 | 23. sep 2026 |

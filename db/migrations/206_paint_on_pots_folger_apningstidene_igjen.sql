@@ -1,0 +1,42 @@
+-- Paint on Pots foelger aapningstidene igjen.
+--
+-- Eieren, 23. september 2026: «skru det på du».
+--
+-- ── Hvorfor den ble slaatt av ─────────────────────────────────────────
+--
+-- 2. september, migrasjon 135: «hvorfor vises paint on pots i kalenderen naar
+-- det ikke er kurs?» og «jeg vil ikke at kurset skal foelge automatisk, kan du
+-- slette det og gjore det saa jeg maa legge ut tid selv?»
+--
+-- Grunnen sto i den migrasjonen: én aapen dag ga fire til seks Paint on
+-- Pots-linjer i kalenderen, mot én for et ekte kurs. Plassene er et tilbud —
+-- «doera staar aapen her» — og de fylte skjermen med rader ingen skulle gjore
+-- noe med.
+--
+-- ── Hvorfor den kan staa paa naa ──────────────────────────────────────
+--
+-- Fordi den grunnen er borte. Apent::skjulUtenBooking() tar de genererte
+-- plassene ut av adminkalenderen, Paameldte, datolista paa kurskortet og
+-- tellingen av datoer framover — helt til noen faktisk har booket. Da er det
+-- en avtale verkstedet skal vite om, og da staar den der som alt annet.
+--
+-- Eieren, samme dag: «ikke vise i admin før det er booking».
+--
+-- Nettsida viser dem som for. Det var aldri der problemet laa.
+--
+-- ── Hva som skjer etterpaa ────────────────────────────────────────────
+--
+-- Ingenting maa trykkes. Tikk kaller Apent::leggUtPaaApneTider() av seg selv,
+-- og plassene kommer naar den neste gaar. Hver plass varer to timer — eieren,
+-- 23. september: «endre tekst og varighet til 2 timer».
+--
+-- ── Det denne ikke gjoer ──────────────────────────────────────────────
+--
+-- Statusen paa kurset roeres ikke. Utleggingen henter «folger_apningstid = 1
+-- AND status = 'publisert'», saa staar kurset som utkast, skjer det fortsatt
+-- ingenting — og aa publisere et kurs er aa legge det ut for alle. Det er
+-- eierens trykk, ikke mitt.
+
+UPDATE courses
+   SET folger_apningstid = 1
+ WHERE tittel = 'Paint on Pots';

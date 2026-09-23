@@ -235,9 +235,19 @@ personopplysningene til medlemmene og alle hemmelighetene i `innstillinger`;
 ligger den et sted nettet når, er sikkerhetskopien selv lekkasjen.
 
 Jobben tar `mysqldump` når den finnes, og skriver ellers dumpen med PHP selv.
-Begge veier gir samme fil. Passordet sendes i miljøvariabelen `MYSQL_PWD` og
-aldri på kommandolinja — der ville det stått synlig for alle som kjører `ps`
-på samme tjener.
+Begge veier gir samme fil, og begge tar ett øyeblikksbilde av hele basen
+(`--single-transaction` / `START TRANSACTION WITH CONSISTENT SNAPSHOT`) — uten
+det kunne en booking som skjer midt i dumpen stått i `bookings` og manglet i
+`payments`. Passordet sendes i miljøvariabelen `MYSQL_PWD` og aldri på
+kommandolinja — der ville det stått synlig for alle som kjører `ps` på samme
+tjener.
+
+**Det denne kopien ikke redder deg fra:** den ligger på samme disk som
+databasen. Ryker disken, eller blir kontoen stengt, er begge borte samtidig.
+Skal det dekkes, må en kopi hentes ned eller sendes et annet sted — og da
+havner personopplysninger og nøkler et sted til, som er et valg eieren skal ta
+bevisst. Verten har også **Acronis Backup**; sjekk hva som faktisk er slått på
+der før dette regnes som løst.
 
 **Slik legges en kopi tilbake** (SSH, eller Terminal i cPanel):
 

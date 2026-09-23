@@ -170,43 +170,72 @@ final class Sikkerhetskopi
             gzwrite($gz, $s);
         };
 
-        $skriv("-- Lissom, kopi tatt " . gmdate('Y-m-d H:i:s') . " UTC\n");
+        $pdo = DB::kobling();
+        $skriv('-- Lissom, kopi tatt ' . gmdate('Y-m-d H:i:s') . " UTC\n");
         $skriv("SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
 
-        $pdo = DB::kobling();
-        $tabeller = $pdo->query('SHOW FULL TABLES')->fetchAll(PDO::FETCH_NUM);
-
-        foreach ($tabeller as [$navn, $mene]) {
+        // Navn og definisjoner foerst, mens svarene fortsatt bufres. Under
+        // stroemmingen lenger nede taaler ikke forbindelsen en sporring til.
+        $tabeller = [];
+        foreach ($pdo->query('SHOW FULL TABLES')->fetchAll(PDO::FETCH_NUM) as [$navn, $mene]) {
             $sitert = '`' . str_replace('`', '``', (string) $navn) . '`';
+            $erView = strtoupper((string) $mene) === 'VIEW';
+            $lag = $erView ? null : $pdo->query("SHOW CREATE TABLE {$sitert}")->fetch(PDO::FETCH_NUM);
+            $tabeller[] = ['sitert' => $sitert, 'view' => $erView, 'lag' => (string) ($lag[1] ?? '')];
+        }
 
-            // Et view har ingen rader aa kopiere, bare sin egen definisjon.
-            if (strtoupper((string) $mene) === 'VIEW') {
-                $skriv("DROP VIEW IF EXISTS {$sitert};\n");
-                continue;
-            }
+        // Ett oeyeblikksbilde for hele kopien. Uten det kan en booking som
+        // skjer midt i dumpen staa i «bookings» og mangle i «payments».
+        // mysqldump gjor det samme med --single-transaction.
+        $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
 
-            $lag = $pdo->query("SHOW CREATE TABLE {$sitert}")->fetch(PDO::FETCH_NUM);
-            $skriv("DROP TABLE IF EXISTS {$sitert};\n" . (string) ($lag[1] ?? '') . ";\n");
-
-            $antall = (int) $pdo->query("SELECT COUNT(*) FROM {$sitert}")->fetchColumn();
-            for ($fra = 0; $fra < $antall; $fra += 500) {
-                $rader = $pdo->query("SELECT * FROM {$sitert} LIMIT 500 OFFSET {$fra}")
-                             ->fetchAll(PDO::FETCH_ASSOC);
-                if ($rader === []) {
-                    break;
+        // Radene stroemmes, én om gangen.
+        //
+        // Her sto «LIMIT 500 OFFSET n» i loekke foerst. Uten ORDER BY gir
+        // MariaDB ingen garanti for rekkefolgen mellom to sporringer: samme
+        // rad kunne komme to ganger, og en annen falle ut — uten at noe sa
+        // fra. En kopi som mister rader i stillhet er verre enn ingen kopi,
+        // fordi den ser hel ut den dagen man trenger den.
+        //
+        // En ubufret sporring henter radene etter hvert, saa hele tabellen
+        // aldri staar i minnet, og rekkefolgen er den basen selv leser i.
+        $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+        try {
+            foreach ($tabeller as $t) {
+                if ($t['view']) {
+                    $skriv("DROP VIEW IF EXISTS {$t['sitert']};\n");
+                    continue;
                 }
-                $verdier = [];
-                foreach ($rader as $rad) {
+                $skriv("DROP TABLE IF EXISTS {$t['sitert']};\n" . $t['lag'] . ";\n");
+
+                $rader = $pdo->query("SELECT * FROM {$t['sitert']}");
+                $bolk = [];
+                $tom = static function () use (&$bolk, $skriv, $t): void {
+                    if ($bolk === []) {
+                        return;
+                    }
+                    $skriv("INSERT INTO {$t['sitert']} VALUES\n" . implode(",\n", $bolk) . ";\n");
+                    $bolk = [];
+                };
+                while (($rad = $rader->fetch(PDO::FETCH_ASSOC)) !== false) {
                     $felt = [];
                     foreach ($rad as $v) {
                         $felt[] = $v === null ? 'NULL'
                             : (is_int($v) || is_float($v) ? (string) $v : $pdo->quote((string) $v));
                     }
-                    $verdier[] = '(' . implode(',', $felt) . ')';
+                    $bolk[] = '(' . implode(',', $felt) . ')';
+                    if (count($bolk) >= 200) {
+                        $tom();
+                    }
                 }
-                $skriv("INSERT INTO {$sitert} VALUES\n" . implode(",\n", $verdier) . ";\n");
+                $rader->closeCursor();
+                $tom();
+                $skriv("\n");
             }
-            $skriv("\n");
+        } finally {
+            $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+            $pdo->exec('COMMIT');
         }
 
         $skriv("SET FOREIGN_KEY_CHECKS=1;\n");

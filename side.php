@@ -492,6 +492,16 @@ if (!$finnes && is_array($alle)) {
         }
     }
 }
+// Verkstedets egen forhaandsvisning er ikke en «finnes ikke».
+//
+// «Se hvordan den blir» aapner adressen til en artikkel som ligger som
+// kladd. Sida tegner den riktig for admin, men statusen her sporr bare
+// etter publiserte — saa svaret ble 404 med hele artikkelen inni. Det er
+// den samme «soft 404» i omvendt rekkefoelge, og roboter ser den aldri:
+// en kladd vises bare for den som er logget inn.
+if (!$finnes && $erAdmin) {
+    $finnes = true;
+}
 if (!$finnes) {
     http_response_code(404);
 }

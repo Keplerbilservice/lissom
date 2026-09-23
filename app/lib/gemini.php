@@ -41,8 +41,21 @@ declare(strict_types=1);
 
 final class Gemini
 {
-    /** Brukes naar ingenting er satt i oppsettet. */
-    public const MODELL_STANDARD = 'gemini-2.5-flash-image';
+    /**
+     * Brukes naar ingenting er satt i oppsettet.
+     *
+     * Sto foerst paa «gemini-2.5-flash-image», som var det jeg kjente til.
+     * Sjekket mot Googles modelliste 23. september 2026: den er én
+     * generasjon bak. «gemini-3.1-flash-image» — Nano Banana 2 — er den
+     * som er ment for produksjon naa.
+     *
+     * De andre som finnes, om noen skal byttes inn fra oppsettet:
+     *   gemini-3.1-flash-lite-image   raskest og billigst
+     *   gemini-3-pro-image            4K, og leselig tekst i bildet
+     *
+     * Imagen er lagt ned, og skal ikke brukes.
+     */
+    public const MODELL_STANDARD = 'gemini-3.1-flash-image';
 
     /** Anslag i ore per bilde, naar ingenting er satt. */
     private const PRIS_ORE_STANDARD = 45;

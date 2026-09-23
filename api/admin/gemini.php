@@ -64,14 +64,34 @@ switch ($handling) {
 
         if (array_key_exists('nokkel', $kropp)) {
             $n = trim((string) $kropp['nokkel']);
-            // Tom kobler fra. Ellers: Google sine noekler er lange og uten
-            // mellomrom. Vi sier fra om noe aapenbart feil framfor aa lagre
-            // en noekkel som stille lar vaere aa virke — for eksempel hele
-            // linja fra en fil, med «API key: » foran.
+
+            // «GEMINI_API_KEY=AIza…» → «AIza…».
+            //
+            // Noekkelen ligger gjerne i en .env-fil, og da limes hele linja
+            // inn. Eieren, 23. september 2026: «den sier at noekkel ikke ble
+            // lagret at den ikke saa riktig ut». Fila hans var nettopp det:
+            // 14 tegn navn, likhetstegn, og verdien bak. Prefikset er
+            // utvetydig, saa vi tar det bort framfor aa avvise.
+            if (preg_match('/^[A-Z][A-Z0-9_]{2,40}\s*=\s*(.+)$/s', $n, $m) === 1) {
+                $n = trim($m[1], " \t\n\r\"'");
+            }
+
+            // Tom kobler fra. Ellers maa den se ut som en Google-noekkel. Vi
+            // sier fra om noe aapenbart feil framfor aa lagre en noekkel som
+            // stille lar vaere aa virke.
             if ($n !== '' && preg_match('/^[A-Za-z0-9_\-]{20,120}$/', $n) !== 1) {
-                Svar::feil('Nøkkelen ser ikke riktig ut. Den er en lang streng uten '
-                         . 'mellomrom, og står i Google AI Studio under «Get API key». '
-                         . 'Lim inn bare selve nøkkelen.');
+                Svar::feil('Dette ser ikke ut som en Gemini-nøkkel. Den er 39 tegn, '
+                         . 'begynner på «AIza», og har verken punktum eller mellomrom. '
+                         . 'Du finner den på aistudio.google.com under «Get API key» — '
+                         . 'lim inn bare selve nøkkelen.');
+            }
+            // Riktig form, men ikke Googles prefiks: da er det trolig en
+            // noekkel til noe annet, og det er bedre aa si det med én gang
+            // enn aa la foerste bildekall svare «API key not valid».
+            if ($n !== '' && !str_starts_with($n, 'AIza')) {
+                Svar::feil('Nøkkelen har riktig form, men begynner ikke på «AIza» slik '
+                         . 'Google sine gjør. Sjekk at den er hentet fra '
+                         . 'aistudio.google.com og ikke fra en annen tjeneste.');
             }
             $lagre('gemini_api_key', $n);
         }

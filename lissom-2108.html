@@ -12494,6 +12494,24 @@ window.__resources = {
                     <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Én setning som står på kortet under «Våre kurs». Kunden ser den før de åpner kurset.</p>
                     <input id="k-kort" value="{{ kKortBeskrivelse }}" onChange="{{ settKKortBeskrivelse }}" maxlength="500" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   </div>
+
+                  <!-- Tittelen og beskrivelsen Google viser.
+                       Kolonnene har ligget i basen siden migrasjon 164, og
+                       side.php har lest dem hele tiden — men ingenting skrev
+                       dem. Bare dreiekurset hadde en egen tittel, satt i
+                       migrasjonen; alle andre fikk «<navn> i Tønsberg | Lissom
+                       Keramikk» uten mulighet til aa endre det. Eieren, 23.
+                       september 2026: «endre titler for søk også». -->
+                  <div style="margin-top: var(--space-5);">
+                    <label for="k-seotittel" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tittel i Google</label>
+                    <input id="k-seotittel" value="{{ kSeoTittel }}" onChange="{{ settKSeoTittel }}" maxlength="191" placeholder="{{ kSeoTittelPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kSeoTittelHjelp }}</p>
+                  </div>
+                  <div style="margin-top: var(--space-5);">
+                    <label for="k-seometa" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse i Google</label>
+                    <textarea id="k-seometa" value="{{ kSeoMeta }}" onChange="{{ settKSeoMeta }}" rows="2" maxlength="300" placeholder="Står under tittelen i søkeresultatet." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);"></textarea>
+                    <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kSeoMetaHjelp }}</p>
+                  </div>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
@@ -36175,6 +36193,7 @@ class Component extends DCLogic {
       kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
       kRessursId: 0,
       kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
       kKarusellFra: [],
       kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
       kGjenstandIKassa: false,
@@ -47198,6 +47217,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -48821,6 +48841,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -54179,6 +54200,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
@@ -54593,6 +54615,24 @@ class Component extends DCLogic {
           fhAbInnholdSkriv: h('abInnhold', 'Brødtekst', 'abTittel', 'artikkelen', 'lang', artbank).skriv,
           fhKlRBeskrivelseMerke: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).merke,
           fhKlRBeskrivelseSkriv: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).skriv,
+        };
+      })(),
+      // Tittel og beskrivelse i Google. Tomt felt betyr den automatiske.
+      ...(() => {
+        const navn = (this.state.kNavn || '').trim();
+        const auto = navn !== '' ? navn + ' i Tønsberg | Lissom Keramikk' : '';
+        const tit = this.state.kSeoTittel || '';
+        const met = this.state.kSeoMeta || '';
+        const lengde = (t, maks) =>
+          t === '' ? '' : ' ' + t.length + ' tegn' + (t.length > maks ? ' — Google kutter etter ' + maks + '.' : '.');
+        return {
+          kSeoTittel: tit,
+          settKSeoTittel: e => this.setState({ kSeoTittel: e.target.value }),
+          kSeoTittelPlass: auto || 'Navnet på kurset i Tønsberg | Lissom Keramikk',
+          kSeoTittelHjelp: (auto !== '' ? 'Står den tom, blir den «' + auto + '».' : 'Står den tom, lages den av kursnavnet.') + lengde(tit, 60),
+          kSeoMeta: met,
+          settKSeoMeta: e => this.setState({ kSeoMeta: e.target.value }),
+          kSeoMetaHjelp: 'Står den tom, brukes de første setningene av beskrivelsen.' + lengde(met, 158),
         };
       })(),
       kForeslaaMerke: this.state.kForeslaar ? 'Skriver …' : 'Foreslå tekst',

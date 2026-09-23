@@ -329,6 +329,21 @@ switch ($handling) {
         if ($har('bekreftelse')) {
             $data['bekreftelse_tekst'] = Foresporsel::tekst('bekreftelse') ?: null;
         }
+        // Tittelen og beskrivelsen Google viser.
+        //
+        // Kolonnene kom med migrasjon 164, og side.php har lest dem siden.
+        // Men ingenting skrev dem: bare dreiekurset hadde en egen tittel,
+        // satt i migrasjonen. Alle andre kurs fikk «<navn> i Tønsberg |
+        // Lissom Keramikk», uten mulighet til aa endre det.
+        //
+        // Eieren, 23. september 2026: «endre titler for søk også».
+        // Tomt felt betyr fortsatt den automatiske tittelen.
+        if ($har('seoTittel') && DB::harKolonne('courses', 'seo_tittel')) {
+            $data['seo_tittel'] = mb_substr(Foresporsel::tekst('seoTittel'), 0, 191) ?: null;
+        }
+        if ($har('seoMeta') && DB::harKolonne('courses', 'seo_meta')) {
+            $data['seo_meta'] = mb_substr(Foresporsel::tekst('seoMeta'), 0, 300) ?: null;
+        }
         $data['status'] = in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)
             ? Foresporsel::tekst('status') : 'kladd';
 

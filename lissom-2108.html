@@ -3129,13 +3129,30 @@ window.__resources = {
                 </sc-if>
                 </div>
                 <sc-if value="{{ bHarTider }}" hint-placeholder-val="{{ false }}">
-                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">{{ bTiderTittel }}</div>
+                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-2);">{{ bTiderTittel }}</div>
+                  <sc-if value="{{ bVinduTekst }}" hint-placeholder-val="{{ 'Åpent 10:00–13:00' }}">
+                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-4);">{{ bVinduTekst }}</div>
+                  </sc-if>
+                  <sc-if value="{{ bVelgerTid }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+                      <input type="time" step="900" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}" aria-label="Når vil du komme?" style="appearance: none; font: inherit; font-weight: 700; padding: 11px 14px; min-height: 44px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); background: var(--surface); color: var(--text-heading);" />
+                    </div>
+                    <sc-if value="{{ bTidFull }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-500);">{{ bTidForslagTekst }}</p>
+                      <sc-if value="{{ bTidHarForslag }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" onClick="{{ bTidTaForslag }}" style="appearance: none; cursor: pointer; font: inherit; font-weight: 700; padding: 9px 16px; min-height: 40px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); background: var(--surface); color: var(--lissom-brown); margin-bottom: var(--space-4);">{{ bTidForslagKnapp }}</button>
+                      </sc-if>
+                    </sc-if>
+                    <p style="margin: 0 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">{{ bTidHjelp }}</p>
+                  </sc-if>
+                  <sc-if value="{{ bVisTidsknapper }}" hint-placeholder-val="{{ true }}">
                   <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-6);">
                     <sc-for list="{{ bookingTider }}" as="t" hint-placeholder-count="3">
                       <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.klokke }}</button>
                     </sc-for>
                   </div>
                   <p style="margin: calc(var(--space-6) * -1 + 4px) 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">{{ bTiderHjelp }}</p>
+                  </sc-if>
                 </sc-if>
                 <sc-if value="{{ visKontaktfelt }}" hint-placeholder-val="{{ true }}">
                   <sc-if value="{{ visAntallPlasser }}" hint-placeholder-val="{{ true }}">
@@ -27025,6 +27042,69 @@ class Component extends DCLogic {
   }
 
   /**
+   * Foelger kurset som er valgt aapningstidene?
+   *
+   * Paint on Pots har ingen faste datoer — plassene er kvarterene inne i den
+   * aapne tida. Katalogen sier hvilke kurs det gjelder.
+   */
+  folgerApningstid() {
+    return !!(this.katalogKurs().folgerApningstid || (this.state.valgtKurs || {}).folgerApningstid);
+  }
+
+  /**
+   * Raden i katalogen for kurset som er valgt.
+   *
+   * Sto skrevet ut tre steder — i kanSelge()s nabo, i hentTider() og i
+   * bookOgBetal() — med det samme oppslaget hver gang. Da er det ett sted som
+   * blir glemt den dagen tittelen ikke er noekkelen lenger.
+   */
+  katalogKurs() {
+    const k = this.state.valgtKurs || {};
+    return (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel)) || {};
+  }
+
+  /** Kurs-id-en for kurset som er valgt, slik katalogen kjenner den. */
+  kursIdNaa() {
+    const k = this.state.valgtKurs || {};
+    return this.katalogKurs().id || k.kursId || k.id || 0;
+  }
+
+  /**
+   * Henter kvarterene som er ledige en dag.
+   *
+   * Eieren, 23. september 2026: «her vil jeg ikke ha faste piller som viser
+   * alle timene, men dato og tid, er det fult maa den foreslaa neste ledige».
+   *
+   * Lista over kvarter ligger ikke i katalogen. Den ville vaert hvert kvarter
+   * i hver aapen dag framover, og det er akkurat den floden som druknet
+   * kalenderen den gangen drop-in laa ute. Skjermen spor om én dag om gangen.
+   */
+  hentTider(dato) {
+    if (!dato || !this.folgerApningstid()) return;
+    const kursId = this.kursIdNaa();
+    if (!kursId) return;
+    this.setState({ bTidHenter: true, bTidFeil: null });
+    fetch('/api/tider.php?kursId=' + encodeURIComponent(kursId)
+          + '&dato=' + encodeURIComponent(dato)
+          + '&antall=' + (this.state.bAntall || 1), { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => {
+        const tider = (d && d.tider) || [];
+        this.setState({
+          bTidHenter: false,
+          bTidDato: dato,
+          bTidVindu: (d && d.vindu) || '',
+          bTidListe: tider,
+          bTidForslag: (d && d.forsteLedige) || null,
+          // Forste ledige staar forhandsvalgt. Den som godtar det den ser,
+          // skal slippe aa taste noe.
+          bTid: tider.length ? tider[0].tid : '',
+        });
+      })
+      .catch(() => this.setState({ bTidHenter: false, bTidFeil: 'Fikk ikke hentet tidene. Prøv igjen.' }));
+  }
+
+  /**
    * Faar dette medlemmet selge egne arbeider?
    *
    * Eieren, 22. september 2026: «Jeg vil at alle medlemskap skal faa denne
@@ -41265,14 +41345,14 @@ class Component extends DCLogic {
     // ── Plassene som er klippet av aapningstida ──────────────────────────
     //
     // Paint on Pots foelger aapningstida, og den klippes i plasser
-    // paa halvannen time (Apent::PLASS_MINUTTER). Gaar det et kurs 10-13, er
+    // paa to timer (Apent::PLASS_MINUTTER). Gaar det et kurs 10-13, er
     // verkstedet aapent 10-13, og begge to legges ut som to plasser: 10:00 og
     // 11:30. I kalenderen ble det to like linjer under hverandre — og med to
     // kurs som foelger tida, fire. Eieren, 29. august: «jeg vil ikke at det
     // skal splittes».
     //
     // Plassene slaas sammen til én linje her, i visningen. Bookingen roeres
-    // ikke: kunden velger fortsatt et tidspunkt og har bordet halvannen time.
+    // ikke: kunden velger fortsatt et tidspunkt og har bordet i to timer.
     // Trykk paa linja, saa staar tidene der hver for seg.
     //
     // Tid mellom to kurs deler ikke linja. Eieren, 29. august: «selv om det er
@@ -44721,9 +44801,23 @@ class Component extends DCLogic {
     // forst naar noen faktisk klikker. Uten dette fikk den som godtok det
     // forhandsvalgte «Velg en dato forst» — datoen sto jo rett foran dem.
     const datoer = this.ekteDatoer() || [];
-    const oktId = this.state.bOktId || (datoer.find(d => !d.full) || {}).oktId;
+    // Kurs som foelger aapningstidene har ingen ferdig oekt aa peke paa.
+    // Kunden valgte et kvarter; serveren lager raden naar bookingen gaar
+    // gjennom. Se api/book.php og Apent::oktForTid().
+    const velgerTid = this.folgerApningstid();
+    const tid = velgerTid ? String(this.state.bTid || '') : '';
+    const tidDato = velgerTid ? String(this.state.bTidDato || '') : '';
+    const kursId = velgerTid ? this.kursIdNaa() : 0;
+    const oktId = velgerTid ? 0 : (this.state.bOktId || (datoer.find(d => !d.full) || {}).oktId);
 
-    if (!oktId) {
+    if (velgerTid && !(kursId && tid && tidDato)) {
+      this.setState({
+        kvittering: 'Velg når du vil komme.',
+        kvitteringDetalj: 'Velg en dag og et tidspunkt i det åpne tidsrommet.',
+      });
+      return;
+    }
+    if (!velgerTid && !oktId) {
       this.setState({
         kvittering: 'Denne datoen kan ikke bookes.',
         kvitteringDetalj: 'Velg en annen dato, eller ta kontakt så hjelper vi deg.',
@@ -44782,7 +44876,10 @@ class Component extends DCLogic {
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        oktId: oktId, antall: 1,
+        oktId: oktId || 0, antall: 1,
+        // Tomme naar kurset har faste datoer. Serveren ser paa oektId da.
+        kursId: kursId || 0,
+        tid: tid && tidDato ? (tidDato + ' ' + tid) : '',
         gavekort: (this.state.gkKode || '').trim(),
         epost: (this.state.bEpost || '').trim(),
         telefon: (this.state.bTelefon || '').trim(),
@@ -46865,7 +46962,7 @@ class Component extends DCLogic {
         // den samme rada, og «Vis alle» gjor jobben til begge.
         //
         // Et fast tilbud sto her ogsaa, og hoerer ikke hjemme i en kategorirad
-        // over kurs: det er ikke et kurs, men halvannen time i verkstedet med ditt
+        // over kurs: det er ikke et kurs, men to timer i verkstedet med ditt
         // eget arbeid. Det har sitt eget menypunkt.
         //
         // Sidene ligger der de laa, i toppmenyen. Det er bare knappene i
@@ -48805,6 +48902,11 @@ class Component extends DCLogic {
                 const en = rad.tider.length === 1 ? rad.tider[0] : null;
                 this.setState(Object.assign({ bDag: rad.dag },
                   en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
+                // Foelger kurset aapningstidene, er tidene ikke en liste av
+                // oekter — de hentes for den ene dagen. Se hentTider().
+                if (this.folgerApningstid()) {
+                  this.hentTider(String((rad.tider[0] || {}).dagIso || ''));
+                }
               },
             };
           }),
@@ -48825,6 +48927,78 @@ class Component extends DCLogic {
           // der som en kvittering paa hva man har valgt.
           bHarTider: (dagRad.tider || []).length > 0,
           bTiderTittel: 'Velg tidspunkt ' + (dagRad.dag ? '· ' + dagRad.dag : ''),
+          // Vinduet doeren staar aapen i, paa den dagen som er valgt.
+          //
+          // Eieren, 23. september 2026, om Paint on Pots: «kan vi vise dagene
+          // paa kurset slik som i kalender, men ogsaa mulig aa booke tid i
+          // dette mellomrommet?»
+          //
+          // Skjermen viste starttidene og ingenting annet. Tre knapper sier
+          // ikke naar doera lukker — og for et kurs der man har plassen en
+          // bestemt tid fra tidspunktet man velger, er det spennet som er
+          // opplysningen. Kalenderen har vist det hele tida; bestillingen
+          // gjorde det ikke.
+          //
+          // Regnes av tidene som staar der: forste start, og slutten paa den
+          // siste. «klokke» er «10:00–11:30» paa disse kursene — se
+          // katalog.php, som setter den av start og slutt. Er det ingen
+          // sluttid, staar det ingenting: da vet vi ikke naar det lukker, og
+          // skal ikke gjette.
+          // ── Tidsvelgeren ────────────────────────────────────────────
+          //
+          // Eieren, 23. september 2026: «her vil jeg ikke ha faste piller som
+          // viser alle timene, men dato og tid, er det fult maa den foreslaa
+          // neste ledige».
+          //
+          // Ett felt, ikke en vegg av knapper. Og ikke et nedtrekk: <sc-for>
+          // inne i <select> kastes av Safari — det var den feilen Monica satt
+          // med 30. august. Et «input type=time» er hverken det ene eller det
+          // andre; telefonen gir sitt eget hjul, og et steg paa 900 sekunder
+          // gjor at man bare kan lande paa et kvarter.
+          bVelgerTid: this.folgerApningstid(),
+          // Knapperada staar igjen for kurs med faste datoer. De to skal
+          // aldri staa samtidig: da ville skjermen spurt om det samme to
+          // ganger, med hvert sitt svar.
+          bVisTidsknapper: !this.folgerApningstid(),
+          bTidVerdi: String(this.state.bTid || ''),
+          bTidSett: (e) => this.setState({ bTid: String((e && e.target && e.target.value) || '') }),
+          // Lengden staar ikke skrevet her. Den kommer fra serveren, av
+          // Apent::PLASS_MINUTTER — sto den som tekst, ville feltet sagt
+          // halvannen time den dagen plassen ble to.
+          bTidHjelp: this.state.bTidHenter
+            ? 'Henter tidene \u2026'
+            : (String(this.state.bTidFeil || '') || (() => {
+                const varer = String(this.katalogKurs().plassVarighet || '');
+                return varer
+                  ? 'Du har plassen i ' + varer + ' fra tidspunktet du velger.'
+                  : 'Du har plassen en stund fra tidspunktet du velger.';
+              })()),
+          // Full dag: si hva som er neste, og la den tas med ett trykk.
+          bTidFull: !this.state.bTidHenter
+            && !!this.state.bTidDato
+            && (this.state.bTidListe || []).length === 0,
+          bTidForslagTekst: (() => {
+            const f = this.state.bTidForslag;
+            if (!f) return 'Det er fullt de nærmeste dagene. Ta kontakt, så finner vi en tid.';
+            return 'Fullt denne dagen. Første ledige er ' + f.dato + ' kl. ' + f.tid + '.';
+          })(),
+          bTidHarForslag: !!this.state.bTidForslag,
+          bTidForslagKnapp: 'Ta den tiden',
+          bTidTaForslag: () => {
+            const f = this.state.bTidForslag;
+            if (!f) return;
+            this.setState({ bTid: f.tid });
+            this.hentTider(f.dato);
+          },
+          bVinduTekst: (() => {
+            if (!this.folgerApningstid()) return '';
+            const tider = dagRad.tider || [];
+            if (!tider.length) return '';
+            const start = String(tider[0].klokkeStart || '');
+            const siste = String(tider[tider.length - 1].klokke || '');
+            const slutt = siste.indexOf('\u2013') > -1 ? siste.split('\u2013')[1] : '';
+            return (start && slutt) ? 'Åpent ' + start + '\u2013' + slutt : '';
+          })(),
           // Gjelder der plassen varer en bestemt tid fra tidspunktet man
           // velger, som Paint on Pots. Et kurs varer saa lenge kurset
           // varer, og da staar det ingenting her.
@@ -48832,11 +49006,9 @@ class Component extends DCLogic {
           // Lengden kommer fra serveren. Sto «to timer» skrevet her, ville
           // teksten sagt to mens tidene sa tre.
           bTiderHjelp: (() => {
-            const k = this.state.valgtKurs || {};
-            const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel)) || {};
-            const paa = !!(kat.folgerApningstid || k.folgerApningstid);
-            const varer = String(kat.plassVarighet || k.plassVarighet || '');
-            return paa && varer ? 'Du har plassen i ' + varer + ' fra tidspunktet du velger.' : '';
+            const kat = this.katalogKurs();
+            const varer = String(kat.plassVarighet || (this.state.valgtKurs || {}).plassVarighet || '');
+            return this.folgerApningstid() && varer ? 'Du har plassen i ' + varer + ' fra tidspunktet du velger.' : '';
           })(),
           bookingTider: (dagRad.tider || []).map(t => {
             const valgt = this.state.bDato ? t.dato === this.state.bDato : !!t.valgt;
@@ -52413,7 +52585,7 @@ class Component extends DCLogic {
 
         // ── Tidene som foelger aapningstida ─────────────────────────────
         //
-        // Paint on Pots klippes i plasser paa halvannen time. En
+        // Paint on Pots klippes i plasser paa to timer. En
         // aapen dag blir seks like linjer under hverandre. Kalenderen slaar
         // dem sammen til én — «6 tider» — og denne lista gjor det samme, med
         // den samme regelen: bare oekter en regel har laget, og bare naar de

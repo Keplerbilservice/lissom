@@ -121,10 +121,11 @@ final class Kursmal
             'Paint on pots' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
                 'laererKort'      => 'Maling og dekor',
-                // Plassen varer halvannen time fra tidspunktet man velger —
-                // se Apent::PLASS_MINUTTER. Lissom endret den fra to timer
-                // 27. august.
-                'varighetTekst'   => 'Halvannen time fra tidspunktet du velger',
+                // Plassen varer to timer fra tidspunktet man velger — se
+                // Apent::PLASS_MINUTTER. Lissom endret den fra to timer til
+                // halvannen 27. august; eieren tok den tilbake 23. september
+                // 2026: «endre tekst og varighet til 2 timer».
+                'varighetTekst'   => 'To timer fra tidspunktet du velger',
                 // «Leire, verktoy, glasur og brenning er inkludert» sto her
                 // som paa alle andre kurs. Paa Paint on Pots faar man ingen
                 // leire — man maler ferdig brent keramikk.

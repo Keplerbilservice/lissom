@@ -199,6 +199,148 @@ final class Booking
         return self::medVisFullt(self::ledigeRegnet($oktIder));
     }
 
+    /**
+     * Ledige plasser i et tidsrom som ikke er en oekt.
+     *
+     * Eieren, 23. september 2026, om Paint on Pots: «her vil jeg ikke ha
+     * faste piller som viser alle timene, men dato og tid, er det fult maa
+     * den foreslaa neste ledige».
+     *
+     * Ledige plasser har alltid vaert et sporsmaal om en OEKT: «hvor mange
+     * er igjen paa denne raden». Skal kunden kunne velge 10:45, finnes det
+     * ingen rad aa spore om — 10:45 er bare et klokkeslett inne i den aapne
+     * tida. Dette svarer paa tidsrommet i stedet.
+     *
+     * ── Samme regel som ellers ────────────────────────────────────────
+     *
+     * Regnestykket er det samme som i ledigeRegnet(): taket paa ressursen,
+     * minus alt som holder den samtidig. Et planlagt kurs holder hele
+     * plasstallet sitt — aatte skiver er dekket til kurset enten noen har
+     * meldt seg paa eller ikke — mens de aapne plassene
+     * («fra_apningstid = 1») bare holder det som faktisk er booket. De er et
+     * tilbud, ikke en plan.
+     *
+     * Har kurset ingen ressurs, eller er den satt inaktiv, gjelder kursets
+     * eget plasstall minus det som er booket i tidsrommet. Samme fallback
+     * som ledigeRegnet() har.
+     *
+     * ── Hvorfor dato og klokke hver for seg ───────────────────────────
+     *
+     * Et flerdagerskurs ligger som ÉN rad: 9. september 17:00 til 10.
+     * september 20:00. Regnet rett fram ville det holdt skivene gjennom
+     * natta, og en morgen klokka ti sto som full uten at noe skjedde i
+     * huset. Derfor to proever, som i ledigeRegnet(): datoene maa motes, og
+     * klokkeslettene maa motes.
+     *
+     * @param string $startUtc «Y-m-d H:i:s» i UTC
+     * @param string $sluttUtc «Y-m-d H:i:s» i UTC
+     */
+    public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int
+    {
+        $kurs = DB::en('SELECT id, kapasitet, ressurs_id FROM courses WHERE id = :i', ['i' => $kursId]);
+        if ($kurs === null) {
+            return 0;
+        }
+        $kapasitet = (int) ($kurs['kapasitet'] ?? 0);
+
+        $aktiv2 = self::aktivSql('b2');
+        $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
+
+        // Samme proeve som i ledigeRegnet, med tidsrommet paa den ene sida.
+        // Krysser tidsrommet midnatt, er klokkevinduet snudd; da teller hele
+        // doegnet framfor aa regnes bort.
+        $iVeien = "DATE(cs2.start_tid) <= DATE(:tilD) AND DATE(:fraD) <= DATE({$slutt2})
+                   AND IF(TIME({$slutt2}) > TIME(cs2.start_tid), TIME(cs2.start_tid), '00:00:00')
+                       < IF(TIME(:tilK2) > TIME(:fraK2), TIME(:tilK3), '23:59:59')
+                   AND IF(TIME(:tilK4) > TIME(:fraK3), TIME(:fraK4), '00:00:00')
+                       < IF(TIME({$slutt2}) > TIME(cs2.start_tid), TIME({$slutt2}), '23:59:59')";
+
+        $par = [
+            'fraD' => $startUtc, 'tilD' => $sluttUtc,
+            'fraK2' => $startUtc, 'tilK2' => $sluttUtc, 'tilK3' => $sluttUtc,
+            'fraK3' => $startUtc, 'tilK4' => $sluttUtc, 'fraK4' => $startUtc,
+        ];
+
+        $ressurs = $kurs['ressurs_id'] === null ? 0 : (int) $kurs['ressurs_id'];
+        $tak = self::verkstedTak();
+
+        if (!isset($tak[$ressurs])) {
+            // Uten ressurs: kursets eget plasstall, minus det som er booket
+            // paa kursets egne oekter i tidsrommet.
+            $brukt = (int) DB::verdi(
+                "SELECT COALESCE(SUM(
+                          COALESCE(cs2.manuelt_opptatt, 0)
+                          + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
+                                       WHERE b2.course_session_id = cs2.id
+                                         AND {$aktiv2}), 0)
+                        ), 0)
+                   FROM course_sessions cs2
+                  WHERE cs2.status = 'planlagt'
+                    AND cs2.course_id = :k
+                    AND ({$iVeien})",
+                $par + ['k' => $kursId]
+            );
+            return max(0, $kapasitet - $brukt);
+        }
+
+        $brukt = (int) DB::verdi(
+            "SELECT COALESCE(SUM(
+                      GREATEST(
+                        CASE WHEN cs2.fra_apningstid = 1 THEN 0
+                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
+                        COALESCE(cs2.manuelt_opptatt, 0)
+                        + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
+                                     WHERE b2.course_session_id = cs2.id
+                                       AND {$aktiv2}), 0)
+                      )), 0)
+               FROM course_sessions cs2
+               JOIN courses c2 ON c2.id = cs2.course_id
+              WHERE cs2.status = 'planlagt'
+                AND c2.status <> 'avlyst'
+                AND c2.ressurs_id = :r
+                AND ({$iVeien})",
+            $par + ['r' => $ressurs]
+        );
+
+        $igjen = $tak[$ressurs] - $brukt;
+
+        // Medlemmer booker ikke — de stempler inn naar de kommer. De teller
+        // bare naar tidsrommet gaar akkurat naa; en booking om tre dager kan
+        // ikke vite hvem som moter opp. Samme regel som ledigeRegnet().
+        $inneNa = self::inneNaa();
+        if (($inneNa[$ressurs] ?? 0) > 0) {
+            $naa = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+            $a = new DateTimeImmutable($startUtc, new DateTimeZone('UTC'));
+            $b = new DateTimeImmutable($sluttUtc, new DateTimeZone('UTC'));
+            if ($a <= $naa && $b > $naa) {
+                $igjen -= $inneNa[$ressurs];
+            }
+        }
+
+        // Kursets eget plasstall er ogsaa et tak: er rommet satt til seks,
+        // hjelper det ikke at ressursen har tolv.
+        return max(0, min($kapasitet > 0 ? $kapasitet : $igjen, $igjen));
+    }
+
+    /**
+     * Hva som legger beslag paa en plass.
+     *
+     * Betalt, eller reservert og ikke gaatt ut paa tid. En reservasjon lagt
+     * inn for haand har ingen frist og frigis aldri av seg selv — derfor
+     * «reservert_til IS NULL» og ikke bare en frist som ikke er passert.
+     *
+     * Sto skrevet inne i ledigeRegnet(). Da ledigeIVindu() kom, trengte to
+     * spoerringer den samme regelen, og en regel som staar to steder svarer
+     * til slutt forskjellig. Den som glemmes er den som selger plassen.
+     */
+    private static function aktivSql(string $alias): string
+    {
+        return "({$alias}.status = 'betalt'
+                   OR ({$alias}.status = 'reservert'
+                       AND ({$alias}.reservert_til IS NULL
+                            OR {$alias}.reservert_til > UTC_TIMESTAMP())))";
+    }
+
     /** Regnestykket, uten overstyringa. Se ledigePlasserFlere(). */
     private static function ledigeRegnet(array $oktIder): array
     {
@@ -235,11 +377,10 @@ final class Booking
         // Aktiv booking: betalt, eller reservert og ikke gaatt ut paa tid.
         // Staar to steder i spoerringa under — paa oekta selv og paa alle de
         // andre som deler ressursen — og maa vaere den samme begge steder.
-        $aktiv = "(b.status = 'betalt'
-                   OR (b.status = 'reservert'
-                       AND (b.reservert_til IS NULL
-                            OR b.reservert_til > UTC_TIMESTAMP())))";
-        $aktiv2 = str_replace('b.', 'b2.', $aktiv);
+        // Regelen staar i aktivSql(), fordi ledigeIVindu() stiller det samme
+        // spoersmaalet om et tidsrom uten oekt.
+        $aktiv  = self::aktivSql('b');
+        $aktiv2 = self::aktivSql('b2');
 
         // Slutt-tida naar den mangler.
         //

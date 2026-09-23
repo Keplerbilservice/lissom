@@ -17836,6 +17836,153 @@ sjekk('… og langteksten lover ikke lenger salget som noe bare aarsmedlemmer fa
     str_contains($mig205, "'En ekstra fordel med Årsmedlemskap er muligheten til å selge egne arbeider")
     && str_contains($mig205, 'Med et løpende medlemskap får du din egen nettbutikk på lissom.no'));
 
+// ── Vinduet over tidene paa Paint on Pots ────────────────────────────────
+//
+// Eieren, 23. september 2026: «kan vi vise dagene paa kurset slik som i
+// kalender, men ogsaa mulig aa booke tid i dette mellomrommet?»
+//
+// Bestillingen viste starttidene og ingenting annet. Tre knapper sier ikke
+// naar doera lukker — og paa et kurs der man har plassen halvannen time fra
+// tidspunktet man velger, er spennet selve opplysningen.
+//
+// Dette er foerste steg: vinduet staar over tidene. Det frie kvartersvalget
+// kommer for seg.
+$vindu = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('bestillingen viser vinduet doeren staar aapen i',
+    str_contains($vindu, "          bVinduTekst: (() => {")
+    && str_contains($vindu, "            if (!(kat.folgerApningstid || k.folgerApningstid)) return '';")
+    // Uten sluttid staar det ingenting. Da vet vi ikke naar det lukker.
+    && str_contains($vindu, "            const slutt = siste.indexOf('\u2013') > -1 ? siste.split('\u2013')[1] : '';")
+    && str_contains($vindu, "            return (start && slutt) ? 'Åpent ' + start + '\u2013' + slutt : '';"));
+sjekk('… og den staar i skjermen, mellom overskriften og knappene',
+    str_contains($vindu, '<sc-if value="{{ bVinduTekst }}" hint-placeholder-val="{{ \'Åpent 10:00–13:00\' }}">')
+    && str_contains($vindu, '{{ bVinduTekst }}</div>'));
+
+// ── Fritt kvarter paa Paint on Pots ──────────────────────────────────────
+//
+// Eieren, 23. september 2026: «kan vi vise dagene paa kurset slik som i
+// kalender, men ogsaa mulig aa booke tid i dette mellomrommet? Her vil jeg
+// ikke ha faste piller som viser alle timene, men dato og tid, er det fult
+// maa den foreslaa neste ledige.»
+//
+// Foer dette var plassene ferdig utklipte oekter — 10:00, 11:30 — og man
+// kunne bare velge en av dem.
+$apentFil = (string) file_get_contents(dirname(__DIR__) . '/app/lib/apent.php');
+$bookFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$tiderFil = (string) file_get_contents(dirname(__DIR__) . '/api/tider.php');
+$bookApi  = (string) file_get_contents(dirname(__DIR__) . '/api/book.php');
+$skjerm   = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Vinduene doeren staar aapen i sto inne i utleggingen. To veier trenger det
+// samme svaret naa, og da skal det ikke regnes to steder.
+sjekk('vinduene regnes ett sted',
+    str_contains($apentFil, '    private static function vinduer(DateTimeImmutable $naa): array')
+    && str_contains($apentFil, '        $vinduer = self::vinduer($naa);')
+    // Lukka som sto inne i utleggingen er borte; metoden har tatt over.
+    && !str_contains($apentFil, '$nesteKvarter = static function'));
+
+// Hele lengden, eller ingenting: siste start i 10:00-13:00 er 11:30.
+sjekk('kvarterene slutter naar hele lengden ikke lenger faar plass',
+    str_contains($apentFil, "                \$til = \$start->modify('+' . self::PLASS_MINUTTER . ' minutes');\n                if (\$til > \$slutt) {\n                    break;\n                }")
+    && str_contains($apentFil, "                \$start = \$start->modify('+15 minutes');"));
+
+// Oppslaget skal ikke lage rader. Ellers kunne hvem som helst fylt
+// course_sessions ved aa laste en side om igjen — slik drop-in druknet
+// kalenderen.
+sjekk('oppslaget lager ingen oekter',
+    str_contains($apentFil, '    public static function ledigeKvarter(int $kursId, string $dato, int $antall = 1): array')
+    && !str_contains(
+        substr($apentFil, strpos($apentFil, 'public static function ledigeKvarter'),
+               strpos($apentFil, 'public static function forsteLedige') - strpos($apentFil, 'public static function ledigeKvarter')),
+        'settInn'));
+
+sjekk('oekta lages forst naar noen booker, og bare paa et kvarter',
+    str_contains($apentFil, '    public static function oktForTid(int $kursId, string $tidOslo): int')
+    && str_contains($apentFil, "        if ((int) \$start->format('i') % 15 !== 0 || (int) \$start->format('s') !== 0) {")
+    && str_contains($apentFil, "            throw new RuntimeException('Velg et helt kvarter.');")
+    // Merket er det ledigeRegnet() leser for aa vite at raden bare holder det
+    // som faktisk er booket.
+    && str_contains($apentFil, "            \$felt['fra_apningstid'] = 1;"));
+
+// Regelen for hva som legger beslag paa en plass staar ett sted.
+sjekk('plassregelen staar ett sted, og brukes begge veier',
+    str_contains($bookFil, '    private static function aktivSql(string $alias): string')
+    && str_contains($bookFil, "        \$aktiv  = self::aktivSql('b');")
+    && str_contains($bookFil, "        \$aktiv2 = self::aktivSql('b2');")
+    && str_contains($bookFil, '    public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int'));
+
+// De aapne plassene holder bare det som er booket — ellers ville en tom aapen
+// plass sperret dreiekurset ved siden av.
+sjekk('et tidsrom regnes med samme unntak som en oekt',
+    str_contains($bookFil, "                        CASE WHEN cs2.fra_apningstid = 1 THEN 0\n                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,"));
+
+sjekk('oppslaget svarer med vindu, tider og neste ledige',
+    str_contains($tiderFil, "\$svar = Apent::ledigeKvarter(\$kursId, \$dato, \$antall);")
+    && str_contains($tiderFil, "\$forste = \$svar['tider'] === []\n    ? Apent::forsteLedige(\$kursId, \$dato, \$antall)\n    : null;")
+    // Datoen skal se ut som en dato: «now» og «+3 days» er ogsaa gyldige for
+    // DateTimeImmutable.
+    && str_contains($tiderFil, "if (!preg_match('/^\\d{4}-\\d{2}-\\d{2}\$/', \$dato)) {"));
+
+sjekk('bookingen tar imot et klokkeslett, og rydder opp om den svikter',
+    str_contains($bookApi, "        \$oktId = Apent::oktForTid(\$kursId, \$tidOslo);")
+    && str_contains($bookApi, 'register_shutdown_function(static function () use ($laget): void {')
+    && str_contains($bookApi, '                        AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.course_session_id = :i2)'));
+
+// Ikke et nedtrekk: <sc-for> inne i <select> kastes av Safari.
+sjekk('skjermen har ett tidsfelt, ikke en vegg av knapper',
+    str_contains($skjerm, '<input type="time" step="900" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}"')
+    && str_contains($skjerm, '          bVisTidsknapper: !this.folgerApningstid(),')
+    && str_contains($skjerm, '<sc-if value="{{ bVisTidsknapper }}" hint-placeholder-val="{{ true }}">'));
+
+sjekk('… og sier hva som er neste ledige naar dagen er full',
+    str_contains($skjerm, "            return 'Fullt denne dagen. Første ledige er ' + f.dato + ' kl. ' + f.tid + '.';")
+    && str_contains($skjerm, '          bTidTaForslag: () => {'));
+
+sjekk('… og sender kurset og tida, ikke en oekt',
+    str_contains($skjerm, '    const kursId = velgerTid ? this.kursIdNaa() : 0;')
+    && str_contains($skjerm, "        tid: tid && tidDato ? (tidDato + ' ' + tid) : '',"));
+
+// ── To timer, og ingenting i admin for det er booket ─────────────────────
+//
+// Eieren, 23. september 2026: «endre tekst og varighet til 2 timer, ikke vise
+// i admin før det er booking».
+//
+// Lengden sto paa to timer til 27. august, da Lissom ba om det motsatte:
+// «endre ... paint on pots fra 2 timer, til 1,5 timer». Naa er den tilbake.
+$apent2  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/apent.php');
+$malFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php');
+$kalFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$pamFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
+$kursFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$skjerm2 = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('plassen varer to timer, og tallet staar ett sted',
+    str_contains($apent2, '    public const PLASS_MINUTTER = 120;')
+    && str_contains($malFil, "                'varighetTekst'   => 'To timer fra tidspunktet du velger',"));
+
+// Teksten kunden leser skal regnes av tallet, ikke skrives ved siden av det.
+sjekk('… og teksten i tidsfeltet regnes av lengden, ikke skrevet ut',
+    str_contains($skjerm2, "                const varer = String(this.katalogKurs().plassVarighet || '');")
+    && !str_contains($skjerm2, "'Du har plassen i halvannen time fra tidspunktet du velger.'"));
+
+// En aapen plass ingen har booket er et tilbud, ikke noe som skjer. Sto de i
+// admin, druknet de virkelige kursene mellom dem — slik drop-in gjorde.
+sjekk('regelen for hva admin skjuler staar ett sted',
+    str_contains($apent2, "    public static function skjulUtenBooking(string \$cs = 'cs'): string")
+    && str_contains($apent2, "                 OR EXISTS (SELECT 1 FROM bookings b_sk\n                             WHERE b_sk.course_session_id = {\$cs}.id))")
+    // Uten kolonna finnes det ingen aapne plasser aa skjule.
+    && str_contains($apent2, "            return '1 = 1';"));
+
+sjekk('… og alle tre stedene i admin bruker den',
+    str_contains($kalFil, "\$utenBooking = Apent::skjulUtenBooking('cs');")
+    && str_contains($kalFil, '        AND {$utenBooking}')
+    && str_contains($pamFil, "            AND \" . Apent::skjulUtenBooking('cs') . \"")
+    && str_contains($kursFil, "                 AND ' . Apent::skjulUtenBooking('cs') . '"));
+
+// Tallet paa kortet og lista under maa si det samme.
+sjekk('… ogsaa tellingen av datoer framover',
+    str_contains($kursFil, "                AND \" . Apent::skjulUtenBooking('cs') . \"\n           GROUP BY course_id"));
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme

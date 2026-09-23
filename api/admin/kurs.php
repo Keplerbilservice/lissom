@@ -59,15 +59,23 @@ if (Foresporsel::metode() === 'GET') {
         $inn = implode(',', $kursIder);
         foreach (DB::alle(
             'SELECT id, course_id, start_tid, slutt_tid, kapasitet, status' . $ekstra . '
-               FROM course_sessions WHERE course_id IN (' . $inn . ') ORDER BY start_tid'
+               FROM course_sessions cs WHERE course_id IN (' . $inn . ')
+                 -- En aapen plass ingen har booket staar ikke i admin.
+                 -- Eieren, 23. september 2026: «ikke vise i admin før det er
+                 -- booking». Se Apent::skjulUtenBooking().
+                 AND ' . Apent::skjulUtenBooking('cs') . '
+              ORDER BY start_tid'
         ) as $o) {
             $okterPerKurs[(int) $o['course_id']][] = $o;
         }
         // «Hvor mange datoer ligger framover» sto som en egen COUNT per kurs.
         foreach (DB::alle(
-            "SELECT course_id, COUNT(*) n FROM course_sessions
+            "SELECT course_id, COUNT(*) n FROM course_sessions cs
               WHERE course_id IN ({$inn}) AND status = 'planlagt'
                 AND start_tid > UTC_TIMESTAMP()
+                -- Samme regel som lista rett over. Sto tallet igjen, ville
+                -- kortet sagt «8 datoer» over en liste uten én eneste.
+                AND " . Apent::skjulUtenBooking('cs') . "
            GROUP BY course_id"
         ) as $r) {
             $datoerFramover[(int) $r['course_id']] = (int) $r['n'];

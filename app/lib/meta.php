@@ -307,6 +307,284 @@ final class Meta
         return $token === '' ? null : $token;
     }
 
+    // ── Innboksen: kommentarer og meldinger ─────────────────────────
+    //
+    // Eieren, 23. september 2026: «kan du faktisk svare paa kommentarer og
+    // spoersmaal paa insta og face?» Svaret var nei — tokenet hadde lov,
+    // men koden kunne bare publisere. Han ba om baade kommentarer og
+    // direktemeldinger.
+    //
+    // Alt her LESER, eller svarer paa noe en kunde har skrevet foerst. Et
+    // svar fra verkstedet staar offentlig, og det finnes ingen vei hit fra
+    // en cron-jobb eller fra Autopilot — samme regel som publisering.
+
+    /** Hvor mange innlegg og samtaler vi henter om gangen. */
+    public const INNBOKS_ANTALL = 15;
+
+    /**
+     * Kommentarene paa de siste innleggene, nyeste foerst.
+     *
+     * Begge kanaler i ett kall hver: Graph tar med kommentarene som et felt
+     * paa innlegget, saa vi slipper ett kall per innlegg.
+     *
+     * Feiler den ene kanalen, kommer den andre likevel. En innboks som er
+     * tom fordi Instagram hikket er verre enn en halv innboks med en
+     * merknad.
+     *
+     * @return array{poster: list<array<string,mixed>>, feil: list<string>}
+     */
+    public static function kommentarer(int $maks = self::INNBOKS_ANTALL): array
+    {
+        $ut = [];
+        $feil = [];
+
+        if (self::klarForInstagram()) {
+            try {
+                $svar = self::kall('GET', self::igId() . '/media', [
+                    'fields' => 'id,permalink,caption,timestamp,'
+                              . 'comments{id,text,username,timestamp,replies{id}}',
+                    'limit'  => (string) $maks,
+                ]);
+                foreach ((array) ($svar['data'] ?? []) as $innlegg) {
+                    foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
+                        $ut[] = [
+                            'id'      => (string) ($k['id'] ?? ''),
+                            'kanal'   => 'Instagram',
+                            'fra'     => (string) ($k['username'] ?? 'Ukjent'),
+                            'tekst'   => (string) ($k['text'] ?? ''),
+                            'tid'     => (string) ($k['timestamp'] ?? ''),
+                            'paa'     => self::kort((string) ($innlegg['caption'] ?? '')),
+                            'lenke'   => (string) ($innlegg['permalink'] ?? ''),
+                            'svart'   => ((array) ($k['replies']['data'] ?? [])) !== [],
+                        ];
+                    }
+                }
+            } catch (RuntimeException $e) {
+                $feil[] = 'Instagram: ' . $e->getMessage();
+            }
+        }
+
+        if (self::klarForFacebook()) {
+            try {
+                $svar = self::kall('GET', self::sideId() . '/feed', [
+                    'fields' => 'id,permalink_url,message,created_time,'
+                              . 'comments{id,message,from,created_time,comments{id}}',
+                    'limit'  => (string) $maks,
+                ], self::sideToken());
+                foreach ((array) ($svar['data'] ?? []) as $innlegg) {
+                    foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
+                        // Vaare egne svar skal ikke staa som ubesvarte
+                        // spoersmaal i innboksen.
+                        if ((string) ($k['from']['id'] ?? '') === self::sideId()) {
+                            continue;
+                        }
+                        $ut[] = [
+                            'id'      => (string) ($k['id'] ?? ''),
+                            'kanal'   => 'Facebook',
+                            'fra'     => (string) ($k['from']['name'] ?? 'Ukjent'),
+                            'tekst'   => (string) ($k['message'] ?? ''),
+                            'tid'     => (string) ($k['created_time'] ?? ''),
+                            'paa'     => self::kort((string) ($innlegg['message'] ?? '')),
+                            'lenke'   => (string) ($innlegg['permalink_url'] ?? ''),
+                            'svart'   => ((array) ($k['comments']['data'] ?? [])) !== [],
+                        ];
+                    }
+                }
+            } catch (RuntimeException $e) {
+                $feil[] = 'Facebook: ' . $e->getMessage();
+            }
+        }
+
+        // Nyeste foerst. Begge kanaler gir ISO-tid, saa strengene sorterer
+        // riktig uten aa gjores om til tall.
+        usort($ut, static fn(array $a, array $b): int => strcmp($b['tid'], $a['tid']));
+
+        return ['poster' => $ut, 'feil' => $feil];
+    }
+
+    /**
+     * Svarer paa en kommentar.
+     *
+     * Instagram vil ha svaret under «replies», Facebook under kommentarens
+     * egne «comments». Samme tanke, to adresser.
+     *
+     * @return array{id: string}
+     */
+    public static function svarKommentar(string $kommentarId, string $tekst, string $kanal): array
+    {
+        $tekst = trim($tekst);
+        if ($tekst === '') {
+            throw new RuntimeException('Svaret er tomt.');
+        }
+        if ($kommentarId === '') {
+            throw new RuntimeException('Vet ikke hvilken kommentar svaret gjelder.');
+        }
+
+        $sti = $kanal === 'Instagram' ? $kommentarId . '/replies' : $kommentarId . '/comments';
+        $ut = self::kall('POST', $sti, ['message' => mb_substr($tekst, 0, 2200)],
+                         $kanal === 'Instagram' ? null : self::sideToken());
+
+        $id = (string) ($ut['id'] ?? '');
+        if ($id === '') {
+            throw new RuntimeException($kanal . ' tok ikke imot svaret.');
+        }
+        return ['id' => $id];
+    }
+
+    /**
+     * Skjuler en kommentar. Bare Instagram og Facebook-sida, ikke sletting.
+     *
+     * Skjuling og ikke sletting med vilje: den som skrev ser sin egen
+     * kommentar staa, og vi slipper en krangel om sensur. Sletting finnes,
+     * men er ikke bygget — den hoerer hjemme et sted der man er sikker.
+     */
+    public static function skjulKommentar(string $kommentarId, string $kanal): void
+    {
+        if ($kommentarId === '') {
+            throw new RuntimeException('Vet ikke hvilken kommentar det gjelder.');
+        }
+        self::kall('POST', $kommentarId, ['hide' => 'true'],
+                   $kanal === 'Instagram' ? null : self::sideToken());
+    }
+
+    /**
+     * Samtalene i innboksen, nyeste foerst.
+     *
+     * Begge kanaler gaar gjennom SIDA: en Instagram-samtale hentes med
+     * platform=instagram paa sidas conversations, ikke paa Instagram-kontoen.
+     * Det er lett aa lete lenge etter det.
+     *
+     * @return array{samtaler: list<array<string,mixed>>, feil: list<string>}
+     */
+    public static function samtaler(int $maks = self::INNBOKS_ANTALL): array
+    {
+        $ut = [];
+        $feil = [];
+        if (!self::klarForFacebook()) {
+            return ['samtaler' => [], 'feil' => ['Facebook-sida er ikke koblet til.']];
+        }
+        $token = self::sideToken();
+
+        foreach (['messenger' => 'Facebook', 'instagram' => 'Instagram'] as $plattform => $kanal) {
+            try {
+                $svar = self::kall('GET', self::sideId() . '/conversations', [
+                    'platform' => $plattform,
+                    'fields'   => 'id,updated_time,snippet,unread_count,participants',
+                    'limit'    => (string) $maks,
+                ], $token);
+                foreach ((array) ($svar['data'] ?? []) as $s) {
+                    // Den andre parten — ikke sida selv.
+                    $navn = 'Ukjent';
+                    $hvem = '';
+                    foreach ((array) ($s['participants']['data'] ?? []) as $p) {
+                        if ((string) ($p['id'] ?? '') !== self::sideId()) {
+                            $navn = (string) ($p['name'] ?? $p['username'] ?? 'Ukjent');
+                            $hvem = (string) ($p['id'] ?? '');
+                        }
+                    }
+                    $ut[] = [
+                        'id'      => (string) ($s['id'] ?? ''),
+                        'kanal'   => $kanal,
+                        'fra'     => $navn,
+                        'hvem'    => $hvem,
+                        'tekst'   => (string) ($s['snippet'] ?? ''),
+                        'tid'     => (string) ($s['updated_time'] ?? ''),
+                        'ulest'   => (int) ($s['unread_count'] ?? 0),
+                    ];
+                }
+            } catch (RuntimeException $e) {
+                $feil[] = $kanal . ': ' . $e->getMessage();
+            }
+        }
+
+        usort($ut, static fn(array $a, array $b): int => strcmp($b['tid'], $a['tid']));
+        return ['samtaler' => $ut, 'feil' => $feil];
+    }
+
+    /**
+     * Meldingene i én samtale, eldste foerst — som en samtale leses.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function meldinger(string $samtaleId, int $maks = 25): array
+    {
+        if ($samtaleId === '') {
+            throw new RuntimeException('Vet ikke hvilken samtale det gjelder.');
+        }
+        $svar = self::kall('GET', $samtaleId, [
+            'fields' => 'messages.limit(' . $maks . '){id,message,from,created_time}',
+        ], self::sideToken());
+
+        $ut = [];
+        foreach ((array) ($svar['messages']['data'] ?? []) as $m) {
+            $ut[] = [
+                'id'    => (string) ($m['id'] ?? ''),
+                'fra'   => (string) ($m['from']['name'] ?? $m['from']['username'] ?? ''),
+                'oss'   => (string) ($m['from']['id'] ?? '') === self::sideId(),
+                'tekst' => (string) ($m['message'] ?? ''),
+                'tid'   => (string) ($m['created_time'] ?? ''),
+            ];
+        }
+        // Graph gir nyeste foerst; en samtale leses andre veien.
+        return array_reverse($ut);
+    }
+
+    /**
+     * Sender et svar i en samtale.
+     *
+     * ── Doegnet ──────────────────────────────────────────────────────
+     *
+     * Meta slipper bare gjennom et svar innen 24 timer etter kundens siste
+     * melding. Etter det maa meldinga merkes med en grunn Meta godtar, og
+     * «vi rakk ikke aa svare» er ikke en av dem. Feilen derfra (kode 10,
+     * underkode 2018278) oversettes til noe som sier hva som faktisk skjedde,
+     * framfor «tillatelse mangler» — som sender folk til feil sted.
+     *
+     * @return array{id: string}
+     */
+    public static function svarMelding(string $mottakerId, string $tekst): array
+    {
+        $tekst = trim($tekst);
+        if ($tekst === '') {
+            throw new RuntimeException('Svaret er tomt.');
+        }
+        if ($mottakerId === '') {
+            throw new RuntimeException('Vet ikke hvem svaret skal til.');
+        }
+
+        try {
+            $ut = self::kall('POST', self::sideId() . '/messages', [
+                'recipient'      => json_encode(['id' => $mottakerId]),
+                'messaging_type' => 'RESPONSE',
+                'message'        => json_encode(['text' => mb_substr($tekst, 0, 2000)]),
+            ], self::sideToken());
+        } catch (RuntimeException $e) {
+            if (str_contains($e->getMessage(), '2018278')
+                || stripos($e->getMessage(), 'outside') !== false
+                || stripos($e->getMessage(), '24') !== false) {
+                throw new RuntimeException(
+                    'Det er gått mer enn 24 timer siden kunden skrev, og da slipper '
+                    . 'Meta ikke gjennom et vanlig svar. Svar i Meta Business Suite, '
+                    . 'eller be kunden skrive på nytt.'
+                );
+            }
+            throw $e;
+        }
+
+        $id = (string) ($ut['message_id'] ?? '');
+        if ($id === '') {
+            throw new RuntimeException('Meldingen ble ikke sendt.');
+        }
+        return ['id' => $id];
+    }
+
+    /** Foerste linje av et innlegg, saa man ser hva kommentaren staar paa. */
+    private static function kort(string $tekst): string
+    {
+        $t = trim((string) preg_replace('/\s+/u', ' ', $tekst));
+        return $t === '' ? '' : (mb_strlen($t) > 60 ? mb_substr($t, 0, 60) . ' …' : $t);
+    }
+
     // ── Selve kallet ─────────────────────────────────────────────────
 
     /**

@@ -7,6 +7,13 @@
  *   POST handling=sjekk       spor Meta hvem tokenet gjelder
  *   POST handling=publiser    { utkastId, kanal, tekst? }  legg det ut
  *
+ *   POST handling=kommentarer      kommentarene paa de siste innleggene
+ *   POST handling=svarKommentar    { id, kanal, tekst }
+ *   POST handling=skjulKommentar   { id, kanal }
+ *   POST handling=samtaler         samtalene i innboksen
+ *   POST handling=meldinger        { samtaleId }
+ *   POST handling=svarMelding      { hvem, tekst }
+ *
  * ── Alltid et trykk ──────────────────────────────────────────────────
  *
  * «publiser» kalles bare fra en knapp. Det finnes ingen jobb, ingen
@@ -181,6 +188,58 @@ switch ($handling) {
             'lenke'   => $ut['lenke'],
             'beskjed' => 'Innlegget er lagt ut på ' . $kanal . '.',
         ]);
+
+    // ── Innboksen ───────────────────────────────────────────────────
+    //
+    // Eieren, 23. september 2026: «kan du faktisk svare paa kommentarer og
+    // spoersmaal paa insta og face?» Alt her leser, eller svarer paa noe en
+    // kunde har skrevet foerst — og hvert svar er et trykk, som
+    // publiseringen. Ingen vei hit fra en jobb eller fra Autopilot.
+
+    case 'kommentarer':
+        Svar::ok(Meta::kommentarer());
+
+    // ---------------------------------------------------------------------
+    case 'svarKommentar':
+        $id    = trim((string) ($kropp['id'] ?? ''));
+        $kanal = (string) ($kropp['kanal'] ?? '');
+        $tekst = trim((string) ($kropp['tekst'] ?? ''));
+        if (!in_array($kanal, ['Instagram', 'Facebook'], true)) {
+            Svar::feil('Velg Instagram eller Facebook.');
+        }
+        $ut = Meta::svarKommentar($id, $tekst, $kanal);
+        revider('kommentar_svart', 'meta', 0, ['kanal' => $kanal, 'paa' => $id, 'tegn' => mb_strlen($tekst)]);
+        Svar::ok(['id' => $ut['id'], 'beskjed' => 'Svaret er lagt ut på ' . $kanal . '.']);
+
+    // ---------------------------------------------------------------------
+    // Skjult, ikke slettet: den som skrev ser sin egen kommentar staa, og
+    // vi slipper en krangel om sensur.
+    case 'skjulKommentar':
+        $id    = trim((string) ($kropp['id'] ?? ''));
+        $kanal = (string) ($kropp['kanal'] ?? '');
+        if (!in_array($kanal, ['Instagram', 'Facebook'], true)) {
+            Svar::feil('Velg Instagram eller Facebook.');
+        }
+        Meta::skjulKommentar($id, $kanal);
+        revider('kommentar_skjult', 'meta', 0, ['kanal' => $kanal, 'paa' => $id]);
+        Svar::ok(['beskjed' => 'Kommentaren er skjult. Den som skrev den ser den fortsatt selv.']);
+
+    // ---------------------------------------------------------------------
+    case 'samtaler':
+        Svar::ok(Meta::samtaler());
+
+    // ---------------------------------------------------------------------
+    case 'meldinger':
+        $sid = trim((string) ($kropp['samtaleId'] ?? ''));
+        Svar::ok(['meldinger' => Meta::meldinger($sid)]);
+
+    // ---------------------------------------------------------------------
+    case 'svarMelding':
+        $hvem  = trim((string) ($kropp['hvem'] ?? ''));
+        $tekst = trim((string) ($kropp['tekst'] ?? ''));
+        $ut = Meta::svarMelding($hvem, $tekst);
+        revider('melding_svart', 'meta', 0, ['til' => $hvem, 'tegn' => mb_strlen($tekst)]);
+        Svar::ok(['id' => $ut['id'], 'beskjed' => 'Meldingen er sendt.']);
 
     default:
         Svar::feil('Ukjent handling.');

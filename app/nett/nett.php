@@ -52,9 +52,9 @@ final class Nett
         '/personvern' => 'personvern',
         '/kursene-vare' => 'kursoversikt',
         '/paint-on-pots' => 'paintonpots',
-        // Testadresse for gavekortsida paa serveren til den er kontrollert
-        // live; /gavekort er fortsatt appen. Ikke i sitemap, noindex.
-        '/gavekort-ny' => 'gavekort',
+        // Gavekortsida paa serveren fra 23. september 2026 (LCP 3,9 → 1,2 s
+        // maalt med struping). ?kjop=1 gaar til appen, se Nett::kan().
+        '/gavekort' => 'gavekort',
         '/kontakt' => 'kontakt',
         '/bedrift' => 'bedrift',
         '/vilkar' => 'vilkar',

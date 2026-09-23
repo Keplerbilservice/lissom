@@ -59,6 +59,12 @@ final class Config
         // Modellnavnet og prisanslaget staar samme sted, fordi Google
         // bytter navn paa bildemodellene sine oftere enn vi legger ut kode.
         'gemini_api_key', 'gemini_modell', 'gemini_pris_ore',
+        // Hvem som skriver teksten — «claude» eller «gemini» — og hvilken
+        // Gemini-modell. Uten disse to her ble valget lagret i basen og
+        // aldri lest: Config::hent() gaar bare til basen for noekler som
+        // staar i denne lista, og et valg som sier «lagret» og likevel ikke
+        // gjelder er verre enn et som sier nei. Maalt 23. september 2026.
+        'ai_leverandor', 'gemini_tekst_modell',
         // Skoleruta i Vestfold, hentet av vedlikeholdsjobben, og eierens
         // egne rettelser oppaa. De staar i basen fordi feriene endrer seg
         // hvert aar — det skal ikke kreve en ny utlegging.

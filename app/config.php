@@ -59,6 +59,10 @@ final class Config
         // Modellnavnet og prisanslaget staar samme sted, fordi Google
         // bytter navn paa bildemodellene sine oftere enn vi legger ut kode.
         'gemini_api_key', 'gemini_modell', 'gemini_pris_ore',
+        // Skoleruta i Vestfold, hentet av vedlikeholdsjobben, og eierens
+        // egne rettelser oppaa. De staar i basen fordi feriene endrer seg
+        // hvert aar — det skal ikke kreve en ny utlegging.
+        'skolerute_data', 'skolerute_hentet', 'skolerute_egne',
         // Standardteksten i kvitteringen etter kjop. Den fylles ut paa nye
         // kurs, og eieren retter eller sletter den paa det enkelte kurset.
         // Sto den i koden, matte hele nettsida legges ut paa nytt for aa

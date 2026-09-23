@@ -483,6 +483,21 @@ switch ($jobb) {
             logg('Glemte innstemplinger lukket', ['antall' => $stemplinger]);
         }
 
+        // Skoleruta i Vestfold, saa varselet i kursoppsettet stemmer.
+        //
+        // Ligger her og ikke i en egen cron-jobb: den ville maattet settes
+        // opp i cPanel, og staa to steder til — her og i docs/OPPSETT.md.
+        // Skolerute::borHente() sorger for at det blir ett kall i uka, ikke
+        // ett i doegnet.
+        //
+        // Feiler den, staar forrige svar urort og vi gaar videre. En skolerute
+        // som ikke lot seg hente skal ikke stoppe medlemskapsryddingen.
+        if (Skolerute::borHente()) {
+            $sr = Skolerute::hent();
+            logg($sr['ok'] ? 'Skoleruta hentet' : 'Skoleruta ble ikke hentet',
+                 ['perioder' => $sr['perioder'], 'feil' => $sr['feil']]);
+        }
+
         // Kurs med fast ukedag: legg ut oktene som mangler framover.
         //
         // Uten dette ville en serie gaatt tom etter aatte uker, og kurset

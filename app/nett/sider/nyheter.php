@@ -14,6 +14,24 @@
 
 declare(strict_types=1);
 
+/** Artikkel (slug) → pillene nederst: [tekst, adresse]. */
+if (!defined('ARTIKKEL_PILLER')) {
+    define('ARTIKKEL_PILLER', [
+        'dreiekurs-i-tonsberg-hva-skjer' => [['Se dreiekurset', '/kurs/dreiekurs']],
+        'dreiekurs-for-nybegynnere-slik-foles-det-a-sitte-ved-dreieskiva-forste-gang' => [['Se dreiekurset', '/kurs/dreiekurs']],
+        'dreiing-eller-handbygging-slik-velger-du-riktig-start-med-leire' => [['Se dreiekurset', '/kurs/dreiekurs'], ['Se håndbygging', '/kurs/handbygging']],
+        'plateteknikk-eller-handbygging' => [['Se håndbygging', '/kurs/handbygging']],
+        'paint-on-pots-slik-fungerer-det' => [['Se Paint on Pots', '/paint-on-pots']],
+        'keramikk-med-barn-tonsberg' => [['Se barnekurset', '/kurs/alle-barn-se-her-tre-pa-rad']],
+        'date-night-keramikk-tonsberg' => [['Se Date Night', '/kurs/date-night']],
+        'sip-and-clay-tonsberg' => [['Se Sip & Clay', '/kurs/sip-and-clay']],
+        'medlemskap-i-keramikkverksted' => [['Se medlemskapene', '/medlemskap']],
+        'hosten-er-en-fin-tid-a-begynne-med-keramikk' => [['Se alle kurs', '/kurs']],
+        'hva-koster-keramikkurs-i-tonsberg' => [['Se alle kurs', '/kurs']],
+        'forste-gang-pa-keramikkurs' => [['Se alle kurs', '/kurs']],
+    ]);
+}
+
 $e = [Nett::class, 'e'];
 $slug = preg_match('~^/nyheter/([a-z0-9\-]+)$~i', Nett::$adresse, $m) === 1 ? $m[1] : '';
 
@@ -28,6 +46,20 @@ if ($slug !== '') {
             $lest = $a;
             break;
         }
+    }
+    // Kladden er ikke i lista, men verkstedet skal kunne se hvordan den
+    // blir for den legges ut.
+    //
+    // Eieren, 23. september 2026: «jeg trykket knappen, se hvordan den blir,
+    // men der lå ikke artikkelen». Knappen aapner artikkelens adresse, og
+    // her sto bare de publiserte — saa en kladd ga 404, ogsaa for den som
+    // var logget inn. Det forsvant stille da nyhetssidene ble tegnet paa
+    // serveren; skjermen de erstattet slapp admin inn.
+    //
+    // Bare den ene artikkelen hentes, ikke hele lista: en kladd skal ikke
+    // dukke opp blant nyhetene, heller ikke for verkstedet.
+    if ($lest === null && Sesjon::erAdmin()) {
+        $lest = DB::en('SELECT * FROM articles WHERE slug = :s', ['s' => $slug]);
     }
     if ($lest === null) {
         return null;
@@ -99,7 +131,20 @@ if ($lest !== null) {
             . '</figure>';
     }
     $h .= Nett::artikkelBlokker((string) $lest['innhold'], Artikler::bilder((int) $lest['id']));
-    $h .= '<div style="clear: both;"></div></div></section>' . "\n";
+    $h .= '<div style="clear: both;"></div>';
+    // Pillen under artikkelen: en ekte lenke til kurset artikkelen handler
+    // om. Ingen av artiklene lenket til en kursside (revisjonen 23. september
+    // 2026), saa Google fant ikke veien fra guidene til det man kan booke.
+    // Teksten og adressene er godkjent av eieren 23. september 2026.
+    $piller = ARTIKKEL_PILLER[(string) $lest['slug']] ?? [];
+    if ($piller !== []) {
+        $h .= '<div style="margin-top: var(--space-10); padding-top: var(--space-8); border-top: 1px solid var(--border-subtle); display: flex; gap: 12px; flex-wrap: wrap;">';
+        foreach ($piller as [$tekst, $href]) {
+            $h .= Deler::knapp($tekst, ['href' => $href, 'lenke' => true, 'variant' => 'ink']);
+        }
+        $h .= '</div>';
+    }
+    $h .= '</div></section>' . "\n";
 }
 
 $h .= '</div>' . "\n";

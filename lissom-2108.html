@@ -3938,6 +3938,20 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ ukeTomGaa }}" hint-size="auto,40px">{{ ukeTomKnapp }}</x-import>
             </div>
           </sc-if>
+          <!-- Paint on Pots, oeverst i stedet for i rutenettet. Tittel og
+               tekst staar hver for seg fordi Mal escaper alt i «{{ }}» — en
+               <b> i teksten ville vist seg som tekst. Hvorfor stripa finnes,
+               staar i app/nett/sider/kalender.php. -->
+          <sc-if value="{{ popHarStripe }}" hint-placeholder-val="{{ true }}">
+            <a href="{{ popStripeGaa }}" style="{{ popStripeStil }}">
+              <span style="font-size: 19px; line-height: 1.3; flex: none;">🎨</span>
+              <span>
+                <span style="display: block; font-size: var(--text-base); font-weight: 700; line-height: 1.4;">{{ popTittel }}</span>
+                <span style="display: block; font-size: var(--text-base); line-height: 1.4;">{{ popTekst }}</span>
+                <span style="display: block; font-size: var(--text-sm); opacity: .78; margin-top: 2px;">{{ popLenke }} →</span>
+              </span>
+            </a>
+          </sc-if>
           <!-- Uka i ett bilde.
                Paa en telefon fikk bare tre av de sju dagskortene plass, og
                resten laa i en stripe man maatte dra sidelengs. Ingenting sa
@@ -6495,6 +6509,9 @@ window.__resources = {
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Ingress</label>
             <textarea value="{{ artIngress }}" onChange="{{ settArtIngress }}" rows="2" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhArtIngressSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhArtIngressMerke }}</button>
+                  </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde</label>
             <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
               <sc-for list="{{ artBildeValg }}" as="v" hint-placeholder-count="7">
@@ -6517,6 +6534,9 @@ window.__resources = {
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Innhold</label>
             <p style="margin: 0 0 6px; font-size: var(--text-xs, 12px); color: var(--text-muted);"># overskrift · ## mellomtittel · | celle | celle | for tabellrader · - punkt for lister · «Tekst:» blir en etikett</p>
             <textarea value="{{ artInnhold }}" onChange="{{ settArtInnhold }}" rows="14" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 13px/1.6 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-5);"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhArtInnholdSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhArtInnholdMerke }}</button>
+                  </div>
             <div style="display: flex; gap: var(--space-3); align-items: center; border-top: 2px solid var(--lissom-brown); padding-top: var(--space-4);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ artLagre }}" hint-size="auto,44px">Lagre artikkel</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ artAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
@@ -9170,6 +9190,9 @@ window.__resources = {
               <div style="margin-bottom: var(--space-5);">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
                 <textarea value="{{ klRBeskrivelse }}" onChange="{{ settKlRBeskrivelse }}" rows="3" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKlRBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKlRBeskrivelseMerke }}</button>
+                  </div>
               </div>
             </sc-if>
             <sc-if value="{{ klRVisBunn }}" hint-placeholder-val="{{ true }}">
@@ -12003,11 +12026,17 @@ window.__resources = {
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Beskrivelse</label>
                   <textarea value="{{ plBeskrivelse }}" onChange="{{ settPlBeskrivelse }}" rows="3" placeholder="En setning eller to om hva dette er." style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlBeskrivelseMerke }}</button>
+                  </div>
                 </div>
 
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Punkter — ett per linje</label>
                   <textarea value="{{ plPunkter }}" onChange="{{ settPlPunkter }}" rows="5" placeholder="30 verkstedtimer i måneden&#10;Egen hylle i verkstedet&#10;Tilgang 24/7 med dørkode" style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlPunkterSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlPunkterMerke }}</button>
+                  </div>
                   <div style="{{ plHjelp }}">Står både på kortet og på siden man kommer til når man klikker seg inn.</div>
                 </div>
 
@@ -12019,12 +12048,18 @@ window.__resources = {
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Utfyllende informasjon</label>
                   <textarea value="{{ plLangtekst }}" onChange="{{ settPlLangtekst }}" rows="12" placeholder="Basis 30 – frihet til å skape, når det passer deg&#10;&#10;Basis 30 er vårt mest populære medlemskap …&#10;&#10;Med dette medlemskapet får du 30 verkstedtimer hver måned …" style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlLangtekstSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlLangtekstMerke }}</button>
+                  </div>
                   <div style="{{ plHjelp }}">Står på siden man kommer til når man klikker seg inn på medlemskapet. La en tom linje stå mellom avsnittene — de settes som egne avsnitt.</div>
                 </div>
 
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Viktig å vite — ett per linje</label>
                   <textarea value="{{ plViktig }}" onChange="{{ settPlViktig }}" rows="4" placeholder="Krever kurs hos oss eller tidligere erfaring&#10;2 måneders bindingstid ved oppstart&#10;Leire, glassur og brenning kjøpes i tillegg" style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlViktigSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlViktigMerke }}</button>
+                  </div>
                   <div style="{{ plHjelp }}">Egen bolk nederst på medlemskapssiden. Står tom om du ikke skriver noe.</div>
                 </div>
 
@@ -12462,6 +12497,24 @@ window.__resources = {
                     <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Én setning som står på kortet under «Våre kurs». Kunden ser den før de åpner kurset.</p>
                     <input id="k-kort" value="{{ kKortBeskrivelse }}" onChange="{{ settKKortBeskrivelse }}" maxlength="500" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   </div>
+
+                  <!-- Tittelen og beskrivelsen Google viser.
+                       Kolonnene har ligget i basen siden migrasjon 164, og
+                       side.php har lest dem hele tiden — men ingenting skrev
+                       dem. Bare dreiekurset hadde en egen tittel, satt i
+                       migrasjonen; alle andre fikk «<navn> i Tønsberg | Lissom
+                       Keramikk» uten mulighet til aa endre det. Eieren, 23.
+                       september 2026: «endre titler for søk også». -->
+                  <div style="margin-top: var(--space-5);">
+                    <label for="k-seotittel" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tittel i Google</label>
+                    <input id="k-seotittel" value="{{ kSeoTittel }}" onChange="{{ settKSeoTittel }}" maxlength="191" placeholder="{{ kSeoTittelPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kSeoTittelHjelp }}</p>
+                  </div>
+                  <div style="margin-top: var(--space-5);">
+                    <label for="k-seometa" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse i Google</label>
+                    <textarea id="k-seometa" value="{{ kSeoMeta }}" onChange="{{ settKSeoMeta }}" rows="2" maxlength="300" placeholder="Står under tittelen i søkeresultatet." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);"></textarea>
+                    <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kSeoMetaHjelp }}</p>
+                  </div>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
@@ -12486,6 +12539,9 @@ window.__resources = {
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hva de kan når de går hjem. Kan stå tomt.</p>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt og i faktaboksen øverst. Ikke på e-post.</p>
                   <textarea id="k-laerer" value="{{ kLaerer }}" onChange="{{ settKLaerer }}" rows="3" placeholder="F.eks. Å sentrere leira, åpne den og trekke opp en vegg. Å trimme foten dagen etter." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKLaererSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKLaererMerke }}</button>
+                  </div>
                 </div>
 
 
@@ -12546,6 +12602,9 @@ window.__resources = {
                     <div>
                       <label for="k-medhjem" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette får du med hjem</label>
                       <textarea id="k-medhjem" value="{{ kMedHjem }}" onChange="{{ settKMedHjem }}" rows="3" placeholder="{{ kMedHjemMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKMedHjemSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKMedHjemMerke }}</button>
+                  </div>
                       <button class="lx-radpille" type="button" onClick="{{ kMedHjemAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
                     </div>
 
@@ -12554,6 +12613,9 @@ window.__resources = {
                       <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hvor lenge det tar før arbeidene kan hentes. Spørsmålet kommer uansett — står det her, kommer det ikke på telefonen.</p>
                       <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt.</p>
                       <textarea id="k-ferdigtid" value="{{ kFerdigTid }}" onChange="{{ settKFerdigTid }}" rows="2" placeholder="{{ kFerdigTidMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKFerdigTidSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKFerdigTidMerke }}</button>
+                  </div>
                       <!-- Standardteksten for kategorien, redigerbar rett her. -->
                       <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                         <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdFerdigHjelp }}</span>
@@ -12586,6 +12648,9 @@ window.__resources = {
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Ett punkt per linje. Står feltet tomt, brukes standardteksten under. «Maks N deltakere» legges på av seg selv og følger antall plasser.</p>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som avhakede punkter under prisen. Ikke på e-post.</p>
                   <textarea id="k-punkter" value="{{ kPunkter }}" onChange="{{ settKPunkter }}" rows="4" placeholder="{{ kStdPunkterPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKPunkterSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKPunkterMerke }}</button>
+                  </div>
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kPunkterHjelp }}</p>
                   <!-- Standardteksten for kategorien, redigerbar rett her. -->
                   <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
@@ -12604,6 +12669,9 @@ window.__resources = {
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Oppmøte, klær, parkering, hva de skal ta med.</p>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, før de betaler. Ikke på e-post.</p>
                   <textarea id="k-praktisk" value="{{ kPraktisk }}" onChange="{{ settKPraktisk }}" rows="3" placeholder="{{ kStdPraktiskPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKPraktiskSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKPraktiskMerke }}</button>
+                  </div>
                   <!-- Standardteksten for kategorien, redigerbar rett her. -->
                   <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdPraktiskHjelp }}</span>
@@ -21658,11 +21726,17 @@ window.__resources = {
                 <div>
                   <label style="{{ abEtikett }}">Ingress — de to linjene som står under overskriften</label>
                   <textarea value="{{ abIngress }}" onChange="{{ settAbIngress }}" rows="2" style="{{ abFeltStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhAbIngressSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhAbIngressMerke }}</button>
+                  </div>
                 </div>
                 <div>
                   <label style="{{ abEtikett }}">Tekst</label>
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted);"># overskrift · ## mellomtittel · - punkt for lister</p>
                   <textarea value="{{ abInnhold }}" onChange="{{ settAbInnhold }}" rows="18" style="{{ abTekstStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhAbInnholdSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhAbInnholdMerke }}</button>
+                  </div>
                 </div>
                 <!-- Bildene inne i teksten.
                      En artikkel hadde ett bilde, og det sto over teksten.
@@ -21938,6 +22012,105 @@ window.__resources = {
           </sc-for>
         </sc-if>
 
+        <!-- ── Innboks ────────────────────────────────────────────────── -->
+        <!--
+             Kommentarer og meldinger fra Instagram og Facebook, samlet.
+
+             Eieren, 23. september 2026: «kan du faktisk svare paa
+             kommentarer og spoersmaal paa insta og face?» Svaret var nei —
+             tokenet hadde lov, men koden kunne bare publisere.
+
+             Hvert svar er et trykk. Det finnes ingen vei hit fra Autopilot
+             eller fra en jobb, samme regel som publisering: et svar fra
+             verkstedet staar offentlig, og skal vaere lest av et menneske.
+        -->
+        <sc-if value="{{ mkErInnboks }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: var(--space-5);">
+            <button type="button" onClick="{{ ibVisKomm }}" style="{{ ibKommStil }}">{{ ibKommMerke }}</button>
+            <button type="button" onClick="{{ ibVisMeld }}" style="{{ ibMeldStil }}">{{ ibMeldMerke }}</button>
+            <div style="flex: 1 1 auto;"></div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ ibHent }}" hint-size="auto,36px">{{ ibHentMerke }}</x-import>
+          </div>
+
+          <sc-if value="{{ ibFeil }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--terracotta-600); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5);">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 4px;">{{ ibFeilTittel }}</div>
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ ibFeilTekst }}</p>
+            </div>
+          </sc-if>
+
+          <!-- ── Kommentarer ── -->
+          <sc-if value="{{ ibErKomm }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ ibTom }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">{{ ibTomTekst }}</p>
+            </sc-if>
+            <sc-for list="{{ ibKommentarer }}" as="k" hint-placeholder-count="3">
+              <div style="{{ k.kortStil }}">
+                <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                  <span style="{{ k.merkeStil }}">{{ k.kanal }}</span>
+                  <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-heading);">{{ k.fra }}</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.naar }}</span>
+                  <sc-if value="{{ k.svart }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: var(--text-xs); color: var(--sage-600); font-weight: 600;">Besvart</span>
+                  </sc-if>
+                </div>
+                <p style="margin: 0 0 var(--space-2); font-size: var(--text-base); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ k.tekst }}</p>
+                <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-4);">{{ k.paaTekst }}</div>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <input value="{{ k.svar }}" onChange="{{ k.settSvar }}" placeholder="Skriv et svar …" style="flex: 1 1 260px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ k.send }}" hint-size="auto,36px">{{ k.sendMerke }}</x-import>
+                </div>
+                <div style="margin-top: var(--space-3); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+                  <a href="{{ k.lenke }}" target="_blank" rel="noopener" style="font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se innlegget ↗</a>
+                  <button class="lx-radpille" type="button" onClick="{{ k.skjul }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Skjul</button>
+                </div>
+              </div>
+            </sc-for>
+          </sc-if>
+
+          <!-- ── Meldinger ── -->
+          <sc-if value="{{ ibErMeld }}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{ ibIngenSamtale }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ ibTom }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">{{ ibTomTekst }}</p>
+              </sc-if>
+              <sc-for list="{{ ibSamtaler }}" as="s" hint-placeholder-count="3">
+                <div onClick="{{ s.apne }}" role="button" style="{{ s.kortStil }}">
+                  <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 4px;">
+                    <span style="{{ s.merkeStil }}">{{ s.kanal }}</span>
+                    <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-heading);">{{ s.fra }}</span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ s.naar }}</span>
+                    <sc-if value="{{ s.harUlest }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">{{ s.ulestTekst }}</span>
+                    </sc-if>
+                  </div>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ s.tekst }}</p>
+                </div>
+              </sc-for>
+            </sc-if>
+
+            <sc-if value="{{ ibHarSamtale }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
+                <button class="lx-radpille" type="button" onClick="{{ ibLukkSamtale }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown);">← Alle samtaler</button>
+                <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-heading);">{{ ibSamtaleNavn }}</span>
+              </div>
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-4);">
+                <sc-for list="{{ ibMeldinger }}" as="m" hint-placeholder-count="4">
+                  <div style="{{ m.stil }}">
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 2px;">{{ m.hvem }}</div>
+                    <p style="margin: 0; font-size: var(--text-base); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ m.tekst }}</p>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <input value="{{ ibSvar }}" onChange="{{ ibSettSvar }}" placeholder="Skriv et svar …" style="flex: 1 1 260px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ ibSendMelding }}" hint-size="auto,36px">{{ ibSendMerke }}</x-import>
+              </div>
+              <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Meta slipper bare gjennom et svar innen 24 timer etter at kunden skrev sist.</p>
+            </sc-if>
+          </sc-if>
+        </sc-if>
+
         <!-- ── Innstillinger ──────────────────────────────────────────── -->
         <sc-if value="{{ mkErInnstillinger }}" hint-placeholder-val="{{ false }}">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-5);">
@@ -21989,6 +22162,92 @@ window.__resources = {
               <input type="password" autocomplete="new-password" value="{{ mkMaalMeta }}" onChange="{{ mkSettMaalMeta }}" placeholder="{{ mkMaalMetaPlass }}" style="{{ mkFeltStil }}">
               <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Meta Events Manager → pikselen → Innstillinger → Conversions API → «Generer tilgangstoken». Skriv «slett» for å fjerne en nøkkel.</p>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMaal }}" hint-size="auto,40px">Lagre</x-import>
+            </div>
+
+            <!-- Gemini lager bildene (app/lib/gemini.php). Noekkelen lagres i
+                 innstillinger-tabellen — ikke i content_blocks, som nettsida
+                 leser — og sendes aldri tilbake hit. Feltet staar tomt, og
+                 plassholderen viser de fire siste tegnene saa eieren kjenner
+                 igjen hvilken noekkel som staar inne. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Bilder med Gemini</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Claude skriver tekst, men lager ikke bilder. Med en nøkkel herfra får du «Lag bilde» i billedvelgeren — på kurs, varer, artikler og kampanjer. Bildene trekkes fra det samme månedstaket som teksten.</p>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkGemStatus }}</div>
+
+              <!-- Hvem som skriver teksten.
+                   Eieren, 23. september 2026: «vi kan jo bruke gemini paa
+                   tekstgenereringen?» — spurt mens Anthropic-kontoen sto uten
+                   dekning og ingen av tekstknappene virket. Valget gjelder alt
+                   som skrives, ikke bare det ene feltet du staar i. -->
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Hvem skriver teksten</label>
+              <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: 6px;">
+                <button type="button" onClick="{{ mkVelgClaude }}" style="{{ mkClaudeStil }}">Claude</button>
+                <button type="button" onClick="{{ mkVelgGemini }}" style="{{ mkGeminiStil }}">Gemini</button>
+              </div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">{{ mkLevHjelp }}</p>
+
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">API-nøkkel</label>
+              <input type="password" autocomplete="new-password" value="{{ mkGemNokkel }}" onChange="{{ mkSettGemNokkel }}" placeholder="{{ mkGemNokkelPlass }}" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">aistudio.google.com → «Get API key». Lim inn bare selve nøkkelen. La feltet stå tomt for å beholde den som ligger inne — skriv «slett» for å fjerne den.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Modell</label>
+              <input value="{{ mkGemModell }}" onChange="{{ mkSettGemModell }}" placeholder="gemini-3.1-flash-image" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Står her og ikke i koden, så du kan rette navnet selv hvis Google bytter det. Sier serveren «Google kjenner ikke modellen», er det dette feltet som skal endres.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Modell for tekst</label>
+              <input value="{{ mkGemTekstModell }}" onChange="{{ mkSettGemTekstModell }}" placeholder="gemini-3.1-pro-preview" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Brukes bare når Gemini er valgt over. Pro skriver best; flash er raskere og billigere.</p>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreGemini }}" hint-size="auto,40px">Lagre</x-import>
+
+              <!-- Referansebildene.
+                   Uten dem lagde modellen polerte studiofoto som kunne vaert
+                   hvilket som helst verksted. Eieren, 23. september 2026:
+                   «jeg vil at du skal bygge alle bildene og videoene du
+                   generer i lissom med disse referansene». De ligger for seg
+                   selv i opplastinger/referanser og vises bare for admin. -->
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
+                <div style="font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Referansebilder</div>
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Bildene her følger med hver gang du lager et bilde, så resultatet ligner verkstedet deres og ikke et tilfeldig studio. Ha alltid minst ett bilde av verkstedet og minst ett av dere selv — da blir både rommet og folkene gjenkjennelige. Tre er nok; flere gjør kallet tregere uten å gjøre bildet bedre.</p>
+                <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkRefStatus }}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4);">
+                  <sc-for list="{{ mkReferanser }}" as="r" hint-placeholder-count="3">
+                    <div style="{{ r.stil }}">
+                      <button type="button" onClick="{{ r.fjern }}" title="Fjern" aria-label="Fjern referansebildet" style="position: absolute; top: 4px; right: 4px; appearance: none; border: none; border-radius: 999px; width: 22px; height: 22px; line-height: 1; cursor: pointer; background: rgba(31,17,12,.72); color: #fff; font-size: 14px; padding: 0;">×</button>
+                    </div>
+                  </sc-for>
+                </div>
+                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: var(--type-label); color: var(--terracotta-600);">
+                  <input type="file" accept="image/*" onChange="{{ mkRefLastOpp }}" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
+                  <span style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 14px;">Legg til bilde</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Publisering til Instagram og Facebook (app/lib/meta.php).
+                 Tokenet lagres i innstillinger-tabellen — ikke i
+                 content_blocks, som nettsida leser — og sendes aldri
+                 tilbake hit. Feltet staar tomt, og lagrer vi uten at noe er
+                 skrevet i det, rores tokenet ikke.
+
+                 Det finnes ingen jobb og ingen vei hit fra Autopilot: et
+                 utkast som legger seg ut paa Instagram uten at noen har
+                 lest det er ikke en funksjon, det er en feil som skjer i
+                 offentligheten. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Publisering til Instagram og Facebook</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Med et token herfra kan et ferdig utkast legges rett ut på Instagram eller Facebook-sida. Ingenting går ut av seg selv — du trykker «Publiser» på hvert enkelt innlegg.</p>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkMetaStatus }}</div>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Systembruker-token</label>
+              <input type="password" autocomplete="new-password" value="{{ mkMetaTok }}" onChange="{{ mkSettMetaTok }}" placeholder="{{ mkMetaTokPlass }}" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Meta Business Manager → Systembrukere → «Lissom publisering» → «Generer token». Velg appen «Publisering», og hak av for instagram_basic, instagram_content_publish, pages_manage_posts og pages_read_engagement. Et slikt token utløper ikke. La feltet stå tomt for å beholde det som ligger inne — skriv «slett» for å fjerne det.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Instagram-konto</label>
+              <input value="{{ mkMetaIg }}" onChange="{{ mkSettMetaIg }}" placeholder="17841400763052125" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Id-en til @lissom_keramikk. Den er et tall, og står i Business Manager under Instagram-kontoer.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Facebook-side</label>
+              <input value="{{ mkMetaSide }}" onChange="{{ mkSettMetaSide }}" placeholder="1343208898874649" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Id-en til Lissom-sida. Står under Sider i Business Manager.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMetaPub }}" hint-size="auto,40px">Lagre</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" icon="eye" on-click="{{ mkSjekkMetaPub }}" hint-size="auto,40px">Sjekk koblingen</x-import>
+              </div>
             </div>
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -22159,6 +22418,18 @@ window.__resources = {
                 </sc-if>
                 <sc-if value="{{ mkLesIkkeArtikkel }}" hint-placeholder-val="{{ true }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mkLesGodkjenn }}" hint-size="auto,44px">{{ mkLesBrukTekst }}</x-import>
+                </sc-if>
+                <!-- Ut paa Instagram og Facebook herfra.
+                     Eieren, 23. september 2026: «kan vi faa en meta
+                     publisering i systemet?» Foer maatte teksten kopieres ut
+                     og limes inn i appen. Knappen staar her, der innlegget
+                     leses — og den staar BARE her: det finnes ingen jobb og
+                     ingen vei fra Autopilot som legger noe ut av seg selv. -->
+                <sc-if value="{{ mkLesKanSome }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ mkLesUtInstagram }}" hint-size="auto,44px">Legg ut på Instagram</x-import>
+                </sc-if>
+                <sc-if value="{{ mkLesKanSomeFb }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ mkLesUtFacebook }}" hint-size="auto,44px">Legg ut på Facebook</x-import>
                 </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="copy" on-click="{{ mkLesKopier }}" hint-size="auto,44px">Kopier teksten</x-import>
               </div>
@@ -22831,44 +23102,43 @@ window.__resources = {
         <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Store bilder krympes automatisk, så et kjøpt bilde fra Shutterstock går rett inn.</span>
       </label>
 
-      <!-- Soek hos Shutterstock, uten aa forlate sida. Treffene er
-           forhaandsvisninger med vannmerke; foerst naar du velger ett blir
-           det lisensiert, lastet ned og lagt i biblioteket. -->
-      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Søk hos Shutterstock</div>
-      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
-        <input value="{{ ssOrd }}" onChange="{{ settSsOrd }}" onKeyDown="{{ ssTast }}" placeholder="Hva leter du etter?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="search" on-click="{{ ssSok }}" hint-size="auto,40px">{{ ssKnapp }}</x-import>
-      </div>
-      <!-- Soeket sendes med norsk som spraak, saa «keramikk» virker. Ordene
-           i biblioteket er likevel skrevet paa engelsk, og et engelsk ord
-           treffer derfor bredere enn oversettelsen av det. -->
-      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Søk på norsk eller engelsk. Engelske ord treffer bredest — <em>pottery</em>, <em>ceramics</em>, <em>clay</em>. <button class="lx-radpille" type="button" onClick="{{ ssSjekk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk tilkoblingen</button> · <button class="lx-radpille" type="button" onClick="{{ ssKoble }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ ssKobleTekst }}</button></p>
-      <!-- Shutterstock avviser tilkoblingen om returadressen ikke staar
-           registrert paa appen, og da havner du paa feilsida deres uten aa
-           vite hvorfor. Derfor staar adressen her foerst. -->
-      <sc-if value="{{ ssKobleKlar }}" hint-placeholder-val="{{ false }}">
-        <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-3); background: var(--clay-50);">
-          <p style="margin: 0 0 var(--space-2); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Denne adressen må stå som Callback URL på appen din hos Shutterstock. Står den ikke der, avviser de tilkoblingen.</p>
-          <code style="display: block; font-size: var(--text-xs); word-break: break-all; color: var(--text-heading); margin-bottom: var(--space-3);">{{ ssKobleRetur }}</code>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ ssFortsett }}" hint-size="auto,36px">Fortsett til Shutterstock</x-import>
+      <!-- Lag bildet med Gemini.
+           Staar i den felles billedvelgeren, saa den finnes paa kurs,
+           events, varer, artikler, kampanjer og referanser paa én gang —
+           og dermed ogsaa i kursoppretteren. Bildet lages paa serveren,
+           legges i biblioteket og settes paa det du holder paa med. -->
+      <!-- Lag video med Veo.
+           Eieren, 23. september 2026: «legger du til at jeg ogsaa kan
+           generere video der det trengs? for eksempel i instagram
+           innlegg?» Staar i den samme velgeren som bildet, men for seg:
+           en video koster kroner der et bilde koster ore, og tar
+           minutter der bildet tar sekunder. Prisen staar paa knappen. -->
+      <sc-if value="{{ gemKlar }}" hint-placeholder-val="{{ true }}">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Lag bilde</div>
+        <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+          <input value="{{ gemLedetekst }}" onChange="{{ settGemLedetekst }}" onKeyDown="{{ gemTast }}" placeholder="Hva skal bildet vise?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ gemLag }}" hint-size="auto,40px">{{ gemKnapp }}</x-import>
         </div>
+        <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Beskriv tingen, ikke stemningen — «et stort uglasert fat på en trebenk» gir bedre bilde enn «noe fint keramikk». Formatet er liggende, uten tekst i bildet. Tar rundt ti sekunder og koster {{ gemPris }}.</p>
+        <sc-if value="{{ vidApen }}" hint-placeholder-val="{{ false }}">
+          <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-5);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Lag video</div>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+              <input value="{{ vidLedetekst }}" onChange="{{ settVidLedetekst }}" placeholder="Hva skal skje i videoen?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ vidLag }}" hint-size="auto,40px">{{ vidKnapp }}</x-import>
+            </div>
+            <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ vidHjelp }}</p>
+            <sc-if value="{{ vidMelding }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">{{ vidMeldingTekst }}</p>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{ gemMelding }}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ gemMeldingTekst }}</p>
+        </sc-if>
+        <div style="height: var(--space-5);"></div>
       </sc-if>
-      <sc-if value="{{ ssMelding }}" hint-placeholder-val="{{ false }}">
-        <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ssMeldingTekst }}</p>
-      </sc-if>
-      <sc-if value="{{ ssHarTreff }}" hint-placeholder-val="{{ true }}">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-3);">
-          <sc-for list="{{ ssTreff }}" as="t" hint-placeholder-count="8">
-            <button type="button" onClick="{{ t.velg }}" aria-label="{{ t.tekst }}" title="{{ t.tekst }}" style="{{ t.stil }}"></button>
-          </sc-for>
-        </div>
-        <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-6);">
-          <span style="font-size: var(--text-xs); color: var(--text-muted);">Trykk et bilde for å lisensiere og legge det inn. Miniatyrene har vannmerke — det ferdige bildet har ikke.</span>
-          <sc-if value="{{ ssFlere }}" hint-placeholder-val="{{ true }}">
-            <button class="lx-radpille" type="button" onClick="{{ ssNeste }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Flere treff</button>
-          </sc-if>
-        </div>
-      </sc-if>
+
 
       <!-- Utsnittet. Vises naar et bilde er valgt: her ser du ramma slik
            kunden faar den, og trykker der motivet skal ligge. -->
@@ -22997,7 +23267,13 @@ window.__resources = {
         </div>
         <p style="margin: var(--space-3) 0 var(--space-5); font-size: var(--text-base); line-height: 1.6; color: var(--text-body); text-wrap: pretty;">{{ piTekst }}</p>
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-body);">
-          <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>{{ piMerknad }}</span></div>
+          <!-- Merknaden finnes bare for «Matsikret» og «Kunstobjekt».
+               Uten denne sc-if sto et ✓ helt alene over de to andre
+               punktene paa hver eneste vase, krukke og skaal — et hakk
+               uten tekst. Sett 23. september 2026 paa /butikk/26-vase. -->
+          <sc-if value="{{ piHarMerknad }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>{{ piMerknad }}</span></div>
+          </sc-if>
           <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>Dreid for hånd i verkstedet på Teie — farge og form varierer litt fra bildet</span></div>
           <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>Hent i butikken på Teie, eller få den sendt. Betal med Vipps.</span></div>
         </div>
@@ -23077,6 +23353,9 @@ window.__resources = {
           <input value="{{ npAntall }}" onChange="{{ settNpAntall }}" placeholder="Antall på lager" style="{{ skFeltStil }}">
         </div>
         <textarea value="{{ npBeskrivelse }}" onChange="{{ settNpBeskrivelse }}" placeholder="Kort beskrivelse, f.eks. «Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.»" rows="{{ 3 }}" style="{{ npTekstStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhNpBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhNpBeskrivelseMerke }}</button>
+                  </div>
 
         <!-- Kategorien styrer hvilket filter varen havner under i butikken.
              Uten den ble en ny vare liggende utenfor alle filtrene. -->
@@ -26626,7 +26905,10 @@ class Component extends DCLogic {
    */
   butikkKolleksjonNaa() {
     if (!this.bryterPaa('medlemssalg')) return 'Lissom';
-    return (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'Medlem' : 'Lissom';
+    // Kortet paa serverbutikken sender hit med /butikk?kolleksjon=medlem.
+    let fraAdressen = 'Lissom';
+    try { if (new URLSearchParams(window.location.search).get('kolleksjon') === 'medlem') fraAdressen = 'Medlem'; } catch (e) { /* ingen sporring */ }
+    return (this.state.butikkKolleksjon || fraAdressen) === 'Medlem' ? 'Medlem' : 'Lissom';
   }
 
   vekslBryter(nokkel, navn) {
@@ -28251,6 +28533,7 @@ class Component extends DCLogic {
       .then(r => r.json())
       .then(d => {
         const inne = !!d.innlogget;
+        if (d.erAdmin || d.erRegnskap) this.settIntern();
         const ny = {
           innlogget: inne,
           erAdminBruker: !!d.erAdmin,
@@ -28316,8 +28599,36 @@ class Component extends DCLogic {
         this.setState(ny);
         // Gaven hoerer til medlemskapet, og vi vet forst her om det finnes.
         if (d.erMedlem) { this.hentGave(); }
+        // Kjoepet fra gavekortsida paa serveren fortsetter her — naa vet vi
+        // om kunden er innlogget. Se fortsettGavekort().
+        this.fortsettGavekort();
       })
       .catch(() => {});
+  }
+
+  /**
+   * Gavekortsida tegnes av serveren (app/nett/sider/gavekort.php), saa den
+   * kommer opp med det samme. Trykker kunden Vipps-knappen der, legger
+   * nett.js det som er fylt ut i sessionStorage («lissom-gavekort») og
+   * sender hit med /gavekort?kjop=1. Da fyller vi skjemaet og kjoeper, som
+   * om kunden hadde trykket her. Maa kunden logge inn foerst, kommer hun
+   * tilbake til den samme adressen, og kjoepet fortsetter der.
+   * (23. september 2026 — gavekortsida var 69 paa mobil, LCP 5,7 s.)
+   */
+  fortsettGavekort() {
+    let q;
+    try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+    if (window.location.pathname !== '/gavekort' || q.get('kjop') !== '1') return;
+    let g = null;
+    try { g = JSON.parse(sessionStorage.getItem('lissom-gavekort') || 'null'); } catch (e) { g = null; }
+    try { history.replaceState(null, '', '/gavekort'); } catch (e) { /* adressen blir staaende */ }
+    if (!g) return;
+    const belop = parseInt(String(g.belop || '').replace(/[^0-9]/g, ''), 10);
+    this.setState({
+      side: 'gavekortside',
+      gvBelopFelt: isNaN(belop) ? '' : String(belop), gvValgt: isNaN(belop) ? null : belop,
+      gvNavn: g.navn || '', gvEpost: g.epost || '', gvHilsen: g.hilsen || '',
+    }, () => this.kjopGavekort());
   }
 
   /**
@@ -29077,9 +29388,17 @@ class Component extends DCLogic {
       return;
     }
     if (!this.state.innlogget) {
-      this.sendTilInnlogging('/gavekort', 'Gavekortet ble ikke kjøpt.');
+      // Tilbake til kjoepet, ikke bare til sida: det som er fylt ut ligger i
+      // sessionStorage, og fortsettGavekort() tar det derfra.
+      try {
+        sessionStorage.setItem('lissom-gavekort', JSON.stringify({
+          belop: belop, navn: this.state.gvNavn || '', epost: epost, hilsen: this.state.gvHilsen || '',
+        }));
+      } catch (e) { /* privat modus: da maa det fylles ut paa nytt */ }
+      this.sendTilInnlogging('/gavekort?kjop=1', 'Gavekortet ble ikke kjøpt.');
       return;
     }
+    try { sessionStorage.removeItem('lissom-gavekort'); } catch (e) { /* ingenting aa rydde */ }
     if (this._gavekortPagaar) return;
     this._gavekortPagaar = true;
     const vare = { item_id: 'gavekort', item_name: 'Gavekort', item_category: 'Gavekort', price: belop, quantity: 1 };
@@ -29352,8 +29671,42 @@ class Component extends DCLogic {
    *        se maalHvem(). Sendes med paa konverteringene, aldri paa
    *        sidevisninger.
    */
+  /**
+   * Er dette eierens (eller regnskapets) nettleser? Da telles ingenting.
+   *
+   * Merket settes naar /api/meg.php sier admin eller regnskap, og blir
+   * staaende i nettleseren — ogsaa etter utlogging, for det er fortsatt
+   * eieren som ser paa sida. GA4 hadde /admin, /admin/logg-inn og
+   * dokumentvisningen i admin blant landingssidene (23. september 2026).
+   * nett.js leser det samme merket.
+   */
+  erIntern() {
+    try { return localStorage.getItem('lissom-intern') === '1'; } catch (e) { return false; }
+  }
+
+  settIntern() {
+    try { localStorage.setItem('lissom-intern', '1'); } catch (e) {}
+    // Er Analytics alt lastet paa denne sida, stopper vi det her og naa.
+    try {
+      const id = String((this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
+      if (id) window['ga-disable-' + id] = true;
+    } catch (e) {}
+  }
+
+  /**
+   * Kom vi hit rett fra Vipps — tilbake fra en betaling eller en
+   * innlogging? Da skal ikke Vipps faa aeren for besoeket: GA4 hadde 68
+   * oekter fra «api.vipps.no / referral» paa 30 dager, og annonsen eller
+   * soeket som brakte kunden, mistet kjoepet. Se «ignore_referrer» i
+   * settOppAnalyse().
+   */
+  fraVipps() {
+    return /^https?:\/\/([^\/]*\.)?(vipps\.no|vippsmobilepay\.com|mobilepay\.(dk|fi))(\/|$)/i.test(document.referrer || '');
+  }
+
   maal(navn, felter, hvem) {
     try {
+      if (this.erIntern()) return false;
       let gikk = false;
       if (hvem) this.maalHvem(hvem);
       if (typeof window.gtag === 'function') {
@@ -29686,6 +30039,7 @@ class Component extends DCLogic {
     const harMeta = /^\d{15,16}$/.test(meta) && !this._metaSatt;
     if (!harGa && !harGtm && !harMeta) return;
     if ((this.state.side || '').indexOf('admin') === 0) return;
+    if (this.erIntern()) return;
     // Ingen maaling for noen har sagt ja. Gtag legger igjen
     // informasjonskapsler med det samme det lastes, saa det holder ikke aa
     // laste det og la vaere aa bruke det. Samme regel for Tag Manager og
@@ -29743,7 +30097,10 @@ class Component extends DCLogic {
       document.head.appendChild(s);
       window.gtag('js', new Date());
       // "anonymize_ip": vi trenger ikke vite hvem som var her, bare hvor mange.
-      window.gtag('config', id, { anonymize_ip: true });
+      // «ignore_referrer» naar vi kommer fra Vipps — se fraVipps().
+      const oppsett = { anonymize_ip: true };
+      if (this.fraVipps()) oppsett.ignore_referrer = true;
+      window.gtag('config', id, oppsett);
     }
 
     // Tag Manager, ved siden av Analytics — ikke i stedet for. Analytics
@@ -30929,6 +31286,7 @@ class Component extends DCLogic {
           kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
           mkMaalGa: '', mkMaalMeta: '',
+          mkGemNokkel: '', mkGemModell: undefined,
           ...(ok && d ? { mkMaal: d } : {}),
         });
       })
@@ -30943,7 +31301,21 @@ class Component extends DCLogic {
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         this._markedHentes = false;
-        if (d && d.ai) this.setState({ marked: d });
+        if (d && d.ai) {
+          const i = d.innstillinger || {};
+          this.setState({
+            marked: d,
+            // Gemini-statusen settes her og ikke bare naar billedvelgeren
+            // aapnes. Aapnet du velgeren for svaret var inne, ble «Lag
+            // bilde» staaende skjult resten av besoket — ruta tegnes én
+            // gang, og et «sc-if» som ble usant ved forste tegning kom ikke
+            // tilbake naar verdien snudde. Maalt fra Sosiale medier 23.
+            // september 2026. Markedsfoering henter dette likevel, saa
+            // statusen er klar for noen rekker aa trykke.
+            geminiKlar: !!i.geminiKlar,
+            geminiPris: this.state.geminiPris || '',
+          });
+        }
       })
       .catch(() => { this._markedHentes = false; });
   }
@@ -31043,12 +31415,40 @@ class Component extends DCLogic {
    * kurset lagres.
    */
   apneBildevalg(id, slag) {
-    // Nytt sted, nytt soek. Sto treffene fra forrige rute igjen, saa det ut
-    // som de hoerte til det du naa holder paa med.
-    this.setState({ ssTreff: [], ssMelding: '', ssSide: 1, ssFlere: false, ssOrd: undefined });
+    // Nytt sted, ny ledetekst. Sto meldinga fra forrige rute igjen, saa det
+    // ut som den hoerte til det du naa holder paa med.
+    this.setState({ gemMelding: '', gemLedetekst: undefined, gemLager: false });
     const v = (id && typeof id === 'object') ? id : { id: id, slag: slag || 'artikkel' };
     this.setState({ bildeFor: v });
     if (!this.state.bildeliste) this.hentBilder();
+
+    // Er Gemini koblet til? Spoerres én gang, ikke ved hver aapning.
+    //
+    // Billedvelgeren brukes fra skjermer som ikke henter Markedsfoering, saa
+    // statusen kan ikke komme derfra. Uten svar staar «Lag bilde» skjult —
+    // en knapp som alltid svarer «ikke koblet til» er bare i veien.
+    if (this.state.geminiKlar === undefined && this.erPublisert()) {
+      this.setState({ geminiKlar: false });
+      fetch('/api/admin/gemini.php', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => {
+          if (d && d.ok && d.status) {
+            this.setState({
+              geminiKlar: !!d.status.klar,
+              geminiPris: d.status.pris || '',
+              // Hvem som skriver teksten, og hvilken Gemini-modell.
+              aiLeverandor: d.leverandor || 'claude',
+              gemTekstModell: d.tekstModell || '',
+              // Referansebildene AI-en laaner stil fra. De hentes her og ikke
+              // med marked.php: det er samme endepunkt som resten av
+              // Gemini-oppsettet, og da er de alltid i takt.
+              gemReferanser: d.referanser || [],
+              vidPris: (d.video && d.video.pris) || '',
+            });
+          }
+        })
+        .catch(() => { /* da staar knappen skjult, som for. */ });
+    }
   }
 
   /**
@@ -31449,34 +31849,42 @@ class Component extends DCLogic {
       // Noekkelen ligger i secrets.php og forlater aldri serveren. Treffene
       // er forhaandsvisninger med vannmerke — foerst naar du velger ett blir
       // det lisensiert, og bare det lisensierte bildet legges ut.
-      ssOrd: this.state.ssOrd !== undefined
-        ? this.state.ssOrd
-        : ((valgt.tittel || '').trim() || 'keramikk verksted'),
-      settSsOrd: (e) => this.setState({ ssOrd: e.target.value }),
-      ssTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sokShutterstock(1); } },
-      ssKnapp: this.state.ssSoker ? 'Søker …' : 'Søk',
-      ssSok: () => this.sokShutterstock(1),
-      ssSjekk: () => this.sjekkShutterstock(),
-      ssKoble: () => this.kobleShutterstock(),
-      ssKobleTekst: this.state.ssKobler ? 'Henter adressen …' : 'Koble til Shutterstock',
-      ssKobleKlar: !!this.state.ssKobleUrl,
-      ssKobleRetur: this.state.ssKobleRetur || '',
-      ssFortsett: () => { if (this.state.ssKobleUrl) window.location.href = this.state.ssKobleUrl; },
-      ssNeste: () => this.sokShutterstock((this.state.ssSide || 1) + 1),
-      ssFlere: !!this.state.ssFlere,
-      ssMelding: !!this.state.ssMelding,
-      ssMeldingTekst: this.state.ssMelding || '',
-      ssHarTreff: (this.state.ssTreff || []).length > 0,
-      ssTreff: (this.state.ssTreff || []).map(t => ({
-        tekst: t.tekst || 'Bilde fra Shutterstock',
-        velg: () => this.hentShutterstock(t.id),
-        stil: {
-          appearance: 'none', cursor: 'pointer', padding: 0, height: 96,
-          borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
-          backgroundImage: "url('" + t.mini + "')", backgroundSize: 'cover',
-          backgroundPosition: 'center', backgroundColor: 'var(--clay-200)',
-        },
-      })),
+      // ── Lag bildet med Gemini ────────────────────────────────────────
+      //
+      // Staar her og ikke i hver enkelt skjerm: billedvelgeren er felles for
+      // kurs, events, varer, artikler, kampanjer og referanser, saa den ene
+      // plassen gir knappen alle stedene.
+      //
+      // Ledeteksten foreslaas av tittelen paa det du redigerer — staar du i
+      // et nytt kurs som heter «Fransk smørklokke», er det den teksten du
+      // vil ha, ikke et tomt felt.
+      gemKlar: !!this.state.geminiKlar,
+      gemPris: this.state.geminiPris || 'rundt 45 øre',
+      gemLedetekst: this.state.gemLedetekst !== undefined
+        ? this.state.gemLedetekst
+        : ((valgt.tittel || '').trim() || ''),
+      settGemLedetekst: (e) => this.setState({ gemLedetekst: e.target.value }),
+      gemTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.lagGeminiBilde(); } },
+      gemKnapp: this.state.gemLager ? 'Lager …' : 'Lag bilde',
+      gemLag: () => this.lagGeminiBilde(),
+      // ── Lag video ────────────────────────────────────────────────────
+      //
+      // Prisen staar paa knappen. Et bilde koster 45 ore og tar ti
+      // sekunder; en video koster kroner og tar minutter, og da skal det
+      // sies for man trykker, ikke etterpaa.
+      vidApen: !!this.state.geminiKlar,
+      vidLedetekst: this.state.vidLedetekst || '',
+      settVidLedetekst: (e) => this.setState({ vidLedetekst: e.target.value }),
+      vidKnapp: this.state.vidJobb ? 'Lager …' : 'Lag video',
+      vidLag: () => this.lagVideo(),
+      vidHjelp: this.state.vidJobb
+        ? 'Veo bruker ett til seks minutter. Du kan bli staaende her, eller komme tilbake.'
+        : 'Aatte sekunder med lyd, staaende for Reels. ' + (this.state.vidPris || '') + ' per video.',
+      vidMelding: !!this.state.vidMelding,
+      vidMeldingTekst: this.state.vidMelding || '',
+      gemMelding: !!this.state.gemMelding,
+      gemMeldingTekst: this.state.gemMelding || '',
+
       // ── Utsnittet ────────────────────────────────────────────────────
       //
       // Rammene har faste former: kurskortene 16:10, butikken 1:1. Et bilde
@@ -31549,126 +31957,6 @@ class Component extends DCLogic {
    * Aa laste opp og deretter maatte finne bildet igjen i lista ville vaert et
    * unodig steg — den som velger en fil, har alt bestemt seg.
    */
-  /**
-   * Soeker hos Shutterstock.
-   *
-   * Serveren gjor kallet, ikke nettleseren: noekkelen skal ikke ligge i
-   * JavaScript der hvem som helst kan lese den.
-   */
-  sokShutterstock(side) {
-    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    const ord = (this.state.ssOrd !== undefined
-      ? this.state.ssOrd
-      : ((this.state.bildeFor && this.state.kNavn) || '')).trim();
-    if (!ord) { this.setState({ ssMelding: 'Skriv hva du leter etter.' }); return; }
-    if (this.state.ssSoker) return;
-    this.setState({ ssSoker: true, ssMelding: '' });
-
-    fetch('/api/admin/shutterstock.php?sok=' + encodeURIComponent(ord) + '&side=' + (side || 1),
-          { credentials: 'same-origin' })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => {
-        if (!ok) {
-          this.setState({ ssSoker: false, ssTreff: [], ssFlere: false,
-                          ssMelding: (d && d.feil) || 'Søket gikk ikke.' });
-          return;
-        }
-        const treff = d.treff || [];
-        this.setState({
-          ssSoker: false,
-          ssSide: d.side || 1,
-          ssFlere: !!d.flere,
-          // «Flere treff» legger paa, framfor aa bytte ut — ellers mister du
-          // det du saa paa da du trykket.
-          ssTreff: (side || 1) > 1 ? (this.state.ssTreff || []).concat(treff) : treff,
-          ssMelding: treff.length ? '' : 'Ingen treff på «' + ord + '». Prøv et annet ord.',
-        });
-      })
-      .catch(() => this.setState({ ssSoker: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
-  }
-
-  /**
-   * Sender Lissom gjennom Shutterstock sin egen innlogging.
-   *
-   * A soke og a laste ned er to ulike ting hos dem. Soket spor om
-   * biblioteket, og der holder det at appen var viser hvem den er. A
-   * lisensiere trekker pa et abonnement, og et abonnement horer til et
-   * menneske — ikke en app. Derfor ma Lissom si ja en gang, hos dem.
-   *
-   * Etterpa sendes du tilbake hit, og tokenet ligger lagret pa serveren.
-   */
-  kobleShutterstock() {
-    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    if (this.state.ssKobler) return;
-    this.setState({ ssKobler: true, ssMelding: '' });
-    fetch('/api/admin/shutterstock-kobling.php?start=1', { credentials: 'same-origin' })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => {
-        if (!ok || !d.url) {
-          this.setState({ ssKobler: false, ssKobleUrl: '',
-                          ssMelding: (d && d.feil) || 'Fikk ikke startet tilkoblingen.' });
-          return;
-        }
-        this.setState({ ssKobler: false, ssKobleUrl: d.url, ssKobleRetur: d.retur || '' });
-      })
-      .catch(() => this.setState({ ssKobler: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
-  }
-
-  /**
-   * Spor Shutterstock hva noekkelen faktisk har lov til.
-   *
-   * A soke og a laste ned er to ulike rettigheter hos dem, og de svarer
-   * ikke pa samme sted. Uten dette merker du forskjellen forst nar du
-   * trykker pa et bilde og far et avslag som ikke sier hvorfor.
-   */
-  sjekkShutterstock() {
-    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    this.setState({ ssMelding: 'Sjekker …' });
-    fetch('/api/admin/shutterstock.php?test=1', { credentials: 'same-origin' })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => this.setState({
-        ssMelding: (d && (ok ? d.beskjed : d.feil)) || 'Fikk ikke svar fra Shutterstock.',
-      }))
-      .catch(() => this.setState({ ssMelding: 'Fikk ikke kontakt med serveren.' }));
-  }
-
-  /**
-   * Lisensierer et bilde og legger det inn.
-   *
-   * Det er her det koster. Rekker ikke abonnementet, sier serveren fra med
-   * det Shutterstock faktisk svarte — framfor aa lagre en forhaandsvisning
-   * med vannmerke, som ville vaert et brudd paa lisensen.
-   */
-  hentShutterstock(id) {
-    if (this._ssHenter) return;
-    this._ssHenter = true;
-    const forNoe = this.state.bildeFor;
-    this.setState({ bildeLaster: true, ssMelding: 'Lisensierer bildet …' });
-
-    fetch('/api/admin/shutterstock.php', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handling: 'hent', id: id }),
-    })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => {
-        this._ssHenter = false;
-        this.setState({ bildeLaster: false });
-        if (!ok) {
-          this.setState({ ssMelding: (d && d.feil) || 'Bildet ble ikke hentet.' });
-          return;
-        }
-        this._bilderHentes = false;
-        this.hentBilder();
-        this.setState({ ssMelding: '', kvittering: 'Bildet er lagt inn',
-                        kvitteringDetalj: d.beskjed || '' });
-        if (forNoe) this.settValgtBilde(d.url);
-      })
-      .catch(() => {
-        this._ssHenter = false;
-        this.setState({ bildeLaster: false, ssMelding: 'Fikk ikke kontakt med serveren.' });
-      });
-  }
 
   /**
    * Krymper bildet for det sendes.
@@ -31780,6 +32068,416 @@ class Component extends DCLogic {
         if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
       })
       .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Lager et bilde med Gemini og setter det paa det du holder paa med.
+   *
+   * Samme vei som hentShutterstock(): serveren lager bildet, legger det i
+   * biblioteket, og vi peker det vi redigerer paa den nye adressen. Da
+   * virker knappen paa kurs, events, varer, artikler, kampanjer og
+   * referanser uten at noen av dem vet at Gemini finnes.
+   *
+   * Kallet tar rundt ti sekunder. Uten «gemLager» kunne man trykke flere
+   * ganger og betale for hvert trykk.
+   */
+  lagGeminiBilde() {
+    if (!this.erPublisert()) { this.setState({ gemMelding: 'Krever den ekte siden' }); return; }
+    const tekst = (this.state.gemLedetekst || '').trim();
+    if (!tekst) { this.setState({ gemMelding: 'Skriv hva bildet skal vise.' }); return; }
+    if (this._gemLager) return;
+    this._gemLager = true;
+
+    const forNoe = this.state.bildeFor;
+    this.setState({ gemLager: true, gemMelding: 'Lager bildet — det tar rundt ti sekunder …' });
+
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'lag', ledetekst: tekst, formal: 'Billedvelger' }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._gemLager = false;
+        this.setState({ gemLager: false });
+        if (!ok) { this.setState({ gemMelding: (d && d.feil) || 'Bildet ble ikke laget.' }); return; }
+        this._bilderHentes = false;
+        this.hentBilder();
+        this.setState({
+          gemMelding: 'Bildet er lagt inn. Kostet ' + (d.kostnad || '') + ' — brukt ' + (d.brukt || '') + ' denne måneden.',
+          gemLedetekst: '',
+        });
+        if (forNoe) this.settValgtBilde(d.url);
+      })
+      .catch(() => {
+        this._gemLager = false;
+        this.setState({ gemLager: false, gemMelding: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /**
+   * Lager en video og legger den i biblioteket.
+   *
+   * To kall: ett som starter, og ett som spor til den er ferdig. Veo
+   * bruker ett til seks minutter, og en nettleser gir opp lenge for det.
+   *
+   * Sporringen gaar hvert tiende sekund i opptil ti minutter. Lukkes ruta
+   * imens, stopper den — jobben lever videre hos Google, men vi henter
+   * den ikke. Det er med vilje: en video som dukker opp i biblioteket et
+   * kvarter senere, uten at noen ba om det, er verre enn en som mangler.
+   */
+  lagVideo() {
+    if (!this.erPublisert()) { this.setState({ vidMelding: 'Krever den ekte siden' }); return; }
+    const tekst = (this.state.vidLedetekst || '').trim();
+    if (!tekst) { this.setState({ vidMelding: 'Skriv hva videoen skal vise.' }); return; }
+    if (this.state.vidJobb) return;
+
+    const forNoe = this.state.bildeFor;
+    this.setState({ vidJobb: 'starter', vidMelding: 'Starter videoen …' });
+
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'videoStart', ledetekst: tekst, format: '9:16', sekunder: 8 }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok || !d.jobb) {
+          this.setState({ vidJobb: null, vidMelding: (d && d.feil) || 'Videoen ble ikke startet.' });
+          return;
+        }
+        this.setState({ vidJobb: d.jobb, vidMelding: d.beskjed || 'Videoen lages nå.' });
+        this.sporVideo(d.jobb, forNoe, 0);
+      })
+      .catch(() => this.setState({ vidJobb: null, vidMelding: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /** Spor om videoen er ferdig. Kaller seg selv til den er det. */
+  sporVideo(jobb, forNoe, runde) {
+    if (this.state.vidJobb !== jobb) return;   // avbrutt
+    if (runde > 60) {
+      this.setState({ vidJobb: null, vidMelding: 'Videoen ble ikke ferdig på ti minutter. Prøv igjen.' });
+      return;
+    }
+    setTimeout(() => {
+      if (this.state.vidJobb !== jobb) return;
+      fetch('/api/admin/gemini.php', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handling: 'videoStatus', jobb: jobb }),
+      })
+        .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+        .then(({ ok, d }) => {
+          if (!ok) {
+            this.setState({ vidJobb: null, vidMelding: (d && d.feil) || 'Videoen feilet.' });
+            return;
+          }
+          if (!d.ferdig) { this.sporVideo(jobb, forNoe, runde + 1); return; }
+          this._bilderHentes = false;
+          this.hentBilder();
+          this.setState({
+            vidJobb: null,
+            vidLedetekst: '',
+            vidMelding: 'Videoen er klar og ligger i biblioteket. Kostet ' + (d.kostnad || '')
+                      + ' — brukt ' + (d.brukt || '') + ' denne måneden.',
+          });
+          if (forNoe) this.settValgtBilde(d.url);
+        })
+        .catch(() => this.sporVideo(jobb, forNoe, runde + 1));
+    }, 10000);
+  }
+
+  /**
+   * Gemini-oppsettet: noekkelen og modellnavnet.
+   *
+   * Eget endepunkt og ikke marked.php, fordi noekkelen skal i
+   * «innstillinger» og ikke i «content_blocks» — det siste leses av
+   * nettsida og er dermed offentlig.
+   *
+   * Feltet toemmes etter lagring: verdien kommer aldri tilbake fra
+   * serveren, og et felt som ser utfylt ut uten aa vaere det er verre enn
+   * et tomt. Plassholderen sier at den ligger inne.
+   */
+  geminiKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          mkGemNokkel: ok ? '' : this.state.mkGemNokkel,
+        });
+        if (ok) { this._markedHentes = false; this.hentMarked(); }
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Meta-oppsettet: tokenet og de to konto-id-ene.
+   *
+   * Samme grunn til eget endepunkt som med Gemini: tokenet skal i
+   * «innstillinger» og ikke i «content_blocks», som nettsida leser.
+   *
+   * «sjekk» sporr Meta hvem tokenet gjelder, saa eieren faar vite det med
+   * én gang framfor aa oppdage det naar han trykker publiser.
+   */
+  /**
+   * Henter kommentarer og samtaler fra Instagram og Facebook.
+   *
+   * To kall mot Meta. De gaar ikke av seg selv naar skjermen aapnes —
+   * eieren skal kunne klikke seg innom Markedsfoering uten at vi spoer
+   * Meta hver gang.
+   */
+  hentInnboks() {
+    if (!this.erPublisert()) { this.setState({ ibFeil: ['Krever den ekte siden'] }); return; }
+    if (this.state.ibHenter) return;
+    this.setState({ ibHenter: true, ibFeil: [] });
+
+    const kall = (handling) => fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: handling }),
+    }).then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })));
+
+    Promise.all([kall('kommentarer'), kall('samtaler')])
+      .then(([k, s]) => {
+        const feil = []
+          .concat((k.ok ? (k.d.feil || []) : [k.d && k.d.feil || 'Kommentarene kom ikke fram']))
+          .concat((s.ok ? (s.d.feil || []) : [s.d && s.d.feil || 'Samtalene kom ikke fram']));
+        this.setState({
+          ibHenter: false,
+          ibHentet: true,
+          ibKomm: (k.ok && k.d.poster) || [],
+          ibSamt: (s.ok && s.d.samtaler) || [],
+          ibFeil: feil.filter(Boolean),
+        });
+      })
+      .catch(() => this.setState({ ibHenter: false, ibFeil: ['Fikk ikke kontakt med serveren.'] }));
+  }
+
+  /**
+   * Svarer paa én kommentar.
+   *
+   * Svaret staar offentlig i det sekundet det gaar. Derfor er dette et
+   * trykk, og bare et trykk — ingen kø, ingen jobb, ingen autopilot.
+   */
+  svarKommentar(k) {
+    const tekst = ((this.state.ibSvar || {})[k.id] || '').trim();
+    if (!tekst) { this.setState({ kvittering: 'Skriv et svar først' }); return; }
+    if (this.state.ibJobb) return;
+    this.setState({ ibJobb: k.id });
+
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'svarKommentar', id: k.id, kanal: k.kanal, tekst: tekst }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          ibJobb: null,
+          kvittering: ok ? 'Svart' : 'Ble ikke sendt',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          // Feltet toemmes og kommentaren merkes som besvart, saa lista
+          // viser det samme som Instagram gjor.
+          ibSvar: ok ? Object.assign({}, this.state.ibSvar, { [k.id]: '' }) : this.state.ibSvar,
+          ibKomm: ok
+            ? (this.state.ibKomm || []).map(x => x.id === k.id ? Object.assign({}, x, { svart: true }) : x)
+            : this.state.ibKomm,
+        });
+      })
+      .catch(() => this.setState({ ibJobb: null, kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /** Skjuler en kommentar. Skjult, ikke slettet — den som skrev ser sin egen. */
+  skjulKommentar(k) {
+    if (this.state.ibJobb) return;
+    this.setState({ ibJobb: k.id });
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'skjulKommentar', id: k.id, kanal: k.kanal }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => this.setState({
+        ibJobb: null,
+        kvittering: ok ? 'Skjult' : 'Ble ikke skjult',
+        kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        ibKomm: ok ? (this.state.ibKomm || []).filter(x => x.id !== k.id) : this.state.ibKomm,
+      }))
+      .catch(() => this.setState({ ibJobb: null, kvittering: 'Ble ikke skjult' }));
+  }
+
+  /** Aapner én samtale og henter meldingene i den. */
+  apneSamtale(s) {
+    this.setState({ ibValgt: s, ibMeldinger: [], ibMeldSvar: '' });
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'meldinger', samtaleId: s.id }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => this.setState({
+        ibMeldinger: (ok && d.meldinger) || [],
+        ibFeil: ok ? [] : [(d && d.feil) || 'Meldingene kom ikke fram'],
+      }))
+      .catch(() => this.setState({ ibFeil: ['Fikk ikke kontakt med serveren.'] }));
+  }
+
+  /**
+   * Sender et svar i den aapne samtalen.
+   *
+   * Doegnregelen ligger paa serveren: er det gaatt mer enn 24 timer siden
+   * kunden skrev, sier Meta nei, og api/admin/meta.php oversetter det til
+   * noe som sier hva som faktisk er i veien.
+   */
+  sendMelding() {
+    const s = this.state.ibValgt;
+    const tekst = (this.state.ibMeldSvar || '').trim();
+    if (!s || !tekst) { this.setState({ kvittering: 'Skriv et svar først' }); return; }
+    if (this.state.ibJobb) return;
+    this.setState({ ibJobb: 'melding' });
+
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'svarMelding', hvem: s.hvem, tekst: tekst }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          ibJobb: null,
+          kvittering: ok ? 'Sendt' : 'Ble ikke sendt',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          ibMeldSvar: ok ? '' : this.state.ibMeldSvar,
+          // Svaret legges nederst med det samme, saa samtalen ser ut som
+          // den gjor hos kunden — framfor aa hente hele traaden paa nytt.
+          ibMeldinger: ok
+            ? (this.state.ibMeldinger || []).concat([{ id: 'ny', oss: true, tekst: tekst, tid: '' }])
+            : this.state.ibMeldinger,
+        });
+      })
+      .catch(() => this.setState({ ibJobb: null, kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  metaKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const sjekker = kropp.handling === 'sjekk';
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? (sjekker ? 'Sjekket' : 'Lagret') : (sjekker ? 'Virket ikke' : 'Ble ikke lagret'),
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          mkMetaTok: ok && !sjekker ? '' : this.state.mkMetaTok,
+        });
+        if (ok && !sjekker) { this._markedHentes = false; this.hentMarked(); }
+      })
+      .catch(() => this.setState({
+        kvittering: sjekker ? 'Virket ikke' : 'Ble ikke lagret',
+        kvitteringDetalj: 'Fikk ikke kontakt med serveren.',
+      }));
+  }
+
+  /**
+   * Legger utkastet som er aapent ut paa Instagram eller Facebook.
+   *
+   * Instagram henter bildet selv og bruker noen sekunder paa det, saa
+   * kvitteringen sier fra med det samme framfor aa la skjermen staa stille.
+   * Ruta lukkes foerst naar innlegget faktisk er ute — gaar det galt, staar
+   * teksten der fortsatt.
+   */
+  metaPubliser(kanal) {
+    const u = this.state.mkLes;
+    if (!u || !u.id) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._metaLegger) return;
+    this._metaLegger = true;
+
+    this.setState({
+      kvittering: 'Legger ut …',
+      kvitteringDetalj: kanal === 'Instagram'
+        ? 'Instagram henter bildet selv. Det tar noen sekunder.'
+        : 'Sender innlegget til Facebook-sida.',
+    });
+
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'publiser', utkastId: u.id, kanal: kanal }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._metaLegger = false;
+        this.setState({
+          kvittering: ok ? 'Lagt ut' : 'Ble ikke lagt ut',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          mkLes: ok ? null : this.state.mkLes,
+        });
+        if (ok) { this._markedHentes = false; this.hentMarked(); }
+      })
+      .catch(() => {
+        this._metaLegger = false;
+        this.setState({ kvittering: 'Ble ikke lagt ut', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /**
+   * Legger et bilde inn som referanse for bildegenereringen.
+   *
+   * Gaar som multipart og ikke som JSON: det er en fil, og den skal ikke
+   * gjennom base64 og tilbake for ingenting.
+   */
+  geminiReferanseLastOpp(e) {
+    const fil = e && e.target && e.target.files && e.target.files[0];
+    if (!fil) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+
+    const skjema = new FormData();
+    skjema.append('handling', 'referanse');
+    skjema.append('bilde', fil);
+    // Feltet toemmes, ellers kan ikke det samme bildet velges om igjen etter
+    // at det er slettet.
+    e.target.value = '';
+
+    this.setState({ kvittering: 'Laster opp …', kvitteringDetalj: '' });
+    fetch('/api/admin/gemini.php', { method: 'POST', credentials: 'same-origin', body: skjema })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Lagt til' : 'Ble ikke lagt til',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          gemReferanser: ok ? (d.referanser || []) : this.state.gemReferanser,
+        });
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagt til', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  geminiReferanseSlett(navn) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'referanseSlett', navn: navn }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Fjernet' : 'Ble ikke fjernet',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          gemReferanser: ok ? (d.referanser || []) : this.state.gemReferanser,
+        });
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke fjernet', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   markedKall(kropp) {
@@ -32450,18 +33148,6 @@ class Component extends DCLogic {
     if (tekst) this.setState({ kvittering: tekst, kvitteringDetalj: detalj });
   }
 
-  // Retur fra Shutterstock: ?shutterstock=koblet
-  //
-  // Tilkoblingen skjer utenfor nettsiden, og du kommer tilbake til en adresse
-  // som ikke sier noe. Uten dette ser det ut som ingenting skjedde.
-  visShutterstockutfall() {
-    if (String(window.location.search || '').indexOf('shutterstock=koblet') === -1) return;
-    history.replaceState(null, '', window.location.pathname + window.location.hash);
-    this.setState({
-      kvittering: 'Shutterstock-kontoen er koblet til',
-      kvitteringDetalj: 'Nå kan bilder lastes ned rett inn i biblioteket fra billedvelgeren.',
-    });
-  }
 
   /**
    * Feilvakta.
@@ -33530,7 +34216,6 @@ class Component extends DCLogic {
     this.hentInnhold();
     this.hentButikk();
     this.visBetalingsutfall();
-    this.visShutterstockutfall();
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));
     }, 1000);
@@ -34055,6 +34740,86 @@ class Component extends DCLogic {
    * der eieren leser og retter for hun lagrer. Utkastkoen under
    * Markedsforing er for det som gaar ut av seg selv.
    */
+  /**
+   * Foreslaar teksten til ett enkelt felt.
+   *
+   * Eieren, 23. september 2026: «naa vil jeg ha tekstgenerator ogsaa, sjekke
+   * alle steder». Tretten felt manglet den. Dette er den ene metoden de alle
+   * bruker — skjermen sier hva feltet heter, hvilken state-noekkel svaret
+   * skal i, og hva som staar rundt.
+   *
+   * Forslaget havner i feltet og ingen andre steder. Teksten baerer
+   * verkstedets navn, og da skal et menneske ha lest den foer den staar ute.
+   *
+   * @param {object} o  { felt, statefelt, om, hvor, form, kontekst }
+   */
+  foreslaaFelt(o) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const om = String(o.om || '').trim();
+    if (!om) {
+      this.setState({
+        kvittering: 'Skriv navnet først',
+        kvitteringDetalj: 'AI-en trenger å vite hva teksten skal handle om.',
+      });
+      return;
+    }
+    // Én om gangen. To forslag i samme felt ville overskrevet hverandre, og
+    // det siste svaret ville vunnet uansett hvilket som ble bedt om først.
+    if (this.state.felttekstFor) return;
+    this.setState({ felttekstFor: o.statefelt });
+
+    fetch('/api/admin/ai.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'felttekst',
+        felt: o.felt || '',
+        om: om,
+        hvor: o.hvor || '',
+        form: o.form === 'punkter' ? 'punkter' : 'avsnitt',
+        kontekst: o.kontekst || {},
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (ok && d.tekst) {
+          this.setState({
+            felttekstFor: null,
+            [o.statefelt]: d.tekst,
+            kvittering: 'Forslaget står i feltet',
+            kvitteringDetalj: 'Les det gjennom og rett det du vil før du lagrer. Kostet '
+                            + (d.kostnad || 'lite') + '.',
+          });
+          return;
+        }
+        this.setState({
+          felttekstFor: null,
+          kvittering: 'Fikk ikke noe forslag',
+          kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.',
+        });
+      })
+      .catch(() => this.setState({
+        felttekstFor: null,
+        kvittering: 'Fikk ikke noe forslag',
+        kvitteringDetalj: 'Fikk ikke kontakt med serveren.',
+      }));
+  }
+
+  /**
+   * Verdiene «Foreslå tekst» trenger for ett felt.
+   *
+   * Samlet her saa hvert av de tretten stedene blir tre linjer i
+   * renderVals i stedet for tolv.
+   */
+  felthjelp(o) {
+    const jobber = this.state.felttekstFor === o.statefelt;
+    return {
+      merke: jobber ? 'Skriver …' : 'Foreslå tekst',
+      jobber: jobber,
+      skriv: () => this.foreslaaFelt(o),
+    };
+  }
+
   foreslaaKursbeskrivelse() {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     const tittel = (this.state.kNavn || '').trim();
@@ -35678,6 +36443,7 @@ class Component extends DCLogic {
       kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
       kRessursId: 0,
       kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
       kKarusellFra: [],
       kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
       kGjenstandIKassa: false,
@@ -38633,6 +39399,7 @@ class Component extends DCLogic {
       // til «Google» eller «Oppsett» fra menyen.
       'Markedsføring': [
         ['Tavle',    'adminmarked', { mkFane: 'tavle' }],
+        ['Innboks',  'adminmarked', { mkFane: 'innboks' }],
         ['Skriv',    'adminmarked', { mkFane: 'artikler' }],
         ['Artikler', 'adminmarked', { mkFane: 'bank' }],
         ['Send',     'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
@@ -46701,6 +47468,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -48352,6 +49120,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
@@ -53710,6 +54479,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
+      kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
@@ -54067,6 +54837,83 @@ class Component extends DCLogic {
       // AI-forslag paa beskrivelsen. Forslaget havner i feltet, ikke ute paa
       // nettsida — teksten baerer verkstedets navn, og da skal et menneske ha
       // lest den for den staar der.
+      // ── «Foreslå tekst» på de tretten feltene ────────────────────────
+      //
+      // Alle bruker den samme metoden. «om» er navnet teksten skal handle
+      // om — uten det vet ikke AI-en hva den skriver om, og foreslaaFelt()
+      // sier fra framfor aa gjette. Konteksten er det som alt staar i
+      // skjemaet, saa forslaget ikke motsier linja over.
+      //
+      // Noeklene staar skrevet ut én for én og ikke bygget i en loekke:
+      // bin/knappesjekk.mjs leser malen og renderVals hver for seg, og en
+      // noekkel som settes med [pre + 'Skriv'] finner den ikke. Da hadde
+      // tretten knapper uten funksjon sett ut som tretten som virket.
+      ...(() => {
+        const kurs = () => ({ Kurs: this.state.kNavn || '', Kategori: this.state.kKategori || '',
+                              Beskrivelse: this.state.kBeskrivelse || '' });
+        const plan = () => ({ Medlemskap: this.state.plNavn || '', Beskrivelse: this.state.plBeskrivelse || '' });
+        const vare = () => ({ Vare: this.state.npNavn || '', Pris: this.state.npPris || '' });
+        const art  = () => ({ Overskrift: this.state.artTittel || '', Ingress: this.state.artIngress || '' });
+        const evt  = () => ({ Navn: this.state.klRNavn || '' });
+        const artbank = () => ({ Overskrift: this.state.abTittel || '',
+                                 Kategori: this.state.abKategori || '',
+                                 Ingress: this.state.abIngress || '' });
+        const h = (statefelt, navn, omfelt, hvor, form, kontekst) => this.felthjelp({
+          statefelt, felt: navn, hvor, form,
+          om: (this.state[omfelt] || '').trim(),
+          kontekst: kontekst(),
+        });
+        return {
+          fhKLaererMerke: h('kLaerer', 'Dette lærer deltakerne', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKLaererSkriv: h('kLaerer', 'Dette lærer deltakerne', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhKMedHjemMerke: h('kMedHjem', 'Dette får du med hjem', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKMedHjemSkriv: h('kMedHjem', 'Dette får du med hjem', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhKPunkterMerke: h('kPunkter', 'Alt som er inkludert', 'kNavn', 'kurset', 'punkter', kurs).merke,
+          fhKPunkterSkriv: h('kPunkter', 'Alt som er inkludert', 'kNavn', 'kurset', 'punkter', kurs).skriv,
+          fhKPraktiskMerke: h('kPraktisk', 'Praktisk informasjon', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKPraktiskSkriv: h('kPraktisk', 'Praktisk informasjon', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhKFerdigTidMerke: h('kFerdigTid', 'Når det er ferdig', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKFerdigTidSkriv: h('kFerdigTid', 'Når det er ferdig', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhPlBeskrivelseMerke: h('plBeskrivelse', 'Beskrivelse', 'plNavn', 'medlemskapet', 'avsnitt', plan).merke,
+          fhPlBeskrivelseSkriv: h('plBeskrivelse', 'Beskrivelse', 'plNavn', 'medlemskapet', 'avsnitt', plan).skriv,
+          fhPlPunkterMerke: h('plPunkter', 'Punkter', 'plNavn', 'medlemskapet', 'punkter', plan).merke,
+          fhPlPunkterSkriv: h('plPunkter', 'Punkter', 'plNavn', 'medlemskapet', 'punkter', plan).skriv,
+          fhPlLangtekstMerke: h('plLangtekst', 'Utfyllende informasjon', 'plNavn', 'medlemskapet', 'avsnitt', plan).merke,
+          fhPlLangtekstSkriv: h('plLangtekst', 'Utfyllende informasjon', 'plNavn', 'medlemskapet', 'avsnitt', plan).skriv,
+          fhPlViktigMerke: h('plViktig', 'Viktig å vite', 'plNavn', 'medlemskapet', 'punkter', plan).merke,
+          fhPlViktigSkriv: h('plViktig', 'Viktig å vite', 'plNavn', 'medlemskapet', 'punkter', plan).skriv,
+          fhNpBeskrivelseMerke: h('npBeskrivelse', 'Produktbeskrivelse', 'npNavn', 'varen', 'avsnitt', vare).merke,
+          fhNpBeskrivelseSkriv: h('npBeskrivelse', 'Produktbeskrivelse', 'npNavn', 'varen', 'avsnitt', vare).skriv,
+          fhArtIngressMerke: h('artIngress', 'Ingress', 'artTittel', 'artikkelen', 'avsnitt', art).merke,
+          fhArtIngressSkriv: h('artIngress', 'Ingress', 'artTittel', 'artikkelen', 'avsnitt', art).skriv,
+          fhArtInnholdMerke: h('artInnhold', 'Brødtekst', 'artTittel', 'artikkelen', 'lang', art).merke,
+          fhArtInnholdSkriv: h('artInnhold', 'Brødtekst', 'artTittel', 'artikkelen', 'lang', art).skriv,
+          fhAbIngressMerke: h('abIngress', 'Ingress', 'abTittel', 'artikkelen', 'avsnitt', artbank).merke,
+          fhAbIngressSkriv: h('abIngress', 'Ingress', 'abTittel', 'artikkelen', 'avsnitt', artbank).skriv,
+          fhAbInnholdMerke: h('abInnhold', 'Brødtekst', 'abTittel', 'artikkelen', 'lang', artbank).merke,
+          fhAbInnholdSkriv: h('abInnhold', 'Brødtekst', 'abTittel', 'artikkelen', 'lang', artbank).skriv,
+          fhKlRBeskrivelseMerke: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).merke,
+          fhKlRBeskrivelseSkriv: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).skriv,
+        };
+      })(),
+      // Tittel og beskrivelse i Google. Tomt felt betyr den automatiske.
+      ...(() => {
+        const navn = (this.state.kNavn || '').trim();
+        const auto = navn !== '' ? navn + ' i Tønsberg | Lissom Keramikk' : '';
+        const tit = this.state.kSeoTittel || '';
+        const met = this.state.kSeoMeta || '';
+        const lengde = (t, maks) =>
+          t === '' ? '' : ' ' + t.length + ' tegn' + (t.length > maks ? ' — Google kutter etter ' + maks + '.' : '.');
+        return {
+          kSeoTittel: tit,
+          settKSeoTittel: e => this.setState({ kSeoTittel: e.target.value }),
+          kSeoTittelPlass: auto || 'Navnet på kurset i Tønsberg | Lissom Keramikk',
+          kSeoTittelHjelp: (auto !== '' ? 'Står den tom, blir den «' + auto + '».' : 'Står den tom, lages den av kursnavnet.') + lengde(tit, 60),
+          kSeoMeta: met,
+          settKSeoMeta: e => this.setState({ kSeoMeta: e.target.value }),
+          kSeoMetaHjelp: 'Står den tom, brukes de første setningene av beskrivelsen.' + lengde(met, 158),
+        };
+      })(),
       kForeslaaMerke: this.state.kForeslaar ? 'Skriver …' : 'Foreslå tekst',
       kForeslaaHjelp: this.state.kForeslaar
         ? 'Henter et forslag. Det tar noen sekunder.'
@@ -54533,6 +55380,7 @@ class Component extends DCLogic {
           // eller få den sendt.»
           piMerknad: p ? (p.badge === 'Matsikret' ? 'Matsikret glasur — tåler oppvaskmaskin'
             : p.badge === 'Kunstobjekt' ? 'Dekorglasur — ment som pynt, ikke til mat' : '') : '',
+          piHarMerknad: !!(p && (p.badge === 'Matsikret' || p.badge === 'Kunstobjekt')),
           piBildeCss: p ? "url('" + p.image + "')" : 'none',
           piFokus: p ? this.fokusFor(p.image || p.bilde || '') : 'center',
           piLeggIKurv: () => { if (p && !p.utsolgt) { this.leggTil(p.id ? '#' + p.id : p.title); this.setState({ piProdukt: null }); } },
@@ -57257,6 +58105,7 @@ class Component extends DCLogic {
       // samme to staar. Én gang holder.
       footerOm: [
         { navn: 'Om oss', velg: this.go('omoss') },
+        { navn: 'For bedrifter', velg: this.go('bedrift') },
         { navn: 'Nyheter', velg: this.go('nyheter') },
         // Klar til henting sto bare i e-posten som ble sendt ut. Den som
         // slettet den, eller ikke fikk den, hadde ingen vei til sida — og
@@ -57269,6 +58118,9 @@ class Component extends DCLogic {
         { navn: 'Spørsmål og svar', velg: this.go('sporsmal') },
         // «Bedrift og event» tatt ut etter onske fra eieren. Sida ligger der
         // som for, og naas fra menyen og fra kortene paa forsida.
+        // Tilbake som «For bedrifter» etter «Om oss» 23. september 2026 —
+        // eieren sa ja etter aa ha faatt vite om det forrige onsket: /bedrift
+        // hadde nesten ingen lenker inn, og Google fant den ikke.
         { navn: 'Personvern', velg: this.go('personvern') },
         // «Vilkår og angrerett» het den. Eieren, 3. september: «kan du
         // fjerne vilkår og angrerett i footer, lag en som heter
@@ -60802,7 +61654,8 @@ class Component extends DCLogic {
           ['bank', 'Artikler'], ['brev', 'Nyhetsbrev'], ['sosialt', 'Sosiale medier'],
           ['seo', 'SEO'], ['geo', 'GEO'], ['analyse', 'Analyse'],
           ['assistent', 'AI og Assistent'], ['innstillinger', 'Google-ID-er'],
-          ['send', 'Send'], ['epost', 'E-post- og SMS-server'],
+          ['send', 'Send'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
+
         ];
 
         // ── Ti faner ble fem grupper ────────────────────────────────────
@@ -60832,6 +61685,7 @@ class Component extends DCLogic {
         // godkjent.
         const GRUPPER = [
           ['Tavle',    ['tavle']],
+          ['Innboks',  ['innboks']],
           ['Skriv',    ['artikler', 'brev', 'sosialt', 'kurs']],
           ['Artikler', ['bank']],
           ['Send',     ['send']],
@@ -60901,6 +61755,125 @@ class Component extends DCLogic {
           mkFaneTittel: minGruppe[1].length > 1
             ? minGruppe[0] + ' · ' + navnPaa(fane)
             : minGruppe[0],
+          // ── Innboksen: kommentarer og meldinger ──────────────────────
+          //
+          // Eieren, 23. september 2026: «kan du faktisk svare paa
+          // kommentarer og spoersmaal paa insta og face?»
+          //
+          // Hentes ikke av seg selv naar skjermen aapnes: det er to kall
+          // mot Meta, og de skal ikke gaa hver gang noen klikker seg innom
+          // Markedsfoering. «Hent» henter.
+          ...(() => {
+            const erKomm = (this.state.ibFane || 'kommentarer') === 'kommentarer';
+            const pilleStil = paa => ({
+              appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+              padding: '9px 16px', font: 'var(--type-body-sm)', fontWeight: 600,
+              border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: paa ? 'var(--lissom-brown)' : 'transparent',
+              color: paa ? 'var(--clay-50)' : 'var(--text-body)',
+            });
+            const merkeStil = kanal => ({
+              font: 'var(--type-eyebrow)', letterSpacing: 'var(--tracking-caps)',
+              textTransform: 'uppercase',
+              color: kanal === 'Instagram' ? 'var(--terracotta-600)' : 'var(--lissom-brown)',
+            });
+            const kortStil = {
+              background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
+              marginBottom: 'var(--space-4)',
+            };
+            // «for 2 timer siden» sier mer enn et klokkeslett naar man leser
+            // en innboks. Er det mer enn en uke, er datoen mer nyttig igjen.
+            const naarTekst = iso => {
+              const t = Date.parse((iso || '').replace(/\+0000$/, 'Z'));
+              if (!t) return '';
+              const min = Math.round((Date.now() - t) / 60000);
+              if (min < 2) return 'nå';
+              if (min < 60) return 'for ' + min + ' min siden';
+              if (min < 48 * 60) return 'for ' + Math.round(min / 60) + ' timer siden';
+              if (min < 7 * 24 * 60) return 'for ' + Math.round(min / 1440) + ' dager siden';
+              return new Date(t).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' });
+            };
+
+            const komm = this.state.ibKomm || [];
+            const samt = this.state.ibSamt || [];
+            const valgt = this.state.ibValgt || null;
+            // Feilene holdes paa sin egen fane. En melding om at meldinger
+            // mangler en tillatelse hoerer ikke hjemme over kommentarene —
+            // der ser den ut som om kommentarene er noe i veien med.
+            const mine = (this.state.ibFeil || []).filter(f => {
+              const erMeld = /melding|pages_messaging|samtale/i.test(f);
+              return erKomm ? !erMeld : erMeld;
+            });
+            const feil = mine.join(' · ');
+
+            return {
+              mkErInnboks: fane === 'innboks',
+              ibErKomm: erKomm,
+              ibErMeld: !erKomm,
+              ibVisKomm: () => this.setState({ ibFane: 'kommentarer', ibValgt: null }),
+              ibVisMeld: () => this.setState({ ibFane: 'meldinger' }),
+              ibKommStil: pilleStil(erKomm),
+              ibMeldStil: pilleStil(!erKomm),
+              ibKommMerke: 'Kommentarer' + (komm.length ? ' (' + komm.length + ')' : ''),
+              ibMeldMerke: 'Meldinger' + (samt.length ? ' (' + samt.length + ')' : ''),
+              ibHent: () => this.hentInnboks(),
+              ibHentMerke: this.state.ibHenter ? 'Henter …' : 'Hent',
+
+              ibFeil: feil !== '',
+              ibFeilTittel: 'Noe kom ikke fram',
+              ibFeilTekst: feil,
+
+              ibTom: !this.state.ibHenter && (erKomm ? komm.length === 0 : samt.length === 0),
+              ibTomTekst: this.state.ibHentet
+                ? (erKomm ? 'Ingen kommentarer på de siste innleggene.' : 'Ingen samtaler i innboksen.')
+                : 'Trykk «Hent» for å se hva som har kommet inn.',
+
+              ibKommentarer: komm.map((k, i) => ({
+                ...k,
+                kortStil: kortStil,
+                merkeStil: merkeStil(k.kanal),
+                naar: naarTekst(k.tid),
+                paaTekst: k.paa ? 'På: ' + k.paa : '',
+                svar: (this.state.ibSvar || {})[k.id] || '',
+                settSvar: e => this.setState({
+                  ibSvar: Object.assign({}, this.state.ibSvar, { [k.id]: e.target.value }),
+                }),
+                sendMerke: this.state.ibJobb === k.id ? 'Sender …' : 'Svar',
+                send: () => this.svarKommentar(k),
+                skjul: () => this.skjulKommentar(k),
+              })),
+
+              ibSamtaler: samt.map(s => ({
+                ...s,
+                kortStil: Object.assign({}, kortStil, { cursor: 'pointer' }),
+                merkeStil: merkeStil(s.kanal),
+                naar: naarTekst(s.tid),
+                harUlest: (s.ulest || 0) > 0,
+                ulestTekst: (s.ulest || 0) + ' ulest',
+                apne: () => this.apneSamtale(s),
+              })),
+
+              ibHarSamtale: !!valgt,
+              ibIngenSamtale: !valgt,
+              ibSamtaleNavn: valgt ? valgt.fra : '',
+              ibLukkSamtale: () => this.setState({ ibValgt: null, ibMeldinger: [] }),
+              ibMeldinger: (this.state.ibMeldinger || []).map(m => ({
+                ...m,
+                hvem: m.oss ? 'Lissom' : (m.fra || valgt && valgt.fra || ''),
+                stil: {
+                  borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-3) 0',
+                  // Vaare egne svar rykkes inn, saa en samtale leses som en
+                  // samtale og ikke som en liste.
+                  marginLeft: m.oss ? 'var(--space-8)' : '0',
+                },
+              })),
+              ibSvar: this.state.ibMeldSvar || '',
+              ibSettSvar: e => this.setState({ ibMeldSvar: e.target.value }),
+              ibSendMerke: this.state.ibJobb === 'melding' ? 'Sender …' : 'Send',
+              ibSendMelding: () => this.sendMelding(),
+            };
+          })(),
           mkErTavle: fane === 'tavle',
           mkErKurs: fane === 'kurs',
           mkErArtikler: fane === 'artikler',
@@ -61502,6 +62475,116 @@ class Component extends DCLogic {
                 : ((ai.kall || 0) > 0
                     ? 'Brukt ' + (ai.brukt || 'kr. 0,-') + ' denne måneden, over ' + ai.kall + ' kall. Nøkkelen leses ikke akkurat nå — sjekk secrets.php.'
                     : 'Ingenting er brukt ennå.')),
+          // ── Gemini: nøkkelen og modellen ──
+          //
+          // Noekkelen kommer aldri tilbake fra serveren. Feltet staar derfor
+          // tomt, og plassholderen sier om det ligger en inne — og hvilken,
+          // med de fire siste tegnene. Samme grep som GA4-hemmeligheten rett
+          // over.
+          ...(() => {
+            const i = d.innstillinger || {};
+            const st = i.geminiKlar
+              ? 'Koblet til. ' + (i.geminiBilder || 0) + ' bilder laget så langt.'
+              : 'Ikke koblet til ennå. Hent en nøkkel på aistudio.google.com — den er gratis å opprette.';
+            return {
+              mkGemStatus: d.innstillinger ? st : 'Henter status …',
+              mkGemNokkel: this.state.mkGemNokkel ?? '',
+              mkSettGemNokkel: e => this.setState({ mkGemNokkel: e.target.value }),
+              mkGemNokkelPlass: i.geminiKlar
+                ? '•••••••• ' + (i.geminiHale || '') + ' (lagt inn)'
+                : 'Lim inn nøkkelen',
+              mkGemModell: this.state.mkGemModell ?? (i.geminiModell || ''),
+              mkGemTekstModell: this.state.mkGemTekstModell ?? (this.state.gemTekstModell || ''),
+              mkSettGemTekstModell: e => this.setState({ mkGemTekstModell: e.target.value }),
+              // Hvem som skriver. Knappene lagrer med det samme — et valg som
+              // ser gjort ut men ikke er lagret er verre enn ingen knapp.
+              ...(() => {
+                const na = this.state.aiLeverandor || 'claude';
+                const pille = (paa) => 'appearance: none; cursor: pointer; border-radius: 999px; '
+                  + 'padding: 7px 16px; font: var(--type-label); '
+                  + (paa ? 'background: var(--lissom-brown); color: #fff; border: 1px solid var(--lissom-brown);'
+                         : 'background: transparent; color: var(--text-body); border: 1px solid var(--border-subtle);');
+                return {
+                  mkClaudeStil: pille(na !== 'gemini'),
+                  mkGeminiStil: pille(na === 'gemini'),
+                  mkVelgClaude: () => this.geminiKall({ handling: 'oppsett', leverandor: 'claude' }),
+                  mkVelgGemini: () => this.geminiKall({ handling: 'oppsett', leverandor: 'gemini' }),
+                  mkLevHjelp: na === 'gemini'
+                    ? 'Gemini skriver all tekst: kursbeskrivelser, SEO, artikler, nyhetsbrev og innlegg. Nøkkelen under er den som gjelder.'
+                    : 'Claude skriver all tekst. Bytter du til Gemini, brukes nøkkelen under i stedet — også til teksten.',
+                };
+              })(),
+              mkSettGemModell: e => this.setState({ mkGemModell: e.target.value }),
+              mkReferanser: (this.state.gemReferanser || []).map(navn => ({
+                navn: navn,
+                stil: 'position: relative; width: 92px; height: 92px; border-radius: var(--radius-md); '
+                    + 'border: 1px solid var(--border-subtle); background-size: cover; background-position: center; '
+                    + 'background-image: url("api/bilde.php?referanse=' + navn + '");',
+                fjern: () => this.geminiReferanseSlett(navn),
+              })),
+              mkRefStatus: (() => {
+                const n = (this.state.gemReferanser || []).length;
+                if (n === 0) return 'Ingen referansebilder ennå — bildene blir generiske uten.';
+                const med = Math.min(n, 3);
+                return n <= 3
+                  ? (n === 1 ? 'Ett bilde følger med hvert kall.' : n + ' bilder følger med hvert kall.')
+                  : n + ' bilder ligger inne. De ' + med + ' nyeste følger med hvert kall.';
+              })(),
+              mkRefLastOpp: e => this.geminiReferanseLastOpp(e),
+              mkLagreGemini: () => {
+                const n = (this.state.mkGemNokkel || '').trim();
+                const kropp = {
+                  handling: 'oppsett',
+                  modell: (this.state.mkGemModell ?? (i.geminiModell || '')).trim(),
+                };
+                // Tomt felt betyr «la noekkelen staa», ikke «slett den».
+                //
+                // Her sto «nokkel» alltid med, og feltet er tomt hver gang
+                // skjermen tegnes — noekkelen kommer aldri tilbake fra
+                // serveren. Rettet du bare modellnavnet og trykte Lagre, ble
+                // noekkelen borte, og «Lag bilde» forsvant fra billedvelgeren
+                // overalt uten at noe sa fra. Maalt 23. september 2026.
+                if (n !== '') kropp.nokkel = n === 'slett' ? '' : n;
+                this.geminiKall(kropp);
+              },
+            };
+          })(),
+          // ── Publisering til Instagram og Facebook ──
+          //
+          // Tokenet kommer aldri tilbake fra serveren, saa feltet staar
+          // tomt. Er det tomt naar det lagres, sendes det ikke med — da
+          // rores tokenet ikke, og det som ligger inne blir staaende. Ellers
+          // ville det aa rette en id slettet tokenet.
+          ...(() => {
+            const i = d.innstillinger || {};
+            const st = i.metaKlar
+              ? 'Koblet til. Instagram og Facebook kan publiseres fra et utkast.'
+              : (i.metaToken
+                  ? 'Tokenet ligger inne, men kontoen mangler. Fyll ut Instagram-kontoen under.'
+                  : 'Ikke koblet til ennå. Hent et systembruker-token i Meta Business Manager.');
+            return {
+              mkMetaStatus: d.innstillinger ? st : 'Henter status …',
+              mkMetaTok: this.state.mkMetaTok ?? '',
+              mkSettMetaTok: e => this.setState({ mkMetaTok: e.target.value }),
+              mkMetaTokPlass: i.metaToken ? '•••••••• (lagt inn)' : 'Lim inn tokenet',
+              mkMetaIg: this.state.mkMetaIg ?? (i.metaIg || ''),
+              mkSettMetaIg: e => this.setState({ mkMetaIg: e.target.value }),
+              mkMetaSide: this.state.mkMetaSide ?? (i.metaSide || ''),
+              mkSettMetaSide: e => this.setState({ mkMetaSide: e.target.value }),
+              mkLagreMetaPub: () => {
+                const tok = (this.state.mkMetaTok || '').trim();
+                const kropp = {
+                  handling: 'oppsett',
+                  igId: (this.state.mkMetaIg ?? (i.metaIg || '')).trim(),
+                  sideId: (this.state.mkMetaSide ?? (i.metaSide || '')).trim(),
+                };
+                // Tomt felt betyr «la det staa», ikke «slett».
+                if (tok !== '') kropp.token = tok === 'slett' ? '' : tok;
+                this.metaKall(kropp);
+              },
+              mkSjekkMetaPub: () => this.metaKall({ handling: 'sjekk' }),
+            };
+          })(),
           mkGoogleBedrift: this.state.mkGoogleBedrift ?? ((d.innstillinger || {}).googleBedrift || ''),
           mkSettGoogleBedrift: e => this.setState({ mkGoogleBedrift: e.target.value }),
           mkLagreBedrift: () => this.markedKall({ handling: 'innstilling', googleBedrift: this.state.mkGoogleBedrift ?? '' }),
@@ -61526,6 +62609,19 @@ class Component extends DCLogic {
           mkLesBildeforslag: (this.state.mkLes || {}).bildeforslag || '',
           mkLesHarBildeforslag: !!(this.state.mkLes || {}).bildeforslag,
           mkLukkLes: () => this.setState({ mkLes: null }),
+          // Ut paa Instagram og Facebook. Knappene vises bare naar tokenet
+          // og kontoen staar inne, og bare paa et innlegg som ikke alt er
+          // lagt ut. Mangler bildet, sier serveren fra — den vet det, og en
+          // knapp som gjemmer seg lar eieren lure paa hvorfor.
+          mkLesKanSome: (this.state.mkLes || {}).type === 'sosialt'
+            && (this.state.mkLes || {}).status !== 'publisert'
+            && !!((d.innstillinger || {}).metaKlar),
+          mkLesKanSomeFb: (this.state.mkLes || {}).type === 'sosialt'
+            && (this.state.mkLes || {}).status !== 'publisert'
+            && !!((d.innstillinger || {}).metaToken)
+            && !!((d.innstillinger || {}).metaSide),
+          mkLesUtInstagram: () => this.metaPubliser('Instagram'),
+          mkLesUtFacebook: () => this.metaPubliser('Facebook'),
           mkLesGodkjenn: () => { const u = this.state.mkLes; if (u) { this.setState({ mkLes: null }); this.aiKall({ handling: 'godkjenn', id: u.id }); } },
           mkLesKopier: () => this.kopier((this.state.mkLes || {}).tekst || '', 'Teksten ligger på utklippstavla.'),
           mkLesKopierTagger: () => this.kopier(

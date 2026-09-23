@@ -33,7 +33,7 @@ $popHref = $kort !== null ? $kort['href'] : '/events';
 return [
     'kropp' => Mal::tegn('Paint on Pots', [
         'popDatoer' => $pop, 'popHarDatoer' => $antall > 0, 'popManglerDatoer' => $antall === 0, 'popHarFlere' => $antall > 1,
-        'popFlereDatoer' => $antall > 1 ? 'Du velger dag og tid i bestillingen — ' . $antall . ' ledige tider de neste to ukene.' : '',
+        'popFlereDatoer' => $antall > 1 ? 'Ingen booking nødvendig — stikk innom i åpningstiden. Vil du være sikker på plass, velger du dag og tid i bestillingen.' : '',
         'popSteg' => $steg, 'popFaq' => $faq, 'sant' => true,
     ], ['goEvents' => '/events', 'goForesporsel' => '/kontakt', 'popTilDatoer' => $popHref, 'book' => $popHref]) . "\n" . Deler::bunn(true),
     'aktiv' => 'Events',

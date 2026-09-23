@@ -264,7 +264,9 @@ final class Mal
                     if ($a('icon-after')) { $o['iconAfter'] = $a('icon-after'); }
                     if ($a('full-width')) { $o['full'] = true; }
                     $h = $href($a('on-click'));
-                    if ($h !== null) { $o['href'] = $h; }
+                    // «js:navn» som paa vanlige elementer: nett.js gjoer noe paa sida.
+                    if ($h !== null && str_starts_with($h, 'js:')) { $o['attr'] = 'data-nett-handling="' . Nett::e(substr($h, 3)) . '"'; }
+                    elseif ($h !== null) { $o['href'] = $h; }
                     if ($a('style') && preg_match('~^\{\{ (.+) \}\}$~', $a('style'), $mm) === 1) { $o['style'] = ' ' . self::css($v(trim($mm[1]))); }
                     return Deler::knapp($inni, $o);
                 case 'CourseCard':
@@ -287,6 +289,25 @@ final class Mal
                 case 'Icon':
                     $size = $verdiAv($a('size'));
                     return Deler::ikon((string) $a('name'), is_numeric($size) ? (int) $size : 20);
+                case 'Input':
+                    // Input i ds-bundle.js: etikett, felt og ev. ikon, samme
+                    // stiler (labelStyle og shell). Feltet faar navnet paa
+                    // verdien det er bundet til (data-nett-felt="gvNavn"),
+                    // saa nett.js kan lese det — gavekortsida, 23. sep 2026.
+                    $felt = ($a('value') !== null && preg_match('~^\{\{ (\w+) \}\}$~', (string) $a('value'), $mm) === 1) ? $mm[1] : '';
+                    $id = 'nf-' . ($felt !== '' ? $felt : substr(md5((string) $a('label')), 0, 8));
+                    $ikon = (string) ($a('icon') ?? '');
+                    return '<div style="width: 100%;">'
+                        . ($a('label') !== null ? '<label for="' . $e($id) . '" style="display: block; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-2);">' . $e($tekstAv($a('label'))) . '</label>' : '')
+                        . '<div style="position: relative; display: flex; align-items: center;">'
+                        . ($ikon !== '' ? '<span style="position: absolute; left: 14px; color: var(--text-faint); display: flex;">' . Deler::ikon($ikon, 18) . '</span>' : '')
+                        . '<input id="' . $e($id) . '"' . ($felt !== '' ? ' data-nett-felt="' . $e($felt) . '"' : '')
+                        . ' type="' . $e((string) ($a('type') ?? 'text')) . '"'
+                        . ($a('placeholder') !== null ? ' placeholder="' . $e($tekstAv($a('placeholder'))) . '"' : '')
+                        . ' value="' . $e($tekstAv($a('value'))) . '"'
+                        . ' style="width: 100%; box-sizing: border-box; padding: var(--field-pad-y) var(--field-pad-x);' . ($ikon !== '' ? ' padding-left: 42px;' : '')
+                        . ' font-family: var(--font-sans); font-size: var(--text-base); color: var(--text-body); background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); outline: none; box-shadow: none; transition: border-color var(--duration-base) var(--ease-clay), box-shadow var(--duration-base) var(--ease-clay);">'
+                        . '</div></div>';
                 default:
                     return '';
             }

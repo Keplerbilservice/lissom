@@ -187,6 +187,15 @@
   var felt = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];
   var sett = function (v) { var o = {}; for (var i = 0; i < felt.length; i++) o[felt[i]] = v; return o; };
   var samtykkeSendt = false;
+  // Admin og regnskap i denne nettleseren (satt av appen ved innlogging):
+  // eierens egne besoek skal ikke telles som kunder. GA4 hadde /admin og
+  // /logg-inn blant landingssidene, 23. september 2026.
+  function intern() { try { return localStorage.getItem('lissom-intern') === '1'; } catch (e) { return false; } }
+  // Kommer man tilbake fra Vipps (betaling eller innlogging), skal ikke
+  // Vipps faa aeren for besoeket. GA4 30 dager til 23. september 2026:
+  // 68 oekter med kilde «api.vipps.no / referral» — annonsen eller soeket
+  // som brakte kunden, mistet kjoepet.
+  function fraVipps() { return /^https?:\/\/([^\/]*\.)?(vipps\.no|vippsmobilepay\.com|mobilepay\.(dk|fi))(\/|$)/i.test(d.referrer || ''); }
   function maal() {
     var m = window.lissomMaal || {};
     var ga = /^G-[A-Z0-9]{6,20}$/i.test(m.ga || '') ? m.ga : '';
@@ -194,6 +203,7 @@
     var meta = /^\d{15,16}$/.test(m.meta || '') ? m.meta : '';
     if (!ga && !gtm && !meta) return;
     if (samtykke() !== 'ja') return;
+    if (intern()) return;
     window.dataLayer = window.dataLayer || [];
     if (typeof window.gtag !== 'function') { window.gtag = function () { window.dataLayer.push(arguments); }; }
     if (samtykkeSendt) {
@@ -212,7 +222,9 @@
       s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ga);
       d.head.appendChild(s);
       window.gtag('js', new Date());
-      window.gtag('config', ga, { anonymize_ip: true });
+      var oppsett = { anonymize_ip: true };
+      if (fraVipps()) oppsett.ignore_referrer = true;
+      window.gtag('config', ga, oppsett);
     }
     if (gtm) {
       window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
@@ -289,6 +301,79 @@
     var ja = boks.querySelector('[data-nett-samtykke-ja]'), nei = boks.querySelector('[data-nett-samtykke-nei]');
     if (ja) ja.addEventListener('click', function () { svar('ja'); });
     if (nei) nei.addEventListener('click', function () { svar('nei'); });
+  }
+
+  /* ── Gavekortsida ───────────────────────────────────────────────────── */
+  // app/nett/sider/gavekort.php. Skjemaet oppfoerer seg som i appen
+  // (settGvBelop, gvValgt): beloepet er bare sifre, «Du betaler …» og
+  // knappen foelger med. Trykker kunden kjoep, tar appen over paa
+  // /gavekort?kjop=1 med det som er fylt ut (fortsettGavekort()).
+  var gvBelop = d.querySelector('[data-nett-felt="gvBelop"]');
+  if (gvBelop) {
+    var gvKr = function () { var v = parseInt(gvBelop.value, 10); return isNaN(v) ? 1490 : v; };
+    var gvTekst = function () {
+      var t = 'kr. ' + gvKr() + ',-';
+      d.querySelectorAll('[data-nett-vipps]').forEach(function (el) { if (el.tagName === 'P') el.textContent = 'Du betaler ' + t; });
+      var r = d.querySelector('[data-nett-reserve]');
+      if (r) {
+        var n = r.lastChild;
+        if (n && n.nodeType === 3) n.nodeValue = 'Kjøp gavekort · ' + t;
+        else r.textContent = 'Kjøp gavekort · ' + t;
+      }
+    };
+    gvBelop.addEventListener('input', function () {
+      var rent = (gvBelop.value || '').replace(/[^0-9]/g, '').slice(0, 5);
+      if (rent !== gvBelop.value) gvBelop.value = rent;
+      gvTekst();
+    });
+    // Fokusrammen fra Input i designsystemet (shell(…, focused)).
+    d.querySelectorAll('[data-nett-felt]').forEach(function (f) {
+      if (f === gvBelop) return;
+      f.addEventListener('focus', function () { f.style.borderColor = 'var(--lissom-brown)'; f.style.boxShadow = 'var(--shadow-focus)'; });
+      f.addEventListener('blur', function () { f.style.borderColor = 'var(--border-default)'; f.style.boxShadow = 'none'; });
+    });
+    // Skriptet til Vipps-knappen hentes foerst naar sida er ferdig tegnet
+    // (se gavekort.php) — det tar med seg egne skrifter.
+    var gvVipps = function () {
+      if (d.querySelector('script[src*="cdn.vippsmobilepay.com"]')) return;
+      var s = d.createElement('script'); s.async = true;
+      s.src = 'https://cdn.vippsmobilepay.com/js/button/button.js';
+      d.head.appendChild(s);
+    };
+    if (d.readyState === 'complete') gvVipps(); else window.addEventListener('load', gvVipps);
+    // Vipps-knappen naar skriptet er klart — ellers staar vaar egen, som i appen.
+    if (window.customElements && customElements.whenDefined) {
+      customElements.whenDefined('vipps-mobilepay-button').then(function () {
+        d.querySelectorAll('[data-nett-vipps]').forEach(function (el) { el.removeAttribute('hidden'); });
+        var r = d.querySelector('[data-nett-reserve]'); if (r) r.style.display = 'none';
+      });
+    }
+    var gvFeil = function (tekst) {
+      var p = d.querySelector('[data-nett-gvfeil]');
+      if (!p) {
+        p = d.createElement('p');
+        p.setAttribute('data-nett-gvfeil', '');
+        p.setAttribute('role', 'alert');
+        p.style.cssText = 'margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--danger); text-align: center;';
+        var r = d.querySelector('[data-nett-reserve]');
+        (r && r.parentNode ? r.parentNode : gvBelop.parentNode).appendChild(p);
+      }
+      p.textContent = tekst;
+    };
+    var gvLes = function (navn) { var f = d.querySelector('[data-nett-felt="' + navn + '"]'); return f ? (f.value || '').trim() : ''; };
+    d.addEventListener('click', function (e) {
+      var el = e.target.closest && e.target.closest('[data-nett-handling="gavekort"]');
+      if (!el) return;
+      e.preventDefault();
+      var belop = gvKr(), epost = gvLes('gvEpost');
+      // Samme sjekk som kjopGavekort() i appen, saa ingen sendes videre for aa faa nei.
+      if (!(belop >= 100 && belop <= 20000)) { gvFeil('Gavekortet må være mellom 100 og 20 000 kroner.'); return; }
+      if (epost && epost.indexOf('@') < 1) { gvFeil('Adressen til mottakeren ser ikke riktig ut.'); return; }
+      try {
+        sessionStorage.setItem('lissom-gavekort', JSON.stringify({ belop: belop, navn: gvLes('gvNavn'), epost: epost, hilsen: gvLes('gvHilsen') }));
+      } catch (x) { /* privat modus: appen viser skjemaet, og kunden fyller ut der */ }
+      location.href = '/gavekort?kjop=1';
+    });
   }
   maal();
 })();

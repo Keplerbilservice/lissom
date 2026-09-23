@@ -53,6 +53,30 @@ final class Config
         // fila: en noekkel som skal kunne byttes fra en knapp, kan ikke
         // ligge et sted bare den som har serveren kommer til.
         'kalender_nokkel', 'verksted_adresse',
+        // Gemini lager bildene. Noekkelen staar i basen og ikke i
+        // secrets.php av samme grunn som kalendernoekkelen: eieren skal
+        // kunne lime den inn og bytte den selv, uten en ny utlegging.
+        // Modellnavnet og prisanslaget staar samme sted, fordi Google
+        // bytter navn paa bildemodellene sine oftere enn vi legger ut kode.
+        'gemini_api_key', 'gemini_modell', 'gemini_pris_ore',
+        // Hvem som skriver teksten — «claude» eller «gemini» — og hvilken
+        // Gemini-modell. Uten disse to her ble valget lagret i basen og
+        // aldri lest: Config::hent() gaar bare til basen for noekler som
+        // staar i denne lista, og et valg som sier «lagret» og likevel ikke
+        // gjelder er verre enn et som sier nei. Maalt 23. september 2026.
+        'ai_leverandor', 'gemini_tekst_modell',
+        // Video (Veo 3.1). Opploesningen staar her fordi den avgjor prisen:
+        // 1080p koster rundt tre ganger 720p, og det er eieren som skal
+        // bestemme hva en Instagram-snutt er verdt.
+        'gemini_video_modell', 'gemini_video_opplosning', 'gemini_video_pris_ore',
+        // Skoleruta i Vestfold, hentet av vedlikeholdsjobben, og eierens
+        // egne rettelser oppaa. De staar i basen fordi feriene endrer seg
+        // hvert aar — det skal ikke kreve en ny utlegging.
+        'skolerute_data', 'skolerute_hentet', 'skolerute_egne',
+        // Publisering til Instagram og Facebook. Tokenet staar i basen og
+        // ikke i content_blocks, som nettsida leser. Versjonen er
+        // redigerbar fordi Meta pensjonerer API-versjoner hvert kvartal.
+        'meta_token', 'meta_ig_id', 'meta_side_id', 'meta_versjon',
         // Standardteksten i kvitteringen etter kjop. Den fylles ut paa nye
         // kurs, og eieren retter eller sletter den paa det enkelte kurset.
         // Sto den i koden, matte hele nettsida legges ut paa nytt for aa

@@ -332,6 +332,20 @@ if (Foresporsel::metode() === 'GET') {
             'metaPiksel'  => $metaPiksel,
             'aiTak'       => AI::tak(),
             'googleBedrift' => trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/Google-bedrift'")),
+            // Gemini lager bildene. Modellnavnet er redigerbart fordi Google
+            // bytter navn oftere enn vi legger ut ny kode. Noekkelen selv
+            // sendes aldri hit — bare om den staar inne, og de fire siste
+            // tegnene, saa eieren kjenner igjen hvilken det er.
+            'geminiModell' => Gemini::modell(),
+            'geminiKlar'   => Gemini::tilgjengelig(),
+            'geminiHale'   => Gemini::tilgjengelig() ? mb_substr(Gemini::noekkel(), -4) : '',
+            'geminiBilder' => Gemini::status()['bilder'],
+            // Publisering til Instagram og Facebook. Tokenet sendes aldri
+            // hit: bare om det staar inne, og hvilke kontoer det gjelder.
+            'metaIg'       => Meta::igId(),
+            'metaSide'     => Meta::sideId(),
+            'metaToken'    => Meta::status()['harToken'],
+            'metaKlar'     => Meta::klarForInstagram(),
         ],
         'forbruk'     => DB::alle(
             "SELECT formal, COUNT(*) AS kall, SUM(kostnad_ore) AS ore

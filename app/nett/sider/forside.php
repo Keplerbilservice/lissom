@@ -195,7 +195,7 @@ if (Nett::bryterPaa('salgsuke') && !Nett::mobilSkjult('salgsuke')) {
         . '<p style="margin: 0; font-size: var(--text-lg); line-height: 1.55; color: var(--clay-200); text-wrap: pretty;">' . $e($f('tekst', 'tekst', 'I én uke selger vi medlemmenes håndlagde keramikk sammen i nettbutikken. Alt er laget i verkstedet på Teie.')) . '</p>'
         . ($prisOre > 0 ? '<div style="margin: var(--space-5) 0 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-3xl); color: var(--lissom-yellow);">' . $e('kr. ' . number_format((int) round($prisOre / 100), 0, ',', ' ') . ',-') . '</div>' : '')
         . '</div>'
-        . Deler::knapp($f('knapp', null, 'Se medlemmenes keramikk'), ['href' => ['butikk' => '/butikk', 'medlemsbutikk' => '/butikk', 'kurs' => '/kurs', 'events' => '/events', 'medlemskap' => '/medlemskap', 'gavekort' => '/gavekort'][$maal]
+        . Deler::knapp($f('knapp', null, 'Se medlemmenes keramikk'), ['href' => ['butikk' => '/butikk', 'medlemsbutikk' => '/butikk?kolleksjon=medlem', 'kurs' => '/kurs', 'events' => '/events', 'medlemskap' => '/medlemskap', 'gavekort' => '/gavekort'][$maal]
             // «kurs/<slug>»: rett til kurssida (api/admin/kampanjer.php).
             ?? (preg_match('~^kurs/([a-z0-9-]{1,120})$~', $maal, $mt) === 1 ? '/kurs/' . $mt[1] : '/butikk'), 'size' => 'lg', 'iconAfter' => 'arrow-right'])
         . '</div>'

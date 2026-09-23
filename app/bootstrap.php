@@ -68,6 +68,7 @@ require APP_DIR . '/config.php';
 spl_autoload_register(static function (string $klasse): void {
     static $kart = [
         'AI' => 'ai.php',
+        'Gemini' => 'gemini.php',
         'Apent' => 'apent.php',
         'Artikler' => 'artikler.php',
         'Avmelding' => 'avmelding.php',
@@ -86,6 +87,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Maaling' => 'maaling.php',
         'Maler' => 'maler.php',
         'Medlemskap' => 'medlemskap.php',
+        'Meta' => 'meta.php',
         'Medlemsordre' => 'medlemsordre.php',
         'Oppmote' => 'oppmote.php',
         'Oppsett' => 'oppsett.php',
@@ -94,7 +96,9 @@ spl_autoload_register(static function (string $klasse): void {
         'Robottekst' => 'robottekst.php',
         'Samlinger' => 'samlinger.php',
         'Serier' => 'serier.php',
+        'Skolerute' => 'skolerute.php',
         'Sesjon' => 'session.php',
+        'Sikkerhetskopi' => 'sikkerhetskopi.php',
         'Stempling' => 'stempling.php',
         'Svar' => 'http.php',
         'Tikk' => 'tikk.php',

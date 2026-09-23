@@ -66,7 +66,7 @@ final class Deler
      * naar den klipper knappene paa telefon, og en <a> faar en annen
      * linjehoeyde. Maalt 15. september 2026: <a> ble 59 px der knappen er 54.
      *
-     * @param array{href?:string,variant?:string,size?:string,icon?:string,iconAfter?:string,full?:bool,style?:string,attr?:string} $o
+     * @param array{href?:string,lenke?:bool,variant?:string,size?:string,icon?:string,iconAfter?:string,full?:bool,style?:string,attr?:string} $o
      */
     public static function knapp(string $tekst, array $o = []): string
     {
@@ -85,6 +85,13 @@ final class Deler
             . (!empty($o['iconAfter']) ? self::ikon($o['iconAfter'], $s['ikon']) : '');
         $hover = ' data-hover="' . self::e(self::KNAPP_SVEV[$v] ?? '') . '"';
         $attr = isset($o['attr']) ? ' ' . $o['attr'] : '';
+        // En ekte lenke Google kan foelge, i samme form som knappen. Brukt
+        // der lenka er poenget — pillene under artiklene, som peker til
+        // kurssidene (23. september 2026). line-height: 1 holder hoeyden
+        // lik knappen (se kommentaren over: <a> ble ellers 59 px mot 54).
+        if (!empty($o['lenke']) && isset($o['href'])) {
+            return '<a href="' . self::e($o['href']) . '" style="' . $stil . ' line-height: 1;"' . $hover . $attr . '>' . $inni . '</a>';
+        }
         if (isset($o['href'])) {
             $attr .= ' data-href="' . self::e($o['href']) . '"';
         }
@@ -418,7 +425,7 @@ final class Deler
         // Lissom.
         $h .= '<div><div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Lissom</div>'
             . '<div class="lx-footlinks" style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">';
-        foreach ([['Om oss', '/om-oss'], ['Nyheter', '/nyheter'], ['Klar til henting', '/ferdigbrent'], ['Spørsmål og svar', '/sporsmal-og-svar'], ['Personvern', '/personvern'], ['Salgsvilkår', '/vilkar']] as [$navn, $href]) {
+        foreach ([['Om oss', '/om-oss'], ['For bedrifter', '/bedrift'], ['Nyheter', '/nyheter'], ['Klar til henting', '/ferdigbrent'], ['Spørsmål og svar', '/sporsmal-og-svar'], ['Personvern', '/personvern'], ['Salgsvilkår', '/vilkar']] as [$navn, $href]) {
             $h .= '<a href="' . $href . '" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; text-align: left; font-family: var(--font-sans); font-size: var(--text-base); color: var(--clay-200); text-decoration: none; transition: color .18s ease;" data-hover="color: var(--lissom-yellow);">' . $e($navn) . '</a>';
         }
         $h .= '</div></div>';

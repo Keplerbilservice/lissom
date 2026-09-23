@@ -57,6 +57,24 @@ final class AI
         return trim((string) Config::hent('claude_api_key', ''));
     }
 
+    /**
+     * Hvem som skriver teksten: «claude» eller «gemini».
+     *
+     * Standarden er Claude. Bytter du, gjelder det alt som skrives —
+     * kursbeskrivelser, SEO, artikler, nyhetsbrev og innlegg.
+     */
+    public static function leverandor(): string
+    {
+        $v = strtolower(trim((string) Config::hent('ai_leverandor', '')));
+        return $v === 'gemini' ? 'gemini' : 'claude';
+    }
+
+    /** Kostnaden fra det siste kallet, ogsaa naar Gemini tok det. */
+    public static function settSisteKostnad(int $ore): void
+    {
+        self::$sisteOre = $ore;
+    }
+
     public static function tilgjengelig(): bool
     {
         return self::noekkel() !== '';
@@ -90,9 +108,14 @@ final class AI
     {
         $tak   = self::tak();
         $brukt = self::bruktDenneMaaneden();
+        // Hvem som faktisk skriver. Staar «gemini» i oppsettet, er det
+        // Gemini-noekkelen som avgjor om knappene virker — ikke Claudes.
+        $lev = self::leverandor();
+        $klar = $lev === 'gemini' ? Gemini::tilgjengelig() : self::tilgjengelig();
         return [
-            'klar'       => self::tilgjengelig(),
-            'modell'     => self::MODELL,
+            'klar'       => $klar,
+            'leverandor' => $lev,
+            'modell'     => $lev === 'gemini' ? Gemini::tekstModell() : self::MODELL,
             'tak'        => Booking::kroner($tak * 100),
             'takOre'     => $tak * 100,
             'brukt'      => Booking::kroner($brukt),
@@ -101,9 +124,11 @@ final class AI
             'overTaket'  => $brukt >= $tak * 100,
             'kall'       => (int) DB::verdi('SELECT COUNT(*) FROM ai_logg'),
             // Uten noekkel er det ingenting aa lure paa — si hva som mangler.
-            'mangler'    => self::tilgjengelig()
+            'mangler'    => $klar
                 ? null
-                : 'Legg inn claude_api_key i secrets.php. Nøkkelen lages på console.anthropic.com.',
+                : ($lev === 'gemini'
+                    ? 'Lim inn Gemini-nøkkelen under Markedsføring → Oppsett.'
+                    : 'Legg inn claude_api_key i secrets.php. Nøkkelen lages på console.anthropic.com.'),
         ];
     }
 
@@ -120,6 +145,20 @@ final class AI
      */
     public static function spor(string $system, string|array $bruker, string $formal, int $maksTokens = 8000): array
     {
+        // Hvem som skriver staar i oppsettet.
+        //
+        // Eieren, 23. september 2026: «vi kan jo bruke gemini paa
+        // tekstgenereringen?» — sagt mens Anthropic-kontoen sto uten dekning
+        // og ingen av tekstknappene virket. Valget ligger her og ikke i hvert
+        // enkelt endepunkt, saa alle stedene som skriver tekst foelger det
+        // uten aa vite om det.
+        //
+        // Bare ren tekst gaar til Gemini. Er «bruker» en liste, er det et
+        // kall med bilder eller dokumenter i seg — de blir vaerende hos Claude.
+        if (is_string($bruker) && self::leverandor() === 'gemini') {
+            return Gemini::sporTekst($system, $bruker, $formal, $maksTokens);
+        }
+
         $noekkel = self::noekkel();
         if ($noekkel === '') {
             throw new RuntimeException(
@@ -297,9 +336,28 @@ final class AI
 
     private static function logg(string $formal, int $inn, int $ut, int $ore, bool $ok, ?string $feil): void
     {
+        self::loggKall($formal, self::MODELL, $inn, $ut, $ore, $ok, $feil);
+    }
+
+    /**
+     * Samme logg, for en annen modell.
+     *
+     * Gemini lager bildene og skal trekkes fra det samme maanedstaket som
+     * teksten. To kasser ville betydd to steder aa se etter naar regningen
+     * kommer, og et tak som ikke holder. Kolonnen «modell» skiller dem.
+     */
+    public static function loggKall(
+        string $formal,
+        string $modell,
+        int $inn,
+        int $ut,
+        int $ore,
+        bool $ok,
+        ?string $feil
+    ): void {
         DB::settInn('ai_logg', [
             'formal'      => mb_substr($formal, 0, 64),
-            'modell'      => self::MODELL,
+            'modell'      => mb_substr($modell, 0, 64),
             'tokens_inn'  => $inn,
             'tokens_ut'   => $ut,
             'kostnad_ore' => $ore,

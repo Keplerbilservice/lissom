@@ -52,6 +52,9 @@ final class Nett
         '/personvern' => 'personvern',
         '/kursene-vare' => 'kursoversikt',
         '/paint-on-pots' => 'paintonpots',
+        // Gavekortsida paa serveren fra 23. september 2026 (LCP 3,9 → 1,2 s
+        // maalt med struping). ?kjop=1 gaar til appen, se Nett::kan().
+        '/gavekort' => 'gavekort',
         '/kontakt' => 'kontakt',
         '/bedrift' => 'bedrift',
         '/vilkar' => 'vilkar',
@@ -66,6 +69,8 @@ final class Nett
     public static string $adresse = '/';
     /** Kursets adresse (slug) naar adressen er /kurs/<slug>. */
     public static string $slug = '';
+    /** Varens nummer naar adressen er /butikk/<id>-<navn>, ellers 0. */
+    public static int $vareId = 0;
 
     /** Fila som tegner adressen, eller null. Kurssidene kjennes paa moensteret. */
     private static function fil(string $adresse): ?string
@@ -78,6 +83,15 @@ final class Nett
         }
         if (preg_match('~^/nyheter/([a-z0-9-]+)$~i', $adresse) === 1) {
             return 'nyheter';
+        }
+        // Butikken, og hver vare sin egen adresse. Tallet er det som
+        // gjelder; navnet bak staar der for menneskene, som i appen.
+        //
+        // /butikk-ny sto her alene mens sida ble vist fram. Eieren saa den
+        // 23. september 2026 og sa ja; da overtok den butikken. Testadressen
+        // staar igjen saa neste endring kan vises fram paa samme maate.
+        if (preg_match('~^/butikk(-ny)?(/\\d+(-[^/]*)?)?$~', $adresse) === 1) {
+            return 'butikk';
         }
         return null;
     }
@@ -117,7 +131,11 @@ final class Nett
     {
         // Kurssida sender folk inn i appen med ?dag=, ?alle=1, ?book=1 eller
         // ?venteliste=1 — da skal appen ha adressen, ikke serversida.
-        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema'] as $n) {
+        // ?kjop=1 er gavekortsida som gaar videre til betalingen (nett.js).
+        // ?vare=1 er «Legg i kurv» paa varesida: kurven bor i appen, og
+        // nett.js har ingen. Serveren sier nei, og appen aapner varen.
+        // ?kolleksjon=medlem er medlemskolleksjonen i butikken, som bor i appen.
+        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare', 'kolleksjon'] as $n) {
             if (isset($_GET[$n])) {
                 return false;
             }
@@ -148,7 +166,22 @@ final class Nett
         // basen (en plass som ble tatt, en tekst som ble endret) er ute
         // innen ett minutt.
         self::$adresse = $adresse;
-        $buffer = self::bufferFil($adresse . '?' . http_build_query(self::sporring()));
+        // Verkstedet leser aldri fra bufferen, og skriver aldri til den.
+
+        // Sidene kan vise noe bare admin skal se — en artikkel som ligger
+        // som kladd, aapnet med «Se hvordan den blir». Bufferen kjenner
+        // bare adressen, ikke hvem som spurte, saa den ferdige sida ville
+        // gaatt ut til alle som kom innom det neste minuttet. En kladd som
+        // lekker ut fordi eieren forhaandsviste den er ikke en treghet, det
+        // er en publisering ingen ba om.
+
+        // Det koster ingenting: verkstedet er én bruker, og de 30-40
+        // sporringene bufferen sparer gjelder de mange som ikke er logget
+        // inn.
+        $forAdmin = Sesjon::erAdmin();
+        $buffer = $forAdmin
+            ? null
+            : self::bufferFil($adresse . '?' . http_build_query(self::sporring()));
         if ($buffer !== null && is_file($buffer) && filemtime($buffer) > time() - self::BUFFER_SEK) {
             $lest = @file_get_contents($buffer);
             if (is_string($lest) && $lest !== '') {
@@ -158,6 +191,7 @@ final class Nett
 
         $fil = __DIR__ . '/sider/' . self::fil($adresse) . '.php';
         self::$slug = preg_match('~^/kurs/([a-z0-9-]+)$~i', $adresse, $m) === 1 ? $m[1] : '';
+        self::$vareId = preg_match('~^/butikk(?:-ny)?/(\\d+)~', $adresse, $mv) === 1 ? (int) $mv[1] : 0;
         /** @var array{kropp:string,aktiv:string,hode?:string,skript?:string}|null $side */
         $side = (static function () use ($fil): ?array {
             return require $fil;

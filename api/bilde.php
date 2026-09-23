@@ -145,6 +145,36 @@ if ($feil !== '') {
     lever($sti);
 }
 
+// Videoene AI-en har laget. Aapne for alle: de legges ut paa Instagram og
+// Facebook, og da henter Meta dem selv fra denne adressen.
+$video = Foresporsel::tekst('video');
+if ($video !== '') {
+    if (preg_match('/^[0-9a-f]{32}\\.mp4$/', $video) !== 1) {
+        Svar::feil('Fant ikke videoen.', 404);
+    }
+    $sti = Bilder::mappe('video') . '/' . $video;
+    if (!is_file($sti)) {
+        Svar::feil('Fant ikke videoen.', 404);
+    }
+    header('Content-Type: video/mp4');
+    header('Content-Length: ' . filesize($sti));
+    header('Cache-Control: public, max-age=31536000, immutable');
+    readfile($sti);
+    exit;
+}
+
+// Referansebildene AI-en laaner stil fra. Bare verkstedet: de er
+// arbeidsmateriale, ikke noe som staar paa nettsida, og de kan vise folk som
+// jobber der.
+$referanse = Foresporsel::tekst('referanse');
+if ($referanse !== '') {
+    $sti = Bilder::sti($referanse, 'referanser');
+    if ($sti === null || !Sesjon::erAdmin()) {
+        Svar::feil('Fant ikke bildet.', 404);
+    }
+    lever($sti);
+}
+
 // Bilder til artikler er aapne for alle — de staar paa nettsida uansett.
 $artikkel = Foresporsel::tekst('artikkel');
 if ($artikkel !== '') {

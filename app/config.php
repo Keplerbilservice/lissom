@@ -63,6 +63,10 @@ final class Config
         // egne rettelser oppaa. De staar i basen fordi feriene endrer seg
         // hvert aar — det skal ikke kreve en ny utlegging.
         'skolerute_data', 'skolerute_hentet', 'skolerute_egne',
+        // Publisering til Instagram og Facebook. Tokenet staar i basen og
+        // ikke i content_blocks, som nettsida leser. Versjonen er
+        // redigerbar fordi Meta pensjonerer API-versjoner hvert kvartal.
+        'meta_token', 'meta_ig_id', 'meta_side_id', 'meta_versjon',
         // Standardteksten i kvitteringen etter kjop. Den fylles ut paa nye
         // kurs, og eieren retter eller sletter den paa det enkelte kurset.
         // Sto den i koden, matte hele nettsida legges ut paa nytt for aa

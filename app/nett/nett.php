@@ -134,7 +134,8 @@ final class Nett
         // ?kjop=1 er gavekortsida som gaar videre til betalingen (nett.js).
         // ?vare=1 er «Legg i kurv» paa varesida: kurven bor i appen, og
         // nett.js har ingen. Serveren sier nei, og appen aapner varen.
-        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare'] as $n) {
+        // ?kolleksjon=medlem er medlemskolleksjonen i butikken, som bor i appen.
+        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare', 'kolleksjon'] as $n) {
             if (isset($_GET[$n])) {
                 return false;
             }

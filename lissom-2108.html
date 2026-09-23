@@ -26803,7 +26803,10 @@ class Component extends DCLogic {
    */
   butikkKolleksjonNaa() {
     if (!this.bryterPaa('medlemssalg')) return 'Lissom';
-    return (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'Medlem' : 'Lissom';
+    // Kortet paa serverbutikken sender hit med /butikk?kolleksjon=medlem.
+    let fraAdressen = 'Lissom';
+    try { if (new URLSearchParams(window.location.search).get('kolleksjon') === 'medlem') fraAdressen = 'Medlem'; } catch (e) { /* ingen sporring */ }
+    return (this.state.butikkKolleksjon || fraAdressen) === 'Medlem' ? 'Medlem' : 'Lissom';
   }
 
   vekslBryter(nokkel, navn) {

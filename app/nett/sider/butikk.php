@@ -149,7 +149,18 @@ if ($valgt === null) {
         . '<div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">'
         . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($innh('Butikk/1/Overskrift')) . '</div>'
         . '<p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">' . $e($innh('Butikk/1/Tekst')) . '</p>'
-        . '</div></div>';
+        . '</div>';
+    // Medlemskolleksjonen. Den falt ut da butikken ble tegnet her — eieren,
+    // 23. september 2026: «naa vises ikke medlemskolleksjonen». Varene og
+    // dialogen med selgerens Vippsnummer bor i appen, saa kortet gaar dit
+    // med ?kolleksjon=medlem (Nett::kan() sier nei, appen tar over).
+    if (Nett::bryterPaa('medlemssalg')) {
+        $h .= '<a href="' . $e($base . '?kolleksjon=medlem') . '" style="display: block; text-decoration: none; background: var(--surface-card); border: 2px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay);" data-hover="box-shadow: var(--shadow-md);">'
+            . '<div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">' . $e($innh('Butikk/2/Overskrift')) . '</div>'
+            . '<p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">' . $e($innh('Butikk/2/Tekst')) . '</p>'
+            . '</a>';
+    }
+    $h .= '</div>';
 } else {
     $h .= '<h2 style="margin: 0 0 var(--space-6); font-size: var(--text-3xl);">Flere varer i butikken</h2>';
 }

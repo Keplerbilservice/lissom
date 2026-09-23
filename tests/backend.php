@@ -18016,6 +18016,38 @@ if (DB::harTabell('courses') && DB::harKolonne('courses', 'folger_apningstid')) 
         $pop === null ? 'fant ikke kurset' : 'status: ' . (string) $pop['status']);
 }
 
+// ── Tidspunktet maa ligge i tida hun er der ──────────────────────────────
+//
+// Eieren, 23. september 2026: «velg tidspunk, må kun være mulig i tiden jeg er
+// der, dette må du endre».
+//
+// Feltet tok imot hva som helst. Serveren avviste et tidspunkt utenfor
+// aapningstida — Apent::oktForTid() — men foerst etter at kunden hadde fylt ut
+// resten og trykket. Da er det ikke et valg lenger, det er en beskjed om at du
+// valgte feil.
+$tidFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('feltet er sperret til vinduet',
+    str_contains($tidFil, '<input type="time" step="900" min="{{ bTidMin }}" max="{{ bTidMaks }}"')
+    && str_contains($tidFil, "          bTidMin: ((this.state.bTidListe || [])[0] || {}).tid || '',"));
+
+// Et tidsfelt kan skrives i for haand, og et hjul paa telefon foelger ikke
+// alltid grensene. Teksten er den som faktisk holder.
+sjekk('… og sier hvorfor naar tida staar utenfor',
+    str_contains($tidFil, '          bTidUtenfor: (() => {')
+    && str_contains($tidFil, "            return !!t && liste.length > 0 && !liste.some(x => x.tid === t);")
+    && str_contains($tidFil, '<sc-if value="{{ bTidUtenfor }}" hint-placeholder-val="{{ false }}">'));
+
+// «Vi stenger 13:00, og plassen varer to timer» forklarer at siste oppmoete er
+// 11:00. Uten det ser 12:00 ut som en tid innenfor aapningstida som likevel
+// ble avvist.
+sjekk('… og forklarer hvorfor siste oppmoete er for stengetid',
+    str_contains($tidFil, "                + (varer ? ' Plassen varer ' + varer + ', så det siste oppmøtet er ' + til + '.' : '');"));
+
+sjekk('… og knappen slipper den ikke gjennom',
+    str_contains($tidFil, "      if (liste.length > 0 && !liste.some(x => x.tid === tid)) {")
+    && str_contains($tidFil, "          kvittering: 'Verkstedet er ikke åpent da.',"));
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme

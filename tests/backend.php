@@ -18736,7 +18736,7 @@ sjekk('Google faar vite at samtykket ble gitt (Consent Mode v2)',
 // Rekkefolgen er hele poenget: kommer signalet etter «config», har taggen
 // alt sendt sitt forste kall paa det gamle grunnlaget.
 $posSamtykke = strpos($msSida, "window.gtag('consent', 'default'");
-$posConfig   = strpos($msSida, "window.gtag('config', id, { anonymize_ip: true });");
+$posConfig   = strpos($msSida, "window.gtag('config', id, oppsett);");
 $posGtm      = strpos($msSida, "g.src = 'https://www.googletagmanager.com/gtm.js?id='");
 sjekk('… og det staar foer bade «config» og gtm.js',
     $posSamtykke !== false && $posConfig !== false && $posGtm !== false

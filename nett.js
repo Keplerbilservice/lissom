@@ -187,6 +187,15 @@
   var felt = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];
   var sett = function (v) { var o = {}; for (var i = 0; i < felt.length; i++) o[felt[i]] = v; return o; };
   var samtykkeSendt = false;
+  // Admin og regnskap i denne nettleseren (satt av appen ved innlogging):
+  // eierens egne besoek skal ikke telles som kunder. GA4 hadde /admin og
+  // /logg-inn blant landingssidene, 23. september 2026.
+  function intern() { try { return localStorage.getItem('lissom-intern') === '1'; } catch (e) { return false; } }
+  // Kommer man tilbake fra Vipps (betaling eller innlogging), skal ikke
+  // Vipps faa aeren for besoeket. GA4 30 dager til 23. september 2026:
+  // 68 oekter med kilde «api.vipps.no / referral» — annonsen eller soeket
+  // som brakte kunden, mistet kjoepet.
+  function fraVipps() { return /^https?:\/\/([^\/]*\.)?(vipps\.no|vippsmobilepay\.com|mobilepay\.(dk|fi))(\/|$)/i.test(d.referrer || ''); }
   function maal() {
     var m = window.lissomMaal || {};
     var ga = /^G-[A-Z0-9]{6,20}$/i.test(m.ga || '') ? m.ga : '';
@@ -194,6 +203,7 @@
     var meta = /^\d{15,16}$/.test(m.meta || '') ? m.meta : '';
     if (!ga && !gtm && !meta) return;
     if (samtykke() !== 'ja') return;
+    if (intern()) return;
     window.dataLayer = window.dataLayer || [];
     if (typeof window.gtag !== 'function') { window.gtag = function () { window.dataLayer.push(arguments); }; }
     if (samtykkeSendt) {
@@ -212,7 +222,9 @@
       s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ga);
       d.head.appendChild(s);
       window.gtag('js', new Date());
-      window.gtag('config', ga, { anonymize_ip: true });
+      var oppsett = { anonymize_ip: true };
+      if (fraVipps()) oppsett.ignore_referrer = true;
+      window.gtag('config', ga, oppsett);
     }
     if (gtm) {
       window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });

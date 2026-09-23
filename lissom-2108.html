@@ -28324,6 +28324,7 @@ class Component extends DCLogic {
       .then(r => r.json())
       .then(d => {
         const inne = !!d.innlogget;
+        if (d.erAdmin || d.erRegnskap) this.settIntern();
         const ny = {
           innlogget: inne,
           erAdminBruker: !!d.erAdmin,
@@ -29425,8 +29426,42 @@ class Component extends DCLogic {
    *        se maalHvem(). Sendes med paa konverteringene, aldri paa
    *        sidevisninger.
    */
+  /**
+   * Er dette eierens (eller regnskapets) nettleser? Da telles ingenting.
+   *
+   * Merket settes naar /api/meg.php sier admin eller regnskap, og blir
+   * staaende i nettleseren — ogsaa etter utlogging, for det er fortsatt
+   * eieren som ser paa sida. GA4 hadde /admin, /admin/logg-inn og
+   * dokumentvisningen i admin blant landingssidene (23. september 2026).
+   * nett.js leser det samme merket.
+   */
+  erIntern() {
+    try { return localStorage.getItem('lissom-intern') === '1'; } catch (e) { return false; }
+  }
+
+  settIntern() {
+    try { localStorage.setItem('lissom-intern', '1'); } catch (e) {}
+    // Er Analytics alt lastet paa denne sida, stopper vi det her og naa.
+    try {
+      const id = String((this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
+      if (id) window['ga-disable-' + id] = true;
+    } catch (e) {}
+  }
+
+  /**
+   * Kom vi hit rett fra Vipps — tilbake fra en betaling eller en
+   * innlogging? Da skal ikke Vipps faa aeren for besoeket: GA4 hadde 68
+   * oekter fra «api.vipps.no / referral» paa 30 dager, og annonsen eller
+   * soeket som brakte kunden, mistet kjoepet. Se «ignore_referrer» i
+   * settOppAnalyse().
+   */
+  fraVipps() {
+    return /^https?:\/\/([^\/]*\.)?(vipps\.no|vippsmobilepay\.com|mobilepay\.(dk|fi))(\/|$)/i.test(document.referrer || '');
+  }
+
   maal(navn, felter, hvem) {
     try {
+      if (this.erIntern()) return false;
       let gikk = false;
       if (hvem) this.maalHvem(hvem);
       if (typeof window.gtag === 'function') {
@@ -29759,6 +29794,7 @@ class Component extends DCLogic {
     const harMeta = /^\d{15,16}$/.test(meta) && !this._metaSatt;
     if (!harGa && !harGtm && !harMeta) return;
     if ((this.state.side || '').indexOf('admin') === 0) return;
+    if (this.erIntern()) return;
     // Ingen maaling for noen har sagt ja. Gtag legger igjen
     // informasjonskapsler med det samme det lastes, saa det holder ikke aa
     // laste det og la vaere aa bruke det. Samme regel for Tag Manager og
@@ -29816,7 +29852,10 @@ class Component extends DCLogic {
       document.head.appendChild(s);
       window.gtag('js', new Date());
       // "anonymize_ip": vi trenger ikke vite hvem som var her, bare hvor mange.
-      window.gtag('config', id, { anonymize_ip: true });
+      // «ignore_referrer» naar vi kommer fra Vipps — se fraVipps().
+      const oppsett = { anonymize_ip: true };
+      if (this.fraVipps()) oppsett.ignore_referrer = true;
+      window.gtag('config', id, oppsett);
     }
 
     // Tag Manager, ved siden av Analytics — ikke i stedet for. Analytics

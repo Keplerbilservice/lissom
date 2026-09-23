@@ -76,22 +76,23 @@ switch ($handling) {
                 $n = trim($m[1], " \t\n\r\"'");
             }
 
-            // Tom kobler fra. Ellers maa den se ut som en Google-noekkel. Vi
-            // sier fra om noe aapenbart feil framfor aa lagre en noekkel som
-            // stille lar vaere aa virke.
-            if ($n !== '' && preg_match('/^[A-Za-z0-9_\-]{20,120}$/', $n) !== 1) {
-                Svar::feil('Dette ser ikke ut som en Gemini-nøkkel. Den er 39 tegn, '
-                         . 'begynner på «AIza», og har verken punktum eller mellomrom. '
-                         . 'Du finner den på aistudio.google.com under «Get API key» — '
-                         . 'lim inn bare selve nøkkelen.');
-            }
-            // Riktig form, men ikke Googles prefiks: da er det trolig en
-            // noekkel til noe annet, og det er bedre aa si det med én gang
-            // enn aa la foerste bildekall svare «API key not valid».
-            if ($n !== '' && !str_starts_with($n, 'AIza')) {
-                Svar::feil('Nøkkelen har riktig form, men begynner ikke på «AIza» slik '
-                         . 'Google sine gjør. Sjekk at den er hentet fra '
-                         . 'aistudio.google.com og ikke fra en annen tjeneste.');
+            // Tom kobler fra. Ellers: bare en grov formsjekk.
+            //
+            // Her sto det at noekkelen maatte vaere 39 tegn, begynne paa
+            // «AIza» og vaere uten punktum. Det var feil. Eierens noekkel fra
+            // AI Studio 23. september 2026 begynner paa «AQ.» og har punktum
+            // i seg — og ble avvist. Han hadde den riktige noekkelen hele
+            // tiden; det var denne regelen som sa nei.
+            //
+            // Laerdommen: Google bytter format, og en regel som beskriver
+            // dagens format blir en sperre i morgen. Vi sjekker derfor bare
+            // det som ikke kan endre seg — at det er én sammenhengende
+            // streng av fornuftig lengde — og lar Google selv avvise en
+            // noekkel som ikke virker. Feilmeldingen derfra er tydelig nok.
+            if ($n !== '' && preg_match('/^\S{20,200}$/', $n) !== 1) {
+                Svar::feil('Nøkkelen ser ikke riktig ut. Den er én sammenhengende '
+                         . 'streng uten mellomrom, og står på aistudio.google.com '
+                         . 'under «Get API key». Lim inn bare selve nøkkelen.');
             }
             $lagre('gemini_api_key', $n);
         }

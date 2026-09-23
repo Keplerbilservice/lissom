@@ -5,6 +5,7 @@
 //   */5 * * * *   php ~/lissom-app/bin/cron.php betalinger >/dev/null
 //   0 * * * *     php ~/lissom-app/bin/cron.php anmeldelser >/dev/null
 //   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold >/dev/null
+//   30 2 * * *    php ~/lissom-app/bin/cron.php sikkerhetskopi >/dev/null
 //   0 * * * *     php ~/lissom-app/bin/cron.php medlemstrekk >/dev/null
 //   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser >/dev/null
 //   0 8 * * *     php ~/lissom-app/bin/cron.php fortsett >/dev/null
@@ -468,6 +469,27 @@ switch ($jobb) {
     // Timeslinja «anmeldelser» kjoerer den ogsaa.
     case 'fortsett':
         medlemsinvitasjon($si);
+        break;
+
+    // -----------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Nattlig kopi av databasen.
+    //
+    // Koden ligger i git. Basen laa uten kopi i det hele tatt — medlemmer,
+    // bookinger, betalinger, og «innstillinger» med Meta-tokenet og
+    // maale-noeklene. Eieren, 23. september 2026: «legg inn auto back upp
+    // hver natt», etter at phpMyAdmin hos verten svarte «Access denied» og
+    // en kopi tatt for haand ikke var mulig.
+    //
+    // 02:30 UTC er 04:30 norsk sommertid: etter at «vedlikehold» har ryddet
+    // 01:00, og lenge for noen booker noe.
+    case 'sikkerhetskopi':
+        $k = Sikkerhetskopi::kjor();
+        $mb = round($k['bytes'] / 1048576, 1);
+        logg('Sikkerhetskopi tatt', ['fil' => basename($k['fil']), 'mb' => $mb,
+                                    'metode' => $k['metode'], 'slettet' => $k['slettet']]);
+        $si('Sikkerhetskopi: ' . basename($k['fil']) . ' (' . $mb . ' MB, '
+            . $k['metode'] . '), ' . $k['slettet'] . ' gamle slettet.');
         break;
 
     // -----------------------------------------------------------------------

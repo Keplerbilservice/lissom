@@ -199,10 +199,11 @@ jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 | Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser >/dev/null` |
 | Medlemsinvitasjon etter kurs | *(ingen — sett Minute `0`, Hour `8`)* | `0 8 * * *` | `php ~/lissom-app/bin/cron.php fortsett >/dev/null` |
 | Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold >/dev/null` |
+| **Sikkerhetskopi av databasen** | *(ingen — sett Minute `30`, Hour `2`)* | `30 2 * * *` | `php ~/lissom-app/bin/cron.php sikkerhetskopi >/dev/null` |
 
-For de tre siste: velg **Once Per Day** i menyen først, og rett så Hour fra `0`
-til `7`, `8` og `1`. Resten av feltene skal stå med stjerne — en stjerne betyr
-«hver».
+For de fire siste: velg **Once Per Day** i menyen først, og rett så Hour fra
+`0` til `7`, `8`, `1` og `2`. Sikkerhetskopien skal i tillegg ha Minute `30`.
+Resten av feltene skal stå med stjerne — en stjerne betyr «hver».
 
 Medlemstrekket sto på `0 4 * * *` fram til 13. september 2026. Eieren ba da om
 det «så ofte jeg kan». Forfallet er en dato og ikke et klokkeslett, så oftere
@@ -210,6 +211,43 @@ enn hver time gir ingenting: et medlem forfaller ved midnatt, og hver time
 henter pengene innen 01:00. Hvert femte minutt ville gitt 55 minutter til, én
 gang per medlem per måned — mot 288 runder i døgnet der hver runde spør Vipps
 om hver avtale som venter på godkjenning. Han valgte hver time.
+
+### Sikkerhetskopien av databasen
+
+Koden ligger i git og kan hentes tilbake fra en tagg. Databasen lå uten kopi
+i det hele tatt fram til 23. september 2026 — medlemmer, bookinger,
+betalinger, innhold, og `innstillinger` med Meta-tokenet og målenøklene.
+Ingenting av det finnes noe annet sted. Samme kveld svarte phpMyAdmin hos
+verten `Access denied for user 'cpses_…'`, så en kopi tatt for hånd var ikke
+engang mulig. Eieren: «legg inn auto back upp hver natt».
+
+Jobben kjører 02:30 UTC (04:30 norsk sommertid) — etter at `vedlikehold` har
+ryddet 01:00, og lenge før noen booker noe.
+
+| | |
+|---|---|
+| Hvor | `~/lissom-sikkerhetskopier/lissom-ÅÅÅÅ-MM-DD.sql.gz` |
+| Hvor lenge | 14 døgn. Jobben sletter eldre selv, så disken ikke fylles |
+| Rettighet | `0600`, og mappa `0700` — over `public_html`, så nettet ikke når den |
+
+Mappa ligger med vilje **utenfor** `public_html`. Fila inneholder
+personopplysningene til medlemmene og alle hemmelighetene i `innstillinger`;
+ligger den et sted nettet når, er sikkerhetskopien selv lekkasjen.
+
+Jobben tar `mysqldump` når den finnes, og skriver ellers dumpen med PHP selv.
+Begge veier gir samme fil. Passordet sendes i miljøvariabelen `MYSQL_PWD` og
+aldri på kommandolinja — der ville det stått synlig for alle som kjører `ps`
+på samme tjener.
+
+**Slik legges en kopi tilbake** (SSH, eller Terminal i cPanel):
+
+```
+gunzip -c ~/lissom-sikkerhetskopier/lissom-2026-09-23.sql.gz \
+  | mysql -u rbvapxvz_admin -p rbvapxvz_lissom26
+```
+
+Kjør den for hånd første gang for å se at den virker:
+`php ~/lissom-app/bin/cron.php sikkerhetskopi`
 
 ### Hvorfor `>/dev/null` står bakerst
 

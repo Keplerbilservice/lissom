@@ -98,6 +98,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Serier' => 'serier.php',
         'Skolerute' => 'skolerute.php',
         'Sesjon' => 'session.php',
+        'Sikkerhetskopi' => 'sikkerhetskopi.php',
         'Stempling' => 'stempling.php',
         'Svar' => 'http.php',
         'Tikk' => 'tikk.php',

@@ -87,10 +87,10 @@ final class Nett
         // Butikken, og hver vare sin egen adresse. Tallet er det som
         // gjelder; navnet bak staar der for menneskene, som i appen.
         //
-        // Bare /butikk-ny inntil videre: sida vises fram for eieren for
-        // den erstatter butikken kundene bruker. Da er det ett tegn aa
-        // fjerne her, og ingenting annet.
-        if (preg_match('~^/butikk-ny(/\\d+(-[^/]*)?)?$~', $adresse) === 1) {
+        // /butikk-ny sto her alene mens sida ble vist fram. Eieren saa den
+        // 23. september 2026 og sa ja; da overtok den butikken. Testadressen
+        // staar igjen saa neste endring kan vises fram paa samme maate.
+        if (preg_match('~^/butikk(-ny)?(/\\d+(-[^/]*)?)?$~', $adresse) === 1) {
             return 'butikk';
         }
         return null;

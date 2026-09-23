@@ -17827,6 +17827,28 @@ sjekk('… og langteksten lover ikke lenger salget som noe bare aarsmedlemmer fa
     str_contains($mig205, "'En ekstra fordel med Årsmedlemskap er muligheten til å selge egne arbeider")
     && str_contains($mig205, 'Med et løpende medlemskap får du din egen nettbutikk på lissom.no'));
 
+// ── Vinduet over tidene paa Paint on Pots ────────────────────────────────
+//
+// Eieren, 23. september 2026: «kan vi vise dagene paa kurset slik som i
+// kalender, men ogsaa mulig aa booke tid i dette mellomrommet?»
+//
+// Bestillingen viste starttidene og ingenting annet. Tre knapper sier ikke
+// naar doera lukker — og paa et kurs der man har plassen halvannen time fra
+// tidspunktet man velger, er spennet selve opplysningen.
+//
+// Dette er foerste steg: vinduet staar over tidene. Det frie kvartersvalget
+// kommer for seg.
+$vindu = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('bestillingen viser vinduet doeren staar aapen i',
+    str_contains($vindu, "          bVinduTekst: (() => {")
+    && str_contains($vindu, "            if (!(kat.folgerApningstid || k.folgerApningstid)) return '';")
+    // Uten sluttid staar det ingenting. Da vet vi ikke naar det lukker.
+    && str_contains($vindu, "            const slutt = siste.indexOf('\u2013') > -1 ? siste.split('\u2013')[1] : '';")
+    && str_contains($vindu, "            return (start && slutt) ? 'Åpent ' + start + '\u2013' + slutt : '';"));
+sjekk('… og den staar i skjermen, mellom overskriften og knappene',
+    str_contains($vindu, '<sc-if value="{{ bVinduTekst }}" hint-placeholder-val="{{ \'Åpent 10:00–13:00\' }}">')
+    && str_contains($vindu, '{{ bVinduTekst }}</div>'));
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme

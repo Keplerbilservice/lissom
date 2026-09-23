@@ -3129,7 +3129,10 @@ window.__resources = {
                 </sc-if>
                 </div>
                 <sc-if value="{{ bHarTider }}" hint-placeholder-val="{{ false }}">
-                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">{{ bTiderTittel }}</div>
+                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-2);">{{ bTiderTittel }}</div>
+                  <sc-if value="{{ bVinduTekst }}" hint-placeholder-val="{{ 'Åpent 10:00–13:00' }}">
+                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-4);">{{ bVinduTekst }}</div>
+                  </sc-if>
                   <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-6);">
                     <sc-for list="{{ bookingTider }}" as="t" hint-placeholder-count="3">
                       <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.klokke }}</button>
@@ -48057,6 +48060,34 @@ class Component extends DCLogic {
           // der som en kvittering paa hva man har valgt.
           bHarTider: (dagRad.tider || []).length > 0,
           bTiderTittel: 'Velg tidspunkt ' + (dagRad.dag ? '· ' + dagRad.dag : ''),
+          // Vinduet doeren staar aapen i, paa den dagen som er valgt.
+          //
+          // Eieren, 23. september 2026, om Paint on Pots: «kan vi vise dagene
+          // paa kurset slik som i kalender, men ogsaa mulig aa booke tid i
+          // dette mellomrommet?»
+          //
+          // Skjermen viste starttidene og ingenting annet. Tre knapper sier
+          // ikke naar doera lukker — og for et kurs der man har plassen en
+          // bestemt tid fra tidspunktet man velger, er det spennet som er
+          // opplysningen. Kalenderen har vist det hele tida; bestillingen
+          // gjorde det ikke.
+          //
+          // Regnes av tidene som staar der: forste start, og slutten paa den
+          // siste. «klokke» er «10:00–11:30» paa disse kursene — se
+          // katalog.php, som setter den av start og slutt. Er det ingen
+          // sluttid, staar det ingenting: da vet vi ikke naar det lukker, og
+          // skal ikke gjette.
+          bVinduTekst: (() => {
+            const k = this.state.valgtKurs || {};
+            const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel)) || {};
+            if (!(kat.folgerApningstid || k.folgerApningstid)) return '';
+            const tider = dagRad.tider || [];
+            if (!tider.length) return '';
+            const start = String(tider[0].klokkeStart || '');
+            const siste = String(tider[tider.length - 1].klokke || '');
+            const slutt = siste.indexOf('\u2013') > -1 ? siste.split('\u2013')[1] : '';
+            return (start && slutt) ? 'Åpent ' + start + '\u2013' + slutt : '';
+          })(),
           // Gjelder der plassen varer en bestemt tid fra tidspunktet man
           // velger, som Paint on Pots. Et kurs varer saa lenge kurset
           // varer, og da staar det ingenting her.

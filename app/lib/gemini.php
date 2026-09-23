@@ -277,14 +277,21 @@ final class Gemini
     /**
      * Hva kallet kostet, i ore.
      *
-     * Googles priser for 3.1 Pro, september 2026: 1,25 dollar per million
-     * tokens inn og 10 dollar per million ut. Samme regnestykke som
-     * AI::kostnadOre(), med de samme forbeholdene — tallet er et anslag til
-     * kostnadsoversikten, ikke en faktura.
+     * Googles priser for 3.1 Pro, slaatt opp 23. september 2026: 2 dollar
+     * per million tokens inn og 12 dollar per million ut, opptil 200 000
+     * tokens kontekst. Over det stiger de til 4 og 18 — det skjer ikke her,
+     * der det lengste kallet er en artikkel paa noen tusen tokens.
+     *
+     * Her sto 1,25 og 10 foerst. Det var tall jeg mente aa huske, og de var
+     * for lave — kostnadsoversikten ville vist omtrent to tredjedeler av det
+     * kallet faktisk kostet.
+     *
+     * Samme regnestykke som AI::kostnadOre(), med de samme forbeholdene:
+     * tallet er et anslag til kostnadsoversikten, ikke en faktura.
      */
     private static function tekstKostnadOre(int $inn, int $ut): int
     {
-        $usd = ($inn / 1000000) * 1.25 + ($ut / 1000000) * 10.00;
+        $usd = ($inn / 1000000) * 2.00 + ($ut / 1000000) * 12.00;
         return (int) round($usd * 11.0 * 100);
     }
 

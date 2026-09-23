@@ -66,7 +66,7 @@ final class Deler
      * naar den klipper knappene paa telefon, og en <a> faar en annen
      * linjehoeyde. Maalt 15. september 2026: <a> ble 59 px der knappen er 54.
      *
-     * @param array{href?:string,variant?:string,size?:string,icon?:string,iconAfter?:string,full?:bool,style?:string,attr?:string} $o
+     * @param array{href?:string,lenke?:bool,variant?:string,size?:string,icon?:string,iconAfter?:string,full?:bool,style?:string,attr?:string} $o
      */
     public static function knapp(string $tekst, array $o = []): string
     {
@@ -85,6 +85,13 @@ final class Deler
             . (!empty($o['iconAfter']) ? self::ikon($o['iconAfter'], $s['ikon']) : '');
         $hover = ' data-hover="' . self::e(self::KNAPP_SVEV[$v] ?? '') . '"';
         $attr = isset($o['attr']) ? ' ' . $o['attr'] : '';
+        // En ekte lenke Google kan foelge, i samme form som knappen. Brukt
+        // der lenka er poenget — pillene under artiklene, som peker til
+        // kurssidene (23. september 2026). line-height: 1 holder hoeyden
+        // lik knappen (se kommentaren over: <a> ble ellers 59 px mot 54).
+        if (!empty($o['lenke']) && isset($o['href'])) {
+            return '<a href="' . self::e($o['href']) . '" style="' . $stil . ' line-height: 1;"' . $hover . $attr . '>' . $inni . '</a>';
+        }
         if (isset($o['href'])) {
             $attr .= ' data-href="' . self::e($o['href']) . '"';
         }

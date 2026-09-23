@@ -5,7 +5,7 @@
  *   GET                       status: hva er koblet til
  *   POST handling=oppsett     { token?, igId?, sideId?, versjon? }
  *   POST handling=sjekk       spor Meta hvem tokenet gjelder
- *   POST handling=publiser    { utkastId, kanal }  legg det ut
+ *   POST handling=publiser    { utkastId, kanal, tekst? }  legg det ut
  *
  * ── Alltid et trykk ──────────────────────────────────────────────────
  *
@@ -144,7 +144,30 @@ switch ($handling) {
         // publiserInstagram(), som kjenner forskjellen paa adressen.
         $url = rtrim(Config::nettsted(), '/') . '/' . ltrim($bilde, '/');
 
-        $tekst = trim((string) ($u['tekst'] ?? ''));
+        // Teksten som faktisk gaar ut.
+        //
+        // Fram til 23. september 2026 kunne bare det AI-en hadde skrevet
+        // legges ut: «publiser» tok en utkast-id og hentet teksten fra
+        // basen, og ingen vei fantes til aa rette den foerst — verken her
+        // eller i skjermen. Det gjorde hele utkastkoen halv: den som leste
+        // gjennom og fant en feil kunne forkaste innlegget, men ikke rette
+        // det.
+        //
+        // Feilen som viste det: et utkast om Paint on Pots skrev «kr. 500,-
+        // per person». Prisen er «fra 500,-» — man betaler for den bitene
+        // man velger. Det er et loefte verkstedet ikke holder, og det ville
+        // gaatt rett ut.
+        //
+        // Kommer en tekst med, lagres den paa utkastet FOER den legges ut.
+        // Da staar det i basen det samme som folk faktisk leser; ellers
+        // ville loggen fortalt en annen historie enn Instagram.
+        $tekst = trim((string) ($kropp['tekst'] ?? ''));
+        if ($tekst !== '') {
+            DB::oppdater('ai_utkast', ['tekst' => $tekst], ['id' => $utkastId]);
+            revider('sosialt_rettet', 'ai_utkast', $utkastId, ['tegn' => mb_strlen($tekst)]);
+        } else {
+            $tekst = trim((string) ($u['tekst'] ?? ''));
+        }
         if ($tekst === '') {
             Svar::feil('Innlegget har ingen tekst.');
         }

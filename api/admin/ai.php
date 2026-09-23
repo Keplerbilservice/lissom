@@ -472,6 +472,80 @@ switch ($handling) {
         );
         Svar::ok(['tekst' => trim($r['tekst']), 'kostnad' => Booking::kroner($r['kostnadOre'])]);
 
+    // ── Ett felt om gangen ──────────────────────────────────────────────
+    //
+    // Eieren, 23. september 2026: «naa vil jeg ha tekstgenerator ogsaa,
+    // sjekke alle steder». Det var tretten felt som manglet — «Hva du
+    // laerer», «Med hjem», produktbeskrivelser, medlemskapstekster.
+    //
+    // Ett endepunkt i stedet for tretten: skjermen sier hva feltet heter,
+    // hva det gjelder og hva som alt staar i skjemaet, og faar teksten
+    // tilbake. Nye felt trenger ingen ny kode her.
+    case 'felttekst':
+        $felt = trim(mb_substr((string) ($kropp['felt'] ?? ''), 0, 80));
+        $om   = trim(mb_substr((string) ($kropp['om'] ?? ''), 0, 191));
+        if ($felt === '') {
+            Svar::feil('Vet ikke hvilket felt teksten skal i.');
+        }
+        if ($om === '') {
+            Svar::feil('Skriv navnet først, så vet AI-en hva teksten skal handle om.');
+        }
+
+        // «punkter» betyr ett kulepunkt per linje, «avsnitt» er loepende
+        // tekst. Uten dette kom det prosa i et felt som listes opp som
+        // punkter paa nettsida, og omvendt.
+        $form = ((string) ($kropp['form'] ?? '')) === 'punkter' ? 'punkter' : 'avsnitt';
+        $hvor = trim(mb_substr((string) ($kropp['hvor'] ?? ''), 0, 40));
+
+        // Resten av skjemaet. Uten den skriver AI-en noe som kan motsi det
+        // som staar rett over — en praktisk-tekst om aa ta med forkle mens
+        // beskrivelsen alt sier at forkle finnes i verkstedet.
+        $rundt = [];
+        foreach ((array) ($kropp['kontekst'] ?? []) as $navn => $verdi) {
+            if (!is_string($navn) || !is_scalar($verdi)) {
+                continue;
+            }
+            $v = trim(mb_substr((string) $verdi, 0, 700));
+            if ($v !== '') {
+                $rundt[] = mb_substr($navn, 0, 60) . ': ' . $v;
+            }
+            if (count($rundt) >= 12) {
+                break;
+            }
+        }
+
+        $sporsmal = 'Feltet heter «' . $felt . '»'
+                  . ($hvor !== '' ? ' og staar under ' . $hvor : '') . '. '
+                  . 'Det gjelder «' . $om . '».';
+        if ($rundt !== []) {
+            $sporsmal .= "
+
+Dette staar alt i skjemaet:
+- " . implode("
+- ", $rundt);
+        }
+
+        $r = AI::spor(
+            $rolle(
+                'Skriv innholdet til ett enkelt felt i verkstedets eget system. '
+                . ($form === 'punkter'
+                    ? 'Svar med tre til seks korte punkter, ett per linje. Ingen '
+                    . 'kulepunkt-tegn, ingen nummerering, ingen overskrift — bare '
+                    . 'linjene, for systemet setter opp lista selv.'
+                    : 'Svar med ett kort avsnitt paa to til fire setninger. Ingen '
+                    . 'overskrift, ingen punktliste, ingen innledning om hva du skal '
+                    . 'til aa skrive.')
+                . ' Skriv bare selve teksten — ingen forklaring rundt, ingen '
+                . 'anfoerselstegn. Finn aldri paa priser, datoer, klokkeslett eller '
+                . 'antall som ikke staar i opplysningene; er noe ukjent, la det vaere '
+                . 'usagt framfor aa gjette.'
+            ),
+            $sporsmal,
+            'felttekst',
+            900
+        );
+        Svar::ok(['tekst' => trim($r['tekst']), 'kostnad' => Booking::kroner($r['kostnadOre'])]);
+
     // ── Autopiloten: ukas forslag ───────────────────────────────────────
     case 'autopilot':
         $tomme = DB::alle(

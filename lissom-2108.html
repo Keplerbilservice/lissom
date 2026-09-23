@@ -6506,6 +6506,9 @@ window.__resources = {
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Ingress</label>
             <textarea value="{{ artIngress }}" onChange="{{ settArtIngress }}" rows="2" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhArtIngressSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhArtIngressMerke }}</button>
+                  </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde</label>
             <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
               <sc-for list="{{ artBildeValg }}" as="v" hint-placeholder-count="7">
@@ -6528,6 +6531,9 @@ window.__resources = {
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Innhold</label>
             <p style="margin: 0 0 6px; font-size: var(--text-xs, 12px); color: var(--text-muted);"># overskrift · ## mellomtittel · | celle | celle | for tabellrader · - punkt for lister · «Tekst:» blir en etikett</p>
             <textarea value="{{ artInnhold }}" onChange="{{ settArtInnhold }}" rows="14" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 13px/1.6 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-5);"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhArtInnholdSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhArtInnholdMerke }}</button>
+                  </div>
             <div style="display: flex; gap: var(--space-3); align-items: center; border-top: 2px solid var(--lissom-brown); padding-top: var(--space-4);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ artLagre }}" hint-size="auto,44px">Lagre artikkel</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ artAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
@@ -9181,6 +9187,9 @@ window.__resources = {
               <div style="margin-bottom: var(--space-5);">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
                 <textarea value="{{ klRBeskrivelse }}" onChange="{{ settKlRBeskrivelse }}" rows="3" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKlRBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKlRBeskrivelseMerke }}</button>
+                  </div>
               </div>
             </sc-if>
             <sc-if value="{{ klRVisBunn }}" hint-placeholder-val="{{ true }}">
@@ -12014,11 +12023,17 @@ window.__resources = {
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Beskrivelse</label>
                   <textarea value="{{ plBeskrivelse }}" onChange="{{ settPlBeskrivelse }}" rows="3" placeholder="En setning eller to om hva dette er." style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlBeskrivelseMerke }}</button>
+                  </div>
                 </div>
 
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Punkter — ett per linje</label>
                   <textarea value="{{ plPunkter }}" onChange="{{ settPlPunkter }}" rows="5" placeholder="30 verkstedtimer i måneden&#10;Egen hylle i verkstedet&#10;Tilgang 24/7 med dørkode" style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlPunkterSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlPunkterMerke }}</button>
+                  </div>
                   <div style="{{ plHjelp }}">Står både på kortet og på siden man kommer til når man klikker seg inn.</div>
                 </div>
 
@@ -12030,12 +12045,18 @@ window.__resources = {
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Utfyllende informasjon</label>
                   <textarea value="{{ plLangtekst }}" onChange="{{ settPlLangtekst }}" rows="12" placeholder="Basis 30 – frihet til å skape, når det passer deg&#10;&#10;Basis 30 er vårt mest populære medlemskap …&#10;&#10;Med dette medlemskapet får du 30 verkstedtimer hver måned …" style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlLangtekstSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlLangtekstMerke }}</button>
+                  </div>
                   <div style="{{ plHjelp }}">Står på siden man kommer til når man klikker seg inn på medlemskapet. La en tom linje stå mellom avsnittene — de settes som egne avsnitt.</div>
                 </div>
 
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Viktig å vite — ett per linje</label>
                   <textarea value="{{ plViktig }}" onChange="{{ settPlViktig }}" rows="4" placeholder="Krever kurs hos oss eller tidligere erfaring&#10;2 måneders bindingstid ved oppstart&#10;Leire, glassur og brenning kjøpes i tillegg" style="{{ plOmradeStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhPlViktigSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhPlViktigMerke }}</button>
+                  </div>
                   <div style="{{ plHjelp }}">Egen bolk nederst på medlemskapssiden. Står tom om du ikke skriver noe.</div>
                 </div>
 
@@ -12497,6 +12518,9 @@ window.__resources = {
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hva de kan når de går hjem. Kan stå tomt.</p>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt og i faktaboksen øverst. Ikke på e-post.</p>
                   <textarea id="k-laerer" value="{{ kLaerer }}" onChange="{{ settKLaerer }}" rows="3" placeholder="F.eks. Å sentrere leira, åpne den og trekke opp en vegg. Å trimme foten dagen etter." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKLaererSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKLaererMerke }}</button>
+                  </div>
                 </div>
 
 
@@ -12557,6 +12581,9 @@ window.__resources = {
                     <div>
                       <label for="k-medhjem" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette får du med hjem</label>
                       <textarea id="k-medhjem" value="{{ kMedHjem }}" onChange="{{ settKMedHjem }}" rows="3" placeholder="{{ kMedHjemMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKMedHjemSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKMedHjemMerke }}</button>
+                  </div>
                       <button class="lx-radpille" type="button" onClick="{{ kMedHjemAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
                     </div>
 
@@ -12565,6 +12592,9 @@ window.__resources = {
                       <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hvor lenge det tar før arbeidene kan hentes. Spørsmålet kommer uansett — står det her, kommer det ikke på telefonen.</p>
                       <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt.</p>
                       <textarea id="k-ferdigtid" value="{{ kFerdigTid }}" onChange="{{ settKFerdigTid }}" rows="2" placeholder="{{ kFerdigTidMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKFerdigTidSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKFerdigTidMerke }}</button>
+                  </div>
                       <!-- Standardteksten for kategorien, redigerbar rett her. -->
                       <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                         <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdFerdigHjelp }}</span>
@@ -12597,6 +12627,9 @@ window.__resources = {
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Ett punkt per linje. Står feltet tomt, brukes standardteksten under. «Maks N deltakere» legges på av seg selv og følger antall plasser.</p>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som avhakede punkter under prisen. Ikke på e-post.</p>
                   <textarea id="k-punkter" value="{{ kPunkter }}" onChange="{{ settKPunkter }}" rows="4" placeholder="{{ kStdPunkterPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKPunkterSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKPunkterMerke }}</button>
+                  </div>
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kPunkterHjelp }}</p>
                   <!-- Standardteksten for kategorien, redigerbar rett her. -->
                   <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
@@ -12615,6 +12648,9 @@ window.__resources = {
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Oppmøte, klær, parkering, hva de skal ta med.</p>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, før de betaler. Ikke på e-post.</p>
                   <textarea id="k-praktisk" value="{{ kPraktisk }}" onChange="{{ settKPraktisk }}" rows="3" placeholder="{{ kStdPraktiskPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhKPraktiskSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhKPraktiskMerke }}</button>
+                  </div>
                   <!-- Standardteksten for kategorien, redigerbar rett her. -->
                   <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdPraktiskHjelp }}</span>
@@ -23150,6 +23186,9 @@ window.__resources = {
           <input value="{{ npAntall }}" onChange="{{ settNpAntall }}" placeholder="Antall på lager" style="{{ skFeltStil }}">
         </div>
         <textarea value="{{ npBeskrivelse }}" onChange="{{ settNpBeskrivelse }}" placeholder="Kort beskrivelse, f.eks. «Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.»" rows="{{ 3 }}" style="{{ npTekstStil }}"></textarea>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                    <button type="button" onClick="{{ fhNpBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhNpBeskrivelseMerke }}</button>
+                  </div>
 
         <!-- Kategorien styrer hvilket filter varen havner under i butikken.
              Uten den ble en ny vare liggende utenfor alle filtrene. -->
@@ -34265,6 +34304,86 @@ class Component extends DCLogic {
    * der eieren leser og retter for hun lagrer. Utkastkoen under
    * Markedsforing er for det som gaar ut av seg selv.
    */
+  /**
+   * Foreslaar teksten til ett enkelt felt.
+   *
+   * Eieren, 23. september 2026: «naa vil jeg ha tekstgenerator ogsaa, sjekke
+   * alle steder». Tretten felt manglet den. Dette er den ene metoden de alle
+   * bruker — skjermen sier hva feltet heter, hvilken state-noekkel svaret
+   * skal i, og hva som staar rundt.
+   *
+   * Forslaget havner i feltet og ingen andre steder. Teksten baerer
+   * verkstedets navn, og da skal et menneske ha lest den foer den staar ute.
+   *
+   * @param {object} o  { felt, statefelt, om, hvor, form, kontekst }
+   */
+  foreslaaFelt(o) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const om = String(o.om || '').trim();
+    if (!om) {
+      this.setState({
+        kvittering: 'Skriv navnet først',
+        kvitteringDetalj: 'AI-en trenger å vite hva teksten skal handle om.',
+      });
+      return;
+    }
+    // Én om gangen. To forslag i samme felt ville overskrevet hverandre, og
+    // det siste svaret ville vunnet uansett hvilket som ble bedt om først.
+    if (this.state.felttekstFor) return;
+    this.setState({ felttekstFor: o.statefelt });
+
+    fetch('/api/admin/ai.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'felttekst',
+        felt: o.felt || '',
+        om: om,
+        hvor: o.hvor || '',
+        form: o.form === 'punkter' ? 'punkter' : 'avsnitt',
+        kontekst: o.kontekst || {},
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (ok && d.tekst) {
+          this.setState({
+            felttekstFor: null,
+            [o.statefelt]: d.tekst,
+            kvittering: 'Forslaget står i feltet',
+            kvitteringDetalj: 'Les det gjennom og rett det du vil før du lagrer. Kostet '
+                            + (d.kostnad || 'lite') + '.',
+          });
+          return;
+        }
+        this.setState({
+          felttekstFor: null,
+          kvittering: 'Fikk ikke noe forslag',
+          kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.',
+        });
+      })
+      .catch(() => this.setState({
+        felttekstFor: null,
+        kvittering: 'Fikk ikke noe forslag',
+        kvitteringDetalj: 'Fikk ikke kontakt med serveren.',
+      }));
+  }
+
+  /**
+   * Verdiene «Foreslå tekst» trenger for ett felt.
+   *
+   * Samlet her saa hvert av de tretten stedene blir tre linjer i
+   * renderVals i stedet for tolv.
+   */
+  felthjelp(o) {
+    const jobber = this.state.felttekstFor === o.statefelt;
+    return {
+      merke: jobber ? 'Skriver …' : 'Foreslå tekst',
+      jobber: jobber,
+      skriv: () => this.foreslaaFelt(o),
+    };
+  }
+
   foreslaaKursbeskrivelse() {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     const tittel = (this.state.kNavn || '').trim();
@@ -54249,6 +54368,58 @@ class Component extends DCLogic {
       // AI-forslag paa beskrivelsen. Forslaget havner i feltet, ikke ute paa
       // nettsida — teksten baerer verkstedets navn, og da skal et menneske ha
       // lest den for den staar der.
+      // ── «Foreslå tekst» på de tretten feltene ────────────────────────
+      //
+      // Alle bruker den samme metoden. «om» er navnet teksten skal handle
+      // om — uten det vet ikke AI-en hva den skriver om, og foreslaaFelt()
+      // sier fra framfor aa gjette. Konteksten er det som alt staar i
+      // skjemaet, saa forslaget ikke motsier linja over.
+      //
+      // Noeklene staar skrevet ut én for én og ikke bygget i en loekke:
+      // bin/knappesjekk.mjs leser malen og renderVals hver for seg, og en
+      // noekkel som settes med [pre + 'Skriv'] finner den ikke. Da hadde
+      // tretten knapper uten funksjon sett ut som tretten som virket.
+      ...(() => {
+        const kurs = () => ({ Kurs: this.state.kNavn || '', Kategori: this.state.kKategori || '',
+                              Beskrivelse: this.state.kBeskrivelse || '' });
+        const plan = () => ({ Medlemskap: this.state.plNavn || '', Beskrivelse: this.state.plBeskrivelse || '' });
+        const vare = () => ({ Vare: this.state.npNavn || '', Pris: this.state.npPris || '' });
+        const art  = () => ({ Overskrift: this.state.artTittel || '', Ingress: this.state.artIngress || '' });
+        const evt  = () => ({ Navn: this.state.klRNavn || '' });
+        const h = (statefelt, navn, omfelt, hvor, form, kontekst) => this.felthjelp({
+          statefelt, felt: navn, hvor, form,
+          om: (this.state[omfelt] || '').trim(),
+          kontekst: kontekst(),
+        });
+        return {
+          fhKLaererMerke: h('kLaerer', 'Dette lærer deltakerne', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKLaererSkriv: h('kLaerer', 'Dette lærer deltakerne', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhKMedHjemMerke: h('kMedHjem', 'Dette får du med hjem', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKMedHjemSkriv: h('kMedHjem', 'Dette får du med hjem', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhKPunkterMerke: h('kPunkter', 'Alt som er inkludert', 'kNavn', 'kurset', 'punkter', kurs).merke,
+          fhKPunkterSkriv: h('kPunkter', 'Alt som er inkludert', 'kNavn', 'kurset', 'punkter', kurs).skriv,
+          fhKPraktiskMerke: h('kPraktisk', 'Praktisk informasjon', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKPraktiskSkriv: h('kPraktisk', 'Praktisk informasjon', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhKFerdigTidMerke: h('kFerdigTid', 'Når det er ferdig', 'kNavn', 'kurset', 'avsnitt', kurs).merke,
+          fhKFerdigTidSkriv: h('kFerdigTid', 'Når det er ferdig', 'kNavn', 'kurset', 'avsnitt', kurs).skriv,
+          fhPlBeskrivelseMerke: h('plBeskrivelse', 'Beskrivelse', 'plNavn', 'medlemskapet', 'avsnitt', plan).merke,
+          fhPlBeskrivelseSkriv: h('plBeskrivelse', 'Beskrivelse', 'plNavn', 'medlemskapet', 'avsnitt', plan).skriv,
+          fhPlPunkterMerke: h('plPunkter', 'Punkter', 'plNavn', 'medlemskapet', 'punkter', plan).merke,
+          fhPlPunkterSkriv: h('plPunkter', 'Punkter', 'plNavn', 'medlemskapet', 'punkter', plan).skriv,
+          fhPlLangtekstMerke: h('plLangtekst', 'Utfyllende informasjon', 'plNavn', 'medlemskapet', 'avsnitt', plan).merke,
+          fhPlLangtekstSkriv: h('plLangtekst', 'Utfyllende informasjon', 'plNavn', 'medlemskapet', 'avsnitt', plan).skriv,
+          fhPlViktigMerke: h('plViktig', 'Viktig å vite', 'plNavn', 'medlemskapet', 'punkter', plan).merke,
+          fhPlViktigSkriv: h('plViktig', 'Viktig å vite', 'plNavn', 'medlemskapet', 'punkter', plan).skriv,
+          fhNpBeskrivelseMerke: h('npBeskrivelse', 'Produktbeskrivelse', 'npNavn', 'varen', 'avsnitt', vare).merke,
+          fhNpBeskrivelseSkriv: h('npBeskrivelse', 'Produktbeskrivelse', 'npNavn', 'varen', 'avsnitt', vare).skriv,
+          fhArtIngressMerke: h('artIngress', 'Ingress', 'artTittel', 'artikkelen', 'avsnitt', art).merke,
+          fhArtIngressSkriv: h('artIngress', 'Ingress', 'artTittel', 'artikkelen', 'avsnitt', art).skriv,
+          fhArtInnholdMerke: h('artInnhold', 'Brødtekst', 'artTittel', 'artikkelen', 'avsnitt', art).merke,
+          fhArtInnholdSkriv: h('artInnhold', 'Brødtekst', 'artTittel', 'artikkelen', 'avsnitt', art).skriv,
+          fhKlRBeskrivelseMerke: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).merke,
+          fhKlRBeskrivelseSkriv: h('klRBeskrivelse', 'Beskrivelse', 'klRNavn', 'arrangementet', 'avsnitt', evt).skriv,
+        };
+      })(),
       kForeslaaMerke: this.state.kForeslaar ? 'Skriver …' : 'Foreslå tekst',
       kForeslaaHjelp: this.state.kForeslaar
         ? 'Henter et forslag. Det tar noen sekunder.'

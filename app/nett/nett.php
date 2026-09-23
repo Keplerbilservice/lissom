@@ -148,7 +148,22 @@ final class Nett
         // basen (en plass som ble tatt, en tekst som ble endret) er ute
         // innen ett minutt.
         self::$adresse = $adresse;
-        $buffer = self::bufferFil($adresse . '?' . http_build_query(self::sporring()));
+        // Verkstedet leser aldri fra bufferen, og skriver aldri til den.
+
+        // Sidene kan vise noe bare admin skal se — en artikkel som ligger
+        // som kladd, aapnet med «Se hvordan den blir». Bufferen kjenner
+        // bare adressen, ikke hvem som spurte, saa den ferdige sida ville
+        // gaatt ut til alle som kom innom det neste minuttet. En kladd som
+        // lekker ut fordi eieren forhaandsviste den er ikke en treghet, det
+        // er en publisering ingen ba om.
+
+        // Det koster ingenting: verkstedet er én bruker, og de 30-40
+        // sporringene bufferen sparer gjelder de mange som ikke er logget
+        // inn.
+        $forAdmin = Sesjon::erAdmin();
+        $buffer = $forAdmin
+            ? null
+            : self::bufferFil($adresse . '?' . http_build_query(self::sporring()));
         if ($buffer !== null && is_file($buffer) && filemtime($buffer) > time() - self::BUFFER_SEK) {
             $lest = @file_get_contents($buffer);
             if (is_string($lest) && $lest !== '') {

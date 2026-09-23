@@ -31017,7 +31017,21 @@ class Component extends DCLogic {
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         this._markedHentes = false;
-        if (d && d.ai) this.setState({ marked: d });
+        if (d && d.ai) {
+          const i = d.innstillinger || {};
+          this.setState({
+            marked: d,
+            // Gemini-statusen settes her og ikke bare naar billedvelgeren
+            // aapnes. Aapnet du velgeren for svaret var inne, ble «Lag
+            // bilde» staaende skjult resten av besoket — ruta tegnes én
+            // gang, og et «sc-if» som ble usant ved forste tegning kom ikke
+            // tilbake naar verdien snudde. Maalt fra Sosiale medier 23.
+            // september 2026. Markedsfoering henter dette likevel, saa
+            // statusen er klar for noen rekker aa trykke.
+            geminiKlar: !!i.geminiKlar,
+            geminiPris: this.state.geminiPris || '',
+          });
+        }
       })
       .catch(() => { this._markedHentes = false; });
   }

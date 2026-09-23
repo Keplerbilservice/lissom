@@ -54,6 +54,40 @@ adressen, bortsett fra SEO som er sin egen skjerm (den ble for stor).
 | **Analyse** | Det nettstedet vet selv om salg og bookinger, pluss Google Analytics om det er koblet til. |
 | **Assistent** | Fritekstspørsmål om egen drift. Svarer på tall den faktisk har. |
 | **Innstillinger** | API-nøkkelstatus, tak for AI-bruk, Google Analytics-id, Google-kobling. |
+| **Innboks** | Kommentarer og meldinger fra Instagram og Facebook, samlet. Svar sendes herfra. |
+
+### 2.1 Innboksen
+
+Lagt til 23. september 2026, etter at publiseringen til Instagram og Facebook
+virket for første gang. Eieren: «kan du faktisk svare på kommentarer og
+spørsmål på insta og face?» — tokenet hadde lov, men koden kunne bare
+publisere.
+
+| Handling i `api/admin/meta.php` | Hva den gjør |
+| --- | --- |
+| `kommentarer` | Kommentarene på de siste innleggene, begge kanaler, nyeste først |
+| `svarKommentar` | Instagram vil ha svaret under `replies`, Facebook under kommentarens egne `comments` |
+| `skjulKommentar` | Skjuler. Ikke sletting — den som skrev ser sin egen kommentar stå |
+| `samtaler` | Innboksen. **Begge** kanaler går gjennom sida (`platform=instagram` på sidas `conversations`), ikke gjennom Instagram-kontoen |
+| `meldinger` | Én samtale, eldste først |
+| `svarMelding` | Sender et svar |
+
+**Døgnet.** Meta slipper bare gjennom et svar innen 24 timer etter kundens
+siste melding. Etter det må meldinga merkes med en grunn Meta godtar, og «vi
+rakk ikke å svare» er ikke en av dem. Feilen derfra (kode 10, underkode
+2018278) sa «tillatelse mangler» og sendte folk til feil sted; den oversettes
+nå til noe som sier hva som faktisk er i veien.
+
+**Tillatelser.** Kommentarer krever `instagram_manage_comments` og
+`pages_manage_engagement`. Meldinger krever i tillegg `pages_messaging`, som
+hører til et eget meldings-bruksområde på appen — det er ikke lagt til per 23.
+september 2026, så meldingsdelen viser en merknad i stedet for samtaler.
+
+**Ingen autopilot.** Hvert svar er et trykk. Det finnes ingen vei hit fra en
+cron-jobb eller fra Autopilot — samme regel som publisering. Et svar fra
+verkstedet står offentlig, og skal være lest av et menneske.
+
+---
 
 «Produktmarkedsføring» gjaldt opprinnelig én vare med datoer og ledige
 plasser. Den er generalisert her: den gjelder én ting i katalogen, med de

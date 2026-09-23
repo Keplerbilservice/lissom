@@ -497,6 +497,21 @@ final class Meta
             }
         }
 
+        // Mangler «pages_messaging», svarer Graph med «tillatelse mangler»
+        // eller «objektet finnes ikke» — to setninger som sender folk til
+        // hver sin blindvei. Tillatelsen hoerer til et eget
+        // meldings-bruksomraade paa appen, og det er der jobben ligger.
+        if ($ut === [] && $feil !== []) {
+            $sier = implode(' ', $feil);
+            if (stripos($sier, 'permission') !== false
+                || stripos($sier, 'tillatelse') !== false
+                || stripos($sier, 'does not exist') !== false) {
+                $feil = ['Meldinger krever tillatelsen «pages_messaging». Den hører til et '
+                       . 'eget meldings-bruksområde på Meta-appen, og er ikke lagt til ennå. '
+                       . 'Kommentarer virker uten den.'];
+            }
+        }
+
         usort($ut, static fn(array $a, array $b): int => strcmp($b['tid'], $a['tid']));
         return ['samtaler' => $ut, 'feil' => $feil];
     }

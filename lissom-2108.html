@@ -61767,7 +61767,14 @@ class Component extends DCLogic {
             const komm = this.state.ibKomm || [];
             const samt = this.state.ibSamt || [];
             const valgt = this.state.ibValgt || null;
-            const feil = (this.state.ibFeil || []).join(' · ');
+            // Feilene holdes paa sin egen fane. En melding om at meldinger
+            // mangler en tillatelse hoerer ikke hjemme over kommentarene —
+            // der ser den ut som om kommentarene er noe i veien med.
+            const mine = (this.state.ibFeil || []).filter(f => {
+              const erMeld = /melding|pages_messaging|samtale/i.test(f);
+              return erKomm ? !erMeld : erMeld;
+            });
+            const feil = mine.join(' · ');
 
             return {
               mkErInnboks: fane === 'innboks',

@@ -47,6 +47,20 @@ if ($slug !== '') {
             break;
         }
     }
+    // Kladden er ikke i lista, men verkstedet skal kunne se hvordan den
+    // blir for den legges ut.
+    //
+    // Eieren, 23. september 2026: «jeg trykket knappen, se hvordan den blir,
+    // men der lå ikke artikkelen». Knappen aapner artikkelens adresse, og
+    // her sto bare de publiserte — saa en kladd ga 404, ogsaa for den som
+    // var logget inn. Det forsvant stille da nyhetssidene ble tegnet paa
+    // serveren; skjermen de erstattet slapp admin inn.
+    //
+    // Bare den ene artikkelen hentes, ikke hele lista: en kladd skal ikke
+    // dukke opp blant nyhetene, heller ikke for verkstedet.
+    if ($lest === null && Sesjon::erAdmin()) {
+        $lest = DB::en('SELECT * FROM articles WHERE slug = :s', ['s' => $slug]);
+    }
     if ($lest === null) {
         return null;
     }

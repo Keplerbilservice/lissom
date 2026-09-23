@@ -494,7 +494,14 @@ switch ($handling) {
         // «punkter» betyr ett kulepunkt per linje, «avsnitt» er loepende
         // tekst. Uten dette kom det prosa i et felt som listes opp som
         // punkter paa nettsida, og omvendt.
-        $form = ((string) ($kropp['form'] ?? '')) === 'punkter' ? 'punkter' : 'avsnitt';
+        // «punkter» er ett kulepunkt per linje, «lang» er en hel artikkel,
+        // «avsnitt» er resten.
+        //
+        // Broedteksten i en artikkel fikk foerst samme form som «Med hjem»,
+        // og ble 80 ord der de eldre artiklene er 650. Eieren, 23. september
+        // 2026: «den skrev veldig kort tekst!»
+        $form = (string) ($kropp['form'] ?? '');
+        $form = in_array($form, ['punkter', 'lang'], true) ? $form : 'avsnitt';
         $hvor = trim(mb_substr((string) ($kropp['hvor'] ?? ''), 0, 40));
 
         // Resten av skjemaet. Uten den skriver AI-en noe som kan motsi det
@@ -528,13 +535,19 @@ Dette staar alt i skjemaet:
         $r = AI::spor(
             $rolle(
                 'Skriv innholdet til ett enkelt felt i verkstedets eget system. '
-                . ($form === 'punkter'
-                    ? 'Svar med tre til seks korte punkter, ett per linje. Ingen '
-                    . 'kulepunkt-tegn, ingen nummerering, ingen overskrift — bare '
-                    . 'linjene, for systemet setter opp lista selv.'
-                    : 'Svar med ett kort avsnitt paa to til fire setninger. Ingen '
-                    . 'overskrift, ingen punktliste, ingen innledning om hva du skal '
-                    . 'til aa skrive.')
+                . (match ($form) {
+                    'punkter' => 'Svar med tre til seks korte punkter, ett per linje. Ingen '
+                        . 'kulepunkt-tegn, ingen nummerering, ingen overskrift — bare '
+                        . 'linjene, for systemet setter opp lista selv.',
+                    'lang' => 'Skriv hele artikkelen: 500 til 700 ord, fem til aatte avsnitt. '
+                        . 'Bruk «# » foran en mellomtittel og «- » foran et punkt i en liste '
+                        . '— det er slik nettsida setter opp teksten. Begynn rett paa saken; '
+                        . 'overskriften og ingressen staar alt over. Slutt med noe leseren '
+                        . 'kan gjore.',
+                    default => 'Svar med ett kort avsnitt paa to til fire setninger. Ingen '
+                        . 'overskrift, ingen punktliste, ingen innledning om hva du skal '
+                        . 'til aa skrive.',
+                })
                 . ' Skriv bare selve teksten — ingen forklaring rundt, ingen '
                 . 'anfoerselstegn. Finn aldri paa priser, datoer, klokkeslett eller '
                 . 'antall som ikke staar i opplysningene; er noe ukjent, la det vaere '
@@ -542,7 +555,9 @@ Dette staar alt i skjemaet:
             ),
             $sporsmal,
             'felttekst',
-            900
+            // En hel artikkel trenger plass. 900 tokens holder til ett avsnitt,
+            // ikke til 700 ord.
+            $form === 'lang' ? 4000 : 900
         );
         Svar::ok(['tekst' => trim($r['tekst']), 'kostnad' => Booking::kroner($r['kostnadOre'])]);
 

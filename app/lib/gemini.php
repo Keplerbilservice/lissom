@@ -82,10 +82,14 @@ final class Gemini
     public static function status(): array
     {
         $satt = self::tilgjengelig();
+        // Booking::kroner() runder til hele kroner, og et bilde koster under
+        // én. «kr. 0,-» ville sagt at det er gratis. Under hundre ore staar
+        // det derfor i ore.
+        $ore = self::prisOre();
         return [
             'klar'    => $satt,
             'modell'  => self::modell(),
-            'pris'    => Booking::kroner(self::prisOre()),
+            'pris'    => $ore < 100 ? $ore . ' øre' : Booking::kroner($ore),
             'bilder'  => (int) DB::verdi(
                 "SELECT COUNT(*) FROM ai_logg WHERE modell LIKE 'gemini%' AND ok = 1"
             ),

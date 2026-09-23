@@ -66,6 +66,12 @@ final class Gemini
      */
     public const MODELL_TEKST_STANDARD = 'gemini-3.1-pro-preview';
 
+    /** Videomodellen. Veo 3.1 lager 4-8 sekunder med lyd. */
+    public const MODELL_VIDEO_STANDARD = 'veo-3.1-generate-preview';
+
+    /** Roten, uten «models/» — operasjonene ligger et annet sted i API-et. */
+    private const BASE_ROT = 'https://generativelanguage.googleapis.com';
+
     /** Anslag i ore per bilde, naar ingenting er satt. */
     private const PRIS_ORE_STANDARD = 45;
 
@@ -418,6 +424,206 @@ final class Gemini
         ];
     }
 
+    /**
+     * Starter en video, og gir tilbake navnet paa jobben.
+     *
+     * Veo bruker ett til seks minutter. Det er for lenge for et HTTP-kall
+     * fra en nettleser — derfor to steg: dette starter, og videoStatus()
+     * spoer om den er ferdig.
+     *
+     * Eieren, 23. september 2026: «legger du til at jeg ogsaa kan generere
+     * video der det trengs? for eksempel i instagram innlegg?»
+     *
+     * @return array{jobb: string}
+     */
+    public static function startVideo(string $ledetekst, string $format = '9:16', int $sekunder = 8): array
+    {
+        $noekkel = self::noekkel();
+        if ($noekkel === '') {
+            throw new RuntimeException(
+                'Gemini er ikke koblet til ennå. Lim inn nøkkelen under Markedsføring → Oppsett.'
+            );
+        }
+        $ledetekst = trim($ledetekst);
+        if ($ledetekst === '') {
+            throw new RuntimeException('Skriv hva videoen skal vise.');
+        }
+
+        // Samme tak som tekst og bilder. En video koster mange kroner, ikke
+        // ore — da er det taket som skal stoppe den, ikke regningen.
+        $tak = AI::tak();
+        if (AI::bruktDenneMaaneden() >= $tak * 100) {
+            throw new RuntimeException(
+                'Taket på ' . Booking::kroner($tak * 100) . ' for denne måneden er nådd. '
+                . 'Du kan heve det under Markedsføring → Oppsett.'
+            );
+        }
+
+        $sekunder = in_array($sekunder, [4, 6, 8], true) ? $sekunder : 8;
+        $format   = in_array($format, ['16:9', '9:16'], true) ? $format : '9:16';
+
+        $svar = http_kall(
+            self::BASE . rawurlencode(self::videoModell()) . ':predictLongRunning',
+            'POST',
+            json_encode([
+                'instances'  => [['prompt' => self::rammeInnVideo($ledetekst)]],
+                'parameters' => [
+                    'aspectRatio'     => $format,
+                    'resolution'      => self::videoOpplosning(),
+                    'durationSeconds' => $sekunder,
+                ],
+            ], JSON_UNESCAPED_UNICODE),
+            ['Content-Type: application/json', 'x-goog-api-key: ' . $noekkel],
+            60
+        );
+
+        $json = json_decode((string) $svar['kropp'], true);
+        if ((int) $svar['status'] !== 200 || !isset($json['name'])) {
+            $melding = (string) ($json['error']['message'] ?? 'Ukjent feil');
+            AI::loggKall('Video', self::videoModell(), 0, 0, 0, false, $melding);
+            throw new RuntimeException(match (true) {
+                (int) $svar['status'] === 429 => 'For mange videoer på kort tid, eller kvoten er '
+                    . 'brukt opp. Vent litt.',
+                (int) $svar['status'] === 404 => 'Google kjenner ikke videomodellen «'
+                    . self::videoModell() . '».',
+                default => 'Videoen ble ikke startet: ' . $melding,
+            });
+        }
+
+        return ['jobb' => (string) $json['name']];
+    }
+
+    /**
+     * Spor om videoen er ferdig. Er den det, lagres den og navnet kommer med.
+     *
+     * @return array{ferdig: bool, navn: string, url: string, kostnadOre: int}
+     */
+    public static function videoStatus(string $jobb): array
+    {
+        $noekkel = self::noekkel();
+        // Bare navn Google selv har gitt oss. Uten dette kunne feltet pekt
+        // hvor som helst i deres API.
+        if (preg_match('~^(models|operations)/[A-Za-z0-9._/-]{1,200}$~', $jobb) !== 1) {
+            throw new RuntimeException('Ukjent jobb.');
+        }
+
+        $svar = http_kall(
+            self::BASE_ROT . '/v1beta/' . $jobb,
+            'GET',
+            null,
+            ['x-goog-api-key: ' . $noekkel],
+            30
+        );
+        $json = json_decode((string) $svar['kropp'], true);
+        if ((int) $svar['status'] !== 200) {
+            throw new RuntimeException('Fikk ikke status på videoen: '
+                . (string) ($json['error']['message'] ?? 'ukjent feil'));
+        }
+
+        if (empty($json['done'])) {
+            return ['ferdig' => false, 'navn' => '', 'url' => '', 'kostnadOre' => 0];
+        }
+        if (isset($json['error'])) {
+            $m = (string) ($json['error']['message'] ?? 'ukjent feil');
+            AI::loggKall('Video', self::videoModell(), 0, 0, 0, false, $m);
+            throw new RuntimeException('Videoen ble ikke laget: ' . $m);
+        }
+
+        $r = $json['response']['generateVideoResponse'] ?? [];
+        $uri = (string) ($r['generatedSamples'][0]['video']['uri'] ?? '');
+        if ($uri === '') {
+            // Modellen kan ha nektet — grunnen staar i filterlista.
+            $grunn = json_encode($r['raiMediaFilteredReasons'] ?? [], JSON_UNESCAPED_UNICODE);
+            AI::loggKall('Video', self::videoModell(), 0, 0, 0, false, 'Ingen video: ' . $grunn);
+            throw new RuntimeException('Det kom ingen video tilbake.'
+                . ($grunn !== '[]' ? ' Gemini sa: ' . mb_substr((string) $grunn, 0, 200) : ''));
+        }
+
+        // Fila hentes med noekkelen i et hode — adressen alene gir ingenting.
+        $fil = http_kall($uri, 'GET', null, ['x-goog-api-key: ' . $noekkel], 180);
+        $raa = (string) $fil['kropp'];
+        if ((int) $fil['status'] !== 200 || strlen($raa) < 1000) {
+            throw new RuntimeException('Videoen ble laget, men kunne ikke lastes ned. Prøv igjen.');
+        }
+
+        $navn = self::lagreVideo($raa);
+        $ore  = self::videoPrisOre();
+        AI::loggKall('Video', self::videoModell(), 0, 0, $ore, true, null);
+        AI::settSisteKostnad($ore);
+
+        return [
+            'ferdig'     => true,
+            'navn'       => $navn,
+            'url'        => 'api/bilde.php?video=' . $navn,
+            'kostnadOre' => $ore,
+        ];
+    }
+
+    /**
+     * Legger videoen i opplastinger/video.
+     *
+     * Bilder::taImotData() gaar veien om GD og tegner om til JPEG — en mp4
+     * ville blitt avvist som «ikke et bilde». Her skrives bytene rett ned,
+     * etter at vi har sett at det ER en mp4: byte fem til aatte er «ftyp».
+     */
+    private static function lagreVideo(string $raa): string
+    {
+        if (substr($raa, 4, 4) !== 'ftyp') {
+            throw new RuntimeException('Det som kom tilbake var ikke en video.');
+        }
+        $navn = bin2hex(random_bytes(16)) . '.mp4';
+        $sti  = Bilder::mappe('video') . '/' . $navn;
+        if (@file_put_contents($sti, $raa) === false) {
+            throw new RuntimeException('Videoen kunne ikke lagres.');
+        }
+        @chmod($sti, 0644);
+        return $navn;
+    }
+
+    /** Videomodellen. Staar i oppsettet, som de andre. */
+    public static function videoModell(): string
+    {
+        $m = trim((string) Config::hent('gemini_video_modell', ''));
+        return $m !== '' ? $m : self::MODELL_VIDEO_STANDARD;
+    }
+
+    /** 720p eller 1080p. 1080p koster omtrent tre ganger saa mye. */
+    public static function videoOpplosning(): string
+    {
+        $o = trim((string) Config::hent('gemini_video_opplosning', ''));
+        return in_array($o, ['720p', '1080p'], true) ? $o : '720p';
+    }
+
+    /**
+     * Anslag i ore for én video.
+     *
+     * Veo 3.1 prises per sekund, og 1080p med lyd koster rundt tre ganger
+     * 720p. Tallet er et anslag til kostnadsoversikten — det kan rettes fra
+     * oppsettet naar Google endrer prisen.
+     */
+    public static function videoPrisOre(): int
+    {
+        $p = (int) Config::hent('gemini_video_pris_ore', 0);
+        if ($p > 0) {
+            return $p;
+        }
+        return self::videoOpplosning() === '1080p' ? 800 : 260;
+    }
+
+    /**
+     * Ledeteksten til en video, med det som alltid skal gjelde.
+     *
+     * Samme tanke som rammeInn() for bilder: uten den kommer det
+     * reklamefilm. Her staar det ikke noe om referansebildene — Veo tar ett
+     * startbilde, ikke tre forlegg, og det er en annen sak enn stilen.
+     */
+    private static function rammeInnVideo(string $ledetekst): string
+    {
+        return $ledetekst . "\n\n"
+            . 'Filmet i et lite keramikkverksted med lyse furureoler og dagslys '
+            . 'fra siden. Rolig, nordisk og jordnaert. Kameraet beveger seg lite. '
+            . 'Ingen tekst, ingen bokstaver, ingen logo i bildet. Ikke reklamefilm.';
+    }
     /**
      * Ledeteksten, med det som alltid skal gjelde.
      *

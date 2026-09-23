@@ -65,6 +65,10 @@ final class Config
         // staar i denne lista, og et valg som sier «lagret» og likevel ikke
         // gjelder er verre enn et som sier nei. Maalt 23. september 2026.
         'ai_leverandor', 'gemini_tekst_modell',
+        // Video (Veo 3.1). Opploesningen staar her fordi den avgjor prisen:
+        // 1080p koster rundt tre ganger 720p, og det er eieren som skal
+        // bestemme hva en Instagram-snutt er verdt.
+        'gemini_video_modell', 'gemini_video_opplosning', 'gemini_video_pris_ore',
         // Skoleruta i Vestfold, hentet av vedlikeholdsjobben, og eierens
         // egne rettelser oppaa. De staar i basen fordi feriene endrer seg
         // hvert aar — det skal ikke kreve en ny utlegging.

@@ -52,6 +52,9 @@ final class Nett
         '/personvern' => 'personvern',
         '/kursene-vare' => 'kursoversikt',
         '/paint-on-pots' => 'paintonpots',
+        // Testadresse for gavekortsida paa serveren til den er kontrollert
+        // live; /gavekort er fortsatt appen. Ikke i sitemap, noindex.
+        '/gavekort-ny' => 'gavekort',
         '/kontakt' => 'kontakt',
         '/bedrift' => 'bedrift',
         '/vilkar' => 'vilkar',
@@ -117,7 +120,8 @@ final class Nett
     {
         // Kurssida sender folk inn i appen med ?dag=, ?alle=1, ?book=1 eller
         // ?venteliste=1 — da skal appen ha adressen, ikke serversida.
-        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema'] as $n) {
+        // ?kjop=1 er gavekortsida som gaar videre til betalingen (nett.js).
+        foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop'] as $n) {
             if (isset($_GET[$n])) {
                 return false;
             }

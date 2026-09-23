@@ -47,6 +47,12 @@ if (Foresporsel::metode() === 'GET') {
         // Hvem som skriver teksten, og hvilken modell hvis det er Gemini.
         'leverandor'  => AI::leverandor(),
         'tekstModell' => Gemini::tekstModell(),
+        // Video: hva den koster, saa skjermen kan si det for noen trykker.
+        'video' => [
+            'opplosning' => Gemini::videoOpplosning(),
+            'pris'       => Booking::kroner(Gemini::videoPrisOre()),
+            'modell'     => Gemini::videoModell(),
+        ],
         'brukt'   => Booking::kroner(AI::bruktDenneMaaneden()),
     ]);
 }
@@ -201,6 +207,36 @@ switch ($handling) {
         Bilder::slett($navn, Gemini::referanseMappe());
         revider('gemini_referanse_fjernet', 'bilde', null, ['navn' => $navn]);
         Svar::ok(['referanser' => Gemini::referanser(), 'beskjed' => 'Bildet er fjernet.']);
+
+    // ------------------------------------------------------- video
+    //
+    // To steg fordi Veo bruker ett til seks minutter: «videoStart» setter
+    // den i gang, «videoStatus» spor om den er ferdig. Nettleseren ville
+    // gitt opp lenge for modellen var det.
+    case 'videoStart':
+        $ledetekst = trim(mb_substr((string) ($kropp['ledetekst'] ?? ''), 0, 1200));
+        $format    = (string) ($kropp['format'] ?? '9:16');
+        $sekunder  = (int) ($kropp['sekunder'] ?? 8);
+        $ut = Gemini::startVideo($ledetekst, $format, $sekunder);
+        revider('gemini_video_startet', null, null, ['format' => $format, 'sek' => $sekunder]);
+        Svar::ok([
+            'jobb'    => $ut['jobb'],
+            'beskjed' => 'Videoen lages nå. Det tar ett til seks minutter.',
+        ]);
+
+    case 'videoStatus':
+        $s = Gemini::videoStatus((string) ($kropp['jobb'] ?? ''));
+        if (!$s['ferdig']) {
+            Svar::ok(['ferdig' => false]);
+        }
+        Svar::ok([
+            'ferdig'  => true,
+            'navn'    => $s['navn'],
+            'url'     => $s['url'],
+            'kostnad' => Booking::kroner($s['kostnadOre']),
+            'brukt'   => Booking::kroner(AI::bruktDenneMaaneden()),
+            'beskjed' => 'Videoen er klar.',
+        ]);
 
     default:
         Svar::feil('Ukjent handling.');

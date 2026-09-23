@@ -22987,6 +22987,12 @@ window.__resources = {
            events, varer, artikler, kampanjer og referanser paa én gang —
            og dermed ogsaa i kursoppretteren. Bildet lages paa serveren,
            legges i biblioteket og settes paa det du holder paa med. -->
+      <!-- Lag video med Veo.
+           Eieren, 23. september 2026: «legger du til at jeg ogsaa kan
+           generere video der det trengs? for eksempel i instagram
+           innlegg?» Staar i den samme velgeren som bildet, men for seg:
+           en video koster kroner der et bilde koster ore, og tar
+           minutter der bildet tar sekunder. Prisen staar paa knappen. -->
       <sc-if value="{{ gemKlar }}" hint-placeholder-val="{{ true }}">
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Lag bilde</div>
         <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
@@ -22994,6 +23000,19 @@ window.__resources = {
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ gemLag }}" hint-size="auto,40px">{{ gemKnapp }}</x-import>
         </div>
         <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Beskriv tingen, ikke stemningen — «et stort uglasert fat på en trebenk» gir bedre bilde enn «noe fint keramikk». Formatet er liggende, uten tekst i bildet. Tar rundt ti sekunder og koster {{ gemPris }}.</p>
+        <sc-if value="{{ vidApen }}" hint-placeholder-val="{{ false }}">
+          <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-5);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Lag video</div>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+              <input value="{{ vidLedetekst }}" onChange="{{ settVidLedetekst }}" placeholder="Hva skal skje i videoen?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ vidLag }}" hint-size="auto,40px">{{ vidKnapp }}</x-import>
+            </div>
+            <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ vidHjelp }}</p>
+            <sc-if value="{{ vidMelding }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">{{ vidMeldingTekst }}</p>
+            </sc-if>
+          </div>
+        </sc-if>
         <sc-if value="{{ gemMelding }}" hint-placeholder-val="{{ false }}">
           <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ gemMeldingTekst }}</p>
         </sc-if>
@@ -28451,8 +28470,36 @@ class Component extends DCLogic {
         this.setState(ny);
         // Gaven hoerer til medlemskapet, og vi vet forst her om det finnes.
         if (d.erMedlem) { this.hentGave(); }
+        // Kjoepet fra gavekortsida paa serveren fortsetter her — naa vet vi
+        // om kunden er innlogget. Se fortsettGavekort().
+        this.fortsettGavekort();
       })
       .catch(() => {});
+  }
+
+  /**
+   * Gavekortsida tegnes av serveren (app/nett/sider/gavekort.php), saa den
+   * kommer opp med det samme. Trykker kunden Vipps-knappen der, legger
+   * nett.js det som er fylt ut i sessionStorage («lissom-gavekort») og
+   * sender hit med /gavekort?kjop=1. Da fyller vi skjemaet og kjoeper, som
+   * om kunden hadde trykket her. Maa kunden logge inn foerst, kommer hun
+   * tilbake til den samme adressen, og kjoepet fortsetter der.
+   * (23. september 2026 — gavekortsida var 69 paa mobil, LCP 5,7 s.)
+   */
+  fortsettGavekort() {
+    let q;
+    try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+    if (window.location.pathname !== '/gavekort' || q.get('kjop') !== '1') return;
+    let g = null;
+    try { g = JSON.parse(sessionStorage.getItem('lissom-gavekort') || 'null'); } catch (e) { g = null; }
+    try { history.replaceState(null, '', '/gavekort'); } catch (e) { /* adressen blir staaende */ }
+    if (!g) return;
+    const belop = parseInt(String(g.belop || '').replace(/[^0-9]/g, ''), 10);
+    this.setState({
+      side: 'gavekortside',
+      gvBelopFelt: isNaN(belop) ? '' : String(belop), gvValgt: isNaN(belop) ? null : belop,
+      gvNavn: g.navn || '', gvEpost: g.epost || '', gvHilsen: g.hilsen || '',
+    }, () => this.kjopGavekort());
   }
 
   /**
@@ -29212,9 +29259,17 @@ class Component extends DCLogic {
       return;
     }
     if (!this.state.innlogget) {
-      this.sendTilInnlogging('/gavekort', 'Gavekortet ble ikke kjøpt.');
+      // Tilbake til kjoepet, ikke bare til sida: det som er fylt ut ligger i
+      // sessionStorage, og fortsettGavekort() tar det derfra.
+      try {
+        sessionStorage.setItem('lissom-gavekort', JSON.stringify({
+          belop: belop, navn: this.state.gvNavn || '', epost: epost, hilsen: this.state.gvHilsen || '',
+        }));
+      } catch (e) { /* privat modus: da maa det fylles ut paa nytt */ }
+      this.sendTilInnlogging('/gavekort?kjop=1', 'Gavekortet ble ikke kjøpt.');
       return;
     }
+    try { sessionStorage.removeItem('lissom-gavekort'); } catch (e) { /* ingenting aa rydde */ }
     if (this._gavekortPagaar) return;
     this._gavekortPagaar = true;
     const vare = { item_id: 'gavekort', item_name: 'Gavekort', item_category: 'Gavekort', price: belop, quantity: 1 };
@@ -31259,6 +31314,7 @@ class Component extends DCLogic {
               // med marked.php: det er samme endepunkt som resten av
               // Gemini-oppsettet, og da er de alltid i takt.
               gemReferanser: d.referanser || [],
+              vidPris: (d.video && d.video.pris) || '',
             });
           }
         })
@@ -31682,6 +31738,21 @@ class Component extends DCLogic {
       gemTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.lagGeminiBilde(); } },
       gemKnapp: this.state.gemLager ? 'Lager …' : 'Lag bilde',
       gemLag: () => this.lagGeminiBilde(),
+      // ── Lag video ────────────────────────────────────────────────────
+      //
+      // Prisen staar paa knappen. Et bilde koster 45 ore og tar ti
+      // sekunder; en video koster kroner og tar minutter, og da skal det
+      // sies for man trykker, ikke etterpaa.
+      vidApen: !!this.state.geminiKlar,
+      vidLedetekst: this.state.vidLedetekst || '',
+      settVidLedetekst: (e) => this.setState({ vidLedetekst: e.target.value }),
+      vidKnapp: this.state.vidJobb ? 'Lager …' : 'Lag video',
+      vidLag: () => this.lagVideo(),
+      vidHjelp: this.state.vidJobb
+        ? 'Veo bruker ett til seks minutter. Du kan bli staaende her, eller komme tilbake.'
+        : 'Aatte sekunder med lyd, staaende for Reels. ' + (this.state.vidPris || '') + ' per video.',
+      vidMelding: !!this.state.vidMelding,
+      vidMeldingTekst: this.state.vidMelding || '',
       gemMelding: !!this.state.gemMelding,
       gemMeldingTekst: this.state.gemMelding || '',
 
@@ -31913,6 +31984,78 @@ class Component extends DCLogic {
         this._gemLager = false;
         this.setState({ gemLager: false, gemMelding: 'Fikk ikke kontakt med serveren.' });
       });
+  }
+
+  /**
+   * Lager en video og legger den i biblioteket.
+   *
+   * To kall: ett som starter, og ett som spor til den er ferdig. Veo
+   * bruker ett til seks minutter, og en nettleser gir opp lenge for det.
+   *
+   * Sporringen gaar hvert tiende sekund i opptil ti minutter. Lukkes ruta
+   * imens, stopper den — jobben lever videre hos Google, men vi henter
+   * den ikke. Det er med vilje: en video som dukker opp i biblioteket et
+   * kvarter senere, uten at noen ba om det, er verre enn en som mangler.
+   */
+  lagVideo() {
+    if (!this.erPublisert()) { this.setState({ vidMelding: 'Krever den ekte siden' }); return; }
+    const tekst = (this.state.vidLedetekst || '').trim();
+    if (!tekst) { this.setState({ vidMelding: 'Skriv hva videoen skal vise.' }); return; }
+    if (this.state.vidJobb) return;
+
+    const forNoe = this.state.bildeFor;
+    this.setState({ vidJobb: 'starter', vidMelding: 'Starter videoen …' });
+
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'videoStart', ledetekst: tekst, format: '9:16', sekunder: 8 }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok || !d.jobb) {
+          this.setState({ vidJobb: null, vidMelding: (d && d.feil) || 'Videoen ble ikke startet.' });
+          return;
+        }
+        this.setState({ vidJobb: d.jobb, vidMelding: d.beskjed || 'Videoen lages nå.' });
+        this.sporVideo(d.jobb, forNoe, 0);
+      })
+      .catch(() => this.setState({ vidJobb: null, vidMelding: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /** Spor om videoen er ferdig. Kaller seg selv til den er det. */
+  sporVideo(jobb, forNoe, runde) {
+    if (this.state.vidJobb !== jobb) return;   // avbrutt
+    if (runde > 60) {
+      this.setState({ vidJobb: null, vidMelding: 'Videoen ble ikke ferdig på ti minutter. Prøv igjen.' });
+      return;
+    }
+    setTimeout(() => {
+      if (this.state.vidJobb !== jobb) return;
+      fetch('/api/admin/gemini.php', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handling: 'videoStatus', jobb: jobb }),
+      })
+        .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+        .then(({ ok, d }) => {
+          if (!ok) {
+            this.setState({ vidJobb: null, vidMelding: (d && d.feil) || 'Videoen feilet.' });
+            return;
+          }
+          if (!d.ferdig) { this.sporVideo(jobb, forNoe, runde + 1); return; }
+          this._bilderHentes = false;
+          this.hentBilder();
+          this.setState({
+            vidJobb: null,
+            vidLedetekst: '',
+            vidMelding: 'Videoen er klar og ligger i biblioteket. Kostet ' + (d.kostnad || '')
+                      + ' — brukt ' + (d.brukt || '') + ' denne måneden.',
+          });
+          if (forNoe) this.settValgtBilde(d.url);
+        })
+        .catch(() => this.sporVideo(jobb, forNoe, runde + 1));
+    }, 10000);
   }
 
   /**

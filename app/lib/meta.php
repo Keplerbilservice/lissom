@@ -154,10 +154,22 @@ final class Meta
         $ig = self::igId();
 
         // 1. Beholderen.
-        $beholder = self::kall('POST', $ig . '/media', [
-            'image_url' => $bildeUrl,
-            'caption'   => mb_substr($tekst, 0, 2200),
-        ]);
+        //
+        // En video er en Reel hos Instagram, ikke et innlegg med bilde:
+        // egen medietype, og adressen heter «video_url». Sender man en mp4
+        // som «image_url», svarer de at fila ikke er et bilde — og det er
+        // en sann, men ubrukelig, feilmelding.
+        $erVideo = str_contains($bildeUrl, '.mp4') || str_contains($bildeUrl, 'video=');
+        $beholder = self::kall('POST', $ig . '/media', $erVideo
+            ? [
+                'media_type' => 'REELS',
+                'video_url'  => $bildeUrl,
+                'caption'    => mb_substr($tekst, 0, 2200),
+            ]
+            : [
+                'image_url' => $bildeUrl,
+                'caption'   => mb_substr($tekst, 0, 2200),
+            ]);
         $id = (string) ($beholder['id'] ?? '');
         if ($id === '') {
             throw new RuntimeException('Instagram lagde ingen beholder for bildet.');
@@ -168,8 +180,11 @@ final class Meta
         // Instagram laster ned bildet i bakgrunnen. Publiserer vi for tidlig,
         // svarer de «Media ID is not available» — en feil som ser ut som noe
         // annet enn «vent litt».
+        // En video skal lastes ned OG kodes om hos Instagram. Tolv forsok
+        // paa to sekunder holder til et bilde, ikke til en Reel.
+        $forsok = $erVideo ? 60 : self::MAKS_FORSOK;
         $status = '';
-        for ($i = 0; $i < self::MAKS_FORSOK; $i++) {
+        for ($i = 0; $i < $forsok; $i++) {
             $s = self::kall('GET', $id, ['fields' => 'status_code,status']);
             $status = (string) ($s['status_code'] ?? '');
             if ($status === 'FINISHED') {

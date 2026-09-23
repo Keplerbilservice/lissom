@@ -127,12 +127,21 @@ switch ($handling) {
         $data  = json_decode((string) ($u['data'] ?? '{}'), true) ?: [];
         $bilde = trim((string) ($data['bilde'] ?? ''));
         if ($bilde === '') {
-            Svar::feil('Innlegget har ikke noe bilde. Velg ett først — '
-                     . ($kanal === 'Instagram' ? 'Instagram tar ikke imot innlegg uten bilde.'
-                                               : 'et innlegg uten bilde blir lite synlig.'));
+            Svar::feil('Innlegget har verken bilde eller video. Velg noe først — '
+                     . ($kanal === 'Instagram' ? 'Instagram tar ikke imot innlegg uten.'
+                                               : 'et innlegg uten blir lite synlig.'));
+        }
+        // Facebook tar imot en video paa samme endepunkt som et bilde, men
+        // ikke under «/photos». Det er ikke bygget ennaa, og en feil som
+        // sier hva som mangler er bedre enn en fra Meta som ikke gjor det.
+        if ($kanal === 'Facebook' && (str_contains($bilde, '.mp4') || str_contains($bilde, 'video='))) {
+            Svar::feil('Video til Facebook er ikke koblet på ennå. Legg den ut på '
+                     . 'Instagram, eller velg et bilde til Facebook.');
         }
 
-        // Meta henter bildet selv, saa det maa staa paa en adresse de naar.
+        // Meta henter fila selv, saa den maa staa paa en adresse de naar.
+        // Det gjelder en video like mye som et bilde — se Meta::
+        // publiserInstagram(), som kjenner forskjellen paa adressen.
         $url = rtrim(Config::nettsted(), '/') . '/' . ltrim($bilde, '/');
 
         $tekst = trim((string) ($u['tekst'] ?? ''));

@@ -22009,6 +22009,105 @@ window.__resources = {
           </sc-for>
         </sc-if>
 
+        <!-- ── Innboks ────────────────────────────────────────────────── -->
+        <!--
+             Kommentarer og meldinger fra Instagram og Facebook, samlet.
+
+             Eieren, 23. september 2026: «kan du faktisk svare paa
+             kommentarer og spoersmaal paa insta og face?» Svaret var nei —
+             tokenet hadde lov, men koden kunne bare publisere.
+
+             Hvert svar er et trykk. Det finnes ingen vei hit fra Autopilot
+             eller fra en jobb, samme regel som publisering: et svar fra
+             verkstedet staar offentlig, og skal vaere lest av et menneske.
+        -->
+        <sc-if value="{{ mkErInnboks }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: var(--space-5);">
+            <button type="button" onClick="{{ ibVisKomm }}" style="{{ ibKommStil }}">{{ ibKommMerke }}</button>
+            <button type="button" onClick="{{ ibVisMeld }}" style="{{ ibMeldStil }}">{{ ibMeldMerke }}</button>
+            <div style="flex: 1 1 auto;"></div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ ibHent }}" hint-size="auto,36px">{{ ibHentMerke }}</x-import>
+          </div>
+
+          <sc-if value="{{ ibFeil }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--terracotta-600); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5);">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 4px;">{{ ibFeilTittel }}</div>
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ ibFeilTekst }}</p>
+            </div>
+          </sc-if>
+
+          <!-- ── Kommentarer ── -->
+          <sc-if value="{{ ibErKomm }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ ibTom }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">{{ ibTomTekst }}</p>
+            </sc-if>
+            <sc-for list="{{ ibKommentarer }}" as="k" hint-placeholder-count="3">
+              <div style="{{ k.kortStil }}">
+                <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                  <span style="{{ k.merkeStil }}">{{ k.kanal }}</span>
+                  <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-heading);">{{ k.fra }}</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.naar }}</span>
+                  <sc-if value="{{ k.svart }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: var(--text-xs); color: var(--sage-600); font-weight: 600;">Besvart</span>
+                  </sc-if>
+                </div>
+                <p style="margin: 0 0 var(--space-2); font-size: var(--text-base); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ k.tekst }}</p>
+                <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-4);">{{ k.paaTekst }}</div>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <input value="{{ k.svar }}" onChange="{{ k.settSvar }}" placeholder="Skriv et svar …" style="flex: 1 1 260px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ k.send }}" hint-size="auto,36px">{{ k.sendMerke }}</x-import>
+                </div>
+                <div style="margin-top: var(--space-3); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+                  <a href="{{ k.lenke }}" target="_blank" rel="noopener" style="font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se innlegget ↗</a>
+                  <button class="lx-radpille" type="button" onClick="{{ k.skjul }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Skjul</button>
+                </div>
+              </div>
+            </sc-for>
+          </sc-if>
+
+          <!-- ── Meldinger ── -->
+          <sc-if value="{{ ibErMeld }}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{ ibIngenSamtale }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ ibTom }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">{{ ibTomTekst }}</p>
+              </sc-if>
+              <sc-for list="{{ ibSamtaler }}" as="s" hint-placeholder-count="3">
+                <div onClick="{{ s.apne }}" role="button" style="{{ s.kortStil }}">
+                  <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 4px;">
+                    <span style="{{ s.merkeStil }}">{{ s.kanal }}</span>
+                    <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-heading);">{{ s.fra }}</span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ s.naar }}</span>
+                    <sc-if value="{{ s.harUlest }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">{{ s.ulestTekst }}</span>
+                    </sc-if>
+                  </div>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ s.tekst }}</p>
+                </div>
+              </sc-for>
+            </sc-if>
+
+            <sc-if value="{{ ibHarSamtale }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
+                <button class="lx-radpille" type="button" onClick="{{ ibLukkSamtale }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown);">← Alle samtaler</button>
+                <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-heading);">{{ ibSamtaleNavn }}</span>
+              </div>
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-4);">
+                <sc-for list="{{ ibMeldinger }}" as="m" hint-placeholder-count="4">
+                  <div style="{{ m.stil }}">
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 2px;">{{ m.hvem }}</div>
+                    <p style="margin: 0; font-size: var(--text-base); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ m.tekst }}</p>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <input value="{{ ibSvar }}" onChange="{{ ibSettSvar }}" placeholder="Skriv et svar …" style="flex: 1 1 260px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ ibSendMelding }}" hint-size="auto,36px">{{ ibSendMerke }}</x-import>
+              </div>
+              <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Meta slipper bare gjennom et svar innen 24 timer etter at kunden skrev sist.</p>
+            </sc-if>
+          </sc-if>
+        </sc-if>
+
         <!-- ── Innstillinger ──────────────────────────────────────────── -->
         <sc-if value="{{ mkErInnstillinger }}" hint-placeholder-val="{{ false }}">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-5);">
@@ -32124,6 +32223,145 @@ class Component extends DCLogic {
    * «sjekk» sporr Meta hvem tokenet gjelder, saa eieren faar vite det med
    * én gang framfor aa oppdage det naar han trykker publiser.
    */
+  /**
+   * Henter kommentarer og samtaler fra Instagram og Facebook.
+   *
+   * To kall mot Meta. De gaar ikke av seg selv naar skjermen aapnes —
+   * eieren skal kunne klikke seg innom Markedsfoering uten at vi spoer
+   * Meta hver gang.
+   */
+  hentInnboks() {
+    if (!this.erPublisert()) { this.setState({ ibFeil: ['Krever den ekte siden'] }); return; }
+    if (this.state.ibHenter) return;
+    this.setState({ ibHenter: true, ibFeil: [] });
+
+    const kall = (handling) => fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: handling }),
+    }).then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })));
+
+    Promise.all([kall('kommentarer'), kall('samtaler')])
+      .then(([k, s]) => {
+        const feil = []
+          .concat((k.ok ? (k.d.feil || []) : [k.d && k.d.feil || 'Kommentarene kom ikke fram']))
+          .concat((s.ok ? (s.d.feil || []) : [s.d && s.d.feil || 'Samtalene kom ikke fram']));
+        this.setState({
+          ibHenter: false,
+          ibHentet: true,
+          ibKomm: (k.ok && k.d.poster) || [],
+          ibSamt: (s.ok && s.d.samtaler) || [],
+          ibFeil: feil.filter(Boolean),
+        });
+      })
+      .catch(() => this.setState({ ibHenter: false, ibFeil: ['Fikk ikke kontakt med serveren.'] }));
+  }
+
+  /**
+   * Svarer paa én kommentar.
+   *
+   * Svaret staar offentlig i det sekundet det gaar. Derfor er dette et
+   * trykk, og bare et trykk — ingen kø, ingen jobb, ingen autopilot.
+   */
+  svarKommentar(k) {
+    const tekst = ((this.state.ibSvar || {})[k.id] || '').trim();
+    if (!tekst) { this.setState({ kvittering: 'Skriv et svar først' }); return; }
+    if (this.state.ibJobb) return;
+    this.setState({ ibJobb: k.id });
+
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'svarKommentar', id: k.id, kanal: k.kanal, tekst: tekst }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          ibJobb: null,
+          kvittering: ok ? 'Svart' : 'Ble ikke sendt',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          // Feltet toemmes og kommentaren merkes som besvart, saa lista
+          // viser det samme som Instagram gjor.
+          ibSvar: ok ? Object.assign({}, this.state.ibSvar, { [k.id]: '' }) : this.state.ibSvar,
+          ibKomm: ok
+            ? (this.state.ibKomm || []).map(x => x.id === k.id ? Object.assign({}, x, { svart: true }) : x)
+            : this.state.ibKomm,
+        });
+      })
+      .catch(() => this.setState({ ibJobb: null, kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /** Skjuler en kommentar. Skjult, ikke slettet — den som skrev ser sin egen. */
+  skjulKommentar(k) {
+    if (this.state.ibJobb) return;
+    this.setState({ ibJobb: k.id });
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'skjulKommentar', id: k.id, kanal: k.kanal }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => this.setState({
+        ibJobb: null,
+        kvittering: ok ? 'Skjult' : 'Ble ikke skjult',
+        kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        ibKomm: ok ? (this.state.ibKomm || []).filter(x => x.id !== k.id) : this.state.ibKomm,
+      }))
+      .catch(() => this.setState({ ibJobb: null, kvittering: 'Ble ikke skjult' }));
+  }
+
+  /** Aapner én samtale og henter meldingene i den. */
+  apneSamtale(s) {
+    this.setState({ ibValgt: s, ibMeldinger: [], ibMeldSvar: '' });
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'meldinger', samtaleId: s.id }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => this.setState({
+        ibMeldinger: (ok && d.meldinger) || [],
+        ibFeil: ok ? [] : [(d && d.feil) || 'Meldingene kom ikke fram'],
+      }))
+      .catch(() => this.setState({ ibFeil: ['Fikk ikke kontakt med serveren.'] }));
+  }
+
+  /**
+   * Sender et svar i den aapne samtalen.
+   *
+   * Doegnregelen ligger paa serveren: er det gaatt mer enn 24 timer siden
+   * kunden skrev, sier Meta nei, og api/admin/meta.php oversetter det til
+   * noe som sier hva som faktisk er i veien.
+   */
+  sendMelding() {
+    const s = this.state.ibValgt;
+    const tekst = (this.state.ibMeldSvar || '').trim();
+    if (!s || !tekst) { this.setState({ kvittering: 'Skriv et svar først' }); return; }
+    if (this.state.ibJobb) return;
+    this.setState({ ibJobb: 'melding' });
+
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'svarMelding', hvem: s.hvem, tekst: tekst }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          ibJobb: null,
+          kvittering: ok ? 'Sendt' : 'Ble ikke sendt',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          ibMeldSvar: ok ? '' : this.state.ibMeldSvar,
+          // Svaret legges nederst med det samme, saa samtalen ser ut som
+          // den gjor hos kunden — framfor aa hente hele traaden paa nytt.
+          ibMeldinger: ok
+            ? (this.state.ibMeldinger || []).concat([{ id: 'ny', oss: true, tekst: tekst, tid: '' }])
+            : this.state.ibMeldinger,
+        });
+      })
+      .catch(() => this.setState({ ibJobb: null, kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
   metaKall(kropp) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     const sjekker = kropp.handling === 'sjekk';
@@ -39158,6 +39396,7 @@ class Component extends DCLogic {
       // til «Google» eller «Oppsett» fra menyen.
       'Markedsføring': [
         ['Tavle',    'adminmarked', { mkFane: 'tavle' }],
+        ['Innboks',  'adminmarked', { mkFane: 'innboks' }],
         ['Skriv',    'adminmarked', { mkFane: 'artikler' }],
         ['Artikler', 'adminmarked', { mkFane: 'bank' }],
         ['Send',     'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
@@ -61384,7 +61623,8 @@ class Component extends DCLogic {
           ['bank', 'Artikler'], ['brev', 'Nyhetsbrev'], ['sosialt', 'Sosiale medier'],
           ['seo', 'SEO'], ['geo', 'GEO'], ['analyse', 'Analyse'],
           ['assistent', 'AI og Assistent'], ['innstillinger', 'Google-ID-er'],
-          ['send', 'Send'], ['epost', 'E-post- og SMS-server'],
+          ['send', 'Send'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
+
         ];
 
         // ── Ti faner ble fem grupper ────────────────────────────────────
@@ -61414,6 +61654,7 @@ class Component extends DCLogic {
         // godkjent.
         const GRUPPER = [
           ['Tavle',    ['tavle']],
+          ['Innboks',  ['innboks']],
           ['Skriv',    ['artikler', 'brev', 'sosialt', 'kurs']],
           ['Artikler', ['bank']],
           ['Send',     ['send']],
@@ -61483,6 +61724,118 @@ class Component extends DCLogic {
           mkFaneTittel: minGruppe[1].length > 1
             ? minGruppe[0] + ' · ' + navnPaa(fane)
             : minGruppe[0],
+          // ── Innboksen: kommentarer og meldinger ──────────────────────
+          //
+          // Eieren, 23. september 2026: «kan du faktisk svare paa
+          // kommentarer og spoersmaal paa insta og face?»
+          //
+          // Hentes ikke av seg selv naar skjermen aapnes: det er to kall
+          // mot Meta, og de skal ikke gaa hver gang noen klikker seg innom
+          // Markedsfoering. «Hent» henter.
+          ...(() => {
+            const erKomm = (this.state.ibFane || 'kommentarer') === 'kommentarer';
+            const pilleStil = paa => ({
+              appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+              padding: '9px 16px', font: 'var(--type-body-sm)', fontWeight: 600,
+              border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: paa ? 'var(--lissom-brown)' : 'transparent',
+              color: paa ? 'var(--clay-50)' : 'var(--text-body)',
+            });
+            const merkeStil = kanal => ({
+              font: 'var(--type-eyebrow)', letterSpacing: 'var(--tracking-caps)',
+              textTransform: 'uppercase',
+              color: kanal === 'Instagram' ? 'var(--terracotta-600)' : 'var(--lissom-brown)',
+            });
+            const kortStil = {
+              background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
+              marginBottom: 'var(--space-4)',
+            };
+            // «for 2 timer siden» sier mer enn et klokkeslett naar man leser
+            // en innboks. Er det mer enn en uke, er datoen mer nyttig igjen.
+            const naarTekst = iso => {
+              const t = Date.parse((iso || '').replace(/\+0000$/, 'Z'));
+              if (!t) return '';
+              const min = Math.round((Date.now() - t) / 60000);
+              if (min < 2) return 'nå';
+              if (min < 60) return 'for ' + min + ' min siden';
+              if (min < 48 * 60) return 'for ' + Math.round(min / 60) + ' timer siden';
+              if (min < 7 * 24 * 60) return 'for ' + Math.round(min / 1440) + ' dager siden';
+              return new Date(t).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' });
+            };
+
+            const komm = this.state.ibKomm || [];
+            const samt = this.state.ibSamt || [];
+            const valgt = this.state.ibValgt || null;
+            const feil = (this.state.ibFeil || []).join(' · ');
+
+            return {
+              mkErInnboks: fane === 'innboks',
+              ibErKomm: erKomm,
+              ibErMeld: !erKomm,
+              ibVisKomm: () => this.setState({ ibFane: 'kommentarer', ibValgt: null }),
+              ibVisMeld: () => this.setState({ ibFane: 'meldinger' }),
+              ibKommStil: pilleStil(erKomm),
+              ibMeldStil: pilleStil(!erKomm),
+              ibKommMerke: 'Kommentarer' + (komm.length ? ' (' + komm.length + ')' : ''),
+              ibMeldMerke: 'Meldinger' + (samt.length ? ' (' + samt.length + ')' : ''),
+              ibHent: () => this.hentInnboks(),
+              ibHentMerke: this.state.ibHenter ? 'Henter …' : 'Hent',
+
+              ibFeil: feil !== '',
+              ibFeilTittel: 'Noe kom ikke fram',
+              ibFeilTekst: feil,
+
+              ibTom: !this.state.ibHenter && (erKomm ? komm.length === 0 : samt.length === 0),
+              ibTomTekst: this.state.ibHentet
+                ? (erKomm ? 'Ingen kommentarer på de siste innleggene.' : 'Ingen samtaler i innboksen.')
+                : 'Trykk «Hent» for å se hva som har kommet inn.',
+
+              ibKommentarer: komm.map((k, i) => ({
+                ...k,
+                kortStil: kortStil,
+                merkeStil: merkeStil(k.kanal),
+                naar: naarTekst(k.tid),
+                paaTekst: k.paa ? 'På: ' + k.paa : '',
+                svar: (this.state.ibSvar || {})[k.id] || '',
+                settSvar: e => this.setState({
+                  ibSvar: Object.assign({}, this.state.ibSvar, { [k.id]: e.target.value }),
+                }),
+                sendMerke: this.state.ibJobb === k.id ? 'Sender …' : 'Svar',
+                send: () => this.svarKommentar(k),
+                skjul: () => this.skjulKommentar(k),
+              })),
+
+              ibSamtaler: samt.map(s => ({
+                ...s,
+                kortStil: Object.assign({}, kortStil, { cursor: 'pointer' }),
+                merkeStil: merkeStil(s.kanal),
+                naar: naarTekst(s.tid),
+                harUlest: (s.ulest || 0) > 0,
+                ulestTekst: (s.ulest || 0) + ' ulest',
+                apne: () => this.apneSamtale(s),
+              })),
+
+              ibHarSamtale: !!valgt,
+              ibIngenSamtale: !valgt,
+              ibSamtaleNavn: valgt ? valgt.fra : '',
+              ibLukkSamtale: () => this.setState({ ibValgt: null, ibMeldinger: [] }),
+              ibMeldinger: (this.state.ibMeldinger || []).map(m => ({
+                ...m,
+                hvem: m.oss ? 'Lissom' : (m.fra || valgt && valgt.fra || ''),
+                stil: {
+                  borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-3) 0',
+                  // Vaare egne svar rykkes inn, saa en samtale leses som en
+                  // samtale og ikke som en liste.
+                  marginLeft: m.oss ? 'var(--space-8)' : '0',
+                },
+              })),
+              ibSvar: this.state.ibMeldSvar || '',
+              ibSettSvar: e => this.setState({ ibMeldSvar: e.target.value }),
+              ibSendMerke: this.state.ibJobb === 'melding' ? 'Sender …' : 'Send',
+              ibSendMelding: () => this.sendMelding(),
+            };
+          })(),
           mkErTavle: fane === 'tavle',
           mkErKurs: fane === 'kurs',
           mkErArtikler: fane === 'artikler',

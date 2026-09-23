@@ -57642,6 +57642,7 @@ class Component extends DCLogic {
       // samme to staar. Én gang holder.
       footerOm: [
         { navn: 'Om oss', velg: this.go('omoss') },
+        { navn: 'For bedrifter', velg: this.go('bedrift') },
         { navn: 'Nyheter', velg: this.go('nyheter') },
         // Klar til henting sto bare i e-posten som ble sendt ut. Den som
         // slettet den, eller ikke fikk den, hadde ingen vei til sida — og
@@ -57654,6 +57655,9 @@ class Component extends DCLogic {
         { navn: 'Spørsmål og svar', velg: this.go('sporsmal') },
         // «Bedrift og event» tatt ut etter onske fra eieren. Sida ligger der
         // som for, og naas fra menyen og fra kortene paa forsida.
+        // Tilbake som «For bedrifter» etter «Om oss» 23. september 2026 —
+        // eieren sa ja etter aa ha faatt vite om det forrige onsket: /bedrift
+        // hadde nesten ingen lenker inn, og Google fant den ikke.
         { navn: 'Personvern', velg: this.go('personvern') },
         // «Vilkår og angrerett» het den. Eieren, 3. september: «kan du
         // fjerne vilkår og angrerett i footer, lag en som heter

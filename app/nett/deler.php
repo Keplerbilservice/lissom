@@ -425,7 +425,7 @@ final class Deler
         // Lissom.
         $h .= '<div><div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Lissom</div>'
             . '<div class="lx-footlinks" style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">';
-        foreach ([['Om oss', '/om-oss'], ['Nyheter', '/nyheter'], ['Klar til henting', '/ferdigbrent'], ['Spørsmål og svar', '/sporsmal-og-svar'], ['Personvern', '/personvern'], ['Salgsvilkår', '/vilkar']] as [$navn, $href]) {
+        foreach ([['Om oss', '/om-oss'], ['For bedrifter', '/bedrift'], ['Nyheter', '/nyheter'], ['Klar til henting', '/ferdigbrent'], ['Spørsmål og svar', '/sporsmal-og-svar'], ['Personvern', '/personvern'], ['Salgsvilkår', '/vilkar']] as [$navn, $href]) {
             $h .= '<a href="' . $href . '" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; text-align: left; font-family: var(--font-sans); font-size: var(--text-base); color: var(--clay-200); text-decoration: none; transition: color .18s ease;" data-hover="color: var(--lissom-yellow);">' . $e($navn) . '</a>';
         }
         $h .= '</div></div>';

@@ -297,9 +297,28 @@ final class AI
 
     private static function logg(string $formal, int $inn, int $ut, int $ore, bool $ok, ?string $feil): void
     {
+        self::loggKall($formal, self::MODELL, $inn, $ut, $ore, $ok, $feil);
+    }
+
+    /**
+     * Samme logg, for en annen modell.
+     *
+     * Gemini lager bildene og skal trekkes fra det samme maanedstaket som
+     * teksten. To kasser ville betydd to steder aa se etter naar regningen
+     * kommer, og et tak som ikke holder. Kolonnen «modell» skiller dem.
+     */
+    public static function loggKall(
+        string $formal,
+        string $modell,
+        int $inn,
+        int $ut,
+        int $ore,
+        bool $ok,
+        ?string $feil
+    ): void {
         DB::settInn('ai_logg', [
             'formal'      => mb_substr($formal, 0, 64),
-            'modell'      => self::MODELL,
+            'modell'      => mb_substr($modell, 0, 64),
             'tokens_inn'  => $inn,
             'tokens_ut'   => $ut,
             'kostnad_ore' => $ore,

@@ -68,6 +68,7 @@ require APP_DIR . '/config.php';
 spl_autoload_register(static function (string $klasse): void {
     static $kart = [
         'AI' => 'ai.php',
+        'Gemini' => 'gemini.php',
         'Apent' => 'apent.php',
         'Artikler' => 'artikler.php',
         'Avmelding' => 'avmelding.php',

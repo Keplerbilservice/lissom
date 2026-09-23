@@ -53,6 +53,12 @@ final class Config
         // fila: en noekkel som skal kunne byttes fra en knapp, kan ikke
         // ligge et sted bare den som har serveren kommer til.
         'kalender_nokkel', 'verksted_adresse',
+        // Gemini lager bildene. Noekkelen staar i basen og ikke i
+        // secrets.php av samme grunn som kalendernoekkelen: eieren skal
+        // kunne lime den inn og bytte den selv, uten en ny utlegging.
+        // Modellnavnet og prisanslaget staar samme sted, fordi Google
+        // bytter navn paa bildemodellene sine oftere enn vi legger ut kode.
+        'gemini_api_key', 'gemini_modell', 'gemini_pris_ore',
         // Standardteksten i kvitteringen etter kjop. Den fylles ut paa nye
         // kurs, og eieren retter eller sletter den paa det enkelte kurset.
         // Sto den i koden, matte hele nettsida legges ut paa nytt for aa

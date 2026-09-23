@@ -223,9 +223,13 @@ final class Meta
     }
 
     /**
-     * Legger ut ett bilde med tekst paa Facebook-sida.
+     * Legger ut ett bilde eller én video med tekst paa Facebook-sida.
      *
-     * Enklere enn Instagram: ett kall, og Facebook henter bildet selv.
+     * Enklere enn Instagram: ett kall, og Facebook henter fila selv.
+     *
+     * En video gaar til /videos og ikke /photos, og teksten heter
+     * «description» der «message» staar paa et bilde. Sender man en mp4 til
+     * /photos, svarer Facebook at fila ikke er et bilde.
      *
      * @return array{id: string, lenke: string}
      */
@@ -238,6 +242,13 @@ final class Meta
             );
         }
 
+        // Video eller bilde? To ulike adresser hos Facebook.
+        //
+        // Var ikke bygget for 23. september 2026 — api/admin/meta.php stoppet
+        // en video med en beskjed om at den ikke var koblet paa. Eieren ba om
+        // den samme kveld: «i saafall bygger du det og video til facebook».
+        $erVideo = str_contains($bildeUrl, '.mp4') || str_contains($bildeUrl, 'video=');
+
         // Sidens eget token, ikke systembrukerens.
         //
         // Instagram-veien gaar gjennom kontoens egen id og godtar
@@ -248,15 +259,30 @@ final class Meta
         //
         // Maalt 23. september 2026, foerste gang noe ble lagt ut: Instagram
         // gikk gjennom, Facebook stoppet her.
-        $ut = self::kall('POST', self::sideId() . '/photos', [
-            'url'     => $bildeUrl,
-            'message' => mb_substr($tekst, 0, 5000),
-        ], self::sideToken());
+        $ut = $erVideo
+            ? self::kall('POST', self::sideId() . '/videos', [
+                'file_url'    => $bildeUrl,
+                'description' => mb_substr($tekst, 0, 5000),
+            ], self::sideToken())
+            : self::kall('POST', self::sideId() . '/photos', [
+                'url'     => $bildeUrl,
+                'message' => mb_substr($tekst, 0, 5000),
+            ], self::sideToken());
+
         $id = (string) ($ut['post_id'] ?? $ut['id'] ?? '');
         if ($id === '') {
             throw new RuntimeException('Facebook publiserte ikke innlegget.');
         }
-        return ['id' => $id, 'lenke' => 'https://www.facebook.com/' . $id];
+
+        // En video svarer med sin egen id, ikke med en innleggs-id. Lenka
+        // til selve innlegget finnes foerst naar Facebook har kodet ferdig,
+        // saa den peker paa videoen — den virker med det samme.
+        return [
+            'id'    => $id,
+            'lenke' => $erVideo
+                ? 'https://www.facebook.com/' . self::sideId() . '/videos/' . $id
+                : 'https://www.facebook.com/' . $id,
+        ];
     }
 
     /**

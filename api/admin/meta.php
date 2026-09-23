@@ -131,13 +131,9 @@ switch ($handling) {
                      . ($kanal === 'Instagram' ? 'Instagram tar ikke imot innlegg uten.'
                                                : 'et innlegg uten blir lite synlig.'));
         }
-        // Facebook tar imot en video paa samme endepunkt som et bilde, men
-        // ikke under «/photos». Det er ikke bygget ennaa, og en feil som
-        // sier hva som mangler er bedre enn en fra Meta som ikke gjor det.
-        if ($kanal === 'Facebook' && (str_contains($bilde, '.mp4') || str_contains($bilde, 'video='))) {
-            Svar::feil('Video til Facebook er ikke koblet på ennå. Legg den ut på '
-                     . 'Instagram, eller velg et bilde til Facebook.');
-        }
+        // Video til Facebook ble bygget 23. september 2026 — se
+        // Meta::publiserFacebook(), som velger /videos framfor /photos.
+        // Sperra som sto her er derfor borte.
 
         // Meta henter fila selv, saa den maa staa paa en adresse de naar.
         // Det gjelder en video like mye som et bilde — se Meta::

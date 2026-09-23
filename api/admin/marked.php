@@ -340,6 +340,12 @@ if (Foresporsel::metode() === 'GET') {
             'geminiKlar'   => Gemini::tilgjengelig(),
             'geminiHale'   => Gemini::tilgjengelig() ? mb_substr(Gemini::noekkel(), -4) : '',
             'geminiBilder' => Gemini::status()['bilder'],
+            // Publisering til Instagram og Facebook. Tokenet sendes aldri
+            // hit: bare om det staar inne, og hvilke kontoer det gjelder.
+            'metaIg'       => Meta::igId(),
+            'metaSide'     => Meta::sideId(),
+            'metaToken'    => Meta::status()['harToken'],
+            'metaKlar'     => Meta::klarForInstagram(),
         ],
         'forbruk'     => DB::alle(
             "SELECT formal, COUNT(*) AS kall, SUM(kostnad_ore) AS ore

@@ -3940,7 +3940,7 @@ window.__resources = {
                <b> i teksten ville vist seg som tekst. Hvorfor stripa finnes,
                staar i app/nett/sider/kalender.php. -->
           <sc-if value="{{ popHarStripe }}" hint-placeholder-val="{{ true }}">
-            <a onClick="{{ popStripeGaa }}" style="{{ popStripeStil }}">
+            <a href="{{ popStripeGaa }}" style="{{ popStripeStil }}">
               <span style="font-size: 19px; line-height: 1.3; flex: none;">🎨</span>
               <span>
                 <span style="display: block; font-size: var(--text-base); font-weight: 700; line-height: 1.4;">{{ popTittel }}</span>
@@ -22020,6 +22020,35 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreGemini }}" hint-size="auto,40px">Lagre</x-import>
             </div>
 
+            <!-- Publisering til Instagram og Facebook (app/lib/meta.php).
+                 Tokenet lagres i innstillinger-tabellen — ikke i
+                 content_blocks, som nettsida leser — og sendes aldri
+                 tilbake hit. Feltet staar tomt, og lagrer vi uten at noe er
+                 skrevet i det, rores tokenet ikke.
+
+                 Det finnes ingen jobb og ingen vei hit fra Autopilot: et
+                 utkast som legger seg ut paa Instagram uten at noen har
+                 lest det er ikke en funksjon, det er en feil som skjer i
+                 offentligheten. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Publisering til Instagram og Facebook</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Med et token herfra kan et ferdig utkast legges rett ut på Instagram eller Facebook-sida. Ingenting går ut av seg selv — du trykker «Publiser» på hvert enkelt innlegg.</p>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkMetaStatus }}</div>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Systembruker-token</label>
+              <input type="password" autocomplete="new-password" value="{{ mkMetaTok }}" onChange="{{ mkSettMetaTok }}" placeholder="{{ mkMetaTokPlass }}" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Meta Business Manager → Systembrukere → «Lissom publisering» → «Generer token». Velg appen «Publisering», og hak av for instagram_basic, instagram_content_publish, pages_manage_posts og pages_read_engagement. Et slikt token utløper ikke. La feltet stå tomt for å beholde det som ligger inne — skriv «slett» for å fjerne det.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Instagram-konto</label>
+              <input value="{{ mkMetaIg }}" onChange="{{ mkSettMetaIg }}" placeholder="17841400763052125" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Id-en til @lissom_keramikk. Den er et tall, og står i Business Manager under Instagram-kontoer.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Facebook-side</label>
+              <input value="{{ mkMetaSide }}" onChange="{{ mkSettMetaSide }}" placeholder="1343208898874649" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Id-en til Lissom-sida. Står under Sider i Business Manager.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMetaPub }}" hint-size="auto,40px">Lagre</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" icon="eye" on-click="{{ mkSjekkMetaPub }}" hint-size="auto,40px">Sjekk koblingen</x-import>
+              </div>
+            </div>
+
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Min bedrift på Google</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Lim inn adressen til bedriftsprofilen deres. Da ligger den her når vi kobler den mot Google sitt API.</p>
@@ -22188,6 +22217,18 @@ window.__resources = {
                 </sc-if>
                 <sc-if value="{{ mkLesIkkeArtikkel }}" hint-placeholder-val="{{ true }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mkLesGodkjenn }}" hint-size="auto,44px">{{ mkLesBrukTekst }}</x-import>
+                </sc-if>
+                <!-- Ut paa Instagram og Facebook herfra.
+                     Eieren, 23. september 2026: «kan vi faa en meta
+                     publisering i systemet?» Foer maatte teksten kopieres ut
+                     og limes inn i appen. Knappen staar her, der innlegget
+                     leses — og den staar BARE her: det finnes ingen jobb og
+                     ingen vei fra Autopilot som legger noe ut av seg selv. -->
+                <sc-if value="{{ mkLesKanSome }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ mkLesUtInstagram }}" hint-size="auto,44px">Legg ut på Instagram</x-import>
+                </sc-if>
+                <sc-if value="{{ mkLesKanSomeFb }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ mkLesUtFacebook }}" hint-size="auto,44px">Legg ut på Facebook</x-import>
                 </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="copy" on-click="{{ mkLesKopier }}" hint-size="auto,44px">Kopier teksten</x-import>
               </div>
@@ -31755,6 +31796,81 @@ class Component extends DCLogic {
         if (ok) { this._markedHentes = false; this.hentMarked(); }
       })
       .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Meta-oppsettet: tokenet og de to konto-id-ene.
+   *
+   * Samme grunn til eget endepunkt som med Gemini: tokenet skal i
+   * «innstillinger» og ikke i «content_blocks», som nettsida leser.
+   *
+   * «sjekk» sporr Meta hvem tokenet gjelder, saa eieren faar vite det med
+   * én gang framfor aa oppdage det naar han trykker publiser.
+   */
+  metaKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const sjekker = kropp.handling === 'sjekk';
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? (sjekker ? 'Sjekket' : 'Lagret') : (sjekker ? 'Virket ikke' : 'Ble ikke lagret'),
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          mkMetaTok: ok && !sjekker ? '' : this.state.mkMetaTok,
+        });
+        if (ok && !sjekker) { this._markedHentes = false; this.hentMarked(); }
+      })
+      .catch(() => this.setState({
+        kvittering: sjekker ? 'Virket ikke' : 'Ble ikke lagret',
+        kvitteringDetalj: 'Fikk ikke kontakt med serveren.',
+      }));
+  }
+
+  /**
+   * Legger utkastet som er aapent ut paa Instagram eller Facebook.
+   *
+   * Instagram henter bildet selv og bruker noen sekunder paa det, saa
+   * kvitteringen sier fra med det samme framfor aa la skjermen staa stille.
+   * Ruta lukkes foerst naar innlegget faktisk er ute — gaar det galt, staar
+   * teksten der fortsatt.
+   */
+  metaPubliser(kanal) {
+    const u = this.state.mkLes;
+    if (!u || !u.id) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._metaLegger) return;
+    this._metaLegger = true;
+
+    this.setState({
+      kvittering: 'Legger ut …',
+      kvitteringDetalj: kanal === 'Instagram'
+        ? 'Instagram henter bildet selv. Det tar noen sekunder.'
+        : 'Sender innlegget til Facebook-sida.',
+    });
+
+    fetch('/api/admin/meta.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'publiser', utkastId: u.id, kanal: kanal }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._metaLegger = false;
+        this.setState({
+          kvittering: ok ? 'Lagt ut' : 'Ble ikke lagt ut',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          mkLes: ok ? null : this.state.mkLes,
+        });
+        if (ok) { this._markedHentes = false; this.hentMarked(); }
+      })
+      .catch(() => {
+        this._metaLegger = false;
+        this.setState({ kvittering: 'Ble ikke lagt ut', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
   }
 
   markedKall(kropp) {
@@ -61463,6 +61579,42 @@ class Component extends DCLogic {
               }),
             };
           })(),
+          // ── Publisering til Instagram og Facebook ──
+          //
+          // Tokenet kommer aldri tilbake fra serveren, saa feltet staar
+          // tomt. Er det tomt naar det lagres, sendes det ikke med — da
+          // rores tokenet ikke, og det som ligger inne blir staaende. Ellers
+          // ville det aa rette en id slettet tokenet.
+          ...(() => {
+            const i = d.innstillinger || {};
+            const st = i.metaKlar
+              ? 'Koblet til. Instagram og Facebook kan publiseres fra et utkast.'
+              : (i.metaToken
+                  ? 'Tokenet ligger inne, men kontoen mangler. Fyll ut Instagram-kontoen under.'
+                  : 'Ikke koblet til ennå. Hent et systembruker-token i Meta Business Manager.');
+            return {
+              mkMetaStatus: d.innstillinger ? st : 'Henter status …',
+              mkMetaTok: this.state.mkMetaTok ?? '',
+              mkSettMetaTok: e => this.setState({ mkMetaTok: e.target.value }),
+              mkMetaTokPlass: i.metaToken ? '•••••••• (lagt inn)' : 'Lim inn tokenet',
+              mkMetaIg: this.state.mkMetaIg ?? (i.metaIg || ''),
+              mkSettMetaIg: e => this.setState({ mkMetaIg: e.target.value }),
+              mkMetaSide: this.state.mkMetaSide ?? (i.metaSide || ''),
+              mkSettMetaSide: e => this.setState({ mkMetaSide: e.target.value }),
+              mkLagreMetaPub: () => {
+                const tok = (this.state.mkMetaTok || '').trim();
+                const kropp = {
+                  handling: 'oppsett',
+                  igId: (this.state.mkMetaIg ?? (i.metaIg || '')).trim(),
+                  sideId: (this.state.mkMetaSide ?? (i.metaSide || '')).trim(),
+                };
+                // Tomt felt betyr «la det staa», ikke «slett».
+                if (tok !== '') kropp.token = tok === 'slett' ? '' : tok;
+                this.metaKall(kropp);
+              },
+              mkSjekkMetaPub: () => this.metaKall({ handling: 'sjekk' }),
+            };
+          })(),
           mkGoogleBedrift: this.state.mkGoogleBedrift ?? ((d.innstillinger || {}).googleBedrift || ''),
           mkSettGoogleBedrift: e => this.setState({ mkGoogleBedrift: e.target.value }),
           mkLagreBedrift: () => this.markedKall({ handling: 'innstilling', googleBedrift: this.state.mkGoogleBedrift ?? '' }),
@@ -61487,6 +61639,19 @@ class Component extends DCLogic {
           mkLesBildeforslag: (this.state.mkLes || {}).bildeforslag || '',
           mkLesHarBildeforslag: !!(this.state.mkLes || {}).bildeforslag,
           mkLukkLes: () => this.setState({ mkLes: null }),
+          // Ut paa Instagram og Facebook. Knappene vises bare naar tokenet
+          // og kontoen staar inne, og bare paa et innlegg som ikke alt er
+          // lagt ut. Mangler bildet, sier serveren fra — den vet det, og en
+          // knapp som gjemmer seg lar eieren lure paa hvorfor.
+          mkLesKanSome: (this.state.mkLes || {}).type === 'sosialt'
+            && (this.state.mkLes || {}).status !== 'publisert'
+            && !!((d.innstillinger || {}).metaKlar),
+          mkLesKanSomeFb: (this.state.mkLes || {}).type === 'sosialt'
+            && (this.state.mkLes || {}).status !== 'publisert'
+            && !!((d.innstillinger || {}).metaToken)
+            && !!((d.innstillinger || {}).metaSide),
+          mkLesUtInstagram: () => this.metaPubliser('Instagram'),
+          mkLesUtFacebook: () => this.metaPubliser('Facebook'),
           mkLesGodkjenn: () => { const u = this.state.mkLes; if (u) { this.setState({ mkLes: null }); this.aiKall({ handling: 'godkjenn', id: u.id }); } },
           mkLesKopier: () => this.kopier((this.state.mkLes || {}).tekst || '', 'Teksten ligger på utklippstavla.'),
           mkLesKopierTagger: () => this.kopier(

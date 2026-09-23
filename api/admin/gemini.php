@@ -133,10 +133,14 @@ switch ($handling) {
 
         $b = Gemini::lagBilde($ledetekst, $formal);
 
+        // Booking::kroner() runder til hele kroner, og et bilde koster under
+        // én — svaret sa «kr. 0,-» mens forbruket steg med én krone. Under
+        // hundre ore staar det derfor i ore, som i status().
+        $ore = $b['kostnadOre'];
         Svar::ok([
             'url'     => $b['url'],
             'navn'    => $b['navn'],
-            'kostnad' => Booking::kroner($b['kostnadOre']),
+            'kostnad' => $ore < 100 ? $ore . ' øre' : Booking::kroner($ore),
             'brukt'   => Booking::kroner(AI::bruktDenneMaaneden()),
             'beskjed' => 'Bildet er lagt i biblioteket.',
         ]);

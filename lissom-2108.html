@@ -22860,6 +22860,24 @@ window.__resources = {
         <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Store bilder krympes automatisk, så et kjøpt bilde fra Shutterstock går rett inn.</span>
       </label>
 
+      <!-- Lag bildet med Gemini.
+           Staar i den felles billedvelgeren, saa den finnes paa kurs,
+           events, varer, artikler, kampanjer og referanser paa én gang —
+           og dermed ogsaa i kursoppretteren. Bildet lages paa serveren,
+           legges i biblioteket og settes paa det du holder paa med. -->
+      <sc-if value="{{ gemKlar }}" hint-placeholder-val="{{ true }}">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Lag bilde</div>
+        <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+          <input value="{{ gemLedetekst }}" onChange="{{ settGemLedetekst }}" onKeyDown="{{ gemTast }}" placeholder="Hva skal bildet vise?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ gemLag }}" hint-size="auto,40px">{{ gemKnapp }}</x-import>
+        </div>
+        <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Beskriv tingen, ikke stemningen — «et stort uglasert fat på en trebenk» gir bedre bilde enn «noe fint keramikk». Formatet er liggende, uten tekst i bildet. Tar rundt ti sekunder og koster {{ gemPris }}.</p>
+        <sc-if value="{{ gemMelding }}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ gemMeldingTekst }}</p>
+        </sc-if>
+        <div style="height: var(--space-5);"></div>
+      </sc-if>
+
       <!-- Soek hos Shutterstock, uten aa forlate sida. Treffene er
            forhaandsvisninger med vannmerke; foerst naar du velger ett blir
            det lisensiert, lastet ned og lagt i biblioteket. -->
@@ -31076,9 +31094,28 @@ class Component extends DCLogic {
     // Nytt sted, nytt soek. Sto treffene fra forrige rute igjen, saa det ut
     // som de hoerte til det du naa holder paa med.
     this.setState({ ssTreff: [], ssMelding: '', ssSide: 1, ssFlere: false, ssOrd: undefined });
+    // Samme for «Lag bilde»: meldinga fra forrige gang hoerer ikke til her.
+    this.setState({ gemMelding: '', gemLedetekst: undefined, gemLager: false });
     const v = (id && typeof id === 'object') ? id : { id: id, slag: slag || 'artikkel' };
     this.setState({ bildeFor: v });
     if (!this.state.bildeliste) this.hentBilder();
+
+    // Er Gemini koblet til? Spoerres én gang, ikke ved hver aapning.
+    //
+    // Billedvelgeren brukes fra skjermer som ikke henter Markedsfoering, saa
+    // statusen kan ikke komme derfra. Uten svar staar «Lag bilde» skjult —
+    // en knapp som alltid svarer «ikke koblet til» er bare i veien.
+    if (this.state.geminiKlar === undefined && this.erPublisert()) {
+      this.setState({ geminiKlar: false });
+      fetch('/api/admin/gemini.php', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => {
+          if (d && d.ok && d.status) {
+            this.setState({ geminiKlar: !!d.status.klar, geminiPris: d.status.pris || '' });
+          }
+        })
+        .catch(() => { /* da staar knappen skjult, som for. */ });
+    }
   }
 
   /**
@@ -31479,6 +31516,27 @@ class Component extends DCLogic {
       // Noekkelen ligger i secrets.php og forlater aldri serveren. Treffene
       // er forhaandsvisninger med vannmerke — foerst naar du velger ett blir
       // det lisensiert, og bare det lisensierte bildet legges ut.
+      // ── Lag bildet med Gemini ────────────────────────────────────────
+      //
+      // Staar her og ikke i hver enkelt skjerm: billedvelgeren er felles for
+      // kurs, events, varer, artikler, kampanjer og referanser, saa den ene
+      // plassen gir knappen alle stedene.
+      //
+      // Ledeteksten foreslaas av tittelen paa det du redigerer — staar du i
+      // et nytt kurs som heter «Fransk smørklokke», er det den teksten du
+      // vil ha, ikke et tomt felt.
+      gemKlar: !!this.state.geminiKlar,
+      gemPris: this.state.geminiPris || 'rundt 45 øre',
+      gemLedetekst: this.state.gemLedetekst !== undefined
+        ? this.state.gemLedetekst
+        : ((valgt.tittel || '').trim() || ''),
+      settGemLedetekst: (e) => this.setState({ gemLedetekst: e.target.value }),
+      gemTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.lagGeminiBilde(); } },
+      gemKnapp: this.state.gemLager ? 'Lager …' : 'Lag bilde',
+      gemLag: () => this.lagGeminiBilde(),
+      gemMelding: !!this.state.gemMelding,
+      gemMeldingTekst: this.state.gemMelding || '',
+
       ssOrd: this.state.ssOrd !== undefined
         ? this.state.ssOrd
         : ((valgt.tittel || '').trim() || 'keramikk verksted'),
@@ -31810,6 +31868,51 @@ class Component extends DCLogic {
         if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
       })
       .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Lager et bilde med Gemini og setter det paa det du holder paa med.
+   *
+   * Samme vei som hentShutterstock(): serveren lager bildet, legger det i
+   * biblioteket, og vi peker det vi redigerer paa den nye adressen. Da
+   * virker knappen paa kurs, events, varer, artikler, kampanjer og
+   * referanser uten at noen av dem vet at Gemini finnes.
+   *
+   * Kallet tar rundt ti sekunder. Uten «gemLager» kunne man trykke flere
+   * ganger og betale for hvert trykk.
+   */
+  lagGeminiBilde() {
+    if (!this.erPublisert()) { this.setState({ gemMelding: 'Krever den ekte siden' }); return; }
+    const tekst = (this.state.gemLedetekst || '').trim();
+    if (!tekst) { this.setState({ gemMelding: 'Skriv hva bildet skal vise.' }); return; }
+    if (this._gemLager) return;
+    this._gemLager = true;
+
+    const forNoe = this.state.bildeFor;
+    this.setState({ gemLager: true, gemMelding: 'Lager bildet — det tar rundt ti sekunder …' });
+
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'lag', ledetekst: tekst, formal: 'Billedvelger' }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._gemLager = false;
+        this.setState({ gemLager: false });
+        if (!ok) { this.setState({ gemMelding: (d && d.feil) || 'Bildet ble ikke laget.' }); return; }
+        this._bilderHentes = false;
+        this.hentBilder();
+        this.setState({
+          gemMelding: 'Bildet er lagt inn. Kostet ' + (d.kostnad || '') + ' — brukt ' + (d.brukt || '') + ' denne måneden.',
+          gemLedetekst: '',
+        });
+        if (forNoe) this.settValgtBilde(d.url);
+      })
+      .catch(() => {
+        this._gemLager = false;
+        this.setState({ gemLager: false, gemMelding: 'Fikk ikke kontakt med serveren.' });
+      });
   }
 
   /**

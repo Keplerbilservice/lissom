@@ -218,15 +218,33 @@ $gavekortMotkonto = static function (array $r): string {
 // hadde ikke staatt noe sted i regnskapet.
 //
 // Bare betalte. «Betaler ved oppmoete» staar som reservert til den er gjort
-// opp, og «Gratis» er null kroner og faller ut av seg selv.
+// opp.
+//
+// ── «Gratis» falt ikke ut av seg selv ────────────────────────────────
+//
+// Her sto det at «Gratis» er null kroner og faller ut paa «belop_ore > 0».
+// Det stemte ikke: naar en plass settes til Gratis, skrives maaten paa
+// bookingen — beloepet staar urort. Maalt 23. september 2026: booking 16
+// sto som Gratis paa kr 1 490, og dagsoppgjoret foerte de 1 490 som
+// inntekt. Okonomi gjorde det ikke, for det finnes ingen betalingsrad, og
+// de to rapportene sprikte med akkurat det beloepet.
+//
+// Derfor spoer vi paa maaten, ikke paa beloepet. Samme liste som
+// Booking::manuellBetaling() bruker, saa de to kan ikke komme i utakt.
+//
+// Fra 23. september 2026 lager begge veiene til «betalt» en betalingsrad,
+// saa dette er stien for det som ble foert for den datoen.
+$utenPenger = Booking::MAATER_UTEN_PENGER;
+$plass      = implode(',', array_fill(0, count($utenPenger), '?'));
 $manuelle = DB::alle(
     "SELECT b.id, b.belop_ore, b.betalt_maate, b.created_at
        FROM bookings b
       WHERE b.payment_id IS NULL
         AND b.status = 'betalt'
         AND b.belop_ore > 0
-        AND b.created_at >= :fra AND b.created_at < :til",
-    ['fra' => $iUtc($fra), 'til' => $iUtc($til)]
+        AND (b.betalt_maate IS NULL OR b.betalt_maate NOT IN ({$plass}))
+        AND b.created_at >= ? AND b.created_at < ?",
+    array_merge($utenPenger, [$iUtc($fra), $iUtc($til)])
 );
 foreach ($manuelle as $m) {
     $rader[] = [

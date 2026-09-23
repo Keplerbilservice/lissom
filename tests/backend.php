@@ -17983,6 +17983,39 @@ sjekk('… og alle tre stedene i admin bruker den',
 sjekk('… ogsaa tellingen av datoer framover',
     str_contains($kursFil, "                AND \" . Apent::skjulUtenBooking('cs') . \"\n           GROUP BY course_id"));
 
+// ── Paint on Pots foelger aapningstidene igjen ───────────────────────────
+//
+// Eieren, 23. september 2026: «skru det på du».
+//
+// Migrasjon 135 slo den av 2. september, og grunnen sto der: «hvorfor vises
+// paint on pots i kalenderen naar det ikke er kurs?» Den grunnen er borte —
+// skjulUtenBooking() tar dem ut av admin til noen har booket.
+$mig206 = (string) file_get_contents(dirname(__DIR__)
+    . '/db/migrations/206_paint_on_pots_folger_apningstidene_igjen.sql');
+sjekk('migrasjonen slaar automatikken paa igjen',
+    str_contains($mig206, "UPDATE courses\n   SET folger_apningstid = 1\n WHERE tittel = 'Paint on Pots';"));
+// Aa publisere et kurs er aa legge det ut for alle. Det er eierens trykk.
+//
+// Foerste utgave av denne proeven lette etter «status = 'publisert'» i fila
+// og fant den — i kommentaren som forklarer hva utleggingen krever. Den saa
+// etter tekst der den skulle sett etter en endring. Naa teller den setninger:
+// det skal vaere én UPDATE, og den skal ikke roere status.
+sjekk('… og roerer ikke statusen paa kurset',
+    substr_count($mig206, 'UPDATE ') === 1
+    && !str_contains($mig206, 'SET status')
+    && !str_contains($mig206, "   SET status"));
+if (DB::harTabell('courses') && DB::harKolonne('courses', 'folger_apningstid')) {
+    $pop = DB::en("SELECT folger_apningstid, status FROM courses WHERE tittel = 'Paint on Pots'");
+    sjekk('Paint on Pots foelger aapningstidene i basen',
+        $pop !== null && (int) $pop['folger_apningstid'] === 1,
+        $pop === null ? 'fant ikke kurset' : 'staar paa ' . (int) $pop['folger_apningstid']);
+    // Ikke en paastand om at det SKAL vaere publisert — bare en beskjed om at
+    // plassene ikke kommer for det er det. Utleggingen krever begge deler.
+    sjekk('… og er publisert, saa plassene faktisk lages',
+        $pop !== null && (string) $pop['status'] === 'publisert',
+        $pop === null ? 'fant ikke kurset' : 'status: ' . (string) $pop['status']);
+}
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme

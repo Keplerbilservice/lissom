@@ -44,6 +44,9 @@ if (Foresporsel::metode() === 'GET') {
         'tak'     => Booking::kroner(AI::tak() * 100),
         // Referansebildene, saa skjermen kan vise dem og la eieren rydde.
         'referanser' => Gemini::referanser(),
+        // Hvem som skriver teksten, og hvilken modell hvis det er Gemini.
+        'leverandor'  => AI::leverandor(),
+        'tekstModell' => Gemini::tekstModell(),
         'brukt'   => Booking::kroner(AI::bruktDenneMaaneden()),
     ]);
 }
@@ -127,6 +130,25 @@ switch ($handling) {
             $lagre('gemini_modell', $m);
         }
 
+        // Hvem som skriver teksten. Gjelder alt — kursbeskrivelser, SEO,
+        // artikler, nyhetsbrev og innlegg.
+        if (array_key_exists('leverandor', $kropp)) {
+            $l = strtolower(trim((string) $kropp['leverandor']));
+            if (!in_array($l, ['claude', 'gemini'], true)) {
+                Svar::feil('Velg Claude eller Gemini.');
+            }
+            $lagre('ai_leverandor', $l);
+        }
+
+        if (array_key_exists('tekstModell', $kropp)) {
+            $m = trim((string) $kropp['tekstModell']);
+            if ($m !== '' && preg_match('/^[a-z0-9.-]{3,64}$/i', $m) !== 1) {
+                Svar::feil('Modellnavnet ser ikke riktig ut. Det ser ut som '
+                         . Gemini::MODELL_TEKST_STANDARD . '.');
+            }
+            $lagre('gemini_tekst_modell', $m);
+        }
+
         if (array_key_exists('pris', $kropp)) {
             $p = (int) preg_replace('/\D+/', '', (string) $kropp['pris']);
             if ($p < 0 || $p > 10000) {
@@ -138,7 +160,10 @@ switch ($handling) {
         Config::glemBasen();
         // Noekkelen selv staar aldri i loggen — bare at oppsettet ble rort.
         revider('gemini_oppsett', null, null, [
-            'felt' => array_values(array_intersect(['nokkel', 'modell', 'pris'], array_keys($kropp))),
+            'felt' => array_values(array_intersect(
+                ['nokkel', 'modell', 'pris', 'leverandor', 'tekstModell'],
+                array_keys($kropp)
+            )),
         ]);
         Svar::ok(['status' => Gemini::status(), 'beskjed' => 'Oppsettet er lagret.']);
 

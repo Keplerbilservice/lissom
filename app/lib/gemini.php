@@ -57,6 +57,15 @@ final class Gemini
      */
     public const MODELL_STANDARD = 'gemini-3.1-flash-image';
 
+    /**
+     * Tekstmodellen, naar ingenting er satt.
+     *
+     * «3.1 Pro» er den som skriver best. Flash er raskere og billigere, og
+     * kan byttes inn fra oppsettet hvis kostnaden blir merkbar — men til
+     * kursbeskrivelser og artikler er det teksten som teller.
+     */
+    public const MODELL_TEKST_STANDARD = 'gemini-3.1-pro-preview';
+
     /** Anslag i ore per bilde, naar ingenting er satt. */
     private const PRIS_ORE_STANDARD = 45;
 
@@ -174,6 +183,109 @@ final class Gemini
                 ? null
                 : 'Lim inn nøkkelen fra aistudio.google.com under Markedsføring → Oppsett.',
         ];
+    }
+
+    /**
+     * Skriver tekst, i stedet for Claude.
+     *
+     * Eieren, 23. september 2026: «vi kan jo bruke gemini paa
+     * tekstgenereringen?» Han spurte fordi Anthropic-kontoen sto uten
+     * dekning og ingen av tekstknappene virket — hverken de tretten nye,
+     * kursbeskrivelsen, SEO eller artiklene.
+     *
+     * Svaret har samme form som AI::spor(), saa alt som kaller den kan gaa
+     * hit uten aa vite hvem som svarte. Kallet logges i «ai_logg» med
+     * modellnavnet sitt og trekkes fra det samme maanedstaket — to kasser
+     * ville betydd to steder aa lete naar regningen kommer.
+     *
+     * @return array{tekst: string, kostnadOre: int, tokensInn: int, tokensUt: int}
+     */
+    public static function sporTekst(string $system, string $bruker, string $formal, int $maksTokens = 8000): array
+    {
+        $noekkel = self::noekkel();
+        if ($noekkel === '') {
+            throw new RuntimeException(
+                'Gemini er ikke koblet til ennå. Lim inn nøkkelen under Markedsføring → Oppsett.'
+            );
+        }
+
+        $modell = self::tekstModell();
+        $svar = http_kall(
+            self::BASE . rawurlencode($modell) . ':generateContent',
+            'POST',
+            json_encode([
+                'contents'          => [['role' => 'user', 'parts' => [['text' => $bruker]]]],
+                'systemInstruction' => ['parts' => [['text' => $system]]],
+                'generationConfig'  => ['maxOutputTokens' => $maksTokens],
+            ], JSON_UNESCAPED_UNICODE),
+            ['Content-Type: application/json', 'x-goog-api-key: ' . $noekkel],
+            120
+        );
+
+        $json = json_decode((string) $svar['kropp'], true);
+
+        if ((int) $svar['status'] !== 200) {
+            $melding = (string) ($json['error']['message'] ?? 'Ukjent feil');
+            AI::loggKall($formal, $modell, 0, 0, 0, false, $melding);
+            throw new RuntimeException(match (true) {
+                (int) $svar['status'] === 400 && str_contains($melding, 'API key')
+                    => 'Nøkkelen ble ikke godtatt. Sjekk den under Markedsføring → Oppsett.',
+                (int) $svar['status'] === 404
+                    => 'Google kjenner ikke modellen «' . $modell . '». Rett navnet under '
+                     . 'Markedsføring → Oppsett.',
+                (int) $svar['status'] === 429
+                    => 'For mange kall på kort tid, eller kvoten er brukt opp. Vent litt.',
+                (int) $svar['status'] >= 500
+                    => 'Google svarer ikke akkurat nå. Prøv igjen om litt.',
+                default => 'Gemini svarte ikke: ' . $melding,
+            });
+        }
+
+        // Modellen kan legge ved sine egne tanker. «thought» er ikke svaret.
+        $tekst = '';
+        foreach (($json['candidates'][0]['content']['parts'] ?? []) as $del) {
+            if (!empty($del['thought'])) {
+                continue;
+            }
+            $tekst .= (string) ($del['text'] ?? '');
+        }
+        $tekst = trim($tekst);
+
+        $inn = (int) ($json['usageMetadata']['promptTokenCount'] ?? 0);
+        $ut  = (int) ($json['usageMetadata']['candidatesTokenCount'] ?? 0);
+        $ore = self::tekstKostnadOre($inn, $ut);
+
+        AI::loggKall($formal, $modell, $inn, $ut, $ore, $tekst !== '', $tekst === '' ? 'Tomt svar' : null);
+        AI::settSisteKostnad($ore);
+
+        if ($tekst === '') {
+            $grunn = (string) ($json['candidates'][0]['finishReason'] ?? '');
+            throw new RuntimeException('Gemini svarte tomt'
+                . ($grunn !== '' ? ' (' . $grunn . ')' : '') . '. Prøv igjen.');
+        }
+
+        return ['tekst' => $tekst, 'kostnadOre' => $ore, 'tokensInn' => $inn, 'tokensUt' => $ut];
+    }
+
+    /** Tekstmodellen. Staar i oppsettet, av samme grunn som bildemodellen. */
+    public static function tekstModell(): string
+    {
+        $m = trim((string) Config::hent('gemini_tekst_modell', ''));
+        return $m !== '' ? $m : self::MODELL_TEKST_STANDARD;
+    }
+
+    /**
+     * Hva kallet kostet, i ore.
+     *
+     * Googles priser for 3.1 Pro, september 2026: 1,25 dollar per million
+     * tokens inn og 10 dollar per million ut. Samme regnestykke som
+     * AI::kostnadOre(), med de samme forbeholdene — tallet er et anslag til
+     * kostnadsoversikten, ikke en faktura.
+     */
+    private static function tekstKostnadOre(int $inn, int $ut): int
+    {
+        $usd = ($inn / 1000000) * 1.25 + ($ut / 1000000) * 10.00;
+        return (int) round($usd * 11.0 * 100);
     }
 
     /**

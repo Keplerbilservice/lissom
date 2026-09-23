@@ -184,22 +184,17 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
 
         $kommentar = mb_substr(trim(Foresporsel::tekst('kommentar')), 0, 300);
 
+        // Selve raden staar i Booking::manuellBetaling(). «Ikke betalt»-kortet
+        // i Kassa gaar den samme veien, saa de to kan ikke komme i utakt.
         $betalingId = DB::iTransaksjon(static function () use ($b, $bookingId, $belop, $maate, $kommentar, $admin): int {
-            return DB::settInn('payments', [
-                // «MANUELL-» foran gjor det umulig aa forveksle raden med en
-                // betaling som faktisk ligger i Vipps.
-                'vipps_reference' => 'MANUELL-' . Vipps::nyReferanse('K'),
-                'type'            => 'manuell',
-                'formal'          => 'booking',
-                'member_id'       => $b['member_id'] !== null ? (int) $b['member_id'] : null,
-                'booking_id'      => $bookingId,
-                'registrert_av'   => (int) $admin['id'],
-                'maate'           => $maate,
-                'kommentar'       => $kommentar !== '' ? $kommentar : null,
-                'belop_ore'       => $belop,
-                'status'          => 'betalt',
-                'idempotency_key' => Vipps::uuid(),
-            ]);
+            return Booking::manuellBetaling(
+                $bookingId,
+                $belop,
+                $maate,
+                $b['member_id'] !== null ? (int) $b['member_id'] : null,
+                (int) $admin['id'],
+                $kommentar
+            );
         });
 
         $etter = Booking::settBetaltStatus($bookingId);

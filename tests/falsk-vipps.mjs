@@ -17,8 +17,13 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const HER   = path.dirname(new URL(import.meta.url).pathname);
+// «new URL(...).pathname» gir «/C:/Users/...» paa Windows, og path.join()
+// lager da «C:\C:\Users\...». Testen startet, men doede paa foerste kall med
+// ENOENT da den skulle skrive logglinja. fileURLToPath() gjor det riktig paa
+// begge plattformer.
+const HER   = path.dirname(fileURLToPath(import.meta.url));
 const LOGG  = path.join(HER, '.falsk-vipps.jsonl');
 const PORT  = Number(process.env.FALSK_VIPPS_PORT || 8125);
 

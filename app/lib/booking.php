@@ -1576,6 +1576,88 @@ final class Booking
     public const MAATER = ['Kontant', 'Vipps', 'Gratis'];
 
     /**
+     * Maatene der det IKKE kom penger inn.
+     *
+     * Lista staar snudd med vilje. Skrev vi opp maatene som gir penger,
+     * maatte den holdes i takt med MAATER i api/admin/pamelding.php — og
+     * verre: en gammel rad med en maate som ikke lenger kan velges, som
+     * «Bankoverforing», ville falt utenfor og aldri blitt foert. Naar lista
+     * sier hva som IKKE er penger, teller alt annet som penger, ogsaa det
+     * som ble skrevet for lista ble kortet ned.
+     *
+     * «Gavekort» er ikke penger som kommer inn — det er et kort som trekkes
+     * ned, og det har sin egen rad med «gavekort_ore».
+     */
+    public const MAATER_UTEN_PENGER = ['Gavekort', 'Gratis', 'Ikke betalt', 'Betaler ved oppmøte'];
+
+    /** Kom det penger inn paa denne maaten? Tom maate teller ikke. */
+    public static function maateGirPenger(string $maate): bool
+    {
+        $m = trim($maate);
+        return $m !== '' && !in_array($m, self::MAATER_UTEN_PENGER, true);
+    }
+
+    /**
+     * Bilaget for en betaling som kom inn i verkstedet.
+     *
+     * ── Hvorfor denne finnes ─────────────────────────────────────────
+     *
+     * Det fantes to veier til «betalt» paa en paamelding, og bare den ene
+     * foerte pengene: «Registrer betaling» inne paa deltakeren lagde en rad i
+     * «payments», mens «Ikke betalt»-kortet i Kassa bare satte status og
+     * skrev maaten paa bookingen. Plassen forsvant fra ubetalt, men
+     * omsetningen — som summerer «payments» — sto stille.
+     *
+     * Maalt 23. september 2026: ni betalte paameldinger uten bilag, kr 26 820.
+     * Dagsoppgjoret fanget dem opp gjennom en egen spoerring og viste
+     * kr 28 310 for september, mens Okonomi viste kr 2 980 for det samme.
+     *
+     * Eieren, samme dag: «jeg fant navnet og trykket paa vipps, fikk en
+     * melding om at det var lagret, og de forsvant fra ubetalt, men det staar
+     * 0 i omsetning».
+     *
+     * Derfor staar raden ett sted nå, og begge veiene gaar hit. To
+     * kodeveier kan komme i utakt; én kan ikke.
+     *
+     * Kaller ikke settBetaltStatus() selv — den som kaller vet best om
+     * statusen skal regnes paa nytt eller staar der alt.
+     *
+     * @return int id-en til betalingsraden
+     */
+    public static function manuellBetaling(
+        int $bookingId,
+        int $belopOre,
+        string $maate,
+        ?int $medlemId = null,
+        ?int $adminId = null,
+        string $kommentar = ''
+    ): int {
+        $felt = [
+            // «MANUELL-» foran gjor det umulig aa forveksle raden med en
+            // betaling som faktisk ligger i Vipps.
+            'vipps_reference' => 'MANUELL-' . Vipps::nyReferanse('K'),
+            'type'            => 'manuell',
+            'formal'          => 'booking',
+            'member_id'       => $medlemId,
+            'maate'           => $maate,
+            'kommentar'       => $kommentar !== '' ? mb_substr($kommentar, 0, 300) : null,
+            'belop_ore'       => max(0, $belopOre),
+            'status'          => 'betalt',
+            'idempotency_key' => Vipps::uuid(),
+        ];
+        // Kolonnene kommer med migrasjon 084. Uten dem skal raden fortsatt
+        // lages — den er et bilag uansett — men uten koblingen.
+        if (DB::harKolonne('payments', 'booking_id')) {
+            $felt['booking_id'] = $bookingId;
+        }
+        if (DB::harKolonne('payments', 'registrert_av') && $adminId !== null && $adminId > 0) {
+            $felt['registrert_av'] = $adminId;
+        }
+
+        return DB::settInn('payments', $felt);
+    }
+
+    /**
      * Betalingene som gjelder én paamelding, og summen av dem.
      *
      * Annullerte teller ikke i summen, men blir staaende i lista — det er

@@ -280,7 +280,7 @@ if ($handling === 'status') {
     if (!in_array($status, ['betalt', 'reservert', 'ikke_mott'], true)) {
         Svar::feil('Ukjent status.');
     }
-    $bok = DB::en('SELECT id, belop_ore, payment_id FROM bookings WHERE id = :i', ['i' => $id]);
+    $bok = DB::en('SELECT id, belop_ore, payment_id, member_id FROM bookings WHERE id = :i', ['i' => $id]);
     if ($bok === null) {
         Svar::feil('Fant ikke påmeldingen.');
     }
@@ -343,6 +343,46 @@ if ($handling === 'status') {
     }
 
     DB::oppdater('bookings', $felt, ['id' => $id]);
+
+    // ── Bilaget for pengene som kom inn ──────────────────────────────
+    //
+    // Her sto det ingenting. Statusen ble satt og maaten skrevet paa
+    // bookingen, men det ble aldri laget en rad i «payments» — og
+    // omsetningen paa Okonomi summerer «payments». Plassen forsvant fra
+    // «Ikke betalt», og pengene forsvant fra regnskapet i samme trykk.
+    //
+    // Maalt 23. september 2026: ni betalte paameldinger uten bilag,
+    // kr 26 820. Dagsoppgjoret viste kr 28 310 for september fordi det har
+    // en egen spoerring for disse; Okonomi viste kr 2 980.
+    //
+    // Raden lages av det som faktisk staar igjen, ikke av hele beloepet:
+    // trykker noen to ganger, eller er en del alt betalt paa nett, skal
+    // ikke summen bli staaende dobbelt. Er alt gjort opp fra for, skjer
+    // ingenting.
+    //
+    // Gavekort gaar ikke her — det har sin egen rad rett under, med
+    // «gavekort_ore» og et trekk paa kortet.
+    if ($status === 'betalt'
+        && $kort === null
+        && Booking::maateGirPenger($nyMaate)
+        && (int) $bok['belop_ore'] > 0
+    ) {
+        $alt     = Booking::betalingerFor($id);
+        $skyldig = max(0, (int) $bok['belop_ore'] - $alt['sum']);
+        if ($skyldig > 0) {
+            $betalingId = Booking::manuellBetaling(
+                $id,
+                $skyldig,
+                $nyMaate,
+                $bok['member_id'] !== null ? (int) $bok['member_id'] : null,
+                (int) $admin['id']
+            );
+            revider('betaling_registrert', 'booking', $id, [
+                'betaling' => $betalingId, 'belop_ore' => $skyldig,
+                'maate' => $nyMaate, 'via' => 'ikke-betalt-kortet',
+            ]);
+        }
+    }
 
     // Beloepet henges paa en betalingsrad slik en nettbetaling gjor, saa
     // Booking::trekkGavekort() kan gjore jobben sin — den samme som ved et

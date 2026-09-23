@@ -1719,8 +1719,17 @@ sjekk('en ny Vipps-betaling kobles til paameldingen med det samme',
 // Endepunktet skal ikke ha sine egne regler ved siden av bibliotekets.
 sjekk('kursbetaling.php bruker reglene i Booking, ikke sine egne',
     str_contains($betFil, 'Booking::settBetaltStatus(') && str_contains($betFil, 'Booking::betalingerFor('));
+// Selve raden flyttet til Booking::manuellBetaling() 23. september 2026, saa
+// «Ikke betalt»-kortet i Kassa og «Registrer betaling» lager den samme raden.
+// Regelen er den samme — referansen skal si at dette ikke er Vipps — men den
+// staar ett sted nå, og det er der den skal sjekkes.
 sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
-    str_contains($betFil, "'MANUELL-' . Vipps::nyReferanse"));
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+        "'MANUELL-' . Vipps::nyReferanse"));
+sjekk('begge veiene til «betalt» lager den samme betalingsraden',
+    str_contains($betFil, 'Booking::manuellBetaling(')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'),
+        'Booking::manuellBetaling('));
 
 // ── Kursholder paa den enkelte datoen ────────────────────────────────────
 //

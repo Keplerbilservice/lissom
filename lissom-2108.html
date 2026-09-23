@@ -22878,44 +22878,6 @@ window.__resources = {
         <div style="height: var(--space-5);"></div>
       </sc-if>
 
-      <!-- Soek hos Shutterstock, uten aa forlate sida. Treffene er
-           forhaandsvisninger med vannmerke; foerst naar du velger ett blir
-           det lisensiert, lastet ned og lagt i biblioteket. -->
-      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Søk hos Shutterstock</div>
-      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
-        <input value="{{ ssOrd }}" onChange="{{ settSsOrd }}" onKeyDown="{{ ssTast }}" placeholder="Hva leter du etter?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="search" on-click="{{ ssSok }}" hint-size="auto,40px">{{ ssKnapp }}</x-import>
-      </div>
-      <!-- Soeket sendes med norsk som spraak, saa «keramikk» virker. Ordene
-           i biblioteket er likevel skrevet paa engelsk, og et engelsk ord
-           treffer derfor bredere enn oversettelsen av det. -->
-      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Søk på norsk eller engelsk. Engelske ord treffer bredest — <em>pottery</em>, <em>ceramics</em>, <em>clay</em>. <button class="lx-radpille" type="button" onClick="{{ ssSjekk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk tilkoblingen</button> · <button class="lx-radpille" type="button" onClick="{{ ssKoble }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ ssKobleTekst }}</button></p>
-      <!-- Shutterstock avviser tilkoblingen om returadressen ikke staar
-           registrert paa appen, og da havner du paa feilsida deres uten aa
-           vite hvorfor. Derfor staar adressen her foerst. -->
-      <sc-if value="{{ ssKobleKlar }}" hint-placeholder-val="{{ false }}">
-        <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-3); background: var(--clay-50);">
-          <p style="margin: 0 0 var(--space-2); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Denne adressen må stå som Callback URL på appen din hos Shutterstock. Står den ikke der, avviser de tilkoblingen.</p>
-          <code style="display: block; font-size: var(--text-xs); word-break: break-all; color: var(--text-heading); margin-bottom: var(--space-3);">{{ ssKobleRetur }}</code>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ ssFortsett }}" hint-size="auto,36px">Fortsett til Shutterstock</x-import>
-        </div>
-      </sc-if>
-      <sc-if value="{{ ssMelding }}" hint-placeholder-val="{{ false }}">
-        <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ssMeldingTekst }}</p>
-      </sc-if>
-      <sc-if value="{{ ssHarTreff }}" hint-placeholder-val="{{ true }}">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-3);">
-          <sc-for list="{{ ssTreff }}" as="t" hint-placeholder-count="8">
-            <button type="button" onClick="{{ t.velg }}" aria-label="{{ t.tekst }}" title="{{ t.tekst }}" style="{{ t.stil }}"></button>
-          </sc-for>
-        </div>
-        <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-6);">
-          <span style="font-size: var(--text-xs); color: var(--text-muted);">Trykk et bilde for å lisensiere og legge det inn. Miniatyrene har vannmerke — det ferdige bildet har ikke.</span>
-          <sc-if value="{{ ssFlere }}" hint-placeholder-val="{{ true }}">
-            <button class="lx-radpille" type="button" onClick="{{ ssNeste }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Flere treff</button>
-          </sc-if>
-        </div>
-      </sc-if>
 
       <!-- Utsnittet. Vises naar et bilde er valgt: her ser du ramma slik
            kunden faar den, og trykker der motivet skal ligge. -->
@@ -31091,10 +31053,8 @@ class Component extends DCLogic {
    * kurset lagres.
    */
   apneBildevalg(id, slag) {
-    // Nytt sted, nytt soek. Sto treffene fra forrige rute igjen, saa det ut
-    // som de hoerte til det du naa holder paa med.
-    this.setState({ ssTreff: [], ssMelding: '', ssSide: 1, ssFlere: false, ssOrd: undefined });
-    // Samme for «Lag bilde»: meldinga fra forrige gang hoerer ikke til her.
+    // Nytt sted, ny ledetekst. Sto meldinga fra forrige rute igjen, saa det
+    // ut som den hoerte til det du naa holder paa med.
     this.setState({ gemMelding: '', gemLedetekst: undefined, gemLager: false });
     const v = (id && typeof id === 'object') ? id : { id: id, slag: slag || 'artikkel' };
     this.setState({ bildeFor: v });
@@ -31537,34 +31497,6 @@ class Component extends DCLogic {
       gemMelding: !!this.state.gemMelding,
       gemMeldingTekst: this.state.gemMelding || '',
 
-      ssOrd: this.state.ssOrd !== undefined
-        ? this.state.ssOrd
-        : ((valgt.tittel || '').trim() || 'keramikk verksted'),
-      settSsOrd: (e) => this.setState({ ssOrd: e.target.value }),
-      ssTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sokShutterstock(1); } },
-      ssKnapp: this.state.ssSoker ? 'Søker …' : 'Søk',
-      ssSok: () => this.sokShutterstock(1),
-      ssSjekk: () => this.sjekkShutterstock(),
-      ssKoble: () => this.kobleShutterstock(),
-      ssKobleTekst: this.state.ssKobler ? 'Henter adressen …' : 'Koble til Shutterstock',
-      ssKobleKlar: !!this.state.ssKobleUrl,
-      ssKobleRetur: this.state.ssKobleRetur || '',
-      ssFortsett: () => { if (this.state.ssKobleUrl) window.location.href = this.state.ssKobleUrl; },
-      ssNeste: () => this.sokShutterstock((this.state.ssSide || 1) + 1),
-      ssFlere: !!this.state.ssFlere,
-      ssMelding: !!this.state.ssMelding,
-      ssMeldingTekst: this.state.ssMelding || '',
-      ssHarTreff: (this.state.ssTreff || []).length > 0,
-      ssTreff: (this.state.ssTreff || []).map(t => ({
-        tekst: t.tekst || 'Bilde fra Shutterstock',
-        velg: () => this.hentShutterstock(t.id),
-        stil: {
-          appearance: 'none', cursor: 'pointer', padding: 0, height: 96,
-          borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
-          backgroundImage: "url('" + t.mini + "')", backgroundSize: 'cover',
-          backgroundPosition: 'center', backgroundColor: 'var(--clay-200)',
-        },
-      })),
       // ── Utsnittet ────────────────────────────────────────────────────
       //
       // Rammene har faste former: kurskortene 16:10, butikken 1:1. Et bilde
@@ -31637,126 +31569,6 @@ class Component extends DCLogic {
    * Aa laste opp og deretter maatte finne bildet igjen i lista ville vaert et
    * unodig steg — den som velger en fil, har alt bestemt seg.
    */
-  /**
-   * Soeker hos Shutterstock.
-   *
-   * Serveren gjor kallet, ikke nettleseren: noekkelen skal ikke ligge i
-   * JavaScript der hvem som helst kan lese den.
-   */
-  sokShutterstock(side) {
-    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    const ord = (this.state.ssOrd !== undefined
-      ? this.state.ssOrd
-      : ((this.state.bildeFor && this.state.kNavn) || '')).trim();
-    if (!ord) { this.setState({ ssMelding: 'Skriv hva du leter etter.' }); return; }
-    if (this.state.ssSoker) return;
-    this.setState({ ssSoker: true, ssMelding: '' });
-
-    fetch('/api/admin/shutterstock.php?sok=' + encodeURIComponent(ord) + '&side=' + (side || 1),
-          { credentials: 'same-origin' })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => {
-        if (!ok) {
-          this.setState({ ssSoker: false, ssTreff: [], ssFlere: false,
-                          ssMelding: (d && d.feil) || 'Søket gikk ikke.' });
-          return;
-        }
-        const treff = d.treff || [];
-        this.setState({
-          ssSoker: false,
-          ssSide: d.side || 1,
-          ssFlere: !!d.flere,
-          // «Flere treff» legger paa, framfor aa bytte ut — ellers mister du
-          // det du saa paa da du trykket.
-          ssTreff: (side || 1) > 1 ? (this.state.ssTreff || []).concat(treff) : treff,
-          ssMelding: treff.length ? '' : 'Ingen treff på «' + ord + '». Prøv et annet ord.',
-        });
-      })
-      .catch(() => this.setState({ ssSoker: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
-  }
-
-  /**
-   * Sender Lissom gjennom Shutterstock sin egen innlogging.
-   *
-   * A soke og a laste ned er to ulike ting hos dem. Soket spor om
-   * biblioteket, og der holder det at appen var viser hvem den er. A
-   * lisensiere trekker pa et abonnement, og et abonnement horer til et
-   * menneske — ikke en app. Derfor ma Lissom si ja en gang, hos dem.
-   *
-   * Etterpa sendes du tilbake hit, og tokenet ligger lagret pa serveren.
-   */
-  kobleShutterstock() {
-    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    if (this.state.ssKobler) return;
-    this.setState({ ssKobler: true, ssMelding: '' });
-    fetch('/api/admin/shutterstock-kobling.php?start=1', { credentials: 'same-origin' })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => {
-        if (!ok || !d.url) {
-          this.setState({ ssKobler: false, ssKobleUrl: '',
-                          ssMelding: (d && d.feil) || 'Fikk ikke startet tilkoblingen.' });
-          return;
-        }
-        this.setState({ ssKobler: false, ssKobleUrl: d.url, ssKobleRetur: d.retur || '' });
-      })
-      .catch(() => this.setState({ ssKobler: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
-  }
-
-  /**
-   * Spor Shutterstock hva noekkelen faktisk har lov til.
-   *
-   * A soke og a laste ned er to ulike rettigheter hos dem, og de svarer
-   * ikke pa samme sted. Uten dette merker du forskjellen forst nar du
-   * trykker pa et bilde og far et avslag som ikke sier hvorfor.
-   */
-  sjekkShutterstock() {
-    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    this.setState({ ssMelding: 'Sjekker …' });
-    fetch('/api/admin/shutterstock.php?test=1', { credentials: 'same-origin' })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => this.setState({
-        ssMelding: (d && (ok ? d.beskjed : d.feil)) || 'Fikk ikke svar fra Shutterstock.',
-      }))
-      .catch(() => this.setState({ ssMelding: 'Fikk ikke kontakt med serveren.' }));
-  }
-
-  /**
-   * Lisensierer et bilde og legger det inn.
-   *
-   * Det er her det koster. Rekker ikke abonnementet, sier serveren fra med
-   * det Shutterstock faktisk svarte — framfor aa lagre en forhaandsvisning
-   * med vannmerke, som ville vaert et brudd paa lisensen.
-   */
-  hentShutterstock(id) {
-    if (this._ssHenter) return;
-    this._ssHenter = true;
-    const forNoe = this.state.bildeFor;
-    this.setState({ bildeLaster: true, ssMelding: 'Lisensierer bildet …' });
-
-    fetch('/api/admin/shutterstock.php', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handling: 'hent', id: id }),
-    })
-      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
-      .then(({ ok, d }) => {
-        this._ssHenter = false;
-        this.setState({ bildeLaster: false });
-        if (!ok) {
-          this.setState({ ssMelding: (d && d.feil) || 'Bildet ble ikke hentet.' });
-          return;
-        }
-        this._bilderHentes = false;
-        this.hentBilder();
-        this.setState({ ssMelding: '', kvittering: 'Bildet er lagt inn',
-                        kvitteringDetalj: d.beskjed || '' });
-        if (forNoe) this.settValgtBilde(d.url);
-      })
-      .catch(() => {
-        this._ssHenter = false;
-        this.setState({ bildeLaster: false, ssMelding: 'Fikk ikke kontakt med serveren.' });
-      });
-  }
 
   /**
    * Krymper bildet for det sendes.
@@ -32613,18 +32425,6 @@ class Component extends DCLogic {
     if (tekst) this.setState({ kvittering: tekst, kvitteringDetalj: detalj });
   }
 
-  // Retur fra Shutterstock: ?shutterstock=koblet
-  //
-  // Tilkoblingen skjer utenfor nettsiden, og du kommer tilbake til en adresse
-  // som ikke sier noe. Uten dette ser det ut som ingenting skjedde.
-  visShutterstockutfall() {
-    if (String(window.location.search || '').indexOf('shutterstock=koblet') === -1) return;
-    history.replaceState(null, '', window.location.pathname + window.location.hash);
-    this.setState({
-      kvittering: 'Shutterstock-kontoen er koblet til',
-      kvitteringDetalj: 'Nå kan bilder lastes ned rett inn i biblioteket fra billedvelgeren.',
-    });
-  }
 
   /**
    * Feilvakta.
@@ -33693,7 +33493,6 @@ class Component extends DCLogic {
     this.hentInnhold();
     this.hentButikk();
     this.visBetalingsutfall();
-    this.visShutterstockutfall();
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));
     }, 1000);

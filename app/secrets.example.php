@@ -100,19 +100,4 @@ return [
     // Hvert kall koster noen øre. Taket per måned settes i admin under
     // Markedsføring → Innstillinger, ikke her.
     'claude_api_key' => '',
-
-    // --- Shutterstock -----------------------------------------------------
-    // Bildesøk rett i billedvelgeren. Nøkkelen lages på
-    // developers.shutterstock.com → My Apps → opprett en app, og hent
-    // «Individual access token» under den.
-    //
-    // Søk og miniatyrer følger med nøkkelen og koster ingenting. Å laste ned
-    // et lisensiert bilde krever et abonnement med API-tilgang — uten det
-    // virker søket, men «Bruk dette bildet» sier fra.
-    // Enten dette tokenet …
-    'shutterstock_token' => '',
-    // … eller disse to. Forbrukernøkkel og forbrukerpassord fra samme
-    // appside. Virker like godt; tokenet er bare litt kortere å sette opp.
-    'shutterstock_nokkel'  => '',
-    'shutterstock_passord' => '',
 ];

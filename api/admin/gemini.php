@@ -11,9 +11,8 @@
  * hjemme der. Den leveres aldri tilbake heller — skjermen faar vite OM den
  * er satt og de fire siste tegnene, ikke hva den er.
  *
- * Selve kallet gjor serveren, ikke nettleseren. Samme regel som
- * shutterstock.php: noekkelen skal ikke ligge i JavaScript der hvem som
- * helst kan lese den.
+ * Selve kallet gjor serveren, ikke nettleseren: noekkelen skal ikke ligge
+ * i JavaScript der hvem som helst kan lese den.
  */
 
 declare(strict_types=1);

@@ -22002,6 +22002,24 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMaal }}" hint-size="auto,40px">Lagre</x-import>
             </div>
 
+            <!-- Gemini lager bildene (app/lib/gemini.php). Noekkelen lagres i
+                 innstillinger-tabellen — ikke i content_blocks, som nettsida
+                 leser — og sendes aldri tilbake hit. Feltet staar tomt, og
+                 plassholderen viser de fire siste tegnene saa eieren kjenner
+                 igjen hvilken noekkel som staar inne. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Bilder med Gemini</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Claude skriver tekst, men lager ikke bilder. Med en nøkkel herfra får du «Lag bilde» i billedvelgeren — på kurs, varer, artikler og kampanjer. Bildene trekkes fra det samme månedstaket som teksten.</p>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkGemStatus }}</div>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">API-nøkkel</label>
+              <input type="password" autocomplete="new-password" value="{{ mkGemNokkel }}" onChange="{{ mkSettGemNokkel }}" placeholder="{{ mkGemNokkelPlass }}" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">aistudio.google.com → «Get API key». Lim inn bare selve nøkkelen. Skriv «slett» for å fjerne den.</p>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Modell</label>
+              <input value="{{ mkGemModell }}" onChange="{{ mkSettGemModell }}" placeholder="gemini-2.5-flash-image" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Står her og ikke i koden, så du kan rette navnet selv hvis Google bytter det. Sier serveren «Google kjenner ikke modellen», er det dette feltet som skal endres.</p>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreGemini }}" hint-size="auto,40px">Lagre</x-import>
+            </div>
+
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Min bedrift på Google</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Lim inn adressen til bedriftsprofilen deres. Da ligger den her når vi kobler den mot Google sitt API.</p>
@@ -30940,6 +30958,7 @@ class Component extends DCLogic {
           kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
           mkMaalGa: '', mkMaalMeta: '',
+          mkGemNokkel: '', mkGemModell: undefined,
           ...(ok && d ? { mkMaal: d } : {}),
         });
       })
@@ -31791,6 +31810,36 @@ class Component extends DCLogic {
         if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
       })
       .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Gemini-oppsettet: noekkelen og modellnavnet.
+   *
+   * Eget endepunkt og ikke marked.php, fordi noekkelen skal i
+   * «innstillinger» og ikke i «content_blocks» — det siste leses av
+   * nettsida og er dermed offentlig.
+   *
+   * Feltet toemmes etter lagring: verdien kommer aldri tilbake fra
+   * serveren, og et felt som ser utfylt ut uten aa vaere det er verre enn
+   * et tomt. Plassholderen sier at den ligger inne.
+   */
+  geminiKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          mkGemNokkel: ok ? '' : this.state.mkGemNokkel,
+        });
+        if (ok) { this._markedHentes = false; this.hentMarked(); }
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   markedKall(kropp) {
@@ -61485,6 +61534,33 @@ class Component extends DCLogic {
                 : ((ai.kall || 0) > 0
                     ? 'Brukt ' + (ai.brukt || 'kr. 0,-') + ' denne måneden, over ' + ai.kall + ' kall. Nøkkelen leses ikke akkurat nå — sjekk secrets.php.'
                     : 'Ingenting er brukt ennå.')),
+          // ── Gemini: nøkkelen og modellen ──
+          //
+          // Noekkelen kommer aldri tilbake fra serveren. Feltet staar derfor
+          // tomt, og plassholderen sier om det ligger en inne — og hvilken,
+          // med de fire siste tegnene. Samme grep som GA4-hemmeligheten rett
+          // over.
+          ...(() => {
+            const i = d.innstillinger || {};
+            const st = i.geminiKlar
+              ? 'Koblet til. ' + (i.geminiBilder || 0) + ' bilder laget så langt.'
+              : 'Ikke koblet til ennå. Hent en nøkkel på aistudio.google.com — den er gratis å opprette.';
+            return {
+              mkGemStatus: d.innstillinger ? st : 'Henter status …',
+              mkGemNokkel: this.state.mkGemNokkel ?? '',
+              mkSettGemNokkel: e => this.setState({ mkGemNokkel: e.target.value }),
+              mkGemNokkelPlass: i.geminiKlar
+                ? '•••••••• ' + (i.geminiHale || '') + ' (lagt inn)'
+                : 'Lim inn nøkkelen',
+              mkGemModell: this.state.mkGemModell ?? (i.geminiModell || ''),
+              mkSettGemModell: e => this.setState({ mkGemModell: e.target.value }),
+              mkLagreGemini: () => this.geminiKall({
+                handling: 'oppsett',
+                nokkel: (this.state.mkGemNokkel || '').trim(),
+                modell: (this.state.mkGemModell ?? (i.geminiModell || '')).trim(),
+              }),
+            };
+          })(),
           mkGoogleBedrift: this.state.mkGoogleBedrift ?? ((d.innstillinger || {}).googleBedrift || ''),
           mkSettGoogleBedrift: e => this.setState({ mkGoogleBedrift: e.target.value }),
           mkLagreBedrift: () => this.markedKall({ handling: 'innstilling', googleBedrift: this.state.mkGoogleBedrift ?? '' }),

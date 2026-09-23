@@ -22013,7 +22013,7 @@ window.__resources = {
               <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkGemStatus }}</div>
               <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">API-nøkkel</label>
               <input type="password" autocomplete="new-password" value="{{ mkGemNokkel }}" onChange="{{ mkSettGemNokkel }}" placeholder="{{ mkGemNokkelPlass }}" style="{{ mkFeltStil }}">
-              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">aistudio.google.com → «Get API key». Lim inn bare selve nøkkelen. Skriv «slett» for å fjerne den.</p>
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">aistudio.google.com → «Get API key». Lim inn bare selve nøkkelen. La feltet stå tomt for å beholde den som ligger inne — skriv «slett» for å fjerne den.</p>
               <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Modell</label>
               <input value="{{ mkGemModell }}" onChange="{{ mkSettGemModell }}" placeholder="gemini-3.1-flash-image" style="{{ mkFeltStil }}">
               <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Står her og ikke i koden, så du kan rette navnet selv hvis Google bytter det. Sier serveren «Google kjenner ikke modellen», er det dette feltet som skal endres.</p>
@@ -61667,11 +61667,22 @@ class Component extends DCLogic {
                   : n + ' bilder ligger inne. De ' + med + ' nyeste følger med hvert kall.';
               })(),
               mkRefLastOpp: e => this.geminiReferanseLastOpp(e),
-              mkLagreGemini: () => this.geminiKall({
-                handling: 'oppsett',
-                nokkel: (this.state.mkGemNokkel || '').trim(),
-                modell: (this.state.mkGemModell ?? (i.geminiModell || '')).trim(),
-              }),
+              mkLagreGemini: () => {
+                const n = (this.state.mkGemNokkel || '').trim();
+                const kropp = {
+                  handling: 'oppsett',
+                  modell: (this.state.mkGemModell ?? (i.geminiModell || '')).trim(),
+                };
+                // Tomt felt betyr «la noekkelen staa», ikke «slett den».
+                //
+                // Her sto «nokkel» alltid med, og feltet er tomt hver gang
+                // skjermen tegnes — noekkelen kommer aldri tilbake fra
+                // serveren. Rettet du bare modellnavnet og trykte Lagre, ble
+                // noekkelen borte, og «Lag bilde» forsvant fra billedvelgeren
+                // overalt uten at noe sa fra. Maalt 23. september 2026.
+                if (n !== '') kropp.nokkel = n === 'slett' ? '' : n;
+                this.geminiKall(kropp);
+              },
             };
           })(),
           // ── Publisering til Instagram og Facebook ──

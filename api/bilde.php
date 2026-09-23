@@ -145,6 +145,18 @@ if ($feil !== '') {
     lever($sti);
 }
 
+// Referansebildene AI-en laaner stil fra. Bare verkstedet: de er
+// arbeidsmateriale, ikke noe som staar paa nettsida, og de kan vise folk som
+// jobber der.
+$referanse = Foresporsel::tekst('referanse');
+if ($referanse !== '') {
+    $sti = Bilder::sti($referanse, 'referanser');
+    if ($sti === null || !Sesjon::erAdmin()) {
+        Svar::feil('Fant ikke bildet.', 404);
+    }
+    lever($sti);
+}
+
 // Bilder til artikler er aapne for alle — de staar paa nettsida uansett.
 $artikkel = Foresporsel::tekst('artikkel');
 if ($artikkel !== '') {

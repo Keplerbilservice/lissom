@@ -22018,6 +22018,29 @@ window.__resources = {
               <input value="{{ mkGemModell }}" onChange="{{ mkSettGemModell }}" placeholder="gemini-3.1-flash-image" style="{{ mkFeltStil }}">
               <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Står her og ikke i koden, så du kan rette navnet selv hvis Google bytter det. Sier serveren «Google kjenner ikke modellen», er det dette feltet som skal endres.</p>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreGemini }}" hint-size="auto,40px">Lagre</x-import>
+
+              <!-- Referansebildene.
+                   Uten dem lagde modellen polerte studiofoto som kunne vaert
+                   hvilket som helst verksted. Eieren, 23. september 2026:
+                   «jeg vil at du skal bygge alle bildene og videoene du
+                   generer i lissom med disse referansene». De ligger for seg
+                   selv i opplastinger/referanser og vises bare for admin. -->
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
+                <div style="font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Referansebilder</div>
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Bildene her følger med hver gang du lager et bilde, så resultatet ligner verkstedet deres og ikke et tilfeldig studio. Tre er nok — flere gjør kallet tregere uten å gjøre bildet bedre.</p>
+                <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkRefStatus }}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4);">
+                  <sc-for list="{{ mkReferanser }}" as="r" hint-placeholder-count="3">
+                    <div style="{{ r.stil }}">
+                      <button type="button" onClick="{{ r.fjern }}" title="Fjern" aria-label="Fjern referansebildet" style="position: absolute; top: 4px; right: 4px; appearance: none; border: none; border-radius: 999px; width: 22px; height: 22px; line-height: 1; cursor: pointer; background: rgba(31,17,12,.72); color: #fff; font-size: 14px; padding: 0;">×</button>
+                    </div>
+                  </sc-for>
+                </div>
+                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: var(--type-label); color: var(--terracotta-600);">
+                  <input type="file" accept="image/*" onChange="{{ mkRefLastOpp }}" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
+                  <span style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 14px;">Legg til bilde</span>
+                </label>
+              </div>
             </div>
 
             <!-- Publisering til Instagram og Facebook (app/lib/meta.php).
@@ -31112,7 +31135,14 @@ class Component extends DCLogic {
         .then(r => r.json())
         .then(d => {
           if (d && d.ok && d.status) {
-            this.setState({ geminiKlar: !!d.status.klar, geminiPris: d.status.pris || '' });
+            this.setState({
+              geminiKlar: !!d.status.klar,
+              geminiPris: d.status.pris || '',
+              // Referansebildene AI-en laaner stil fra. De hentes her og ikke
+              // med marked.php: det er samme endepunkt som resten av
+              // Gemini-oppsettet, og da er de alltid i takt.
+              gemReferanser: d.referanser || [],
+            });
           }
         })
         .catch(() => { /* da staar knappen skjult, som for. */ });
@@ -31871,6 +31901,55 @@ class Component extends DCLogic {
         this._metaLegger = false;
         this.setState({ kvittering: 'Ble ikke lagt ut', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
       });
+  }
+
+  /**
+   * Legger et bilde inn som referanse for bildegenereringen.
+   *
+   * Gaar som multipart og ikke som JSON: det er en fil, og den skal ikke
+   * gjennom base64 og tilbake for ingenting.
+   */
+  geminiReferanseLastOpp(e) {
+    const fil = e && e.target && e.target.files && e.target.files[0];
+    if (!fil) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+
+    const skjema = new FormData();
+    skjema.append('handling', 'referanse');
+    skjema.append('bilde', fil);
+    // Feltet toemmes, ellers kan ikke det samme bildet velges om igjen etter
+    // at det er slettet.
+    e.target.value = '';
+
+    this.setState({ kvittering: 'Laster opp …', kvitteringDetalj: '' });
+    fetch('/api/admin/gemini.php', { method: 'POST', credentials: 'same-origin', body: skjema })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Lagt til' : 'Ble ikke lagt til',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          gemReferanser: ok ? (d.referanser || []) : this.state.gemReferanser,
+        });
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagt til', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  geminiReferanseSlett(navn) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'referanseSlett', navn: navn }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Fjernet' : 'Ble ikke fjernet',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          gemReferanser: ok ? (d.referanser || []) : this.state.gemReferanser,
+        });
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke fjernet', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   markedKall(kropp) {
@@ -61572,6 +61651,22 @@ class Component extends DCLogic {
                 : 'Lim inn nøkkelen',
               mkGemModell: this.state.mkGemModell ?? (i.geminiModell || ''),
               mkSettGemModell: e => this.setState({ mkGemModell: e.target.value }),
+              mkReferanser: (this.state.gemReferanser || []).map(navn => ({
+                navn: navn,
+                stil: 'position: relative; width: 92px; height: 92px; border-radius: var(--radius-md); '
+                    + 'border: 1px solid var(--border-subtle); background-size: cover; background-position: center; '
+                    + 'background-image: url("api/bilde.php?referanse=' + navn + '");',
+                fjern: () => this.geminiReferanseSlett(navn),
+              })),
+              mkRefStatus: (() => {
+                const n = (this.state.gemReferanser || []).length;
+                if (n === 0) return 'Ingen referansebilder ennå — bildene blir generiske uten.';
+                const med = Math.min(n, 3);
+                return n <= 3
+                  ? (n === 1 ? 'Ett bilde følger med hvert kall.' : n + ' bilder følger med hvert kall.')
+                  : n + ' bilder ligger inne. De ' + med + ' nyeste følger med hvert kall.';
+              })(),
+              mkRefLastOpp: e => this.geminiReferanseLastOpp(e),
               mkLagreGemini: () => this.geminiKall({
                 handling: 'oppsett',
                 nokkel: (this.state.mkGemNokkel || '').trim(),

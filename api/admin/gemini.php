@@ -42,11 +42,33 @@ if (Foresporsel::metode() === 'GET') {
         // til aa bruke den.
         'hale'    => $n === '' ? '' : mb_substr($n, -4),
         'tak'     => Booking::kroner(AI::tak() * 100),
+        // Referansebildene, saa skjermen kan vise dem og la eieren rydde.
+        'referanser' => Gemini::referanser(),
         'brukt'   => Booking::kroner(AI::bruktDenneMaaneden()),
     ]);
 }
 
 Foresporsel::krevMetode('POST');
+
+// Opplastingen kommer som multipart og ikke som JSON, saa den maa tas foer
+// Foresporsel::kropp() proever aa lese en tom stroem som JSON.
+if (($_POST['handling'] ?? '') === 'referanse') {
+    if (!isset($_FILES['bilde']) || ($_FILES['bilde']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        Svar::feil('Du må velge et bilde.');
+    }
+    try {
+        $navn = Bilder::taImot($_FILES['bilde'], Gemini::referanseMappe());
+    } catch (RuntimeException $e) {
+        Svar::feil($e->getMessage());
+    }
+    revider('gemini_referanse_lagt_til', 'bilde', null, ['navn' => $navn]);
+    Svar::ok([
+        'navn'       => $navn,
+        'referanser' => Gemini::referanser(),
+        'beskjed'    => 'Bildet er lagt til som referanse.',
+    ]);
+}
+
 $kropp    = Foresporsel::kropp();
 $handling = Foresporsel::tekst('handling');
 
@@ -143,6 +165,17 @@ switch ($handling) {
             'brukt'   => Booking::kroner(AI::bruktDenneMaaneden()),
             'beskjed' => 'Bildet er lagt i biblioteket.',
         ]);
+
+    // ------------------------------------------------- referanse bort
+    case 'referanseSlett':
+        $navn = trim((string) ($kropp['navn'] ?? ''));
+        // Bare et filnavn. Uten dette kunne «../../» pekt ut av mappa.
+        if (preg_match('/^[a-f0-9]{32}.jpg$/i', $navn) !== 1) {
+            Svar::feil('Ukjent bilde.');
+        }
+        Bilder::slett($navn, Gemini::referanseMappe());
+        revider('gemini_referanse_fjernet', 'bilde', null, ['navn' => $navn]);
+        Svar::ok(['referanser' => Gemini::referanser(), 'beskjed' => 'Bildet er fjernet.']);
 
     default:
         Svar::feil('Ukjent handling.');

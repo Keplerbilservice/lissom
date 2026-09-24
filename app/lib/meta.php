@@ -479,7 +479,8 @@ final class Meta
                     $navn = 'Ukjent';
                     $hvem = '';
                     foreach ((array) ($s['participants']['data'] ?? []) as $p) {
-                        if ((string) ($p['id'] ?? '') !== self::sideId()) {
+                        if (!in_array((string) ($p['id'] ?? ''),
+                                      array_filter([self::sideId(), self::igId()]), true)) {
                             $navn = (string) ($p['name'] ?? $p['username'] ?? 'Ukjent');
                             $hvem = (string) ($p['id'] ?? '');
                         }
@@ -506,7 +507,9 @@ final class Meta
         // eller «objektet finnes ikke» — to setninger som sender folk til
         // hver sin blindvei. Tillatelsen hoerer til et eget
         // meldings-bruksomraade paa appen, og det er der jobben ligger.
-        if ($ut === [] && $feil !== []) {
+        // Bare naar begge kanalene feilet: virker den ene, er ikke
+        // tillatelsen problemet, og teksten ville sendt folk feil vei.
+        if ($ut === [] && count($feil) === 2) {
             $sier = implode(' ', $feil);
             if (stripos($sier, 'permission') !== false
                 || stripos($sier, 'tillatelse') !== false
@@ -543,7 +546,9 @@ final class Meta
             $ut[] = [
                 'id'    => (string) ($m['id'] ?? ''),
                 'fra'   => (string) ($m['from']['name'] ?? $m['from']['username'] ?? ''),
-                'oss'   => (string) ($m['from']['id'] ?? '') === self::sideId(),
+                // Instagram-meldinger bærer kontoens egen id, ikke sidas.
+                'oss'   => in_array((string) ($m['from']['id'] ?? ''),
+                                    array_filter([self::sideId(), self::igId()]), true),
                 'tekst' => (string) ($m['message'] ?? ''),
                 'tid'   => (string) ($m['created_time'] ?? ''),
             ];

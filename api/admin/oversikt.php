@@ -160,6 +160,26 @@ $ubetalte = (int) DB::verdi(
       WHERE status = 'reservert' AND reservert_til > UTC_TIMESTAMP()"
 );
 
+// Paameldingene bak «Siste sju dager» — de samme som tallet over teller.
+// Eieren, 24. september 2026: kortet skal kunne trykkes paa, og gaa til
+// «Nye paameldinger». Den lista viser tre dager (eieren, 30. august), og den
+// teller ogsaa paa «Venter paa deg»; derfor en egen liste her, ikke en
+// lengre «nyeste».
+$sisteUkeListe = DB::alle(
+    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
+            COALESCE(m.navn, b.gjest_navn) AS navn,
+            COALESCE(m.epost, b.gjest_epost) AS epost,
+            c.tittel, cs.start_tid, p.vipps_reference
+       FROM bookings b
+       JOIN courses c ON c.id = b.course_id
+  LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+  LEFT JOIN members m ON m.id = b.member_id
+  LEFT JOIN payments p ON p.id = b.payment_id
+      WHERE b.status = 'betalt' AND b.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+      ORDER BY b.id DESC
+      LIMIT 200"
+);
+
 // --- Kommende okter -------------------------------------------------------
 //
 // Fra midnatt i dag, ikke fra «naa». Programmet for i dag skal vise hele
@@ -499,7 +519,7 @@ Svar::json([
     'kanaler' => [
         'sms' => Varsel::smsMulig(),
     ],
-    'nyeste' => array_map(static fn($b) => [
+    'nyeste' => array_map($paameldingRad = static fn($b) => [
         // Uten id-en kunne raden aapnes, men ikke gjores noe med. En
         // paamelding til et kurs uten dato ble staaende her for alltid: den
         // har ingen dato aa finne den igjen paa under Paameldte heller.
@@ -516,6 +536,7 @@ Svar::json([
         'status'    => $b['status'] === 'betalt' ? 'Betalt' : 'Ikke betalt',
         'referanse' => $b['vipps_reference'],
     ], $nyeste),
+    'sisteUkeListe' => array_map($paameldingRad, $sisteUkeListe),
     'omsetning' => [
         'idag'       => $kroner($betaltIdag),
         'maned'      => $kroner($betaltMnd),

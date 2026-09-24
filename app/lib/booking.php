@@ -447,14 +447,7 @@ final class Booking
                     -- samtidig. Aatte skiver er aatte skiver enten de sitter
                     -- paa et dreiekurs eller en Date Night.
                     --
-                    -- Et planlagt kurs holder plasstallet sitt, ikke bare de
-                    -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
-                    -- mulig aa booke en plass eller dreieskive paa forhaand for
-                    -- medlemmer naar det er planlagt kurs. Da er de ressursene
-                    -- booket og opptatt med kurs.» Et dreiekurs med aatte
-                    -- plasser tar alle aatte skivene i den tida det gaar, ogsaa
-                    -- for noen har meldt seg paa — skivene staar dekket til
-                    -- kurset.
+                    -- ── Bare det som faktisk er booket ──────────────────
                     --
                     -- Med ett unntak, og det er avgjorende: de aapne plassene
                     -- (fra_apningstid = 1 — Paint on Pots) holder
@@ -478,7 +471,7 @@ final class Booking
                                 + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
                                              WHERE b2.course_session_id = cs2.id
                                                AND {$aktiv2}), 0)
-                            ))
+                            )
                           FROM course_sessions cs2
                           JOIN courses c2 ON c2.id = cs2.course_id
                          WHERE cs2.status = 'planlagt'
@@ -1633,6 +1626,51 @@ final class Booking
         // CSV-ene til regnskapsforeren har hver sin egen formaterer uten
         // tusenskille i det hele tatt, og roeres ikke av dette.
         return "kr.\u{a0}" . number_format($ore / 100, 0, ',', "\u{a0}") . ',-';
+    }
+
+    /**
+     * Beloepet kort nok til aa staa under en soyle.
+     *
+     * Eieren, 23. september 2026, med ukesgrafen i OEkonomi: «se paa teksten
+     * som ikke passer i pillene».
+     *
+     * Aatte soyler paa en telefonskjerm gir rundt 35 piksler hver.
+     * «kr. 26 820,-» er tre ganger saa bredt, og teksten sto med
+     * «white-space: nowrap» — den rant inn i naboen, tallene laa oppaa
+     * hverandre, og ingen av dem var til aa lese.
+     *
+     *        0 →  «0»
+     *      990 →  «990»
+     *    5 470 →  «5,5k»
+     *   26 820 →  «27k»
+     *  −26 820 →  «−27k»
+     *
+     * Under tusen staar hele tallet: der er hver krone verdt aa se. Fra tusen
+     * og opp er det stoerrelsen som betyr noe, ikke kronene — og over ti tusen
+     * sier desimalen ingenting et blikk kan bruke.
+     *
+     * Minus er et ekte minustegn og ikke en bindestrek: «kr.-26 820,-» sto
+     * med streken klistret til «kr.» og saa ut som en skrivefeil.
+     *
+     * Den fulle summen staar fortsatt ved siden av, for den som trenger den.
+     */
+    public static function kortKroner(int $ore): string
+    {
+        $kr  = (int) round($ore / 100);
+        $neg = $kr < 0;
+        $abs = abs($kr);
+
+        if ($abs < 1000) {
+            $tall = (string) $abs;
+        } elseif ($abs < 10000) {
+            // Én desimal, og ikke «5,0k» naar det er rundt.
+            $t = round($abs / 1000, 1);
+            $tall = rtrim(rtrim(number_format($t, 1, ',', ''), '0'), ',') . 'k';
+        } else {
+            $tall = number_format($abs / 1000, 0, ',', "\u{a0}") . 'k';
+        }
+
+        return ($neg ? "\u{2212}" : '') . $tall;
     }
 
     /**

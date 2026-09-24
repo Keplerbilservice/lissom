@@ -6264,19 +6264,31 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     }
 }
 
-// ── Et planlagt kurs holder plassene sine ──────────────────────────────
+// ── Et planlagt kurs holder bare det som faktisk er booket ─────────────
 //
-// Eieren, 30. august: «det maa ikke vaere mulig aa booke drop in eller
-// dreieskive paa forhaand for medlemmer naar det er planlagt kurs. Da er de
-// ressursene booket og opptatt med kurs.»
+// Eieren, 23. september 2026: «jeg vil at det kun skal vises om opptatt om
+// det er 12 paa kurs, altsaa faktiske paameldte».
 //
-// Spurt om et kurs med faerre plasser enn ressursen har: «kurset holder av
-// sine plasser». Et dreiekurs paa aatte tar altsaa alle aatte skivene, ogsaa
-// for noen har meldt seg paa.
+// Her holdt kurset HELE plasstallet sitt saa lenge det varte, ogsaa for noen
+// hadde meldt seg paa — eieren, 30. august: «det maa ikke vaere mulig aa
+// booke drop in eller dreieskive paa forhaand for medlemmer naar det er
+// planlagt kurs».
+//
+// Folgen sto paa nettsida 23. september: Paint on Pots var «Kurs i
+// verkstedet» onsdag og torsdag uten at én person hadde meldt seg paa noe.
+// Aapningstida ER de timene det gaar et kurs, saa kurset dekket til hele
+// vinduet det selv gjorde bookbart.
 if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     $kurs = DB::en(
         "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.ressurs_id,
-                COALESCE(cs.kapasitet, c.kapasitet) AS kap
+                COALESCE(cs.kapasitet, c.kapasitet) AS kap,
+                COALESCE(cs.manuelt_opptatt, 0)
+                + COALESCE((SELECT SUM(b.antall) FROM bookings b
+                             WHERE b.course_session_id = cs.id
+                               AND (b.status = 'betalt'
+                                    OR (b.status = 'reservert'
+                                        AND (b.reservert_til IS NULL
+                                             OR b.reservert_til > UTC_TIMESTAMP())))), 0) AS opptatt
            FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
           WHERE cs.status = 'planlagt' AND cs.fra_apningstid = 0
             AND c.ressurs_id IS NOT NULL AND cs.slutt_tid IS NOT NULL
@@ -6294,7 +6306,6 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     );
     if ($kurs !== null) {
         $tak = Booking::verkstedTak()[(int) $kurs['ressurs_id']] ?? 0;
-        // De aapne plassene som ligger inni kursets tid.
         $aapne = DB::alle(
             'SELECT cs.id FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
               WHERE cs.fra_apningstid = 1 AND cs.status = \'planlagt\'
@@ -6305,27 +6316,25 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
         );
         if ($aapne !== [] && $tak > 0) {
             $led = Booking::ledigePlasserFlere(array_column($aapne, 'id'));
-            $ventet = max(0, $tak - (int) $kurs['kap']);
-            sjekk('en aapen plass er stengt mens kurset gaar',
+            // Taket minus det kurset FAKTISK legger beslag paa, aldri mer enn
+            // den aapne plassen selv har rom til.
+            $ventet = max(0, min((int) $kurs['kap'], $tak - (int) $kurs['opptatt']));
+            sjekk('en aapen plass er stengt bare av dem som faktisk er paameldt',
                 max($led) === $ventet,
                 'ventet ' . $ventet . ' ledige (' . $tak . ' minus kursets '
-                . $kurs['kap'] . '), fikk ' . max($led));
+                . $kurs['opptatt'] . ' paameldte), fikk ' . max($led));
+            // Selve poenget: et kurs uten paameldte sperrer ingenting.
+            if ((int) $kurs['opptatt'] === 0) {
+                sjekk('… og et kurs uten paameldte sperrer ingenting',
+                    max($led) > 0,
+                    'kurset har ingen paameldte, men den aapne plassen sto paa '
+                    . max($led) . ' ledige');
+            }
         }
-        // Men kurset selv skal ikke sperre for seg selv: det er nettopp det
-        // som skjer om en tom aapen plass paa aatte holder plasstallet sitt
-        // ogsaa. Da tar de to livet av hverandre.
+        // Kurset skal ikke sperre for seg selv heller.
         $egen = Booking::ledigePlasserFlere([(int) $kurs['id']])[(int) $kurs['id']];
-        sjekk('… men kurset sperrer ikke for seg selv',
+        sjekk('… og kurset sperrer ikke for seg selv',
             $egen > 0, 'kurset sto med ' . $egen . ' ledige');
-
-        // Og kunden skal faa vite hvorfor. «Fullbooket» paa en aapen time
-        // der det ikke er én booking, men et kurs, gir en telefon fra en som
-        // ikke ser noen i verkstedet.
-        if (isset($aapne) && $aapne !== [] && ($ventet ?? 1) === 0) {
-            $sp = Booking::sperretAvAnnet(array_column($aapne, 'id'));
-            sjekk('… og en stengt aapen time sier at det gaar kurs',
-                in_array(true, $sp, true), 'ingen av dem er merket sperret');
-        }
     }
 }
 
@@ -17919,6 +17928,20 @@ sjekk('plassregelen staar ett sted, og brukes begge veier',
     && str_contains($bookFil, "        \$aktiv2 = self::aktivSql('b2');")
     && str_contains($bookFil, '    public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int'));
 
+// Plassregelen: main sin utgave gjelder.
+//
+// To endringer traff den samme linja samme dag. Eieren sa til meg 23.
+// september: «jeg vil at det kun skal vises om opptatt om det er 12 paa kurs,
+// altsaa faktiske paameldte», og jeg tok bort hele plassreservasjonen — ogsaa
+// for et dreiekurs.
+//
+// Dagen etter kom den snevrere utgaven her, paa det samme symptomet: «Paint on
+// Pots sto utsolgt uten en booking fordi et tomt Store fat-kurs holdt hele
+// verkstedet» og «ressursene er verkstedplasser og ikke dreieskiver». Den
+// friggjor de aapne plassene og lar et vanlig kurs holde sine.
+//
+// Den staar, fordi den loser det eieren klaget paa uten aa ta fra
+// kursdeltakerne plassene de har betalt for. Min bredere utgave er forkastet.
 // De aapne plassene holder bare det som er booket — ellers ville en tom aapen
 // plass sperret dreiekurset ved siden av.
 sjekk('et tidsrom regnes med samme unntak som en oekt',
@@ -18063,6 +18086,49 @@ sjekk('… og forklarer hvorfor siste oppmoete er for stengetid',
 sjekk('… og knappen slipper den ikke gjennom',
     str_contains($tidFil, "      if (liste.length > 0 && !liste.some(x => x.tid === tid)) {")
     && str_contains($tidFil, "          kvittering: 'Verkstedet er ikke åpent da.',"));
+
+// ── Prosenten og tallene under soylene ───────────────────────────────────
+//
+// Eieren, 23. september 2026, med «+4073900 % mot august» paa skjermen:
+// «se paa prosentokningen mot august, for svada». Og: «se paa teksten som
+// ikke passer i pillene».
+$okFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/okonomi.php');
+$bkFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$skjFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// «$forrigeSum > 0» var ikke nok: august hadde én krone, og da blir 40 740
+// mot 1 til fire millioner prosent. Riktig regnet, og fullstendig meningsloest.
+sjekk('prosenten krever et grunnlag som taaler aa deles paa',
+    str_contains($okFil, 'const SAMMENLIKNBART_ORE = 100000;')
+    && str_contains($okFil, 'if ($forrigeSum >= SAMMENLIKNBART_ORE) {'));
+// Under grensa staar beloepet i stedet. Det er det eneste som sier noe.
+sjekk('… og under grensa staar beloepet, ikke en prosent',
+    str_contains($okFil, "    \$endring = 'mot ' . Booking::kroner(\$forrigeSum) . ' i ' . \$mndNavn;"));
+
+// Aatte soyler paa en telefon gir rundt 35 piksler hver. «kr. 26 820,-» er
+// tre ganger saa bredt, og med «nowrap» rant tallene inn i hverandre.
+sjekk('soylene har en kort utgave av beloepet',
+    str_contains($bkFil, '    public static function kortKroner(int $ore): string')
+    && str_contains($okFil, "        'kort'  => Booking::kortKroner(\$u['ore']),")
+    && str_contains($skjFil, '{{ s.kort }}</span>')
+    // Den fulle summen staar fortsatt ved siden av, for den som trenger den.
+    && str_contains($okFil, "        'sum'   => Booking::kroner(\$u['ore']),"));
+
+// Minus skal vaere et minustegn, ikke en bindestrek klistret til «kr.».
+sjekk('… med ekte minustegn foran et negativt beloep',
+    str_contains($bkFil, "        return (\$neg ? \"\\u{2212}\" : '') . \$tall;"));
+
+// Regnestykket, uten database. Under tusen staar hele tallet; over ti tusen
+// sier desimalen ingenting et blikk kan bruke.
+sjekk('… og kortformen runder slik den skal',
+    Booking::kortKroner(0) === '0'
+    && Booking::kortKroner(100) === '1'
+    && Booking::kortKroner(99000) === '990'
+    && Booking::kortKroner(547000) === '5,5k'
+    && Booking::kortKroner(1000000) === '10k'
+    && Booking::kortKroner(2682000) === '27k'
+    && Booking::kortKroner(-2682000) === "\u{2212}27k",
+    Booking::kortKroner(547000) . ' / ' . Booking::kortKroner(2682000));
 
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //

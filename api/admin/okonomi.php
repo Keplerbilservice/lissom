@@ -49,12 +49,30 @@ $forrigeMnd = $mndStart->modify('-1 month');
 $naaSum     = $sumMellom($tilUtc($mndStart), $tilUtc($nesteMnd));
 $forrigeSum = $sumMellom($tilUtc($forrigeMnd), $tilUtc($mndStart));
 
-// Sammenlikningen gir bare mening naar det var noe aa sammenlikne med.
+// ── Sammenlikningen med forrige maaned ────────────────────────────────
+//
+// Eieren, 23. september 2026, med «+4073900 % mot august» paa skjermen:
+// «se paa prosentokningen mot august, for svada».
+//
+// Her sto det bare «$forrigeSum > 0». August hadde én krone. Da er
+// regnestykket 40 740 mot 1, og prosenten blir fire millioner — matematisk
+// riktig og fullstendig meningsloest.
+//
+// En prosent trenger et grunnlag som taaler aa deles paa. Under tusen kroner
+// er en maaned saa godt som tom, og da er det ikke en oekning i prosent — det
+// er at forrige maaned ikke var noe. Da staar beloepet i stedet, som er det
+// eneste som faktisk sier noe: «mot kr. 1,- i august».
+//
 // «+100 % mot juli» naar juli var null er ikke et tall, det er en divisjon.
+const SAMMENLIKNBART_ORE = 100000;
+
 $endring = null;
-if ($forrigeSum > 0) {
+$mndNavn  = $MAANEDER[(int) $forrigeMnd->format('n') - 1];
+if ($forrigeSum >= SAMMENLIKNBART_ORE) {
     $pst = (int) round(($naaSum - $forrigeSum) / $forrigeSum * 100);
-    $endring = ($pst >= 0 ? '+' : '') . $pst . ' % mot ' . $MAANEDER[(int) $forrigeMnd->format('n') - 1];
+    $endring = ($pst >= 0 ? '+' : '') . $pst . ' % mot ' . $mndNavn;
+} elseif ($forrigeSum > 0) {
+    $endring = 'mot ' . Booking::kroner($forrigeSum) . ' i ' . $mndNavn;
 }
 
 // --- Aatte uker bakover ----------------------------------------------------
@@ -181,6 +199,17 @@ Svar::json([
     'uker'      => array_map(static fn($u) => [
         'uke'   => $u['uke'],
         'sum'   => Booking::kroner($u['ore']),
+        // Kort utgave til soylene.
+        //
+        // Eieren, 23. september 2026: «se paa teksten som ikke passer i
+        // pillene». Aatte soyler paa en telefonskjerm gir rundt 35 piksler
+        // hver, og «kr. 26 820,-» er tre ganger saa bredt. Teksten sto med
+        // «white-space: nowrap» og rant derfor inn i naboen — tallene laa
+        // oppaa hverandre og ingen av dem var til aa lese.
+        //
+        // «26,8k» er til aa lese paa ett blikk, og den fulle summen staar i
+        // «sum» for den som trenger den.
+        'kort'  => Booking::kortKroner($u['ore']),
         'fraDag' => $u['fraDag'],
         // Hoyden i prosent av den hoyeste uka. Er alt null, blir alle null,
         // og grafen viser en flat linje framfor aatte like hoye soyler.

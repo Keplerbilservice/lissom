@@ -18070,6 +18070,49 @@ sjekk('… og knappen slipper den ikke gjennom',
     str_contains($tidFil, "      if (liste.length > 0 && !liste.some(x => x.tid === tid)) {")
     && str_contains($tidFil, "          kvittering: 'Verkstedet er ikke åpent da.',"));
 
+// ── Prosenten og tallene under soylene ───────────────────────────────────
+//
+// Eieren, 23. september 2026, med «+4073900 % mot august» paa skjermen:
+// «se paa prosentokningen mot august, for svada». Og: «se paa teksten som
+// ikke passer i pillene».
+$okFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/okonomi.php');
+$bkFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$skjFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// «$forrigeSum > 0» var ikke nok: august hadde én krone, og da blir 40 740
+// mot 1 til fire millioner prosent. Riktig regnet, og fullstendig meningsloest.
+sjekk('prosenten krever et grunnlag som taaler aa deles paa',
+    str_contains($okFil, 'const SAMMENLIKNBART_ORE = 100000;')
+    && str_contains($okFil, 'if ($forrigeSum >= SAMMENLIKNBART_ORE) {'));
+// Under grensa staar beloepet i stedet. Det er det eneste som sier noe.
+sjekk('… og under grensa staar beloepet, ikke en prosent',
+    str_contains($okFil, "    \$endring = 'mot ' . Booking::kroner(\$forrigeSum) . ' i ' . \$mndNavn;"));
+
+// Aatte soyler paa en telefon gir rundt 35 piksler hver. «kr. 26 820,-» er
+// tre ganger saa bredt, og med «nowrap» rant tallene inn i hverandre.
+sjekk('soylene har en kort utgave av beloepet',
+    str_contains($bkFil, '    public static function kortKroner(int $ore): string')
+    && str_contains($okFil, "        'kort'  => Booking::kortKroner(\$u['ore']),")
+    && str_contains($skjFil, '{{ s.kort }}</span>')
+    // Den fulle summen staar fortsatt ved siden av, for den som trenger den.
+    && str_contains($okFil, "        'sum'   => Booking::kroner(\$u['ore']),"));
+
+// Minus skal vaere et minustegn, ikke en bindestrek klistret til «kr.».
+sjekk('… med ekte minustegn foran et negativt beloep',
+    str_contains($bkFil, "        return (\$neg ? \"\\u{2212}\" : '') . \$tall;"));
+
+// Regnestykket, uten database. Under tusen staar hele tallet; over ti tusen
+// sier desimalen ingenting et blikk kan bruke.
+sjekk('… og kortformen runder slik den skal',
+    Booking::kortKroner(0) === '0'
+    && Booking::kortKroner(100) === '1'
+    && Booking::kortKroner(99000) === '990'
+    && Booking::kortKroner(547000) === '5,5k'
+    && Booking::kortKroner(1000000) === '10k'
+    && Booking::kortKroner(2682000) === '27k'
+    && Booking::kortKroner(-2682000) === "\u{2212}27k",
+    Booking::kortKroner(547000) . ' / ' . Booking::kortKroner(2682000));
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme

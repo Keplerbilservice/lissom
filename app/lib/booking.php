@@ -1620,6 +1620,51 @@ final class Booking
     }
 
     /**
+     * Beloepet kort nok til aa staa under en soyle.
+     *
+     * Eieren, 23. september 2026, med ukesgrafen i OEkonomi: «se paa teksten
+     * som ikke passer i pillene».
+     *
+     * Aatte soyler paa en telefonskjerm gir rundt 35 piksler hver.
+     * «kr. 26 820,-» er tre ganger saa bredt, og teksten sto med
+     * «white-space: nowrap» — den rant inn i naboen, tallene laa oppaa
+     * hverandre, og ingen av dem var til aa lese.
+     *
+     *        0 →  «0»
+     *      990 →  «990»
+     *    5 470 →  «5,5k»
+     *   26 820 →  «27k»
+     *  −26 820 →  «−27k»
+     *
+     * Under tusen staar hele tallet: der er hver krone verdt aa se. Fra tusen
+     * og opp er det stoerrelsen som betyr noe, ikke kronene — og over ti tusen
+     * sier desimalen ingenting et blikk kan bruke.
+     *
+     * Minus er et ekte minustegn og ikke en bindestrek: «kr.-26 820,-» sto
+     * med streken klistret til «kr.» og saa ut som en skrivefeil.
+     *
+     * Den fulle summen staar fortsatt ved siden av, for den som trenger den.
+     */
+    public static function kortKroner(int $ore): string
+    {
+        $kr  = (int) round($ore / 100);
+        $neg = $kr < 0;
+        $abs = abs($kr);
+
+        if ($abs < 1000) {
+            $tall = (string) $abs;
+        } elseif ($abs < 10000) {
+            // Én desimal, og ikke «5,0k» naar det er rundt.
+            $t = round($abs / 1000, 1);
+            $tall = rtrim(rtrim(number_format($t, 1, ',', ''), '0'), ',') . 'k';
+        } else {
+            $tall = number_format($abs / 1000, 0, ',', "\u{a0}") . 'k';
+        }
+
+        return ($neg ? "\u{2212}" : '') . $tall;
+    }
+
+    /**
      * 2029-08-21 → «21. august 2029».
      *
      * PHPs date() gir engelske maanedsnavn uansett hva serveren staar til, og

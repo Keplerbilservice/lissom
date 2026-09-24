@@ -30715,7 +30715,7 @@ class Component extends DCLogic {
   fsFilValgt(e) {
     const fil = e && e.target && e.target.files && e.target.files[0];
     if (!fil) return;
-    const video = (this.state.fsType || 'bilde') === 'video';
+    const video = (this.state.mfType || 'bilde') === 'video';
     if (this.state.fsForhand) { try { URL.revokeObjectURL(this.state.fsForhand); } catch (x) {} }
     if (!video) {
       this.setState({ fsFil: fil, fsForhand: URL.createObjectURL(fil) });
@@ -30745,7 +30745,7 @@ class Component extends DCLogic {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     if (this._fsSender) return;
     const st = this.state;
-    const type = st.fsType || 'bilde';
+    const type = st.mfType || 'bilde';
     const tekst = String(st.fsTekst || '').trim();
     if (!st.fsFil) {
       this.setState({ kvitteringTone: 'danger', kvittering: type === 'video' ? 'Du må velge en video.' : 'Du må velge et bilde.' });
@@ -30789,7 +30789,7 @@ class Component extends DCLogic {
 
   forslagVals() {
     const st = this.state;
-    const type = st.fsType || 'bilde';
+    const type = st.mfType || 'bilde';
     const pille = (paa) => ({
       appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
       font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
@@ -30799,7 +30799,7 @@ class Component extends DCLogic {
     const bytt = (t) => () => {
       if (t === type) return;
       if (st.fsForhand) { try { URL.revokeObjectURL(st.fsForhand); } catch (x) {} }
-      this.setState({ fsType: t, fsFil: null, fsForhand: '' });
+      this.setState({ mfType: t, fsFil: null, fsForhand: '' });
     };
     const forhand = st.fsForhand || '';
     return {

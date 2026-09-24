@@ -19492,13 +19492,8 @@ window.__resources = {
           <!-- Auto-godkjenn. Eieren, 12. september 2026: «Jeg vil fortsatt
                godkjenne eller sette auto godkjenn». Staar den paa, gaar varen
                rett ut — men den kan fortsatt skjules eller slettes under. -->
-          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
-            <div style="min-width: 0;">
-              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Auto-godkjenn nye varer</div>
-              <div style="font-size: var(--text-xs); color: var(--text-muted);">Varen går rett ut i butikken uten at du ser på den først. Du kan fortsatt skjule eller slette den etterpå.</div>
-            </div>
-            <span class="lx-bryterhoyre"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ gAutoEtikett }}" checked="{{ gAutoPaa }}" on-change="{{ gAutoVeksl }}" hint-size="auto,28px"></x-import></span>
-          </div>
+          <!-- «Auto-godkjenn nye varer» staar under ⊙ Synlighet fra 24.
+               september 2026, sammen med de andre bryterne (eierens valg). -->
           <sc-if value="{{ gIngenVenter }}" hint-placeholder-val="{{ false }}">
             <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingen bidrag venter nå.</div>
           </sc-if>
@@ -54990,6 +54985,16 @@ class Component extends DCLogic {
                 () => this.vekslBryter('internbutikk', 'Internbutikken')),
             rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),
                 () => this.vekslBryter('medlemssalg', 'Selg egne arbeider')),
+            // Flyttet hit fra Nettbutikk. Eieren, 24. september 2026: «auto
+            // godkjenn nye varer, er det en av og på bryter som ikke ligger
+            // sammen de andre?» — valgte «Flytt til Synlighet». Samme nokkel
+            // og samme strenge 'ja' som foer (se gAutoPaa).
+            rad('Auto-godkjenn nye varer', (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',
+                () => {
+                  const paa = (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja';
+                  this.lagreInnhold({ 'Vis/autogodkjenn': paa ? 'nei' : 'ja' },
+                    paa ? 'Auto-godkjenn er slått av' : 'Auto-godkjenn er slått på');
+                }),
             rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),
                 () => this.vekslBryter('gaven', 'Gaven')),
             rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),

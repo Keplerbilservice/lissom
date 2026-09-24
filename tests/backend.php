@@ -11799,7 +11799,11 @@ sjekk('… og kalenderen faar antallet fra serveren',
         "'antall'    => (int) \$b['antall'],"));
 // Begge stedene sier hva et tomt beloepsfelt betyr.
 sjekk('… og begge sier hva et tomt beloepsfelt gjor',
-    substr_count($endre, "'Tomt = prisen ganger antallet'") === 2);
+    substr_count($endre, "'Tomt = pris × antall, minus rabatten'") === 2);
+// Rabatt i prosent ved siden av antall og beloep. Eieren, 24. september 2026.
+sjekk('… og begge har et rabattfelt',
+    substr_count($endre, '<label style="{{ mpEtikett }}">Rabatt %</label>') === 2
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'), "\$felt['belop_ore'] = (int) round((int) \$pris * \$nyttAntall * (1 - (\$rabatt ?? 0) / 100));"));
 // To aapne paneler paa samme rad er ikke til aa se hvilket som lagres.
 sjekk('… og bare ett panel er aapent om gangen',
     str_contains($endre, 'flyttRad: apen ? this.state.flyttRad : null,')

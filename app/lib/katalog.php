@@ -264,6 +264,9 @@ final class Katalog
                     return [
                         'folgerApningstid' => true,
                         'plassMinutter'    => $min,
+                        // Hvor langt fram det kan bookes, saa kalenderen kan si
+                        // hvorfor en dag lenger fram ikke kan velges.
+                        'bookDagerFram'    => Apent::BOOK_DAGER_FRAM,
                         'plassVarighet'    => $ord[$min] ?? ($min . ' minutter'),
                         // Det faste vinduet, naar kurset har et. Nettsida skriver
                         // «hver dag 08–22» av dette — den skal ikke ha to

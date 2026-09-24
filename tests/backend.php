@@ -16277,12 +16277,13 @@ sjekk('… og aarskalenderen staar sist i snarveisrada, etter Kasse',
     strpos($veiSida, "                { navn: 'Kasse', nokkel: 'kasse', velg: () => this.gaaAdmin('adminuttak', {")
        < strpos($veiSida, "                { navn: 'Årskalender', nokkel: 'arskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
     && str_contains($veiSida, "klAarApne: () => this.gaaAdmin('adminarskalender', {}),"));
-// «Nye paameldinger» var et kort med tallet som merke. Fra 13. september er
-// det den samme tellinga, som én av linjene i «Venter paa deg» — og kortet
-// gaar til den samme skjermen.
-sjekk('… og nye paameldinger telles i «Venter paa deg»',
+// «Nye paameldinger» telles paa kortet «Påmelding». Eieren, 24. september
+// 2026: «venter på deg og påmeldingen, er det samme» — «Venter paa deg» er
+// det som skal godkjennes, og aapner Til godkjenning.
+sjekk('… og nye paameldinger telles paa «Påmelding», ikke i «Venter paa deg»',
     str_contains($veiSida, "            const nye   = (d.nyeste || []).length;")
-    && str_contains($veiSida, "                     () => this.gaaAdmin('adminnyepameldinger', {}), 'venter'),"));
+    && str_contains($veiSida, "            const venter = varer + frys + dugn + forsl;")
+    && str_contains($veiSida, "                       : this.gaaAdmin('admingodkjenning', {})), 'venter'),"));
 // «ingen link»: raden oeverst er borte.
 sjekk('… og raden med lenka oeverst er borte',
     !str_contains($veiSida, 'aarStripe')

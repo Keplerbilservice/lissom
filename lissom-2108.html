@@ -55042,7 +55042,10 @@ class Component extends DCLogic {
             const dugn  = ((d.koer || {}).dugnad) || 0;
             // Medlemmenes forslag til Instagram (migrasjon 207).
             const forsl = ((d.koer || {}).medlemsforslag) || 0;
-            const venter = nye + varer + frys + dugn + forsl;
+            // Nye paameldinger har sitt eget kort («Påmelding»). Eieren,
+            // 24. september 2026: «venter på deg og påmeldingen, er det samme»
+            // — valgte at «Venter på deg» er det som skal godkjennes.
+            const venter = varer + frys + dugn + forsl;
 
             const ubetalte = d.ubetalte || [];
             const sum = ubetalte.reduce((a, u) => a + (u.belopOre || 0), 0);
@@ -55101,14 +55104,17 @@ class Component extends DCLogic {
                        setTimeout(() => { const el = document.getElementById('kl-kalender'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
                      }, 'idag'),
                 kort('Venter på deg', String(venter), [
-                       nye   ? linje(nye + (nye === 1 ? ' ny påmelding' : ' nye påmeldinger')) : null,
                        varer ? linje(varer + (varer === 1 ? ' vare til godkjenning' : ' varer til godkjenning')) : null,
                        frys  ? linje(frys + (frys === 1 ? ' søknad om frys' : ' søknader om frys')) : null,
                        dugn  ? linje(dugn + (dugn === 1 ? ' dugnad' : ' dugnader') + ' å svare på') : null,
                        forsl ? linje(forsl + ' forslag til Instagram') : null,
                        venter ? null : linje('Ingenting venter'),
                      ].filter(Boolean), venter > 0,
-                     () => this.gaaAdmin('adminnyepameldinger', {}), 'venter'),
+                     // Til godkjenning. Forslagene til Instagram ligger ikke
+                     // der, men under Markedsføring — er det bare dem, dit.
+                     () => (varer + frys + dugn === 0 && forsl > 0
+                       ? this.gaaAdmin('adminmarked', { mkFane: 'forslag' })
+                       : this.gaaAdmin('admingodkjenning', {})), 'venter'),
                 // Til Kassa, ikke til OEkonomi.
                 //
                 // Eieren, 13. september 2026: «naar jeg trykker paa ubetalt

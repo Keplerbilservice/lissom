@@ -20156,6 +20156,41 @@ sjekk('fanen i Markedsfoering',
 sjekk('forslagene staar i «Venter paa deg»',
     str_contains($mfSida, "forsl ? linje(forsl + ' forslag til Instagram') : null,"));
 
+// ── Adminmenyen som fliser ────────────────────────────────────────────
+//
+// Eieren, 24. september 2026, med et bilde av menyskuffen: «kom med forslag
+// til nytt oppsett paa denne siden, sykt uoversiktlig» — og av ni forslag:
+// «jeg liker fliser». Skuffen er seks navngitte bolker i stedet for 22
+// piller i tre bunker, og hver ting staar ett sted.
+$fmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nAdminmenyen som fliser\n";
+sjekk('bolkene staar i den rekkefoelgen eieren ba om',
+    str_contains($fmSida, "    const bolkNaa = gruppe('N\u{e5}', [")
+    && str_contains($fmSida, "    const bolkVenter = gruppe('Venter p\u{e5} deg', [")
+    && str_contains($fmSida, "    const bolkKurs = gruppe('Kurs og folk', [")
+    && str_contains($fmSida, "    const bolkPenger = gruppe('Penger og salg', [")
+    && str_contains($fmSida, "    const bolkResten = gruppe('Resten', [")
+    && str_contains($fmSida, "    const bolkRaskt = gruppe('Gj\u{f8}r raskt',"));
+sjekk('chatten staar i «Venter paa deg», med uleste som tall',
+    str_contains($fmSida, "    const chatNye = this.state.chatNye || 0;")
+    && str_contains($fmSida, "      tall: chatNye ? String(chatNye) : '',"));
+sjekk('«I verkstedet naa» ligger under «Venter paa deg»',
+    str_contains($fmSida, "      admMobPunkterA: med('naa', bolkNaa).concat(med('venter', bolkVenter)),"));
+// Kasse, Til godkjenning og Aarskalender sto baade som sted og som snarvei.
+sjekk('ingenting staar to ganger i skuffen',
+    str_contains($fmSida, "    brukt.arskalender = true;")
+    && str_contains($fmSida, "      snar('kasse', 'Nytt salg', sted.meny === 'Kasse'),")
+    && str_contains($fmSida, "      snar('tilgodkjenning', '', sted.meny === 'Til godkjenning'),"));
+sjekk('en ny snarvei faller ned i «Gjoer raskt» av seg selv',
+    str_contains($fmSida, "      this.adminSnarveier().filter(x => !brukt[x.nokkel]).map(x => snar(x.nokkel)),"));
+sjekk('Verktoey og Logg ut staar nederst, med en strek over',
+    str_contains($fmSida, "      marginTop: 6, paddingTop: 10,\n      borderTop: '1px solid rgba(244,235,222,.18)',"));
+sjekk('ovnkortet naas fra alle adminskjermene',
+    str_contains($fmSida, "      ...((side || '').indexOf('admin') === 0 ? (this.hentOvn(), this.ovnVals()) : {}),")
+    && str_contains($fmSida, '<div class="{{ ovnKortKlasse }}" style="{{ ovnSkuffStil }}">'));
+sjekk('den samme knappen tegner baade fliser og piller',
+    str_contains($fmSida, "    const heleKnappen = (k) => Object.assign({"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

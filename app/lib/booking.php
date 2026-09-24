@@ -447,7 +447,14 @@ final class Booking
                     -- samtidig. Aatte skiver er aatte skiver enten de sitter
                     -- paa et dreiekurs eller en Date Night.
                     --
-                    -- ── Bare det som faktisk er booket ──────────────────
+                    -- Et planlagt kurs holder plasstallet sitt, ikke bare de
+                    -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
+                    -- mulig aa booke en plass eller dreieskive paa forhaand for
+                    -- medlemmer naar det er planlagt kurs. Da er de ressursene
+                    -- booket og opptatt med kurs.» Et dreiekurs med aatte
+                    -- plasser tar alle aatte skivene i den tida det gaar, ogsaa
+                    -- for noen har meldt seg paa — skivene staar dekket til
+                    -- kurset.
                     --
                     -- Med ett unntak, og det er avgjorende: de aapne plassene
                     -- (fra_apningstid = 1 — Paint on Pots) holder
@@ -471,7 +478,7 @@ final class Booking
                                 + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
                                              WHERE b2.course_session_id = cs2.id
                                                AND {$aktiv2}), 0)
-                            )
+                            ))
                           FROM course_sessions cs2
                           JOIN courses c2 ON c2.id = cs2.course_id
                          WHERE cs2.status = 'planlagt'

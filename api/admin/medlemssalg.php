@@ -32,6 +32,8 @@ $hent = static fn(): array => array_map(static fn($r) => [
     'kontakt'  => $r['kontakt'],
     'levering' => 'Leveres etter avtale',
     'status'   => $r['status'],
+    // Naar varen ble lagt inn — raden i admin viser det (24. september 2026).
+    'dato'     => !empty($r['created_at']) ? date('j.n.Y', strtotime((string) $r['created_at'])) : '',
 ], DB::alle(
     // ── LEFT JOIN, ikke JOIN ──────────────────────────────────────────
     //

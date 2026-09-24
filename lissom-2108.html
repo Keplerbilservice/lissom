@@ -40056,9 +40056,11 @@ class Component extends DCLogic {
         ['Tavle',    'adminmarked', { mkFane: 'tavle' }],
         ['Innboks',  'adminmarked', { mkFane: 'innboks' }],
         ['Medlemsforslag', 'adminmarked', { mkFane: 'forslag' }],
+        // Eieren, 24. september 2026: «artikler kan du fjerne, den ligger
+        // under skriv. og send bør vel hete tilbud / nyhetsbrev». Lista over
+        // artiklene er en fane under Skriv (eierens valg samme dag).
         ['Skriv',    'adminmarked', { mkFane: 'artikler' }],
-        ['Artikler', 'adminmarked', { mkFane: 'bank' }],
-        ['Send',     'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
+        ['Tilbud / nyhetsbrev', 'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
         ['Google',   'adminseo',    { seoFra: 'marked' }],
         ['Oppsett',  'adminmarked', { mkFane: 'innstillinger' }],
       ],
@@ -40073,9 +40075,9 @@ class Component extends DCLogic {
         ['GEO',             'admingeo',    { geoFra: 'marked' }],
         ['Analyse',         'adminmarked', { mkFane: 'analyse' }],
       ],
-      'Send': [
+      'Tilbud / nyhetsbrev': [
         ['← Markedsføring', 'adminmarked', { mkFane: 'tavle' }],
-        ['Send',            'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
+        ['Tilbud / nyhetsbrev', 'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
       ],
       'Oppsett': [
         ['← Markedsføring',      'adminmarked', { mkFane: 'tavle' }],
@@ -40167,7 +40169,7 @@ class Component extends DCLogic {
         return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle kurs');
       case 'adminbeskjeder':
         // Kom man fra «Send» i Markedsfoering, er det der man er.
-        if (st.beskjedFra === 'marked') return p('Markedsføring', 'Send', 'Send');
+        if (st.beskjedFra === 'marked') return p('Markedsføring', 'Tilbud / nyhetsbrev', 'Tilbud / nyhetsbrev');
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
           ? p('Kurs og deltakere', 'Kurs og deltakere', 'Beskjeder')
           : p('Brukere', 'Brukere', 'Beskjeder');
@@ -40234,8 +40236,8 @@ class Component extends DCLogic {
   markedGruppe() {
     const fane = this.state.mkFane || 'tavle';
     const g = [
-      ['Tavle', ['tavle']], ['Medlemsforslag', ['forslag']], ['Skriv', ['artikler', 'brev', 'sosialt', 'kurs']],
-      ['Artikler', ['bank']], ['Send', ['send']], ['Google', ['seo', 'geo', 'analyse']],
+      ['Tavle', ['tavle']], ['Medlemsforslag', ['forslag']], ['Skriv', ['artikler', 'bank', 'brev', 'sosialt', 'kurs']],
+      ['Tilbud / nyhetsbrev', ['send']], ['Google', ['seo', 'geo', 'analyse']],
       ['Oppsett', ['innstillinger', 'assistent', 'epost']],
     ].find(x => x[1].indexOf(fane) !== -1);
     return g ? g[0] : 'Tavle';
@@ -62453,7 +62455,7 @@ class Component extends DCLogic {
           ['bank', 'Artikler'], ['brev', 'Nyhetsbrev'], ['sosialt', 'Sosiale medier'],
           ['seo', 'SEO'], ['geo', 'GEO'], ['analyse', 'Analyse'],
           ['assistent', 'AI og Assistent'], ['innstillinger', 'Google-ID-er'],
-          ['send', 'Send'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
+          ['send', 'Tilbud / nyhetsbrev'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
           ['forslag', 'Medlemsforslag'],
 
         ];
@@ -62487,9 +62489,10 @@ class Component extends DCLogic {
           ['Tavle',    ['tavle']],
           ['Innboks',  ['innboks']],
           ['Medlemsforslag', ['forslag']],
-          ['Skriv',    ['artikler', 'brev', 'sosialt', 'kurs']],
-          ['Artikler', ['bank']],
-          ['Send',     ['send']],
+          // «Artikler» ble en fane under Skriv, og «Send» heter
+          // «Tilbud / nyhetsbrev». Eieren, 24. september 2026.
+          ['Skriv',    ['artikler', 'bank', 'brev', 'sosialt', 'kurs']],
+          ['Tilbud / nyhetsbrev', ['send']],
           ['Google',   ['seo', 'geo', 'analyse']],
           ['Oppsett',  ['innstillinger', 'assistent', 'epost']],
         ];

@@ -19351,9 +19351,6 @@ window.__resources = {
                     </div>
                   </sc-if>
                 </sc-for>
-                <div style="display: flex; justify-content: flex-end;">
-                  <button type="button" onClick="{{ hlaLagrePriser }}" style="{{ hlaLagreStil }}">Lagre</button>
-                </div>
               </div>
             </sc-if>
 
@@ -19381,6 +19378,11 @@ window.__resources = {
               <label style="display: flex; align-items: center; gap: 8px; font-size: var(--text-xs); color: var(--text-muted);">Administrasjonsgebyr
                 <input type="text" inputmode="decimal" value="{{ hlaGebyr }}" onChange="{{ hlaGebyrEndre }}" aria-label="Administrasjonsgebyr i prosent" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);"> %
               </label>
+              <!-- Lagre sammen med de andre knappene. Eieren, 24. september
+                   2026: «legg lagre knappen sammen de andre knappene så vi ser
+                   den». Den lagrer alt paa skjermen: priser, frakt, gebyr,
+                   adresser og fraktsatser. -->
+              <button type="button" onClick="{{ hlaLagreAlt }}" style="{{ hlaLagreStil }}">Lagre</button>
             </div>
           </div>
         </div>
@@ -31757,6 +31759,10 @@ class Component extends DCLogic {
       hlaLagrePriser: () => (prisKall.length ? this.hlaLagre(prisKall, lagret) : this.setState({ kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' })),
       hlaLagreOppsett: () => (oppsettKall.length ? this.hlaLagre(oppsettKall, lagret) : this.setState({ kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' })),
       hlaLagreStil: lagrePille,
+      hlaLagreAlt: () => {
+        const alle = prisKall.concat(oppsettKall);
+        return alle.length ? this.hlaLagre(alle, lagret) : this.setState({ kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
+      },
       // Ny leverandoer — eieren, 15. september 2026: «jeg vil også kunne
       // legge til Scan-Form info@scan-form.no».
       hlaNyNavn: u.nyNavn,

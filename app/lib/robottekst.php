@@ -78,8 +78,9 @@ final class Robottekst
     {
         $utenDato = DB::harKolonne('courses', 'vis_uten_dato') ? 'c.vis_uten_dato' : '0 AS vis_uten_dato';
         $kort     = DB::harKolonne('courses', 'kort_beskrivelse') ? 'c.kort_beskrivelse' : 'NULL AS kort_beskrivelse';
+        $fraPris  = DB::harKolonne('courses', 'fra_pris') ? 'c.fra_pris' : '0 AS fra_pris';
         $rader = DB::alle(
-            "SELECT c.slug, c.tittel, c.pris_ore, c.beskrivelse, c.tema, c.bilde, {$utenDato}, {$kort},
+            "SELECT c.slug, c.tittel, c.pris_ore, c.beskrivelse, c.tema, c.bilde, {$utenDato}, {$kort}, {$fraPris},
                     (SELECT MIN(cs.start_tid) FROM course_sessions cs
                       WHERE cs.course_id = c.id AND cs.status = 'planlagt'
                         AND cs.start_tid > UTC_TIMESTAMP()) AS neste,
@@ -101,6 +102,7 @@ final class Robottekst
                 'slug'        => (string) $k['slug'],
                 'tittel'      => (string) $k['tittel'],
                 'pris_ore'    => (int) $k['pris_ore'],
+                'fra_pris'    => (int) ($k['fra_pris'] ?? 0) === 1,
                 'beskrivelse' => trim(strip_tags((string) ($k['beskrivelse'] ?? ''))),
                 'kort'        => trim((string) ($k['kort_beskrivelse'] ?? '')),
                 'tema'        => (string) ($k['tema'] ?? ''),
@@ -151,6 +153,7 @@ final class Robottekst
             'slug'        => (string) $k['slug'],
             'tittel'      => (string) $k['tittel'],
             'pris_ore'    => (int) $k['pris_ore'],
+            'fra_pris'    => (int) ($k['fra_pris'] ?? 0) === 1,
             'beskrivelse' => trim(strip_tags((string) ($k['beskrivelse'] ?? ''))),
             'kort'        => trim((string) ($k['kort_beskrivelse'] ?? '')),
             'seo_meta'    => trim((string) ($k['seo_meta'] ?? '')),
@@ -653,15 +656,25 @@ final class Robottekst
         return [$ig, $fb];
     }
 
-    private static function tilbud(int $ore, string $url, bool $tilgjengelig = true): array
+    /**
+     * Et tilbud. Med $fra (kurset har «Vis som fra-pris», migrasjon 209) er
+     * prisen et minimum: siden sier «Fra kr. 450,-», og da sier dataene til
+     * Google det samme — minPrice i priceSpecification (24. september 2026).
+     */
+    private static function tilbud(int $ore, string $url, bool $tilgjengelig = true, bool $fra = false): array
     {
-        return [
+        $pris = number_format($ore / 100, 2, '.', '');
+        $o = [
             '@type'         => 'Offer',
-            'price'         => number_format($ore / 100, 2, '.', ''),
+            'price'         => $pris,
             'priceCurrency' => 'NOK',
             'url'           => $url,
             'availability'  => $tilgjengelig ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
         ];
+        if ($fra) {
+            $o['priceSpecification'] = ['@type' => 'PriceSpecification', 'minPrice' => $pris, 'priceCurrency' => 'NOK'];
+        }
+        return $o;
     }
 
     private static function kursLdKort(array $k): array
@@ -682,7 +695,7 @@ final class Robottekst
             $c['image'] = self::bildeUrl($k['bilde']);
         }
         if ($k['pris_ore'] > 0) {
-            $c['offers'] = self::tilbud($k['pris_ore'], $url);
+            $c['offers'] = self::tilbud($k['pris_ore'], $url, true, !empty($k['fra_pris']));
         }
         return $c;
     }
@@ -730,7 +743,7 @@ final class Robottekst
                 $h['image'] = self::bildeUrl($k['bilde']);
             }
             if ($k['pris_ore'] > 0) {
-                $h['offers'] = self::tilbud($k['pris_ore'], $canon);
+                $h['offers'] = self::tilbud($k['pris_ore'], $canon, true, !empty($k['fra_pris']));
             }
             $hendelser[] = $h;
         }

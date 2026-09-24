@@ -594,6 +594,11 @@ Svar::json([
         // Kortet «Butikk» paa dashboardet viser tallet — eieren,
         // 15. september 2026: «butikk er en viktig aa ha i dashboard».
         'butikk' => (int) DB::verdi("SELECT COUNT(*) FROM orders WHERE status = 'betalt'"),
+        // Medlemmenes forslag til Instagram som venter paa verkstedet
+        // (migrasjon 207). Eieren, 24. september 2026.
+        'medlemsforslag' => DB::harTabell('medlemsforslag')
+            ? (int) DB::verdi("SELECT COUNT(*) FROM medlemsforslag WHERE status IN ('venter','godkjent')")
+            : 0,
     ],
     // ── De mest populaere kursene ─────────────────────────────────────
     //

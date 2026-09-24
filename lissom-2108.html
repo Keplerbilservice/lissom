@@ -660,7 +660,8 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
       ramme.setAttribute('srcdoc', html);
     }
 
-    var alle = document.querySelectorAll('img[data-src], iframe[data-src]');
+    // «video» kom med medlemsforslagene (24. september 2026).
+    var alle = document.querySelectorAll('img[data-src], iframe[data-src], video[data-src]');
     for (var i = 0; i < alle.length; i++) {
       var el = alle[i], v = el.getAttribute('data-src');
       // Uregnet mal, tom verdi — la den staa til neste tegning.
@@ -6056,6 +6057,79 @@ window.__resources = {
                   <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">Lista er sendt. Du får et Vipps-krav når prisene er klare.</p>
                 </sc-if>
                 <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Lista blir liggende til du sender den. Prisen settes når verkstedet bestiller, og du får et Vipps-krav før varene hentes hjem.</p>
+              </div>
+              </sc-if>
+
+              <!-- Del paa Instagram. Eieren, 24. september 2026: medlemmer
+                   foreslaar et innlegg — ett bilde eller én video paa maks 15
+                   sekunder, med tekst — og verkstedet godkjenner for det
+                   legges ut paa @lissom_keramikk. Ett forslag om gangen.
+                   Bryteren ⊙ Synlighet → Del paa Instagram styrer kortet.
+                   Serveren er api/medlemsforslag.php. -->
+              <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
+              <div id="minside-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Del på Instagram</div>
+
+                <sc-for list="{{ fsMine }}" as="f" hint-placeholder-count="1">
+                  <div style="display: flex; gap: var(--space-3); align-items: center; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-3); margin: var(--space-3) 0;">
+                    <sc-if value="{{ f.video }}" hint-placeholder-val="{{ false }}">
+                      <video data-src="{{ f.fil }}" muted playsinline preload="metadata" style="flex: none; width: 74px; height: 74px; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-200);"></video>
+                    </sc-if>
+                    <sc-if value="{{ f.bilde }}" hint-placeholder-val="{{ true }}">
+                      <img data-src="{{ f.fil }}" alt="" style="flex: none; width: 74px; height: 74px; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-200);">
+                    </sc-if>
+                    <div style="min-width: 0;">
+                      <sc-if value="{{ f.venter }}" hint-placeholder-val="{{ true }}">
+                        <span style="display: inline-block; border-radius: var(--radius-pill); padding: 3px 10px; font-size: var(--text-xs); font-weight: 800; background: var(--yellow-100); color: var(--lissom-brown);">Venter på godkjenning</span>
+                      </sc-if>
+                      <sc-if value="{{ f.ute }}" hint-placeholder-val="{{ false }}">
+                        <span style="display: inline-block; border-radius: var(--radius-pill); padding: 3px 10px; font-size: var(--text-xs); font-weight: 800; background: var(--sage-100, #DCEFD9); color: var(--sage-700, #3D7A4A);">Lagt ut på Instagram</span>
+                      </sc-if>
+                      <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-heading); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ f.tekst }}</p>
+                      <sc-if value="{{ f.harLenke }}" hint-placeholder-val="{{ false }}">
+                        <a href="{{ f.lenke }}" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); padding: 4px 12px; font-size: var(--text-xs); font-weight: 700; color: var(--lissom-brown); text-decoration: none;">Se innlegget →</a>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+
+                <sc-if value="{{ fsKanSende }}" hint-placeholder-val="{{ true }}">
+                <h3 style="margin: var(--space-2) 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Vis fram det du har laget</h3>
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">Send oss et bilde eller en kort video. Blir det godkjent, legger vi det ut på @lissom_keramikk med navnet ditt.</p>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                  <button type="button" onClick="{{ fsVelgBilde }}" style="{{ fsBildeStil }}">Bilde</button>
+                  <button type="button" onClick="{{ fsVelgVideo }}" style="{{ fsVideoStil }}">Video (maks 15 sek)</button>
+                </div>
+
+                <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 150px; border: 2px dashed var(--clay-200); border-radius: var(--radius-lg); background: var(--clay-100); color: var(--text-muted); cursor: pointer; overflow: hidden; margin-bottom: var(--space-4);">
+                  <sc-if value="{{ fsHarForhand }}" hint-placeholder-val="{{ false }}">
+                    <sc-if value="{{ fsForhandVideo }}" hint-placeholder-val="{{ false }}">
+                      <video data-src="{{ fsForhand }}" muted playsinline controls style="max-width: 100%; max-height: 320px; display: block;"></video>
+                    </sc-if>
+                    <sc-if value="{{ fsForhandBilde }}" hint-placeholder-val="{{ true }}">
+                      <img data-src="{{ fsForhand }}" alt="" style="max-width: 100%; max-height: 320px; display: block;">
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{ fsIngenForhand }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size: 26px; line-height: 1;">＋</span>
+                    <span style="font: var(--type-body-sm); font-weight: 700;">{{ fsVelgTekst }}</span>
+                  </sc-if>
+                  <input type="file" accept="{{ fsAccept }}" onChange="{{ fsFilValgt }}" style="display: none;">
+                </label>
+
+                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Tekst</label>
+                <textarea value="{{ fsTekst }}" onChange="{{ fsTekstEndre }}" rows="3" maxlength="1500" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-3);"></textarea>
+
+                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Hashtagger</label>
+                <input type="text" value="{{ fsTags }}" onChange="{{ fsTagsEndre }}" maxlength="500" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-3);">
+
+                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Instagram-brukeren din (valgfritt)</label>
+                <input type="text" value="{{ fsIg }}" onChange="{{ fsIgEndre }}" maxlength="31" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-4);">
+
+                <button type="button" onClick="{{ fsSend }}" style="{{ fsSendStil }}">Send forslag</button>
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Ett forslag om gangen. Du kan sende et nytt når dette er behandlet.</p>
+                </sc-if>
               </div>
               </sc-if>
 
@@ -22029,6 +22103,54 @@ window.__resources = {
           </sc-for>
         </sc-if>
 
+        <!-- ── Medlemsforslag ────────────────────────────────────────── -->
+        <!--
+             Medlemmenes forslag til Instagram. Eieren, 24. september 2026:
+             «maa godkjennes av admin». «Godkjenn og legg ut» legger det ut
+             paa @lissom_keramikk med én gang — ett trykk, aldri en jobb.
+             Den faste linja oeverst er malen som staar i hvert innlegg.
+             Serveren er api/admin/medlemsforslag.php.
+        -->
+        <sc-if value="{{ mkErForslag }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5);">
+            <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 6px;">Fast tekst i innlegget</div>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+              <input value="{{ mfMal }}" onChange="{{ mfMalEndre }}" maxlength="300" style="flex: 1 1 320px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ mfMalLagre }}" hint-size="auto,36px">Lagre</x-import>
+            </div>
+            <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{medlem} blir byttet ut med @brukernavnet eller fornavnet.</p>
+          </div>
+
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ mfVenterMerke }}</div>
+          <sc-for list="{{ mfVenter }}" as="f" hint-placeholder-count="2">
+            <div style="display: flex; gap: var(--space-4); align-items: flex-start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4);">
+              <sc-if value="{{ f.video }}" hint-placeholder-val="{{ false }}">
+                <video data-src="{{ f.fil }}" muted playsinline controls preload="metadata" style="flex: none; width: 140px; max-height: 240px; border-radius: var(--radius-md); background: var(--clay-200);"></video>
+              </sc-if>
+              <sc-if value="{{ f.bilde }}" hint-placeholder-val="{{ true }}">
+                <a href="{{ f.fil }}" target="_blank" rel="noopener" style="flex: none;"><img data-src="{{ f.fil }}" alt="" style="width: 140px; max-height: 240px; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-200); display: block;"></a>
+              </sc-if>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                  <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-heading);">{{ f.navn }}</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.under }}</span>
+                </div>
+                <sc-if value="{{ f.visTekst }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); white-space: pre-line;">{{ f.bildetekst }}</p>
+                </sc-if>
+                <sc-if value="{{ f.redigerer }}" hint-placeholder-val="{{ false }}">
+                  <textarea value="{{ f.bildetekst }}" onChange="{{ f.settTekst }}" rows="7" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-3); resize: vertical;"></textarea>
+                </sc-if>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" onClick="{{ f.godkjenn }}" style="{{ f.godkjennStil }}">Godkjenn og legg ut</button>
+                  <button type="button" onClick="{{ f.rediger }}" style="{{ f.pilleStil }}">Rediger teksten</button>
+                  <button type="button" onClick="{{ f.avvis }}" style="{{ f.pilleStil }}">Avvis</button>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </sc-if>
+
         <!-- ── Innboks ────────────────────────────────────────────────── -->
         <!--
              Kommentarer og meldinger fra Instagram og Facebook, samlet.
@@ -30520,6 +30642,254 @@ class Component extends DCLogic {
         if (t.length < 2) { this.setState({ kvitteringTone: 'danger', kvittering: 'Skriv hva du ønsker deg' }); return; }
         this.hlKall({ handling: 'onske', tekst: t });
       },
+    };
+  }
+
+  // ── Del paa Instagram (medlemsforslag) ─────────────────────────────────
+  //
+  // Eieren, 24. september 2026: medlemmer foreslaar et innlegg — ett bilde
+  // eller én video paa maks 15 sekunder, med tekst — og verkstedet
+  // godkjenner for det legges ut paa @lissom_keramikk. Serveren er
+  // api/medlemsforslag.php; den sjekker lengden paa videoen selv ogsaa.
+
+  /** Mine forslag, og om funksjonen er paa. Hentes én gang per skjerm. */
+  hentForslag() {
+    if (!this.erPublisert() || !this.state.innlogget || this._fsHentes || this._fsHentet) return;
+    this._fsHentes = true;
+    fetch('/api/medlemsforslag.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._fsHentes = false;
+        this._fsHentet = true;
+        if (d) this.setState({ fsPaa: !!d.paa, fsMine: d.mine || [], fsVenter: !!d.venter });
+      })
+      .catch(() => { this._fsHentes = false; });
+  }
+
+  /**
+   * Fila er valgt. En video maales i nettleseren foer den sendes: det er
+   * bedre aa faa beskjed med én gang enn etter et minutt med opplasting.
+   */
+  fsFilValgt(e) {
+    const fil = e && e.target && e.target.files && e.target.files[0];
+    if (!fil) return;
+    const video = (this.state.fsType || 'bilde') === 'video';
+    if (this.state.fsForhand) { try { URL.revokeObjectURL(this.state.fsForhand); } catch (x) {} }
+    if (!video) {
+      this.setState({ fsFil: fil, fsForhand: URL.createObjectURL(fil) });
+      return;
+    }
+    const url = URL.createObjectURL(fil);
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => {
+      const sek = v.duration || 0;
+      if (sek > 15.5) {
+        try { URL.revokeObjectURL(url); } catch (x) {}
+        try { e.target.value = ''; } catch (x) {}
+        this.setState({ fsFil: null, fsForhand: '', kvitteringTone: 'danger',
+                        kvittering: 'Videoen er lengre enn 15 sekunder.' });
+        return;
+      }
+      this.setState({ fsFil: fil, fsForhand: url });
+    };
+    // Klarer ikke nettleseren aa lese den, avgjoer serveren.
+    v.onerror = () => this.setState({ fsFil: fil, fsForhand: url });
+    v.src = url;
+  }
+
+  /** Sender forslaget. Bildet krympes foerst, som de andre opplastingene. */
+  fsSend() {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._fsSender) return;
+    const st = this.state;
+    const type = st.fsType || 'bilde';
+    const tekst = String(st.fsTekst || '').trim();
+    if (!st.fsFil) {
+      this.setState({ kvitteringTone: 'danger', kvittering: type === 'video' ? 'Du må velge en video.' : 'Du må velge et bilde.' });
+      return;
+    }
+    if (!tekst) { this.setState({ kvitteringTone: 'danger', kvittering: 'Skriv litt tekst til innlegget.' }); return; }
+
+    this._fsSender = true;
+    this.setState({ fsSender: true });
+    const klar = type === 'video' ? Promise.resolve(st.fsFil) : this.krympBilde(st.fsFil);
+    klar.then(fil => {
+      const skjema = new FormData();
+      skjema.append('handling', 'send');
+      skjema.append('type', type);
+      skjema.append('tekst', tekst);
+      skjema.append('hashtags', String(st.fsTags || ''));
+      skjema.append('instagram', String(st.fsIg || ''));
+      skjema.append('fil', fil, (st.fsFil.name || (type === 'video' ? 'video.mp4' : 'bilde.jpg')));
+      return fetch('/api/medlemsforslag.php', { method: 'POST', credentials: 'same-origin', body: skjema })
+        .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })));
+    })
+      .then(({ ok, d }) => {
+        this._fsSender = false;
+        if (!ok) {
+          this.setState({ fsSender: false, kvitteringTone: 'danger',
+                          kvittering: 'Forslaget ble ikke sendt', kvitteringDetalj: (d && d.feil) || '' });
+          return;
+        }
+        if (this.state.fsForhand) { try { URL.revokeObjectURL(this.state.fsForhand); } catch (x) {} }
+        this.setState(s => ({
+          fsSender: false, fsFil: null, fsForhand: '', fsTekst: '', fsTags: '', fsIg: '',
+          fsVenter: true, fsMine: d.forslag ? [d.forslag].concat(s.fsMine || []) : (s.fsMine || []),
+        }));
+      })
+      .catch(() => {
+        this._fsSender = false;
+        this.setState({ fsSender: false, kvitteringTone: 'danger', kvittering: 'Forslaget ble ikke sendt',
+                        kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  forslagVals() {
+    const st = this.state;
+    const type = st.fsType || 'bilde';
+    const pille = (paa) => ({
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
+      font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
+      background: paa ? 'var(--lissom-brown)' : 'var(--clay-100)',
+      color: paa ? '#fff' : 'var(--lissom-brown)',
+    });
+    const bytt = (t) => () => {
+      if (t === type) return;
+      if (st.fsForhand) { try { URL.revokeObjectURL(st.fsForhand); } catch (x) {} }
+      this.setState({ fsType: t, fsFil: null, fsForhand: '' });
+    };
+    const forhand = st.fsForhand || '';
+    return {
+      fsMine: (st.fsMine || []).map(f => ({
+        fil: f.fil,
+        video: f.type === 'video',
+        bilde: f.type !== 'video',
+        tekst: f.tekst || '',
+        venter: f.status === 'venter' || f.status === 'godkjent',
+        ute: f.status === 'publisert',
+        harLenke: f.status === 'publisert' && !!f.lenke,
+        lenke: f.lenke || '',
+      })),
+      fsKanSende: !st.fsVenter,
+      fsVelgBilde: bytt('bilde'),
+      fsVelgVideo: bytt('video'),
+      fsBildeStil: pille(type === 'bilde'),
+      fsVideoStil: pille(type === 'video'),
+      fsAccept: type === 'video' ? 'video/mp4,video/quicktime' : 'image/jpeg,image/png,image/webp',
+      fsVelgTekst: type === 'video' ? 'Velg video' : 'Velg bilde',
+      fsFilValgt: (e) => this.fsFilValgt(e),
+      fsForhand: forhand,
+      fsHarForhand: !!forhand,
+      fsIngenForhand: !forhand,
+      fsForhandVideo: !!forhand && type === 'video',
+      fsForhandBilde: !!forhand && type !== 'video',
+      fsTekst: st.fsTekst || '',
+      fsTekstEndre: (e) => this.setState({ fsTekst: e.target.value }),
+      fsTags: st.fsTags || '',
+      fsTagsEndre: (e) => this.setState({ fsTags: e.target.value }),
+      fsIg: st.fsIg || '',
+      fsIgEndre: (e) => this.setState({ fsIg: e.target.value }),
+      fsSend: () => this.fsSend(),
+      fsSendStil: {
+        appearance: 'none', cursor: st.fsSender ? 'wait' : 'pointer', width: '100%',
+        border: 'none', borderRadius: 'var(--radius-pill)', padding: '12px 18px',
+        background: 'var(--lissom-brown)', color: '#fff', font: 'var(--type-body)', fontWeight: 800,
+        opacity: st.fsSender ? 0.6 : 1,
+      },
+    };
+  }
+
+  // ── Medlemsforslag, verkstedets side ───────────────────────────────────
+  //
+  // Markedsfoering → Medlemsforslag. Hentes naar fanen aapnes: det er ett
+  // kall mot vaar egen server, ikke mot Meta. Serveren er
+  // api/admin/medlemsforslag.php.
+
+  mfHent() {
+    if (!this.erPublisert() || this._mfHentes) return;
+    this._mfHentes = true;
+    fetch('/api/admin/medlemsforslag.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._mfHentes = false;
+        this._mfHentet = true;
+        if (!ok) {
+          this.setState({ mfFeil: (d && d.feil) || 'Fikk ikke hentet forslagene.' });
+          return;
+        }
+        this.setState({ mfFeil: '', mfListe: d.venter || [], mfMal: d.mal || '', mfMalLagret: d.mal || '' });
+      })
+      .catch(() => { this._mfHentes = false; });
+  }
+
+  mfKall(kropp, ferdig) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this.state.mfJobb) return;
+    this.setState({ mfJobb: kropp.id || kropp.handling });
+    fetch('/api/admin/medlemsforslag.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({ mfJobb: null });
+        if (!ok) {
+          this.setState({ kvitteringTone: 'danger', kvittering: 'Det gikk ikke', kvitteringDetalj: (d && d.feil) || '' });
+          return;
+        }
+        if (d.beskjed) this.setState({ kvitteringTone: '', kvittering: d.beskjed, kvitteringDetalj: '' });
+        if (ferdig) ferdig(d);
+      })
+      .catch(() => this.setState({ mfJobb: null, kvitteringTone: 'danger', kvittering: 'Det gikk ikke',
+                                   kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  medlemsforslagAdminVals(fane) {
+    const paa = fane === 'forslag';
+    if (paa && this.erPublisert() && !this._mfHentet) this.mfHent();
+    const st = this.state;
+    const liste = st.mfListe || [];
+    const tekster = st.mfTekster || {};
+    const redigerer = st.mfRedigerer || {};
+    const pilleStil = {
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
+      font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
+      background: 'var(--clay-100)', color: 'var(--lissom-brown)',
+    };
+    const fjern = id => this.setState(s => ({ mfListe: (s.mfListe || []).filter(x => x.id !== id) }));
+    return {
+      mkErForslag: paa,
+      mfMal: st.mfMal || '',
+      mfMalEndre: (e) => this.setState({ mfMal: e.target.value }),
+      mfMalLagre: () => this.mfKall({ handling: 'mal', tekst: String(st.mfMal || '') },
+        d => this.setState({ mfMal: d.mal, mfMalLagret: d.mal, kvittering: 'Lagret', kvitteringTone: '' })),
+      mfVenterMerke: liste.length
+        ? liste.length + ' venter på deg'
+        : (st.mfFeil || 'Ingen forslag venter'),
+      mfVenter: liste.map(f => {
+        const tekst = tekster[f.id] !== undefined ? tekster[f.id] : f.bildetekst;
+        const jobber = st.mfJobb === f.id;
+        return {
+          fil: f.fil,
+          video: f.type === 'video',
+          bilde: f.type !== 'video',
+          navn: f.navn || 'Medlem',
+          under: [f.instagram, f.tid ? String(f.tid).slice(0, 16).replace('T', ' ') : ''].filter(Boolean).join(' · '),
+          bildetekst: tekst,
+          redigerer: !!redigerer[f.id],
+          visTekst: !redigerer[f.id],
+          settTekst: (e) => this.setState(s => ({ mfTekster: Object.assign({}, s.mfTekster, { [f.id]: e.target.value }) })),
+          rediger: () => this.setState(s => ({ mfRedigerer: Object.assign({}, s.mfRedigerer, { [f.id]: !redigerer[f.id] }) })),
+          godkjenn: () => this.mfKall({ handling: 'godkjenn', id: f.id, tekst }, () => fjern(f.id)),
+          avvis: () => this.mfKall({ handling: 'avvis', id: f.id }, () => fjern(f.id)),
+          pilleStil,
+          godkjennStil: Object.assign({}, pilleStil, {
+            background: 'var(--sage-700, #3D7A4A)', borderColor: 'var(--sage-700, #3D7A4A)', color: '#fff',
+            opacity: jobber ? 0.6 : 1, cursor: jobber ? 'wait' : 'pointer',
+          }),
+        };
+      }),
     };
   }
 
@@ -39480,6 +39850,7 @@ class Component extends DCLogic {
       'Markedsføring': [
         ['Tavle',    'adminmarked', { mkFane: 'tavle' }],
         ['Innboks',  'adminmarked', { mkFane: 'innboks' }],
+        ['Medlemsforslag', 'adminmarked', { mkFane: 'forslag' }],
         ['Skriv',    'adminmarked', { mkFane: 'artikler' }],
         ['Artikler', 'adminmarked', { mkFane: 'bank' }],
         ['Send',     'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
@@ -39658,7 +40029,7 @@ class Component extends DCLogic {
   markedGruppe() {
     const fane = this.state.mkFane || 'tavle';
     const g = [
-      ['Tavle', ['tavle']], ['Skriv', ['artikler', 'brev', 'sosialt', 'kurs']],
+      ['Tavle', ['tavle']], ['Medlemsforslag', ['forslag']], ['Skriv', ['artikler', 'brev', 'sosialt', 'kurs']],
       ['Artikler', ['bank']], ['Send', ['send']], ['Google', ['seo', 'geo', 'analyse']],
       ['Oppsett', ['innstillinger', 'assistent', 'epost']],
     ].find(x => x[1].indexOf(fane) !== -1);
@@ -47506,6 +47877,14 @@ class Component extends DCLogic {
         return paa && (!this.erPublisert() || !!this.state.hlPaa);
       })(),
       ...this.handlelisteVals(),
+      // Del paa Instagram. Bryteren styrer om kortet finnes, og serveren
+      // svarer «paa» bare naar den staar paa der ogsaa.
+      visForslag: (() => {
+        const paa = this.medlemsvisning() && this.bryterPaa('medlemsforslag');
+        if (paa && this.erPublisert()) this.hentForslag();
+        return paa && (!this.erPublisert() || !!this.state.fsPaa);
+      })(),
+      ...this.forslagVals(),
       // Interne samlinger: vanlige kurs merket «Kun for medlemmer». De laa
       // som tre faste oppforinger her, og var tomme paa den ekte siden.
       medlemskurs: this.medBildeCss(
@@ -53840,6 +54219,11 @@ class Component extends DCLogic {
                 () => this.vekslBryter('glemtstempling', 'Glemt å stemple ut')),
             rad('Handlelista', this.bryterPaa('handleliste'),
                 () => this.vekslBryter('handleliste', 'Handlelista')),
+            // Eieren, 24. september 2026: medlemmenes forslag til Instagram
+            // «som jeg maa kunne skru av og paa i synlighet». Migrasjon 207
+            // setter den av.
+            rad('Del på Instagram', this.bryterPaa('medlemsforslag'),
+                () => this.vekslBryter('medlemsforslag', 'Del på Instagram')),
             // Eieren, 15. september 2026: dugnad «maa kunne skrus av og paa
             // og legges sammen de andre bryterne». Migrasjon 189 setter den av.
             rad('Dugnad', this.bryterPaa('dugnad'),
@@ -53960,7 +54344,9 @@ class Component extends DCLogic {
             const varer = ((d.koer || {}).medlemsvarer) || 0;
             const frys  = ((d.koer || {}).frys) || 0;
             const dugn  = ((d.koer || {}).dugnad) || 0;
-            const venter = nye + varer + frys + dugn;
+            // Medlemmenes forslag til Instagram (migrasjon 207).
+            const forsl = ((d.koer || {}).medlemsforslag) || 0;
+            const venter = nye + varer + frys + dugn + forsl;
 
             const ubetalte = d.ubetalte || [];
             const sum = ubetalte.reduce((a, u) => a + (u.belopOre || 0), 0);
@@ -54015,6 +54401,7 @@ class Component extends DCLogic {
                        varer ? linje(varer + (varer === 1 ? ' vare til godkjenning' : ' varer til godkjenning')) : null,
                        frys  ? linje(frys + (frys === 1 ? ' søknad om frys' : ' søknader om frys')) : null,
                        dugn  ? linje(dugn + (dugn === 1 ? ' dugnad' : ' dugnader') + ' å svare på') : null,
+                       forsl ? linje(forsl + ' forslag til Instagram') : null,
                        venter ? null : linje('Ingenting venter'),
                      ].filter(Boolean), venter > 0,
                      () => this.gaaAdmin('adminnyepameldinger', {}), 'venter'),
@@ -61856,6 +62243,7 @@ class Component extends DCLogic {
           ['seo', 'SEO'], ['geo', 'GEO'], ['analyse', 'Analyse'],
           ['assistent', 'AI og Assistent'], ['innstillinger', 'Google-ID-er'],
           ['send', 'Send'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
+          ['forslag', 'Medlemsforslag'],
 
         ];
 
@@ -61887,6 +62275,7 @@ class Component extends DCLogic {
         const GRUPPER = [
           ['Tavle',    ['tavle']],
           ['Innboks',  ['innboks']],
+          ['Medlemsforslag', ['forslag']],
           ['Skriv',    ['artikler', 'brev', 'sosialt', 'kurs']],
           ['Artikler', ['bank']],
           ['Send',     ['send']],
@@ -61964,6 +62353,7 @@ class Component extends DCLogic {
           // Hentes ikke av seg selv naar skjermen aapnes: det er to kall
           // mot Meta, og de skal ikke gaa hver gang noen klikker seg innom
           // Markedsfoering. «Hent» henter.
+          ...this.medlemsforslagAdminVals(fane),
           ...(() => {
             const erKomm = (this.state.ibFane || 'kommentarer') === 'kommentarer';
             const pilleStil = paa => ({

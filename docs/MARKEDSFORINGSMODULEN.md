@@ -80,8 +80,42 @@ nå til noe som sier hva som faktisk er i veien.
 
 **Tillatelser.** Kommentarer krever `instagram_manage_comments` og
 `pages_manage_engagement`. Meldinger krever i tillegg `pages_messaging`, som
-hører til et eget meldings-bruksområde på appen — det er ikke lagt til per 23.
-september 2026, så meldingsdelen viser en merknad i stedet for samtaler.
+hører til et eget meldings-bruksområde på appen — lagt til 24. september 2026
+(«Engage with customers on Messenger from Meta»).
+
+**Instagram-meldinger krever at Instagram er koblet til Facebook-sida for
+innboksen** — ikke bare at publisering virker. Uten koblingen svarer Graph
+`platform=instagram` med kode 100, underkode 33. Koblingen gjøres i Business
+Suite → Innboks → Instagram → «Koble til Instagram» → «Gi tilgang til
+Instagram-meldinger i innboksen», **innlogget som sidas eier** (Monica). Med
+delt tilgang ser trykket ut til å virke, men lagres ikke. Bryteren «Tillat
+tilgang til meldinger» finnes bare i Instagram-appen på mobil. Svar til kunder
+krever App Review mens appen står i utviklingsmodus.
+
+Samtalelista mot Instagram er treg (rundt 20 s) og svarer av og til «reduce
+the amount of data» eller «Timeout»; `Meta::samtaler()` prøver da igjen med
+færre samtaler, ned til fem.
+
+### 2.2 Medlemsforslag
+
+Lagt til 24. september 2026. Eieren: medlemmer foreslår et innlegg — ett
+bilde eller én video på maks 15 sekunder, med tekst — og verkstedet
+godkjenner før det legges ut på @lissom_keramikk.
+
+| Del | Hvor |
+| --- | --- |
+| Tabell `medlemsforslag`, bryter `Vis/medlemsforslag` (av), mal `Marked/Medlemsforslag mal` | migrasjon 207 |
+| Regler: lengde (mvhd-boksen, 3–15,5 s), 4:5-beskjæring, hashtagger, bildetekst | `app/lib/medlemsforslag.php` |
+| Medlemmet: hente egne, sende (ett om gangen, aktive medlemmer) | `api/medlemsforslag.php` |
+| Verkstedet: liste, godkjenn og legg ut, avvis, mal | `api/admin/medlemsforslag.php` |
+| Fila | `api/bilde.php?forslag=` — privat til status er `godkjent`/`publisert` |
+| Skjermene | Min side-kortet «Del på Instagram», fanen Medlemsforslag, raden i ⊙ Synlighet, linja i «Venter på deg» |
+
+Bildeteksten er medlemmets tekst, malen («{medlem}» blir @brukernavnet eller
+fornavnet) og hashtaggene med `#lissomkeramikk` først. «Godkjenn og legg ut»
+setter status `godkjent` (da åpner fila seg for Meta), publiserer med
+`Meta::publiserInstagram`, og setter tilbake til `venter` hvis det feiler. Et
+avvist forslag slettes fra disken. Ingen vei hit fra Autopilot.
 
 **Ingen autopilot.** Hvert svar er et trykk. Det finnes ingen vei hit fra en
 cron-jobb eller fra Autopilot — samme regel som publisering. Et svar fra

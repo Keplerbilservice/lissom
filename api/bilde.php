@@ -145,6 +145,37 @@ if ($feil !== '') {
     lever($sti);
 }
 
+// Medlemmenes forslag til Instagram. Private til verkstedet har godkjent:
+// da maa Meta kunne hente fila selv, og fra da staar den ute paa Instagram
+// uansett. For det ser bare medlemmet selv og verkstedet den.
+$forslag = Foresporsel::tekst('forslag');
+if ($forslag !== '') {
+    $sti = Medlemsforslag::sti($forslag);
+    if ($sti === null || !Medlemsforslag::klar()) {
+        Svar::feil('Fant ikke fila.', 404);
+    }
+    $rad = DB::en('SELECT member_id, status FROM medlemsforslag WHERE fil = :f', ['f' => $forslag]);
+    if ($rad === null) {
+        Svar::feil('Fant ikke fila.', 404);
+    }
+    $aapen = in_array($rad['status'], ['godkjent', 'publisert'], true);
+    $m = Sesjon::medlem();
+    $egen = $m !== null && (int) $rad['member_id'] === (int) $m['id'];
+    if (!$aapen && !$egen && !Sesjon::erAdmin()) {
+        Svar::feil('Fant ikke fila.', 404);
+    }
+    // Ikke lever(): den sier «public, immutable», og et forslag som venter
+    // skal ikke ligge i noen delt mellomlagring.
+    $hode = (string) file_get_contents($sti, false, null, 0, 12);
+    header('Content-Type: ' . (str_ends_with($forslag, '.jpg') ? 'image/jpeg'
+        : (substr($hode, 8, 4) === 'qt  ' ? 'video/quicktime' : 'video/mp4')));
+    header('Content-Length: ' . filesize($sti));
+    header('Cache-Control: ' . ($aapen ? 'public' : 'private') . ', max-age=86400');
+    header('X-Content-Type-Options: nosniff');
+    readfile($sti);
+    exit;
+}
+
 // Videoene AI-en har laget. Aapne for alle: de legges ut paa Instagram og
 // Facebook, og da henter Meta dem selv fra denne adressen.
 $video = Foresporsel::tekst('video');

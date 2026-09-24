@@ -20014,6 +20014,52 @@ sjekk('… og sier «Lagret», ikke «Sendt til godkjenning»',
     str_contains($rdSida, "              skSender: false, skFeil: null, gDelSendt: !endret,")
     && str_contains($rdSida, "              kvittering: endret ? 'Lagret' : 'Sendt til godkjenning',"));
 
+// ── Medlemsforslag til Instagram (migrasjon 207) ──────────────────────
+//
+// Eieren, 24. september 2026: medlemmer foreslaar et innlegg — ett bilde
+// eller én video paa maks 15 sekunder — og verkstedet godkjenner for det
+// legges ut paa @lissom_keramikk. Bryteren i ⊙ Synlighet staar av fra start.
+$mfMig  = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/207_medlemsforslag_til_instagram.sql');
+$mfLib  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemsforslag.php');
+$mfApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemsforslag.php');
+$mfAdm  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/medlemsforslag.php');
+$mfBild = (string) file_get_contents(dirname(__DIR__) . '/api/bilde.php');
+$mfSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nMedlemsforslag til Instagram\n";
+sjekk('bryteren staar av fra start',
+    str_contains($mfMig, "SELECT 'Vis/medlemsforslag', 'nei'"));
+sjekk('malen har eierens tekst',
+    str_contains($mfMig, "'🏺 Laget av {medlem}, medlem hos Lissom Keramikk'"));
+sjekk('serveren nekter naar bryteren er av',
+    str_contains($mfApi, "if (!Medlemsforslag::paa()) {"));
+sjekk('… og bare ett forslag om gangen',
+    str_contains($mfApi, "WHERE member_id = :m AND status IN ('venter','godkjent')"));
+sjekk('… og bare for aktive medlemmer',
+    str_contains($mfApi, '$medlem = krev_aktivt_medlem();'));
+sjekk('videoen maales paa serveren, ikke bare i nettleseren',
+    str_contains($mfLib, 'public const MAKS_SEKUNDER = 15.5;')
+    && str_contains($mfLib, "if (\$type === 'mvhd') {"));
+sjekk('et smalt mobilbilde beskjaeres til 4:5 for Instagram',
+    str_contains($mfLib, 'if ($forhold >= 0.8 && $forhold <= 1.91) {'));
+sjekk('#lissomkeramikk kommer alltid med',
+    str_contains($mfLib, "public const FAST_TAGG = '#lissomkeramikk';"));
+sjekk('fila er privat til den er godkjent',
+    str_contains($mfBild, "\$aapen = in_array(\$rad['status'], ['godkjent', 'publisert'], true);"));
+sjekk('godkjenning legger ut, og settes tilbake om det feiler',
+    str_contains($mfAdm, '$ut = Meta::publiserInstagram($url, $tekst);')
+    && str_contains($mfAdm, "DB::kjor(\"UPDATE medlemsforslag SET status = 'venter' WHERE id = :i\", ['i' => \$id]);"));
+sjekk('et avvist forslag etterlater ingen fil',
+    str_contains($mfAdm, "Medlemsforslag::slettFil((string) \$rad['fil']);"));
+sjekk('raden i Synlighet',
+    str_contains($mfSida, "rad('Del på Instagram', this.bryterPaa('medlemsforslag'),"));
+sjekk('kortet paa Min side styres av bryteren',
+    str_contains($mfSida, "const paa = this.medlemsvisning() && this.bryterPaa('medlemsforslag');"));
+sjekk('fanen i Markedsfoering',
+    str_contains($mfSida, "['Medlemsforslag', ['forslag']],")
+    && str_contains($mfSida, '<sc-if value="{{ mkErForslag }}"'));
+sjekk('forslagene staar i «Venter paa deg»',
+    str_contains($mfSida, "forsl ? linje(forsl + ' forslag til Instagram') : null,"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

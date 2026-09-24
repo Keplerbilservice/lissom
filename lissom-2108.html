@@ -9357,6 +9357,27 @@ window.__resources = {
                   </div>
               </div>
             </sc-if>
+            <!-- Deltakerne, med «Ta betalt» paa dem som ikke har betalt. Eieren,
+                 24. september 2026: «når jeg klikker på kurs i kalender, så vil
+                 jeg også ha mulighet til å trykke ta betaling». Klikket paa
+                 kurset aapner denne ruta; lista laa ett trykk unna. -->
+            <sc-if value="{{ klRHarDelt }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); margin-bottom: var(--space-4);">
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-2);">Deltakere</div>
+                <sc-for list="{{ klRDeltRader }}" as="dr" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: center; gap: var(--space-3); padding: 8px 0; border-top: 1px solid var(--border-subtle);">
+                    <div style="flex: 1 1 auto; min-width: 0;">
+                      <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ dr.navn }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ dr.detalj }}</div>
+                    </div>
+                    <span style="font-size: var(--text-xs); font-weight: 700; color: {{ dr.farge }}; white-space: nowrap;">{{ dr.status }}</span>
+                    <sc-if value="{{ dr.kanBetale }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ dr.betal }}" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px 12px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Ta betalt</button>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
             <sc-if value="{{ klRVisBunn }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klRLagre }}" hint-size="auto,44px">Lagre</x-import>
@@ -43698,6 +43719,23 @@ class Component extends DCLogic {
                 : 'Går kurset over flere dager, legger du inn hver dag her. Deltakeren melder seg på hele kurset, én gang.',
               klRFull: () => redEvt && this.klApneKurs(redEvt),
               klRDeltakere: () => redEvt && this.setState({ klRedId: null, klValgtId: redEvt.id, klFlyttVis: false, klBekreftAvlys: false }),
+              klRHarDelt: !!redEvt && (redEvt.deltakere || []).length > 0,
+              klRDeltRader: (redEvt ? (redEvt.deltakere || []) : []).map(p => {
+                const kr = (ore) => 'kr ' + String(Math.round((ore || 0) / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+                const kan = !!p.bookingId && p.status === 'Ikke betalt';
+                return {
+                  navn: p.navn,
+                  detalj: [(p.antall || 1) + ((p.antall || 1) === 1 ? ' plass' : ' plasser'), p.belopOre ? kr(p.belopOre) : '', p.tlf || p.epost || ''].filter(Boolean).join(' · '),
+                  status: p.status,
+                  farge: p.status === 'Betalt' ? 'var(--sage-600, #4C6B4F)' : 'var(--terracotta-600)',
+                  kanBetale: kan,
+                  betal: () => this.apneTaBetalt({
+                    slag: 'booking', id: p.bookingId, navn: p.navn,
+                    under: p.navn + ' · ' + redEvt.tittel + ' · ' + redEvt.dato + ', ' + redEvt.tid,
+                    antall: p.antall || 1, prisOre: p.prisOre || 0, belopOre: p.belopOre || 0, rabatt: p.rabatt || 0,
+                  }, ''),
+                };
+              }),
               // Hva som er endret, i klartekst. Linja oeverst kommer forst
               // naar det faktisk er noe aa lagre.
               klREndret: !!redEvt && this.klRedEndringer(redEvt).length > 0,

@@ -44,7 +44,11 @@ final class Bilder
      * @return string filnavnet, til lagring i basen
      * @throws RuntimeException med en tekst som kan vises til den som lastet opp
      */
-    public static function taImot(array $fil, string $under): string
+    /**
+     * @param int $maksKant lengste side etter krymping (standard 1400). Bilder
+     *                      til Instagram trenger mer: se Medlemsforslag.
+     */
+    public static function taImot(array $fil, string $under, int $maksKant = self::MAKS_KANT, int $kvalitet = 82): string
     {
         if (!isset($fil['error']) || $fil['error'] !== UPLOAD_ERR_OK) {
             throw new RuntimeException(match ($fil['error'] ?? -1) {
@@ -64,7 +68,7 @@ final class Bilder
 
         // Vi stoler ikke paa filnavn eller Content-Type. Bildet aapnes i
         // fraFil(), og klarer ikke GD det, er det ikke et bilde.
-        return self::fraFil($sti, $under);
+        return self::fraFil($sti, $under, $maksKant, $kvalitet);
     }
 
     /**
@@ -100,7 +104,7 @@ final class Bilder
      *
      * Sto inne i taImot() og kunne bare naas gjennom en opplasting.
      */
-    private static function fraFil(string $sti, string $under): string
+    private static function fraFil(string $sti, string $under, int $maksKant = self::MAKS_KANT, int $kvalitet = 82): string
     {
         $info = @getimagesize($sti);
         if ($info === false || !isset(self::TYPER[$info[2]])) {
@@ -117,7 +121,7 @@ final class Bilder
         }
 
         [$b, $h] = [imagesx($kilde), imagesy($kilde)];
-        $skala = min(1.0, self::MAKS_KANT / max($b, $h));
+        $skala = min(1.0, $maksKant / max($b, $h));
         $nb = max(1, (int) round($b * $skala));
         $nh = max(1, (int) round($h * $skala));
 
@@ -129,7 +133,7 @@ final class Bilder
         $navn = bin2hex(random_bytes(16)) . '.jpg';
         $mal = self::mappe($under) . '/' . $navn;
 
-        if (!imagejpeg($ut, $mal, 82)) {
+        if (!imagejpeg($ut, $mal, $kvalitet)) {
             imagedestroy($ut);
             throw new RuntimeException('Bildet kunne ikke lagres.');
         }

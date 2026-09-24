@@ -5,7 +5,12 @@
  *   GET                      varene som kan bestilles, og lista mi
  *   POST handling=legg       { produktId }        legg til, eller +1
  *   POST handling=antall     { linjeId, antall }  0 = ta bort linja
+ *   POST handling=linje      { leverandorId, artikkelnr, navn, antall }
  *   POST handling=send       send lista til verkstedet
+ *
+ * «linje» er en vare medlemmet har funnet selv i nettbutikken til en av
+ * leverandoerene admin har slaatt paa (leverandorer.vis_medlemmer). Eieren,
+ * 24. september 2026: «egne felt, antall, artikkelnummer, varenavn».
  *
  * Eieren, 13. september 2026: «medlemmene maa kunne samle opp og trykk send».
  * Lista blir liggende aapen paa tvers av dager til medlemmet sender den; da
@@ -33,24 +38,41 @@ $klar = DB::harTabell('handleliste_linjer') && DB::harKolonne('products', 'artik
 // Slaatt av av verkstedet? Da finnes ikke kortet for medlemmet.
 $paa = (string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/handleliste'") !== 'nei';
 
+// Leverandoer og artikkelnummer paa linja selv (migrasjon 208). Foer den er
+// kjoert, er lista som foer: bare varer og oensker.
+$harLev = $klar && DB::harKolonne('handleliste_linjer', 'leverandor_id')
+    && DB::harKolonne('leverandorer', 'vis_medlemmer');
+
 /** Lista mi, slik den staar naa. */
-$mine = static function () use ($klar, $medlemId): array {
+$mine = static function () use ($klar, $harLev, $medlemId): array {
     if (!$klar) {
         return [];
     }
     $rader = DB::alle(
-        "SELECT h.id, h.antall, COALESCE(p.tittel, h.tekst) AS tittel, COALESCE(p.artikkelnr, '') AS artikkelnr,
-                h.product_id IS NULL AS onske
-           FROM handleliste_linjer h
-      LEFT JOIN products p ON p.id = h.product_id
-          WHERE h.member_id = :m AND h.status = 'apen'
-          ORDER BY h.id",
+        $harLev
+            ? "SELECT h.id, h.antall, COALESCE(p.tittel, h.tekst) AS tittel,
+                      COALESCE(NULLIF(p.artikkelnr, ''), h.artikkelnr) AS artikkelnr,
+                      COALESCE(lp.navn, lh.navn, '') AS leverandor,
+                      h.product_id IS NULL AS onske
+                 FROM handleliste_linjer h
+            LEFT JOIN products p ON p.id = h.product_id
+            LEFT JOIN leverandorer lp ON lp.id = p.leverandor_id
+            LEFT JOIN leverandorer lh ON lh.id = h.leverandor_id
+                WHERE h.member_id = :m AND h.status = 'apen'
+                ORDER BY h.id"
+            : "SELECT h.id, h.antall, COALESCE(p.tittel, h.tekst) AS tittel, COALESCE(p.artikkelnr, '') AS artikkelnr,
+                      '' AS leverandor, h.product_id IS NULL AS onske
+                 FROM handleliste_linjer h
+            LEFT JOIN products p ON p.id = h.product_id
+                WHERE h.member_id = :m AND h.status = 'apen'
+                ORDER BY h.id",
         ['m' => $medlemId]
     );
     return array_map(static fn($r) => [
         'id'     => (int) $r['id'],
         'navn'   => (string) $r['tittel'],
         'nummer' => (string) $r['artikkelnr'],
+        'leverandor' => (string) $r['leverandor'],
         'antall' => (int) $r['antall'],
         // Skrevet av medlemmet selv, ikke en vare (migrasjon 191).
         'onske'  => (bool) $r['onske'],
@@ -71,6 +93,18 @@ if (Foresporsel::metode() === 'GET') {
             'nummer' => (string) $v['artikkelnr'],
         ], $varer),
         'mine'  => $mine(),
+        // Leverandoerene admin har slaatt paa, med soeket i nettbutikken.
+        'leverandorer' => $harLev && $paa ? array_map(static fn($l) => [
+            'id'   => (int) $l['id'],
+            'navn' => (string) $l['navn'],
+            'sok'  => (string) $l['sok_url'],
+        ], DB::alle('SELECT id, navn, sok_url FROM leverandorer WHERE vis_medlemmer = 1 AND aktiv = 1 ORDER BY navn')) : [],
+        // Gebyrsatsen, saa medlemmet ser hva som kommer i tillegg. Samme
+        // innstilling som admin setter under Handlelister.
+        'gebyr' => (static function (): float {
+            $p = (float) str_replace(',', '.', (string) DB::verdi("SELECT verdi FROM innstillinger WHERE nokkel = 'handleliste_gebyr_prosent'"));
+            return $p > 0 && $p <= 100 ? $p : 0.0;
+        })(),
     ]);
 }
 
@@ -97,6 +131,35 @@ if ($handling === 'onske') {
         Svar::feil('Ønsker i fritekst krever oppdatering 191. Kjør oppdateringen først.');
     }
     DB::settInn('handleliste_linjer', ['member_id' => $medlemId, 'tekst' => $tekst]);
+    Svar::ok(['mine' => $mine()]);
+}
+
+// En vare medlemmet har funnet selv hos en av leverandoerene. Eieren, 24.
+// september 2026: «egne felt, antall, artikkelnummer, varenavn».
+if ($handling === 'linje') {
+    if (!$harLev) {
+        Svar::feil('Handlelista må oppdateres først. Kjør oppdateringen av databasen.');
+    }
+    $lev = DB::en(
+        'SELECT id FROM leverandorer WHERE id = :l AND vis_medlemmer = 1 AND aktiv = 1',
+        ['l' => Foresporsel::heltall('leverandorId')]
+    );
+    if ($lev === null) {
+        Svar::feil('Velg en leverandør.');
+    }
+    $navn = trim(mb_substr(Foresporsel::tekst('navn'), 0, 191));
+    if (mb_strlen($navn) < 2) {
+        Svar::feil('Skriv varenavnet.');
+    }
+    $nummer = trim(mb_substr(Foresporsel::tekst('artikkelnr'), 0, 64));
+    $antall = max(1, min(99, Foresporsel::heltall('antall') ?: 1));
+    DB::settInn('handleliste_linjer', [
+        'member_id'     => $medlemId,
+        'tekst'         => $navn,
+        'leverandor_id' => (int) $lev['id'],
+        'artikkelnr'    => $nummer,
+        'antall'        => $antall,
+    ]);
     Svar::ok(['mine' => $mine()]);
 }
 

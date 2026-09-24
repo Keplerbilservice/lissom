@@ -7014,12 +7014,12 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Nye påmeldinger</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">De siste tre dagene. Trykk en rad for å se beløp, status og referanse. Om plassen er betalt, står også på kursdatoen under Kurs og deltakere.</p>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">{{ npsjTittel }}</h1>
+          <sc-if value="{{ npsjErTre }}" hint-placeholder-val="{{ true }}"><p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">De siste tre dagene. Trykk en rad for å se beløp, status og referanse. Om plassen er betalt, står også på kursdatoen under Kurs og deltakere.</p></sc-if><sc-if value="{{ npsjErSju }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">{{ npsjIngress }}</p></sc-if>
         </div>
 
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px;">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Siste tre dagene</div>
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ npsjHode }}</div>
           <sc-if value="{{ ingenNyePameldinger }}" hint-placeholder-val="{{ false }}">
             <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen nye påmeldinger de siste tre dagene. De som melder seg på dukker opp her, og faller av etter tre dager.</div>
           </sc-if>
@@ -8724,7 +8724,7 @@ window.__resources = {
                paa linje med foerste kurskortet til venstre; naa er det
                topplinja som staar oeverst, og den staar paa linje med
                «Alle kurs». -->
-          <div style="{{ klStyringStil }}">
+          <div id="kl-kalender" style="{{ klStyringStil }}">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
             <div class="lx-kaltopp" style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
               <button type="button" onClick="{{ klForrige }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">‹</button>
@@ -40279,7 +40279,8 @@ class Component extends DCLogic {
     this.setState(Object.assign(
       // «beskjedFra» sier at Beskjeder ble aapnet fra Send i Markedsfoering.
       // Den skal ikke henge igjen naar man gaar dit fra Brukere etterpaa.
-      { side: rute, fhRolle: '', fhFra: '', beskjedFra: '' },
+      // «npSju»: «Nye påmeldinger» aapnet fra kortet «Siste sju dager».
+      { side: rute, fhRolle: '', fhFra: '', beskjedFra: '', npSju: false },
       this.personRutaTom(),
       forvalg || {}
     ));
@@ -54712,11 +54713,19 @@ class Component extends DCLogic {
             const snarveier = this.adminSnarveier();
 
             const kortene = [
+                // «I dag», «Inne nå» og «Siste sju dager» kunne ikke trykkes
+                // paa. Eieren, 24. september 2026: «pillene i dag etc skal
+                // være klikkbare».
                 kort('I dag',
                      dagens.length ? dagens.length + (dagens.length === 1 ? ' kurs' : ' kurs') : 'Ingen kurs',
                      dagens.slice(0, 3).map(k => linje(
                        k.klokke + ' ' + k.tittel + ' \u00b7 ' + k.pameldte + ' av ' + k.kapasitet)),
-                     false, null, 'idag'),
+                     false, () => {
+                       const d = new Date(); d.setHours(0, 0, 0, 0);
+                       const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                       this.setState({ klAnker: iso, klVisning: 'dag' });
+                       setTimeout(() => { const el = document.getElementById('kl-kalender'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+                     }, 'idag'),
                 kort('Venter på deg', String(venter), [
                        nye   ? linje(nye + (nye === 1 ? ' ny påmelding' : ' nye påmeldinger')) : null,
                        varer ? linje(varer + (varer === 1 ? ' vare til godkjenning' : ' varer til godkjenning')) : null,
@@ -54750,9 +54759,11 @@ class Component extends DCLogic {
                      ].filter(Boolean), sum > 0,
                      () => this.gaaAdmin('adminuttak', {}), 'ubetalt'),
                 kort('Inne nå', String(inne),
-                     [linje(inne ? 'i verkstedet nå' : 'Ingen innstemplet')], false, null, 'innenaa'),
+                     [linje(inne ? 'i verkstedet nå' : 'Ingen innstemplet')], false,
+                     () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Inne nå', medlemSok: '' }), 'innenaa'),
                 kort('Siste sju dager',
-                     uka + (uka === 1 ? ' påmelding' : ' påmeldinger'), [linje('betalt')], false, null, 'sjudager'),
+                     uka + (uka === 1 ? ' påmelding' : ' påmeldinger'), [linje('betalt')], false,
+                     () => this.gaaAdmin('adminnyepameldinger', { npSju: true }), 'sjudager'),
                 // Paamelding og Butikk, 15. september 2026. Eieren: «i det
                 // store feltet er det fint aa vise, i dag, ubetalt, venter
                 // paa meg, og paamelding», og «butikk er en viktig aa ha i
@@ -61317,11 +61328,18 @@ class Component extends DCLogic {
         };
       })(),
       ingenNyePameldinger: this.erPublisert()
-        && (((this.state.adminData || {}).nyeste || []).length === 0),
+        && (((this.state.adminData || {})[this.state.npSju ? 'sisteUkeListe' : 'nyeste'] || []).length === 0),
+      // Fra «Siste sju dager»: de betalte paameldingene siste sju dager —
+      // de samme som kortet teller. Ellers de tre siste dagene, som foer.
+      npsjTittel: this.state.npSju ? 'Siste sju dager' : 'Nye påmeldinger',
+      npsjIngress: this.state.npSju ? 'Betalte påmeldinger de siste sju dagene. Trykk en rad for å se beløp og referanse.' : '',
+      npsjHode: this.state.npSju ? 'Siste sju dagene' : 'Siste tre dagene',
+      npsjErSju: !!this.state.npSju,
+      npsjErTre: !this.state.npSju,
       nyePameldinger: this.klikkbar(
         // Ekte paameldinger naar serveren har svart. Lista under er designdata
         // og vises kun i forhandsvisningen, der det ikke finnes noen server.
-        ((this.state.adminData || {}).nyeste || (this.erPublisert() ? [] : [
+        ((this.state.adminData || {})[this.state.npSju ? 'sisteUkeListe' : 'nyeste'] || (this.erPublisert() ? [] : [
           { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs, 19. aug', tid: 'I går 19:41' },
           { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug' },
           { navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', tid: '21. aug' },

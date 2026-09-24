@@ -160,6 +160,26 @@ $ubetalte = (int) DB::verdi(
       WHERE status = 'reservert' AND reservert_til > UTC_TIMESTAMP()"
 );
 
+// Paameldingene bak «Siste sju dager» — de samme som tallet over teller.
+// Eieren, 24. september 2026: kortet skal kunne trykkes paa, og gaa til
+// «Nye paameldinger». Den lista viser tre dager (eieren, 30. august), og den
+// teller ogsaa paa «Venter paa deg»; derfor en egen liste her, ikke en
+// lengre «nyeste».
+$sisteUkeListe = DB::alle(
+    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
+            COALESCE(m.navn, b.gjest_navn) AS navn,
+            COALESCE(m.epost, b.gjest_epost) AS epost,
+            c.tittel, cs.start_tid, p.vipps_reference
+       FROM bookings b
+       JOIN courses c ON c.id = b.course_id
+  LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+  LEFT JOIN members m ON m.id = b.member_id
+  LEFT JOIN payments p ON p.id = b.payment_id
+      WHERE b.status = 'betalt' AND b.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+      ORDER BY b.id DESC
+      LIMIT 200"
+);
+
 // --- Kommende okter -------------------------------------------------------
 //
 // Fra midnatt i dag, ikke fra «naa». Programmet for i dag skal vise hele
@@ -173,6 +193,11 @@ $kommende = DB::alle(
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.status = 'planlagt' AND cs.start_tid >= :fra
+        -- En aapen plass ingen har booket, er ikke et kurs i dag. Eieren,
+        -- 24. september 2026: «kortet i dag viser 2 kurs» — Paint on Pots
+        -- 0 av 12 sto ved siden av det ekte kurset. Samme regel som
+        -- kalenderen, se Apent::skjulUtenBooking().
+        AND " . Apent::skjulUtenBooking('cs') . "
       ORDER BY cs.start_tid
       LIMIT 60",
     ['fra' => $dagStart]
@@ -494,7 +519,7 @@ Svar::json([
     'kanaler' => [
         'sms' => Varsel::smsMulig(),
     ],
-    'nyeste' => array_map(static fn($b) => [
+    'nyeste' => array_map($paameldingRad = static fn($b) => [
         // Uten id-en kunne raden aapnes, men ikke gjores noe med. En
         // paamelding til et kurs uten dato ble staaende her for alltid: den
         // har ingen dato aa finne den igjen paa under Paameldte heller.
@@ -511,6 +536,7 @@ Svar::json([
         'status'    => $b['status'] === 'betalt' ? 'Betalt' : 'Ikke betalt',
         'referanse' => $b['vipps_reference'],
     ], $nyeste),
+    'sisteUkeListe' => array_map($paameldingRad, $sisteUkeListe),
     'omsetning' => [
         'idag'       => $kroner($betaltIdag),
         'maned'      => $kroner($betaltMnd),
@@ -589,6 +615,11 @@ Svar::json([
         // Kortet «Butikk» paa dashboardet viser tallet — eieren,
         // 15. september 2026: «butikk er en viktig aa ha i dashboard».
         'butikk' => (int) DB::verdi("SELECT COUNT(*) FROM orders WHERE status = 'betalt'"),
+        // Medlemmenes forslag til Instagram som venter paa verkstedet
+        // (migrasjon 207). Eieren, 24. september 2026.
+        'medlemsforslag' => DB::harTabell('medlemsforslag')
+            ? (int) DB::verdi("SELECT COUNT(*) FROM medlemsforslag WHERE status IN ('venter','godkjent')")
+            : 0,
     ],
     // ── De mest populaere kursene ─────────────────────────────────────
     //
@@ -697,12 +728,19 @@ Svar::json([
             'naar'    => Booking::norskDato((string) $r['start_tid']),
             'belop'   => Booking::kroner((int) $r['belop_ore']),
             'belopOre' => (int) $r['belop_ore'],
+            // «Ta betalt» (eieren, 24. september 2026): steget regner
+            // pris × antall minus rabatt, og kan endre alle tre.
+            'antall'  => (int) ($r['antall'] ?? 1),
+            'prisOre' => (int) ($r['pris_ore'] ?? 0),
+            'rabatt'  => (float) ($r['rabatt_prosent'] ?? 0),
             'telefon' => (string) ($r['gjest_telefon'] ?? ''),
             'maate'   => (string) ($r['betalt_maate'] ?? ''),
             'dager'   => (int) $r['dager'],
         ];
     }, DB::alle(
         "SELECT b.id, b.gjest_navn, b.gjest_telefon, b.belop_ore, b.betalt_maate,
+                b.antall, " . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0') . " AS rabatt_prosent,
+                " . (DB::harKolonne('course_sessions', 'pris_ore') ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore') . " AS pris_ore,
                 c.tittel, cs.start_tid,
                 DATEDIFF(UTC_DATE(), DATE(b.created_at)) AS dager
            FROM bookings b

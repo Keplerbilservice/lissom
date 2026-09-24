@@ -9,7 +9,7 @@
  *   POST handling=til-venteliste { id }    gir fra seg plassen, staar i koen
  *   POST handling=kontakt  { id, epost?, telefon? }  retter kontaktinfoen
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
- *   POST handling=endre      { id, antall?, belop? }   retter antall og sum
+ *   POST handling=endre      { id, antall?, belop?, rabatt? }   retter antall og sum
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
@@ -514,6 +514,22 @@ if ($handling === 'endre') {
     // Beloepet. Tomt felt og et endret antall betyr «regn det ut paa nytt»:
     // prisen paa datoen gaar foran prisen paa kurset, samme uttrykk som naar
     // plassen legges inn — se lenger nede — saa de to ikke kan bli uenige.
+    // Rabatt i prosent. Eieren, 24. september 2026: «i kortet når jeg skal
+    // ta betalt, kan jeg endre rabatt?» — et felt ved siden av antall og
+    // beloep. Staar beloepet tomt, regnes det av pris × antall minus
+    // rabatten; skriver hun et beloep, gaar det foran.
+    $rabattRaa = trim(str_replace(['%', ','], ['', '.'], Foresporsel::tekst('rabatt')));
+    $rabatt = null;
+    if ($rabattRaa !== '') {
+        $rabatt = (float) $rabattRaa;
+        if (!is_numeric($rabattRaa) || $rabatt < 0 || $rabatt > 100) {
+            Svar::feil('Rabatten må være mellom 0 og 100 prosent.');
+        }
+        if (DB::harKolonne('bookings', 'rabatt_prosent')) {
+            $felt['rabatt_prosent'] = $rabatt;
+        }
+    }
+
     $belopRaa = trim(Foresporsel::tekst('belop'));
     if ($belopRaa !== '') {
         $belop = (int) round((float) str_replace(',', '.', $belopRaa) * 100);
@@ -521,7 +537,7 @@ if ($handling === 'endre') {
             Svar::feil('Beløpet må være mellom 0 og 100 000 kroner.');
         }
         $felt['belop_ore'] = $belop;
-    } elseif (isset($felt['antall'])) {
+    } elseif (isset($felt['antall']) || $rabatt !== null) {
         $prisKol = DB::harKolonne('course_sessions', 'pris_ore')
             ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
         $pris = DB::verdi(
@@ -531,7 +547,7 @@ if ($handling === 'endre') {
             ['i' => (int) $rad['course_session_id']]
         );
         if ($pris !== null) {
-            $felt['belop_ore'] = (int) $pris * $nyttAntall;
+            $felt['belop_ore'] = (int) round((int) $pris * $nyttAntall * (1 - ($rabatt ?? 0) / 100));
         }
     }
 
@@ -548,6 +564,7 @@ if ($handling === 'endre') {
         'antall_naa' => (int) ($felt['antall'] ?? $rad['antall']),
         'belop_for'  => (int) $rad['belop_ore'],
         'belop_naa'  => (int) ($felt['belop_ore'] ?? $rad['belop_ore']),
+        'rabatt'     => $rabatt,
     ]);
 
     Svar::ok([

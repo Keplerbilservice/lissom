@@ -79,9 +79,13 @@ $fulltKol  = DB::harKolonne('course_sessions', 'vis_fullt')
 $holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id AND h.aktiv = 1' : '';
 
 $utenBooking = Apent::skjulUtenBooking('cs');
+// Prisen per plass — datoens egen pris foran kursets. Samme uttrykk som
+// api/admin/pamelding.php, saa «Ta betalt» regner som «Endre».
+$prisKolK = DB::harKolonne('course_sessions', 'pris_ore') ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, cs.course_id,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
+            {$prisKolK} AS pris_ore,
             c.tittel, c.type, c.tema, c.status AS kurs_status {$autoKol}{$fulltKol}{$holderKol}
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
@@ -112,8 +116,12 @@ $deltakere = [];
 if ($oktIder !== []) {
     $inn = implode(',', $oktIder);
     $allergi = DB::harKolonne('bookings', 'allergier') ? 'b.allergier' : "''";
+    // «Ta betalt» fra kurset i kalenderen (eieren, 24. september 2026):
+    // steget viser beloepet og rabatten som staar paa paameldingen.
+    $rabattKol = DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0';
     foreach (DB::alle(
         "SELECT b.id, b.course_session_id, b.member_id, b.status, b.antall,
+                b.belop_ore, {$rabattKol} AS rabatt_prosent,
                 b.created_at, {$allergi} AS merknad,
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
@@ -483,6 +491,9 @@ foreach ($okter as $o) {
             // 10 personer, saa kom det bare 6». Uten tallet her maatte ruta
             // gjettet paa hva som staar for det rettes.
             'antall'    => (int) $b['antall'],
+            'belopOre'  => (int) ($b['belop_ore'] ?? 0),
+            'rabatt'    => (float) ($b['rabatt_prosent'] ?? 0),
+            'prisOre'   => (int) ($o['pris_ore'] ?? 0),
             // Kontaktopplysningene, saa deltakerruta kan vise dem framfor aa
             // regne dem ut av navnet. Den gjorde noeyaktig det: «kari.nordmann
             // @epost.no» og et telefonnummer laget av lengden paa navnet.

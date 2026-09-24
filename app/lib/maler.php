@@ -113,9 +113,10 @@ final class Maler
                 // eneste feltet for, og staar igjen for at en mal som er
                 // skrevet om for haand ikke skal miste innholdet sitt.
                 'ordre' => 'Kurset og datoen i ett (fra før)',
-                'belop' => 'Det som ble betalt',
+                // «belop» er tatt bort: ingen pris i bekreftelsen (eieren,
+                // 24. september 2026). Feltet sendes tomt, se Booking.
                 // Tom for den som har betalt. Valgte kunden «betal ved
-                // oppmøte», står summen og måten her.
+                // oppmøte», står måten her (uten summen).
                 'betaling' => 'Setningen om betaling ved oppmøte',
             ],
         ],

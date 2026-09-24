@@ -332,9 +332,11 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
     $forLange = 0;
     $perDag = [];
     $iHull = 0;
-    $kilder2 = Apent::dager()['kilder'];
+    // Plassene legges ut BOOK_DAGER_FRAM dager fram (30), ikke bare de
+    // fjorten aapningstidslista viser. Eieren, 24. september 2026.
+    $kilder2 = Apent::dager(Apent::BOOK_DAGER_FRAM)['kilder'];
     $dagerRad = [];
-    foreach (Apent::dager()['dager'] as $d) {
+    foreach (Apent::dager(Apent::BOOK_DAGER_FRAM)['dager'] as $d) {
         if (!$d['stengt'] && $d['fra'] !== null) {
             $dagerRad[(string) $d['dato']] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
         }
@@ -11806,7 +11808,11 @@ sjekk('… og kalenderen faar antallet fra serveren',
         "'antall'    => (int) \$b['antall'],"));
 // Begge stedene sier hva et tomt beloepsfelt betyr.
 sjekk('… og begge sier hva et tomt beloepsfelt gjor',
-    substr_count($endre, "'Tomt = prisen ganger antallet'") === 2);
+    substr_count($endre, "'Tomt = pris × antall, minus rabatten'") === 2);
+// Rabatt i prosent ved siden av antall og beloep. Eieren, 24. september 2026.
+sjekk('… og begge har et rabattfelt',
+    substr_count($endre, '<label style="{{ mpEtikett }}">Rabatt %</label>') === 2
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'), "\$felt['belop_ore'] = (int) round((int) \$pris * \$nyttAntall * (1 - (\$rabatt ?? 0) / 100));"));
 // To aapne paneler paa samme rad er ikke til aa se hvilket som lagres.
 sjekk('… og bare ett panel er aapent om gangen',
     str_contains($endre, 'flyttRad: apen ? this.state.flyttRad : null,')
@@ -14823,7 +14829,8 @@ sjekk('… og innholdet har plass under den, paa telefonen',
 sjekk('bare det stedet du staar paa tegnes',
     // Var seks. Chatten fikk sitt eget valg, og verkstedsruta aapnes av
     // pilla i stedet for aa staa fast paa forsiden — to blokker mindre.
-    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 4
+    // Fem: «Del paa Instagram» flyttet fra Butikk til forsiden 24. september.
+    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 5
     && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 3
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneSelg }}"') === 1
@@ -16279,12 +16286,13 @@ sjekk('… og aarskalenderen staar sist i snarveisrada, etter Kasse',
     strpos($veiSida, "                { navn: 'Kasse', nokkel: 'kasse', velg: () => this.gaaAdmin('adminuttak', {")
        < strpos($veiSida, "                { navn: 'Årskalender', nokkel: 'arskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },")
     && str_contains($veiSida, "klAarApne: () => this.gaaAdmin('adminarskalender', {}),"));
-// «Nye paameldinger» var et kort med tallet som merke. Fra 13. september er
-// det den samme tellinga, som én av linjene i «Venter paa deg» — og kortet
-// gaar til den samme skjermen.
-sjekk('… og nye paameldinger telles i «Venter paa deg»',
+// «Nye paameldinger» telles paa kortet «Påmelding». Eieren, 24. september
+// 2026: «venter på deg og påmeldingen, er det samme» — «Venter paa deg» er
+// det som skal godkjennes, og aapner Til godkjenning.
+sjekk('… og nye paameldinger telles paa «Påmelding», ikke i «Venter paa deg»',
     str_contains($veiSida, "            const nye   = (d.nyeste || []).length;")
-    && str_contains($veiSida, "                     () => this.gaaAdmin('adminnyepameldinger', {}), 'venter'),"));
+    && str_contains($veiSida, "            const venter = varer + frys + dugn + forsl;")
+    && str_contains($veiSida, "                       : this.gaaAdmin('admingodkjenning', {})), 'venter'),"));
 // «ingen link»: raden oeverst er borte.
 sjekk('… og raden med lenka oeverst er borte',
     !str_contains($veiSida, 'aarStripe')
@@ -17920,23 +17928,32 @@ sjekk('plassregelen staar ett sted, og brukes begge veier',
     && str_contains($bookFil, "        \$aktiv2 = self::aktivSql('b2');")
     && str_contains($bookFil, '    public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int'));
 
-// Ingenting holder et plasstall det ikke har solgt.
+// Plassregelen: main sin utgave gjelder.
 //
-// Eieren, 23. september 2026: «jeg vil at det kun skal vises om opptatt om det
-// er 12 paa kurs, altsaa faktiske paameldte». Da trengs hverken GREATEST rundt
-// plasstallet eller unntaket for de aapne plassene — alle tre stedene teller
-// det samme: manuelt opptatte plasser pluss aktive bookinger.
+// To endringer traff den samme linja samme dag. Eieren sa til meg 23.
+// september: «jeg vil at det kun skal vises om opptatt om det er 12 paa kurs,
+// altsaa faktiske paameldte», og jeg tok bort hele plassreservasjonen — ogsaa
+// for et dreiekurs.
 //
-// Foerste utgave av denne proeven sa «ingen GREATEST i fila». Den er der
-// fortsatt, to steder — «GREATEST(0, ...)» som holder et regnestykke over
-// null, og det er noe helt annet. Proeven er rettet, ikke koden.
-sjekk('ingenting holder et plasstall det ikke har solgt',
-    !str_contains($bookFil, 'CASE WHEN cs2.fra_apningstid = 1 THEN 0')
-    && !str_contains($bookFil, 'ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END')
-    && substr_count($bookFil, 'COALESCE(cs2.manuelt_opptatt, 0)') === 3
-    // De to som er igjen er bunnstopp, ikke plassreservasjon.
-    && substr_count($bookFil, 'GREATEST(0,') === 2
-    && substr_count($bookFil, 'GREATEST(') === 2);
+// Dagen etter kom den snevrere utgaven her, paa det samme symptomet: «Paint on
+// Pots sto utsolgt uten en booking fordi et tomt Store fat-kurs holdt hele
+// verkstedet» og «ressursene er verkstedplasser og ikke dreieskiver». Den
+// friggjor de aapne plassene og lar et vanlig kurs holde sine.
+//
+// Den staar, fordi den loser det eieren klaget paa uten aa ta fra
+// kursdeltakerne plassene de har betalt for. Min bredere utgave er forkastet.
+// De aapne plassene holder bare det som er booket — ellers ville en tom aapen
+// plass sperret dreiekurset ved siden av.
+sjekk('et tidsrom regnes med samme unntak som en oekt',
+    str_contains($bookFil, "                        CASE WHEN cs2.fra_apningstid = 1 OR {\$egenApen} = 1 THEN 0\n                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,"));
+
+// Eieren, 24. september 2026: Paint on Pots sto «utsolgt» uten en booking
+// fordi et tomt Store fat-kurs holdt hele verkstedet. En aapen plass skal
+// bare sperres av folk som faktisk er paameldt paa kursene rundt.
+sjekk('en aapen plass teller bare paameldte paa kursene rundt (oekt)',
+    str_contains($bookFil, 'CASE WHEN cs2.fra_apningstid = 1 OR cs.fra_apningstid = 1 THEN 0'));
+sjekk('en aapen plass teller bare paameldte paa kursene rundt (tidsrom)',
+    str_contains($bookFil, "\$egenApen = (int) (\$kurs['folger_apningstid'] ?? 0) === 1 ? 1 : 0;"));
 
 sjekk('oppslaget svarer med vindu, tider og neste ledige',
     str_contains($tiderFil, "\$svar = Apent::ledigeKvarter(\$kursId, \$dato, \$antall);")
@@ -18480,7 +18497,7 @@ sjekk('kampanjen som staar ute kan ikke slettes ved et uhell',
 sjekk('skjulte og avviste varer er fortsatt innen rekkevidde',
     str_contains($vis172, "      gSkjulte: this.galleriListe()\n        .filter(g => g.status === 'skjult' || g.status === 'avvist')")
     && str_contains($vis172, '<sc-for list="{{ gSkjulte }}" as="g"')
-    && str_contains($vis172, '>Skjult og avvist</span>'));
+    && str_contains($vis172, '>Skjult og avvist</div>'));
 sjekk('… og de kan legges ut igjen',
     str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
     && str_contains($vis172, '>Legg ut igjen</button>'));
@@ -18619,9 +18636,12 @@ sjekk('… og ingen av de ti bryterne staar to steder',
     && !str_contains($syn, 'label="Selg egne arbeider"')
     && !str_contains($syn, 'label="Gaven («Ta med en venn»)"')
     && !str_contains($syn, 'label="Frys av medlemskap"'));
-// Auto-godkjenn hoerer til godkjenningsarbeidet, ikke til hva som vises.
-sjekk('… mens Auto-godkjenn blir staaende paa Butikken',
-    str_contains($syn, '>Auto-godkjenn nye varer</div>'));
+// Auto-godkjenn sto paa Butikken fram til 24. september 2026. Eieren: «er
+// det en av og på bryter som ikke ligger sammen de andre?» — valgte «Flytt
+// til Synlighet». Den staar ikke lenger i Butikken, men i Synlighet-lista.
+sjekk('… og Auto-godkjenn staar i Synlighet, ikke paa Butikken',
+    !str_contains($syn, '>Auto-godkjenn nye varer</div>')
+    && str_contains($vis172, "            rad('Auto-godkjenn nye varer', (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',"));
 // Kursvelgerbryteren paa Butikken las «visKursvelger» — bryteren OG
 // mobilvisninga. Den sto av naar lenken var skjult paa mobil, selv om
 // bryteren var paa. Den er borte med kortet.
@@ -18650,8 +18670,10 @@ sjekk('bryterpillene i medlemssalg-kortet ligger i samme spalte',
 // salgskampanjens bryter gikk samme vei: «Husk vis paa forside og skal staa
 // samlet med det andre». Auto-godkjenn blir staaende: den hoerer til
 // godkjenningsarbeidet, ikke til hva som vises.
-sjekk('… og bryteren i kortet er med',
-    substr_count($vis172, '<span class="lx-bryterhoyre">') === 1);
+// Fra 24. september 2026 er ogsaa Auto-godkjenn flyttet til Synlighet —
+// kortet har ingen bryter igjen.
+sjekk('… og kortet har ingen bryter igjen',
+    substr_count($vis172, '<span class="lx-bryterhoyre">') === 0);
 
 sjekk('… og slettes for godt, etter et spoersmaal',
     str_contains($vis172, "  salgSlett(v) {")
@@ -19167,16 +19189,34 @@ sjekk('… og beloep med oere vises med oere',
     && str_contains($hlAdmin, 'if ($ore % 100 === 0) {'));
 
 $hlS = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('kortet staar paa Min side, under internbutikken',
+// Eieren, 24. september 2026: «her vil jeg ha et bedre oppsett» — handlelista
+// staar bredt til venstre, internbutikken og historikken til hoeyre.
+sjekk('kortet staar paa Min side, ved siden av internbutikken',
     str_contains($hlS, '<sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">')
     && str_contains($hlS, '<div id="minside-handleliste"')
-    && strpos($hlS, 'id="minside-internbutikk"') < strpos($hlS, 'id="minside-handleliste"'));
+    && strpos($hlS, 'id="minside-handleliste"') < strpos($hlS, 'id="minside-internbutikk"'));
 // Eieren, 14. september: «vi trenger navn og artikkelnummer, ikke hele
 // beskrivelsen paa produktet», og «jeg vil ikke at det brekker». Navnet
 // kuttes med «…» framfor aa brekke; nummeret staar fast og kuttes aldri.
 sjekk('… og varelinja staar paa én linje, med nummeret i behold',
-    str_contains($hlS, 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</div>')
-    && str_contains($hlS, 'style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.nummer }}</div>'));
+    str_contains($hlS, 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</span>')
+    && str_contains($hlS, 'font-variant-numeric: tabular-nums; white-space: nowrap;">{{ h.nummer }}</span>'));
+// Eieren, 24. september 2026: «egne felt, antall, artikkelnummer, varenavn»,
+// leverandoeren admin har slaatt paa, og soek i nettbutikken dens.
+sjekk('… og linja har leverandoer, artikkelnummer, varenavn og antall',
+    str_contains($hlS, 'aria-label="Artikkelnr."') && str_contains($hlS, 'aria-label="Varenavn"')
+    && str_contains($hlS, '<sc-for list="{{ hlLev }}" as="l"')
+    && str_contains($hlS, '<a href="{{ hlLevSokUrl }}" target="_blank" rel="noopener"'));
+sjekk('… og gebyret og frakten staar paa kortet',
+    str_contains($hlS, "'administrasjonsgebyr på ' + gebyrTekst + ' % og en andel av frakten.'"));
+$hl208 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/208_handleliste_leverandorer_og_frakt.sql');
+sjekk('… og migrasjon 208 legger til leverandoer, synlighet, soek og frakt',
+    str_contains($hl208, 'ADD COLUMN IF NOT EXISTS leverandor_id BIGINT UNSIGNED NULL')
+    && str_contains($hl208, 'ADD COLUMN IF NOT EXISTS vis_medlemmer TINYINT(1) NOT NULL DEFAULT 0')
+    && str_contains($hl208, "UPDATE leverandorer SET sok_url = 'https://cerama.no/Default.aspx?ID=4069&q={q}', vis_medlemmer = 0"));
+sjekk('… og frakten deles og staar som egen linje paa kravet',
+    str_contains($hlAdmin, "\$m['fraktOre'] += (int) ceil(\$ore / count(\$med));")
+    && str_contains($hlAdmin, "'tittel'     => 'Andel av frakt',"));
 sjekk('… og soekefeltet finnes',
     str_contains($hlS, 'placeholder="Søk etter leire, glasur, verktøy …"'));
 // Fanen i admin. Varene og ordrene staar til side naar handlelistene vises —
@@ -19972,13 +20012,15 @@ $tgSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // Begge gruppene staar naa paa «Til godkjenning» OG paa Nettbutikk. Det er
 // den samme lista begge steder, saa de kan ikke komme i utakt.
 sjekk('«Ute i butikken» staar paa begge skjermene',
-    substr_count($tgSida, '<sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">') === 2);
+    substr_count($tgSida, '<sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="3">') === 2);
 sjekk('«Skjult og avvist» ogsaa',
     substr_count($tgSida, '<sc-for list="{{ gSkjulte }}" as="g" hint-placeholder-count="3">') === 2);
-// Overskriftene skal si hva gruppa er, paa den nye skjermen.
+// Overskriftene skal si hva gruppa er, paa den nye skjermen. Fra 24.
+// september 2026 er «Skjult og avvist» en egen overskriftslinje ogsaa paa
+// Nettbutikk (radene med bilde og pris), saa den staar to ganger.
 sjekk('… med hver sin overskrift paa godkjenningsskjermen',
     str_contains($tgSida, 'uppercase; color: var(--text-muted);">Ute i butikken</div>')
-    && substr_count($tgSida, 'uppercase; color: var(--text-muted);">Skjult og avvist</div>') === 1);
+    && substr_count($tgSida, 'uppercase; color: var(--text-muted);">Skjult og avvist</div>') === 2);
 // Knappene er de samme. «Legg ut igjen» er den samme ruta som «Godkjenn» —
 // ingen ny serverhandling, saa en vare tatt ned ved et uhell kan hentes
 // tilbake fra begge skjermer.
@@ -20070,6 +20112,52 @@ sjekk('… og sender endringa som en endring',
 sjekk('… og sier «Lagret», ikke «Sendt til godkjenning»',
     str_contains($rdSida, "              skSender: false, skFeil: null, gDelSendt: !endret,")
     && str_contains($rdSida, "              kvittering: endret ? 'Lagret' : 'Sendt til godkjenning',"));
+
+// ── Medlemsforslag til Instagram (migrasjon 207) ──────────────────────
+//
+// Eieren, 24. september 2026: medlemmer foreslaar et innlegg — ett bilde
+// eller én video paa maks 15 sekunder — og verkstedet godkjenner for det
+// legges ut paa @lissom_keramikk. Bryteren i ⊙ Synlighet staar av fra start.
+$mfMig  = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/207_medlemsforslag_til_instagram.sql');
+$mfLib  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemsforslag.php');
+$mfApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemsforslag.php');
+$mfAdm  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/medlemsforslag.php');
+$mfBild = (string) file_get_contents(dirname(__DIR__) . '/api/bilde.php');
+$mfSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nMedlemsforslag til Instagram\n";
+sjekk('bryteren staar av fra start',
+    str_contains($mfMig, "SELECT 'Vis/medlemsforslag', 'nei'"));
+sjekk('malen har eierens tekst',
+    str_contains($mfMig, "'🏺 Laget av {medlem}, medlem hos Lissom Keramikk'"));
+sjekk('serveren nekter naar bryteren er av',
+    str_contains($mfApi, "if (!Medlemsforslag::paa()) {"));
+sjekk('… og bare ett forslag om gangen',
+    str_contains($mfApi, "WHERE member_id = :m AND status IN ('venter','godkjent')"));
+sjekk('… og bare for aktive medlemmer',
+    str_contains($mfApi, '$medlem = krev_aktivt_medlem();'));
+sjekk('videoen maales paa serveren, ikke bare i nettleseren',
+    str_contains($mfLib, 'public const MAKS_SEKUNDER = 15.5;')
+    && str_contains($mfLib, "if (\$type === 'mvhd') {"));
+sjekk('et smalt mobilbilde beskjaeres til 4:5 for Instagram',
+    str_contains($mfLib, 'if ($forhold >= 0.8 && $forhold <= 1.91) {'));
+sjekk('#lissomkeramikk kommer alltid med',
+    str_contains($mfLib, "public const FAST_TAGG = '#lissomkeramikk';"));
+sjekk('fila er privat til den er godkjent',
+    str_contains($mfBild, "\$aapen = in_array(\$rad['status'], ['godkjent', 'publisert'], true);"));
+sjekk('godkjenning legger ut, og settes tilbake om det feiler',
+    str_contains($mfAdm, '$ut = Meta::publiserInstagram($url, $tekst);')
+    && str_contains($mfAdm, "DB::kjor(\"UPDATE medlemsforslag SET status = 'venter' WHERE id = :i\", ['i' => \$id]);"));
+sjekk('et avvist forslag etterlater ingen fil',
+    str_contains($mfAdm, "Medlemsforslag::slettFil((string) \$rad['fil']);"));
+sjekk('raden i Synlighet',
+    str_contains($mfSida, "rad('Del på Instagram', this.bryterPaa('medlemsforslag'),"));
+sjekk('kortet paa Min side styres av bryteren',
+    str_contains($mfSida, "const paa = this.medlemsvisning() && this.bryterPaa('medlemsforslag');"));
+sjekk('fanen i Markedsfoering',
+    str_contains($mfSida, "['Medlemsforslag', ['forslag']],")
+    && str_contains($mfSida, '<sc-if value="{{ mkErForslag }}"'));
+sjekk('forslagene staar i «Venter paa deg»',
+    str_contains($mfSida, "forsl ? linje(forsl + ' forslag til Instagram') : null,"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

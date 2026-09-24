@@ -237,11 +237,16 @@ final class Booking
      */
     public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int
     {
-        $kurs = DB::en('SELECT id, kapasitet, ressurs_id FROM courses WHERE id = :i', ['i' => $kursId]);
+        $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? 'folger_apningstid' : '0';
+        $kurs = DB::en("SELECT id, kapasitet, ressurs_id, {$apenFelt} AS folger_apningstid
+                          FROM courses WHERE id = :i", ['i' => $kursId]);
         if ($kurs === null) {
             return 0;
         }
         $kapasitet = (int) ($kurs['kapasitet'] ?? 0);
+        // Aapen plass (Paint on Pots): de andre kursene teller bare folk som
+        // er paameldt, som i ledigeRegnet(). Eieren, 24. september 2026.
+        $egenApen = (int) ($kurs['folger_apningstid'] ?? 0) === 1 ? 1 : 0;
 
         $aktiv2 = self::aktivSql('b2');
         $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
@@ -285,11 +290,14 @@ final class Booking
 
         $brukt = (int) DB::verdi(
             "SELECT COALESCE(SUM(
-                      COALESCE(cs2.manuelt_opptatt, 0)
-                      + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
-                                   WHERE b2.course_session_id = cs2.id
-                                     AND {$aktiv2}), 0)
-                    ), 0)
+                      GREATEST(
+                        CASE WHEN cs2.fra_apningstid = 1 OR {$egenApen} = 1 THEN 0
+                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
+                        COALESCE(cs2.manuelt_opptatt, 0)
+                        + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
+                                     WHERE b2.course_session_id = cs2.id
+                                       AND {$aktiv2}), 0)
+                      )), 0)
                FROM course_sessions cs2
                JOIN courses c2 ON c2.id = cs2.course_id
               WHERE cs2.status = 'planlagt'
@@ -441,35 +449,24 @@ final class Booking
                     --
                     -- ── Bare det som faktisk er booket ──────────────────
                     --
-                    -- Eieren, 23. september 2026: «jeg vil at det kun skal
-                    -- vises om opptatt om det er 12 paa kurs, altsaa faktiske
-                    -- paameldte».
+                    -- Med ett unntak, og det er avgjorende: de aapne plassene
+                    -- (fra_apningstid = 1 — Paint on Pots) holder
+                    -- bare det som faktisk er booket. De er et tilbud, ikke en
+                    -- plan. Holdt de plasstallet sitt ogsaa, ville en tom
+                    -- aapen plass paa aatte sperret dreiekurset ved siden av,
+                    -- og de to hadde tatt livet av hverandre.
                     --
-                    -- Her holdt et planlagt kurs HELE plasstallet sitt saa
-                    -- lenge det varte, ogsaa for noen hadde meldt seg paa.
-                    -- Eieren, 30. august: «det maa ikke vaere mulig aa booke
-                    -- en plass eller dreieskive paa forhaand for medlemmer
-                    -- naar det er planlagt kurs.»
-                    --
-                    -- Folgen sto paa nettsida 23. september: Paint on Pots
-                    -- var «Kurs i verkstedet» onsdag og torsdag, uten at én
-                    -- person hadde meldt seg paa noe. Aapningstida ER de
-                    -- timene det gaar et kurs — det er derfor doera staar
-                    -- aapen — saa kurset dekket til hele vinduet det selv
-                    -- gjorde bookbart.
-                    --
-                    -- Naa teller bare det som faktisk er der: manuelt
-                    -- opptatte plasser og aktive bookinger. Et kurs med
-                    -- tolv plasser og ingen paameldte holder ingenting.
-                    --
-                    -- Merk hva det koster: et dreiekurs som fyller seg opp
-                    -- sperrer skivene forst naar plassene er solgt. Sitter
-                    -- det fire paa kurset, staar fire skiver ledige for
-                    -- andre — og da kan en som melder seg paa kurset etterpaa
-                    -- komme til en skive som er tatt. Det er eierens valg,
-                    -- tatt med apne oyne.
+                    -- Og motsatt: er det OEKTA SELV som er aapen plass, teller
+                    -- de andre kursene bare folk som er paameldt. Eieren, 24.
+                    -- september 2026: Paint on Pots sto «utsolgt» uten en
+                    -- eneste booking fordi et tomt Store fat-kurs holdt hele
+                    -- verkstedet — «ressursene er verkstedplasser og ikke
+                    -- dreieskiver».
                     COALESCE((
                         SELECT SUM(
+                            GREATEST(
+                                CASE WHEN cs2.fra_apningstid = 1 OR cs.fra_apningstid = 1 THEN 0
+                                     ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
                                 COALESCE(cs2.manuelt_opptatt, 0)
                                 + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
                                              WHERE b2.course_session_id = cs2.id
@@ -763,6 +760,15 @@ final class Booking
         // Medlemskap er ikke gruppekjop.
         $tema = (string) ($kurs['tema'] ?? '');
         if ($tema === 'Medlemskap' || $antall < 2) {
+            return 0.0;
+        }
+        // En fra-pris er et minimum; prisen settes i verkstedet (migrasjon
+        // 209). Da trekkes ingen grupperabatt av det.
+        $fra = $kurs['fra_pris'] ?? null;
+        if ($fra === null && isset($kurs['course_id']) && DB::harKolonne('courses', 'fra_pris')) {
+            $fra = DB::verdi('SELECT fra_pris FROM courses WHERE id = :i', ['i' => (int) $kurs['course_id']]);
+        }
+        if ((int) $fra === 1) {
             return 0.0;
         }
 
@@ -1172,17 +1178,20 @@ final class Booking
             'kurs'  => (string) $b['tittel'],
             'naar'  => $naar,
             'ordre' => (string) $b['tittel'] . ($naar !== '' ? ' — ' . $naar : ''),
-            'belop' => self::kroner((int) $b['belop_ore']),
+            // Ingen pris i bekreftelsen. Eieren, 24. september 2026: «jeg vil
+            // ikke at de skal ha pris i bekreftelses eposter, så fjern dette
+            // på alle steder» — valgte paameldinger til kurs og events.
+            // «{belop}» staar tomt, saa en mal som er skrevet om for haand
+            // med feltet i heller ikke viser et tall.
+            'belop' => '',
             // ── Hva som skjer med pengene ─────────────────────────────
             //
-            // Tomt naar det er gjort opp — da sier malen alt som trengs.
-            // Valgte kunden aa betale ved oppmoete, maa summen og maaten
-            // staa i kvitteringa: hen har ikke betalt noe, og skal vite hva
-            // som venter. Migrasjon 197 legger «{betaling}» bakerst i malen,
-            // men bare hvis den ikke er skrevet om for haand.
+            // Tomt naar det er gjort opp. Valgte kunden aa betale ved
+            // oppmoete, staar maaten — ikke summen. Migrasjon 197 legger
+            // «{betaling}» bakerst i malen, men bare hvis den ikke er
+            // skrevet om for haand.
             'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1
-                ? 'Du betaler ' . self::kroner((int) $b['belop_ore'])
-                  . ' ved oppmøte — kontant eller Vipps.'
+                ? 'Du betaler ved oppmøte — kontant eller Vipps.'
                 : '',
         ], 'booking', $bookingId);
 

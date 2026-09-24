@@ -464,20 +464,41 @@ final class Meta
             return ['samtaler' => [], 'feil' => ['Facebook-sida er ikke koblet til.']];
         }
         $token = self::sideToken();
+        $metaSa = [];
 
         foreach (['messenger' => 'Facebook', 'instagram' => 'Instagram'] as $plattform => $kanal) {
+            self::$sisteMetaFeil = '';
             try {
-                $svar = self::kall('GET', self::sideId() . '/conversations', [
-                    'platform' => $plattform,
-                    'fields'   => 'id,updated_time,snippet,unread_count,participants',
-                    'limit'    => (string) $maks,
-                ], $token);
+                // Instagram svarer av og til «reduce the amount of data»
+                // (kode 1) eller «Timeout» (kode -2) paa en helt vanlig
+                // liste. Da proever vi igjen med
+                // faerre samtaler, ned til fem, framfor aa vise en feil.
+                $antall = $maks;
+                while (true) {
+                    try {
+                        $svar = self::kall('GET', self::sideId() . '/conversations', [
+                            'platform' => $plattform,
+                            'fields'   => 'id,updated_time,snippet,unread_count,participants',
+                            'limit'    => (string) $antall,
+                        ], $token);
+                        break;
+                    } catch (RuntimeException $e) {
+                        $tung = stripos(self::$sisteMetaFeil, 'reduce the amount') !== false
+                             || stripos(self::$sisteMetaFeil, 'timeout') !== false;
+                        if ($antall <= 5 || !$tung) {
+                            throw $e;
+                        }
+                        $antall = max(5, intdiv($antall, 2));
+                        self::$sisteMetaFeil = '';
+                    }
+                }
                 foreach ((array) ($svar['data'] ?? []) as $s) {
                     // Den andre parten — ikke sida selv.
                     $navn = 'Ukjent';
                     $hvem = '';
                     foreach ((array) ($s['participants']['data'] ?? []) as $p) {
-                        if ((string) ($p['id'] ?? '') !== self::sideId()) {
+                        if (!in_array((string) ($p['id'] ?? ''),
+                                      array_filter([self::sideId(), self::igId()]), true)) {
                             $navn = (string) ($p['name'] ?? $p['username'] ?? 'Ukjent');
                             $hvem = (string) ($p['id'] ?? '');
                         }
@@ -494,6 +515,9 @@ final class Meta
                 }
             } catch (RuntimeException $e) {
                 $feil[] = $kanal . ': ' . $e->getMessage();
+                if (self::$sisteMetaFeil !== '') {
+                    $metaSa[] = $kanal . ': ' . self::$sisteMetaFeil;
+                }
             }
         }
 
@@ -501,7 +525,9 @@ final class Meta
         // eller «objektet finnes ikke» — to setninger som sender folk til
         // hver sin blindvei. Tillatelsen hoerer til et eget
         // meldings-bruksomraade paa appen, og det er der jobben ligger.
-        if ($ut === [] && $feil !== []) {
+        // Bare naar begge kanalene feilet: virker den ene, er ikke
+        // tillatelsen problemet, og teksten ville sendt folk feil vei.
+        if ($ut === [] && count($feil) === 2) {
             $sier = implode(' ', $feil);
             if (stripos($sier, 'permission') !== false
                 || stripos($sier, 'tillatelse') !== false
@@ -510,6 +536,9 @@ final class Meta
                        . 'eget meldings-bruksområde på Meta-appen, og er ikke lagt til ennå. '
                        . 'Kommentarer virker uten den.'];
             }
+        }
+        if ($metaSa !== []) {
+            $feil[] = 'Meta svarte: ' . implode(' · ', $metaSa);
         }
 
         usort($ut, static fn(array $a, array $b): int => strcmp($b['tid'], $a['tid']));
@@ -535,7 +564,9 @@ final class Meta
             $ut[] = [
                 'id'    => (string) ($m['id'] ?? ''),
                 'fra'   => (string) ($m['from']['name'] ?? $m['from']['username'] ?? ''),
-                'oss'   => (string) ($m['from']['id'] ?? '') === self::sideId(),
+                // Instagram-meldinger bærer kontoens egen id, ikke sidas.
+                'oss'   => in_array((string) ($m['from']['id'] ?? ''),
+                                    array_filter([self::sideId(), self::igId()]), true),
                 'tekst' => (string) ($m['message'] ?? ''),
                 'tid'   => (string) ($m['created_time'] ?? ''),
             ];
@@ -603,6 +634,15 @@ final class Meta
     // ── Selve kallet ─────────────────────────────────────────────────
 
     /**
+     * Metas egen ordlyd fra siste feil, foer den ble oversatt.
+     *
+     * Oversettelsen i kall() er til for eieren, men den slaar sammen feil
+     * med ulik aarsak. Innboksen viser denne bak sin egen tekst, saa man
+     * ser hva Meta faktisk sa. (Eieren, 24. september 2026.)
+     */
+    private static string $sisteMetaFeil = '';
+
+    /**
      * Ett kall mot Graph API.
      *
      * Tokenet gaar i et hode og ikke i adressen: en adresse havner i
@@ -636,6 +676,9 @@ final class Meta
             $f = $json['error'] ?? [];
             $melding = (string) ($f['message'] ?? 'Ukjent feil');
             $kode = (int) ($f['code'] ?? 0);
+            self::$sisteMetaFeil = $melding . ' (kode ' . $kode
+                . (isset($f['error_subcode']) ? ', underkode ' . (int) $f['error_subcode'] : '')
+                . ')';
 
             // Oversett de som faktisk skjer, til noe eieren kan gjore noe med.
             throw new RuntimeException(match (true) {

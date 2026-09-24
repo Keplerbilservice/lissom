@@ -2221,6 +2221,15 @@ window.__resources = {
     .lx-kortnavn { display: none !important; }
     .lx-kortmer  { display: block !important; }
   }
+   /* Handlelista paa Min side paa telefon: hver rad et lite kort i stedet for
+      en bred tabell man maa skyve paa. Eieren, 24. september 2026. */
+   @media (max-width: 640px) {
+    .lx-hlrad { grid-template-columns: 1fr auto !important; min-width: 0 !important; row-gap: 6px !important; }
+    .lx-hlrad > .lx-hlnavn { grid-column: 1 / -1; order: 3; }
+    .lx-hlrad > .lx-hlant { order: 4; }
+    .lx-hlrad > .lx-hlx { order: 5; }
+    .lx-hlhode { display: none !important; }
+   }
   @media (max-width: 900px) {
     body { zoom: 1; --width-content: 100%; --width-wide: 100%; --section-y: 64px; }
     section { padding-left: 20px !important; padding-right: 20px !important; }
@@ -5552,6 +5561,174 @@ window.__resources = {
               </div>
             </div>
           </sc-if>
+          <!-- Butikk. Sto i den smale hoeyre spalta, med venstre side tom paa
+               PC. Eieren, 24. september 2026: «her vil jeg ha et bedre
+               oppsett». Naa: handlelista bredt, internbutikken og
+               kjoepshistorikken ved siden av. «Del paa Instagram» staar paa
+               forsiden (msFaneHjem). -->
+          <sc-if value="{{ msFaneButikk }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--space-6); margin-top: var(--space-6); align-items: start;">
+            <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
+              <!-- Handlelista. Internbutikken over selger det som ligger paa
+                   lager, med betaling i kassa med en gang. Dette er den andre
+                   veien: det som maa skaffes. Medlemmet samler opp, sender, og
+                   verkstedet bestiller samlet — eieren, 13. september 2026:
+                   «maalet er aa samle innkjop paa min lissom konto for aa faa
+                   rabatter». Ingen pris staar her: den settes naar
+                   leverandoren har sagt hva den koster. -->
+              <!-- Eieren, 24. september 2026: «egne felt, antall,
+                   artikkelnummer, varenavn», leverandoeren man handler hos,
+                   og soek rett i nettbutikken dens. Leverandoerene er de admin
+                   har slaatt paa under Nettbutikk → Handlelister. -->
+              <sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">
+              <div id="minside-handleliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+                <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
+                  <div>
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Handleliste</div>
+                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Det du trenger til neste innkjøp</h3>
+                  </div>
+                  <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
+                    <span style="border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 13px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">{{ hlAntallTekst }}</span>
+                  </sc-if>
+                </div>
+
+                <sc-if value="{{ hlHarLev }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">Leverandør</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                    <sc-for list="{{ hlLev }}" as="l" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ l.velg }}" style="{{ l.stil }}">{{ l.navn }}</button>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ hlLevHarSok }}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: var(--space-4);">
+                      <input type="search" value="{{ hlLevSok }}" onInput="{{ hlLevSokEndre }}" placeholder="{{ hlLevSokTekst }}" aria-label="{{ hlLevSokTekst }}" style="flex: 1; min-width: 0; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading);">
+                      <a href="{{ hlLevSokUrl }}" target="_blank" rel="noopener" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700; text-decoration: none; white-space: nowrap;">Søk ↗</a>
+                    </div>
+                  </sc-if>
+                </sc-if>
+
+                <div style="overflow-x: auto;">
+                  <!-- Rader som rutenett, ikke en HTML-tabell: nettleseren flytter
+                       sc-for-løkka ut av tabellen, og radene sto tomme. -->
+                  <div role="table" aria-label="Handleliste" style="font-size: var(--text-sm); color: var(--text-heading);">
+                    <div role="row" class="lx-hlrad lx-hlhode" style="display: grid; grid-template-columns: minmax(110px, 1.1fr) minmax(90px, 1fr) minmax(150px, 2fr) 96px 72px; gap: 8px; align-items: center; min-width: 560px; padding: 9px 6px; border-bottom: 1px solid var(--border-subtle);">
+                      <span role="columnheader" style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); font-weight: 700; white-space: nowrap;">Leverandør</span><span role="columnheader" style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); font-weight: 700; white-space: nowrap;">Artikkelnr.</span><span role="columnheader" style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); font-weight: 700; white-space: nowrap;">Varenavn</span><span role="columnheader" style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); font-weight: 700; white-space: nowrap;">Antall</span><span></span>
+                    </div>
+                    <sc-for list="{{ hlMine }}" as="h" hint-placeholder-count="2">
+                      <div role="row" class="lx-hlrad" style="display: grid; grid-template-columns: minmax(110px, 1.1fr) minmax(90px, 1fr) minmax(150px, 2fr) 96px 72px; gap: 8px; align-items: center; min-width: 560px; padding: 9px 6px; border-bottom: 1px solid var(--border-subtle);">
+                        <span role="cell" style="color: var(--text-muted); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.leverandor }}</span>
+                        <span role="cell" style="color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap;">{{ h.nummer }}</span>
+                        <span role="cell" class="lx-hlnavn" style="font-weight: 700; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</span>
+                        <span role="cell" class="lx-hlant" style="display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+                          <button type="button" onClick="{{ h.faerre }}" aria-label="Færre" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">−</button>
+                          <span style="min-width: 18px; text-align: center; font-weight: 700;">{{ h.antall }}</span>
+                          <button type="button" onClick="{{ h.flere }}" aria-label="Flere" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">+</button>
+                        </span>
+                        <span role="cell" class="lx-hlx" style="text-align: right;"><button type="button" onClick="{{ h.fjern }}" aria-label="Ta bort" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); font-size: 20px; line-height: 1; padding: 4px;">×</button></span>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ hlHarLev }}" hint-placeholder-val="{{ true }}">
+                      <div role="row" class="lx-hlrad" style="display: grid; grid-template-columns: minmax(110px, 1.1fr) minmax(90px, 1fr) minmax(150px, 2fr) 96px 72px; gap: 8px; align-items: center; min-width: 560px; padding: 9px 6px; border-bottom: 1px solid var(--border-subtle); background: var(--clay-50);">
+                        <span role="cell" style="font-weight: 700; overflow-wrap: anywhere;">{{ hlLevValgtNavn }}</span>
+                        <input type="text" value="{{ hlNyNr }}" onInput="{{ hlNyNrEndre }}" placeholder="Artikkelnr." aria-label="Artikkelnr." maxlength="64" style="box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--surface-card); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); color: var(--text-heading); width: 100%; min-width: 0;">
+                        <input type="text" class="lx-hlnavn" value="{{ hlNyNavn }}" onInput="{{ hlNyNavnEndre }}" placeholder="Varenavn" aria-label="Varenavn" maxlength="191" style="box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--surface-card); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); color: var(--text-heading); width: 100%; min-width: 0;">
+                        <input type="number" class="lx-hlant" min="1" max="99" value="{{ hlNyAntall }}" onInput="{{ hlNyAntallEndre }}" aria-label="Antall" style="box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--surface-card); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); color: var(--text-heading); width: 100%; min-width: 0;">
+                        <span role="cell" class="lx-hlx" style="text-align: right;"><button type="button" onClick="{{ hlNyLegg }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 7px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Legg til</button></span>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+
+                <!-- Varene verkstedet har lagt inn («Kan bestilles»). Staar
+                     bare naar du soker eller har trykket «Legg til vare». -->
+                <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ false }}">
+                <sc-if value="{{ hlVelgApen }}" hint-placeholder-val="{{ false }}">
+                <input type="search" value="{{ hlSok }}" onInput="{{ hlSokEndre }}" placeholder="Søk etter leire, glasur, verktøy …" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-top: var(--space-4);">
+                <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md, 10px); padding: var(--space-2) var(--space-4); margin-top: var(--space-3);">
+                  <sc-for list="{{ hlTreff }}" as="t" hint-placeholder-count="3">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                      <div style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ t.navn }}</div>
+                      <div style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ t.nummer }}</div>
+                      <button type="button" onClick="{{ t.legg }}" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700; padding: 5px 12px;">Legg til</button>
+                    </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+                </sc-if>
+
+                <sc-if value="{{ hlGebyrTekst }}" hint-placeholder-val="{{ 'x' }}">
+                  <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: 12px 14px; margin-top: var(--space-4); font-size: var(--text-sm); color: var(--text-body); line-height: 1.5;"><strong style="color: var(--text-heading);">Kommer i tillegg:</strong> {{ hlGebyrTekst }}</div>
+                </sc-if>
+
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5);">
+                  <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ hlSendNa }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">{{ hlSendTekst }}</button>
+                  </sc-if>
+                  <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ hlVelgVeksle }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Legg til vare</button>
+                  </sc-if>
+                </div>
+
+                <sc-if value="{{ hlKvittering }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">Lista er sendt. Du får et Vipps-krav når prisene er klare.</p>
+                </sc-if>
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Lista blir liggende til du sender den. Prisen settes når verkstedet bestiller, og du får et Vipps-krav før varene hentes hjem.</p>
+              </div>
+              </sc-if>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
+              <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
+              <div id="minside-internbutikk" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+                <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
+                  <div>
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Internbutikk</div>
+                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Leire og brenning</h3>
+                  </div>
+                  <sc-if value="{{ visKurvKnapp }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ apneOrdre }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 14px; font: var(--type-body-sm); font-weight: 700;">Se bestillingen · {{ kurvAntall }}</button>
+                  </sc-if>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <sc-for list="{{ internvarer }}" as="v" hint-placeholder-count="4">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }}</div>
+                      </div>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.kjopNaa }}" hint-size="auto,34px">{{ v.knappetekst }}</x-import>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ kurvTom }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Legg til det du trenger, så får du en ordre du kan gå til betaling på. Betales med Vipps.</p>
+                </sc-if>
+              </div>
+              </sc-if>
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-2); flex-wrap: wrap;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kjøpshistorikk</div>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Kvittering i Vipps</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <sc-for list="{{ kjopshistorikk }}" as="h" hint-placeholder-count="2">
+                    <div onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: var(--space-3) var(--space-2); margin: 0 calc(-1 * var(--space-2)); cursor: pointer; border-radius: var(--radius-sm); transition: background var(--duration-fast, .15s) ease;" style-hover="background: var(--clay-100);">
+                      <div style="min-width: 0;">
+                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ h.navn }}</div>
+                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ h.detalj }} · {{ h.tid }} · {{ h.ref }}</div>
+                      </div>
+                      <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ h.sum }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ harMerHistorikk }}" hint-placeholder-val="{{ true }}">
+                  <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); margin-top: var(--space-1, 4px);">
+                    <button type="button" onClick="{{ visMerHistorikk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Vis full historikk ({{ antallSkjult }} eldre)</button>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+          </sc-if>
           <div class="lx-split" style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); margin-top: var(--space-6); align-items: start;">
 
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
@@ -5778,6 +5955,84 @@ window.__resources = {
               </sc-if>
               </sc-if>
 
+              <!-- Del paa Instagram. Eieren, 24. september 2026: medlemmer
+                   foreslaar et innlegg — ett bilde eller én video paa maks 15
+                   sekunder, med tekst — og verkstedet godkjenner for det
+                   legges ut paa @lissom_keramikk. Ett forslag om gangen.
+                   Bryteren ⊙ Synlighet → Del paa Instagram styrer kortet.
+                   Serveren er api/medlemsforslag.php.
+                   Flyttet fra Butikk til forsiden 24. september 2026 (eieren:
+                   «den må ligge på forsiden»). -->
+              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
+              <div id="minside-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Del på Instagram</div>
+
+                <sc-for list="{{ fsMine }}" as="f" hint-placeholder-count="1">
+                  <div style="display: flex; gap: var(--space-3); align-items: center; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-3); margin: var(--space-3) 0;">
+                    <sc-if value="{{ f.video }}" hint-placeholder-val="{{ false }}">
+                      <video data-src="{{ f.fil }}" muted playsinline preload="metadata" style="flex: none; width: 74px; height: 74px; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-200);"></video>
+                    </sc-if>
+                    <sc-if value="{{ f.bilde }}" hint-placeholder-val="{{ true }}">
+                      <img data-src="{{ f.fil }}" alt="" style="flex: none; width: 74px; height: 74px; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-200);">
+                    </sc-if>
+                    <div style="min-width: 0;">
+                      <sc-if value="{{ f.venter }}" hint-placeholder-val="{{ true }}">
+                        <span style="display: inline-block; border-radius: var(--radius-pill); padding: 3px 10px; font-size: var(--text-xs); font-weight: 800; background: var(--yellow-100); color: var(--lissom-brown);">Venter på godkjenning</span>
+                      </sc-if>
+                      <sc-if value="{{ f.ute }}" hint-placeholder-val="{{ false }}">
+                        <span style="display: inline-block; border-radius: var(--radius-pill); padding: 3px 10px; font-size: var(--text-xs); font-weight: 800; background: var(--sage-100, #DCEFD9); color: var(--sage-700, #3D7A4A);">Lagt ut på Instagram</span>
+                      </sc-if>
+                      <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-heading); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ f.tekst }}</p>
+                      <sc-if value="{{ f.harLenke }}" hint-placeholder-val="{{ false }}">
+                        <a href="{{ f.lenke }}" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); padding: 4px 12px; font-size: var(--text-xs); font-weight: 700; color: var(--lissom-brown); text-decoration: none;">Se innlegget →</a>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+
+                <sc-if value="{{ fsKanSende }}" hint-placeholder-val="{{ true }}">
+                <h3 style="margin: var(--space-2) 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Vis fram det du har laget</h3>
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">Send oss et bilde eller en kort video. Blir det godkjent, legger vi det ut på @lissom_keramikk med navnet ditt.</p>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                  <button type="button" onClick="{{ fsVelgBilde }}" style="{{ fsBildeStil }}">Bilde</button>
+                  <button type="button" onClick="{{ fsVelgVideo }}" style="{{ fsVideoStil }}">Video (maks 15 sek)</button>
+                </div>
+
+                <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 150px; border: 2px dashed var(--clay-200); border-radius: var(--radius-lg); background: var(--clay-100); color: var(--text-muted); cursor: pointer; overflow: hidden; margin-bottom: var(--space-4);">
+                  <sc-if value="{{ fsHarForhand }}" hint-placeholder-val="{{ false }}">
+                    <sc-if value="{{ fsForhandVideo }}" hint-placeholder-val="{{ false }}">
+                      <video data-src="{{ fsForhand }}" muted playsinline controls style="max-width: 100%; max-height: 320px; display: block;"></video>
+                    </sc-if>
+                    <sc-if value="{{ fsForhandBilde }}" hint-placeholder-val="{{ true }}">
+                      <img data-src="{{ fsForhand }}" alt="" style="max-width: 100%; max-height: 320px; display: block;">
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{ fsIngenForhand }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size: 26px; line-height: 1;">＋</span>
+                    <span style="font: var(--type-body-sm); font-weight: 700;">{{ fsVelgTekst }}</span>
+                  </sc-if>
+                  <input type="file" accept="{{ fsAccept }}" onChange="{{ fsFilValgt }}" style="display: none;">
+                </label>
+
+                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Tekst</label>
+                <textarea value="{{ fsTekst }}" onChange="{{ fsTekstEndre }}" rows="3" maxlength="1500" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-3);"></textarea>
+
+                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Hashtagger</label>
+                <input type="text" value="{{ fsTags }}" onChange="{{ fsTagsEndre }}" maxlength="500" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-3);">
+
+                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Instagram-brukeren din (valgfritt)</label>
+                <input type="text" value="{{ fsIg }}" onChange="{{ fsIgEndre }}" maxlength="31" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-4);">
+
+                <button type="button" onClick="{{ mfSend }}" style="{{ fsSendStil }}">Send forslag</button>
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Ett forslag om gangen. Du kan sende et nytt når dette er behandlet.</p>
+                </sc-if>
+              </div>
+              </sc-if>
+
+              </sc-if>
+
               <!-- Kursene blir staaende paa forsiden. Det er datoer man maa
                    rekke, ikke noe man leter etter i en meny. -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
@@ -5966,204 +6221,6 @@ window.__resources = {
 
               </sc-if>
 
-              <sc-if value="{{ msFaneButikk }}" hint-placeholder-val="{{ false }}">
-              <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-internbutikk" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-                <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
-                  <div>
-                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Internbutikk</div>
-                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Leire og brenning</h3>
-                  </div>
-                  <sc-if value="{{ visKurvKnapp }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ apneOrdre }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 14px; font: var(--type-body-sm); font-weight: 700;">Se bestillingen · {{ kurvAntall }}</button>
-                  </sc-if>
-                </div>
-                <div style="display: flex; flex-direction: column;">
-                  <sc-for list="{{ internvarer }}" as="v" hint-placeholder-count="4">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
-                      <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }}</div>
-                      </div>
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.kjopNaa }}" hint-size="auto,34px">{{ v.knappetekst }}</x-import>
-                    </div>
-                  </sc-for>
-                </div>
-                <sc-if value="{{ kurvTom }}" hint-placeholder-val="{{ true }}">
-                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Legg til det du trenger, så får du en ordre du kan gå til betaling på. Betales med Vipps.</p>
-                </sc-if>
-              </div>
-              </sc-if>
-
-              <!-- Handlelista. Internbutikken over selger det som ligger paa
-                   lager, med betaling i kassa med en gang. Dette er den andre
-                   veien: det som maa skaffes. Medlemmet samler opp, sender, og
-                   verkstedet bestiller samlet — eieren, 13. september 2026:
-                   «maalet er aa samle innkjop paa min lissom konto for aa faa
-                   rabatter». Ingen pris staar her: den settes naar
-                   leverandoren har sagt hva den koster. -->
-              <sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-handleliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
-                <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
-                  <div>
-                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Handleliste</div>
-                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Det du trenger til neste innkjøp</h3>
-                  </div>
-                  <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
-                    <span style="border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 13px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">{{ hlAntallTekst }}</span>
-                  </sc-if>
-                </div>
-
-                <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ true }}">
-                <input type="search" value="{{ hlSok }}" onInput="{{ hlSokEndre }}" placeholder="Søk etter leire, glasur, verktøy …" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-3);">
-                </sc-if>
-                <!-- Oenske i fritekst. Eieren, 15. september 2026: medlemmene
-                     skal kunne skrive selv, ikke bare velge blant varene. -->
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: var(--space-3);">
-                  <input type="text" value="{{ hlOnske }}" onInput="{{ hlOnskeEndre }}" placeholder="Skriv et ønske, f.eks. hvit steingods 10 kg" maxlength="191" style="flex: 1; min-width: 0; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading);">
-                  <button type="button" onClick="{{ hlOnskeLegg }}" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 14px; font: var(--type-body-sm); font-weight: 700;">Legg til</button>
-                </div>
-
-                <div style="display: flex; flex-direction: column;">
-                  <sc-for list="{{ hlMine }}" as="h" hint-placeholder-count="3">
-                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
-                      <div style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</div>
-                      <div style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.nummer }}</div>
-                      <div style="flex: none; display: flex; align-items: center; gap: 5px;">
-                        <button type="button" onClick="{{ h.faerre }}" aria-label="Færre" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">−</button>
-                        <span style="min-width: 16px; text-align: center; font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ h.antall }}</span>
-                        <button type="button" onClick="{{ h.flere }}" aria-label="Flere" style="appearance: none; cursor: pointer; width: 28px; height: 28px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); font-weight: 700; line-height: 1;">+</button>
-                      </div>
-                    </div>
-                  </sc-for>
-                </div>
-
-                <!-- Varene aa velge blant. Staar bare naar du soker eller har
-                     trykket «Legg til vare» — ellers er lista di det du ser. -->
-                <sc-if value="{{ hlVelgApen }}" hint-placeholder-val="{{ false }}">
-                <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md, 10px); padding: var(--space-2) var(--space-4); margin-top: var(--space-3);">
-                  <sc-for list="{{ hlTreff }}" as="t" hint-placeholder-count="3">
-                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
-                      <div style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ t.navn }}</div>
-                      <div style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ t.nummer }}</div>
-                      <button type="button" onClick="{{ t.legg }}" style="flex: none; appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px 12px; font: var(--type-body-sm); font-weight: 700;">Legg til</button>
-                    </div>
-                  </sc-for>
-                </div>
-                </sc-if>
-
-                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5);">
-                  <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
-                    <button type="button" onClick="{{ hlSendNa }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">{{ hlSendTekst }}</button>
-                  </sc-if>
-                  <sc-if value="{{ hlHarVarer }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ hlVelgVeksle }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Legg til vare</button>
-                  </sc-if>
-                </div>
-
-                <sc-if value="{{ hlKvittering }}" hint-placeholder-val="{{ false }}">
-                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">Lista er sendt. Du får et Vipps-krav når prisene er klare.</p>
-                </sc-if>
-                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Lista blir liggende til du sender den. Prisen settes når verkstedet bestiller, og du får et Vipps-krav før varene hentes hjem.</p>
-              </div>
-              </sc-if>
-
-              <!-- Del paa Instagram. Eieren, 24. september 2026: medlemmer
-                   foreslaar et innlegg — ett bilde eller én video paa maks 15
-                   sekunder, med tekst — og verkstedet godkjenner for det
-                   legges ut paa @lissom_keramikk. Ett forslag om gangen.
-                   Bryteren ⊙ Synlighet → Del paa Instagram styrer kortet.
-                   Serveren er api/medlemsforslag.php. -->
-              <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Del på Instagram</div>
-
-                <sc-for list="{{ fsMine }}" as="f" hint-placeholder-count="1">
-                  <div style="display: flex; gap: var(--space-3); align-items: center; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-3); margin: var(--space-3) 0;">
-                    <sc-if value="{{ f.video }}" hint-placeholder-val="{{ false }}">
-                      <video data-src="{{ f.fil }}" muted playsinline preload="metadata" style="flex: none; width: 74px; height: 74px; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-200);"></video>
-                    </sc-if>
-                    <sc-if value="{{ f.bilde }}" hint-placeholder-val="{{ true }}">
-                      <img data-src="{{ f.fil }}" alt="" style="flex: none; width: 74px; height: 74px; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-200);">
-                    </sc-if>
-                    <div style="min-width: 0;">
-                      <sc-if value="{{ f.venter }}" hint-placeholder-val="{{ true }}">
-                        <span style="display: inline-block; border-radius: var(--radius-pill); padding: 3px 10px; font-size: var(--text-xs); font-weight: 800; background: var(--yellow-100); color: var(--lissom-brown);">Venter på godkjenning</span>
-                      </sc-if>
-                      <sc-if value="{{ f.ute }}" hint-placeholder-val="{{ false }}">
-                        <span style="display: inline-block; border-radius: var(--radius-pill); padding: 3px 10px; font-size: var(--text-xs); font-weight: 800; background: var(--sage-100, #DCEFD9); color: var(--sage-700, #3D7A4A);">Lagt ut på Instagram</span>
-                      </sc-if>
-                      <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-heading); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ f.tekst }}</p>
-                      <sc-if value="{{ f.harLenke }}" hint-placeholder-val="{{ false }}">
-                        <a href="{{ f.lenke }}" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); padding: 4px 12px; font-size: var(--text-xs); font-weight: 700; color: var(--lissom-brown); text-decoration: none;">Se innlegget →</a>
-                      </sc-if>
-                    </div>
-                  </div>
-                </sc-for>
-
-                <sc-if value="{{ fsKanSende }}" hint-placeholder-val="{{ true }}">
-                <h3 style="margin: var(--space-2) 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Vis fram det du har laget</h3>
-                <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">Send oss et bilde eller en kort video. Blir det godkjent, legger vi det ut på @lissom_keramikk med navnet ditt.</p>
-
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
-                  <button type="button" onClick="{{ fsVelgBilde }}" style="{{ fsBildeStil }}">Bilde</button>
-                  <button type="button" onClick="{{ fsVelgVideo }}" style="{{ fsVideoStil }}">Video (maks 15 sek)</button>
-                </div>
-
-                <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 150px; border: 2px dashed var(--clay-200); border-radius: var(--radius-lg); background: var(--clay-100); color: var(--text-muted); cursor: pointer; overflow: hidden; margin-bottom: var(--space-4);">
-                  <sc-if value="{{ fsHarForhand }}" hint-placeholder-val="{{ false }}">
-                    <sc-if value="{{ fsForhandVideo }}" hint-placeholder-val="{{ false }}">
-                      <video data-src="{{ fsForhand }}" muted playsinline controls style="max-width: 100%; max-height: 320px; display: block;"></video>
-                    </sc-if>
-                    <sc-if value="{{ fsForhandBilde }}" hint-placeholder-val="{{ true }}">
-                      <img data-src="{{ fsForhand }}" alt="" style="max-width: 100%; max-height: 320px; display: block;">
-                    </sc-if>
-                  </sc-if>
-                  <sc-if value="{{ fsIngenForhand }}" hint-placeholder-val="{{ true }}">
-                    <span style="font-size: 26px; line-height: 1;">＋</span>
-                    <span style="font: var(--type-body-sm); font-weight: 700;">{{ fsVelgTekst }}</span>
-                  </sc-if>
-                  <input type="file" accept="{{ fsAccept }}" onChange="{{ fsFilValgt }}" style="display: none;">
-                </label>
-
-                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Tekst</label>
-                <textarea value="{{ fsTekst }}" onChange="{{ fsTekstEndre }}" rows="3" maxlength="1500" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-3);"></textarea>
-
-                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Hashtagger</label>
-                <input type="text" value="{{ fsTags }}" onChange="{{ fsTagsEndre }}" maxlength="500" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-3);">
-
-                <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Instagram-brukeren din (valgfritt)</label>
-                <input type="text" value="{{ fsIg }}" onChange="{{ fsIgEndre }}" maxlength="31" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-4);">
-
-                <button type="button" onClick="{{ mfSend }}" style="{{ fsSendStil }}">Send forslag</button>
-                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Ett forslag om gangen. Du kan sende et nytt når dette er behandlet.</p>
-                </sc-if>
-              </div>
-              </sc-if>
-
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-2); flex-wrap: wrap;">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kjøpshistorikk</div>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Kvittering i Vipps</span>
-                </div>
-                <div style="display: flex; flex-direction: column;">
-                  <sc-for list="{{ kjopshistorikk }}" as="h" hint-placeholder-count="2">
-                    <div onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: var(--space-3) var(--space-2); margin: 0 calc(-1 * var(--space-2)); cursor: pointer; border-radius: var(--radius-sm); transition: background var(--duration-fast, .15s) ease;" style-hover="background: var(--clay-100);">
-                      <div style="min-width: 0;">
-                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ h.navn }}</div>
-                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ h.detalj }} · {{ h.tid }} · {{ h.ref }}</div>
-                      </div>
-                      <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ h.sum }}</span>
-                    </div>
-                  </sc-for>
-                </div>
-                <sc-if value="{{ harMerHistorikk }}" hint-placeholder-val="{{ true }}">
-                  <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); margin-top: var(--space-1, 4px);">
-                    <button type="button" onClick="{{ visMerHistorikk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Vis full historikk ({{ antallSkjult }} eldre)</button>
-                  </div>
-                </sc-if>
-              </div>
-              </sc-if>
             </div>
           </div>
 
@@ -19220,6 +19277,24 @@ window.__resources = {
               </div>
             </sc-if>
 
+            <!-- Frakten per leverandoer (migrasjon 208). Lagres med «Lagre»
+                 over, og deles likt paa medlemmene som har varer der. -->
+            <sc-if value="{{ hlaHarFrakt }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-5); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Frakt for bestillingen</div>
+                <sc-for list="{{ hlaFrakt }}" as="f" hint-placeholder-count="2">
+                  <label style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; font-size: var(--text-sm); color: var(--text-heading);">
+                    <span style="min-width: 150px; font-weight: 700;">{{ f.navn }}</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;">kr <input type="text" inputmode="decimal" value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="0,00" aria-label="Frakt i kroner" style="width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 6px 12px; font: var(--type-body-sm); color: var(--text-heading);"></span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.hjelp }}</span>
+                  </label>
+                </sc-for>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button type="button" onClick="{{ hlaLagrePriser }}" style="{{ hlaLagreStil }}">Lagre</button>
+                </div>
+              </div>
+            </sc-if>
+
             <!-- Oppgjoret: ett kort per medlem, med gebyret paa toppen. -->
             <div class="lx-cols2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); margin-top: var(--space-6);">
               <sc-for list="{{ hlaMedlemmer }}" as="m" hint-placeholder-count="3">
@@ -19227,6 +19302,9 @@ window.__resources = {
                   <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</div>
                   <div style="display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted);"><span>Varer</span><span>{{ m.varer }}</span></div>
                   <div style="display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted);"><span>{{ m.gebyrNavn }}</span><span>{{ m.gebyr }}</span></div>
+                  <sc-if value="{{ m.harFrakt }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted);"><span>Andel av frakt</span><span>{{ m.frakt }}</span></div>
+                  </sc-if>
                   <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--lissom-brown);">{{ m.sum }}</div>
                   <div style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700;">{{ m.merknad }}</div>
                 </div>
@@ -19257,6 +19335,9 @@ window.__resources = {
                 <sc-for list="{{ l.maater }}" as="m" hint-placeholder-count="2">
                   <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                 </sc-for>
+                <sc-if value="{{ l.harVis }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ l.visVeksle }}" style="{{ l.visStil }}">{{ l.visTekst }}</button>
+                </sc-if>
               </div>
             </sc-for>
             <!-- En ny leverandoer: navn og adresse, «Legg til». -->
@@ -30608,7 +30689,8 @@ class Component extends DCLogic {
       .then(d => {
         this._hlHentes = false;
         this._hlHentet = true;
-        if (d) this.setState({ hlPaa: !!d.paa, hlVarer: d.varer || [], hlMine: d.mine || [] });
+        if (d) this.setState({ hlPaa: !!d.paa, hlVarer: d.varer || [], hlMine: d.mine || [],
+          hlLevListe: d.leverandorer || [], hlGebyr: typeof d.gebyr === 'number' ? d.gebyr : null });
       })
       .catch(() => { this._hlHentes = false; });
   }
@@ -30633,7 +30715,7 @@ class Component extends DCLogic {
         this._hlSender = false;
         if (!ok) { this.setState({ kvitteringTone: 'danger', kvittering: d.feil || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this.setState(Object.assign({ hlMine: d.mine || [] },
-          kropp.handling === 'onske' ? { hlOnske: '' } : {},
+          kropp.handling === 'linje' ? { hlNyNr: '', hlNyNavn: '', hlNyAntall: '1' } : {},
           kropp.handling === 'send' ? { hlKvittering: true, hlSok: '', hlVelgApen: false } : {}));
       })
       .catch(() => {
@@ -30668,22 +30750,73 @@ class Component extends DCLogic {
       hlMine: mine.map(h => ({
         navn: h.navn,
         nummer: h.nummer || '',
+        leverandor: h.leverandor || '',
         antall: h.antall,
         flere: () => this.hlKall({ handling: 'antall', linjeId: h.id, antall: (h.antall || 0) + 1 }),
         faerre: () => this.hlKall({ handling: 'antall', linjeId: h.id, antall: (h.antall || 0) - 1 }),
+        fjern: () => this.hlKall({ handling: 'antall', linjeId: h.id, antall: 0 }),
       })),
+      ...this.hlLevVals(),
       hlSendTekst: 'Send til verkstedet',
       hlSendNa: () => this.hlKall({ handling: 'send' }),
       hlKvittering: !!this.state.hlKvittering,
-      // Varene aa velge blant finnes ikke alltid; da staar bare oensket.
+      // Varene verkstedet har lagt inn finnes ikke alltid.
       hlHarVarer: varer.length > 0,
-      hlOnske: this.state.hlOnske || '',
-      hlOnskeEndre: (e) => this.setState({ hlOnske: e.target.value, hlKvittering: false }),
-      hlOnskeLegg: () => {
-        const t = String(this.state.hlOnske || '').trim();
-        if (t.length < 2) { this.setState({ kvitteringTone: 'danger', kvittering: 'Skriv hva du ønsker deg' }); return; }
-        this.hlKall({ handling: 'onske', tekst: t });
+    };
+  }
+
+  /**
+   * Leverandoeren, soeket i nettbutikken dens, og feltene for en ny linje.
+   *
+   * Eieren, 24. september 2026: «egne felt, antall, artikkelnummer,
+   * varenavn. og gjerne fra hvem av de forhåndsdefinerte butikkene […] med
+   * et søkefelt rett i nettbutikken». Fritekstfeltet («Skriv et ønske») er
+   * erstattet av disse feltene. Butikkene vises ikke inne hos oss — soeket
+   * aapner nettbutikken i en ny fane, og medlemmet skriver inn nummer og navn.
+   */
+  hlLevVals() {
+    const liste = this.state.hlLevListe || [];
+    const valgt = liste.find(l => l.id === this.state.hlLevId) || liste[0] || null;
+    const q = String(this.state.hlLevSok || '').trim();
+    const sokUrl = valgt && valgt.sok ? valgt.sok.split('{q}').join(encodeURIComponent(q)) : '';
+    const gebyr = this.state.hlGebyr;
+    const gebyrTekst = gebyr ? String(gebyr).replace('.', ',') : '';
+    const pille = (paa) => ({
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
+      font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
+      background: paa ? 'var(--lissom-brown)' : 'var(--clay-100)',
+      color: paa ? '#fff' : 'var(--lissom-brown)',
+    });
+    return {
+      hlHarLev: liste.length > 0,
+      hlLev: liste.map(l => ({
+        navn: l.navn,
+        stil: pille(valgt && l.id === valgt.id),
+        velg: () => this.setState({ hlLevId: l.id, hlKvittering: false }),
+      })),
+      hlLevValgtNavn: valgt ? valgt.navn : '',
+      hlLevHarSok: !!sokUrl,
+      hlLevSok: this.state.hlLevSok || '',
+      hlLevSokEndre: (e) => this.setState({ hlLevSok: e.target.value }),
+      hlLevSokTekst: valgt ? 'Søk i nettbutikken til ' + valgt.navn + ' …' : '',
+      hlLevSokUrl: sokUrl,
+      hlNyNr: this.state.hlNyNr || '',
+      hlNyNrEndre: (e) => this.setState({ hlNyNr: e.target.value, hlKvittering: false }),
+      hlNyNavn: this.state.hlNyNavn || '',
+      hlNyNavnEndre: (e) => this.setState({ hlNyNavn: e.target.value, hlKvittering: false }),
+      hlNyAntall: this.state.hlNyAntall === undefined ? '1' : this.state.hlNyAntall,
+      hlNyAntallEndre: (e) => this.setState({ hlNyAntall: e.target.value }),
+      hlNyLegg: () => {
+        const navn = String(this.state.hlNyNavn || '').trim();
+        if (!valgt) return;
+        if (navn.length < 2) { this.setState({ kvitteringTone: 'danger', kvittering: 'Skriv varenavnet.' }); return; }
+        const antall = Math.max(1, Math.min(99, parseInt(this.state.hlNyAntall === undefined ? '1' : this.state.hlNyAntall, 10) || 1));
+        this.hlKall({ handling: 'linje', leverandorId: valgt.id, artikkelnr: String(this.state.hlNyNr || '').trim(), navn, antall });
       },
+      // Gebyret staar i admin (Nettbutikk → Handlelister), frakten deles
+      // paa dem som er med. Eieren, 24. september 2026: «det må komme frem».
+      hlGebyrTekst: (gebyrTekst ? 'administrasjonsgebyr på ' + gebyrTekst + ' % og en andel av frakten.' : 'en andel av frakten.')
+        + ' Frakten deles likt mellom alle som er med på bestillingen.',
     };
   }
 
@@ -31217,7 +31350,7 @@ class Component extends DCLogic {
    * — som resten av admin.
    */
   hlaUtkast() {
-    return this.state.hlaUtkast || { pris: {}, epost: {}, gebyr: null, nyNavn: '', nyEpost: '' };
+    return this.state.hlaUtkast || { pris: {}, epost: {}, frakt: {}, gebyr: null, nyNavn: '', nyEpost: '' };
   }
 
   hlaSkriv(del, nokkel, verdi) {
@@ -31273,7 +31406,11 @@ class Component extends DCLogic {
     // Prisene som er endret — bare de sendes.
     const prisKall = varer
       .filter(v => u.pris[v.produktId] !== undefined && u.pris[v.produktId] !== (v.pris || ''))
-      .map(v => ({ handling: 'pris', produktId: v.produktId, kroner: u.pris[v.produktId] }));
+      .map(v => ({ handling: 'pris', produktId: v.produktId, kroner: u.pris[v.produktId] }))
+      // Frakten per leverandoer lagres med samme knapp som prisene.
+      .concat(lev
+        .filter(l => (u.frakt || {})[l.id] !== undefined && u.frakt[l.id] !== (l.frakt || ''))
+        .map(l => ({ handling: 'frakt', leverandorId: l.id, kroner: u.frakt[l.id] })));
     // Gebyret og leverandoerenes adresser.
     const gebyrTekst = String(gebyr).replace('.', ',');
     const oppsettKall = []
@@ -31281,7 +31418,7 @@ class Component extends DCLogic {
       .concat(lev
         .filter(l => u.epost[l.id] !== undefined && u.epost[l.id] !== (l.epost || ''))
         .map(l => ({ handling: 'leverandor', id: l.id, epost: u.epost[l.id], bestillingsmaate: l.maate })));
-    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, gebyr: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
+    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, frakt: {}, gebyr: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
 
     const pille = (aktiv) => ({
       appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -31335,10 +31472,28 @@ class Component extends DCLogic {
         varer: m.varer,
         gebyrNavn: 'Gebyr ' + String(gebyr).replace('.', ',') + ' %',
         gebyr: m.gebyr,
+        harFrakt: (m.fraktOre || 0) > 0,
+        frakt: m.frakt || '',
         sum: m.sum,
         merknad: m.kravSendt ? 'Krav sendt' : (m.harTlf ? '' : 'Mangler telefonnummer'),
       })),
       hlaKrav: () => this.hlaKall({ handling: 'krav' }),
+      // Frakten for bestillingen hos hver leverandoer, delt likt paa dem som
+      // har varer der. Eieren, 24. september 2026: «fraktregning delt».
+      hlaHarFrakt: !!d.har208 && lev.length > 0,
+      hlaFrakt: lev.map(l => {
+        const verdi = (u.frakt || {})[l.id] !== undefined ? u.frakt[l.id] : (l.frakt || '');
+        const kr = parseFloat(String(verdi).replace(/\s/g, '').replace(',', '.')) || 0;
+        const n = l.antallMedlemmer || 0;
+        const hver = n > 0 && kr > 0 ? Math.ceil(kr * 100 / n) / 100 : 0;
+        return {
+          navn: l.navn,
+          verdi,
+          endre: (e) => this.hlaSkriv('frakt', l.id, e.target.value),
+          hjelp: n === 0 ? 'Ingen har varer her nå'
+            : n + (n === 1 ? ' medlem' : ' medlemmer') + (hver > 0 ? ' · kr ' + hver.toFixed(2).replace('.', ',') + ' hver' : ''),
+        };
+      }),
       hlaBestill: lev.map(l => ({
         navn: 'Bestill hos ' + l.navn,
         send: () => this.hlaKall({ handling: 'bestill', leverandorId: l.id }),
@@ -31363,6 +31518,12 @@ class Component extends DCLogic {
       },
       hlaLeverandorer: lev.map(l => ({
         navn: l.navn,
+        // Hvilke medlemmene kan velge i handlelista. Eieren, 24. september
+        // 2026: «admin kan velge hvem leverandør som skal vises».
+        harVis: !!d.har208,
+        visTekst: l.vis ? 'Vises på Min side' : 'Vises ikke på Min side',
+        visStil: pille(!!l.vis),
+        visVeksle: () => this.hlaKall({ handling: 'vis', id: l.id, paa: l.vis ? 0 : 1 }),
         epost: u.epost[l.id] !== undefined ? u.epost[l.id] : (l.epost || ''),
         epostEndre: (e) => this.hlaSkriv('epost', l.id, e.target.value),
         maater: [

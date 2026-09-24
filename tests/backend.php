@@ -14814,7 +14814,8 @@ sjekk('… og innholdet har plass under den, paa telefonen',
 sjekk('bare det stedet du staar paa tegnes',
     // Var seks. Chatten fikk sitt eget valg, og verkstedsruta aapnes av
     // pilla i stedet for aa staa fast paa forsiden — to blokker mindre.
-    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 4
+    // Fem: «Del paa Instagram» flyttet fra Butikk til forsiden 24. september.
+    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 5
     && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 3
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneSelg }}"') === 1
@@ -19110,16 +19111,34 @@ sjekk('… og beloep med oere vises med oere',
     && str_contains($hlAdmin, 'if ($ore % 100 === 0) {'));
 
 $hlS = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('kortet staar paa Min side, under internbutikken',
+// Eieren, 24. september 2026: «her vil jeg ha et bedre oppsett» — handlelista
+// staar bredt til venstre, internbutikken og historikken til hoeyre.
+sjekk('kortet staar paa Min side, ved siden av internbutikken',
     str_contains($hlS, '<sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">')
     && str_contains($hlS, '<div id="minside-handleliste"')
-    && strpos($hlS, 'id="minside-internbutikk"') < strpos($hlS, 'id="minside-handleliste"'));
+    && strpos($hlS, 'id="minside-handleliste"') < strpos($hlS, 'id="minside-internbutikk"'));
 // Eieren, 14. september: «vi trenger navn og artikkelnummer, ikke hele
 // beskrivelsen paa produktet», og «jeg vil ikke at det brekker». Navnet
 // kuttes med «…» framfor aa brekke; nummeret staar fast og kuttes aldri.
 sjekk('… og varelinja staar paa én linje, med nummeret i behold',
-    str_contains($hlS, 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</div>')
-    && str_contains($hlS, 'style="flex: none; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.nummer }}</div>'));
+    str_contains($hlS, 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.navn }}</span>')
+    && str_contains($hlS, 'font-variant-numeric: tabular-nums; white-space: nowrap;">{{ h.nummer }}</span>'));
+// Eieren, 24. september 2026: «egne felt, antall, artikkelnummer, varenavn»,
+// leverandoeren admin har slaatt paa, og soek i nettbutikken dens.
+sjekk('… og linja har leverandoer, artikkelnummer, varenavn og antall',
+    str_contains($hlS, 'aria-label="Artikkelnr."') && str_contains($hlS, 'aria-label="Varenavn"')
+    && str_contains($hlS, '<sc-for list="{{ hlLev }}" as="l"')
+    && str_contains($hlS, '<a href="{{ hlLevSokUrl }}" target="_blank" rel="noopener"'));
+sjekk('… og gebyret og frakten staar paa kortet',
+    str_contains($hlS, "'administrasjonsgebyr på ' + gebyrTekst + ' % og en andel av frakten.'"));
+$hl208 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/208_handleliste_leverandorer_og_frakt.sql');
+sjekk('… og migrasjon 208 legger til leverandoer, synlighet, soek og frakt',
+    str_contains($hl208, 'ADD COLUMN IF NOT EXISTS leverandor_id BIGINT UNSIGNED NULL')
+    && str_contains($hl208, 'ADD COLUMN IF NOT EXISTS vis_medlemmer TINYINT(1) NOT NULL DEFAULT 0')
+    && str_contains($hl208, "UPDATE leverandorer SET sok_url = 'https://cerama.no/Default.aspx?ID=4069&q={q}', vis_medlemmer = 0"));
+sjekk('… og frakten deles og staar som egen linje paa kravet',
+    str_contains($hlAdmin, "\$m['fraktOre'] += (int) ceil(\$ore / count(\$med));")
+    && str_contains($hlAdmin, "'tittel'     => 'Andel av frakt',"));
 sjekk('… og soekefeltet finnes',
     str_contains($hlS, 'placeholder="Søk etter leire, glasur, verktøy …"'));
 // Fanen i admin. Varene og ordrene staar til side naar handlelistene vises —

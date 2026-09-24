@@ -27337,7 +27337,7 @@ class Component extends DCLogic {
     this.setState({ bTidHenter: true, bTidFeil: null });
     fetch('/api/tider.php?kursId=' + encodeURIComponent(kursId)
           + '&dato=' + encodeURIComponent(dato)
-          + '&antall=' + (this.state.bAntall || 1), { credentials: 'same-origin' })
+          + '&antall=' + this.valgtAntall(), { credentials: 'same-origin' })
       .then(r => r.json())
       .then(d => {
         const tider = (d && d.tider) || [];
@@ -29533,6 +29533,35 @@ class Component extends DCLogic {
    * Sto midt inne i knappeteksten. Naa staar den her, fordi linja over
    * Vipps-knappen maa si det samme tallet — se «bookBetalLinje».
    */
+  /**
+   * Plassene som er valgt — det samme tallet som prisen regnes av.
+   *
+   * Bestillingen sendte «antall: 1» uansett hva kunden valgte, saa tre
+   * personer ble lagret som én (og betalte for én). Funnet 24. september
+   * 2026, da en kunde bestilte Paint on Pots for tre.
+   */
+  /**
+   * Nytt antall plasser. Paint on Pots viser bare tider med plass til alle,
+   * saa tidene hentes paa nytt — og tida som staar valgt blir staaende om
+   * den fortsatt har plass.
+   */
+  byttAntall(nytt) {
+    const ny = { bAntallN: nytt };
+    if (this.folgerApningstid() && this.state.bTidDato) {
+      ny.bTidOnsket = { dato: this.state.bTidDato, tid: this.state.bTid || '' };
+      ny.bTidDato = '';
+      this._tiderSpurt = null;
+    }
+    this.setState(ny);
+  }
+
+  valgtAntall() {
+    const k = this.state.valgtKurs || {};
+    if ((k.tema || '') === 'Medlemskap') return 1;
+    const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
+    return Math.max(1, Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12));
+  }
+
   bookSum() {
     const k = this.state.valgtKurs || {};
     if (k.price === 'Gratis') return 'Gratis';
@@ -45513,7 +45542,7 @@ class Component extends DCLogic {
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        oktId: oktId || 0, antall: 1,
+        oktId: oktId || 0, antall: this.valgtAntall(),
         // Tomme naar kurset har faste datoer. Serveren ser paa oektId da.
         kursId: kursId || 0,
         tid: tid && tidDato ? (tidDato + ' ' + tid) : '',
@@ -49009,8 +49038,8 @@ class Component extends DCLogic {
         return {
           bAntTekst: n + (n === 1 ? ' plass' : ' plasser'),
           bAntMaksTekst: 'Maks ' + maks + ' plasser på dette kurset',
-          bAntMinus: () => this.setState({ bAntallN: Math.max(1, n - 1) }),
-          bAntPlus: () => this.setState({ bAntallN: Math.min(maks, n + 1) }),
+          bAntMinus: () => this.byttAntall(Math.max(1, n - 1)),
+          bAntPlus: () => this.byttAntall(Math.min(maks, n + 1)),
         };
       })(),
       // Levering. Prisen kommer fra basen, ikke fra en tekst her inne.

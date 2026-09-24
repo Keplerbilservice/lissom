@@ -21842,6 +21842,11 @@ window.__resources = {
 
         <!-- ── Kunnskapsbank ──────────────────────────────────────────── -->
         <sc-if value="{{ mkErBank }}" hint-placeholder-val="{{ false }}">
+          <!-- «Ny artikkel» aapner skrivingen (mkFane 'artikler'). Var en egen
+               fane, «Artikkel», ved siden av lista. Eieren, 24. september 2026. -->
+          <div style="margin-bottom: var(--space-5);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="sparkles" on-click="{{ mkNyArtikkel }}" hint-size="auto,44px">Ny artikkel</x-import>
+          </div>
           <div class="lx-pillerad" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
             <sc-for list="{{ mkBankFiltre }}" as="f" hint-placeholder-count="7">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
@@ -40059,7 +40064,7 @@ class Component extends DCLogic {
         // Eieren, 24. september 2026: «artikler kan du fjerne, den ligger
         // under skriv. og send bør vel hete tilbud / nyhetsbrev». Lista over
         // artiklene er en fane under Skriv (eierens valg samme dag).
-        ['Skriv',    'adminmarked', { mkFane: 'artikler' }],
+        ['Skriv',    'adminmarked', { mkFane: 'bank' }],
         ['Tilbud / nyhetsbrev', 'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
         ['Google',   'adminseo',    { seoFra: 'marked' }],
         ['Oppsett',  'adminmarked', { mkFane: 'innstillinger' }],
@@ -40236,7 +40241,7 @@ class Component extends DCLogic {
   markedGruppe() {
     const fane = this.state.mkFane || 'tavle';
     const g = [
-      ['Tavle', ['tavle']], ['Medlemsforslag', ['forslag']], ['Skriv', ['artikler', 'bank', 'brev', 'sosialt', 'kurs']],
+      ['Tavle', ['tavle']], ['Medlemsforslag', ['forslag']], ['Skriv', ['bank', 'artikler', 'brev', 'sosialt', 'kurs']],
       ['Tilbud / nyhetsbrev', ['send']], ['Google', ['seo', 'geo', 'analyse']],
       ['Oppsett', ['innstillinger', 'assistent', 'epost']],
     ].find(x => x[1].indexOf(fane) !== -1);
@@ -62454,7 +62459,7 @@ class Component extends DCLogic {
         // AI-en. De fire siste er ikke faner her, men doerer til andre
         // skjermer — de staar i lista saa pillene faar navn.
         const FANER = [
-          ['tavle', 'Tavle'], ['kurs', 'Kursmarkedsføring'], ['artikler', 'Artikkel'],
+          ['tavle', 'Tavle'], ['kurs', 'Kursmarkedsføring'], ['artikler', 'Ny artikkel'],
           ['bank', 'Artikler'], ['brev', 'Nyhetsbrev'], ['sosialt', 'Sosiale medier'],
           ['seo', 'SEO'], ['geo', 'GEO'], ['analyse', 'Analyse'],
           ['assistent', 'AI og Assistent'], ['innstillinger', 'Google-ID-er'],
@@ -62494,7 +62499,10 @@ class Component extends DCLogic {
           ['Medlemsforslag', ['forslag']],
           // «Artikler» ble en fane under Skriv, og «Send» heter
           // «Tilbud / nyhetsbrev». Eieren, 24. september 2026.
-          ['Skriv',    ['artikler', 'bank', 'brev', 'sosialt', 'kurs']],
+          // «Artikkel» og «Artikler» ble én fane: lista, med «Ny artikkel»
+          // oeverst. Eieren, 24. september 2026: «men hvorfor artikler og
+          // artikkel» — og valgte «slå sammen».
+          ['Skriv',    ['bank', 'artikler', 'brev', 'sosialt', 'kurs']],
           ['Tilbud / nyhetsbrev', ['send']],
           ['Google',   ['seo', 'geo', 'analyse']],
           ['Oppsett',  ['innstillinger', 'assistent', 'epost']],
@@ -62553,10 +62561,11 @@ class Component extends DCLogic {
           // Under staar fanene i gruppa man er i. «Tavle» er alene om sin,
           // saa da staar raden tom og skjules.
           mkHarUnder: minGruppe[1].length > 1,
-          mkUnderfaner: minGruppe[1].map(n => ({
-            navn: navnPaa(n), stil: velgStil(fane === n),
+          mkUnderfaner: minGruppe[1].filter(n => n !== 'artikler').map(n => ({
+            navn: navnPaa(n), stil: velgStil(fane === n || (n === 'bank' && fane === 'artikler')),
             velg: () => gaaTil(n),
           })),
+          mkNyArtikkel: () => this.setState({ mkFane: 'artikler' }),
           // Overskrifta sier hvor du er: «Skriv · Nyhetsbrev». Gruppene med
           // én fane heter bare det gruppa heter.
           mkFaneTittel: minGruppe[1].length > 1

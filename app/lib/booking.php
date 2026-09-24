@@ -1176,17 +1176,20 @@ final class Booking
             'kurs'  => (string) $b['tittel'],
             'naar'  => $naar,
             'ordre' => (string) $b['tittel'] . ($naar !== '' ? ' — ' . $naar : ''),
-            'belop' => self::kroner((int) $b['belop_ore']),
+            // Ingen pris i bekreftelsen. Eieren, 24. september 2026: «jeg vil
+            // ikke at de skal ha pris i bekreftelses eposter, så fjern dette
+            // på alle steder» — valgte paameldinger til kurs og events.
+            // «{belop}» staar tomt, saa en mal som er skrevet om for haand
+            // med feltet i heller ikke viser et tall.
+            'belop' => '',
             // ── Hva som skjer med pengene ─────────────────────────────
             //
-            // Tomt naar det er gjort opp — da sier malen alt som trengs.
-            // Valgte kunden aa betale ved oppmoete, maa summen og maaten
-            // staa i kvitteringa: hen har ikke betalt noe, og skal vite hva
-            // som venter. Migrasjon 197 legger «{betaling}» bakerst i malen,
-            // men bare hvis den ikke er skrevet om for haand.
+            // Tomt naar det er gjort opp. Valgte kunden aa betale ved
+            // oppmoete, staar maaten — ikke summen. Migrasjon 197 legger
+            // «{betaling}» bakerst i malen, men bare hvis den ikke er
+            // skrevet om for haand.
             'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1
-                ? 'Du betaler ' . self::kroner((int) $b['belop_ore'])
-                  . ' ved oppmøte — kontant eller Vipps.'
+                ? 'Du betaler ved oppmøte — kontant eller Vipps.'
                 : '',
         ], 'booking', $bookingId);
 

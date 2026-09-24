@@ -144,7 +144,11 @@ final class Config
         }
         self::$base = [];
         try {
-            if (class_exists('DB', false) && DB::harTabell('innstillinger')) {
+            // Med autolasteren (22. september 2026) er DB ikke lastet foer
+            // noen bruker den. Sto det «class_exists('DB', false)» her, fikk
+            // den som spurte Config foerst — kalenderfeeden — en tom liste,
+            // og telefonen fikk 404 paa adressen admin viste.
+            if (class_exists('DB') && DB::harTabell('innstillinger')) {
                 foreach (DB::alle('SELECT nokkel, verdi FROM innstillinger') as $r) {
                     self::$base[(string) $r['nokkel']] = (string) ($r['verdi'] ?? '');
                 }

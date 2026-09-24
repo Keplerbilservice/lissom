@@ -82,9 +82,23 @@ final class Medlemsforslag
      *
      * @throws RuntimeException med tekst som kan vises til medlemmet
      */
+    /** Minste side paa et bilde til Instagram. Instagram viser 1080 piksler. */
+    public const MIN_KANT = 1080;
+
     public static function taImotBilde(array $fil): string
     {
-        $navn = Bilder::taImot($fil, self::MAPPE);
+        // Eieren, 24. september 2026: et bilde paa 160 × 160 gikk ut paa
+        // Instagram og ble «veldig dårlig kvalitet». Min side stopper det
+        // alt naar bildet velges; her stoppes det ogsaa, i tilfelle.
+        $tmp = (string) ($fil['tmp_name'] ?? '');
+        $info = $tmp !== '' ? @getimagesize($tmp) : false;
+        if ($info !== false && min((int) $info[0], (int) $info[1]) < self::MIN_KANT) {
+            throw new RuntimeException('Bildet er for lite (' . (int) $info[0] . ' × ' . (int) $info[1]
+                . '). Velg originalbildet fra kamerarullen – minst ' . self::MIN_KANT . ' piksler bredt.');
+        }
+        // Stoerre og skarpere enn andre opplastinger: 1400 piksler ga et
+        // staaende mobilbilde bare 1050 i bredden.
+        $navn = Bilder::taImot($fil, self::MAPPE, 2048, 90);
         $sti = Bilder::mappe(self::MAPPE) . '/' . $navn;
         self::tilInstagramForhold($sti);
         return $navn;
@@ -118,7 +132,7 @@ final class Medlemsforslag
         }
         $ny = imagecreatetruecolor($nyB, $nyH);
         imagecopy($ny, $kilde, 0, 0, intdiv($b - $nyB, 2), intdiv($h - $nyH, 2), $nyB, $nyH);
-        imagejpeg($ny, $sti, 85);
+        imagejpeg($ny, $sti, 90);
         imagedestroy($kilde);
         imagedestroy($ny);
     }

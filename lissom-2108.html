@@ -21265,10 +21265,26 @@ window.__resources = {
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ukesfordelingen kommer når det har gått noen uker med betalinger.</p>
             </sc-if>
             <div style="height: 1px; background: var(--border-subtle); margin: var(--space-8) 0 var(--space-6);"></div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5);">
+            <!-- Hvor pengene kom fra.
+                 Eieren, 24. september 2026, med raden ringet inn: «synes du
+                 denne teksten er bra plassert?»
+                 Nei. Raden sto paa fire faste kolonner med tre ting i. Paa en
+                 telefon ble hver kolonne saa smal at «KURS OG EVENTS» brakk
+                 over to linjer — og da skled beloepet under den ned et hakk
+                 mens «kr. 700,-» og «kr. 10 240,-» ble staaende hoeyere.
+                 Ingenting holdt radene i flukt.
+                 To ting retter det. Kolonnene faar en minstebredde og bryter
+                 til to paa en telefon i stedet for aa presses til fire. Og
+                 overskrifta faar plass til to linjer og legger seg i bunnen
+                 av dem, saa beloepene begynner paa samme hoeyde enten navnet
+                 brekker eller ikke — og uten et tomrom under de korte.
+                 Tegnet paa 390 piksler, med «Gavekort og tilgodelapper» ved
+                 siden av «Butikk»: den lange brekker, den korte faller ned,
+                 og beloepene staar i flukt. -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-5);">
               <sc-for list="{{ okonomiKilder }}" as="k" hint-placeholder-count="4">
                 <div onClick="{{ k.velg }}" style="cursor: pointer;">
-                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ k.navn }}</div>
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); line-height: 1.3; min-height: 2.6em; display: flex; align-items: flex-end;">{{ k.navn }}</div>
                   <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin-top: 6px;">{{ k.sum }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ k.andel }} % av total</div>
                 </div>

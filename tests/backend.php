@@ -18107,6 +18107,26 @@ sjekk('… og kortformen runder slik den skal',
     && Booking::kortKroner(-2682000) === "\u{2212}27k",
     Booking::kortKroner(547000) . ' / ' . Booking::kortKroner(2682000));
 
+// ── Raden «hvor pengene kom fra» ─────────────────────────────────────────
+//
+// Eieren, 24. september 2026, med raden ringet inn: «synes du denne teksten er
+// bra plassert?» — og: «jeg har bedt om dette flere ganger».
+//
+// Raden sto paa fire faste kolonner med tre ting i. Paa en telefon ble hver
+// kolonne saa smal at «KURS OG EVENTS» brakk over to linjer, og da skled
+// beloepet under den ned et hakk mens «kr. 700,-» og «kr. 10 240,-» ble
+// staaende hoeyere.
+$kildeFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('kildekolonnene bryter i stedet for aa presses sammen',
+    str_contains($kildeFil, 'grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-5);'));
+
+// Overskrifta faar plass til to linjer og legger seg i bunnen av dem. Da
+// begynner beloepene paa samme hoeyde enten navnet brekker eller ikke — og
+// uten et tomrom under de korte.
+sjekk('… og overskriftene holder beloepene i flukt',
+    str_contains($kildeFil, 'line-height: 1.3; min-height: 2.6em; display: flex; align-items: flex-end;">{{ k.navn }}</div>'));
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme

@@ -25037,6 +25037,27 @@ const TALLDETALJER = {
 class Component extends DCLogic {
   state = { side: 'forside', innstemplet: true, synlig: true, kursFilter: 'Kursene', detalj: null };
 
+  /**
+   * Meldingen midt paa skjermen (kvittering) har tittel, forklaring og farge.
+   * Mange steder setter bare tittelen — da ble forklaringen og fargen fra
+   * forrige melding staaende: «Du må velge et bilde» fikk «Du har brukt 0
+   * timer denne måneden» under seg, og «Gikk ikke» fikk det gronne haket.
+   * (Geminis funksjonstest, 24. september 2026.) Her, der alle meldinger gaar
+   * gjennom (setState under): mangler forklaringen, er den tom; mangler
+   * fargen, er den roed for en feil og ellers vanlig.
+   */
+  kvitteringRydd(update) {
+    if (update && typeof update === 'object' && typeof update.kvittering === 'string' && update.kvittering) {
+      const ekstra = {};
+      if (!('kvitteringDetalj' in update)) ekstra.kvitteringDetalj = '';
+      if (!('kvitteringTone' in update)) {
+        ekstra.kvitteringTone = /^(gikk ikke|fikk ikke|kunne ikke|klarte ikke|ble ikke|noe gikk galt|du må|mangler|feil|ugyldig|krever)|feilet/i.test(update.kvittering) ? 'danger' : null;
+      }
+      update = { ...update, ...ekstra };
+    }
+    return update;
+  }
+
   // fhRolle nullstilles: en forhandsvisning skal ikke folge med videre til
   // neste skjerm. Den settes bare av de to kortene i admin.
   go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s, fhRolle: '', fhFra: '' }); window.scrollTo(0, 0); }; }
@@ -25205,6 +25226,21 @@ class Component extends DCLogic {
    *
    * @return {boolean} om varen ble funnet
    */
+  /**
+   * «Legg i kurv» fra varesida paa serveren (/butikk/<id>?vare=1): varen
+   * legges i kurven slik knappen i appen gjor det, og ?vare=1 tas bort fra
+   * adressen, saa en ny lasting ikke legger den i én gang til.
+   */
+  leggVareFraAdresse(id) {
+    const v = (this.state.butikkvareListe || []).find(x => Number(x.id) === Number(id));
+    try { window.history.replaceState(window.history.state, '', window.location.pathname); } catch (e) { /* adressen blir staaende */ }
+    if (!v) return;
+    const p = this.varekort(v);
+    if (p.utsolgt) return;
+    this.leggTil(p.id ? '#' + p.id : p.title);
+    this.setState({ piProdukt: null });
+  }
+
   aapneVare(id) {
     const v = (this.state.butikkvareListe || []).find(x => Number(x.id) === Number(id));
     if (!v) return false;
@@ -26665,6 +26701,7 @@ class Component extends DCLogic {
   // kundeutgaven, lastes den sida i stedet — ellers ville en skjerm som
   // ikke finnes staatt tom.
   setState(endring, etterpaa) {
+    endring = this.kvitteringRydd(endring);
     const side = endring && typeof endring === 'object' ? endring.side : undefined;
     const sti = side ? Component.SERVERSIDER[side] : undefined;
     // Forside, kurslista, nyheter og nyttig info finnes ikke i appen lenger
@@ -26934,7 +26971,12 @@ class Component extends DCLogic {
     // adressen slik den heter naa.
     const vareTreff = sti.match(/^\/butikk\/(\d+)(?:-[^/]*)?$/);
     if (vareTreff) {
-      return { sti, side: 'butikk', vareId: parseInt(vareTreff[1], 10) };
+      // ?vare=1 er «Legg i kurv» paa varesida fra serveren (butikk.php).
+      // Da skal varen i kurven, ikke bare aapnes — foer maatte kunden
+      // trykke «Legg i kurv» en gang til, og kurven sto tom (Geminis
+      // funksjonstest, 24. september 2026).
+      const leggIKurv = new URLSearchParams(window.location.search).get('vare') === '1';
+      return { sti, side: 'butikk', vareId: parseInt(vareTreff[1], 10), leggIKurv };
     }
 
     // Ingen treff. For sto skjermen igjen paa forsida, og den som hadde
@@ -26975,9 +27017,11 @@ class Component extends DCLogic {
       // vareslenke aapnet butikken uten aa vise varen det gjaldt.
       if (this.aapneVare(rute.vareId)) {
         this._ventendeVare = null;
+        if (rute.leggIKurv) this.leggVareFraAdresse(rute.vareId);
         return;
       }
       this._ventendeVare = rute.vareId;
+      this._ventendeVareKurv = !!rute.leggIKurv;
       this.setState({ side: 'butikk', piProdukt: null });
       return;
     }
@@ -29229,8 +29273,12 @@ class Component extends DCLogic {
           // oensket her. Naa er varene der, og varen kan aapnes.
           if (!this._ventendeVare) return;
           const id = this._ventendeVare;
+          const kurv = this._ventendeVareKurv;
           this._ventendeVare = null;
-          if (!this.aapneVare(id)) {
+          this._ventendeVareKurv = false;
+          if (this.aapneVare(id)) {
+            if (kurv) this.leggVareFraAdresse(id);
+          } else {
             // Varen finnes ikke lenger, eller er en medlemsvare. Da skal
             // adressen si fra framfor aa late som butikken er svaret.
             this.setState({ side: 'ikkefunnet' });

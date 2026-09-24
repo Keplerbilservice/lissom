@@ -40829,6 +40829,13 @@ class Component extends DCLogic {
    * medlemskap og butikksalg viser beloepet og registreres som foer.
    */
   apneTaBetalt(r, maate) {
+    // «2026-09-24» fra kalenderen blir «torsdag 24. september».
+    if (r && r.under) {
+      r = Object.assign({}, r, { under: r.under.replace(/(\d{4})-(\d{2})-(\d{2})/, (m, a, b, c) => {
+        const d = new Date(+a, +b - 1, +c);
+        return d.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' });
+      }) });
+    }
     this.setState({
       tbRad: r, tbMaate: maate || '', tbKode: '',
       tbAntall: String(r.antall || 1),
@@ -40846,7 +40853,11 @@ class Component extends DCLogic {
     const rabatt = Math.max(0, Math.min(100, parseFloat(String(this.state.tbRabatt || '').replace(',', '.')) || 0));
     const belopFelt = String(this.state.tbBelop || '').trim();
     const skrevet = belopFelt !== '' ? Math.round(parseFloat(belopFelt.replace(/\s/g, '').replace(',', '.')) * 100) : null;
-    const regnet = erKurs && r.prisOre ? Math.round(r.prisOre * antall * (1 - rabatt / 100)) : (r.belopOre || 0);
+    // Beloepet som staar paa paameldingen, til antall eller rabatt endres —
+    // det kan vaere satt for haand (Maria, 24. september: kr 8 866 for sju,
+    // uten rabatt i prosent). Da regnes det paa nytt av pris × antall.
+    const uendret = antall === (r.antall || 1) && rabatt === (r.rabatt || 0);
+    const regnet = erKurs && r.prisOre && !uendret ? Math.round(r.prisOre * antall * (1 - rabatt / 100)) : (r.belopOre || 0);
     const sum = skrevet !== null && !isNaN(skrevet) ? skrevet : regnet;
     const maate = this.state.tbMaate || '';
     const pille = (paa) => ({
@@ -40873,7 +40884,7 @@ class Component extends DCLogic {
       tbSettKode: e => this.setState({ tbKode: e.target.value }),
       tbSumLinje: maate === 'Gratis' ? 'Gratis'
         : (skrevet !== null ? 'Beløpet du skrev'
-          : (erKurs && r.prisOre ? antall + ' × ' + kr(r.prisOre) + (rabatt ? ' − ' + String(rabatt).replace('.', ',') + ' %' : '') : 'Å betale')),
+          : (erKurs && r.prisOre && !uendret ? antall + ' × ' + kr(r.prisOre) + (rabatt ? ' − ' + String(rabatt).replace('.', ',') + ' %' : '') : 'Å betale')),
       tbSum: maate === 'Gratis' ? kr(0) : kr(sum),
       tbIkkeKlar: !klar,
       tbKnappTekst: maate ? 'Registrer betaling – ' + maate : 'Velg betalingsmåte',

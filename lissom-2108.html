@@ -40983,6 +40983,17 @@ class Component extends DCLogic {
         return d.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' });
       }) });
     }
+    // Rabatt gitt som beloep, ikke som prosent (Maria, 24. september: kr 8 866
+    // for sju paa Sip & Clay = 15 % av 7 × 1 490). Da sto feltet tomt, og
+    // skrev eieren 15 der, ble beloepet det samme — det saa ut som ingenting
+    // virket. Naa regnes prosenten ut av beloepet, saa feltet viser den.
+    if (r && !r.rabatt && r.prisOre && r.belopOre) {
+      const full = r.prisOre * (r.antall || 1);
+      if (r.belopOre < full) {
+        const p = Math.round((1 - r.belopOre / full) * 1000) / 10;
+        if (p > 0 && p < 100) r = Object.assign({}, r, { rabatt: p });
+      }
+    }
     this.setState({
       tbRad: r, tbMaate: maate || '', tbKode: '',
       tbAntall: String(r.antall || 1),

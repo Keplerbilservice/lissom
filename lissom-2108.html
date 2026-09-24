@@ -9681,6 +9681,10 @@ window.__resources = {
                     <label style="{{ mpEtikett }}">Antall</label>
                     <input value="{{ klDAntall }}" onChange="{{ settKlDAntall }}" inputmode="numeric" style="{{ mpFeltStil }}">
                   </div>
+                  <div style="flex: 0 1 110px; min-width: 0;">
+                    <label style="{{ mpEtikett }}">Rabatt %</label>
+                    <input value="{{ klDRabatt }}" onChange="{{ settKlDRabatt }}" placeholder="0" inputmode="decimal" style="{{ mpFeltStil }}">
+                  </div>
                   <div style="flex: 1 1 180px; min-width: 0;">
                     <label style="{{ mpEtikett }}">Beløp i kroner</label>
                     <input value="{{ klDBelop }}" onChange="{{ settKlDBelop }}" placeholder="{{ klDBelopHint }}" inputmode="numeric" style="{{ mpFeltStil }}">
@@ -16266,6 +16270,10 @@ window.__resources = {
                   <div style="flex: 0 1 140px; min-width: 0;">
                     <label style="{{ mpEtikett }}">Antall</label>
                     <input value="{{ endreAntall }}" onChange="{{ settEndreAntall }}" inputmode="numeric" style="{{ mpFeltStil }}">
+                  </div>
+                  <div style="flex: 0 1 110px; min-width: 0;">
+                    <label style="{{ mpEtikett }}">Rabatt %</label>
+                    <input value="{{ endreRabatt }}" onChange="{{ settEndreRabatt }}" placeholder="0" inputmode="decimal" style="{{ mpFeltStil }}">
                   </div>
                   <div style="flex: 1 1 220px; min-width: 0;">
                     <label style="{{ mpEtikett }}">Beløp i kroner</label>
@@ -43635,15 +43643,18 @@ class Component extends DCLogic {
               settKlDAntall: e => this.setState({ klDAntall: e.target.value }),
               klDBelop: this.state.klDBelop ?? '',
               settKlDBelop: e => this.setState({ klDBelop: e.target.value }),
-              klDBelopHint: 'Tomt = prisen ganger antallet',
+              klDRabatt: this.state.klDRabatt ?? '',
+              settKlDRabatt: e => this.setState({ klDRabatt: e.target.value }),
+              klDBelopHint: 'Tomt = pris × antall, minus rabatten',
               klDEndreUtfor: () => {
                 if (!dv || !dv.bookingId) return;
                 const antall = String(this.state.klDAntall ?? '').trim();
                 const belop  = String(this.state.klDBelop ?? '').trim();
-                if (antall === '' && belop === '') return;
+                const rabatt = String(this.state.klDRabatt ?? '').trim();
+                if (antall === '' && belop === '' && rabatt === '') return;
                 this.klKall('/api/admin/pamelding.php',
-                  { handling: 'endre', id: dv.bookingId, antall: antall, belop: belop })
-                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDAntall: null, klDBelop: '' }); });
+                  { handling: 'endre', id: dv.bookingId, antall: antall, belop: belop, rabatt: rabatt })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDAntall: null, klDBelop: '', klDRabatt: '' }); });
               },
               // ── Betalingen, begge veier ─────────────────────────────
               //
@@ -59315,19 +59326,22 @@ class Component extends DCLogic {
           settEndreBelop: e => this.setState({ endreBelop: e.target.value }),
           // Hva som skjer om feltet staar tomt. Sier det, framfor aa la
           // eieren gjette paa om pengene foelger antallet.
-          endreBelopHint: 'Tomt = prisen ganger antallet',
-          endreAvbryt: () => this.setState({ endreRad: null, endreAntall: '', endreBelop: '' }),
+          endreRabatt: this.state.endreRabatt ?? '',
+          settEndreRabatt: e => this.setState({ endreRabatt: e.target.value }),
+          endreBelopHint: 'Tomt = pris × antall, minus rabatten',
+          endreAvbryt: () => this.setState({ endreRad: null, endreAntall: '', endreBelop: '', endreRabatt: '' }),
           endreLagre: () => {
             const id = this.state.endreRad;
             if (!id) return;
             const antall = String(this.state.endreAntall ?? '').trim();
             const belop  = String(this.state.endreBelop ?? '').trim();
-            if (antall === '' && belop === '') {
+            const rabatt = String(this.state.endreRabatt ?? '').trim();
+            if (antall === '' && belop === '' && rabatt === '') {
               this.setState({ endreRad: null });
               return;
             }
-            this.pameldingKall({ handling: 'endre', id, antall, belop });
-            this.setState({ endreRad: null, endreAntall: '', endreBelop: '' });
+            this.pameldingKall({ handling: 'endre', id, antall, belop, rabatt });
+            this.setState({ endreRad: null, endreAntall: '', endreBelop: '', endreRabatt: '' });
           },
           flyttUtfor: () => {
             const id = this.state.flyttId;

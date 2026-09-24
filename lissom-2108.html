@@ -3129,6 +3129,14 @@ window.__resources = {
                   <button type="button" onClick="{{ bVisFlereDatoer }}" style="{{ bFlereDatoerStil }}">{{ bFlereDatoerTekst }}</button>
                 </sc-if>
                 </div>
+                <!-- Dreiekurs: «Passer ikke oensket dato?». Eieren, 24. september
+                     2026 (GO paa skissen). Samme som kursside.php. -->
+                <sc-if value="{{ bVisTidForesporsel }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin: 0 0 var(--space-6);">
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-align: center;">Passer ikke ønsket dato?</p>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ goForesporselTid }}" hint-size="100%,52px">Send oss en forespørsel om tid</x-import>
+                  </div>
+                </sc-if>
                 <sc-if value="{{ bHarTider }}" hint-placeholder-val="{{ false }}">
                   <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-2);">{{ bTiderTittel }}</div>
                   <sc-if value="{{ bVinduTekst }}" hint-placeholder-val="{{ 'Åpent 10:00–13:00' }}">
@@ -3410,7 +3418,7 @@ window.__resources = {
                 <sc-if value="{{ bVlSkjemaLukket }}" hint-placeholder-val="{{ true }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ bVlApne }}" hint-size="100%,52px">Sett meg på venteliste</x-import>
                   <div style="height: var(--space-3);"></div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ goForesporsel }}" hint-size="100%,52px">Send oss en forespørsel</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ goForesporselTid }}" hint-size="100%,52px">Send oss en forespørsel</x-import>
                 </sc-if>
                 <sc-if value="{{ bVlSkjemaApen }}" hint-placeholder-val="{{ false }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ vlNavn }}" on-change="{{ settVlNavn }}" hint-size="100%,66px"></x-import>
@@ -6127,7 +6135,7 @@ window.__resources = {
                 <label style="display: block; font-weight: 800; font-size: var(--text-sm); color: var(--text-heading); margin-bottom: 4px;">Instagram-brukeren din (valgfritt)</label>
                 <input type="text" value="{{ fsIg }}" onChange="{{ fsIgEndre }}" maxlength="31" style="width: 100%; box-sizing: border-box; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading); margin-bottom: var(--space-4);">
 
-                <button type="button" onClick="{{ fsSend }}" style="{{ fsSendStil }}">Send forslag</button>
+                <button type="button" onClick="{{ mfSend }}" style="{{ fsSendStil }}">Send forslag</button>
                 <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Ett forslag om gangen. Du kan sende et nytt når dette er behandlet.</p>
                 </sc-if>
               </div>
@@ -23606,8 +23614,23 @@ window.__resources = {
     <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin: auto 0; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
       <button type="button" onClick="{{ fsLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 22px; line-height: 1;">×</button>
       <sc-if value="{{ fsIkkeSendt }}" hint-placeholder-val="{{ true }}">
-        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send en forespørsel</h3>
-        <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Uforpliktende — vi svarer som regel samme dag med forslag til opplegg og pris.</p>
+        <!-- «Passer ikke oensket dato?» paa dreiekurs og paa kurs uten
+             datoer: samme skjema, men med kurset, varigheten og antall
+             ganger oeverst. Eieren, 24. september 2026 (GO paa skissen). -->
+        <sc-if value="{{ fsErVanlig }}" hint-placeholder-val="{{ true }}">
+          <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send en forespørsel</h3>
+          <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Uforpliktende — vi svarer som regel samme dag med forslag til opplegg og pris.</p>
+        </sc-if>
+        <sc-if value="{{ fsErTid }}" hint-placeholder-val="{{ false }}">
+          <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send oss en forespørsel om tid</h3>
+          <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi svarer som regel samme dag.</p>
+          <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: var(--space-6); font-size: var(--text-sm); line-height: 1.5; color: var(--text-heading);">
+            <div style="font-weight: 700;">{{ fsKursTittel }}</div>
+            <sc-if value="{{ fsKursVarighet }}" hint-placeholder-val="{{ '3 timer og 30 minutter per gang · 2 ganger' }}">
+              <div style="color: var(--text-body);">{{ fsKursVarighet }}</div>
+            </sc-if>
+          </div>
+        </sc-if>
         <div style="display: flex; flex-direction: column; gap: var(--space-4);">
           <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ fsNavn }}" on-change="{{ settFsNavn }}" hint-size="100%,66px"></x-import>
@@ -23621,7 +23644,12 @@ window.__resources = {
               </sc-for>
             </div>
           </div>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Hva ønsker dere?" placeholder="F.eks. teambuilding for 10 kolleger en torsdag i oktober" value="{{ fsMelding }}" on-change="{{ settFsMelding }}" rows="{{ tre }}" hint-size="100%,110px"></x-import>
+          <sc-if value="{{ fsErVanlig }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Hva ønsker dere?" placeholder="F.eks. teambuilding for 10 kolleger en torsdag i oktober" value="{{ fsMelding }}" on-change="{{ settFsMelding }}" rows="{{ tre }}" hint-size="100%,110px"></x-import>
+          </sc-if>
+          <sc-if value="{{ fsErTid }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Når passer det for dere?" placeholder="F.eks. torsdager etter kl. 18" value="{{ fsMelding }}" on-change="{{ settFsMelding }}" rows="{{ tre }}" hint-size="100%,110px"></x-import>
+          </sc-if>
           <sc-if value="{{ fsFeil }}" hint-placeholder-val="{{ false }}">
             <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600;">{{ fsFeil }}</p>
           </sc-if>
@@ -28112,7 +28140,14 @@ class Component extends DCLogic {
   }
 
   apneForesporsel() {
-    this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
+    this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTid: false });
+  }
+
+  // «Send oss en forespoersel om tid»: samme skjema, med kurset som staar
+  // aapent (valgtKurs) oeverst. Antallet nullstilles, for valgene er andre
+  // (1–4 og «5 eller flere») enn i gruppeskjemaet (2–5, 6–10, 11–16).
+  apneForesporselTid() {
+    this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTid: true, fsAntall: null });
   }
 
   goNaa(side, filter) {
@@ -29115,6 +29150,13 @@ class Component extends DCLogic {
       });
   }
 
+  // Kurset skjemaet gjelder naar det er aapnet som «forespoersel om tid»,
+  // ellers null. Staar ingen kurs aapent, er det det vanlige skjemaet.
+  fsTidKurs() {
+    const k = this.state.valgtKurs;
+    return (this.state.fsTid && k && k.title) ? k : null;
+  }
+
   sendForesporsel() {
     const s = this.state;
     if (this._fsPagaar) return;
@@ -29127,7 +29169,7 @@ class Component extends DCLogic {
       body: JSON.stringify({
         navn: (s.fsNavn || '').trim(),
         kontakt: (s.fsKontakt || '').trim(),
-        type: s.fsType || '',
+        type: this.fsTidKurs() ? ('Forespørsel om tid: ' + this.fsTidKurs().title).slice(0, 64) : (s.fsType || ''),
         antall: s.fsAntall ? String(s.fsAntall) : '',
         melding: (s.fsMelding || '').trim(),
       }),
@@ -30790,7 +30832,9 @@ class Component extends DCLogic {
       fsTagsEndre: (e) => this.setState({ fsTags: e.target.value }),
       fsIg: st.fsIg || '',
       fsIgEndre: (e) => this.setState({ fsIg: e.target.value }),
-      fsSend: () => this.fsSend(),
+      // Eget navn: «fsSend» er «Send forespørsel» i forespoerselsskjemaet, og
+      // denne sto etter den i renderVals og tok over knappen der (24. sep 2026).
+      mfSend: () => this.fsSend(),
       fsSendStil: {
         appearance: 'none', cursor: st.fsSender ? 'wait' : 'pointer', width: '100%',
         border: 'none', borderRadius: 'var(--radius-pill)', padding: '12px 18px',
@@ -34530,7 +34574,7 @@ class Component extends DCLogic {
       if (rute.side === 'kontakt') this.setState({ ktApen: true, ktSendt2: false, ktFeil: null });
       // Forsida ogsaa: «Er dere en gruppe … Les mer» paa serversida — og
       // kurssida: «Send oss en forespoersel» paa et kurs uten datoer.
-      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs' || rute.side === 'forside' || rute.side === 'booking') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
+      if (rute.side === 'bedrift' || rute.side === 'paintonpots' || rute.side === 'kurs' || rute.side === 'forside' || rute.side === 'booking') this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTid: rute.side === 'booking' });
     }
     this._popstate = (e) => {
       // Hvor dypt vi staar naa — se tilbakeVals().
@@ -47409,7 +47453,7 @@ class Component extends DCLogic {
         };
       })(),
       kursAlle: this.filtrerKurs(this.kursKort()),
-      bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null }),
+      bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTid: false }),
       ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null }),
       ktApen: !!this.state.ktApen,
       ktLukk: () => this.setState({ ktApen: false }),
@@ -47426,6 +47470,10 @@ class Component extends DCLogic {
       fsApen: !!this.state.fsApen,
       fsLukk: () => this.setState({ fsApen: false }),
       fsIkkeSendt: !this.state.fsSendt2,
+      fsErTid: this.fsTidKurs() !== null,
+      fsErVanlig: this.fsTidKurs() === null,
+      fsKursTittel: (this.fsTidKurs() || {}).title || '',
+      fsKursVarighet: (this.fsTidKurs() || {}).duration || '',
       fsSendt: !!this.state.fsSendt2,
       fsNavn: this.state.fsNavn || '',
       settFsNavn: e => this.setState({ fsNavn: e.target.value, fsFeil: null }),
@@ -47435,8 +47483,8 @@ class Component extends DCLogic {
       settFsMelding: e => this.setState({ fsMelding: e.target.value, fsFeil: null }),
       fsFeil: this.state.fsFeil || '',
       tre: 3,
-      fsAntallValg: ['2–5', '6–10', '11–16'].map(n => ({
-        navn: n + ' personer',
+      fsAntallValg: (this.fsTidKurs() ? ['1', '2', '3', '4', '5 eller flere'] : ['2–5', '6–10', '11–16']).map(n => ({
+        navn: this.fsTidKurs() ? n : n + ' personer',
         velg: () => this.setState({ fsAntall: n, fsFeil: null }),
         stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: (this.state.fsAntall === n) ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: (this.state.fsAntall === n) ? 'var(--lissom-brown)' : 'var(--surface-card)', color: (this.state.fsAntall === n) ? 'var(--clay-50)' : 'var(--text-heading)' },
       })),
@@ -47996,6 +48044,7 @@ class Component extends DCLogic {
       // faktisk gaar: ta kontakt. Skjemaet er det samme enkle som knappen
       // paa kortet aapnet for, med kurset som emne.
       visKontaktKurs: !!(this.state.valgtKurs && this.state.valgtKurs.kunKontakt),
+      bVisTidForesporsel: this.erDreiekurs(this.state.valgtKurs) && !this.state.valgtKurs.kunKontakt,
       // ── Infosida for et medlemskap ──────────────────────────────────
       //
       // «Les mer» paa et medlemskapskort aapner denne skjermen. Nederst sto
@@ -61294,6 +61343,7 @@ class Component extends DCLogic {
       ooVeibeskrivelse: this.innh('Om oss/1/Veibeskrivelse'),
       kaKnapp: this.innh('Booking/1/Knapp'),
       goForesporsel: () => this.apneForesporsel(),
+      goForesporselTid: () => this.apneForesporselTid(),
       vilkaarOk: !!this.state.vilkaarOk,
       vilkaarMangler: !this.state.vilkaarOk,
       // ── Vipps sin knapp, eller vaar egen ────────────────────────────

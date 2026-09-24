@@ -443,6 +443,14 @@ if (!$fullbooket && !$kunKontakt) {
     $h .= Deler::knapp('Velg dato og book', ['href' => $appHref . '?book=1', 'size' => 'lg', 'full' => true])
         . '<p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du velger tid, antall og betaler med Vipps i neste steg.</p>';
 }
+// Dreiekurs: «Passer ikke oensket dato?». Eieren, 24. september 2026 (GO paa
+// skissen). ?skjema=1 aapner forespoerselen om tid i appen, med kurset,
+// varigheten og antall ganger oeverst. Samme som appen (bVisTidForesporsel).
+if (!$kunKontakt && (string) ($kat['tema'] ?? '') === 'Dreiing') {
+    $h .= '<div style="margin-top: var(--space-6);"><p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-align: center;">Passer ikke ønsket dato?</p>'
+        . Deler::knapp('Send oss en forespørsel om tid', ['href' => $appHref . '?skjema=1', 'variant' => 'secondary', 'size' => 'lg', 'full' => true])
+        . '</div>';
+}
 if ($kunKontakt) {
     // Kurs uten datoer: venteliste eller forespoersel. Eieren, 21. september
     // 2026. Begge knappene gaar inn i appen: ?venteliste=1 aapner

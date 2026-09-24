@@ -18431,7 +18431,7 @@ sjekk('kampanjen som staar ute kan ikke slettes ved et uhell',
 sjekk('skjulte og avviste varer er fortsatt innen rekkevidde',
     str_contains($vis172, "      gSkjulte: this.galleriListe()\n        .filter(g => g.status === 'skjult' || g.status === 'avvist')")
     && str_contains($vis172, '<sc-for list="{{ gSkjulte }}" as="g"')
-    && str_contains($vis172, '>Skjult og avvist</span>'));
+    && str_contains($vis172, '>Skjult og avvist</div>'));
 sjekk('… og de kan legges ut igjen',
     str_contains($vis172, "          leggUt: () => this.salgKall({ handling: 'godkjenn', id: g.id }),")
     && str_contains($vis172, '>Legg ut igjen</button>'));
@@ -19941,13 +19941,15 @@ $tgSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // Begge gruppene staar naa paa «Til godkjenning» OG paa Nettbutikk. Det er
 // den samme lista begge steder, saa de kan ikke komme i utakt.
 sjekk('«Ute i butikken» staar paa begge skjermene',
-    substr_count($tgSida, '<sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">') === 2);
+    substr_count($tgSida, '<sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="3">') === 2);
 sjekk('«Skjult og avvist» ogsaa',
     substr_count($tgSida, '<sc-for list="{{ gSkjulte }}" as="g" hint-placeholder-count="3">') === 2);
-// Overskriftene skal si hva gruppa er, paa den nye skjermen.
+// Overskriftene skal si hva gruppa er, paa den nye skjermen. Fra 24.
+// september 2026 er «Skjult og avvist» en egen overskriftslinje ogsaa paa
+// Nettbutikk (radene med bilde og pris), saa den staar to ganger.
 sjekk('… med hver sin overskrift paa godkjenningsskjermen',
     str_contains($tgSida, 'uppercase; color: var(--text-muted);">Ute i butikken</div>')
-    && substr_count($tgSida, 'uppercase; color: var(--text-muted);">Skjult og avvist</div>') === 1);
+    && substr_count($tgSida, 'uppercase; color: var(--text-muted);">Skjult og avvist</div>') === 2);
 // Knappene er de samme. «Legg ut igjen» er den samme ruta som «Godkjenn» —
 // ingen ny serverhandling, saa en vare tatt ned ved et uhell kan hentes
 // tilbake fra begge skjermer.

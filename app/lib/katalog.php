@@ -82,6 +82,8 @@ final class Katalog
             ? ', nivaa_intern, nivaa_tekst, kort_beskrivelse, lager_du, med_hjem, ferdig_tid, tillegg, varighet_tekst' : '';
         // «Gjenstanden betales i verkstedet». Kom med migrasjon 074.
         $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kassa' : '';
+        // «Vis som fra-pris» (migrasjon 209).
+        $kassaFelt .= DB::harKolonne('courses', 'fra_pris') ? ', fra_pris' : '';
         // «Datoene lages av aapningstidene» — Paint on Pots. Kom med
         // migrasjon 079. Foer laa den inni gjenstand_i_kassa, som gjorde to jobber.
         $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? ', folger_apningstid' : '';
@@ -225,6 +227,16 @@ final class Katalog
                         ], $okter)),
                     ];
                 })(),
+                // «Vis som fra-pris» (migrasjon 209). Eieren, 24. september
+                // 2026: «paint on pots fra kr 450, ikke fast pris». Kursprisen
+                // vises som «Fra kr. X» — samme felt som gjenstanden under
+                // bruker, saa kort, kursside og booking viser det likt. Staar
+                // gjenstandshaken ogsaa paa, gaar den foran (den kommer etter).
+                ...((int) ($k['fra_pris'] ?? 0) === 1 && (int) $k['pris_ore'] > 0 ? [
+                    'fraPris'    => true,
+                    'prisFraOre' => (int) $k['pris_ore'],
+                    'prisFra'    => Booking::kroner((int) $k['pris_ore']),
+                ] : ['fraPris' => false]),
                 // Paint on Pots og andre der gjenstanden velges i verkstedet.
                 //
                 // Prisen paa kurset er da prisen paa plassen, ikke paa det du gaar

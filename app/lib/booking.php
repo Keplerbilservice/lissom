@@ -769,6 +769,15 @@ final class Booking
         if ($tema === 'Medlemskap' || $antall < 2) {
             return 0.0;
         }
+        // En fra-pris er et minimum; prisen settes i verkstedet (migrasjon
+        // 209). Da trekkes ingen grupperabatt av det.
+        $fra = $kurs['fra_pris'] ?? null;
+        if ($fra === null && isset($kurs['course_id']) && DB::harKolonne('courses', 'fra_pris')) {
+            $fra = DB::verdi('SELECT fra_pris FROM courses WHERE id = :i', ['i' => (int) $kurs['course_id']]);
+        }
+        if ((int) $fra === 1) {
+            return 0.0;
+        }
 
         $dreiing = $tema === 'Dreiing'
             || str_contains(mb_strtolower((string) ($kurs['tittel'] ?? '')), 'dreie');

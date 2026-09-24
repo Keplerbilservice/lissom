@@ -281,9 +281,12 @@ final class Medlemsforslag
      */
     public static function bildetekst(array $forslag, string $fornavn): string
     {
-        $medlem = (string) ($forslag['instagram'] ?? '') !== ''
-            ? (string) $forslag['instagram']
-            : ($fornavn !== '' ? $fornavn : 'et medlem');
+        // Navnet og Instagram-kontoen. Eieren, 24. september 2026: «Laget av
+        // Joakim (@joikakakinen), medlem hos Lissom Keramikk». Uten konto:
+        // bare fornavnet.
+        $ig = trim((string) ($forslag['instagram'] ?? ''));
+        $navn = $fornavn !== '' ? $fornavn : 'et medlem';
+        $medlem = $ig !== '' ? ($fornavn !== '' ? $fornavn . ' (' . $ig . ')' : $ig) : $navn;
         $linje = str_replace('{medlem}', $medlem, self::mal());
         return trim((string) ($forslag['tekst'] ?? '')) . "\n\n" . $linje . "\n\n"
              . self::hashtags((string) ($forslag['hashtags'] ?? ''));

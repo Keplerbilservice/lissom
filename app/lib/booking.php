@@ -237,11 +237,16 @@ final class Booking
      */
     public static function ledigeIVindu(int $kursId, string $startUtc, string $sluttUtc): int
     {
-        $kurs = DB::en('SELECT id, kapasitet, ressurs_id FROM courses WHERE id = :i', ['i' => $kursId]);
+        $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? 'folger_apningstid' : '0';
+        $kurs = DB::en("SELECT id, kapasitet, ressurs_id, {$apenFelt} AS folger_apningstid
+                          FROM courses WHERE id = :i", ['i' => $kursId]);
         if ($kurs === null) {
             return 0;
         }
         $kapasitet = (int) ($kurs['kapasitet'] ?? 0);
+        // Aapen plass (Paint on Pots): de andre kursene teller bare folk som
+        // er paameldt, som i ledigeRegnet(). Eieren, 24. september 2026.
+        $egenApen = (int) ($kurs['folger_apningstid'] ?? 0) === 1 ? 1 : 0;
 
         $aktiv2 = self::aktivSql('b2');
         $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
@@ -286,7 +291,7 @@ final class Booking
         $brukt = (int) DB::verdi(
             "SELECT COALESCE(SUM(
                       GREATEST(
-                        CASE WHEN cs2.fra_apningstid = 1 THEN 0
+                        CASE WHEN cs2.fra_apningstid = 1 OR {$egenApen} = 1 THEN 0
                              ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
                         COALESCE(cs2.manuelt_opptatt, 0)
                         + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
@@ -457,10 +462,17 @@ final class Booking
                     -- plan. Holdt de plasstallet sitt ogsaa, ville en tom
                     -- aapen plass paa aatte sperret dreiekurset ved siden av,
                     -- og de to hadde tatt livet av hverandre.
+                    --
+                    -- Og motsatt: er det OEKTA SELV som er aapen plass, teller
+                    -- de andre kursene bare folk som er paameldt. Eieren, 24.
+                    -- september 2026: Paint on Pots sto «utsolgt» uten en
+                    -- eneste booking fordi et tomt Store fat-kurs holdt hele
+                    -- verkstedet — «ressursene er verkstedplasser og ikke
+                    -- dreieskiver».
                     COALESCE((
                         SELECT SUM(
                             GREATEST(
-                                CASE WHEN cs2.fra_apningstid = 1 THEN 0
+                                CASE WHEN cs2.fra_apningstid = 1 OR cs.fra_apningstid = 1 THEN 0
                                      ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
                                 COALESCE(cs2.manuelt_opptatt, 0)
                                 + COALESCE((SELECT SUM(b2.antall) FROM bookings b2

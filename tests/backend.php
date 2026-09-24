@@ -17914,7 +17914,15 @@ sjekk('plassregelen staar ett sted, og brukes begge veier',
 // De aapne plassene holder bare det som er booket — ellers ville en tom aapen
 // plass sperret dreiekurset ved siden av.
 sjekk('et tidsrom regnes med samme unntak som en oekt',
-    str_contains($bookFil, "                        CASE WHEN cs2.fra_apningstid = 1 THEN 0\n                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,"));
+    str_contains($bookFil, "                        CASE WHEN cs2.fra_apningstid = 1 OR {\$egenApen} = 1 THEN 0\n                             ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,"));
+
+// Eieren, 24. september 2026: Paint on Pots sto «utsolgt» uten en booking
+// fordi et tomt Store fat-kurs holdt hele verkstedet. En aapen plass skal
+// bare sperres av folk som faktisk er paameldt paa kursene rundt.
+sjekk('en aapen plass teller bare paameldte paa kursene rundt (oekt)',
+    str_contains($bookFil, 'CASE WHEN cs2.fra_apningstid = 1 OR cs.fra_apningstid = 1 THEN 0'));
+sjekk('en aapen plass teller bare paameldte paa kursene rundt (tidsrom)',
+    str_contains($bookFil, "\$egenApen = (int) (\$kurs['folger_apningstid'] ?? 0) === 1 ? 1 : 0;"));
 
 sjekk('oppslaget svarer med vindu, tider og neste ledige',
     str_contains($tiderFil, "\$svar = Apent::ledigeKvarter(\$kursId, \$dato, \$antall);")

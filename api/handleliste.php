@@ -93,12 +93,26 @@ if (Foresporsel::metode() === 'GET') {
             'nummer' => (string) $v['artikkelnr'],
         ], $varer),
         'mine'  => $mine(),
-        // Leverandoerene admin har slaatt paa, med soeket i nettbutikken.
-        'leverandorer' => $harLev && $paa ? array_map(static fn($l) => [
-            'id'   => (int) $l['id'],
-            'navn' => (string) $l['navn'],
-            'sok'  => (string) $l['sok_url'],
-        ], DB::alle('SELECT id, navn, sok_url FROM leverandorer WHERE vis_medlemmer = 1 AND aktiv = 1 ORDER BY navn')) : [],
+        // Leverandoerene admin har slaatt paa, med soeket i nettbutikken,
+        // fraktsatsene og bestillingsrutinen (migrasjon 210).
+        'leverandorer' => $harLev && $paa ? array_map(static function ($l) {
+            $satser = [];
+            foreach ((array) json_decode((string) $l['frakt_satser'], true) as $s) {
+                if ((int) ($s['kg'] ?? 0) > 0) {
+                    $satser[] = ['kg' => (int) $s['kg'], 'ore' => (int) ($s['ore'] ?? 0)];
+                }
+            }
+            usort($satser, static fn($a, $b) => $a['kg'] <=> $b['kg']);
+            return [
+                'id'     => (int) $l['id'],
+                'navn'   => (string) $l['navn'],
+                'sok'    => (string) $l['sok_url'],
+                'satser' => $satser,
+                'rutine' => (string) $l['bestillingsrutine'],
+            ];
+        }, DB::alle('SELECT id, navn, sok_url, '
+            . (DB::harKolonne('leverandorer', 'frakt_satser') ? 'frakt_satser, bestillingsrutine' : 'NULL AS frakt_satser, NULL AS bestillingsrutine')
+            . ' FROM leverandorer WHERE vis_medlemmer = 1 AND aktiv = 1 ORDER BY navn')) : [],
         // Gebyrsatsen, saa medlemmet ser hva som kommer i tillegg. Samme
         // innstilling som admin setter under Handlelister.
         'gebyr' => (static function (): float {

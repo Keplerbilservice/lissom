@@ -5613,6 +5613,15 @@ window.__resources = {
                   </sc-if>
                 </sc-if>
 
+                <!-- Frakten fra leverandoeren som er valgt, og hvordan det
+                     bestilles derfra (migrasjon 210, styres i admin). -->
+                <sc-if value="{{ hlLevFraktTekst }}" hint-placeholder-val="{{ 'x' }}">
+                  <div style="font-size: var(--text-sm); color: var(--text-body); line-height: 1.5; margin-bottom: var(--space-2);"><strong style="color: var(--text-heading);">Frakt fra {{ hlLevValgtNavn }}:</strong> {{ hlLevFraktTekst }}</div>
+                </sc-if>
+                <sc-if value="{{ hlLevRutine }}" hint-placeholder-val="{{ 'x' }}">
+                  <div style="font-size: var(--text-sm); color: var(--text-body); line-height: 1.5; margin-bottom: var(--space-4); white-space: pre-line;"><strong style="color: var(--text-heading);">Slik bestiller vi:</strong> {{ hlLevRutine }}</div>
+                </sc-if>
+
                 <div style="overflow-x: auto;">
                   <!-- Rader som rutenett, ikke en HTML-tabell: nettleseren flytter
                        sc-for-løkka ut av tabellen, og radene sto tomme. -->
@@ -19334,6 +19343,13 @@ window.__resources = {
                     <span style="display: inline-flex; align-items: center; gap: 6px;">kr <input type="text" inputmode="decimal" value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="0,00" aria-label="Frakt i kroner" style="width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 6px 12px; font: var(--type-body-sm); color: var(--text-heading);"></span>
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.hjelp }}</span>
                   </label>
+                  <sc-if value="{{ f.harSatser }}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; padding-left: 0;">
+                      <sc-for list="{{ f.satser }}" as="s" hint-placeholder-count="3">
+                        <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
                 </sc-for>
                 <div style="display: flex; justify-content: flex-end;">
                   <button type="button" onClick="{{ hlaLagrePriser }}" style="{{ hlaLagreStil }}">Lagre</button>
@@ -19383,6 +19399,28 @@ window.__resources = {
                 </sc-for>
                 <sc-if value="{{ l.harVis }}" hint-placeholder-val="{{ true }}">
                   <button type="button" onClick="{{ l.visVeksle }}" style="{{ l.visStil }}">{{ l.visTekst }}</button>
+                </sc-if>
+                <!-- Fraktsatsene og bestillingsrutinen (migrasjon 210). Eieren,
+                     24. september 2026: «fraktpriser og bestillingsrutiner som
+                     styres fra admin». Lagres med «Lagre» nederst. -->
+                <sc-if value="{{ l.harSatser }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex-basis: 100%; display: flex; flex-direction: column; gap: 8px; padding-left: 0;">
+                    <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Fraktsatser</div>
+                    <sc-for list="{{ l.satser }}" as="s" hint-placeholder-count="3">
+                      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--text-sm); color: var(--text-heading);">
+                        <span>Inntil</span>
+                        <input type="text" inputmode="numeric" value="{{ s.kg }}" onChange="{{ s.kgEndre }}" aria-label="Kilo" style="width: 70px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 6px 9px; font: var(--type-body-sm); color: var(--text-heading);">
+                        <span>kg</span>
+                        <span style="margin-left: 6px;">kr</span>
+                        <input type="text" inputmode="decimal" value="{{ s.kr }}" onChange="{{ s.krEndre }}" aria-label="Frakt i kroner" style="width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 6px 9px; font: var(--type-body-sm); color: var(--text-heading);">
+                        <button type="button" onClick="{{ s.fjern }}" aria-label="Ta bort satsen" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); font-size: 20px; line-height: 1; padding: 4px;">×</button>
+                      </div>
+                    </sc-for>
+                    <div><button type="button" onClick="{{ l.nySats }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--clay-100); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700;">+ Legg til sats</button></div>
+                    <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Bestillingsrutine
+                      <textarea rows="2" maxlength="2000" value="{{ l.rutine }}" onChange="{{ l.rutineEndre }}" placeholder="Hvordan og når vi bestiller herfra. Vises for medlemmene på Min side." style="width: 100%; box-sizing: border-box; border: 2px solid var(--clay-200); border-radius: 9px; padding: 8px 11px; font: var(--type-body-sm); letter-spacing: normal; text-transform: none; background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                    </label>
+                  </div>
                 </sc-if>
               </div>
             </sc-for>
@@ -30927,6 +30965,10 @@ class Component extends DCLogic {
         velg: () => this.setState({ hlLevId: l.id, hlKvittering: false }),
       })),
       hlLevValgtNavn: valgt ? valgt.navn : '',
+      hlLevFraktTekst: valgt && (valgt.satser || []).length
+        ? valgt.satser.map(x => 'inntil ' + x.kg + ' kg kr ' + this.hlKr(x.ore)).join(' · ') + '.'
+        : '',
+      hlLevRutine: valgt ? String(valgt.rutine || '').trim() : '',
       hlLevHarSok: !!sokUrl,
       hlLevSok: this.state.hlLevSok || '',
       hlLevSokEndre: (e) => this.setState({ hlLevSok: e.target.value }),
@@ -31482,14 +31524,27 @@ class Component extends DCLogic {
    * — som resten av admin.
    */
   hlaUtkast() {
-    return this.state.hlaUtkast || { pris: {}, epost: {}, frakt: {}, gebyr: null, nyNavn: '', nyEpost: '' };
+    return this.state.hlaUtkast || { pris: {}, epost: {}, frakt: {}, satser: {}, rutine: {}, gebyr: null, nyNavn: '', nyEpost: '' };
+  }
+
+  /** Kroner for fraktsatsene: «850» eller «850,50», med mellomrom i tusen. */
+  hlKr(ore) {
+    const k = ore / 100;
+    return k.toLocaleString('nb-NO', { minimumFractionDigits: ore % 100 ? 2 : 0, maximumFractionDigits: 2 });
+  }
+
+  /** Fraktsatsene til en leverandoer slik de staar i skjemaet: utkastet, ellers de lagrede. */
+  hlaSatser(l) {
+    const u = this.hlaUtkast();
+    if ((u.satser || {})[l.id] !== undefined) return u.satser[l.id];
+    return (l.satser || []).map(x => ({ kg: String(x.kg), kr: x.kr }));
   }
 
   hlaSkriv(del, nokkel, verdi) {
     const u = this.hlaUtkast();
     const ny = { ...u };
     if (nokkel === null) ny[del] = verdi;
-    else ny[del] = { ...u[del], [nokkel]: verdi };
+    else ny[del] = { ...(u[del] || {}), [nokkel]: verdi };
     this.setState({ hlaUtkast: ny });
   }
 
@@ -31549,8 +31604,18 @@ class Component extends DCLogic {
       .concat(u.gebyr !== null && u.gebyr !== gebyrTekst ? [{ handling: 'gebyr', prosent: u.gebyr }] : [])
       .concat(lev
         .filter(l => u.epost[l.id] !== undefined && u.epost[l.id] !== (l.epost || ''))
-        .map(l => ({ handling: 'leverandor', id: l.id, epost: u.epost[l.id], bestillingsmaate: l.maate })));
-    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, frakt: {}, gebyr: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
+        .map(l => ({ handling: 'leverandor', id: l.id, epost: u.epost[l.id], bestillingsmaate: l.maate })))
+      // Fraktsatser og bestillingsrutine (migrasjon 210) — hele lista per
+      // leverandoer, bare der noe er endret. Tomme rader tas bort.
+      .concat(lev
+        .filter(l => (u.satser || {})[l.id] !== undefined || (u.rutine || {})[l.id] !== undefined)
+        .map(l => ({
+          handling: 'satser', id: l.id,
+          satser: this.hlaSatser(l).filter(x => String(x.kg).trim() !== '' || String(x.kr).trim() !== '')
+            .map(x => ({ kg: String(x.kg).trim(), kroner: String(x.kr).trim() })),
+          rutine: (u.rutine || {})[l.id] !== undefined ? u.rutine[l.id] : (l.rutine || ''),
+        })));
+    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, frakt: {}, satser: {}, rutine: {}, gebyr: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
 
     const pille = (aktiv) => ({
       appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -31622,6 +31687,13 @@ class Component extends DCLogic {
           navn: l.navn,
           verdi,
           endre: (e) => this.hlaSkriv('frakt', l.id, e.target.value),
+          // Trykk paa en sats, saa staar beloepet i feltet — lagres med «Lagre».
+          harSatser: (l.satser || []).length > 0,
+          satser: (l.satser || []).map(x => ({
+            navn: 'Inntil ' + x.kg + ' kg · kr ' + this.hlKr(x.ore),
+            stil: pille(Math.round(kr * 100) === x.ore),
+            velg: () => this.hlaSkriv('frakt', l.id, x.kr),
+          })),
           hjelp: n === 0 ? 'Ingen har varer her nå'
             : n + (n === 1 ? ' medlem' : ' medlemmer') + (hver > 0 ? ' · kr ' + hver.toFixed(2).replace('.', ',') + ' hver' : ''),
         };
@@ -31658,6 +31730,20 @@ class Component extends DCLogic {
         visVeksle: () => this.hlaKall({ handling: 'vis', id: l.id, paa: l.vis ? 0 : 1 }),
         epost: u.epost[l.id] !== undefined ? u.epost[l.id] : (l.epost || ''),
         epostEndre: (e) => this.hlaSkriv('epost', l.id, e.target.value),
+        harSatser: !!d.har210,
+        satser: this.hlaSatser(l).map((x, i, alle) => {
+          const bytt = (felt, verdi) => this.hlaSkriv('satser', l.id, alle.map((y, j) => (j === i ? { ...y, [felt]: verdi } : y)));
+          return {
+            kg: x.kg,
+            kr: x.kr,
+            kgEndre: (e) => bytt('kg', e.target.value),
+            krEndre: (e) => bytt('kr', e.target.value),
+            fjern: () => this.hlaSkriv('satser', l.id, alle.filter((y, j) => j !== i)),
+          };
+        }),
+        nySats: () => this.hlaSkriv('satser', l.id, this.hlaSatser(l).concat([{ kg: '', kr: '' }])),
+        rutine: (u.rutine || {})[l.id] !== undefined ? u.rutine[l.id] : (l.rutine || ''),
+        rutineEndre: (e) => this.hlaSkriv('rutine', l.id, e.target.value),
         maater: [
           { navn: 'E-post', verdi: 'epost' },
           { navn: 'API — ikke tilgjengelig ennå', verdi: 'api' },

@@ -41,6 +41,17 @@ final class Apent
     public const DAGER_FRAM = 14;
 
     /**
+     * Hvor langt fram kurs som foelger aapningstidene (Paint on Pots) kan
+     * bookes.
+     *
+     * Eieren, 24. september 2026, etter at en kunde ikke fikk booket 8.
+     * oktober — dag 15, rett utenfor de fjorten: «Book lenger fram», 30 dager.
+     * Aapningstidslista paa nettsida (DAGER_FRAM) blir staaende paa fjorten;
+     * dette gjelder bare plassene som kan bookes.
+     */
+    public const BOOK_DAGER_FRAM = 30;
+
+    /**
      * Hvor lenge én plass varer.
      *
      * Eieren, 23. september 2026: «endre tekst og varighet til 2 timer».
@@ -417,7 +428,7 @@ final class Apent
     {
         $oslo = new DateTimeZone('Europe/Oslo');
         $dag  = new DateTimeImmutable($fraDato, $oslo);
-        for ($i = 0; $i < self::DAGER_FRAM; $i++) {
+        for ($i = 0; $i < self::BOOK_DAGER_FRAM; $i++) {
             $d = $dag->modify('+' . $i . ' days')->format('Y-m-d');
             $svar = self::ledigeKvarter($kursId, $d, $antall);
             if ($svar['tider'] !== []) {
@@ -569,7 +580,7 @@ final class Apent
         // Her ble hullet stengt en periode. Det var feil vei: det gjorde en
         // dag hun uansett er i huset mindre bookbar enn en dag hun kommer
         // innom en time.
-        $alt = self::dager();
+        $alt = self::dager(self::BOOK_DAGER_FRAM);
         $vinduer = [];
         foreach ($alt['dager'] as $d) {
             if ($d['stengt'] || $d['fra'] === null || $d['til'] === null) {

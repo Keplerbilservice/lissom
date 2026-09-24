@@ -332,9 +332,11 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
     $forLange = 0;
     $perDag = [];
     $iHull = 0;
-    $kilder2 = Apent::dager()['kilder'];
+    // Plassene legges ut BOOK_DAGER_FRAM dager fram (30), ikke bare de
+    // fjorten aapningstidslista viser. Eieren, 24. september 2026.
+    $kilder2 = Apent::dager(Apent::BOOK_DAGER_FRAM)['kilder'];
     $dagerRad = [];
-    foreach (Apent::dager()['dager'] as $d) {
+    foreach (Apent::dager(Apent::BOOK_DAGER_FRAM)['dager'] as $d) {
         if (!$d['stengt'] && $d['fra'] !== null) {
             $dagerRad[(string) $d['dato']] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
         }

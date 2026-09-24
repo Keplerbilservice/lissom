@@ -3123,6 +3123,12 @@ window.__resources = {
                         <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border-subtle); vertical-align: -1px; margin-right: 5px;"></span>Fullbooket</span>
                       </div>
                     </div>
+                    <sc-if value="{{ bKalHarBeskjed }}" hint-placeholder-val="{{ false }}">
+                      <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: 12px 14px; font-size: var(--text-sm); color: var(--text-body); line-height: 1.5;">
+                        <p style="margin: 0 0 10px; text-wrap: pretty;">{{ bKalBeskjed }}</p>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ goForesporselTid }}" hint-size="auto,36px">Send oss en forespørsel om tid</x-import>
+                      </div>
+                    </sc-if>
                     <button type="button" onClick="{{ bKalLukk }}" style="{{ bFlereDatoerStil }}">Lukk kalenderen</button>
                   </sc-if>
                   <sc-for list="{{ bookingDager }}" as="d" hint-placeholder-count="3">
@@ -25020,10 +25026,16 @@ class Component extends DCLogic {
       // «Sett meg paa venteliste» paa et kurs uten datoer, fra serversida.
       vl = q.get('venteliste') === '1';
     } catch (e) { /* ingen sporring */ }
+    // Kommer hun tilbake fra Vipps-innloggingen, staar dagen og oekta hun
+    // valgte foer den (se lissom_booking). Uten dette ble de nullstilt her.
+    const igjen = this._bookingIgjen || null;
+    this._bookingIgjen = null;
     this.setState({
       side: 'booking', fra: 'kurs', valgtKurs: kort,
-      bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null,
-      bDag: dag || null, bKal: kal, bVlApen: vl,
+      bookOrdre: false, bookKvittert: false, bDato: null,
+      bOktId: (igjen && igjen.oktId) || null,
+      bDag: dag || (igjen && igjen.dag) || null, bKal: kal, bVlApen: vl,
+      bKalBeskjedDag: '',
       ventelisteBekreftet: null,
     });
     // Kom hun fra datolista paa serversida, skal hun lande PAA datoene.
@@ -27336,8 +27348,14 @@ class Component extends DCLogic {
           bTidListe: tider,
           bTidForslag: (d && d.forsteLedige) || null,
           // Forste ledige staar forhandsvalgt. Den som godtar det den ser,
-          // skal slippe aa taste noe.
-          bTid: tider.length ? tider[0].tid : '',
+          // skal slippe aa taste noe. Kommer hun tilbake fra Vipps-
+          // innloggingen, staar tida hun valgte foer den — er den fortsatt
+          // ledig.
+          bTid: (this.state.bTidOnsket && this.state.bTidOnsket.dato === dato
+                 && tider.some(t => t.tid === this.state.bTidOnsket.tid))
+            ? this.state.bTidOnsket.tid
+            : (tider.length ? tider[0].tid : ''),
+          bTidOnsket: null,
         });
       })
       .catch(() => this.setState({ bTidHenter: false, bTidFeil: 'Fikk ikke hentet tidene. Prøv igjen.' }));
@@ -34855,6 +34873,12 @@ class Component extends DCLogic {
         const b = JSON.parse(raa) || {};
         const ny = {};
         if (b.oktId) { ny.bOktId = b.oktId; }
+        if (b.dag) { ny.bDag = b.dag; }
+        // aapneKursSlug() kjoerer naar katalogen er hentet — etter dette — og
+        // satte dag og oekt tilbake til ingenting. Den leser disse.
+        this._bookingIgjen = { dag: b.dag || '', oktId: b.oktId || null };
+        if (b.tid && b.tidDato) { ny.bTidOnsket = { dato: b.tidDato, tid: b.tid }; }
+        if (b.antall > 1) { ny.bAntallN = b.antall; }
         if (b.telefon) { ny.bTelefon = b.telefon; }
         if (b.epost) { ny.bEpost = b.epost; }
         if (b.allergiKryss) { ny.bAllergiKryss = true; }
@@ -45452,6 +45476,12 @@ class Component extends DCLogic {
           allergier: (this.state.bAllergier || '').trim(),
           gavekort: (this.state.gkKode || '').trim(),
           vilkaar: !!this.state.vilkaarOk,
+          // Paint on Pots: dagen, klokkeslettet og antallet. Eieren, 24.
+          // september 2026: «husk tid og antall etter innlogging».
+          dag: this.state.bDag || '',
+          tid: tid,
+          tidDato: tidDato,
+          antall: this.state.bAntallN || 0,
         }));
       } catch (_) { /* privat modus: da staar feltene tomme, som for */ }
       // Tilbake til bookingen etterpaa, ikke til forsiden.
@@ -49438,6 +49468,21 @@ class Component extends DCLogic {
         // Plasstallet paa dagen: det som er ledig paa den beste tida.
         const ledigstPaa = (rad) => rad.tider.find(t => !t.full) || rad.tider[0] || {};
 
+        // Tidene for dagen som staar valgt. De ble bare hentet naar man
+        // trykket en av de tre dagene i lista — ikke for dagen som sto valgt
+        // fra start, og ikke for en dag valgt i kalenderen. Da sto «Åpent
+        // 10:00–20:00» og et klokkeslett paa skjermen, men bestillingen visste
+        // ikke hvilken dag det gjaldt, og svarte «Velg en dag og et tidspunkt
+        // i det åpne tidsrommet». Funnet 24. september 2026, etter at en kunde
+        // ikke fikk booket Paint on Pots.
+        if (this.folgerApningstid() && !this.state.bTidHenter) {
+          const iso = String(((dagRad.tider || [])[0] || {}).iso || '');
+          if (iso && iso !== this.state.bTidDato && this._tiderSpurt !== iso) {
+            this._tiderSpurt = iso;
+            setTimeout(() => this.hentTider(iso), 0);
+          }
+        }
+
         return {
           // ── Kalenderen ──────────────────────────────────────────────
           ...(() => {
@@ -49465,7 +49510,14 @@ class Component extends DCLogic {
             for (let dag = 1; dag <= antall; dag++) {
               const iso = kal + '-' + String(dag).padStart(2, '0');
               const rad = perIso[iso];
-              if (!rad) { ruter.push({ tall: String(dag), stil: Object.assign({}, ruteStil, { color: 'var(--clay-400)', cursor: 'default' }), velg: () => {} }); continue; }
+              if (!rad) {
+                // Paint on Pots: trykker man en dag uten plasser, staar det
+                // hvorfor under kalenderen. Eieren, 24. september 2026:
+                // «forklar datoer som er for langt fram».
+                const beskjed = this.folgerApningstid() ? () => this.setState({ bKalBeskjedDag: iso }) : () => {};
+                ruter.push({ tall: String(dag), stil: Object.assign({}, ruteStil, { color: 'var(--clay-400)', cursor: this.folgerApningstid() ? 'pointer' : 'default' }), velg: beskjed });
+                continue;
+              }
               const full = rad.tider.every(t => t.full);
               const valgt = rad.dag === valgtDag;
               ruter.push({
@@ -49482,7 +49534,7 @@ class Component extends DCLogic {
                   // lista som valgt. Eieren, 21. september 2026: «naar
                   // jeg har valgt en annen dato, saa skal datovelgeren
                   // lukkes».
-                  this.setState(Object.assign({ bDag: rad.dag, bKal: '' }, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
+                  this.setState(Object.assign({ bDag: rad.dag, bKal: '', bKalBeskjedDag: '' }, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
                 },
               });
             }
@@ -49495,6 +49547,24 @@ class Component extends DCLogic {
               bKalNeste: () => { if (neste) this.setState({ bKal: neste }); },
               bKalUkedager: ['ma', 'ti', 'on', 'to', 'fr', 'lø', 'sø'].map(n => ({ navn: n })),
               bKalRuter: ruter,
+              ...(() => {
+                const iso = this.state.bKalBeskjedDag || '';
+                if (!iso || !this.folgerApningstid()) return { bKalHarBeskjed: false, bKalBeskjed: '' };
+                const fram = parseInt((this.katalogKurs() || {}).bookDagerFram, 10) || 30;
+                const d = new Date(iso + 'T12:00:00');
+                const idag = new Date(); idag.setHours(12, 0, 0, 0);
+                const dagerTil = Math.round((d - idag) / 86400000);
+                const UKEDAG = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
+                const MND2 = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+                const navn = UKEDAG[d.getDay()] + ' ' + d.getDate() + '. ' + MND2[d.getMonth()];
+                const Navn = navn.charAt(0).toUpperCase() + navn.slice(1);
+                return {
+                  bKalHarBeskjed: true,
+                  bKalBeskjed: dagerTil >= fram
+                    ? Navn + ' kan ikke bookes ennå. Du kan booke inntil ' + fram + ' dager fram.'
+                    : 'Vi har ikke åpent for Paint on Pots ' + navn + '. Velg en annen dag.',
+                };
+              })(),
               // Angrer man, skal de tre anbefalte datoene kunne faas tilbake.
               // Eieren, 21. september 2026: «det maa ogsaa vaere mulig aa
               // lukke datovelgeren, om man likevel vil velge fra de
@@ -49525,7 +49595,9 @@ class Component extends DCLogic {
                 // Foelger kurset aapningstidene, er tidene ikke en liste av
                 // oekter — de hentes for den ene dagen. Se hentTider().
                 if (this.folgerApningstid()) {
-                  this.hentTider(String((rad.tider[0] || {}).dagIso || ''));
+                  // Radene har «iso», ikke «dagIso» (se ekteDatoer()). Sto det
+                  // dagIso her, ble tidene aldri hentet. Rettet 24. september 2026.
+                  this.hentTider(String((rad.tider[0] || {}).iso || ''));
                 }
               },
             };

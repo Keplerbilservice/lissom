@@ -12628,6 +12628,12 @@ window.__resources = {
                     <input type="checkbox" checked="{{ kGjenstandIKassa }}" onChange="{{ toggleKGjenstand }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer; flex-shrink: 0; margin-top: 2px;">
                     <span>Gjenstanden betales i verkstedet<br><span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kGjenstandHjelp }}</span></span>
                   </label>
+                  <!-- «Vis som fra-pris» (migrasjon 209). Eieren, 24. september
+                       2026: «paint on pots fra kr 450, ikke fast pris». -->
+                  <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading); margin-top: var(--space-3);">
+                    <input type="checkbox" checked="{{ kFraPris }}" onChange="{{ toggleKFraPris }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer; flex-shrink: 0; margin-top: 2px;">
+                    <span>Vis som fra-pris<br><span style="font-size: var(--text-xs); color: var(--text-muted);">Prisen over vises som «Fra kr …». Kunden betaler i verkstedet etter hva hen velger.</span></span>
+                  </label>
                   <sc-if value="{{ kGjenstandAdvarsel }}" hint-placeholder-val="{{ false }}">
                     <div style="margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--clay-100); border: 1px solid var(--terracotta-500);">
                       <p style="margin: 0; font-size: var(--text-xs); color: var(--text-body); text-wrap: pretty;">{{ kGjenstandAdvarsel }}</p>
@@ -25488,7 +25494,7 @@ class Component extends DCLogic {
         utenForskudd: !!kat.utenForskudd,
         // Samme regel her som paa kortene over: er gjenstanden det som
         // koster, er det fra-prisen som skal staa.
-        price: kat.gjenstandIKassa
+        price: (kat.gjenstandIKassa || kat.fraPris)
           ? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')
           : (kat.prisOre === 0 ? 'Gratis' : kat.pris),
         status: 'Ta kontakt for dato',
@@ -25563,7 +25569,7 @@ class Component extends DCLogic {
       // staar kortet uten pris som for — heller ingenting enn et tall vi
       // ikke kan staa for.
       folgerApningstid: !!kat.folgerApningstid,
-      price: kat.gjenstandIKassa
+      price: (kat.gjenstandIKassa || kat.fraPris)
         ? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')
         : (kat.prisOre === 0 ? 'Gratis' : kat.pris),
       duration: kat.varighetVist || k.duration,
@@ -29640,6 +29646,11 @@ class Component extends DCLogic {
     // som staar paa kortet — «kr. 0,-» paa et kurs til 2 800 er verre
     // enn ingen sum i det hele tatt.
     const grunn = this.prisAv(k.title || k.tittel || '') || 0;
+    // Fra-pris (migrasjon 209): «fra kr. 1 350,-», uten grupperabatt.
+    const katF = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
+    if (katF && katF.fraPris && katF.prisFraOre) {
+      return 'fra kr.' + ' ' + Math.round(katF.prisFraOre / 100 * antall).toLocaleString('nb-NO') + ',-';
+    }
     if (!grunn) return (k.price || '').replace('Fra ', '') || 'se pris';
     const netto = grunn * antall * (1 - this.rabattFor(k, antall) / 100);
     return 'kr.' + ' ' + Math.round(netto).toLocaleString('nb-NO') + ',-';
@@ -36229,6 +36240,7 @@ class Component extends DCLogic {
       ferdigTid: this.state.kFerdigTid || '', tillegg: this.state.kTillegg || '',
       varighetTekst: this.state.kVarighetTekst || '',
       gjenstandIKassa: this.state.kGjenstandIKassa ? 'ja' : 'nei',
+      fraPris: this.state.kFraPris ? 'ja' : 'nei',
       mva: this.state.kMva ? '25 % mva' : 'Uten mva',
       // SMS er av med mindre noen uttrykkelig har slaatt den paa. Her sto
       // det «!== false» naar SMS-leverandoeren manglet, og det gjor undefined
@@ -37228,7 +37240,7 @@ class Component extends DCLogic {
       kSeoTittel: '', kSeoMeta: '',
       kKarusellFra: [],
       kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
-      kGjenstandIKassa: false,
+      kGjenstandIKassa: false, kFraPris: false,
       kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
       kGjentak: 'Ingen', kAntall: '',
       kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -39021,6 +39033,7 @@ class Component extends DCLogic {
       kFerdigTid: raa.ferdigTid || '', kTillegg: raa.tillegg || '',
       kVarighetTekst: raa.varighetTekst || '',
       kGjenstandIKassa: !!raa.gjenstandIKassa,
+      kFraPris: !!raa.fraPris,
       // Gjentakelsen staar i regelen paa serveren, ikke i kortteksten.
       // Ligger det en regel der, er det den som gjelder.
       ...(() => {
@@ -48459,7 +48472,7 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
       kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
-            kGjenstandIKassa: false,
+            kGjenstandIKassa: false, kFraPris: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
           kGjentak: 'Ingen', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -49540,9 +49553,9 @@ class Component extends DCLogic {
         // kommer med kurset, saa det aldri kan bli lavere enn det kassa
         // faktisk krever.
         const kat2 = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
-        if (kat2 && kat2.gjenstandIKassa && kat2.prisFraOre) {
+        if (kat2 && (kat2.gjenstandIKassa || kat2.fraPris) && kat2.prisFraOre) {
           return {
-            bPris: fmt(kat2.prisFraOre / 100 * antall),
+            bPris: 'Fra ' + fmt(kat2.prisFraOre / 100 * antall),
             bPrisAntallNote: antall > 1 ? (antall + ' × fra ' + fmt(kat2.prisFraOre / 100)) : '',
             bRabattLinje: '',
             bRabattTeaser: '',
@@ -50237,7 +50250,7 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
       kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
-            kGjenstandIKassa: false,
+            kGjenstandIKassa: false, kFraPris: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                 kGjentak: 'Ingen', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -55617,7 +55630,7 @@ class Component extends DCLogic {
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '', kBildeAlt: '',
       kSeoTittel: '', kSeoMeta: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
-            kGjenstandIKassa: false,
+            kGjenstandIKassa: false, kFraPris: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       // Hva som skjer naar et kurs som finnes faar nytt navn.
@@ -55730,6 +55743,8 @@ class Component extends DCLogic {
 
           kGjenstandIKassa: !!st.kGjenstandIKassa,
           toggleKGjenstand: () => this.setState(x => ({ kGjenstandIKassa: !x.kGjenstandIKassa })),
+          kFraPris: !!this.state.kFraPris,
+          toggleKFraPris: () => this.setState(x => ({ kFraPris: !x.kFraPris })),
           kGjenstandHjelp: st.kGjenstandIKassa
             ? 'Prisen over er plassen. Gjenstanden velger kunden i verkstedet og '
               + 'betaler den i kassa, som en butikkvare — lageret trekkes, og salget '

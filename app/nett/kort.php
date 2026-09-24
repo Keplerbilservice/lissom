@@ -158,7 +158,7 @@ final class Kort
     private static function medServerdata(array $d, array $kat, array $katalog, bool $ogsaaSkjult = false): ?array
     {
         $datoer = $kat['datoer'] ?? [];
-        $pris = !empty($kat['gjenstandIKassa'])
+        $pris = (!empty($kat['gjenstandIKassa']) || !empty($kat['fraPris']))
             ? (!empty($kat['prisFraOre']) ? 'Fra ' . $kat['prisFra'] : '')
             : ((int) $kat['prisOre'] === 0 ? 'Gratis' : (string) $kat['pris']);
         $slug = (string) ($kat['slug'] ?? '');

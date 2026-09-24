@@ -284,8 +284,8 @@ $h .= '</div>';
 // ── Boksen: pris og datoene ───────────────────────────────────────────────
 $fmt = static fn(float $n): string => 'kr. ' . number_format((int) round($n), 0, ',', ' ') . ',-';
 $grunn = ($valgt !== null && isset($valgt['prisOre']) && $valgt['prisOre'] !== null) ? (int) $valgt['prisOre'] / 100 : (int) ($kat['prisOre'] ?? 0) / 100;
-if (!empty($kat['gjenstandIKassa']) && !empty($kat['prisFraOre'])) {
-    $pris = $fmt((int) $kat['prisFraOre'] / 100);
+if ((!empty($kat['gjenstandIKassa']) || !empty($kat['fraPris'])) && !empty($kat['prisFraOre'])) {
+    $pris = 'Fra ' . $fmt((int) $kat['prisFraOre'] / 100);
     $rabattTeaser = '';
 } else {
     $pris = $gratis ? 'Gratis' : ($grunn > 0 ? $fmt($grunn) : (string) ($kort['price'] ?? ''));

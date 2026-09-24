@@ -469,11 +469,26 @@ final class Meta
         foreach (['messenger' => 'Facebook', 'instagram' => 'Instagram'] as $plattform => $kanal) {
             self::$sisteMetaFeil = '';
             try {
-                $svar = self::kall('GET', self::sideId() . '/conversations', [
-                    'platform' => $plattform,
-                    'fields'   => 'id,updated_time,snippet,unread_count,participants',
-                    'limit'    => (string) $maks,
-                ], $token);
+                // Instagram svarer av og til «reduce the amount of data»
+                // (kode 1) paa en helt vanlig liste. Da proever vi igjen med
+                // faerre samtaler, ned til fem, framfor aa vise en feil.
+                $antall = $maks;
+                while (true) {
+                    try {
+                        $svar = self::kall('GET', self::sideId() . '/conversations', [
+                            'platform' => $plattform,
+                            'fields'   => 'id,updated_time,snippet,unread_count,participants',
+                            'limit'    => (string) $antall,
+                        ], $token);
+                        break;
+                    } catch (RuntimeException $e) {
+                        if ($antall <= 5 || stripos(self::$sisteMetaFeil, 'reduce the amount') === false) {
+                            throw $e;
+                        }
+                        $antall = max(5, intdiv($antall, 2));
+                        self::$sisteMetaFeil = '';
+                    }
+                }
                 foreach ((array) ($svar['data'] ?? []) as $s) {
                     // Den andre parten — ikke sida selv.
                     $navn = 'Ukjent';

@@ -464,8 +464,10 @@ final class Meta
             return ['samtaler' => [], 'feil' => ['Facebook-sida er ikke koblet til.']];
         }
         $token = self::sideToken();
+        $metaSa = [];
 
         foreach (['messenger' => 'Facebook', 'instagram' => 'Instagram'] as $plattform => $kanal) {
+            self::$sisteMetaFeil = '';
             try {
                 $svar = self::kall('GET', self::sideId() . '/conversations', [
                     'platform' => $plattform,
@@ -494,6 +496,9 @@ final class Meta
                 }
             } catch (RuntimeException $e) {
                 $feil[] = $kanal . ': ' . $e->getMessage();
+                if (self::$sisteMetaFeil !== '') {
+                    $metaSa[] = $kanal . ': ' . self::$sisteMetaFeil;
+                }
             }
         }
 
@@ -510,6 +515,9 @@ final class Meta
                        . 'eget meldings-bruksområde på Meta-appen, og er ikke lagt til ennå. '
                        . 'Kommentarer virker uten den.'];
             }
+        }
+        if ($metaSa !== []) {
+            $feil[] = 'Meta svarte: ' . implode(' · ', $metaSa);
         }
 
         usort($ut, static fn(array $a, array $b): int => strcmp($b['tid'], $a['tid']));
@@ -603,6 +611,15 @@ final class Meta
     // ── Selve kallet ─────────────────────────────────────────────────
 
     /**
+     * Metas egen ordlyd fra siste feil, foer den ble oversatt.
+     *
+     * Oversettelsen i kall() er til for eieren, men den slaar sammen feil
+     * med ulik aarsak. Innboksen viser denne bak sin egen tekst, saa man
+     * ser hva Meta faktisk sa. (Eieren, 24. september 2026.)
+     */
+    private static string $sisteMetaFeil = '';
+
+    /**
      * Ett kall mot Graph API.
      *
      * Tokenet gaar i et hode og ikke i adressen: en adresse havner i
@@ -636,6 +653,9 @@ final class Meta
             $f = $json['error'] ?? [];
             $melding = (string) ($f['message'] ?? 'Ukjent feil');
             $kode = (int) ($f['code'] ?? 0);
+            self::$sisteMetaFeil = $melding . ' (kode ' . $kode
+                . (isset($f['error_subcode']) ? ', underkode ' . (int) $f['error_subcode'] : '')
+                . ')';
 
             // Oversett de som faktisk skjer, til noe eieren kan gjore noe med.
             throw new RuntimeException(match (true) {

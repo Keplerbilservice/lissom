@@ -55112,6 +55112,16 @@ class Component extends DCLogic {
             const snarveier = this.adminSnarveier();
 
             const kortene = [
+                // Omsetningen, foerst i raden. Eieren, 24. september 2026:
+                // «denne måneden som er plassert helt til høyre, må jeg ha mer
+                // synlig på pc» — valgte eget kort i kortraden. Boksen oeverst
+                // til hoeyre er tatt bort (mndHar).
+                (() => {
+                  const om = d.omsetning || {};
+                  return kort('Omsetning', om.maned || 'kr. 0,-',
+                    [linje('denne måneden'), om.idag ? linje('i dag ' + om.idag) : null].filter(Boolean),
+                    false, () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }), 'omsetning');
+                })(),
                 // «I dag», «Inne nå» og «Siste sju dager» kunne ikke trykkes
                 // paa. Eieren, 24. september 2026: «pillene i dag etc skal
                 // være klikkbare».
@@ -55217,7 +55227,9 @@ class Component extends DCLogic {
       ...(() => {
         const beloep = ((this.state.adminData || {}).omsetning || {}).maned || '';
         return {
-          mndHar: beloep !== '',
+          // Staar i kortet «Omsetning» i kortrada (24. september 2026). Her
+          // bare naar kortrada er skjult — ellers forsvant tallet paa telefon.
+          mndHar: beloep !== '' && this.erSmal() && !this.dashApenNa(),
           mndMerke: 'Denne måneden',
           mndTall: beloep,
           mndVelg: () => this.gaaAdmin('adminokonomi', { okonomiFor: '' }),

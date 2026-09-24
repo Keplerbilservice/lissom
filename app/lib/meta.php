@@ -470,7 +470,8 @@ final class Meta
             self::$sisteMetaFeil = '';
             try {
                 // Instagram svarer av og til «reduce the amount of data»
-                // (kode 1) paa en helt vanlig liste. Da proever vi igjen med
+                // (kode 1) eller «Timeout» (kode -2) paa en helt vanlig
+                // liste. Da proever vi igjen med
                 // faerre samtaler, ned til fem, framfor aa vise en feil.
                 $antall = $maks;
                 while (true) {
@@ -482,7 +483,9 @@ final class Meta
                         ], $token);
                         break;
                     } catch (RuntimeException $e) {
-                        if ($antall <= 5 || stripos(self::$sisteMetaFeil, 'reduce the amount') === false) {
+                        $tung = stripos(self::$sisteMetaFeil, 'reduce the amount') !== false
+                             || stripos(self::$sisteMetaFeil, 'timeout') !== false;
+                        if ($antall <= 5 || !$tung) {
                             throw $e;
                         }
                         $antall = max(5, intdiv($antall, 2));

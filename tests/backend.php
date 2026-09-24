@@ -18570,9 +18570,12 @@ sjekk('… og ingen av de ti bryterne staar to steder',
     && !str_contains($syn, 'label="Selg egne arbeider"')
     && !str_contains($syn, 'label="Gaven («Ta med en venn»)"')
     && !str_contains($syn, 'label="Frys av medlemskap"'));
-// Auto-godkjenn hoerer til godkjenningsarbeidet, ikke til hva som vises.
-sjekk('… mens Auto-godkjenn blir staaende paa Butikken',
-    str_contains($syn, '>Auto-godkjenn nye varer</div>'));
+// Auto-godkjenn sto paa Butikken fram til 24. september 2026. Eieren: «er
+// det en av og på bryter som ikke ligger sammen de andre?» — valgte «Flytt
+// til Synlighet». Den staar ikke lenger i Butikken, men i Synlighet-lista.
+sjekk('… og Auto-godkjenn staar i Synlighet, ikke paa Butikken',
+    !str_contains($syn, '>Auto-godkjenn nye varer</div>')
+    && str_contains($vis172, "            rad('Auto-godkjenn nye varer', (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',"));
 // Kursvelgerbryteren paa Butikken las «visKursvelger» — bryteren OG
 // mobilvisninga. Den sto av naar lenken var skjult paa mobil, selv om
 // bryteren var paa. Den er borte med kortet.
@@ -18601,8 +18604,10 @@ sjekk('bryterpillene i medlemssalg-kortet ligger i samme spalte',
 // salgskampanjens bryter gikk samme vei: «Husk vis paa forside og skal staa
 // samlet med det andre». Auto-godkjenn blir staaende: den hoerer til
 // godkjenningsarbeidet, ikke til hva som vises.
-sjekk('… og bryteren i kortet er med',
-    substr_count($vis172, '<span class="lx-bryterhoyre">') === 1);
+// Fra 24. september 2026 er ogsaa Auto-godkjenn flyttet til Synlighet —
+// kortet har ingen bryter igjen.
+sjekk('… og kortet har ingen bryter igjen',
+    substr_count($vis172, '<span class="lx-bryterhoyre">') === 0);
 
 sjekk('… og slettes for godt, etter et spoersmaal',
     str_contains($vis172, "  salgSlett(v) {")

@@ -49966,8 +49966,11 @@ class Component extends DCLogic {
       // omraader. Uten den sto det «Administrasjon» begge steder, og man
       // kunne ikke se om beskjeden gikk til deltakerne eller medlemmene.
       omrEyebrow: this.omraadeFaner().omrNavn || 'Administrasjon',
-      beskjedTittel: (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
-        ? 'Beskjed til kursdeltakere' : 'Beskjed til medlemmer',
+      // Fra Markedsfoering → «Tilbud / nyhetsbrev» er det et tilbud, ikke en
+      // beskjed. Eieren, 24. september 2026: «beskjed til medlemmer, vil jeg
+      // skal være tilbud til medlemmer». Fra Brukere → Beskjeder som foer.
+      beskjedTittel: (this.state.beskjedFra === 'marked' ? 'Tilbud til ' : 'Beskjed til ')
+        + ((this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs' ? 'kursdeltakere' : 'medlemmer'),
       // «Butikk» het den til 4. september. Eieren: «Butikk skal hete
       // Nettbutikk i hele adminsystemet». Fanen inne heter fortsatt
       // «Butikken» — det er lista, ikke stedet.

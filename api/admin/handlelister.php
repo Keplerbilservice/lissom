@@ -13,6 +13,12 @@
  *   POST handling=gebyr          { prosent }
  *   POST handling=frakt          { leverandorId, kroner }  frakten for bestillingen
  *   POST handling=vis            { id, paa }               vises paa Min side
+ *   POST handling=satser         { id, satser: [{kg, kroner}], rutine }
+ *
+ * Fraktsatsene og bestillingsrutinen (migrasjon 210): eieren, 24. september
+ * 2026, «fraktpriser og bestillingsrutiner som styres fra admin». Satsene er
+ * det leverandoeren tar per vektklasse; admin velger én naar frakten for
+ * bestillingen settes, og medlemmene ser dem paa Min side.
  *
  * Frakten (migrasjon 208): eieren, 24. september 2026, valgte «fraktregning
  * delt» — admin skriver inn hva frakten kostet hos én leverandoer, og den
@@ -52,6 +58,36 @@ function handleliste_har208(): bool
     static $har = null;
     return $har ??= DB::harKolonne('handleliste_linjer', 'leverandor_id')
         && DB::harKolonne('leverandorer', 'frakt_ore');
+}
+
+/** Migrasjon 210: fraktsatser og bestillingsrutine paa leverandoeren. */
+function handleliste_har210(): bool
+{
+    static $har = null;
+    return $har ??= DB::harKolonne('leverandorer', 'frakt_satser')
+        && DB::harKolonne('leverandorer', 'bestillingsrutine');
+}
+
+/**
+ * Fraktsatsene fra basen, som [{kg, ore, kr}] sortert paa kg. Det som ikke
+ * kan leses, hoppes over — en feil i én sats skal ikke velte handlelista.
+ */
+function handleliste_satser(?string $json): array
+{
+    $liste = json_decode((string) $json, true);
+    if (!is_array($liste)) {
+        return [];
+    }
+    $ut = [];
+    foreach ($liste as $s) {
+        $kg = (int) ($s['kg'] ?? 0);
+        $ore = (int) ($s['ore'] ?? 0);
+        if ($kg > 0 && $ore >= 0) {
+            $ut[] = ['kg' => $kg, 'ore' => $ore, 'kr' => number_format($ore / 100, 2, ',', '')];
+        }
+    }
+    usort($ut, static fn($a, $b) => $a['kg'] <=> $b['kg']);
+    return $ut;
 }
 
 /** Gebyrsatsen i prosent. Staar i basen, ikke i koden. */
@@ -219,8 +255,10 @@ function handleliste_bilde(): array
     unset($m);
 
     $lev = DB::alle(handleliste_har208()
-        ? 'SELECT id, navn, epost, bestillingsmaate, vis_medlemmer, sok_url, frakt_ore FROM leverandorer WHERE aktiv = 1 ORDER BY navn'
-        : "SELECT id, navn, epost, bestillingsmaate, 0 AS vis_medlemmer, '' AS sok_url, NULL AS frakt_ore FROM leverandorer WHERE aktiv = 1 ORDER BY navn");
+        ? 'SELECT id, navn, epost, bestillingsmaate, vis_medlemmer, sok_url, frakt_ore, '
+            . (handleliste_har210() ? 'frakt_satser, bestillingsrutine' : 'NULL AS frakt_satser, NULL AS bestillingsrutine')
+            . ' FROM leverandorer WHERE aktiv = 1 ORDER BY navn'
+        : "SELECT id, navn, epost, bestillingsmaate, 0 AS vis_medlemmer, '' AS sok_url, NULL AS frakt_ore, NULL AS frakt_satser, NULL AS bestillingsrutine FROM leverandorer WHERE aktiv = 1 ORDER BY navn");
 
     // Hvor mange som har sendt inn, uansett om prisen er satt. Oppgjoret
     // under teller bare dem som har en pris — det er noe annet.
@@ -244,9 +282,12 @@ function handleliste_bilde(): array
             'vis'    => (bool) $l['vis_medlemmer'],
             'sok'    => (string) $l['sok_url'],
             'frakt'  => $l['frakt_ore'] === null ? '' : number_format((int) $l['frakt_ore'] / 100, 2, ',', ''),
+            'satser' => handleliste_satser($l['frakt_satser']),
+            'rutine' => (string) $l['bestillingsrutine'],
             'antallMedlemmer' => count($hvemHosLev[(int) $l['id']] ?? []),
         ], $lev),
         'har208'       => handleliste_har208(),
+        'har210'       => handleliste_har210(),
         'gebyr'        => $gebyr,
     ];
 }
@@ -325,6 +366,43 @@ if ($handling === 'frakt') {
     }
     DB::oppdater('leverandorer', ['frakt_ore' => $tekst === '' ? null : (int) round($kroner * 100)], ['id' => $id]);
     revider('handleliste_frakt', 'leverandor', $id, ['kroner' => $tekst]);
+    Svar::ok(handleliste_bilde());
+}
+
+// Fraktsatsene og bestillingsrutinen til én leverandoer (migrasjon 210).
+// Hele lista sendes hver gang; tomme rader er tatt bort i nettleseren.
+if ($handling === 'satser') {
+    if (!handleliste_har210()) {
+        Svar::feil('Fraktsatsene krever oppdatering 210. Kjør oppdateringen først.');
+    }
+    $id = Foresporsel::heltall('id');
+    if (DB::en('SELECT id FROM leverandorer WHERE id = :i', ['i' => $id]) === null) {
+        Svar::feil('Fant ikke leverandøren.');
+    }
+    $inn = Foresporsel::kropp()['satser'] ?? [];
+    if (!is_array($inn) || count($inn) > 20) {
+        Svar::feil('Fraktsatsene kunne ikke leses.');
+    }
+    $satser = [];
+    foreach ($inn as $s) {
+        $kg = (int) round((float) str_replace([',', ' '], ['.', ''], (string) ($s['kg'] ?? '')));
+        $krTekst = trim((string) ($s['kroner'] ?? ''));
+        $kr = (float) str_replace([',', ' '], ['.', ''], $krTekst);
+        if ($kg <= 0 || $kg > 100000) {
+            Svar::feil('Vekten må være et helt antall kilo over null.');
+        }
+        if ($krTekst === '' || $kr < 0 || $kr > 100000) {
+            Svar::feil('Frakten må være mellom null og 100 000 kroner.');
+        }
+        $satser[$kg] = ['kg' => $kg, 'ore' => (int) round($kr * 100)];
+    }
+    ksort($satser);
+    $rutine = mb_substr(trim(str_replace("\r\n", "\n", Foresporsel::tekst('rutine'))), 0, 2000);
+    DB::oppdater('leverandorer', [
+        'frakt_satser'      => $satser ? json_encode(array_values($satser)) : null,
+        'bestillingsrutine' => $rutine !== '' ? $rutine : null,
+    ], ['id' => $id]);
+    revider('leverandor_satser', 'leverandor', $id, ['satser' => array_values($satser)]);
     Svar::ok(handleliste_bilde());
 }
 

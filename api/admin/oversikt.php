@@ -173,6 +173,11 @@ $kommende = DB::alle(
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.status = 'planlagt' AND cs.start_tid >= :fra
+        -- En aapen plass ingen har booket, er ikke et kurs i dag. Eieren,
+        -- 24. september 2026: «kortet i dag viser 2 kurs» — Paint on Pots
+        -- 0 av 12 sto ved siden av det ekte kurset. Samme regel som
+        -- kalenderen, se Apent::skjulUtenBooking().
+        AND " . Apent::skjulUtenBooking('cs') . "
       ORDER BY cs.start_tid
       LIMIT 60",
     ['fra' => $dagStart]

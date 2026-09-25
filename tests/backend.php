@@ -4104,8 +4104,11 @@ sjekk('ferien bygger paa apningstider, ikke en egen tabell',
                     "SELECT dato FROM apningstider WHERE stengt = 1"));
 // Det som var nytt: en stengt dag skjuler kursdatoene, ikke bare
 // aapningstidene i bunnteksten.
+// Fra 25. september 2026 gaar det via Ferie::skjult(): en oekt eieren har
+// lagt ut i ferien «likevel» (ferie_ok, migrasjon 211) skal vises.
 sjekk('en stengt dag skjuler kursdatoene paa nettsida',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::stengt('));
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::skjult($o)')
+    && str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'), 'public static function skjult(array $okt): bool'));
 sjekk('… og aapningstidene folger med',
     str_contains(file_get_contents(__DIR__ . '/../app/lib/apent.php'), '$okter = Ferie::utenom($okter);'));
 // Skjult er ikke det samme som stengt: en gammel fane kan sende okt-id-en

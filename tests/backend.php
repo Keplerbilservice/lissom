@@ -20228,6 +20228,42 @@ sjekk('ingen av de aatte reglene lekker ut paa kundesida',
     substr_count($flSida, 'div[style*="minmax(') === 8
     && substr_count($flSida, '.lx-adminaside ~ main div[style*="minmax(') === 8);
 
+// ── Kalenderen paa telefon ────────────────────────────────────────────
+//
+// Eieren, 25. september 2026: «kalender paa mobil maa ha en ny loesning, er
+// uoversiktlig». Av tre forslag valgte han B — det som gaar naa oeverst — og
+// «Jeg vil ha b» da han ble spurt om den lange lista skulle erstatte
+// Dag/Uke/Maaned/Liste. Rutenettene staar derfor som for under.
+$kmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nKalenderen paa telefon\n";
+sjekk('blokka staar bare paa telefon',
+    str_contains($kmSida, '  .lx-kalmob { display: none; }')
+    && str_contains($kmSida, '    .lx-adminaside ~ main .lx-kalmob { display: block; }'));
+sjekk('den staar oeverst, over datoraden',
+    str_contains($kmSida, '<div id="kl-kalender" style="{{ klStyringStil }}">' . "\n"
+        . '          <!-- ── Kalenderen paa telefon: hva skjer naa ──────────────────'));
+sjekk('kortet viser det som gaar naa, ellers det neste i dag',
+    str_contains($kmSida, "        const hoved = gaar[0] || senere[0] || null;")
+    && str_contains($kmSida, "          kalNaaTittel: hoved ? hoved.tittel : 'Ingenting mer i dag',"));
+// Avlyste er filtrert bort av klAlle med vilje (eieren, 8. september 2026).
+// Kortet han ba om 25. september maa derfor lese maanedene for filteret.
+sjekk('avlyste hentes for filteret som skjuler dem i rutenettet',
+    str_contains($kmSida, '        const avlysteFram = (() => {')
+    && str_contains($kmSida, '          const kh = this.state.kalHendelser || {};')
+    && str_contains($kmSida, '            if (!e.avlyst || sett[e.id] || !ekte(e)) return;'));
+sjekk('«Trenger et blikk» tar med det som er for tynt til aa gaa',
+    str_contains($kmSida, '                             && (e.pameldt || 0) * 3 < e.kap).forEach(e => blikk.push({'));
+sjekk('uka er sju dager fra mandag, med i dag markert',
+    str_contains($kmSida, '        mandag.setDate(idag.getDate() - ((idag.getDay() + 6) % 7));')
+    && str_contains($kmSida, "                      border: erIdag ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',"));
+// «12 av 12 plasser — fullbooket» brakk over to linjer paa 390 px.
+sjekk('er det fullt, staar det bare «Fullbooket»',
+    str_contains($kmSida, "              ? 'Fullbooket'"));
+// Blokka skal lese det som alt er hentet, ikke hente selv. Ett kall til
+// kalenderen i hele fila, og det er klHent() sitt.
+sjekk('ingen nye kall — hendelsene er de samme rutenettene tegner',
+    substr_count($kmSida, "fetch('/api/admin/kalender.php") === 1);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -1743,6 +1743,107 @@ window.__resources = {
     }
   }
 
+  /* ── Kalenderen paa telefon: «hva skjer naa» ────────────────────────
+     Blokka finnes i markupen paa hver adminskjerm som har kalenderen, men
+     staar bare fram under 560 px. Paa PC er kalenderen som for: der er det
+     plass til rutenettet, og det er der man planlegger.
+     Eieren, 25. september 2026. Se «kalMobHar» og folgende i klVals. */
+  .lx-kalmob { display: none; }
+
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-kalmob { display: block; }
+    /* Siste overskrift er «Kalenderen», og rett under staar datoraden med
+       sin egen luft. To luftrom paa rad ble et hull paa 55 px. */
+    .lx-adminaside ~ main .lx-kalmob > .lx-kalh:last-child { margin-bottom: 0; }
+
+    /* Kortet for det som gaar naa. Brunt, som stripa over — det er ikke en
+       rad i en liste, det er svaret paa hvorfor man tok opp telefonen. */
+    .lx-adminaside ~ main .lx-kalna {
+      background: var(--lissom-brown);
+      color: var(--clay-100);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .lx-adminaside ~ main .lx-kalna-e {
+      font-size: 10px; font-weight: 700; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--lissom-yellow);
+    }
+    .lx-adminaside ~ main .lx-kalna-h {
+      margin: 5px 0 2px; font-family: var(--font-display);
+      font-size: 19px; font-weight: 800; color: var(--clay-50);
+    }
+    .lx-adminaside ~ main .lx-kalna-p {
+      margin: 0; font-size: 12.5px; color: rgba(244, 235, 222, .72);
+    }
+    .lx-adminaside ~ main .lx-kalna-bar {
+      height: 6px; border-radius: 99px; background: rgba(244, 235, 222, .18);
+      margin: 11px 0 9px; overflow: hidden;
+    }
+    .lx-adminaside ~ main .lx-kalna-kn { display: flex; gap: 7px; margin-top: 11px; }
+    .lx-adminaside ~ main .lx-kalna-kn button {
+      flex: 1; appearance: none; cursor: pointer;
+      border: 1px solid rgba(244, 235, 222, .3);
+      background: transparent; color: var(--clay-100);
+      border-radius: 99px; padding: 9px 0;
+      font: inherit; font-size: 12.5px; font-weight: 700;
+      min-height: 40px;
+    }
+    .lx-adminaside ~ main .lx-kalna-kn button.lx-kalna-f {
+      background: var(--lissom-yellow); border-color: var(--lissom-yellow);
+      color: var(--lissom-brown);
+    }
+
+    .lx-adminaside ~ main .lx-kalh {
+      font-size: 10.5px; font-weight: 700; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--text-muted);
+      margin: 18px 0 8px;
+    }
+
+    /* Radene. Klokka til venstre, saken i midten, «om 2½ t» til hoyre. */
+    .lx-adminaside ~ main .lx-kalkort {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .lx-adminaside ~ main .lx-kalrad {
+      display: flex; align-items: center; gap: 11px;
+      width: 100%; box-sizing: border-box;
+      appearance: none; cursor: pointer; text-align: left;
+      background: transparent; border: 0;
+      border-top: 1px solid var(--border-subtle);
+      padding: 11px 12px; font: inherit; color: var(--text-heading);
+      min-height: 48px;
+    }
+    .lx-adminaside ~ main .lx-kalrad:first-child { border-top: 0; }
+    .lx-adminaside ~ main .lx-kalrad > b {
+      flex: 0 0 46px; font-size: 13px; font-weight: 800;
+    }
+    .lx-adminaside ~ main .lx-kalrad .m { flex: 1; min-width: 0; }
+    .lx-adminaside ~ main .lx-kalrad .m i {
+      display: block; font-style: normal; font-size: 13.5px; font-weight: 700;
+      line-height: 1.25;
+    }
+    .lx-adminaside ~ main .lx-kalrad .m small {
+      display: block; font-size: 11px; color: var(--text-muted); margin-top: 1px;
+    }
+    .lx-adminaside ~ main .lx-kalrad .t {
+      font-size: 11px; font-weight: 800; color: var(--terracotta-600); white-space: nowrap;
+    }
+
+    /* Uka. Sju like brede, dagen du staar i med tykkere ramme. */
+    .lx-adminaside ~ main .lx-kaluke { display: flex; gap: 5px; }
+    .lx-adminaside ~ main .lx-kaluke button { min-height: 52px; font: inherit; }
+    .lx-adminaside ~ main .lx-kaluke i {
+      display: block; font-style: normal; font-size: 9.5px; font-weight: 700;
+      color: var(--text-muted);
+    }
+    .lx-adminaside ~ main .lx-kaluke b {
+      display: block; font-size: 14px; font-weight: 800; margin-top: 1px;
+      color: var(--text-heading);
+    }
+  }
+
   /* Ferikalenderen paa telefon.
      Kalenderen har aatte kolonner: ukepilla og sju dager. Paa en 390 px
      skjerm er det 268 px aa dele paa, og «Uke 36» tok 58 av dem — da ble
@@ -9375,6 +9476,78 @@ window.__resources = {
                topplinja som staar oeverst, og den staar paa linje med
                «Alle kurs». -->
           <div id="kl-kalender" style="{{ klStyringStil }}">
+          <!-- ── Kalenderen paa telefon: hva skjer naa ──────────────────
+               Eieren, 25. september 2026: «kalender paa mobil maa ha en ny
+               loesning, er uoversiktlig». Av tre forslag valgte han dette.
+               Staar bare paa telefon — se «.lx-kalmob» i stilarket. Paa PC
+               er kalenderen som for, og blokka finnes ikke.
+               Verdiene bygges i klVals, av de samme hendelsene som
+               rutenettene under tegner. -->
+          <div class="lx-kalmob">
+
+            <!-- Det som gaar naa. Er dagen over, sier kortet det. -->
+            <div class="lx-kalna">
+              <div class="lx-kalna-e">{{ kalNaaMerke }}</div>
+              <h2 class="lx-kalna-h">{{ kalNaaTittel }}</h2>
+              <sc-if value="{{ kalNaaHar }}" hint-placeholder-val="{{ true }}">
+                <p class="lx-kalna-p">{{ kalNaaLinje }}</p>
+                <sc-if value="{{ kalNaaHarPlass }}" hint-placeholder-val="{{ true }}">
+                  <div class="lx-kalna-bar"><span style="{{ kalNaaStolpeStil }}"></span></div>
+                  <p class="lx-kalna-p">{{ kalNaaPlass }}</p>
+                </sc-if>
+                <div class="lx-kalna-kn">
+                  <button type="button" onClick="{{ kalNaaVelg }}" class="lx-kalna-f">Deltakerliste</button>
+                  <button type="button" onClick="{{ kalNaaBeskjed }}">Send beskjed</button>
+                </div>
+              </sc-if>
+            </div>
+
+            <!-- Resten av dagen, med hvor lenge det er til. -->
+            <sc-if value="{{ kalRestenHar }}" hint-placeholder-val="{{ true }}">
+              <div class="lx-kalh">Resten av dagen</div>
+              <div class="lx-kalkort">
+                <sc-for list="{{ kalResten }}" as="r" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ r.velg }}" class="lx-kalrad">
+                    <b>{{ r.klokke }}</b>
+                    <span class="m"><i>{{ r.tittel }}</i><small>{{ r.under }}</small></span>
+                    <span class="t">{{ r.om }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Uka som sju tall. Trykk paa en dag aapner den i dagvisningen
+                 under — det er den samme kalenderen, ikke en ny. -->
+            <div class="lx-kalh">Denne uka</div>
+            <div class="lx-kaluke">
+              <sc-for list="{{ kalUke7 }}" as="u" hint-placeholder-count="7">
+                <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">
+                  <i>{{ u.navn }}</i><b>{{ u.dag }}</b>
+                  <span style="{{ u.antallStil }}">{{ u.antall }}</span>
+                </button>
+              </sc-for>
+            </div>
+
+            <!-- Det avlyste, og det som er for tynt til aa gaa. Eieren,
+                 25. september 2026: «et kort med avlyste kurs maa vi ha
+                 ogsaa». Det tynne staar med av samme grunn: det er noe man
+                 vil vite om mens det er tid til aa gjore noe. -->
+            <sc-if value="{{ kalBlikkHar }}" hint-placeholder-val="{{ true }}">
+              <div class="lx-kalh">Trenger et blikk</div>
+              <div class="lx-kalkort">
+                <sc-for list="{{ kalBlikk }}" as="b" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ b.velg }}" class="lx-kalrad">
+                    <b style="{{ b.naarStil }}">{{ b.naar }}</b>
+                    <span class="m"><i>{{ b.tittel }}</i><small>{{ b.under }}</small></span>
+                    <span style="{{ b.merkeStil }}">{{ b.merke }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <div class="lx-kalh">Kalenderen</div>
+          </div>
+
           <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
             <div class="lx-kaltopp" style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
               <button type="button" onClick="{{ klForrige }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">‹</button>
@@ -45736,6 +45909,165 @@ class Component extends DCLogic {
       klUkeKroppStil: { display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden' },
       klUkeGutterStil: { position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
       klListe: liste,
+
+      // ── Kalenderen paa telefon ──────────────────────────────────────
+      //
+      // Eieren, 25. september 2026: «kalender paa mobil maa ha en ny
+      // loesning, er uoversiktlig, hopper opp til toppen av siden naar vi
+      // blar». Han fikk foerst den samme kalenderen ryddet, og svarte: «har
+      // du ikke noe bedre aa komme med?» Av tre nye forslag valgte han B:
+      // det som gaar naa oeverst, resten av dagen, uka som sju tall, og
+      // «Trenger et blikk». Spurt om den lange lista skulle komme under i
+      // stedet for Dag/Uke/Maaned/Liste, svarte han «Jeg vil ha b» — saa
+      // rutenettene staar som for under dette.
+      //
+      // Kalenderen svarer paa «hva skjer naa» for den er en kalender. Det er
+      // det man tar opp telefonen for aa vite, staaende i verkstedet.
+      //
+      // Ingen nye kall og ingen nye skjermer: alt under er de samme
+      // hendelsene rutenettene tegner, fra «alle».
+      ...(() => {
+        const naMin = naM;
+        const slutten = e => (e.slutt ? minAv(e.slutt) : minAv(e.tid) + 60);
+        // Brenning og innstempling er alt ute av «alle» — se filteret der.
+        // Vaktene er ikke, og de er ikke avtaler.
+        const ekte = e => e.type !== 'vakt';
+        const idagAlle = dagEvts(idagIso).filter(ekte);
+        const omTekst = (min) => {
+          if (min < 1) return 'nå';
+          if (min < 60) return 'om ' + min + ' min';
+          const t = Math.floor(min / 60), r = min % 60;
+          return 'om ' + t + (r >= 45 ? '¾' : r >= 30 ? '½' : r >= 15 ? '¼' : '') + ' t';
+        };
+        const fyll = e => (e.kap ? Math.min(100, Math.round((e.pameldt || 0) / e.kap * 100)) : 0);
+        // «12 av 12 plasser — fullbooket» brakk over to linjer, og
+        // «— fullbooket» ble staaende alene. Er det fullt, er det ordet som
+        // sier det; tallet er de andre gangene.
+        const plassTekst = e => (e.kap
+          ? ((e.pameldt || 0) >= e.kap
+              ? 'Fullbooket'
+              : (e.pameldt || 0) + ' av ' + e.kap + ' plasser')
+          : '');
+
+        // Det som gaar akkurat naa. Er det ingenting, er det det neste i dag;
+        // er dagen over, sier kortet det i stedet for aa staa tomt.
+        const gaar = idagAlle.filter(e => !e.avlyst && minAv(e.tid) <= naMin && slutten(e) > naMin);
+        const senere = idagAlle.filter(e => !e.avlyst && minAv(e.tid) > naMin);
+        const hoved = gaar[0] || senere[0] || null;
+        const gaarNa = !!gaar[0];
+        const to = n => (n < 10 ? '0' : '') + n;
+        const klokka = to(Math.floor(naMin / 60)) + ':' + to(naMin % 60);
+
+        // Resten av dagen, etter det som staar i kortet.
+        const resten = senere.filter(e => !hoved || e.id !== hoved.id);
+
+        // Uka, som sju tall. Mandag til soendag rundt i dag.
+        const mandag = new Date(idag);
+        mandag.setDate(idag.getDate() - ((idag.getDay() + 6) % 7));
+
+        // ── Trenger et blikk ────────────────────────────────────────
+        //
+        // To ting eieren ellers maa lete etter. Det avlyste — han ba om «et
+        // kort med avlyste kurs» 25. september — og det som er for tynt til
+        // aa gaa: et kurs som naermer seg med nesten ingen paameldte er noe
+        // man vil vite om mens det er tid til aa gjore noe.
+        const iMorgen14 = (() => { const d = new Date(idag); d.setDate(idag.getDate() + 21); return isoAv(d); })();
+        const framover = alle.filter(e => e.dato >= idagIso && e.dato <= iMorgen14 && ekte(e));
+        // Avlyste staar ikke i «alle». klAlle filtrerer dem bort med vilje —
+        // eieren, 8. september 2026: «Naar jeg avlyser et kurs, saa vil jeg
+        // at dette kurset forsvinner fra kalenderen». Her skal de fram, og
+        // det er nettopp det han etterlyste 25. september: «et kort med
+        // avlyste kurs maa vi ha ogsaa». Derfor leses maanedene raa, for
+        // filteret. Rutenettene under er urort: de leser «alle» som for.
+        const avlysteFram = (() => {
+          const ut = [], sett = {};
+          const kh = this.state.kalHendelser || {};
+          Object.keys(kh).forEach(k => (kh[k] || []).forEach(e => {
+            if (!e.avlyst || sett[e.id] || !ekte(e)) return;
+            if (e.dato < idagIso || e.dato > iMorgen14) return;
+            sett[e.id] = true;
+            ut.push(e);
+          }));
+          return ut.sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid));
+        })();
+        const naarTekst = (iso) => {
+          const d = new Date(iso + 'T12:00:00');
+          const dg = Math.round((d - new Date(idagIso + 'T12:00:00')) / 86400000);
+          if (dg === 0) return 'I dag';
+          if (dg === 1) return 'I morgen';
+          return d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3);
+        };
+        const blikk = [];
+        avlysteFram.forEach(e => blikk.push({
+          naar: naarTekst(e.dato), tittel: e.tittel,
+          under: 'Avlyst' + ((e.pameldt || 0) > 0 ? ' · ' + e.pameldt + ' var påmeldt' : ' · ingen var påmeldt'),
+          merke: 'Avlyst', merkeStil: { fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', whiteSpace: 'nowrap' },
+          naarStil: { flex: '0 0 52px', fontSize: '12.5px', fontWeight: 800, color: 'var(--text-muted)' },
+          velg: velg(e),
+        }));
+        // «Tynt»: under en tredel fylt, og under to uker til. En dato som
+        // ligger langt fram er ikke tynn ennaa — den har bare ikke fylt seg.
+        const toUker = (() => { const d = new Date(idag); d.setDate(idag.getDate() + 14); return isoAv(d); })();
+        framover.filter(e => !e.avlyst && e.kap > 0 && e.dato <= toUker
+                             && (e.pameldt || 0) * 3 < e.kap).forEach(e => blikk.push({
+          naar: naarTekst(e.dato), tittel: e.tittel,
+          // Datoen staar i spalta til venstre. Den sto her ogsaa, og
+          // «I morgen · i morgen» leste seg som en feil.
+          under: (e.pameldt || 0) + ' av ' + e.kap + ' plasser',
+          merke: 'Tynt', merkeStil: { fontSize: '11px', fontWeight: 800, color: 'var(--terracotta-600)', whiteSpace: 'nowrap' },
+          naarStil: { flex: '0 0 52px', fontSize: '12.5px', fontWeight: 800, color: 'var(--text-heading)' },
+          velg: velg(e),
+        }));
+
+        return {
+          kalMobHar: true,
+          kalNaaHar: !!hoved,
+          kalNaaMerke: hoved ? (gaarNa ? 'Går nå · ' + klokka : 'Neste i dag · ' + klokka) : '',
+          kalNaaTittel: hoved ? hoved.tittel : 'Ingenting mer i dag',
+          kalNaaLinje: hoved
+            ? [hoved.holder || '', hoved.tid + (hoved.slutt ? '–' + hoved.slutt : ''),
+               gaarNa ? 'slutter ' + omTekst(slutten(hoved) - naMin)
+                      : 'begynner ' + omTekst(minAv(hoved.tid) - naMin)].filter(Boolean).join(' · ')
+            : '',
+          kalNaaPlass: hoved ? plassTekst(hoved) : '',
+          kalNaaHarPlass: !!(hoved && hoved.kap),
+          kalNaaStolpeStil: hoved && hoved.kap
+            ? { display: 'block', height: '100%', borderRadius: '99px', width: fyll(hoved) + '%',
+                background: 'var(--lissom-yellow)' }
+            : { display: 'none' },
+          kalNaaVelg: hoved ? velg(hoved) : (() => {}),
+          kalNaaBeskjed: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }),
+
+          kalRestenHar: resten.length > 0,
+          kalResten: resten.map(e => ({
+            klokke: e.tid, tittel: e.tittel,
+            under: [e.holder || '', plassTekst(e)].filter(Boolean).join(' · '),
+            om: omTekst(minAv(e.tid) - naMin),
+            velg: velg(e),
+          })),
+
+          kalUke7: uked.map((n, i) => {
+            const d = new Date(mandag); d.setDate(mandag.getDate() + i);
+            const iso = isoAv(d);
+            const antall = dagEvts(iso).filter(e => ekte(e) && !e.avlyst).length;
+            const erIdag = iso === idagIso;
+            return {
+              navn: n.charAt(0), dag: String(d.getDate()),
+              antall: antall ? String(antall) : '—',
+              velg: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
+              stil: { flex: 1, appearance: 'none', cursor: 'pointer',
+                      background: 'var(--surface-card)', borderRadius: '11px',
+                      border: erIdag ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
+                      padding: '7px 0 8px', textAlign: 'center' },
+              antallStil: { display: 'block', fontSize: '10px', fontWeight: 700, marginTop: '2px',
+                            color: antall ? 'var(--terracotta-600)' : 'var(--clay-300, #c3b8aa)' },
+            };
+          }),
+
+          kalBlikkHar: blikk.length > 0,
+          kalBlikk: blikk.slice(0, 6),
+        };
+      })(),
       klBoardKolonner: kolonner,
       klBoardTimer: (() => { const t = []; for (let h = bStart / 60; h < bSluttMin / 60; h++) t.push({ navn: String(h).padStart(2, '0') + ':00', stil: { position: 'absolute', top: ((h - bStart / 60) * pxTime - 1) + 'px', right: '8px', fontSize: '11px', color: 'var(--text-muted)' } }); return t; })(),
       // Paa telefon faar hver spalte 150 px og rammen ruller sidelengs. Med

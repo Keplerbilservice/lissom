@@ -295,6 +295,24 @@ final class Varsel
             return;
         }
 
+        // ── Bare fornavnet til kunden ─────────────────────────────────
+        //
+        // Eieren, 18. september 2026: «Bruk kun fornavn, det gjør du i alle
+        // maler forøvrig.» Det ble rettet i én mal. 25. september kom
+        // bekreftelsen til ham med «Hei Joakim Andre Væthe-Larsen!»: «jeg vil
+        // kun at eposter bruker fornavnet mitt … sørg for å fikse det
+        // permanent».
+        //
+        // Derfor her, der alle malene flettes, og ikke i hver mal: {navn} er
+        // fornavnet i alt som går til en kunde, også i en mal som skrives om
+        // under Maler. Beskjedene til verkstedet (intern_) beholder hele
+        // navnet — der må det gå an å se hvem det er.
+        if (!str_starts_with($malNavn, 'intern_') && trim((string) ($felter['navn'] ?? '')) !== '') {
+            $forste = (string) (preg_split('/\s+/u', trim((string) $felter['navn']))[0] ?? '');
+            $felter['navn'] = $forste;
+            $felter['fornavn'] = $felter['fornavn'] ?? $forste;
+        }
+
         $emne = self::flett((string) ($mal['emne'] ?? ''), $felter);
         $tekst = self::flett((string) $mal['tekst'], $felter);
         $kanal = (string) $mal['kanal'];
@@ -722,14 +740,46 @@ final class Utsending
             $grense = 'lissom-' . bin2hex(random_bytes(12));
             $headere['Content-Type'] = 'multipart/alternative; boundary="' . $grense . '"';
             unset($headere['Content-Transfer-Encoding']);
+            $htmlDel = "Content-Type: text/html; charset=UTF-8\n"
+                . "Content-Transfer-Encoding: 8bit\n\n"
+                . str_replace("\r\n", "\n", $html) . "\n\n";
+
+            // ── Logoen ligger i e-posten, ikke paa nettet ─────────────
+            //
+            // Eieren, 25. september 2026: «lissom logoen i eposten vises
+            // heller ikke». Signaturen hentet den fra lissom.no, og Outlook
+            // tok bildet ut av meldingen — igjen sto en tom lenke. Mange
+            // e-postprogrammer blokkerer bilder fra nettet til mottakeren
+            // trykker «Last ned bilder».
+            //
+            // Naa sendes logoen med i selve meldingen (multipart/related),
+            // og signaturen peker paa den. Det er den samme fila, lagt i
+            // app/epost/ saa den foelger koden ut.
+            $logoFil = APP_DIR . '/epost/signatur-logo.png';
+            if (str_contains($html, 'lissom-signatur-logo.png') && is_file($logoFil)) {
+                $cid = 'signatur-logo@lissom.no';
+                $medCid = (string) preg_replace('#src="[^"]*lissom-signatur-logo\.png"#', 'src="cid:' . $cid . '"', $html);
+                $rel = 'lissom-rel-' . bin2hex(random_bytes(12));
+                $htmlDel = "Content-Type: multipart/related; boundary=\"{$rel}\"\n\n"
+                    . "--{$rel}\n"
+                    . "Content-Type: text/html; charset=UTF-8\n"
+                    . "Content-Transfer-Encoding: 8bit\n\n"
+                    . str_replace("\r\n", "\n", $medCid) . "\n\n"
+                    . "--{$rel}\n"
+                    . "Content-Type: image/png; name=\"lissom-logo.png\"\n"
+                    . "Content-Transfer-Encoding: base64\n"
+                    . "Content-ID: <{$cid}>\n"
+                    . "Content-Disposition: inline; filename=\"lissom-logo.png\"\n\n"
+                    . chunk_split(base64_encode((string) file_get_contents($logoFil)), 76, "\n") . "\n"
+                    . "--{$rel}--\n\n";
+            }
+
             $kropp = "--{$grense}\n"
                 . "Content-Type: text/plain; charset=UTF-8\n"
                 . "Content-Transfer-Encoding: 8bit\n\n"
                 . $kropp . "\n\n"
                 . "--{$grense}\n"
-                . "Content-Type: text/html; charset=UTF-8\n"
-                . "Content-Transfer-Encoding: 8bit\n\n"
-                . str_replace("\r\n", "\n", $html) . "\n\n"
+                . $htmlDel
                 . "--{$grense}--\n";
         }
 

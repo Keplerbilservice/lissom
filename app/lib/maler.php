@@ -147,7 +147,7 @@ final class Maler
             'hvor'   => 'Sendes automatisk før kurset, senest morgenen samme dag.',
             'felter' => [
                 'fornavn' => 'Fornavnet til deltakeren',
-                'navn'    => 'Hele navnet (fra før)',
+                'navn'    => 'Fornavnet også (fra før)',
                 'kurs'    => 'Kursets navn',
                 'tid'     => 'Klokkeslettet kurset starter',
                 'naar'    => 'Dagen og klokkeslettet. Går kurset over flere dager, står hver dag på sin egen linje',
@@ -166,7 +166,7 @@ final class Maler
             'hvor'   => 'Sendes noen timer etter kurset, til dem som betalte.',
             'felter' => [
                 'fornavn' => 'Fornavnet til deltakeren',
-                'navn'  => 'Hele navnet',
+                'navn'  => 'Fornavnet også',
                 'kurs'  => 'Kurset de var på',
                 'lenke' => 'Lenken de legger igjen ordene på',
             ],

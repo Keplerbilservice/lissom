@@ -18107,6 +18107,26 @@ sjekk('… og kortformen runder slik den skal',
     && Booking::kortKroner(-2682000) === "\u{2212}27k",
     Booking::kortKroner(547000) . ' / ' . Booking::kortKroner(2682000));
 
+// ── Raden «hvor pengene kom fra» ─────────────────────────────────────────
+//
+// Eieren, 24. september 2026, med raden ringet inn: «synes du denne teksten er
+// bra plassert?» — og: «jeg har bedt om dette flere ganger».
+//
+// Raden sto paa fire faste kolonner med tre ting i. Paa en telefon ble hver
+// kolonne saa smal at «KURS OG EVENTS» brakk over to linjer, og da skled
+// beloepet under den ned et hakk mens «kr. 700,-» og «kr. 10 240,-» ble
+// staaende hoeyere.
+$kildeFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('kildekolonnene bryter i stedet for aa presses sammen',
+    str_contains($kildeFil, 'grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-5);'));
+
+// Overskrifta faar plass til to linjer og legger seg i bunnen av dem. Da
+// begynner beloepene paa samme hoeyde enten navnet brekker eller ikke — og
+// uten et tomrom under de korte.
+sjekk('… og overskriftene holder beloepene i flukt',
+    str_contains($kildeFil, 'line-height: 1.3; min-height: 2.6em; display: flex; align-items: flex-end;">{{ k.navn }}</div>'));
+
 // ── Én bryter, ikke to ───────────────────────────────────────────────────
 //
 // Eieren, 12. september 2026: «Har vi ikke alt for mange brytere for samme
@@ -20135,6 +20155,201 @@ sjekk('fanen i Markedsfoering',
     && str_contains($mfSida, '<sc-if value="{{ mkErForslag }}"'));
 sjekk('forslagene staar i «Venter paa deg»',
     str_contains($mfSida, "forsl ? linje(forsl + ' forslag til Instagram') : null,"));
+
+// ── Adminmenyen som fliser ────────────────────────────────────────────
+//
+// Eieren, 24. september 2026, med et bilde av menyskuffen: «kom med forslag
+// til nytt oppsett paa denne siden, sykt uoversiktlig» — og av ni forslag:
+// «jeg liker fliser». Skuffen er seks navngitte bolker i stedet for 22
+// piller i tre bunker, og hver ting staar ett sted.
+$fmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nAdminmenyen som fliser\n";
+sjekk('bolkene staar i den rekkefoelgen eieren ba om',
+    str_contains($fmSida, "    const bolkNaa = gruppe('N\u{e5}', [")
+    && str_contains($fmSida, "    const bolkVenter = gruppe('Venter p\u{e5} deg', [")
+    && str_contains($fmSida, "    const bolkKurs = gruppe('Kurs og folk', [")
+    && str_contains($fmSida, "    const bolkPenger = gruppe('Penger og salg', [")
+    && str_contains($fmSida, "    const bolkResten = gruppe('Resten', [")
+    && str_contains($fmSida, "    const bolkRaskt = gruppe('Gj\u{f8}r raskt',"));
+sjekk('chatten staar i «Venter paa deg», med uleste som tall',
+    str_contains($fmSida, "    const chatNye = this.state.chatNye || 0;")
+    && str_contains($fmSida, "      tall: chatNye ? String(chatNye) : '',"));
+sjekk('«I verkstedet naa» ligger under «Venter paa deg»',
+    str_contains($fmSida, "      admMobPunkterA: med('naa', bolkNaa).concat(med('venter', bolkVenter)),"));
+// Kasse, Til godkjenning og Aarskalender sto baade som sted og som snarvei.
+sjekk('ingenting staar to ganger i skuffen',
+    str_contains($fmSida, "    brukt.arskalender = true;")
+    && str_contains($fmSida, "      snar('kasse', 'Nytt salg', sted.meny === 'Kasse'),")
+    && str_contains($fmSida, "      snar('tilgodkjenning', '', sted.meny === 'Til godkjenning'),"));
+sjekk('en ny snarvei faller ned i «Gjoer raskt» av seg selv',
+    str_contains($fmSida, "      this.adminSnarveier().filter(x => !brukt[x.nokkel]).map(x => snar(x.nokkel)),"));
+sjekk('Verktoey og Logg ut staar nederst, med en strek over',
+    str_contains($fmSida, "      marginTop: 6, paddingTop: 10,\n      borderTop: '1px solid rgba(244,235,222,.18)',"));
+sjekk('ovnkortet naas fra alle adminskjermene',
+    str_contains($fmSida, "      ...((side || '').indexOf('admin') === 0 ? (this.hentOvn(), this.ovnVals()) : {}),")
+    && str_contains($fmSida, '<div class="{{ ovnKortKlasse }}" style="{{ ovnSkuffStil }}">'));
+sjekk('den samme knappen tegner baade fliser og piller',
+    str_contains($fmSida, "    const heleKnappen = (k) => Object.assign({"));
+
+// ── Admin paa telefon: fliser ─────────────────────────────────────────
+//
+// Eieren, 25. september 2026, etter aa ha sett alle 37 skjermene tegnet:
+// «ja bygg det». Tre ting gikk igjen, og to av dem overstyrer valg han
+// selv tok 13. september — han ble spurt, og svarte «ja, bygg skissen».
+$flSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nAdmin paa telefon: fliser\n";
+sjekk('fanerekka ruller sidelengs',
+    str_contains($flSida, "    .lx-adminaside ~ main .lx-fanerad {\n      flex-wrap: nowrap !important;")
+    && str_contains($flSida, "      overscroll-behavior-x: contain;"));
+// Uten dette ble «Send purring» og «Kontakt» inne i kortene klippet i
+// kanten. Det saa jeg paa bildet av Alle brukere, og skilte dem ut.
+sjekk('handlingsradene inne i kortene bryter som for',
+    str_contains($flSida, "    .lx-adminaside ~ main .lx-pillerad {\n      flex-wrap: wrap !important;")
+    && str_contains($flSida, "      flex: 1 1 calc(50% - 12px) !important;"));
+sjekk('25 rader er merket som fanerekker',
+    substr_count($flSida, 'class="lx-pillerad lx-fanerad"') === 25);
+// «EKSPORTER TIL REGNSKAP» rant ut av flisa si og la seg oppaa knappen ved
+// siden av. Pilla staar med «nowrap» fra designsystemet; i full bredde gikk
+// det bra, i en flis paa 151 px gjorde det ikke det.
+sjekk('teksten brekker og krymper i flisa, i stedet for aa renne ut',
+    str_contains($flSida, "      white-space: normal !important;\n      font-size: 12px !important;"));
+// To fliser ved siden av hverandre var 68 og 53 px hoye. Eieren, med bilde:
+// «pass på tekst og størrelse».
+sjekk('flisene i topprada blir like hoye',
+    str_contains($flSida, "      height: 100% !important;\n      min-height: 48px !important;"));
+// «x-import» pakker knappen i en «.sc-host-x» med «display: contents», saa
+// det er knappen som er cella. En «grid-column» paa innpakningen gjor
+// ingenting: «LEGG TIL DELTAKER» sto paa 151 px i stedet for 310.
+sjekk('oddetallsknappen faar hele raden, ogsaa bak innpakningen',
+    str_contains($flSida, '> *:nth-child(odd):last-child > button {' . "\n" . '      grid-column: 1 / -1;'));
+sjekk('handlingene staar to og to',
+    str_contains($flSida, "    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) {")
+    && str_contains($flSida, "      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;"));
+sjekk('tallkortene staar to og to',
+    str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(190px"],')
+    && str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(260px"] {'));
+// Kortene paa 300 og 320 holder skjemaer og produktbilder, og skal ha hele
+// bredda. De under 180 har alt to spalter.
+sjekk('… men bare de som er tallkort',
+    !str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(300px"]')
+    && !str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(320px"]')
+    && !str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(150px"]'));
+// Reglene staar bare inne i admin. Min side og kundesida bruker de samme
+// rutenettene — se «minmax(190px» paa medlemssida — og de skal ikke roeres.
+// Hver eneste av de aatte velgerne baerer «.lx-adminaside ~ main».
+sjekk('ingen av de aatte reglene lekker ut paa kundesida',
+    substr_count($flSida, 'div[style*="minmax(') === 8
+    && substr_count($flSida, '.lx-adminaside ~ main div[style*="minmax(') === 8);
+
+// ── Kalenderen paa telefon ────────────────────────────────────────────
+//
+// Eieren, 25. september 2026: «kalender paa mobil maa ha en ny loesning, er
+// uoversiktlig». Av tre forslag valgte han B — det som gaar naa oeverst — og
+// «Jeg vil ha b» da han ble spurt om den lange lista skulle erstatte
+// Dag/Uke/Maaned/Liste. Rutenettene staar derfor som for under.
+$kmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nKalenderen paa telefon\n";
+sjekk('blokka staar bare paa telefon',
+    str_contains($kmSida, '  .lx-kalmob { display: none; }')
+    && str_contains($kmSida, '    .lx-adminaside ~ main .lx-kalmob { display: block; }'));
+sjekk('den staar oeverst, over datoraden',
+    str_contains($kmSida, '<div id="kl-kalender" style="{{ klStyringStil }}">' . "\n"
+        . '          <!-- ── Kalenderen paa telefon: hva skjer naa ──────────────────'));
+sjekk('kortet viser det som gaar naa, ellers det neste i dag',
+    str_contains($kmSida, "        const hoved = gaar[0] || senere[0] || null;")
+    && str_contains($kmSida, "          kalNaaTittel: hoved ? hoved.tittel : 'Ingenting mer i dag',"));
+// Avlyste var filtrert bort av klAlle. De staar der igjen fra 25. september
+// — se «Avlyste okter i kalenderen» lenger nede — saa kortet leser dem fra
+// den samme lista som alt annet, og ikke fra en kilde til.
+sjekk('avlyste leses fra den samme lista som resten',
+    str_contains($kmSida, '        const avlysteFram = framover.filter(e => e.avlyst);')
+    && !str_contains($kmSida, 'const kh = this.state.kalHendelser || {};'));
+sjekk('«Trenger et blikk» tar med det som er for tynt til aa gaa',
+    str_contains($kmSida, '                             && (e.pameldt || 0) * 3 < e.kap).forEach(e => blikk.push({'));
+sjekk('uka er sju dager fra mandag, med i dag markert',
+    str_contains($kmSida, '        mandag.setDate(idag.getDate() - ((idag.getDay() + 6) % 7));')
+    && str_contains($kmSida, "                      border: erIdag ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',"));
+// «12 av 12 plasser — fullbooket» brakk over to linjer paa 390 px.
+sjekk('er det fullt, staar det bare «Fullbooket»',
+    str_contains($kmSida, "              ? 'Fullbooket'"));
+// Blokka skal lese det som alt er hentet, ikke hente selv. Ett kall til
+// kalenderen i hele fila, og det er klHent() sitt.
+sjekk('ingen nye kall — hendelsene er de samme rutenettene tegner',
+    substr_count($kmSida, "fetch('/api/admin/kalender.php") === 1);
+
+// ── Avlyste okter: skravert, men uten aa ta plassen ───────────────────
+//
+// Eieren, 25. september 2026: «avlyste kurs kan stå som skravert eller
+// transparente, men de må ikke okkupere plassen i kalenderen». De var
+// filtrert helt bort siden 8. september.
+$avSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nAvlyste okter i kalenderen\n";
+sjekk('de er ikke filtrert bort lenger',
+    str_contains($avSida, '    const skjulAvlyste = liste => liste;')
+    && !str_contains($avSida, 'const skjulAvlyste = liste => liste.filter(e => !e.avlyst);'));
+sjekk('de er skravert, i tillegg til gjennomsiktige',
+    str_contains($avSida, "    const skravur = e => (e.avlyst ? {")
+    && str_contains($avSida, "      backgroundImage: 'repeating-linear-gradient(45deg,'"));
+// Uten dette blir et ekte kurs en strime ved siden av en avlyst okt.
+sjekk('de er ute av breddedelinga i dag- og ukevisningen',
+    str_contains($avSida, '      const spokelser = kort.filter(e => e.avlyst);')
+    && str_contains($avSida, '      const plassert = spokelser.map(tilP)')
+    && str_contains($avSida, "      const plas = evs.filter(e => e.avlyst).map(tilQ)"));
+sjekk('… og ligger bak de ekte, litt utenfor saa skravuren synes',
+    substr_count($avSida, "p.spokelse ? 0 : 2 + p.lane") === 2
+    && substr_count($avSida, "p.spokelse ? '0px'") === 2
+    && substr_count($avSida, "p.spokelse ? '100%'") === 2);
+// En dag der den eneste okta er avlyst sa «1 økt», og saa opptatt ut.
+sjekk('en avlyst kveld teller ikke som en okt paa dagen',
+    str_contains($avSida, "(evs.filter(e => !e.avlyst).length)"));
+sjekk('i maanedsruta staar de sist, saa de ekte faar plassene',
+    str_contains($avSida, '        .slice().sort((a, b) => (a.avlyst ? 1 : 0) - (b.avlyst ? 1 : 0));'));
+
+// ── Datoraden laa utenfor skjermen ────────────────────────────────────
+//
+// «lx-kaltopp» sitter paa to rader. Regelen fra 16. september 2026 gjaldt
+// topprada med «Denne måneden», men traff ogsaa datoraden inne i
+// kalenderen — og med nowrap kunne den ikke brekke. Maalt paa 390 px:
+// datoen 43 px og sammendraget 163 px utenfor. Eieren, 25. september:
+// «se bildet med teksten som går utenfor».
+echo "\nDatoraden i kalenderen\n";
+sjekk('nowrap gjelder bare topprada, ikke datoraden',
+    str_contains($avSida, '    .lx-adminaside ~ main .lx-topprad.lx-kaltopp {' . "\n" . '      flex-wrap: nowrap !important;')
+    && !str_contains($avSida, '    .lx-adminaside ~ main .lx-kaltopp {' . "\n" . '      flex-wrap: nowrap !important;'));
+sjekk('«Denne måneden» staar fortsatt ved siden av tittelen',
+    str_contains($avSida, '    .lx-adminaside ~ main .lx-topprad.lx-kaltopp button.lx-mndkort {'));
+
+// ── Ingen ukesvisning paa telefon, maaneden som datovelger ────────────
+//
+// Eieren, 25. september 2026: «vi kan ikke ha ukesvisning, dagvisningen er
+// fin, om jeg trykker måned åpner det seg en kalender med dager jeg kan
+// klikke på? Som er indikerte når det er kurs?»
+$dvSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nKalendervisningene paa telefon\n";
+sjekk('ukesvisningen finnes ikke paa telefon',
+    str_contains($dvSida, "    if (smalKal && visning === 'uke') visning = 'dag';")
+    && str_contains($dvSida, "        .filter(v => !(smalKal && v[0] === 'uke')).map(v => ({"));
+// Paa PC staar den som for — eieren ba om telefonen.
+sjekk('… men staar som for paa PC',
+    str_contains($dvSida, "      klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]")
+    && str_contains($dvSida, '<sc-if value="{{ klErUke }}"'));
+sjekk('maaneden er en datovelger paa telefon',
+    str_contains($dvSida, '    const mndMobDager = celler.map(c => {')
+    && str_contains($dvSida, '      klMndMobDager: mndMobDager,')
+    && str_contains($dvSida, '<div class="lx-mndmob">'));
+sjekk('… og rutenettet med kursnavn staar bare paa PC',
+    str_contains($dvSida, '  .lx-mndmob { display: none; }')
+    && str_contains($dvSida, '    .lx-adminaside ~ main .lx-mndpc { display: none !important; }'));
+sjekk('hver dag er en knapp som aapner dagen',
+    str_contains($dvSida, '<button type="button" onClick="{{ d.velgDag }}" style="{{ d.stil }}">')
+    && str_contains($dvSida, '        velgDag: c.velgDag,'));
+// Grоnn naar det er fullt, terrakotta ellers, graa naar det bare er avlyst.
+sjekk('prikkene sier hva slags dag det er',
+    str_contains($dvSida, "                  ? 'var(--sage-500, #7f9c78)' : 'var(--terracotta-600)' },")
+    && str_contains($dvSida, "        ? [{ stil: { width: '5px', height: '5px', borderRadius: '50%', background: 'var(--clay-300, #c3b8aa)' } }]"));
+// Uten fast hoyde paa prikkeraden spratt tallene opp og ned fra rad til rad.
+sjekk('prikkeraden har fast hoyde, saa tallene staar i ro',
+    str_contains($dvSida, "      height: 5px;\n      align-items: center;"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

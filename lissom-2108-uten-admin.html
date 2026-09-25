@@ -1952,6 +1952,18 @@ window.__resources = {
     .lx-adminaside ~ main .lx-topprad button {
       width: 100% !important;
     }
+    /* Ordet maa kunne brekke i flisa.
+       Pilla staar med «nowrap» fra designsystemet. I full bredde gikk det
+       bra; i en flis paa 151 px rant «EKSPORTER TIL REGNSKAP» ut av sin egen
+       ramme og la seg oppaa «MÅNEDSRAPPORT (PDF)» ved siden av. Det saa jeg
+       paa bildet av Økonomi paa 390 px. Selve knappene sto riktig — 151 px
+       hver, paa 40 og 199 — det var teksten som laa utenfor.
+       To linjer er greit; en knapp man ikke kan lese er det ikke. */
+    .lx-adminaside ~ main .lx-topprad button {
+      white-space: normal !important;
+      padding: 9px 14px !important;
+      height: auto !important;
+    }
     /* «:not(:first-child)» maa staa der: har skjermen ingen handlinger, er
        tittelen bade forste og siste barn, og den skal ikke bli et rutenett. */
     .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) {

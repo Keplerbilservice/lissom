@@ -20208,6 +20208,11 @@ sjekk('handlingsradene inne i kortene bryter som for',
     && str_contains($flSida, "      flex: 1 1 calc(50% - 12px) !important;"));
 sjekk('25 rader er merket som fanerekker',
     substr_count($flSida, 'class="lx-pillerad lx-fanerad"') === 25);
+// «EKSPORTER TIL REGNSKAP» rant ut av flisa si og la seg oppaa knappen ved
+// siden av. Pilla staar med «nowrap» fra designsystemet; i full bredde gikk
+// det bra, i en flis paa 151 px gjorde det ikke det.
+sjekk('ordet brekker i flisa i stedet for aa renne ut',
+    str_contains($flSida, "      white-space: normal !important;\n      padding: 9px 14px !important;"));
 sjekk('handlingene staar to og to, oddetallet i full bredde',
     str_contains($flSida, "    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) {")
     && str_contains($flSida, "      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;")

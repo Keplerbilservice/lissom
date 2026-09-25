@@ -27953,6 +27953,39 @@ class Component extends DCLogic {
    * gjennom (setState under): mangler forklaringen, er den tom; mangler
    * fargen, er den roed for en feil og ellers vanlig.
    */
+  /**
+   * Ferie-advarselen. Eieren, 25. september 2026: «husk å gi meg mulighet å
+   * legge ut kurs likevel, men jeg må få advarsel, om at det er ferie».
+   *
+   * Datoer legges inn og flyttes fra aatte steder i admin. I stedet for aa
+   * endre alle aatte ligger vakten ett sted: svarer api/admin/kurs.php med
+   * «ferieAdvarsel», spor vi, og sier eieren ja, sendes det samme kallet paa
+   * nytt med ferieOk = 1. Kalleren faar det siste svaret, som om det var det
+   * foerste. Sier hun nei, faar kalleren advarselen som en vanlig feil.
+   */
+  ferieVakt() {
+    if (typeof window === 'undefined' || window.__lissomFerieVakt) return;
+    window.__lissomFerieVakt = true;
+    const opprinnelig = window.fetch.bind(window);
+    window.fetch = (url, opt) => {
+      const erKurs = typeof url === 'string' && url.indexOf('/api/admin/kurs.php') === 0
+        && opt && String(opt.method || '').toUpperCase() === 'POST' && typeof opt.body === 'string';
+      if (!erKurs) return opprinnelig(url, opt);
+      return opprinnelig(url, opt).then(r => {
+        if (r.status !== 409) return r;
+        return r.clone().json().then(d => {
+          if (!d || !d.ferieAdvarsel) return r;
+          const ja = window.confirm(d.feil + '\n\nOK = Legg ut likevel · Avbryt = Avbryt');
+          if (!ja) return r;
+          let kropp = {};
+          try { kropp = JSON.parse(opt.body); } catch (e) { return r; }
+          kropp.ferieOk = 1;
+          return opprinnelig(url, Object.assign({}, opt, { body: JSON.stringify(kropp) }));
+        }).catch(() => r);
+      });
+    };
+  }
+
   kvitteringRydd(update) {
     if (update && typeof update === 'object' && typeof update.kvittering === 'string' && update.kvittering) {
       const ekstra = {};
@@ -37872,6 +37905,8 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
+    // Ferie-advarselen for datoer som legges inn eller flyttes (se ferieVakt).
+    this.ferieVakt();
     // Handlekurven fra forrige sidelasting i samme fane — se componentDidUpdate.
     try {
       const k = JSON.parse(sessionStorage.getItem('lissom-kurv') || 'null');

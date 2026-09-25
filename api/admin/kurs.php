@@ -248,6 +248,25 @@ $holderId = static function (string $felt): ?int {
 // i kalenderen, som en merknad paa dagen, ikke som et nei i innleggingen.
 
 /** «2026-09-02 17:30» i norsk tid → «2026-09-02 15:30:00» UTC for lagring. */
+// Ferie. Eieren, 25. september 2026: «husk å gi meg mulighet å legge ut
+// kurs likevel, men jeg må få advarsel, om at det er ferie». Ligger en dato
+// paa en stengt dag, svarer vi med en advarsel (ferieAdvarsel) i stedet for
+// aa lagre. Admin spor, og sendes det samme igjen med ferieOk = 1, lagres
+// oekta som et unntak (ferie_ok, migrasjon 211) og vises paa nettsiden.
+$ferieVakt = static function (array $utcTider): bool {
+    $stengte = Ferie::stengteBlant($utcTider);
+    if ($stengte === []) {
+        return false;
+    }
+    if (Foresporsel::heltall('ferieOk') === 1) {
+        return true;
+    }
+    $f = $stengte[0];
+    $hvem = $f['merknad'] !== '' ? ' (' . $f['merknad'] . ')' : '';
+    $flere = count($stengte) > 1 ? ' Det gjelder også ' . implode(', ', array_map(static fn($x) => $x['dato'], array_slice($stengte, 1))) . '.' : '';
+    Svar::feil($f['dato'] . ' er ferie' . $hvem . '.' . $flere . ' Vil du legge ut kurset likevel?', 409, ['ferieAdvarsel' => true]);
+};
+
 $tilUtc = static function (string $norsk): ?string {
     $norsk = trim($norsk);
     if ($norsk === '') {
@@ -565,6 +584,11 @@ switch ($handling) {
         if ($start === null) {
             Svar::feil('Skriv datoen som 2026-09-02 17:30.');
         }
+        $ferieTider = [$start];
+        foreach ($dagerInn as $d) {
+            $ferieTider[] = $tilUtc($d['dato'] . ' ' . ($d['fra'] !== '' ? $d['fra'] : '12:00'));
+        }
+        $ferieUnntak = $ferieVakt($ferieTider);
         // Ligger kurset alt paa denne datoen og tida, sier vi det.
         //
         // Eieren, 16. september 2026, med et bilde av dialogen: «naa faar jeg
@@ -666,6 +690,9 @@ switch ($handling) {
                 : Kursholder::forKurs($kursId);
         }
 
+        if ($ferieUnntak && Ferie::harUnntak()) {
+            $nyOkt['ferie_ok'] = 1;
+        }
         $oktId = DB::settInn('course_sessions', $nyOkt);
 
         // Gaar kurset over flere dager, lagres dagene som samlinger — dag én
@@ -942,10 +969,12 @@ switch ($handling) {
         if ($slutt !== null && $slutt <= $start) {
             Svar::feil('Slutt må være etter start.');
         }
+        $ferieUnntakFlytt = $ferieVakt([$start]);
 
         DB::oppdater(
             'course_sessions',
-            ['start_tid' => $start, 'slutt_tid' => $slutt],
+            ['start_tid' => $start, 'slutt_tid' => $slutt]
+                + ($ferieUnntakFlytt && Ferie::harUnntak() ? ['ferie_ok' => 1] : []),
             ['id' => $oktId]
         );
         revider('dato_flyttet', 'course_session', $oktId, [

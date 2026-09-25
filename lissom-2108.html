@@ -1923,13 +1923,22 @@ window.__resources = {
       grid-column: 1 / -1;
     }
     /* Rada skal ikke brekke: da blir sida lengre, og det var nettopp det
-       eieren ikke ville. Tittelen krymper i stedet. */
-    .lx-adminaside ~ main .lx-kaltopp {
+       eieren ikke ville. Tittelen krymper i stedet.
+
+       «.lx-topprad» maa staa i velgeren. Klassen «lx-kaltopp» sitter paa TO
+       rader: topprada med «Denne måneden», som er den denne regelen gjelder,
+       og datoraden inne i kalenderen — «‹ I dag › Fredag 25. september 2026
+       · 2 økter · 8 av 16 plasser». Uten «nowrap» brekker den siste av seg
+       selv, og regelen lenger oppe gir tittelen sin egen linje. Med nowrap
+       kunne den ikke brekke, og ingenting holdt den inne: maalt paa 390 px
+       laa datoen 43 px og sammendraget 163 px utenfor skjermen.
+       Eieren, 25. september 2026: «se bildet med teksten som går utenfor». */
+    .lx-adminaside ~ main .lx-topprad.lx-kaltopp {
       flex-wrap: nowrap !important;
       align-items: center;
       gap: var(--space-4);
     }
-    .lx-adminaside ~ main .lx-kaltopp button.lx-mndkort {
+    .lx-adminaside ~ main .lx-topprad.lx-kaltopp button.lx-mndkort {
       width: auto !important;
     }
     .lx-adminaside ~ main .lx-topprad > div:last-child {
@@ -45189,20 +45198,23 @@ class Component extends DCLogic {
         evts.push(e);
       });
     }
-    // ── Avlyste oekter staar ikke i kalenderen ────────────────────────
+    // ── Avlyste oekter staar skravert, men tar ikke plassen ───────────
     //
-    // De sto med strek over og halvt gjennomsiktige, saa man kunne se at de
-    // hadde vaert der. Eieren, 8. september 2026: «Når jeg avlyser et kurs,
-    // så vil jeg at dette kurset forsvinner fra kalenderen».
+    // De sto med strek over og halvt gjennomsiktige. Eieren, 8. september
+    // 2026: «Når jeg avlyser et kurs, så vil jeg at dette kurset forsvinner
+    // fra kalenderen» — og da ble de filtrert bort her.
     //
-    // Han fikk sagt at veien tilbake gaar med: «Gjenopprett økten» naas ved
-    // aa hoyreklikke brikka, og finnes ikke brikka, finnes ikke veien. Han
-    // valgte «Skjul, punktum» — en avlysning er endelig, og datoen maa lages
-    // paa nytt om den var feil.
+    // Eieren, 25. september 2026: «avlyste kurs kan stå som skravert eller
+    // transparente, men de må ikke okkupere plassen i kalenderen».
     //
-    // Datoen roeres ikke i basen. Den staar som «avlyst» og er lesbar i
-    // dagsrapporten og under kurset; det er kalenderen den er ute av.
-    const skjulAvlyste = liste => liste.filter(e => !e.avlyst);
+    // Det er to ting, og bare det andre var problemet. En avlyst oekt som
+    // deler bredden med et ekte kurs gjor kurset til en strime, og en kveld
+    // som er avlyst ser opptatt ut. Naa staar den bak, i full bredde, med
+    // skravur over — og breddedelinga later som den ikke finnes. Se
+    // «spokelse» i dag- og ukevisningen.
+    //
+    // Strek over og halv gjennomsiktighet sto her fra for, og staar fortsatt.
+    const skjulAvlyste = liste => liste;
 
     // Fase 5: bare det som staar i basen tegnes. Lagene under blir staaende
     // i koden fordi de er det optimistiske svaret fase 6 skal bruke — men de
@@ -45275,6 +45287,21 @@ class Component extends DCLogic {
       // jeg?». Booker noen, staar den tida der som foer.
       .filter(e => !(e.auto && !((e.pameldt || 0) > 0)));
     const farge = e => (modus === 'holder' && e.holder ? (hInfo[e.holder] || info.verksted) : info[e.type]);
+    // Skravuren paa en avlyst oekt.
+    //
+    // Eieren, 25. september 2026: «avlyste kurs kan stå som skravert eller
+    // transparente». Begge deler: den er halvt gjennomsiktig fra for, og
+    // faar striper over. Gjennomsiktighet alene er ikke nok — en lys brikke
+    // paa lys bakgrunn blir bare svak, og «svak» kan bety mye. Striper
+    // betyr én ting.
+    //
+    // «background-image» og ikke «background»: fargen under skal staa, saa
+    // man ser hvilket kurs det var.
+    const skravur = e => (e.avlyst ? {
+      backgroundImage: 'repeating-linear-gradient(45deg,'
+        + ' rgba(62,30,13,.16) 0, rgba(62,30,13,.16) 4px,'
+        + ' transparent 4px, transparent 9px)',
+    } : {});
     const pill = (e, blokk) => {
       const f = farge(e);
       return Object.assign({
@@ -45283,7 +45310,7 @@ class Component extends DCLogic {
         background: f.bg, color: f.fg, fontFamily: 'var(--font-ui, inherit)', fontSize: blokk ? '12px' : '11px', fontWeight: 600, lineHeight: 1.35,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: blokk ? 'normal' : 'nowrap',
         opacity: e.avlyst ? .45 : 1, textDecoration: e.avlyst ? 'line-through' : 'none',
-      }, varsel(e), puls(e),
+      }, skravur(e), varsel(e), puls(e),
       // Drar du en person, er det oektene som tar imot. En gruppe har ingen
       // oektId og kan ikke ta imot noen.
       e.oktId ? this.klSlippRamme('okt', 'var(--sage-600)') : {});
@@ -45446,7 +45473,12 @@ class Component extends DCLogic {
     for (let i = 0; i < offset; i++) celler.push(tomCelle());
     for (let d = 1; d <= dim; d++) {
       const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-      const evts = samle(dagEvts(iso));
+      // Avlyste staar sist i cella. Er det flere enn det er plass til, er
+      // det de avlyste som faller inn under «+ N til» — de ekte oektene skal
+      // ha plassen. Eieren, 25. september 2026: «de må ikke okkupere plassen
+      // i kalenderen».
+      const evts = samle(dagEvts(iso))
+        .slice().sort((a, b) => (a.avlyst ? 1 : 0) - (b.avlyst ? 1 : 0));
       const stengtDag = !!this.klStengte()[iso];
       celler.push({
         iso,
@@ -45628,12 +45660,21 @@ class Component extends DCLogic {
         const s = minAv(e.tid);
         return { e, s, sl: e.slutt ? minAv(e.slutt) : s + 60 };
       };
-      const smaa  = kort.filter(erSmal);
-      const store = kort.filter(e => !erSmal(e));
+      // ── Den avlyste tar ikke plassen ────────────────────────────
+      //
+      // Eieren, 25. september 2026. Den staar der, skravert, men den er ikke
+      // med i delBredden — de ekte oektene legges ut som om den ikke fantes,
+      // og den legger seg bak dem i full bredde.
+      const spokelser = kort.filter(e => e.avlyst);
+      const levende   = kort.filter(e => !e.avlyst);
+      const smaa  = levende.filter(erSmal);
+      const store = levende.filter(e => !erSmal(e));
       // Er det ingen smale, skal de andre ha hele bredden som for.
       const bredResten = smaa.length ? 100 - SMAL_ANDEL : 100;
-      const plassert = delBredden(store.map(tilP))
-        .map(q => Object.assign(q, { fra: 0, bredde: bredResten, smal: false }))
+      const plassert = spokelser.map(tilP)
+        .map(q => Object.assign(q, { fra: 0, bredde: 100, smal: false, lane: 0, av: 1, spokelse: true }))
+        .concat(delBredden(store.map(tilP))
+          .map(q => Object.assign(q, { fra: 0, bredde: bredResten, smal: false })))
         .concat(delBredden(smaa.map(tilP))
           .map(q => Object.assign(q, { fra: bredResten, bredde: SMAL_ANDEL, smal: true })));
       return {
@@ -45706,8 +45747,10 @@ class Component extends DCLogic {
               // hvor mange som deler akkurat her — se «delBredden» over.
               // «p.fra» og «p.bredde» er stripa: Paint on Pots ytterst i 15
               // prosent, de andre i resten.
-              left: 'calc(' + (p.fra + p.lane / p.av * p.bredde) + '% + ' + (p.smal ? 2 : 5) + 'px)',
-              width: 'calc(' + (p.bredde / p.av) + '% - ' + (p.smal ? 4 : 10) + 'px)',
+              // Den avlyste ligger bak, og litt utenfor: dekker et ekte kurs
+              // den helt, skal skravuren fortsatt kunne ses i kanten.
+              left: p.spokelse ? '0px' : 'calc(' + (p.fra + p.lane / p.av * p.bredde) + '% + ' + (p.smal ? 2 : 5) + 'px)',
+              width: p.spokelse ? '100%' : 'calc(' + (p.bredde / p.av) + '% - ' + (p.smal ? 4 : 10) + 'px)',
               boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left',
               border: f.kant || 'none', borderLeft: (p.smal ? '2px' : '3px') + ' solid rgba(46,16,2,.28)', borderRadius: '8px',
               padding: p.smal ? '3px 4px' : '6px 9px',
@@ -45715,9 +45758,9 @@ class Component extends DCLogic {
               lineHeight: p.smal ? 1.2 : 1.35, overflow: 'hidden',
               // Blokkene deler bredden og gaar ikke over hverandre, men
               // zIndex holder dem foran rutenettet og timelinjene.
-              boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none',
+              boxShadow: 'var(--shadow-sm)', zIndex: p.spokelse ? 0 : 2 + p.lane, userSelect: 'none',
               opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none',
-            }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', boxShadow: 'var(--shadow-lg)', cursor: 'grabbing' } : {}),
+            }, skravur(p.e), varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', boxShadow: 'var(--shadow-lg)', cursor: 'grabbing' } : {}),
           };
         }),
       };
@@ -45762,16 +45805,21 @@ class Component extends DCLogic {
       const d = new Date(ukeStart); d.setDate(ukeStart.getDate() + i);
       const iso = ukeIsos[i];
       const evs = dagEvts(iso).filter(e => e.type !== 'vakt');
-      const plas = delBredden(evs.map(e => {
-        const s = minAv(e.tid);
-        return { e, s, sl: e.slutt ? minAv(e.slutt) : s + 60 };
-      }));
+      // Som i dagvisningen: den avlyste staar bak, i full bredde, og er ikke
+      // med i delBredden. Eieren, 25. september 2026.
+      const tilQ = e => { const s2 = minAv(e.tid); return { e, s: s2, sl: e.slutt ? minAv(e.slutt) : s2 + 60 }; };
+      const plas = evs.filter(e => e.avlyst).map(tilQ)
+        .map(q => Object.assign(q, { lane: 0, av: 1, spokelse: true }))
+        .concat(delBredden(evs.filter(e => !e.avlyst).map(tilQ)));
       const erIdag = iso === idagIso;
       const stengtU = !!this.klStengte()[iso];
       return {
         iso,
         navn: n + ' ' + d.getDate() + '.',
-        antall: stengtU ? 'Stengt' : (evs.length ? evs.length + (evs.length === 1 ? ' økt' : ' økter') : '–'),
+        // Teller bare de som gaar. En dag der den eneste oekta er avlyst sa
+        // «1 økt», og da saa kvelden opptatt ut — som var nettopp det
+        // eieren ikke ville, 25. september 2026.
+        antall: stengtU ? 'Stengt' : ((n2 => n2 ? n2 + (n2 === 1 ? ' økt' : ' økter') : '–')(evs.filter(e => !e.avlyst).length)),
         velgDag: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
         hodeStil: { appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '10px 10px', borderRight: '1px solid var(--border-subtle)', background: erIdag ? 'var(--lissom-yellow)' : 'transparent', minWidth: 0 },
         navnStil: { display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: erIdag ? 'var(--lissom-brown)' : 'var(--text-heading)' },
@@ -45814,7 +45862,7 @@ class Component extends DCLogic {
             harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
             merknadAntall: String((p.e.deltakere || []).filter(dl => dl.merknad).length),
             harMeta: (p.e.deltakere || []).length > 0 || (p.e.deltakere || []).some(dl => dl.merknad),
-            stil: Object.assign({ position: 'absolute', top: (Math.max(0, p.s - wStart) / 60 * pxUke) + 'px', height: Math.max(26, (Math.min(p.sl, wSlutt) - Math.max(p.s, wStart)) / 60 * pxUke - 3) + 'px', left: 'calc(' + (p.lane / p.av * 100) + '% + 3px)', width: 'calc(' + (100 / p.av) + '% - 6px)', boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left', border: f.kant || 'none', borderRadius: '6px', padding: '3px 6px', background: f.bg, color: f.fg, fontSize: '11px', lineHeight: 1.3, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none', opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none' }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', cursor: 'grabbing' } : {}),
+            stil: Object.assign({ position: 'absolute', top: (Math.max(0, p.s - wStart) / 60 * pxUke) + 'px', height: Math.max(26, (Math.min(p.sl, wSlutt) - Math.max(p.s, wStart)) / 60 * pxUke - 3) + 'px', left: p.spokelse ? '0px' : 'calc(' + (p.lane / p.av * 100) + '% + 3px)', width: p.spokelse ? '100%' : 'calc(' + (100 / p.av) + '% - 6px)', boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left', border: f.kant || 'none', borderRadius: '6px', padding: '3px 6px', background: f.bg, color: f.fg, fontSize: '11px', lineHeight: 1.3, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', zIndex: p.spokelse ? 0 : 2 + p.lane, userSelect: 'none', opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none' }, skravur(p.e), varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', cursor: 'grabbing' } : {}),
           };
         }),
       };
@@ -45973,23 +46021,8 @@ class Component extends DCLogic {
         // man vil vite om mens det er tid til aa gjore noe.
         const iMorgen14 = (() => { const d = new Date(idag); d.setDate(idag.getDate() + 21); return isoAv(d); })();
         const framover = alle.filter(e => e.dato >= idagIso && e.dato <= iMorgen14 && ekte(e));
-        // Avlyste staar ikke i «alle». klAlle filtrerer dem bort med vilje —
-        // eieren, 8. september 2026: «Naar jeg avlyser et kurs, saa vil jeg
-        // at dette kurset forsvinner fra kalenderen». Her skal de fram, og
-        // det er nettopp det han etterlyste 25. september: «et kort med
-        // avlyste kurs maa vi ha ogsaa». Derfor leses maanedene raa, for
-        // filteret. Rutenettene under er urort: de leser «alle» som for.
-        const avlysteFram = (() => {
-          const ut = [], sett = {};
-          const kh = this.state.kalHendelser || {};
-          Object.keys(kh).forEach(k => (kh[k] || []).forEach(e => {
-            if (!e.avlyst || sett[e.id] || !ekte(e)) return;
-            if (e.dato < idagIso || e.dato > iMorgen14) return;
-            sett[e.id] = true;
-            ut.push(e);
-          }));
-          return ut.sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid));
-        })();
+        // Avlyste staar i «alle» igjen fra 25. september — se skjulAvlyste.
+        const avlysteFram = framover.filter(e => e.avlyst);
         const naarTekst = (iso) => {
           const d = new Date(iso + 'T12:00:00');
           const dg = Math.round((d - new Date(idagIso + 'T12:00:00')) / 86400000);

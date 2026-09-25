@@ -20264,6 +20264,48 @@ sjekk('er det fullt, staar det bare «Fullbooket»',
 sjekk('ingen nye kall — hendelsene er de samme rutenettene tegner',
     substr_count($kmSida, "fetch('/api/admin/kalender.php") === 1);
 
+// ── Avlyste okter: skravert, men uten aa ta plassen ───────────────────
+//
+// Eieren, 25. september 2026: «avlyste kurs kan stå som skravert eller
+// transparente, men de må ikke okkupere plassen i kalenderen». De var
+// filtrert helt bort siden 8. september.
+$avSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nAvlyste okter i kalenderen\n";
+sjekk('de er ikke filtrert bort lenger',
+    str_contains($avSida, '    const skjulAvlyste = liste => liste;')
+    && !str_contains($avSida, 'const skjulAvlyste = liste => liste.filter(e => !e.avlyst);'));
+sjekk('de er skravert, i tillegg til gjennomsiktige',
+    str_contains($avSida, "    const skravur = e => (e.avlyst ? {")
+    && str_contains($avSida, "      backgroundImage: 'repeating-linear-gradient(45deg,'"));
+// Uten dette blir et ekte kurs en strime ved siden av en avlyst okt.
+sjekk('de er ute av breddedelinga i dag- og ukevisningen',
+    str_contains($avSida, '      const spokelser = kort.filter(e => e.avlyst);')
+    && str_contains($avSida, '      const plassert = spokelser.map(tilP)')
+    && str_contains($avSida, "      const plas = evs.filter(e => e.avlyst).map(tilQ)"));
+sjekk('… og ligger bak de ekte, litt utenfor saa skravuren synes',
+    substr_count($avSida, "p.spokelse ? 0 : 2 + p.lane") === 2
+    && substr_count($avSida, "p.spokelse ? '0px'") === 2
+    && substr_count($avSida, "p.spokelse ? '100%'") === 2);
+// En dag der den eneste okta er avlyst sa «1 økt», og saa opptatt ut.
+sjekk('en avlyst kveld teller ikke som en okt paa dagen',
+    str_contains($avSida, "(evs.filter(e => !e.avlyst).length)"));
+sjekk('i maanedsruta staar de sist, saa de ekte faar plassene',
+    str_contains($avSida, '        .slice().sort((a, b) => (a.avlyst ? 1 : 0) - (b.avlyst ? 1 : 0));'));
+
+// ── Datoraden laa utenfor skjermen ────────────────────────────────────
+//
+// «lx-kaltopp» sitter paa to rader. Regelen fra 16. september 2026 gjaldt
+// topprada med «Denne måneden», men traff ogsaa datoraden inne i
+// kalenderen — og med nowrap kunne den ikke brekke. Maalt paa 390 px:
+// datoen 43 px og sammendraget 163 px utenfor. Eieren, 25. september:
+// «se bildet med teksten som går utenfor».
+echo "\nDatoraden i kalenderen\n";
+sjekk('nowrap gjelder bare topprada, ikke datoraden',
+    str_contains($avSida, '    .lx-adminaside ~ main .lx-topprad.lx-kaltopp {' . "\n" . '      flex-wrap: nowrap !important;')
+    && !str_contains($avSida, '    .lx-adminaside ~ main .lx-kaltopp {' . "\n" . '      flex-wrap: nowrap !important;'));
+sjekk('«Denne måneden» staar fortsatt ved siden av tittelen',
+    str_contains($avSida, '    .lx-adminaside ~ main .lx-topprad.lx-kaltopp button.lx-mndkort {'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

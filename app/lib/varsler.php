@@ -486,6 +486,16 @@ final class Varsel
         }
 
         $ren = self::signaturSomTekst($signatur);
+        // Et ferdig oppsett kan si hvor signaturen skal staa: «<!--signatur-->»
+        // inne i kortet, rett under hilsenen. Eieren, 25. september 2026:
+        // «løft den litt opp fra bunnen» — den laa under hele e-posten.
+        if ($egenHtml !== null && str_contains($kropp, '<!--signatur-->')) {
+            return [
+                $ren === '' ? $tekst : $tekst . "\n\n-- \n" . $ren,
+                str_replace('<!--signatur-->',
+                    '<tr><td style="padding:0 44px 32px 44px">' . $signatur . '</td></tr>', $kropp),
+            ];
+        }
         return [
             $ren === '' ? $tekst : $tekst . "\n\n-- \n" . $ren,
             $kropp . '<div style="margin-top:28px;">' . $signatur . '</div>',

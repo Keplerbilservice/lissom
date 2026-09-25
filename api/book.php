@@ -104,8 +104,8 @@ if ($oktId <= 0) {
     }
 }
 
-if (Ferie::stengt((string) DB::verdi(
-    'SELECT start_tid FROM course_sessions WHERE id = :id', ['id' => $oktId]
+if (Ferie::skjult((array) DB::en(
+    'SELECT start_tid' . (Ferie::harUnntak() ? ', ferie_ok' : '') . ' FROM course_sessions WHERE id = :id', ['id' => $oktId]
 ))) {
     Svar::feil('Verkstedet holder stengt denne dagen. Velg en annen dato.');
 }

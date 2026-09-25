@@ -20306,6 +20306,38 @@ sjekk('nowrap gjelder bare topprada, ikke datoraden',
 sjekk('«Denne måneden» staar fortsatt ved siden av tittelen',
     str_contains($avSida, '    .lx-adminaside ~ main .lx-topprad.lx-kaltopp button.lx-mndkort {'));
 
+// ── Ingen ukesvisning paa telefon, maaneden som datovelger ────────────
+//
+// Eieren, 25. september 2026: «vi kan ikke ha ukesvisning, dagvisningen er
+// fin, om jeg trykker måned åpner det seg en kalender med dager jeg kan
+// klikke på? Som er indikerte når det er kurs?»
+$dvSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nKalendervisningene paa telefon\n";
+sjekk('ukesvisningen finnes ikke paa telefon',
+    str_contains($dvSida, "    if (smalKal && visning === 'uke') visning = 'dag';")
+    && str_contains($dvSida, "        .filter(v => !(smalKal && v[0] === 'uke')).map(v => ({"));
+// Paa PC staar den som for — eieren ba om telefonen.
+sjekk('… men staar som for paa PC',
+    str_contains($dvSida, "      klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]")
+    && str_contains($dvSida, '<sc-if value="{{ klErUke }}"'));
+sjekk('maaneden er en datovelger paa telefon',
+    str_contains($dvSida, '    const mndMobDager = celler.map(c => {')
+    && str_contains($dvSida, '      klMndMobDager: mndMobDager,')
+    && str_contains($dvSida, '<div class="lx-mndmob">'));
+sjekk('… og rutenettet med kursnavn staar bare paa PC',
+    str_contains($dvSida, '  .lx-mndmob { display: none; }')
+    && str_contains($dvSida, '    .lx-adminaside ~ main .lx-mndpc { display: none !important; }'));
+sjekk('hver dag er en knapp som aapner dagen',
+    str_contains($dvSida, '<button type="button" onClick="{{ d.velgDag }}" style="{{ d.stil }}">')
+    && str_contains($dvSida, '        velgDag: c.velgDag,'));
+// Grоnn naar det er fullt, terrakotta ellers, graa naar det bare er avlyst.
+sjekk('prikkene sier hva slags dag det er',
+    str_contains($dvSida, "                  ? 'var(--sage-500, #7f9c78)' : 'var(--terracotta-600)' },")
+    && str_contains($dvSida, "        ? [{ stil: { width: '5px', height: '5px', borderRadius: '50%', background: 'var(--clay-300, #c3b8aa)' } }]"));
+// Uten fast hoyde paa prikkeraden spratt tallene opp og ned fra rad til rad.
+sjekk('prikkeraden har fast hoyde, saa tallene staar i ro',
+    str_contains($dvSida, "      height: 5px;\n      align-items: center;"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

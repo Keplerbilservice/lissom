@@ -1844,6 +1844,46 @@ window.__resources = {
     }
   }
 
+  /* ── Maaneden som datovelger paa telefon ────────────────────────────
+     Eieren, 25. september 2026. Rutenettet med kursnavn i cella staar som
+     for paa PC; her er det tallet og prikkene. Se klMndMobDager. */
+  .lx-mndmob { display: none; }
+
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main .lx-mndmob {
+      display: block;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 10px 8px 12px;
+    }
+    .lx-adminaside ~ main .lx-mndpc { display: none !important; }
+    .lx-adminaside ~ main .lx-mndmob-u,
+    .lx-adminaside ~ main .lx-mndmob-d {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 2px;
+    }
+    .lx-adminaside ~ main .lx-mndmob-u span {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      padding-bottom: 4px;
+    }
+    /* Prikkene har alltid sin egen hoyde, ogsaa naar det ikke er noen. Uten
+       det spratt tallene opp og ned fra rad til rad. */
+    .lx-adminaside ~ main .lx-mndmob-p {
+      display: flex;
+      gap: 3px;
+      height: 5px;
+      align-items: center;
+      justify-content: center;
+    }
+    .lx-adminaside ~ main .lx-mndmob-p i { display: block; }
+  }
+
   /* Ferikalenderen paa telefon.
      Kalenderen har aatte kolonner: ukepilla og sju dager. Paa en 390 px
      skjerm er det 268 px aa dele paa, og «Uke 36» tok 58 av dem — da ble
@@ -9625,7 +9665,31 @@ window.__resources = {
           </div>
 
         <sc-if value="{{ klErManed }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-kalbred" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <!-- Maaneden paa telefon: bare tall og prikker, og hver dag er en
+               knapp. Eieren, 25. september 2026: «om jeg trykker måned
+               åpner det seg en kalender med dager jeg kan klikke på? Som er
+               indikerte når det er kurs?» Trykk aapner dagen.
+               Samme celler som rutenettet under — se klMndMobDager. -->
+          <div class="lx-mndmob">
+            <div class="lx-mndmob-u">
+              <sc-for list="{{ klMndMobUker }}" as="u" hint-placeholder-count="7">
+                <span>{{ u }}</span>
+              </sc-for>
+            </div>
+            <div class="lx-mndmob-d">
+              <sc-for list="{{ klMndMobDager }}" as="d" hint-placeholder-count="35">
+                <button type="button" onClick="{{ d.velgDag }}" style="{{ d.stil }}">
+                  <span style="{{ d.tallStil }}">{{ d.tall }}</span>
+                  <span class="lx-mndmob-p">
+                    <sc-for list="{{ d.prikker }}" as="pr" hint-placeholder-count="0">
+                      <i style="{{ pr.stil }}"></i>
+                    </sc-for>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <div class="lx-kalbred lx-mndpc" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="display: grid; grid-template-columns: repeat(7, 1fr);">
               <sc-for list="{{ klUkedager }}" as="u" hint-placeholder-count="7">
                 <div style="padding: var(--space-3) var(--space-3); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ u }}</div>
@@ -45269,6 +45333,19 @@ class Component extends DCLogic {
     // Maaned og Liste staar der fortsatt som valg; rutenettet ruller
     // sidelengs i sin egen ramme, saa resten av sida staar stille.
     let visning = this.state.klVisning || 'dag';
+    // ── Ingen ukesvisning paa telefon ────────────────────────────────
+    //
+    // Eieren, 25. september 2026: «vi kan ikke ha ukesvisning, dagvisningen
+    // er fin». Sju spalter paa 390 px er 47 px hver — et kursnavn blir ett
+    // ord per linje, og tre ord blir tre linjer.
+    //
+    // Paa PC staar den som for. Der er spaltene 120 px, og uka er nettopp
+    // det man planlegger i.
+    //
+    // Staar man i uka og tar opp telefonen, faller man ned i dagen framfor
+    // en tom skjerm.
+    const smalKal = this.erSmal();
+    if (smalKal && visning === 'uke') visning = 'dag';
     const skjulT = this.state.klSkjulType || {}, skjulH = this.state.klSkjulHolder || {};
     const modus = this.state.klFarge || 'type';
     const info = this.klTypeInfo(), hInfo = this.klHolderInfo();
@@ -45512,6 +45589,55 @@ class Component extends DCLogic {
     }
     while (celler.length % 7) celler.push(tomCelle());
     const uker = []; for (let i = 0; i < celler.length; i += 7) uker.push({ dager: celler.slice(i, i + 7) });
+
+    // ── Maaneden paa telefon: dager du kan trykke paa ────────────────
+    //
+    // Eieren, 25. september 2026: «om jeg trykker måned åpner det seg en
+    // kalender med dager jeg kan klikke på? Som er indikerte når det er
+    // kurs?»
+    //
+    // Rutenettet over er det samme, men det tegner kursnavn i cella. Paa
+    // 390 px er cella 52 px bred, og da staar det «Nybegy…» i 9 px skrift.
+    // Her er det bare tallet og prikker: hvor mange, og hva slags.
+    //
+    // Samme celler, samme «velgDag» — trykker du paa en dag, aapner den seg
+    // i dagvisningen, som er den eieren vil ha.
+    const mndMobDager = celler.map(c => {
+      if (!c.iso) return { iso: '', tall: '', prikker: [], stil: { visibility: 'hidden' }, tallStil: {}, velgDag: () => {} };
+      const evs = dagEvts(c.iso);
+      const ekteD  = evs.filter(e => !e.avlyst && e.type !== 'vakt');
+      const avlD   = evs.filter(e => e.avlyst);
+      const erIdagD = c.iso === idagIso;
+      const erValgt = c.iso === isoAv(anker);   // «dagIso» settes lenger nede
+      const stengtM = !!this.klStengte()[c.iso];
+      // Tre prikker holder. Er det flere, sier den tredje bare «og mer» —
+      // tallet staar i dagen naar man trykker.
+      const prikker = ekteD.slice(0, 3).map(e => ({
+        stil: { width: '5px', height: '5px', borderRadius: '50%',
+                background: (e.kap && (e.pameldt || 0) >= e.kap)
+                  ? 'var(--sage-500, #7f9c78)' : 'var(--terracotta-600)' },
+      })).concat(ekteD.length === 0 && avlD.length
+        ? [{ stil: { width: '5px', height: '5px', borderRadius: '50%', background: 'var(--clay-300, #c3b8aa)' } }]
+        : []);
+      return {
+        iso: c.iso,
+        tall: String(parseInt(c.tall, 10)),
+        prikker,
+        velgDag: c.velgDag,
+        stil: {
+          appearance: 'none', cursor: 'pointer', padding: '6px 0 5px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+          minHeight: '46px', borderRadius: '10px', font: 'inherit',
+          background: erValgt ? 'var(--lissom-yellow)' : (stengtM ? 'var(--clay-200)' : 'transparent'),
+          border: erIdagD && !erValgt ? '2px solid var(--lissom-brown)' : '1px solid transparent',
+        },
+        tallStil: {
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px',
+          color: erValgt ? 'var(--lissom-brown)' : 'var(--text-heading)',
+          lineHeight: 1,
+        },
+      };
+    });
     const ukeStart = new Date(anker); ukeStart.setDate(anker.getDate() - ((anker.getDay() + 6) % 7));
     const ukeSlutt = new Date(ukeStart); ukeSlutt.setDate(ukeStart.getDate() + 6);
     const dagIso = isoAv(anker);
@@ -45946,12 +46072,16 @@ class Component extends DCLogic {
       klKonfliktMot: this.state.klKonflikt ? this.state.klKonflikt.motTittel + ' · ' + this.state.klKonflikt.motTid : '',
       klKonfliktBekreft: () => this.klBrukFlytt(this.state.klKonflikt.flytting),
       klKonfliktAvbryt: () => this.setState({ klKonflikt: null }),
-      klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']].map(v => ({
+      klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]
+        .filter(v => !(smalKal && v[0] === 'uke')).map(v => ({
         navn: v[1], velg: () => this.setState({ klVisning: v[0] }),
         stil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', fontWeight: visning === v[0] ? 700 : 500, background: visning === v[0] ? 'var(--lissom-yellow)' : 'var(--surface-card)', color: visning === v[0] ? 'var(--lissom-brown)' : 'var(--text-muted)' },
       })),
       klErManed: visning === 'maned', klErUke: visning === 'uke', klErDag: visning === 'dag', klErListe: visning === 'liste',
       klUkedager: uked, klUker: uker, klUkeDager: ukeDager,
+      // Maaneden som datovelger paa telefon. Bokstaven, ikke de tre.
+      klMndMobUker: uked.map(n => n.charAt(0)),
+      klMndMobDager: mndMobDager,
       klUkeTimer: ukeTimer,
       klUkeHodeStil: { display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)', borderBottom: '1px solid var(--border-subtle)', background: 'var(--clay-100)' },
       klUkeKroppStil: { display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden' },

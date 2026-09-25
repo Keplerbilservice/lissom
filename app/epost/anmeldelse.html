@@ -4,6 +4,8 @@
   som app/epost/fortsett.html. Sendes av bin/cron.php (og «kursbevis» i
   api/admin/pamelding.php) som HTML-delen av malen «anmeldelse».
   {kursbevisblokk} er knappen til beviset, eller tom når beviset er trukket.
+  <!--signatur--> er der signaturen legges (Varsel::medSignatur): inne i kortet,
+  ikke under e-posten. Adressen står i signaturen, ikke i bunnen (eieren).
 -->
 <!DOCTYPE html>
 <html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><title>Takk for at du var hos oss</title></head>
@@ -27,12 +29,9 @@
 </td></tr>
 </table>
 </td></tr>
-<tr><td align="center" style="padding:30px 44px 38px 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#2E1002">Tusen takk – vi håper vi sees igjen!<br><br>Hilsen Monica, Lissom Keramikk</td></tr>
+<tr><td align="center" style="padding:30px 44px 24px 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#2E1002">Tusen takk – vi håper vi sees igjen!<br><br>Hilsen Monica, Lissom Keramikk</td></tr>
+<!--signatur-->
 </table>
-</td></tr>
-<tr><td align="center" style="padding:26px 20px 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6F5D4C">
-Lissom Keramikk &amp; Håndverk AS · Nordre Løkkevei 15, 3120 Nøtterøy<br>
-<a href="https://lissom.no" style="color:#A2502B;text-decoration:underline">lissom.no</a> · <a href="mailto:monica@lissom.no" style="color:#A2502B;text-decoration:underline">monica@lissom.no</a> · tlf 941 34 601
 </td></tr>
 </table>
 </td></tr>

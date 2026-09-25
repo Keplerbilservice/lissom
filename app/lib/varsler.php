@@ -474,6 +474,13 @@ final class Varsel
         $kropp = $egenHtml !== null && trim($egenHtml) !== ''
             ? $egenHtml : self::tekstSomHtml($tekst);
 
+        // Et ferdig oppsett kan si nei til signaturen: «<!--uten-signatur-->».
+        // Eieren, 25. september 2026, om «Be om en anmeldelse»: «vi trenger jo
+        // ikke epost signaturen på denne kanskje? ser fin ut som det er».
+        if ($egenHtml !== null && str_contains($egenHtml, '<!--uten-signatur-->')) {
+            return [$tekst, $egenHtml];
+        }
+
         if (!in_array($gruppe, self::GRUPPER, true)) {
             return [$tekst, $egenHtml];
         }

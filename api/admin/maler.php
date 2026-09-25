@@ -5,6 +5,7 @@
  *   GET                      alle malene, med feltene hver av dem kan bruke
  *   POST handling=lagre      { navn, emne, tekst, aktiv }
  *   POST handling=slett      { navn, bekreftet? }
+ *   POST handling=test       { epost, navn? }  sender malene med eksempelverdier
  *
  * ── Hvorfor denne finnes ─────────────────────────────────────────────
  *
@@ -74,6 +75,66 @@ Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling');
+
+// ── Test: se malene slik de kommer fram ─────────────────────────────
+//
+// Eieren, 25. september 2026: «send en test til joakim@kepler.no med alle
+// aktive eposter så jeg får se hvordan de ser ut».
+//
+// Hver aktive e-postmal (eller bare den ene, med «navn») sendes til den
+// adressen som oppgis, gjennom den vanlige veien — Varsel::mal(), med
+// signatur og logo — fylt med eksempelverdier. Ingen kunde, ingen booking og
+// ingen admin-adresse blir berørt: mottakeren er bare adressen her, og det
+// sendes ingen SMS.
+if ($handling === 'test') {
+    $til = trim(Foresporsel::tekst('epost'));
+    if (!filter_var($til, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Skriv en gyldig e-postadresse.');
+    }
+    $bare = mb_substr(Foresporsel::tekst('navn'), 0, 64);
+    $eksempel = [
+        'navn' => 'Kari Nordmann', 'fornavn' => 'Kari', 'kurs' => 'Nybegynner dreiekurs',
+        'naar' => 'onsdag 7. – torsdag 8. oktober, 17:00', 'tid' => 'onsdag 7. oktober kl. 17:00',
+        'dato' => 'onsdag 7. oktober', 'fra' => 'onsdag 7. oktober', 'til' => 'onsdag 14. oktober',
+        'belop' => 'kr 2 800', 'sum' => 'kr 1 250', 'pris' => 'kr 400', 'betaling' => 'Ubetalt',
+        'lenke' => 'https://lissom.no', 'avmelding' => 'https://lissom.no',
+        'abonnement' => 'Årsmedlemskap', 'plan' => 'Årsmedlemskap', 'type' => 'Årsmedlemskap',
+        'gyldig' => '25. september 2027', 'dag' => '1.', 'ordre' => 'LIS-260925-1234',
+        'nummer' => 'LIS-260925-1234', 'varelinjer' => "1 × Skål – kr 400\n1 × Kopp – kr 350",
+        'varer' => "2 × Leire, 10 kg\n1 × Glasur, hvit", 'adresse' => 'Storgata 1, 3100 Tønsberg',
+        'tekst' => 'Eksempeltekst', 'svar' => 'Takk for at du spurte! Her er svaret vårt.',
+        'melding' => 'Hei, jeg lurer på om det er ledig plass på kurset.',
+        'oppsummering' => "Navn: Kari Nordmann\nE-post: kari@example.com",
+        'timer' => '3', 'varighet' => '3 timer', 'forslag' => 'Rydde glasurrommet',
+        'mottaker' => 'Ola Nordmann', 'kode' => 'ABCD-1234', 'hilsen' => 'Gratulerer med dagen!',
+        'tittel' => 'Skål', 'grunn' => 'Bildet var for mørkt.', 'begrunnelse' => 'Kurset er fullt.',
+        'kontakt' => 'kari@example.com · 900 00 000', 'beskjed' => 'Pakkes som gave.',
+        'epost' => 'kari@example.com', 'telefon' => '900 00 000', 'produsent' => 'Kari Nordmann',
+        'erfaring' => 'Har gått nybegynnerkurs', 'posisjon' => '1', 'visste' => '',
+    ];
+    $maler = DB::alle("SELECT navn FROM notification_templates WHERE aktiv = 1 AND kanal LIKE '%epost%' ORDER BY navn");
+    $sendt = [];
+    foreach ($maler as $m) {
+        $malNavn = (string) $m['navn'];
+        if ($bare !== '' && $bare !== $malNavn) {
+            continue;
+        }
+        // Medlemsinvitasjonen har sin egen HTML (app/epost/fortsett.html),
+        // som bin/cron.php sender med. Den skal med i testen ogsaa.
+        $egenHtml = null;
+        if ($malNavn === 'fortsett' && is_file(APP_DIR . '/epost/fortsett.html')) {
+            $egenHtml = (string) preg_replace('/^<!--.*?-->\s*/s', '', (string) file_get_contents(APP_DIR . '/epost/fortsett.html'));
+        }
+        Varsel::mal($malNavn, ['epost' => $til], $eksempel, null, null, $egenHtml);
+        $sendt[] = $malNavn;
+    }
+    if ($sendt === []) {
+        Svar::feil('Fant ingen aktiv e-postmal å sende.');
+    }
+    revider('mal_test_sendt', 'mal', null, ['til' => $til, 'antall' => count($sendt)]);
+    Svar::ok(['sendt' => $sendt, 'beskjed' => count($sendt) . ' testmeldinger er lagt i køen til ' . $til . '.']);
+}
+
 $navn = mb_substr(Foresporsel::tekst('navn'), 0, 64);
 if ($navn === '') {
     Svar::feil('Hvilken mal?');

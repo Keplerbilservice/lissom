@@ -43,6 +43,19 @@ if (Foresporsel::metode() === 'GET') {
             return $ut;
         }, $rader),
         'venter' => (int) DB::verdi("SELECT COUNT(*) FROM dugnad WHERE status IN ('venter','til_godkjenning')"),
+        // «Gi dugnad» og «Utvalgte» (migrasjon 214). Medlemmene man kan gi
+        // en jobb: de med et medlemskap som gaar.
+        'utvalgte' => Dugnad::utvalgte(),
+        'medlemmer' => array_map(static fn(array $m): array => [
+            'id'        => (int) $m['id'],
+            'navn'      => (string) $m['navn'],
+            'serDugnad' => !empty($m['ser_dugnad']),
+        ], DB::alle(
+            "SELECT id, navn, " . (DB::harKolonne('members', 'ser_dugnad') ? 'ser_dugnad' : '0 AS ser_dugnad') . "
+               FROM members
+              WHERE status IN ('prove','aktiv','pause') AND TRIM(COALESCE(navn, '')) <> ''
+           ORDER BY navn"
+        )),
     ]);
 }
 
@@ -50,6 +63,73 @@ Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling');
+
+// ── Gi dugnad ──────────────────────────────────────────────────────────
+//
+//   POST handling=gi { tekst, medlemmer: [id, …], epost: 'ja'|'nei' }
+//
+// Eieren, 25. september 2026: «tildele enkeltpersoner i medlemmer
+// dugnadsarbeid». Jobben er godkjent med en gang — medlemmet kan stemple inn
+// uten aa spoerre foerst. Har medlemmet alt en dugnad som ikke er avsluttet,
+// hoppes hen over og nevnes i svaret.
+if ($handling === 'gi') {
+    if (!DB::harKolonne('dugnad', 'tildelt')) {
+        Svar::feil('Vedlikeholdet må kjøres først (oppdatering 214).');
+    }
+    $tekst = trim(mb_substr(Foresporsel::tekst('tekst'), 0, 500));
+    if (mb_strlen($tekst) < 3) {
+        Svar::feil('Skriv hva som skal gjøres.');
+    }
+    $raa = Foresporsel::kropp()['medlemmer'] ?? [];
+    $ider = array_values(array_unique(array_filter(array_map('intval', is_array($raa) ? $raa : []))));
+    if ($ider === []) {
+        Svar::feil('Velg minst ett medlem.');
+    }
+    $sendEpost = Foresporsel::tekst('epost') !== 'nei';
+    $gitt = [];
+    $hoppet = [];
+    foreach ($ider as $mid) {
+        $m = DB::en('SELECT id, navn, epost FROM members WHERE id = :i', ['i' => $mid]);
+        if ($m === null) {
+            continue;
+        }
+        $mNavn = trim((string) $m['navn']) ?: 'Medlemmet';
+        if (Dugnad::aktiv($mid) !== null) {
+            $hoppet[] = $mNavn;
+            continue;
+        }
+        $nyId = DB::settInn('dugnad', [
+            'member_id' => $mid,
+            'tekst'     => $tekst,
+            'status'    => 'godkjent',
+            'tildelt'   => 1,
+            'svart_av'  => (int) $jeg['id'],
+            'svart_at'  => gmdate('Y-m-d H:i:s'),
+        ]);
+        revider('dugnad_gitt', 'member', $mid, ['dugnad' => $nyId]);
+        $gitt[] = $mNavn;
+        $mEpost = trim((string) ($m['epost'] ?? ''));
+        if ($sendEpost && $mEpost !== '' && filter_var($mEpost, FILTER_VALIDATE_EMAIL)) {
+            try {
+                Varsel::mal('dugnad_godkjent', ['epost' => $mEpost, 'navn' => $mNavn], [
+                    'fornavn' => explode(' ', $mNavn)[0],
+                    'tekst'   => $tekst,
+                    'svar'    => '',
+                ], 'dugnad', $nyId);
+            } catch (Throwable $e) {
+                logg_feil('Fikk ikke sendt dugnaden til medlemmet', $e);
+            }
+        }
+    }
+    if ($gitt === []) {
+        Svar::feil($hoppet !== []
+            ? implode(', ', $hoppet) . ' har alt en dugnad som ikke er avsluttet.'
+            : 'Fant ingen av medlemmene.');
+    }
+    Svar::ok(['beskjed' => 'Dugnaden er gitt til ' . implode(', ', $gitt) . '.'
+        . ($sendEpost ? ' E-post er sendt.' : '')
+        . ($hoppet !== [] ? ' ' . implode(', ', $hoppet) . ' har alt en dugnad som ikke er avsluttet, og fikk ikke denne.' : '')]);
+}
 $id = Foresporsel::heltall('id');
 $d = DB::en('SELECT d.*, m.navn, m.epost FROM dugnad d JOIN members m ON m.id = d.member_id WHERE d.id = :i', ['i' => $id]);
 if ($d === null) {

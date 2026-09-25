@@ -1140,6 +1140,73 @@ final class Booking
         return $ok;
     }
 
+    /**
+     * Lengden, dagene og det praktiske, til påmeldingsbekreftelsen.
+     *
+     * Eieren, 25. september 2026: de som melder seg på dreiekurs «må få mer
+     * info, kursets lengde, veibeskrivelse, at vi serverer enkel snacks,
+     * kaffe eller te, dere får låne forkle, og litt om hva vi går igjennom
+     * dag 1 og dag 2». Dagene er samlingene på kursdatoen, og det praktiske
+     * er feltet «Praktisk informasjon» på kurset (eller standarden for
+     * kategorien) — de samme tekstene som står på kurssiden. Da får hvert
+     * kurs sitt eget, og teksten endres på kurset, ikke i malen.
+     *
+     * @param array<string, mixed> $b bookingen, med start_tid og slutt_tid
+     */
+    public static function kursinfo(array $b): string
+    {
+        $deler = [];
+        $samlinger = !empty($b['course_session_id'])
+            ? (Samlinger::forOkter([(int) $b['course_session_id']])[(int) $b['course_session_id']] ?? [])
+            : [];
+
+        // Lengden: per gang når kurset går over flere samlinger.
+        $v = null;
+        if (count($samlinger) > 1) {
+            $s = $samlinger[0];
+            if (($s['fra'] ?? '') !== '' && ($s['til'] ?? '') !== '') {
+                $v = Kursmal::varighetAv($s['dato'] . ' ' . $s['fra'], $s['dato'] . ' ' . $s['til']);
+            }
+            if ($v !== null) {
+                $deler[] = count($samlinger) . ' ganger à ' . $v;
+            }
+        } elseif (!empty($b['start_tid'])) {
+            $v = Kursmal::varighetAv((string) $b['start_tid'], $b['slutt_tid'] ?? null);
+            if ($v !== null) {
+                $deler[] = $v;
+            }
+        }
+
+        if (count($samlinger) > 1) {
+            foreach ($samlinger as $i => $s) {
+                $tittel = trim((string) ($s['overskrift'] ?? ''));
+                $tekst  = trim((string) ($s['tekst'] ?? ''));
+                if ($tittel === '' && $tekst === '') {
+                    continue;
+                }
+                $deler[] = "\n" . 'Dag ' . ($i + 1) . ($tittel !== '' ? ' – ' . $tittel : '')
+                    . ($tekst !== '' ? "\n" . $tekst : '');
+            }
+        }
+
+        $kurs = DB::en('SELECT * FROM courses WHERE id = :id', ['id' => (int) ($b['course_id'] ?? 0)]);
+        if ($kurs !== null) {
+            $praktisk = trim((string) ($kurs['praktisk'] ?? ''));
+            if ($praktisk === '') {
+                $praktisk = trim((string) (Kursmal::forKurs($kurs)['praktisk'] ?? ''));
+            }
+            if ($praktisk !== '') {
+                $linjer = array_filter(array_map('trim', preg_split('/\R/u', $praktisk) ?: []), static fn($l) => $l !== '');
+                $deler[] = "\nPraktisk\n" . implode("\n", array_map(
+                    static fn($l) => '– ' . ltrim($l, "–-• \t"),
+                    $linjer
+                ));
+            }
+        }
+
+        return implode("\n", $deler);
+    }
+
     /** Legger kvitteringen i varselkøen. Cron sender den. */
     public static function sendBekreftelse(int $bookingId): void
     {
@@ -1177,6 +1244,7 @@ final class Booking
         $naar = $b['start_tid']
             ? self::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null)
             : '';
+        $kursinfo = self::kursinfo($b);
         Varsel::mal('ordrebekreftelse', [
             'epost'   => $b['m_epost'] ?? $b['gjest_epost'],
             'telefon' => $b['m_telefon'] ?? $b['gjest_telefon'],
@@ -1185,6 +1253,7 @@ final class Booking
             'kurs'  => (string) $b['tittel'],
             'naar'  => $naar,
             'ordre' => (string) $b['tittel'] . ($naar !== '' ? ' — ' . $naar : ''),
+            'kursinfo' => $kursinfo,
             // Ingen pris i bekreftelsen. Eieren, 24. september 2026: «jeg vil
             // ikke at de skal ha pris i bekreftelses eposter, så fjern dette
             // på alle steder» — valgte paameldinger til kurs og events.
@@ -1591,6 +1660,7 @@ final class Booking
 
         Varsel::mal($erPakke ? 'butikkordre_pakke' : 'butikkordre',
             ['epost' => (string) $o['kunde_epost']], [
+                'navn'       => (string) ($o['kunde_navn'] ?? ''),
                 'ordre'      => (string) $o['ordrenr'],
                 'varelinjer' => implode("\n", $liste),
                 'sum'        => self::kroner((int) $o['sum_ore']),
@@ -1686,6 +1756,69 @@ final class Booking
      * PHPs date() gir engelske maanedsnavn uansett hva serveren staar til, og
      * «21. August 2029» paa et norsk gavekort ser ut som en feil.
      */
+    /**
+     * Lenken til kursbeviset, med en personlig kode som virker uten
+     * innlogging (migrasjon 215). Koden lages første gang og står fast.
+     * Null når påmeldingen ikke gir bevis: ikke betalt, trukket tilbake,
+     * eller kurset er ikke gjennomført.
+     *
+     * Eieren, 25. september 2026: kursbeviset sendes med Google-anmeldelsen.
+     */
+    public static function bevisLenke(int $bookingId): ?string
+    {
+        if (!DB::harKolonne('bookings', 'bevis_kode')) {
+            return null;
+        }
+        $b = DB::en(
+            'SELECT b.id, b.status, b.bevis_kode, '
+            . (DB::harKolonne('bookings', 'bevis_sperret') ? 'b.bevis_sperret, ' : '0 AS bevis_sperret, ')
+            . 'cs.start_tid, cs.slutt_tid
+               FROM bookings b LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+              WHERE b.id = :id',
+            ['id' => $bookingId]
+        );
+        if ($b === null || $b['status'] !== 'betalt' || !empty($b['bevis_sperret'])) {
+            return null;
+        }
+        $slutt = $b['slutt_tid'] ?: $b['start_tid'];
+        if ($slutt === null || strtotime((string) $slutt) > time()) {
+            return null;
+        }
+        $kode = (string) ($b['bevis_kode'] ?? '');
+        if (!preg_match('/^[a-f0-9]{32}$/', $kode)) {
+            $kode = bin2hex(random_bytes(16));
+            DB::oppdater('bookings', ['bevis_kode' => $kode], ['id' => $bookingId]);
+        }
+        return 'https://lissom.no/api/kursbevis.php?booking=' . $bookingId . '&k=' . $kode;
+    }
+
+    /**
+     * HTML-utgaven av «Be om en anmeldelse»: knapper i stedet for lange
+     * lenker (app/epost/anmeldelse.html). Eieren, 25. september 2026: «jeg
+     * vil ha vedlegg, eller fine knapper» — GO paa knappene. Null naar fila
+     * mangler; da gaar e-posten som foer.
+     */
+    public static function anmeldelseHtml(string $fornavn, string $kurs, string $lenke, ?string $bevisUrl): ?string
+    {
+        $fil = APP_DIR . '/epost/anmeldelse.html';
+        if (!is_file($fil)) {
+            return null;
+        }
+        $e = static fn(string $t): string => htmlspecialchars($t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $html = (string) preg_replace('/^<!--.*?-->\s*/s', '', (string) file_get_contents($fil));
+        $tekst = 'font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#2E1002';
+        $blokk = $bevisUrl === null ? '' :
+            '<tr><td style="padding:30px 44px 0 44px;' . $tekst . '" align="center">Her er kursbeviset ditt fra <b>' . $e($kurs) . '</b>.</td></tr>' . "\n"
+            . '<tr><td align="center" style="padding:16px 40px 0 40px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#4D1D12" style="border-radius:8px">'
+            . '<a href="' . $e($bevisUrl) . '" style="display:block;padding:14px 34px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#FBF6EE;text-decoration:none;border-radius:8px">Last ned kursbeviset</a>'
+            . '</td></tr></table></td></tr>';
+        return str_replace(
+            ['{kursbevisblokk}', '{fornavn}', '{lenke}'],
+            [$blokk, $e($fornavn), $e($lenke)],
+            $html
+        );
+    }
+
     public static function norskDatoKort(string $dato): string
     {
         // Tidspunkt lagres i UTC. Uten omregningen ville et kurs som slutter

@@ -11,6 +11,7 @@
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
  *   POST handling=endre      { id, antall?, belop?, rabatt? }   retter antall og sum
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
+ *   POST handling=bekreftelse { id, oppmote? }  sender paameldingsbekreftelsen
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
  * paa samme deltakerliste som alle andre — ellers foerer verkstedet to
@@ -443,6 +444,90 @@ if ($handling === 'status') {
 // rettes den DER. Skrev vi den paa gjestefeltene i stedet, ville lista
 // fortsatt vist den gamle: oppslagene leser «COALESCE(m.epost, b.gjest_epost)»,
 // og medlemmet vinner. Svaret sier fra om hvilken av de to som ble rettet.
+// ----------------------------------------------------- bekreftelsen paa nytt
+//
+// Eieren, 25. september 2026: en kunde (Torhild) fikk ingen bekreftelse —
+// hun startet med Vipps og fullfoerte aldri, og plassen ble gjort om til
+// «betal ved oppmoete» i admin. «Send kvittering paa nytt» virker bare for
+// betalte. Denne sender den samme bekreftelsen som bookingen sender selv
+// (Booking::sendBekreftelse): til kunden, og «Ny paamelding» til admin.
+//
+// Med oppmote = 1 merkes plassen «betales ved oppmoete» foerst, saa
+// bekreftelsen sier det.
+if ($handling === 'bekreftelse') {
+    $b = DB::en(
+        "SELECT b.id, b.status, COALESCE(m.epost, b.gjest_epost) AS epost
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.id = :i",
+        ['i' => $id]
+    );
+    if ($b === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+    if (!in_array((string) $b['status'], ['reservert', 'betalt'], true)) {
+        Svar::feil('Påmeldingen er ikke aktiv, så det er ingenting å bekrefte.');
+    }
+    if (trim((string) $b['epost']) === '') {
+        Svar::feil('Påmeldingen har ingen e-postadresse. Legg den inn først.');
+    }
+    if (Foresporsel::heltall('oppmote') === 1 && (string) $b['status'] === 'reservert'
+        && DB::harKolonne('bookings', 'uten_forskudd')) {
+        DB::oppdater('bookings', ['uten_forskudd' => 1, 'reservert_til' => null], ['id' => $id]);
+    }
+    Booking::sendBekreftelse($id);
+    revider('bekreftelse_sendt', 'booking', $id, ['epost' => (string) $b['epost']]);
+    Svar::ok(['beskjed' => 'Bekreftelsen er sendt til ' . $b['epost'] . '.']);
+}
+
+// ── Kursbeviset i ettertid ─────────────────────────────────────────────
+//
+//   POST handling=kursbevis { id, til? }
+//
+// Sender «Be om en anmeldelse» med kursbeviset for én paamelding — den
+// samme e-posten som bin/cron.php sender etter kurset. For dem som var paa
+// kurs foer beviset kom med i e-posten. Eieren, 25. september 2026: «ja
+// takk» til aa sende beviset til dem som booket uten konto. «til» sender den
+// til en annen adresse (en test), ikke til kunden.
+if ($handling === 'kursbevis') {
+    $b = DB::en(
+        "SELECT b.id, c.tittel, COALESCE(m.navn, b.gjest_navn) AS navn,
+                COALESCE(m.epost, b.gjest_epost) AS epost
+           FROM bookings b
+           JOIN courses c ON c.id = b.course_id
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.id = :i",
+        ['i' => $id]
+    );
+    if ($b === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+    $url = Booking::bevisLenke($id);
+    if ($url === null) {
+        Svar::feil(DB::harKolonne('bookings', 'bevis_kode')
+            ? 'Påmeldingen gir ikke kursbevis (ikke betalt, trukket tilbake, eller kurset er ikke ferdig).'
+            : 'Vedlikeholdet må kjøres først (oppdatering 215).');
+    }
+    $til = trim(Foresporsel::tekst('til'));
+    $mottaker = $til !== '' ? $til : trim((string) $b['epost']);
+    if (!filter_var($mottaker, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Påmeldingen har ingen gyldig e-postadresse.');
+    }
+    $navn = (string) $b['navn'];
+    Varsel::mal('anmeldelse', ['epost' => $mottaker], [
+        'navn'      => $navn,
+        'fornavn'   => explode(' ', trim($navn))[0],
+        'kurs'      => (string) $b['tittel'],
+        'lenke'     => trim((string) Config::hent('anmeldelse_lenke', '')),
+        'kursbevis' => 'Her er kursbeviset ditt fra ' . $b['tittel'] . ":\n" . $url,
+    ], $til !== '' ? null : 'booking', $til !== '' ? null : $id,
+    // Knappene (app/epost/anmeldelse.html). Eieren, 25. september 2026.
+    Booking::anmeldelseHtml(explode(' ', trim($navn))[0], (string) $b['tittel'],
+        trim((string) Config::hent('anmeldelse_lenke', '')), $url));
+    revider('kursbevis_sendt', 'booking', $id, ['til' => $mottaker]);
+    Svar::ok(['beskjed' => 'Kursbeviset er sendt til ' . $mottaker . '.']);
+}
+
 if ($handling === 'kontakt') {
     $b = DB::en(
         'SELECT b.id, b.member_id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,

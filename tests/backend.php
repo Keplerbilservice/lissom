@@ -4104,8 +4104,11 @@ sjekk('ferien bygger paa apningstider, ikke en egen tabell',
                     "SELECT dato FROM apningstider WHERE stengt = 1"));
 // Det som var nytt: en stengt dag skjuler kursdatoene, ikke bare
 // aapningstidene i bunnteksten.
+// Fra 25. september 2026 gaar det via Ferie::skjult(): en oekt eieren har
+// lagt ut i ferien «likevel» (ferie_ok, migrasjon 211) skal vises.
 sjekk('en stengt dag skjuler kursdatoene paa nettsida',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::stengt('));
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::skjult($o)')
+    && str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'), 'public static function skjult(array $okt): bool'));
 sjekk('… og aapningstidene folger med',
     str_contains(file_get_contents(__DIR__ . '/../app/lib/apent.php'), '$okter = Ferie::utenom($okter);'));
 // Skjult er ikke det samme som stengt: en gammel fane kan sende okt-id-en
@@ -18881,9 +18884,12 @@ sjekk('migrasjon 166: malen «fortsett» staar paa, med hilsenen eieren ba om',
     && str_contains($fortsettMig, "('fortsett_paa',   '1'),")
     && str_contains($fortsettMig, "CREATE TABLE IF NOT EXISTS epost_avmelding ("));
 $fortsettHtml = (string) file_get_contents(dirname(__DIR__) . '/app/epost/fortsett.html');
-sjekk('eierens HTML har hilsenen for «Tusen takk», prisboksen som {visste} og avmeldinga som lenke',
-    str_contains($fortsettHtml, 'Hei {navn}, det var så hyggelig å ha deg på kurs, så vi håper du vil fortsette som medlem.')
-    && strpos($fortsettHtml, 'Hei {navn}') < strpos($fortsettHtml, 'Tusen takk for at du valgte')
+// 25. september 2026 (GO paa det nye forslaget): «Hei {navn}!» uten dobbel
+// takk — se migrasjon 213.
+sjekk('eierens HTML har «Hei {navn}!» foer teksten, prisboksen som {visste} og avmeldinga som lenke',
+    str_contains($fortsettHtml, '>Hei {navn}!</td>')
+    && !str_contains($fortsettHtml, 'Tusen takk for at du valgte')
+    && strpos($fortsettHtml, 'Hei {navn}') < strpos($fortsettHtml, 'Det du laget på kurset, var bare begynnelsen.')
     && str_contains($fortsettHtml, '{visste}')
     && !str_contains($fortsettHtml, 'kr 990')
     && str_contains($fortsettHtml, 'href="{avmelding}"'));

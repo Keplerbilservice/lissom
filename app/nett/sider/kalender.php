@@ -198,7 +198,12 @@ if ($popKurs !== null) {
 
     if ($popTittel === '') {
         // Ikke i dag, eller utsolgt: si rytmen, og naar det er plass igjen.
-        $neste = '';
+        //
+        // Het «$neste», det samme som neste uke over, og skrev over den: pilen
+        // til neste uke ble /kalender?uke=torsdag 1. oktober … og viste samme
+        // uke igjen. Eieren, 25. september 2026: «forsøker å bla med pilen til
+        // høyre, men det fungerer heller ikke».
+        $popNeste = '';
         foreach ($perDag as $dag => $okter) {
             if ($dag === $idag) {
                 continue;
@@ -206,7 +211,7 @@ if ($popKurs !== null) {
             $rom = array_values(array_filter($tidsrom($okter), static fn(array $v): bool => $v['ledig']));
             if ($rom !== []) {
                 $d = $okter[0]['d'];
-                $neste = $DAGNAVN[(int) $d->format('N') - 1] . ' ' . $d->format('j') . '. '
+                $popNeste = $DAGNAVN[(int) $d->format('N') - 1] . ' ' . $d->format('j') . '. '
                        . $MND[(int) $d->format('n') - 1] . ', ' . $liste($rom);
                 break;
             }
@@ -215,7 +220,7 @@ if ($popKurs !== null) {
         $popTittel = isset($perDag[$idag])
             ? 'Paint on Pots er fullt i dag.'
             : 'Paint on Pots går onsdag og torsdag, 10–13 og 17–20.';
-        $popTekst = $neste !== '' ? 'Neste dag med ledig plass er ' . $neste . '.' : '';
+        $popTekst = $popNeste !== '' ? 'Neste dag med ledig plass er ' . $popNeste . '.' : '';
     }
 }
 

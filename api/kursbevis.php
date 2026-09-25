@@ -18,7 +18,13 @@ declare(strict_types=1);
 require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
-$medlem = krev_medlem();
+// Lenken i e-posten etter kurset har en personlig kode (?k=), og virker uten
+// innlogging — ogsaa for den som booket uten konto. Eieren, 25. september
+// 2026: kursbeviset sendes ut sammen med Google-anmeldelsen. Uten kode
+// gjelder det som foer: bare den som gikk kurset, eller admin.
+$kode = Foresporsel::tekst('k');
+$medKode = preg_match('/^[a-f0-9]{32}$/', $kode) === 1 && DB::harKolonne('bookings', 'bevis_kode');
+$medlem = $medKode ? null : krev_medlem();
 
 $bookingId = Foresporsel::heltall('booking');
 
@@ -27,6 +33,7 @@ $bookingId = Foresporsel::heltall('booking');
 $bevisFelt = DB::harKolonne('bookings', 'bevis_navn')
     ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,'
     : '';
+$bevisFelt .= $medKode ? ' b.bevis_kode,' : '';
 
 // Kursholderen som faktisk holdt kurset.
 //
@@ -65,7 +72,11 @@ $b = DB::en(
 if (!$b) {
     Svar::feil('Fant ikke påmeldingen.', 404);
 }
-if ((int) ($b['member_id'] ?? 0) !== (int) $medlem['id'] && !Sesjon::erAdmin()) {
+if ($medKode) {
+    if (!hash_equals((string) ($b['bevis_kode'] ?? ''), $kode)) {
+        Svar::feil('Fant ikke påmeldingen.', 404);
+    }
+} elseif ((int) ($b['member_id'] ?? 0) !== (int) $medlem['id'] && !Sesjon::erAdmin()) {
     // 404 og ikke 403: vi bekrefter ikke at en fremmed pamelding finnes.
     Svar::feil('Fant ikke påmeldingen.', 404);
 }
@@ -218,7 +229,9 @@ header('Cache-Control: no-store');
 
 <div class="verktoy">
   <button type="button" onclick="window.print()">Last ned som PDF</button>
+<?php if (!$medKode): // Den som kom fra e-posten, har kanskje ingen Min side. ?>
   <a class="andre" href="/min-side">Tilbake til Min side</a>
+<?php endif; ?>
 </div>
 
 <div class="ark">

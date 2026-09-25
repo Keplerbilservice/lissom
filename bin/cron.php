@@ -338,9 +338,15 @@ switch ($jobb) {
                         m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
                    FROM bookings b
               LEFT JOIN members m ON m.id = b.member_id
-                  WHERE b.course_session_id = :s AND b.status = 'betalt'",
+                  WHERE b.course_session_id = :s AND b.status = 'betalt'
+                    AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY)",
                 ['s' => $okt['id']]
             );
+            // «AND b.created_at …»: paaminnelsen gaar bare til den som meldte
+            // seg paa for to uker siden eller mer. Eieren, 25. september 2026:
+            // «påminnelse før kurset, sendes kun om det er 2 uker eller mer
+            // siden de ble påmeldt». Den som meldte seg paa nylig, har
+            // bekreftelsen friskt i minne.
 
             // Naar kurset er, ferdig skrevet. Eieren, 14. september 2026:
             // «ogsaa info om kurset de meldte seg paa? Dato og klokkeslett»,
@@ -426,7 +432,7 @@ switch ($jobb) {
         $antall = 0;
         foreach ($okter as $okt) {
             $deltakere = DB::alle(
-                "SELECT b.gjest_navn, b.gjest_epost, b.gjest_telefon,
+                "SELECT b.id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,
                         m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
                    FROM bookings b
               LEFT JOIN members m ON m.id = b.member_id
@@ -435,6 +441,7 @@ switch ($jobb) {
             );
 
             foreach ($deltakere as $d) {
+                $bevisUrl = Booking::bevisLenke((int) $d['id']);
                 Varsel::mal('anmeldelse', [
                     'epost'   => $d['m_epost'] ?? $d['gjest_epost'],
                     // Samme regel som paaminnelsen: SMS bare der kurset har
@@ -448,7 +455,15 @@ switch ($jobb) {
                     'fornavn' => fornavnet((string) ($d['m_navn'] ?: $d['gjest_navn'])),
                     'kurs'    => (string) $okt['tittel'],
                     'lenke'   => $lenke,
-                ], 'course_session', (int) $okt['id']);
+                    // Kursbeviset, med en lenke som virker uten innlogging.
+                    // Eieren, 25. september 2026: «dette maa vi sende ut
+                    // sammen med google anmeldelsen». Tomt naar beviset er
+                    // trukket — da blir avsnittet borte.
+                    'kursbevis' => $bevisUrl === null ? '' : 'Her er kursbeviset ditt fra ' . $okt['tittel'] . ":\n" . $bevisUrl,
+                // Knappene i HTML-utgaven (app/epost/anmeldelse.html). Eieren,
+                // 25. september 2026: «fine knapper».
+                ], 'course_session', (int) $okt['id'],
+                Booking::anmeldelseHtml(fornavnet((string) ($d['m_navn'] ?: $d['gjest_navn'])), (string) $okt['tittel'], $lenke, $bevisUrl));
                 $antall++;
             }
 

@@ -70,6 +70,8 @@ final class Maler
             'tittel' => 'Butikkbestilling — hentes',
             'hvor'   => 'Sendes når en bestilling i butikken er betalt, og kunden valgte å hente selv.',
             'felter' => [
+                // Fornavnet (migrasjon 213, «Hei {navn}, og takk …»).
+                'navn'       => 'Fornavnet til kunden',
                 'ordre'      => 'Bestillingsnummeret, f.eks. B-260901-C4D7EC',
                 'varelinjer' => 'Varene, én per linje, med antall og pris',
                 'sum'        => 'Totalsummen',
@@ -94,6 +96,8 @@ final class Maler
             'tittel' => 'Butikkbestilling — sendes',
             'hvor'   => 'Sendes når kunden valgte «Send som pakke» i kassa.',
             'felter' => [
+                // Fornavnet (migrasjon 213, «Hei {navn}, og takk …»).
+                'navn'       => 'Fornavnet til kunden',
                 'ordre'      => 'Bestillingsnummeret',
                 'varelinjer' => 'Varene, én per linje, med antall og pris',
                 'sum'        => 'Totalsummen, inkludert frakt',
@@ -118,6 +122,8 @@ final class Maler
                 // Tom for den som har betalt. Valgte kunden «betal ved
                 // oppmøte», står måten her (uten summen).
                 'betaling' => 'Setningen om betaling ved oppmøte',
+                // Eieren, 25. september 2026. Se Booking::kursinfo.
+                'kursinfo' => 'Lengden, dag 1 og dag 2 og «Praktisk» fra kurset',
             ],
         ],
         'avbestilling' => [
@@ -147,7 +153,7 @@ final class Maler
             'hvor'   => 'Sendes automatisk før kurset, senest morgenen samme dag.',
             'felter' => [
                 'fornavn' => 'Fornavnet til deltakeren',
-                'navn'    => 'Hele navnet (fra før)',
+                'navn'    => 'Fornavnet også (fra før)',
                 'kurs'    => 'Kursets navn',
                 'tid'     => 'Klokkeslettet kurset starter',
                 'naar'    => 'Dagen og klokkeslettet. Går kurset over flere dager, står hver dag på sin egen linje',
@@ -166,9 +172,11 @@ final class Maler
             'hvor'   => 'Sendes noen timer etter kurset, til dem som betalte.',
             'felter' => [
                 'fornavn' => 'Fornavnet til deltakeren',
-                'navn'  => 'Hele navnet',
+                'navn'  => 'Fornavnet også',
                 'kurs'  => 'Kurset de var på',
                 'lenke' => 'Lenken de legger igjen ordene på',
+                // Migrasjon 215. Se Booking::bevisLenke.
+                'kursbevis' => 'Kursbeviset: «Her er kursbeviset ditt fra …» og lenken (tomt hvis det er trukket)',
             ],
         ],
         // Kom med medlemsinvitasjonen 12. september, men sto ikke her.

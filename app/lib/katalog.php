@@ -127,6 +127,10 @@ final class Katalog
         // sine av aapningstidene, og fjorten dager framover blir fort et par hundre.
         // Katalogen er det forste nettsiden henter, saa den betaler alle.
         $ekstra = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
+        // Unntaket fra ferien (migrasjon 211), se Ferie::skjult().
+        if (Ferie::harUnntak()) {
+            $ekstra .= ', ferie_ok';
+        }
         $kursIder = array_map(static fn(array $k): int => (int) $k['id'], $kurs);
 
         $okterPerKurs = [];
@@ -144,7 +148,7 @@ final class Katalog
                 // stengt — oekta selv roeres ikke, saa alt er tilbake naar ferien
                 // tas bort. Se app/lib/ferie.php for hvorfor det gjores her og ikke
                 // i sporringen.
-                if (Ferie::stengt((string) $o['start_tid'])) {
+                if (Ferie::skjult($o)) {
                     continue;
                 }
                 $okterPerKurs[(int) $o['course_id']][] = $o;

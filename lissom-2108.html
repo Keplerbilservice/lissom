@@ -10607,6 +10607,9 @@ window.__resources = {
                        alternativer legg til venteliste». Samme handling som
                        naar du drar henne ned i ruta i sidemenyen. -->
                   <button type="button" onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>
+                  <!-- Bekreftelsen paa nytt, til kunden og «Ny paamelding» til
+                       admin. Eieren, 25. september 2026. -->
+                  <button type="button" onClick="{{ klDSendBekreftelse }}" style="{{ klDHandlingStil }}">Send bekreftelse</button>
                   <button type="button" onClick="{{ klDAvbestill }}" style="{{ klDFareStil }}">Avbestill</button>
                 </div>
                 <!-- Betalingen.
@@ -47477,6 +47480,29 @@ class Component extends DCLogic {
                 this.klKall('/api/admin/pamelding.php',
                   { handling: 'status', id: dv.bookingId, status: 'betalt', maate: 'Gavekort', kode: kode })
                   .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDGaveApen: false, klDGaveKode: '' }); });
+              },
+              // Sender paameldingsbekreftelsen (api/admin/pamelding.php,
+              // handling=bekreftelse). Er plassen ikke betalt, merkes den
+              // «betales ved oppmoete» foerst, saa bekreftelsen sier det.
+              klDSendBekreftelse: () => {
+                if (!dv || !dv.bookingId || this._klBekrSender) return;
+                this._klBekrSender = true;
+                fetch('/api/admin/pamelding.php', {
+                  method: 'POST', credentials: 'same-origin',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ handling: 'bekreftelse', id: dv.bookingId, oppmote: dv.betalt ? 0 : 1 }),
+                })
+                  .then(r => r.json())
+                  .then(d => {
+                    this._klBekrSender = false;
+                    this.setState(d && d.ok
+                      ? { kvitteringTone: 'success', kvittering: 'Bekreftelsen er sendt', kvitteringDetalj: d.beskjed || '' }
+                      : { kvitteringTone: 'danger', kvittering: 'Ble ikke sendt', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+                  })
+                  .catch(() => {
+                    this._klBekrSender = false;
+                    this.setState({ kvitteringTone: 'danger', kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+                  });
               },
               klDIkkeMott: () => {
                 if (!dv || !dv.bookingId) return;

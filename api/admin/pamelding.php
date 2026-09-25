@@ -11,6 +11,7 @@
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
  *   POST handling=endre      { id, antall?, belop?, rabatt? }   retter antall og sum
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
+ *   POST handling=bekreftelse { id, oppmote? }  sender paameldingsbekreftelsen
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
  * paa samme deltakerliste som alle andre — ellers foerer verkstedet to
@@ -443,6 +444,42 @@ if ($handling === 'status') {
 // rettes den DER. Skrev vi den paa gjestefeltene i stedet, ville lista
 // fortsatt vist den gamle: oppslagene leser «COALESCE(m.epost, b.gjest_epost)»,
 // og medlemmet vinner. Svaret sier fra om hvilken av de to som ble rettet.
+// ----------------------------------------------------- bekreftelsen paa nytt
+//
+// Eieren, 25. september 2026: en kunde (Torhild) fikk ingen bekreftelse —
+// hun startet med Vipps og fullfoerte aldri, og plassen ble gjort om til
+// «betal ved oppmoete» i admin. «Send kvittering paa nytt» virker bare for
+// betalte. Denne sender den samme bekreftelsen som bookingen sender selv
+// (Booking::sendBekreftelse): til kunden, og «Ny paamelding» til admin.
+//
+// Med oppmote = 1 merkes plassen «betales ved oppmoete» foerst, saa
+// bekreftelsen sier det.
+if ($handling === 'bekreftelse') {
+    $b = DB::en(
+        "SELECT b.id, b.status, COALESCE(m.epost, b.gjest_epost) AS epost
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.id = :i",
+        ['i' => $id]
+    );
+    if ($b === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+    if (!in_array((string) $b['status'], ['reservert', 'betalt'], true)) {
+        Svar::feil('Påmeldingen er ikke aktiv, så det er ingenting å bekrefte.');
+    }
+    if (trim((string) $b['epost']) === '') {
+        Svar::feil('Påmeldingen har ingen e-postadresse. Legg den inn først.');
+    }
+    if (Foresporsel::heltall('oppmote') === 1 && (string) $b['status'] === 'reservert'
+        && DB::harKolonne('bookings', 'uten_forskudd')) {
+        DB::oppdater('bookings', ['uten_forskudd' => 1, 'reservert_til' => null], ['id' => $id]);
+    }
+    Booking::sendBekreftelse($id);
+    revider('bekreftelse_sendt', 'booking', $id, ['epost' => (string) $b['epost']]);
+    Svar::ok(['beskjed' => 'Bekreftelsen er sendt til ' . $b['epost'] . '.']);
+}
+
 if ($handling === 'kontakt') {
     $b = DB::en(
         'SELECT b.id, b.member_id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,

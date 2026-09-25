@@ -7976,7 +7976,40 @@ window.__resources = {
              etterpaa. Begge her, under de ubesvarte — det er henvendelser. -->
         <sc-if value="{{ dugAdmVis }}" hint-placeholder-val="{{ false }}">
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px; margin-top: var(--space-6);">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;"><span>Dugnad</span><span style="{{ dugAdmBryterStil }}">{{ dugAdmBryterTekst }}</span></div>
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;"><span>Dugnad</span><span style="display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;"><span style="{{ dugAdmBryterStil }}">{{ dugAdmBryterTekst }}</span><button type="button" onClick="{{ dugGiVeksle }}" style="{{ dugGiKnappStil }}">+ Gi dugnad</button></span></div>
+          <!-- Gi dugnad: verkstedet gir en jobb til ett eller flere medlemmer.
+               Eieren, 25. september 2026 (GO). Se handling=gi i
+               api/admin/dugnad.php. -->
+          <sc-if value="{{ dugGiApen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-3);">
+              <label for="dug-gi-tekst" style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Hva skal gjøres?</label>
+              <input id="dug-gi-tekst" value="{{ dugGiTekst }}" onChange="{{ settDugGiTekst }}" maxlength="500" placeholder="F.eks. vaske gulvet i glasurrommet" style="{{ dugGiFeltStil }}">
+              <label for="dug-gi-sok" style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Hvem skal gjøre det?</label>
+              <input id="dug-gi-sok" value="{{ dugGiSok }}" onChange="{{ settDugGiSok }}" placeholder="Søk etter medlem …" autocomplete="off" style="{{ dugGiFeltStil }}">
+              <sc-if value="{{ dugGiHarTreff }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ dugGiTreff }}" as="t" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ t.velg }}" style="{{ dugGiTreffStil }}">{{ t.navn }}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dugGiHarValgte }}" hint-placeholder-val="{{ false }}">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ dugGiValgte }}" as="v" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ v.fjern }}" aria-label="{{ v.fjernTekst }}" style="{{ dugGiValgtStil }}">{{ v.navn }}<span aria-hidden="true" style="margin-left: 6px;">✕</span></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+                <input type="checkbox" checked="{{ dugGiEpost }}" onChange="{{ vekslDugGiEpost }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                Send e-post til dem
+              </label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ dugGiSend }}" hint-size="auto,36px">Gi dugnad</x-import>
+                <button type="button" onClick="{{ dugGiVeksle }}" style="{{ dugAdmLenkeStil }}">Avbryt</button>
+              </div>
+            </div>
+          </sc-if>
           <sc-if value="{{ dugAdmTom }}" hint-placeholder-val="{{ false }}">
             <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen dugnader venter.</div>
           </sc-if>
@@ -19340,6 +19373,14 @@ window.__resources = {
                 <div style="margin-top: var(--space-3);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
                 </div>
+                <!-- «Ser dugnad» (migrasjon 214). Vises naar dugnad staar paa «Utvalgte».
+                     Eieren, 25. september 2026. Lagres med det samme. -->
+                <sc-if value="{{ personSerDugnadVis }}" hint-placeholder-val="{{ false }}">
+                  <label style="{{ personFriEtikett }}">
+                    <input type="checkbox" checked="{{ personSerDugnad }}" onChange="{{ vekslPersonSerDugnad }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Ser dugnad
+                  </label>
+                </sc-if>
                 <!-- Begynn paa nytt med den samme personen.
                      Eieren, 4. september, om Eirin: hun sto to ganger, ingenting var
                      betalt, og et forlatt Vipps-forsok bestemte fortsatt bade plan og
@@ -20803,6 +20844,14 @@ window.__resources = {
                   <div style="margin-top: var(--space-3);">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
                   </div>
+                  <!-- «Ser dugnad» (migrasjon 214). Vises naar dugnad staar paa «Utvalgte».
+                       Eieren, 25. september 2026. Lagres med det samme. -->
+                  <sc-if value="{{ personSerDugnadVis }}" hint-placeholder-val="{{ false }}">
+                    <label style="{{ personFriEtikett }}">
+                      <input type="checkbox" checked="{{ personSerDugnad }}" onChange="{{ vekslPersonSerDugnad }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                      Ser dugnad
+                    </label>
+                  </sc-if>
                   <!-- Begynn paa nytt med den samme personen.
                        Eieren, 4. september, om Eirin: hun sto to ganger, ingenting var
                        betalt, og et forlatt Vipps-forsok bestemte fortsatt bade plan og
@@ -27271,6 +27320,18 @@ window.__resources = {
           <span style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ r.navn }}</span>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="" checked="{{ r.paa }}" on-change="{{ r.veksl }}" hint-size="auto,28px"></x-import>
         </div>
+        <!-- Dugnad: for alle, eller bare utvalgte medlemmer. Eieren, 25.
+             september 2026 (GO paa forslaget). Migrasjon 214. -->
+        <sc-if value="{{ r.harPiller }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 10px 0 12px; border-bottom: 1px solid var(--border-subtle);">
+            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <sc-for list="{{ r.piller }}" as="p" hint-placeholder-count="2">
+                <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
+              </sc-for>
+            </div>
+            <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ r.pilleNote }}</p>
+          </div>
+        </sc-if>
       </sc-for>
       <!-- «Betal ved oppmøte» — de tre stedene valget gjelder.
            Eieren, 19. september 2026: «Vi har jo alle som skal vise og skru
@@ -39913,9 +39974,48 @@ class Component extends DCLogic {
     return {
       dugAdmVis: !!da && this.erPublisert(),
       dugAdmTom: liste.length === 0,
-      dugAdmBryterTekst: da && da.paa ? 'På for medlemmene' : 'Av — slå på under ⊙ Synlighet',
+      dugAdmBryterTekst: da && da.paa ? (da.utvalgte ? 'På for utvalgte medlemmer' : 'På for medlemmene') : 'Av — slå på under ⊙ Synlighet',
       dugAdmBryterStil: { textTransform: 'none', letterSpacing: 0, color: da && da.paa ? 'var(--sage-600, #5f6a4e)' : 'var(--terracotta-600)' },
       dugAdmLenkeStil: { appearance: 'none', background: 'transparent', border: 'none', padding: '0 4px', cursor: 'pointer', font: 'var(--type-body-sm)', color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: 3 },
+      // ── Gi dugnad (migrasjon 214) ──────────────────────────────────
+      ...(() => {
+        const medl = (da && da.medlemmer) || [];
+        const valgte = this.state.dugGiValgte || [];
+        const sok = String(this.state.dugGiSok || '').trim().toLowerCase();
+        const treff = sok.length < 1 ? [] : medl
+          .filter(m => valgte.indexOf(m.id) === -1 && m.navn.toLowerCase().indexOf(sok) !== -1)
+          .slice(0, 8);
+        const felt = { width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', background: 'var(--surface-card)', color: 'var(--text-heading)' };
+        const pille = (gul) => ({ appearance: 'none', cursor: 'pointer', borderRadius: 999, padding: '6px 14px', font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--lissom-brown)', background: gul ? 'var(--lissom-yellow)' : 'transparent', border: '1.5px solid ' + (gul ? 'var(--lissom-yellow)' : 'var(--lissom-brown)') });
+        return {
+          dugGiApen: !!this.state.dugGiApen,
+          dugGiVeksle: () => this.setState(st => ({ dugGiApen: !st.dugGiApen, dugGiTekst: '', dugGiSok: '', dugGiValgte: [], dugGiEpost: true })),
+          dugGiKnappStil: Object.assign(pille(true), { padding: '4px 12px', textTransform: 'none', letterSpacing: 0 }),
+          dugGiFeltStil: felt,
+          dugGiTekst: this.state.dugGiTekst || '',
+          settDugGiTekst: e => this.setState({ dugGiTekst: e.target.value }),
+          dugGiSok: this.state.dugGiSok || '',
+          settDugGiSok: e => this.setState({ dugGiSok: e.target.value }),
+          dugGiHarTreff: treff.length > 0,
+          dugGiTreff: treff.map(m => ({ navn: m.navn, velg: () => this.setState(st => ({ dugGiValgte: (st.dugGiValgte || []).concat([m.id]), dugGiSok: '' })) })),
+          dugGiTreffStil: pille(false),
+          dugGiHarValgte: valgte.length > 0,
+          dugGiValgte: valgte.map(id => {
+            const m = medl.find(x => x.id === id) || { navn: '' };
+            return { navn: m.navn, fjernTekst: 'Fjern ' + m.navn, fjern: () => this.setState(st => ({ dugGiValgte: (st.dugGiValgte || []).filter(x => x !== id) })) };
+          }),
+          dugGiValgtStil: pille(true),
+          dugGiEpost: this.state.dugGiEpost !== false,
+          vekslDugGiEpost: () => this.setState(st => ({ dugGiEpost: st.dugGiEpost === false })),
+          dugGiSend: () => {
+            const tekst = String(this.state.dugGiTekst || '').trim();
+            if (tekst.length < 3) { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Skriv hva som skal gjøres.' }); return; }
+            if (!valgte.length) { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Velg minst ett medlem.' }); return; }
+            this.dugnadAdminKall({ handling: 'gi', tekst, medlemmer: valgte, epost: this.state.dugGiEpost === false ? 'nei' : 'ja' });
+            this.setState({ dugGiApen: false, dugGiTekst: '', dugGiSok: '', dugGiValgte: [] });
+          },
+        };
+      })(),
       dugAdmListe: liste.map(d => ({
         navn: d.navn,
         merke: merke[d.status] || d.status,
@@ -40006,13 +40106,45 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * «Alle medlemmer» eller «Utvalgte» under dugnad-bryteren i Synlighet.
+   * Eieren, 25. september 2026 (GO): «velge hvem av medlemmene som faar se at
+   * det er dugnad». Hvem som er valgt, settes paa medlemskortet («Ser dugnad»).
+   */
+  dugnadHvemVals() {
+    const utv = (this.state.innholdLagret || {})['Vis/dugnadutvalgte'] === 'ja';
+    const stil = (paa) => ({
+      appearance: 'none', cursor: 'pointer', borderRadius: 999, padding: '6px 14px',
+      font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--lissom-brown)',
+      background: paa ? 'var(--lissom-yellow)' : 'transparent',
+      border: '1.5px solid ' + (paa ? 'var(--lissom-yellow)' : 'var(--lissom-brown)'),
+    });
+    const sett = (ja) => { if (ja !== utv) this.lagreInnhold({ 'Vis/dugnadutvalgte': ja ? 'ja' : 'nei' }, ja ? 'Dugnad vises bare for utvalgte medlemmer' : 'Dugnad vises for alle medlemmer'); };
+    const liste = ((this.state.dugnadAdmin || {}).medlemmer) || null;
+    const antall = liste ? liste.filter(m => m.serDugnad).length : null;
+    return {
+      harPiller: this.bryterPaa('dugnad'),
+      piller: [
+        { navn: 'Alle medlemmer', velg: () => sett(false), stil: stil(!utv) },
+        { navn: 'Utvalgte', velg: () => sett(true), stil: stil(utv) },
+      ],
+      pilleNote: utv
+        ? (antall === null ? '' : antall + (antall === 1 ? ' medlem ser' : ' medlemmer ser') + ' dugnad. ') + 'Velg hvem på medlemskortet under Medlemmer.'
+        : 'Alle medlemmer ser dugnad på Min side.',
+    };
+  }
+
   /** Verdiene til dugnadskortet paa Min side. */
   dugnadVals() {
     const dg = this.state.dugnad;
     const a = dg && dg.aktiv;
     const st = a ? a.status : '';
     const vis = !!dg && !!dg.paa && this.medlemsvisning();
-    const merke = { venter: 'Venter på svar', godkjent: 'Godkjent', pagar: 'Pågår', til_godkjenning: 'Til godkjenning' }[st] || '';
+    // Gitt av verkstedet (migrasjon 214): «Dugnad fra verkstedet» i stedet
+    // for «Godkjent» — medlemmet har ikke spurt. Eieren, 25. september 2026.
+    const fraVerkstedet = !!(a && a.tildelt) && st === 'godkjent';
+    const merke = fraVerkstedet ? 'Dugnad fra verkstedet'
+      : ({ venter: 'Venter på svar', godkjent: 'Godkjent', pagar: 'Pågår', til_godkjenning: 'Til godkjenning' }[st] || '');
     const knapp = (bg) => ({
       appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999,
       padding: '9px 14px', font: 'var(--type-body-sm)', fontWeight: 700,
@@ -40030,7 +40162,9 @@ class Component extends DCLogic {
       },
       dugTekstLinje: !a
         ? 'Vil du bidra i verkstedet — vaske, rydde, sortere glasur? Tida du jobber legges til timene dine når verkstedet har godkjent jobben.'
-        : '«' + a.tekst + '»' + (a.svar ? ' — ' + a.svar : '') + (st === 'godkjent' && a.svart ? ' Godkjent ' + a.svart + '.' : ''),
+        : fraVerkstedet
+          ? '«' + a.tekst + '» Stemple inn når du begynner, og ut når du er ferdig. Tida legges til timene dine når verkstedet har godkjent jobben.'
+          : '«' + a.tekst + '»' + (a.svar ? ' — ' + a.svar : '') + (st === 'godkjent' && a.svart ? ' Godkjent ' + a.svart + '.' : ''),
       dugKanSporre: vis && !a,
       dugVenter: st === 'venter',
       dugSendt: a ? a.sendt : '',
@@ -54195,6 +54329,22 @@ class Component extends DCLogic {
           // laaser opp en knapp er ikke noe bevis; dette skal kunne vises fram.
           personVilkaar: p.vilkaar || '',
           personHarVilkaar: !!p.vilkaar,
+          // «Ser dugnad» (migrasjon 214). Eieren, 25. september 2026.
+          personSerDugnadVis: this.bryterPaa('dugnad') && (this.state.innholdLagret || {})['Vis/dugnadutvalgte'] === 'ja',
+          personSerDugnad: this.state.personSerDugnad === null || this.state.personSerDugnad === undefined
+            ? !!p.serDugnad : !!this.state.personSerDugnad,
+          vekslPersonSerDugnad: () => {
+            const naa = this.state.personSerDugnad === null || this.state.personSerDugnad === undefined
+              ? !!p.serDugnad : !!this.state.personSerDugnad;
+            this.setState({ personSerDugnad: !naa });
+            this.medlemKall({ handling: 'ser-dugnad', medlemId: p.id, paa: naa ? 'nei' : 'ja' }, true)
+              .then(ok => {
+                this.setState({ personSerDugnad: null });
+                if (!ok) return;
+                this.apnePerson(p.id, 0);
+                this._dugAdmHentes = false; this.hentDugnadAdmin();
+              });
+          },
           personFriEtikett: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                               marginTop: 'var(--space-4)', fontSize: 'var(--text-sm)',
                               color: 'var(--text-heading)' },
@@ -58462,8 +58612,8 @@ class Component extends DCLogic {
                 () => this.vekslBryter('medlemsforslag', 'Del på Instagram')),
             // Eieren, 15. september 2026: dugnad «maa kunne skrus av og paa
             // og legges sammen de andre bryterne». Migrasjon 189 setter den av.
-            rad('Dugnad', this.bryterPaa('dugnad'),
-                () => this.vekslBryter('dugnad', 'Dugnad')),
+            Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),
+                () => this.vekslBryter('dugnad', 'Dugnad')), this.dugnadHvemVals()),
             rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),
                 () => this.vekslBryter('dugnadoverforing', 'Overføring av dugnadstimer')),
             // Eieren, 15. september 2026: «Ta med barn» paa medlemskapet —

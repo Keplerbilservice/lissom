@@ -1215,6 +1215,27 @@ if (Foresporsel::metode() === 'POST') {
     //
     // Medlemskapet, timene og doerkoden er urort. Dette sier bare at det ikke
     // skal komme penger.
+    // ── Ser dugnad ─────────────────────────────────────────────────────
+    //
+    //   POST handling=ser-dugnad { medlemId, paa: 'ja'|'nei' }
+    //
+    // Eieren, 25. september 2026: «at jeg kan velge hvem av medlemmene som
+    // faar se at det er dugnad». Gjelder naar Synlighet → Dugnad staar paa
+    // «Utvalgte» (migrasjon 214).
+    if ($handling === 'ser-dugnad') {
+        if (!DB::harKolonne('members', 'ser_dugnad')) {
+            Svar::feil('Vedlikeholdet må kjøres først (oppdatering 214).');
+        }
+        $id = Foresporsel::heltall('medlemId');
+        if (DB::en('SELECT id FROM members WHERE id = :i', ['i' => $id]) === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+        $paa = Foresporsel::tekst('paa') === 'ja';
+        DB::oppdater('members', ['ser_dugnad' => $paa ? 1 : 0], ['id' => $id]);
+        revider('medlem_ser_dugnad', 'member', $id, ['paa' => $paa]);
+        Svar::ok(['beskjed' => $paa ? 'Medlemmet ser nå dugnad på Min side.' : 'Medlemmet ser ikke lenger dugnad.']);
+    }
+
     if ($handling === 'betaler-ikke') {
         if (!DB::harKolonne('members', 'betaler_ikke')) {
             Svar::feil('Vedlikeholdet må kjøres først (oppdatering 130).');
@@ -1937,6 +1958,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // Samme regel som lista og kortet paa Oversikt bruker, saa de tre
             // ikke kan svare hver sitt om den samme personen.
             'betalerIkke'      => !empty($m['betaler_ikke']),
+            'serDugnad'        => !empty($m['ser_dugnad']),
             'betalerIkkeGrunn' => (string) ($m['betaler_ikke_grunn'] ?? ''),
             // ── Den siste oekta i verkstedet ───────────────────────────
             //
@@ -2240,6 +2262,8 @@ if ($sok !== '') {
 $betalerKol = DB::harKolonne('members', 'betaler_ikke')
     ? 'betaler_ikke, betaler_ikke_grunn'
     : '0 AS betaler_ikke, NULL AS betaler_ikke_grunn';
+// «Ser dugnad» (migrasjon 214), paa samme maate.
+$betalerKol .= DB::harKolonne('members', 'ser_dugnad') ? ', ser_dugnad' : ', 0 AS ser_dugnad';
 
 $medlemmer = DB::alle(
     "SELECT id, navn, epost, telefon, rolle, medlemskap_type, status,
@@ -2446,6 +2470,7 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     // siden av.
     'harAktivAvtale'  => isset($harAktivAvtale[(int) $m['id']]),
     'betalerIkke'     => !empty($m['betaler_ikke']),
+    'serDugnad'       => !empty($m['ser_dugnad']),
     'betalerIkkeGrunn'=> (string) ($m['betaler_ikke_grunn'] ?? ''),
     'sisteBetaling'   => isset($sisteBetaling[(int) $m['id']])
         ? $dato(substr((string) $sisteBetaling[(int) $m['id']]['created_at'], 0, 10)) : null,

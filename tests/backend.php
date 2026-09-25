@@ -20351,6 +20351,40 @@ sjekk('prikkene sier hva slags dag det er',
 sjekk('prikkeraden har fast hoyde, saa tallene staar i ro',
     str_contains($dvSida, "      height: 5px;\n      align-items: center;"));
 
+// ── Kalenderfeeden: en avlysning sier fra én gang ─────────────────────
+//
+// Eieren, 25. september 2026: «naar jeg avlyste et barnekurs den 2 okt, saa
+// ble alle disse kursene avlyst i min kalender paa telefonen». Avlysningen
+// hans virket, og han avlyste ikke de andre: seks av de sju barnekursene var
+// avlyst uker for. Nettsiden viser ikke avlyste datoer i det hele tatt, saa
+// telefonen var det eneste stedet de fantes.
+//
+// Maalt i den ekte feeden samme dag: 25 av 178 hendelser var avlyste, ti av
+// dem bakover i tid.
+$kfFil = (string) file_get_contents(dirname(__DIR__) . '/api/kalender-abonnement.php');
+echo "\nKalenderfeeden\n";
+sjekk('en avlyst dato som har vaert sendes ikke',
+    str_contains($kfFil, "AND (cs.status <> 'avlyst'")
+    && str_contains($kfFil, '           OR (cs.start_tid > UTC_TIMESTAMP()'));
+sjekk('… og heller ikke en avlysning eldre enn 30 dager',
+    str_contains($kfFil, "               AND cs.updated_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)))"));
+// Endringstida kom med migrasjon 059. Uten den er datoen det eneste vi har.
+sjekk('uten «updated_at» faller bare de som har vaert bort',
+    str_contains($kfFil, "    : \"AND (cs.status <> 'avlyst' OR cs.start_tid > UTC_TIMESTAMP())\";"));
+sjekk('fragmentet staar i spoerringa',
+    str_contains($kfFil, '        {$utenLedige}' . "\n" . '        {$avlysteSomTeller}'));
+// php -l ser ikke inni en SQL-streng. Parentesene telles for haand.
+sjekk('parentesene i fragmentet gaar opp',
+    substr_count("AND (cs.status <> 'avlyst'
+           OR (cs.start_tid > UTC_TIMESTAMP()
+               AND cs.updated_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)))", '(')
+    === substr_count("AND (cs.status <> 'avlyst'
+           OR (cs.start_tid > UTC_TIMESTAMP()
+               AND cs.updated_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)))", ')'));
+// En fersk avlysning skal fortsatt naa telefonen.
+sjekk('ferske avlysninger sendes som for, merket avlyst',
+    str_contains($kfFil, "    \$linjer[] = 'STATUS:' . (\$o['status'] === 'avlyst' ? 'CANCELLED' : 'CONFIRMED');"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

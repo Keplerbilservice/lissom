@@ -5509,7 +5509,7 @@ window.__resources = {
                  rett her. Eieren, 15. september 2026: «nyttig info paa min
                  side aapner kortene direkte». Samme lister som den aapne
                  sida (plakatKort, nyttigArtikler, nyttigeLenker). -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); align-items: stretch;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); align-items: stretch; margin-top: var(--space-5);">
               <sc-for list="{{ plakatKort }}" as="p" hint-placeholder-count="3">
                 <div role="button" tabindex="0" onClick="{{ p.velg }}" style="display: flex; flex-direction: column; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); cursor: pointer;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.eyebrow }}</div>
@@ -60699,6 +60699,9 @@ class Component extends DCLogic {
           msRuterStil: f === 'hjem'
             ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(250px, 100%), 1fr))',
                 gap: 'var(--space-5)', alignItems: 'stretch' }
+            // Nyttig info: kortene ut i hele bredda. Eieren, 25. september 2026:
+            // «så legger du kortene under ut i bredden».
+            : f === 'nyttig' ? { display: 'block' }
             : { display: 'block', maxWidth: 640 },
           msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
           msBmSelg: b.selg, msBmChat: b.chat, msBmNyttig: b.nyttig, msBmLoggUt: b.loggUt,

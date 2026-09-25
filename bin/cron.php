@@ -441,6 +441,7 @@ switch ($jobb) {
             );
 
             foreach ($deltakere as $d) {
+                $bevisUrl = Booking::bevisLenke((int) $d['id']);
                 Varsel::mal('anmeldelse', [
                     'epost'   => $d['m_epost'] ?? $d['gjest_epost'],
                     // Samme regel som paaminnelsen: SMS bare der kurset har
@@ -458,11 +459,11 @@ switch ($jobb) {
                     // Eieren, 25. september 2026: «dette maa vi sende ut
                     // sammen med google anmeldelsen». Tomt naar beviset er
                     // trukket — da blir avsnittet borte.
-                    'kursbevis' => (static function () use ($d, $okt): string {
-                        $url = Booking::bevisLenke((int) $d['id']);
-                        return $url === null ? '' : 'Her er kursbeviset ditt fra ' . $okt['tittel'] . ":\n" . $url;
-                    })(),
-                ], 'course_session', (int) $okt['id']);
+                    'kursbevis' => $bevisUrl === null ? '' : 'Her er kursbeviset ditt fra ' . $okt['tittel'] . ":\n" . $bevisUrl,
+                // Knappene i HTML-utgaven (app/epost/anmeldelse.html). Eieren,
+                // 25. september 2026: «fine knapper».
+                ], 'course_session', (int) $okt['id'],
+                Booking::anmeldelseHtml(fornavnet((string) ($d['m_navn'] ?: $d['gjest_navn'])), (string) $okt['tittel'], $lenke, $bevisUrl));
                 $antall++;
             }
 

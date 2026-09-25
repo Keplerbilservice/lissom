@@ -1140,6 +1140,73 @@ final class Booking
         return $ok;
     }
 
+    /**
+     * Lengden, dagene og det praktiske, til påmeldingsbekreftelsen.
+     *
+     * Eieren, 25. september 2026: de som melder seg på dreiekurs «må få mer
+     * info, kursets lengde, veibeskrivelse, at vi serverer enkel snacks,
+     * kaffe eller te, dere får låne forkle, og litt om hva vi går igjennom
+     * dag 1 og dag 2». Dagene er samlingene på kursdatoen, og det praktiske
+     * er feltet «Praktisk informasjon» på kurset (eller standarden for
+     * kategorien) — de samme tekstene som står på kurssiden. Da får hvert
+     * kurs sitt eget, og teksten endres på kurset, ikke i malen.
+     *
+     * @param array<string, mixed> $b bookingen, med start_tid og slutt_tid
+     */
+    public static function kursinfo(array $b): string
+    {
+        $deler = [];
+        $samlinger = !empty($b['course_session_id'])
+            ? (Samlinger::forOkter([(int) $b['course_session_id']])[(int) $b['course_session_id']] ?? [])
+            : [];
+
+        // Lengden: per gang når kurset går over flere samlinger.
+        $v = null;
+        if (count($samlinger) > 1) {
+            $s = $samlinger[0];
+            if (($s['fra'] ?? '') !== '' && ($s['til'] ?? '') !== '') {
+                $v = Kursmal::varighetAv($s['dato'] . ' ' . $s['fra'], $s['dato'] . ' ' . $s['til']);
+            }
+            if ($v !== null) {
+                $deler[] = count($samlinger) . ' ganger à ' . $v;
+            }
+        } elseif (!empty($b['start_tid'])) {
+            $v = Kursmal::varighetAv((string) $b['start_tid'], $b['slutt_tid'] ?? null);
+            if ($v !== null) {
+                $deler[] = $v;
+            }
+        }
+
+        if (count($samlinger) > 1) {
+            foreach ($samlinger as $i => $s) {
+                $tittel = trim((string) ($s['overskrift'] ?? ''));
+                $tekst  = trim((string) ($s['tekst'] ?? ''));
+                if ($tittel === '' && $tekst === '') {
+                    continue;
+                }
+                $deler[] = "\n" . 'Dag ' . ($i + 1) . ($tittel !== '' ? ' – ' . $tittel : '')
+                    . ($tekst !== '' ? "\n" . $tekst : '');
+            }
+        }
+
+        $kurs = DB::en('SELECT * FROM courses WHERE id = :id', ['id' => (int) ($b['course_id'] ?? 0)]);
+        if ($kurs !== null) {
+            $praktisk = trim((string) ($kurs['praktisk'] ?? ''));
+            if ($praktisk === '') {
+                $praktisk = trim((string) (Kursmal::forKurs($kurs)['praktisk'] ?? ''));
+            }
+            if ($praktisk !== '') {
+                $linjer = array_filter(array_map('trim', preg_split('/\R/u', $praktisk) ?: []), static fn($l) => $l !== '');
+                $deler[] = "\nPraktisk\n" . implode("\n", array_map(
+                    static fn($l) => '– ' . ltrim($l, "–-• \t"),
+                    $linjer
+                ));
+            }
+        }
+
+        return implode("\n", $deler);
+    }
+
     /** Legger kvitteringen i varselkøen. Cron sender den. */
     public static function sendBekreftelse(int $bookingId): void
     {
@@ -1177,6 +1244,7 @@ final class Booking
         $naar = $b['start_tid']
             ? self::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null)
             : '';
+        $kursinfo = self::kursinfo($b);
         Varsel::mal('ordrebekreftelse', [
             'epost'   => $b['m_epost'] ?? $b['gjest_epost'],
             'telefon' => $b['m_telefon'] ?? $b['gjest_telefon'],
@@ -1185,6 +1253,7 @@ final class Booking
             'kurs'  => (string) $b['tittel'],
             'naar'  => $naar,
             'ordre' => (string) $b['tittel'] . ($naar !== '' ? ' — ' . $naar : ''),
+            'kursinfo' => $kursinfo,
             // Ingen pris i bekreftelsen. Eieren, 24. september 2026: «jeg vil
             // ikke at de skal ha pris i bekreftelses eposter, så fjern dette
             // på alle steder» — valgte paameldinger til kurs og events.
@@ -1591,6 +1660,7 @@ final class Booking
 
         Varsel::mal($erPakke ? 'butikkordre_pakke' : 'butikkordre',
             ['epost' => (string) $o['kunde_epost']], [
+                'navn'       => (string) ($o['kunde_navn'] ?? ''),
                 'ordre'      => (string) $o['ordrenr'],
                 'varelinjer' => implode("\n", $liste),
                 'sum'        => self::kroner((int) $o['sum_ore']),

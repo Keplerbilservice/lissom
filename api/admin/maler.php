@@ -96,7 +96,7 @@ if ($handling === 'test') {
         'navn' => 'Kari Nordmann', 'fornavn' => 'Kari', 'kurs' => 'Nybegynner dreiekurs',
         'naar' => 'onsdag 7. – torsdag 8. oktober, 17:00', 'tid' => 'onsdag 7. oktober kl. 17:00',
         'dato' => 'onsdag 7. oktober', 'fra' => 'onsdag 7. oktober', 'til' => 'onsdag 14. oktober',
-        'belop' => 'kr 2 800', 'sum' => 'kr 1 250', 'pris' => 'kr 400', 'betaling' => 'Ubetalt',
+        'belop' => 'kr 2 800', 'sum' => 'kr 1 250', 'pris' => 'kr 400', 'betaling' => '',
         'lenke' => 'https://lissom.no', 'avmelding' => 'https://lissom.no',
         'abonnement' => 'Årsmedlemskap', 'plan' => 'Årsmedlemskap', 'type' => 'Årsmedlemskap',
         'gyldig' => '25. september 2027', 'dag' => '1.', 'ordre' => 'LIS-260925-1234',
@@ -111,12 +111,24 @@ if ($handling === 'test') {
         'kontakt' => 'kari@example.com · 900 00 000', 'beskjed' => 'Pakkes som gave.',
         'epost' => 'kari@example.com', 'telefon' => '900 00 000', 'produsent' => 'Kari Nordmann',
         'erfaring' => 'Har gått nybegynnerkurs', 'posisjon' => '1', 'visste' => '',
+        // Slik Booking::kursinfo fyller den for dreiekurset.
+        'kursinfo' => "2 ganger à 3 timer og 30 minutter\n\n"
+            . "Dag 1 – Sentrere og dreie\nDu lærer å sentrere leiren, åpne formen og dreie dine første ting på skiven. Vi hjelper deg hele veien.\n\n"
+            . "Dag 2 – Trimme og dekorere\nDu trimmer foten på det du dreide kvelden før, og vi dekorerer. Etterpå glaserer og brenner vi arbeidene for deg.\n\n"
+            . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere får låne forkle, men regn med å bli litt skitten.\n– Leire, verktøy, glasur og brenning er inkludert.",
     ];
     $maler = DB::alle("SELECT navn FROM notification_templates WHERE aktiv = 1 AND kanal LIKE '%epost%' ORDER BY navn");
     $sendt = [];
     foreach ($maler as $m) {
         $malNavn = (string) $m['navn'];
         if ($bare !== '' && $bare !== $malNavn) {
+            continue;
+        }
+        // «Svar på forespørsel» er bare det verkstedet skriver selv. I testen
+        // ble det eksempelteksten «Takk for at du spurte! …» — eieren, 25.
+        // september 2026: «fjern eposten takk for at du spurte». Den sendes
+        // bare når den er valgt for seg.
+        if ($bare === '' && $malNavn === 'foresporsel_svar') {
             continue;
         }
         // Medlemsinvitasjonen har sin egen HTML (app/epost/fortsett.html),

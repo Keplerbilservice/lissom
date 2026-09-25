@@ -9629,6 +9629,25 @@ window.__resources = {
                 </button>
               </sc-for>
             </div>
+            <!-- Dagen man trykket paa, rett under uka. Eieren, 25. september
+                 2026 (GO paa forslaget): «disse dagene maa jeg kunne klikke
+                 paa». Foer byttet trykket dag i kalenderen langt nede, og
+                 ingenting synlig skjedde her. -->
+            <sc-if value="{{ kalMobUkeDagHar }}" hint-placeholder-val="{{ false }}">
+              <div class="lx-kalh" style="color: var(--text-heading);">{{ kalMobDagTittel }}</div>
+              <div class="lx-kalkort">
+                <sc-for list="{{ kalMobDagRader }}" as="r" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ r.velg }}" class="lx-kalrad">
+                    <b>{{ r.klokke }}</b>
+                    <span class="m"><i>{{ r.tittel }}</i><small>{{ r.under }}</small></span>
+                    <span style="{{ r.merkeStil }}">{{ r.merke }}</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ kalMobDagTom }}" hint-placeholder-val="{{ false }}">
+                  <div class="lx-kalrad" style="cursor: default; color: var(--text-muted);">Ingen kurs denne dagen.</div>
+                </sc-if>
+              </div>
+            </sc-if>
 
             <!-- Det avlyste, og det som er for tynt til aa gaa. Eieren,
                  25. september 2026: «et kort med avlyste kurs maa vi ha
@@ -9741,6 +9760,26 @@ window.__resources = {
                 </button>
               </sc-for>
             </div>
+          </div>
+          <!-- Dagen man trykket paa i maaneden, rett under. Eieren, 25.
+               september 2026: trykket aapnet «den gamle kalenderen»
+               (dagvisningen). Naa blir maaneden staaende. Bare paa telefon. -->
+          <div class="lx-kalmob">
+            <sc-if value="{{ kalMobMndDagHar }}" hint-placeholder-val="{{ false }}">
+              <div class="lx-kalh" style="color: var(--text-heading);">{{ kalMobDagTittel }}</div>
+              <div class="lx-kalkort">
+                <sc-for list="{{ kalMobDagRader }}" as="r" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ r.velg }}" class="lx-kalrad">
+                    <b>{{ r.klokke }}</b>
+                    <span class="m"><i>{{ r.tittel }}</i><small>{{ r.under }}</small></span>
+                    <span style="{{ r.merkeStil }}">{{ r.merke }}</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ kalMobDagTom }}" hint-placeholder-val="{{ false }}">
+                  <div class="lx-kalrad" style="cursor: default; color: var(--text-muted);">Ingen kurs denne dagen.</div>
+                </sc-if>
+              </div>
+            </sc-if>
           </div>
           <div class="lx-kalbred lx-mndpc" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="display: grid; grid-template-columns: repeat(7, 1fr);">
@@ -45739,7 +45778,8 @@ class Component extends DCLogic {
         iso: c.iso,
         tall: String(parseInt(c.tall, 10)),
         prikker,
-        velgDag: c.velgDag,
+        // Paa telefon: dagen vises under maaneden, i stedet for dagvisningen.
+        velgDag: () => this.setState({ klAnker: c.iso, kalMobDag: c.iso, kalMobKilde: 'mnd' }),
         stil: {
           appearance: 'none', cursor: 'pointer', padding: '6px 0 5px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
@@ -46333,9 +46373,11 @@ class Component extends DCLogic {
             return {
               navn: n.charAt(0), dag: String(d.getDate()),
               antall: antall ? String(antall) : '—',
-              velg: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
+              // Trykk viser dagen rett under uka. Trykk igjen lukker den.
+              velg: () => this.setState(this.state.kalMobDag === iso && this.state.kalMobKilde === 'uke'
+                ? { kalMobDag: '' } : { kalMobDag: iso, kalMobKilde: 'uke' }),
               stil: { flex: 1, appearance: 'none', cursor: 'pointer',
-                      background: 'var(--surface-card)', borderRadius: '11px',
+                      background: (this.state.kalMobDag === iso && this.state.kalMobKilde === 'uke') ? 'var(--lissom-yellow)' : 'var(--surface-card)', borderRadius: '11px',
                       border: erIdag ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
                       padding: '7px 0 8px', textAlign: 'center' },
               antallStil: { display: 'block', fontSize: '10px', fontWeight: 700, marginTop: '2px',
@@ -46343,6 +46385,29 @@ class Component extends DCLogic {
             };
           }),
 
+          ...(() => {
+            const iso = this.state.kalMobDag || '';
+            const kilde = this.state.kalMobKilde || '';
+            if (!iso) return { kalMobUkeDagHar: false, kalMobMndDagHar: false, kalMobDagRader: [], kalMobDagTom: false, kalMobDagTittel: '' };
+            const DAG = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
+            const d = new Date(iso + 'T12:00:00');
+            const rader = dagEvts(iso).filter(ekte)
+              .slice().sort((a, b) => minAv(a.tid) - minAv(b.tid))
+              .map(e => ({
+                klokke: e.tid, tittel: e.tittel,
+                under: [e.holder || '', plassTekst(e)].filter(Boolean).join(' · '),
+                merke: e.avlyst ? 'Avlyst' : '',
+                merkeStil: { fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', whiteSpace: 'nowrap' },
+                velg: velg(e),
+              }));
+            return {
+              kalMobUkeDagHar: kilde === 'uke',
+              kalMobMndDagHar: kilde === 'mnd',
+              kalMobDagTittel: DAG[d.getDay()] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()],
+              kalMobDagRader: rader,
+              kalMobDagTom: rader.length === 0,
+            };
+          })(),
           kalBlikkHar: blikk.length > 0,
           kalBlikk: blikk.slice(0, 6),
         };

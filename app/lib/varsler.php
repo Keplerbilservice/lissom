@@ -407,7 +407,10 @@ final class Varsel
             $tekst = str_replace('{' . $nokkel . '}', (string) $verdi, $tekst);
         }
         // Plassholdere vi ikke har verdi for fjernes, så kunden slipper å lese «{navn}».
-        return preg_replace('/\{[a-zA-Z_][a-zA-Z0-9_]*\}/', '', $tekst) ?? $tekst;
+        $tekst = preg_replace('/\{[a-zA-Z_][a-zA-Z0-9_]*\}/', '', $tekst) ?? $tekst;
+        // Et tomt felt på egen linje («{betaling}» når alt er betalt, eller
+        // «{kursinfo}» på et kurs uten samlinger) skal ikke bli et hull.
+        return preg_replace("/\n[ \t]*\n(?:[ \t]*\n)+/", "\n\n", $tekst) ?? $tekst;
     }
 
     /** SMS tåler ikke HTML, og lange meldinger koster flere segmenter. */

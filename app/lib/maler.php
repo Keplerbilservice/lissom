@@ -118,6 +118,8 @@ final class Maler
                 // Tom for den som har betalt. Valgte kunden «betal ved
                 // oppmøte», står måten her (uten summen).
                 'betaling' => 'Setningen om betaling ved oppmøte',
+                // Eieren, 25. september 2026. Se Booking::kursinfo.
+                'kursinfo' => 'Lengden, dag 1 og dag 2 og «Praktisk» fra kurset',
             ],
         ],
         'avbestilling' => [

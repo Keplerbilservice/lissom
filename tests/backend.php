@@ -18884,9 +18884,12 @@ sjekk('migrasjon 166: malen «fortsett» staar paa, med hilsenen eieren ba om',
     && str_contains($fortsettMig, "('fortsett_paa',   '1'),")
     && str_contains($fortsettMig, "CREATE TABLE IF NOT EXISTS epost_avmelding ("));
 $fortsettHtml = (string) file_get_contents(dirname(__DIR__) . '/app/epost/fortsett.html');
-sjekk('eierens HTML har hilsenen for «Tusen takk», prisboksen som {visste} og avmeldinga som lenke',
-    str_contains($fortsettHtml, 'Hei {navn}, det var så hyggelig å ha deg på kurs, så vi håper du vil fortsette som medlem.')
-    && strpos($fortsettHtml, 'Hei {navn}') < strpos($fortsettHtml, 'Tusen takk for at du valgte')
+// 25. september 2026 (GO paa det nye forslaget): «Hei {navn}!» uten dobbel
+// takk — se migrasjon 213.
+sjekk('eierens HTML har «Hei {navn}!» foer teksten, prisboksen som {visste} og avmeldinga som lenke',
+    str_contains($fortsettHtml, '>Hei {navn}!</td>')
+    && !str_contains($fortsettHtml, 'Tusen takk for at du valgte')
+    && strpos($fortsettHtml, 'Hei {navn}') < strpos($fortsettHtml, 'Det du laget på kurset, var bare begynnelsen.')
     && str_contains($fortsettHtml, '{visste}')
     && !str_contains($fortsettHtml, 'kr 990')
     && str_contains($fortsettHtml, 'href="{avmelding}"'));

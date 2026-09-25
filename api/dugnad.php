@@ -23,7 +23,9 @@ if (!Dugnad::klar()) {
     Svar::json(['paa' => false, 'klar' => false]);
 }
 Dugnad::lukkGlemte();
-$paa = Dugnad::paa();
+// Per medlem: står dugnad på «Utvalgte», ser bare de valgte den (og den som
+// har fått en jobb av verkstedet). Migrasjon 214.
+$paa = Dugnad::synligFor($medlem);
 
 if (Foresporsel::metode() === 'POST') {
     Foresporsel::krevSammeOpphav();

@@ -30,6 +30,40 @@ final class Dugnad
         return (string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/dugnad'") !== 'nei';
     }
 
+    /**
+     * Bare for utvalgte medlemmer? ⊙ Synlighet → Dugnad → «Utvalgte».
+     * Mangler raden, er det for alle (migrasjon 214). Eieren, 25. september 2026.
+     */
+    public static function utvalgte(): bool
+    {
+        return (string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/dugnadutvalgte'") === 'ja';
+    }
+
+    /**
+     * Ser dette medlemmet dugnad paa Min side?
+     *
+     * Av: ingen. Alle: alle. Utvalgte: de som har «Ser dugnad» paa, og den
+     * som har faatt en dugnadsjobb fra verkstedet som ikke er avsluttet —
+     * ellers kunne hen ikke stemple inn den jobben hen ble gitt.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function synligFor(array $medlem): bool
+    {
+        if (!self::paa()) {
+            return false;
+        }
+        if (!self::utvalgte()) {
+            return true;
+        }
+        if (DB::harKolonne('members', 'ser_dugnad')
+            && (int) DB::verdi('SELECT ser_dugnad FROM members WHERE id = :i', ['i' => (int) $medlem['id']]) === 1) {
+            return true;
+        }
+        $aktiv = self::aktiv((int) $medlem['id']);
+        return $aktiv !== null && !empty($aktiv['tildelt']);
+    }
+
     /** Skal ubrukte dugnadstimer tas med til neste maaned? Mangler raden, er den paa. */
     public static function overforing(): bool
     {
@@ -218,6 +252,9 @@ final class Dugnad
             'godkjentMinutter' => $d['godkjent_minutter'] !== null ? (int) $d['godkjent_minutter'] : null,
             'godkjentTimer'    => $d['godkjent_minutter'] !== null ? self::kvarterTimer((int) $d['godkjent_minutter']) : '',
             'forslagTimer'     => self::kvarterTimer(self::kvarter((int) ($d['minutter'] ?? 0))),
+            // Gitt av verkstedet (migrasjon 214). Min side sier da «Dugnad
+            // fra verkstedet».
+            'tildelt'          => !empty($d['tildelt']),
         ];
     }
 }

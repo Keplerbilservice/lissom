@@ -24562,7 +24562,7 @@ window.__resources = {
           </div>
 
           <sc-if value="{{ mkHarUtkast }}" hint-placeholder-val="{{ true }}">
-            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-xl);">Utkast som venter på deg</h2>
+            <h2 id="mk-utkast" style="margin: 0 0 var(--space-4); font-size: var(--text-xl);">Utkast som venter på deg</h2>
             <sc-for list="{{ mkUtkast }}" as="u" hint-placeholder-count="3">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-4);">
                 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
@@ -26317,9 +26317,17 @@ window.__resources = {
 
 <!-- ── Velg bilde til en artikkel eller en vare ──────────────────────────────
      Ligger den inne i én skjerm, aapner den seg ikke fra den andre.
-     Den brukes baade fra Kunnskapsbanken og fra Butikk. -->
+     Den brukes baade fra Kunnskapsbanken og fra Butikk.
+
+     560 og ikke 60. Velgeren aapnes fra dialoger — «Ny vare» og «Nytt kurs»
+     ligger paa 97, kursholderen og medlemskapet paa 520 og 540 — og laa den
+     under dem, kom den opp bak. Trykket virket, ruta fantes, og ingenting
+     var aa se. Det ser ut som en doed knapp, og det var det eieren meldte
+     25. september 2026: «faar ikke lastet bildet».
+
+     Over alle dialogene, under lasteskjermen. -->
 <sc-if value="{{ mkBildevalgApen }}" hint-placeholder-val="{{ false }}">
-  <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
+  <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 560; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
     <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 760px; width: 100%; padding: var(--space-8);">
       <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-6);">
         <div>
@@ -26573,12 +26581,32 @@ window.__resources = {
     <div onClick="{{ stoppKlikk }}" style="width: min(440px, 100%); max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); position: relative; box-shadow: var(--shadow-lg);">
       <button type="button" onClick="{{ npLukk }}" aria-label="Lukk" style="position: absolute; top: 12px; right: 14px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 24px; line-height: 1;">×</button>
       <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ npTittel }}</h3>
-      <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Legges i nettbutikken. Bildene beskjæres automatisk til kvadrat (1:1).</p>
+      <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Legges i nettbutikken. Bildet beskjæres automatisk til kvadrat (1:1).</p>
       <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <!-- Bilderuta. Sto som tre stiplede firkanter fra designet: ingen
+             fil aa velge, ingen handling, ingenting som ble lagret. Eieren,
+             25. september 2026: «legge ut varer i nettbutikk virker ikke,
+             faar ikke lastet bildet».
+
+             Én rute og ikke tre, fordi en vare har étt bilde i basen
+             («products.bilde»). To ruter til ville ikke hatt noe sted aa
+             bli av — de ville sett ut som de virket og ikke gjort det, som
+             de nettopp gjorde.
+
+             Krysset ligger utenfor ruteknappen, ikke inni: en knapp inni en
+             knapp er ikke gyldig, og da blir det tilfeldig hva et trykk
+             treffer. Samme grep som bilderutene til kurset. -->
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3);">
-          <div style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 10px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Hovedbilde</div></div>
-          <div style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 10px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">+</div></div>
-          <div style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 10px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">+</div></div>
+          <div style="position: relative;">
+            <button type="button" onClick="{{ npBildeVelg }}" aria-label="{{ npBildeMerke }}" style="{{ npBildeStil }}">
+              <sc-if value="{{ npBildeTom }}" hint-placeholder-val="{{ true }}">
+                <span style="font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">{{ npBildeMerke }}</span>
+              </sc-if>
+            </button>
+            <sc-if value="{{ npHarBilde }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ npBildeFjern }}" aria-label="Ta bildet ut av ruta" title="Ta bildet ut av ruta" style="{{ npBildeFjernStil }}">×</button>
+            </sc-if>
+          </div>
         </div>
         <input value="{{ npNavn }}" onChange="{{ settNpNavn }}" placeholder="Navn på varen *" style="{{ skFeltStil }}">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
@@ -35529,6 +35557,13 @@ class Component extends DCLogic {
       this.vareBildeKall(v.id, url || '');
       return;
     }
+    // Bildet i «Ny vare» ligger i skjemaet til varen lagres. En ny vare har
+    // ingen id aa lagre paa, saa det kan ikke gaa veien over «vareBildeKall»
+    // slik en vare som alt finnes gjor.
+    if (v.slag === 'nyvare') {
+      this.setState({ npBilde: url || '' });
+      return;
+    }
     // Kursbildene lagres sammen med kurset, ikke for seg: et nytt kurs har
     // ingen id aa lagre paa foer det er opprettet.
     if (v.slag === 'kurs') {
@@ -36399,7 +36434,16 @@ class Component extends DCLogic {
       this.setState({ kvittering: 'Krever den ekte siden', kvitteringDetalj: 'AI-en svarer først når siden kjører på serveren.' });
       return;
     }
-    if (this._aiJobber) return;
+    // Sto som et bart «return». Er et AI-kall i gang — og de tar et halvt
+    // minutt — gjorde hver eneste knapp paa skjermen ingenting, uten et ord
+    // om hvorfor. Det ser ut som en oedelagt knapp. Naa sier den fra.
+    if (this._aiJobber) {
+      this.setState({
+        kvittering: 'Vent litt',
+        kvitteringDetalj: 'Noe annet holder paa akkurat naa. Prøv igjen om et øyeblikk.',
+      });
+      return;
+    }
     this._aiJobber = true;
     this.setState({
       kvittering: laget ? 'Et øyeblikk' : 'AI-en skriver',
@@ -39177,7 +39221,7 @@ class Component extends DCLogic {
     }
 
     if (!this.erPublisert()) {
-      const vare = { title: navn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: 'kr.' + ' ' + pris + ',-', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
+      const vare = { title: navn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: 'kr.' + ' ' + pris + ',-', image: s.npBilde || 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
       this.setState(s2 => ({ npApen: false, nyeVarer: s.npRediger ? (s2.nyeVarer || []) : (s2.nyeVarer || []).concat([vare]), kvittering: s.npRediger ? 'Endringene er lagret' : navn + ' er lagt ut i butikken' }));
       return;
     }
@@ -39202,11 +39246,20 @@ class Component extends DCLogic {
         pris: parseInt(pris, 10),
         // Tomt antall betyr «ikke lagerstyrt», ikke «tomt paa lager».
         lager: (s.npAntall || '').trim(),
+        // Sto to ganger i det samme objektet, og den nederste vant:
+        // «fra && fra.kunMedlemmer». En NY vare har ingen «fra», saa avkryssinga
+        // «Kun for medlemmer (internbutikken)» ble alltid til «nei» — varen havnet
+        // i den aapne butikken uansett. Og en vare som fantes kunne ikke
+        // flyttes mellom butikkene i det hele tatt: den beholdt sin gamle
+        // verdi hva enn ruta sto paa. Naa er det ruta som gjelder.
         kunMedlemmer: s.npKunMedlemmer ? 'ja' : 'nei',
         kategori: (s.npKategori || '').trim(),
         mva: s.npMva === false ? 0 : 25,
-        bilde: fra ? fra.bilde : '',
-        kunMedlemmer: fra && fra.kunMedlemmer ? 'ja' : 'nei',
+        // Bildet fra ruta i skjemaet. Sto «fra ? fra.bilde : ''»: en vare som
+        // alt fantes beholdt sitt, og en ny kunne aldri faa noe — ruta var
+        // tre stiplede firkanter uten handling, saa det fantes ingen vei inn.
+        // Redigering fyller ruta med det varen har, saa den beholder det.
+        bilde: (s.npBilde || '') || (fra ? fra.bilde : '') || '',
         // Handlelista, migrasjon 184.
         artikkelnr: (s.npArtikkelnr || '').trim(),
         leverandorId: parseInt(String(s.npLeverandor || 0), 10) || 0,
@@ -50900,6 +50953,7 @@ class Component extends DCLogic {
               npArtikkelnr: raa.artikkelnr || '', npLeverandor: raa.leverandorId || 0,
               npKanBestilles: !!raa.kanBestilles,
               npMva: (raa.mva ?? 25) > 0, npKunMedlemmer: true,
+              npBilde: raa.bilde || '',
             } : {}
           ));
           window.scrollTo(0, 0);
@@ -51682,6 +51736,7 @@ class Component extends DCLogic {
       ...this.bildevalgVals(),
       mkBildevalgHva: (this.state.bildeFor || {}).slag === 'kampanje' ? 'Bilde til kampanjen'
         : (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen'
+        : (this.state.bildeFor || {}).slag === 'nyvare' ? 'Bilde til varen'
         : (this.state.bildeFor || {}).slag === 'plan' ? 'Bilde til medlemskapet'
         : (this.state.bildeFor || {}).slag === 'artikkelbilde' ? 'Bilde i artikkelteksten'
         : (this.state.bildeFor || {}).slag === 'kurs'
@@ -58020,11 +58075,11 @@ class Component extends DCLogic {
       // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
       // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
       // peker knappene dit.
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
-      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
       butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
-        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true })
-        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false })),
+        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npBilde: '' })
+        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npBilde: '' })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
       // Handlelista, migrasjon 184. Leverandorene kommer fra basen —
@@ -58047,6 +58102,39 @@ class Component extends DCLogic {
           },
           velg: () => this.setState({ npLeverandor: l.id }),
         })),
+      // Bilderuta i «Ny vare». Bildet ligger i skjemaet til varen lagres:
+      // en ny vare har ingen id aa lagre paa foer den er opprettet — samme
+      // grunn som kursbildene og kampanjebildet.
+      npBilde: this.state.npBilde || '',
+      npBildeTom: !(this.state.npBilde || ''),
+      npHarBilde: !!(this.state.npBilde || ''),
+      npBildeMerke: 'Hovedbilde',
+      npBildeVelg: () => this.apneBildevalg({ slag: 'nyvare' }),
+      // Angrer du paa bildet, skal du bli kvitt det der det staar. Dette
+      // tommer bare ruta — fila blir liggende under «Dine egne» i velgeren.
+      npBildeFjern: () => this.setState({ npBilde: '' }),
+      npBildeStil: {
+        appearance: 'none', cursor: 'pointer', padding: 0, position: 'relative',
+        width: '100%',
+        // Kvadrat, som butikken beskjaerer til.
+        aspectRatio: '1 / 1', borderRadius: 10, overflow: 'hidden',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: (this.state.npBilde || '') ? '1px solid var(--border-subtle)' : '2px dashed var(--border-subtle)',
+        // «backgroundColor» og ikke kortformen «background»: kortformen med
+        // en variabel i seg nuller ut «cover», og da staar bildet i sin egen
+        // stoerrelse. Det kostet en kveld paa kursbildene.
+        backgroundColor: 'var(--clay-200)',
+        backgroundImage: (this.state.npBilde || '') ? "url('" + (this.state.npBilde || '') + "')" : 'none',
+        backgroundSize: 'cover', backgroundPosition: 'center',
+      },
+      npBildeFjernStil: {
+        position: 'absolute', top: 6, right: 6, width: 28, height: 28,
+        appearance: 'none', cursor: 'pointer', padding: 0, lineHeight: '26px',
+        borderRadius: '50%', border: '2px solid #fff',
+        backgroundColor: 'rgba(46,16,2,.82)', color: '#fff',
+        fontSize: '15px', fontWeight: 700,
+        boxShadow: '0 2px 6px rgba(0,0,0,.35)',
+      },
       npTittel: this.state.npRediger ? 'Rediger vare' : 'Ny vare',
       npHandling: this.state.npRediger ? 'Lagre endringer' : 'Legg ut i butikken',
       npNavn: this.state.npNavn || '',
@@ -64772,6 +64860,7 @@ class Component extends DCLogic {
           npBeskrivelse: v.raa ? (v.raa.beskrivelse || '') : '',
           npKategori: v.raa ? (v.raa.kategori || '') : '',
           npMva: v.raa ? (v.raa.mva ?? 25) > 0 : true,
+          npBilde: (v.raa && v.raa.bilde) || '',
         }),
         slett: () => { if (v.raa) this.slettVare(v.raa.id, v.navn); },
       })),
@@ -66605,7 +66694,16 @@ class Component extends DCLogic {
 
           // ── Tavle ──
           mkKort: [
-            { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'artikkel').length), tekst: 'nye artikkelutkast', velg: () => this.setState({ mkFane: 'tavle' }) },
+            // Flisa sto med «mkFane: 'tavle'» — men den STAAR paa Tavle, saa
+            // trykket satte fanen til den den alt var, og ingenting skjedde.
+            // Eieren, 25. september 2026: «knappen utkast gjør ingen ting».
+            // Utkastene ligger rett under flisene, og paa telefon er de
+            // utenfor skjermen. Naa ruller den dit.
+            { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'artikkel').length), tekst: 'nye artikkelutkast',
+              velg: () => this.setState({ mkFane: 'tavle' }, () => setTimeout(() => {
+                const el = document.getElementById('mk-utkast');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 60)) },
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'nyhetsbrev').length), tekst: 'nyhetsbrev klare', velg: () => this.setState({ mkFane: 'brev' }) },
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'sosialt').length), tekst: 'innlegg til sosiale medier', velg: () => this.setState({ mkFane: 'sosialt' }) },
             { merke: 'SEO', tall: String(muligheter.length), tekst: 'muligheter funnet i basen',

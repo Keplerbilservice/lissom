@@ -20396,6 +20396,61 @@ sjekk('parentesene i fragmentet gaar opp',
 sjekk('ferske avlysninger sendes som for, merket avlyst',
     str_contains($kfFil, "    \$linjer[] = 'STATUS:' . (\$o['status'] === 'avlyst' ? 'CANCELLED' : 'CONFIRMED');"));
 
+// ── Bildet til en ny vare ───────────────────────────────────────
+//
+// Eieren, 25. september 2026: «legge ut varer i nettbutikk virker ikke, faar
+// ikke lastet bildet». Bilderuta i «Ny vare» var tre stiplede firkanter fra
+// designet: ingen fil aa velge, ingen handling, ingenting som ble lagret.
+$nvSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+echo "\nBildet til en ny vare\n";
+sjekk('bilderuta er en knapp som aapner velgeren',
+    str_contains($nvSida, '<button type="button" onClick="{{ npBildeVelg }}" aria-label="{{ npBildeMerke }}" style="{{ npBildeStil }}">')
+    && str_contains($nvSida, "npBildeVelg: () => this.apneBildevalg({ slag: 'nyvare' }),"));
+// Én rute og ikke tre: en vare har étt bilde i basen.
+sjekk('én rute, ikke tre stiplede firkanter',
+    substr_count($nvSida, 'aria-label="{{ npBildeMerke }}"') === 1
+    && !str_contains($nvSida, 'padding: 8px;">Hovedbilde</div></div>'));
+sjekk('velgeren vet hvor bildet skal',
+    str_contains($nvSida, "    if (v.slag === 'nyvare') {\n      this.setState({ npBilde: url || '' });"));
+sjekk('og hva ruta heter mens den staar aapen',
+    str_contains($nvSida, "slag === 'nyvare' ? 'Bilde til varen'"));
+// Velgeren laa paa 60, dialogene den aapnes fra paa 97, 520 og 540. Den kom
+// opp BAK dem: trykket virket, og ingenting var aa se.
+sjekk('velgeren ligger over dialogene den aapnes fra',
+    str_contains($nvSida, '<sc-if value="{{ mkBildevalgApen }}" hint-placeholder-val="{{ false }}">'
+        . "\n" . '  <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 560;'));
+sjekk('bildet foelger med naar varen lagres',
+    str_contains($nvSida, "        bilde: (s.npBilde || '') || (fra ? fra.bilde : '') || '',"));
+sjekk('krysset tommer ruta',
+    str_contains($nvSida, "npBildeFjern: () => this.setState({ npBilde: '' }),"));
+// «background» med en variabel i seg nuller ut «cover». Det kostet en kveld
+// paa kursbildene, og ruta her er skrevet med «backgroundColor» av den grunn.
+sjekk('ruta bruker backgroundColor, ikke kortformen',
+    str_contains($nvSida, "        backgroundColor: 'var(--clay-200)',\n        backgroundImage: (this.state.npBilde || '')"));
+// Sto to ganger i det samme objektet. Den nederste vant, og en ny vare havnet
+// alltid i den aapne butikken.
+sjekk('«kun for medlemmer» sendes én gang, fra avkryssinga',
+    substr_count($nvSida, "kunMedlemmer: s.npKunMedlemmer ? 'ja' : 'nei',") === 1
+    && !str_contains($nvSida, "kunMedlemmer: fra && fra.kunMedlemmer ? 'ja' : 'nei',"));
+// Redigering fyller ruta, ellers ville lagring tatt bildet vekk.
+sjekk('redigering av en vare fyller ruta med bildet den har',
+    substr_count($nvSida, "npBilde: raa.bilde || '',") === 1
+    && substr_count($nvSida, "npBilde: (v.raa && v.raa.bilde) || '',") === 1);
+sjekk('en ny vare aapner med tom rute',
+    substr_count($nvSida, "npKanBestilles: false, npBilde: '' }") === 2);
+
+// ── To knapper som ikke sa fra ─────────────────────────────────
+echo "\nKnapper som ikke sa fra\n";
+// «knappen utkast gjør ingen ting» — flisa satte fanen til den den alt sto paa.
+sjekk('utkastflisa ruller til lista i stedet for aa sette fanen paa nytt',
+    str_contains($nvSida, "                const el = document.getElementById('mk-utkast');")
+    && str_contains($nvSida, '<h2 id="mk-utkast"'));
+// Et AI-kall tar et halvt minutt. Imens gjorde hver knapp ingenting, taust.
+sjekk('et AI-kall som alt er i gang sier fra i stedet for aa tie',
+    str_contains($nvSida, "    if (this._aiJobber) {\n      this.setState({\n        kvittering: 'Vent litt',")
+    && !str_contains($nvSida, "    if (this._aiJobber) return;\n    this._aiJobber = true;\n    this.setState({\n      kvittering: laget"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

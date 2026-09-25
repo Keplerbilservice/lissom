@@ -20191,6 +20191,43 @@ sjekk('ovnkortet naas fra alle adminskjermene',
 sjekk('den samme knappen tegner baade fliser og piller',
     str_contains($fmSida, "    const heleKnappen = (k) => Object.assign({"));
 
+// ── Admin paa telefon: fliser ─────────────────────────────────────────
+//
+// Eieren, 25. september 2026, etter aa ha sett alle 37 skjermene tegnet:
+// «ja bygg det». Tre ting gikk igjen, og to av dem overstyrer valg han
+// selv tok 13. september — han ble spurt, og svarte «ja, bygg skissen».
+$flSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+echo "\nAdmin paa telefon: fliser\n";
+sjekk('fanerekka ruller sidelengs',
+    str_contains($flSida, "    .lx-adminaside ~ main .lx-fanerad {\n      flex-wrap: nowrap !important;")
+    && str_contains($flSida, "      overscroll-behavior-x: contain;"));
+// Uten dette ble «Send purring» og «Kontakt» inne i kortene klippet i
+// kanten. Det saa jeg paa bildet av Alle brukere, og skilte dem ut.
+sjekk('handlingsradene inne i kortene bryter som for',
+    str_contains($flSida, "    .lx-adminaside ~ main .lx-pillerad {\n      flex-wrap: wrap !important;")
+    && str_contains($flSida, "      flex: 1 1 calc(50% - 12px) !important;"));
+sjekk('25 rader er merket som fanerekker',
+    substr_count($flSida, 'class="lx-pillerad lx-fanerad"') === 25);
+sjekk('handlingene staar to og to, oddetallet i full bredde',
+    str_contains($flSida, "    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) {")
+    && str_contains($flSida, "      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;")
+    && str_contains($flSida, "> *:nth-child(odd):last-child {\n      grid-column: 1 / -1;"));
+sjekk('tallkortene staar to og to',
+    str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(190px"],')
+    && str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(260px"] {'));
+// Kortene paa 300 og 320 holder skjemaer og produktbilder, og skal ha hele
+// bredda. De under 180 har alt to spalter.
+sjekk('… men bare de som er tallkort',
+    !str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(300px"]')
+    && !str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(320px"]')
+    && !str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(150px"]'));
+// Reglene staar bare inne i admin. Min side og kundesida bruker de samme
+// rutenettene — se «minmax(190px» paa medlemssida — og de skal ikke roeres.
+// Hver eneste av de aatte velgerne baerer «.lx-adminaside ~ main».
+sjekk('ingen av de aatte reglene lekker ut paa kundesida',
+    substr_count($flSida, 'div[style*="minmax(') === 8
+    && substr_count($flSida, '.lx-adminaside ~ main div[style*="minmax(') === 8);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

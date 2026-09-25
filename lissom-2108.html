@@ -1658,26 +1658,88 @@ window.__resources = {
      — «Last ned liste», «Send beskjed» og «Legg til deltaker» ga tre ulike
      hoeyrekanter. Eieren, 13. september 2026, valgte full bredde: da staar
      kolonnen rett. Maalt paa 390 px. */
-  /* To like brede piller paa telefon.
-     Eieren, 13. september 2026, saa tre varianter av faneraden paa Paameldte
-     — bredden foelger ordet, tre like brede, to like brede — og valgte to:
-     «Jeg vil ha to like bredder som vi avtalte, husk globalt». Derfor staar
-     klassen paa alle 98 pilleradene i admin, ikke bare den han saa.
+  /* Én rad som ruller sidelengs, paa telefon.
+     -----------------------------------------------------------------
+     Her sto to like brede piller per linje. Eieren, 13. september 2026,
+     saa tre varianter av faneraden paa Paameldte og valgte to like
+     bredder: «Jeg vil ha to like bredder som vi avtalte, husk globalt».
 
-     «flex-basis: calc(50% - 12px)» med «flex-grow: 1» gir to per linje: to
-     piller fyller linja, en tredje faar ikke plass. «min-width: fit-content»
-     er unntaket — et langt navn som «Store former, viderekomne» (maalt 156
-     px mot spaltas 151) faar hele linja i stedet for aa bli klippet.
-     Ordet skal kunne leses; det er derfor det staar der. */
+     Det gjorde raden jevn, men ikke kort. Maalt paa 390 px 25. september
+     2026: Paameldte har ti faner, og to per linje er fem linjer — 190 px
+     av skjermen for noe man som regel ikke skal bruke. Kurs og deltakere
+     og Brukere har det samme. Til sammen med de tre stablede
+     handlingsknappene over begynte det egentlige innholdet 1400 px nede.
+
+     Eieren, 25. september 2026, med alle 37 skjermene tegnet ved siden av
+     hverandre: «ja bygg det» — og, spurt om nettopp dette valget fra
+     13. september sto i veien: «ja, bygg skissen».
+
+     Naa staar fanene paa én linje som ruller sidelengs. Den du staar i er
+     gul og synlig; resten drar man inn. Raden er 34 px i stedet for 190,
+     og ingen fane er borte. Kalenderen gjor det samme fra for — se
+     «.lx-kalbred» lenger nede. */
   @media (max-width: 560px) {
+    /* Handlingsradene inne i kortene staar som for: to like brede per linje,
+       og de bryter. «Send purring» og «Kontakt» maa begge kunne ses — en
+       knapp som ligger utenfor kanten er en knapp man ikke finner. Det saa
+       jeg paa bildet av Alle brukere for dette ble skilt ut. */
     .lx-adminaside ~ main .lx-pillerad {
-      /* Elleve av radene var flex uten «wrap» — da kan ingenting falle ned
-         paa linje to, og to like brede blir umulig. */
       flex-wrap: wrap !important;
     }
     .lx-adminaside ~ main .lx-pillerad > button {
       flex: 1 1 calc(50% - 12px) !important;
       min-width: fit-content !important;
+    }
+    /* Fanerekka for omraadet er den som ruller. Den er navigasjon — en vei
+       videre — og den staar oeverst paa hver skjerm, over innholdet. */
+    .lx-adminaside ~ main .lx-fanerad {
+      flex-wrap: nowrap !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      /* Rullingen skal bli i raden. Uten dette drar et sveip forbi siste
+         pille hele sida sidelengs. */
+      overscroll-behavior-x: contain;
+      /* Rullefeltet tar 15 px av hoyden paa en rad som er 34. Fingeren
+         trenger det ikke, og paa iPhone staar det ikke der uansett. */
+      scrollbar-width: none;
+    }
+    .lx-adminaside ~ main .lx-fanerad::-webkit-scrollbar { display: none; }
+    .lx-adminaside ~ main .lx-fanerad > button {
+      /* Pilla er saa brei som ordet. «1 1 calc(50% - 12px)» ville strukket
+         to piller over hele raden. */
+      flex: 0 0 auto !important;
+      min-width: 0 !important;
+    }
+  }
+
+  /* Talla to og to, ikke ett per rad.
+     -----------------------------------------------------------------
+     Tallkortene staar i rutenett paa «repeat(auto-fit, minmax(N, 1fr))».
+     Paa PC gir det tre eller fire spalter. Paa en telefon er det 358 px
+     aa dele paa, og alt over 180 gir én — da blir fire kort en kolonne
+     paa 1100 px, og man ruller forbi dem for aa komme til lista de
+     beskriver. Maalt paa Paameldte 25. september 2026.
+
+     To spalter gir 175 px per kort. Det holder for et merke, et tall og
+     en linje under — de tre tingene som staar i dem.
+
+     Bare kortene tas: 180 til 260 er tallkortene. Rutenettene paa 300 og
+     320 holder skjemaer og produktkort med bilde, og de skal ha hele
+     bredda. De under 180 har alt to eller flere spalter her.
+
+     Regelen staar bare inne i admin («.lx-adminaside ~ main»), saa de
+     samme malene paa Min side og kundesida er uroert. */
+  @media (max-width: 560px) {
+    .lx-adminaside ~ main div[style*="minmax(180px"],
+    .lx-adminaside ~ main div[style*="minmax(190px"],
+    .lx-adminaside ~ main div[style*="minmax(200px"],
+    .lx-adminaside ~ main div[style*="minmax(210px"],
+    .lx-adminaside ~ main div[style*="minmax(220px"],
+    .lx-adminaside ~ main div[style*="minmax(230px"],
+    .lx-adminaside ~ main div[style*="minmax(240px"],
+    .lx-adminaside ~ main div[style*="minmax(260px"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
   }
 
@@ -1731,11 +1793,33 @@ window.__resources = {
     flex: 0 0 auto;
   }
 
+  /* Handlingene som fliser, to og to.
+     -----------------------------------------------------------------
+     Her sto de i full bredde, stablet. Eieren valgte det 13. september
+     2026 fordi tre ulike ordlengder — «Last ned liste», «Send beskjed»,
+     «Legg til deltaker» — ga tre ulike hoyrekanter, og kolonnen sto skjevt.
+
+     Full bredde rettet kanten, men tre knapper ble 210 px av skjermen.
+     Eieren, 25. september 2026: «ja, bygg skissen». To like brede fliser
+     per rad retter kanten paa den samme maaten og tar 140 px mindre.
+
+     Er det et oddetall, faar den siste hele raden — ellers staar den
+     alene som en halv knapp, og det er nettopp den skjeve kanten igjen. */
   @media (max-width: 560px) {
     .lx-adminaside ~ main .lx-topprad x-import,
     .lx-adminaside ~ main .lx-topprad .sc-host-x,
     .lx-adminaside ~ main .lx-topprad button {
       width: 100% !important;
+    }
+    /* «:not(:first-child)» maa staa der: har skjermen ingen handlinger, er
+       tittelen bade forste og siste barn, og den skal ikke bli et rutenett. */
+    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+    }
+    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) > *:nth-child(odd):last-child {
+      grid-column: 1 / -1;
     }
     /* Rada skal ikke brekke: da blir sida lengre, og det var nettopp det
        eieren ikke ville. Tittelen krymper i stedet. */
@@ -6727,7 +6811,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -8363,7 +8447,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11077,7 +11161,7 @@ window.__resources = {
              deltakere» — og da maa raden staa her ogsaa, ellers er skjermen
              en blindvei man bare kommer seg ut av gjennom menyen. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -13062,7 +13146,7 @@ window.__resources = {
         </div>
 
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -13565,7 +13649,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -15709,7 +15793,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -16062,7 +16146,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet, saa veien tilbake til Markedsforing staar
              der som paa de andre skjermene. Uten den var dette en blindvei. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="2">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -16512,7 +16596,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -16810,7 +16894,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -17096,7 +17180,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -17404,7 +17488,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -17680,7 +17764,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -18591,7 +18675,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -19662,7 +19746,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -20491,7 +20575,7 @@ window.__resources = {
                 <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Søket går på tvers av kategoriene. <button type="button" onClick="{{ tomMedlemSok }}" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Tøm søket</button></div>
               </sc-if>
             </div>
-            <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+            <div class="lx-pillerad lx-fanerad" style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
               <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
                 <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
               </sc-for>
@@ -20876,7 +20960,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -21307,7 +21391,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -22003,7 +22087,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -22422,7 +22506,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -22746,7 +22830,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -23506,7 +23590,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -24142,7 +24226,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -24151,7 +24235,7 @@ window.__resources = {
 
         <!-- Fanene, i to nivaa: gruppa oeverst, fanene i gruppa under.
              Se GRUPPER i renderVals for hvorfor. -->
-        <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+        <div class="lx-pillerad lx-fanerad" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
           <sc-for list="{{ mkGrupper }}" as="g" hint-placeholder-count="5">
             <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
           </sc-for>
@@ -25396,7 +25480,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -25788,7 +25872,7 @@ window.__resources = {
         </div>
 
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+          <div class="lx-pillerad lx-fanerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>

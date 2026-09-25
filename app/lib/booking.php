@@ -1756,6 +1756,42 @@ final class Booking
      * PHPs date() gir engelske maanedsnavn uansett hva serveren staar til, og
      * «21. August 2029» paa et norsk gavekort ser ut som en feil.
      */
+    /**
+     * Lenken til kursbeviset, med en personlig kode som virker uten
+     * innlogging (migrasjon 215). Koden lages første gang og står fast.
+     * Null når påmeldingen ikke gir bevis: ikke betalt, trukket tilbake,
+     * eller kurset er ikke gjennomført.
+     *
+     * Eieren, 25. september 2026: kursbeviset sendes med Google-anmeldelsen.
+     */
+    public static function bevisLenke(int $bookingId): ?string
+    {
+        if (!DB::harKolonne('bookings', 'bevis_kode')) {
+            return null;
+        }
+        $b = DB::en(
+            'SELECT b.id, b.status, b.bevis_kode, '
+            . (DB::harKolonne('bookings', 'bevis_sperret') ? 'b.bevis_sperret, ' : '0 AS bevis_sperret, ')
+            . 'cs.start_tid, cs.slutt_tid
+               FROM bookings b LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+              WHERE b.id = :id',
+            ['id' => $bookingId]
+        );
+        if ($b === null || $b['status'] !== 'betalt' || !empty($b['bevis_sperret'])) {
+            return null;
+        }
+        $slutt = $b['slutt_tid'] ?: $b['start_tid'];
+        if ($slutt === null || strtotime((string) $slutt) > time()) {
+            return null;
+        }
+        $kode = (string) ($b['bevis_kode'] ?? '');
+        if (!preg_match('/^[a-f0-9]{32}$/', $kode)) {
+            $kode = bin2hex(random_bytes(16));
+            DB::oppdater('bookings', ['bevis_kode' => $kode], ['id' => $bookingId]);
+        }
+        return 'https://lissom.no/api/kursbevis.php?booking=' . $bookingId . '&k=' . $kode;
+    }
+
     public static function norskDatoKort(string $dato): string
     {
         // Tidspunkt lagres i UTC. Uten omregningen ville et kurs som slutter

@@ -1728,17 +1728,26 @@ window.__resources = {
      320 holder skjemaer og produktkort med bilde, og de skal ha hele
      bredda. De under 180 har alt to eller flere spalter her.
 
+     «.lx-split» holdes utenfor. Det er tospalta — liste til venstre,
+     det valgte til hoyre — og fire av dem er skrevet med samme minmax:
+     Innhold, Maler, SEO og GEO. Den har sin egen regel lenger nede som
+     legger spaltene under hverandre paa telefon, men denne er skarpere
+     («.lx-adminaside ~ main div[style]» mot «.lx-split») og vant. SEO ble
+     to spalter paa 151 px, og kortet til hoyre stakk 126 px utenfor
+     skjermen. Eieren, 25. september 2026: «merkelig plassering, begge to
+     paa mobil».
+
      Regelen staar bare inne i admin («.lx-adminaside ~ main»), saa de
      samme malene paa Min side og kundesida er uroert. */
   @media (max-width: 560px) {
-    .lx-adminaside ~ main div[style*="minmax(180px"],
-    .lx-adminaside ~ main div[style*="minmax(190px"],
-    .lx-adminaside ~ main div[style*="minmax(200px"],
-    .lx-adminaside ~ main div[style*="minmax(210px"],
-    .lx-adminaside ~ main div[style*="minmax(220px"],
-    .lx-adminaside ~ main div[style*="minmax(230px"],
-    .lx-adminaside ~ main div[style*="minmax(240px"],
-    .lx-adminaside ~ main div[style*="minmax(260px"] {
+    .lx-adminaside ~ main div[style*="minmax(180px"]:not(.lx-split),
+    .lx-adminaside ~ main div[style*="minmax(190px"]:not(.lx-split),
+    .lx-adminaside ~ main div[style*="minmax(200px"]:not(.lx-split),
+    .lx-adminaside ~ main div[style*="minmax(210px"]:not(.lx-split),
+    .lx-adminaside ~ main div[style*="minmax(220px"]:not(.lx-split),
+    .lx-adminaside ~ main div[style*="minmax(230px"]:not(.lx-split),
+    .lx-adminaside ~ main div[style*="minmax(240px"]:not(.lx-split),
+    .lx-adminaside ~ main div[style*="minmax(260px"]:not(.lx-split) {
       grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
   }

@@ -20226,8 +20226,19 @@ sjekk('handlingene staar to og to',
     str_contains($flSida, "    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) {")
     && str_contains($flSida, "      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;"));
 sjekk('tallkortene staar to og to',
-    str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(190px"],')
-    && str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(260px"] {'));
+    str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(190px"]:not(.lx-split),')
+    && str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(260px"]:not(.lx-split) {'));
+// Tospalta — lista til venstre, det valgte til hoyre — er skrevet med samme
+// minmax paa Innhold, Maler, SEO og GEO. Regelen over var skarpere enn
+// «.lx-split { 1fr }» og gjorde den til to spalter paa 151 px, med kortet
+// til hoyre 126 px utenfor skjermen. Eieren, 25. september 2026: «merkelig
+// plassering, begge to paa mobil».
+sjekk('tospalta holdes utenfor alle de aatte reglene',
+    substr_count($flSida, ']:not(.lx-split)') === 8);
+sjekk('de fire tospaltene som ble truffet staar der fortsatt',
+    preg_match_all('/class="lx-split" style="display: grid; grid-template-columns: minmax\\((?:190|240|260)px/', $flSida) === 4);
+sjekk('og de legges under hverandre paa telefon',
+    str_contains($flSida, '    .lx-split { grid-template-columns: 1fr !important; }'));
 // Kortene paa 300 og 320 holder skjemaer og produktbilder, og skal ha hele
 // bredda. De under 180 har alt to spalter.
 sjekk('… men bare de som er tallkort',

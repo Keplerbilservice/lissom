@@ -125,7 +125,14 @@ if ($handling === 'test') {
         if ($malNavn === 'fortsett' && is_file(APP_DIR . '/epost/fortsett.html')) {
             $egenHtml = (string) preg_replace('/^<!--.*?-->\s*/s', '', (string) file_get_contents(APP_DIR . '/epost/fortsett.html'));
         }
-        Varsel::mal($malNavn, ['epost' => $til], $eksempel, null, null, $egenHtml);
+        // «Be om en anmeldelse» skal lenke til Google-anmeldelsen, som den
+        // ekte utsendingen i bin/cron.php. Eieren, 25. september 2026: «den
+        // må jo lenke til google sin anmeldelse side».
+        $felter = $eksempel;
+        if ($malNavn === 'anmeldelse') {
+            $felter['lenke'] = trim((string) Config::hent('anmeldelse_lenke', '')) ?: $felter['lenke'];
+        }
+        Varsel::mal($malNavn, ['epost' => $til], $felter, null, null, $egenHtml);
         $sendt[] = $malNavn;
     }
     if ($sendt === []) {

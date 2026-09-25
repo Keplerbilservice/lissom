@@ -338,9 +338,15 @@ switch ($jobb) {
                         m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
                    FROM bookings b
               LEFT JOIN members m ON m.id = b.member_id
-                  WHERE b.course_session_id = :s AND b.status = 'betalt'",
+                  WHERE b.course_session_id = :s AND b.status = 'betalt'
+                    AND b.created_at <= DATE_SUB(NOW(), INTERVAL 14 DAY)",
                 ['s' => $okt['id']]
             );
+            // «AND b.created_at …»: paaminnelsen gaar bare til den som meldte
+            // seg paa for to uker siden eller mer. Eieren, 25. september 2026:
+            // «påminnelse før kurset, sendes kun om det er 2 uker eller mer
+            // siden de ble påmeldt». Den som meldte seg paa nylig, har
+            // bekreftelsen friskt i minne.
 
             // Naar kurset er, ferdig skrevet. Eieren, 14. september 2026:
             // «ogsaa info om kurset de meldte seg paa? Dato og klokkeslett»,

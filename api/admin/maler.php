@@ -143,6 +143,15 @@ if ($handling === 'test') {
         $felter = $eksempel;
         if ($malNavn === 'anmeldelse') {
             $felter['lenke'] = trim((string) Config::hent('anmeldelse_lenke', '')) ?: $felter['lenke'];
+            // Et ekte bevis, så lenken i testen kan åpnes: det siste som er
+            // utstedt. Finnes ingen, står eksempelteksten uten lenke.
+            $sisteBevis = (int) (DB::verdi(
+                "SELECT b.id FROM bookings b JOIN course_sessions cs ON cs.id = b.course_session_id
+                  WHERE b.status = 'betalt' AND COALESCE(cs.slutt_tid, cs.start_tid) < UTC_TIMESTAMP()
+               ORDER BY COALESCE(cs.slutt_tid, cs.start_tid) DESC LIMIT 1"
+            ) ?? 0);
+            $url = $sisteBevis > 0 ? Booking::bevisLenke($sisteBevis) : null;
+            $felter['kursbevis'] = 'Her er kursbeviset ditt fra ' . $felter['kurs'] . ':' . ($url !== null ? "\n" . $url : '');
         }
         Varsel::mal($malNavn, ['epost' => $til], $felter, null, null, $egenHtml);
         $sendt[] = $malNavn;

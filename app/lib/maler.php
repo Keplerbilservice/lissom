@@ -175,6 +175,8 @@ final class Maler
                 'navn'  => 'Fornavnet også',
                 'kurs'  => 'Kurset de var på',
                 'lenke' => 'Lenken de legger igjen ordene på',
+                // Migrasjon 215. Se Booking::bevisLenke.
+                'kursbevis' => 'Kursbeviset: «Her er kursbeviset ditt fra …» og lenken (tomt hvis det er trukket)',
             ],
         ],
         // Kom med medlemsinvitasjonen 12. september, men sto ikke her.

@@ -432,7 +432,7 @@ switch ($jobb) {
         $antall = 0;
         foreach ($okter as $okt) {
             $deltakere = DB::alle(
-                "SELECT b.gjest_navn, b.gjest_epost, b.gjest_telefon,
+                "SELECT b.id, b.gjest_navn, b.gjest_epost, b.gjest_telefon,
                         m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
                    FROM bookings b
               LEFT JOIN members m ON m.id = b.member_id
@@ -454,6 +454,14 @@ switch ($jobb) {
                     'fornavn' => fornavnet((string) ($d['m_navn'] ?: $d['gjest_navn'])),
                     'kurs'    => (string) $okt['tittel'],
                     'lenke'   => $lenke,
+                    // Kursbeviset, med en lenke som virker uten innlogging.
+                    // Eieren, 25. september 2026: «dette maa vi sende ut
+                    // sammen med google anmeldelsen». Tomt naar beviset er
+                    // trukket — da blir avsnittet borte.
+                    'kursbevis' => (static function () use ($d, $okt): string {
+                        $url = Booking::bevisLenke((int) $d['id']);
+                        return $url === null ? '' : 'Her er kursbeviset ditt fra ' . $okt['tittel'] . ":\n" . $url;
+                    })(),
                 ], 'course_session', (int) $okt['id']);
                 $antall++;
             }

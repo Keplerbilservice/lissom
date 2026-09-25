@@ -1792,6 +1792,33 @@ final class Booking
         return 'https://lissom.no/api/kursbevis.php?booking=' . $bookingId . '&k=' . $kode;
     }
 
+    /**
+     * HTML-utgaven av «Be om en anmeldelse»: knapper i stedet for lange
+     * lenker (app/epost/anmeldelse.html). Eieren, 25. september 2026: «jeg
+     * vil ha vedlegg, eller fine knapper» — GO paa knappene. Null naar fila
+     * mangler; da gaar e-posten som foer.
+     */
+    public static function anmeldelseHtml(string $fornavn, string $kurs, string $lenke, ?string $bevisUrl): ?string
+    {
+        $fil = APP_DIR . '/epost/anmeldelse.html';
+        if (!is_file($fil)) {
+            return null;
+        }
+        $e = static fn(string $t): string => htmlspecialchars($t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $html = (string) preg_replace('/^<!--.*?-->\s*/s', '', (string) file_get_contents($fil));
+        $tekst = 'font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#2E1002';
+        $blokk = $bevisUrl === null ? '' :
+            '<tr><td style="padding:30px 44px 0 44px;' . $tekst . '" align="center">Her er kursbeviset ditt fra <b>' . $e($kurs) . '</b>.</td></tr>' . "\n"
+            . '<tr><td align="center" style="padding:16px 40px 0 40px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#4D1D12" style="border-radius:8px">'
+            . '<a href="' . $e($bevisUrl) . '" style="display:block;padding:14px 34px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#FBF6EE;text-decoration:none;border-radius:8px">Last ned kursbeviset</a>'
+            . '</td></tr></table></td></tr>';
+        return str_replace(
+            ['{kursbevisblokk}', '{fornavn}', '{lenke}'],
+            [$blokk, $e($fornavn), $e($lenke)],
+            $html
+        );
+    }
+
     public static function norskDatoKort(string $dato): string
     {
         // Tidspunkt lagres i UTC. Uten omregningen ville et kurs som slutter

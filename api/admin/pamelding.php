@@ -520,7 +520,10 @@ if ($handling === 'kursbevis') {
         'kurs'      => (string) $b['tittel'],
         'lenke'     => trim((string) Config::hent('anmeldelse_lenke', '')),
         'kursbevis' => 'Her er kursbeviset ditt fra ' . $b['tittel'] . ":\n" . $url,
-    ], $til !== '' ? null : 'booking', $til !== '' ? null : $id);
+    ], $til !== '' ? null : 'booking', $til !== '' ? null : $id,
+    // Knappene (app/epost/anmeldelse.html). Eieren, 25. september 2026.
+    Booking::anmeldelseHtml(explode(' ', trim($navn))[0], (string) $b['tittel'],
+        trim((string) Config::hent('anmeldelse_lenke', '')), $url));
     revider('kursbevis_sendt', 'booking', $id, ['til' => $mottaker]);
     Svar::ok(['beskjed' => 'Kursbeviset er sendt til ' . $mottaker . '.']);
 }

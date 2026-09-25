@@ -1,0 +1,40 @@
+<!--
+  «Be om en anmeldelse» etter kurset, med kursbeviset. Eieren, 25. september
+  2026: e-posten med to lange lenker i ren tekst var «ikke pen». Samme stil
+  som app/epost/fortsett.html. Sendes av bin/cron.php (og «kursbevis» i
+  api/admin/pamelding.php) som HTML-delen av malen «anmeldelse».
+  {kursbevisblokk} er knappen til beviset, eller tom når beviset er trukket.
+-->
+<!DOCTYPE html>
+<html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><title>Takk for at du var hos oss</title></head>
+<body style="margin:0;padding:0;background-color:#FBF6EE">
+<span style="display:none;font-size:1px;color:#FBF6EE;max-height:0;max-width:0;opacity:0;overflow:hidden">Her er kursbeviset ditt – og tusen takk for at du var hos oss.</span>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FBF6EE">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%">
+<tr><td align="center" style="padding:0 0 24px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:2px;color:#A2502B;text-transform:uppercase;font-weight:bold">Lissom Keramikk &amp; Håndverk</td></tr>
+<tr><td style="background-color:#FFFFFF;border:1px solid #E8DBC8;border-radius:12px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+<tr><td style="padding:40px 40px 0 40px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:36px;mso-line-height-rule:exactly;color:#2E1002;font-weight:bold" align="center">Takk for at du var hos oss!</td></tr>
+<tr><td style="padding:18px 44px 0 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#2E1002" align="center">Hei {fornavn}!</td></tr>
+<tr><td style="padding:14px 44px 0 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#2E1002" align="center">Tusen takk for din deltagelse – det var hyggelig å ha deg her. Vi håper du hadde en koselig opplevelse.</td></tr>
+{kursbevisblokk}
+<tr><td style="padding:30px 44px 0 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#2E1002" align="center">Vi setter stor pris på om du tar deg tid til å skrive noen ord om oss på Google.</td></tr>
+<tr><td align="center" style="padding:16px 40px 0 40px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<tr><td bgcolor="#FFCF38" style="border-radius:8px">
+<a href="{lenke}" style="display:block;padding:14px 34px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#4D1D12;text-decoration:none;border-radius:8px">Skriv en anmeldelse på Google</a>
+</td></tr>
+</table>
+</td></tr>
+<tr><td align="center" style="padding:30px 44px 38px 44px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#2E1002">Tusen takk – vi håper vi sees igjen!<br><br>Hilsen Monica, Lissom Keramikk</td></tr>
+</table>
+</td></tr>
+<tr><td align="center" style="padding:26px 20px 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6F5D4C">
+Lissom Keramikk &amp; Håndverk AS · Nordre Løkkevei 15, 3120 Nøtterøy<br>
+<a href="https://lissom.no" style="color:#A2502B;text-decoration:underline">lissom.no</a> · <a href="mailto:monica@lissom.no" style="color:#A2502B;text-decoration:underline">monica@lissom.no</a> · tlf 941 34 601
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>

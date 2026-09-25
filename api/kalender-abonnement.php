@@ -65,6 +65,37 @@ $utenLedige = DB::harKolonne('course_sessions', 'fra_apningstid')
                 WHERE b2.course_session_id = cs.id AND b2.status = 'betalt') > 0)"
     : '';
 
+// ── En avlysning skal si fra én gang, ikke for alltid ────────────────
+//
+// Avlyste datoer sendes med, merket avlyst, saa telefonen tar dem bort i
+// stedet for aa la dem staa. Men de ble sendt hele veien: 60 dager bakover
+// og 400 framover, for alltid.
+//
+// Maalt i feeden 25. september 2026: 25 av 178 hendelser var avlyste — elleve
+// «Store fat kurs», sju barnekurs, seks dreiekurs. Ti av dem laa bakover i
+// tid. Tretten var avlyst samme dag, 16. september, da en serie ble lagt om.
+//
+// Eieren hadde nettopp avlyst én barnekursdato og saa sju overstrokne
+// barnekurs i telefonen: «naar jeg avlyste et barnekurs den 2 okt, saa ble
+// alle disse kursene avlyst i min kalender paa telefonen». De seks andre var
+// avlyst uker for, men nettsiden viser ikke avlyste datoer i det hele tatt —
+// telefonen var det eneste stedet de fantes.
+//
+// Et abonnement leser hele feeden paa nytt hver gang, saa det som ikke er med
+// blir borte. Da holder det aa sende avlysningen mens den er fersk:
+//
+//   · en dato som har vaert, sendes ikke — den er over uansett
+//   · en avlysning eldre enn 30 dager sendes ikke — telefonen har for lengst
+//     tatt den imot, og REFRESH-INTERVAL er to timer
+//
+// Uten «updated_at» vet vi ikke naar den ble avlyst. Da er datoen det eneste
+// vi har, og de framtidige blir staaende som for.
+$avlysteSomTeller = $harEndret
+    ? "AND (cs.status <> 'avlyst'
+           OR (cs.start_tid > UTC_TIMESTAMP()
+               AND cs.updated_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)))"
+    : "AND (cs.status <> 'avlyst' OR cs.start_tid > UTC_TIMESTAMP())";
+
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status,
             " . ($harEndret ? 'cs.updated_at,' : 'NULL AS updated_at,') . "
@@ -77,6 +108,7 @@ $okter = DB::alle(
       WHERE cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 DAY)
         AND cs.start_tid < DATE_ADD(UTC_TIMESTAMP(), INTERVAL 400 DAY)
         {$utenLedige}
+        {$avlysteSomTeller}
    ORDER BY cs.start_tid"
 );
 
@@ -248,9 +280,10 @@ foreach ($okter as $o) {
     $linjer[] = 'SUMMARY:' . $tekst((string) $o['tittel'] . $mt['merke']);
     $linjer[] = 'DESCRIPTION:' . $tekst($mt['om']);
     $linjer[] = 'LOCATION:' . $tekst($sted);
-    // Avlyste datoer sendes med, merket avlyst. Uten dem ville de blitt
-    // staaende igjen paa telefonen for alltid — feeden sier bare hva som
-    // finnes, ikke hva som er borte.
+    // Avlyste datoer sendes med, merket avlyst, saa telefonen tar dem bort i
+    // stedet for aa la dem staa. Men bare mens avlysningen er fersk — se
+    // «$avlysteSomTeller» over. En avlysning som har rukket rundt er ikke noe
+    // nytt, og 25 overstrokne kurs i kalenderen er ikke til hjelp for noen.
     $linjer[] = 'STATUS:' . ($o['status'] === 'avlyst' ? 'CANCELLED' : 'CONFIRMED');
 
     // Et varsel dagen for, klokka atten.

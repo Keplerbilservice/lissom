@@ -3469,6 +3469,15 @@ window.__resources = {
                        gikk til adressen fra Vipps-innloggingen uansett hva som
                        ble skrevet. Naa staar innloggingens adresse her, og kan
                        rettes. -->
+                  <!-- Navnet, for den som ikke er logget inn. Eieren, 25. september
+                       2026: «man må da ikke være innlogget for å betale, dette
+                       må du endre med en gang». Serveren (api/book.php) har tatt
+                       imot gjester hele tiden — det var nettsida som sendte dem
+                       til Vipps-innlogging foerst. -->
+                  <sc-if value="{{ bGjest }}" hint-placeholder-val="{{ false }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn og etternavn" value="{{ bNavn }}" on-change="{{ settBNavn }}" hint-size="100%,66px"></x-import>
+                    <div style="height: var(--space-4);"></div>
+                  </sc-if>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bEpost }}" on-change="{{ settBEpost }}" hint-size="100%,66px"></x-import>
                   <div style="height: var(--space-4);"></div>
                   <!-- Telefonnummeret.
@@ -49226,7 +49235,10 @@ class Component extends DCLogic {
       });
       return;
     }
-    if (!this.state.innlogget) {
+    // Til innlogging bare naar serveren sier det er noedvendig (loggInn) —
+    // et arrangement kun for medlemmer. Alle andre kan melde seg paa og
+    // betale uten aa logge inn (eieren, 25. september 2026).
+    const tilInnlogging = () => {
       // Det hun rakk aa fylle ut skal ikke vaere borte naar hun kommer
       // tilbake.
       //
@@ -49257,8 +49269,7 @@ class Component extends DCLogic {
       } catch (_) { /* privat modus: da staar feltene tomme, som for */ }
       // Tilbake til bookingen etterpaa, ikke til forsiden.
       this.sendTilInnlogging(this.naaSti(), 'Du ble ikke meldt på kurset.');
-      return;
-    }
+    };
     // Krysset av for allergier, men ikke skrevet noe. Da vet verkstedet at
     // det er noe, uten aa vite hva — verre enn om boksen sto tom. Serveren
     // sier fra om det samme; dette er bare for aa slippe turen dit.
@@ -49294,10 +49305,17 @@ class Component extends DCLogic {
         harAllergier: this.state.bAllergiKryss ? 'ja' : 'nei',
         allergier: this.state.bAllergiKryss ? allergier : '',
         betaling: betaling === 'oppmote' ? 'oppmote' : '',
+        // Gjesten skriver navnet selv; for et medlem henter serveren det.
+        navn: this.state.innlogget ? '' : (this.state.bNavn || '').trim(),
       }),
     })
       .then(r => r.json())
       .then(d => {
+        if (d && d.loggInn) {
+          this.setState({ bookJobber: false });
+          tilInnlogging();
+          return;
+        }
         if (!d || !d.ok) {
           this.setState({ bookJobber: false, kvittering: (d && d.feil) || 'Noe gikk galt. Prov igjen.' });
           return;
@@ -52314,6 +52332,9 @@ class Component extends DCLogic {
 
       bEpost: this.state.bEpost ?? (this.state.medlemEpost || ''),
       settBEpost: e => this.setState({ bEpost: e.target.value }),
+      bGjest: !this.state.innlogget,
+      bNavn: this.state.bNavn || '',
+      settBNavn: e => this.setState({ bNavn: e.target.value }),
       // Er man logget inn, staar nummeret fra kontoen der og kan rettes —
       // som e-posten rett over.
       bTelefon: this.state.bTelefon ?? (this.state.medlemTelefon || ''),

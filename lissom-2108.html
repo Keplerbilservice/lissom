@@ -1952,17 +1952,34 @@ window.__resources = {
     .lx-adminaside ~ main .lx-topprad button {
       width: 100% !important;
     }
-    /* Ordet maa kunne brekke i flisa.
-       Pilla staar med «nowrap» fra designsystemet. I full bredde gikk det
-       bra; i en flis paa 151 px rant «EKSPORTER TIL REGNSKAP» ut av sin egen
-       ramme og la seg oppaa «MÅNEDSRAPPORT (PDF)» ved siden av. Det saa jeg
-       paa bildet av Økonomi paa 390 px. Selve knappene sto riktig — 151 px
-       hver, paa 40 og 199 — det var teksten som laa utenfor.
-       To linjer er greit; en knapp man ikke kan lese er det ikke. */
+    /* Teksten i flisa: brekker, mindre, og like hoye fliser.
+       ------------------------------------------------------------------
+       Pilla staar med «nowrap» og 14 px med nesten 2 px sperre fra
+       designsystemet. I full bredde gikk det bra; i en flis paa 151 px rant
+       «EKSPORTER TIL REGNSKAP» ut av sin egen ramme og la seg oppaa
+       «MÅNEDSRAPPORT (PDF)» ved siden av.
+
+       Foerste retting lot ordet brekke. Da sto det inne, men i tre linjer,
+       og de to flisene ble 68 og 53 px hoye — ulik hoyde ved siden av
+       hverandre. Eieren, 25. september 2026, med bilde: «pass på tekst og
+       størrelse».
+
+       Naa: 12 px og mindre sperre, saa det gaar paa to linjer, og flisene
+       strekkes like hoye. Paa PC staar pilla som for — der er det plass. */
     .lx-adminaside ~ main .lx-topprad button {
       white-space: normal !important;
-      padding: 9px 14px !important;
-      height: auto !important;
+      font-size: 12px !important;
+      letter-spacing: .04em !important;
+      line-height: 1.25 !important;
+      padding: 8px 10px !important;
+      height: 100% !important;
+      min-height: 48px !important;
+    }
+    /* «.sc-host-x» er innpakningen x-import lager. Uten hoyde her strekkes
+       ikke knappen inni, og de to flisene blir ulike igjen. */
+    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) > * {
+      height: 100%;
+      min-width: 0;
     }
     /* «:not(:first-child)» maa staa der: har skjermen ingen handlinger, er
        tittelen bade forste og siste barn, og den skal ikke bli et rutenett. */
@@ -1971,7 +1988,15 @@ window.__resources = {
       grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
       gap: 8px !important;
     }
-    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) > *:nth-child(odd):last-child {
+    /* Er det et oddetall, faar den siste hele raden.
+       «x-import» pakker knappen i en «.sc-host-x», og den staar med
+       «display: contents» — det er altsaa KNAPPEN som er cella i rutenettet,
+       ikke innpakningen. En «grid-column» paa innpakningen gjor ingenting.
+       Maalt paa Paameldte: «LEGG TIL DELTAKER» sto paa 151 px, ikke 310.
+       Derfor staar begge i velgeren: noen skjermer har knappen rett i raden,
+       andre har den bak innpakningen. */
+    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) > *:nth-child(odd):last-child,
+    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) > *:nth-child(odd):last-child > button {
       grid-column: 1 / -1;
     }
     /* Rada skal ikke brekke: da blir sida lengre, og det var nettopp det

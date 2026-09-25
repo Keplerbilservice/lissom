@@ -20211,12 +20211,20 @@ sjekk('25 rader er merket som fanerekker',
 // «EKSPORTER TIL REGNSKAP» rant ut av flisa si og la seg oppaa knappen ved
 // siden av. Pilla staar med «nowrap» fra designsystemet; i full bredde gikk
 // det bra, i en flis paa 151 px gjorde det ikke det.
-sjekk('ordet brekker i flisa i stedet for aa renne ut',
-    str_contains($flSida, "      white-space: normal !important;\n      padding: 9px 14px !important;"));
-sjekk('handlingene staar to og to, oddetallet i full bredde',
+sjekk('teksten brekker og krymper i flisa, i stedet for aa renne ut',
+    str_contains($flSida, "      white-space: normal !important;\n      font-size: 12px !important;"));
+// To fliser ved siden av hverandre var 68 og 53 px hoye. Eieren, med bilde:
+// «pass på tekst og størrelse».
+sjekk('flisene i topprada blir like hoye',
+    str_contains($flSida, "      height: 100% !important;\n      min-height: 48px !important;"));
+// «x-import» pakker knappen i en «.sc-host-x» med «display: contents», saa
+// det er knappen som er cella. En «grid-column» paa innpakningen gjor
+// ingenting: «LEGG TIL DELTAKER» sto paa 151 px i stedet for 310.
+sjekk('oddetallsknappen faar hele raden, ogsaa bak innpakningen',
+    str_contains($flSida, '> *:nth-child(odd):last-child > button {' . "\n" . '      grid-column: 1 / -1;'));
+sjekk('handlingene staar to og to',
     str_contains($flSida, "    .lx-adminaside ~ main .lx-topprad > div:last-child:not(:first-child) {")
-    && str_contains($flSida, "      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;")
-    && str_contains($flSida, "> *:nth-child(odd):last-child {\n      grid-column: 1 / -1;"));
+    && str_contains($flSida, "      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;"));
 sjekk('tallkortene staar to og to',
     str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(190px"],')
     && str_contains($flSida, '.lx-adminaside ~ main div[style*="minmax(260px"] {'));
@@ -20250,12 +20258,12 @@ sjekk('den staar oeverst, over datoraden',
 sjekk('kortet viser det som gaar naa, ellers det neste i dag',
     str_contains($kmSida, "        const hoved = gaar[0] || senere[0] || null;")
     && str_contains($kmSida, "          kalNaaTittel: hoved ? hoved.tittel : 'Ingenting mer i dag',"));
-// Avlyste er filtrert bort av klAlle med vilje (eieren, 8. september 2026).
-// Kortet han ba om 25. september maa derfor lese maanedene for filteret.
-sjekk('avlyste hentes for filteret som skjuler dem i rutenettet',
-    str_contains($kmSida, '        const avlysteFram = (() => {')
-    && str_contains($kmSida, '          const kh = this.state.kalHendelser || {};')
-    && str_contains($kmSida, '            if (!e.avlyst || sett[e.id] || !ekte(e)) return;'));
+// Avlyste var filtrert bort av klAlle. De staar der igjen fra 25. september
+// — se «Avlyste okter i kalenderen» lenger nede — saa kortet leser dem fra
+// den samme lista som alt annet, og ikke fra en kilde til.
+sjekk('avlyste leses fra den samme lista som resten',
+    str_contains($kmSida, '        const avlysteFram = framover.filter(e => e.avlyst);')
+    && !str_contains($kmSida, 'const kh = this.state.kalHendelser || {};'));
 sjekk('«Trenger et blikk» tar med det som er for tynt til aa gaa',
     str_contains($kmSida, '                             && (e.pameldt || 0) * 3 < e.kap).forEach(e => blikk.push({'));
 sjekk('uka er sju dager fra mandag, med i dag markert',

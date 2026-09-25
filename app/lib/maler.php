@@ -70,6 +70,8 @@ final class Maler
             'tittel' => 'Butikkbestilling — hentes',
             'hvor'   => 'Sendes når en bestilling i butikken er betalt, og kunden valgte å hente selv.',
             'felter' => [
+                // Fornavnet (migrasjon 213, «Hei {navn}, og takk …»).
+                'navn'       => 'Fornavnet til kunden',
                 'ordre'      => 'Bestillingsnummeret, f.eks. B-260901-C4D7EC',
                 'varelinjer' => 'Varene, én per linje, med antall og pris',
                 'sum'        => 'Totalsummen',
@@ -94,6 +96,8 @@ final class Maler
             'tittel' => 'Butikkbestilling — sendes',
             'hvor'   => 'Sendes når kunden valgte «Send som pakke» i kassa.',
             'felter' => [
+                // Fornavnet (migrasjon 213, «Hei {navn}, og takk …»).
+                'navn'       => 'Fornavnet til kunden',
                 'ordre'      => 'Bestillingsnummeret',
                 'varelinjer' => 'Varene, én per linje, med antall og pris',
                 'sum'        => 'Totalsummen, inkludert frakt',

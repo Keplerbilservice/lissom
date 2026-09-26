@@ -334,11 +334,88 @@ final class Gemini
             );
         }
 
-        $modell = self::modell();
-        $url = self::BASE . rawurlencode($modell) . ':generateContent';
-
         // Bildene av det ekte verkstedet. Er mappa tom, gaar kallet som for.
         $referanser = self::referanseDeler();
+
+        // Referansebildene foerst, teksten sist. Modellen leser delene i
+        // rekkefoelge, og en instruksjon som staar etter bildene gjelder
+        // bildene som kom foer.
+        return self::bildeKall(array_merge(
+            $referanser,
+            [['text' => self::rammeInn($ledetekst, $referanser !== [])]]
+        ), $formal, $noekkel);
+    }
+
+    /**
+     * Den faste bakgrunnen til varebildene i nettbutikken.
+     *
+     * Eieren, 26. september 2026: «legg en fast bakgrunn paa bildene jeg
+     * legger ut for butikken min, altsaa et stemningsbilde fra verkstedet».
+     * Samme bakgrunn paa alle, saa butikken blir ensartet.
+     */
+    public const BUTIKK_BAKGRUNN = 'assets_butikk-bakgrunn.jpg';
+
+    /**
+     * Setter en vare paa den faste bakgrunnen. Selve varen skal ikke endres —
+     * bare det som staar bak og under den. Resultatet legges i biblioteket;
+     * det byttes ikke paa varen foer admin har sagt ja.
+     *
+     * @return array{navn: string, url: string, kostnadOre: int}
+     */
+    public static function forbedreVarebilde(string $raa, string $navn = 'varen'): array
+    {
+        $noekkel = self::noekkel();
+        if ($noekkel === '') {
+            throw new RuntimeException(
+                'Gemini er ikke koblet til ennå. Lim inn nøkkelen under Markedsføring → Oppsett.'
+            );
+        }
+        $tak = AI::tak();
+        if (AI::bruktDenneMaaneden() >= $tak * 100) {
+            throw new RuntimeException(
+                'Taket på ' . Booking::kroner($tak * 100) . ' for denne måneden er nådd. '
+                . 'Du kan heve det under Markedsføring → Oppsett.'
+            );
+        }
+        $bak = @file_get_contents(dirname(__DIR__, 2) . '/' . self::BUTIKK_BAKGRUNN);
+        if ($bak === false || $bak === '') {
+            throw new RuntimeException('Fant ikke den faste bakgrunnen.');
+        }
+        $info = @getimagesizefromstring($raa);
+        $mime = is_array($info) && !empty($info['mime']) ? (string) $info['mime'] : 'image/jpeg';
+
+        $tekst = "Bilde 1 er et produktfoto av " . $navn . ". Bilde 2 er den faste bakgrunnen for nettbutikken vaar.
+
+"
+            . "Sett produktet fra bilde 1 paa treplaten midt i bilde 2. Selve produktet skal vaere noeyaktig som i bilde 1: "
+            . "samme form, proporsjoner, glasur, farger, moenster, strek, prikker og ujevnheter. Ikke rett opp, ikke glatt ut, "
+            . "ikke endre eller legg til noe paa produktet. Samme kameravinkel paa produktet.
+
+"
+            . "Bakgrunnen skal vaere bilde 2, med hyllene myk og uskarp bak (lav dybdeskarphet). Lyset paa produktet skal passe "
+            . "med dagslyset i bilde 2, med en myk, naturlig skygge paa treplaten.
+
+"
+            . "TETT UTSNITT: produktet skal fylle ca. 75 % av bildets hoeyde, midt i bildet. Staaende format 3:4. "
+            . "Ingen tekst, ingen logoer, ingen mennesker, ingen andre gjenstander ved produktet.";
+
+        return self::bildeKall([
+            ['inlineData' => ['mimeType' => $mime, 'data' => base64_encode($raa)]],
+            ['inlineData' => ['mimeType' => 'image/jpeg', 'data' => base64_encode($bak)]],
+            ['text' => $tekst],
+        ], 'Varebilde', $noekkel);
+    }
+
+    /**
+     * Selve kallet til Google for et bilde, og mottaket av svaret.
+     *
+     * @param list<array<string,mixed>> $deler
+     * @return array{navn: string, url: string, kostnadOre: int}
+     */
+    private static function bildeKall(array $deler, string $formal, string $noekkel): array
+    {
+        $modell = self::modell();
+        $url = self::BASE . rawurlencode($modell) . ':generateContent';
 
         // Noekkelen gaar i et hode, ikke i adressen: en adresse havner i
         // serverlogger og i feilmeldinger, et hode gjor det ikke.
@@ -347,20 +424,18 @@ final class Gemini
             'POST',
             json_encode([
                 'contents' => [[
-                    // Referansebildene foerst, teksten sist. Modellen leser
-                    // delene i rekkefoelge, og en instruksjon som staar etter
-                    // bildene gjelder bildene som kom foer.
-                    'parts' => array_merge(
-                        $referanser,
-                        [['text' => self::rammeInn($ledetekst, $referanser !== [])]]
-                    ),
+                    'parts' => $deler,
                 ]],
-            ], JSON_UNESCAPED_UNICODE),
+            ] + ($formal === 'Varebilde'
+                // Varebildene i butikken staar i 3:4, som bildene fra foer.
+                ? ['generationConfig' => ['imageConfig' => ['aspectRatio' => '3:4']]]
+                : []), JSON_UNESCAPED_UNICODE),
             [
                 'Content-Type: application/json',
                 'x-goog-api-key: ' . $noekkel,
             ],
-            60
+            // To bilder inn tar lengre tid enn ett.
+            $formal === 'Varebilde' ? 120 : 60
         );
 
         $json = json_decode((string) $svar['kropp'], true);

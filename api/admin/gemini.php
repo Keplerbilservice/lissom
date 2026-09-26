@@ -82,6 +82,48 @@ $kropp    = Foresporsel::kropp();
 $handling = Foresporsel::tekst('handling');
 
 switch ($handling) {
+
+    // ── Varebildet paa den faste bakgrunnen ────────────────────────────
+    //
+    //   POST handling=forbedreVare { id }
+    //
+    // Eieren, 26. september 2026: «kan man legge til bildeforbedring i
+    // butikken? kun lissom kolleksjonen for admin» og «legg en fast bakgrunn
+    // paa bildene jeg legger ut for butikken min». Varene i «products» er
+    // Lissom-kolleksjonen; medlemmenes varer ligger et annet sted og er ikke
+    // med. Svaret er et nytt bilde i biblioteket — varen roeres ikke foer
+    // admin har valgt «Bruk det nye» (produkter.php, handling=bilde).
+    case 'forbedreVare':
+        @set_time_limit(150);
+        $vare = DB::en('SELECT id, tittel, bilde FROM products WHERE id = :i', ['i' => (int) ($kropp['id'] ?? 0)]);
+        if ($vare === null) {
+            Svar::feil('Fant ikke varen.');
+        }
+        $bilde = (string) ($vare['bilde'] ?? '');
+        $sti = null;
+        if (preg_match('~^api/bilde\.php\?artikkel=([0-9a-f]{32}\.jpg)$~', $bilde, $m) === 1) {
+            $sti = Bilder::sti($m[1], 'artikler');
+        } elseif ($bilde !== '' && basename($bilde) === $bilde && preg_match('/\.(jpe?g|png|webp)$/i', $bilde) === 1) {
+            $rot = dirname(__DIR__, 2) . '/' . $bilde;
+            $sti = is_file($rot) ? $rot : null;
+        }
+        if ($sti === null) {
+            Svar::feil('Varen har ikke noe bilde å forbedre. Last opp et bilde først.');
+        }
+        try {
+            $b = Gemini::forbedreVarebilde((string) file_get_contents($sti), (string) $vare['tittel']);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('varebilde_forbedret', 'product', (int) $vare['id'], ['nytt' => $b['navn']]);
+        $ore = $b['kostnadOre'];
+        Svar::ok([
+            'url'     => $b['url'],
+            'for'     => $bilde,
+            'kostnad' => $ore < 100 ? $ore . ' øre' : Booking::kroner($ore),
+            'beskjed' => 'Det nye bildet er klart. Velg om du vil bruke det.',
+        ]);
+
     // ----------------------------------------------------------- oppsettet
     case 'oppsett':
         $lagre = static function (string $nokkel, string $verdi) use ($admin): void {

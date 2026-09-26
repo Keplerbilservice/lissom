@@ -69,6 +69,11 @@ if (Foresporsel::metode() === 'GET') {
             'vises'     => (bool) $h['vises_paa_nett'],
             // Den som foreslaas naar en ny kursdato settes opp. Bare én.
             'standard'  => (bool) ($h['standard'] ?? 0),
+            // Lønn eller timer, og om hen er koblet til en innlogging (samme
+            // e-post). Migrasjon 221 — eieren, 26. september 2026.
+            'betaling'  => (string) ($h['betaling'] ?? 'lonn'),
+            'koblet'    => trim((string) ($h['epost'] ?? '')) !== '' && DB::verdi(
+                'SELECT id FROM members WHERE LOWER(TRIM(epost)) = LOWER(TRIM(:e)) LIMIT 1', ['e' => (string) $h['epost']]) !== null,
             'timerMnd'  => rtrim(rtrim(number_format((float) $h['timer_mnd'], 1, ',', ''), '0'), ','),
         ], $holdere),
         'maaned' => $mnd($maanedStart),
@@ -102,6 +107,10 @@ if ($handling === 'lagre') {
         'timesats_ore'  => $sats === '' ? null : (int) round((float) str_replace(',', '.', $sats) * 100),
         'vises_paa_nett' => Foresporsel::tekst('vises') === 'ja' ? 1 : 0,
     ];
+    // Lønn eller timer (migrasjon 221).
+    if (DB::harKolonne('kursholdere', 'betaling')) {
+        $felt['betaling'] = Foresporsel::tekst('betaling') === 'timer' ? 'timer' : 'lonn';
+    }
 
     // Signaturen paa kursbeviset.
     //

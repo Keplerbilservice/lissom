@@ -5316,6 +5316,48 @@ window.__resources = {
             </div>
           </div>
           </sc-if>
+          <!-- Kursholderen: kursene hen holder, stempling, og timene som
+               bekreftes. Eieren, 26. september 2026 (GO paa skissen).
+               Kjennes igjen paa e-posten — se api/kursholder.php. -->
+          <sc-if value="{{ khmVis }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600, #5f6a4e); margin-bottom: var(--space-2);">Kurs du holder</div>
+            <sc-if value="{{ khmIngenKurs }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs de neste tre ukene.</p>
+            </sc-if>
+            <sc-for list="{{ khmKurs }}" as="k" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--border-subtle);">
+                <div style="flex: 1 1 180px; min-width: 0;">
+                  <div style="font-weight: 700; color: var(--text-heading);">{{ k.tittel }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.linje }}</div>
+                </div>
+                <sc-if value="{{ k.kanInn }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ k.inn }}" style="{{ khmInnStil }}">Stemple inn</button>
+                </sc-if>
+                <sc-if value="{{ k.inne }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ k.ut }}" style="{{ khmUtStil }}">Stemple ut</button>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600, #5f6a4e); margin: var(--space-5) 0 var(--space-2);">Timene mine</div>
+            <sc-if value="{{ khmIngenTimer }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen timer denne måneden.</p>
+            </sc-if>
+            <sc-for list="{{ khmTimer }}" as="t" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--border-subtle);">
+                <div style="flex: 1 1 180px; min-width: 0;">
+                  <div style="font-weight: 700; color: var(--text-heading);">{{ t.overskrift }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ t.kildeTekst }}</div>
+                </div>
+                <input type="text" inputmode="decimal" aria-label="Timer" value="{{ t.felt }}" onChange="{{ t.sett }}" style="width: 64px; box-sizing: border-box; border: 1.5px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 6px 8px; text-align: center; font: var(--type-body-sm); font-weight: 700; background: var(--surface-card); color: var(--text-heading);">
+                <span style="{{ t.merkeStil }}">{{ t.merke }}</span>
+                <sc-if value="{{ t.kanBekrefte }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ t.bekreft }}" style="{{ khmInnStil }}">{{ t.knapp }}</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
           </sc-if>
 
           <!-- Baandet «Kursdeltaker / Medlemsside» sto her.
@@ -9912,6 +9954,9 @@ window.__resources = {
                       <span style="display: block; font-weight: 700;">{{ h.tid }}</span>
                       <span style="display: block; font-weight: 600;">{{ h.tittel }}</span>
                       <span style="display: block; opacity: .75;">{{ h.detalj }}</span>
+                      <sc-if value="{{ h.harHolder }}" hint-placeholder-val="{{ false }}">
+                        <span role="button" tabindex="0" aria-label="Bytt kursholder" onClick="{{ h.byttHolder }}" onMouseDown="{{ h.stopp }}" style="{{ h.holderStil }}">{{ h.holderNavn }}</span>
+                      </sc-if>
                       <sc-if value="{{ h.harAvatarer }}" hint-placeholder-val="{{ false }}">
                         <span style="display: flex; align-items: center; gap: 3px; margin-top: 5px; flex-wrap: wrap;">
                           <sc-for list="{{ h.avatarer }}" as="av" hint-placeholder-count="0">
@@ -10020,6 +10065,15 @@ window.__resources = {
         </div>
       </sc-if>
 
+      <!-- Bytt kursholder fra kurskortet (eieren, 26. september 2026). -->
+      <sc-if value="{{ klHPopVis }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klHPopLukk }}" style="position: fixed; inset: 0; z-index: 80;"></div>
+        <div style="{{ klHPopStil }}">
+          <sc-for list="{{ klHPopValg }}" as="v" hint-placeholder-count="3">
+            <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
       <sc-if value="{{ klKonfliktVises }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ klKonfliktAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 70; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
           <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(460px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
@@ -11962,6 +12016,16 @@ window.__resources = {
                   <input type="checkbox" checked="{{ khVises }}" onChange="{{ vekslKhVises }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                   <span>Vis på nettsiden</span>
                 </label>
+              </div>
+              <!-- Lønn eller timer (migrasjon 221). Eieren, 26. september 2026. -->
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div class="lx-pillerad" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ khBetalingValg }}" as="b" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
+                  </sc-for>
+                </div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khBetalingHjelp }}</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khKobletTekst }}</span>
               </div>
               <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khLagre }}" hint-size="auto,38px">{{ khKnapp }}</x-import>
@@ -24195,7 +24259,39 @@ window.__resources = {
             </sc-if>
           </div>
 
-          
+          <!-- Timelisten: kursholdertimene som lønnes. Eieren, 26. september
+               2026 (GO): «en timeliste som jeg kan eksportere til
+               regnskapsfører». Regnskapsfoereren ser Økonomi og ser den her. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-top: var(--space-6);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Timeliste · {{ tlMaaned }}</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                <sc-for list="{{ tlMaaneder }}" as="m" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                </sc-for>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ tlLastNed }}" hint-size="auto,36px">Last ned timeliste</x-import>
+              </div>
+            </div>
+            <sc-if value="{{ tlTom }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kursholdertimer denne måneden.</p>
+            </sc-if>
+            <sc-if value="{{ tlHar }}" hint-placeholder-val="{{ true }}">
+              <!-- Rader som rutenett: lister inne i <table> tegnes ikke av runtime. -->
+              <div style="overflow-x: auto;">
+                <div style="min-width: 540px;">
+                  <div style="display: grid; grid-template-columns: 78px 1fr 1.3fr 56px 110px 76px; gap: 8px; align-items: center; padding: 8px 0; font-size: var(--text-sm); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); padding-top: 0;"><span>Dato</span><span>Kursholder</span><span>Kurs</span><span style="text-align: right;">Timer</span><span>Status</span><span style="text-align: right;">Sum</span></div>
+                  <sc-for list="{{ tlRader }}" as="r" hint-placeholder-count="3">
+                    <div style="display: grid; grid-template-columns: 78px 1fr 1.3fr 56px 110px 76px; gap: 8px; align-items: center; padding: 8px 0; font-size: var(--text-sm); border-top: 1px solid var(--border-subtle);"><span>{{ r.dato }}</span><span>{{ r.navn }}</span><span>{{ r.hva }}</span><span style="text-align: right; font-variant-numeric: tabular-nums;">{{ r.timer }}</span><span><span style="{{ r.statusStil }}">{{ r.status }}</span></span><span style="text-align: right; font-variant-numeric: tabular-nums;">{{ r.sum }}</span></div>
+                  </sc-for>
+                  <sc-for list="{{ tlSummer }}" as="su" hint-placeholder-count="1">
+                    <div style="display: grid; grid-template-columns: 78px 1fr 1.3fr 56px 110px 76px; gap: 8px; align-items: center; padding: 8px 0; font-size: var(--text-sm); border-top: 2px solid var(--lissom-brown); font-weight: 700;"><span style="grid-column: 1 / 4;">{{ su.navn }}</span><span style="text-align: right; font-variant-numeric: tabular-nums;">{{ su.timer }}</span><span style="font-weight: 400; font-size: var(--text-xs); color: var(--terracotta-600);">{{ su.ubekreftet }}</span><span style="text-align: right; font-variant-numeric: tabular-nums;">{{ su.sum }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+
           </div>
         </div>
       </main>
@@ -30389,6 +30485,51 @@ class Component extends DCLogic {
 
   // Okonomiskjermen: ukesfordeling, hva pengene kom fra, og hvilke
   // betalingsnokler som faktisk staar inne.
+  // ── Timelisten (kursholdertimer som lønnes) ─────────────────────────
+  // Eieren, 26. september 2026. Se api/admin/timeliste.php.
+  tlPeriode() {
+    if (this.state.tlPeriode) return this.state.tlPeriode;
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  hentTimeliste() {
+    if (!this.erPublisert() || this._tlHentes) return;
+    const per = this.tlPeriode();
+    this._tlHentes = true;
+    fetch('/api/admin/timeliste.php?periode=' + encodeURIComponent(per), { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._tlHentes = false; this.setState({ timeliste: d || { rader: [], summer: [] }, tlHentetFor: per }); })
+      .catch(() => { this._tlHentes = false; this.setState({ tlHentetFor: per }); });
+  }
+
+  timelisteVals() {
+    const d = this.state.timeliste || { rader: [], summer: [] };
+    const MND = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'];
+    const per = this.tlPeriode();
+    const navnFor = (p) => MND[parseInt(p.slice(5, 7), 10) - 1] + ' ' + p.slice(0, 4);
+    const naa = new Date();
+    const denne = naa.getFullYear() + '-' + String(naa.getMonth() + 1).padStart(2, '0');
+    const f = new Date(naa.getFullYear(), naa.getMonth() - 1, 1);
+    const forrige = f.getFullYear() + '-' + String(f.getMonth() + 1).padStart(2, '0');
+    const pille = (valgt) => ({ appearance: 'none', cursor: 'pointer', borderRadius: 999, padding: '5px 12px', font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--lissom-brown)', background: valgt ? 'var(--lissom-yellow)' : 'transparent', border: '1.5px solid ' + (valgt ? 'var(--lissom-yellow)' : 'var(--lissom-brown)') });
+    return {
+      tlMaaned: navnFor(per),
+      tlMaaneder: [forrige, denne].map(p => ({ navn: MND[parseInt(p.slice(5, 7), 10) - 1], stil: pille(p === per), velg: () => this.setState({ tlPeriode: p }) })),
+      tlTom: (d.rader || []).length === 0,
+      tlHar: (d.rader || []).length > 0,
+      tlRader: (d.rader || []).map(r => Object.assign({}, r, {
+        status: r.bekreftet ? 'bekreftet' : 'ikke bekreftet',
+        statusStil: { fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.05em', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', background: r.bekreftet ? 'var(--sage-100, #e3e7d9)' : 'var(--clay-100)', color: r.bekreftet ? 'var(--sage-600, #5f6a4e)' : 'var(--terracotta-600)' },
+      })),
+      tlSummer: (d.summer || []).map(su => ({ navn: su.navn, timer: su.timer, sum: su.sum, ubekreftet: su.ubekreftet ? su.ubekreftet + ' ikke bekreftet' : '' })),
+      tlLastNed: () => {
+        if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+        window.open('/api/admin/timeliste.php?format=csv&periode=' + encodeURIComponent(per), '_blank', 'noopener');
+      },
+    };
+  }
+
   hentOkonomi() {
     if (!this.erPublisert() || this._okonomiHentes) return;
     this._okonomiHentes = true;
@@ -39986,6 +40127,83 @@ class Component extends DCLogic {
       });
   }
 
+  // ── Kursholderen paa Min side ─────────────────────────────────────
+  // Eieren, 26. september 2026 (GO). Se api/kursholder.php.
+  hentKursholderMin() {
+    if (!this.erPublisert() || this._khmHentes) return;
+    this._khmHentes = true;
+    fetch('/api/kursholder.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { this._khmHentes = false; this.setState({ kursholderMin: d || { erHolder: false } }); })
+      .catch(() => { this._khmHentes = false; });
+  }
+
+  kursholderMinKall(kropp, tittel) {
+    if (!this.erPublisert() || this._khmKaller) return;
+    this._khmKaller = true;
+    fetch('/api/kursholder.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        this._khmKaller = false;
+        this.setState({ kvittering: ok ? tittel : 'Fikk ikke registrert', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+        this._khmHentes = false; this.hentKursholderMin();
+        this._stemplingHentes = false; this.hentStempling();
+      })
+      .catch(() => {
+        this._khmKaller = false;
+        this.setState({ kvittering: 'Fikk ikke registrert', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  kursholderMinVals() {
+    const d = this.state.kursholderMin;
+    const vis = !!(d && d.erHolder);
+    const felt = this.state.khmFelt || {};
+    const knapp = (bg, fg) => ({ appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999, padding: '8px 14px', font: 'var(--type-body-sm)', fontWeight: 700, background: bg, color: fg, whiteSpace: 'nowrap' });
+    const tall = (x) => String(x).replace('.', ',');
+    const kurs = vis ? (d.kurs || []) : [];
+    const timer = vis ? (d.timer || []) : [];
+    return {
+      khmVis: vis,
+      khmIngenKurs: vis && kurs.length === 0,
+      khmIngenTimer: vis && timer.length === 0,
+      khmInnStil: knapp('var(--lissom-yellow)', 'var(--lissom-brown)'),
+      khmUtStil: knapp('var(--lissom-brown)', '#fff'),
+      khmKurs: kurs.map(k => ({
+        tittel: k.tittel,
+        linje: [k.naar, k.pameldte + (k.pameldte === 1 ? ' påmeldt' : ' påmeldte'), k.varighet, k.inne ? 'inne siden ' + k.inn : ''].filter(Boolean).join(' · '),
+        kanInn: k.iDag && !k.inne,
+        inne: !!k.inne,
+        inn: () => this.kursholderMinKall({ handling: 'inn', oktId: k.id }, 'Stemplet inn'),
+        ut: () => this.kursholderMinKall({ handling: 'ut', oktId: k.id }, 'Stemplet ut'),
+      })),
+      khmTimer: timer.map(t => {
+        const bekreftet = t.status === 'bekreftet';
+        const endret = felt[t.id] !== undefined && felt[t.id] !== tall(t.timer);
+        return {
+          overskrift: t.dag + ' · ' + t.hva,
+          kildeTekst: t.kilde === 'stemplet' ? (t.inne ? 'Stemplet inn ' + t.tid : 'Stemplet ' + t.tid)
+            : t.kilde === 'lengde' ? 'Kursets lengde' : 'Ført av verkstedet',
+          felt: felt[t.id] !== undefined ? felt[t.id] : tall(t.timer),
+          sett: (e) => { const v = e.target.value; this.setState(st => ({ khmFelt: Object.assign({}, st.khmFelt, { [t.id]: v }) })); },
+          merke: bekreftet && !endret ? 'bekreftet' : 'ikke bekreftet',
+          merkeStil: { fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.05em', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap', background: bekreftet && !endret ? 'var(--sage-100, #e3e7d9)' : 'var(--clay-100)', color: bekreftet && !endret ? 'var(--sage-600, #5f6a4e)' : 'var(--terracotta-600)' },
+          kanBekrefte: !t.inne && (!bekreftet || endret),
+          knapp: 'Bekreft',
+          bekreft: () => {
+            const v = felt[t.id] !== undefined ? felt[t.id] : tall(t.timer);
+            this.setState(st => { const f = Object.assign({}, st.khmFelt); delete f[t.id]; return { khmFelt: f }; });
+            this.kursholderMinKall({ handling: 'bekreft', id: t.id, timer: v }, 'Timene er bekreftet');
+          },
+        };
+      }),
+    };
+  }
+
   /** Dugnadene, sett fra verkstedet (Ubesvarte). */
   hentDugnadAdmin() {
     if (!this.erPublisert() || this._dugAdmHentes) return;
@@ -46102,8 +46320,15 @@ class Component extends DCLogic {
     // dagsvisningen, og valgte likevel: «Fjern spalta helt».
     //
     // Listevisningen tegner fortsatt alt, uansett holder.
-    const alleKolonner = this.klHoldere().map(kn => {
-      const evs = dagensAlle.filter(e => e.holder === kn);
+    // Én kolonne for hele dagen. Eieren, 26. september 2026: «jeg ville ikke
+    // at det skulle blitt en kolonne til, men kun merkes på kurskortene i
+    // admin». Kursholderen staar paa kortet (h.holderNavn), og trykk paa
+    // navnet bytter. To kurs paa samme tid deler bredden (delBredden).
+    // «Verkstedet» som navn: data-kol maa ha en verdi for at dra-og-slipp
+    // skal finne spalta, og «Verkstedet» betyr «ingen bestemt kursholder»
+    // der (se klSlippNy).
+    const alleKolonner = ['Verkstedet'].map(kn => {
+      const evs = dagensAlle.slice();
       const vakt = evs.find(e => e.type === 'vakt');
       const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
       // ── Paint on Pots tar ikke spalta ──────────────────────────────
@@ -46172,6 +46397,23 @@ class Component extends DCLogic {
             tid: p.e.tid + (p.e.slutt ? '–' + p.e.slutt : ''),
             tittel: p.e.tittel,
             detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : '', p.e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · '),
+            // Kursholderen paa kortet, og trykk bytter (eieren, 26. september
+            // 2026). Bare paa ekte kursdatoer — ikke notater, brenning eller
+            // vakter — og ikke paa de smale Paint on Pots-stripene.
+            ...(() => {
+              const ekteOkt = /^\d+$/.test(String(p.e.id)) && ['vakt', 'verksted', 'brenning', 'notat'].indexOf(p.e.type) === -1;
+              return {
+                harHolder: ekteOkt && !p.smal,
+                holderNavn: (p.e.holder || 'Ingen kursholder') + ' ▾',
+                holderStil: { display: 'inline-block', marginTop: '4px', border: '1.5px solid currentColor', borderRadius: '999px', padding: '0 8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'rgba(255,255,255,.55)' },
+                stopp: ev => ev.stopPropagation(),
+                byttHolder: ev => {
+                  ev.stopPropagation();
+                  const rr = ev.currentTarget.getBoundingClientRect();
+                  this.setState({ klHPop: { id: Number(p.e.id), navn: p.e.holder || '', x: Math.max(8, Math.min(window.innerWidth - 280, rr.left)), y: rr.bottom + 6 } });
+                },
+              };
+            })(),
             id: p.e.id, domId: 'kalevt-' + p.e.id, velg: velg(p.e),
             ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
             inn: ev => {
@@ -46412,6 +46654,23 @@ class Component extends DCLogic {
       klAngreVises: !!this.state.klAngre,
       klAngreTekst: (this.state.klAngre || {}).tekst || '',
       klAngreGjor: () => this.klAngreUtfor(),
+      // Velgeren som bytter kursholder fra kortet.
+      klHPopVis: !!this.state.klHPop,
+      klHPopLukk: () => this.setState({ klHPop: null }),
+      klHPopStil: this.state.klHPop ? { position: 'fixed', left: this.state.klHPop.x + 'px', top: this.state.klHPop.y + 'px', zIndex: 81, background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md, 0 6px 18px rgba(0,0,0,.18))', padding: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap', maxWidth: '270px' } : {},
+      klHPopValg: this.state.klHPop ? this.klHoldere().filter(Boolean).map(navn => {
+        const valgt = navn === this.state.klHPop.navn;
+        return {
+          navn,
+          stil: { appearance: 'none', cursor: 'pointer', borderRadius: 999, padding: '5px 12px', font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--lissom-brown)', background: valgt ? 'var(--lissom-yellow)' : 'transparent', border: '1.5px solid ' + (valgt ? 'var(--lissom-yellow)' : 'var(--lissom-brown)') },
+          velg: () => {
+            const pop = this.state.klHPop;
+            this.setState({ klHPop: null });
+            if (!pop || navn === pop.navn) return;
+            this.klKall('/api/admin/kurs.php', { handling: 'dato', oktId: pop.id, kursholderId: this.klHolderId(navn) || 0 });
+          },
+        };
+      }) : [],
       klKonfliktVises: !!this.state.klKonflikt,
       klKonfliktHolder: (this.state.klKonflikt || {}).holder || '',
       klKonfliktNy: this.state.klKonflikt ? this.state.klKonflikt.flytting.tekst : '',
@@ -49013,7 +49272,7 @@ class Component extends DCLogic {
       const datoEl = els.find(el => el.getAttribute && el.getAttribute('data-dato'));
       const o = (kurs.okter && kurs.okter[0]) || {};
       const dur = o.fra && o.til ? this.klMin(o.til) - this.klMin(o.fra) : 180;
-      let dato = null, fra = o.fra || '17:00', til = o.til || this.klFmt(this.klMin(o.fra || '17:00') + dur), holder = this.klHoldere()[0] || '';
+      let dato = null, fra = o.fra || '17:00', til = o.til || this.klFmt(this.klMin(o.fra || '17:00') + dur), holder = this.klStandardHolder() || this.klHoldere()[0] || '';
       if (kolEl) {
         const r = kolEl.getBoundingClientRect();
         const omr = this._klRange || { start: 420, slutt: 1320, px: 52 };
@@ -50529,6 +50788,9 @@ class Component extends DCLogic {
     if (side === 'minside' && this.state.innlogget && !this.state.dugnad) {
       this.hentDugnad();
     }
+    if (side === 'minside' && this.state.innlogget && !this.state.kursholderMin) {
+      this.hentKursholderMin();
+    }
     if (side === 'minside' && this.state.innlogget && !this.state.tillegg) {
       this.hentTillegg();
     }
@@ -50675,6 +50937,9 @@ class Component extends DCLogic {
     }
     if (side === 'adminokonomi' && !this.state.okonomi) {
       this.hentOkonomi();
+    }
+    if (side === 'adminokonomi' && this.state.tlHentetFor !== this.tlPeriode()) {
+      this.hentTimeliste();
     }
     if (side === 'adminokonomi'
         && (!this.state.dagsoppgjor || this.state.doHentetFor !== this.doMaanedNaa())) {
@@ -59249,7 +59514,8 @@ class Component extends DCLogic {
           khUtkast: h ? {
             navn: h.navn, rolle: h.rolle, epost: h.epost, telefon: h.telefon,
             kurs: h.kurs, timesats: h.timesats, vises: h.vises,
-          } : { vises: true },
+            betaling: h.betaling || 'lonn', koblet: !!h.koblet,
+          } : { vises: true, betaling: 'lonn' },
           khBeskjed: '',
         });
 
@@ -59275,6 +59541,21 @@ class Component extends DCLogic {
           khNavn: u.navn || '', khRolle: u.rolle || '', khEpost: u.epost || '',
           khTelefon: u.telefon || '', khKurs: u.kurs || '', khTimesats: u.timesats || '',
           khVises: u.vises !== false,
+          // Lønn eller timer, og om hen er koblet til Min side (migrasjon 221).
+          // Eieren, 26. september 2026.
+          khBetalingValg: [['lonn', 'Lønn'], ['timer', 'Timer']].map(([k, navn]) => {
+            const valgt = (u.betaling || 'lonn') === k;
+            return {
+              navn,
+              velg: () => this.setState(st => ({ khUtkast: Object.assign({}, st.khUtkast || {}, { betaling: k }), khBeskjed: '' })),
+              stil: { appearance: 'none', cursor: 'pointer', borderRadius: 999, padding: '6px 14px', font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--lissom-brown)', background: valgt ? 'var(--lissom-yellow)' : 'transparent', border: '1.5px solid ' + (valgt ? 'var(--lissom-yellow)' : 'var(--lissom-brown)') },
+            };
+          }),
+          khBetalingHjelp: (u.betaling || 'lonn') === 'timer'
+            ? 'Bekreftet tid legges til verkstedtimene på Min side, som dugnad.'
+            : 'Bekreftet tid går til timelisten under Økonomi.',
+          khKobletTekst: u.koblet ? 'Koblet til Min side — samme e-post som innloggingen.' : 'Ikke koblet til Min side: e-posten må være den samme som innloggingen.',
+
           // Signaturen paa kursbeviset (migrasjon 107).
           khSignatur: u.signatur || '',
           khHarSignatur: !!(u.signatur || ''),
@@ -59304,6 +59585,7 @@ class Component extends DCLogic {
             navn: (u.navn || '').trim(), rolle: u.rolle || '', epost: u.epost || '',
             telefon: u.telefon || '', kurs: u.kurs || '', timesats: u.timesats || '',
             vises: u.vises !== false ? 'ja' : 'nei',
+            betaling: u.betaling === 'timer' ? 'timer' : 'lonn',
             signatur: u.signatur || '',
           })),
           khSlett: () => {
@@ -61333,6 +61615,8 @@ class Component extends DCLogic {
       vekslStempling: () => this.vekslStempling(),
       ...this.innstRute(),
       ...this.dugnadVals(),
+      ...this.timelisteVals(),
+      ...this.kursholderMinVals(),
       ...this.barnVals(),
       ...this.tilbakeVals(),
       // Linjene under timestolpen: planen, dugnad og gave — bare naar det

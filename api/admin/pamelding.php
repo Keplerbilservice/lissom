@@ -489,6 +489,87 @@ if ($handling === 'bekreftelse') {
 // kurs foer beviset kom med i e-posten. Eieren, 25. september 2026: «ja
 // takk» til aa sende beviset til dem som booket uten konto. «til» sender den
 // til en annen adresse (en test), ikke til kunden.
+// ── Kursbeviset til alle denne maaneden som ikke har faatt det ─────────
+//
+//   POST handling=kursbevis-maaned { send? }
+//
+// Eieren, 26. september 2026: «sende epost til de som har vaert paa
+// dreiekurs og andre kurs denne maaneden, med kursbeviset, dersom du ikke har
+// sendt fra foer». Uten «send» er dette bare lista — ingenting sendes.
+//
+// «Sendt fra foer» leses av e-postene selv: en «anmeldelse» som alt baerer
+// lenken til akkurat denne paameldingens kursbevis. De som fikk den foer
+// beviset kom med i malen (25. september), faar den derfor nå.
+if ($handling === 'kursbevis-maaned') {
+    if (!DB::harKolonne('bookings', 'bevis_kode')) {
+        Svar::feil('Vedlikeholdet må kjøres først (oppdatering 215).');
+    }
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $fra = (new DateTimeImmutable('first day of this month 00:00', $oslo))
+        ->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    // Lenken staar i teksten naar malen har {kursbevis}, og alltid i HTML-en (knappen).
+    $iHtml = DB::harKolonne('notifications', 'html')
+        ? "OR n.html LIKE CONCAT('%kursbevis.php?booking=', b.id, '&%')" : '';
+    $rader = DB::alle(
+        "SELECT b.id, c.tittel, cs.start_tid,
+                COALESCE(m.navn, b.gjest_navn) AS navn,
+                COALESCE(m.epost, b.gjest_epost) AS epost
+           FROM bookings b
+           JOIN course_sessions cs ON cs.id = b.course_session_id
+           JOIN courses c ON c.id = b.course_id
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.status = 'betalt'
+            AND cs.status <> 'avlyst'
+            AND cs.start_tid >= :fra
+            AND COALESCE(cs.slutt_tid, cs.start_tid) <= UTC_TIMESTAMP()
+            AND COALESCE(c.tema, '') <> 'Kun for medlemmer'
+            AND NOT EXISTS (
+                SELECT 1 FROM notifications n
+                 WHERE n.mal = 'anmeldelse' AND n.status IN ('ko', 'sendt')
+                   AND (n.tekst LIKE CONCAT('%kursbevis.php?booking=', b.id, '&%')
+                        $iHtml))
+          ORDER BY cs.start_tid, b.id",
+        ['fra' => $fra]
+    );
+    $lenke = trim((string) Config::hent('anmeldelse_lenke', ''));
+    $liste = [];
+    foreach ($rader as $r) {
+        if (!filter_var(trim((string) $r['epost']), FILTER_VALIDATE_EMAIL)) {
+            continue;
+        }
+        $liste[] = $r;
+    }
+    if (empty(Foresporsel::kropp()['send'])) {
+        Svar::ok(['antall' => count($liste), 'liste' => array_map(static fn ($r) => [
+            'id' => (int) $r['id'], 'navn' => (string) $r['navn'], 'epost' => (string) $r['epost'],
+            'kurs' => (string) $r['tittel'], 'dato' => Booking::norskDatoKort((string) $r['start_tid']),
+        ], $liste)]);
+    }
+    // Er malen slaatt av, gaar ingenting ut — si det i stedet for aa telle.
+    if ((int) (DB::verdi("SELECT aktiv FROM notification_templates WHERE navn = 'anmeldelse'") ?? 0) !== 1) {
+        Svar::feil('E-postmalen «Be om en anmeldelse» er slått av. Slå den på under Markedsføring → E-post først.');
+    }
+    $sendt = 0;
+    foreach ($liste as $r) {
+        $url = Booking::bevisLenke((int) $r['id']);
+        if ($url === null) {
+            continue;
+        }
+        $navn = (string) $r['navn'];
+        Varsel::mal('anmeldelse', ['epost' => trim((string) $r['epost'])], [
+            'navn'      => $navn,
+            'fornavn'   => explode(' ', trim($navn))[0],
+            'kurs'      => (string) $r['tittel'],
+            'lenke'     => $lenke,
+            'kursbevis' => 'Her er kursbeviset ditt fra ' . $r['tittel'] . ":\n" . $url,
+        ], 'booking', (int) $r['id'],
+        Booking::anmeldelseHtml(explode(' ', trim($navn))[0], (string) $r['tittel'], $lenke, $url));
+        revider('kursbevis_sendt', 'booking', (int) $r['id'], ['til' => $r['epost'], 'samlet' => true]);
+        $sendt++;
+    }
+    Svar::ok(['antall' => $sendt, 'beskjed' => $sendt . ' kursbevis er lagt i køen for utsending.']);
+}
+
 if ($handling === 'kursbevis') {
     $b = DB::en(
         "SELECT b.id, c.tittel, COALESCE(m.navn, b.gjest_navn) AS navn,

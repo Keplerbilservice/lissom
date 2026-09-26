@@ -96,6 +96,10 @@ AddDefaultCharset UTF-8
     Header always set X-Frame-Options "SAMEORIGIN"
     # Siden trenger verken mikrofon, kamera eller posisjon.
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # Ikke tilby HTTP/3 (26. september 2026, test): Messenger henter
+    # forhaandsvisningen fra telefonen i krypterte chatter, og viste ingen —
+    # heller ikke for en liten statisk side. SMS og nettlesere viste den.
+    Header always unset Alt-Svc
 
     # Hva sida faar lov aa hente, og hvorfra.
     #

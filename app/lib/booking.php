@@ -1114,6 +1114,25 @@ final class Booking
     }
 
     /**
+     * Trekker varene paa en nettordre fra lageret. Bare der lager telles
+     * (lager IS NOT NULL), og aldri under null. Samme trekk som kassa gjor
+     * i api/admin/uttak.php.
+     */
+    public static function trekkLager(int $ordreId): void
+    {
+        foreach (DB::alle('SELECT product_id, antall FROM order_lines WHERE order_id = :o',
+                          ['o' => $ordreId]) as $l) {
+            if ($l['product_id'] === null) {
+                continue;
+            }
+            DB::kjor(
+                'UPDATE products SET lager = GREATEST(0, lager - :a) WHERE id = :p AND lager IS NOT NULL',
+                ['a' => (int) $l['antall'], 'p' => (int) $l['product_id']]
+            );
+        }
+    }
+
+    /**
      * Markerer en booking som betalt. Kalles fra webhook og fra returen —
      * begge kan komme først, og begge kan komme flere ganger.
      */
@@ -1150,9 +1169,16 @@ final class Booking
                 return true;
             }
 
-            $ordre = DB::en('SELECT id FROM orders WHERE payment_id = :p', ['p' => $betaling['id']]);
+            $ordre = DB::en('SELECT id, ordrenr FROM orders WHERE payment_id = :p', ['p' => $betaling['id']]);
             if ($ordre !== null) {
                 DB::oppdater('orders', ['status' => 'betalt'], ['id' => $ordre['id']]);
+                // Lageret trekkes naar pengene er i havn — en forlatt kurv i
+                // Vipps skal ikke ta varer fra hylla. Betalingen er laast over
+                // (FOR UPDATE), saa dette skjer én gang. Bare nettbutikken
+                // (B-): samlebestillingen (H-) er varer bestilt fra leverandoer.
+                if (str_starts_with((string) $ordre['ordrenr'], 'B-')) {
+                    self::trekkLager((int) $ordre['id']);
+                }
                 // «Ta med barn» (migrasjon 192): tillegget paa ordren blir
                 // aktivt naar pengene er i havn — ikke foer.
                 Tillegg::aktiverForOrdre((int) $ordre['id']);

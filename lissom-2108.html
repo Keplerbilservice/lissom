@@ -589,6 +589,21 @@ img{max-width:100%;display:block}
 <style>
 /* Oversikt, ny drakt (26. september 2026). Hele kortet klikkbart: mørk kant
    naar musa er over. Radene lyser svakt gult. */
+.lx-tmgrp { position: relative; }
+.lx-tmgrp > .lx-tmpanel { display: none; position: absolute; top: 100%; left: 0; z-index: 50; margin-top: 6px; }
+.lx-tmgrp > .lx-tmpanel.lx-tmhoyre { left: auto; right: 0; }
+.lx-tmgrp::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 10px; }
+.lx-tmgrp:hover > .lx-tmpanel, .lx-tmgrp:focus-within > .lx-tmpanel { display: block; }
+.lx-tm button:focus-visible { outline: 2px solid var(--lissom-yellow); outline-offset: 2px; }
+.lx-tmgrp > .lx-tmpanel[style*="display: block"] { display: block !important; }
+@media (min-width: 980px) {
+  .lx-adminaside > button:first-child { order: 1; align-self: center !important; }
+  .lx-adminaside > button:first-child img { height: 38px !important; width: auto !important; }
+  /* Statusboksene nederst i sidefeltet (Solgt i dag, Denne maaneden …) staar
+     naa i linja, mellom menyen og Stemple inn. */
+  .lx-adminaside > .lx-admstatus { order: 2; margin: 0 !important; border: 0 !important; padding: 0 var(--space-2) !important; white-space: nowrap; line-height: 1.25; }
+  .lx-adminaside > .lx-admstatus > div:first-child { margin-bottom: 1px !important; font-size: 10px !important; }
+}
 .lx-ovgruppe { transition: border-color .15s, box-shadow .15s; }
 .lx-ovgruppe:hover { border-color: var(--lissom-brown) !important; box-shadow: 0 4px 16px rgba(46,16,2,.10); }
 .lx-ovrad:hover { background: color-mix(in srgb, var(--lissom-yellow) 16%, transparent); }
@@ -6897,6 +6912,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyttig }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7336,6 +7402,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyePameldinger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7596,6 +7713,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemssoknader }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7842,6 +8010,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUbesvarte }}" as="a" hint-placeholder-count="11">
@@ -8199,6 +8418,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavGodkjenning }}" as="a" hint-placeholder-count="11">
@@ -8586,6 +8856,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVideokurs }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -8851,6 +9172,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFerdigbrent }}" as="a" hint-placeholder-count="11">
@@ -9272,6 +9644,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKalender }}" as="n" hint-placeholder-count="9">
@@ -11153,6 +11576,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavArskalender }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -11460,6 +11934,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVenteliste }}" as="a" hint-placeholder-count="11">
@@ -11829,6 +12354,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursholdere }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12195,6 +12771,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUttak }}" as="a" hint-placeholder-count="9">
@@ -13084,6 +13711,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyreg }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -13457,6 +14135,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemskap }}" as="a" hint-placeholder-count="9">
@@ -13949,6 +14678,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNav }}" as="a" hint-placeholder-count="6">
@@ -15271,6 +16051,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOversikt }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -15600,6 +16431,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursvelger }}" as="a" hint-placeholder-count="11">
@@ -15999,6 +16881,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavReferanser }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -16357,6 +17290,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVarsler }}" as="a" hint-placeholder-count="10">
@@ -16808,6 +17792,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavRessurser }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -17106,6 +18141,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFerie }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -17391,6 +18477,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFeil }}" as="a" hint-placeholder-count="9">
@@ -17695,6 +18832,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMobilvis }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -17964,6 +19152,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavPameldte }}" as="a" hint-placeholder-count="9">
@@ -18523,6 +19762,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOmraade }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -18874,6 +20164,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursdeltakere }}" as="a" hint-placeholder-count="9">
@@ -19661,6 +21002,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -19963,6 +21355,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlem }}" as="a" hint-placeholder-count="7">
@@ -21178,6 +22621,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavInnhold }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -21606,6 +23100,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavButikk }}" as="a" hint-placeholder-count="7">
@@ -22313,6 +23858,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBeskjeder }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -22734,6 +24330,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMaler }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -23052,6 +24699,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOppskrifter }}" as="a" hint-placeholder-count="10">
@@ -23805,6 +25503,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOkonomi }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -24479,6 +26228,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMarked }}" as="a" hint-placeholder-count="7">
@@ -25738,6 +27538,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
         </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavSeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -26136,6 +27987,57 @@ window.__resources = {
           <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
           <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
           <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
+        <!-- Menylinja oeverst paa PC (eieren, 26. september 2026: «kan vi legge
+             de opp paa en annen maate saa vi slipper aa ha dette sidefeltet»).
+             Samme rader og samme handlinger som sidemenyen — adminMeny() —
+             bare fordelt: faner, «Mer», hvem som er inne, og ⚙ med verktoyene.
+             Paa telefon staar alt som foer. -->
+        <nav class="lx-tm" style="{{ tmStil }}" aria-label="Hovedmeny">
+          <sc-for list="{{ tmFaner }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+          <div class="lx-tmgrp" style="{{ tmMerGrpStil }}">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmMerApen }}" onClick="{{ tmMerVeksle }}" style="{{ tmMerStil }}">{{ tmMerNavn }}</button>
+            <div class="lx-tmpanel" style="{{ tmMerPanelStil }}">
+              <sc-for list="{{ tmMer }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <span style="flex: 1 1 auto;"></span>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmInneApen }}" onClick="{{ tmInneVeksle }}" style="{{ tmInneStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ tmInneTekst }}</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmInnePanelStil }}">
+              <div style="{{ admMenyEtikettStil }}">I verkstedet nå</div>
+              <sc-for list="{{ admMenyInne }}" as="i" hint-placeholder-count="3">
+                <div style="{{ admMenyRadStil }}">
+                  <div style="{{ admMenyLinjeStil }}">
+                    <span style="{{ admMenyPrikkStil }}"></span>
+                    <span style="{{ admMenyNavnStil }}">{{ i.navn }}</span>
+                    <span style="{{ admMenyKlokkeStil }}">{{ i.klokke }}</span>
+                  </div>
+                  <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ admMenySkjultStil }}">Skjult for andre</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ admMenyHarMer }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ admMenyMerStil }}">{{ admMenyMer }}</div>
+              </sc-if>
+              <sc-if value="{{ admMenyTom }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ admMenyLinjeStil }}"><span style="{{ admMenyPrikkStil }}"></span>{{ inneTekst }}</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="lx-tmgrp">
+            <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
+            <div class="lx-tmpanel lx-tmhoyre" style="{{ tmVerkPanelStil }}">
+              <sc-for list="{{ tmVerktoy }}" as="a" hint-placeholder-count="7">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
         </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavGeo }}" as="a" hint-placeholder-count="7">
@@ -49871,6 +51773,75 @@ class Component extends DCLogic {
     return this.adminMeny().filter(r => r.navn === Component.ADMIN_LOGG_UT);
   }
 
+  // ── Menylinja oeverst paa PC ───────────────────────────────────────────
+  //
+  // Eieren, 26. september 2026: menyen i en linje oeverst i stedet for
+  // sidefeltet. Radene er adminMeny() sine — samme navn og samme handling —
+  // bare fordelt: de mest brukte som faner, resten under «Mer», og
+  // verktoyene (Synlighet, Se nettsiden, Vedlikehold, Test Vipps, Meld inn
+  // feil, Synk med mobilen, Logg ut) under ⚙.
+  toppmenyVals() {
+    const smal = (this.state.vw || 1400) < 980;
+    if (smal) return { tmStil: { display: 'none' }, tmFaner: [], tmMer: [], tmVerktoy: [], tmMerNavn: '', tmInneTekst: '',
+                       tmMerStil: {}, tmMerGrpStil: {}, tmInneStil: {}, tmVerkStil: {},
+                       tmMerPanelStil: {}, tmInnePanelStil: {}, tmVerkPanelStil: {}, tmMerApen: 'false', tmInneApen: 'false', tmVerkApen: 'false',
+                       tmMerVeksle: () => {}, tmInneVeksle: () => {}, tmVerkVeksle: () => {} };
+    const alle = this.adminMeny();
+    const aktiv = this.adminSted().meny;
+    const FANER = ['Oversikt', 'Kalender', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'];
+    const MER = ['Årskalender', 'Til godkjenning', 'Verkstedet', 'Admin-brukere'];
+    const menyNavn = new Set(Component.ADMIN_MENY.map(([n]) => n));
+    const fane = (r) => Object.assign({}, r, { stil: {
+      appearance: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+      padding: '7px 12px', borderRadius: 'var(--radius-pill)', font: 'var(--type-body-sm)',
+      fontWeight: 700, background: r.navn === aktiv ? 'var(--lissom-yellow)' : 'transparent',
+      color: r.navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-100)',
+    } });
+    const panelRad = (r, aktivNaa) => Object.assign({}, r, { velg: (...a) => { this.setState({ tmApen: '' }); return r.velg(...a); }, stil: Object.assign({}, r.stil || {}, {
+      display: 'block', width: '100%', textAlign: 'left', whiteSpace: 'nowrap', marginTop: 0, borderTop: 'none', paddingTop: 10,
+      background: aktivNaa ? 'var(--lissom-yellow)' : 'transparent',
+      color: aktivNaa ? 'var(--lissom-brown)' : ((r.stil || {}).color || 'var(--clay-100)'),
+    }) });
+    const faner = alle.filter(r => FANER.indexOf(r.navn) >= 0).map(fane);
+    const mer = alle.filter(r => MER.indexOf(r.navn) >= 0).map(r => panelRad(r, r.navn === aktiv));
+    const verktoy = alle.filter(r => !menyNavn.has(r.navn)).map(r => panelRad(r, false));
+    const merAktiv = MER.indexOf(aktiv) >= 0;
+    const inne = (this.state.stempling && this.state.stempling.inne && this.state.stempling.inne.antall) || 0;
+    const pille = (paa) => ({
+      appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8,
+      padding: '6px 12px', borderRadius: 'var(--radius-pill)', font: 'var(--type-body-sm)', fontWeight: 700,
+      border: '1px solid rgba(244,235,222,.32)', background: paa ? 'var(--lissom-yellow)' : 'transparent',
+      color: paa ? 'var(--lissom-brown)' : 'var(--clay-100)',
+    });
+    return {
+      tmStil: { display: 'flex', alignItems: 'center', gap: 2, flex: '1 1 auto', minWidth: 0, order: 2, flexWrap: 'wrap', padding: '10px 0' },
+      tmFaner: faner,
+      tmMer: mer,
+      tmMerNavn: merAktiv ? aktiv + ' ▾' : 'Mer ▾',
+      tmMerStil: Object.assign(pille(merAktiv), { border: 'none' }),
+      tmMerGrpStil: mer.length ? {} : { display: 'none' },
+      tmVerktoy: verktoy,
+      tmInneTekst: inne ? inne + ' inne' : 'Ingen inne',
+      tmInneStil: pille(false),
+      tmVerkStil: Object.assign(pille(false), { width: 36, height: 36, padding: 0, justifyContent: 'center', fontSize: 17 }),
+      ...(() => {
+        // Trykk aapner og lukker; musa over aapner ogsaa (CSS). Et valg i
+        // panelet lukker det, siden det bytter skjerm.
+        const apen = this.state.tmApen || '';
+        const panel = (hvem) => Object.assign({
+          background: 'var(--lissom-brown)', border: '1px solid rgba(244,235,222,.22)', borderRadius: 'var(--radius-md)',
+          padding: 6, minWidth: 230, boxShadow: '0 12px 30px rgba(0,0,0,.28)',
+        }, apen === hvem ? { display: 'block' } : {});
+        const veksle = (hvem) => (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.setState({ tmApen: apen === hvem ? '' : hvem }); };
+        return {
+          tmMerPanelStil: panel('mer'), tmInnePanelStil: panel('inne'), tmVerkPanelStil: panel('verk'),
+          tmMerApen: apen === 'mer' ? 'true' : 'false', tmInneApen: apen === 'inne' ? 'true' : 'false', tmVerkApen: apen === 'verk' ? 'true' : 'false',
+          tmMerVeksle: veksle('mer'), tmInneVeksle: veksle('inne'), tmVerkVeksle: veksle('verk'),
+        };
+      })(),
+    };
+  }
+
   adminBunnStil() {
     return {
       appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
@@ -67133,9 +69104,7 @@ class Component extends DCLogic {
         return {
           admStemplingStil: smal
             ? { display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }
-            : { display: 'flex', flexDirection: 'column', gap: 6, alignSelf: 'stretch',
-                paddingBottom: 'var(--space-6)',
-                borderBottom: '1px solid rgba(244,235,222,.20)' },
+            : { display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', order: 3 },
           admStempNavn: st.stempleNavn,
           admStempVelg: st.stempleVelg,
           admStempStil: smal ? kompakt(st.stempleStil) : st.stempleStil,
@@ -69631,13 +71600,17 @@ class Component extends DCLogic {
       })(),
       adminGridStil: (this.state.vw || 1400) < 980
         ? { display: 'block', minHeight: '100vh', background: 'var(--clay-100)' }
-        : { display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh', background: 'var(--clay-100)' },
+        // Paa PC: menylinja oeverst, innholdet under i hele bredden (26. sep.).
+        : { display: 'block', minHeight: '100vh', background: 'var(--clay-100)' },
       adminAsideStil: (this.state.vw || 1400) < 980
         ? { background: 'var(--lissom-brown)', padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-4)', position: 'sticky', top: 0, zIndex: 30 }
-        : { background: 'var(--lissom-brown)', padding: 'var(--space-8) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' },
+        : { background: 'var(--lissom-brown)', padding: '0 var(--space-8)', minHeight: 64, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-5)', position: 'sticky', top: 0, zIndex: 40 },
       adminNavStil: (this.state.vw || 1400) < 980
         ? { display: 'flex', flexDirection: 'row', gap: 4, overflowX: 'auto', overscrollBehaviorX: 'contain', flex: 1 }
-        : { display: 'flex', flexDirection: 'column', gap: 2 },
+        // Den gamle sidemenyen staar ikke paa PC lenger — menylinja (tm…) har
+        // de samme radene.
+        : { display: 'none' },
+      ...this.toppmenyVals(),
       // Aapne fra start. Eieren, 15. september 2026: kortene i Nyttig info
       // skal aapne direkte. Trykk paa overskrifta lukker som foer.
       ordensregerApen: this.state.ordensApen !== false,

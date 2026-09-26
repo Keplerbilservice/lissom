@@ -23,7 +23,7 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lissom.no/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#FBF6EE">
 
@@ -65,10 +65,16 @@
 <meta property="og:title" content="Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk">
 <meta property="og:description" content="Kurs, events og medlemskap i keramikkverkstedet på Teie. Ingen forkunnskaper nødvendig — se datoer og book plass.">
 <meta property="og:image" content="https://lissom.no/delingsbilde.jpg">
+<meta property="og:image:secure_url" content="https://lissom.no/delingsbilde.jpg">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="675">
 <meta property="og:image:alt" content="Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk">
+<meta name="twitter:description" content="Kurs, events og medlemskap i keramikkverkstedet på Teie. Ingen forkunnskaper nødvendig — se datoer og book plass.">
+<meta name="twitter:image" content="https://lissom.no/delingsbilde.jpg">
+<meta name="twitter:image:alt" content="Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg">
 <!-- seo:slutt -->
 <!-- ── Vipps sine egne betalingsknapper ──────────────────────────────────
      Eieren, 3. september: «1. vanlig vipps med vanlig vipps logo».
@@ -32333,6 +32339,9 @@ class Component extends DCLogic {
           // Innlogget er ikke medlem. Vipps forteller hvem noen er;
           // medlemskapet er noe verkstedet godkjenner.
           erMedlemBruker: !!d.erMedlem,
+          // 20 % paa kurs for aktive medlemmer. Serveren avgjor (api/meg.php
+          // og Booking::faarMedlemsrabatt); skjermen viser bare det samme tallet.
+          medlemsrabatt: Number(d.medlemsrabatt) || 0,
           soknadStatus: d.soknadStatus || null,
           // Faar hen selge egne arbeider? Regnet ut av serveren, i
           // Medlemskap::kanSelge() — se kanSelge() her.
@@ -53753,7 +53762,13 @@ class Component extends DCLogic {
         const antall = ((k.tema || '') === 'Medlemskap') ? 1 : Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
         const rabatt = this.rabattFor(k, antall);
         const brutto = grunn * antall;
-        const netto = brutto * (1 - rabatt / 100);
+        // Medlemsrabatten gjelder medlemmets egen plass, og den stoerste av
+        // den og grupperabatten — samme regnestykke som Booking::belopFor().
+        const mPst = (this.state.innlogget && k.tema !== 'Medlemskap' && k.price !== 'Gratis' && grunn > 0)
+          ? (Number(this.state.medlemsrabatt) || 0) : 0;
+        const netto = mPst > 0
+          ? grunn * (1 - Math.max(rabatt, mPst) / 100) + grunn * (antall - 1) * (1 - rabatt / 100)
+          : brutto * (1 - rabatt / 100);
         const maks = this.maksRabatt(k);
         // Paint on Pots og andre der gjenstanden velges i verkstedet.
         //
@@ -53778,9 +53793,11 @@ class Component extends DCLogic {
           // endre senere i admin. Ingen fra pris».
           bPris: k.price === 'Gratis' ? 'Gratis'
             : (grunn > 0 ? fmt(netto) : (k.price || '')),
-          bPrisAntallNote: (k.tema !== 'Medlemskap' && antall > 1) ? (antall + ' × ' + fmt(grunn) + (rabatt ? ' = ' + fmt(brutto) : '')) : '',
-          bRabattLinje: (rabatt && k.price !== 'Gratis') ? ('Grupperabatt ' + rabatt + ' %: −' + fmt(brutto - netto)) : '',
-          bRabattTeaser: (!rabatt && maks > 0 && k.price !== 'Gratis' && k.tema !== 'Medlemskap') ? ('Ta med venner og få opptil ' + maks + ' % rabatt.') : '',
+          bPrisAntallNote: (k.tema !== 'Medlemskap' && antall > 1) ? (antall + ' × ' + fmt(grunn) + ((rabatt || mPst) ? ' = ' + fmt(brutto) : '')) : '',
+          bRabattLinje: (mPst > 0 && mPst >= rabatt)
+            ? ('Medlemsrabatt ' + mPst + ' %' + (antall > 1 ? ' på din plass' : '') + (rabatt ? ', grupperabatt ' + rabatt + ' % på de andre' : '') + ': −' + fmt(brutto - netto))
+            : ((rabatt && k.price !== 'Gratis') ? ('Grupperabatt ' + rabatt + ' %: −' + fmt(brutto - netto)) : ''),
+          bRabattTeaser: (!rabatt && !mPst && maks > 0 && k.price !== 'Gratis' && k.tema !== 'Medlemskap') ? ('Ta med venner og få opptil ' + maks + ' % rabatt.') : '',
         };
       })(),
       bBilde: (this.state.valgtKurs && this.state.valgtKurs.image) || 'uploads_shutterstock_2630283113.jpg',

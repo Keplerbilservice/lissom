@@ -728,6 +728,44 @@ Dette staar alt i skjemaet:
     // Sletter utkastet for godt. «Legg bort» skjuler det; dette fjerner
     // raden. En artikkel som alt er laget av utkastet blir staaende — den er
     // en egen ting, og slettes under Kunnskapsbank.
+    // ── Rette teksten foer den brukes ─────────────────────────────────
+    //
+    //   POST handling=endre { id, tittel?, tekst? }
+    //
+    // Eieren, 26. september 2026: «naar du lager en some artikkel, saa maa jeg
+    // kunne redigere teksten foer jeg publiserer den». Det som lagres her er
+    // det som publiseres — artikkelen, nyhetsbrevet og innlegget til
+    // Instagram og Facebook leser alle teksten fra utkastet.
+    case 'endre':
+        $id = (int) ($kropp['id'] ?? 0);
+        $u = DB::en('SELECT id, status FROM ai_utkast WHERE id = :i', ['i' => $id]);
+        if ($u === null) {
+            Svar::feil('Fant ikke utkastet.');
+        }
+        if (!in_array($u['status'], ['utkast', 'godkjent'], true)) {
+            Svar::feil('Utkastet er allerede brukt.');
+        }
+        $ny = [];
+        if (array_key_exists('tittel', $kropp)) {
+            $t = trim(mb_substr((string) $kropp['tittel'], 0, 191));
+            if ($t === '') {
+                Svar::feil('Tittelen kan ikke være tom.');
+            }
+            $ny['tittel'] = $t;
+        }
+        if (array_key_exists('tekst', $kropp)) {
+            $t = trim((string) $kropp['tekst']);
+            if ($t === '') {
+                Svar::feil('Teksten kan ikke være tom.');
+            }
+            $ny['tekst'] = mb_substr($t, 0, 60000);
+        }
+        if ($ny !== []) {
+            DB::oppdater('ai_utkast', $ny, ['id' => $id]);
+            revider('ai_rettet', 'ai', $id, ['felt' => array_keys($ny)]);
+        }
+        Svar::ok(['beskjed' => 'Endringene er lagret.']);
+
     case 'slett':
         $id = (int) ($kropp['id'] ?? 0);
         if (DB::en('SELECT id FROM ai_utkast WHERE id = :i', ['i' => $id]) === null) {

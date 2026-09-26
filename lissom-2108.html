@@ -39853,7 +39853,13 @@ class Component extends DCLogic {
     const dybde = this._dybde || 0;
     const admin = this.erAdminSkjerm(side);
     return {
-      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminkalender',
+      // Ikke naar menyskuffen staar aapen. Skuffen gjoer adminstripa 650 px
+      // hoy, og da finner tilbakeTopp() ingen «linje» aa legge seg under —
+      // den er hoyere enn taket paa 240 px — saa pila falt tilbake til 10 px
+      // og la seg oppaa logoen. Skuffen har sin egen «Lukk», og en rund pil
+      // oppaa menyen er uansett i veien for det man skal velge.
+      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminkalender'
+        && !this.state.admMobApen,
       tilbakeGaa: () => {
         if (dybde > 0) { history.back(); return; }
         if (admin) { this.gaaAdmin('adminkalender', {}); return; }
@@ -43761,7 +43767,14 @@ class Component extends DCLogic {
       // «beskjedFra» sier at Beskjeder ble aapnet fra Send i Markedsfoering.
       // Den skal ikke henge igjen naar man gaar dit fra Brukere etterpaa.
       // «npSju»: «Nye påmeldinger» aapnet fra kortet «Siste sju dager».
-      { side: rute, fhRolle: '', fhFra: '', beskjedFra: '', npSju: false },
+      // «admMobApen»: menyskuffen sto aapen etter at man hadde valgt noe i
+      // bunnmenyen. Skuffens egne knapper lukker den selv (se lukkOg), men
+      // bunnmenyen gaar rett hit — og da la skuffen seg oppaa skjermen man
+      // nettopp ba om. Eieren, 26. september 2026: «jeg trykker paa kalender
+      // etter aa ha trykket paa meny, kommer ikke i kalender opp». Enhver vei
+      // videre lukker den naa, ikke bare de som gaar gjennom skuffen.
+      { side: rute, fhRolle: '', fhFra: '', beskjedFra: '', npSju: false,
+        admMobApen: false, menyInneApen: false },
       this.personRutaTom(),
       forvalg || {}
     ));
@@ -44574,11 +44587,21 @@ class Component extends DCLogic {
       if (!stripe) return 0;
       const bunn = document.querySelector('.lx-bunnmeny');
       const nede = bunn ? bunn.getBoundingClientRect().top : window.innerHeight;
+      // Stripa staar oeverst i dokumentet, og «bottom» er maalt mot toppen av
+      // SKJERMEN. Hadde man rullet ned foer man trykket «Meny», var den
+      // negativ: rullet man 900 px, ga regnestykket 786 - (-800) - 32 =
+      // 1554 px. En skuff halvannen skjerm hoy, tegnet der oppe man ikke
+      // ser. Eieren, 26. september 2026: «naar jeg trykker paa meny
+      // hamburger, kommer det bare tilbakepilen frem».
+      //
+      // Taket er uansett avstanden fra toppen av skjermen ned til
+      // bunnmenyen. Hadde stripa rullet bort, regnes det derfra.
+      const oppe = Math.max(0, stripe.getBoundingClientRect().bottom);
       // 32 px gaar fra: 16 er skuffens egen toppmarg (marginTop i
       // admMobPanelStil, var(--space-4)), 16 er luft mellom siste pille og
       // bunnmenyen. Aldri under 160: da er det bedre aa rulle i en liten
       // skuff enn aa ha en som ikke kan aapnes.
-      return Math.max(160, Math.round(nede - stripe.getBoundingClientRect().bottom - 32));
+      return Math.max(160, Math.round(nede - oppe - 32));
     } catch (e) { return 0; }
   }
 
@@ -44933,12 +44956,19 @@ class Component extends DCLogic {
       admMobKnappTekst: apen ? 'Lukk' : 'Meny',
       // Lukker du skuffen, legger verkstedlista seg sammen igjen. Ellers
       // sto den utslaatt neste gang du aapnet, uten at du ba om det.
-      admMobVeksle: () => this.setState(s => ({
-        admMobApen: !s.admMobApen, menyInneApen: false,
-        // Maales i det man aapner: stripa staar der alt, saa vi vet hvor
-        // skuffen begynner, og bunnmenyen hvor den maa slutte.
-        admMobPlass: !s.admMobApen ? this.skuffPlass() : 0,
-      })),
+      admMobVeksle: () => {
+        const aapner = !this.state.admMobApen;
+        // Skuffen tegnes under stripa, og stripa staar oeverst i dokumentet.
+        // Sto man langt nede paa en lang skjerm, aapnet skuffen seg der oppe
+        // og man saa ingenting av den — bare brunt, og den runde
+        // tilbakepila oppaa. Naa foelger skjermen med dit skuffen kommer.
+        if (aapner) window.scrollTo(0, 0);
+        this.setState({ admMobApen: aapner, menyInneApen: false, admMobPlass: 0 }, () => {
+          // Maales etter at skjermen har flyttet seg, ikke foer: stripa maa
+          // staa der den skal staa foer hoyden regnes ut.
+          if (aapner) requestAnimationFrame(() => this.setState({ admMobPlass: this.skuffPlass() }));
+        });
+      },
       // Skuffen er delt i to lister med verkstedkortet imellom: eieren,
       // 24. september 2026, «I verkstedet naa legges under venter paa deg».
       // Markupen tegner A, saa kortet, saa resten.

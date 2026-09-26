@@ -20457,6 +20457,38 @@ sjekk('et AI-kall som alt er i gang sier fra i stedet for aa tie',
     str_contains($nvSida, "    if (this._aiJobber) {\n      this.setState({\n        kvittering: 'Vent litt',")
     && !str_contains($nvSida, "    if (this._aiJobber) return;\n    this._aiJobber = true;\n    this.setState({\n      kvittering: laget"));
 
+// ── Menyskuffen paa telefon ───────────────────────────────────
+//
+// Eieren, 26. september 2026: «naar jeg trykker paa meny hamburger, kommer det
+// bare tilbakepilen frem» og «jeg trykker paa kalender etter aa ha trykket paa
+// meny, kommer ikke i kalender opp». Tre feil i skuffen fra #216.
+$msSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+echo "\nMenyskuffen paa telefon\n";
+// Stripa staar oeverst i dokumentet. Hadde man rullet ned, var «bottom»
+// negativ, og 786 - (-800) - 32 ga en skuff paa 1554 px — halvannen skjerm,
+// tegnet der oppe man ikke ser.
+sjekk('hoyden regnes fra toppen av skjermen naar stripa har rullet bort',
+    str_contains($msSida, '      const oppe = Math.max(0, stripe.getBoundingClientRect().bottom);')
+    && str_contains($msSida, '      return Math.max(160, Math.round(nede - oppe - 32));'));
+// Skuffen tegnes under stripa, og stripa staar oeverst. Sto man langt nede,
+// aapnet den seg utenfor skjermen.
+sjekk('skjermen foelger med dit skuffen kommer',
+    str_contains($msSida, '        if (aapner) window.scrollTo(0, 0);'));
+// Hoyden maa maales ETTER at skjermen har flyttet seg, ikke foer.
+sjekk('hoyden maales etter at skjermen har flyttet seg',
+    str_contains($msSida, '          if (aapner) requestAnimationFrame(() => this.setState({ admMobPlass: this.skuffPlass() }));'));
+// Skuffens egne knapper lukket den selv, men bunnmenyen gaar rett i gaaAdmin.
+sjekk('enhver vei videre i admin lukker skuffen',
+    str_contains($msSida, "      { side: rute, fhRolle: '', fhFra: '', beskjedFra: '', npSju: false,\n        admMobApen: false, menyInneApen: false },"));
+// Skuffen gjoer stripa 650 px hoy. Da fant tilbakeTopp() ingen linje aa legge
+// seg under, og pila falt til 10 px — oppaa logoen.
+sjekk('tilbakepila staar ikke oppaa den aapne skuffen',
+    str_contains($msSida, "      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminkalender'\n        && !this.state.admMobApen,"));
+// Skuffen lukker seg fortsatt selv naar man velger noe i den.
+sjekk('skuffens egne knapper lukker den som for',
+    str_contains($msSida, "    const lukkOg = (fn) => () => { this.setState({ admMobApen: false }); fn(); };"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -545,6 +545,40 @@ switch ($handling) {
         Svar::ok(['id' => $nyId, 'slug' => $slug]);
 
     // ------------------------------------------------------------- ny dato
+    // ── Bare hovedbildet ──────────────────────────────────────────────
+    //
+    //   POST handling=hovedbilde { id, bilde }
+    //
+    // Bytter det foerste bildet paa et kurs uten aa lagre hele kursoppsettet
+    // (eieren, 26. september 2026: ekte bilder fra verkstedet). Resten av
+    // karusellen staar. Samme vakt som «lagre»: et filnavn i rota, eller et
+    // opplastet bilde bak api/bilde.php.
+    case 'hovedbilde':
+        $id = Foresporsel::heltall('id');
+        $raa = trim(Foresporsel::tekst('bilde'));
+        $kurs = DB::en('SELECT id, bilde' . (DB::harKolonne('courses', 'bilder') ? ', bilder' : '') . ' FROM courses WHERE id = :i', ['i' => $id]);
+        if ($kurs === null) {
+            Svar::feil('Fant ikke kurset.', 404);
+        }
+        $bilde = preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $raa) === 1
+            ? $raa : mb_substr(basename($raa), 0, 191);
+        if ($bilde === '' || (!str_starts_with($bilde, 'api/') && !is_file(dirname(__DIR__, 2) . '/' . $bilde))) {
+            Svar::feil('Fant ikke bildet.');
+        }
+        $data = ['bilde' => $bilde];
+        if (array_key_exists('bilder', $kurs)) {
+            $liste = json_decode((string) ($kurs['bilder'] ?? ''), true);
+            $liste = is_array($liste) ? array_values(array_filter($liste, 'is_string')) : [];
+            if ($liste === [] && (string) ($kurs['bilde'] ?? '') !== '') {
+                $liste = [(string) $kurs['bilde']];
+            }
+            $liste[0] = $bilde;
+            $data['bilder'] = json_encode(array_values($liste), JSON_UNESCAPED_SLASHES);
+        }
+        DB::oppdater('courses', $data, ['id' => $id]);
+        revider('kurs_hovedbilde', 'course', $id, ['bilde' => $bilde]);
+        Svar::ok(['beskjed' => 'Bildet er byttet.']);
+
     case 'nydato':
         $kursId = Foresporsel::heltall('kursId');
         $start = $tilUtc(Foresporsel::tekst('start'));

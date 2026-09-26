@@ -9937,6 +9937,9 @@ window.__resources = {
                     <button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
                       <span style="display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.tid }}</span>
                       <span style="display: block; overflow: hidden; text-overflow: ellipsis;">{{ h.tittel }}</span>
+                      <sc-if value="{{ h.harHolder }}" hint-placeholder-val="{{ false }}">
+                        <span role="button" tabindex="0" aria-label="Bytt kursholder" onClick="{{ h.byttHolder }}" onMouseDown="{{ h.stopp }}" style="{{ h.holderStil }}">{{ h.holderNavn }}</span>
+                      </sc-if>
                       <sc-if value="{{ h.harMeta }}" hint-placeholder-val="{{ false }}">
                         <span style="display: flex; align-items: center; gap: 7px; margin-top: 2px; opacity: .9;">
                           <sc-if value="{{ h.harAvatarer }}" hint-placeholder-val="{{ false }}">
@@ -46625,6 +46628,23 @@ class Component extends DCLogic {
               this.setState({ klHover: { id: p.e.id, over: true, x: Math.max(10, Math.min(window.innerWidth - 340, r.left + r.width / 2 - 160)), y: r.top, bunn: r.bottom } });
             },
             ut: () => this.setState({ klHover: null }),
+            // Kursholderen ogsaa paa kortene i uka, ikke bare i dagvisningen.
+            // Eieren, 26. september 2026: «det er ingen kursholder paa store fat
+            // kurs». Samme pille og samme bytte som i dagvisningen.
+            ...(() => {
+              const ekteOkt = /^\d+$/.test(String(p.e.id)) && ['vakt', 'verksted', 'brenning', 'notat'].indexOf(p.e.type) === -1;
+              return {
+                harHolder: ekteOkt && !p.e.avlyst,
+                holderNavn: (p.e.holder || 'Ingen kursholder') + ' ▾',
+                holderStil: { display: 'inline-block', maxWidth: '100%', boxSizing: 'border-box', marginTop: '3px', border: '1.5px solid currentColor', borderRadius: '999px', padding: '0 6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', background: 'rgba(255,255,255,.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+                stopp: ev => ev.stopPropagation(),
+                byttHolder: ev => {
+                  ev.stopPropagation();
+                  const rr = ev.currentTarget.getBoundingClientRect();
+                  this.setState({ klHPop: { id: Number(p.e.id), navn: p.e.holder || '', x: Math.max(8, Math.min(window.innerWidth - 280, rr.left)), y: rr.bottom + 6 } });
+                },
+              };
+            })(),
             harAvatarer: (p.e.deltakere || []).length > 0,
             antallTekst: String((p.e.deltakere || []).length),
             ...(() => {

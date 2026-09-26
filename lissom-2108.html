@@ -657,7 +657,7 @@ img{max-width:100%;display:block}
 .lx-mshjem .ms-o-barn > div { margin: 0 !important; }
 .lx-mshjem .ms-o-barn p, .lx-mshjem .ms-o-barn ul { display: none !important; }
 .lx-mshjem .ms-o-barn .ms-barn-pris { font-family: var(--font-sans) !important; font-size: 14px !important; font-weight: 600 !important; margin: 0 !important; }
-.lx-mshjem .ms-o-barn .ms-barn-pris span { display: none; }
+.lx-mshjem .ms-o-barn .ms-barn-pris .ms-barn-kal { display: none; }
 .ms-barn-pris em { display: none; }
 .lx-mshjem .ms-o-barn .ms-barn-pris em { display: inline; }
 .lx-mshjem .ms-o-barn button { background: var(--lissom-brown) !important; color: #fff !important; text-transform: uppercase; font-size: 12px !important; letter-spacing: .05em; padding: 6px 12px !important; }
@@ -5334,7 +5334,7 @@ window.__resources = {
               </sc-if>
               <sc-if value="{{ barnIkkeAktivt }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: 0 0 6px; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet — hele måneden.</p>
-                <div class="ms-barn-pris" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <em style="font-style: normal;">per måned</em> <span style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
+                <div class="ms-barn-pris" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <em style="font-style: normal;">per måned</em> <span class="ms-barn-kal" style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
                 <ul style="margin: 0 0 var(--space-3); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
                   <li>Gjelder ut måneden, som medlemskapet</li>
                   <li>Leire og glasur er ikke inkludert</li>

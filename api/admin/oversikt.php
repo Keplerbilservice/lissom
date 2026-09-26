@@ -105,11 +105,12 @@ $dagStart = $naa->setTime(0, 0)->setTimezone($utc)->format('Y-m-d H:i:s');
 $mndStart = $naa->modify('first day of this month')->setTime(0, 0)
                 ->setTimezone($utc)->format('Y-m-d H:i:s');
 
-$sum = static function (string $fra): int {
+$sum = static function (string $fra, ?string $til = null): int {
     return (int) DB::verdi(
         "SELECT COALESCE(SUM(belop_ore - refundert_ore), 0) FROM payments
-          WHERE status = 'betalt' AND created_at >= :fra",
-        ['fra' => $fra]
+          WHERE status = 'betalt' AND created_at >= :fra"
+          . ($til !== null ? " AND created_at < :til" : ""),
+        $til !== null ? ['fra' => $fra, 'til' => $til] : ['fra' => $fra]
     );
 };
 
@@ -141,7 +142,8 @@ $linjer = static function (string $fra) use ($FORMAL): array {
     $ut = [];
     foreach ($FORMAL as $nokkel => $navn) {
         if (isset($etter[$nokkel])) {
-            $ut[] = ['navn' => $navn, 'verdi' => Booking::kroner($etter[$nokkel])];
+            // «ore» er med saa Oversikt kan tegne fordelingen som en stripe.
+            $ut[] = ['navn' => $navn, 'verdi' => Booking::kroner($etter[$nokkel]), 'ore' => $etter[$nokkel], 'nokkel' => $nokkel];
         }
     }
     return $ut;
@@ -149,6 +151,29 @@ $linjer = static function (string $fra) use ($FORMAL): array {
 
 $betaltIdag = $sum($dagStart);
 $betaltMnd  = $sum($mndStart);
+
+// Sammenligningen paa Oversikt (eieren, 26. september 2026: «en liten
+// sammenligning mot sist maned»). Forrige maned fram til samme dag og
+// klokkeslett, saa midten av maneden ikke sammenlignes med en hel maned.
+// «I dag» sammenlignes med samme ukedag forrige uke, fram til samme tid.
+$forrigeMndStartOslo = $naa->modify('first day of last month')->setTime(0, 0);
+$dagerInn = (int) $naa->format('j') - 1;
+$forrigeMndTilOslo = $forrigeMndStartOslo->modify('+' . $dagerInn . ' days')
+    ->setTime((int) $naa->format('H'), (int) $naa->format('i'));
+if ($forrigeMndTilOslo->format('n') !== $forrigeMndStartOslo->format('n')) {
+    // 31. mot en maned med 30 dager: hele forrige maned.
+    $forrigeMndTilOslo = $naa->modify('first day of this month')->setTime(0, 0);
+}
+$betaltForrigeMnd = $sum(
+    $forrigeMndStartOslo->setTimezone($utc)->format('Y-m-d H:i:s'),
+    $forrigeMndTilOslo->setTimezone($utc)->format('Y-m-d H:i:s')
+);
+$uke = $naa->modify('-7 days');
+$betaltForrigeUkedag = $sum(
+    $uke->setTime(0, 0)->setTimezone($utc)->format('Y-m-d H:i:s'),
+    $uke->setTimezone($utc)->format('Y-m-d H:i:s')
+);
+$MND_NAVN = [1 => 'januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
 
 // --- Bookinger ------------------------------------------------------------
 $nyeBookinger = (int) DB::verdi(
@@ -542,6 +567,11 @@ Svar::json([
         'maned'      => $kroner($betaltMnd),
         'linjerIdag' => $linjer($dagStart),
         'linjerMnd'  => $linjer($mndStart),
+        'idagOre'    => $betaltIdag,
+        'manedOre'   => $betaltMnd,
+        'forrigeMndOre'    => $betaltForrigeMnd,
+        'forrigeMndNavn'   => $MND_NAVN[(int) $forrigeMndStartOslo->format('n')],
+        'forrigeUkedagOre' => $betaltForrigeUkedag,
     ],
     // ── Hvem som er i huset ───────────────────────────────────────────
     //

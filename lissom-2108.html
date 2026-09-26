@@ -592,11 +592,29 @@ img{max-width:100%;display:block}
 .lx-kalflik { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 45; appearance: none; border: none; cursor: pointer;
   background: var(--lissom-brown); color: #fff; border-radius: 12px 0 0 12px; padding: 16px 9px; box-shadow: -3px 0 12px rgba(0,0,0,.18); transition: padding .2s; }
 .lx-kalflik span { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 800; font-size: 14px; letter-spacing: .06em; display: block; }
+@media (max-width: 979px) {
+  .lx-kalflik { top: auto; right: auto; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); border-radius: 999px; padding: 11px 20px; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .lx-kalflik:hover, .lx-kalflik:focus-visible { padding-right: 20px; }
+  .lx-kalflik span { writing-mode: horizontal-tb; transform: none; }
+}
 .lx-kalflik:hover, .lx-kalflik:focus-visible { padding-right: 14px; }
 @keyframes lx-glidinn { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
 .lx-glidinn { animation: lx-glidinn .3s ease; }
 @media (prefers-reduced-motion: reduce) { .lx-glidinn { animation: none; } }
 @media (min-width: 980px) { .lx-kalpc-skjul { display: none !important; } }
+/* Kalenderen paa PC etter skissen (eieren, 26. september 2026): bare «✕ Lukk»
+   oeverst, og en sidelinje med tre kort — Venteliste, Legg til deltaker og
+   Dra inn kurs. Kursene selv ligger paa Oversikt. */
+.lx-kalpc-vis { display: none; }
+@media (min-width: 980px) { .lx-kalpc-vis { display: block; } }
+.lx-kalsl { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 12px; }
+.lx-kalsl h3 { margin: 0 0 8px; font-size: 15px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.lx-kalsl h3 span { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+.lx-kalsl-hj { display: block; font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.lx-kalsl-brikker { display: flex; flex-wrap: wrap; gap: 6px; }
+.lx-kalsl-brikke { display: inline-flex; align-items: center; gap: 6px; background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: var(--text-heading); cursor: grab; user-select: none; }
+.lx-kalsl-brikke i { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.lx-kalsl-gul { appearance: none; border: none; cursor: pointer; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 7px 14px; font-weight: 800; font-size: 13px; }
 /* Min side, forsiden (26. september 2026, etter skissen). Blokkene ligger der
    de alltid har ligget i malen; her faar de plass i et rutenett. Paa telefon
    staar de under hverandre som foer. */
@@ -627,8 +645,49 @@ img{max-width:100%;display:block}
 .lx-mshjem .ms-o-full { order: 60; }
 .lx-mshjem .ms-o-slutt { order: 99; }
 .lx-mshjem .ms-bunnluft { order: 100; }
-.lx-mshjem.lx-msdeltaker .ms-o-pamld { order: 20; }
-.lx-mshjem.lx-msdeltaker .ms-o-bevis { order: 21; }
+/* Etter skissen (26. september 2026): smaa fliser paa forsiden. Det fulle
+   innholdet (paameldingene, Del paa Instagram, dugnadsskjemaet, kursbevisene)
+   aapnes fra flisen og staar da i full bredde under. */
+.lx-mshjem .ms-o-pamld, .lx-mshjem .ms-o-forslag, .lx-mshjem .ms-o-dugnad, .lx-mshjem .ms-o-bevis { display: none !important; }
+.lx-mshjem.ms-vis-pamld .ms-o-pamld { display: block !important; order: 40; grid-column: 1 / -1 !important; }
+.lx-mshjem.ms-vis-forslag .ms-o-forslag { display: block !important; order: 41; grid-column: 1 / -1 !important; }
+.lx-mshjem.ms-vis-dugnad .ms-o-dugnad { display: block !important; order: 42; grid-column: 1 / -1 !important; }
+.lx-mshjem .ms-o-pamld2 { order: 20; }
+.lx-mshjem .ms-o-forslag2 { order: 24; }
+.lx-mshjem .ms-o-dugnad2 { order: 25; }
+.lx-mshjem .ms-o-bevis2 { order: 28; }
+.lx-mshjem.lx-msdeltaker .ms-o-pamld2 { order: 20; border: 2px solid var(--terracotta-500) !important; }
+.lx-mshjem.lx-msdeltaker .ms-o-bevis2 { order: 21; }
+.ms-fh { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.ms-ft { font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading); }
+.ms-fn { font-size: var(--text-sm); color: var(--text-muted); font-weight: 700; white-space: nowrap; }
+.ms-fr { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border-subtle); padding: 9px 0; }
+.ms-fr:last-child { padding-bottom: 0; }
+.ms-fm { flex: 1; min-width: 0; }
+.ms-fm b { display: block; font-size: var(--text-sm); color: var(--text-heading); }
+.ms-fm small, .ms-fr > small { display: block; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; }
+.ms-merke { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; border-radius: 999px; padding: 2px 9px; background: var(--clay-200); color: var(--lissom-brown); }
+.ms-merke.ok { background: var(--sage-100, #dfe9d6); color: var(--sage-600, #4f7a46); }
+.ms-fr-knapp { cursor: pointer; }
+/* Menylinja paa Min side (skissen): gul, som nettsiden; paa telefon «☰ Meny». */
+.ms-tl { background: var(--lissom-yellow); position: sticky; top: 0; z-index: 30; }
+.ms-tl-inn { max-width: var(--width-wide); margin: 0 auto; display: flex; align-items: center; gap: 14px; padding: 10px var(--space-8); box-sizing: border-box; }
+.ms-tl-logo { appearance: none; border: none; background: transparent; cursor: pointer; font-family: var(--font-display); font-weight: 800; font-size: 26px; color: var(--lissom-brown); padding: 0 8px 0 0; }
+.ms-tl-faner { display: flex; gap: 2px; flex-wrap: wrap; }
+.ms-tl-faner button, .ms-tl-mob button { appearance: none; border: none; cursor: pointer; border-radius: 999px; padding: 7px 13px; font: var(--type-body-sm); font-weight: 700; background: transparent; color: var(--lissom-brown); white-space: nowrap; }
+.ms-tl-faner button.p, .ms-tl-mob button.p { background: var(--lissom-brown); color: #fff; }
+.ms-tl-hoyre { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ms-tl-pille { appearance: none; cursor: pointer; border: 1.5px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: 999px; padding: 6px 13px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap; }
+.ms-tl-meny { display: none; }
+.ms-tl-mob { display: none; }
+@media (max-width: 760px) {
+  .ms-tl-inn { padding: 10px 16px; }
+  .ms-tl-faner, .ms-tl-ut { display: none !important; }
+  .ms-tl-meny { display: inline-flex; }
+  .ms-tl-mob { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 16px 14px; }
+  .ms-tl-mob button { background: rgba(46,16,2,.08); border-radius: 12px; padding: 13px 14px; text-align: left; font-size: 15px; }
+}
+
 .lx-mshjem.lx-msdeltaker .ms-o-beskjeder { order: 22; }
 @media (min-width: 900px) {
   .lx-mshjem { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
@@ -637,7 +696,7 @@ img{max-width:100%;display:block}
   .lx-mshjem .ms-o-inne { grid-column: span 1 !important; }
   .lx-mshjem .ms-o-kort { grid-column: span 1 !important; align-self: stretch; }
   .lx-mshjem .ms-o-pamld, .lx-mshjem .ms-o-forslag, .lx-mshjem .ms-o-full { grid-column: 1 / -1 !important; }
-  .lx-mshjem.lx-msdeltaker .ms-o-pamld { grid-column: span 2 !important; }
+
 }
 .ms-flis { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .ms-flis:hover { border-color: var(--lissom-brown) !important; box-shadow: 0 4px 16px rgba(46,16,2,.10); }
@@ -2172,10 +2231,17 @@ window.__resources = {
        4. september. Den staar «fixed» mot bunnen, saa hovedinnholdet maa
        ha plass under seg: 58 px meny, luft, og hjemknappen paa iPhone.
        Uten dette dekker menyen den nederste knappen paa hver skjerm. */
-    .lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }
+    /* Bunnmenyen er tatt bort etter skissen (26. september 2026); kalender-
+       knappen nederst staar der i stedet, og hovedinnholdet faar plass til den. */
     .lx-adminaside + main {
-      padding-bottom: calc(58px + 18px + env(safe-area-inset-bottom, 0px)) !important;
+      padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
     }
+    .lx-adminaside > button:first-child { order: 1; }
+    .lx-adminaside .lx-admmob:not(.lx-admmobpanel) { order: 2; flex: 1 1 auto !important; justify-content: flex-end !important; }
+    .lx-adminaside .lx-admmob:not(.lx-admmobpanel) > div:first-child { display: none; }
+    .lx-adminaside .lx-admstempling { order: 3; flex-wrap: nowrap !important; }
+    .lx-adminaside .lx-admstempling > button + button { display: none !important; }
+    .lx-adminaside .lx-admmobpanel { order: 4; flex: 1 0 100%; }
     .lx-admmobpanel { display: grid !important; }
     /* «Lukk» oeverst til hoyre.
        Pillen sto helt ute i kanten av stripa, og paa eierens telefon havnet
@@ -4996,7 +5062,36 @@ window.__resources = {
 
   <sc-if value="{{ erMinside }}" hint-placeholder-val="{{ true }}">
     <div role="main" data-screen-label="Min side">
-      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+      <!-- Menylinja etter skissen (eieren, 26. september 2026): Min side har
+           sin egen linje i Lissom-gult, som admin har sin. Paa telefon blir
+           den «☰ Meny»; bunnmenyen er borte. Valgene er de samme som i den
+           gamle pilleraden og bunnmenyen (minsidePiller). -->
+      <nav class="ms-tl" aria-label="Min side">
+        <div class="ms-tl-inn">
+          <button type="button" class="ms-tl-logo" onClick="{{ msTlForside }}">lissom</button>
+          <div class="ms-tl-faner">
+            <sc-for list="{{ msTlFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" class="{{ f.klasse }}" onClick="{{ f.velg }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+          <div class="ms-tl-hoyre">
+            <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="ms-tl-pille" onClick="{{ msTilNyttig }}">Dørkode <b>{{ dorkode }}</b></button>
+            </sc-if>
+            <button type="button" class="ms-tl-pille ms-tl-meny" aria-expanded="{{ msTlMenyAria }}" onClick="{{ msTlMenyVeksle }}">{{ msTlMenyTekst }}</button>
+            <button type="button" class="ms-tl-pille ms-tl-ut" onClick="{{ msTlLoggUt }}">⌁ Logg ut</button>
+          </div>
+        </div>
+        <sc-if value="{{ msTlMenyApen }}" hint-placeholder-val="{{ false }}">
+          <div class="ms-tl-mob">
+            <sc-for list="{{ msTlFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" class="{{ f.klasse }}" onClick="{{ f.velg }}">{{ f.navn }}</button>
+            </sc-for>
+            <button type="button" onClick="{{ msTlForside }}">↗ Til lissom.no</button>
+            <button type="button" onClick="{{ msTlLoggUt }}">⌁ Logg ut</button>
+          </div>
+        </sc-if>
+      </nav>
 
       <section style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--space-16);">
         <div class="{{ msHjemKlasse }}" style="max-width: var(--width-wide); margin: 0 auto;">
@@ -5041,7 +5136,12 @@ window.__resources = {
                mer diskret lenger opp». Den staar naa som en liten pille ved
                navnet, og aapner Nyttig info naar man trykker paa den. -->
           <div class="ms-o-topp" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
-            <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
+            <div style="display: grid; gap: 6px; min-width: 0;">
+              <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
+              <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Her finner du kursene dine, kursbevisene og beskjeder fra verkstedet.</p>
+              </sc-if>
+            </div>
             <!-- Neste kurs ved hilsenen, for kursdeltakere (skissen, 26. september 2026). -->
             <sc-if value="{{ msNesteVis }}" hint-placeholder-val="{{ false }}">
               <button type="button" onClick="{{ msNesteVelg }}" class="ms-neste" style="{{ msNesteStil }}">
@@ -5050,9 +5150,7 @@ window.__resources = {
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ msNesteLinje }}</span>
               </button>
             </sc-if>
-            <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-              <button type="button" onClick="{{ msTilNyttig }}" aria-label="Dørkode {{ dorkode }} — åpne nyttig info" style="{{ msDorStil }}">Dørkode <span style="{{ msDorTallStil }}">{{ dorkode }}</span></button>
-            </sc-if>
+
           </div>
 
           <!-- ── De samme sju stedene, som piller ─────────────────────
@@ -5197,6 +5295,7 @@ window.__resources = {
                Pulserer til man selv har trykket «Sett»; borte etter 24
                timer. Se ovnVals(). -->
           <div class="{{ ovnKortKlasse }} ms-o-ovn" style="{{ ovnKortStil }}">
+            <span style="font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--lissom-brown);">Ovnen</span>
             <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
               <div>
@@ -5431,6 +5530,10 @@ window.__resources = {
             <sc-if value="{{ msChatTom }}" hint-placeholder-val="{{ false }}">
               <div style="font-size: var(--text-sm); color: var(--text-muted);">Skriv til de andre medlemmene.</div>
             </sc-if>
+            <div id="minside-chatflis" class="ms-fr" onClick="{{ msStopp }}">
+              <textarea class="ms-chatskriv" value="{{ chatTekst }}" onChange="{{ settChatTekst }}" onKeyDown="{{ chatEnter }}" rows="1" placeholder="Skriv til medlemmene" style="flex: 1; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 8px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: none;"></textarea>
+              <button type="button" onClick="{{ sendChat }}" style="{{ msKnappGul }}">Send</button>
+            </div>
           </div>
           <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
           <div class="ms-o-kort ms-o-butikk ms-flis" role="button" tabindex="0" onClick="{{ msPlButikk.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
@@ -5449,8 +5552,13 @@ window.__resources = {
             </sc-for>
             <sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">
               <div style="border-top: 1px solid var(--border-subtle); padding: 8px 0 0;">
-                <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">Handleliste</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">Det du trenger til neste innkjøp</div>
+                <div style="display: flex; align-items: center; gap: var(--space-3);">
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">Handleliste</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">Det du trenger til neste innkjøp</div>
+                  </div>
+                  <button type="button" onClick="{{ msHlLeggTil }}" class="ms-tl-pille" style="padding: 4px 12px; font-size: 13px;">+ Legg til</button>
+                </div>
               </div>
             </sc-if>
           </div>
@@ -5459,6 +5567,7 @@ window.__resources = {
           <div class="ms-o-kort ms-o-selg ms-flis" role="button" tabindex="0" onClick="{{ msPlSelg.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
             <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
               <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Selg mine produkter</span>
+              <sc-if value="{{ msSelgHarSolgt }}" hint-placeholder-val="{{ false }}"><span class="ms-fn">Solgt {{ msSelgSolgt }}</span></sc-if>
             </div>
             <sc-for list="{{ msSelgRader }}" as="v" hint-placeholder-count="2">
               <div style="display: flex; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: 8px 0;">
@@ -5518,6 +5627,74 @@ window.__resources = {
             </sc-if>
           </div>
           </sc-if>
+          </sc-if>
+
+          <!-- Smaa fliser etter skissen (26. september 2026). Hver aapner det
+               fulle innholdet, som staar der det sto (ms-vis-*). -->
+          <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
+            <div class="ms-o-kort ms-o-pamld2 ms-flis" role="button" tabindex="0" onClick="{{ msApnePamld }}" style="{{ msFlisStil }}">
+              <div class="ms-fh"><span class="ms-ft">Mine påmeldinger</span><span class="ms-fn">{{ msPamldAntall }}</span></div>
+              <sc-for list="{{ minePameldinger }}" as="p" hint-placeholder-count="2">
+                <sc-if value="{{ p.kommende }}" hint-placeholder-val="{{ true }}">
+                  <div class="ms-fr"><div class="ms-fm"><b>{{ p.tittel }}</b><small>{{ p.naar }}</small></div><span class="ms-merke ok">{{ p.status }}</span></div>
+                </sc-if>
+              </sc-for>
+              <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
+                <div class="ms-fr"><small>Trykk på et kurs for å avbestille eller se bilder. Avbestiller du innen fristen, kan du flytte plassen én gang, eller gi den videre.</small></div>
+              </sc-if>
+            </div>
+            </sc-if>
+            <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
+              <div class="ms-o-kort ms-o-forslag2 ms-flis" role="button" tabindex="0" onClick="{{ msApneForslag }}" style="{{ msFlisStil }}">
+                <div class="ms-fh"><span class="ms-ft">Del på Instagram</span></div>
+                <div class="ms-fr"><div class="ms-fm"><b>Vis fram det du har laget</b><small>Send oss et bilde eller en kort video.</small></div></div>
+                <sc-for list="{{ fsMine }}" as="f" hint-placeholder-count="1">
+                  <sc-if value="{{ f.ute }}" hint-placeholder-val="{{ true }}">
+                    <div class="ms-fr"><div class="ms-fm"><b>Lagt ut på Instagram</b><small>«{{ f.tekst }}»</small></div><span class="ms-merke ok">Ute</span></div>
+                  </sc-if>
+                  <sc-if value="{{ f.venter }}" hint-placeholder-val="{{ false }}">
+                    <div class="ms-fr"><div class="ms-fm"><b>Venter på godkjenning</b><small>«{{ f.tekst }}»</small></div></div>
+                  </sc-if>
+                </sc-for>
+              </div>
+              </sc-if>
+              <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
+              <div class="ms-o-kort ms-o-dugnad2 ms-flis" role="button" tabindex="0" onClick="{{ msApneDugnad }}" style="{{ msFlisStil }}">
+                <div class="ms-fh"><span class="ms-ft">Dugnad</span><sc-if value="{{ dugMerkeVis }}" hint-placeholder-val="{{ false }}"><span class="ms-fn">{{ dugMerke }}</span></sc-if></div>
+                <sc-if value="{{ dugKanSporre }}" hint-placeholder-val="{{ true }}">
+                  <div class="ms-fr"><div class="ms-fm"><b>Send forespørsel</b><small>{{ dugTekstLinje }}</small></div></div>
+                </sc-if>
+                <sc-if value="{{ dugVenter }}" hint-placeholder-val="{{ false }}">
+                  <div class="ms-fr"><div class="ms-fm"><b>Sendt {{ dugSendt }}</b><small>Du får e-post når verkstedet har svart.</small></div></div>
+                </sc-if>
+                <sc-if value="{{ dugKanInn }}" hint-placeholder-val="{{ false }}">
+                  <div class="ms-fr"><div class="ms-fm"><b>Stemple inn dugnad</b><small>{{ dugTekstLinje }}</small></div></div>
+                </sc-if>
+                <sc-if value="{{ dugPagar }}" hint-placeholder-val="{{ false }}">
+                  <div class="ms-fr"><div class="ms-fm"><b>Stemple ut dugnad</b><small>Innstemplet dugnad {{ dugInn }} · {{ dugVarighet }}</small></div></div>
+                </sc-if>
+                <sc-if value="{{ dugTilGodkjenning }}" hint-placeholder-val="{{ false }}">
+                  <div class="ms-fr"><div class="ms-fm"><small>Du jobbet {{ dugVarighet }} {{ dugDag }}. Verkstedet ser over jobben og godkjenner tida — da legges den til timene dine.</small></div></div>
+                </sc-if>
+              </div>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ msKursbevisVis }}" hint-placeholder-val="{{ false }}">
+            <div id="ms-bevis-flis" class="ms-o-kort ms-o-bevis2 ms-flis" style="{{ msFlisStil }}">
+              <div class="ms-fh"><span class="ms-ft">Kursbevis</span><span class="ms-fn">{{ msBevisAntall }}</span></div>
+              <sc-for list="{{ mineBevis }}" as="kb" hint-placeholder-count="2">
+                <div class="ms-fr ms-fr-knapp" role="button" tabindex="0" onClick="{{ kb.apne }}"><div class="ms-fm"><b>{{ kb.tittel }}</b><small>{{ kb.naar }}</small></div></div>
+              </sc-for>
+              <sc-if value="{{ ingenMineBevis }}" hint-placeholder-val="{{ false }}">
+                <div class="ms-fr"><small>Du har ingen kursbevis ennå.</small></div>
+              </sc-if>
+              <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
+                <div class="ms-fr ms-fr-knapp" role="button" tabindex="0" onClick="{{ msApnePamld }}"><div class="ms-fm"><b>Bilder av det du laget</b><small>Last opp fra kurset</small></div></div>
+              </sc-if>
+            </div>
+            </sc-if>
           </sc-if>
 
           <!-- Baandet «Kursdeltaker / Medlemsside» sto her.
@@ -5907,6 +6084,11 @@ window.__resources = {
                       </sc-for>
                     </div>
                   </div>
+                  <sc-if value="{{ bmIkkeValgt }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Velg et medlemskap, så kommer skjemaet opp.</p>
+                  </sc-if>
+                  <sc-if value="{{ bmHarValgt }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: var(--space-4);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bmEpost }}" on-change="{{ settBmEpost }}" hint-size="100%,64px"></x-import>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Har du jobbet med leire før?" rows="2" placeholder="F.eks. «Gikk nybegynnerkurs hos dere i vår», eller «helt fersk»." value="{{ bmErfaring }}" on-change="{{ settBmErfaring }}" hint-size="100%,96px"></x-import>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Noe du vil si oss? (valgfritt)" rows="2" placeholder="Når du helst vil bruke verkstedet, hva du vil lage …" value="{{ bmMelding }}" on-change="{{ settBmMelding }}" hint-size="100%,96px"></x-import>
@@ -5949,6 +6131,8 @@ window.__resources = {
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" disabled="{{ bmVilkaarMangler }}" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
                     </sc-if>
                   </div>
+                  </div>
+                  </sc-if>
                 </div>
               </sc-if>
             </div>
@@ -7010,7 +7194,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -7500,7 +7684,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -7811,7 +7995,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -8109,7 +8293,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -8517,7 +8701,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -8954,7 +9138,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -9271,7 +9455,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -9743,7 +9927,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -9999,7 +10183,8 @@ window.__resources = {
         </sc-if>
       </aside>
       <main class="{{ klMainKlasse }}" style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div class="lx-topprad lx-kaltopp" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
+        <div class="lx-kalpc-vis" style="margin-bottom: var(--space-4);"><button type="button" onClick="{{ klFlikLukk }}" style="{{ klFlikLukkStil }}">✕ Lukk</button></div>
+        <div class="lx-topprad lx-kaltopp lx-kalpc-skjul" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <div style="min-width: 0;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">Kalender<sc-if value="{{ klFlikLukkVis }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ klFlikLukk }}" style="{{ klFlikLukkStil }}">✕ Lukk</button></sc-if></h1>
@@ -10038,7 +10223,7 @@ window.__resources = {
 
         <div style="{{ klSideGridStil }}">
 
-        <div style="{{ klToppKortStil }}">
+        <div class="lx-kalpc-skjul" style="{{ klToppKortStil }}">
           <!-- ── Alle kortene er like ──────────────────────────────────
                Eieren, 7. september 2026: «beskjeder, paaminnelser og notater
                pillene lages til mindre piller som er like de pillene under»,
@@ -10095,7 +10280,7 @@ window.__resources = {
               </button>
             </sc-for>
           </div>
-          <div class="lx-pillerad" style="{{ klSnarveiPilleRadStil }}">
+          <div class="lx-pillerad lx-kalpc-skjul" style="{{ klSnarveiPilleRadStil }}">
             <sc-for list="{{ klSnarveiPiller }}" as="s" hint-placeholder-count="6">
               <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}<sc-if value="{{ s.harVerdi }}" hint-placeholder-val="{{ false }}"><span style="{{ s.verdiStil }}">{{ s.verdi }}</span></sc-if></button>
             </sc-for>
@@ -10111,6 +10296,44 @@ window.__resources = {
         </div>
 
         <aside style="{{ klAsideStil }}">
+          <!-- PC, etter skissen. Den gamle sidelinja staar under for telefon. -->
+          <div class="lx-kalpc-vis">
+            <section class="lx-kalsl">
+              <h3>Venteliste <span>{{ klVlAntall }}</span></h3>
+              <div id="klvl-sone" style="{{ klVlSoneStil }}">
+                <sc-for list="{{ klVlSide }}" as="v" hint-placeholder-count="2">
+                  <div onMouseDown="{{ v.ned }}" style="{{ v.kortStil }}" style-hover="box-shadow: var(--shadow-md);">
+                    <div style="{{ v.navnStil }}">{{ v.navn }}</div>
+                    <div style="{{ v.metaStil }}">
+                      <span style="{{ v.kursStil }}">{{ v.kurs }}</span>
+                      <sc-if value="{{ v.harUnder }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ v.underStil }}">{{ v.under }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ klVlSideTom }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Ingen på venteliste.</div>
+                </sc-if>
+              </div>
+              <small class="lx-kalsl-hj">Dra personen inn på en økt</small>
+            </section>
+            <section class="lx-kalsl">
+              <h3>Legg til deltaker</h3>
+              <button type="button" class="lx-kalsl-gul" onClick="{{ klVlLeggTil }}">+ Legg til deltaker</button>
+              <small class="lx-kalsl-hj">Eller dra en person inn på en økt</small>
+            </section>
+            <section class="lx-kalsl">
+              <h3>Dra inn kurs</h3>
+              <div class="lx-kalsl-brikker">
+                <sc-for list="{{ klSideAlleBrikker }}" as="k" hint-placeholder-count="6">
+                  <span class="lx-kalsl-brikke" onMouseDown="{{ k.ned }}" style="{{ k.brikkeStil }}"><i style="{{ k.prikkStil }}"></i>{{ k.navn }}</span>
+                </sc-for>
+              </div>
+              <small class="lx-kalsl-hj">Slipp på dagen og klokkeslettet</small>
+            </section>
+          </div>
+          <div class="lx-kalpc-skjul" style="display: contents;">
           <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; padding: var(--space-2) 2px 2px; box-sizing: border-box;">
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);">
               <span style="font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); white-space: nowrap;">Alle kurs</span>
@@ -10242,6 +10465,7 @@ window.__resources = {
                i header menyen paa en fin maate».
                Spalta er dermed bare det som hoerer til dra-og-slipp:
                kursene, ventelista og «Bytt dato». -->
+          </div>
         </aside>
 
         <div style="{{ klHovedStil }}">
@@ -11674,7 +11898,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -12033,7 +12257,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -12452,7 +12676,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -12870,7 +13094,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -13809,7 +14033,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -14234,7 +14458,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -14777,7 +15001,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -16149,7 +16373,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -16477,6 +16701,9 @@ window.__resources = {
                 <span style="{{ g.tallStil }}">{{ g.tall }}</span>
               </div>
               <sc-for list="{{ g.rader }}" as="r" hint-placeholder-count="4">
+                <sc-if value="{{ r.harSeksjon }}" hint-placeholder-val="{{ false }}">
+                  <div style="border-top: 1px solid var(--border-subtle); background: var(--clay-100); padding: 7px 18px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted);">{{ r.seksjon }}</div>
+                </sc-if>
                 <div role="button" tabindex="0" onClick="{{ r.velg }}" class="lx-ovrad" style="{{ r.stil }}">
                   <span style="flex: 1; min-width: 0;">
                     <span style="display: block; font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ r.navn }}</span>
@@ -16496,7 +16723,7 @@ window.__resources = {
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin: 0 0 var(--space-3);">Resten</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: var(--space-3); margin-bottom: var(--space-10);">
           <sc-for list="{{ ovSmaa }}" as="k" hint-placeholder-count="6">
-            <button type="button" onClick="{{ k.velg }}" class="lx-ovlite" style="appearance: none; cursor: pointer; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading);">{{ k.navn }}<span style="display: block; font-family: var(--font-body); font-weight: 400; font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ k.under }}</span></button>
+            <button type="button" onClick="{{ k.velg }}" class="lx-ovlite" style="appearance: none; cursor: pointer; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading);">{{ k.navn }}<span style="display: block; font-family: var(--font-sans); font-weight: 400; font-size: 12px; line-height: 1.4; color: var(--text-muted); margin-top: 4px;">{{ k.under }}</span></button>
           </sc-for>
         </div>
 
@@ -16530,7 +16757,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -16979,7 +17206,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -17389,7 +17616,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -17890,7 +18117,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -18239,7 +18466,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -18576,7 +18803,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -18930,7 +19157,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -19251,7 +19478,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -19860,7 +20087,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -20263,7 +20490,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -21100,7 +21327,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -21454,7 +21681,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -22719,7 +22946,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -23199,7 +23426,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -23956,7 +24183,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -24428,7 +24655,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -24798,7 +25025,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -25601,7 +25828,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -26327,7 +26554,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -27636,7 +27863,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -28086,7 +28313,7 @@ window.__resources = {
              samme paa alle 35 adminskjermene.
              Ingen ny stemplings- eller ferielosning: dette er de samme
              pillene, fra stemplingPiller(). -->
-        <div style="{{ admStemplingStil }}">
+        <div class="lx-admstempling" style="{{ admStemplingStil }}">
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
@@ -31523,10 +31750,61 @@ class Component extends DCLogic {
     });
 
     return {
-      msHjemKlasse: hjem ? (medlem ? 'lx-mshjem' : 'lx-mshjem lx-msdeltaker') : '',
+      msHjemKlasse: hjem ? (medlem ? 'lx-mshjem' : 'lx-mshjem lx-msdeltaker') + (this.state.msApne ? ' ms-vis-' + this.state.msApne : '') : '',
+      msErDeltaker: !medlem,
+      ...(() => {
+        const pl = this.minsidePiller();
+        const lukk = (fn) => () => { this.setState({ msTlMeny: false }); fn(); };
+        const tilHjemOg = (apne, id) => () => {
+          this.setState({ msFane: 'hjem', msTlMeny: false, msApne: apne || this.state.msApne || '' });
+          setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+        };
+        const f = (navn, noekkel, velg) => ({ navn, klasse: fane === noekkel ? 'p' : '', velg });
+        const faner = medlem
+          ? [f('Min side', 'hjem', lukk(pl.hjem.velg)), f('Medlemskap', 'medlemskap', lukk(pl.medlemskap.velg)), f('Butikk', 'butikk', lukk(pl.butikk.velg))]
+              .concat(this.kanSelge() ? [f('Selg', 'selg', lukk(pl.selg.velg))] : [])
+              .concat([f('Chat', 'chat', lukk(pl.chat.velg)), f('Nyttig info', 'nyttig', lukk(pl.nyttig.velg))])
+          : [f('Min side', 'hjem', lukk(pl.hjem.velg)), f('Kursene mine', '-', tilHjemOg('pamld', 'minside-pameldinger')),
+             f('Kursbevis', '-', tilHjemOg('', 'ms-bevis-flis')), f('Finn nytt kurs', '-', lukk(this.go('kurs')))];
+        return {
+          msTlFaner: faner,
+          msTlMenyApen: !!this.state.msTlMeny,
+          msTlMenyAria: this.state.msTlMeny ? 'true' : 'false',
+          msTlMenyTekst: this.state.msTlMeny ? '✕ Lukk' : '☰ Meny',
+          msTlMenyVeksle: () => this.setState(st => ({ msTlMeny: !st.msTlMeny })),
+          msTlLoggUt: lukk(pl.loggUt.velg),
+          msTlForside: lukk(this.go('forside')),
+        };
+      })(),
+      msStopp: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); },
+      msFlisStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)', cursor: 'pointer', boxSizing: 'border-box', minWidth: 0 },
+      msApnePamld: stopp(() => {
+        this.setState({ msApne: 'pamld' });
+        setTimeout(() => { const el = document.getElementById('minside-pameldinger'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+      }),
+      msApneForslag: stopp(() => {
+        this.setState({ msApne: 'forslag' });
+        setTimeout(() => { const el = document.getElementById('minside-forslag'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+      }),
+      msApneDugnad: stopp(() => {
+        this.setState({ msApne: 'dugnad' });
+        setTimeout(() => { const el = document.querySelector('.ms-o-dugnad'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+      }),
+      msHlLeggTil: stopp(() => {
+        this.setState({ msFane: 'butikk' });
+        setTimeout(() => { const el = document.getElementById('minside-handleliste'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+      }),
+      msPamldAntall: String(plasser.length || ''),
+      msBevisAntall: (() => { const n = (this.state.minePlasser || []).filter(x => x.kursbevis).length; return n ? String(n) : ''; })(),
+      ...(() => {
+        const solgt = (this.state.mineSalg || []).filter(v => v.status === 'solgt')
+          .reduce((n, v) => n + (parseInt(String(v.pris || '').replace(/[^0-9]/g, ''), 10) || 0), 0);
+        return { msSelgHarSolgt: solgt > 0, msSelgSolgt: 'kr ' + solgt.toLocaleString('nb-NO') + ',-' };
+      })(),
       // «I verkstedet naa» staar som egen flis paa forsiden paa PC; pilla
       // aapner den som foer paa telefon.
-      msVerkstedVis: !!this.state.msVerksted || (hjem && medlem && (this.state.vw || 1400) >= 900),
+      // Flisen staar fast paa forsiden, ogsaa paa telefon (skissen).
+      msVerkstedVis: !!this.state.msVerksted || (hjem && medlem),
       // Snarveiene for kursdeltakere er borte — flisene staar rett under
       // (eieren: «her er det plass til fliser, saa snarveier trengs vel ikke»).
       msViserSnarveierNaa: false,
@@ -32094,15 +32372,14 @@ class Component extends DCLogic {
       { sti: '/min-side/nyttig',     side: 'minside', fane: 'nyttig' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
-      // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
-      // kalender skal vaere start siden». Adressen /admin aapner derfor
-      // kalenderen. Oversikt er ikke fjernet — den har faatt sin egen
-      // adresse rett under, og staar der den sto i menyen.
+      // Eieren, 26. september 2026: «jeg vil komme inn paa oversikt som
+      // default» (var kalenderen fra 9. september). Adressen /admin aapner
+      // Oversikt; kalenderen har sin egen adresse, /admin/kalender.
       //
       // Rekkefolgen betyr noe for veien TILBAKE: stiFor() tar det forste
-      // treffet paa skjermnavnet, saa denne maa staa foer /admin/kalender
+      // treffet paa skjermnavnet, saa denne maa staa foer /admin/oversikt
       // for at adressefeltet skal vise /admin.
-      { sti: '/admin',              side: 'adminkalender' },
+      { sti: '/admin',              side: 'adminoversikt' },
       { sti: '/admin/oversikt',     side: 'adminoversikt' },
       { sti: '/admin/innhold',      side: 'admininnhold' },
       { sti: '/admin/medlemskap',   side: 'adminmedlemskap' },
@@ -34900,7 +35177,7 @@ class Component extends DCLogic {
     const passord = this.state.liPassord || '';
 
     if (!this.erPublisert()) {
-      this.setState({ innlogget: true, erAdminBruker: true, side: 'adminkalender', liPassord: '' });
+      this.setState({ innlogget: true, erAdminBruker: true, side: 'adminoversikt', liPassord: '' });
       window.scrollTo(0, 0);
       return;
     }
@@ -34945,12 +35222,12 @@ class Component extends DCLogic {
           liPassord: '', liFeil: null,
           innlogget: true, erAdminBruker: !!d.erAdmin, erRegnskapBruker: !!d.erRegnskap,
           vippsNavn: d.navn || '',
-          // Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg
-          // at kalender skal vaere start siden». Det er der dagen begynner.
+          // Eieren, 26. september 2026: «jeg vil komme inn paa oversikt som
+          // default» (var kalenderen fra 9. september).
           //
-          // Regnskapsfoereren lander paa OEkonomi. Kalenderen er ikke hennes
-          // arbeidsdag, og Oversikt er stengt for rollen.
-          side: d.erAdmin ? 'adminkalender' : (d.erRegnskap ? 'adminokonomi' : 'minside'),
+          // Regnskapsfoereren lander paa OEkonomi. Oversikt er stengt for
+          // rollen.
+          side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),
           kvittering: 'Du er logget inn',
           kvitteringDetalj: 'Velkommen tilbake, ' + (d.navn || '') + '.',
         });
@@ -36662,13 +36939,13 @@ class Component extends DCLogic {
   adminSnarveier() {
     const d = this.state.adminData || {};
     return [
-                { navn: 'Chat', nokkel: 'chat', velg: () => this.setState({ klChatVis: true }) },
+                { navn: 'Chat', nokkel: 'chat', velg: () => (this.state.side === 'adminkalender' ? this.setState({ klChatVis: true }) : this.gaaAdmin('adminkalender', { klChatVis: true })) },
                 // Eieren, 13. september 2026: «legge til send beskjed ved
                 // siden av chat pillen i kalender … komme til samme sted som
                 // medlemmer, beskjeder». Samme skjerm og samme forvalg som
                 // fanen «Beskjeder» under Medlemmer (ADMIN_FANER).
                 { navn: 'Send beskjed', nokkel: 'beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
-                { navn: 'Dagsrapport', nokkel: 'dagsrapport', velg: () => this.setState({ klRapVis: true }) },
+                { navn: 'Dagsrapport', nokkel: 'dagsrapport', velg: () => (this.state.side === 'adminkalender' ? this.setState({ klRapVis: true }) : this.gaaAdmin('adminkalender', { klRapVis: true })) },
                 // Samme rute som snarveien hadde: kassa aapnes med tom kurv.
                 { navn: 'Kasse', nokkel: 'kasse', velg: () => this.gaaAdmin('adminuttak', {
                     utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
@@ -40789,7 +41066,7 @@ class Component extends DCLogic {
    * og det er det man skriver i.
    */
   chatteKort() {
-    const alle = [document.getElementById('minside-chat'), document.getElementById('admin-chat')];
+    const alle = [document.getElementById('minside-chat'), document.getElementById('admin-chat'), document.getElementById('minside-chatflis')];
     for (let i = 0; i < alle.length; i++) {
       if (alle[i] && alle[i].getClientRects().length > 0) return alle[i];
     }
@@ -42931,6 +43208,8 @@ class Component extends DCLogic {
       navnStil: { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },
       metaStil: { display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: 'auto', flex: '0 0 auto' },
       ned: e => this.klNyDragStart(k, e),
+      prikkStil: { background: k.type === 'Event' ? (k.navn === 'Paint on Pots' ? 'var(--slip-500)' : 'var(--terracotta-500)') : 'var(--lissom-yellow)' },
+      brikkeStil: { opacity: k.publisert === false ? .6 : 1 },
     }));
   }
 
@@ -46412,7 +46691,8 @@ class Component extends DCLogic {
 
     const radStil = (bg) => ({ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 18px', borderTop: '1px solid var(--border-subtle)', cursor: 'pointer', background: bg || 'transparent' });
     const tallStil = (rod) => ({ fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: rod ? 'var(--terracotta-600)' : 'var(--text-heading)' });
-    const rad = (navn, under, tall, velg, rod, knapper, bg) => ({
+    const rad = (navn, under, tall, velg, rod, knapper, bg, seksjon) => ({
+      seksjon: seksjon || '', harSeksjon: !!seksjon,
       navn, under: under || '', tall: (tall === null || tall === undefined || tall === 0 || tall === '') ? '' : String(tall),
       tallStil: tallStil(!!rod), velg: stopp(velg), knapper: knapper || [], stil: radStil(bg),
     });
@@ -46451,14 +46731,17 @@ class Component extends DCLogic {
     const skylder = this.skylderKort().ovSkylder || [];
     const alleUbet = d.ubetalte || [];
     const tilKasse = () => this.gaaAdmin('adminuttak', {});
+    // Etter skissen (26. september 2026): to avsnitt, «Påmeldt, ikke betalt»
+    // og «Kunde innom», og Dagsoppgjør nederst.
     const kasse = [
-      ...skylder.slice(0, 2).map(u => rad(u.navn, [u.under, u.belop].filter(Boolean).join(' · '), null, () => (u.erMedlem ? u.aapne() : tilKasse()), false,
-        (u.maater || []).filter(m => m.navn === 'Kontant' || m.navn === 'Vipps').map(m => knapp(m.navn, m.velg)))),
-      rad('Se alle som ikke har betalt', alleUbet.length ? alleUbet.length + ' står ubetalt' : 'Alt er betalt', alleUbet.length, tilKasse, alleUbet.length > 0),
+      ...skylder.slice(0, 2).map((u, i) => rad(u.navn, [u.under, u.belop].filter(Boolean).join(' · '), null, () => (u.erMedlem ? u.aapne() : tilKasse()), false,
+        (u.maater || []).filter(m => m.navn === 'Kontant' || m.navn === 'Vipps').map(m => knapp(m.navn, m.velg)), null, i === 0 ? 'Påmeldt, ikke betalt' : '')),
+      rad('Se alle som ikke har betalt', alleUbet.length ? alleUbet.length + ' står ubetalt' : 'Alt er betalt', alleUbet.length, tilKasse, alleUbet.length > 0,
+        null, null, skylder.length ? '' : 'Påmeldt, ikke betalt'),
       rad('Selg over disk', 'Kurs, medlemskap eller en ting fra hylla', null,
         () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '', utDel: 'salg', utBelop: '', utSalgBeskjed: '' }), false,
-        [knapp('Ta betalt', () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '', utDel: 'salg', utBelop: '', utSalgBeskjed: '' }), true)]),
-      // Dagsoppgjoeret staar i den gule raden rett over; ikke to ganger.
+        [knapp('Ta betalt', () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '', utDel: 'salg', utBelop: '', utSalgBeskjed: '' }), true)], null, 'Kunde innom'),
+      rad('Dagsoppgjør', 'Dagens salg samlet', null, () => { if (this._aDagsoppgjor) this._aDagsoppgjor(); }),
     ];
 
     // ── Aarskalenderen: de neste maanedene, av oektene som finnes ──
@@ -47109,7 +47392,9 @@ class Component extends DCLogic {
       const stripe = document.querySelector('.lx-admmob');
       if (!stripe) return 0;
       const bunn = document.querySelector('.lx-bunnmeny');
-      const nede = bunn ? bunn.getBoundingClientRect().top : window.innerHeight;
+      // Bunnmenyen er skjult paa telefon fra 26. september 2026; da er det
+      // kalenderknappen nederst (70 px) som setter grensen.
+      const nede = bunn && bunn.offsetParent ? bunn.getBoundingClientRect().top : window.innerHeight - 70;
       // 32 px gaar fra: 16 er skuffens egen toppmarg (marginTop i
       // admMobPanelStil, var(--space-4)), 16 er luft mellom siste pille og
       // bunnmenyen. Aldri under 160: da er det bedre aa rulle i en liten
@@ -47466,7 +47751,7 @@ class Component extends DCLogic {
       admMobNaa: sted.fane ? sted.meny + ' \u00b7 ' + sted.fane : (sted.meny || 'Admin'),
       admMobApen: apen,
       admMobUtvidet: apen ? 'true' : 'false',
-      admMobKnappTekst: apen ? 'Lukk' : 'Meny',
+      admMobKnappTekst: apen ? 'Lukk' : '☰ Meny',
       // Lukker du skuffen, legger verkstedlista seg sammen igjen. Ellers
       // sto den utslaatt neste gang du aapnet, uten at du ba om det.
       admMobVeksle: () => this.setState(s => ({
@@ -47478,12 +47763,22 @@ class Component extends DCLogic {
       // Skuffen er delt i to lister med verkstedkortet imellom: eieren,
       // 24. september 2026, «I verkstedet naa legges under venter paa deg».
       // Markupen tegner A, saa kortet, saa resten.
-      admMobPunkterA: med('naa', bolkNaa).concat(med('venter', bolkVenter)),
-      admMobPunkter: med('kurs', bolkKurs)
-        .concat(med('penger', bolkPenger))
-        .concat(med('resten', bolkResten))
-        .concat([bolkRaskt])
-        .concat(bunnrader),
+      // Etter skissen «Lissom på mobil» (eieren, 26. september 2026): de
+      // samme stedene som menylinja paa PC, «Mer» og «Innstillinger».
+      // Chat, Dugnad, Handleliste og Dagsrapport stod bare i kalenderens
+      // pillerad; de staar under «Mer» saa ingenting forsvinner.
+      admMobPunkterA: (() => {
+        const hoved = gruppe('', ['Oversikt', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'].map(stedFlis), false, true);
+        const mer = gruppe('Mer', ['Årskalender', 'Til godkjenning', 'Verkstedet', 'Admin-brukere'].map(stedFlis)
+          .concat([chatFlis, snar('dugnad'), snar('handleliste'), snar('dagsrapport')]), false, true);
+        return (fanerBolk && sted.meny !== 'Kalender' ? [hoved, fanerBolk] : [hoved]).concat([mer]);
+      })(),
+      admMobPunkter: (() => {
+        const st = this.stemplingPiller();
+        return [gruppe('Innstillinger', ekstra.map(r => flis({ navn: (r.navn || '').replace(/\s+/g, ' ').trim(), velg: r.velg,
+          varsel: !!(r.stil && r.stil.color === 'var(--lissom-yellow)') }))
+          .concat([flis({ navn: st.ferieNavn, velg: lukkOg(st.ferieVelg) })]), false, true)];
+      })(),
       admMobLinjeStil: {
         flex: '1 1 auto', minWidth: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', gap: 'var(--space-4)',
@@ -48213,7 +48508,8 @@ class Component extends DCLogic {
     //
     // Maaned og Liste staar der fortsatt som valg; rutenettet ruller
     // sidelengs i sin egen ramme, saa resten av sida staar stille.
-    let visning = this.state.klVisning || 'dag';
+    // PC: uka, etter skissen eieren godkjente 26. september 2026.
+    let visning = this.state.klVisning || (this.erSmal() ? 'dag' : 'uke');
     // ── Ingen ukesvisning paa telefon ────────────────────────────────
     //
     // Eieren, 25. september 2026: «vi kan ikke ha ukesvisning, dagvisningen
@@ -49434,6 +49730,9 @@ class Component extends DCLogic {
           klSideInterneHar: this.kursData().some(k => k.type === 'Kun medlemmer'),
           klSideInterneTom: !this.kursData().some(k => k.type === 'Kun medlemmer'),
           klSideKurs: this.klSideKort(this.kursData().filter(k => k.type !== 'Kun medlemmer')),
+          // PC-sidelinja: alle kursene som smaa brikker, interne til slutt.
+          klSideAlleBrikker: this.klSideKort(this.kursData().filter(k => k.type !== 'Kun medlemmer')
+            .concat(this.kursData().filter(k => k.type === 'Kun medlemmer'))),
           // Kurset redigeres ikke lenger i en egen rute her — et trykk paa
           // kortet aapner det komplette kursoppsettet. Se klApneKursFullt.
           // Beskjedene i toppen.
@@ -49496,6 +49795,7 @@ class Component extends DCLogic {
           // venter paa kurset staar paa hver kommende dato — uten dette ville
           // én person fylt alle de aatte plassene alene. Hun staar paa den
           // forste, som ogsaa er den hun mest sannsynlig far.
+          klVlAntall: (() => { const sett = {}; let n = 0; alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).forEach(e => e.venteliste.forEach(v => { const n2 = v.id != null ? 'w' + v.id : 'n' + v.navn + '|' + e.tittel; if (!sett[n2]) { sett[n2] = true; n++; } })); return n ? String(n) : ''; })(),
           klVlSide: (() => { const sett = {}; return alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).reduce((acc, e) => acc.concat(e.venteliste.filter(v => {
             const n2 = v.id != null ? 'w' + v.id : 'n' + v.navn + '|' + e.tittel;
             if (sett[n2]) { return false; }
@@ -52013,7 +52313,7 @@ class Component extends DCLogic {
       this.gaaAdmin('adminkalender', { klFlikFra: side, klFlikGlid: true });
     };
     return {
-      kalFlikVis: paaAdmin && !smal,
+      kalFlikVis: paaAdmin,
       kalFlikApne: apne,
       kalFlikInn: () => { clearTimeout(this._flikTid); this._flikTid = setTimeout(apne, 350); },
       kalFlikUt: () => clearTimeout(this._flikTid),
@@ -52053,8 +52353,13 @@ class Component extends DCLogic {
       background: aktivNaa ? 'var(--lissom-yellow)' : 'transparent',
       color: aktivNaa ? 'var(--lissom-brown)' : ((r.stil || {}).color || 'var(--clay-100)'),
     }) });
-    const faner = alle.filter(r => FANER.indexOf(r.navn) >= 0).map(fane);
+    // I skissens rekkefoelge, ikke sidemenyens.
+    const faner = alle.filter(r => FANER.indexOf(r.navn) >= 0).sort((x, y) => FANER.indexOf(x.navn) - FANER.indexOf(y.navn)).map(fane);
     const mer = alle.filter(r => MER.indexOf(r.navn) >= 0).map(r => panelRad(r, r.navn === aktiv));
+    // Chat og Dagsrapport stod bare i kalenderens pillerad, som er borte paa PC
+    // etter skissen (26. september 2026). De staar her i stedet.
+    this.adminSnarveier().filter(x => x.nokkel === 'chat' || x.nokkel === 'dagsrapport')
+      .forEach(x => mer.push(panelRad({ navn: x.navn, velg: () => { this.kortBrukt(x.nokkel); x.velg(); } }, false)));
     const verktoy = alle.filter(r => !menyNavn.has(r.navn)).map(r => panelRad(r, false));
     // Staar du paa kalenderen, lyser ingen fane — fliken er borte, og «✕ Lukk» gaar tilbake.
     const merAktiv = MER.indexOf(aktiv) >= 0;
@@ -55732,6 +56037,8 @@ class Component extends DCLogic {
         naar: p.naar,
         status: p.status,
         harKursbevis: !!p.kursbevis,
+        // Flisen paa forsiden viser bare det som kommer (skissen).
+        kommende: !p.kursbevis,
         apneKursbevis: () => { if (p.kursbevis) window.open(p.kursbevis, '_blank', 'noopener'); },
 
         // ── Bilder av det du laget ──────────────────────────────────────
@@ -62202,7 +62509,8 @@ class Component extends DCLogic {
         };
       })(),
       // Dagsoppgjoret bygges av de samme tallene som omsetningskortet.
-      aDagsoppgjor: this.apne(
+      // Oversikt bruker den samme i Kasse-kortet (ovNyVals).
+      aDagsoppgjor: this._aDagsoppgjor = this.apne(
         'Dagsoppgjør',
         this.norskDagsdato() + ' · betalt med Vipps',
         (() => {
@@ -63537,7 +63845,8 @@ class Component extends DCLogic {
           msFaneChat:       f === 'chat',
           // Bunnmenyen staar bare for den som faktisk har de fem stedene.
           // En kursdeltaker har to av dem, og faar dem paa forsiden som for.
-          msHarBunnmeny: this.medlemsvisning(),
+          // Menylinja oeverst har tatt over (skissen, 26. september 2026).
+          msHarBunnmeny: false,
           // Snarveispillene staar bare for den som ikke har bunnmenyen.
           msViserSnarveier: !this.medlemsvisning(),
           // Rutenettet holdt tre kort ved siden av hverandre. Naa staar bare
@@ -65993,8 +66302,8 @@ class Component extends DCLogic {
       // alle admin-endepunkter krever admin-sesjon og svarer 404 til andre.
       // Naa er den alltid der, diskret, og sender deg gjennom Vipps forst.
       goAdminFooter: () => {
-        if (!this.erPublisert()) { this.setState({ side: 'adminkalender' }); window.scrollTo(0, 0); return; }
-        if (this.state.erAdminBruker) { this.setState({ side: 'adminkalender' }); window.scrollTo(0, 0); return; }
+        if (!this.erPublisert()) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
+        if (this.state.erAdminBruker) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
         // Ikke admin — av hvilken grunn som helst. Da er innloggingssida for
         // verkstedet det riktige stedet aa havne. Den sendte for til Vipps
         // eller til en beskjed uten vei videre, og Vipps gir uansett ikke
@@ -71589,6 +71898,8 @@ class Component extends DCLogic {
       // som «venter», og da kom hen aldri videre: soknader behandles ikke
       // lenger, saa den ville ligget der for alltid.
       bmSkjema: true,
+      bmHarValgt: !!this.bmValgt(),
+      bmIkkeValgt: !this.bmValgt(),
       // Det finnes ingen soknad lenger — innmeldingen ER betalingen. Det
       // eneste tilfellet som staar igjen er et medlem med en gammel rad fra
       // den gangen det fantes. Hen skal ikke faa beskjed om at vi «ser paa

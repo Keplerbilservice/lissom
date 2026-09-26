@@ -160,6 +160,18 @@ $siFra = static function (string $mal, array $felter) use ($epost, $id, $navn, $
     }
 };
 
+// Trekk tilbake en dugnad som ikke er begynt. Eieren, 26. september 2026:
+// «når jeg har gitt en dugnad, så kan jeg ikke ta den tilbake». Raden
+// slettes, som naar medlemmet trekker sin egen forespoersel. Ingen e-post.
+if ($handling === 'trekk') {
+    if (!in_array((string) $d['status'], ['venter', 'godkjent'], true)) {
+        Svar::feil('Dugnaden er i gang eller ferdig, og kan ikke trekkes tilbake.');
+    }
+    DB::kjor('DELETE FROM dugnad WHERE id = :i', ['i' => $id]);
+    revider('dugnad_trukket_av_verkstedet', 'member', $medlemId, ['dugnad' => $id]);
+    Svar::ok(['beskjed' => 'Dugnaden til ' . $navn . ' er trukket tilbake.']);
+}
+
 if ($handling === 'godkjenn') {
     if ((string) $d['status'] !== 'venter') {
         Svar::feil('Forespørselen er allerede behandlet.');

@@ -50,6 +50,9 @@ Svar::json([
     // staa tydelig at det bor settes.
     'adminUtenPassord'   => Sesjon::adminUtenPassord(),
     'erMedlem'       => er_aktivt_medlem($m),
+    // 20 % paa kurs. Samme regel som bookingen bruker — Booking::
+    // faarMedlemsrabatt() — saa skjermen viser det serveren trekker.
+    'medlemsrabatt'  => Booking::faarMedlemsrabatt($m) ? Booking::MEDLEMSRABATT : 0,
     // Faar hen selge egne arbeider? Regelen bor i Medlemskap::kanSelge() og
     // skal ikke skrives to ganger. Skjermen sammenlignet plan-navn paa egen
     // haand — «=== 'Årsmedlemskap'» — og da var det to utgaver av samme

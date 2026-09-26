@@ -357,6 +357,9 @@ final class Medlemskap
         // Dugnadstimer legges ogsaa til (eieren, 15. september 2026) — de
         // rundes til kvarter, saa taket kan bli 31,75. Se Dugnad::minutterTilgode().
         $dugnad = class_exists('Dugnad') ? Dugnad::minutterTilgode($medlem) : 0;
+        // Kursholdertimer for den som faar «Timer» i stedet for lønn (eieren,
+        // 26. september 2026). Se Kursholder::minutterTilgode().
+        $dugnad += class_exists('Kursholder') ? Kursholder::minutterTilgode($medlem) : 0;
         $sum = $tak + self::gavetimer((int) ($medlem['id'] ?? 0)) + $dugnad / 60;
         return $dugnad % 60 === 0 ? (int) $sum : $sum;
     }

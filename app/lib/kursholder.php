@@ -98,6 +98,141 @@ final class Kursholder
         return self::paaKurset($kursId) ?? self::standard();
     }
 
+    // ── Kursholderen paa Min side, og timene ────────────────────────────
+    //
+    // Eieren, 26. september 2026 (GO paa skissen): kursholderen ser kursene
+    // sine paa Min side og stempler der. Kursets lengde er forslaget; hen
+    // bekrefter eller endrer. I admin velges «Lønn» (timelisten under
+    // Økonomi) eller «Timer» (legges til verkstedtimene, som dugnad).
+    // Migrasjon 221.
+
+    /** Er timene i den nye formen (migrasjon 221)? */
+    public static function timerKlar(): bool
+    {
+        return DB::harTabell('kursholder_timer') && DB::harKolonne('kursholder_timer', 'session_id');
+    }
+
+    /**
+     * Kursholderen som hoerer til en innlogging: samme e-post.
+     *
+     * @param array<string,mixed> $medlem
+     * @return array<string,mixed>|null
+     */
+    public static function forMedlem(array $medlem): ?array
+    {
+        $epost = mb_strtolower(trim((string) ($medlem['epost'] ?? '')));
+        if ($epost === '' || !DB::harTabell('kursholdere')) {
+            return null;
+        }
+        return DB::en(
+            'SELECT * FROM kursholdere WHERE aktiv = 1 AND LOWER(TRIM(epost)) = :e ORDER BY id LIMIT 1',
+            ['e' => $epost]
+        );
+    }
+
+    /** Minutter en kursdato varer: samlingene lagt sammen, ellers start–slutt samme dag. */
+    public static function minutterFor(int $oktId): ?int
+    {
+        if (DB::harTabell('okt_samlinger')) {
+            $rader = DB::alle('SELECT fra, til FROM okt_samlinger WHERE session_id = :s', ['s' => $oktId]);
+            if (count($rader) > 1) {
+                $sum = 0;
+                foreach ($rader as $r) {
+                    if ($r['fra'] !== null && $r['til'] !== null) {
+                        $sum += max(0, (int) ((strtotime('2000-01-01 ' . $r['til']) - strtotime('2000-01-01 ' . $r['fra'])) / 60));
+                    }
+                }
+                return $sum > 0 ? $sum : null;
+            }
+        }
+        $o = DB::en('SELECT start_tid, slutt_tid FROM course_sessions WHERE id = :s', ['s' => $oktId]);
+        if ($o === null || $o['start_tid'] === null || $o['slutt_tid'] === null) {
+            return null;
+        }
+        $a = strtotime((string) $o['start_tid'] . ' UTC');
+        $b = strtotime((string) $o['slutt_tid'] . ' UTC');
+        if ($b <= $a || $b - $a > 12 * 3600) {
+            return null;
+        }
+        return (int) (($b - $a) / 60);
+    }
+
+    /**
+     * Forslag for kursdatoer som er over: kursets lengde, «forslag».
+     *
+     * Lages for hver ferdig kursdato med en kursholder, de siste 60 dagene,
+     * saa sant det ikke alt finnes en rad (stemplet eller foert for haand).
+     */
+    public static function lagForslag(?int $holderId = null): void
+    {
+        if (!self::timerKlar() || !self::klar()) {
+            return;
+        }
+        $param = [];
+        $hvem = '';
+        if ($holderId !== null) {
+            $hvem = ' AND cs.kursholder_id = :h';
+            $param['h'] = $holderId;
+        }
+        $okter = DB::alle(
+            "SELECT cs.id, cs.kursholder_id, cs.start_tid, c.tittel
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+               JOIN kursholdere k ON k.id = cs.kursholder_id AND k.aktiv = 1
+          LEFT JOIN kursholder_timer t ON t.kursholder_id = cs.kursholder_id AND t.session_id = cs.id
+              WHERE t.id IS NULL
+                AND cs.status = 'planlagt'
+                AND COALESCE(cs.slutt_tid, cs.start_tid) < UTC_TIMESTAMP()
+                AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 DAY){$hvem}",
+            $param
+        );
+        $oslo = new DateTimeZone('Europe/Oslo');
+        foreach ($okter as $o) {
+            $min = self::minutterFor((int) $o['id']);
+            if ($min === null) {
+                continue;
+            }
+            $dato = (new DateTimeImmutable((string) $o['start_tid'], new DateTimeZone('UTC')))->setTimezone($oslo)->format('Y-m-d');
+            try {
+                DB::settInn('kursholder_timer', [
+                    'kursholder_id' => (int) $o['kursholder_id'],
+                    'session_id'    => (int) $o['id'],
+                    'dato'          => $dato,
+                    'timer'         => round($min / 60, 2),
+                    'hva'           => mb_substr((string) $o['tittel'], 0, 96),
+                    'status'        => 'forslag',
+                    'kilde'         => 'lengde',
+                ]);
+            } catch (Throwable $e) {
+                // To samtidige kall: raden kom inn fra det andre. Greit.
+            }
+        }
+    }
+
+    /**
+     * Bekreftede kursholdertimer som legges til verkstedtimene denne maaneden
+     * — for kursholdere med «Timer». I minutter, som dugnaden.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function minutterTilgode(array $medlem): int
+    {
+        if (!self::timerKlar() || !DB::harKolonne('kursholdere', 'betaling')) {
+            return 0;
+        }
+        $h = self::forMedlem($medlem);
+        if ($h === null || (string) ($h['betaling'] ?? '') !== 'timer') {
+            return 0;
+        }
+        $mnd = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-01');
+        $timer = (float) (DB::verdi(
+            "SELECT COALESCE(SUM(timer), 0) FROM kursholder_timer
+              WHERE kursholder_id = :h AND status = 'bekreftet' AND dato >= :m",
+            ['h' => (int) $h['id'], 'm' => $mnd]
+        ) ?? 0);
+        return (int) round($timer * 60);
+    }
+
     /** Bare for provene: glem det som er hentet. */
     public static function glem(): void
     {

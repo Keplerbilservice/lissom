@@ -533,6 +533,13 @@ final class Nett
         $ogAlt = (string) ($seo['altTekst'] ?? 'Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg');
         $ikkeISoket = strtolower((string) ($seo['index'] ?? 'Index')) === 'noindex';
 
+        $bildeMime = 'image/jpeg';
+        if (str_ends_with(strtolower($ogBilde), '.png')) {
+            $bildeMime = 'image/png';
+        } elseif (str_ends_with(strtolower($ogBilde), '.webp')) {
+            $bildeMime = 'image/webp';
+        }
+
         $ldTekst = '';
         if ($ld !== []) {
             $j = json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -554,7 +561,7 @@ final class Nett
             . '<link rel="icon" href="/favicon.ico" sizes="any">' . "\n"
             . '<link rel="icon" type="image/svg+xml" href="/favicon.svg">' . "\n"
             . '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">' . "\n"
-            . '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">' . "\n"
+            . '<link rel="apple-touch-icon" sizes="180x180" href="' . $e($rot . '/apple-touch-icon.png') . '">' . "\n"
             . '<link rel="manifest" href="/site.webmanifest">' . "\n"
             . '<meta name="theme-color" content="#FBF6EE">' . "\n"
             . '<title>' . $e($tittel) . "</title>\n"
@@ -568,10 +575,16 @@ final class Nett
             . '<meta property="og:title" content="' . $e($ogT) . '">' . "\n"
             . ($ogB !== '' ? '<meta property="og:description" content="' . $e($ogB) . '">' . "\n" : '')
             . '<meta property="og:image" content="' . $e($ogBilde) . '">' . "\n"
+            . '<meta property="og:image:secure_url" content="' . $e($ogBilde) . '">' . "\n"
+            . '<meta property="og:image:type" content="' . $e($bildeMime) . '">' . "\n"
             . ($egetBilde ? '' : '<meta property="og:image:width" content="1200">' . "\n"
                 . '<meta property="og:image:height" content="675">' . "\n")
             . '<meta property="og:image:alt" content="' . $e($ogAlt) . '">' . "\n"
             . '<meta name="twitter:card" content="summary_large_image">' . "\n"
+            . '<meta name="twitter:title" content="' . $e($ogT) . '">' . "\n"
+            . ($ogB !== '' ? '<meta name="twitter:description" content="' . $e($ogB) . '">' . "\n" : '')
+            . '<meta name="twitter:image" content="' . $e($ogBilde) . '">' . "\n"
+            . '<meta name="twitter:image:alt" content="' . $e($ogAlt) . '">' . "\n"
             . $ldTekst
             // Bare fontene over folden forhaandslastes: overskrifta (Bitter 800
             // + 600 kursiv) og ingressen (Alegreya Sans 400). De to andre

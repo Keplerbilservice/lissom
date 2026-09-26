@@ -3176,7 +3176,7 @@ sjekk('de brede visningene ruller sidelengs paa telefon',
 // Dagen er standardvisningen der fra 6. september, ikke den eneste — se
 // proeven «dagen er standardvisningen ogsaa paa telefon» lenger nede.
 sjekk('visningsknappene virker ogsaa paa telefon',
-    str_contains($sida, "let visning = this.state.klVisning || 'dag';")
+    str_contains($sida, "let visning = this.state.klVisning || (this.erSmal() ? 'dag' : 'uke');")
     && str_contains($sida, "klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]"));
 sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
     str_contains($sida, "? { minWidth: 0, order: 1 }"));
@@ -4141,14 +4141,14 @@ sjekk('… og pillen staar under logoen, paa alle adminsidene',
     str_contains($sida2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),")
     && str_contains($sida2, '{{ admFerieNavn }}')
     && substr_count($sida2, '{{ admFerieNavn }}')
-       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til kalenderen"'));
+       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til oversikten"'));
 // Logoen gikk til Oversikt. Eieren, 8. september 2026: «når jeg trykker på
 // lissom logoen vil jeg at vi skal gå tilbake til kalender». Da maatte
 // teksten paa knappen foelge med — ellers sto det «Til oversikten» paa noe
 // som gikk et annet sted.
-sjekk('logoen gaar til kalenderen',
-    str_contains($sida2, "adminHjem: () => this.gaaAdmin('adminkalender', {}),")
-    && !str_contains($sida2, 'title="Til oversikten"'));
+// Fra 26. september 2026 til Oversikt (eieren: «oversikt skal vaere default»).
+sjekk('logoen gaar til Oversikt',
+    str_contains($sida2, "adminHjem: () => this.gaaAdmin('adminoversikt', {}),"));
 // Eieren, 30. august: «stemple inn og ferie maa flyttes til oversikt».
 sjekk('… og de staar ikke lenger i menyen',
     str_contains($sida2, 'const stempling = [];'));
@@ -4297,7 +4297,7 @@ sjekk('… og staar tom naar planen er borte',
 // Eieren, 6. september: «naar vi aapner kalender paa mobil i admin, saa vil
 // jeg at dag skal vaere default».
 sjekk('dagen er standardvisningen ogsaa paa telefon',
-    str_contains($sida2, "let visning = this.state.klVisning || 'dag';")
+    str_contains($sida2, "let visning = this.state.klVisning || (this.erSmal() ? 'dag' : 'uke');")
     && !str_contains($sida2, "this.erSmal() ? 'liste' : 'dag'"));
 // De fire valgene staar der fortsatt.
 sjekk('… og de andre visningene kan fortsatt velges',
@@ -5268,7 +5268,7 @@ sjekk('… og knappen aapner den ekte kassa',
     str_contains($sida2, "klKasse: () => this.gaaAdmin('adminuttak', {"));
 sjekk('… med samme utgangspunkt som kortet paa oversikten',
     // Tre fra 13. september: snarveispilla paa kalenderen kom til.
-    substr_count($sida2, "utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',") === 3);
+    substr_count($sida2, "utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',") === 5);
 
 // ── Alle fire medlemskapene, ikke bare de tre ──────────────────────────
 //
@@ -5800,12 +5800,13 @@ sjekk('… men en oppsagt teller ikke som nytt medlem',
     str_contains($ovKode, "if (!\$oppsagt && (string) \$m['start_dato'] ?? '' >= \$mndStart) {")
     || str_contains($ovKode, "if (!\$oppsagt && (string) (\$m['start_dato'] ?? '') >= \$mndStart) {"));
 
-// ── Kalenderen er startsida i admin ────────────────────────────────────
+// ── Oversikt er startsida i admin ─────────────────────────────────────
 //
-// Eieren, 9. september 2026: «naar jeg logger inn paa admin vil jeg at
-// kalender skal vaere start siden».
-sjekk('/admin aapner kalenderen',
-    str_contains($sida, "{ sti: '/admin',              side: 'adminkalender' },"));
+// Eieren, 26. september 2026: «jeg vil komme inn paa oversikt som default»
+// (kalenderen var startsida fra 9. september).
+sjekk('/admin aapner Oversikt, og innloggingen lander der',
+    str_contains($sida, "{ sti: '/admin',              side: 'adminoversikt' },")
+    && str_contains($sida, "side: d.erAdmin ? 'adminoversikt' :"));
 // Oversikt er ikke fjernet — den har faatt sin egen adresse.
 sjekk('… og Oversikt har fortsatt en adresse',
     str_contains($sida, "{ sti: '/admin/oversikt',     side: 'adminoversikt' },"));
@@ -6079,7 +6080,7 @@ if (file_exists($mig153)) {
 //
 // Vist fire plasseringer. Han valgte A: «under pilla».
 $msPille = strpos($sida, 'class="ms-verksted" onClick="{{ msPlVerksted.velg }}"');
-$msRute  = strpos($sida, '<sc-if value="{{ msVerkstedApen }}"');
+$msRute  = strpos($sida, '<sc-if value="{{ msVerkstedVis }}"');
 sjekk('ruta med hvem som er inne staar rett etter pilla',
     $msPille !== false && $msRute !== false && $msRute > $msPille
     && ($msRute - $msPille) < 2500,
@@ -6090,7 +6091,7 @@ sjekk('… og den er fortsatt bak et trykk',
     && str_contains($sida, 'velg: () => this.setState(st => ({ msVerksted: !st.msVerksted })),'));
 // Bare medlemmer. Hvem som er i verkstedet er internt.
 sjekk('… og bare medlemmer ser den',
-    (bool) preg_match('/\{\{ erMedlem \}\}" hint-placeholder-val="\{\{ true \}\}">\s*<sc-if value="\{\{ msVerkstedApen \}\}"/', $sida));
+    (bool) preg_match('/\{\{ erMedlem \}\}" hint-placeholder-val="\{\{ true \}\}">\s*<sc-if value="\{\{ msVerkstedVis \}\}"/', $sida));
 // Innholdet er urort: navnene, de skjulte og haken.
 sjekk('… og innholdet er det samme som for',
     str_contains($sida, 'Ingen er innstemplet nå.')
@@ -7464,7 +7465,7 @@ sjekk('… og admin teller fortsatt som medlem paa serveren',
 //    761 px  sju piller paa én linje, 47 px hoy
 //    390 px  piller skjult, bunnmenyen staar som for
 sjekk('Min side har baade piller og bunnmeny i markupen',
-    str_contains($sida, '<nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">')
+    str_contains($sida, '<nav class="ms-pillerad ms-o-meny" style="{{ msPlRadStil }}" aria-label="Min side">')
     && str_contains($sida, '<nav class="ms-bunnmeny" style="{{ msBmStil }}" aria-label="Min side">'));
 // Raden staar alltid. Paa telefonen er det to piller som staar igjen av den:
 // «Min side» og «x inne». De seks andre er i bunnmenyen der, og aatte celler
@@ -7641,7 +7642,7 @@ sjekk('… og chatten spor etter nytt mens panelet staar aapent',
 // Skrivefeltet finnes to steder naa. Det synlige er det man skriver i.
 sjekk('… og hjelperne finner det kortet som staar framme',
     str_contains($sida, 'chatteKort() {')
-    && str_contains($sida, "const alle = [document.getElementById('minside-chat'), document.getElementById('admin-chat')];")
+    && str_contains($sida, "const alle = [document.getElementById('minside-chat'), document.getElementById('admin-chat'), document.getElementById('minside-chatflis')];")
     && str_contains($sida, "var navn = ['minside-chat', 'admin-chat'];"),
     'sending og rulling maa treffe det samme kortet');
 
@@ -7740,7 +7741,7 @@ sjekk('… paa alle fire knappene, Nyttig info, begge i admin og Min side',
 // admin. Shift+Enter ga linjeskift, det ble lagret, og boblen viste to
 // linjer.
 sjekk('skrivefeltet i chatten er et felt som vokser',
-    substr_count($sida, '<textarea class="ms-chatskriv" value="{{ chatTekst }}"') === 2
+    substr_count($sida, '<textarea class="ms-chatskriv" value="{{ chatTekst }}"') === 3
     && !str_contains($sida, '<input value="{{ chatTekst }}"'),
     'maalt: 41 px tomt, 153 px etter to setninger, tak paa seks linjer');
 sjekk('… og hoyden settes etter hvor mye som staar i det',
@@ -8460,7 +8461,7 @@ sjekk('… og navigasjonen sender henne tilbake dit',
 // endret venstre side av dette valget, ikke hoyre: regnskapsfoereren lander
 // fortsatt paa OEkonomi, og det er det denne vokter.
 sjekk('… og hun lander paa OEkonomi naar hun logger inn',
-    str_contains($sida2, "side: d.erAdmin ? 'adminkalender' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
+    str_contains($sida2, "side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
 
 // Rollen kunne ikke velges i det hele tatt: skjemaet hadde én avkryssingsboks
 // for admin. Eieren, 1. september: «jeg kan ikke velge hva en ny bruker skal
@@ -10054,12 +10055,13 @@ sjekk('… paa det samme knekkpunktet som resten av admin',
 // Begge kortblokkene: Oversikt og omraadesidene. Sto det bare ett sted,
 // ville halvparten av kortene oppfoert seg annerledes.
 sjekk('… paa begge kortblokkene',
-    substr_count($sidaG, '<p class="lx-korthva"') === 2
-    && substr_count($sidaG, '<span class="lx-kortnavn">{{ k.knapp }} →</span><span class="lx-kortmer">Se mer →</span>') === 2);
+    // To ble én 26. september: Oversikt har faatt nye kort (ovGrupper).
+    substr_count($sidaG, '<p class="lx-korthva"') === 1
+    && substr_count($sidaG, '<span class="lx-kortnavn">{{ k.knapp }} →</span><span class="lx-kortmer">Se mer →</span>') === 1);
 // Funksjonen skal ikke vaere borte: kortet er den samme knappen, og gaar
 // til det samme stedet. Bare teksten paa det er kortere.
-sjekk('… uten at kortet mister noe',
-    str_contains($sidaG, '<button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">'));
+sjekk('… og kortene paa ny Oversikt er klikkbare i hele flaten',
+    str_contains($sidaG, '<div role="button" tabindex="0" onClick="{{ g.velg }}" class="lx-ovgruppe" style="{{ g.stil }}">'));
 
 // ── «Forfalt» og «Ikke betalt» ser ikke like ut lenger ─────────────────
 //
@@ -11128,7 +11130,7 @@ sjekk('… og radene starter fra toppen',
 // 36 -> 37 den 16. september 2026: skjermen «Til godkjenning» kom til.
 // Tallet er antall adminskjermer — sidemenyen er den samme paa alle.
 sjekk('navnene staar i sidemenyen',
-    substr_count($sida, '<sc-for list="{{ admMenyInne }}" as="i"') === 37
+    substr_count($sida, '<sc-for list="{{ admMenyInne }}" as="i"') === 74
     && str_contains($sida, 'admMenyInne: raa.slice(0, 6).map(r => ({'));
 // Eieren, 7. september: forst «paa pc, flytt i verkstedet naa til rett under
 // meld inn feil, saa log ut nedenfor der» — men menyen er lengre enn
@@ -11653,7 +11655,7 @@ echo "\n== Bunnmeny på telefon, seks valg ==\n";
 $sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Menyen staar i hver adminskjerm, som logoen og stemplingspillene.
-$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til kalenderen"');
+$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til oversikten"');
 sjekk('bunnmenyen staar i alle adminskjermene',
     substr_count($sidaB, 'class="lx-bunnmeny"') === $logoerB, $logoerB . ' skjermer');
 sjekk('… med seks valg i hver',
@@ -11695,7 +11697,8 @@ sjekk('… og cella er den samme i begge bunnmenyene',
 // dekker den den nederste knappen paa hver skjerm.
 sjekk('innholdet har plass under menyen',
     str_contains($sidaB, '.lx-adminaside + main {')
-    && str_contains($sidaB, 'padding-bottom: calc(58px + 18px + env(safe-area-inset-bottom, 0px)) !important;'));
+    // Bunnmenyen er borte (skissen, 26. september 2026); kalenderknappen staar nederst.
+    && str_contains($sidaB, 'padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;'));
 // Hjemknappen paa iPhone ligger nederst paa skjermen.
 sjekk('… og det er satt av plass til hjemknappen paa iPhone',
     str_contains($sidaB, "paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',"));
@@ -11703,7 +11706,7 @@ sjekk('… og det er satt av plass til hjemknappen paa iPhone',
 // Bare paa telefon. Paa PC er sidemenyen der.
 sjekk('menyen staar bare paa smal skjerm',
     str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }')
-    && str_contains($sidaB, '.lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }'));
+    && str_contains($sidaB, '<button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}"'));
 
 // Kvitteringsboksen sto 110 px fra toppen, alltid. Da adminstripa fikk
 // verktoeypillene, la boksen seg midt oppaa dem — og oppaa linja som sier
@@ -11842,10 +11845,9 @@ sjekk('… fra den samme kilden som bekreftelsen leser',
 // «Ikke betalt» i Kassa viser dem — men ingen aapner Kassa for aa lete.
 $kreves = preg_replace('/^\s*\/\/.*$/m', '',
     preg_replace('/<!--.*?-->/s', '', $sidaB));
-sjekk('linja «maa kreves inn» staar paa Oversikt',
+sjekk('krevInnLinje() finnes fortsatt (verdiene brukes ikke paa ny Oversikt)',
     str_contains($kreves, 'krevInnLinje() {')
-    && str_contains($kreves, '...this.krevInnLinje(),')
-    && str_contains($kreves, '<sc-if value="{{ ovKrevInnVis }}"'));
+    && str_contains($kreves, '...this.krevInnLinje(),'));
 // Den leser de samme radene som kortet i Kassa, saa tallene kan ikke sprike.
 //
 // Her sto et filter: «u.slag === 'medlem' && u.forfalt». Testen het det den
@@ -11880,9 +11882,11 @@ sjekk('… og sier bare det som er sant om alder og beloep',
     str_contains($kreves, 'if (eldst > 0) {')
     && str_contains($kreves, 'if (sum > 0) {'));
 // Knappen gaar til Kassa, der jobben faktisk gjores.
-sjekk('… og knappen gaar til Kassa',
-    str_contains($kreves, "ovKrevInnVelg: () => this.gaaAdmin('adminuttak', {}),")
-    && str_contains($kreves, '>Til Kassa</button>'));
+// Ny Oversikt (26. september 2026): Kasse-kortet faar roed kant og tall naar noe
+// staar ubetalt, og raden «Se alle som ikke har betalt» gaar til Kassa.
+sjekk('… og Kasse-kortet paa Oversikt sier fra og gaar til Kassa',
+    str_contains($kreves, "kasse, tilKasse, alleUbet.length > 0),")
+    && str_contains($kreves, "const tilKasse = () => this.gaaAdmin('adminuttak', {});"));
 
 // ── Brevet lovet en lenke som ikke finnes ────────────────────────────────
 //
@@ -12051,7 +12055,7 @@ $sidaP2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // Sidemenyen staar i hver eneste adminskjerm. Tallet er ikke poenget —
 // poenget er at pillene staar like mange steder som logoen gjor, saa ingen
 // skjerm er glemt.
-$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til kalenderen"');
+$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til oversikten"');
 $stempler = substr_count($sidaP2, '{{ admStemplingStil }}');
 sjekk('pillene staar like mange steder som logoen',
     $logoer > 20 && $stempler === $logoer, $logoer . ' logoer, ' . $stempler . ' pillepar');
@@ -12072,7 +12076,7 @@ sjekk('… og Ferie aapner den eksisterende ferieskjermen',
 // og en verdi som mangler ett sted tegner hele skjermen som «{{ }}».
 $foerAdminHjem = substr($sidaP2, 0, (int) strpos($sidaP2, 'admStemplingStil:'));
 sjekk('verdiene staar paa toppnivaa, ikke bak en side-sjekk',
-    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminkalender', {}),"));
+    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminoversikt', {}),"));
 
 // Stripa paa Oversikt er borte — bade markupen og verdiene den brukte.
 sjekk('stripa paa Oversikt er borte',
@@ -14221,7 +14225,7 @@ sjekk('det er kode aa maale i Min side-sjekkene', strlen($msU) > 500000, strlen(
 // forsiden, sammen med stemplinga — det er der man spor om dem. Sto de
 // begge steder, ville det vaert to tall om det samme igjen.
 sjekk('timene staar sammen med stemplinga',
-    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ timerBarStil \}\}/s', $msU)
+    (bool) preg_match('/Stemple inn og timene dine.{0,7000}\{\{ timerBarStil \}\}/s', $msU)
     && !preg_match('/id="minside-abonnement".{0,4000}\{\{ timerBarStil \}\}/s', $msU),
     'ett sted, ikke to');
 sjekk('… og «Timer igjen» staar ikke lenger som egen rad der',
@@ -14810,7 +14814,8 @@ sjekk('… med de valgene eieren ba om',
     && str_contains($msP, "selg:       p('Selg', 'Selg produktene dine', 'selg'),")
     && str_contains($msP, "nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),"));
 sjekk('… og den staar bare for den som har de fem stedene',
-    str_contains($msRen, 'msHarBunnmeny: this.medlemsvisning(),'),
+    // Menylinja har tatt over for bunnmenyen (skissen, 26. september 2026).
+    str_contains($msRen, 'msHarBunnmeny: false,'),
     'en kursdeltaker har to av dem, og faar snarveiene som for');
 sjekk('… og innholdet har plass under den, paa telefonen',
     str_contains($msRen, "msBunnLuft: { height: 'calc(64px + env(safe-area-inset-bottom, 0px))' },")
@@ -14824,8 +14829,10 @@ sjekk('bare det stedet du staar paa tegnes',
     // Var seks. Chatten fikk sitt eget valg, og verkstedsruta aapnes av
     // pilla i stedet for aa staa fast paa forsiden — to blokker mindre.
     // Fem: «Del paa Instagram» flyttet fra Butikk til forsiden 24. september.
-    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 5
-    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 3
+    // Seks fra 26. september: de smaa flisene etter skissen har sin egen blokk.
+    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 6
+    // Tre ble to 26. september: kursbevisene staar ogsaa paa forsiden (msKursbevisVis).
+    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 2
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneSelg }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneChat }}"') === 1
@@ -14833,22 +14840,22 @@ sjekk('bare det stedet du staar paa tegnes',
     'maalt i nettleseren: hvert valg viser bare sitt eget, 390 og 1440 px');
 sjekk('… og en kursdeltaker sendes hjem fra et sted hun ikke har',
     str_contains($msP, "if (!this.medlemsvisning()\n        && (f === 'medlemskap' || f === 'butikk' || f === 'selg'\n            || f === 'nyttig' || f === 'chat')) return 'hjem';"));
-sjekk('… mens snarveipillene staar igjen for henne',
-    str_contains($msRen, 'msViserSnarveier: !this.medlemsvisning(),')
-    && str_contains($msRen, '<sc-if value="{{ msViserSnarveier }}"'),
-    'ingenting er fjernet for den som ikke har menyen');
+sjekk('… og kursdeltakeren har flisene i stedet for snarveiene',
+    str_contains($msRen, 'msViserSnarveierNaa: false,')
+    && str_contains($msRen, '<sc-if value="{{ msViserSnarveierNaa }}"'),
+    'eieren 26. september: «her er det plass til fliser, saa snarveier trengs vel ikke»');
 
 // ── Doerkoden ─────────────────────────────────────────────────────
 sjekk('doerkoden staar som en liten pille ved navnet',
-    str_contains($msRen, 'onClick="{{ msTilNyttig }}" aria-label="Dørkode {{ dorkode }}')
-    && str_contains($msRen, 'msDorStil: {'),
+    // Fra 26. september 2026 i menylinja oeverst (skissen).
+    str_contains($msRen, '<button type="button" class="ms-tl-pille" onClick="{{ msTilNyttig }}">Dørkode <b>{{ dorkode }}</b></button>'),
     'ikke i et eget kort etter fem andre');
 
 // ── Verkstedet ditt ───────────────────────────────────────────────
 // Dugnadskortet (15. september 2026) ligger mellom timene og medlemskapet,
 // saa avstanden fra stolpen til «mittAbo» ble lengre.
 sjekk('stempling, timer og medlemskap staar i ett kort',
-    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,12000}\{\{ mittAbo \}\}/s', $msRen),
+    (bool) preg_match('/Stemple inn og timene dine.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,12000}\{\{ mittAbo \}\}/s', $msRen),
     'tre steder ble ett');
 // ── Kortet finner ikke paa en plan ────────────────────────────────
 //
@@ -14877,7 +14884,7 @@ sjekk('… og veien videre til hele medlemskapet staar der',
     str_contains($msRen, 'onClick="{{ msTilMedlemskap }}"')
     && str_contains($msRen, 'Se medlemskapet →'));
 sjekk('… og «glemt aa stemple ut» hoerer til stemplinga, ikke abonnementet',
-    (bool) preg_match('/Verkstedet ditt.{0,6000}\{\{ apneMsGlemt \}\}/s', $msRen));
+    (bool) preg_match('/Stemple inn og timene dine.{0,6000}\{\{ apneMsGlemt \}\}/s', $msRen));
 
 
 echo "\n== Kortet, skivene og «Selg» sier det som er sant ==\n";
@@ -14952,9 +14959,11 @@ sjekk('«Selg» sier fra naar skjemaet er slaatt av',
     'maalt: ingen av de sju stedene staar tomme');
 
 // ── De to flyttingene ──────────────────────────────────────────────
-sjekk('kursbevisene staar bak Medlemskap',
-    (bool) preg_match('/<sc-if value="\{\{ msFaneMedlemskap \}\}"[^>]*>\s*<div id="minside-kursbevis"/s', $k2Ren),
-    'eieren: «Mine kursbevis skal vises i medlemskap og ikke på forside»');
+// Eieren, 26. september 2026 (ny Min side): «da tar vi kursbevis opp ved siden
+// av beskjeder». Kursbevisene staar naa baade under Medlemskap og paa forsiden.
+sjekk('kursbevisene staar under Medlemskap og paa forsiden',
+    (bool) preg_match('/<sc-if value="\{\{ msKursbevisVis \}\}"[^>]*>\s*<div id="minside-kursbevis"/s', $k2Ren)
+    && str_contains($k2Ren, "msKursbevisVis: fane === 'medlemskap' || hjem,"));
 sjekk('menyen sier «Butikk», ikke «Internbutikk»',
     str_contains($k2, "butikk:     p('Butikk', 'Internbutikk — leire og brenning', 'butikk'),"),
     'kortnavn i cella, hele navnet i aria-label');
@@ -15718,8 +15727,8 @@ sjekk('… og notatet og paaminnelsene er borte',
 // «Venter paa deg». De fire som ikke har et menypunkt staar som piller.
 sjekk('… og de fire uten menypunkt staar som piller under',
     str_contains($byttSida, '<sc-for list="{{ klSnarveiPiller }}" as="s"')
-    && str_contains($byttSida, "                { navn: 'Chat', nokkel: 'chat', velg: () => this.setState({ klChatVis: true }) },")
-    && str_contains($byttSida, "                { navn: 'Dagsrapport', nokkel: 'dagsrapport', velg: () => this.setState({ klRapVis: true }) },")
+    && str_contains($byttSida, "{ navn: 'Chat', nokkel: 'chat', velg: () => (this.state.side === 'adminkalender' ? this.setState({ klChatVis: true }) : this.gaaAdmin('adminkalender', { klChatVis: true })) },")
+    && str_contains($byttSida, "{ navn: 'Dagsrapport', nokkel: 'dagsrapport', velg: () => (this.state.side === 'adminkalender' ? this.setState({ klRapVis: true }) : this.gaaAdmin('adminkalender', { klRapVis: true })) },")
     && str_contains($byttSida, "                { navn: 'Årskalender', nokkel: 'arskalender', velg: () => this.gaaAdmin('adminarskalender', {}) },"));
 sjekk('… og de to foerste gaar til skjermene som finnes',
     str_contains($byttSida, "klGaMedlemmer: () => this.gaaAdmin('adminmedlem',")
@@ -18527,7 +18536,7 @@ sjekk('omsetning i dag staar som pille paa kalenderen',
 // Tallet staar i topprada, og kortet er ikke en handlingsknapp: egen klasse,
 // saa de 48 pikslene og den fulle bredda i toppradregelen ikke treffer.
 sjekk('… og «Denne måneden» staar ved siden av tittelen',
-    str_contains($flytt, 'class="lx-topprad lx-kaltopp"')
+    str_contains($flytt, 'class="lx-topprad lx-kaltopp lx-kalpc-skjul"')
     && str_contains($flytt, '<button type="button" class="lx-mndkort" onClick="{{ mndVelg }}"')
     && str_contains($flytt, '.lx-adminaside ~ main .lx-topprad button.lx-mndkort {')
     && str_contains($flytt, '      flex-wrap: nowrap !important;'),
@@ -20180,8 +20189,8 @@ sjekk('bolkene staar i den rekkefoelgen eieren ba om',
 sjekk('chatten staar i «Venter paa deg», med uleste som tall',
     str_contains($fmSida, "    const chatNye = this.state.chatNye || 0;")
     && str_contains($fmSida, "      tall: chatNye ? String(chatNye) : '',"));
-sjekk('«I verkstedet naa» ligger under «Venter paa deg»',
-    str_contains($fmSida, "      admMobPunkterA: med('naa', bolkNaa).concat(med('venter', bolkVenter)),"));
+sjekk('«I verkstedet naa» ligger under «Mer» i skuffen (skissen, 26. september 2026)',
+    str_contains($fmSida, "        const mer = gruppe('Mer', ['Årskalender', 'Til godkjenning', 'Verkstedet', 'Admin-brukere'].map(stedFlis)"));
 // Kasse, Til godkjenning og Aarskalender sto baade som sted og som snarvei.
 sjekk('ingenting staar to ganger i skuffen',
     str_contains($fmSida, "    brukt.arskalender = true;")
@@ -20484,7 +20493,7 @@ sjekk('enhver vei videre i admin lukker skuffen',
 // Skuffen gjoer stripa 650 px hoy. Da fant tilbakeTopp() ingen linje aa legge
 // seg under, og pila falt til 10 px — oppaa logoen.
 sjekk('tilbakepila staar ikke oppaa den aapne skuffen',
-    str_contains($msSida, "      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminkalender'\n        && !this.state.admMobApen,"));
+    str_contains($msSida, "      tilbakeVis: this.erPublisert() && side !== 'forside' && side !== 'adminoversikt'\n        && !this.state.admMobApen,"));
 // Skuffen lukker seg fortsatt selv naar man velger noe i den.
 sjekk('skuffens egne knapper lukker den som for',
     str_contains($msSida, "    const lukkOg = (fn) => () => { this.setState({ admMobApen: false }); fn(); };"));

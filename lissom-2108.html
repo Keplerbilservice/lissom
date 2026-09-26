@@ -586,6 +586,20 @@ img{max-width:100%;display:block}
      linja staa her for de kjorer. support.js legger inn den samme regelen en
      gang til; to like regler er ingen forskjell. -->
 <style>x-dc{display:none!important}</style>
+<style>
+/* Oversikt, ny drakt (26. september 2026). Hele kortet klikkbart: mørk kant
+   naar musa er over. Radene lyser svakt gult. */
+.lx-ovgruppe { transition: border-color .15s, box-shadow .15s; }
+.lx-ovgruppe:hover { border-color: var(--lissom-brown) !important; box-shadow: 0 4px 16px rgba(46,16,2,.10); }
+.lx-ovrad:hover { background: color-mix(in srgb, var(--lissom-yellow) 16%, transparent); }
+.lx-ovlite:hover { border-color: var(--lissom-brown) !important; }
+.lx-ovgruppe:focus-visible, .lx-ovrad:focus-visible { outline: 2px solid var(--lissom-brown); outline-offset: 2px; }
+@media (max-width: 760px) {
+  .lx-ovtopp { grid-template-columns: 1fr !important; }
+  .lx-ovoms { justify-items: start !important; text-align: left !important; }
+  .lx-ovforkl { justify-content: flex-start !important; }
+}
+</style>
 
 <script src="/ds-bundle.min.js" defer></script>
 
@@ -15430,198 +15444,96 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6) var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
+        <!-- ── Oversikt, ny drakt (eieren, 26. september 2026, GO paa skissen) ──
+             Toppen: dato og hilsen til venstre, omsetningen til hoeyre — ikke i
+             et kort. Saa den gule raden, store kort og smaa kort. Hele kortet
+             er klikkbart; ingen «Åpne» og ingen piler (eierens regel). Radene
+             inne i kortene aapner hvert sitt sted. Alle verdiene kommer fra
+             ovNyVals(). -->
+        <div class="lx-ovtopp" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: var(--space-6) var(--space-8); align-items: end; margin-bottom: var(--space-6);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ adminDagsdato }}</div>
-            <!-- Hjertet fra logoen etter navnet.
-                 Eieren, 31. august: «kan du legge til logo hjertet bak
-                 navnet, men dette er kun paa Monica». Det er hennes verksted,
-                 og det staar bare naar det er hun som er logget inn.
-
-                 Masken er den samme fila heroen bruker, saa formen er logoens
-                 og ikke et hjerte fra en skrifttype. Fargen kommer fra
-                 designsystemet og folger med om paletten endres. -->
-            <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+            <h1 style="margin: 0; font-size: var(--text-4xl); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
               <span>{{ adminHilsen }}</span>
               <sc-if value="{{ adminHilsenHjerte }}" hint-placeholder-val="{{ false }}">
-                <!-- Tegnet, ikke skalert.
-                     Foerst brukte jeg heart-logo-mask.png som maske. Den er
-                     720 x 695 piksler og ble krympet til 24 — kantene ble
-                     grumsete, og eieren saa det med det samme: «hjertet bak
-                     monica er ikke saa pent, og det virker ikke som hele
-                     bildet kom med».
-
-                     En kurve er skarp i enhver stoerrelse, og den staar i
-                     fila i stedet for aa hentes over nett. -->
                 <svg aria-hidden="true" viewBox="0 0 24 22" style="flex: 0 0 auto; width: 0.66em; height: 0.66em; overflow: visible;">
                   <path d="M12 21.2 3.3 12.5a5.8 5.8 0 0 1 0-8.2 5.8 5.8 0 0 1 8.2 0l.5.5.5-.5a5.8 5.8 0 0 1 8.2 0 5.8 5.8 0 0 1 0 8.2Z" fill="var(--terracotta-600)"></path>
                 </svg>
               </sc-if>
             </h1>
           </div>
-        </div>
-
-        <!-- «Må kreves inn».
-             Eieren, 5. september: «jeg vil at det bygges en paaminnelse i
-             admin». Bakgrunnen er at bare aarsmedlemskapet har fast trekk;
-             de andre betales én periode om gangen, og naar perioden er ute
-             er det ingen som ber om pengene. Kortet «Ikke betalt» i Kassa
-             viser dem alt — men ingen aapner Kassa for aa lete.
-             Linja staar naar noe staar ubetalt — en kursplass, et medlemskap
-             eller et butikksalg. Er alt gjort opp, finnes den ikke. Tallene
-             kommer fra krevInnLinje(), som leser de samme radene som kortet i
-             Kassa, uten filter. -->
-        <sc-if value="{{ ovKrevInnVis }}" hint-placeholder-val="{{ false }}">
-          <div style="{{ ovKrevInnRamme }}">
-            <div style="min-width: 0;">
-              <div style="{{ ovKrevInnTittelStil }}">{{ ovKrevInnTittel }}</div>
-              <sc-if value="{{ ovKrevInnHarDetalj }}" hint-placeholder-val="{{ true }}">
-                <div style="{{ ovKrevInnDetaljStil }}">{{ ovKrevInnDetalj }}</div>
-              </sc-if>
-            </div>
-            <button type="button" onClick="{{ ovKrevInnVelg }}" style="{{ ovKrevInnKnappStil }}">Til Kassa</button>
-          </div>
-        </sc-if>
-
-        <div data-theme="sun" class="lx-hurtig" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3) var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-10);">
-          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Ofte brukt</span>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Melding til medlemmene</x-import>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldDeltakere }}" hint-size="auto,40px">Til deltakere</x-import>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="download" on-click="{{ aDagsoppgjor }}" hint-size="auto,40px">Dagsoppgjør</x-import>
-        </div>
-
-        <!-- Her sto stripa med «Stemple inn» og «Ferie».
-             Den kom hit fra menyen 30. august. Naa staar de samme pillene
-             under logoen i sidemenyen, paa hver eneste adminside — eieren,
-             4. september: «uansett hvilken side jeg er inne paa». Da er én
-             plass nok, og Oversikt begynner med kortene. -->
-
-        <!-- Kortene.
-             Oversikten aapnet foer med en rad snarveier og deretter tolv
-             paneler under hverandre. Alt var der, men ingenting var lett aa
-             finne: det du gjorde oftest laa mellom det du gjorde sjelden.
-             Kortene er de ni tingene verkstedet faktisk begynner med. Hele
-             kortet er klikkbart, og tallet paa det avgjor om du maa dit. -->
-        <!-- Abonnementet paa kalenderen laa her, i en egen spalte ved siden
-             av kortene. Eieren 29. august: kortet skal bort. Adressen til
-             feeden staar under Kalender, der programmet ellers hoerer
-             hjemme; her tok den plass fra det man kom for. -->
-        <div style="margin-bottom: var(--space-10);">
-          <div style="min-width: 0;">
-          <!-- Kortene kan dras dit du vil ha dem. Rekkefolgen lagres, saa den
-               staar til neste gang ogsaa. Selve dragingen ligger i et lite
-               skript oeverst i fila — dc bygger rutenettet paa nytt ved hver
-               endring, og da maa lyttingen henge paa beholderen og ikke paa
-               hvert kort. -->
-          <!-- «Ikke betalt» og statistikken laa her, over rutenettet, som to
-               brede paneler i en annen drakt enn kortene under. Eieren, 31.
-               august: «jeg vil at de skal ha vaert sitt kort, men ikke slike
-               kort som i dag, jeg vil at kortene skal vaere like som de andre
-               kortene paa denne siden». De staar naa inne i rutenettet, med
-               den samme ramma som resten. Se ovSkylderRamme og ovPopRamme. -->
-          <!-- Statistikk.
-               Eieren 30. august: «her vil jeg se mine mest populaere kurs».
-               Regnet av plassene som faktisk er solgt siste tolv maaneder —
-               ikke av hvor mange datoer et kurs har. Talte vi datoer, ville
-               et fast tilbud ligget oeverst hver gang uten at det sa noe om
-               hva folk vil ha. Streken bak hver rad er andelen av det
-               stoerste, saa forholdet mellom dem er til aa se og ikke bare
-               til aa lese. -->
-          <!-- Statistikken over mest populaere kurs sto her. Flyttet til
-               Kurs og deltakere 13. september 2026 — den teller kurs. -->
-          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
-
-            <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
-              <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
-                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
-                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
-                  <span style="{{ k.tallStil }}">{{ k.tall }}</span>
-                </div>
-                <p class="lx-korthva" style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.hva }}</p>
-                <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;"><span class="lx-kortnavn">{{ k.knapp }} →</span><span class="lx-kortmer">Se mer →</span></span>
-              </button>
-            </sc-for>
-          </div>
-          <p style="margin: 0 0 var(--space-10); font-size: var(--text-xs); color: var(--text-muted);">{{ ovDraHjelp }}</p>
-          </div>
-        </div>
-
-        <!-- Her sto seksjonen «Kursene» med en liste over seks kurs.
-             Radene gikk til Alle kurs og aapnet kurset der — noeyaktig dit
-             kortet «Planlagte kurs» gaar. Skjermen og kortet fantes altsaa
-             fra foer, og lista var en tredje visning av de samme kursene.
-             Fjernet 26. august; ingen vei inn er borte. -->
-
-        <!-- ── Her sto seksjonen «Synlighet og innhold» ──────────────────
-             Overskrift og rutenett. Alt som laa i rutenettet er flyttet ut,
-             ett stykke om gangen, og til slutt sto overskrifta igjen uten noe
-             under seg. Maalt i nettleseren 13. september 2026: overskrifta
-             paa y=1189, ingenting etter den. Begge deler er ute; ingen
-             funksjon er borte, bare den tomme ramma.
-
-             Hvor tingene ble av:
-
-             · De to kortene «Vis paa nettsiden» og «Vis for medlemmene paa
-               Min side», med ti brytere til sammen. Eieren, 13. september
-               2026: «alle funksjoner der det er snakk om aa vise paa siden,
-               min side skal samles og legges paa menyen verktoy» og «ikke lag
-               dobbelt, men flytt og fjern fra gammel plassering». De staar naa
-               i «⊙ Synlighet» — i Verktoy-arket paa telefon og i sidemenyen
-               paa PC. Samme navn, samme brytere; flyttet, ikke kopiert.
-
-             · Kursvelgeren, som var en boks med en lenke videre. Den staar naa
-               som kort oeverst paa Oversikt, sammen med de andre verktoeyene.
-               To veier inn til det samme er én for mye.
-
-             · Grupperabatten. Eieren, 13. september 2026: den hoerer til Kurs
-               og deltakere. Den er en kursinnstilling, ikke en oversikt.
-               Skjemaet var dessuten skjult paa telefon fra 1. september —
-               «paa admin mobil oversikt, fjern banneret under toppbildet, og
-               grupperabatt» — saa paa mobil sto ramma tom alt da. -->
-
-        <!-- Banneret under toppbildet. Ett felt som skal brukes til det som
-             gjelder akkurat naa: aapent hus, gavekort til jul, paaskeegg. -->
-          <!-- Banner-redigeringa sto her. Eieren, 13. september 2026, etter
-               aa ha faatt se hva den faktisk var: «redigering av banneret
-               gaar til der du foreslo» — Nettsiden › Innhold.
-               Bryteren som slaar banneret av og paa er noe annet; den
-               flyttet til ⊙ Synlighet samme dag. -->
-
-        <!-- «Ikke fornyet — minn dem paa» sto her.
-             Flyttet til Medlemmer 27. august paa bestilling: det er arbeid
-             med medlemmene, og hoerer hjemme der de staar. -->
-
-        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Økonomi</div>
-        <div style="max-width: 560px; margin-bottom: var(--space-10);">
-
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Omsetning</span>
-              <div class="lx-pillerad" style="display: flex; gap: 2px;">
+          <div class="lx-ovoms" style="display: grid; gap: 5px; justify-items: end; text-align: right;">
+            <div style="display: flex; gap: var(--space-3); align-items: center;">
+              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Omsetning</span>
+              <div style="display: flex; flex-wrap: nowrap; gap: 2px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 2px;">
                 <sc-for list="{{ ovOmsValg }}" as="o" hint-placeholder-count="2">
                   <button type="button" onClick="{{ o.velg }}" style="{{ o.stil }}">{{ o.navn }}</button>
                 </sc-for>
               </div>
             </div>
-            <sc-for list="{{ ovOmsListe }}" as="o" hint-placeholder-count="4">
-              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <span style="font-size: var(--text-sm); color: var(--text-body);">{{ o.navn }}</span>
-                <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ o.verdi }}</span>
-              </div>
-            </sc-for>
-            <sc-if value="{{ ingenOmsLinjer }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenOmsTekst }}</div>
+            <button type="button" onClick="{{ ovGaOkonomi }}" aria-label="Full rapport i Økonomi" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--text-heading); white-space: nowrap;">{{ ovOmsSum }}</button>
+            <sc-if value="{{ ovOmsHarMot }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size: var(--text-sm); color: var(--text-muted);"><b style="{{ ovOmsMotStil }}">{{ ovOmsMotPst }}</b> {{ ovOmsMotTekst }}</div>
             </sc-if>
-            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 2px solid var(--lissom-brown);">
-              <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Sum</span>
-              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">{{ ovOmsSum }}</span>
+            <div style="display: flex; width: 100%; max-width: 320px; height: 7px; border-radius: 999px; overflow: hidden; gap: 2px; background: var(--clay-100);">
+              <sc-for list="{{ ovOmsStripe }}" as="d" hint-placeholder-count="3">
+                <i style="{{ d.stil }}"></i>
+              </sc-for>
             </div>
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; gap: var(--space-3); flex-wrap: wrap;">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ aDagsoppgjor }}" hint-size="auto,40px">Dagsoppgjør</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ ovGaOkonomi }}" hint-size="auto,40px">Full rapport →</x-import>
+            <div class="lx-ovforkl" style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 12px; font-size: var(--text-sm); color: var(--text-muted);">
+              <sc-for list="{{ ovOmsListeFarge }}" as="o" hint-placeholder-count="3">
+                <span style="display: inline-flex; align-items: center; gap: 6px;"><i style="{{ o.prikk }}"></i>{{ o.navn }} <b style="color: var(--text-heading);">{{ o.verdi }}</b></span>
+              </sc-for>
+              <sc-if value="{{ ingenOmsLinjer }}" hint-placeholder-val="{{ false }}">
+                <span>{{ ingenOmsTekst }}</span>
+              </sc-if>
             </div>
           </div>
+        </div>
+
+        <!-- Den gule raden: det som brukes oftest, og ovnen. -->
+        <div data-theme="sun" class="lx-hurtig" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3) var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
+          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Ofte brukt</span>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ ovNyttKurs }}" hint-size="auto,40px">Nytt kurs</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Melding til medlemmene</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldDeltakere }}" hint-size="auto,40px">Til deltakere</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="download" on-click="{{ aDagsoppgjor }}" hint-size="auto,40px">Dagsoppgjør</x-import>
+          <sc-for list="{{ ovOvnPiller }}" as="p" hint-placeholder-count="3">
+            <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
+          </sc-for>
+        </div>
+
+        <!-- De store kortene. Hvert kort er en gruppe med rader. -->
+        <div class="lx-ovgrupper" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
+          <sc-for list="{{ ovGrupper }}" as="g" hint-placeholder-count="6">
+            <div role="button" tabindex="0" onClick="{{ g.velg }}" class="lx-ovgruppe" style="{{ g.stil }}">
+              <div style="padding: var(--space-4) var(--space-5) var(--space-3); display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3);">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ g.tittel }}</span>
+                <span style="{{ g.tallStil }}">{{ g.tall }}</span>
+              </div>
+              <sc-for list="{{ g.rader }}" as="r" hint-placeholder-count="4">
+                <div role="button" tabindex="0" onClick="{{ r.velg }}" class="lx-ovrad" style="{{ r.stil }}">
+                  <span style="flex: 1; min-width: 0;">
+                    <span style="display: block; font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ r.navn }}</span>
+                    <span style="display: block; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ r.under }}</span>
+                  </span>
+                  <sc-for list="{{ r.knapper }}" as="b" hint-placeholder-count="0">
+                    <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
+                  </sc-for>
+                  <span style="{{ r.tallStil }}">{{ r.tall }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Resten – smaa kort, som foer. -->
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin: 0 0 var(--space-3);">Resten</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: var(--space-3); margin-bottom: var(--space-10);">
+          <sc-for list="{{ ovSmaa }}" as="k" hint-placeholder-count="6">
+            <button type="button" onClick="{{ k.velg }}" class="lx-ovlite" style="appearance: none; cursor: pointer; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading);">{{ k.navn }}<span style="display: block; font-family: var(--font-body); font-weight: 400; font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ k.under }}</span></button>
+          </sc-for>
         </div>
 
         <!-- Her sto «Medlemmer og timer» og «Interne samlinger».
@@ -32306,7 +32218,7 @@ class Component extends DCLogic {
   // Omsetningen fordelt paa hva den gjaldt, for valgt periode.
   omsetningsLinjer() {
     const o = (this.state.adminData || {}).omsetning;
-    const idag = (this.state.ovOms || 'I dag') === 'I dag';
+    const idag = (this.state.ovOms || 'Denne måneden') === 'I dag';
 
     if (o) return (idag ? o.linjerIdag : o.linjerMnd) || [];
     if (this.erPublisert()) return [];
@@ -44333,6 +44245,209 @@ class Component extends DCLogic {
    * det trengs uten aa bli skrevet av. Tallene er serverens
    * (adminData.ubetalte); her staar bare ordene, fargene og knappene.
    */
+  // ── Oversikt, ny drakt ─────────────────────────────────────────────────
+  //
+  // Eieren, 26. september 2026, GO paa skissen: omsetningen ved hilsenen,
+  // den gule raden med ovnen, store kort (Trenger handling, Kasse,
+  // Årskalender, Markedsfoering, Nettbutikk, Medlemmer) og smaa kort for
+  // resten. Hele kortet er klikkbart, og hver rad aapner sitt eget sted —
+  // de samme stedene de gamle kortene gikk til (se ovKort). Ingen «Åpne» og
+  // ingen piler.
+  ovNyVals() {
+    const tom = { ovGrupper: [], ovSmaa: [], ovOmsStripe: [], ovOmsListeFarge: [], ovOvnPiller: [],
+                  ovOmsHarMot: false, ovOmsMotPst: '', ovOmsMotTekst: '', ovOmsMotStil: {}, ovNyttKurs: () => {} };
+    if (this.state.side !== 'adminoversikt') return tom;
+
+    const d = this.state.adminData || {};
+    const koer = d.koer || {};
+    const oms = d.omsetning || {};
+    const idag = (this.state.ovOms || 'Denne måneden') === 'I dag';
+    const stopp = (fn) => (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); fn(); };
+    const kr = (ore) => 'kr ' + String(Math.round((ore || 0) / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+    // ── Omsetningen ved hilsenen ──
+    const FARGE = { booking: 'var(--terracotta-500)', medlemskap: 'var(--clay-400, #a08a7c)', ordre: 'var(--lissom-yellow)', gavekort: 'var(--lissom-brown)' };
+    const linjer = (idag ? oms.linjerIdag : oms.linjerMnd) || [];
+    const sumOre = linjer.reduce((n, l) => n + (l.ore || 0), 0);
+    const naaOre = idag ? oms.idagOre : oms.manedOre;
+    const forOre = idag ? oms.forrigeUkedagOre : oms.forrigeMndOre;
+    const harMot = typeof naaOre === 'number' && typeof forOre === 'number' && forOre > 0;
+    const pst = harMot ? Math.round((naaOre - forOre) / forOre * 100) : 0;
+
+    // ── Tallene de gamle kortene brukte (ovKort) ──
+    const ventende = this.state.adminVenteliste || [];
+    const nyeste = (d.nyeste || []).length;
+    const ubesvarte = (this.state.adminForesporsler || []).filter(f => f.status === 'Ubesvart').length;
+    const soknader = (this.state.adminSoknader || []).length;
+    const venterMelding = (this.state.ferdigbrentAdmin || []).filter(o => !o.meldt).length;
+    const feilNye = ((this.state.feilData || {}).rapporter || []).filter(r => r.status === 'ny').length;
+    const vt = d.varselTall || {};
+    const hengende = (d.hengende || []).length;
+    const dugnad = koer.dugnad || 0, dugnadIGang = koer.dugnadIGang || 0;
+
+    const radStil = (bg) => ({ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 18px', borderTop: '1px solid var(--border-subtle)', cursor: 'pointer', background: bg || 'transparent' });
+    const tallStil = (rod) => ({ fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', color: rod ? 'var(--terracotta-600)' : 'var(--text-heading)' });
+    const rad = (navn, under, tall, velg, rod, knapper, bg) => ({
+      navn, under: under || '', tall: (tall === null || tall === undefined || tall === 0 || tall === '') ? '' : String(tall),
+      tallStil: tallStil(!!rod), velg: stopp(velg), knapper: knapper || [], stil: radStil(bg),
+    });
+    const knapp = (navn, velg, gul) => ({
+      navn, velg: stopp(velg),
+      stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '4px 11px', font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap',
+              border: '1.5px solid ' + (gul ? 'var(--lissom-yellow)' : 'var(--lissom-brown)'), background: gul ? 'var(--lissom-yellow)' : 'var(--surface-card)', color: 'var(--lissom-brown)' },
+    });
+    const gruppe = (tittel, tall, rader, velg, haster) => ({
+      tittel, tall: tall ? String(tall) : '', rader,
+      tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-lg)', color: haster ? 'var(--terracotta-600)' : 'var(--text-muted)', whiteSpace: 'nowrap' },
+      velg: velg || (() => {}),
+      stil: { background: 'var(--surface-card)', border: '1px solid ' + (haster ? 'var(--terracotta-400, #D98E63)' : 'var(--border-subtle)'), borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer' },
+    });
+
+    // ── Trenger handling ── de faste radene, og de som bare staar naar noe venter.
+    const handling = [
+      rad('Nye påmeldinger', 'Siste tre dagene', nyeste, () => this.gaaAdmin('adminnyepameldinger', {}), nyeste > 0),
+      rad('Ubesvarte meldinger', 'Forespørsler og dugnad', ubesvarte, () => this.gaaAdmin('adminubesvarte', {}), ubesvarte > 0),
+      rad('Beskjeder', 'Til deltakerne eller medlemmene', null, () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' })),
+      rad('Venteliste', ventende.length === 1 ? ventende[0].navn + ' venter på ' + ventende[0].kurs : 'Står og venter på plass', ventende.length, () => this.gaaAdmin('adminventeliste', {}), ventende.length > 0),
+      rad('Dugnad', dugnadIGang ? dugnadIGang + ' i gang' : 'Venter på svar eller i gang', dugnad, () => this.gaaAdmin('adminubesvarte', {}), dugnad > 0),
+      ...(soknader ? [rad('Medlemskapsforespørsler', 'Venter på svar', soknader, () => this.gaaAdmin('adminmedlemssoknader', {}), true)] : []),
+      ...(koer.medlemsvarer ? [rad('Medlemsvarer til godkjenning', 'Lagt ut av medlemmene', koer.medlemsvarer, () => this.gaaAdmin('adminbutikk', { butikkFane: 'Medlemssalg' }), true)] : []),
+      ...(koer.frys ? [rad('Søknader om frys', 'Medlemmer som vil fryse', koer.frys, () => this.gaaAdmin('adminmedlem', {}), true)] : []),
+      ...(venterMelding ? [rad('Klar til henting', 'Ikke meldt fra ennå', venterMelding, () => this.gaaAdmin('adminferdigbrent', {}), true)] : []),
+      ...(feilNye ? [rad('Feil meldt inn', 'Nye meldinger om feil', feilNye, () => this.gaaAdmin('adminfeil', {}), true)] : []),
+      ...(vt.feilet ? [rad('Varsler kom ikke fram', 'E-post som ikke gikk', vt.feilet, () => this.gaaAdmin('adminvarsler', {}), true)] : []),
+      ...(vt.iKo ? [rad('Varsler står i kø', 'Venter på å bli sendt', vt.iKo, () => this.gaaAdmin('adminvarsler', {}), false)] : []),
+      ...(hengende ? [rad('Henger i Vipps', 'Betalinger som ikke ble fullført', hengende, () => this.gaaAdmin('adminokonomi', { okonomiFor: 'hengende' }), true)] : []),
+    ];
+    const handlingTall = nyeste + ubesvarte + ventende.length + dugnad + soknader + (koer.medlemsvarer || 0)
+      + (koer.frys || 0) + venterMelding + feilNye + (vt.feilet || 0) + hengende;
+
+    // ── Kasse · ta betalt ── de to foerste i «Ikke betalt», med Kontant og Vipps.
+    const skylder = this.skylderKort().ovSkylder || [];
+    const alleUbet = d.ubetalte || [];
+    const tilKasse = () => this.gaaAdmin('adminuttak', {});
+    const kasse = [
+      ...skylder.slice(0, 2).map(u => rad(u.navn, [u.under, u.belop].filter(Boolean).join(' · '), null, () => (u.erMedlem ? u.aapne() : tilKasse()), false,
+        (u.maater || []).filter(m => m.navn === 'Kontant' || m.navn === 'Vipps').map(m => knapp(m.navn, m.velg)))),
+      rad('Se alle som ikke har betalt', alleUbet.length ? alleUbet.length + ' står ubetalt' : 'Alt er betalt', alleUbet.length, tilKasse, alleUbet.length > 0),
+      rad('Selg over disk', 'Kurs, medlemskap eller en ting fra hylla', null,
+        () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '', utDel: 'salg', utBelop: '', utSalgBeskjed: '' }), false,
+        [knapp('Ta betalt', () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '', utDel: 'salg', utBelop: '', utSalgBeskjed: '' }), true)]),
+      // Dagsoppgjoeret staar i den gule raden rett over; ikke to ganger.
+    ];
+
+    // ── Aarskalenderen: de neste maanedene, av oektene som finnes ──
+    const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+    const naa = new Date();
+    const okter = (this.state.adminOkter || []).filter(o => !o.auto && o.publisert !== false && o.dato);
+    const solgt = o => (o.betalt || 0) + (o.reservert || 0);
+    const dagTall = iso => String(parseInt(iso.slice(8, 10), 10)) + '.';
+    const maaneder = [];
+    for (let i = 1; i <= 4; i++) {
+      const m = new Date(naa.getFullYear(), naa.getMonth() + i, 1);
+      const nokkel = m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0');
+      const her = okter.filter(o => o.dato.slice(0, 7) === nokkel).sort((a, b) => a.dato.localeCompare(b.dato));
+      maaneder.push({ navn: MND[m.getMonth()], her,
+        solgt: her.reduce((n, o) => n + solgt(o), 0), kap: her.reduce((n, o) => n + (o.kapasitet || 0), 0) });
+    }
+    const dagerTil = o => Math.round((new Date(o.dato + 'T12:00:00') - naa) / 86400000);
+    const fremtid = okter.filter(o => dagerTil(o) >= 0);
+    const nestenFull = fremtid.filter(o => o.kapasitet > 0 && solgt(o) / o.kapasitet >= 0.8).sort((a, b) => a.dato.localeCompare(b.dato));
+    const tynne = fremtid.filter(o => o.kapasitet > 0 && dagerTil(o) <= 14 && solgt(o) / o.kapasitet < 0.34).sort((a, b) => a.dato.localeCompare(b.dato));
+    const kortTittel = t => String(t || '').replace(/\s+kurs$/i, '');
+    const forslag = [];
+    if (nestenFull[0]) forslag.push('• ' + nestenFull[0].tittel + ' ' + dagTall(nestenFull[0].dato) + ' ' + MND[parseInt(nestenFull[0].dato.slice(5, 7), 10) - 1].slice(0, 3) + ' er nesten fullt – sett opp en dato til.');
+    if (tynne[0]) forslag.push('• ' + tynne[0].tittel + ' ' + dagTall(tynne[0].dato) + ' har ' + solgt(tynne[0]) + ' av ' + tynne[0].kapasitet + ', ' + dagerTil(tynne[0]) + ' dager før – løft den under Markedsføring.');
+    const tynnMnd = maaneder.find(m => m.her.length > 0 && m.her.length < 3) || maaneder.find(m => m.her.length === 0);
+    if (tynnMnd) forslag.push('• ' + tynnMnd.navn.charAt(0).toUpperCase() + tynnMnd.navn.slice(1) + ' har få datoer – legg ut flere.');
+    const tilAar = () => this.gaaAdmin('adminarskalender', {});
+    const aar = [
+      ...maaneder.map(m => rad(m.navn.charAt(0).toUpperCase() + m.navn.slice(1),
+        m.her.length
+          ? m.her.slice(0, 4).map(o => kortTittel(o.tittel) + ' ' + dagTall(o.dato)).join(' · ') + (m.her.length > 4 ? ' · +' + (m.her.length - 4) : '') + (m.kap ? ' — ' + m.solgt + ' av ' + m.kap + ' plasser solgt' : '')
+          : 'Ingen kursdatoer ennå',
+        null, tilAar)),
+      ...(forslag.length ? [rad('Forslag', forslag.join(' '), null, tilAar, false, [], 'var(--terracotta-100, #fbe7dc)')] : []),
+    ];
+
+    // ── Markedsfoering ──
+    const loft = tynne[0];
+    const marked = [
+      rad('Kurs som trenger et løft', loft ? loft.tittel + ' ' + dagTall(loft.dato) + ' · ' + solgt(loft) + ' av ' + loft.kapasitet : 'Ingen akkurat nå', null,
+        () => this.gaaAdmin('adminmarked', { mkFane: 'kurs' }), false,
+        loft ? [knapp('Løft', () => this.gaaAdmin('adminmarked', { mkFane: 'kurs' }), true)] : []),
+      rad('Forslag til Instagram', 'Fra medlemmene, til godkjenning', koer.medlemsforslag || 0, () => this.gaaAdmin('adminmarked', { mkFane: 'forslag' }), (koer.medlemsforslag || 0) > 0),
+      rad('Kampanjer', 'Rabattkoder og tilbud', null, () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' })),
+      rad('Besøk på nettsiden', 'Tall fra Google Analytics', null, () => this.gaaAdmin('adminmarked', { mkFane: 'analyse' })),
+    ];
+
+    // ── Nettbutikk ──
+    const varer = this.state.adminProdukter || [];
+    const lite = varer.filter(v => v.lager !== null && v.lager !== undefined && v.lager <= 2);
+    const butikkLinje = ((oms.linjerMnd || []).find(l => l.nokkel === 'ordre') || {}).verdi || '';
+    const tilButikk = () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' });
+    const butikk = [
+      rad('Ordrer til behandling', 'Skal pakkes, sendes eller hentes', koer.butikk || 0, tilButikk, (koer.butikk || 0) > 0),
+      rad('Lite på lager', lite.length ? lite.slice(0, 3).map(v => v.tittel + ' (' + v.lager + ')').join(' · ') : 'Ingenting er i ferd med å gå tomt', lite.length, tilButikk),
+      rad('Solgt denne måneden', 'Nettbutikk og kasse', butikkLinje, tilButikk),
+    ];
+
+    // ── Medlemmer ──
+    const ms = d.medlemmer || {};
+    const inne = ((this.state.stempling || {}).inne || {}).antall || 0;
+    const medRader = this.state.adminMedlemmer ? this.medlemsrader().filter(x => x.erMedlem && !x.erAdmin) : [];
+    const medlem = [
+      rad('Inne nå', 'Stemplet inn i verkstedet', inne, () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Inne nå', medlemSok: '' })),
+      rad('Nye medlemmer', 'Denne måneden', ms.nyeDenneMnd || 0, () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: '' })),
+      rad('Ikke betalt medlemskap', 'Trekk som ikke gikk gjennom, eller ubetalt', ms.ubetalte || 0, tilKasse, (ms.ubetalte || 0) > 0),
+      rad('Alle medlemmer', 'Medlemskap og timene de har brukt', medRader.length || ms.aktive || 0, () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: '' })),
+      rad('Hva medlemmene ser', 'Min side for medlemmer', null, () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
+    ];
+
+    // ── Smaa kort ──
+    const planlagte = (this.state.adminOkter || []).filter(o => !o.auto).length;
+    const kurs = (this.state.adminKursListe || []).length;
+    const r = (this.state.ressurser || []).filter(x => x.aktiv);
+    const refAntall = (this.state.refAdmin || []).filter(x => this.staarUte(x)).length;
+    const lite2 = (navn, under, velg) => ({ navn, under, velg });
+
+    const ovn = (navn, h) => ({
+      navn, velg: () => this.ovnKall(h),
+      stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 13px', font: 'var(--type-body-sm)', fontWeight: 800,
+              letterSpacing: '.05em', textTransform: 'uppercase', fontSize: '12px', border: '1.5px solid var(--lissom-brown)', background: 'transparent', color: 'var(--lissom-brown)' },
+    });
+
+    return {
+      ovOmsHarMot: harMot,
+      ovOmsMotPst: harMot ? (pst >= 0 ? '▲ ' : '▼ ') + Math.abs(pst) + ' %' : '',
+      ovOmsMotStil: { color: pst >= 0 ? 'var(--sage-600, #4f7a46)' : 'var(--terracotta-600)', fontWeight: 800 },
+      ovOmsMotTekst: harMot ? (idag ? 'mot samme dag forrige uke · ' : 'mot ' + (oms.forrigeMndNavn || 'forrige måned') + ' · ') + kr(forOre) + ' samme tid' : '',
+      ovOmsStripe: linjer.map(l => ({ stil: { display: 'block', flex: String(Math.max(1, l.ore || 0)), background: FARGE[l.nokkel] || 'var(--clay-300)' } })),
+      ovOmsListeFarge: linjer.map(l => ({ navn: l.navn, verdi: kr(l.ore), prikk: { width: 9, height: 9, borderRadius: '50%', display: 'inline-block', background: FARGE[l.nokkel] || 'var(--clay-300)' } })),
+      ovNyttKurs: () => this.gaaAdmin('admin', this.nyttKursSteg1()),
+      ovOvnPiller: [ovn('Råbrann satt', 'raabrann'), ovn('Glasurbrann satt', 'glasurbrann'), ovn('Ovn er tømt', 'tomt')],
+      ovGrupper: [
+        gruppe('Trenger handling', handlingTall, handling, () => this.gaaAdmin('adminnyepameldinger', {}), handlingTall > 0),
+        // Roed kant naar noe staar ubetalt — det gamle varselet «N ting maa
+        // kreves inn» over kortene er borte, og kortet sier det selv naa.
+        gruppe('Kasse · ta betalt', oms.idag && /[1-9]/.test(oms.idag) ? 'i dag ' + oms.idag : '', kasse, tilKasse, alleUbet.length > 0),
+        gruppe('Årskalender', '', aar, tilAar, false),
+        gruppe('Markedsføring', '', marked, () => this.gaaAdmin('adminmarked', {}), false),
+        gruppe('Nettbutikk', '', butikk, tilButikk, false),
+        gruppe('Medlemmer', '', medlem, () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: '' }), false),
+      ],
+      ovSmaa: [
+        lite2('Kurs', kurs + ' kurs · ' + planlagte + ' planlagte datoer', () => this.gaaAdmin('admin', { kursFane: 'alle' })),
+        lite2('Hva kursdeltakere ser', 'Min side for kursdeltakere', () => this.gaaAdmin('minside', { fhRolle: 'deltaker', fhFra: 'adminoversikt' })),
+        lite2('Kursholdere', 'Hvem som holder kursene, og timene', () => this.gaaAdmin('adminkursholdere', {})),
+        lite2('Tekst maler', 'E-post', () => this.gaaAdmin('adminmaler', {})),
+        lite2('Ressurser', r.length ? r.map(x => x.navn + ' ' + x.antall).join(' · ') : 'Plasser per kurs', () => this.gaaAdmin('adminressurser', {})),
+        lite2('Kursvelgeren', 'Spørsmålene', () => this.gaaAdmin('adminkursvelger', {})),
+        lite2('Referansekunder', refAntall ? refAntall + ' står ute' : 'Arbeid for andre', () => this.gaaAdmin('adminreferanser', {})),
+      ],
+    };
+  }
+
   skylderKort() {
     const liste = (this.state.adminData || {}).ubetalte || [];
     // Brikka fyller cella si og midtstiller ordet. Uten «width: 100%» ville
@@ -59745,10 +59860,11 @@ class Component extends DCLogic {
       })(),
       bryterVisKursholdere: this.bryterPaa('kursholdere'),
       vekslVisKursholdere: () => this.vekslBryter('kursholdere', 'Kursholderne'),
+      ...this.ovNyVals(),
       ovOmsValg: ['I dag', 'Denne måneden'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovOms: n }),
-        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovOms || 'I dag') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovOms || 'I dag') ? 'var(--clay-50)' : 'var(--text-muted)' },
+        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovOms || 'Denne måneden') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovOms || 'Denne måneden') ? 'var(--clay-50)' : 'var(--text-muted)' },
       })),
       // Fordelingen kommer fra serveren, gruppert paa hva pengene gjaldt.
       // Sto tidligere som faste tall for «I dag» og ingenting for «Denne
@@ -59766,15 +59882,15 @@ class Component extends DCLogic {
       // stemplingPiller(). To sett verdier for det samme er ett for mye.
       ovOmsListe: this.omsetningsLinjer(),
       ingenOmsLinjer: this.erPublisert() && this.omsetningsLinjer().length === 0,
-      ingenOmsTekst: (this.state.ovOms || 'I dag') === 'I dag'
+      ingenOmsTekst: (this.state.ovOms || 'Denne måneden') === 'I dag'
         ? 'Ingen betalinger registrert i dag ennå.'
         : 'Ingen betalinger registrert denne måneden ennå.',
       // Ekte omsetning fra serveren. Sto tidligere som faste tall, og eieren
       // hadde ingen maate aa se at de var oppdiktet.
       ovOmsSum: (() => {
         const o = (this.state.adminData || {}).omsetning;
-        if (o) return (this.state.ovOms || 'I dag') === 'I dag' ? o.idag : o.maned;
-        return this.erPublisert() ? '–' : ((this.state.ovOms || 'I dag') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
+        if (o) return (this.state.ovOms || 'Denne måneden') === 'I dag' ? o.idag : o.maned;
+        return this.erPublisert() ? '–' : ((this.state.ovOms || 'Denne måneden') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
       })(),
       // Okonomiskjermen. Ukesfordelingen, kildene og innstillingene sto som
       // fast tekst og var tomme paa den ekte siden. Naa kommer alt fra

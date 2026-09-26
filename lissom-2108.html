@@ -597,6 +597,50 @@ img{max-width:100%;display:block}
 .lx-glidinn { animation: lx-glidinn .3s ease; }
 @media (prefers-reduced-motion: reduce) { .lx-glidinn { animation: none; } }
 @media (min-width: 980px) { .lx-kalpc-skjul { display: none !important; } }
+/* Min side, forsiden (26. september 2026, etter skissen). Blokkene ligger der
+   de alltid har ligget i malen; her faar de plass i et rutenett. Paa telefon
+   staar de under hverandre som foer. */
+/* Samme rekkefoelge paa alle skjermer (Stemple inn oeverst); paa PC et
+   rutenett med tre spalter, paa telefon en kolonne. */
+.lx-mshjem { display: flex; flex-direction: column; gap: var(--space-5); }
+.lx-mshjem > * { margin: 0 !important; order: 0; }
+.lx-mshjem .ms-o-inn { display: contents !important; }
+.lx-mshjem .ms-o-inn > * { order: 0; margin: 0 !important; }
+.lx-mshjem .ms-o-topp { order: 1; }
+.lx-mshjem .ms-o-meny { order: 2; }
+.lx-mshjem .ms-kmp { order: 3; }
+.lx-mshjem .ms-o-stempel { order: 4; }
+.lx-mshjem .ms-o-inne { order: 5; }
+.lx-mshjem .ms-o-banner { order: 6; }
+.lx-mshjem .ms-o-ovn { order: 7; display: flex !important; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-6); background: var(--lissom-yellow) !important; border-color: var(--lissom-yellow) !important; }
+.lx-mshjem .ms-o-faq { order: 8; }
+.lx-mshjem .ms-o-etter { order: 9; }
+.lx-mshjem .ms-o-chat { order: 21; }
+.lx-mshjem .ms-o-butikk { order: 22; }
+.lx-mshjem .ms-o-selg { order: 23; }
+.lx-mshjem .ms-o-dugnad { order: 25; }
+.lx-mshjem .ms-o-skiver { order: 26; }
+.lx-mshjem .ms-o-beskjeder { order: 27; }
+.lx-mshjem .ms-o-bevis { order: 28; }
+.lx-mshjem .ms-o-pamld { order: 40; }
+.lx-mshjem .ms-o-forslag { order: 41; }
+.lx-mshjem .ms-o-full { order: 60; }
+.lx-mshjem .ms-o-slutt { order: 99; }
+.lx-mshjem .ms-bunnluft { order: 100; }
+.lx-mshjem.lx-msdeltaker .ms-o-pamld { order: 20; }
+.lx-mshjem.lx-msdeltaker .ms-o-bevis { order: 21; }
+.lx-mshjem.lx-msdeltaker .ms-o-beskjeder { order: 22; }
+@media (min-width: 900px) {
+  .lx-mshjem { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  .lx-mshjem > *, .lx-mshjem .ms-o-inn > * { grid-column: 1 / -1; }
+  .lx-mshjem .ms-o-stempel { grid-column: span 2 !important; }
+  .lx-mshjem .ms-o-inne { grid-column: span 1 !important; }
+  .lx-mshjem .ms-o-kort { grid-column: span 1 !important; align-self: stretch; }
+  .lx-mshjem .ms-o-pamld, .lx-mshjem .ms-o-forslag, .lx-mshjem .ms-o-full { grid-column: 1 / -1 !important; }
+  .lx-mshjem.lx-msdeltaker .ms-o-pamld { grid-column: span 2 !important; }
+}
+.ms-flis { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.ms-flis:hover { border-color: var(--lissom-brown) !important; box-shadow: 0 4px 16px rgba(46,16,2,.10); }
 .lx-tmgrp { position: relative; }
 .lx-tmgrp > .lx-tmpanel { display: none; position: absolute; top: 100%; left: 0; z-index: 50; margin-top: 6px; }
 .lx-tmgrp > .lx-tmpanel.lx-tmhoyre { left: auto; right: 0; }
@@ -4955,7 +4999,7 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
 
       <section style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--space-16);">
-        <div style="max-width: var(--width-wide); margin: 0 auto;">
+        <div class="{{ msHjemKlasse }}" style="max-width: var(--width-wide); margin: 0 auto;">
 
           <!-- Adminkonto, men logget inn med Vipps.
                Uten dette forsvinner admin-lenka uten forklaring, og det ser
@@ -4996,8 +5040,16 @@ window.__resources = {
                fem andre kort. Eieren, 5. september: «Dørkode kan stå fast
                mer diskret lenger opp». Den staar naa som en liten pille ved
                navnet, og aapner Nyttig info naar man trykker paa den. -->
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+          <div class="ms-o-topp" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
+            <!-- Neste kurs ved hilsenen, for kursdeltakere (skissen, 26. september 2026). -->
+            <sc-if value="{{ msNesteVis }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ msNesteVelg }}" class="ms-neste" style="{{ msNesteStil }}">
+                <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Neste kurs</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.1; color: var(--text-heading);">{{ msNesteNaar }}</span>
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ msNesteLinje }}</span>
+              </button>
+            </sc-if>
             <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
               <button type="button" onClick="{{ msTilNyttig }}" aria-label="Dørkode {{ dorkode }} — åpne nyttig info" style="{{ msDorStil }}">Dørkode <span style="{{ msDorTallStil }}">{{ dorkode }}</span></button>
             </sc-if>
@@ -5018,7 +5070,7 @@ window.__resources = {
                oppe: da folger den med naar vinduet endrer stoerrelse,
                uten at skjermen maa tegnes om. 760 px, som resten av sida. -->
           <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
-            <nav class="ms-pillerad" style="{{ msPlRadStil }}" aria-label="Min side">
+            <nav class="ms-pillerad ms-o-meny" style="{{ msPlRadStil }}" aria-label="Min side">
               <!-- Hjempilla. Den staar igjen paa telefonen sammen med
                    verkstedspilla — se «.ms-hjem» i stilarket.
 
@@ -5061,8 +5113,8 @@ window.__resources = {
                    trykker. Den staar utenfor rutenettet under, saa den legger
                    seg mellom pilleraden og «Verkstedet ditt». -->
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
-              <sc-if value="{{ msVerkstedApen }}" hint-placeholder-val="{{ false }}">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <sc-if value="{{ msVerkstedVis }}" hint-placeholder-val="{{ false }}">
+              <div class="ms-o-inne" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</div>
                   <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ antallInne }} inne</span>
@@ -5106,7 +5158,7 @@ window.__resources = {
                    info — og bare naar eieren har slaatt den paa for
                    medlemmer («Vises for medlemmer» under Verkstedet). -->
               <sc-if value="{{ msFaq }}" hint-placeholder-val="{{ false }}">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+              <div class="ms-o-faq" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Spør o store krukkemester</div>
                 <div style="display: flex; gap: var(--space-3); align-items: center;">
                   <input value="{{ msSporsmal }}" onChange="{{ msSporEndre }}" onKeyDown="{{ msSporTast }}" placeholder="Skriv spørsmålet ditt" aria-label="Spør o store krukkemester" style="flex: 1 1 auto; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); height: 40px; padding: 0 16px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
@@ -5144,7 +5196,7 @@ window.__resources = {
                statusen — det siste trykket — oeverst i det samme kortet.
                Pulserer til man selv har trykket «Sett»; borte etter 24
                timer. Se ovnVals(). -->
-          <div class="{{ ovnKortKlasse }}" style="{{ ovnKortStil }}">
+          <div class="{{ ovnKortKlasse }} ms-o-ovn" style="{{ ovnKortStil }}">
             <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
               <div>
@@ -5162,10 +5214,35 @@ window.__resources = {
               <button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>
               <button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
             </div>
+            <sc-if value="{{ barnVis }}" hint-placeholder-val="{{ false }}">
+            <div class="ms-o-barn" style="margin-left: auto; min-width: 0; max-width: 460px;">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Ta med barn</span>
+                <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}"><span style="{{ barnMerkeStil }}">Aktivt · {{ barnAktivMaaned }}</span></sc-if>
+              </div>
+              <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ barnAktivTekst }}</p>
+              </sc-if>
+              <sc-if value="{{ barnIkkeAktivt }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0 0 6px; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet — hele måneden.</p>
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <span style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
+                <ul style="margin: 0 0 var(--space-3); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
+                  <li>Gjelder ut måneden, som medlemskapet</li>
+                  <li>Leire og glasur er ikke inkludert</li>
+                  <li>Barnet er alltid sammen med deg — aldri alene i verkstedet</li>
+                </ul>
+              </sc-if>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ barnKjopValg }}" as="k" hint-placeholder-count="1">
+                  <button type="button" onClick="{{ k.velg }}" style="{{ barnKnappStil }}">Kjøp for {{ k.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
           </div>
-          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+          <div class="ms-o-stempel" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Verkstedet ditt</div>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Stemple inn og timene dine</div>
               <span style="{{ aboBadgeStil }}">{{ aboBadge }}</span>
             </div>
 
@@ -5266,8 +5343,33 @@ window.__resources = {
                  godkjenner, medlemmet stempler inn og ut som dugnad, tida
                  godkjennes og legges til timene. Kortet finnes bare naar
                  bryteren «Dugnad» (⊙ Synlighet → Paa Min side) staar paa. -->
+
+
+            <!-- «Ta med barn». Eieren, 15. september 2026: et tillegg paa
+                 medlemskapet, per kalendermaaned, betalt med Vipps foer det
+                 gjelder. Bryteren «Ta med barn» i ⊙ Synlighet. Ett barn per
+                 tillegg, navn og alder skrives inn, vilkaarene hukes av. -->
+
+
+            <!-- Medlemskapet i kortform. Radene, knappene og oppsigelsen
+                 staar bak menyvalget Medlemskap — her staar bare hva du har
+                 og hva det koster, saa kortet svarer paa det uten aa bli en
+                 side i seg selv. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <sc-if value="{{ msHarEgenPlan }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; min-width: 0;">
+                  <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ mittAbo }}</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ msIngenEgenPlan }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ msIngenPlanTekst }}</span>
+              </sc-if>
+              <button type="button" onClick="{{ msTilMedlemskap }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Se medlemskapet →</button>
+            </div>
+          </div>
             <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
-            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+            <div class="ms-o-kort ms-o-dugnad" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Dugnad</span>
                 <sc-if value="{{ dugMerkeVis }}" hint-placeholder-val="{{ false }}"><span style="{{ dugMerkeStil }}">{{ dugMerke }}</span></sc-if>
@@ -5310,60 +5412,73 @@ window.__resources = {
               </sc-if>
             </div>
             </sc-if>
-
-            <!-- «Ta med barn». Eieren, 15. september 2026: et tillegg paa
-                 medlemskapet, per kalendermaaned, betalt med Vipps foer det
-                 gjelder. Bryteren «Ta med barn» i ⊙ Synlighet. Ett barn per
-                 tillegg, navn og alder skrives inn, vilkaarene hukes av. -->
-            <sc-if value="{{ barnVis }}" hint-placeholder-val="{{ false }}">
-            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
-              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Ta med barn</span>
-                <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}"><span style="{{ barnMerkeStil }}">Aktivt · {{ barnAktivMaaned }}</span></sc-if>
-              </div>
-              <sc-if value="{{ barnAktivt }}" hint-placeholder-val="{{ false }}">
-                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ barnAktivTekst }}</p>
-              </sc-if>
-              <sc-if value="{{ barnIkkeAktivt }}" hint-placeholder-val="{{ true }}">
-                <p style="margin: 0 0 6px; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet — hele måneden.</p>
-                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <span style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
-                <ul style="margin: 0 0 var(--space-3); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
-                  <li>Gjelder ut måneden, som medlemskapet</li>
-                  <li>Leire og glasur er ikke inkludert</li>
-                  <li>Barnet er alltid sammen med deg — aldri alene i verkstedet</li>
-                </ul>
-              </sc-if>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <sc-for list="{{ barnKjopValg }}" as="k" hint-placeholder-count="1">
-                  <button type="button" onClick="{{ k.velg }}" style="{{ barnKnappStil }}">Kjøp for {{ k.navn }}</button>
-                </sc-for>
-              </div>
+          <!-- Nye fliser paa forsiden for medlemmer (eieren, 26. september 2026:
+               «paa forsiden, vis chat, instagram og internbutikk / handleliste»
+               og «butikk, selg mine produkter paa forsiden»). Hver flis viser et
+               utdrag og aapner fanen der alt ligger; knappene i dem gjoer det
+               samme som i fanen. -->
+          <div class="ms-o-kort ms-o-chat ms-flis" role="button" tabindex="0" onClick="{{ msPlChat.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
+              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Chat</span>
+              <sc-if value="{{ chatHarNytt }}" hint-placeholder-val="{{ false }}"><span style="font-weight: 800; color: var(--terracotta-600);">Nytt</span></sc-if>
             </div>
+            <sc-for list="{{ msChatSiste }}" as="c" hint-placeholder-count="2">
+              <div style="border-top: 1px solid var(--border-subtle); padding: 8px 0;">
+                <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ c.navn }} <span style="font-weight: 400; color: var(--text-muted); font-size: var(--text-xs);">{{ c.tid }}</span></div>
+                <div style="font-size: var(--text-sm); color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ c.tekst }}</div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ msChatTom }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-sm); color: var(--text-muted);">Skriv til de andre medlemmene.</div>
             </sc-if>
-
-            <!-- Medlemskapet i kortform. Radene, knappene og oppsigelsen
-                 staar bak menyvalget Medlemskap — her staar bare hva du har
-                 og hva det koster, saa kortet svarer paa det uten aa bli en
-                 side i seg selv. -->
-            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <sc-if value="{{ msHarEgenPlan }}" hint-placeholder-val="{{ true }}">
-                <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; min-width: 0;">
-                  <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ mittAbo }}</span>
-                  <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
-                </div>
-              </sc-if>
-              <sc-if value="{{ msIngenEgenPlan }}" hint-placeholder-val="{{ false }}">
-                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ msIngenPlanTekst }}</span>
-              </sc-if>
-              <button type="button" onClick="{{ msTilMedlemskap }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Se medlemskapet →</button>
-            </div>
           </div>
+          <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
+          <div class="ms-o-kort ms-o-butikk ms-flis" role="button" tabindex="0" onClick="{{ msPlButikk.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
+              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Internbutikk</span>
+              <span style="font-size: var(--text-sm); color: var(--text-muted);">Leire og brenning</span>
+            </div>
+            <sc-for list="{{ msButikkVarer }}" as="v" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: 8px 0;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }}</div>
+                </div>
+                <button type="button" onClick="{{ v.kjop }}" style="{{ msKnappGul }}">{{ v.knappetekst }}</button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); padding: 8px 0 0;">
+                <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">Handleliste</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">Det du trenger til neste innkjøp</div>
+              </div>
+            </sc-if>
+          </div>
+          </sc-if>
+          <sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}">
+          <div class="ms-o-kort ms-o-selg ms-flis" role="button" tabindex="0" onClick="{{ msPlSelg.velg }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
+              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Selg mine produkter</span>
+            </div>
+            <sc-for list="{{ msSelgRader }}" as="v" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: 8px 0;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ v.tittel }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.pris }}</div>
+                </div>
+                <span style="{{ v.merkeStil }}">{{ v.statusTekst }}</span>
+              </div>
+            </sc-for>
+            <div style="padding-top: 8px;"><button type="button" onClick="{{ msPlSelg.velg }}" style="{{ msKnappGul }}">+ Legg ut nytt produkt</button></div>
+          </div>
+          </sc-if>
+
           </sc-if>
           <!-- Kursholderen: kursene hen holder, stempling, og timene som
                bekreftes. Eieren, 26. september 2026 (GO paa skissen).
                Kjennes igjen paa e-posten — se api/kursholder.php. -->
           <sc-if value="{{ khmVis }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
+          <div class="ms-o-etter" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600, #5f6a4e); margin-bottom: var(--space-2);">Kurs du holder</div>
             <sc-if value="{{ khmIngenKurs }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs de neste tre ukene.</p>
@@ -5421,7 +5536,7 @@ window.__resources = {
 
                For en kursdeltaker staar de fortsatt her: hun har to av dem,
                paameldingene og beskjedene, og ingen bunnmeny. -->
-          <sc-if value="{{ msViserSnarveier }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ msViserSnarveierNaa }}" hint-placeholder-val="{{ false }}">
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
               <sc-for list="{{ minsideSnarveier }}" as="s" hint-placeholder-count="3">
                 <button type="button" onClick="{{ s.velg }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 9px 15px; font: var(--type-body-sm); font-weight: 700;" style-hover="border-color: var(--lissom-brown);">{{ s.navn }}</button>
@@ -5444,7 +5559,7 @@ window.__resources = {
                én. En travel maaned er en travel maaned; det er naar det
                gjentar seg at planen er for liten. Se «visOppgrader». -->
           <sc-if value="{{ visOppgrader }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ oppStil }}">
+            <div class="ms-o-etter" style="{{ oppStil }}">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-bottom: 4px;">{{ oppTittel }}</div>
               <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--lissom-brown); text-wrap: pretty;">{{ oppTekst }}</p>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ oppVelg }}" hint-size="auto,40px">{{ oppKnapp }}</x-import>
@@ -5453,9 +5568,9 @@ window.__resources = {
 
           <!-- Dreieskivene staar paa forsiden; medlemskapet og den interne
                infoen bak hvert sitt menyvalg. Rutene er de samme som for. -->
-          <div style="{{ msRuterStil }}">
+          <div class="ms-o-inn" style="{{ msRuterStil }}">
             <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;">
+            <div class="ms-o-kort ms-o-skiver" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dreieskivene denne uka</div>
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ skiveUke }}</span>
@@ -5777,7 +5892,7 @@ window.__resources = {
           </sc-if>
 
           <sc-if value="{{ visBliMedlem }}" hint-placeholder-val="{{ false }}">
-            <div id="bli-medlem" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
+            <div id="bli-medlem" class="ms-o-full" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Medlemskap</div>
               <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">{{ bmTittel }}</h2>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">{{ bmTekst }}</p>
@@ -5841,7 +5956,7 @@ window.__resources = {
 
 
           <sc-if value="{{ harVennegave }}" hint-placeholder-val="{{ true }}">
-            <div style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;" data-theme="sun">
+            <div class="ms-o-etter" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;" data-theme="sun">
               <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; min-width: 240px;">
                 <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Gave fra Monica</span>
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--lissom-brown);">{{ gaveTittel }}</span>
@@ -6121,9 +6236,9 @@ window.__resources = {
             </div>
           </div>
           </sc-if>
-          <div class="lx-split" style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); margin-top: var(--space-6); align-items: start;">
+          <div class="lx-split ms-o-inn" style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); margin-top: var(--space-6); align-items: start;">
 
-            <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
+            <div class="ms-o-inn" style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
               <!-- «Selg keramikk» har sitt eget sted.
                    Den laa sammen med internbutikken. Eieren, 5. september:
@@ -6315,7 +6430,7 @@ window.__resources = {
                    du skal se, ikke noe du skal lete etter i en meny. -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ harBeskjeder }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+              <div id="minside-beskjeder" class="ms-o-kort ms-o-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Beskjeder</div>
                 <h3 style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Fra verkstedet</h3>
                 <div style="display: flex; flex-direction: column; gap: var(--space-5);">
@@ -6357,7 +6472,7 @@ window.__resources = {
                    «den må ligge på forsiden»). -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+              <div id="minside-forslag" class="ms-o-kort ms-o-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Del på Instagram</div>
 
                 <sc-for list="{{ fsMine }}" as="f" hint-placeholder-count="1">
@@ -6428,35 +6543,45 @@ window.__resources = {
               <!-- Kursene blir staaende paa forsiden. Det er datoer man maa
                    rekke, ikke noe man leter etter i en meny. -->
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+                            <!-- Kampanjebanneret for medlemmer: det neste interne arrangementet
+                   (eieren, 26. september 2026). Det er de samme «Kun for
+                   medlemmer»-kursene som foer, lagt ut i admin som vanlige kurs;
+                   paameldingen gaar samme vei og havner i kalenderen. -->
               <sc-if value="{{ harMedlemskurs }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-internkurs" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8);">
-                <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-6);">
-                  <div>
-                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Kun for medlemmer</div>
-                    <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Interne kurs og samlinger</h3>
-                  </div>
-                  <span style="font-size: var(--text-sm); color: var(--text-muted);">Vises ikke på nettsiden</span>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-5);">
-                  <sc-for list="{{ medlemskurs }}" as="k" hint-placeholder-count="3">
-                    <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column;">
-                      <div style="width: 100%; height: 130px; background-image: {{ k.imageCss }}; background-size: cover; background-position: center;"></div>
-                      <div style="padding: var(--space-5); display: flex; flex-direction: column; flex: 1;">
-                        <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ k.title }}</div>
-                        <div style="font-size: var(--text-sm); color: var(--text-muted); margin: 4px 0 2px;">{{ k.date }} · {{ k.duration }}</div>
-                        <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-5);">{{ k.price }} · {{ k.status }}</div>
-                        <div style="margin-top: auto;">
-                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" full-width="{{ sant }}" on-click="{{ k.meld }}" hint-size="100%,36px">Meld meg på</x-import>
-                        </div>
-                      </div>
-                    </div>
+              <div id="minside-internkurs" class="ms-o-banner" style="{{ msBannerStil }}">
+                <div style="min-width: 0; flex: 1 1 320px;">
+                  <div style="font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--lissom-yellow);">Kun for medlemmer</div>
+                  <h3 style="margin: 4px 0 6px; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.2; color: #fff;">{{ msBanTittel }}</h3>
+                  <p style="margin: 0; color: var(--clay-100); max-width: 60ch;">{{ msBanLinje }}</p>
+                  <sc-for list="{{ msBanFlere }}" as="k" hint-placeholder-count="0">
+                    <button type="button" onClick="{{ k.meld }}" style="appearance: none; cursor: pointer; margin: 8px 8px 0 0; border: 1px solid rgba(255,255,255,.35); background: transparent; color: var(--clay-100); border-radius: 999px; padding: 4px 12px; font: var(--type-body-sm);">{{ k.title }} · {{ k.date }}</button>
                   </sc-for>
+                </div>
+                <div style="display: grid; gap: 8px; justify-items: end;">
+                  <div style="font-size: var(--text-sm); color: var(--clay-100);">{{ msBanPlass }}</div>
+                  <button type="button" onClick="{{ msBanMeld }}" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 9px 22px; font-weight: 800;">Meld meg på</button>
+                </div>
+              </div>
+              </sc-if>
+              <!-- Kampanjebanneret for kursdeltakere: salgskampanjen som staar ute
+                   (Nettbutikk › Kampanjer), slaatt paa under ⊙ Synlighet. -->
+              <sc-if value="{{ msKmpVis }}" hint-placeholder-val="{{ false }}">
+              <div class="ms-kmp" style="{{ msBannerStil }}">
+                <div style="min-width: 0; flex: 1 1 320px;">
+                  <div style="font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--lissom-yellow);">{{ kampanjeMerke }}</div>
+                  <h3 style="margin: 4px 0 6px; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.2; color: #fff;">{{ kampanjeTittel }}</h3>
+                  <p style="margin: 0; color: var(--clay-100); max-width: 60ch;">{{ kampanjeTekst }}</p>
+                </div>
+                <div style="display: grid; gap: 8px; justify-items: end;">
+                  <sc-if value="{{ kampanjeHarPris }}" hint-placeholder-val="{{ false }}"><div style="font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--lissom-yellow);">{{ kampanjePris }}</div></sc-if>
+                  <button type="button" onClick="{{ kampanjeTilButikk }}" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 9px 22px; font-weight: 800;">{{ kampanjeKnappTekst }}</button>
                 </div>
               </div>
               </sc-if>
 
+
               <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
-              <div id="minside-pameldinger" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+              <div id="minside-pameldinger" class="ms-o-kort ms-o-pamld" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Mine påmeldinger</div>
                 <h3 style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Kurs og events du har plass på</h3>
                 <div style="display: flex; flex-direction: column; gap: var(--space-4);">
@@ -6520,8 +6645,8 @@ window.__resources = {
                    fram naar man trenger det, ikke noe man ser paa hver gang
                    man skal stemple inn. -->
               </sc-if>
-              <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
-              <div id="minside-kursbevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+              <sc-if value="{{ msKursbevisVis }}" hint-placeholder-val="{{ false }}">
+              <div id="minside-kursbevis" class="ms-o-kort ms-o-bevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kursbevis</div>
                   <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mineBevisAntall }}</span>
@@ -6550,7 +6675,7 @@ window.__resources = {
               </sc-if>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
+            <div class="ms-o-inn" style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
 
@@ -6648,7 +6773,7 @@ window.__resources = {
                bruker sidene mest, og som stanser paa noe som ikke virker.
                Staar bare naar eieren har slaatt innmeldingen paa. -->
           <sc-if value="{{ fmKnappVis }}" hint-placeholder-val="{{ false }}">
-            <p style="margin: var(--space-8) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Er det noe som ikke virker? <button type="button" onClick="{{ fmAapne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Meld inn feil</button>, så ser vi på det.</p>
+            <p class="ms-o-slutt" style="margin: var(--space-8) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Er det noe som ikke virker? <button type="button" onClick="{{ fmAapne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Meld inn feil</button>, så ser vi på det.</p>
           </sc-if>
 
           <!-- Menyen ligger fast over innholdet. Uten denne luften blir det
@@ -31349,6 +31474,89 @@ class Component extends DCLogic {
         ref: 'LIS-' + (10500 + (s.kjop || []).length + i),
       })).concat(s.kjop || []),
     }));
+  }
+
+  // ── Min side, forsiden i ny drakt (eieren, 26. september 2026) ──────────
+  //
+  // Verdiene til de nye flisene, bannerne og «Neste kurs». Alt leses fra de
+  // samme tilstandene som fanene bruker (chat, butikkvareListe, mineSalg,
+  // katalog, minePlasser); ingen nye kall til serveren.
+  msNyVals() {
+    const side = this.state.side || '';
+    const fane = this.msFane ? this.msFane() : 'hjem';
+    const hjem = side === 'minside' && fane === 'hjem';
+    const medlem = this.medlemsvisning();
+    const stopp = (fn) => (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); return fn(); };
+
+    // Kampanjebanneret for medlemmer: det neste interne arrangementet.
+    const interne = (this.state.katalog || []).filter(k => (k.tema || '') === 'Kun for medlemmer')
+      .map(k => {
+        const d = (k.datoer || [])[0];
+        const kurs = {
+          title: k.tittel, date: d ? d.dato : 'Dato kommer', duration: '',
+          price: k.prisOre === 0 ? 'Gratis' : k.pris,
+          status: d ? this.ledigTekst(d.ledige, d.plasser || k.plasser, d.sperret) : 'Åpen påmelding',
+          image: 'uploads_shutterstock_2752346251.jpg', om: k.om || '', tema: 'Kun for medlemmer', slug: k.slug,
+          level: 'Kun for medlemmer',
+        };
+        kurs.meld = stopp(() => {
+          this.setState({ side: 'booking', fra: 'minside', valgtKurs: Object.assign({}, kurs), bookOrdre: false, bDato: null });
+          window.scrollTo(0, 0);
+        });
+        return kurs;
+      });
+    const forste = interne[0] || null;
+
+    // Neste kurs for kursdeltakere: den foerste kommende plassen.
+    const plasser = (this.state.minePlasser || []).filter(p => !p.kursbevis && (this.state.avbestilt || []).indexOf(p.tittel) === -1);
+    const neste = plasser[0] || null;
+
+    const chat = (this.state.chat || []).filter(m => !m.slettet);
+    const varer = (this.state.butikkvareListe || []).filter(v => v.kunMedlemmer).slice(0, 2);
+    const salg = (this.state.mineSalg || []).slice(0, 3);
+    const STATUS = { til_godkjenning: 'Til godkjenning', publisert: 'Ute i butikken', avvist: 'Ikke lagt ut', skjult: 'Tatt ned', solgt: 'Solgt' };
+    const merke = (st) => ({
+      fontSize: 11, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+      borderRadius: 999, padding: '2px 9px',
+      background: st === 'publisert' || st === 'solgt' ? 'var(--sage-100, #dfe9d6)' : st === 'avvist' ? 'var(--terracotta-100, #fbe7dc)' : 'var(--clay-200)',
+      color: st === 'publisert' || st === 'solgt' ? 'var(--sage-600, #4f7a46)' : st === 'avvist' ? 'var(--terracotta-600)' : 'var(--lissom-brown)',
+    });
+
+    return {
+      msHjemKlasse: hjem ? (medlem ? 'lx-mshjem' : 'lx-mshjem lx-msdeltaker') : '',
+      // «I verkstedet naa» staar som egen flis paa forsiden paa PC; pilla
+      // aapner den som foer paa telefon.
+      msVerkstedVis: !!this.state.msVerksted || (hjem && medlem && (this.state.vw || 1400) >= 900),
+      // Snarveiene for kursdeltakere er borte — flisene staar rett under
+      // (eieren: «her er det plass til fliser, saa snarveier trengs vel ikke»).
+      msViserSnarveierNaa: false,
+      msKursbevisVis: fane === 'medlemskap' || hjem,
+      msBannerStil: {
+        display: 'flex', flexWrap: 'wrap', gap: 'var(--space-5) var(--space-6)', alignItems: 'center', justifyContent: 'space-between',
+        background: 'var(--lissom-brown)', color: '#fff', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6) var(--space-7, 28px)',
+        backgroundImage: 'radial-gradient(circle at 92% 20%, rgba(255,207,56,.35), transparent 45%)', marginBottom: 'var(--space-5)',
+      },
+      msBanTittel: forste ? forste.title : '',
+      msBanLinje: forste ? [forste.date, forste.price, forste.om].filter(Boolean).join(' · ') : '',
+      msBanPlass: forste ? forste.status : '',
+      msBanMeld: forste ? forste.meld : () => {},
+      msBanFlere: interne.slice(1, 4),
+      msKmpVis: hjem && !medlem && this.bryterPaa('salgsuke'),
+      msNesteVis: hjem && !medlem && !!neste,
+      msNesteNaar: neste ? String(neste.naar || '').replace(/,\s*\d{1,2}:\d{2}$/, '') : '',
+      msNesteLinje: neste ? [neste.tittel, (String(neste.naar || '').match(/\d{1,2}:\d{2}$/) || [''])[0] && 'kl ' + (String(neste.naar || '').match(/\d{1,2}:\d{2}$/) || [''])[0], neste.status || ''].filter(Boolean).join(' · ') : '',
+      msNesteVelg: () => { const el = document.getElementById('minside-pameldinger'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+      msNesteStil: { appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', display: 'grid', gap: 3, justifyItems: 'end', textAlign: 'right', padding: 0 },
+      msChatSiste: chat.slice(-2).map(m => ({ navn: m.navn, tid: m.tid, tekst: m.tekst })),
+      msChatTom: chat.length === 0,
+      msButikkVarer: varer.map(v => ({
+        navn: v.tittel, detalj: [v.detalj, v.pris].filter(Boolean).join(' · '),
+        knappetekst: v.utsolgt ? 'Tomt' : 'Kjøp',
+        kjop: stopp(v.utsolgt ? () => {} : () => this.leggTil(v.id ? '#' + v.id : v.tittel)),
+      })),
+      msSelgRader: salg.map(v => ({ tittel: v.tittel, pris: v.pris ? String(v.pris) : '', statusTekst: STATUS[v.status] || v.status, merkeStil: merke(v.status) })),
+      msKnappGul: { appearance: 'none', cursor: 'pointer', border: 'none', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', borderRadius: 999, padding: '5px 13px', fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap' },
+    };
   }
 
   medBildeCss(liste) {
@@ -63323,6 +63531,7 @@ class Component extends DCLogic {
           msFaneMedlemskap: f === 'medlemskap',
           msFaneButikk:     f === 'butikk',
           msFaneSelg:       f === 'selg' && this.kanSelge(),
+          ...this.msNyVals(),
           msKanSelge:       this.kanSelge(),
           msFaneNyttig:     f === 'nyttig',
           msFaneChat:       f === 'chat',

@@ -44364,7 +44364,8 @@ class Component extends DCLogic {
     const aar = [
       ...maaneder.map(m => rad(m.navn.charAt(0).toUpperCase() + m.navn.slice(1),
         m.her.length
-          ? m.her.slice(0, 4).map(o => kortTittel(o.tittel) + ' ' + dagTall(o.dato)).join(' · ') + (m.her.length > 4 ? ' · +' + (m.her.length - 4) : '') + (m.kap ? ' — ' + m.solgt + ' av ' + m.kap + ' plasser solgt' : '')
+          // Samme kurs to ganger samme dag (formiddag og kveld) staar én gang.
+          ? (u => u.slice(0, 4).join(' · ') + (u.length > 4 ? ' · +' + (u.length - 4) : ''))([...new Set(m.her.map(o => kortTittel(o.tittel) + ' ' + dagTall(o.dato)))]) + (m.kap ? ' — ' + m.solgt + ' av ' + m.kap + ' plasser solgt' : '')
           : 'Ingen kursdatoer ennå',
         null, tilAar)),
       ...(forslag.length ? [rad('Forslag', forslag.join(' '), null, tilAar, false, [], 'var(--terracotta-100, #fbe7dc)')] : []),

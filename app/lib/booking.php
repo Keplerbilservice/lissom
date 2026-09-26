@@ -802,14 +802,61 @@ final class Booking
         return max(0.0, min(100.0, (float) ($best ?? 0)));
     }
 
-    /** Belopet for en booking, etter grupperabatt. Alltid hele ore. */
-    public static function belopFor(array $kurs, int $antall): array
-    {
-        $brutto = (int) $kurs['pris_ore'] * $antall;
-        $rabatt = self::rabattProsent($kurs, $antall);
-        $netto  = (int) round($brutto * (1 - $rabatt / 100));
+    /** Medlemsrabatten paa kurs, i prosent. */
+    public const MEDLEMSRABATT = 20.0;
 
-        return ['brutto' => $brutto, 'rabatt' => $rabatt, 'netto' => $netto];
+    /**
+     * Faar denne bookeren medlemsrabatt?
+     *
+     * Eieren, 26. september 2026: «det er aktive medlemmer som faar det, den
+     * maa sjekke opp her og ikke at man er innlogget». Bare status «aktiv»
+     * og «prove» — ikke «pause» (fryst), og ikke admin bare fordi hen er
+     * admin. er_aktivt_medlem() slipper begge inn, og er derfor ikke brukt.
+     */
+    public static function faarMedlemsrabatt(?array $medlem): bool
+    {
+        return $medlem !== null
+            && in_array((string) ($medlem['status'] ?? 'ingen'), ['aktiv', 'prove'], true);
+    }
+
+    /**
+     * Belopet for en booking, etter grupperabatt og medlemsrabatt. Alltid
+     * hele ore.
+     *
+     * Medlemsrabatten gjelder medlemmets egen plass. Tar hen med venner,
+     * betaler de som foer — med grupperabatten, om antallet gir det. Paa
+     * medlemmets plass gjelder den stoerste av de to; de legges ikke oppaa
+     * hverandre. Ikke paa medlemskap, ikke paa fra-pris-kurs der prisen
+     * settes i verkstedet, og ikke paa gratis plasser.
+     */
+    public static function belopFor(array $kurs, int $antall, bool $medlemsrabatt = false): array
+    {
+        $enhet  = (int) $kurs['pris_ore'];
+        $brutto = $enhet * $antall;
+        $rabatt = self::rabattProsent($kurs, $antall);
+
+        $fra = $kurs['fra_pris'] ?? null;
+        if ($fra === null && isset($kurs['course_id']) && DB::harKolonne('courses', 'fra_pris')) {
+            $fra = DB::verdi('SELECT fra_pris FROM courses WHERE id = :i', ['i' => (int) $kurs['course_id']]);
+        }
+        $kanMedlem = $medlemsrabatt && $antall >= 1 && $enhet > 0
+            && (string) ($kurs['tema'] ?? '') !== 'Medlemskap'
+            && (int) $fra !== 1
+            && (int) ($kurs['gjenstand_i_kassa'] ?? 0) !== 1;
+
+        if (!$kanMedlem) {
+            $netto = (int) round($brutto * (1 - $rabatt / 100));
+            return ['brutto' => $brutto, 'rabatt' => $rabatt, 'netto' => $netto, 'medlemsrabatt' => false];
+        }
+
+        $egen  = $enhet * (1 - max($rabatt, self::MEDLEMSRABATT) / 100);
+        $andre = $enhet * ($antall - 1) * (1 - $rabatt / 100);
+        $netto = (int) round($egen + $andre);
+        // Rabatten som lagres paa bookingen er den samlede, saa kvitteringer
+        // og rapporter som leser «rabatt_prosent» regner riktig.
+        $samlet = $brutto > 0 ? round((1 - $netto / $brutto) * 100, 2) : 0.0;
+
+        return ['brutto' => $brutto, 'rabatt' => $samlet, 'netto' => $netto, 'medlemsrabatt' => true];
     }
 
     /**
@@ -829,7 +876,10 @@ final class Booking
         ?string $allergier = null,
         // «Betal ved oppmoete». Kunden ber om det; bryteren i ⊙ Synlighet
         // avgjor om det gaar, og det avgjores her — ikke av nettleseren.
-        bool $utenForskudd = false
+        bool $utenForskudd = false,
+        // Aktivt medlem (se faarMedlemsrabatt()). Avgjores av den som kaller,
+        // fra sesjonen — aldri av noe nettleseren sender.
+        bool $medlemsrabatt = false
     ): array {
         // Prisen paa datoen gaar foran kursets, naar den er satt. COALESCE
         // og ikke to sporringer: da er det ett sted prisen kommer fra, og
@@ -900,7 +950,7 @@ final class Booking
 
         // Prisen regnes her, ikke i nettleseren. Rabatten som vises paa
         // bookingsiden og den kunden trekkes er naa det samme tallet.
-        $pris   = self::belopFor($okt, $antall);
+        $pris   = self::belopFor($okt, $antall, $medlemsrabatt);
         $belop  = $pris['netto'];
         $rabatt = $pris['rabatt'];
         $referanse = Vipps::nyReferanse();

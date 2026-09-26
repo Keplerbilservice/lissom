@@ -139,7 +139,9 @@ try {
         // «Betal ved oppmoete». Kurset avgjor om det gaar — se
         // Booking::reserverOgBetal(), som avviser det paa et kurs som krever
         // betaling i forkant.
-        Foresporsel::tekst('betaling') === 'oppmote'
+        Foresporsel::tekst('betaling') === 'oppmote',
+        // Medlemsrabatt: fra sesjonen, bare for aktive medlemmer.
+        Booking::faarMedlemsrabatt($medlem)
     );
 } catch (RuntimeException $e) {
     // Meldingene herfra er skrevet for aa vises til kunden.

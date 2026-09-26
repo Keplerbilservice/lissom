@@ -4141,14 +4141,14 @@ sjekk('… og pillen staar under logoen, paa alle adminsidene',
     str_contains($sida2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),")
     && str_contains($sida2, '{{ admFerieNavn }}')
     && substr_count($sida2, '{{ admFerieNavn }}')
-       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til kalenderen"'));
+       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til oversikten"'));
 // Logoen gikk til Oversikt. Eieren, 8. september 2026: «når jeg trykker på
 // lissom logoen vil jeg at vi skal gå tilbake til kalender». Da maatte
 // teksten paa knappen foelge med — ellers sto det «Til oversikten» paa noe
 // som gikk et annet sted.
-sjekk('logoen gaar til kalenderen',
-    str_contains($sida2, "adminHjem: () => this.gaaAdmin('adminkalender', {}),")
-    && !str_contains($sida2, 'title="Til oversikten"'));
+// Fra 26. september 2026 til Oversikt (eieren: «oversikt skal vaere default»).
+sjekk('logoen gaar til Oversikt',
+    str_contains($sida2, "adminHjem: () => this.gaaAdmin('adminoversikt', {}),"));
 // Eieren, 30. august: «stemple inn og ferie maa flyttes til oversikt».
 sjekk('… og de staar ikke lenger i menyen',
     str_contains($sida2, 'const stempling = [];'));
@@ -11655,7 +11655,7 @@ echo "\n== Bunnmeny på telefon, seks valg ==\n";
 $sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 
 // Menyen staar i hver adminskjerm, som logoen og stemplingspillene.
-$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til kalenderen"');
+$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til oversikten"');
 sjekk('bunnmenyen staar i alle adminskjermene',
     substr_count($sidaB, 'class="lx-bunnmeny"') === $logoerB, $logoerB . ' skjermer');
 sjekk('… med seks valg i hver',
@@ -12055,7 +12055,7 @@ $sidaP2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // Sidemenyen staar i hver eneste adminskjerm. Tallet er ikke poenget —
 // poenget er at pillene staar like mange steder som logoen gjor, saa ingen
 // skjerm er glemt.
-$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til kalenderen"');
+$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til oversikten"');
 $stempler = substr_count($sidaP2, '{{ admStemplingStil }}');
 sjekk('pillene staar like mange steder som logoen',
     $logoer > 20 && $stempler === $logoer, $logoer . ' logoer, ' . $stempler . ' pillepar');
@@ -12076,7 +12076,7 @@ sjekk('… og Ferie aapner den eksisterende ferieskjermen',
 // og en verdi som mangler ett sted tegner hele skjermen som «{{ }}».
 $foerAdminHjem = substr($sidaP2, 0, (int) strpos($sidaP2, 'admStemplingStil:'));
 sjekk('verdiene staar paa toppnivaa, ikke bak en side-sjekk',
-    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminkalender', {}),"));
+    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminoversikt', {}),"));
 
 // Stripa paa Oversikt er borte — bade markupen og verdiene den brukte.
 sjekk('stripa paa Oversikt er borte',

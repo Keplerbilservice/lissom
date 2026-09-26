@@ -53764,7 +53764,11 @@ class Component extends DCLogic {
         const brutto = grunn * antall;
         // Medlemsrabatten gjelder medlemmets egen plass, og den stoerste av
         // den og grupperabatten — samme regnestykke som Booking::belopFor().
-        const mPst = (this.state.innlogget && k.tema !== 'Medlemskap' && k.price !== 'Gratis' && grunn > 0)
+        // Ikke paa fra-pris eller gjenstand i kassa — som paa serveren, ogsaa
+        // om prisFraOre skulle mangle og visningen under ikke slaar til.
+        const katM = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || '')) || {};
+        const mPst = (this.state.innlogget && k.tema !== 'Medlemskap' && k.price !== 'Gratis' && grunn > 0
+            && !katM.gjenstandIKassa && !katM.fraPris)
           ? (Number(this.state.medlemsrabatt) || 0) : 0;
         const netto = mPst > 0
           ? grunn * (1 - Math.max(rabatt, mPst) / 100) + grunn * (antall - 1) * (1 - rabatt / 100)

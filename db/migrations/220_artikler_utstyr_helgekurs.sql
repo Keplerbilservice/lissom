@@ -1,10 +1,9 @@
--- To artikler som kladd: Topp moderne utstyr (pugmill, platerulle, brennovn) og Helgekurs i Tønsberg.
+-- To artikler: Topp moderne utstyr (pugmill, platerulle, brennovn) og Helgekurs i Tønsberg.
 --
 -- Eieren, 25. september 2026: satsing på å bli Norges største keramikk-kurssenter.
 -- Løfter frem maskinparken og det nasjonale tilbudet om intensive helgekurs.
 --
--- Tekstene ble godkjent av eieren («GO – legg inn som kladd») før innlegging.
--- Ingenting vises for publikum før eieren publiserer fra admin (Nyheter → status).
+-- Tekstene ble godkjent av eieren for publisering («kan du publisere de»).
 --
 -- Formatet er det nettsida tegner (parseInnhold): «# » er mellomtittel,
 -- «## » undertittel, «- » punkt, tom linje skiller avsnitt. Bolken
@@ -14,7 +13,7 @@
 -- «INSERT IGNORE»: tittel og slug er unike. Kjøres migrasjonen en gang
 -- til, eller har verkstedet alt en artikkel med samme navn, røres ingenting.
 
-INSERT IGNORE INTO articles (tittel, kategori, slug, fokus_ord, dato, ingress, innhold, kilde, status, sortering) VALUES
+INSERT IGNORE INTO articles (tittel, kategori, slug, fokus_ord, dato, ingress, innhold, kilde, status, publisert_at, sortering) VALUES
 (
   'Utstyret som utgjør forskjellen: pugmill, platerulle og profesjonell brennovn',
   'Verkstedet',
@@ -71,7 +70,7 @@ Vi har ti moderne Shimpo-dreieskiver som går stille og gir presis turtallskontr
 ## Hvilken temperatur brennes steingodset på?
 
 Råbrann kjøres typisk til 950–1000 °C, mens glasurbrann brennes til 1220–1240 °C for maksimal slitestyrke og matsikkerhet.',
-  'ai', 'kladd', 25
+  'ai', 'publisert', NOW(), 25
 ),
 (
   'Keramikkhelg i Tønsberg: intensivt helgekurs og kreativ pause ved kysten',
@@ -128,5 +127,10 @@ Vi holder gruppene små (maks 8–10 deltakere) slik at hver deltaker får tett,
 ## Hva skjer hvis jeg bor langt unna og ikke kan hente keramikken selv?
 
 Ingen problem. Vi pakker og sender de ferdige arbeidene dine i posten mot et lite frakttillegg så snart brenningene er ferdige.',
-  'ai', 'kladd', 26
+  'ai', 'publisert', NOW(), 26
 );
+
+UPDATE articles
+   SET status = 'publisert',
+       publisert_at = COALESCE(publisert_at, NOW())
+ WHERE slug IN ('utstyret-som-utgjor-forskjellen-pugmill-platerulle-ovn', 'keramikkhelg-tonsberg-helgekurs');

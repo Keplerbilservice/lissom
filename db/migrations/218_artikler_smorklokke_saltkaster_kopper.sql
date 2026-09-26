@@ -1,10 +1,9 @@
--- Tre artikler som kladd: Fransk smørklokke, Saltkaster og saltkar, og Lage egne kopper og store fat.
+-- Tre artikler: Fransk smørklokke, Saltkaster og saltkar, og Lage egne kopper og store fat.
 --
 -- Eieren, 25. september 2026: satsing på å bli Norges største keramikk-kurssenter.
 -- Spesialkurs, trendgjenstander og teknikker som folk søker etter i Norge.
 --
--- Tekstene ble godkjent av eieren («GO – legg inn som kladd») før innlegging.
--- Ingenting vises for publikum før eieren publiserer fra admin (Nyheter → status).
+-- Tekstene ble godkjent av eieren for publisering («kan du publisere de»).
 --
 -- Formatet er det nettsida tegner (parseInnhold): «# » er mellomtittel,
 -- «## » undertittel, «- » punkt, tom linje skiller avsnitt. Bolken
@@ -14,7 +13,7 @@
 -- «INSERT IGNORE»: tittel og slug er unike. Kjøres migrasjonen en gang
 -- til, eller har verkstedet alt en artikkel med samme navn, røres ingenting.
 
-INSERT IGNORE INTO articles (tittel, kategori, slug, fokus_ord, dato, ingress, innhold, kilde, status, sortering) VALUES
+INSERT IGNORE INTO articles (tittel, kategori, slug, fokus_ord, dato, ingress, innhold, kilde, status, publisert_at, sortering) VALUES
 (
   'Fransk smørklokke i keramikk: slik virker den, og slik lager du din egen',
   'Kurs',
@@ -70,7 +69,7 @@ Med ferskt vann hver 2.–3. dag holder smøret seg fint i 3–4 uker på kjøkk
 ## Kan smørklokken vaskes i oppvaskmaskin?
 
 Ja, når den er brent som steingods med matsikker glasur tåler den vanlig oppvaskmaskin mellom hver gang du fyller den med nytt smør.',
-  'ai', 'kladd', 19
+  'ai', 'publisert', NOW(), 19
 ),
 (
   'Saltkaster og saltkar i keramikk: kokkens beste venn på kjøkkenbenken',
@@ -127,7 +126,7 @@ En standard saltkaster rommer omtrent 200–300 gram flaksalt – nok til flere 
 ## Hva slags leire brukes?
 
 Vi bruker steingodsleire av høy kvalitet som brennes på over 1200 °C, noe som gjør det ferdige produktet svært solid og slitesterkt.',
-  'ai', 'kladd', 20
+  'ai', 'publisert', NOW(), 20
 ),
 (
   'Lage egne kopper og store fat: dreiing vs. plateteknikk i praksis',
@@ -188,5 +187,10 @@ Ja. Alt vi brenner hos Lissom er høybrent steingods med matsikker glasur, og t�
 ## Hvorfor sprekker store fat av og til under brenning?
 
 Store fat er sårbare for spenninger hvis platen har ujevn tykkelse eller tørker for fort. Ved å bruke platerulle og kontrollert tørking på tørkehyllene våre minimeres denne risikoen betraktelig.',
-  'ai', 'kladd', 21
+  'ai', 'publisert', NOW(), 21
 );
+
+UPDATE articles
+   SET status = 'publisert',
+       publisert_at = COALESCE(publisert_at, NOW())
+ WHERE slug IN ('fransk-smorklokke-i-keramikk', 'saltkaster-og-saltkar-i-keramikk', 'lage-egne-kopper-og-store-fat');

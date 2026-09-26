@@ -1,10 +1,9 @@
--- Tre artikler som kladd: Egen nettbutikk for medlemmer, Regler for salg av keramikk i Norge, og Fysisk utsalg og markeder.
+-- Tre artikler: Egen nettbutikk for medlemmer, Regler for salg av keramikk i Norge, og Fysisk utsalg og markeder.
 --
 -- Eieren, 25. september 2026: satsing på å bli Norges største keramikk-kurssenter.
 -- Medlemsfordeler og salg av egne arbeider — unikt for Lissom i Norge.
 --
--- Tekstene ble godkjent av eieren («GO – legg inn som kladd») før innlegging.
--- Ingenting vises for publikum før eieren publiserer fra admin (Nyheter → status).
+-- Tekstene ble godkjent av eieren for publisering («kan du publisere de»).
 --
 -- Formatet er det nettsida tegner (parseInnhold): «# » er mellomtittel,
 -- «## » undertittel, «- » punkt, tom linje skiller avsnitt. Bolken
@@ -14,7 +13,7 @@
 -- «INSERT IGNORE»: tittel og slug er unike. Kjøres migrasjonen en gang
 -- til, eller har verkstedet alt en artikkel med samme navn, røres ingenting.
 
-INSERT IGNORE INTO articles (tittel, kategori, slug, fokus_ord, dato, ingress, innhold, kilde, status, sortering) VALUES
+INSERT IGNORE INTO articles (tittel, kategori, slug, fokus_ord, dato, ingress, innhold, kilde, status, publisert_at, sortering) VALUES
 (
   'Selg keramikken din på nett: egen butikk og 0 % provisjon for medlemmer',
   'Medlemskap',
@@ -67,7 +66,7 @@ Nei, så lenge du selger som hobby innenfor skatteetatens hobbygrenser trenger d
 ## Hvor mange produkter kan jeg ha ute samtidig?
 
 Hvert medlem kan ha opptil 20 aktive produkter i butikken samtidig.',
-  'ai', 'kladd', 22
+  'ai', 'publisert', NOW(), 22
 ),
 (
   'Selge egen keramikk i Norge: regler for hobby, skatt, MVA og Mattilsynet',
@@ -125,7 +124,7 @@ Krakelert glasur er ikke matsikker fordi bakterier og fuktighet kan trenge inn i
 ## Hvordan bør jeg ta betalt?
 
 Vipps er den enkleste og tryggeste betalingsmåten for hobbysalg i Norge.',
-  'ai', 'kladd', 23
+  'ai', 'publisert', NOW(), 23
 ),
 (
   'Fra verksted til butikkhylle: fysisk utsalg, åpent hus og markeder for medlemmer',
@@ -180,5 +179,10 @@ Du som produsent bestemmer salgsprisen på dine egne produkter helt selv.
 ## Hvordan merkes produktene?
 
 Hvert produkt merkes med medlemmets navn eller stempel, slik at kunden vet nøyaktig hvem som har formet det.',
-  'ai', 'kladd', 24
+  'ai', 'publisert', NOW(), 24
 );
+
+UPDATE articles
+   SET status = 'publisert',
+       publisert_at = COALESCE(publisert_at, NOW())
+ WHERE slug IN ('selg-keramikken-din-pa-nett-medlem', 'selge-egen-keramikk-regler-matsikkerhet', 'fysisk-utsalg-apent-hus-markeder-medlem');

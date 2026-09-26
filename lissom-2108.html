@@ -653,6 +653,16 @@ img{max-width:100%;display:block}
 .lx-mshjem.ms-vis-forslag .ms-o-forslag { display: block !important; order: 41; grid-column: 1 / -1 !important; }
 .lx-mshjem.ms-vis-dugnad .ms-o-dugnad { display: block !important; order: 42; grid-column: 1 / -1 !important; }
 .lx-mshjem .ms-o-pamld2 { order: 20; }
+.lx-mshjem .ms-o-barn { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: none !important; }
+.lx-mshjem .ms-o-barn > div { margin: 0 !important; }
+.lx-mshjem .ms-o-barn p, .lx-mshjem .ms-o-barn ul { display: none !important; }
+.lx-mshjem .ms-o-barn .ms-barn-pris { font-family: var(--font-sans) !important; font-size: 14px !important; font-weight: 600 !important; margin: 0 !important; }
+.lx-mshjem .ms-o-barn .ms-barn-pris span { display: none; }
+.ms-barn-pris em { display: none; }
+.lx-mshjem .ms-o-barn .ms-barn-pris em { display: inline; }
+.lx-mshjem .ms-o-barn button { background: var(--lissom-brown) !important; color: #fff !important; text-transform: uppercase; font-size: 12px !important; letter-spacing: .05em; padding: 6px 12px !important; }
+.lx-mshjem .ms-o-barn > div:first-child span:first-child { font-family: var(--font-sans) !important; font-size: 14px !important; }
+@media (max-width: 760px) { .lx-mshjem .ms-o-barn { margin-left: 0 !important; width: 100%; } }
 .lx-mshjem .ms-o-forslag2 { order: 24; }
 .lx-mshjem .ms-o-dugnad2 { order: 25; }
 .lx-mshjem .ms-o-bevis2 { order: 28; }
@@ -5324,7 +5334,7 @@ window.__resources = {
               </sc-if>
               <sc-if value="{{ barnIkkeAktivt }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: 0 0 6px; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Barnet ditt (opptil {{ barnMaksAlder }} år) kan være med deg i verkstedet — hele måneden.</p>
-                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <span style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
+                <div class="ms-barn-pris" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 6px;">{{ barnPris }} <em style="font-style: normal;">per måned</em> <span style="font-family: var(--font-sans); font-weight: 500; font-size: var(--text-xs); color: var(--text-muted);">per kalendermåned</span></div>
                 <ul style="margin: 0 0 var(--space-3); padding-left: 18px; font-size: var(--text-sm); color: var(--text-body);">
                   <li>Gjelder ut måneden, som medlemskapet</li>
                   <li>Leire og glasur er ikke inkludert</li>
@@ -5373,10 +5383,13 @@ window.__resources = {
             <sc-if value="{{ msHarRessurser }}" hint-placeholder-val="{{ true }}">
               <div style="margin-top: var(--space-4);">
                 <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 6px;">{{ msRessursHjelp }}</div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;">
                   <sc-for list="{{ msRessursValg }}" as="r" hint-placeholder-count="2">
-                    <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
+                    <button type="button" onClick="{{ r.velg }}" style="{{ r.boksStil }}"><b style="display: block; font-size: 15px;">{{ r.navn }}</b><small style="display: block; font-size: 12px; opacity: .8;">{{ r.ledig }}</small></button>
                   </sc-for>
+                  <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ msApneDugnad }}" style="{{ msDugBoksStil }}"><b style="display: block; font-size: 15px;">Dugnad</b><small style="display: block; font-size: 12px; opacity: .8;">Når du har fått en jobb</small></button>
+                  </sc-if>
                 </div>
               </div>
             </sc-if>
@@ -64360,10 +64373,19 @@ class Component extends DCLogic {
           // aapner den likevel ser hva verkstedet vil tro.
           msRessursId: naa,
           msRessursHjelp: 'Hva skal du bruke? Da vet de som kommer etter deg hva som er ledig.',
+          msDugBoksStil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 12, padding: '12px 10px', textAlign: 'center', background: 'var(--surface-card)', color: 'var(--lissom-brown)' },
           msRessursValg: alle.map(r => {
             const paa = Number(naa) === Number(r.id);
+            const ledige = r.antall != null ? Math.max(0, Number(r.antall) - Number(r.iBruk || 0)) : null;
             return {
               navn: r.navn,
+              ledig: ledige == null ? '' : ledige + ' ledige',
+              boksStil: {
+                appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 12,
+                padding: '12px 10px', textAlign: 'center',
+                background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                color: paa ? 'var(--clay-50)' : 'var(--lissom-brown)',
+              },
               velg: () => this.setState({ msRessursId: r.id }),
               stil: {
                 appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',

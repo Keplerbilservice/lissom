@@ -606,6 +606,11 @@ Svar::json([
         'dugnad' => DB::harTabell('dugnad')
             ? (int) DB::verdi("SELECT COUNT(*) FROM dugnad WHERE status IN ('venter','til_godkjenning')")
             : 0,
+        // Dugnad som er gitt eller godkjent og ikke ferdig: kortet «Dugnad» paa
+        // Oversikt. Eieren, 26. september 2026.
+        'dugnadIGang' => DB::harTabell('dugnad')
+            ? (int) DB::verdi("SELECT COUNT(*) FROM dugnad WHERE status IN ('godkjent','pagar')")
+            : 0,
         // Handlelister som er sendt inn og ikke bestilt (migrasjon 184): antall
         // medlemmer med linjer som venter. Pilla paa kalenderen viser tallet.
         'handleliste' => DB::harTabell('handleliste_linjer')

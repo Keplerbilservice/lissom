@@ -58929,6 +58929,17 @@ class Component extends DCLogic {
                        sum     ? null : linje('Alt er betalt'),
                      ].filter(Boolean), sum > 0,
                      () => this.gaaAdmin('adminuttak', {}), 'ubetalt'),
+                // Dugnad. Eieren, 26. september 2026: «kan du legge til dugnad kort
+                // paa oversikt?» Tallet er det som venter paa svar; trykk aapner
+                // Ubesvarte, der dugnadene og «+ Gi dugnad» staar.
+                (() => {
+                  const iGang = ((d.koer || {}).dugnadIGang) || 0;
+                  return kort('Dugnad', String(dugn), [
+                    dugn ? linje(dugn + ' å svare på') : null,
+                    iGang ? linje(iGang + ' i gang') : null,
+                    dugn || iGang ? null : linje('Ingenting venter'),
+                  ].filter(Boolean), dugn > 0, () => this.gaaAdmin('adminubesvarte', {}), 'dugnad');
+                })(),
                 kort('Inne nå', String(inne),
                      [linje(inne ? 'i verkstedet nå' : 'Ingen innstemplet')], false,
                      () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Inne nå', medlemSok: '' }), 'innenaa'),

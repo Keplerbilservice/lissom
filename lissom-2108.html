@@ -5339,6 +5339,7 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
+            <sc-if value="{{ khmHarTimer }}" hint-placeholder-val="{{ true }}">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600, #5f6a4e); margin: var(--space-5) 0 var(--space-2);">Timene mine</div>
             <sc-if value="{{ khmIngenTimer }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen timer denne måneden.</p>
@@ -5356,6 +5357,7 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
+            </sc-if>
           </div>
           </sc-if>
           </sc-if>
@@ -40166,11 +40168,12 @@ class Component extends DCLogic {
     const knapp = (bg, fg) => ({ appearance: 'none', cursor: 'pointer', border: 'none', borderRadius: 999, padding: '8px 14px', font: 'var(--type-body-sm)', fontWeight: 700, background: bg, color: fg, whiteSpace: 'nowrap' });
     const tall = (x) => String(x).replace('.', ',');
     const kurs = vis ? (d.kurs || []) : [];
-    const timer = vis ? (d.timer || []) : [];
+    const timer = vis && d.betaling !== 'ingen' ? (d.timer || []) : [];
     return {
       khmVis: vis,
       khmIngenKurs: vis && kurs.length === 0,
-      khmIngenTimer: vis && timer.length === 0,
+      khmIngenTimer: vis && d.betaling !== 'ingen' && timer.length === 0,
+      khmHarTimer: vis && d.betaling !== 'ingen',
       khmInnStil: knapp('var(--lissom-yellow)', 'var(--lissom-brown)'),
       khmUtStil: knapp('var(--lissom-brown)', '#fff'),
       khmKurs: kurs.map(k => ({
@@ -59543,7 +59546,7 @@ class Component extends DCLogic {
           khVises: u.vises !== false,
           // Lønn eller timer, og om hen er koblet til Min side (migrasjon 221).
           // Eieren, 26. september 2026.
-          khBetalingValg: [['lonn', 'Lønn'], ['timer', 'Timer']].map(([k, navn]) => {
+          khBetalingValg: [['lonn', 'Lønn'], ['timer', 'Timer'], ['ingen', 'Ingen']].map(([k, navn]) => {
             const valgt = (u.betaling || 'lonn') === k;
             return {
               navn,
@@ -59553,7 +59556,7 @@ class Component extends DCLogic {
           }),
           khBetalingHjelp: (u.betaling || 'lonn') === 'timer'
             ? 'Bekreftet tid legges til verkstedtimene på Min side, som dugnad.'
-            : 'Bekreftet tid går til timelisten under Økonomi.',
+            : (u.betaling === 'ingen' ? 'Timene føres ikke — verken lønn eller verkstedtimer.' : 'Bekreftet tid går til timelisten under Økonomi.'),
           khKobletTekst: u.koblet ? 'Koblet til Min side — samme e-post som innloggingen.' : 'Ikke koblet til Min side: e-posten må være den samme som innloggingen.',
 
           // Signaturen paa kursbeviset (migrasjon 107).
@@ -59585,7 +59588,7 @@ class Component extends DCLogic {
             navn: (u.navn || '').trim(), rolle: u.rolle || '', epost: u.epost || '',
             telefon: u.telefon || '', kurs: u.kurs || '', timesats: u.timesats || '',
             vises: u.vises !== false ? 'ja' : 'nei',
-            betaling: u.betaling === 'timer' ? 'timer' : 'lonn',
+            betaling: ['timer', 'ingen'].indexOf(u.betaling) !== -1 ? u.betaling : 'lonn',
             signatur: u.signatur || '',
           })),
           khSlett: () => {

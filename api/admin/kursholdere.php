@@ -109,7 +109,8 @@ if ($handling === 'lagre') {
     ];
     // Lønn eller timer (migrasjon 221).
     if (DB::harKolonne('kursholdere', 'betaling')) {
-        $felt['betaling'] = Foresporsel::tekst('betaling') === 'timer' ? 'timer' : 'lonn';
+        $b = Foresporsel::tekst('betaling');
+        $felt['betaling'] = in_array($b, ['timer', 'ingen'], true) ? $b : 'lonn';
     }
 
     // Signaturen paa kursbeviset.

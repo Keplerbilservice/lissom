@@ -589,6 +589,14 @@ img{max-width:100%;display:block}
 <style>
 /* Oversikt, ny drakt (26. september 2026). Hele kortet klikkbart: mørk kant
    naar musa er over. Radene lyser svakt gult. */
+.lx-kalflik { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 45; appearance: none; border: none; cursor: pointer;
+  background: var(--lissom-brown); color: #fff; border-radius: 12px 0 0 12px; padding: 16px 9px; box-shadow: -3px 0 12px rgba(0,0,0,.18); transition: padding .2s; }
+.lx-kalflik span { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 800; font-size: 14px; letter-spacing: .06em; display: block; }
+.lx-kalflik:hover, .lx-kalflik:focus-visible { padding-right: 14px; }
+@keyframes lx-glidinn { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+.lx-glidinn { animation: lx-glidinn .3s ease; }
+@media (prefers-reduced-motion: reduce) { .lx-glidinn { animation: none; } }
+@media (min-width: 980px) { .lx-kalpc-skjul { display: none !important; } }
 .lx-tmgrp { position: relative; }
 .lx-tmgrp > .lx-tmpanel { display: none; position: absolute; top: 100%; left: 0; z-index: 50; margin-top: 6px; }
 .lx-tmgrp > .lx-tmpanel.lx-tmhoyre { left: auto; right: 0; }
@@ -9865,11 +9873,11 @@ window.__resources = {
           </div>
         </sc-if>
       </aside>
-      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+      <main class="{{ klMainKlasse }}" style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div class="lx-topprad lx-kaltopp" style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <div style="min-width: 0;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
+            <h1 style="margin: 0; font-size: var(--text-4xl); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">Kalender<sc-if value="{{ klFlikLukkVis }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ klFlikLukk }}" style="{{ klFlikLukkStil }}">✕ Lukk</button></sc-if></h1>
           </div>
           <!-- «Denne måneden» ved siden av tittelen. Eieren, 16. september
                2026. Kortet staar bare naar det er omsetning aa vise. -->
@@ -9883,7 +9891,7 @@ window.__resources = {
         <!-- Ovnkortet — det samme som medlemmene har paa Min side. Eieren,
              12. september 2026: «admin må også ha denne knappen på kalender
              oversikten»; 13. september: raabrann og glasurbrann i samme kort. -->
-        <div class="{{ ovnKortKlasse }}" style="{{ ovnKortStil }}">
+        <div class="{{ ovnKortKlasse }} lx-kalpc-skjul" style="{{ ovnKortStil }}">
           <sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
             <div>
@@ -9949,7 +9957,7 @@ window.__resources = {
             </button>
           </sc-if>
           <sc-if value="{{ klDashApen }}" hint-placeholder-val="{{ true }}">
-          <div style="{{ klOversiktRadStil }}">
+          <div class="lx-kalpc-skjul" style="{{ klOversiktRadStil }}">
             <sc-for list="{{ klOversiktKort }}" as="k" hint-placeholder-count="6">
               <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
                 <span style="{{ klOversiktMerkeStil }}">{{ k.merke }}</span>
@@ -28837,6 +28845,13 @@ window.__resources = {
      endre pris, antall eller endre rabatt», og fra kurset i kalenderen:
      «mulighet til å trykke ta betaling». GO paa skissen samme dag.
      Samme steg begge steder; betalingen registreres som foer (gjorOppRad). -->
+<!-- Kalender-fliken i hoeyre kant paa admin (PC). Eieren, 26. september
+     2026: «en liten flik paa siden, saa kommer den frem naar vi tar musa
+     over». Musa over i et lite oyeblikk, eller et trykk, og kalenderen glir
+     inn. «✕ Lukk» paa kalenderen gaar tilbake dit du var. -->
+<sc-if value="{{ kalFlikVis }}" hint-placeholder-val="{{ false }}">
+  <button type="button" class="lx-kalflik" aria-label="Åpne kalenderen" onClick="{{ kalFlikApne }}" onMouseEnter="{{ kalFlikInn }}" onMouseLeave="{{ kalFlikUt }}"><span>📅 Kalender</span></button>
+</sc-if>
 <sc-if value="{{ tbApen }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ tbLukk }}" style="position: fixed; inset: 0; z-index: 98; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ stoppKlikk }}" style="width: min(480px, 100%); margin: auto 0; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
@@ -51780,6 +51795,31 @@ class Component extends DCLogic {
   // bare fordelt: de mest brukte som faner, resten under «Mer», og
   // verktoyene (Synlighet, Se nettsiden, Vedlikehold, Test Vipps, Meld inn
   // feil, Synk med mobilen, Logg ut) under ⚙.
+  // ── Kalender-fliken ─────────────────────────────────────────────────
+  kalFlikVals() {
+    const side = this.state.side || '';
+    const smal = (this.state.vw || 1400) < 980;
+    const paaAdmin = side.indexOf('admin') === 0 && side !== 'adminkalender' && !this.erBareRegnskap();
+    const apne = () => {
+      clearTimeout(this._flikTid);
+      this.gaaAdmin('adminkalender', { klFlikFra: side, klFlikGlid: true });
+    };
+    return {
+      kalFlikVis: paaAdmin && !smal,
+      kalFlikApne: apne,
+      kalFlikInn: () => { clearTimeout(this._flikTid); this._flikTid = setTimeout(apne, 350); },
+      kalFlikUt: () => clearTimeout(this._flikTid),
+      klMainKlasse: side === 'adminkalender' && this.state.klFlikGlid && !smal ? 'lx-glidinn' : '',
+      klFlikLukkVis: side === 'adminkalender' && !!this.state.klFlikFra && !smal,
+      klFlikLukk: () => { const fra = this.state.klFlikFra || 'adminoversikt'; this.gaaAdmin(fra, { klFlikFra: '', klFlikGlid: false }); },
+      klFlikLukkStil: {
+        appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 14px',
+        font: 'var(--type-body-sm)', fontWeight: 800, border: '1.5px solid var(--lissom-brown)',
+        background: 'transparent', color: 'var(--lissom-brown)',
+      },
+    };
+  }
+
   toppmenyVals() {
     const smal = (this.state.vw || 1400) < 980;
     if (smal) return { tmStil: { display: 'none' }, tmFaner: [], tmMer: [], tmVerktoy: [], tmMerNavn: '', tmInneTekst: '',
@@ -51788,16 +51828,19 @@ class Component extends DCLogic {
                        tmMerVeksle: () => {}, tmInneVeksle: () => {}, tmVerkVeksle: () => {} };
     const alle = this.adminMeny();
     const aktiv = this.adminSted().meny;
-    const FANER = ['Oversikt', 'Kalender', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'];
+    // Kalender er fliken i hoeyre kant (og logoen), ikke en fane.
+    const FANER = ['Oversikt', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'];
     const MER = ['Årskalender', 'Til godkjenning', 'Verkstedet', 'Admin-brukere'];
     const menyNavn = new Set(Component.ADMIN_MENY.map(([n]) => n));
-    const fane = (r) => Object.assign({}, r, { stil: {
+    // Et valg i menyen glemmer hvor kalender-fliken kom fra.
+    const glem = (r) => (...a) => { if (this.state.klFlikFra || this.state.klFlikGlid) this.setState({ klFlikFra: '', klFlikGlid: false }); return r.velg(...a); };
+    const fane = (r) => Object.assign({}, r, { velg: glem(r), stil: {
       appearance: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
       padding: '7px 12px', borderRadius: 'var(--radius-pill)', font: 'var(--type-body-sm)',
       fontWeight: 700, background: r.navn === aktiv ? 'var(--lissom-yellow)' : 'transparent',
       color: r.navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-100)',
     } });
-    const panelRad = (r, aktivNaa) => Object.assign({}, r, { velg: (...a) => { this.setState({ tmApen: '' }); return r.velg(...a); }, stil: Object.assign({}, r.stil || {}, {
+    const panelRad = (r, aktivNaa) => Object.assign({}, r, { velg: (...a) => { this.setState({ tmApen: '', klFlikFra: '', klFlikGlid: false }); return r.velg(...a); }, stil: Object.assign({}, r.stil || {}, {
       display: 'block', width: '100%', textAlign: 'left', whiteSpace: 'nowrap', marginTop: 0, borderTop: 'none', paddingTop: 10,
       background: aktivNaa ? 'var(--lissom-yellow)' : 'transparent',
       color: aktivNaa ? 'var(--lissom-brown)' : ((r.stil || {}).color || 'var(--clay-100)'),
@@ -51805,6 +51848,7 @@ class Component extends DCLogic {
     const faner = alle.filter(r => FANER.indexOf(r.navn) >= 0).map(fane);
     const mer = alle.filter(r => MER.indexOf(r.navn) >= 0).map(r => panelRad(r, r.navn === aktiv));
     const verktoy = alle.filter(r => !menyNavn.has(r.navn)).map(r => panelRad(r, false));
+    // Staar du paa kalenderen, lyser ingen fane — fliken er borte, og «✕ Lukk» gaar tilbake.
     const merAktiv = MER.indexOf(aktiv) >= 0;
     const inne = (this.state.stempling && this.state.stempling.inne && this.state.stempling.inne.antall) || 0;
     const pille = (paa) => ({
@@ -71611,6 +71655,7 @@ class Component extends DCLogic {
         // de samme radene.
         : { display: 'none' },
       ...this.toppmenyVals(),
+      ...this.kalFlikVals(),
       // Aapne fra start. Eieren, 15. september 2026: kortene i Nyttig info
       // skal aapne direkte. Trykk paa overskrifta lukker som foer.
       ordensregerApen: this.state.ordensApen !== false,

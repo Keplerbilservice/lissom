@@ -24020,6 +24020,13 @@ window.__resources = {
                 </div>
                 <!-- Hver linje skal kunne endres og fjernes der den staar. -->
                 <div class="lx-pillerad" style="display: flex; gap: var(--space-2); align-items: center; margin-left: auto; flex-wrap: wrap;">
+                  <!-- Bildeforbedring, bare for Lissom-kolleksjonen (eieren,
+                       26. september 2026). Varen settes paa den faste
+                       bakgrunnen fra verkstedet; ingenting byttes foer admin
+                       har sett foer og etter og valgt «Bruk det nye». -->
+                  <sc-if value="{{ v.harForbedre }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ v.forbedre }}" style="appearance: none; background: var(--lissom-yellow); border: 1px solid var(--lissom-yellow); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); white-space: nowrap;">Forbedre bildet</button>
+                  </sc-if>
                   <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ v.bildeKnapp }}</button>
                   <button type="button" onClick="{{ v.velg }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">Rediger</button>
                   <button class="lx-radpille" type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
@@ -24027,6 +24034,45 @@ window.__resources = {
               </div>
             </sc-for>
           </div>
+
+          <sc-if value="{{ vfbApen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: fixed; inset: 0; background: rgba(31,17,12,.6); z-index: 70; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
+              <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 760px; width: 100%; padding: var(--space-7, 28px); display: grid; gap: var(--space-5);">
+                <div style="display: flex; justify-content: space-between; gap: var(--space-4); align-items: flex-start;">
+                  <div>
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Forbedre bildet</div>
+                    <h2 style="margin: 4px 0 0; font-size: var(--text-xl);">{{ vfbNavn }}</h2>
+                  </div>
+                  <button type="button" onClick="{{ vfbLukk }}" aria-label="Lukk" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 26px; line-height: 1; color: var(--text-muted); padding: 4px 10px;">×</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                  <div style="display: grid; gap: 6px;">
+                    <img src="{{ vfbFor }}" alt="Bildet i dag" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100);">
+                    <span style="font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted);">I dag</span>
+                  </div>
+                  <div style="display: grid; gap: 6px;">
+                    <sc-if value="{{ vfbLaster }}" hint-placeholder-val="{{ true }}">
+                      <div style="aspect-ratio: 3 / 4; border-radius: var(--radius-md); background: var(--clay-100); display: flex; align-items: center; justify-content: center; text-align: center; padding: var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Lager det nye bildet … det tar omtrent ett minutt.</div>
+                    </sc-if>
+                    <sc-if value="{{ vfbHarNy }}" hint-placeholder-val="{{ false }}">
+                      <img src="{{ vfbNy }}" alt="Det nye bildet" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100);">
+                    </sc-if>
+                    <span style="font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--sage-600, #4f7a46);">Nytt</span>
+                  </div>
+                </div>
+                <sc-if value="{{ vfbHarFeil }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 0; color: var(--terracotta-600); font-size: var(--text-sm);">{{ vfbFeil }}</p>
+                </sc-if>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <sc-if value="{{ vfbHarNy }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ vfbBruk }}" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 10px 20px; font: var(--type-body-sm); font-weight: 800;">Bruk det nye</button>
+                    <button type="button" onClick="{{ vfbProvIgjen }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Lag et nytt forslag</button>
+                  </sc-if>
+                  <button type="button" onClick="{{ vfbLukk }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--border-subtle); background: transparent; color: var(--text-heading); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Behold dagens</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
 
           <div class="lx-butordre" style="display: flex; flex-direction: column; gap: var(--space-6);">
           <!-- Her sto kortet «Synlighet paa nettsiden» med to brytere som
@@ -38550,6 +38596,36 @@ class Component extends DCLogic {
   }
 
   /** Bytter bildet paa en vare, og henter lista paa nytt saa raden viser det. */
+  /**
+   * Setter en vare paa den faste bakgrunnen (api/admin/gemini.php,
+   * handling=forbedreVare). Svaret er et nytt bilde; varen byttes foerst
+   * naar admin trykker «Bruk det nye».
+   */
+  forbedreVare(raa) {
+    if (!raa || !raa.id) return;
+    if (this._vfbLager) return;
+    const bildeUrl = raa.bilde || '';
+    this.setState({ vfb: { id: raa.id, raa: raa, navn: raa.tittel || '', for: bildeUrl, ny: '', laster: true, feil: '' } });
+    if (!this.erPublisert()) { this.setState({ vfb: Object.assign({}, this.state.vfb, { laster: false, feil: 'Krever den ekte siden' }) }); return; }
+    this._vfbLager = true;
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'forbedreVare', id: raa.id }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._vfbLager = false;
+        this.setState(st => (st.vfb && st.vfb.id === raa.id
+          ? { vfb: Object.assign({}, st.vfb, { laster: false, ny: ok ? d.url : '', feil: ok ? '' : ((d && d.feil) || 'Det nye bildet ble ikke laget.') }) }
+          : {}));
+      })
+      .catch(() => {
+        this._vfbLager = false;
+        this.setState(st => (st.vfb ? { vfb: Object.assign({}, st.vfb, { laster: false, feil: 'Fikk ikke kontakt med serveren. Prøv igjen.' }) } : {}));
+      });
+  }
+
   vareBildeKall(id, url) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Lagret' }); return; }
     fetch('/api/admin/produkter.php', {
@@ -68361,6 +68437,18 @@ class Component extends DCLogic {
 
       // Lageret, fra basen. Trykk paa en rad aapner skjemaet med varen i,
       // slik at «Lagre» faktisk endrer den raden.
+      // Ruta med foer og etter for bildeforbedringen.
+      vfbApen: !!this.state.vfb,
+      vfbNavn: (this.state.vfb || {}).navn || '',
+      vfbFor: (this.state.vfb || {}).for || '',
+      vfbNy: (this.state.vfb || {}).ny || '',
+      vfbHarNy: !!(this.state.vfb || {}).ny,
+      vfbLaster: !!(this.state.vfb || {}).laster,
+      vfbFeil: (this.state.vfb || {}).feil || '',
+      vfbHarFeil: !!(this.state.vfb || {}).feil,
+      vfbLukk: () => this.setState({ vfb: null }),
+      vfbProvIgjen: () => { const f = this.state.vfb; if (f && f.raa) this.forbedreVare(f.raa); },
+      vfbBruk: () => { const f = this.state.vfb; if (f && f.ny) { this.setState({ vfb: null }); this.vareBildeKall(f.id, f.ny); } },
       lager: (this.state.adminProdukter
         ? this.state.adminProdukter
             .filter(v => (this.state.butikkFane === 'Medlemssalg') ? v.kunMedlemmer : !v.kunMedlemmer)
@@ -68393,6 +68481,9 @@ class Component extends DCLogic {
                      backgroundSize: 'cover', backgroundPosition: 'center' },
         bildeKnapp: (v.raa && v.raa.bilde) ? 'Bytt bilde' : 'Velg bilde',
         byttBilde: () => { if (v.raa) this.apneBildevalg(v.raa.id, 'vare'); },
+        // Bare Lissom-kolleksjonen, og bare naar varen har et bilde.
+        harForbedre: !!(v.raa && v.raa.bilde) && this.state.butikkFane !== 'Medlemssalg',
+        forbedre: () => { if (v.raa) this.forbedreVare(v.raa); },
         // Nummeret maa foelge med inn i skjemaet. Uten det ble varen slaatt
         // opp paa navn ved lagring, og to kopper som het det samme kunne
         // ikke lenger redigeres hver for seg — den forste vant alltid.

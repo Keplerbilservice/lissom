@@ -594,7 +594,7 @@ img{max-width:100%;display:block}
 .lx-kalflik span { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 800; font-size: 14px; letter-spacing: .06em; display: block; }
 @media (max-width: 979px) { .lx-kalflik { display: none !important; } }
 .lx-admkal { display: none !important; }
-@media (max-width: 979px) { .lx-admkal { display: inline-flex !important; align-items: center; justify-content: center; font-size: 17px !important; padding: 8px 11px !important; } .lx-adminaside { gap: 10px !important; } }
+@media (max-width: 979px) { .lx-admkal { display: inline-flex !important; align-items: center; justify-content: center; font-size: 17px !important; padding: 8px 11px !important; appearance: none; cursor: pointer; min-height: 40px; border-radius: 999px; border: 1px solid rgba(244,235,222,.32); background: transparent; } .lx-adminaside { gap: 10px !important; } }
 .lx-kalflik:hover, .lx-kalflik:focus-visible { padding-right: 14px; }
 @keyframes lx-glidinn { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
 .lx-glidinn { animation: lx-glidinn .3s ease; }
@@ -7346,7 +7346,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -7836,7 +7836,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -8147,7 +8147,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -8445,7 +8445,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -8853,7 +8853,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -9290,7 +9290,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -9607,7 +9607,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -10077,7 +10077,7 @@ window.__resources = {
              sto hele menyen utslaatt over kalenderen. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -12059,7 +12059,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -12418,7 +12418,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -12837,7 +12837,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -13255,7 +13255,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -14194,7 +14194,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -14619,7 +14619,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -15162,7 +15162,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -16534,7 +16534,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -16918,7 +16918,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -17367,7 +17367,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -17777,7 +17777,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -18273,7 +18273,7 @@ window.__resources = {
         </nav>
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -18622,7 +18622,7 @@ window.__resources = {
         </nav>
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -18959,7 +18959,7 @@ window.__resources = {
         </nav>
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -19318,7 +19318,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -19639,7 +19639,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -20248,7 +20248,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -20651,7 +20651,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -21488,7 +21488,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -21842,7 +21842,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -23107,7 +23107,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -23587,7 +23587,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -24344,7 +24344,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -24811,7 +24811,7 @@ window.__resources = {
         </nav>
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -25186,7 +25186,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -25989,7 +25989,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -26715,7 +26715,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -28024,7 +28024,7 @@ window.__resources = {
              ett trykk viser hele kartet. -->
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -28469,7 +28469,7 @@ window.__resources = {
         </nav>
         <div class="lx-admmob" style="{{ admMobLinjeStil }}">
           <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
-          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender" style="{{ admMobKnappStil }}">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+          <button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}" aria-label="Kalender" title="Kalender">📅</button><button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
           <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
@@ -42396,7 +42396,10 @@ class Component extends DCLogic {
       // 15. september 2026: «den kan godt vaere mindre ... jeg vil ikke
       // flytte paa noen logo». Hoeyden maales — se tilbakePlasser().
       tilbakeStil: {
-        position: 'fixed', left: 12, top: this._tilbakeTopp || 96, zIndex: 530, appearance: 'none', cursor: 'pointer',
+        // Under topplinja (30) og under vinduene som aapnes (60 og oppover): paa
+        // telefon la pila seg oppaa menyen og Chat-vinduet, og ble det eneste
+        // man saa (eieren, 26. september 2026).
+        position: 'fixed', left: 12, top: this._tilbakeTopp || 96, zIndex: 25, appearance: 'none', cursor: 'pointer',
         width: 38, height: 38, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         border: '1px solid rgba(244,235,222,.35)', borderRadius: '50%',
         font: '700 20px/1 var(--font-display)', background: 'var(--lissom-brown)', color: 'var(--clay-50)',
@@ -42448,6 +42451,9 @@ class Component extends DCLogic {
       const k = document.querySelector('.lx-tilbake');
       if (!k) return;
       const t = this.tilbakeTopp();
+      // 10 betyr at ingen linje ble funnet — typisk et vindu som dekker toppen.
+      // Da staar pila der den sto, i stedet for aa hoppe opp paa logoen.
+      if (t === 10 && this._tilbakeTopp) return;
       if (t !== this._tilbakeTopp) { this._tilbakeTopp = t; k.style.top = t + 'px'; }
     });
   }

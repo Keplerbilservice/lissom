@@ -11698,7 +11698,7 @@ sjekk('… og cella er den samme i begge bunnmenyene',
 sjekk('innholdet har plass under menyen',
     str_contains($sidaB, '.lx-adminaside + main {')
     // Bunnmenyen er borte (skissen, 26. september 2026); kalenderknappen staar nederst.
-    && str_contains($sidaB, 'padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;'));
+    && str_contains($sidaB, 'padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;'));
 // Hjemknappen paa iPhone ligger nederst paa skjermen.
 sjekk('… og det er satt av plass til hjemknappen paa iPhone',
     str_contains($sidaB, "paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',"));
@@ -11706,7 +11706,7 @@ sjekk('… og det er satt av plass til hjemknappen paa iPhone',
 // Bare paa telefon. Paa PC er sidemenyen der.
 sjekk('menyen staar bare paa smal skjerm',
     str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }')
-    && str_contains($sidaB, '.lx-kalflik { top: auto; right: auto; left: 50%;'));
+    && str_contains($sidaB, '<button type="button" class="lx-admkal" onClick="{{ kalFlikApne }}"'));
 
 // Kvitteringsboksen sto 110 px fra toppen, alltid. Da adminstripa fikk
 // verktoeypillene, la boksen seg midt oppaa dem — og oppaa linja som sier

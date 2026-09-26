@@ -52320,7 +52320,9 @@ class Component extends DCLogic {
   kalFlikVals() {
     const side = this.state.side || '';
     const smal = (this.state.vw || 1400) < 980;
-    const paaAdmin = side.indexOf('admin') === 0 && side !== 'adminkalender' && !this.erBareRegnskap();
+    // Bare for innlogget admin — ikke paa innloggingssida.
+    const paaAdmin = side.indexOf('admin') === 0 && side !== 'adminkalender' && side !== 'adminlogin'
+      && !!this.state.innlogget && !!this.state.erAdminBruker && !this.erBareRegnskap();
     const apne = () => {
       clearTimeout(this._flikTid);
       this.gaaAdmin('adminkalender', { klFlikFra: side, klFlikGlid: true });

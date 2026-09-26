@@ -529,6 +529,13 @@ $egetBilde = $ogBilde !== '';
 if (!$egetBilde) { $ogBilde = ROT . '/delingsbilde.jpg'; }
 $ogAlt  = (string) ($d['altTekst'] ?? 'Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg');
 
+$bildeMime = 'image/jpeg';
+if (str_ends_with(strtolower($ogBilde), '.png')) {
+    $bildeMime = 'image/png';
+} elseif (str_ends_with(strtolower($ogBilde), '.webp')) {
+    $bildeMime = 'image/webp';
+}
+
 $e = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
 $hode = MERKE_START . "\n"
@@ -543,10 +550,16 @@ $hode = MERKE_START . "\n"
     . '<meta property="og:title" content="' . $e($ogT) . '">' . "\n"
     . ($ogB !== '' ? '<meta property="og:description" content="' . $e($ogB) . '">' . "\n" : '')
     . '<meta property="og:image" content="' . $e($ogBilde) . '">' . "\n"
+    . '<meta property="og:image:secure_url" content="' . $e($ogBilde) . '">' . "\n"
+    . '<meta property="og:image:type" content="' . $e($bildeMime) . '">' . "\n"
     . ($egetBilde ? '' : '<meta property="og:image:width" content="1200">' . "\n"
         . '<meta property="og:image:height" content="675">' . "\n")
     . '<meta property="og:image:alt" content="' . $e($ogAlt) . '">' . "\n"
     . '<meta name="twitter:card" content="summary_large_image">' . "\n"
+    . '<meta name="twitter:title" content="' . $e($ogT) . '">' . "\n"
+    . ($ogB !== '' ? '<meta name="twitter:description" content="' . $e($ogB) . '">' . "\n" : '')
+    . '<meta name="twitter:image" content="' . $e($ogBilde) . '">' . "\n"
+    . '<meta name="twitter:image:alt" content="' . $e($ogAlt) . '">' . "\n"
     // Kursbildet, naar appen skal tegne bookingskjermen (?book=, ?dag= …).
     // Det er det stoerste paa skjermen (LCP), og uten dette fant
     // nettleseren det foerst etter at hele appen var lest og tegnet.

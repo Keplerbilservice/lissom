@@ -264,6 +264,12 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
         ]);
     }
 
+    // Betales det ved henting, er varene lagt til side fra nå av. En ordre
+    // betalt i Vipps trekkes i Booking::markerBetalt() i stedet.
+    if ($vedHenting) {
+        Booking::trekkLager($ordreId);
+    }
+
     return ['ordreId' => $ordreId, 'paymentId' => $paymentId];
 });
 

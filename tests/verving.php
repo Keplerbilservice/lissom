@@ -93,8 +93,15 @@ $rad = $gave === null ? null : DB::en('SELECT * FROM medlemsgaver WHERE id = :i'
 sjekk('… som en timegave til den som vervet', $rad !== null
     && (int) $rad['member_id'] === $verver && $rad['type'] === 'timer');
 sjekk('… med timetallet eieren har satt', $rad !== null && (int) $rad['timer'] === 7, (string) ($rad['timer'] ?? ''));
-sjekk('… og gjelder ut maaneden, som timegavene fra admin',
-    $rad !== null && $rad['gyldig_til'] === (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-t'));
+// Eieren, 27. september 2026: tre maaneder fra premien gis.
+sjekk('… og kan loeses inn i tre maaneder',
+    $rad !== null && $rad['gyldig_til'] === (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('+3 months')->format('Y-m-d'));
+// Men timene gjelder én gang: i det de loeses inn, kortes gaven ned til
+// slutten av maaneden, ellers la gavetimer() dem til hver maaned i tre maaneder.
+$gaveKode = file_get_contents(dirname(__DIR__) . '/api/gave.php');
+sjekk('… og timene gjelder i maaneden de loeses inn, ikke tre maaneder paa rad',
+    str_contains($gaveKode, "if ((string) \$g['type'] === 'timer' && \$g['member_id'] !== null) {")
+    && str_contains($gaveKode, "DB::oppdater('medlemsgaver', ['gyldig_til' => \$ut], ['id' => (int) \$g['id']]);"));
 sjekk('… og staar i «Vervet saa langt»',
     count(array_filter(Verving::liste(), static fn($v) => $v['venn'] === 'Venn To' && $v['timer'] === 7)) === 1);
 

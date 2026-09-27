@@ -165,13 +165,13 @@ final class Verving
                     'plan'            => mb_substr($planNavn, 0, 64),
                     'timer'           => $timer,
                 ]);
-                // Samme gyldighet som timegavene admin gir: ut inneværende
-                // maaned (api/admin/gaver.php).
+                // Kan loeses inn i tre maaneder (eieren, 27. september 2026).
+                // Timene gjelder i maaneden de loeses inn — se api/gave.php.
                 $gaveId = DB::settInn('medlemsgaver', [
                     'member_id'  => (int) $verver['id'],
                     'type'       => 'timer',
                     'timer'      => $timer,
-                    'gyldig_til' => (new DateTimeImmutable('now', $oslo))->format('Y-m-t'),
+                    'gyldig_til' => (new DateTimeImmutable('now', $oslo))->modify('+3 months')->format('Y-m-d'),
                 ]);
                 DB::oppdater('vervinger', ['gave_id' => $gaveId], ['id' => $radId]);
                 return $gaveId;

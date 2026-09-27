@@ -108,6 +108,19 @@ try {
     Svar::feil('Gaven er allerede løst inn.');
 }
 
+// Vervepremien kan loeses inn i tre maaneder (eieren, 27. september 2026),
+// men timene skal gjelde én gang, i maaneden de loeses inn. Medlemskap::
+// gavetimer() legger en gave til timetaket saa lenge den gjelder — sto de tre
+// maanedene igjen, ga fem timer fem ekstra hver maaned. Derfor kortes en
+// personlig timegave ned til slutten av denne maaneden i det den loeses inn.
+// Gaver fra admin gjelder alt bare ut maaneden, saa for dem endres ingenting.
+if ((string) $g['type'] === 'timer' && $g['member_id'] !== null) {
+    $ut = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-t');
+    if ((string) $g['gyldig_til'] > $ut) {
+        DB::oppdater('medlemsgaver', ['gyldig_til' => $ut], ['id' => (int) $g['id']]);
+    }
+}
+
     Varsel::malTilAdmin('intern_gave_lost_inn', [
         'tittel'  => $tittel($g),
         'navn'    => (string) $medlem['navn'],

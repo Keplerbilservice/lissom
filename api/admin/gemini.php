@@ -124,6 +124,44 @@ switch ($handling) {
             'beskjed' => 'Det nye bildet er klart. Velg om du vil bruke det.',
         ]);
 
+    // ── Kursbildet med mer luft rundt ──────────────────────────────────
+    //
+    //   POST handling=utvidKursbilde { id, bilde? }
+    //
+    // Markedsfoering › Bilder (eieren, 27. september 2026). «bilde» er det
+    // som staar i forhaandsvisningen — et nylig opplastet bilde, eller kursets
+    // eget. Kurset roeres ikke her; det skjer foerst ved «Lagre»
+    // (kurs.php, handling=hovedbilde).
+    case 'utvidKursbilde':
+        @set_time_limit(150);
+        $kurs = DB::en('SELECT id, tittel, bilde FROM courses WHERE id = :i', ['i' => (int) ($kropp['id'] ?? 0)]);
+        if ($kurs === null) {
+            Svar::feil('Fant ikke kurset.');
+        }
+        $bilde = trim((string) ($kropp['bilde'] ?? '')) ?: (string) ($kurs['bilde'] ?? '');
+        $sti = null;
+        if (preg_match('~^api/bilde\.php\?artikkel=([0-9a-f]{32}\.jpg)$~', $bilde, $m) === 1) {
+            $sti = Bilder::sti($m[1], 'artikler');
+        } elseif ($bilde !== '' && basename($bilde) === $bilde && preg_match('/\.(jpe?g|png|webp)$/i', $bilde) === 1) {
+            $rot = dirname(__DIR__, 2) . '/' . $bilde;
+            $sti = is_file($rot) ? $rot : null;
+        }
+        if ($sti === null) {
+            Svar::feil('Kurset har ikke noe bilde å forbedre. Last opp et bilde først.');
+        }
+        try {
+            $b = Gemini::utvidKursbilde((string) file_get_contents($sti), (string) $kurs['tittel']);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('kursbilde_utvidet', 'course', (int) $kurs['id'], ['fra' => $bilde, 'nytt' => $b['navn']]);
+        $ore = $b['kostnadOre'];
+        Svar::ok([
+            'url'     => $b['url'],
+            'kostnad' => $ore < 100 ? $ore . ' øre' : Booking::kroner($ore),
+            'beskjed' => 'Det nye bildet er klart. Velg om du vil bruke det.',
+        ]);
+
     // ── Medlemmets bilde til galleriet ─────────────────────────────────
     //
     //   POST handling=forbedreForslag { id }

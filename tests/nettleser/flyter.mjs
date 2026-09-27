@@ -456,6 +456,57 @@ await flyt('Synlighet: pille, flis og ark', async () => {
 });
 
 // ── 7. Gavekortsida ───────────────────────────────────────────────────
+// ── Markedsfoering › Bilder ───────────────────────────────────────────
+// Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring, at jeg
+// kan klikke å laste opp eller dra og slipp».
+await flyt('Bilder: last opp, dra og slipp, fokus og Lagre', async () => {
+  const jpg = php(`$im = imagecreatetruecolor(1600, 1000); imagefill($im, 0, 0, imagecolorallocate($im, 180, 120, 80));
+    $f = sys_get_temp_dir() . '/e2e-kursbilde.jpg'; imagejpeg($im, $f, 80); return $f;`);
+  const p = await side('admin');
+  await gaa(p, '/admin/markedsforing', 3000);
+  await p.locator('main button', { hasText: 'Bilder' }).first().click();
+  await p.waitForTimeout(1500);
+  const kort = p.locator(`[data-bf-kurs="${S.kurs}"]`);
+  sjekk('kurset har et kort under Bilder', await kort.count() === 1);
+  const forBilde = verdi('SELECT COALESCE(bilde, \'\') FROM courses WHERE id = :i', { i: S.kurs });
+
+  // Velg bilde (fil-input).
+  await kort.locator('input[type=file]').setInputFiles(jpg);
+  await p.waitForFunction((id) => /api\/bilde\.php\?artikkel=/.test(getComputedStyle(document.querySelector(`[data-bf-kurs="${id}"] [data-bf-vis="kort-pc"]`)).backgroundImage), S.kurs, { timeout: 15000 });
+  sjekk('«Velg bilde» viser det nye bildet i forhaandsvisningen', true);
+  sjekk('… uten at kurset er byttet foer «Lagre»',
+    verdi('SELECT COALESCE(bilde, \'\') FROM courses WHERE id = :i', { i: S.kurs }) === forBilde);
+
+  // Dra og slipp et bilde paa sona.
+  const forste = await kort.locator('[data-bf-vis="kort-pc"]').evaluate(e => getComputedStyle(e).backgroundImage);
+  await kort.locator('label[data-slipp]').evaluate(async (el) => {
+    const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
+    const g = c.getContext('2d'); g.fillStyle = '#4D7A46'; g.fillRect(0, 0, 1200, 800);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
+    const dt = new DataTransfer(); dt.items.add(new File([blob], 'slipp.jpg', { type: 'image/jpeg' }));
+    el.dispatchEvent(new DragEvent('dragover', { dataTransfer: dt, bubbles: true, cancelable: true }));
+    el.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  });
+  await p.waitForFunction(([id, f]) => getComputedStyle(document.querySelector(`[data-bf-kurs="${id}"] [data-bf-vis="kort-pc"]`)).backgroundImage !== f, [S.kurs, forste], { timeout: 15000 });
+  sjekk('dra og slipp laster opp og viser det nye bildet', true);
+
+  // Fokus: trykk nede til venstre i det store bildet.
+  const stor = kort.locator('[data-bf-stor]');
+  const b = await stor.boundingBox();
+  await p.mouse.click(b.x + b.width * 0.25, b.y + b.height * 0.75);
+  await p.waitForTimeout(400);
+  const pos = await kort.locator('[data-bf-vis="kort-pc"]').evaluate(e => e.style.backgroundPosition);
+  sjekk('trykk i bildet flytter utsnittet i forhaandsvisningen', /^2\d% 7\d%$/.test(pos), pos);
+
+  await kort.getByRole('button', { name: 'Lagre', exact: true }).click();
+  await p.waitForTimeout(2500);
+  const etter = String(verdi('SELECT COALESCE(bilde, \'\') FROM courses WHERE id = :i', { i: S.kurs }));
+  sjekk('«Lagre» bytter kursets bilde', /^api\/bilde\.php\?artikkel=[0-9a-f]{32}\.jpg$/.test(etter), etter);
+  sjekk('… og lagrer fokuset', String(verdi('SELECT fokus FROM bilde_fokus WHERE fil = :f', { f: etter })) === pos, pos);
+  sjekk('… og sier «Lagret ✓»', await kort.getByText('Lagret ✓').count() === 1);
+  await p.context().close();
+});
+
 await flyt('Gavekortsida', async () => {
   const p = await side(null);
   await gaa(p, '/gavekort', 2000);

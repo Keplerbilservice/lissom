@@ -27731,6 +27731,63 @@ window.__resources = {
           </sc-for>
         </sc-if>
 
+        <!-- ── Bilder ────────────────────────────────────────────────── -->
+        <!--
+             Eieren, 27. september 2026: «jeg vil gjøre det selv i
+             markedsføring, at jeg kan klikke å laste opp eller dra og slipp».
+             Kursbildet og hvordan det vises paa kurskortet og kurssiden, PC og
+             mobil. Ingenting byttes paa nettsida foer «Lagre». Se
+             bilderAdminVals().
+        -->
+        <sc-if value="{{ mkErBilder }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ bfTom }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs</p>
+          </sc-if>
+          <sc-for list="{{ bfKurs }}" as="k" hint-placeholder-count="2">
+            <div data-bf-kurs="{{ k.id }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: grid; gap: var(--space-4);">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ k.tittel }}</div>
+              <div class="lx-bf-rad" style="display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start;">
+                <div style="display: grid; gap: 6px; flex: 0 1 360px; min-width: 0;">
+                  <div data-bf-stor="1" onClick="{{ k.velgFokus }}" style="{{ k.stor }}"><span style="{{ k.prikkStil }}"></span></div>
+                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 360px;">Trykk i bildet for å velge hva som skal være midt i utsnittet</p>
+                </div>
+                <div style="display: grid; gap: var(--space-3); flex: 1 1 320px; min-width: 0;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Slik vises det</div>
+                  <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-end;">
+                    <div style="display: grid; gap: 4px;"><div data-bf-vis="kort-pc" style="{{ k.kortPc }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kurskort · PC</span></div>
+                    <div style="display: grid; gap: 4px;"><div data-bf-vis="kort-mobil" style="{{ k.kortMobil }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kurskort · Mobil</span></div>
+                    <div style="display: grid; gap: 4px;"><div data-bf-vis="side-pc" style="{{ k.sidePc }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kursside · PC</span></div>
+                    <div style="display: grid; gap: 4px;"><div data-bf-vis="side-mobil" style="{{ k.sideMobil }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kursside · Mobil</span></div>
+                  </div>
+                </div>
+              </div>
+              <label data-slipp="1" onDragOver="{{ k.dragOver }}" onDragLeave="{{ k.dragUt }}" onDrop="{{ k.slipp }}" style="{{ k.sonStil }}">
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ k.velgFil }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                <span style="font-size: var(--text-sm); color: var(--text-body);">Dra et bilde hit, eller</span>
+                <span style="border: 1.5px solid var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 12px; font: var(--type-chip); font-weight: 700; color: var(--lissom-brown); background: var(--surface-card);">Velg bilde</span>
+                <sc-if value="{{ k.laster }}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--text-sm); color: var(--text-muted);">Laster opp …</span></sc-if>
+              </label>
+              <sc-if value="{{ k.harGemini }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center;">
+                  <div data-bf-vis="gemini" style="{{ k.geminiStil }}"></div>
+                  <button type="button" onClick="{{ k.brukGemini }}" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 800;">Bruk det nye</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ k.geminiLaster }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Lager det nye bildet … det tar omtrent ett minutt.</p>
+              </sc-if>
+              <sc-if value="{{ k.harFeil }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600);">{{ k.feil }}</p>
+              </sc-if>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <button type="button" onClick="{{ k.gemini }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--lissom-brown); background: var(--surface-card); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 700;">Forbedre med Gemini</button>
+                <button type="button" onClick="{{ k.lagre }}" style="{{ k.lagreStil }}">Lagre</button>
+                <sc-if value="{{ k.lagret }}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--text-sm); font-weight: 700; color: var(--sage-700, #2F6B3A);">Lagret ✓</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </sc-if>
+
         <!-- ── Medlemsforslag ────────────────────────────────────────── -->
         <!--
              Medlemmenes forslag til Instagram. Eieren, 24. september 2026:
@@ -37591,6 +37648,169 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * Markedsfoering › Bilder. Eieren, 27. september 2026: «jeg vil gjøre det
+   * selv i markedsføring, at jeg kan klikke å laste opp eller dra og slipp».
+   *
+   * Ett kort per kurs og event: bildet i dag, og hvordan det vises paa
+   * kurskortet og kurssiden (begge 16:10, som sidene), paa PC og mobil. Et
+   * nytt bilde (opplastet eller fra Gemini) og et nytt fokuspunkt staar bare
+   * i forhaandsvisningen til «Lagre» — da byttes kursets hovedbilde
+   * (kurs.php, handling=hovedbilde) og fokuset lagres (bilder.php,
+   * handling=fokus), som bildebiblioteket ellers gjor.
+   */
+  bfHent() {
+    this._bfHentet = true;
+    fetch('/api/admin/bilder.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => this.setState({ bfFokus: (d && d.fokus) || {} }))
+      .catch(() => this.setState({ bfFokus: {} }));
+  }
+
+  bfLastOpp(id, fil) {
+    if (!fil) return;
+    const fd = new FormData();
+    fd.append('handling', 'last-opp');
+    fd.append('bilde', fil);
+    this.setState(st => ({ bfUtkast: Object.assign({}, st.bfUtkast, { [id]: Object.assign({}, (st.bfUtkast || {})[id], { laster: true, feil: '' }) }) }));
+    fetch('/api/admin/bilder.php', { method: 'POST', credentials: 'same-origin', body: fd })
+      .then(r => r.json())
+      .then(d => {
+        const u = Object.assign({}, (this.state.bfUtkast || {})[id]);
+        if (!d || !d.url) { u.laster = false; u.feil = (d && d.feil) || 'Det gikk ikke. Prøv igjen.'; }
+        else { u.laster = false; u.bilde = d.url; u.fokus = '50% 50%'; u.feil = ''; u.lagret = false; }
+        this.setState(st => ({ bfUtkast: Object.assign({}, st.bfUtkast, { [id]: u }) }));
+      })
+      .catch(() => this.setState(st => ({ bfUtkast: Object.assign({}, st.bfUtkast, { [id]: Object.assign({}, (st.bfUtkast || {})[id], { laster: false, feil: 'Fikk ikke kontakt med serveren.' }) }) })));
+  }
+
+  bilderAdminVals(fane) {
+    const paa = fane === 'bilder';
+    if (paa && this.erPublisert() && !this._bfHentet) this.bfHent();
+    if (!paa) return { mkErBilder: false, bfKurs: [] };
+    const st = this.state;
+    const fokusKart = st.bfFokus || {};
+    const utkast = st.bfUtkast || {};
+    const settU = (id, endring) => this.setState(s => ({
+      bfUtkast: Object.assign({}, s.bfUtkast, { [id]: Object.assign({}, (s.bfUtkast || {})[id], endring) }),
+    }));
+    const url = b => (/^api\//.test(b) ? '/' + b : '/' + b);
+    const kurs = (st.adminKursRaa || []).slice();
+    const vis = (b, fokus, w, h, standard) => ({
+      width: w + 'px', height: h + 'px', maxWidth: '100%', borderRadius: '8px', flex: 'none',
+      backgroundColor: 'var(--clay-200)', backgroundSize: 'cover', backgroundRepeat: 'no-repeat',
+      backgroundImage: b ? 'url("' + url(b) + '")' : 'none',
+      backgroundPosition: fokus || standard,
+    });
+    return {
+      mkErBilder: true,
+      bfTom: kurs.length === 0,
+      bfKurs: kurs.map(k => {
+        const id = k.id;
+        const u = utkast[id] || {};
+        const bilde = u.bilde || k.bilde || '';
+        const lagretFokus = fokusKart[bilde];
+        const fokus = u.fokus || lagretFokus || '';
+        const endret = (!!u.bilde && u.bilde !== k.bilde) || (!!u.fokus && u.fokus !== (fokusKart[bilde] || ''));
+        const velgFokus = (e) => {
+          if (!e || !e.currentTarget) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          const x = Math.max(0, Math.min(100, Math.round((e.clientX - r.left) / r.width * 100)));
+          const y = Math.max(0, Math.min(100, Math.round((e.clientY - r.top) / r.height * 100)));
+          settU(id, { fokus: x + '% ' + y + '%', lagret: false });
+        };
+        const g = u.gemini || null;
+        return {
+          id: String(id),
+          tittel: k.tittel,
+          harBilde: !!bilde,
+          stor: Object.assign(vis(bilde, fokus, 360, 360, '50% 50%'), { backgroundSize: 'contain', backgroundColor: 'var(--clay-100)', cursor: 'crosshair', position: 'relative' }),
+          prikkStil: {
+            position: 'absolute', width: '18px', height: '18px', borderRadius: '50%', transform: 'translate(-50%, -50%)',
+            left: (fokus || '50% 50%').split(' ')[0], top: (fokus || '50% 50%').split(' ')[1] || '50%',
+            border: '3px solid var(--lissom-yellow)', boxShadow: '0 0 0 2px var(--lissom-brown)', pointerEvents: 'none',
+          },
+          velgFokus,
+          kortPc: vis(bilde, fokus, 254, 159, '50% 50%'),
+          kortMobil: vis(bilde, fokus, 174, 109, '50% 50%'),
+          sidePc: vis(bilde, fokus, 324, 203, 'center 32%'),
+          sideMobil: vis(bilde, fokus, 175, 110, 'center 32%'),
+          laster: !!u.laster,
+          feil: u.feil || '',
+          harFeil: !!u.feil,
+          drar: !!u.drar,
+          sonStil: {
+            display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', position: 'relative',
+            border: '2px dashed ' + (u.drar ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+            background: u.drar ? 'var(--yellow-100, #FFF4C7)' : 'transparent',
+            borderRadius: 'var(--radius-md)', padding: '14px 16px',
+          },
+          dragOver: (e) => { if (!e) return; e.preventDefault(); if (!u.drar) settU(id, { drar: true }); },
+          dragUt: () => { if (u.drar) settU(id, { drar: false }); },
+          slipp: (e) => {
+            if (!e) return;
+            e.preventDefault();
+            settU(id, { drar: false });
+            const f = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+            this.bfLastOpp(id, f);
+          },
+          velgFil: (e) => {
+            const f = e && e.target && e.target.files ? e.target.files[0] : null;
+            if (e && e.target) e.target.value = '';
+            this.bfLastOpp(id, f);
+          },
+          // Gemini: et bilde med mer luft rundt, vist ved siden av. Brukes
+          // bare naar eieren trykker «Bruk det nye».
+          gemini: () => {
+            if (u.geminiLaster) return;
+            settU(id, { geminiLaster: true, feil: '' });
+            fetch('/api/admin/gemini.php', {
+              method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ handling: 'utvidKursbilde', id, bilde }),
+            })
+              .then(r => r.json())
+              .then(d => {
+                if (!d || !d.url) { settU(id, { geminiLaster: false, feil: (d && d.feil) || 'Det gikk ikke. Prøv igjen.' }); return; }
+                settU(id, { geminiLaster: false, gemini: d.url });
+              })
+              .catch(() => settU(id, { geminiLaster: false, feil: 'Fikk ikke kontakt med serveren.' }));
+          },
+          geminiLaster: !!u.geminiLaster,
+          harGemini: !!g,
+          geminiStil: vis(g, '', 254, 159, '50% 50%'),
+          brukGemini: () => settU(id, { bilde: g, gemini: null, fokus: '50% 50%', lagret: false }),
+          endret,
+          lagreStil: {
+            appearance: 'none', cursor: endret ? 'pointer' : 'not-allowed', opacity: endret ? 1 : .5,
+            border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)',
+            borderRadius: 'var(--radius-pill)', padding: '8px 18px', font: 'var(--type-body-sm)', fontWeight: 800,
+          },
+          lagret: !!u.lagret,
+          lagre: () => {
+            if (!endret || u.lagrer) return;
+            settU(id, { lagrer: true, feil: '' });
+            const nyttBilde = u.bilde && u.bilde !== k.bilde ? u.bilde : '';
+            const post = (adr, kropp) => fetch(adr, {
+              method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(kropp),
+            }).then(r => r.json()).then(d => (d && d.feil ? Promise.reject(d.feil) : d));
+            (nyttBilde ? post('/api/admin/kurs.php', { handling: 'hovedbilde', id, bilde: nyttBilde }) : Promise.resolve(true))
+              .then(() => (u.fokus ? post('/api/admin/bilder.php', { handling: 'fokus', fil: bilde, fokus: u.fokus }) : true))
+              .then(d => {
+                const ny = (st.adminKursRaa || []).map(x => (x.id === id && nyttBilde ? Object.assign({}, x, { bilde: nyttBilde }) : x));
+                this.setState(s => ({
+                  adminKursRaa: ny,
+                  bfFokus: (d && d.fokus) || s.bfFokus,
+                  bfUtkast: Object.assign({}, s.bfUtkast, { [id]: { lagret: true } }),
+                }));
+              })
+              .catch(f => settU(id, { lagrer: false, feil: typeof f === 'string' ? f : 'Det gikk ikke. Prøv igjen.' }));
+          },
+        };
+      }),
+    };
+  }
+
   medlemsforslagAdminVals(fane) {
     const paa = fane === 'forslag';
     if (paa && this.erPublisert() && !this._mfHentet) this.mfHent();
@@ -47290,6 +47510,7 @@ class Component extends DCLogic {
         ['Innboks',  'adminmarked', { mkFane: 'innboks' }],
         ['Medlemsforslag', 'adminmarked', { mkFane: 'forslag' }],
         ['Vervepremie', 'adminmarked', { mkFane: 'verving' }],
+        ['Bilder', 'adminmarked', { mkFane: 'bilder' }],
         // Eieren, 24. september 2026: «artikler kan du fjerne, den ligger
         // under skriv. og send bør vel hete tilbud / nyhetsbrev». Lista over
         // artiklene er en fane under Skriv (eierens valg samme dag).
@@ -71209,6 +71430,7 @@ class Component extends DCLogic {
           ['send', 'Tilbud / nyhetsbrev'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
           ['forslag', 'Medlemsforslag'],
           ['verving', 'Vervepremie'],
+          ['bilder', 'Bilder'],
           ['maler', 'Tekst maler'],
 
         ];
@@ -71244,6 +71466,9 @@ class Component extends DCLogic {
           ['Medlemsforslag', ['forslag']],
           // Eieren, 27. september 2026: vervepremien.
           ['Vervepremie', ['verving']],
+          // Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring,
+          // at jeg kan klikke å laste opp eller dra og slipp» — kursbildene.
+          ['Bilder', ['bilder']],
           // «Artikler» ble en fane under Skriv, og «Send» heter
           // «Tilbud / nyhetsbrev». Eieren, 24. september 2026.
           // «Artikkel» og «Artikler» ble én fane: lista, med «Ny artikkel»
@@ -71330,6 +71555,7 @@ class Component extends DCLogic {
           // Markedsfoering. «Hent» henter.
           ...this.medlemsforslagAdminVals(fane),
           ...this.vervingAdminVals(fane),
+          ...this.bilderAdminVals(fane),
           ...(() => {
             const erKomm = (this.state.ibFane || 'kommentarer') === 'kommentarer';
             const pilleStil = paa => ({

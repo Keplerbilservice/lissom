@@ -649,6 +649,32 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "markedsforing-bilder",
+            "dato": "2026-09-27",
+            "hva": "«jeg vil gjøre det selv i markedsføring, at jeg kan klikke å laste opp eller dra og slipp» — fanen Bilder: kursbildet med forhåndsvisning (kurskort/kursside, PC/mobil), dra og slipp eller Velg bilde, fokuspunkt, Forbedre med Gemini, ingenting byttes før Lagre",
+            "hvor": "Admin › Markedsføring › Bilder",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "['Bilder', ['bilder']],",
+                        "bilderAdminVals(fane) {",
+                        "Dra et bilde hit, eller",
+                        "Trykk i bildet for å velge hva som skal være midt i utsnittet",
+                        "Forbedre med Gemini",
+                        "onDrop=\"{{ k.slipp }}\"",
+                        "handling: 'hovedbilde', id, bilde: nyttBilde"
+                    ]
+                },
+                {
+                    "fil": "api/admin/gemini.php",
+                    "finnes": [
+                        "case 'utvidKursbilde':"
+                    ]
+                }
+            ]
         }
     ]
 }

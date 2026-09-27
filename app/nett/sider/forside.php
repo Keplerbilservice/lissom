@@ -69,7 +69,7 @@ $h .= '</div></div></section>' . "\n";
 // ── Banneret under heroen ────────────────────────────────────────────────
 // Alt i det settes i admin under Oversikt — bannerNaa() i nettsida.
 if (($lagret['Banner/pa'] ?? '') !== 'nei' && !Nett::mobilSkjult('apenthus')) {
-    $std = ['tittel' => 'Gi et gavekort', 'tekst' => 'Kan brukes på alle våre tjenester og produkter.', 'knapp' => 'Kjøp gavekort', 'lenke' => 'gavekort', 'bilde' => 'assets_photos_butikken.jpg'];
+    $std = ['tittel' => 'Gi et gavekort', 'tekst' => 'Kan brukes på alle våre tjenester og produkter.', 'knapp' => 'Kjøp gavekort', 'lenke' => 'gavekort', 'bilde' => 'uploads_foto-kontakt.jpg'];
     $b = [];
     foreach ($std as $f => $v) {
         $lag = $lagret['Banner/' . $f] ?? '';
@@ -93,9 +93,9 @@ $h .= '<section style="background: var(--clay-50); padding: var(--section-y) var
     . '<h2 style="margin: 0 0 var(--space-8);">' . $e($innh('Forside/1/Overskrift')) . '</h2>'
     . '<div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">';
 $innganger = [
-    ['level' => '01 · Dreiekurs', 'title' => 'Dreiekurs', 'text' => 'To kvelder ved dreieskiva: sentrere, dreie, trimme foten og dekorere. Vi glaserer og brenner. Fra leireklump til ferdig kopp.', 'image' => 'uploads_foto-dreiekurs.jpg', 'imageAlt' => 'Deltaker dreier ved dreieskiva hos Lissom Keramikk', 'cta' => 'Se dreiekurs', 'href' => '/kurs'],
+    ['level' => '01 · Dreiekurs', 'title' => 'Dreiekurs', 'text' => 'To kvelder ved dreieskiva: sentrere, dreie, trimme foten og dekorere. Vi glaserer og brenner. Fra leireklump til ferdig kopp.', 'image' => 'uploads_foto-dreiekurs2.jpg', 'imageAlt' => 'Deltaker dreier ved dreieskiva hos Lissom Keramikk', 'cta' => 'Se dreiekurs', 'href' => '/kurs'],
     ['level' => '02 · Plateteknikk og håndbygging', 'title' => 'Boller og store fat', 'text' => 'Kjevle ut leira, forme over form, få rene kanter. Én kveld: boller, et stort fat eller en fransk smørklokke.', 'image' => 'uploads_foto-boller.jpg', 'imageAlt' => 'Kursholderen viser en bolle til deltakerne på plateteknikk hos Lissom Keramikk', 'cta' => 'Se kursene', 'href' => '/kurs'],
-    ['level' => '03 · Paint on Pots', 'title' => 'Paint on Pots', 'text' => 'Velg en ferdigbrent kopp, skål eller figur og mal den slik du vil. Vi glaserer og brenner — klar til henting etter to til fire uker.', 'image' => 'uploads_b7012bbb-b81d-4c66-8614-030285ed4d5e.jpg', 'imageAlt' => 'Paint on Pots: ferdigbrent keramikk som males hos Lissom Keramikk', 'cta' => 'Les mer', 'href' => '/paint-on-pots'],
+    ['level' => '03 · Paint on Pots', 'title' => 'Paint on Pots', 'text' => 'Velg en ferdigbrent kopp, skål eller figur og mal den slik du vil. Vi glaserer og brenner — klar til henting etter to til fire uker.', 'image' => 'uploads_foto-paint.jpg', 'imageAlt' => 'Paint on Pots: ferdigbrent keramikk som males hos Lissom Keramikk', 'cta' => 'Les mer', 'href' => '/paint-on-pots'],
     ['level' => '04 · Medlemskap', 'title' => 'Medlemskap', 'text' => 'Egen hylle, dørkode døgnet rundt og timer i verkstedet hver måned. Prøv én måned uten binding.', 'image' => 'uploads_shutterstock_2829101499.jpg', 'imageAlt' => 'Medlem jobber ved dreieskiva i verkstedet hos Lissom', 'cta' => 'Se medlemskap', 'href' => '/medlemskap'],
 ];
 foreach ($innganger as $k) {

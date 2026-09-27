@@ -26,7 +26,7 @@ final class Kort
         ['level' => 'Kurs',                 'title' => 'Kurs boller',          'tema' => 'Plateteknikk', 'image' => self::FOTO . 'handbygging.jpg'],
         ['level' => 'Kurs',                 'title' => 'Store fat kurs',       'tema' => 'Plateteknikk', 'image' => 'uploads_shutterstock_2830576133.jpg'],
         ['level' => 'Event · For dere to',  'title' => 'Date Night',           'tema' => 'Events',       'image' => 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg'],
-        ['level' => 'Event · Den enkleste', 'title' => 'Paint on Pots',        'tema' => 'Events',       'image' => 'uploads_shutterstock_2830576853.jpg'],
+        ['level' => 'Event · Den enkleste', 'title' => 'Paint on Pots',        'tema' => 'Events',       'image' => 'uploads_foto-paintonpots.jpg'],
     ];
 
     /** @var list<array<string,mixed>>|null */

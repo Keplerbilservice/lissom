@@ -560,6 +560,14 @@ await flyt('Regresjon: faner i admin og hovedsidene', async () => {
   const p = await side('admin');
   await gaa(p, '/admin/oversikt', 3000);
   const faner = await p.locator('.lx-tm > button').allInnerTexts();
+  // To av pillene — «⌕ Søk» og «Synlighet» — aapner et ark oppaa skjermen
+  // i stedet for aa bytte skjerm. Arket dekker pilleraden, saa neste pille
+  // kan ikke treffes for det er lukket. Begge arkene har den samme runde
+  // lukkeknappen i .lx-synark.
+  const lukkArk = async () => {
+    const lukk = p.locator('.lx-synark button[aria-label="Lukk"]');
+    if (await lukk.count()) { await lukk.first().click(); await p.waitForTimeout(400); }
+  };
   for (const navn of faner.map(s => s.trim()).filter(Boolean)) {
     const foerFeil = skriptfeil.length;
     await p.locator('.lx-tm > button', { hasText: navn }).first().click();
@@ -567,6 +575,7 @@ await flyt('Regresjon: faner i admin og hovedsidene', async () => {
     const h1 = await p.locator('main h1').first().innerText().catch(() => '');
     sjekk(`admin-fanen «${navn}» aapner en side`, h1.trim() !== '', h1);
     sjekk(`… uten skriptfeil`, skriptfeil.length === foerFeil, skriptfeil.slice(foerFeil).join(' | '));
+    await lukkArk();
   }
   await gaa(p, '/admin/markedsforing', 3000);
   const mfaner = await p.locator('main button').evaluateAll(b => b.filter(x => x.getClientRects().length && x.closest('div')?.querySelectorAll('button').length >= 6).map(x => x.innerText.trim()).slice(0, 12));

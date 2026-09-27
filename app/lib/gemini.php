@@ -453,6 +453,48 @@ final class Gemini
     }
 
     /**
+     * Et kursbilde med mer luft rundt motivet. Eieren, 27. september 2026:
+     * «bildet dreiekurs … feil utsnitt, vi ser bare halve bildet» og «anniken
+     * er for stor på bildet» — og at han vil gjore det selv i Markedsfoering ›
+     * Bilder. Kurssidene og kortene viser bildet i 16:10; et staaende bilde
+     * mister da det meste. Her utvides bildet til 16:10 med mer av scenen
+     * rundt. Resultatet legges i biblioteket; kurset roeres ikke foer admin
+     * har valgt «Bruk det nye» og «Lagre».
+     *
+     * @return array{navn: string, url: string, kostnadOre: int}
+     */
+    public static function utvidKursbilde(string $raa, string $kurs = 'kurset'): array
+    {
+        $noekkel = self::noekkel();
+        if ($noekkel === '') {
+            throw new RuntimeException(
+                'Gemini er ikke koblet til ennå. Lim inn nøkkelen under Markedsføring → Oppsett.'
+            );
+        }
+        $tak = AI::tak();
+        if (AI::bruktDenneMaaneden() >= $tak * 100) {
+            throw new RuntimeException(
+                'Taket på ' . Booking::kroner($tak * 100) . ' for denne måneden er nådd. '
+                . 'Du kan heve det under Markedsføring → Oppsett.'
+            );
+        }
+        $info = @getimagesizefromstring($raa);
+        $mime = is_array($info) && !empty($info['mime']) ? (string) $info['mime'] : 'image/jpeg';
+
+        $tekst = 'Dette er et foto fra keramikkverkstedet Lissom, brukt som bilde for «' . $kurs . '». '
+            . "Lag det samme bildet i liggende format 16:10, med mer av scenen rundt: utvid bildet til sidene og "
+            . "ovenfor/nedenfor slik at hele motivet (personer, hender, dreieskive, keramikk) er med og har luft rundt seg, "
+            . "og personene blir mindre i bildet. Alt som er i originalen skal vaere noeyaktig som foer: samme personer, "
+            . "ansikter, klaer, hender, keramikk, farger og lys. Ikke legg til nye personer, tekst eller logoer. "
+            . "Det nye rundt skal vaere et troverdig keramikkverksted i samme stil og lys som originalen.";
+
+        return self::bildeKall([
+            ['inlineData' => ['mimeType' => $mime, 'data' => base64_encode($raa)]],
+            ['text' => $tekst],
+        ], 'Kursbilde', $noekkel);
+    }
+
+    /**
      * Selve kallet til Google for et bilde, og mottaket av svaret.
      *
      * @param list<array<string,mixed>> $deler

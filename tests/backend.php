@@ -20999,6 +20999,23 @@ sjekk('knappene og kvitteringene er de godkjente',
 sjekk('kursboost-utkastet husker kurset',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/ai.php'), "\$r + ['kursId' => (int) \$k['kurs']['id']],"));
 
+// Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring, at jeg
+// kan klikke å laste opp eller dra og slipp» — Markedsføring › Bilder.
+echo "\nMarkedsfoering › Bilder\n";
+$bfSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$bfGem  = file_get_contents(dirname(__DIR__) . '/api/admin/gemini.php');
+sjekk('fanen Bilder staar i Markedsfoering',
+    str_contains($bfSida, "['Bilder', 'adminmarked', { mkFane: 'bilder' }],") && str_contains($bfSida, "['Bilder', ['bilder']],"));
+sjekk('… med dra og slipp og «Velg bilde»',
+    str_contains($bfSida, 'onDrop="{{ k.slipp }}"') && str_contains($bfSida, 'onChange="{{ k.velgFil }}"'));
+sjekk('… kurset byttes foerst ved «Lagre»',
+    str_contains($bfSida, "handling: 'hovedbilde', id, bilde: nyttBilde")
+    && str_contains($bfSida, "handling: 'fokus', fil: bilde, fokus: u.fokus"));
+$bfDel = explode("case 'utvidKursbilde':", $bfGem)[1] ?? '';
+$bfDel = explode("    case '", $bfDel)[0];
+sjekk('… og Gemini lager bare et forslag, som ikke roerer kurset',
+    $bfDel !== '' && !str_contains($bfDel, 'DB::oppdater'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

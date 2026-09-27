@@ -57,6 +57,8 @@ for (const a of api) {
 }
 
 fs.mkdirSync(SKJERMBILDER, { recursive: true });
+// Skjermbildene Gemini ser paa etterpaa — se nederst.
+const tilGemini = [];
 const nettleser = await chromium.launch();
 
 for (const s of skjermer) {
@@ -90,11 +92,66 @@ for (const s of skjermer) {
       const fil = `${s.navn}${sti.replace(/\//g, '_') || '_forside'}.png`;
       await side.screenshot({ path: path.join(SKJERMBILDER, fil), fullPage: false }).catch(() => {});
     }
+    const bilde = await side.screenshot({ type: 'jpeg', quality: 45 }).catch(() => null);
+    if (bilde) tilGemini.push({ navn, bilde });
     await side.close();
   }
   await kontekst.close();
 }
 await nettleser.close();
+
+// ── Gemini ser over sidene ─────────────────────────────────────────────
+//
+// Eieren, 27. september 2026: «husk at den faste timelige sjekken ogsaa skal
+// utfores av Gemini, at dere samarbeider». Sjekkene over maaler det som kan
+// maales. Gemini ser paa skjermbildene som en besokende: tekst som overlapper,
+// bilder som mangler, tomme felt, feilmeldinger, noe som ser oedelagt ut.
+// Noekkelen ligger i Dokumenter\Claude-noekler\gemini.txt, eller i
+// GEMINI_API_KEY. Uten noekkel hoppes dette over.
+const gNokkel = (() => {
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY.trim();
+  try {
+    const r = fs.readFileSync(path.join(process.env.USERPROFILE || process.env.HOME || '',
+      'Documents', 'Claude-nøkler', 'gemini.txt'), 'utf8').trim();
+    return r.includes('=') ? r.slice(r.indexOf('=') + 1).trim() : r;
+  } catch { return ''; }
+})();
+if (gNokkel && tilGemini.length && process.env.VAKT_GEMINI !== '0') {
+  console.log(`\n── Gemini ser over ${tilGemini.length} skjermbilder ──`);
+  const deler = [{ text:
+    'Du er testeksperten for lissom.no, et norsk keramikkverksted. Under er skjermbilder av hver side, '
+    + 'paa PC og paa mobil, rett etter at de lastet. Se etter det en besokende ville merket som feil: '
+    + 'tekst som overlapper eller er kuttet, bilder som mangler eller er odelagte, tomme seksjoner, '
+    + 'feilmeldinger, knapper eller menyer som ligger feil, sider som bare viser lasting. '
+    + 'Hvert bilde viser bare den forste skjermhoyden, og samtykkebanneret for informasjonskapsler '
+    + 'ligger nederst: det som kuttes i nederkant av bildet eller skjules av banneret er IKKE en feil. '
+    + 'Ikke meld smak, designforslag eller ting som bare er uvanlige. Svar KUN med JSON: '
+    + '{"avvik":[{"side":"<navnet>","hva":"<kort, norsk>"}]} — tom liste naar alt ser riktig ut.' }];
+  for (const t of tilGemini) {
+    deler.push({ text: `Side: ${t.navn}` });
+    deler.push({ inline_data: { mime_type: 'image/jpeg', data: t.bilde.toString('base64') } });
+  }
+  try {
+    const svar = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
+      method: 'POST',
+      headers: { 'x-goog-api-key': gNokkel, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: deler }],
+        generationConfig: { responseMimeType: 'application/json' } }),
+    });
+    const j = await svar.json();
+    if (!svar.ok) {
+      console.log(`  Gemini svarte ikke (status ${svar.status}) — hoppet over`);
+    } else {
+      const tekst = (j?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+      const funn = (JSON.parse(tekst || '{}').avvik) || [];
+      if (!funn.length) { ok++; console.log('  OK    Gemini fant ingenting som ser galt ut'); }
+      for (const f of funn) sjekk(`Gemini: ${f.side}`, false, f.hva);
+    }
+  } catch (e) {
+    // Gemini nede er ikke lissom.no nede. Det skrives ned, men teller ikke.
+    console.log('  Gemini kunne ikke spores — hoppet over: ' + String(e.message).split('\n')[0]);
+  }
+}
 
 console.log(`\n${ok} sjekker i orden, ${avvik.length} avvik.`);
 if (avvik.length) {

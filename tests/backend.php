@@ -20741,7 +20741,7 @@ sjekk('«Flytt hit» uten valgt dato gjoer ingenting',
 echo "\nGavekortet sendes paa e-post\n";
 $gkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('gavekortsida sier at kortet sendes paa e-post',
-    str_contains($gkSida, "'Sendes på e-post når betalingen er gjennomført.',"));
+    str_contains($gkSida, "'Sendes på e-post så snart betalingen er gjennomført.',"));
 sjekk('… og ikke at det kan hentes i verkstedet',
     !str_contains($gkSida, "'Kan hentes i verkstedet.'")
     && !str_contains($gkSida, 'Kan jeg få gavekortet fysisk?'));
@@ -21141,6 +21141,23 @@ sjekk('soeket lukker menyskuffen og Verktøy-arket naar det aapner',
 sjekk('den sier fra naar ingenting passer',
     str_contains($sokSida, "admSokIngen: q !== '' && treff.length === 0,")
     && str_contains($sokSida, "admSokIngenTekst: 'Ingen treff på «'"));
+
+// Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring, at jeg
+// kan klikke å laste opp eller dra og slipp» — Markedsføring › Bilder.
+echo "\nMarkedsfoering › Bilder\n";
+$bfSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$bfGem  = file_get_contents(dirname(__DIR__) . '/api/admin/gemini.php');
+sjekk('fanen Bilder staar i Markedsfoering',
+    str_contains($bfSida, "['Bilder', 'adminmarked', { mkFane: 'bilder' }],") && str_contains($bfSida, "['Bilder', ['bilder']],"));
+sjekk('… med dra og slipp og «Velg bilde»',
+    str_contains($bfSida, 'onDrop="{{ k.slipp }}"') && str_contains($bfSida, 'onChange="{{ k.velgFil }}"'));
+sjekk('… kurset byttes foerst ved «Lagre»',
+    str_contains($bfSida, "handling: 'hovedbilde', id, bilde: nyttBilde")
+    && str_contains($bfSida, "handling: 'fokus', fil: bilde, fokus: u.fokus"));
+$bfDel = explode("case 'utvidKursbilde':", $bfGem)[1] ?? '';
+$bfDel = explode("    case '", $bfDel)[0];
+sjekk('… og Gemini lager bare et forslag, som ikke roerer kurset',
+    $bfDel !== '' && !str_contains($bfDel, 'DB::oppdater'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

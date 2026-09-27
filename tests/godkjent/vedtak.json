@@ -89,7 +89,7 @@
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "'Sendes på e-post når betalingen er gjennomført.',"
+                        "'Sendes på e-post så snart betalingen er gjennomført.',"
                     ],
                     "ikkeFinnes": [
                         "'Kan hentes i verkstedet.'",
@@ -101,7 +101,7 @@
                 {
                     "sti": "/gavekort",
                     "finnes": [
-                        "Sendes på e-post når betalingen er gjennomført."
+                        "Sendes på e-post så snart betalingen er gjennomført."
                     ],
                     "ikkeFinnes": [
                         "Kan hentes i verkstedet",
@@ -646,6 +646,123 @@
                     ],
                     "ikkeFinnes": [
                         "artikkel: 'Lagre som kladd i Nyheter'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kursbilder-nytt-utsnitt",
+            "dato": "2026-09-27",
+            "hva": "Nybegynner dreiekurs og Paint on Pots har fått Gemini-utvidede bilder (alternativ B) — hele motivet synes på kortene, Anniken mindre (eieren: «ikke spør, jeg har sagt hvordan jeg vil ha det»)",
+            "hvor": "uploads_foto-nybegynner.jpg, uploads_foto-paintonpots.jpg",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "\"uploads_foto-nybegynner.jpg\":[400,800,1800]",
+                        "\"uploads_foto-paintonpots.jpg\":[400,800,1800]"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "oversikt-dagens-omsetning-og-bestillinger",
+            "dato": "2026-09-27",
+            "hva": "«jeg vil at du alltid har dagens omsetning øverst, klikkbar, så jeg kan gå inn å se på den, deretter dagens bestilling selv om den ikke er betalt»",
+            "hvor": "Admin › Oversikt",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "(this.state.ovOms || 'I dag')",
+                        "onClick=\"{{ ovOmsApne }}\"",
+                        "Dagens bestillinger",
+                        "Ingen bestillinger i dag.",
+                        "ovDagRader: dagRader,"
+                    ],
+                    "ikkeFinnes": [
+                        "(this.state.ovOms || 'Denne måneden')"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "'dagensBestillinger' => $dagensBestillinger,"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "gavekort-tekst-og-lapp",
+            "dato": "2026-09-27",
+            "hva": "«gavekort tekst, få gemini til å sjekke, men stryk verkstedtid … noe som indikerer litt gave, men ikke for mye, i vår stil» — Geminis tekster (godkjent), overskrift «Gi bort litt tid med leire» på siden, Google-tittelen beholder «Gavekort på keramikkurs», merkelapp med kaffekoppen på kjøpskortet og i e-posten",
+            "hvor": "/gavekort, e-posten gavekort_mottaker",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "{ l: 'Overskrift', v: 'Gi bort litt tid med leire' },",
+                        "class=\"lx-gavelapp\"",
+                        "'Kan brukes på kurs, events, medlemskap og varer i butikken.',"
+                    ],
+                    "ikkeFinnes": [
+                        "medlemskap, verkstedtid og varer"
+                    ]
+                },
+                {
+                    "fil": "innhold-standard.json",
+                    "finnes": [
+                        "\"Gavekort/0/Overskrift\": \"Gi bort litt tid med leire\""
+                    ]
+                },
+                {
+                    "fil": "seo-kart.json",
+                    "finnes": [
+                        "Gavekort på keramikkurs – opplevelsesgave Vestfold | Lissom"
+                    ]
+                },
+                {
+                    "fil": "app/epost/oppsett.html",
+                    "finnes": [
+                        "https://lissom.no/e-post-gavelapp.png"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/gavekort",
+                    "finnes": [
+                        "Gi bort litt tid med leire",
+                        "Kan brukes på kurs, events, medlemskap og varer i butikken."
+                    ],
+                    "ikkeFinnes": [
+                        "verkstedtid"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "markedsforing-bilder",
+            "dato": "2026-09-27",
+            "hva": "«jeg vil gjøre det selv i markedsføring, at jeg kan klikke å laste opp eller dra og slipp» — fanen Bilder: kursbildet med forhåndsvisning (kurskort/kursside, PC/mobil), dra og slipp eller Velg bilde, fokuspunkt, Forbedre med Gemini, ingenting byttes før Lagre",
+            "hvor": "Admin › Markedsføring › Bilder",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "['Bilder', ['bilder']],",
+                        "bilderAdminVals(fane) {",
+                        "Dra et bilde hit, eller",
+                        "Trykk i bildet for å velge hva som skal være midt i utsnittet",
+                        "Forbedre med Gemini",
+                        "onDrop=\"{{ k.slipp }}\"",
+                        "handling: 'hovedbilde', id, bilde: nyttBilde"
+                    ]
+                },
+                {
+                    "fil": "api/admin/gemini.php",
+                    "finnes": [
+                        "case 'utvidKursbilde':"
                     ]
                 }
             ]

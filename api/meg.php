@@ -58,6 +58,11 @@ Svar::json([
     // haand — «=== 'Årsmedlemskap'» — og da var det to utgaver av samme
     // regel, med hver sin maate aa ta feil paa. Naa spor den serveren.
     'kanSelge'       => Medlemskap::kanSelge($m),
+    // Vervepremien: banneret paa Min side, bare for aktive medlemmer og bare
+    // naar bryteren staar paa. Timetallet er eierens — se app/lib/verving.php.
+    'verving'        => er_aktivt_medlem($m) && Verving::klar() && Verving::paa()
+        ? ['timer' => Verving::timer(), 'lenke' => Verving::lenkeFor((int) $m['id'])]
+        : null,
     'soknadStatus'   => $soknad ? (string) $soknad['status'] : null,
     'medlem'    => [
         'id'        => (int) $m['id'],

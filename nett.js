@@ -6,6 +6,15 @@
   'use strict';
   var d = document;
 
+  /* ── Vervelenka ─────────────────────────────────────────────────────── */
+  // lissom.no/medlemskap?verv=KODE tegnes av serveren. Koden huskes her, og
+  // appen sender den med innmeldingen — se vervKode() i lissom-2108.html.
+  try {
+    var verv = (new URLSearchParams(window.location.search).get('verv') || '')
+      .toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+    if (verv) localStorage.setItem('lissom-verv', verv);
+  } catch (e) { /* uten lagring blir det ingen premie, men sida virker */ }
+
   /* ── Toppen ─────────────────────────────────────────────────────────── */
   // Gjennomsiktig over heroen; hvit med skygge naar man har rullet 8 px.
   var topper = d.querySelectorAll('header[data-nett-topp="overlay"]');

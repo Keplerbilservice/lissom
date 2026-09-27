@@ -19,7 +19,18 @@ gikk=(); feilet=()
 kjor() { # kjor "navn" kommando...
   local navn="$1"; shift
   echo; echo "━━━ $navn"
-  if "$@"; then gikk+=("$navn"); else feilet+=("$navn"); fi
+  # En test som krasjer, kan avslutte med kode 0: appens feilhaandterer
+  # skriver «Ubehandlet feil» og avslutter med 0. Da saa den gronn ut.
+  # Derfor leses ogsaa det testen skrev, og et krasj teller som feil.
+  local ut kode
+  ut=$("$@" 2>&1); kode=$?
+  printf '%s\n' "$ut"
+  if [ $kode -eq 0 ] && ! grep -qE '(PHP )?(Fatal error|Parse error|Uncaught )|Ubehandlet feil' <<<"$ut"; then
+    gikk+=("$navn")
+  else
+    [ $kode -eq 0 ] && echo "  ✗ $navn krasjet (kode 0, men feil i utskriften)"
+    feilet+=("$navn")
+  fi
 }
 
 # --- Sjekkene av nettsida og admin (leser filene) --------------------------
@@ -32,6 +43,7 @@ done
 kjor "backend"       php tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
+kjor "verving"       php tests/verving.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
 kjor "betalingsflyt" bash tests/flyt.sh

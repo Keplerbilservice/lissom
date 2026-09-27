@@ -1293,6 +1293,19 @@ final class Medlemskap
             DB::oppdater('members', ['status' => 'oppsagt'], ['id' => (int) $avtale['member_id']]);
         }
 
+        // Vervepremien. Avtalen er aktiv og foerste trekk tatt — kom vennen
+        // fra en vervelenke, faar den som vervet timene sine naa. Trygg aa
+        // kalle hver gang: premien gis én gang per venn. Feiler den, skal
+        // ikke medlemskapet til vennen stoppe av det. Bare naar avtalen GAAR
+        // over til aktiv — ikke hver gang en aktiv avtale sjekkes.
+        if ($ny === 'aktiv' && (string) $avtale['status'] !== 'aktiv') {
+            try {
+                Verving::premier((int) $avtale['member_id'], (int) $avtale['id'], (string) $avtale['plan']);
+            } catch (Throwable $e) {
+                logg_feil('Vervepremien feilet for avtale ' . $avtale['id'], $e);
+            }
+        }
+
         return $ny;
     }
 

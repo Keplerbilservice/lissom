@@ -107,6 +107,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Utsending' => 'varsler.php',
         'Varsel' => 'varsler.php',
         'Veileder' => 'veileder.php',
+        'Verving' => 'verving.php',
         'Vipps' => 'vipps.php',
     ];
     if (isset($kart[$klasse])) {

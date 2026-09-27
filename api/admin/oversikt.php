@@ -535,7 +535,117 @@ $medlemsstatus = (static function (): array {
 })();
 
 
+// ── Dagens bestillinger ─────────────────────────────────────────────────
+//
+// Eieren, 27. september 2026: «jeg vil at du alltid har dagens omsetning
+// øverst, klikkbar, så jeg kan gå inn å se på den, deretter dagens bestilling
+// selv om den ikke er betalt». Alt som er bestilt i dag (norsk dag): kurs,
+// butikk, gavekort og medlemskap, nyeste først.
+//
+// Ikke med: det kunden avbrøt i Vipps (betalingen er avbrutt eller feilet,
+// eller reservasjonen har gått ut) — det er ingen bestilling. Samme regel som
+// «Nye påmeldinger» over. Betal ved oppmøte og det som er lagt inn i admin har
+// ingen Vipps-betaling, og står med.
+$dagensBestillinger = (static function () use ($dagStart): array {
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $klokke = static fn(string $utc): string
+        => (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone($oslo)->format('H:i');
+    $avbrutt = "(p.status IS NOT NULL AND p.status IN ('avbrutt','feilet'))";
+    $rader = [];
+
+    foreach (DB::alle(
+        "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, b.course_session_id,
+                COALESCE(m.navn, b.gjest_navn) AS navn, c.tittel
+           FROM bookings b
+           JOIN courses c ON c.id = b.course_id
+      LEFT JOIN members m ON m.id = b.member_id
+      LEFT JOIN payments p ON p.id = b.payment_id
+          WHERE b.created_at >= :fra
+            AND b.status IN ('betalt','reservert','refundert','ikke_mott')
+            AND NOT $avbrutt
+            AND (b.status <> 'reservert' OR b.reservert_til IS NULL OR b.reservert_til > UTC_TIMESTAMP())",
+        ['fra' => $dagStart]
+    ) as $b) {
+        $rader[] = [
+            'slag'   => 'kurs', 'id' => (int) $b['id'],
+            'oktId'  => $b['course_session_id'] !== null ? (int) $b['course_session_id'] : null,
+            'naar'   => (string) $b['created_at'], 'kl' => $klokke((string) $b['created_at']),
+            'hva'    => (string) $b['tittel'] . ((int) $b['antall'] > 1 ? ' · ' . (int) $b['antall'] . ' plasser' : ''),
+            'belop'  => Booking::kroner((int) $b['belop_ore']),
+            'navn'   => (string) $b['navn'],
+            'status' => match ((string) $b['status']) {
+                'betalt', 'ikke_mott' => 'Betalt', 'refundert' => 'Refundert', default => 'Ikke betalt',
+            },
+        ];
+    }
+
+    if (DB::harTabell('orders')) {
+        foreach (DB::alle(
+            "SELECT o.id, o.ordrenr, o.kunde_navn, o.sum_ore, o.status, o.created_at,
+                    (SELECT GROUP_CONCAT(CONCAT(l.antall, ' × ', l.tittel) SEPARATOR ', ')
+                       FROM order_lines l WHERE l.order_id = o.id) AS linjer
+               FROM orders o
+          LEFT JOIN payments p ON p.id = o.payment_id
+              WHERE o.created_at >= :fra AND o.status <> 'kansellert' AND NOT $avbrutt",
+            ['fra' => $dagStart]
+        ) as $o) {
+            $rader[] = [
+                'slag'   => 'ordre', 'id' => (int) $o['id'], 'ordrenr' => (string) $o['ordrenr'],
+                'naar'   => (string) $o['created_at'], 'kl' => $klokke((string) $o['created_at']),
+                'hva'    => (string) ($o['linjer'] ?: $o['ordrenr']),
+                'belop'  => Booking::kroner((int) $o['sum_ore']),
+                'navn'   => (string) $o['kunde_navn'],
+                'status' => match ((string) $o['status']) {
+                    'betalt', 'klar', 'hentet' => 'Betalt', 'refundert' => 'Refundert', default => 'Ikke betalt',
+                },
+            ];
+        }
+    }
+
+    foreach (DB::alle(
+        "SELECT g.id, g.kode, g.opprinnelig_ore, g.kjoper_navn, g.status, g.created_at, p.status AS pstatus
+           FROM gift_cards g
+      LEFT JOIN payments p ON p.id = g.payment_id
+          WHERE g.created_at >= :fra AND NOT $avbrutt",
+        ['fra' => $dagStart]
+    ) as $g) {
+        $rader[] = [
+            'slag'   => 'gavekort', 'id' => (int) $g['id'], 'kode' => (string) $g['kode'],
+            'naar'   => (string) $g['created_at'], 'kl' => $klokke((string) $g['created_at']),
+            'hva'    => 'Gavekort',
+            'belop'  => Booking::kroner((int) $g['opprinnelig_ore']),
+            'navn'   => (string) ($g['kjoper_navn'] ?? ''),
+            'status' => in_array((string) $g['pstatus'], ['refundert', 'delvis_refundert'], true) ? 'Refundert'
+                : (in_array((string) $g['status'], ['aktivt', 'brukt'], true) ? 'Betalt' : 'Ikke betalt'),
+        ];
+    }
+
+    if (DB::harTabell('medlemsordrer')) {
+        foreach (DB::alle(
+            "SELECT o.id, o.medlem_id, o.navn, o.plan, o.pris_ore, o.opprettet, o.betaling
+               FROM medlemsordrer o
+              WHERE o.opprettet >= :fra AND o.status = 'fullfort'",
+            ['fra' => $dagStart]
+        ) as $m) {
+            $rader[] = [
+                'slag'   => 'medlemskap', 'id' => (int) $m['id'],
+                'medlemId' => $m['medlem_id'] !== null ? (int) $m['medlem_id'] : null,
+                'naar'   => (string) $m['opprettet'], 'kl' => $klokke((string) $m['opprettet']),
+                'hva'    => 'Medlemskap · ' . (string) $m['plan'],
+                'belop'  => Booking::kroner((int) $m['pris_ore']),
+                'navn'   => (string) $m['navn'],
+                // «Betal i verkstedet» er meldt inn, men ikke betalt enda.
+                'status' => (string) $m['betaling'] === 'verksted' ? 'Ikke betalt' : 'Betalt',
+            ];
+        }
+    }
+
+    usort($rader, static fn(array $a, array $b): int => strcmp($b['naar'], $a['naar']));
+    return $rader;
+})();
+
 Svar::json([
+    'dagensBestillinger' => $dagensBestillinger,
     // Hva som faktisk er skrudd paa.
     //
     // SMS-malene laa i admin som om de gikk ut. Uten leverandoer i

@@ -16867,10 +16867,11 @@ window.__resources = {
                 </sc-for>
               </div>
             </div>
-            <button type="button" onClick="{{ ovGaOkonomi }}" aria-label="Full rapport i Økonomi" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--text-heading); white-space: nowrap;">{{ ovOmsSum }}</button>
+            <button type="button" onClick="{{ ovOmsApne }}" aria-label="Se omsetningen" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--text-heading); white-space: nowrap;">{{ ovOmsSum }}</button>
             <sc-if value="{{ ovOmsHarMot }}" hint-placeholder-val="{{ true }}">
               <div style="font-size: var(--text-sm); color: var(--text-muted);"><b style="{{ ovOmsMotStil }}">{{ ovOmsMotPst }}</b> {{ ovOmsMotTekst }}</div>
             </sc-if>
+            <div role="button" tabindex="0" onClick="{{ ovOmsApne }}" style="display: grid; gap: 5px; justify-items: end; width: 100%; cursor: pointer;">
             <div style="display: flex; width: 100%; max-width: 320px; height: 7px; border-radius: 999px; overflow: hidden; gap: 2px; background: var(--clay-100);">
               <sc-for list="{{ ovOmsStripe }}" as="d" hint-placeholder-count="3">
                 <i style="{{ d.stil }}"></i>
@@ -16884,7 +16885,35 @@ window.__resources = {
                 <span>{{ ingenOmsTekst }}</span>
               </sc-if>
             </div>
+            </div>
           </div>
+        </div>
+
+        <!-- Dagens bestillinger (eieren, 27. september 2026): rett under
+             omsetningen, alt bestilt i dag, også det som ikke er betalt. -->
+        <div class="lx-ovgruppe lx-ovdag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
+          <div style="padding: var(--space-4) var(--space-5) var(--space-3); display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3);">
+            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Dagens bestillinger</span>
+            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-muted);">{{ ovDagTall }}</span>
+          </div>
+          <sc-for list="{{ ovDagRader }}" as="r" hint-placeholder-count="3">
+            <div role="button" tabindex="0" onClick="{{ r.velg }}" class="lx-ovrad" style="display: flex; align-items: center; gap: var(--space-4); padding: 12px 18px; border-top: 1px solid var(--border-subtle); cursor: pointer;">
+              <span style="flex: none; width: 3.2em; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-muted);">{{ r.kl }}</span>
+              <span style="flex: 1; min-width: 0;">
+                <span style="display: block; font-weight: 700; font-size: var(--text-base); color: var(--text-heading); overflow-wrap: anywhere;">{{ r.hva }}</span>
+                <span style="display: block; font-size: var(--text-sm); color: var(--text-muted);">{{ r.under }}</span>
+              </span>
+              <span style="{{ r.statusStil }}">{{ r.status }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ ovDagTom }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 12px 18px; border-top: 1px solid var(--border-subtle); color: var(--text-muted); font-size: var(--text-sm);">Ingen bestillinger i dag.</div>
+          </sc-if>
+          <sc-if value="{{ ovDagFlere }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 10px 18px; border-top: 1px solid var(--border-subtle);">
+              <button type="button" onClick="{{ ovDagSeAlle }}" style="appearance: none; cursor: pointer; border-radius: var(--radius-pill); padding: 6px 12px; font: var(--type-chip); font-weight: 700; border: 1.5px solid var(--lissom-brown); background: var(--surface-card); color: var(--lissom-brown);">Se alle</button>
+            </div>
+          </sc-if>
         </div>
 
         <!-- Den gule raden: det som brukes oftest, og ovnen. -->
@@ -35224,7 +35253,7 @@ class Component extends DCLogic {
   // Omsetningen fordelt paa hva den gjaldt, for valgt periode.
   omsetningsLinjer() {
     const o = (this.state.adminData || {}).omsetning;
-    const idag = (this.state.ovOms || 'Denne måneden') === 'I dag';
+    const idag = (this.state.ovOms || 'I dag') === 'I dag';
 
     if (o) return (idag ? o.linjerIdag : o.linjerMnd) || [];
     if (this.erPublisert()) return [];
@@ -47872,13 +47901,14 @@ class Component extends DCLogic {
 
   ovNyVals() {
     const tom = { ovGrupper: [], ovSmaa: [], ovOmsStripe: [], ovOmsListeFarge: [], ovOvnPiller: [],
-                  ovOmsHarMot: false, ovOmsMotPst: '', ovOmsMotTekst: '', ovOmsMotStil: {}, ovNyttKurs: () => {} };
+                  ovOmsHarMot: false, ovOmsMotPst: '', ovOmsMotTekst: '', ovOmsMotStil: {}, ovNyttKurs: () => {},
+                  ovDagRader: [], ovDagTall: '', ovDagTom: false, ovDagFlere: false, ovDagSeAlle: () => {}, ovOmsApne: () => {} };
     if (this.state.side !== 'adminoversikt') return tom;
 
     const d = this.state.adminData || {};
     const koer = d.koer || {};
     const oms = d.omsetning || {};
-    const idag = (this.state.ovOms || 'Denne måneden') === 'I dag';
+    const idag = (this.state.ovOms || 'I dag') === 'I dag';
     const stopp = (fn) => (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); fn(); };
     const kr = (ore) => 'kr ' + String(Math.round((ore || 0) / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
@@ -48069,7 +48099,46 @@ class Component extends DCLogic {
               letterSpacing: '.05em', textTransform: 'uppercase', fontSize: '12px', border: '1.5px solid var(--lissom-brown)', background: 'transparent', color: 'var(--lissom-brown)' },
     });
 
+    // ── Dagens bestillinger ── (eieren, 27. september 2026: «deretter dagens
+    // bestilling selv om den ikke er betalt»). Serveren gir listen
+    // (api/admin/oversikt.php, dagensBestillinger); her tegnes den, og hver
+    // rad åpner bestillingen der den hører hjemme.
+    const dagBest = Array.isArray(d.dagensBestillinger) ? d.dagensBestillinger : [];
+    const visAlleDag = !!this.state.ovDagAlle;
+    const pilleStil = (s) => ({
+      display: 'inline-block', borderRadius: 'var(--radius-pill)', padding: '3px 10px', fontSize: 'var(--text-xs)',
+      fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+      background: s === 'Betalt' ? 'var(--sage-100, #DCEFD9)' : s === 'Refundert' ? 'var(--clay-100)' : 'var(--terracotta-100, #F5DED0)',
+      color: s === 'Betalt' ? 'var(--sage-700, #2F5D2A)' : s === 'Refundert' ? 'var(--text-muted)' : 'var(--terracotta-600)',
+    });
+    const aapneBestilling = (r) => {
+      if (r.slag === 'kurs') {
+        this.setState({ side: 'adminpameldte', pameldtOkt: r.oktId || 0, pameldtFilter: 'Alle' });
+        window.scrollTo(0, 0);
+      } else if (r.slag === 'ordre') {
+        this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' });
+      } else if (r.slag === 'medlemskap') {
+        this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: r.navn || '' });
+      } else {
+        this.gaaAdmin('adminokonomi', {});
+      }
+    };
+    const dagRader = (visAlleDag ? dagBest : dagBest.slice(0, 8)).map(r => ({
+      kl: r.kl || '', hva: r.hva || '', under: [r.belop, r.navn].filter(Boolean).join(' · '),
+      status: String(r.status || '').toUpperCase(), statusStil: pilleStil(r.status),
+      velg: stopp(() => aapneBestilling(r)),
+    }));
+    // Omsetningen er klikkbar: «I dag» åpner dagens salg (dagsoppgjøret),
+    // «Denne måneden» full rapport i Økonomi.
+    const omsApne = () => { if (idag) { if (this._aDagsoppgjor) this._aDagsoppgjor(); } else { this.gaaAdmin('adminokonomi', {}); } };
+
     return {
+      ovDagRader: dagRader,
+      ovDagTall: dagBest.length ? String(dagBest.length) : '',
+      ovDagTom: dagBest.length === 0,
+      ovDagFlere: !visAlleDag && dagBest.length > 8,
+      ovDagSeAlle: stopp(() => this.setState({ ovDagAlle: true })),
+      ovOmsApne: stopp(omsApne),
       ovOmsHarMot: harMot,
       ovOmsMotPst: harMot ? (pst >= 0 ? '▲ ' : '▼ ') + Math.abs(pst) + ' %' : '',
       ovOmsMotStil: { color: pst >= 0 ? 'var(--sage-600, #4f7a46)' : 'var(--terracotta-600)', fontWeight: 800 },
@@ -63739,7 +63808,7 @@ class Component extends DCLogic {
       ovOmsValg: ['I dag', 'Denne måneden'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovOms: n }),
-        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovOms || 'Denne måneden') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovOms || 'Denne måneden') ? 'var(--clay-50)' : 'var(--text-muted)' },
+        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovOms || 'I dag') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovOms || 'I dag') ? 'var(--clay-50)' : 'var(--text-muted)' },
       })),
       // Fordelingen kommer fra serveren, gruppert paa hva pengene gjaldt.
       // Sto tidligere som faste tall for «I dag» og ingenting for «Denne
@@ -63757,15 +63826,15 @@ class Component extends DCLogic {
       // stemplingPiller(). To sett verdier for det samme er ett for mye.
       ovOmsListe: this.omsetningsLinjer(),
       ingenOmsLinjer: this.erPublisert() && this.omsetningsLinjer().length === 0,
-      ingenOmsTekst: (this.state.ovOms || 'Denne måneden') === 'I dag'
+      ingenOmsTekst: (this.state.ovOms || 'I dag') === 'I dag'
         ? 'Ingen betalinger registrert i dag ennå.'
         : 'Ingen betalinger registrert denne måneden ennå.',
       // Ekte omsetning fra serveren. Sto tidligere som faste tall, og eieren
       // hadde ingen maate aa se at de var oppdiktet.
       ovOmsSum: (() => {
         const o = (this.state.adminData || {}).omsetning;
-        if (o) return (this.state.ovOms || 'Denne måneden') === 'I dag' ? o.idag : o.maned;
-        return this.erPublisert() ? '–' : ((this.state.ovOms || 'Denne måneden') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
+        if (o) return (this.state.ovOms || 'I dag') === 'I dag' ? o.idag : o.maned;
+        return this.erPublisert() ? '–' : ((this.state.ovOms || 'I dag') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
       })(),
       // Okonomiskjermen. Ukesfordelingen, kildene og innstillingene sto som
       // fast tekst og var tomme paa den ekte siden. Naa kommer alt fra

@@ -207,8 +207,7 @@ $h .= '</div></section>' . "\n";
 $h .= '<section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8);">'
     . '<div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-12); align-items: start;">'
     . '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-4);">' . $e($innh('Butikk/3/Kicker')) . '</div>'
-    . '<h2 style="color: var(--lissom-brown); margin: 0 0 var(--space-6); font-size: clamp(32px, 2.8vw, 48px); line-height: 1.05; text-wrap: balance;">Vil du gi noe <em style="font-style: italic; font-weight: 700;">helt eget?</em></h2>'
-    . Deler::knapp($innh('Butikk/3/Knapp'), ['variant' => 'ink', 'size' => 'lg', 'iconAfter' => 'arrow-right', 'lenke' => true, 'href' => '/kontakt'])
+    . '<h2 style="color: var(--lissom-brown); margin: 0; font-size: clamp(32px, 2.8vw, 48px); line-height: 1.05; text-wrap: balance;">Vil du gi noe <em style="font-style: italic; font-weight: 700;">helt eget?</em></h2>'
     . '</div>'
     . '<div style="display: flex; flex-direction: column; gap: var(--space-5); font-size: var(--text-lg); line-height: 1.65; color: var(--brown-500);">'
     . '<p style="margin: 0; text-wrap: pretty;">Vi tar imot spesialbestillinger — et fat med navn og dato til bryllupet, en jubileumsgave, et servise. Fortell oss om anledningen, så foreslår vi noe som passer.</p>'

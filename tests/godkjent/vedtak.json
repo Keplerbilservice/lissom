@@ -557,6 +557,46 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "butikk-en-foresporsel",
+            "dato": "2026-09-27",
+            "hva": "«i bunnen av lissom.no har vi en brun og en gul, send oss en forespørsel, det holder med en» — den brune i «Vil du gi noe helt eget?» på /butikk er fjernet",
+            "hvor": "/butikk",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/butikk.php",
+                    "ikkeFinnes": [
+                        "Butikk/3/Knapp"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "ikkeFinnes": [
+                        "btSpesialKnapp"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ingen-github-epost-fra-grener",
+            "dato": "2026-09-27",
+            "hva": "«jeg får eposter fra github hele tiden» — testkjøringer på arbeidsgrener feiler ikke kjøringen (ingen e-post); sperren før publisering stopper og varsler som før",
+            "hvor": ".github/workflows/tester.yml",
+            "kode": [
+                {
+                    "fil": ".github/workflows/tester.yml",
+                    "finnes": [
+                        "continue-on-error: ${{ github.ref != 'refs/heads/main' }}"
+                    ]
+                },
+                {
+                    "fil": ".github/workflows/deploy.yml",
+                    "finnes": [
+                        "needs: tester"
+                    ]
+                }
+            ]
         }
     ]
 }

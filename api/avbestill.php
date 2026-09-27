@@ -104,7 +104,7 @@ Varsel::mal('avbestilling', [
     'navn'  => (string) $medlem['navn'],
     'kurs'  => (string) $b['tittel'] . ($b['start_tid'] ? ' — ' . Booking::norskDato((string) $b['start_tid']) : ''),
     // Refusjonen staar bare i e-posten naar den faktisk skjer. Tomme felt
-    // fjerner avsnittet og radene (Varsler::oppsett()).
+    // fjerner avsnittet og radene (Varsel::oppsett()).
     'belop'        => $refunderes > 0 ? Booking::kroner($refunderes) : '',
     'refusjon'     => $refundert
         ? 'Pengene er på vei tilbake til deg på Vipps.'

@@ -578,7 +578,7 @@ sjekk('andre markering gjor ingenting', Booking::markerBetalt($ref) === false);
 // sendes to ganger naar betalinga markeres to ganger.
 $antKvitt = (int)DB::verdi("SELECT COUNT(*) FROM notifications
                              WHERE ref_type='booking' AND ref_id=:i
-                               AND emne NOT LIKE 'Ny påmelding:%'",['i'=>$bid]);
+                               AND emne NOT LIKE 'Ny påmelding%'",['i'=>$bid]);
 sjekk('kun én kvittering tross to markeringer', $antKvitt === 1, $antKvitt . ' stk');
 // Verkstedet kan vaere flere adresser — adressen i admin, og de som har
 // rollen. Da er det én rad per adresse, og det er som det skal. Det vakta
@@ -586,7 +586,7 @@ sjekk('kun én kvittering tross to markeringer', $antKvitt === 1, $antKvitt . ' 
 // ble markert to ganger.
 $admRader = DB::alle("SELECT mottaker FROM notifications
                        WHERE ref_type='booking' AND ref_id=:i
-                         AND emne LIKE 'Ny påmelding:%'",['i'=>$bid]);
+                         AND emne LIKE 'Ny påmelding%'",['i'=>$bid]);
 $admMott = array_map(static fn($r) => mb_strtolower((string) $r['mottaker']), $admRader);
 sjekk('… og verkstedet varsles én gang per adresse',
     count($admMott) === count(array_unique($admMott)),
@@ -14637,9 +14637,10 @@ sjekk('… og ingen piller staar igjen med det gamle maalet',
 // dem stiles fra JS — «Velg noen andre» i ny registrering, og «Skjul»/«Vis»
 // paa referansekundene. Resten gaar gjennom klassen «.lx-radpille», som
 // bruker det samme maalet.
-// Femten fra 27. september 2026: bryteren i hver rad i Tekst maler.
+// Femten fra 27. september 2026: bryteren i hver rad i Tekst maler. Seksten:
+// «+ Legg til rad» i faktakortet samme dag.
 sjekk('… og de som har skrift bruker pillemaalet',
-    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 15
+    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 16
     && str_contains($utenKomm, '    padding: 6px 12px !important;')
     && str_contains($utenKomm, '    font: var(--type-chip) !important;'));
 

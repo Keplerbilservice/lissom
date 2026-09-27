@@ -20658,6 +20658,16 @@ sjekk('ingen dato er valgt paa forhaand',
 sjekk('«Flytt hit» uten valgt dato gjoer ingenting',
     str_contains($flSida, "            const okt = this.state.flyttOkt || '';\n            if (!id || !okt) return;"));
 
+// Eieren, 27. september 2026: gavekortet sendes bare paa e-post, det hentes
+// ikke i verkstedet.
+echo "\nGavekortet sendes paa e-post\n";
+$gkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('gavekortsida sier at kortet sendes paa e-post',
+    str_contains($gkSida, "'Sendes på e-post når betalingen er gjennomført.',"));
+sjekk('… og ikke at det kan hentes i verkstedet',
+    !str_contains($gkSida, "'Kan hentes i verkstedet.'")
+    && !str_contains($gkSida, 'Kan jeg få gavekortet fysisk?'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

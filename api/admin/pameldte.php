@@ -103,7 +103,7 @@ if ($oktId <= 0) {
         ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid';
 
     $okter = DB::alle(
-        "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.type, c.tema,
+        "SELECT cs.id, cs.course_id, cs.start_tid, cs.slutt_tid, c.tittel, c.type, c.tema,
                 c.status AS kurs_status{$autoKol},
                 COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
                 (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
@@ -201,6 +201,9 @@ if ($oktId <= 0) {
         // aapningstidene, saa de blir mange.
         'okter' => array_map(static fn($o) => [
         'oktId'     => (int) $o['id'],
+        // Hvilket kurs datoen hoerer til. «Flytt» paa en deltaker viser bare
+        // datoene paa det samme kurset (eieren, 27. september 2026).
+        'kursId'    => (int) $o['course_id'],
         'tittel'    => $o['tittel'],
         'naar'      => Booking::norskDato((string) $o['start_tid']),
         'betalt'    => (int) $o['betalt'],

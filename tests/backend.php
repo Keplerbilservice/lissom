@@ -20600,6 +20600,27 @@ sjekk('dagbrikka i ukekalenderen hopper til dagen',
         . "          if (!el || !el.getClientRects().length) return;\n"
         . '          this.rullTil(el);'));
 
+// Eieren, 27. september 2026: «enklere maate aa flytte dato paa deltaker paa
+// rett i kurset». «Flytt» paa Paameldte viste alle kurs, ogsaa datoer som
+// hadde vaert, med én dato valgt paa forhaand.
+echo "\nFlytt en deltaker til en annen dato\n";
+$flSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$flApi  = file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
+sjekk('datoene sier hvilket kurs de hoerer til',
+    str_contains($flApi, "'kursId'    => (int) \$o['course_id'],")
+    && str_contains($flApi, 'SELECT cs.id, cs.course_id, cs.start_tid'));
+sjekk('lista viser bare datoene paa det samme kurset',
+    str_contains($flSida, 'alleOkter.filter(o => o.kursId === fraOkt.kursId'));
+sjekk('… og bare de som kommer, ikke den de staar paa',
+    str_contains($flSida, '&& o.oktId !== fraOkt.oktId')
+    && str_contains($flSida, '&& o.dato >= idagIso) : [])'));
+sjekk('ingen dato er valgt paa forhaand',
+    str_contains($flSida, "          flyttOkt: this.state.flyttOkt || '',")
+    && str_contains($flSida, "            flyttOkt: '',")
+    && !str_contains($flSida, 'find(o => o.oktId !== p.oktId) || {}).oktId'));
+sjekk('«Flytt hit» uten valgt dato gjoer ingenting',
+    str_contains($flSida, "            const okt = this.state.flyttOkt || '';\n            if (!id || !okt) return;"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

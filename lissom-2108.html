@@ -66785,14 +66785,26 @@ class Component extends DCLogic {
       // verkstedet fjernet dem og la dem inn paa nytt — betalingen fulgte
       // ikke med, og plassen ble regnet feil begge steder.
       ...(() => {
-        const okter = (this.state.adminOkter || []).map(o => ({
-          verdi: String(o.oktId),
-          navn: o.tittel + ' · ' + o.naar + ' · ' + o.ledige + ' ledige',
-        }));
+        // Eieren, 27. september 2026: «enklere maate aa flytte dato paa
+        // deltaker paa rett i kurset». Lista viste alle kurs, ogsaa datoer
+        // som hadde vaert, med én dato valgt paa forhaand. Naa: bare datoene
+        // paa det samme kurset, bare de som kommer, og ingenting forhaandsvalgt.
+        const alleOkter = this.state.adminOkter || [];
+        const flyttFra = this.state.flyttId != null
+          ? (this.state.adminDeltakere || []).find(d => d.id === this.state.flyttId) : null;
+        const fraOkt = flyttFra ? alleOkter.find(o => o.oktId === flyttFra.oktId) : null;
+        const idagIso = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+        const okter = (fraOkt ? alleOkter.filter(o => o.kursId === fraOkt.kursId
+                                                   && o.oktId !== fraOkt.oktId
+                                                   && o.dato >= idagIso) : [])
+          .map(o => ({
+            verdi: String(o.oktId),
+            navn: o.naar + ' · ' + o.ledige + ' ledige',
+          }));
         return {
           flyttOkter: okter,
           ingenFlyttOkter: okter.length === 0,
-          flyttOkt: this.state.flyttOkt || (okter[0] ? okter[0].verdi : ''),
+          flyttOkt: this.state.flyttOkt || '',
           settFlyttOkt: e => this.setState({ flyttOkt: e.target.value }),
           flyttAvbryt: () => this.setState({ flyttRad: null, flyttId: null }),
           // ── Panelet «Endre»: feltene og lagringen ────────────────────
@@ -66824,7 +66836,7 @@ class Component extends DCLogic {
           },
           flyttUtfor: () => {
             const id = this.state.flyttId;
-            const okt = this.state.flyttOkt || (okter[0] ? okter[0].verdi : '');
+            const okt = this.state.flyttOkt || '';
             if (!id || !okt) return;
             this.pameldingKall({ handling: 'flytt', id, oktId: parseInt(okt, 10) });
             this.setState({ flyttRad: null, flyttId: null });
@@ -66912,11 +66924,8 @@ class Component extends DCLogic {
           this.setState(st => ({
             flyttRad: st.flyttRad === rad ? null : rad,
             flyttId: p.id,
-            // Forvalget er en annen dato enn den de staar paa — det er
-            // poenget med aa flytte.
-            flyttOkt: st.flyttOkt || String(
-              ((this.state.adminOkter || []).find(o => o.oktId !== p.oktId) || {}).oktId || ''
-            ),
+            // Ingenting er valgt paa forhaand — eieren velger datoen selv.
+            flyttOkt: '',
           }));
         },
         avbestill: (e) => {

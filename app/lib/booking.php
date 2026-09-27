@@ -2103,8 +2103,15 @@ final class Booking
         //
         // Leser vi bare den nye, staar en betalt Vipps-plass som ubetalt her
         // — og det var noeyaktig det som skjedde. Vi leser begge.
+        // Gavekortdelen teller med. Et gavekort er penger som kom inn den
+        // gangen kortet ble kjopt: raden har null kroner i «belop_ore» og
+        // beloepet i «gavekort_ore». Uten den sto en plass betalt med kort pluss
+        // kontant som om bare kontantene var betalt (eieren, 27. september
+        // 2026: «litt gavekort og litt penger og litt vipps»).
+        $gaveFelt = DB::harKolonne('payments', 'gavekort_ore')
+            ? 'COALESCE(p.gavekort_ore, 0) AS gavekort_ore' : '0 AS gavekort_ore';
         $rader = DB::alle(
-            'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, p.status, p.maate,
+            'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, ' . $gaveFelt . ', p.status, p.maate,
                     p.kommentar, p.annullert_at, p.created_at,
                     p.registrert_av, m.navn AS registrert_navn
                FROM payments p
@@ -2119,7 +2126,7 @@ final class Booking
         foreach ($rader as $r) {
             if ($r['annullert_at'] === null
                 && in_array((string) $r['status'], ['betalt', 'autorisert', 'delvis_refundert'], true)) {
-                $sum += (int) $r['belop_ore'];
+                $sum += (int) $r['belop_ore'] + (int) $r['gavekort_ore'];
             }
         }
 

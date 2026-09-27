@@ -29345,6 +29345,37 @@ window.__resources = {
       <sc-if value="{{ tbGaveVis }}" hint-placeholder-val="{{ false }}">
         <div style="margin-bottom: var(--space-3);"><label style="{{ mpEtikett }}">Gavekortkode</label><input value="{{ tbKode }}" onInput="{{ tbSettKode }}" style="{{ mpFeltStil }}"></div>
       </sc-if>
+      <!-- Delt betaling (eieren, 27. september 2026, GO paa skissen): den
+           forste linja er maaten over, med eget beloep; resten legges til. -->
+      <sc-if value="{{ tbDelt }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-bottom: var(--space-3);"><label style="{{ mpEtikett }}">Beløp i kroner</label><input value="{{ tbDel1 }}" onInput="{{ tbSettDel1 }}" inputmode="decimal" style="{{ mpFeltStil }}"></div>
+        <sc-for list="{{ tbEkstraLinjer }}" as="l" hint-placeholder-count="1">
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); margin-bottom: var(--space-3);">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: var(--space-3);">
+              <sc-for list="{{ l.maater }}" as="m" hint-placeholder-count="3">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+              </sc-for>
+              <button type="button" onClick="{{ l.fjern }}" aria-label="Fjern" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 20px; line-height: 1; margin-left: auto;">×</button>
+            </div>
+            <div><label style="{{ mpEtikett }}">Beløp i kroner</label><input value="{{ l.belop }}" onInput="{{ l.settBelop }}" inputmode="decimal" style="{{ mpFeltStil }}"></div>
+            <sc-if value="{{ l.gave }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-3);"><label style="{{ mpEtikett }}">Gavekortkode</label><input value="{{ l.kode }}" onInput="{{ l.settKode }}" style="{{ mpFeltStil }}"></div>
+              <sc-if value="{{ l.harSaldo }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 6px; font-size: var(--text-sm); color: var(--text-muted);">{{ l.saldo }}</div>
+              </sc-if>
+            </sc-if>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ tbKanLeggeTil }}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{ tbLeggTil }}" style="{{ tbLeggTilStil }}">+ Legg til betalingsmåte</button>
+      </sc-if>
+      <sc-if value="{{ tbDelt }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3);">
+          <span style="font-size: var(--text-sm); color: var(--text-muted);">Igjen å betale</span>
+          <span style="font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ tbIgjen }}</span>
+        </div>
+      </sc-if>
       <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
         <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ tbSumLinje }}</span>
         <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); white-space: nowrap;">{{ tbSum }}</span>
@@ -47300,6 +47331,9 @@ class Component extends DCLogic {
     }
     this.setState({
       tbRad: r, tbMaate: maate || '', tbKode: '',
+      // Delt betaling: linjene etter den forste, og beloepet paa den forste.
+      // Tom liste er «Ta betalt» slik den alltid har vaert.
+      tbEkstra: [], tbDel1: '',
       tbAntall: String(r.antall || 1),
       tbRabatt: r.rabatt ? String(r.rabatt).replace('.', ',') : '',
       tbBelop: '',
@@ -47327,9 +47361,95 @@ class Component extends DCLogic {
       font: 'var(--type-chip)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
       background: paa ? 'var(--lissom-brown)' : 'var(--clay-100)', color: paa ? '#fff' : 'var(--lissom-brown)',
     });
-    const klar = !!maate && (maate !== 'Gavekort' || String(this.state.tbKode || '').trim() !== '');
+    // ── Delt betaling ─────────────────────────────────────────────────
+    //
+    // Eieren, 27. september 2026: «litt gavekort og litt penger og litt
+    // vipps, dele betaling?» — GO paa skissen samme dag. Hver linje er en
+    // maate og et beloep; «Igjen å betale» maa bli kr 0 foer knappen virker.
+    // Beloepet paa en linje er en del av betalingen — ikke ny pris. Prisen
+    // styres fortsatt av «Beløp i kroner» over.
+    const ekstra = this.state.tbEkstra || [];
+    const delt = ekstra.length > 0;
+    const tilOre = (t) => {
+      const s = String(t || '').replace(/[\s ]/g, '').replace(',', '.');
+      if (s === '' || isNaN(Number(s))) return 0;
+      return Math.max(0, Math.round(Number(s) * 100));
+    };
+    const del1 = tilOre(this.state.tbDel1);
+    const igjen = sum - del1 - ekstra.reduce((n, l) => n + tilOre(l.belop), 0);
+    const settLinje = (i, felt) => this.setState(st => ({
+      tbEkstra: (st.tbEkstra || []).map((l, j) => (j === i ? Object.assign({}, l, felt) : l)),
+    }));
+    // Saldoen hentes naar koden er skrevet, som i kassa. Staar beloepet tomt,
+    // fylles det med det kortet dekker av det som staar igjen.
+    const sjekkKort = (i, kode) => {
+      clearTimeout(this._tbKortTimer);
+      const ren = String(kode || '').trim();
+      if (ren.length < 4) { settLinje(i, { saldo: '' }); return; }
+      this._tbKortTimer = setTimeout(() => {
+        fetch('/api/gavekort.php?kode=' + encodeURIComponent(ren), { credentials: 'same-origin', cache: 'no-store' })
+          .then(x => x.json())
+          .then(d => {
+            const l = (this.state.tbEkstra || [])[i];
+            if (!l || String(l.kode || '').trim() !== ren) return;
+            const felt = { saldo: (d && d.beskjed) || '' };
+            if (d && d.gyldig && String(l.belop || '').trim() === '') {
+              const v = this.taBetaltVals();
+              const rest = Math.max(0, (v.tbIgjenOre || 0));
+              const ore = Math.min(d.saldo_ore || 0, rest);
+              if (ore > 0) felt.belop = String(ore / 100).replace('.', ',');
+            }
+            settLinje(i, felt);
+          })
+          .catch(() => settLinje(i, { saldo: '' }));
+      }, 600);
+    };
+    const delKlar = delt
+      && del1 > 0 && (maate !== 'Gavekort' || String(this.state.tbKode || '').trim() !== '')
+      && ekstra.every(l => l.maate && tilOre(l.belop) > 0
+                           && (l.maate !== 'Gavekort' || String(l.kode || '').trim() !== ''))
+      && igjen === 0
+      && [maate].concat(ekstra.map(l => l.maate)).filter(m => m === 'Gavekort').length <= 1;
+    const klar = delt
+      ? (!!maate && maate !== 'Gratis' && delKlar)
+      : (!!maate && (maate !== 'Gavekort' || String(this.state.tbKode || '').trim() !== ''));
     return {
       tbApen: true,
+      tbDelt: delt,
+      tbIgjenOre: igjen,
+      tbIgjen: kr(Math.max(0, igjen)) + (igjen < 0 ? ' for mye' : ''),
+      tbDel1: this.state.tbDel1 || '',
+      tbSettDel1: e => this.setState({ tbDel1: e.target.value }),
+      tbKanLeggeTil: !!maate && maate !== 'Gratis' && ekstra.length < 4,
+      tbLeggTil: () => this.setState(st => {
+        const lengde = (st.tbEkstra || []).length;
+        const felt = { tbEkstra: (st.tbEkstra || []).concat([{ maate: '', belop: '', kode: '', saldo: '' }]) };
+        // Foerste gang det deles, faar den forste linja hele summen. Da er
+        // det bare aa rette den ned og skrive resten paa den nye.
+        if (lengde === 0 && String(st.tbDel1 || '').trim() === '') felt.tbDel1 = String(sum / 100).replace('.', ',');
+        return felt;
+      }),
+      tbLeggTilStil: {
+        appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px',
+        font: 'var(--type-chip)', fontWeight: 700, border: '1.5px dashed var(--lissom-brown)',
+        background: 'transparent', color: 'var(--lissom-brown)', marginBottom: 'var(--space-3)',
+      },
+      tbEkstraLinjer: ekstra.map((l, i) => ({
+        maater: ['Kontant', 'Vipps', 'Gavekort'].map(m => ({
+          navn: m, stil: pille(m === l.maate), velg: () => settLinje(i, { maate: m }),
+        })),
+        belop: l.belop || '',
+        settBelop: e => settLinje(i, { belop: e.target.value }),
+        gave: l.maate === 'Gavekort',
+        kode: l.kode || '',
+        settKode: e => { const v = e.target.value; settLinje(i, { kode: v, saldo: '' }); sjekkKort(i, v); },
+        harSaldo: !!l.saldo,
+        saldo: l.saldo || '',
+        fjern: () => this.setState(st => ({
+          tbEkstra: (st.tbEkstra || []).filter((x, j) => j !== i),
+          tbDel1: (st.tbEkstra || []).length === 1 ? '' : st.tbDel1,
+        })),
+      })),
       tbUnder: r.under || r.navn || '',
       tbErKurs: erKurs,
       tbMaater: ['Kontant', 'Vipps', 'Gavekort', 'Gratis'].map(m => ({
@@ -47349,7 +47469,7 @@ class Component extends DCLogic {
           : (erKurs && r.prisOre && !uendret ? antall + ' × ' + kr(r.prisOre) + (rabatt ? ' − ' + String(rabatt).replace('.', ',') + ' %' : '') : 'Å betale')),
       tbSum: maate === 'Gratis' ? kr(0) : kr(sum),
       tbIkkeKlar: !klar,
-      tbKnappTekst: maate ? 'Registrer betaling – ' + maate : 'Velg betalingsmåte',
+      tbKnappTekst: delt ? 'Registrer betaling' : (maate ? 'Registrer betaling – ' + maate : 'Velg betalingsmåte'),
       tbKnappStil: {
         display: 'block', width: '100%', marginTop: 'var(--space-5)', appearance: 'none',
         cursor: klar ? 'pointer' : 'not-allowed', opacity: klar ? 1 : .5,
@@ -47372,13 +47492,22 @@ class Component extends DCLogic {
                                      belop: skrevet !== null ? (skrevet / 100).toFixed(2) : '' }),
             }).then(x => x.json()).then(d => (d && d.ok ? true : Promise.reject(d && d.feil)))
           : Promise.resolve(true);
+        // Delt: alle linjene i ett kall. Serveren lagrer alle eller ingen.
+        const deler = delt
+          ? [{ maate, belop: String(this.state.tbDel1 || ''), kode: maate === 'Gavekort' ? String(this.state.tbKode || '').trim() : '' }]
+              .concat(ekstra.map(l => ({ maate: l.maate, belop: String(l.belop || ''),
+                                         kode: l.maate === 'Gavekort' ? String(l.kode || '').trim() : '' })))
+          : null;
         foerst
-          .then(() => this.gjorOppRad({ slag: r.slag, id: r.id }, maate, maate === 'Gavekort' ? String(this.state.tbKode || '').trim() : undefined))
+          .then(() => (delt
+            ? this.gjorOppDelt({ slag: r.slag, id: r.id }, deler)
+            : this.gjorOppRad({ slag: r.slag, id: r.id }, maate, maate === 'Gavekort' ? String(this.state.tbKode || '').trim() : undefined)))
           .then(ok => {
             this._tbSender = false;
             if (ok === false) return;
             this.setState({ tbRad: null, kvitteringTone: 'success', kvittering: 'Betalt',
-                            kvitteringDetalj: (r.navn || '') + ' · ' + (maate === 'Gratis' ? 'gratis' : kr(sum)) + ' · ' + maate });
+                            kvitteringDetalj: (r.navn || '') + ' · ' + (maate === 'Gratis' ? 'gratis' : kr(sum)) + ' · '
+                              + (delt ? deler.map(d => d.maate).join(' + ') : maate) });
             if (this.klFrisk) this.klFrisk();
           })
           .catch(feil => {
@@ -47400,6 +47529,19 @@ class Component extends DCLogic {
     }
     return this.pameldingKall(Object.assign(
       { handling: 'status', id: u.id, status: 'betalt', maate: maate }, gave));
+  }
+
+  // Samme tre slag som over, gjort opp i flere deler. Hver del blir sin egen
+  // betaling; se api/admin/kursbetaling.php (delt), uttak.php (gjorOpp med
+  // deler) og medlemmer.php (betaling med deler).
+  gjorOppDelt(u, deler) {
+    if (u.slag === 'ordre') {
+      return this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, deler: deler });
+    }
+    if (u.slag === 'medlem') {
+      return this.medlemKall({ handling: 'betaling', medlemId: u.id, deler: deler });
+    }
+    return this.betalingKall({ handling: 'delt', bookingId: u.id, deler: deler });
   }
 
   adminBunnMeny() {

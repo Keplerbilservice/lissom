@@ -35,6 +35,7 @@ kjor "gavekortspor"  php tests/gavekortspor.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
 kjor "betalingsflyt" bash tests/flyt.sh
+kjor "delt betaling" bash tests/deltbetaling.sh
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

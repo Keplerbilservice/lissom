@@ -90,7 +90,7 @@ if (Foresporsel::metode() === 'GET') {
         'maater'    => Booking::MAATER,
         'historikk' => array_map(static fn($r) => [
             'id'         => (int) $r['id'],
-            'belop'      => Booking::kroner((int) $r['belop_ore']),
+            'belop'      => Booking::kroner((int) $r['belop_ore'] + (int) ($r['gavekort_ore'] ?? 0)),
             // Vipps eller for haand — det skal aldri vaere tvil om hvilken.
             'manuell'    => (string) $r['type'] === 'manuell',
             'maate'      => (string) $r['type'] === 'manuell'
@@ -213,6 +213,132 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
                   . ($rest > 0 ? ' ' . Booking::kroner($rest) . ' står igjen.' : ''),
         ]);
 
+    // ------------------------------------------------------------- delt
+    //
+    // Én plass gjort opp med flere maater: litt gavekort, litt kontant,
+    // litt Vipps. Eieren, 27. september 2026: «hvordan kan admin ta i mot
+    // betalingen? Litt gavekort og litt penger og litt vipps, dele betaling?»
+    // — og GO paa skissen i «Ta betalt» samme dag.
+    //
+    //   POST handling=delt { bookingId, deler: [{ maate, belop, kode? }] }
+    //
+    // Alle delene lagres i én transaksjon: enten staar alle, eller ingen.
+    // Summen maa vaere det som staar igjen paa plassen — ikke mer, ikke mindre.
+    case 'delt':
+        $bookingId = Foresporsel::heltall('bookingId');
+        $b = DB::en(
+            'SELECT b.id, b.belop_ore, b.status, b.member_id,
+                    COALESCE(m.navn, b.gjest_navn) AS navn
+               FROM bookings b
+          LEFT JOIN members m ON m.id = b.member_id
+              WHERE b.id = :i',
+            ['i' => $bookingId]
+        );
+        if ($b === null) {
+            Svar::feil('Fant ikke påmeldingen.', 404);
+        }
+        if ((string) $b['status'] === 'avbestilt') {
+            Svar::feil('Denne påmeldingen er avbestilt. Legg personen inn på nytt i stedet.');
+        }
+
+        $raaDeler = Foresporsel::kropp()['deler'] ?? [];
+        if (!is_array($raaDeler) || $raaDeler === [] || count($raaDeler) > 5) {
+            Svar::feil('Legg inn mellom én og fem deler.');
+        }
+
+        $deler = [];
+        $sum = 0;
+        $kort = null;
+        foreach ($raaDeler as $d) {
+            $m = is_array($d) ? (string) ($d['maate'] ?? '') : '';
+            if (!in_array($m, ['Kontant', 'Vipps', 'Gavekort'], true)) {
+                Svar::feil('Velg betalingsmåte på hver del.');
+            }
+            $t = trim(str_replace(',', '.', str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) ($d['belop'] ?? ''))));
+            if ($t === '' || !is_numeric($t) || (float) $t <= 0) {
+                Svar::feil('Skriv inn et beløp på hver del.');
+            }
+            $ore = (int) round((float) $t * 100);
+            if ($m === 'Gavekort') {
+                if ($kort !== null) {
+                    Svar::feil('Bare ett gavekort per betaling.');
+                }
+                $kort = Booking::finnGavekort((string) ($d['kode'] ?? ''));
+                if ($kort === null) {
+                    Svar::feil('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp '
+                             . 'eller gått ut på dato.');
+                }
+                if ($ore > $kort['saldo_ore']) {
+                    Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                             . ' igjen. Sett ned beløpet på gavekortdelen.');
+                }
+            }
+            $sum += $ore;
+            $deler[] = ['maate' => $m, 'ore' => $ore];
+        }
+
+        $bet     = Booking::betalingerFor($bookingId);
+        $skyldig = max(0, (int) $b['belop_ore'] - $bet['sum']);
+        if ($skyldig === 0) {
+            Svar::feil('Denne er alt gjort opp.');
+        }
+        if ($sum !== $skyldig) {
+            Svar::feil('Delene er til sammen ' . Booking::kroner($sum) . ', men det står '
+                     . Booking::kroner($skyldig) . ' igjen å betale.');
+        }
+
+        $medlemId = $b['member_id'] !== null ? (int) $b['member_id'] : null;
+        $adminId  = (int) $admin['id'];
+        [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $bookingId, $medlemId, $adminId, $kort): array {
+            $ider = [];
+            $gaveRad = null;
+            foreach ($deler as $d) {
+                if ($d['maate'] !== 'Gavekort') {
+                    $ider[] = Booking::manuellBetaling($bookingId, $d['ore'], $d['maate'], $medlemId, $adminId);
+                    continue;
+                }
+                // Gavekortet: null kroner inn i dag, beloepet i «gavekort_ore»,
+                // og trekket etter transaksjonen — samme vei som naar hele
+                // plassen tas med kort (api/admin/pamelding.php).
+                $felt = [
+                    'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
+                    'type'            => 'manuell',
+                    'formal'          => 'booking',
+                    'member_id'       => $medlemId,
+                    'maate'           => 'Gavekort',
+                    'belop_ore'       => 0,
+                    'gavekort_id'     => $kort['id'],
+                    'gavekort_ore'    => $d['ore'],
+                    'status'          => 'betalt',
+                    'booking_id'      => $bookingId,
+                    'idempotency_key' => Vipps::uuid(),
+                ];
+                if (DB::harKolonne('payments', 'registrert_av') && $adminId > 0) {
+                    $felt['registrert_av'] = $adminId;
+                }
+                $gaveRad = DB::settInn('payments', $felt);
+                $ider[] = $gaveRad;
+            }
+            return [$ider, $gaveRad];
+        });
+
+        if ($gaveRad !== null) {
+            Booking::trekkGavekort((int) $gaveRad);
+        }
+        $etter = Booking::settBetaltStatus($bookingId);
+
+        revider('betaling_delt', 'booking', $bookingId, [
+            'betalinger' => $ider, 'deler' => $deler, 'gavekort' => $kort['kode'] ?? null,
+        ]);
+
+        Svar::ok([
+            'status'  => $etter['status'],
+            'beskjed' => Booking::kroner($sum) . ' er registrert på ' . $b['navn'] . ' — '
+                       . implode(', ', array_map(
+                           static fn(array $d): string => mb_strtolower($d['maate']) . ' ' . Booking::kroner($d['ore']),
+                           $deler)) . '.',
+        ]);
+
     // --------------------------------------------------------- annuller
     case 'annuller':
         $betalingId = Foresporsel::heltall('betalingId');
@@ -264,6 +390,10 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
                 : $p['kommentar'],
         ], ['id' => $betalingId]);
 
+        // Var det en gavekortdel, gaar beloepet tilbake paa kortet. Ellers ville
+        // en annullert del av et delt oppgjor spist av saldoen for ingenting.
+        $gaveTilbake = Booking::angreGavekort($betalingId);
+
         if ($erMedlemskap) {
             // Ingen booking aa regne om. Merket paa medlemmet leser
             // betalingene paa nytt av seg selv — Medlemskap::sisteBetalinger
@@ -293,7 +423,8 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
             'beskjed' => Booking::kroner((int) $p['belop_ore']) . ' er annullert. '
                        . ($etter['status'] === 'betalt'
                            ? 'Påmeldingen er fortsatt gjort opp av de andre betalingene.'
-                           : 'Påmeldingen står som ubetalt igjen.'),
+                           : 'Påmeldingen står som ubetalt igjen.')
+                       . ($gaveTilbake > 0 ? ' ' . Booking::kroner($gaveTilbake) . ' er lagt tilbake på gavekortet.' : ''),
         ]);
 
     default:

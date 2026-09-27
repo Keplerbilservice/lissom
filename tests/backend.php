@@ -20631,6 +20631,44 @@ sjekk('… og ikke at det kan hentes i verkstedet',
     !str_contains($gkSida, "'Kan hentes i verkstedet.'")
     && !str_contains($gkSida, 'Kan jeg få gavekortet fysisk?'));
 
+// Eieren, 27. september 2026: «litt gavekort og litt penger og litt vipps,
+// dele betaling?» — GO paa skissen i «Ta betalt». Ende-til-ende-testen
+// staar i tests/deltbetaling.sh; her vaktes det som leses av koden.
+echo "\nDelt betaling i «Ta betalt»\n";
+$dbSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$dbBook = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$dbKurs = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+$dbUtt  = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+$dbMed  = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('knappen «+ Legg til betalingsmåte» finnes',
+    str_contains($dbSida, '>+ Legg til betalingsmåte</button>'));
+sjekk('… og «Igjen å betale» vises naar betalingen deles',
+    str_contains($dbSida, '>Igjen å betale</span>'));
+sjekk('knappen virker bare naar det ikke staar noe igjen',
+    str_contains($dbSida, '      && igjen === 0'));
+sjekk('uten ekstra linjer er «Ta betalt» som foer',
+    str_contains($dbSida, "      : (!!maate && (maate !== 'Gavekort' || String(this.state.tbKode || '').trim() !== ''));"));
+sjekk('ingen maate er valgt paa en ny linje',
+    str_contains($dbSida, "concat([{ maate: '', belop: '', kode: '', saldo: '' }])"));
+sjekk('delene sendes i ett kall til riktig endepunkt for hvert slag',
+    str_contains($dbSida, "return this.betalingKall({ handling: 'delt', bookingId: u.id, deler: deler });")
+    && str_contains($dbSida, "return this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, deler: deler });")
+    && str_contains($dbSida, "return this.medlemKall({ handling: 'betaling', medlemId: u.id, deler: deler });"));
+sjekk('gavekortdelen teller med i det som er betalt paa en plass',
+    str_contains($dbBook, "\$sum += (int) \$r['belop_ore'] + (int) \$r['gavekort_ore'];"));
+sjekk('kursplassen lagrer alle delene i én transaksjon',
+    str_contains($dbKurs, "case 'delt':")
+    && str_contains($dbKurs, '[$ider, $gaveRad] = DB::iTransaksjon('));
+sjekk('… og summen maa vaere det som staar igjen',
+    str_contains($dbKurs, 'if ($sum !== $skyldig) {'));
+sjekk('en annullert gavekortdel gaar tilbake paa kortet',
+    str_contains($dbKurs, '$gaveTilbake = Booking::angreGavekort($betalingId);'));
+sjekk('kassesalget kan gjores opp i deler',
+    str_contains($dbUtt, "if (\$handling === 'gjorOpp' && is_array(\$kropp['deler'] ?? null) && count(\$kropp['deler']) >= 2) {")
+    && str_contains($dbUtt, "if (\$delsum !== (int) \$ordre['sum_ore']) {"));
+sjekk('medlemskapet kan gjores opp i deler',
+    str_contains($dbMed, "\$raaDeler = \$handling === 'betaling' ? (Foresporsel::kropp()['deler'] ?? null) : null;"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

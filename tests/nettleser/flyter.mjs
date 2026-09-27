@@ -464,7 +464,7 @@ await flyt('Bilder: last opp, dra og slipp, fokus og Lagre', async () => {
     $f = sys_get_temp_dir() . '/e2e-kursbilde.jpg'; imagejpeg($im, $f, 80); return $f;`);
   const p = await side('admin');
   await gaa(p, '/admin/markedsforing', 3000);
-  await p.locator('main button', { hasText: 'Bilder' }).first().click();
+  await p.locator('main').getByRole('button', { name: 'Bilder', exact: true }).first().click();
   await p.waitForTimeout(1500);
   const kort = p.locator(`[data-bf-kurs="${S.kurs}"]`);
   sjekk('kurset har et kort under Bilder', await kort.count() === 1);

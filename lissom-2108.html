@@ -27744,20 +27744,23 @@ window.__resources = {
             <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs</p>
           </sc-if>
           <sc-for list="{{ bfKurs }}" as="k" hint-placeholder-count="2">
-            <div data-bf-kurs="{{ k.id }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: grid; gap: var(--space-4);">
+            <div data-bf-kurs="{{ k.id }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4);">
               <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ k.tittel }}</div>
               <div class="lx-bf-rad" style="display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start;">
-                <div style="display: grid; gap: 6px; flex: 0 1 360px; min-width: 0;">
-                  <div data-bf-stor="1" onClick="{{ k.velgFokus }}" style="{{ k.stor }}"><span style="{{ k.prikkStil }}"></span></div>
+                <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; flex: 0 1 360px; min-width: 0;">
+                  <div style="position: relative; display: inline-block; justify-self: start; line-height: 0;">
+                    <img data-bf-stor="1" data-src="{{ k.bildeUrl }}" alt="" onClick="{{ k.velgFokus }}" style="display: block; max-width: min(360px, 100%); max-height: 360px; border-radius: var(--radius-md); cursor: crosshair; background: var(--clay-100);">
+                    <span style="{{ k.prikkStil }}"></span>
+                  </div>
                   <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 360px;">Trykk i bildet for å velge hva som skal være midt i utsnittet</p>
                 </div>
-                <div style="display: grid; gap: var(--space-3); flex: 1 1 320px; min-width: 0;">
+                <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); flex: 1 1 320px; min-width: 0;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Slik vises det</div>
                   <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-end;">
-                    <div style="display: grid; gap: 4px;"><div data-bf-vis="kort-pc" style="{{ k.kortPc }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kurskort · PC</span></div>
-                    <div style="display: grid; gap: 4px;"><div data-bf-vis="kort-mobil" style="{{ k.kortMobil }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kurskort · Mobil</span></div>
-                    <div style="display: grid; gap: 4px;"><div data-bf-vis="side-pc" style="{{ k.sidePc }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kursside · PC</span></div>
-                    <div style="display: grid; gap: 4px;"><div data-bf-vis="side-mobil" style="{{ k.sideMobil }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kursside · Mobil</span></div>
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; max-width: 100%;"><div data-bf-vis="kort-pc" style="{{ k.kortPc }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kurskort · PC</span></div>
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; max-width: 100%;"><div data-bf-vis="kort-mobil" style="{{ k.kortMobil }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kurskort · Mobil</span></div>
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; max-width: 100%;"><div data-bf-vis="side-pc" style="{{ k.sidePc }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kursside · PC</span></div>
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; max-width: 100%;"><div data-bf-vis="side-mobil" style="{{ k.sideMobil }}"></div><span style="font-size: var(--text-xs); color: var(--text-muted);">Kursside · Mobil</span></div>
                   </div>
                 </div>
               </div>
@@ -37697,7 +37700,7 @@ class Component extends DCLogic {
     const url = b => (/^api\//.test(b) ? '/' + b : '/' + b);
     const kurs = (st.adminKursRaa || []).slice();
     const vis = (b, fokus, w, h, standard) => ({
-      width: w + 'px', height: h + 'px', maxWidth: '100%', borderRadius: '8px', flex: 'none',
+      width: w + 'px', maxWidth: '100%', aspectRatio: w + ' / ' + h, borderRadius: '8px', flex: 'none',
       backgroundColor: 'var(--clay-200)', backgroundSize: 'cover', backgroundRepeat: 'no-repeat',
       backgroundImage: b ? 'url("' + url(b) + '")' : 'none',
       backgroundPosition: fokus || standard,
@@ -37724,7 +37727,7 @@ class Component extends DCLogic {
           id: String(id),
           tittel: k.tittel,
           harBilde: !!bilde,
-          stor: Object.assign(vis(bilde, fokus, 360, 360, '50% 50%'), { backgroundSize: 'contain', backgroundColor: 'var(--clay-100)', cursor: 'crosshair', position: 'relative' }),
+          bildeUrl: bilde ? url(bilde) : '',
           prikkStil: {
             position: 'absolute', width: '18px', height: '18px', borderRadius: '50%', transform: 'translate(-50%, -50%)',
             left: (fokus || '50% 50%').split(' ')[0], top: (fokus || '50% 50%').split(' ')[1] || '50%',

@@ -30663,8 +30663,7 @@ class Component extends DCLogic {
     const gaa = () => {
       const el = document.getElementById('booking-tider');
       if (el) {
-        const y = el.getBoundingClientRect().top + window.scrollY - 110;
-        window.scrollTo({ top: Math.max(0, Math.round(y)), behavior: 'smooth' });
+        this.rullTil(el, 110);
         return;
       }
       if (++forsok < 30) window.requestAnimationFrame(gaa);
@@ -39317,7 +39316,7 @@ class Component extends DCLogic {
       const el = [].slice.call(document.querySelectorAll('#medlemsliste'))
         .filter(e => e.offsetParent !== null)[0];
       if (!ruta && el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        this.rullTil(el);
         return;
       }
       if (++forsok < 30) { window.requestAnimationFrame(proev); return; }
@@ -39335,7 +39334,7 @@ class Component extends DCLogic {
       const el = [].slice.call(document.querySelectorAll('#personrute'))
         .filter(e => e.offsetParent !== null)[0];
       if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        this.rullTil(el);
         return;
       }
       if (++forsok < 20) { window.requestAnimationFrame(proev); }
@@ -39354,7 +39353,7 @@ class Component extends DCLogic {
     const proev = () => {
       const el = document.getElementById(id);
       if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        this.rullTil(el);
         return;
       }
       if (++forsok < 20) { window.requestAnimationFrame(proev); }
@@ -39379,7 +39378,7 @@ class Component extends DCLogic {
     const proev = () => {
       const el = document.getElementById('henv-' + id);
       if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        this.rullTil(el);
         return;
       }
       if (++forsok < 20) { window.requestAnimationFrame(proev); }
@@ -42343,6 +42342,30 @@ class Component extends DCLogic {
    * igjen, og to utgaver av det samme trykket er én for mye.
    */
   /**
+   * Ruller til et element, med luft over.
+   *
+   * «window.scrollTo({ top, behavior })» gjoer ikke det den ser ut til her.
+   * Maalt 27. september 2026 paa forsida, /kalender, /kurs og /medlemskap,
+   * paa 390 og 1280 px: sida gaar til TOPPEN i stedet for dit man ba om.
+   * Toargumentformen «scrollTo(0, y)» virker, og «scrollIntoView» virker.
+   * «html» og «body» har «overflow-x: clip», og da tar ikke vinduet imot
+   * objektformen.
+   *
+   * Eieren, 27. september 2026, om ukekalenderen: «naar jeg trykker paa
+   * f.eks. 26/9 saa viser den ikke kurset den dagen. Popper tilbake til et
+   * annet sted». Maalt: 255 → 0. Ti steder i fila gjorde det samme.
+   *
+   * «scroll-margin-top» gir lufta over, saa elementet ikke havner under den
+   * faste toppen. Den leses av «scrollIntoView» med det samme.
+   */
+  rullTil(el, luft) {
+    if (!el || !el.getClientRects || !el.getClientRects().length) return false;
+    el.style.scrollMarginTop = (luft === undefined ? 90 : luft) + 'px';
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  }
+
+  /**
    * Aapner abonnementskortet og ruller dit.
    *
    * Kalles fra snarveien paa Min side og fra oppgraderingsforslaget. Laa som
@@ -42352,7 +42375,7 @@ class Component extends DCLogic {
   hoppTilAbo() {
     this.setState({ byttAboApen: true });
     const el = document.getElementById('minside-abonnement');
-    if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); }
+    this.rullTil(el);
   }
 
   vekslStempling() {
@@ -54929,7 +54952,7 @@ class Component extends DCLogic {
           if (!(d.poster || []).length) return;
           const el = document.getElementById('ukedag-' + dagIdx);
           if (!el || !el.getClientRects().length) return;
-          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+          this.rullTil(el);
         },
         stripStil: {
           appearance: 'none', fontFamily: 'inherit',
@@ -63575,10 +63598,7 @@ class Component extends DCLogic {
       })(),
       kSeDatoene: () => {
         const el = document.getElementById('admin-datoer');
-        if (el) {
-          const y = el.getBoundingClientRect().top + window.scrollY - 90;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }
+        this.rullTil(el);
       },
       // Bare paa et kurs som finnes paa serveren. Et nytt kurs som ikke er
       // lagret enda har ingenting aa slette.
@@ -64112,7 +64132,7 @@ class Component extends DCLogic {
           ]
       ).map(s => ({ navn: s.navn, velg: s.ekstern || (() => {
         const el = document.getElementById(s.id);
-        if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); }
+        this.rullTil(el);
       }) })),
       // Selve hoppet ligger i metoden hoppTilAbo(). Bade snarveien her og
       // oppgraderingsforslaget kaller den — én vei til abonnementskortet.
@@ -65054,7 +65074,7 @@ class Component extends DCLogic {
           return;
         }
         if (this.state.side !== 'paintonpots') { this.setState({ side: 'paintonpots' }); }
-        setTimeout(() => { const el = document.getElementById('pop-datoer'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); } }, 60);
+        setTimeout(() => this.rullTil(document.getElementById('pop-datoer')), 60);
       },
       // Stegene og sporsmaalene sto som faste lister her. Naa staar de under
       // Nettsiden → Innhold → Paint on Pots, og nummereringen folger de

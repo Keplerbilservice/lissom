@@ -1,3 +1,4 @@
+-- godkjent av eieren: 2026-09-27
 -- Nytt oppsett for e-postene: overskrift, avsnitt, faktakort, knapp og en
 -- sekundaer lenke. Eieren, 27. september 2026: «ikke bra nok, jeg vil ha med
 -- knapper og kort», og «la gemini vurdere tekstene også». Tekstene er

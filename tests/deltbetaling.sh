@@ -134,6 +134,20 @@ sjekk "… og beloepet er tilbake paa kortet" "100000" "$(sql "SELECT saldo_ore 
 sjekk "… og plassen staar ubetalt igjen" "reservert" "$(sql "SELECT status FROM bookings WHERE id = $BOOKING")"
 
 echo
+echo "── Dagsoppgjoret viser hver maate for seg ──"
+# Delene paa nytt (gavekortdelen ble annullert over), og saa dagens bilag.
+post kursbetaling.php "{\"handling\":\"delt\",\"bookingId\":$BOOKING,\"deler\":[{\"maate\":\"Gavekort\",\"belop\":\"1000\",\"kode\":\"DELT-TEST-A\"}]}" >/dev/null
+IDAG=$(php -r 'echo (new DateTime("now", new DateTimeZone("Europe/Oslo")))->format("Y-m-d");')
+DAG=$(curl -s -m 15 -H "Cookie: lissom_sesjon=$TOKEN" "$B/dagsoppgjor.php?dato=$IDAG")
+MAATER=$(echo "$DAG" | php -r '$d = json_decode(stream_get_contents(STDIN), true);
+  $m = [];
+  array_walk_recursive($d, function ($v, $k) use (&$m) { if ($k === "maate" && is_string($v)) $m[$v] = 1; });
+  ksort($m); echo implode(",", array_keys($m));')
+sjekk "kontantdelen staar i dagsoppgjoret" "ja" "$(echo "$MAATER" | grep -q 'Kontant' && echo ja || echo nei)"
+sjekk "… og Vipps-delen for seg" "ja" "$(echo "$MAATER" | grep -q 'Vipps' && echo ja || echo nei)"
+sjekk "plassen er betalt igjen med kortet" "betalt" "$(sql "SELECT status FROM bookings WHERE id = $BOOKING")"
+
+echo
 echo "── Kassesalg som sto ubetalt: kontant + Vipps ──"
 SVAR=$(post uttak.php "{\"handling\":\"gjorOpp\",\"ordreId\":$ORDRE,\"deler\":[{\"maate\":\"Kontant\",\"belop\":\"500\"},{\"maate\":\"Vipps\",\"belop\":\"900\"}]}")
 sjekk "feil sum avvises" "false" "$(echo "$SVAR" | felt ok)"

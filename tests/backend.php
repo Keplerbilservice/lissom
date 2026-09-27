@@ -20219,8 +20219,11 @@ sjekk('et smalt mobilbilde beskjaeres til 4:5 for Instagram',
     str_contains($mfLib, 'if ($forhold >= 0.8 && $forhold <= 1.91) {'));
 sjekk('#lissomkeramikk kommer alltid med',
     str_contains($mfLib, "public const FAST_TAGG = '#lissomkeramikk';"));
+// Galleriet (27. september 2026) kom til som en tredje vei ut: «galleri»,
+// og bare saa lenge bildet staar i galleriet.
 sjekk('fila er privat til den er godkjent',
-    str_contains($mfBild, "\$aapen = in_array(\$rad['status'], ['godkjent', 'publisert'], true);"));
+    str_contains($mfBild, "\$aapen = in_array(\$rad['status'], ['godkjent', 'publisert'], true)\n")
+    && str_contains($mfBild, "|| (\$rad['status'] === 'galleri' && (int) \$rad['galleri'] === 1);"));
 sjekk('godkjenning legger ut, og settes tilbake om det feiler',
     str_contains($mfAdm, '$ut = Meta::publiserInstagram($url, $tekst);')
     && str_contains($mfAdm, "DB::kjor(\"UPDATE medlemsforslag SET status = 'venter' WHERE id = :i\", ['i' => \$id]);"));

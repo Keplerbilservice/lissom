@@ -322,7 +322,9 @@ final class Deler
     {
         $e = [self::class, 'e'];
         return '<div class="lx-varekort" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm);">'
-            . '<img src="' . $e($g['bilde']) . '" alt="' . $e($g['alt']) . '" loading="lazy" decoding="async" style="display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: var(--clay-200);">'
+            . '<img src="' . $e($g['bilde']) . '"'
+            . ((string) ($g['srcset'] ?? '') !== '' ? ' srcset="' . $e((string) $g['srcset']) . '" sizes="(max-width: 900px) 50vw, 300px"' : '')
+            . ' alt="' . $e($g['alt']) . '" loading="lazy" decoding="async" style="display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: var(--clay-200);">'
             . '<div style="padding: var(--space-5); display: flex; flex-direction: column; gap: 4px;">'
             . '<div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">' . $e($g['tittel']) . '</div>'
             . '<div style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($g['navn']) . '</div>'

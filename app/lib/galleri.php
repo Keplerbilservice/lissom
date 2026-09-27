@@ -84,12 +84,12 @@ final class Galleri
 
         $aktive = DB::alle(
             "SELECT id, galleri_vist_fra FROM medlemsforslag
-              WHERE galleri = 1 AND type = 'bilde' AND galleri_vist_fra IS NOT NULL
+              WHERE galleri = 1 AND type = 'bilde' AND galleri_vist_fra IS NOT NULL AND status IN ('godkjent', 'publisert', 'galleri')
               ORDER BY galleri_vist_fra, id"
         );
         $venter = DB::alle(
             "SELECT id FROM medlemsforslag
-              WHERE galleri = 1 AND type = 'bilde' AND galleri_vist_fra IS NULL
+              WHERE galleri = 1 AND type = 'bilde' AND galleri_vist_fra IS NULL AND status IN ('godkjent', 'publisert', 'galleri')
               ORDER BY COALESCE(galleri_godkjent_at, behandlet_at, created_at), id"
         );
 
@@ -124,7 +124,7 @@ final class Galleri
      * (nyeste plass foerst), saa fyllbildene. Tom liste naar det ikke er
      * nok til et galleri — da viser forsida varene.
      *
-     * @return list<array{bilde: string, tittel: string, navn: string, alt: string, fyll: bool}>
+     * @return list<array{bilde: string, srcset: string, tittel: string, navn: string, alt: string, fyll: bool}>
      */
     public static function kort(?DateTimeImmutable $naa = null): array
     {
@@ -147,6 +147,7 @@ final class Galleri
                 $tittel = self::tittel((string) $r['tekst']);
                 $ut[] = [
                     'bilde'  => '/api/bilde.php?forslag=' . rawurlencode((string) $r['fil']),
+                    'srcset' => '',
                     'tittel' => $tittel,
                     'navn'   => Medlemsforslag::fornavn((string) $r['navn']),
                     'alt'    => self::alt($tittel),
@@ -166,7 +167,7 @@ final class Galleri
     /**
      * Verkstedets egne bilder, fra galleri-fyll.json.
      *
-     * @return list<array{bilde: string, tittel: string, navn: string, alt: string, fyll: bool}>
+     * @return list<array{bilde: string, srcset: string, tittel: string, navn: string, alt: string, fyll: bool}>
      */
     public static function fyll(): array
     {
@@ -184,7 +185,20 @@ final class Galleri
                 continue;
             }
             $tittel = trim((string) ($r['tittel'] ?? ''));
-            $ut[] = ['bilde' => '/' . $navn, 'tittel' => $tittel, 'navn' => self::FYLL_NAVN,
+            // De mindre utgavene fra bin/bilder.php, naar de finnes: et kort
+            // er 300 piksler bredt, og originalen er 1200.
+            $rot = dirname($fil);
+            $stamme = (string) preg_replace('/\.(jpe?g|png|webp)$/i', '', $navn);
+            $ende = substr($navn, strlen($stamme));
+            $srcset = [];
+            foreach ([400, 800] as $b) {
+                if (is_file($rot . '/' . $stamme . '-' . $b . $ende)) {
+                    $srcset[] = '/' . $stamme . '-' . $b . $ende . ' ' . $b . 'w';
+                }
+            }
+            $ut[] = ['bilde' => '/' . (is_file($rot . '/' . $stamme . '-800' . $ende) ? $stamme . '-800' . $ende : $navn),
+                     'srcset' => implode(', ', $srcset),
+                     'tittel' => $tittel, 'navn' => self::FYLL_NAVN,
                      'alt' => self::alt($tittel), 'fyll' => true];
         }
         return $ut;

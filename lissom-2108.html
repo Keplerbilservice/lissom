@@ -14424,6 +14424,14 @@ window.__resources = {
                 <sc-if value="{{ nrIngenOkter }}" hint-placeholder-val="{{ false }}">
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">{{ nrIngenOkterTekst }}</p>
                 </sc-if>
+                <!-- Lista gaar tretti dager tilbake. Skal noen foeres inn paa
+                     noe som alt er gjennomfoert, hentes datoene bakover — to
+                     aar. Eieren, 27. september 2026: fem medlemmer som gikk
+                     nybegynnerkurs foer systemet fantes. -->
+                <label style="{{ nrFortidStil }}">
+                  <input type="checkbox" checked="{{ nrFortid }}" onChange="{{ vekslNrFortid }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                  {{ nrFortidTekst }}
+                </label>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--space-4); margin-top: var(--space-4);">
                   <div>
@@ -15758,6 +15766,18 @@ window.__resources = {
                       <button type="button" onClick="{{ c.velg }}" style="{{ c.stil }}">{{ c.nr }}</button>
                     </sc-for>
                   </div>
+                  <!-- Dager som har vaert er stengt: et kurs lagret paa en dato
+                       bakover forsvant fra nettsida, som bare viser det som
+                       ligger foran, og sto som publisert i admin uten et ord om
+                       hvorfor.
+                       Men noe HAR vaert, og skal kunne foeres inn: eieren, 27.
+                       september 2026, om fem medlemmer som gikk kurs foer
+                       systemet. Bryteren aapner bakover naar man ber om det, og
+                       staar av til man gjoer det. -->
+                  <label style="{{ kFortidStil }}">
+                    <input type="checkbox" checked="{{ kFortid }}" onChange="{{ vekslKFortid }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Datoer som har vært (for å føre inn noe som alt er gjennomført)
+                  </label>
                 </div>
                 <sc-if value="{{ harOkter }}" hint-placeholder-val="{{ false }}">
                   <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-4);">
@@ -58356,7 +58376,10 @@ class Component extends DCLogic {
           if (hva === 'Event') return t === 'event';
           return t === 'kurs' || t === 'workshop';
         };
-        const okter = alleOkter.filter(passer);
+        const okter = alleOkter.filter(passer)
+          // Datoene bakover staar sist, og bare naar de er bedt om. De
+          // kommende er det man trenger ni ganger av ti.
+          .concat(st.nrFortid ? (st.nrGamleOkter || []).filter(passer) : []);
         const oktValgt = String(st.nrOkt || (okter[0] ? okter[0].oktId : ''));
 
         const planer = (st.adminPlanerRaa || []).filter(p => p.aktiv !== false);
@@ -58447,6 +58470,27 @@ class Component extends DCLogic {
           settNrPlan: e => this.setState({ nrPlan: e.target.value }),
 
           nrOktEtikett: hva === 'Event' ? 'Event' : 'Kurs og dato',
+          // Datoene bakover. Hentes foerst naar bryteren slaas paa — da er
+          // det et eget kall, og svaret er bare datoer.
+          nrFortid: !!st.nrFortid,
+          nrFortidTekst: st.nrFortidHenter
+            ? 'Henter datoer som har v\u00e6rt \u2026'
+            : 'Vis ogs\u00e5 datoer som har v\u00e6rt',
+          nrFortidStil: {
+            display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+            fontSize: 'var(--text-sm)', color: 'var(--text-muted)',
+            marginTop: 'var(--space-3)', textWrap: 'pretty',
+          },
+          vekslNrFortid: () => {
+            const paa = !this.state.nrFortid;
+            this.setState({ nrFortid: paa });
+            if (!paa || this.state.nrGamleOkter || !this.erPublisert()) return;
+            this.setState({ nrFortidHenter: true });
+            fetch('/api/admin/pameldte.php?historikk=1', { credentials: 'same-origin', cache: 'no-store' })
+              .then(r => (r.ok ? r.json() : null))
+              .then(d => this.setState({ nrFortidHenter: false, nrGamleOkter: (d && d.okter) || [] }))
+              .catch(() => this.setState({ nrFortidHenter: false, nrGamleOkter: [] }));
+          },
           nrOkter: okter.map(o => ({
             verdi: String(o.oktId),
             navn: o.tittel + ' · ' + o.naar + ' · ' + o.ledige + ' ledige',
@@ -58498,6 +58542,12 @@ class Component extends DCLogic {
               handling: 'legg-til',
               oktId: Number(oktNaa.oktId),
               navn: personNavn,
+              // Er den valgte et medlem, foelger medlemsnummeret med. Uten
+              // det ble plassen en gjestepaamelding, og verken den eller
+              // kursbeviset dukket opp paa medlemmets Min side — den henter
+              // bare bookinger med «member_id». Er ingen valgt, eller er den
+              // valgte ikke medlem, sendes 0, og serveren foerer det som gjest.
+              medlemId: valgt ? (valgt.medlemId || 0) : 0,
               epost: valgt ? (valgt.epost || '') : (st.nrEpost || '').trim(),
               telefon: valgt ? (valgt.tlf || '') : (st.nrTlf || '').trim(),
               antall: Number(st.nrAntall) || 1,
@@ -63505,6 +63555,14 @@ class Component extends DCLogic {
           },
         };
       })(),
+      // Bryteren under kalenderen. Se markupen og «passert» under.
+      kFortid: !!this.state.kFortid,
+      vekslKFortid: () => this.setState(st => ({ kFortid: !st.kFortid })),
+      kFortidStil: {
+        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+        fontSize: 'var(--text-sm)', color: 'var(--text-muted)',
+        marginTop: 'var(--space-3)', textWrap: 'pretty',
+      },
       kalDager: (() => {
         const n = new Date(); const aar = this.state.kalAar ?? n.getFullYear(); const mnd = this.state.kalMnd ?? n.getMonth();
         const forste = (new Date(aar, mnd, 1).getDay() + 6) % 7;
@@ -63523,14 +63581,15 @@ class Component extends DCLogic {
         for (let dag = 1; dag <= antall; dag++) {
           const iso = aar + '-' + String(mnd + 1).padStart(2, '0') + '-' + String(dag).padStart(2, '0');
           const valgt = valgte.indexOf(iso) >= 0;
-          const passert = new Date(aar, mnd, dag) < idag;
+          // Stengt bakover, med mindre bryteren under kalenderen staar paa.
+          const passert = new Date(aar, mnd, dag) < idag && !this.state.kFortid;
           celler.push({
             nr: dag,
             velg: () => {
               if (passert) {
                 this.setState({
                   kvittering: 'Den datoen har vært',
-                  kvitteringDetalj: 'Velg en dag som ligger foran oss — ellers vises ikke kurset på nettsiden.',
+                  kvitteringDetalj: 'Velg en dag som ligger foran oss — ellers vises ikke kurset på nettsiden. Skal du føre inn noe som alt er gjennomført, slå på «Datoer som har vært» under kalenderen.',
                 });
                 return;
               }

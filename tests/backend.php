@@ -20534,6 +20534,60 @@ sjekk('dagbrikka i ukekalenderen hopper til dagen',
         . "          if (!el || !el.getClientRects().length) return;\n"
         . '          this.rullTil(el);'));
 
+// ── Kursbevis for noe som alt er gjennomfoert ───────────────────────
+//
+// Eieren, 27. september 2026: «kan du legge inn kursbevis nybegynner dreiekurs
+// under min side til medlemmene» — fem medlemmer som gikk kurset foer systemet
+// fantes.
+//
+// Et kursbevis lagres ikke. Det bygges av paameldingen, og staar paa Min side
+// naar den er betalt og datoen har vaert. Tre ting sto i veien:
+//
+//   1. En paamelding lagt inn for haand fikk alltid «member_id = null», og
+//      Min side henter bare bookinger med member_id.
+//   2. Datovelgeren nektet dager som har vaert.
+//   3. Oektlista gikk bare tretti dager tilbake.
+$kbSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kbPam  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+$kbPmd  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
+
+echo "\nKursbevis i ettertid\n";
+// 1. Medlemmet foelger med paameldingen.
+sjekk('en paamelding lagt inn for haand kan baere medlemmet',
+    str_contains($kbPam, "\$medlemId = Foresporsel::heltall('medlemId');")
+    && str_contains($kbPam, "        'member_id'         => \$medlemId > 0 ? \$medlemId : null,"));
+sjekk('et medlemsnummer som ikke finnes avvises',
+    str_contains($kbPam, "if (\$medlemId > 0 && DB::en('SELECT id FROM members WHERE id = :i', ['i' => \$medlemId]) === null) {"));
+// Navnet i feltet kan staa litt annerledes enn i registeret.
+sjekk('dobbelttrykk fanges paa medlemsnummeret ogsaa',
+    str_contains($kbPam, "            AND (member_id = :m OR gjest_navn = :n)"));
+sjekk('skjermen sender medlemmet videre',
+    str_contains($kbSida, '              medlemId: valgt ? (valgt.medlemId || 0) : 0,'));
+// Den som ringer og ikke er medlem skal fortsatt kunne foeres som gjest.
+sjekk('uten medlem foeres det som gjest, som for',
+    str_contains($kbPam, "\$medlemId > 0 ? \$medlemId : null"));
+
+// 2. Datovelgeren.
+sjekk('dager som har vaert er stengt til man ber om dem',
+    str_contains($kbSida, '          const passert = new Date(aar, mnd, dag) < idag && !this.state.kFortid;'));
+sjekk('bryteren finnes under kalenderen',
+    str_contains($kbSida, 'checked="{{ kFortid }}" onChange="{{ vekslKFortid }}"')
+    && str_contains($kbSida, "      vekslKFortid: () => this.setState(st => ({ kFortid: !st.kFortid })),"));
+sjekk('og meldinga peker paa bryteren',
+    str_contains($kbSida, '«Datoer som har vært» under kalenderen.'));
+
+// 3. Oektlista bakover.
+sjekk('datoene bakover hentes for seg, og bare datoene',
+    str_contains($kbPmd, "if (Foresporsel::heltall('historikk') === 1) {")
+    && str_contains($kbPmd, "            AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 MONTH)"));
+sjekk('de gaar ikke inn i den vanlige lista',
+    str_contains($kbPmd, "          WHERE cs.status <> 'avlyst' AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)"));
+sjekk('skjermen henter dem foerst naar bryteren slaas paa',
+    str_contains($kbSida, "            if (!paa || this.state.nrGamleOkter || !this.erPublisert()) return;")
+    && str_contains($kbSida, "            fetch('/api/admin/pameldte.php?historikk=1'"));
+sjekk('og de staar sist i lista',
+    str_contains($kbSida, '          .concat(st.nrFortid ? (st.nrGamleOkter || []).filter(passer) : []);'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

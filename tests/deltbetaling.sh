@@ -38,12 +38,15 @@ opprydding() {
       DB::kjor("DELETE FROM course_sessions WHERE course_id = :c", ["c" => $c]);
       DB::kjor("DELETE FROM courses WHERE id = :c", ["c" => $c]);
     }
+    DB::kjor("UPDATE gift_cards SET payment_id = NULL WHERE kode LIKE \"DELT-TEST-%\"");
+    DB::kjor("UPDATE orders SET payment_id = NULL WHERE ordrenr LIKE \"TEST-DELTOPP%\"");
     DB::kjor("DELETE FROM payments WHERE order_id IN (SELECT id FROM orders WHERE ordrenr LIKE \"TEST-DELTOPP%\")");
     DB::kjor("DELETE FROM orders WHERE ordrenr LIKE \"TEST-DELTOPP%\"");
     DB::kjor("DELETE FROM gift_card_uses WHERE gift_card_id IN (SELECT id FROM gift_cards WHERE kode LIKE \"DELT-TEST-%\")");
     DB::kjor("DELETE FROM gift_cards WHERE kode LIKE \"DELT-TEST-%\"");
     $m = array_column(DB::alle("SELECT id FROM members WHERE epost LIKE \"delt-%@lissom.test\""), "id");
     foreach ($m as $i) {
+      DB::kjor("UPDATE orders SET payment_id = NULL WHERE payment_id IN (SELECT id FROM payments WHERE member_id = :m OR registrert_av = :m2)", ["m" => $i, "m2" => $i]);
       DB::kjor("UPDATE bookings SET payment_id = NULL WHERE payment_id IN (SELECT id FROM payments WHERE member_id = :m OR registrert_av = :m2)", ["m" => $i, "m2" => $i]);
       DB::kjor("DELETE FROM payments WHERE member_id = :m OR registrert_av = :m2", ["m" => $i, "m2" => $i]);
       DB::kjor("DELETE FROM sessions WHERE member_id = :m", ["m" => $i]);

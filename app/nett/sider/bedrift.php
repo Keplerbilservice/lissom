@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 $innh = [Nett::class, 'innh'];
 $tilbud = [];
-foreach ([[1, 'uploads_workshop4.jpg'], [2, 'uploads_datenight.jpg'], [3, 'uploads_barn2.jpg']] as [$n, $bilde]) {
+foreach ([[1, 'uploads_foto-teambuilding.jpg'], [2, 'uploads_foto-utdrikningslag.jpg'], [3, 'uploads_barn2.jpg']] as [$n, $bilde]) {
     $tilbud[] = [
         'navn'     => $innh('Bedrift og event/1/Kort ' . $n . ' tittel'),
         'tekst'    => $innh('Bedrift og event/1/Kort ' . $n . ' tekst'),
@@ -39,5 +39,5 @@ return [
     'kropp' => Mal::tegn('Bedrift og event', ['bedriftTilbud' => $tilbud, 'beReferanser' => $kunder, 'beHarReferanser' => $kunder !== [], 'sant' => true], ['bedriftTilSkjema' => '/bedrift?skjema=1']) . "\n" . Deler::bunn(true),
     'aktiv' => '',
     // Det foerste tilbudskortets bilde er LCP paa sida.
-    'hode'  => '<link rel="preload" as="image" fetchpriority="high" href="uploads_workshop4.jpg">' . "\n",
+    'hode'  => '<link rel="preload" as="image" fetchpriority="high" href="uploads_foto-teambuilding.jpg">' . "\n",
 ];

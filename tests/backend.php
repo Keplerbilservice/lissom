@@ -14633,8 +14633,9 @@ sjekk('… og ingen piller staar igjen med det gamle maalet',
 // dem stiles fra JS — «Velg noen andre» i ny registrering, og «Skjul»/«Vis»
 // paa referansekundene. Resten gaar gjennom klassen «.lx-radpille», som
 // bruker det samme maalet.
+// Femten fra 27. september 2026: bryteren i hver rad i Tekst maler.
 sjekk('… og de som har skrift bruker pillemaalet',
-    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 14
+    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 15
     && str_contains($utenKomm, '    padding: 6px 12px !important;')
     && str_contains($utenKomm, '    font: var(--type-chip) !important;'));
 
@@ -17414,7 +17415,9 @@ sjekk('migrasjon 163 gir «anmeldelse» plakatens tekst, som e-post, og setter d
             && str_contains($m, "«Leiren husker alt du gjør med den – og vi husker alle som tar seg tid.»")
             && str_contains($m, "aktiv = 0")
             && str_contains($m, "WHERE navn = 'anmeldelse'")
-            && str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'), "if (!\$paa || \$lenke === '' || !\$malPaa) {");
+            // Den egne bryteren «anmeldelse_paa» ble slaatt sammen med malen
+            // i migrasjon 226 (eieren, 27. september 2026).
+            && str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'), "if (\$lenke === '' || !\$malPaa) {");
     })());
 // ── Sidene slik robotene ser dem ─────────────────────────────────────────
 //

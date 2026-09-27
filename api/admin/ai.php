@@ -230,8 +230,11 @@ switch ($handling) {
             10000
         );
 
+        // Kurset foelger med, saa pakken kan lage bildet av kursets egne
+        // bilder etterpaa — se Kursboost::kursbilder().
         $lagre('kursboost', 'Kursboost: ' . $k['kurs']['tittel'],
-            (string) ($r['artikkel']['tekst'] ?? ''), $r, (string) $k['kurs']['tittel'], AI::sisteKostnad());
+            (string) ($r['artikkel']['tekst'] ?? ''), $r + ['kursId' => (int) $k['kurs']['id']],
+            (string) $k['kurs']['tittel'], AI::sisteKostnad());
 
     // ── Nyhetsbrev ──────────────────────────────────────────────────────
     case 'nyhetsbrev':
@@ -620,39 +623,13 @@ Dette staar alt i skjemaet:
         // Artikler og SEO-sider blir til artikler. Resten godkjennes bare —
         // nyhetsbrev sendes fra Beskjeder, innlegg limes inn i kanalen.
         if (in_array($u['type'], ['artikkel', 'seo'], true) && trim((string) $u['tekst']) !== '') {
-            $slug = trim((string) ($data['slug'] ?? ''));
-            if ($slug === '') {
-                $slug = mb_strtolower((string) $u['tittel']);
-                $slug = strtr($slug, ['æ' => 'ae', 'ø' => 'o', 'å' => 'a']);
-                $slug = trim(preg_replace('/[^a-z0-9]+/', '-', $slug) ?? '', '-');
-            }
-            // To artikler kan ikke dele adresse.
-            $grunn = $slug;
-            $n = 2;
-            while ((int) DB::verdi('SELECT COUNT(*) FROM articles WHERE slug = :s', ['s' => $slug]) > 0) {
-                $slug = $grunn . '-' . $n++;
-            }
-            // Overskriften er UNIQUE i basen. To utkast om det samme ga
-            // hele SQLSTATE-feilen paa skjermen og ingen publisering — se
-            // Artikler::ledigTittel(). Kvitteringen sier fra naar den ble
-            // endret, saa den kan doepes om framfor aa staa som «(2)».
-            $tittel = Artikler::ledigTittel((string) $u['tittel']);
-            $resultat = DB::settInn('articles', [
-                'tittel'    => $tittel,
-                'kategori'  => $data['kategori'] ?? null,
-                'slug'      => $slug,
-                'fokus_ord' => $data['fokusord'] ?? ($data['sokeord'] ?? null),
-                'ingress'   => $data['ingress'] ?? null,
-                'innhold'   => $u['tekst'],
-                // Bildet eieren valgte da utkastet ble laget. Uten dette
-                // maatte det velges paa nytt inne i artikkelen etterpaa —
-                // valget var gjort, og ble borte.
-                'bilde'     => $data['bilde'] ?? null,
-                'kilde'     => 'ai',
-                // Kladd, ikke publisert. Godkjenning betyr «denne vil jeg ha»,
-                // ikke «legg den ut naa» — eieren velger tidspunktet selv.
-                'status'    => 'kladd',
-            ]);
+            // Slug, ledig overskrift (UNIQUE i basen — se Artikler::
+            // ledigTittel()) og kladd-status staar i Artikler::kladdFraUtkast(),
+            // som kursboost ogsaa bruker. Bildet eieren valgte foelger med.
+            // Kvitteringen sier fra naar overskriften ble endret.
+            $kladd = Artikler::kladdFraUtkast((string) $u['tittel'], (string) $u['tekst'], $data);
+            $resultat = $kladd['id'];
+            $tittel = $kladd['tittel'];
         }
 
         $doptOm = $resultat !== null && isset($tittel) && $tittel !== (string) $u['tittel'];

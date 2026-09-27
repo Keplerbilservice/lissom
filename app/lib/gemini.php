@@ -347,6 +347,52 @@ final class Gemini
     }
 
     /**
+     * Et bilde til kursboost, laget av kursets EGNE bilder.
+     *
+     * Eieren, 27. september 2026 (GO paa kursboost med bilde): pakken skal ha
+     * et bilde, og Lissom-regelen er at genererte bilder bygger paa
+     * verkstedets egne. Derfor gaar kursbildene inn som forlegg — foran
+     * referansebildene fra verkstedet — og modellen blir bedt om aa lage et
+     * nytt bilde fra samme kurs, ikke aa redigere dem.
+     *
+     * @param list<string> $kursbilder raa JPEG/PNG-byte, maks tre brukes
+     * @return array{navn: string, url: string, kostnadOre: int}
+     */
+    public static function lagKursbilde(array $kursbilder, string $kurs, int $variant = 1): array
+    {
+        $noekkel = self::noekkel();
+        if ($noekkel === '') {
+            throw new RuntimeException(
+                'Gemini er ikke koblet til ennå. Lim inn nøkkelen under Markedsføring → Oppsett.'
+            );
+        }
+        $tak = AI::tak();
+        if (AI::bruktDenneMaaneden() >= $tak * 100) {
+            throw new RuntimeException(
+                'Taket på ' . Booking::kroner($tak * 100) . ' for denne måneden er nådd. '
+                . 'Du kan heve det under Markedsføring → Oppsett.'
+            );
+        }
+        $deler = [];
+        foreach (array_slice($kursbilder, 0, 3) as $raa) {
+            $info = @getimagesizefromstring($raa);
+            if (!is_array($info)) {
+                continue;
+            }
+            $deler[] = ['inlineData' => ['mimeType' => (string) ($info['mime'] ?? 'image/jpeg'), 'data' => base64_encode($raa)]];
+        }
+        $deler = array_merge($deler, self::referanseDeler());
+        // Tre forslag skal ikke bli tre like bilder. Utsnittet varierer.
+        $utsnitt = [1 => 'et naerbilde av hender som former leire paa dette kurset',
+                    2 => 'ferdig keramikk fra dette kurset paa et bord i verkstedet',
+                    3 => 'kursrommet med arbeid i gang, sett litt fra siden'][$variant] ?? 'et bilde fra kurset';
+        $tekst = 'Lag et nytt bilde til et innlegg i sosiale medier om kurset «' . $kurs . '». Motiv: ' . $utsnitt . '. '
+            . 'Ingen gjenkjennelige ansikter.';
+        $deler[] = ['text' => self::rammeInn($tekst, $deler !== [])];
+        return self::bildeKall($deler, 'Kursbilde', $noekkel);
+    }
+
+    /**
      * Den faste bakgrunnen til varebildene i nettbutikken.
      *
      * Eieren, 26. september 2026: «legg en fast bakgrunn paa bildene jeg
@@ -415,7 +461,12 @@ final class Gemini
     private static function bildeKall(array $deler, string $formal, string $noekkel): array
     {
         $modell = self::modell();
-        $url = self::BASE . rawurlencode($modell) . ':generateContent';
+        // En test peker kallet til en falsk Gemini (LISSOM_GEMINI_BASE), saa
+        // ingen bilder bestilles — og betales — fra en testkjoring. Bare
+        // utenfor produksjon, samme regel som Config::vippsBase().
+        $fra = (string) (getenv('LISSOM_GEMINI_BASE') ?: '');
+        $base = $fra !== '' && Config::miljo() !== 'produksjon' ? rtrim($fra, '/') . '/' : self::BASE;
+        $url = $base . rawurlencode($modell) . ':generateContent';
 
         // Noekkelen gaar i et hode, ikke i adressen: en adresse havner i
         // serverlogger og i feilmeldinger, et hode gjor det ikke.
@@ -429,7 +480,10 @@ final class Gemini
             ] + ($formal === 'Varebilde'
                 // Varebildene i butikken staar i 3:4, som bildene fra foer.
                 ? ['generationConfig' => ['imageConfig' => ['aspectRatio' => '3:4']]]
-                : []), JSON_UNESCAPED_UNICODE),
+                // Kursboost: 4:5, det hoeyeste Instagram viser i feeden.
+                : ($formal === 'Kursbilde'
+                    ? ['generationConfig' => ['imageConfig' => ['aspectRatio' => '4:5']]]
+                    : [])), JSON_UNESCAPED_UNICODE),
             [
                 'Content-Type: application/json',
                 'x-goog-api-key: ' . $noekkel,

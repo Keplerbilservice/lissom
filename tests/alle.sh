@@ -55,6 +55,7 @@ kjor "betalingsflyt" bash tests/flyt.sh
 kjor "delt betaling" bash tests/deltbetaling.sh
 kjor "galleri, admin" bash tests/galleri.sh
 kjor "avbestilling"  bash tests/avbestilling.sh
+kjor "kursboost"     bash tests/kursboost.sh
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

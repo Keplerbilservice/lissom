@@ -3723,7 +3723,10 @@ sjekk('et ferskt utkast kan aapnes for lista er hentet',
 // SQLSTATE-feilen paa skjermen, og ingenting ble publisert.
 sjekk('en dublett-overskrift gir et tall bak, ikke en SQL-feil',
     str_contains(file_get_contents(__DIR__ . '/../app/lib/artikler.php'), 'public static function ledigTittel')
-    && str_contains(file_get_contents(__DIR__ . '/../api/admin/ai.php'), 'Artikler::ledigTittel('));
+    // Kladden lages ett sted fra 27. september 2026 (kursboost bruker den
+    // ogsaa): ai.php kaller kladdFraUtkast(), som bruker ledigTittel().
+    && str_contains(file_get_contents(__DIR__ . '/../api/admin/ai.php'), 'Artikler::kladdFraUtkast(')
+    && str_contains(file_get_contents(__DIR__ . '/../app/lib/artikler.php'), '$ledig = self::ledigTittel($tittel);'));
 sjekk('… og skjemaet i Kunnskapsbank sier fra i klartekst',
     str_contains(file_get_contents(__DIR__ . '/../api/admin/artikler.php'),
                  'Det finnes allerede en artikkel som heter'));
@@ -20949,6 +20952,49 @@ sjekk('… ukjente felt i oppsettet avvises som i teksten',
 sjekk('… forhåndsvisningen lages av den samme koden som sender',
     str_contains($eoApi, "if (\$handling === 'forhandsvis') {")
     && str_contains($eoApi, 'Varsel::oppsett(array_merge($mal, $somKolonner($o)), $felter, $gruppe);'));
+// Eieren, 27. september 2026: «jeg har kursboost, som systemet foreslaar
+// selv, men det er ikke bilde eller video generator her, og jeg vet ikke hvor
+// det er tenkt aa bruke det heller». GO paa skissen: bilde av kursets egne
+// bilder og én knapp per del. tests/kursboost.sh kjorer hele flyten mot en
+// falsk Gemini og Meta; her staar det som skal holde seg i koden.
+echo "\nKursboost som ferdig flyt\n";
+$kbSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kbLib  = file_get_contents(dirname(__DIR__) . '/app/lib/kursboost.php');
+$kbGem  = file_get_contents(dirname(__DIR__) . '/app/lib/gemini.php');
+$kbBesk = file_get_contents(dirname(__DIR__) . '/api/admin/beskjed.php');
+sjekk('bildet lages av kursets egne bilder, foran verkstedets referanser',
+    str_contains($kbGem, 'public static function lagKursbilde(array $kursbilder, string $kurs, int $variant = 1): array')
+    && str_contains($kbGem, '$deler = array_merge($deler, self::referanseDeler());'));
+sjekk('… tre forslag, og ingen er valgt paa forhaand',
+    str_contains($kbLib, 'public const FORSLAG = 3;')
+    && str_contains($kbLib, "\$data['kb']['valgt'] = '';"));
+sjekk('… og kostnaden gaar under det samme taket',
+    substr_count($kbGem, 'if (AI::bruktDenneMaaneden() >= $tak * 100) {') >= 3);
+sjekk('Gemini og Meta kan bare pekes til en test utenfor produksjon',
+    str_contains($kbGem, "\$base = \$fra !== '' && Config::miljo() !== 'produksjon' ? rtrim(\$fra, '/') . '/' : self::BASE;")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/meta.php'), "if (\$fra !== '' && Config::miljo() !== 'produksjon') {"));
+sjekk('en del som er gjort kan ikke gjoeres igjen',
+    str_contains($kbLib, "if (isset(\$u['data']['kb']['gjort'][\$del])) {")
+    && str_contains($kbBesk, "if (\$kursboostId > 0 && Kursboost::gjort(\$kursboostId, 'medlemmer') !== null) {"));
+sjekk('Instagram er laast til et bilde er valgt',
+    str_contains($kbSida, "const trengerBilde = del === 'instagram' && !p.valgt;")
+    && str_contains($kbLib, "'Velg et bilde først. Instagram tar ikke imot innlegg uten.'"));
+sjekk('artikkelen blir kladd samme vei som et artikkelutkast',
+    str_contains($kbLib, 'Artikler::kladdFraUtkast(')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/ai.php'), 'Artikler::kladdFraUtkast('));
+sjekk('meldingen til medlemmene gaar gjennom den vanlige utsendingen, med tallet foerst',
+    str_contains($kbSida, "beskjed({ handling: 'antall' })")
+    && str_contains($kbSida, 'beskjed({ kursboost: p.id })')
+    && str_contains($kbBesk, "if (Foresporsel::tekst('handling') === 'antall') {"));
+sjekk('… og bekreftelsen staar i siden, ikke i en nettleserboks',
+    str_contains($kbSida, "' medlemmer får meldingen på e-post, og den legges på Min side.'")
+    && !preg_match('/kbVals\(\)[\s\S]{0,9000}window\.confirm/', $kbSida));
+sjekk('knappene og kvitteringene er de godkjente',
+    str_contains($kbSida, "artikkel: 'Lagre som kladd i Nyheter', nyhetsbrev: 'Lag nyhetsbrev-utkast',")
+    && str_contains($kbSida, "nyhetsbrev: 'Lagt som utkast i Tilbud / nyhetsbrev ✓',")
+    && str_contains($kbSida, "kbBildeKnapp: 'Lag nye forslag',"));
+sjekk('kursboost-utkastet husker kurset',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/ai.php'), "\$r + ['kursId' => (int) \$k['kurs']['id']],"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

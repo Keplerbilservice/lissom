@@ -3,7 +3,10 @@
  * Malene for alt som sendes ut.
  *
  *   GET                      alle malene, med feltene hver av dem kan bruke
- *   POST handling=lagre      { navn, emne, tekst, aktiv }
+ *   POST handling=lagre      { navn, emne, tekst, aktiv,
+ *                              overskrift?, avsnitt?, kort?, knapp?, lenke2? }
+ *   POST handling=forhandsvis { navn, overskrift, avsnitt, kort, knapp, lenke2 }
+ *                              e-posten i oppsettet, med eksempelverdier
  *   POST handling=slett      { navn, bekreftet? }
  *   POST handling=test       { epost, navn? }  sender malene med eksempelverdier
  *
@@ -63,6 +66,17 @@ $hent = static function () use ($harGruppe, $IBRUK): array {
             'iBruk'   => in_array($navn, $IBRUK, true),
             'hvor'    => Maler::hvor($navn),
             'felter'  => Maler::felter($navn),
+            // Det felles oppsettet (migrasjon 227): overskrift, avsnitt,
+            // faktakort, knapp og sekundaer lenke. null naar malen ikke har det.
+            'oppsett' => Varsel::harOppsett($m) ? [
+                'overskrift' => (string) ($m['overskrift'] ?? ''),
+                'avsnitt'    => implode("
+
+", (array) (json_decode((string) ($m['avsnitt'] ?? ''), true) ?: [])),
+                'kort'       => array_values((array) (json_decode((string) ($m['kort'] ?? ''), true) ?: [])),
+                'knapp'      => json_decode((string) ($m['knapp'] ?? ''), true) ?: null,
+                'lenke2'     => json_decode((string) ($m['lenke2'] ?? ''), true) ?: null,
+            ] : null,
         ];
     }, $rader);
 };
@@ -86,37 +100,41 @@ $handling = Foresporsel::tekst('handling');
 // signatur og logo — fylt med eksempelverdier. Ingen kunde, ingen booking og
 // ingen admin-adresse blir berørt: mottakeren er bare adressen her, og det
 // sendes ingen SMS.
+// Eksempelverdiene til testen og forhåndsvisningen i Tekst maler.
+$eksempel = [
+    'navn' => 'Kari Nordmann', 'fornavn' => 'Kari', 'kurs' => 'Nybegynner dreiekurs',
+    'naar' => 'onsdag 7. – torsdag 8. oktober, 17:00', 'tid' => 'onsdag 7. oktober kl. 17:00',
+    'dato' => 'onsdag 7. oktober', 'fra' => 'onsdag 7. oktober', 'til' => 'onsdag 14. oktober',
+    'belop' => 'kr 2 800', 'sum' => 'kr 1 250', 'pris' => 'kr 400', 'betaling' => '',
+    'lenke' => 'https://lissom.no', 'avmelding' => 'https://lissom.no',
+    'abonnement' => 'Årsmedlemskap', 'plan' => 'Årsmedlemskap', 'type' => 'Årsmedlemskap',
+    'gyldig' => '25. september 2027', 'dag' => '1.', 'ordre' => 'LIS-260925-1234',
+    'nummer' => 'LIS-260925-1234', 'varelinjer' => "1 × Skål – kr 400\n1 × Kopp – kr 350",
+    'varer' => "2 × Leire, 10 kg\n1 × Glasur, hvit", 'adresse' => 'Storgata 1, 3100 Tønsberg',
+    'tekst' => 'Eksempeltekst', 'svar' => 'Takk for at du spurte! Her er svaret vårt.',
+    'melding' => 'Hei, jeg lurer på om det er ledig plass på kurset.',
+    'oppsummering' => "Navn: Kari Nordmann\nE-post: kari@example.com",
+    'timer' => '3', 'varighet' => '3 timer', 'forslag' => 'Rydde glasurrommet',
+    'mottaker' => 'Ola Nordmann', 'kode' => 'ABCD-1234', 'hilsen' => 'Gratulerer med dagen!',
+    'tittel' => 'Skål', 'grunn' => 'Bildet var for mørkt.', 'begrunnelse' => 'Kurset er fullt.',
+    'kontakt' => 'kari@example.com · 900 00 000', 'beskjed' => 'Pakkes som gave.',
+    'epost' => 'kari@example.com', 'telefon' => '900 00 000', 'produsent' => 'Kari Nordmann',
+    'erfaring' => 'Har gått nybegynnerkurs', 'posisjon' => '1', 'visste' => '',
+    'status' => 'Venter på godkjenning', 'refusjon' => 'Pengene er på vei tilbake til deg på Vipps.',
+    'refusjonstid' => 'Vanligvis innen tre virkedager',
+    // Slik Booking::kursinfo fyller den for dreiekurset.
+    'kursinfo' => "2 ganger à 3 timer og 30 minutter\n\n"
+        . "Dag 1 – Sentrere og dreie\nDu lærer å sentrere leiren, åpne formen og dreie dine første ting på skiven. Vi hjelper deg hele veien.\n\n"
+        . "Dag 2 – Trimme og dekorere\nDu trimmer foten på det du dreide kvelden før, og vi dekorerer. Etterpå glaserer og brenner vi arbeidene for deg.\n\n"
+        . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere får låne forkle, men regn med å bli litt skitten.\n– Leire, verktøy, glasur og brenning er inkludert.",
+];
+
 if ($handling === 'test') {
     $til = trim(Foresporsel::tekst('epost'));
     if (!filter_var($til, FILTER_VALIDATE_EMAIL)) {
         Svar::feil('Skriv en gyldig e-postadresse.');
     }
     $bare = mb_substr(Foresporsel::tekst('navn'), 0, 64);
-    $eksempel = [
-        'navn' => 'Kari Nordmann', 'fornavn' => 'Kari', 'kurs' => 'Nybegynner dreiekurs',
-        'naar' => 'onsdag 7. – torsdag 8. oktober, 17:00', 'tid' => 'onsdag 7. oktober kl. 17:00',
-        'dato' => 'onsdag 7. oktober', 'fra' => 'onsdag 7. oktober', 'til' => 'onsdag 14. oktober',
-        'belop' => 'kr 2 800', 'sum' => 'kr 1 250', 'pris' => 'kr 400', 'betaling' => '',
-        'lenke' => 'https://lissom.no', 'avmelding' => 'https://lissom.no',
-        'abonnement' => 'Årsmedlemskap', 'plan' => 'Årsmedlemskap', 'type' => 'Årsmedlemskap',
-        'gyldig' => '25. september 2027', 'dag' => '1.', 'ordre' => 'LIS-260925-1234',
-        'nummer' => 'LIS-260925-1234', 'varelinjer' => "1 × Skål – kr 400\n1 × Kopp – kr 350",
-        'varer' => "2 × Leire, 10 kg\n1 × Glasur, hvit", 'adresse' => 'Storgata 1, 3100 Tønsberg',
-        'tekst' => 'Eksempeltekst', 'svar' => 'Takk for at du spurte! Her er svaret vårt.',
-        'melding' => 'Hei, jeg lurer på om det er ledig plass på kurset.',
-        'oppsummering' => "Navn: Kari Nordmann\nE-post: kari@example.com",
-        'timer' => '3', 'varighet' => '3 timer', 'forslag' => 'Rydde glasurrommet',
-        'mottaker' => 'Ola Nordmann', 'kode' => 'ABCD-1234', 'hilsen' => 'Gratulerer med dagen!',
-        'tittel' => 'Skål', 'grunn' => 'Bildet var for mørkt.', 'begrunnelse' => 'Kurset er fullt.',
-        'kontakt' => 'kari@example.com · 900 00 000', 'beskjed' => 'Pakkes som gave.',
-        'epost' => 'kari@example.com', 'telefon' => '900 00 000', 'produsent' => 'Kari Nordmann',
-        'erfaring' => 'Har gått nybegynnerkurs', 'posisjon' => '1', 'visste' => '',
-        // Slik Booking::kursinfo fyller den for dreiekurset.
-        'kursinfo' => "2 ganger à 3 timer og 30 minutter\n\n"
-            . "Dag 1 – Sentrere og dreie\nDu lærer å sentrere leiren, åpne formen og dreie dine første ting på skiven. Vi hjelper deg hele veien.\n\n"
-            . "Dag 2 – Trimme og dekorere\nDu trimmer foten på det du dreide kvelden før, og vi dekorerer. Etterpå glaserer og brenner vi arbeidene for deg.\n\n"
-            . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere får låne forkle, men regn med å bli litt skitten.\n– Leire, verktøy, glasur og brenning er inkludert.",
-    ];
     $maler = DB::alle("SELECT navn FROM notification_templates WHERE aktiv = 1 AND kanal LIKE '%epost%' ORDER BY navn");
     $sendt = [];
     foreach ($maler as $m) {
@@ -172,6 +190,74 @@ if ($mal === null) {
     Svar::feil('Fant ikke malen.', 404);
 }
 
+// ── Oppsettet fra skjemaet ───────────────────────────────────────────
+//
+// Overskrift, avsnitt (ett per blank linje), faktakort, knapp og sekundaer
+// lenke (migrasjon 227). null naar skjemaet ikke sendte oppsettet — da
+// roeres det ikke, slik at bryteren i lista ikke kan viske det ut.
+$lesOppsett = static function (): ?array {
+    $k = Foresporsel::kropp();
+    if (!array_key_exists('overskrift', $k)) {
+        return null;
+    }
+    $tekst = static fn($v): string => trim(is_scalar($v) ? (string) $v : '');
+    $avsnitt = array_values(array_filter(
+        array_map('trim', preg_split("/\r?\n[ \t]*\r?\n/", str_replace("\r", '', (string) ($k['avsnitt'] ?? ''))) ?: []),
+        static fn($p) => $p !== ''
+    ));
+    $kort = [];
+    foreach ((array) ($k['kort'] ?? []) as $rad) {
+        if (!is_array($rad)) {
+            continue;
+        }
+        $e = mb_substr($tekst($rad[0] ?? ''), 0, 80);
+        $v = mb_substr($tekst($rad[1] ?? ''), 0, 500);
+        if ($e !== '' || $v !== '') {
+            $kort[] = [$e, $v];
+        }
+    }
+    $lenke = static function ($raa) use ($tekst): ?array {
+        if (!is_array($raa)) {
+            return null;
+        }
+        $t = mb_substr($tekst($raa[0] ?? ''), 0, 80);
+        $u = mb_substr($tekst($raa[1] ?? ''), 0, 500);
+        return ($t === '' && $u === '') ? null : [$t, $u];
+    };
+    return [
+        'overskrift' => mb_substr($tekst($k['overskrift'] ?? ''), 0, 191),
+        'avsnitt'    => $avsnitt,
+        'kort'       => $kort,
+        'knapp'      => $lenke($k['knapp'] ?? null),
+        'lenke2'     => $lenke($k['lenke2'] ?? null),
+    ];
+};
+$somKolonner = static fn(array $o): array => [
+    'overskrift' => $o['overskrift'] !== '' ? $o['overskrift'] : null,
+    'avsnitt'    => $o['avsnitt'] !== [] ? json_encode($o['avsnitt'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+    'kort'       => $o['kort'] !== [] ? json_encode($o['kort'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+    'knapp'      => $o['knapp'] !== null ? json_encode($o['knapp'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+    'lenke2'     => $o['lenke2'] !== null ? json_encode($o['lenke2'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+];
+
+// ── Forhåndsvisning ──────────────────────────────────────────────────
+//
+// E-posten slik den blir i oppsettet, med eksempelverdiene — det samme
+// Varsel::oppsett() lager naar den sendes, ikke en etterlikning.
+if ($handling === 'forhandsvis') {
+    $o = $lesOppsett();
+    if ($o === null) {
+        Svar::feil('Ingenting å vise.');
+    }
+    $felter = $eksempel;
+    if (!str_starts_with($navn, 'intern_')) {
+        $felter['navn'] = 'Kari';
+    }
+    $gruppe = str_starts_with($navn, 'intern_') ? 'intern' : (string) ($mal['gruppe'] ?? 'system');
+    [, $html] = Varsel::oppsett(array_merge($mal, $somKolonner($o)), $felter, $gruppe);
+    Svar::ok(['html' => $html]);
+}
+
 // ── Slett ────────────────────────────────────────────────────────────
 //
 // En mal koden kaller kan ikke slettes. Varsel::mal() skriver en linje i
@@ -216,8 +302,26 @@ if (mb_strlen($tekst) > 20000) {
 
 // Et felt som ikke finnes staar igjen som «{varelinjer}» i e-posten kunden
 // faar. Da er det bedre aa si fra her.
+$oppsett = $lesOppsett();
+$oppsettTekst = '';
+if ($oppsett !== null) {
+    $oppsettTekst = $oppsett['overskrift'] . ' ' . implode(' ', $oppsett['avsnitt']) . ' '
+        . json_encode([$oppsett['kort'], $oppsett['knapp'], $oppsett['lenke2']], JSON_UNESCAPED_UNICODE);
+    if ($oppsett['overskrift'] === '' && $oppsett['avsnitt'] === []) {
+        Svar::feil('E-posten trenger en overskrift eller tekst. Skal den ikke sendes, slå den av i stedet.');
+    }
+    // En knapp som peker paa noe annet enn en nettadresse, blir borte i
+    // e-posten. Da er det bedre aa si fra her.
+    foreach (['knapp' => 'Knappen', 'lenke2' => 'Den sekundære lenken'] as $n => $hva) {
+        $l = $oppsett[$n];
+        if ($l !== null && ($l[0] === '' || preg_match('~^(https?://|mailto:|\{[a-zA-Z_]+\}$)~', $l[1]) !== 1)) {
+            Svar::feil($hva . ' trenger både tekst og en adresse som begynner med https://, eller et felt som {lenke}.');
+        }
+    }
+}
+
 $kjente = array_column(Maler::felter($navn), 'felt');
-preg_match_all('/\{([a-zA-Z_]+)\}/', $emne . ' ' . $tekst, $funn);
+preg_match_all('/\{([a-zA-Z_]+)\}/', $emne . ' ' . $tekst . ' ' . $oppsettTekst, $funn);
 $ukjente = array_values(array_unique(array_diff($funn[1], $kjente)));
 if ($ukjente !== []) {
     Svar::feil('Denne malen kjenner ikke {' . implode('}, {', $ukjente) . '}. '
@@ -226,11 +330,11 @@ if ($ukjente !== []) {
             : 'Den kan bruke: {' . implode('}, {', $kjente) . '}.'));
 }
 
-DB::oppdater('notification_templates', [
+DB::oppdater('notification_templates', array_merge([
     'emne'  => $emne !== '' ? $emne : null,
     'tekst' => $tekst,
     'aktiv' => $aktiv,
-], ['navn' => $navn]);
+], $oppsett !== null && DB::harKolonne('notification_templates', 'overskrift') ? $somKolonner($oppsett) : []), ['navn' => $navn]);
 
 revider('mal_endret', 'mal', null, ['navn' => $navn, 'aktiv' => $aktiv]);
 Svar::ok(['maler' => $hent(), 'beskjed' => Maler::tittel($navn) . ' er lagret.']);

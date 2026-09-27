@@ -5038,13 +5038,17 @@ sjekk('… og registeret lover ingen mal som ikke kalles',
 // ikke i registeret, staar igjen som raa tekst i e-posten kunden faar.
 if (DB::harTabell('notification_templates')) {
     $feilFelt = [];
-    foreach (DB::alle('SELECT navn, emne, tekst FROM notification_templates') as $m) {
+    // Det felles oppsettet (migrasjon 227) har ogsaa felt: overskrift,
+    // avsnitt, faktakort, knapp og sekundaer lenke.
+    $oppsettKol = DB::harKolonne('notification_templates', 'overskrift')
+        ? ", CONCAT_WS(' ', overskrift, avsnitt, kort, knapp, lenke2) AS oppsett" : '';
+    foreach (DB::alle('SELECT navn, emne, tekst' . $oppsettKol . ' FROM notification_templates') as $m) {
         $navn = (string) $m['navn'];
         if (!in_array($navn, $iRegister, true)) {
             continue;
         }
         $kjente = array_column(Maler::felter($navn), 'felt');
-        preg_match_all('/\{([a-zA-Z_]+)\}/', (string) $m['emne'] . ' ' . (string) $m['tekst'], $funn);
+        preg_match_all('/\{([a-zA-Z_]+)\}/', (string) $m['emne'] . ' ' . (string) $m['tekst'] . ' ' . (string) ($m['oppsett'] ?? ''), $funn);
         foreach (array_unique(array_diff($funn[1], $kjente)) as $ukjent) {
             $feilFelt[] = $navn . ' → {' . $ukjent . '}';
         }
@@ -10302,7 +10306,7 @@ sjekk('… og lukker seg naar en side er valgt',
 sjekk('mal-lista ligger bak en pille paa telefonen',
     str_contains($sidaG, '    .lx-malliste[data-apen="false"] { display: none !important; }'));
 sjekk('… og lukker seg naar en mal er valgt',
-    str_contains($sidaG, "velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),"));
+    str_contains($sidaG, "velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false, malForhand: '' }),"));
 
 // ── Datolista paa stor skjerm ──────────────────────────────────────────
 //
@@ -18268,11 +18272,13 @@ sjekk('… og varen gaar rett ut naar den staar paa',
     && str_contains($salgApi, "        ? 'Takk! «' . \$tittel . '» er ute i butikken nå.'"));
 // Gaar en vare ut uten at noen har sett paa den, er det mer verdt aa faa vite
 // om, ikke mindre. Egen mal, saa teksten ikke lyver om at noe venter.
+// 27. september 2026 (eieren: «rydd opp»): én mal for begge, med statusen
+// som eget felt — teksten lyver fortsatt ikke om at noe venter.
 sjekk('… og verkstedet faar sin egen beskjed om det',
-    str_contains($salgApi, "    Varsel::malTilAdmin(\$auto ? 'intern_ny_vare_ute' : 'intern_ny_vare', [")
-    && str_contains($mig174, "('intern_ny_vare_ute', 'epost', 'Ny vare ute i butikken',")
+    str_contains($salgApi, "    Varsel::malTilAdmin('intern_ny_vare', [")
+    && str_contains($salgApi, "'status'    => \$auto ? 'Gikk rett ut (auto-godkjenn står på)' : 'Venter på godkjenning',")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
-        "        'intern_ny_vare_ute' => ["),
+        "                'status'    => 'Venter på godkjenning, eller gikk rett ut',"),
     'malen skal kunne endres under Maler, som de andre');
 
 echo "\n== Medlemmet ser bildet det legger ut ==\n";
@@ -20906,6 +20912,42 @@ sjekk('… en dag med flere tider maa velges',
     str_contains($btSida, "kvittering: 'Velg et tidspunkt.',"));
 sjekk('… og kvitteringen faar datoen som ble booket',
     str_contains($btSida, 'this.setState({ bOktId: oktId, bDato: d ? d.dato : this.state.bDato });'));
+
+// Eieren, 27. september 2026: «ikke bra nok, jeg vil ha med knapper og kort».
+// Det felles oppsettet for e-postene, og redigeringen av det i Tekst maler.
+echo "\nE-postene i det felles oppsettet\n";
+$eoVars = (string) file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+$eoApi  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/maler.php');
+$eoSide = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$eoMig  = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/227_epost_oppsett.sql');
+$eoRam  = (string) file_get_contents(dirname(__DIR__) . '/app/epost/oppsett.html');
+sjekk('oppsettet har kort, knapp, lenke og signatur som kan tas bort',
+    str_contains($eoRam, '<!--kort:start-->') && str_contains($eoRam, '<!--knapp:start-->')
+    && str_contains($eoRam, '<!--lenke2:start-->') && str_contains($eoRam, '<!--signatur:start-->'));
+sjekk('alle e-poster fra en mal med oppsett går gjennom det',
+    str_contains($eoVars, '? self::oppsett($mal, $felter, $gruppe)')
+    && str_contains($eoVars, '[$tekst, $html] = self::oppsett($mal, $felter, \'intern\');'));
+sjekk('… signaturen følger de samme reglene som før, ett sted',
+    str_contains($eoVars, 'private static function signaturFor(string $gruppe): string')
+    && str_contains($eoVars, '$signatur = self::signaturFor($gruppe);'));
+sjekk('… en knapp uten gyldig adresse blir borte',
+    str_contains($eoVars, "preg_match('~^(https?://|mailto:)~i', \$url) !== 1"));
+sjekk('migrasjonen tar vare på dagens tekst og rører ikke av/på',
+    str_contains($eoMig, 'emne_for_oppsett = emne, tekst_for_oppsett = tekst')
+    && !preg_match('~SET\s+aktiv~i', $eoMig));
+sjekk('… og ingen adresse er «#»', !str_contains($eoMig, '"#"'));
+sjekk('Tekst maler: overskrift, avsnitt, faktakort, knapp, lenke og forhåndsvisning',
+    str_contains($eoSide, '<sc-if value="{{ malHarOppsett }}"')
+    && str_contains($eoSide, '>+ Legg til rad</button>')
+    && str_contains($eoSide, '<iframe data-srcdoc="{{ malForhand }}"'));
+sjekk('… lagringen sender oppsettet, og bryteren i lista rører det ikke',
+    str_contains($eoSide, 'utkast.oppsett ? utkast.oppsett : {}),')
+    && str_contains($eoApi, "if (!array_key_exists('overskrift', \$k)) {"));
+sjekk('… ukjente felt i oppsettet avvises som i teksten',
+    str_contains($eoApi, "preg_match_all('/\\{([a-zA-Z_]+)\\}/', \$emne . ' ' . \$tekst . ' ' . \$oppsettTekst, \$funn);"));
+sjekk('… forhåndsvisningen lages av den samme koden som sender',
+    str_contains($eoApi, "if (\$handling === 'forhandsvis') {")
+    && str_contains($eoApi, 'Varsel::oppsett(array_merge($mal, $somKolonner($o)), $felter, $gruppe);'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

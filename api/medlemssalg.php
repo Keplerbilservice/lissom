@@ -259,10 +259,12 @@ $id = DB::settInn('member_sales', $rad);
 // Verkstedet skal vite at det ligger noe og venter — eller at noe gikk rett
 // ut. Gaar varen ut uten at noen har sett paa den, er det MER verdt aa faa
 // vite om, ikke mindre.
-    Varsel::malTilAdmin($auto ? 'intern_ny_vare_ute' : 'intern_ny_vare', [
+    // Én mal for begge tilfellene (migrasjon 227); statusen sier hvilket.
+    Varsel::malTilAdmin('intern_ny_vare', [
         'produsent' => $produsent,
         'tittel'    => $tittel,
         'pris'      => Booking::kroner($pris * 100),
+        'status'    => $auto ? 'Gikk rett ut (auto-godkjenn står på)' : 'Venter på godkjenning',
     ], 'medlemssalg', $id);
 
 revider('medlemssalg_lagt_ut', 'member_sale', $id, ['tittel' => $tittel, 'auto' => $auto]);

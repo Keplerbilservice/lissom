@@ -103,7 +103,13 @@ Varsel::mal('avbestilling', [
 ], [
     'navn'  => (string) $medlem['navn'],
     'kurs'  => (string) $b['tittel'] . ($b['start_tid'] ? ' — ' . Booking::norskDato((string) $b['start_tid']) : ''),
-    'belop' => $refunderes > 0 ? Booking::kroner($refunderes) : 'ingen refusjon',
+    // Refusjonen staar bare i e-posten naar den faktisk skjer. Tomme felt
+    // fjerner avsnittet og radene (Varsler::oppsett()).
+    'belop'        => $refunderes > 0 ? Booking::kroner($refunderes) : '',
+    'refusjon'     => $refundert
+        ? 'Pengene er på vei tilbake til deg på Vipps.'
+        : ($manuelt ? 'Refusjonen tar vi manuelt — du hører fra oss i løpet av kort tid.' : ''),
+    'refusjonstid' => $refundert ? 'Vanligvis innen tre virkedager' : '',
 ], 'booking', $bookingId);
 
 Svar::ok([

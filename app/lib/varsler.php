@@ -185,6 +185,12 @@ final class Varsel
         }
         $emne  = self::flett((string) ($mal['emne'] ?? ''), $felter);
         $tekst = self::flett((string) $mal['tekst'], $felter);
+        // Det felles oppsettet ogsaa for beskjedene til verkstedet — uten
+        // signatur, som foer (gruppa «intern»).
+        $html = null;
+        if (self::harOppsett($mal)) {
+            [$tekst, $html] = self::oppsett($mal, $felter, 'intern');
+        }
 
         // ── Én beskjed per hendelse ───────────────────────────────────
         //
@@ -253,7 +259,7 @@ final class Varsel
 
         // Én adresse: den foerste. Staar det flere i «admin_eposter», er det
         // fortsatt én beskjed per hendelse — det er det eieren ba om.
-        if (self::epost($adresser[0], $emne, $tekst, $refType, $refId, 'intern') > 0) {
+        if (self::epost($adresser[0], $emne, $tekst, $refType, $refId, 'intern', $html) > 0) {
             return 1;
         }
         logg_feil('Fikk ikke lagt beskjed til admin i kø: ' . $emne);
@@ -321,10 +327,18 @@ final class Varsel
         // «system» — og da oppfoerer det seg som for.
         $gruppe = (string) ($mal['gruppe'] ?? 'system');
 
+        // Det nye oppsettet (migrasjon 227) gaar foran den ferdige HTML-en
+        // noen kall sender med (fortsett, anmeldelse): eieren godkjente de
+        // nye tekstene i det felles oppsettet 27. september 2026. Uten
+        // migrasjonen er alt som foer.
+        $medOppsett = self::harOppsett($mal);
+
         $viaEpost = false;
         if ($kanal === 'epost' || $kanal === 'epost_sms') {
             if (!empty($mottaker['epost'])) {
-                [$epostTekst, $epostHtml] = self::medSignatur($tekst, $gruppe, $egenHtml);
+                [$epostTekst, $epostHtml] = $medOppsett
+                    ? self::oppsett($mal, $felter, $gruppe)
+                    : self::medSignatur($tekst, $gruppe, $egenHtml);
                 self::iKo('epost', (string) $mottaker['epost'], $emne, $epostTekst, $malNavn, $refType, $refId, $epostHtml);
                 $viaEpost = true;
             }
@@ -345,7 +359,9 @@ final class Varsel
         // e-post bedre enn ingenting. Kunden skal faa beskjeden, ikke vente
         // paa at oppsettet blir ferdig.
         if (!$viaEpost && !$viaSms && $kanal === 'sms' && !empty($mottaker['epost'])) {
-            [$reserveTekst, $reserveHtml] = self::medSignatur($tekst, $gruppe);
+            [$reserveTekst, $reserveHtml] = $medOppsett
+                ? self::oppsett($mal, $felter, $gruppe)
+                : self::medSignatur($tekst, $gruppe);
             self::iKo(
                 'epost',
                 (string) $mottaker['epost'],
@@ -481,14 +497,8 @@ final class Varsel
             return [$tekst, $egenHtml];
         }
 
-        if (!in_array($gruppe, self::GRUPPER, true)) {
-            return [$tekst, $egenHtml];
-        }
-        $signatur = trim((string) Config::hent('epost_signatur', ''));
+        $signatur = self::signaturFor($gruppe);
         if ($signatur === '') {
-            return [$tekst, $egenHtml];
-        }
-        if ((string) Config::hent('epost_signatur_' . $gruppe, '1') !== '1') {
             return [$tekst, $egenHtml];
         }
 
@@ -516,6 +526,176 @@ final class Varsel
      * som den staar — derfor rommes den inn foerst, saa en < i «kl. 18 < 20»
      * ikke blir borte, og linjeskiftene beholdes.
      */
+    /**
+     * Signaturen for en gruppe, eller tom streng naar den ikke skal med.
+     *
+     * Reglene sto inne i medSignatur(). Det nye oppsettet trenger de samme,
+     * og de skal ikke staa to steder: en gruppe med signaturen slaatt av er
+     * slaatt av i begge.
+     */
+    private static function signaturFor(string $gruppe): string
+    {
+        if (!in_array($gruppe, self::GRUPPER, true)) {
+            return '';
+        }
+        $signatur = trim((string) Config::hent('epost_signatur', ''));
+        if ($signatur === '') {
+            return '';
+        }
+        if ((string) Config::hent('epost_signatur_' . $gruppe, '1') !== '1') {
+            return '';
+        }
+        return $signatur;
+    }
+
+    /**
+     * Har malen det nye oppsettet (migrasjon 227)?
+     *
+     * @param array<string,mixed> $mal
+     */
+    public static function harOppsett(array $mal): bool
+    {
+        return trim((string) ($mal['overskrift'] ?? '')) !== ''
+            || trim((string) ($mal['avsnitt'] ?? '')) !== '';
+    }
+
+    /**
+     * E-posten i det felles oppsettet: overskrift, avsnitt, faktakort, én
+     * knapp og en sekundaer lenke. Eieren, 27. september 2026: «jeg vil ha
+     * med knapper og kort». Oppsettet er app/epost/oppsett.html.
+     *
+     * Felt uten verdi gir ingen tom rad og ikke noe tomt avsnitt. En knapp
+     * uten gyldig adresse (tom {lenke}) blir borte i stedet for aa peke paa
+     * ingenting. Alt som flettes inn, roemmes foer det settes i HTML-en.
+     *
+     * Ren-tekst-delen sier det samme: overskrift, avsnitt, «Etikett: verdi»
+     * og «Knapp: adresse», med signaturen skrevet ut som tekst.
+     *
+     * @param array<string,mixed>  $mal
+     * @param array<string,string> $felter
+     * @return array{0: string, 1: string} [tekst, html]
+     */
+    public static function oppsett(array $mal, array $felter, string $gruppe): array
+    {
+        $fl = static fn($s): string => trim(self::flett((string) $s, $felter));
+        $liste = static function ($raa): array {
+            $v = is_array($raa) ? $raa : json_decode((string) $raa, true);
+            return is_array($v) ? $v : [];
+        };
+
+        $overskrift = $fl($mal['overskrift'] ?? '');
+        $raa = array_values(array_filter(array_map(
+            static fn($p) => trim((string) $p), $liste($mal['avsnitt'] ?? null)), static fn($p) => $p !== ''));
+        $signatur = self::signaturFor($gruppe);
+        // Signaturen har hilsenen. Staar den ogsaa sist i teksten, blir det
+        // to. Det er malens egen tekst som sjekkes — ikke det som flettes inn,
+        // saa en hilsen fra en kunde aldri forsvinner.
+        if ($signatur !== '' && $raa !== []) {
+            $sist = (string) end($raa);
+            if (preg_match('/^(hilsen|vennlig hilsen|med vennlig hilsen)\b/iu', $sist) === 1) {
+                array_pop($raa);
+            } elseif (!str_contains($sist, '{')) {
+                $raa[count($raa) - 1] = (string) preg_replace('/\s+(hilsen|vennlig hilsen)\b[^.!?]*[.!]?$/iu', '', $sist);
+            }
+        }
+        $avsnitt = array_values(array_filter(array_map($fl, $raa), static fn($p) => $p !== ''));
+        $kort = [];
+        foreach ($liste($mal['kort'] ?? null) as $rad) {
+            if (!is_array($rad)) {
+                continue;
+            }
+            $etikett = $fl($rad[0] ?? '');
+            $verdi = $fl($rad[1] ?? '');
+            if ($verdi !== '') {
+                $kort[] = [$etikett, $verdi];
+            }
+        }
+        $lenke = static function ($raa) use ($liste, $fl): ?array {
+            $l = $liste($raa);
+            if ($l === []) {
+                return null;
+            }
+            $tekst = $fl($l[0] ?? '');
+            $url = $fl($l[1] ?? '');
+            if ($tekst === '' || preg_match('~^(https?://|mailto:)~i', $url) !== 1) {
+                return null;
+            }
+            return [$tekst, $url];
+        };
+        $knapp = $lenke($mal['knapp'] ?? null);
+        $lenke2 = $lenke($mal['lenke2'] ?? null);
+
+        // ── HTML ────────────────────────────────────────────────────────
+        static $ramme = null;
+        if ($ramme === null) {
+            $fil = APP_DIR . '/epost/oppsett.html';
+            $ramme = is_file($fil) ? (string) preg_replace('/^<!--.*?-->\s*/s', '', (string) file_get_contents($fil)) : '';
+        }
+        $e = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        // En adresse i teksten blir en lenke man kan trykke paa.
+        $tekstHtml = static fn(string $s): string => nl2br((string) preg_replace(
+            '~(https?://[^\s<]+)~',
+            '<a href="$1" style="color:#4D1D12;text-decoration:underline;">$1</a>',
+            $e($s)
+        ));
+        $del = static function (string $html, string $navn, bool $med): string {
+            return $med
+                ? str_replace(['<!--' . $navn . ':start-->', '<!--' . $navn . ':slutt-->'], '', $html)
+                : (string) preg_replace('~<!--' . $navn . ':start-->.*?<!--' . $navn . ':slutt-->~s', '', $html);
+        };
+
+        $html = $ramme;
+        if ($html !== '') {
+            $html = str_replace('{{OVERSKRIFT}}', $e($overskrift), $html);
+            $html = str_replace('{{TEKST}}', implode('', array_map(
+                static fn($p) => '<p style="margin:0 0 14px 0;">' . $tekstHtml($p) . '</p>', $avsnitt)), $html);
+            if (preg_match('~<!--rad:start-->(.*?)<!--rad:slutt-->~s', $html, $m) === 1) {
+                $rader = '';
+                foreach ($kort as [$etikett, $verdi]) {
+                    $rader .= str_replace(['{{LABEL}}', '{{VERDI}}'], [$e($etikett), $tekstHtml($verdi)], $m[1]);
+                }
+                $html = str_replace($m[0], $rader, $html);
+            }
+            $html = $del($html, 'kort', $kort !== []);
+            $html = $del($html, 'knapp', $knapp !== null);
+            if ($knapp !== null) {
+                $html = str_replace(['{{KNAPP_TEKST}}', '{{KNAPP_URL}}'], [$e($knapp[0]), $e($knapp[1])], $html);
+            }
+            $html = $del($html, 'lenke2', $lenke2 !== null);
+            if ($lenke2 !== null) {
+                $html = str_replace(['{{LENKE2_TEKST}}', '{{LENKE2_URL}}'], [$e($lenke2[0]), $e($lenke2[1])], $html);
+            }
+            $html = $del($html, 'signatur', $signatur !== '');
+            $html = str_replace('{{SIGNATUR}}', $signatur, $html);
+        }
+
+        // ── Ren tekst ───────────────────────────────────────────────────
+        $deler = [];
+        if ($overskrift !== '') {
+            $deler[] = $overskrift;
+        }
+        foreach ($avsnitt as $p) {
+            $deler[] = $p;
+        }
+        if ($kort !== []) {
+            $deler[] = implode("\n", array_map(
+                static fn($r) => ($r[0] !== '' ? $r[0] . ': ' : '') . $r[1], $kort));
+        }
+        foreach ([$knapp, $lenke2] as $l) {
+            if ($l !== null) {
+                $deler[] = $l[0] . ': ' . $l[1];
+            }
+        }
+        $tekst = implode("\n\n", $deler);
+        if ($signatur !== '') {
+            $ren = self::signaturSomTekst($signatur);
+            if ($ren !== '') {
+                $tekst .= "\n\n-- \n" . $ren;
+            }
+        }
+        return [$tekst, $html !== '' ? $html : self::tekstSomHtml($tekst)];
+    }
+
     private static function tekstSomHtml(string $tekst): string
     {
         $trygg = htmlspecialchars($tekst, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

@@ -25154,10 +25154,58 @@ window.__resources = {
                 </div>
               </sc-if>
 
+              <!-- Det felles oppsettet (migrasjon 227). Eieren, 27. september
+                   2026: «jeg vil ha med knapper og kort». Overskrift, avsnitt,
+                   faktakort, knapp og sekundaer lenke — og e-posten slik den
+                   blir, laget av den samme koden som sender den. -->
+              <sc-if value="{{ malHarOppsett }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label for="mal-overskrift" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Overskrift</label>
+                  <input id="mal-overskrift" value="{{ malOverskrift }}" onChange="{{ malSettOverskrift }}" style="{{ malFeltStil }}">
+                </div>
+                <div>
+                  <label for="mal-avsnitt" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Avsnitt</label>
+                  <textarea id="mal-avsnitt" value="{{ malAvsnitt }}" onChange="{{ malSettAvsnitt }}" rows="8" style="{{ malOmraadeStil }}"></textarea>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Faktakort</div>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <sc-for list="{{ malKort }}" as="r" hint-placeholder-count="2">
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <input value="{{ r.etikett }}" onChange="{{ r.settEtikett }}" placeholder="Etikett" style="{{ r.etikettStil }}">
+                        <input value="{{ r.verdi }}" onChange="{{ r.settVerdi }}" placeholder="Verdi" style="{{ r.verdiStil }}">
+                        <button type="button" onClick="{{ r.fjern }}" aria-label="Fjern" style="{{ r.fjernStil }}">×</button>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <button type="button" onClick="{{ malLeggTilRad }}" style="{{ malRadKnappStil }}">+ Legg til rad</button>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knapp</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <input value="{{ malKnappTekst }}" onChange="{{ malSettKnappTekst }}" placeholder="Tekst" aria-label="Knapp: tekst" style="{{ malHalvFeltStil }}">
+                    <input value="{{ malKnappUrl }}" onChange="{{ malSettKnappUrl }}" placeholder="https://" aria-label="Knapp: adresse" style="{{ malHalvFeltStil }}">
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Sekundær lenke</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <input value="{{ malLenke2Tekst }}" onChange="{{ malSettLenke2Tekst }}" placeholder="Tekst" aria-label="Sekundær lenke: tekst" style="{{ malHalvFeltStil }}">
+                    <input value="{{ malLenke2Url }}" onChange="{{ malSettLenke2Url }}" placeholder="https://" aria-label="Sekundær lenke: adresse" style="{{ malHalvFeltStil }}">
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Forhåndsvisning</div>
+                  <iframe data-srcdoc="{{ malForhand }}" title="Forhåndsvisning" style="display: block; width: 100%; height: 640px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: #FBF6EE;"></iframe>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ malVisTekst }}" hint-placeholder-val="{{ true }}">
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Tekst</label>
                 <textarea value="{{ malTekst }}" onChange="{{ malSettTekst }}" rows="9" style="{{ malOmraadeStil }}"></textarea>
               </div>
+              </sc-if>
 
               <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
                 <sc-if value="{{ malUlagret }}" hint-placeholder-val="{{ false }}">
@@ -71867,12 +71915,43 @@ class Component extends DCLogic {
         const emne = endret ? utkast.emne : (valgt ? valgt.emne : '');
         const tekst = endret ? utkast.tekst : (valgt ? valgt.tekst : '');
 
+        // Oppsettet (migrasjon 227): utkastet om det finnes, ellers det som
+        // er lagret. Kopieres, saa endringer ikke skriver i lista.
+        const lagretOppsett = valgt && valgt.oppsett ? valgt.oppsett : null;
+        const ops = endret && utkast.oppsett ? utkast.oppsett : lagretOppsett;
         const settUtkast = (felt, verdi) => this.setState(st => {
           const fra = (st.malUtkast && st.malUtkast.navn === valgtNavn)
             ? st.malUtkast
-            : { navn: valgtNavn, emne: valgt ? valgt.emne : '', tekst: valgt ? valgt.tekst : '' };
+            : { navn: valgtNavn, emne: valgt ? valgt.emne : '', tekst: valgt ? valgt.tekst : '',
+                oppsett: lagretOppsett ? JSON.parse(JSON.stringify(lagretOppsett)) : null };
           return { malUtkast: Object.assign({}, fra, { [felt]: verdi }) };
         });
+        const settOppsett = (endre) => this.setState(st => {
+          const fra = (st.malUtkast && st.malUtkast.navn === valgtNavn)
+            ? st.malUtkast
+            : { navn: valgtNavn, emne: valgt ? valgt.emne : '', tekst: valgt ? valgt.tekst : '',
+                oppsett: lagretOppsett ? JSON.parse(JSON.stringify(lagretOppsett)) : null };
+          const o = JSON.parse(JSON.stringify(fra.oppsett || { overskrift: '', avsnitt: '', kort: [], knapp: null, lenke2: null }));
+          endre(o);
+          return { malUtkast: Object.assign({}, fra, { oppsett: o }) };
+        });
+        // Forhåndsvisningen hentes fra serveren — den samme koden som sender
+        // e-posten — en liten stund etter siste endring.
+        if (ops && this.erPublisert()) {
+          const nokkel = valgtNavn + '|' + JSON.stringify(ops);
+          if (nokkel !== this._forhandNokkel) {
+            this._forhandNokkel = nokkel;
+            clearTimeout(this._forhandTid);
+            this._forhandTid = setTimeout(() => {
+              fetch('/api/admin/maler.php', {
+                method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.assign({ handling: 'forhandsvis', navn: valgtNavn }, ops)),
+              }).then(r => r.json()).then(d => {
+                if (d && d.html && this._forhandNokkel === nokkel) this.setState({ malForhand: d.html });
+              }).catch(() => {});
+            }, 450);
+          }
+        }
 
         const felt = {
           width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
@@ -71905,7 +71984,7 @@ class Component extends DCLogic {
             navn: m.tittel,
             kanal: kanalTekst(m.kanal),
             av: !m.aktiv,
-            velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),
+            velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false, malForhand: '' }),
             radStil: {
               display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
               borderTop: '1px solid var(--border-subtle)',
@@ -71957,6 +72036,46 @@ class Component extends DCLogic {
           malOmraadeStil: Object.assign({}, felt, { minHeight: 190, resize: 'vertical', lineHeight: 1.6 }),
           malHarEmne: !!(valgt && valgt.kanal !== 'sms'),
 
+          // ── Oppsettet: overskrift, avsnitt, faktakort, knapp, lenke ──
+          malHarOppsett: !!ops,
+          // «Tekst» er fortsatt SMS-en. En ren e-postmal med oppsett har den
+          // ikke lenger i bruk, og den staar da ikke og forvirrer.
+          malVisTekst: !ops || !!(valgt && String(valgt.kanal || '').indexOf('sms') !== -1),
+          malOverskrift: ops ? ops.overskrift || '' : '',
+          malSettOverskrift: e => { const v = e.target.value; settOppsett(o => { o.overskrift = v; }); },
+          malAvsnitt: ops ? ops.avsnitt || '' : '',
+          malSettAvsnitt: e => { const v = e.target.value; settOppsett(o => { o.avsnitt = v; }); },
+          malKort: (ops ? ops.kort || [] : []).map((r, i) => ({
+            etikett: r[0] || '',
+            verdi: r[1] || '',
+            settEtikett: e => { const v = e.target.value; settOppsett(o => { o.kort[i][0] = v; }); },
+            settVerdi: e => { const v = e.target.value; settOppsett(o => { o.kort[i][1] = v; }); },
+            fjern: () => settOppsett(o => { o.kort.splice(i, 1); }),
+            etikettStil: Object.assign({}, felt, { flex: '0 1 38%' }),
+            verdiStil: Object.assign({}, felt, { flex: '1 1 auto' }),
+            fjernStil: {
+              flex: 'none', appearance: 'none', cursor: 'pointer', width: 34, height: 34,
+              borderRadius: '50%', border: '1.5px solid var(--border-subtle)', background: 'transparent',
+              color: 'var(--text-heading)', fontSize: 18, lineHeight: 1,
+            },
+          })),
+          malLeggTilRad: () => settOppsett(o => { o.kort = (o.kort || []).concat([['', '']]); }),
+          malRadKnappStil: {
+            marginTop: 8, appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+            padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 700,
+            border: '1.5px dashed var(--lissom-brown)', background: 'transparent', color: 'var(--lissom-brown)',
+          },
+          malKnappTekst: ops && ops.knapp ? ops.knapp[0] || '' : '',
+          malKnappUrl: ops && ops.knapp ? ops.knapp[1] || '' : '',
+          malSettKnappTekst: e => { const v = e.target.value; settOppsett(o => { o.knapp = [v, (o.knapp || [])[1] || '']; }); },
+          malSettKnappUrl: e => { const v = e.target.value; settOppsett(o => { o.knapp = [(o.knapp || [])[0] || '', v]; }); },
+          malLenke2Tekst: ops && ops.lenke2 ? ops.lenke2[0] || '' : '',
+          malLenke2Url: ops && ops.lenke2 ? ops.lenke2[1] || '' : '',
+          malSettLenke2Tekst: e => { const v = e.target.value; settOppsett(o => { o.lenke2 = [v, (o.lenke2 || [])[1] || '']; }); },
+          malSettLenke2Url: e => { const v = e.target.value; settOppsett(o => { o.lenke2 = [(o.lenke2 || [])[0] || '', v]; }); },
+          malHalvFeltStil: Object.assign({}, felt, { flex: '1 1 220px', width: 'auto' }),
+          malForhand: ops ? (this.state.malForhand || '') : '',
+
           // ── Feltene, til aa kopiere ──────────────────────────────
           //
           // Hver mal har sine egne. «{varelinjer}» finnes i
@@ -71992,8 +72111,9 @@ class Component extends DCLogic {
           malLagreTekst: endret ? 'Lagre endringene' : 'Lagret',
           malLagre: () => {
             if (!endret || !valgt) return;
-            this.malKall({ handling: 'lagre', navn: valgt.navn, emne: utkast.emne,
+            this.malKall(Object.assign({ handling: 'lagre', navn: valgt.navn, emne: utkast.emne,
                            tekst: utkast.tekst, aktiv: valgt.aktiv ? 'ja' : 'nei' },
+                           utkast.oppsett ? utkast.oppsett : {}),
                          valgt.tittel + ' er lagret');
           },
           malForkast: () => this.setState({ malUtkast: null }),

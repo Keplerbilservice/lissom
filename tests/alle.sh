@@ -45,11 +45,13 @@ kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
 kjor "verving"       php tests/verving.php
 kjor "galleri"       php tests/galleri.php
+kjor "eposter"       php tests/eposter.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
 kjor "betalingsflyt" bash tests/flyt.sh
 kjor "delt betaling" bash tests/deltbetaling.sh
 kjor "galleri, admin" bash tests/galleri.sh
+kjor "avbestilling"  bash tests/avbestilling.sh
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

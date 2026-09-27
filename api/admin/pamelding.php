@@ -81,8 +81,37 @@ if ($handling === 'fjern') {
         'avbestilt_at' => gmdate('Y-m-d H:i:s'),
     ], ['id' => $id]);
 
+    // Kunden skal vite det. Eieren, 27. september 2026: «en avbestilling fra
+    // admin, må sende epost til kunden» — testet paa lissom.no samme dag:
+    // koen sto stille. Samme mal som naar kunden avbestiller selv, og samme
+    // bryter i Tekst maler. Her refunderes ingenting (en Vipps-betaling
+    // stoppes over), saa refusjonsfeltene staar tomme og radene blir borte.
+    $k = DB::en(
+        'SELECT COALESCE(m.navn, b.gjest_navn) AS navn,
+                COALESCE(m.epost, b.gjest_epost) AS epost,
+                c.tittel, cs.start_tid
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+      LEFT JOIN courses c ON c.id = b.course_id
+      LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+          WHERE b.id = :i',
+        ['i' => $id]
+    );
+    $varslet = false;
+    if ($k !== null && trim((string) $k['epost']) !== '' && (string) $b['status'] !== 'avbestilt') {
+        Varsel::mal('avbestilling', ['epost' => (string) $k['epost'], 'navn' => (string) $k['navn']], [
+            'navn'         => (string) $k['navn'],
+            'kurs'         => (string) $k['tittel'] . ($k['start_tid'] ? ' — ' . Booking::norskDato((string) $k['start_tid']) : ''),
+            'belop'        => '',
+            'refusjon'     => '',
+            'refusjonstid' => '',
+        ], 'booking', $id);
+        $varslet = true;
+    }
+
     revider('pamelding_fjernet', 'booking', $id,
-            ['navn' => $b['gjest_navn'], 'betaling' => (string) ($b['betalingsstatus'] ?? 'ingen')]);
+            ['navn' => $b['gjest_navn'], 'betaling' => (string) ($b['betalingsstatus'] ?? 'ingen'),
+             'kunden_varslet' => $varslet]);
     Svar::ok(['beskjed' => 'Plassen er frigitt.']);
 }
 

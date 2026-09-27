@@ -427,6 +427,16 @@ final class Varsel
     /** @param array<string,string> $felter */
     public static function flett(string $tekst, array $felter): string
     {
+        // Kursnavnet midt i en setning skrives med liten forbokstav. Eieren, 27.
+        // september 2026: «det står du er påmeldt Nybegynner dreiekurs, det er
+        // ikke stor N her». Bare navn skrevet som en setning («Nybegynner
+        // dreiekurs», «Store fat kurs») — «Paint on Pots» og «Sip & Clay» er
+        // navn med egne store bokstaver og står som de er. Først i en setning,
+        // eller alene (i faktakortet), beholdes den store bokstaven.
+        if (isset($felter['kurs']) && self::erSetningsnavn((string) $felter['kurs'])) {
+            $lite = mb_strtolower(mb_substr((string) $felter['kurs'], 0, 1)) . mb_substr((string) $felter['kurs'], 1);
+            $tekst = preg_replace('/(?<![.!?:]\s)(?<![.!?:])(?<=\S\s)\{kurs\}/u', str_replace(['\\', '$'], ['\\\\', '\\$'], $lite), $tekst) ?? $tekst;
+        }
         foreach ($felter as $nokkel => $verdi) {
             $tekst = str_replace('{' . $nokkel . '}', (string) $verdi, $tekst);
         }
@@ -435,6 +445,24 @@ final class Varsel
         // Et tomt felt på egen linje («{betaling}» når alt er betalt, eller
         // «{kursinfo}» på et kurs uten samlinger) skal ikke bli et hull.
         return preg_replace("/\n[ \t]*\n(?:[ \t]*\n)+/", "\n\n", $tekst) ?? $tekst;
+    }
+
+    /**
+     * Er kursnavnet skrevet som en setning — stor forbokstav, resten smått?
+     * «Nybegynner dreiekurs» ja; «Paint on Pots», «Keramikk Workshop» nei.
+     */
+    public static function erSetningsnavn(string $navn): bool
+    {
+        $ord = preg_split('/\s+/u', trim($navn)) ?: [];
+        if (count($ord) < 2 || !preg_match('/^\p{Lu}\p{Ll}/u', $ord[0])) {
+            return false;
+        }
+        foreach (array_slice($ord, 1) as $o) {
+            if (preg_match('/\p{Lu}/u', $o)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** SMS tåler ikke HTML, og lange meldinger koster flere segmenter. */

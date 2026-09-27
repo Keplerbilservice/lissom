@@ -597,6 +597,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kursnavn-liten-forbokstav",
+            "dato": "2026-09-27",
+            "hva": "«det står du er påmeldt Nybegynner dreiekurs, det er ikke stor N her» — kursnavn skrevet som setning får liten forbokstav midt i en setning i e-postene; Paint on Pots o.l. står som de er",
+            "hvor": "app/lib/varsler.php",
+            "kode": [
+                {
+                    "fil": "app/lib/varsler.php",
+                    "finnes": [
+                        "public static function erSetningsnavn(string $navn): bool",
+                        "self::erSetningsnavn((string) $felter['kurs'])"
+                    ]
+                }
+            ]
         }
     ]
 }

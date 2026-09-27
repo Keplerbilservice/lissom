@@ -225,6 +225,16 @@ foreach ($for as $n => $v) {
 }
 Config::glemBasen();
 
+// Eieren, 27. september 2026: «det står du er påmeldt Nybegynner dreiekurs,
+// det er ikke stor N her».
+sjekk('kursnavnet får liten forbokstav midt i setningen',
+    Varsel::flett('Du er påmeldt {kurs}', ['kurs' => 'Nybegynner dreiekurs']) === 'Du er påmeldt nybegynner dreiekurs');
+sjekk('… men beholder den først i en setning og alene i kortet',
+    Varsel::flett('Takk. {kurs} starter snart', ['kurs' => 'Nybegynner dreiekurs']) === 'Takk. Nybegynner dreiekurs starter snart'
+    && Varsel::flett('{kurs}', ['kurs' => 'Nybegynner dreiekurs']) === 'Nybegynner dreiekurs');
+sjekk('… og navn med egne store bokstaver står som de er',
+    Varsel::flett('Du er påmeldt {kurs}', ['kurs' => 'Paint on Pots']) === 'Du er påmeldt Paint on Pots');
+
 echo "\n{$ok} i orden, {$feil} feil\n";
 $ferdig = true;
 exit($feil > 0 ? 1 : 0);

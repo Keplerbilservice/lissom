@@ -28007,7 +28007,8 @@ window.__resources = {
                         <!-- Egne bilder (eieren, 27. september 2026): fra
                              bildebiblioteket, eller lastet opp her. -->
                         <button type="button" onClick="{{ kbBibliotek }}" disabled="{{ kbLager }}" style="{{ kbBibliotekStil }}">Velg fra biblioteket</button>
-                        <label style="{{ kbBibliotekStil }}">Last opp<input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ kbLastOpp }}" disabled="{{ kbLager }}" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;"></label>
+                        <button type="button" onClick="{{ kbVelgFil }}" disabled="{{ kbLager }}" style="{{ kbBibliotekStil }}">Last opp</button>
+                        <input id="kb-fil" type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ kbLastOpp }}" style="display: none;">
                       </div>
                     </div>
                     <sc-if value="{{ kbHarValgt }}" hint-placeholder-val="{{ false }}">
@@ -39023,6 +39024,8 @@ class Component extends DCLogic {
           ? { tittel: this.state.artTittel || 'artikkelen', bilde: this.state.artBilde || '' }
         : (v && v.slag === 'beskjedbilde')
           ? { tittel: this.state.nbEmne || 'beskjeden', bilde: this.state.nbBilde || '' }
+        : (v && v.slag === 'kursboost')
+          ? { tittel: (this.state.kbPakke || {}).kurs || '', bilde: (this.state.kbPakke || {}).valgt || '' }
           : ((v && kilde.find(x => x.id === v.id)) || {});
     // Ruta viser den lille fila og lagrer den store. Foer lastet velgeren
     // originalene i full stoerrelse — over hundre av dem, hver gang den ble
@@ -40093,6 +40096,7 @@ class Component extends DCLogic {
       kbValgtStil: { display: 'block', width: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 'var(--radius-md)', background: 'var(--clay-100)' },
       kbBibliotek: () => this.apneBildevalg({ slag: 'kursboost', id: p.id }),
       kbBibliotekStil: pille(false, lagerBilder),
+      kbVelgFil: () => { if (lagerBilder) return; const f = document.getElementById('kb-fil'); if (f) f.click(); },
       kbLastOpp: e => {
         const fil = e && e.target && e.target.files && e.target.files[0];
         if (!fil) return;
@@ -56361,6 +56365,7 @@ class Component extends DCLogic {
         : (this.state.bildeFor || {}).slag === 'nyvare' ? 'Bilde til varen'
         : (this.state.bildeFor || {}).slag === 'plan' ? 'Bilde til medlemskapet'
         : (this.state.bildeFor || {}).slag === 'artikkelbilde' ? 'Bilde i artikkelteksten'
+        : (this.state.bildeFor || {}).slag === 'kursboost' ? 'Bilde til kursboosten'
         : (this.state.bildeFor || {}).slag === 'kurs'
           ? ((this.state.bildeFor || {}).rute === 0 ? 'Hovedbilde til kurset' : 'Bilde til kurset')
           : 'Bilde til artikkelen',

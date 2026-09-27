@@ -490,7 +490,7 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         ">Velg fra biblioteket</button>",
-                        ">Last opp<input type=\"file\"",
+                        ">Last opp</button>",
                         "Legges ut på Instagram, Facebook og nettsiden nå.",
                         "artikkel: 'Publiser artikkelen'",
                         "const UT = ['instagram', 'facebook', 'artikkel'];"

@@ -705,6 +705,9 @@ final class Varsel
                 }
                 $html = str_replace($m[0], $rader, $html);
             }
+            // Gavepreget: den lille merkelappen med kaffekoppen, bare paa
+            // gavekortet til mottakeren (eieren, 27. september 2026).
+            $html = $del($html, 'gavelapp', ($mal['navn'] ?? '') === 'gavekort_mottaker' && $kort !== []);
             $html = $del($html, 'kort', $kort !== []);
             if (preg_match('~<!--samling:start-->(.*?)<!--samling:slutt-->~s', $html, $m) === 1) {
                 $kortene = '';

@@ -89,7 +89,7 @@
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "'Sendes på e-post når betalingen er gjennomført.',"
+                        "'Sendes på e-post så snart betalingen er gjennomført.',"
                     ],
                     "ikkeFinnes": [
                         "'Kan hentes i verkstedet.'",
@@ -101,7 +101,7 @@
                 {
                     "sti": "/gavekort",
                     "finnes": [
-                        "Sendes på e-post når betalingen er gjennomført."
+                        "Sendes på e-post så snart betalingen er gjennomført."
                     ],
                     "ikkeFinnes": [
                         "Kan hentes i verkstedet",
@@ -688,6 +688,55 @@
                     "fil": "api/admin/oversikt.php",
                     "finnes": [
                         "'dagensBestillinger' => $dagensBestillinger,"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "gavekort-tekst-og-lapp",
+            "dato": "2026-09-27",
+            "hva": "«gavekort tekst, få gemini til å sjekke, men stryk verkstedtid … noe som indikerer litt gave, men ikke for mye, i vår stil» — Geminis tekster (godkjent), overskrift «Gi bort litt tid med leire» på siden, Google-tittelen beholder «Gavekort på keramikkurs», merkelapp med kaffekoppen på kjøpskortet og i e-posten",
+            "hvor": "/gavekort, e-posten gavekort_mottaker",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "{ l: 'Overskrift', v: 'Gi bort litt tid med leire' },",
+                        "class=\"lx-gavelapp\"",
+                        "'Kan brukes på kurs, events, medlemskap og varer i butikken.',"
+                    ],
+                    "ikkeFinnes": [
+                        "medlemskap, verkstedtid og varer"
+                    ]
+                },
+                {
+                    "fil": "innhold-standard.json",
+                    "finnes": [
+                        "\"Gavekort/0/Overskrift\": \"Gi bort litt tid med leire\""
+                    ]
+                },
+                {
+                    "fil": "seo-kart.json",
+                    "finnes": [
+                        "Gavekort på keramikkurs – opplevelsesgave Vestfold | Lissom"
+                    ]
+                },
+                {
+                    "fil": "app/epost/oppsett.html",
+                    "finnes": [
+                        "https://lissom.no/e-post-gavelapp.png"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/gavekort",
+                    "finnes": [
+                        "Gi bort litt tid med leire",
+                        "Kan brukes på kurs, events, medlemskap og varer i butikken."
+                    ],
+                    "ikkeFinnes": [
+                        "verkstedtid"
                     ]
                 }
             ]

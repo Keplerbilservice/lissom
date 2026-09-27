@@ -500,8 +500,10 @@ if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
 
     $koFor = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'");
 
-    // Uten lenke skal ingenting gaa, ogsaa naar bryteren staar paa.
-    DB::kjor("INSERT INTO innstillinger (nokkel, verdi) VALUES ('anmeldelse_paa','1'),('anmeldelse_lenke','')
+    // Uten lenke skal ingenting gaa, ogsaa naar bryteren staar paa. Bryteren
+    // er malen selv fra migrasjon 226 (eieren, 27. september 2026: én bryter
+    // per e-post) — den er slaatt paa over.
+    DB::kjor("INSERT INTO innstillinger (nokkel, verdi) VALUES ('anmeldelse_lenke','')
               ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)");
     Config::glemBasen();
     exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/cron.php') . ' anmeldelser 2>&1');
@@ -531,18 +533,18 @@ if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
     sjekk('en ny kjoring sender ikke paa nytt',
         (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'") === $etter);
 
-    // Og med bryteren av skjer ingenting.
-    DB::kjor("UPDATE innstillinger SET verdi = '0' WHERE nokkel = 'anmeldelse_paa'");
+    // Og med bryteren av skjer ingenting. Bryteren er malen under Tekst
+    // maler — den ene (migrasjon 226).
+    DB::kjor("UPDATE notification_templates SET aktiv = 0 WHERE navn = 'anmeldelse'");
     Config::glemBasen();
     $enda = $lagOkt($kursId, 6);
     exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/cron.php') . ' anmeldelser 2>&1');
     sjekk('med bryteren av skjer ingenting',
         DB::verdi('SELECT anmeldelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $enda]) === null);
 
-    // Rydder etter oss.
-    if ($malStodAv) {
-        DB::kjor("UPDATE notification_templates SET aktiv = 0 WHERE navn = 'anmeldelse'");
-    }
+    // Rydder etter oss: malen staar slik den sto.
+    DB::kjor("UPDATE notification_templates SET aktiv = :a WHERE navn = 'anmeldelse'",
+        ['a' => $malStodAv ? 0 : 1]);
     DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Anmeldelsesprove'");
     DB::kjor('DELETE FROM course_sessions WHERE id IN (:a, :b, :c)',
         ['a' => $nyOkt, 'b' => $gammelOkt, 'c' => $enda]);
@@ -9998,9 +10000,10 @@ sjekk('… og beholder sin egen fanerad',
     && substr_count($sidaG, "['← Verkstedet',  'adminoppskrifter', { vstFane: '' }],") === 2);
 
 // De to som flyttet helt hoerer til Verkstedets egen rad, ikke Nettsidens.
-sjekk('referansekundene og malene hoerer til Verkstedet',
+// Malene flyttet videre til Markedsfoering 27. september 2026 (eieren).
+sjekk('referansekundene hoerer til Verkstedet, malene til Markedsfoering',
     str_contains($sidaG, "case 'adminreferanser':    return p('Verkstedet', 'Verkstedet', 'Referansekunder');")
-    && str_contains($sidaG, "case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');"));
+    && str_contains($sidaG, "case 'adminmaler':         return p('Markedsføring', 'Tekst maler', 'Tekst maler');"));
 // Kortet paa Oversikt skal gaa dit som for. Eieren, 1. september: «jeg vil
 // ha et eget kort paa oversikt som heter maler».
 sjekk('… og kortet paa Oversikt gaar fortsatt til malene',
@@ -14630,8 +14633,9 @@ sjekk('… og ingen piller staar igjen med det gamle maalet',
 // dem stiles fra JS — «Velg noen andre» i ny registrering, og «Skjul»/«Vis»
 // paa referansekundene. Resten gaar gjennom klassen «.lx-radpille», som
 // bruker det samme maalet.
+// Femten fra 27. september 2026: bryteren i hver rad i Tekst maler.
 sjekk('… og de som har skrift bruker pillemaalet',
-    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 14
+    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 15
     && str_contains($utenKomm, '    padding: 6px 12px !important;')
     && str_contains($utenKomm, '    font: var(--type-chip) !important;'));
 
@@ -17411,7 +17415,9 @@ sjekk('migrasjon 163 gir «anmeldelse» plakatens tekst, som e-post, og setter d
             && str_contains($m, "«Leiren husker alt du gjør med den – og vi husker alle som tar seg tid.»")
             && str_contains($m, "aktiv = 0")
             && str_contains($m, "WHERE navn = 'anmeldelse'")
-            && str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'), "if (!\$paa || \$lenke === '' || !\$malPaa) {");
+            // Den egne bryteren «anmeldelse_paa» ble slaatt sammen med malen
+            // i migrasjon 226 (eieren, 27. september 2026).
+            && str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'), "if (\$lenke === '' || !\$malPaa) {");
     })());
 // ── Sidene slik robotene ser dem ─────────────────────────────────────────
 //
@@ -18983,11 +18989,15 @@ sjekk('koden i lenka er tilfeldig og avsloerer ikke adressen',
     str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/avmelding.php'), '$kode = bin2hex(random_bytes(16));')
     && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/avmelding.php'), "preg_match('/^[a-f0-9]{32}$/', \$kode)"));
 $vaFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/varsler.php');
-sjekk('admin: bryteren «Send medlemsinvitasjon etter kurs» med dager og status',
-    str_contains($mkSida, 'label="Send medlemsinvitasjon etter kurs" checked="{{ vaFortsettPaa }}" on-change="{{ vaFortsettVeksle }}"')
+// Eieren, 27. september 2026: én bryter per e-post. Den egne bryteren
+// «Send medlemsinvitasjon etter kurs» er borte; av og paa staar paa malen.
+sjekk('admin: medlemsinvitasjonen har dager og status, men ingen egen bryter',
+    !str_contains($mkSida, 'label="Send medlemsinvitasjon etter kurs"')
+    && !str_contains($mkSida, 'vaFortsettPaa')
     && str_contains($mkSida, 'onChange="{{ settVa.fortsett_dager }}"')
     && str_contains($mkSida, "'anmeldelse_lenke', 'anmeldelse_timer', 'fortsett_dager',")
-    && str_contains($vaFil, "'fortsett_paa', 'fortsett_dager',")
+    && str_contains($vaFil, "    'fortsett_dager',\n")
+    && !str_contains($vaFil, "'fortsett_paa'")
     && str_contains($vaFil, "\$svar['fortsett'] = [")
     && str_contains($vaFil, "DB::harTabell('epost_avmelding') ? (int) (DB::verdi("));
 
@@ -20798,6 +20808,71 @@ sjekk('alle veiene inn i arket gaar gjennom synAapne',
     && substr_count($slSida, 'synlighetApen: true') === 1);
 sjekk('… og lange lister kuttes, saa flisen ikke blir hoeyere enn naboene',
     str_contains($slSida, "n.length > 6 ? n.slice(0, 6).join(' · ') + ' … og ' + (n.length - 6) + ' til'"));
+
+// ── Én bryter per e-post, samlet i Tekst maler ─────────────────────────
+//
+// Eieren, 27. september 2026: «Vil du fortsette med leire? — etter kurset,
+// denne staar av, jeg mistenker at denne finnes paa flere steder? jeg burde
+// jo ha alle eposter som er lagret samlet paa et sted med bryter send av og
+// paa». To e-poster hadde to brytere hver. Naa er malen den ene, og Tekst
+// maler ligger under Markedsfoering.
+echo "\nÉn bryter per e-post\n";
+$tmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$tmCron = (string) file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$tmVa   = (string) file_get_contents(dirname(__DIR__) . '/api/admin/varsler.php');
+sjekk('hver rad i Tekst maler har en av/paa-bryter',
+    str_contains($tmSida, '<button type="button" class="lx-malbryter" onClick="{{ m.veksle }}" aria-pressed="{{ m.paa }}"')
+    && str_contains($tmSida, "bryterTekst: m.aktiv ? 'På' : 'Av',"));
+sjekk('… som lagrer med én gang, og lar et ulagret utkast staa',
+    str_contains($tmSida, "aktiv: ny ? 'ja' : 'nei' },")
+    && str_contains($tmSida, 'malKall(kropp, merkelapp, beholdUtkast) {')
+    && str_contains($tmSida, 'this.setState(beholdUtkast ? { malListe: d.maler } : { malListe: d.maler, malUtkast: null });'));
+sjekk('… og telleren oeverst sier hvor mange som er paa',
+    str_contains($tmSida, "+ ' · ' + alle.filter(m => m.aktiv).length + ' på',"));
+sjekk('cron leser bare malens bryter for de to e-postene',
+    !str_contains($tmCron, "Config::hent('fortsett_paa'")
+    && !str_contains($tmCron, "Config::hent('anmeldelse_paa'")
+    && str_contains($tmCron, "\$malPaa = (int) (DB::verdi(\"SELECT aktiv FROM notification_templates WHERE navn = 'fortsett'\") ?? 0) === 1;")
+    && str_contains($tmCron, "if (\$lenke === '' || !\$malPaa) {"));
+sjekk('… og det samme gjoer E-post-skjermen',
+    !str_contains($tmVa, "Config::hent('fortsett_paa'")
+    && !str_contains($tmVa, "Config::hent('anmeldelse_paa'")
+    && !str_contains($tmSida, 'label="Send oppfølging etter kurs"')
+    && !str_contains($tmSida, 'label="Send medlemsinvitasjon etter kurs"'));
+sjekk('Tekst maler ligger under Markedsfoering',
+    str_contains($tmSida, "      maler: ['adminmaler'],")
+    && str_contains($tmSida, "          ['Tekst maler', ['maler']],")
+    && str_contains($tmSida, "        ['Tekst maler', 'adminmaler'],")
+    && str_contains($tmSida, "      'Tekst maler': [\n        ['← Markedsføring', 'adminmarked', { mkFane: 'tavle' }],"));
+
+// Migrasjon 226 skal ta vare paa det som faktisk gikk: stod den egne bryteren
+// av, slaas malen av — ingenting skal begynne aa sendes av seg selv.
+$m226 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/226_en_bryter_per_epost.sql');
+$m226Ren = (string) preg_replace('/^--.*$/m', '', $m226);
+$tmFor = DB::alle("SELECT navn, aktiv FROM notification_templates WHERE navn IN ('fortsett', 'anmeldelse')");
+$tmInn = DB::alle("SELECT nokkel, verdi FROM innstillinger WHERE nokkel IN ('fortsett_paa', 'anmeldelse_paa')");
+DB::kjor("UPDATE notification_templates SET aktiv = 1 WHERE navn IN ('fortsett', 'anmeldelse')");
+DB::kjor("INSERT INTO innstillinger (nokkel, verdi) VALUES ('fortsett_paa', '0'), ('anmeldelse_paa', '1')
+          ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)");
+foreach (array_filter(array_map('trim', explode(';', $m226Ren))) as $sp) {
+    DB::kjor($sp);
+}
+$etter226 = array_column(DB::alle(
+    "SELECT navn, aktiv FROM notification_templates WHERE navn IN ('fortsett', 'anmeldelse')"), 'aktiv', 'navn');
+sjekk('migrasjon 226: en egen bryter som sto av, slaar malen av',
+    (int) ($etter226['fortsett'] ?? -1) === 0, json_encode($etter226));
+sjekk('… og en som sto paa, lar malen staa paa',
+    (int) ($etter226['anmeldelse'] ?? -1) === 1, json_encode($etter226));
+sjekk('… og de gamle bryterne er borte',
+    (int) DB::verdi("SELECT COUNT(*) FROM innstillinger WHERE nokkel IN ('fortsett_paa', 'anmeldelse_paa')") === 0);
+// Tilbake slik det sto.
+foreach ($tmFor as $r) {
+    DB::kjor('UPDATE notification_templates SET aktiv = :a WHERE navn = :n', ['a' => (int) $r['aktiv'], 'n' => $r['navn']]);
+}
+foreach ($tmInn as $r) {
+    DB::kjor('INSERT INTO innstillinger (nokkel, verdi) VALUES (:k, :v) ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)',
+        ['k' => $r['nokkel'], 'v' => $r['verdi']]);
+}
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

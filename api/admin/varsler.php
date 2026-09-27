@@ -55,9 +55,11 @@ const FELTER = [
     'epost_signatur_kurs', 'epost_signatur_nyhetsbrev',
     // Oppfoelgingen etter kurset. Lenken staar ikke i koden — den er
     // verkstedets egen, og skal kunne byttes herfra.
-    'anmeldelse_paa', 'anmeldelse_lenke', 'anmeldelse_timer',
+    // Av og paa staar paa malene under Markedsfoering › Tekst maler — én
+    // bryter per e-post (migrasjon 226, eieren 27. september 2026).
+    'anmeldelse_lenke', 'anmeldelse_timer',
     // Medlemsinvitasjonen etter kurset (malen «fortsett»).
-    'fortsett_paa', 'fortsett_dager',
+    'fortsett_dager',
 ];
 
 /** De fire gruppene en mal kan hoere til, og hva de heter for et menneske. */
@@ -235,7 +237,10 @@ $svar['sms_klar'] = Varsel::smsMulig();
 // paa. Den sender ikke uten lenke, og den gaar som e-post til SMS er satt
 // opp — begge deler er noe eieren skal se uten aa gjette.
 $svar['anmeldelse'] = [
-    'paa'    => (string) Config::hent('anmeldelse_paa', '0') === '1',
+    // Bryteren er malen «anmeldelse» under Tekst maler (migrasjon 226).
+    'paa'    => (int) (DB::verdi(
+        "SELECT aktiv FROM notification_templates WHERE navn = 'anmeldelse'"
+    ) ?? 0) === 1,
     'lenke'  => trim((string) Config::hent('anmeldelse_lenke', '')) !== '',
     'kanal'  => Varsel::smsMulig() ? 'SMS' : 'e-post',
     'timer'  => max(1, min(72, (int) Config::hent('anmeldelse_timer', '3'))),
@@ -246,10 +251,11 @@ $svar['anmeldelse'] = [
 
 // ── Medlemsinvitasjonen etter kurset ────────────────────────────────────
 //
-// Bryteren er en innstilling, men malen «fortsett» kan ogsaa vaere slaatt
-// av under Maler — da sender jobben ingenting, og det skal skjermen si.
+// Bryteren er malen «fortsett» under Tekst maler — den ene (migrasjon 226).
 $svar['fortsett'] = [
-    'paa'     => (string) Config::hent('fortsett_paa', '0') === '1',
+    'paa'     => (int) (DB::verdi(
+        "SELECT aktiv FROM notification_templates WHERE navn = 'fortsett'"
+    ) ?? 0) === 1,
     'mal'     => (int) (DB::verdi(
         "SELECT aktiv FROM notification_templates WHERE navn = 'fortsett'"
     ) ?? 0) === 1,

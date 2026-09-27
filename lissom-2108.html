@@ -18120,7 +18120,8 @@ window.__resources = {
           <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
             <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); max-width: 74ch; text-wrap: pretty;">En melding til dem som var på kurset, noen timer etterpå, med lenken til å legge igjen en anmeldelse. Den går én gang per kursdato, bare til dem som betalte, og aldri for et kurs som er mer enn tre døgn gammelt.</p>
 
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Send oppfølging etter kurs" checked="{{ vaAnmPaa }}" on-change="{{ vaAnmVeksle }}" hint-size="100%,28px"></x-import>
+            <!-- Bryteren staar paa malen «anmeldelse» under Markedsfoering › Tekst
+                 maler — én bryter per e-post (eieren, 27. september 2026). -->
 
             <div>
               <label for="va-anm-lenke" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Lenken de sendes til</label>
@@ -18150,7 +18151,8 @@ window.__resources = {
           <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
             <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); max-width: 74ch; text-wrap: pretty;">E-posten «Vil du fortsette med leire?» til dem som betalte for kurset, noen dager etterpå. Den går én gang per kursdato, ikke til dem som alt er medlemmer, og ikke til dem som har meldt seg av.</p>
 
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Send medlemsinvitasjon etter kurs" checked="{{ vaFortsettPaa }}" on-change="{{ vaFortsettVeksle }}" hint-size="100%,28px"></x-import>
+            <!-- Bryteren staar paa malen «fortsett» under Markedsfoering › Tekst
+                 maler — én bryter per e-post (eieren, 27. september 2026). -->
 
             <div>
               <label for="va-fortsett-dager" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvor lenge etter kurset</label>
@@ -25105,14 +25107,18 @@ window.__resources = {
             <button type="button" class="lx-listevis" onClick="{{ malListeVeksle }}" style="{{ listeKnappStil }}">{{ malListeKnapp }}</button>
             <div class="lx-malliste" data-apen="{{ malListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Alle malene</div>
+            <!-- Én bryter per e-post, rett i lista (eieren, 27. september
+                 2026: «jeg burde jo ha alle eposter som er lagret samlet paa
+                 et sted med bryter send av og paa»). Navnet aapner malen som
+                 foer; pillen til hoeyre slaar den av og paa med det samme. -->
             <sc-for list="{{ malListe }}" as="m" hint-placeholder-count="10">
-              <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">
-                <span style="font-weight: 600;">{{ m.navn }}</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.kanal }}</span>
-                <sc-if value="{{ m.av }}" hint-placeholder-val="{{ false }}">
-                  <span style="font-size: 11px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Slått av</span>
-                </sc-if>
-              </button>
+              <div style="{{ m.radStil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">
+                  <span style="font-weight: 600;">{{ m.navn }}</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.kanal }}</span>
+                </button>
+                <button type="button" class="lx-malbryter" onClick="{{ m.veksle }}" aria-pressed="{{ m.paa }}" aria-label="{{ m.bryterNavn }}" style="{{ m.bryterStil }}">{{ m.bryterTekst }}</button>
+              </div>
             </sc-for>
             </div>
           </div>
@@ -40557,7 +40563,7 @@ class Component extends DCLogic {
       .catch(() => { this._malerHentes = false; });
   }
 
-  malKall(kropp, merkelapp) {
+  malKall(kropp, merkelapp, beholdUtkast) {
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden',
                       kvitteringDetalj: 'Malene ligger i databasen, og finnes bare på lissom.no.' });
@@ -40573,7 +40579,12 @@ class Component extends DCLogic {
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
       .then(({ ok, d }) => {
         this._malLagrer = false;
-        if (ok && d.maler) this.setState({ malListe: d.maler, malUtkast: null });
+        // Bryteren i lista (beholdUtkast) skal ikke kaste et ulagret utkast
+        // paa malen som staar aapen.
+        if (ok && d.maler) this.setState(beholdUtkast ? { malListe: d.maler } : { malListe: d.maler, malUtkast: null });
+        // Gikk det ikke, hentes lista paa nytt, saa bryteren viser det som
+        // faktisk er lagret.
+        if (!ok && beholdUtkast) { this._malerHentes = false; this.hentMaler(); }
         this.setState({
           kvittering: ok ? (merkelapp || 'Lagret') : 'Gikk ikke',
           kvitteringDetalj: ok ? (d.beskjed || '') : (d.feil || 'Prøv igjen om litt.'),
@@ -40581,6 +40592,7 @@ class Component extends DCLogic {
       })
       .catch(() => {
         this._malLagrer = false;
+        if (beholdUtkast) { this._malerHentes = false; this.hentMaler(); }
         this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
       });
   }
@@ -46690,6 +46702,8 @@ class Component extends DCLogic {
       geo:   ['admingeo',       { geoFra: 'marked' }],
       send:  ['adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
       epost: ['adminvarsler'],
+      // Tekst maler flyttet hit fra Verkstedet (eieren, 27. september 2026).
+      maler: ['adminmaler'],
     };
   }
 
@@ -46793,6 +46807,8 @@ class Component extends DCLogic {
         ['Skriv',    'adminmarked', { mkFane: 'bank' }],
         ['Tilbud / nyhetsbrev', 'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
         ['Google',   'adminseo',    { seoFra: 'marked' }],
+        // Alle e-poster og SMS-er, med én bryter hver (eieren, 27. september 2026).
+        ['Tekst maler', 'adminmaler'],
         ['Oppsett',  'adminmarked', { mkFane: 'innstillinger' }],
       ],
       // Skjermene som er piller i Markedsfoering, men egne skjermer: SEO og
@@ -46809,6 +46825,10 @@ class Component extends DCLogic {
       'Tilbud / nyhetsbrev': [
         ['← Markedsføring', 'adminmarked', { mkFane: 'tavle' }],
         ['Tilbud / nyhetsbrev', 'adminbeskjeder', { beskjedFra: 'marked', motValg: 'Alle aktive medlemmer' }],
+      ],
+      'Tekst maler': [
+        ['← Markedsføring', 'adminmarked', { mkFane: 'tavle' }],
+        ['Tekst maler',     'adminmaler'],
       ],
       'Oppsett': [
         ['← Markedsføring',      'adminmarked', { mkFane: 'tavle' }],
@@ -46892,7 +46912,9 @@ class Component extends DCLogic {
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
       case 'adminressurser':     return p('Verkstedet', 'Verkstedet', 'Ressurser');
       case 'adminvarsler':       return p('Markedsføring', 'Oppsett', 'E-post- og SMS-server');
-      case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Tekst maler');
+      // Under Markedsfoering fra 27. september 2026 (eieren) — overskriften
+      // sa det alt; menyen og veien tilbake gjorde det ikke.
+      case 'adminmaler':         return p('Markedsføring', 'Tekst maler', 'Tekst maler');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
         if (st.kursFane === 'interne') return p('Brukere', 'Brukere', 'Kurs');
@@ -70669,6 +70691,7 @@ class Component extends DCLogic {
           ['send', 'Tilbud / nyhetsbrev'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
           ['forslag', 'Medlemsforslag'],
           ['verving', 'Vervepremie'],
+          ['maler', 'Tekst maler'],
 
         ];
 
@@ -70710,6 +70733,8 @@ class Component extends DCLogic {
           // artikkel» — og valgte «slå sammen».
           ['Skriv',    ['bank', 'artikler', 'brev', 'sosialt', 'kurs']],
           ['Tilbud / nyhetsbrev', ['send']],
+          // Eieren, 27. september 2026: «Tekst maler» hoerer hjemme her.
+          ['Tekst maler', ['maler']],
           ['Google',   ['seo', 'geo', 'analyse']],
           ['Oppsett',  ['innstillinger', 'assistent', 'epost']],
         ];
@@ -71839,7 +71864,8 @@ class Component extends DCLogic {
 
         return {
           malIngen: alle.length === 0,
-          malAntall: alle.length + (alle.length === 1 ? ' mal' : ' maler'),
+          malAntall: alle.length + (alle.length === 1 ? ' mal' : ' maler')
+            + ' · ' + alle.filter(m => m.aktiv).length + ' på',
           // Mal-lista bak en pille paa telefonen. Skjermen var 3 749 px paa
           // en 390 px skjerm — 4,4 skjermer — og 2 502 av dem var de 36
           // malene man ruller forbi for aa naa emnet og teksten. Samme grep
@@ -71854,13 +71880,42 @@ class Component extends DCLogic {
             kanal: kanalTekst(m.kanal),
             av: !m.aktiv,
             velg: () => this.setState({ malValgt: m.navn, malUtkast: null, malListeApen: false }),
-            stil: {
-              display: 'flex', flexDirection: 'column', gap: 2, width: '100%', textAlign: 'left',
-              appearance: 'none', cursor: 'pointer',
+            radStil: {
+              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+              borderTop: '1px solid var(--border-subtle)',
               background: m.navn === valgtNavn ? 'var(--clay-100)' : 'transparent',
-              border: 'none', borderTop: '1px solid var(--border-subtle)',
-              padding: 'var(--space-3) var(--space-5)', font: 'var(--type-body-sm)',
+              paddingRight: 'var(--space-4)',
+            },
+            stil: {
+              display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 auto', minWidth: 0,
+              textAlign: 'left', appearance: 'none', cursor: 'pointer', background: 'transparent',
+              border: 'none', padding: 'var(--space-3) var(--space-5)', font: 'var(--type-body-sm)',
               color: 'var(--text-heading)', opacity: m.aktiv ? 1 : .55,
+            },
+            // Bryteren i raden. Lagres med én gang, samme vei som «Slå av»
+            // inne i malen. Teksten og emnet sendes som de staar lagret, og et
+            // ulagret utkast paa en annen mal blir staaende.
+            paa: !!m.aktiv,
+            bryterTekst: m.aktiv ? 'På' : 'Av',
+            bryterNavn: m.tittel + ': ' + (m.aktiv ? 'På' : 'Av'),
+            veksle: () => {
+              // Mens forrige lagring gaar, venter bryteren — ellers kunne
+              // pillen vise noe annet enn det som ble lagret.
+              if (this._malLagrer) return;
+              const ny = !m.aktiv;
+              this.setState(st => ({
+                malListe: (st.malListe || []).map(x => x.navn === m.navn ? Object.assign({}, x, { aktiv: ny }) : x),
+              }));
+              this.malKall({ handling: 'lagre', navn: m.navn, emne: m.emne || '', tekst: m.tekst || '',
+                             aktiv: ny ? 'ja' : 'nei' },
+                           ny ? m.tittel + ' sendes igjen' : m.tittel + ' sendes ikke lenger', true);
+            },
+            bryterStil: {
+              flex: 'none', appearance: 'none', cursor: 'pointer', minWidth: 52,
+              borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)',
+              fontWeight: 700, border: '1.5px solid var(--lissom-brown)',
+              background: m.aktiv ? 'var(--lissom-brown)' : 'transparent',
+              color: m.aktiv ? 'var(--clay-50)' : 'var(--lissom-brown)',
             },
           })),
 
@@ -72024,17 +72079,11 @@ class Component extends DCLogic {
 
           // ── Oppfolgingen etter kurset ────────────────────────────────
           //
-          // Bryteren er den eneste som styrer. Malen ligger klar med kanal
-          // «sms», og Varsel::mal() sender e-post i stedet saa lenge SMS
-          // ikke er satt opp — samme melding, annen vei.
-          vaAnmPaa: verdi('anmeldelse_paa') === '1',
-          vaAnmVeksle: () => this.setState(st => ({
-            varslerUtkast: Object.assign({}, st.varslerUtkast, {
-              anmeldelse_paa: (st.varslerUtkast || {}).anmeldelse_paa !== undefined
-                ? ((st.varslerUtkast || {}).anmeldelse_paa === '1' ? '0' : '1')
-                : (((d.oppsett || {}).anmeldelse_paa || {}).verdi === '1' ? '0' : '1'),
-            }),
-          })),
+          // Av og paa staar paa malen «anmeldelse» under Markedsfoering ›
+          // Tekst maler — én bryter per e-post (migrasjon 226, eieren 27.
+          // september 2026). Malen ligger klar med kanal «sms», og
+          // Varsel::mal() sender e-post i stedet saa lenge SMS ikke er satt
+          // opp — samme melding, annen vei.
           vaAnmLenke: verdi('anmeldelse_lenke'),
           vaAnmTimer: verdi('anmeldelse_timer') || '3',
           // Hva som faktisk skjer, ikke bare hva bryteren staar paa.
@@ -72049,21 +72098,13 @@ class Component extends DCLogic {
 
           // ── Medlemsinvitasjonen etter kurset ─────────────────────────
           //
-          // Samme monster som oppfolgingen over: bryteren og dagene lagres
-          // som innstillinger, og status-linja regnes av serveren.
-          vaFortsettPaa: verdi('fortsett_paa') === '1',
-          vaFortsettVeksle: () => this.setState(st => ({
-            varslerUtkast: Object.assign({}, st.varslerUtkast, {
-              fortsett_paa: (st.varslerUtkast || {}).fortsett_paa !== undefined
-                ? ((st.varslerUtkast || {}).fortsett_paa === '1' ? '0' : '1')
-                : (((d.oppsett || {}).fortsett_paa || {}).verdi === '1' ? '0' : '1'),
-            }),
-          })),
+          // Samme monster som oppfolgingen over: av og paa staar paa malen
+          // «fortsett» under Tekst maler, dagene er en innstilling, og
+          // status-linja regnes av serveren.
           vaFortsettDager: verdi('fortsett_dager') || '3',
           vaFortsettStatus: (() => {
             const f = d.fortsett || {};
             if (!f.paa) { return 'Står av. Ingen invitasjon sendes.'; }
-            if (f.mal === false) { return 'Bryteren står på, men malen «fortsett» under Maler er slått av — ingenting sendes før den er på.'; }
             return 'På. Går ' + f.dager + ' dager etter kurset, som e-post.'
               + (f.sendt ? ' ' + f.sendt + ' sendt hittil.' : '')
               + (f.avmeldt ? ' ' + f.avmeldt + ' har meldt seg av.' : '');

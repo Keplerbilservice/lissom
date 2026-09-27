@@ -23,7 +23,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Sperren: alle testene maa gaa gjennom foer noe legges ut. Eieren,
+  # 27. september 2026 — funksjoner sluttet aa virke etter endringer andre
+  # steder. Feiler en test, blir sida som ligger ute staaende.
+  tester:
+    uses: ./.github/workflows/tester.yml
+
   publiser:
+    needs: tester
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

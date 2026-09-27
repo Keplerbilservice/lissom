@@ -455,6 +455,34 @@ await flyt('Synlighet: pille, flis og ark', async () => {
   await p.context().close();
 });
 
+// ── 6b. Oversikt: dagens omsetning og dagens bestillinger ─────────────
+// Eieren, 27. september 2026: «jeg vil at du alltid har dagens omsetning
+// øverst, klikkbar, så jeg kan gå inn å se på den, deretter dagens bestilling
+// selv om den ikke er betalt».
+await flyt('Oversikt: dagens omsetning og bestillinger', async () => {
+  const p = await side('admin');
+  await gaa(p, '/admin/oversikt', 3500);
+  const idag = p.locator('.lx-ovoms button', { hasText: 'I dag' }).first();
+  const bg = await idag.evaluate(e => getComputedStyle(e).backgroundColor).catch(() => '');
+  sjekk('«I dag» er valgt når Oversikt åpnes', !!bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent', bg);
+  const kort = p.locator('.lx-ovdag');
+  sjekk('«Dagens bestillinger» står rett under omsetningen', await kort.getByText('Dagens bestillinger').isVisible().catch(() => false));
+  const rader = await kort.locator('.lx-ovrad').count();
+  sjekk('… med dagens bestillinger eller «Ingen bestillinger i dag.»', rader > 0 || await kort.getByText('Ingen bestillinger i dag.').isVisible().catch(() => false), String(rader));
+  await p.locator('.lx-ovoms button[aria-label="Se omsetningen"]').click();
+  await p.waitForTimeout(1200);
+  sjekk('trykk på omsetningen åpner dagsoppgjøret', await p.getByText('Dagsoppgjør', { exact: true }).last().isVisible().catch(() => false));
+  await p.keyboard.press('Escape').catch(() => {});
+  await gaa(p, '/admin/oversikt', 3000);
+  if (rader > 0) {
+    await p.locator('.lx-ovdag .lx-ovrad').first().click();
+    await p.waitForTimeout(1800);
+    const url = p.url();
+    sjekk('en rad åpner bestillingen', !/\/admin\/oversikt|\/admin$/.test(url), url);
+  }
+  await p.context().close();
+});
+
 // ── 7. Gavekortsida ───────────────────────────────────────────────────
 await flyt('Gavekortsida', async () => {
   const p = await side(null);

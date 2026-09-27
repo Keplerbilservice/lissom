@@ -46,9 +46,14 @@ jobs:
             $s["db_navn"] = "lissom";
             $s["db_bruker"] = "lissom";
             $s["db_passord"] = "lissom";
+            // Testverdier. Vipps er en stubbe i testene, aldri den ekte.
+            foreach (["vipps_msn", "vipps_client_id", "vipps_client_secret", "vipps_sub_key"] as $n) { $s[$n] = "test"; }
+            $s["cron_nokkel"] = "test";
             file_put_contents("app/secrets.php", "<?php return " . var_export($s, true) . ";");
           '
           php bin/migrate.php
+          # Sjekkene av nettsida bruker terser, som ellers bare ligger lokalt.
+          npm install --no-save --no-package-lock terser
 
       - name: Kjor alle testene
         run: bash tests/alle.sh

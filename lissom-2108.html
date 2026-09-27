@@ -53433,7 +53433,21 @@ class Component extends DCLogic {
     const tid = velgerTid ? String(this.state.bTid || '') : '';
     const tidDato = velgerTid ? String(this.state.bTidDato || '') : '';
     const kursId = velgerTid ? this.kursIdNaa() : 0;
-    const oktId = velgerTid ? 0 : (this.state.bOktId || (datoer.find(d => !d.full) || {}).oktId);
+    const vist = this._visteOkt || null;
+    if (!velgerTid && !this.state.bOktId && !vist && this._visteDagHarFlere) {
+      this.setState({
+        kvittering: 'Velg et tidspunkt.',
+        kvitteringDetalj: 'Denne dagen har flere tider. Trykk på den du vil ha.',
+      });
+      return;
+    }
+    const oktId = velgerTid ? 0 : (this.state.bOktId || (vist && vist.oktId) || (datoer.find(d => !d.full) || {}).oktId);
+    // Kvitteringen leser datoen av bOktId. Sto den tom, viste den en annen
+    // dato enn den som ble booket (27. september 2026: «Onsdag 19. august»).
+    if (!velgerTid && !this.state.bOktId && oktId) {
+      const d = datoer.find(x => x.oktId === oktId);
+      this.setState({ bOktId: oktId, bDato: d ? d.dato : this.state.bDato });
+    }
 
     if (velgerTid && !(kursId && tid && tidDato)) {
       this.setState({
@@ -57493,6 +57507,14 @@ class Component extends DCLogic {
         const valgtDag = this.state.bDag
           || (valgtTid ? dagenTil(valgtTid) : (dager[0] ? dager[0].dag : ''));
         const dagRad = dager.find(x => x.dag === valgtDag) || dager[0] || { tider: [] };
+        // Datoen som staar paa skjermen er den som bookes. 27. september 2026:
+        // en bestilling fra «lørdag 10. oktober» (valgt paa kurssida, ?dag=)
+        // havnet paa onsdag 7. oktober, fordi bookOgBetal() tok den foerste
+        // ledige datoen naar ingen tid var trykket. Har dagen bare én tid, er
+        // det den; har den flere, maa kunden velge.
+        const ledigeTider = (dagRad.tider || []).filter(t => !t.full);
+        this._visteOkt = ledigeTider.length === 1 ? ledigeTider[0] : null;
+        this._visteDagHarFlere = ledigeTider.length > 1;
 
         // Tre dager foerst. Resten i en kalender: «Vis flere datoer» bytter
         // lista ut med en maanedskalender man blar i; dager med kurs har

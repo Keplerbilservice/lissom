@@ -20893,6 +20893,20 @@ sjekk('… og et bilde som bare er i galleriet, staar i lista',
 sjekk('… og statusen hentes fra ett sted',
     substr_count($dgSida, '{{ f.uteTekst }}') === 2 && !str_contains($dgSida, '>Lagt ut på Instagram<'));
 
+// 27. september 2026, testbestilling paa lissom.no: «lørdag 10. oktober»
+// valgt paa kurssida, uten aa trykke paa tida — bookingen havnet paa onsdag
+// 7. oktober, og kvitteringen sa «Onsdag 19. august».
+echo "\nDatoen paa skjermen er den som bookes\n";
+$btSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('dagen som vises husker sin ene ledige tid',
+    str_contains($btSida, 'this._visteOkt = ledigeTider.length === 1 ? ledigeTider[0] : null;'));
+sjekk('… og bookingen bruker den foer den foerste ledige datoen',
+    str_contains($btSida, '(this.state.bOktId || (vist && vist.oktId) || (datoer.find(d => !d.full) || {}).oktId)'));
+sjekk('… en dag med flere tider maa velges',
+    str_contains($btSida, "kvittering: 'Velg et tidspunkt.',"));
+sjekk('… og kvitteringen faar datoen som ble booket',
+    str_contains($btSida, 'this.setState({ bOktId: oktId, bDato: d ? d.dato : this.state.bDato });'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

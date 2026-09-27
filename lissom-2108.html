@@ -723,6 +723,14 @@ img{max-width:100%;display:block}
   .lx-adminaside > .lx-admstatus { order: 2; margin: 0 !important; border: 0 !important; padding: 0 var(--space-2) !important; white-space: nowrap; line-height: 1.25; }
   .lx-adminaside > .lx-admstatus > div:first-child { margin-bottom: 1px !important; font-size: 10px !important; }
 }
+/* Eieren, 27. september 2026: «naa flyttet innstillingshjulet seg?» Paa
+   sidene med «Uke 39 · 35 paameldte framover» ble linja for lang, og «1
+   inne» og ⚙ havnet paa en linje nummer to. Maalt paa 1358 px: 1373 px
+   innhold paa 1342 px plass. Statusen viker naar det er trangt, saa hjulet
+   staar paa samme sted paa alle sidene. */
+@media (min-width: 980px) and (max-width: 1499px) {
+  .lx-adminaside > .lx-admstatus { display: none !important; }
+}
 .lx-ovgruppe { transition: border-color .15s, box-shadow .15s; }
 .lx-ovgruppe:hover { border-color: var(--lissom-brown) !important; box-shadow: 0 4px 16px rgba(46,16,2,.10); }
 .lx-ovrad:hover { background: color-mix(in srgb, var(--lissom-yellow) 16%, transparent); }

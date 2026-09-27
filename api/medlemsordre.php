@@ -86,6 +86,14 @@ try {
 
 $plan = Medlemskap::plan($type);
 
+// Vervepremien: kom hun fra en vervelenke, foelger koden ordren gjennom
+// Vipps. Om den gir premie avgjores foerst naar avtalen er aktiv — se
+// Verving::premier().
+$verv = Verving::renKode(Foresporsel::tekst('verv'));
+if ($verv !== '' && Verving::klar() && DB::harKolonne('medlemsordrer', 'verve_kode')) {
+    DB::oppdater('medlemsordrer', ['verve_kode' => $verv], ['token' => $token]);
+}
+
 revider('medlemsordre_opprettet', 'member',
     $innlogget === null ? 0 : (int) $innlogget['id'],
     ['plan' => $type, 'betaling' => $betaling]);

@@ -20603,6 +20603,43 @@ sjekk('dagbrikka i ukekalenderen hopper til dagen',
 // Eieren, 27. september 2026: «enklere maate aa flytte dato paa deltaker paa
 // rett i kurset». «Flytt» paa Paameldte viste alle kurs, ogsaa datoer som
 // hadde vaert, med én dato valgt paa forhaand.
+// Eieren, 27. september 2026: vervepremien. tests/verving.php proever
+// reglene mot databasen; her staar koblingene mellom delene.
+echo "\nVervepremien\n";
+$vpSida  = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$vpNett  = file_get_contents(dirname(__DIR__) . '/nett.js');
+$vpOrdre = file_get_contents(dirname(__DIR__) . '/api/medlemsordre.php');
+$vpMed   = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$vpMeg   = file_get_contents(dirname(__DIR__) . '/api/meg.php');
+sjekk('premien gis naar avtalen gaar over til aktiv',
+    str_contains($vpMed, "if (\$ny === 'aktiv' && (string) \$avtale['status'] !== 'aktiv') {")
+    && str_contains($vpMed, "Verving::premier((int) \$avtale['member_id'], (int) \$avtale['id'], (string) \$avtale['plan']);"));
+sjekk('… og en feil der stopper ikke medlemskapet',
+    str_contains($vpMed, "logg_feil('Vervepremien feilet for avtale '"));
+sjekk('vervekoden lagres paa innmeldingen',
+    str_contains($vpOrdre, "\$verv = Verving::renKode(Foresporsel::tekst('verv'));")
+    && str_contains($vpOrdre, "DB::oppdater('medlemsordrer', ['verve_kode' => \$verv], ['token' => \$token]);"));
+sjekk('… og sendes med fra skjermen',
+    str_contains($vpSida, 'verv: this.vervKode(),'));
+sjekk('koden huskes ogsaa fra den servertegnede medlemskapssida',
+    str_contains($vpNett, "localStorage.setItem('lissom-verv', verv);")
+    && str_contains($vpSida, "localStorage.setItem('lissom-verv', kode);"));
+sjekk('banneret vises bare naar serveren sier det',
+    str_contains($vpMeg, "'verving'        => er_aktivt_medlem(\$m) && Verving::klar() && Verving::paa()")
+    && str_contains($vpSida, 'msVervVis: hjem && medlem && !!v,'));
+sjekk('tekstene i banneret er eierens',
+    str_contains($vpSida, ">Vervepremie</div>")
+    && str_contains($vpSida, "'Del skapergleden og få ' + t + ' timer i verkstedet!'")
+    && str_contains($vpSida, "'Verv en venn til årsmedlemskap via din personlige lenke, så får du ' + t")
+    && str_contains($vpSida, "' timer ekstra til prosjektene dine hos oss.'")
+    && str_contains($vpSida, "'Lenken er kopiert og klar!' : 'Kopier personlig lenke'"));
+sjekk('Vervepremie er en gruppe i Markedsfoering',
+    str_contains($vpSida, "['Vervepremie', ['verving']],")
+    && str_contains($vpSida, "['verving', 'Vervepremie'],")
+    && str_contains($vpSida, '...this.vervingAdminVals(fane),'));
+sjekk('bryteren er av naar raden mangler, som paa serveren',
+    str_contains($vpSida, "const bryter = (st.innholdLagret || {})['Vis/verving'] === 'ja';"));
+
 echo "\nFlytt en deltaker til en annen dato\n";
 $flSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 $flApi  = file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');

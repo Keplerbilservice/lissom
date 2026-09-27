@@ -6807,6 +6807,22 @@ window.__resources = {
               </div>
               </sc-if>
 
+              <!-- Vervepremien for medlemmer (eieren, 27. september 2026): verv en
+                   venn til aarsmedlemskap og faa timer i verkstedet. Slaas av og
+                   paa, og timene settes, i Markedsfoering › Vervepremie. -->
+              <sc-if value="{{ msVervVis }}" hint-placeholder-val="{{ false }}">
+              <div id="minside-verving" class="ms-o-banner" style="{{ msBannerStil }}">
+                <div style="min-width: 0; flex: 1 1 320px;">
+                  <div style="font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--lissom-yellow);">Vervepremie</div>
+                  <h3 style="margin: 4px 0 6px; font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.2; color: #fff;">{{ msVervTittel }}</h3>
+                  <p style="margin: 0; color: var(--clay-100); max-width: 60ch;">{{ msVervLinje }}</p>
+                </div>
+                <div style="display: grid; gap: 8px; justify-items: end;">
+                  <button type="button" onClick="{{ msVervKopier }}" style="appearance: none; cursor: pointer; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: 999px; padding: 9px 22px; font-weight: 800;">{{ msVervKnapp }}</button>
+                </div>
+              </div>
+              </sc-if>
+
 
               <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
               <div id="minside-pameldinger" class="ms-o-kort ms-o-pamld" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
@@ -27471,6 +27487,38 @@ window.__resources = {
           </sc-for>
         </sc-if>
 
+        <!-- ── Vervepremie ───────────────────────────────────────────── -->
+        <!--
+             Eieren, 27. september 2026: «verv en venn til aarsmedlemskap og
+             faa 5 timer til bruk i verkstedet, jeg maa kunne endre antall
+             timer de faar». Bryteren styrer banneret paa Min side og om
+             premien gis. Serveren er api/admin/verving.php.
+        -->
+        <sc-if value="{{ mkErVerving }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: grid; gap: var(--space-4);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vervepremie på Min side" checked="{{ vpPaa }}" on-change="{{ vpVeksle }}" hint-size="100%,28px"></x-import>
+            <div>
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 6px;">Timer til den som verver</div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <input type="number" min="1" max="100" inputmode="numeric" value="{{ vpTimer }}" onChange="{{ vpTimerEndre }}" style="width: 110px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ vpTimerLagre }}" hint-size="auto,36px">Lagre</x-import>
+              </div>
+            </div>
+          </div>
+
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Vervet så langt</div>
+          <sc-if value="{{ vpTom }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">{{ vpTomTekst }}</p>
+          </sc-if>
+          <sc-for list="{{ vpListe }}" as="v" hint-placeholder-count="2">
+            <div style="display: flex; gap: var(--space-4); align-items: baseline; flex-wrap: wrap; padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle);">
+              <span style="flex: 1 1 240px; min-width: 0; color: var(--text-heading);">{{ v.hvem }}</span>
+              <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ v.dato }}</span>
+              <span style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ v.timer }}</span>
+            </div>
+          </sc-for>
+        </sc-if>
+
         <!-- ── Medlemsforslag ────────────────────────────────────────── -->
         <!--
              Medlemmenes forslag til Instagram. Eieren, 24. september 2026:
@@ -31939,6 +31987,32 @@ class Component extends DCLogic {
       msBanMeld: forste ? forste.meld : () => {},
       msBanFlere: interne.slice(1, 4),
       msKmpVis: hjem && !medlem && this.bryterPaa('salgsuke'),
+      // Vervepremien. Eieren, 27. september 2026 — tekstene er godkjent
+      // ordrett. Serveren avgjor om den vises (api/meg.php); timetallet er
+      // det eieren har satt i Markedsfoering › Vervepremie.
+      ...(() => {
+        const v = this.state.verving;
+        const t = v ? String(v.timer) : '';
+        return {
+          msVervVis: hjem && medlem && !!v,
+          msVervTittel: 'Del skapergleden og få ' + t + ' timer i verkstedet!',
+          msVervLinje: 'Verv en venn til årsmedlemskap via din personlige lenke, så får du ' + t
+            + ' timer ekstra til prosjektene dine hos oss.',
+          msVervKnapp: this.state.vervKopiert ? 'Lenken er kopiert og klar!' : 'Kopier personlig lenke',
+          msVervKopier: () => {
+            if (!v || !v.lenke) return;
+            const ferdig = () => {
+              this.setState({ vervKopiert: true });
+              clearTimeout(this._vervTimer);
+              this._vervTimer = setTimeout(() => this.setState({ vervKopiert: false }), 4000);
+            };
+            // Uten tilgang til utklippstavla vises lenka, saa den kan kopieres for haand.
+            try {
+              navigator.clipboard.writeText(v.lenke).then(ferdig, () => window.prompt('', v.lenke));
+            } catch (e) { window.prompt('', v.lenke); }
+          },
+        };
+      })(),
       msNesteVis: hjem && !medlem && !!neste,
       msNesteNaar: neste ? String(neste.naar || '').replace(/,\s*\d{1,2}:\d{2}$/, '') : '',
       msNesteLinje: neste ? [neste.tittel, (String(neste.naar || '').match(/\d{1,2}:\d{2}$/) || [''])[0] && 'kl ' + (String(neste.naar || '').match(/\d{1,2}:\d{2}$/) || [''])[0], neste.status || ''].filter(Boolean).join(' · ') : '',
@@ -34785,6 +34859,9 @@ class Component extends DCLogic {
           // ingen leser, og et felt uten leser er en felle for den neste som
           // tror det betyr noe.
           medlemKanSelge: !!d.kanSelge,
+          // Vervepremien (api/meg.php): timetallet og den personlige lenka,
+          // eller null naar banneret ikke skal staa.
+          verving: d.verving || null,
           medlemEpost: (d.medlem && d.medlem.epost) || '',
           // Nummeret fra kontoen, saa den som er logget inn slipper aa
           // skrive det paa nytt for hver paamelding.
@@ -35564,6 +35641,24 @@ class Component extends DCLogic {
    * disken. Planen avgjor om det gaar — serveren avviser det paa et
    * medlemskap som ikke har haken.
    */
+  /**
+   * Vervekoden fra lenka lissom.no/medlemskap?verv=KODE.
+   *
+   * Eieren, 27. september 2026: vervepremien. Koden leses av adressen og
+   * huskes i nettleseren, saa den er med ogsaa om vennen klikker seg rundt
+   * foer hun melder seg inn. Serveren avgjor om den gir premie — se
+   * app/lib/verving.php.
+   */
+  vervKode() {
+    let kode = '';
+    try {
+      kode = (new URLSearchParams(window.location.search).get('verv') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+      if (kode) localStorage.setItem('lissom-verv', kode);
+      else kode = localStorage.getItem('lissom-verv') || '';
+    } catch (e) { /* uten lagring gjelder bare adressen */ }
+    return kode;
+  }
+
   sendMedlemssoknad(valgt, betaling) {
     const type = (valgt || this.bmValgt() || '').trim();
     // Ingen plan, ingen ordre. Serveren nekter ogsaa — se
@@ -35602,6 +35697,8 @@ class Component extends DCLogic {
         erfaring: (this.state.bmErfaring || '').trim(),
         melding: (this.state.bmMelding || '').trim(),
         vilkaar: this.state.bmVilkaarOk ? 'ja' : 'nei',
+        // Vervepremien: koden fra vervelenka, om hun kom derfra.
+        verv: this.vervKode(),
       }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
@@ -36999,6 +37096,64 @@ class Component extends DCLogic {
       })
       .catch(() => this.setState({ mfJobb: null, kvitteringTone: 'danger', kvittering: 'Det gikk ikke',
                                    kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Markedsfoering › Vervepremie.
+   *
+   * Eieren, 27. september 2026. Bryteren (Vis/verving) lagres som de andre
+   * bryterne; timetallet og lista kommer fra api/admin/verving.php. Bryteren
+   * er av naar raden mangler — samme regel som Verving::paa() paa serveren.
+   */
+  vpHent() {
+    this._vpHentet = true;
+    fetch('/api/admin/verving.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.feil) { this.setState({ vpFeil: d.feil }); return; }
+        this.setState({ vpData: d, vpTimer: String((d && d.timer) || ''), vpFeil: '' });
+      })
+      .catch(() => this.setState({ vpFeil: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  vervingAdminVals(fane) {
+    const paa = fane === 'verving';
+    if (paa && this.erPublisert() && !this._vpHentet) this.vpHent();
+    const st = this.state;
+    const d = st.vpData || {};
+    const liste = d.liste || [];
+    const bryter = (st.innholdLagret || {})['Vis/verving'] === 'ja';
+    return {
+      mkErVerving: paa,
+      vpPaa: bryter,
+      vpVeksle: () => this.lagreInnhold({ 'Vis/verving': bryter ? 'nei' : 'ja' },
+        bryter ? 'Vervepremien er skjult' : 'Vervepremien vises på Min side'),
+      vpTimer: st.vpTimer === undefined ? '' : st.vpTimer,
+      vpTimerEndre: e => this.setState({ vpTimer: e.target.value }),
+      vpTimerLagre: () => {
+        const timer = parseInt(String(st.vpTimer || ''), 10);
+        fetch('/api/admin/verving.php', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handling: 'timer', timer }),
+        })
+          .then(r => r.json())
+          .then(s => {
+            if (s && s.feil) { this.setState({ kvitteringTone: 'danger', kvittering: s.feil, kvitteringDetalj: '' }); return; }
+            this.setState({ vpTimer: String(s.timer), vpData: Object.assign({}, d, { timer: s.timer }),
+                            kvitteringTone: '', kvittering: 'Lagret', kvitteringDetalj: '' });
+          })
+          .catch(() => this.setState({ kvitteringTone: 'danger', kvittering: 'Det gikk ikke',
+                                       kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+      },
+      vpTom: liste.length === 0,
+      vpTomTekst: st.vpFeil || 'Ingen er vervet ennå.',
+      vpListe: liste.map(v => ({
+        hvem: v.verver + ' → ' + v.venn,
+        dato: v.dato,
+        timer: v.timer + (v.timer === 1 ? ' time gitt' : ' timer gitt'),
+      })),
+    };
   }
 
   medlemsforslagAdminVals(fane) {
@@ -40769,6 +40924,8 @@ class Component extends DCLogic {
   componentDidMount() {
     // Ferie-advarselen for datoer som legges inn eller flyttes (se ferieVakt).
     this.ferieVakt();
+    // Kom hun fra en vervelenke (?verv=), huskes koden til innmeldingen.
+    this.vervKode();
     // Handlekurven fra forrige sidelasting i samme fane — se componentDidUpdate.
     try {
       const k = JSON.parse(sessionStorage.getItem('lissom-kurv') || 'null');
@@ -46419,6 +46576,7 @@ class Component extends DCLogic {
         ['Tavle',    'adminmarked', { mkFane: 'tavle' }],
         ['Innboks',  'adminmarked', { mkFane: 'innboks' }],
         ['Medlemsforslag', 'adminmarked', { mkFane: 'forslag' }],
+        ['Vervepremie', 'adminmarked', { mkFane: 'verving' }],
         // Eieren, 24. september 2026: «artikler kan du fjerne, den ligger
         // under skriv. og send bør vel hete tilbud / nyhetsbrev». Lista over
         // artiklene er en fane under Skriv (eierens valg samme dag).
@@ -70130,6 +70288,7 @@ class Component extends DCLogic {
           ['assistent', 'AI og Assistent'], ['innstillinger', 'Google-ID-er'],
           ['send', 'Tilbud / nyhetsbrev'], ['epost', 'E-post- og SMS-server'],          ['innboks', 'Innboks'],
           ['forslag', 'Medlemsforslag'],
+          ['verving', 'Vervepremie'],
 
         ];
 
@@ -70162,6 +70321,8 @@ class Component extends DCLogic {
           ['Tavle',    ['tavle']],
           ['Innboks',  ['innboks']],
           ['Medlemsforslag', ['forslag']],
+          // Eieren, 27. september 2026: vervepremien.
+          ['Vervepremie', ['verving']],
           // «Artikler» ble en fane under Skriv, og «Send» heter
           // «Tilbud / nyhetsbrev». Eieren, 24. september 2026.
           // «Artikkel» og «Artikler» ble én fane: lista, med «Ny artikkel»
@@ -70245,6 +70406,7 @@ class Component extends DCLogic {
           // mot Meta, og de skal ikke gaa hver gang noen klikker seg innom
           // Markedsfoering. «Hent» henter.
           ...this.medlemsforslagAdminVals(fane),
+          ...this.vervingAdminVals(fane),
           ...(() => {
             const erKomm = (this.state.ibFane || 'kommentarer') === 'kommentarer';
             const pilleStil = paa => ({

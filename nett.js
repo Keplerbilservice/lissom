@@ -391,29 +391,32 @@
   }
   maal();
 
-  /* ── Kalenderen: sveip for aa bla i ukene ───────────────────────────── */
-  // Eieren, 27. september 2026: «kan du gjoere saa man kan scrolle eller bla
-  // i den sideveis paa mobil». Sveip mot venstre = neste uke, mot hoeyre =
-  // forrige — de samme adressene som pilene. Bare paa kalendersida, og bare
-  // naar fingeren gaar tydelig sideveis, saa vanlig rulling ikke blir et
-  // ukebytte.
-  var ukeFeltet = d.getElementById('ukedag-0');
-  var ukeSeksjon = ukeFeltet && ukeFeltet.closest('section');
-  if (ukeSeksjon) {
-    var sx = null, sy = 0;
-    ukeSeksjon.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1) { sx = null; return; }
-      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
-    }, { passive: true });
-    ukeSeksjon.addEventListener('touchend', function (e) {
-      if (sx === null) return;
-      var t = e.changedTouches[0];
-      var dx = t.clientX - sx, dy = t.clientY - sy;
-      sx = null;
-      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      var pil = d.querySelector(dx < 0 ? '[aria-label="Neste uke"]' : '[aria-label="Forrige uke"]');
-      var h = pil && pil.getAttribute('data-href');
-      if (h) location.href = h;
-    }, { passive: true });
-  }
+  /* ── Kalenderen: datoraden paa telefon ──────────────────────────────── */
+  // Eieren, 27. september 2026: «jeg vil at datene skal rulle, og ikke noe
+  // annet paa siden ingen hopping osv bare rulle datoer». Raden ruller av
+  // seg selv (CSS). Et trykk paa en dag med kurs viser kursene den dagen i
+  // panelet under — ingen ny side, ingen rulling av sida.
+  d.addEventListener('click', function (e) {
+    var knapp = e.target.closest && e.target.closest('[data-rull-dag]');
+    if (!knapp) return;
+    var dag = knapp.getAttribute('data-rull-dag');
+    if (!dag) return;
+    var alle = d.querySelectorAll('[data-rull-dag]');
+    for (var k = 0; k < alle.length; k++) {
+      var b = alle[k];
+      if (!b.getAttribute('data-rull-dag')) continue;
+      var valgt = b === knapp;
+      b.style.background = valgt ? 'var(--lissom-brown)' : 'var(--lissom-yellow)';
+      b.style.color = valgt ? 'var(--clay-50)' : 'var(--lissom-brown)';
+      var prikk = b.lastElementChild;
+      if (prikk) {
+        prikk.style.background = valgt ? 'var(--lissom-yellow)' : 'var(--lissom-brown)';
+        prikk.style.color = valgt ? 'var(--lissom-brown)' : 'var(--clay-50)';
+      }
+    }
+    var paneler = d.querySelectorAll('[data-rull-panel]');
+    for (var p = 0; p < paneler.length; p++) {
+      paneler[p].style.display = paneler[p].getAttribute('data-rull-panel') === dag ? 'block' : 'none';
+    }
+  });
 })();

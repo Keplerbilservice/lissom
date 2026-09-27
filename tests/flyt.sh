@@ -77,7 +77,7 @@ echo $t;
 
 OKT=$(php -r 'require "'"$ROT"'/app/bootstrap.php";
 echo (int) DB::verdi("SELECT cs.id FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
-  WHERE c.status = \"publisert\" AND cs.start_tid > UTC_TIMESTAMP() ORDER BY cs.start_tid LIMIT 1");')
+  WHERE c.status = \"publisert\" AND c.pris_ore > 0 AND cs.start_tid > UTC_TIMESTAMP() ORDER BY cs.start_tid LIMIT 1");')
 
 echo
 echo "== Uten innlogging =="

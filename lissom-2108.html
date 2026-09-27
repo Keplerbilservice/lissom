@@ -47757,7 +47757,10 @@ class Component extends DCLogic {
 
     // ── Nettbutikk ──
     const varer = this.state.adminProdukter || [];
-    const lite = varer.filter(v => v.lager !== null && v.lager !== undefined && v.lager <= 2);
+    // Bare internvarene (eieren, 27. september 2026: «lite paa lager i
+    // varselet vil jeg ikke ha som varsel, annet enn paa interne varer»).
+    // En nettbutikkvare som gaar tom, forsvinner fra butikken av seg selv.
+    const lite = varer.filter(v => v.kunMedlemmer && v.lager !== null && v.lager !== undefined && v.lager <= 2);
     const butikkLinje = ((oms.linjerMnd || []).find(l => l.nokkel === 'ordre') || {}).verdi || '';
     const tilButikk = () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' });
     const butikk = [

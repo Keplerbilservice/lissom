@@ -503,6 +503,25 @@ await flyt('Regresjon: faner i admin og hovedsidene', async () => {
     const t = (await gjest.locator('body').innerText()).trim().length;
     sjekk(`${sti} laster med innhold og uten skriptfeil`, t > 200 && skriptfeil.length === foerFeil, `${t} tegn ${skriptfeil.slice(foerFeil).join(' | ')}`);
   }
+  // «Les mer» paa forsida (/?skjema=1) og /?dag= ble staaende bak lastesida
+  // i 40 sekunder — appen har ingen forside lenger (Gemini, 27.09.2026).
+  const lasterBorte = async () => {
+    for (let i = 0; i < 20; i++) {
+      const synlig = await gjest.locator('#lx-laster:not(.lx-ut)').count();
+      if (!synlig) return true;
+      await gjest.waitForTimeout(500);
+    }
+    return false;
+  };
+  await gaa(gjest, '/?skjema=1', 500);
+  sjekk('«Les mer» (/?skjema=1) blir ikke haengende paa lastesida', await lasterBorte());
+  sjekk('… og aapner gruppeskjemaet paa /bedrift',
+    new URL(gjest.url()).pathname === '/bedrift' && await gjest.getByPlaceholder('navn@epost.no').first().isVisible().catch(() => false),
+    gjest.url());
+  for (const sti of ['/?dag=2026-10-07', '/kalender?dag=2026-10-07']) {
+    await gaa(gjest, sti, 500);
+    sjekk(`${sti} blir ikke haengende paa lastesida`, await lasterBorte());
+  }
   await gjest.context().close();
   const kari = await side('medlem');
   const foerFeil = skriptfeil.length;

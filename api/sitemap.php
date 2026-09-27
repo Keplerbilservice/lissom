@@ -143,12 +143,14 @@ try {
 // Bare det som er aapent for alle. Medlemsvarene — leire, ekstra brenning —
 // er verkstedets interne hylle og har ingen offentlig side.
 //
-// Utsolgte staar likevel. En vare uten lager kommer ofte igjen, og en side
-// som forsvinner og kommer tilbake er verre enn en som sier «utsolgt».
+// Utsolgte er ikke med. Eieren, 27. september 2026: «naar en vare i
+// nettbutikken er solgt ut, saa skal den bli borte». Den kommer tilbake av
+// seg selv naar den er paa lager igjen.
 try {
     foreach (DB::alle(
         "SELECT id, tittel, created_at FROM products
           WHERE status = 'publisert' AND kun_medlemmer = 0
+            AND (lager IS NULL OR lager > 0)
        ORDER BY tittel"
     ) as $v) {
         $linjer[] = [

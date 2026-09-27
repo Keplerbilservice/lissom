@@ -59,7 +59,9 @@ $h .= '<p class="lx-hero-p" style="margin: calc(var(--space-8) + 40px) 0 0; font
     // mobil) fikk en annen side enn eieren saa paa PC. Eieren, 21. september
     // 2026: «aapner annerledes paa mobil, pc er fasit». Samme grep som
     // bedrift.php: ?skjema=1 gir adressen til appen, som aapner skjemaet.
-    . ' <a href="/?skjema=1" style="' . $lenkeStil . '">' . $e($innh('Forside/0/Gruppelenke')) . '</a></p>';
+    // Appen har ingen forside lenger (74a6bcb), saa skjemaet aapnes paa
+    // /bedrift — det samme gruppeskjemaet (27. september 2026).
+    . ' <a href="/bedrift?skjema=1" style="' . $lenkeStil . '">' . $e($innh('Forside/0/Gruppelenke')) . '</a></p>';
 if (Nett::bryterPaa('kursvelger') && !Nett::mobilSkjult('kursvelger')) {
     $h .= '<p class="lx-hero-p" style="margin: var(--space-6) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">' . $e($innh('Forside/0/Kursvelgerlinje'))
         . ' <a href="/kurs#kursvelger" style="' . $lenkeStil . '">' . $e($innh('Forside/0/Kursvelgerlenke')) . '</a></p>';

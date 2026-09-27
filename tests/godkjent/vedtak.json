@@ -387,6 +387,82 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "utsolgt-borte",
+            "dato": "2026-09-27",
+            "hva": "«lite på lager i varselet vil jeg ikke ha som varsel, annet enn på interne varer, så når en vare i nettbutikken er solgt ut, så skal den bli borte»",
+            "hvor": "Oversikt › Nettbutikk, butikken på lissom.no, sitemap, vareadresser",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "const lite = varer.filter(v => v.kunMedlemmer && v.lager !== null && v.lager !== undefined && v.lager <= 2);"
+                    ]
+                },
+                {
+                    "fil": "api/butikk.php",
+                    "finnes": [
+                        "AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/butikk.php",
+                    "finnes": [
+                        "AND (lager IS NULL OR lager > 0)"
+                    ]
+                },
+                {
+                    "fil": "api/sitemap.php",
+                    "finnes": [
+                        "AND (lager IS NULL OR lager > 0)"
+                    ]
+                },
+                {
+                    "fil": "app/lib/robottekst.php",
+                    "finnes": [
+                        "AND (lager IS NULL OR lager > 0)"
+                    ],
+                    "ikkeFinnes": [
+                        "status IN ('publisert', 'utsolgt')"
+                    ]
+                },
+                {
+                    "fil": "side.php",
+                    "finnes": [
+                        "AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forside-les-mer-skjema",
+            "dato": "2026-09-27",
+            "hva": "«Les mer» under «Er dere en gruppe …» på forsiden åpner gruppeskjemaet (feil funnet av Gemini: hang på lastesiden)",
+            "hvor": "forsiden, side.php, app/nett/nett.php",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "<a href=\"/bedrift?skjema=1\""
+                    ],
+                    "ikkeFinnes": [
+                        "<a href=\"/?skjema=1\""
+                    ]
+                },
+                {
+                    "fil": "side.php",
+                    "finnes": [
+                        "header('Location: /bedrift?skjema=1', true, 302);"
+                    ]
+                },
+                {
+                    "fil": "app/nett/nett.php",
+                    "finnes": [
+                        "if (isset($_GET[$n]) && !$bareHer) {"
+                    ]
+                }
+            ]
         }
     ]
 }

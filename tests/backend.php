@@ -10798,9 +10798,9 @@ sjekk('ingen regner ut tusenskillet med et vanlig mellomrom',
 // Seks, ikke fem: konustabellen regner ut to tall paa den samme linja, og
 // linja «maa kreves inn» paa Oversikt kom 5. september.
 // Flere steder er kommet til siden (Oversikt i ny drakt 26. september). Alle
-// skal bruke et hardt mellomrom — skrevet som  ,   eller tegnet selv.
+// skal bruke et hardt mellomrom — skrevet som escape-kode eller tegnet selv.
 $tusenAlle = preg_match_all("~\(\?=\(\\\\d\{3\}\)\+\(\?!\\\\d\)\)/g, '([^']*)'\)~u", $sidaT, $tusenM);
-$tusenHarde = count(array_filter($tusenM[1] ?? [], static fn($t) => in_array($t, [' ', ' ', "\u{00A0}"], true)));
+$tusenHarde = count(array_filter($tusenM[1] ?? [], static fn($t) => in_array($t, ['\u00A0', '\u00a0', "\u{00A0}"], true)));
 sjekk('… og alle stedene bruker et hardt',
     $tusenAlle >= 6 && $tusenHarde === $tusenAlle, $tusenHarde . ' av ' . $tusenAlle);
 // Vakta som fanger den neste. Den leser teksten slik den staar paa skjermen,

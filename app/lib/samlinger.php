@@ -229,6 +229,37 @@ final class Samlinger
     }
 
     /** «onsdag 9. september», paa norsk. */
+    /**
+     * Samlingene paa én kursdato, klare for samlingskortene i
+     * kursbekreftelsen. Eieren, 27. september 2026: «jeg vil ha dreiekurs,
+     * kort på dag 1, og eget på dag 2» — i e-postbekreftelsen.
+     *
+     * Tom liste naar kursdatoen har én samling eller ingen: da er det ikke
+     * noe aa dele opp, og e-posten er som foer. Tittel og beskrivelse staar
+     * ordrett slik de er skrevet paa kurset i admin.
+     *
+     * @return list<array{nr: string, dato: string, tid: string, tittel: string, beskrivelse: string}>
+     */
+    public static function forEpost(int $oktId): array
+    {
+        $alle = $oktId > 0 ? (self::forOkter([$oktId])[$oktId] ?? []) : [];
+        if (count($alle) < 2) {
+            return [];
+        }
+        $ut = [];
+        foreach (array_values($alle) as $i => $s) {
+            $dag = self::norskDag((string) $s['dato']);
+            $ut[] = [
+                'nr'          => (string) ($i + 1),
+                'dato'        => mb_strtoupper(mb_substr($dag, 0, 1)) . mb_substr($dag, 1),
+                'tid'         => $s['fra'] !== '' ? $s['fra'] . ($s['til'] !== '' ? '–' . $s['til'] : '') : '',
+                'tittel'      => trim((string) $s['overskrift']),
+                'beskrivelse' => trim((string) $s['tekst']),
+            ];
+        }
+        return $ut;
+    }
+
     private static function norskDag(string $dato): string
     {
         static $DAG = ['Sun' => 'søndag', 'Mon' => 'mandag', 'Tue' => 'tirsdag', 'Wed' => 'onsdag',

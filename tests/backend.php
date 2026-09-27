@@ -20952,7 +20952,7 @@ sjekk('… ukjente felt i oppsettet avvises som i teksten',
     str_contains($eoApi, "preg_match_all('/\\{([a-zA-Z_]+)\\}/', \$emne . ' ' . \$tekst . ' ' . \$oppsettTekst, \$funn);"));
 sjekk('… forhåndsvisningen lages av den samme koden som sender',
     str_contains($eoApi, "if (\$handling === 'forhandsvis') {")
-    && str_contains($eoApi, 'Varsel::oppsett(array_merge($mal, $somKolonner($o)), $felter, $gruppe);'));
+    && str_contains($eoApi, 'Varsel::oppsett(array_merge($mal, $somKolonner($o)), $medSamlinger($navn, $felter), $gruppe);'));
 // Eieren, 27. september 2026: «jeg har kursboost, som systemet foreslaar
 // selv, men det er ikke bilde eller video generator her, og jeg vet ikke hvor
 // det er tenkt aa bruke det heller». GO paa skissen: bilde av kursets egne

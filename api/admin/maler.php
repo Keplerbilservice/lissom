@@ -129,6 +129,24 @@ $eksempel = [
         . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere får låne forkle, men regn med å bli litt skitten.\n– Leire, verktøy, glasur og brenning er inkludert.",
 ];
 
+// Kursbekreftelsen med to samlinger, som dreiekurset: ett kort per samling
+// (eieren, 27. september 2026). Da staar ikke samlingene i {kursinfo} ogsaa —
+// det samme Booking::sendBekreftelse() gjor.
+$medSamlinger = static function (string $malNavn, array $felter): array {
+    if ($malNavn !== 'ordrebekreftelse') {
+        return $felter;
+    }
+    $felter[Varsel::SAMLINGER] = (string) json_encode([
+        ['nr' => '1', 'dato' => 'Onsdag 7. oktober', 'tid' => '17:00–20:30', 'tittel' => 'Sentrere og dreie',
+         'beskrivelse' => 'Du lærer å sentrere leiren, åpne formen og dreie dine første ting på skiven. Vi hjelper deg hele veien.'],
+        ['nr' => '2', 'dato' => 'Torsdag 8. oktober', 'tid' => '17:00–20:30', 'tittel' => 'Trimme og dekorere',
+         'beskrivelse' => 'Du trimmer foten på det du dreide kvelden før, og vi dekorerer. Etterpå glaserer og brenner vi arbeidene for deg.'],
+    ], JSON_UNESCAPED_UNICODE);
+    $felter['kursinfo'] = "2 ganger à 3 timer og 30 minutter\n\n"
+        . "Praktisk\n– Vi serverer enkel snacks, og kaffe eller te.\n– Dere får låne forkle, men regn med å bli litt skitten.\n– Leire, verktøy, glasur og brenning er inkludert.";
+    return $felter;
+};
+
 if ($handling === 'test') {
     $til = trim(Foresporsel::tekst('epost'));
     if (!filter_var($til, FILTER_VALIDATE_EMAIL)) {
@@ -171,7 +189,7 @@ if ($handling === 'test') {
             $url = $sisteBevis > 0 ? Booking::bevisLenke($sisteBevis) : null;
             $felter['kursbevis'] = 'Her er kursbeviset ditt fra ' . $felter['kurs'] . ':' . ($url !== null ? "\n" . $url : '');
         }
-        Varsel::mal($malNavn, ['epost' => $til], $felter, null, null, $egenHtml);
+        Varsel::mal($malNavn, ['epost' => $til], $medSamlinger($malNavn, $felter), null, null, $egenHtml);
         $sendt[] = $malNavn;
     }
     if ($sendt === []) {
@@ -254,7 +272,7 @@ if ($handling === 'forhandsvis') {
         $felter['navn'] = 'Kari';
     }
     $gruppe = str_starts_with($navn, 'intern_') ? 'intern' : (string) ($mal['gruppe'] ?? 'system');
-    [, $html] = Varsel::oppsett(array_merge($mal, $somKolonner($o)), $felter, $gruppe);
+    [, $html] = Varsel::oppsett(array_merge($mal, $somKolonner($o)), $medSamlinger($navn, $felter), $gruppe);
     Svar::ok(['html' => $html]);
 }
 

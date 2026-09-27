@@ -492,6 +492,71 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "samlingskort-i-kursbekreftelsen",
+            "dato": "2026-09-27",
+            "hva": "Kursbekreftelsen har ett kort per samling når kurset går over flere dager («jeg vil ha dreiekurs, kort på dag 1, og eget på dag 2»), under «Dette skal vi gjøre»; da står ikke Tid-raden eller samlingene i {kursinfo} i tillegg",
+            "hvor": "e-posten «ordrebekreftelse»: app/epost/oppsett.html, app/lib/varsler.php, app/lib/booking.php, app/lib/samlinger.php",
+            "kode": [
+                {
+                    "fil": "app/epost/oppsett.html",
+                    "finnes": [
+                        "<!--samlinger:start-->",
+                        "Dette skal vi gjøre",
+                        "SAMLING {{S_NR}}",
+                        "<!--samling:start-->"
+                    ]
+                },
+                {
+                    "fil": "app/lib/varsler.php",
+                    "finnes": [
+                        "public const SAMLINGER = 'samlingskort_json';",
+                        "if ($samlinger !== [] && trim((string) ($rad[1] ?? '')) === '{naar}') {",
+                        "$html = $del($html, 'samlinger', $samlinger !== []);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "$samlingskort = Samlinger::forEpost((int) ($b['course_session_id'] ?? 0));",
+                        "$kursinfo = self::kursinfo($b, $samlingskort !== []);",
+                        "Varsel::SAMLINGER => $samlingskort !== []"
+                    ]
+                },
+                {
+                    "fil": "app/lib/samlinger.php",
+                    "finnes": [
+                        "public static function forEpost(int $oktId): array",
+                        "if (count($alle) < 2) {"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "logo-i-e-postene",
+            "dato": "2026-09-27",
+            "hva": "Logoen (kaffekoppen og lissom-ordmerket) står i toppen av alle e-postene («det bør jo være med logoen vår i alle disse epostenes header, kaffekoppen er en del»)",
+            "hvor": "app/epost/oppsett.html, e-post-logo-topp.png",
+            "kode": [
+                {
+                    "fil": "app/epost/oppsett.html",
+                    "finnes": [
+                        "<img src=\"https://lissom.no/e-post-logo-topp.png\" width=\"180\" height=\"99\" alt=\"Lissom Keramikk &amp; Håndverk\""
+                    ],
+                    "ikkeFinnes": [
+                        "font-size: 36px; color: #4D1D12; line-height: 1; padding-bottom: 8px;\">lissom<"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/e-post-logo-topp.png",
+                    "selektorer": [
+                        "img[src$=\"e-post-logo-topp.png\"]"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -1,4 +1,4 @@
-<!-- Felles oppsett for alle e-postene (eieren, 27. september 2026: «jeg vil ha med knapper og kort»). Laget av Gemini og godkjent av eieren. Varsel::oppsett() fyller det, og fjerner delene som er tomme (kort, knapp, lenke2, signatur). -->
+<!-- Felles oppsett for alle e-postene (eieren, 27. september 2026: «jeg vil ha med knapper og kort»). Laget av Gemini og godkjent av eieren. Varsel::oppsett() fyller det, og fjerner delene som er tomme (kort, samlinger, knapp, lenke2, signatur). Logoen i toppen er e-post-logo-topp.png (eieren, 27. september 2026: «det bør jo være med logoen vår i alle disse epostenes header, kaffekoppen er en del»). -->
 <!DOCTYPE html>
 <html lang="no" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
@@ -21,8 +21,7 @@ body { margin: 0; padding: 0; width: 100% !important; background-color: #FBF6EE;
 <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FBF6EE" style="table-layout: fixed; width: 100%;">
 <tr><td align="center" bgcolor="#FFCF38" style="padding: 35px 15px;">
   <table class="fluid" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
-    <tr><td align="center" style="font-family: Georgia, serif; font-size: 36px; color: #4D1D12; line-height: 1; padding-bottom: 8px;">lissom</td></tr>
-    <tr><td align="center" style="font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #4D1D12; text-transform: uppercase; letter-spacing: 3px;">KERAMIKK &amp; HÅNDVERK</td></tr>
+    <tr><td align="center"><img src="https://lissom.no/e-post-logo-topp.png" width="180" height="99" alt="Lissom Keramikk &amp; Håndverk" style="display: block; border: 0; outline: none; text-decoration: none; width: 180px; height: auto; font-family: Georgia, serif; font-size: 22px; color: #4D1D12;"></td></tr>
   </table>
 </td></tr>
 <tr><td align="center" style="padding: 30px 15px 40px 15px;">
@@ -40,6 +39,16 @@ body { margin: 0; padding: 0; width: 100% !important; background-color: #FBF6EE;
         </table>
       </td></tr></table>
       <!--kort:slutt-->
+      <!--samlinger:start-->
+      <h2 style="font-family: Georgia, serif; font-size: 20px; color: #4D1D12; font-weight: normal; margin: 0 0 14px 0;">Dette skal vi gjøre</h2>
+      <!--samling:start--><table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 14px;"><tr><td bgcolor="#FFFFFF" style="border: 1px solid #E6D9C7; border-radius: 10px; padding: 18px 20px;">
+        <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;"><tr><td bgcolor="#FFCF38" style="border-radius: 999px; padding: 4px 11px; font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: bold; letter-spacing: 1px; color: #4D1D12;">SAMLING {{S_NR}}</td></tr></table>
+        <div style="font-family: Georgia, serif; font-size: 19px; color: #4D1D12; margin: 0 0 4px 0;">{{S_TITTEL}}</div>
+        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: bold; color: #A2502B; margin: 0 0 10px 0;">{{S_NAAR}}</div>
+        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 23px; color: #4D1D12;">{{S_BESKRIVELSE}}</div>
+      </td></tr></table><!--samling:slutt-->
+      <div style="height: 11px; line-height: 11px; font-size: 1px;">&nbsp;</div>
+      <!--samlinger:slutt-->
       <!--knapp:start-->
       <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 25px;"><tr><td align="center">
         <table border="0" cellspacing="0" cellpadding="0"><tr><td align="center" bgcolor="#FFCF38" style="border-radius: 999px;">

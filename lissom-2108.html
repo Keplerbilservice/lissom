@@ -7129,7 +7129,6 @@ window.__resources = {
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-4);">{{ btSpesialKicker }}</div>
             <h2 style="color: var(--lissom-brown); margin: 0 0 var(--space-6); font-size: clamp(32px, 2.8vw, 48px); line-height: 1.05; text-wrap: balance;">Vil du gi noe <em style="font-style: italic; font-weight: 700;">helt eget?</em></h2>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goForesporsel }}" hint-size="auto,56px">{{ btSpesialKnapp }}</x-import>
           </div>
           <div style="display: flex; flex-direction: column; gap: var(--space-5); font-size: var(--text-lg); line-height: 1.65; color: var(--brown-500);">
             <p style="margin: 0; text-wrap: pretty;">Vi tar imot spesialbestillinger — et fat med navn og dato til bryllupet, en jubileumsgave, et servise. Fortell oss om anledningen, så foreslår vi noe som passer.</p>
@@ -30398,8 +30397,7 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Laget av medlemmer' },
       { l: 'Tekst', v: 'Unike arbeider fra medlemmene i verkstedet. Selges direkte fra maker.', lang: true } ] },
     { navn: 'Spesialbestillinger', type: 'Seksjon nederst', synlig: 'Publisert', felter: [
-      { l: 'Kicker', v: 'Spesialbestillinger' },
-      { l: 'Knapp', v: 'Send oss en forespørsel' } ] },
+      { l: 'Kicker', v: 'Spesialbestillinger' } ] },
     { navn: 'Praktisk info', type: 'Tre punkter', synlig: 'Publisert', felter: [
       { l: 'Punkt 1', v: 'Hent på Teie' },
       { l: 'Punkt 2', v: 'Betaling med Vipps' },
@@ -69903,7 +69901,6 @@ class Component extends DCLogic {
       btMedlemTittel: this.innh('Butikk/2/Overskrift'),
       btMedlemTekst: this.innh('Butikk/2/Tekst'),
       btSpesialKicker: this.innh('Butikk/3/Kicker'),
-      btSpesialKnapp: this.innh('Butikk/3/Knapp'),
       ftKnapp: this.innh('Footer/0/Knapp'),
       // Ikke paa kontaktsida: der er den den tredje knappen som sier det
       // samme. Se kommentaren ved bandet i bunnteksten.

@@ -463,6 +463,26 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "butikk-en-foresporsel",
+            "dato": "2026-09-27",
+            "hva": "«i bunnen av lissom.no har vi en brun og en gul, send oss en forespørsel, det holder med en» — den brune i «Vil du gi noe helt eget?» på /butikk er fjernet",
+            "hvor": "/butikk",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/butikk.php",
+                    "ikkeFinnes": [
+                        "Butikk/3/Knapp"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "ikkeFinnes": [
+                        "btSpesialKnapp"
+                    ]
+                }
+            ]
         }
     ]
 }

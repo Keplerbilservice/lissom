@@ -1639,6 +1639,12 @@ window.__resources = {
   @keyframes lissomPuls { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
   button[aria-label="Meny"] { order: 3; }
   .lx-kunmobil { display: none; }
+  /* Galleriet paa forsida (eieren, 27. september 2026): fire kort synlige,
+     sporet flyttes ett kort om gangen av skriptet «data-galleri-spor». */
+  .lx-galleri { overflow: hidden; }
+  .lx-galleri-spor { display: flex; gap: var(--space-8); transition: transform .7s var(--ease-clay, ease); will-change: transform; }
+  .lx-galleri-spor > * { flex: 0 0 calc((100% - 3 * var(--space-8)) / 4); min-width: 0; }
+  @media (prefers-reduced-motion: reduce) { .lx-galleri-spor { transition: none; } }
 
   /* Adminmenyen paa smal skjerm.
      Under 980px legger menyen seg som en topplinje. Logoen i full
@@ -2679,6 +2685,9 @@ window.__resources = {
     section { padding-left: 20px !important; padding-right: 20px !important; }
     .lx-hide-m { display: none !important; }
     .lx-kunmobil { display: block !important; }
+    /* Galleriet: to kort synlige paa telefon. */
+    .lx-galleri-spor { gap: var(--space-5); }
+    .lx-galleri-spor > * { flex-basis: calc((100% - var(--space-5)) / 2); }
     /* Medlemskap/events og butikken staar rett under hverandre paa mobil —
        salgsuke-banneret mellom dem er skjult der. To fulle seksjonsmarger
        mot hverandre ble et tomrom paa 157 px, som leste som at noe manglet. */
@@ -27557,14 +27566,66 @@ window.__resources = {
                 <sc-if value="{{ f.redigerer }}" hint-placeholder-val="{{ false }}">
                   <textarea value="{{ f.bildetekst }}" onChange="{{ f.settTekst }}" rows="7" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-3); resize: vertical;"></textarea>
                 </sc-if>
+                <!-- Galleriet paa forsida (eieren, 27. september 2026): bildet
+                     kan forbedres med bildeforberederen, og godkjennes til
+                     Instagram, galleriet eller begge. Ingenting er huket av
+                     paa forhaand. -->
+                <sc-if value="{{ f.forbedrer }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: var(--space-3); align-items: flex-start; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                    <sc-if value="{{ f.forbLaster }}" hint-placeholder-val="{{ false }}">
+                      <div style="width: 140px; aspect-ratio: 3 / 4; border-radius: var(--radius-md); background: var(--clay-100); display: flex; align-items: center; justify-content: center; text-align: center; padding: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">Lager det nye bildet … det tar omtrent ett minutt.</div>
+                    </sc-if>
+                    <sc-if value="{{ f.forbHarNy }}" hint-placeholder-val="{{ false }}">
+                      <img data-src="{{ f.forbNy }}" alt="Det nye bildet" style="width: 140px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100); display: block;">
+                      <div style="display: grid; gap: 8px;">
+                        <button type="button" onClick="{{ f.forbBruk }}" style="{{ f.pilleStil }}">Bruk det nye</button>
+                        <button type="button" onClick="{{ f.forbIgjen }}" style="{{ f.pilleStil }}">Lag et nytt forslag</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ f.forbHarFeil }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin: 0; color: var(--terracotta-600); font-size: var(--text-sm);">{{ f.forbFeil }}</p>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <div style="display: grid; gap: 6px; margin-bottom: var(--space-3);">
+                  <label style="display: flex; gap: 10px; align-items: center; font-size: var(--text-sm); color: var(--text-heading); cursor: pointer;">
+                    <input type="checkbox" checked="{{ f.tilInsta }}" onChange="{{ f.veksleInsta }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown);">
+                    Legg ut på Instagram
+                  </label>
+                  <sc-if value="{{ f.bilde }}" hint-placeholder-val="{{ true }}">
+                    <label style="display: flex; gap: 10px; align-items: center; font-size: var(--text-sm); color: var(--text-heading); cursor: pointer;">
+                      <input type="checkbox" checked="{{ f.tilGalleri }}" onChange="{{ f.veksleGalleri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown);">
+                      Vis i galleriet på forsiden
+                    </label>
+                  </sc-if>
+                </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <button type="button" onClick="{{ f.godkjenn }}" style="{{ f.godkjennStil }}">Godkjenn og legg ut</button>
+                  <button type="button" onClick="{{ f.godkjenn }}" style="{{ f.godkjennStil }}">Godkjenn</button>
+                  <sc-if value="{{ f.bilde }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ f.forbedre }}" style="{{ f.pilleStil }}">Forbedre bildet</button>
+                  </sc-if>
                   <button type="button" onClick="{{ f.rediger }}" style="{{ f.pilleStil }}">Rediger teksten</button>
                   <button type="button" onClick="{{ f.avvis }}" style="{{ f.pilleStil }}">Avvis</button>
                 </div>
               </div>
             </div>
           </sc-for>
+
+          <!-- Bildene som staar i galleriet paa forsida. Et bilde som tas ut,
+               staar fortsatt paa Instagram hvis det ble lagt ut der. -->
+          <sc-if value="{{ mfHarGalleri }}" hint-placeholder-val="{{ false }}">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-6) 0 var(--space-3);">Galleri</div>
+            <sc-for list="{{ mfGalleri }}" as="g" hint-placeholder-count="2">
+              <div style="display: flex; gap: var(--space-3); align-items: center; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 8px 12px; margin-bottom: 8px;">
+                <img data-src="{{ g.fil }}" alt="" style="width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-sm, 8px); background: var(--clay-200); display: block;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 700; color: var(--text-heading); font-size: var(--text-sm);">{{ g.tittel }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.navn }}</div>
+                </div>
+                <button type="button" onClick="{{ g.taUt }}" style="{{ g.pilleStil }}">Ta ut av galleriet</button>
+              </div>
+            </sc-for>
+          </sc-if>
         </sc-if>
 
         <!-- ── Innboks ────────────────────────────────────────────────── -->
@@ -37102,9 +37163,29 @@ class Component extends DCLogic {
           this.setState({ mfFeil: (d && d.feil) || 'Fikk ikke hentet forslagene.' });
           return;
         }
-        this.setState({ mfFeil: '', mfListe: d.venter || [], mfMal: d.mal || '', mfMalLagret: d.mal || '' });
+        this.setState({ mfFeil: '', mfListe: d.venter || [], mfGalleri: d.galleri || [], mfMal: d.mal || '', mfMalLagret: d.mal || '' });
       })
       .catch(() => { this._mfHentes = false; });
+  }
+
+  /**
+   * «Forbedre bildet» paa et medlemsforslag: den samme bildeforberederen
+   * som varene i Butikk (api/admin/gemini.php, handling=forbedreForslag).
+   * Forslaget byttes foerst naar admin trykker «Bruk det nye».
+   */
+  mfForbedre(id) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const sett = (v) => this.setState(s => ({ mfForb: Object.assign({}, s.mfForb, { [id]: v }) }));
+    if (((this.state.mfForb || {})[id] || {}).laster) return;
+    sett({ laster: true, ny: '', feil: '' });
+    fetch('/api/admin/gemini.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'forbedreForslag', id }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => sett({ laster: false, ny: ok ? d.url : '', feil: ok ? '' : ((d && d.feil) || 'Det nye bildet ble ikke laget.') }))
+      .catch(() => sett({ laster: false, ny: '', feil: 'Fikk ikke kontakt med serveren. Prøv igjen.' }));
   }
 
   mfKall(kropp, ferdig) {
@@ -37200,8 +37281,26 @@ class Component extends DCLogic {
       background: 'var(--clay-100)', color: 'var(--lissom-brown)',
     };
     const fjern = id => this.setState(s => ({ mfListe: (s.mfListe || []).filter(x => x.id !== id) }));
+    // Instagram og galleri per forslag. Ingenting er valgt paa forhaand.
+    const valg = st.mfValg || {};
+    const forb = st.mfForb || {};
+    const settValg = (id, felt) => this.setState(s => {
+      const v = Object.assign({ instagram: false, galleri: false }, (s.mfValg || {})[id]);
+      v[felt] = !v[felt];
+      return { mfValg: Object.assign({}, s.mfValg, { [id]: v }) };
+    });
+    const gal = st.mfGalleri || [];
     return {
       mkErForslag: paa,
+      mfHarGalleri: gal.length > 0,
+      mfGalleri: gal.map(g => ({
+        fil: g.fil,
+        tittel: g.tittel || g.navn || '',
+        navn: g.navn || '',
+        pilleStil,
+        taUt: () => this.mfKall({ handling: 'ut-av-galleri', id: g.id },
+          () => this.setState(s => ({ mfGalleri: (s.mfGalleri || []).filter(x => x.id !== g.id) }))),
+      })),
       mfMal: st.mfMal || '',
       mfMalEndre: (e) => this.setState({ mfMal: e.target.value }),
       mfMalLagre: () => this.mfKall({ handling: 'mal', tekst: String(st.mfMal || '') },
@@ -37212,7 +37311,28 @@ class Component extends DCLogic {
       mfVenter: liste.map(f => {
         const tekst = tekster[f.id] !== undefined ? tekster[f.id] : f.bildetekst;
         const jobber = st.mfJobb === f.id;
+        const v = valg[f.id] || {};
+        const tilInsta = !!v.instagram;
+        const tilGalleri = !!v.galleri && f.type !== 'video';
+        const klar = tilInsta || tilGalleri;
+        const fb = forb[f.id] || null;
         return {
+          tilInsta,
+          tilGalleri,
+          veksleInsta: () => settValg(f.id, 'instagram'),
+          veksleGalleri: () => settValg(f.id, 'galleri'),
+          forbedrer: !!fb,
+          forbLaster: !!(fb && fb.laster),
+          forbHarNy: !!(fb && fb.ny),
+          forbNy: (fb && fb.ny) || '',
+          forbHarFeil: !!(fb && fb.feil),
+          forbFeil: (fb && fb.feil) || '',
+          forbedre: () => this.mfForbedre(f.id),
+          forbIgjen: () => this.mfForbedre(f.id),
+          forbBruk: () => fb && fb.ny && this.mfKall({ handling: 'bruk-bilde', id: f.id, url: fb.ny }, d => this.setState(s => ({
+            mfForb: Object.assign({}, s.mfForb, { [f.id]: null }),
+            mfListe: (s.mfListe || []).map(x => (x.id === f.id ? Object.assign({}, x, { fil: d.fil }) : x)),
+          }))),
           fil: f.fil,
           video: f.type === 'video',
           bilde: f.type !== 'video',
@@ -37223,12 +37343,19 @@ class Component extends DCLogic {
           visTekst: !redigerer[f.id],
           settTekst: (e) => this.setState(s => ({ mfTekster: Object.assign({}, s.mfTekster, { [f.id]: e.target.value }) })),
           rediger: () => this.setState(s => ({ mfRedigerer: Object.assign({}, s.mfRedigerer, { [f.id]: !redigerer[f.id] }) })),
-          godkjenn: () => this.mfKall({ handling: 'godkjenn', id: f.id, tekst }, () => fjern(f.id)),
+          godkjenn: () => {
+            if (!klar) return;
+            this.mfKall({ handling: 'godkjenn', id: f.id, tekst, instagram: tilInsta, galleri: tilGalleri }, () => {
+              fjern(f.id);
+              // Galleri-lista under oppdateres fra serveren.
+              if (tilGalleri) { this._mfHentet = false; this.mfHent(); }
+            });
+          },
           avvis: () => this.mfKall({ handling: 'avvis', id: f.id }, () => fjern(f.id)),
           pilleStil,
           godkjennStil: Object.assign({}, pilleStil, {
             background: 'var(--sage-700, #3D7A4A)', borderColor: 'var(--sage-700, #3D7A4A)', color: '#fff',
-            opacity: jobber ? 0.6 : 1, cursor: jobber ? 'wait' : 'pointer',
+            opacity: jobber ? 0.6 : (klar ? 1 : 0.45), cursor: jobber ? 'wait' : (klar ? 'pointer' : 'not-allowed'),
           }),
         };
       }),

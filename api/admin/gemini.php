@@ -124,6 +124,37 @@ switch ($handling) {
             'beskjed' => 'Det nye bildet er klart. Velg om du vil bruke det.',
         ]);
 
+    // ── Medlemmets bilde til galleriet ─────────────────────────────────
+    //
+    //   POST handling=forbedreForslag { id }
+    //
+    // Den samme bildeforberederen som varene over (eieren, 27. september
+    // 2026: «jeg vil admin kan bruke bildeforbereder for bakgrunn etc.»).
+    // Forslaget roeres ikke foer admin har valgt «Bruk det nye»
+    // (medlemsforslag.php, handling=bruk-bilde).
+    case 'forbedreForslag':
+        @set_time_limit(150);
+        $forslag = DB::harTabell('medlemsforslag')
+            ? DB::en('SELECT id, type, fil, tekst FROM medlemsforslag WHERE id = :i', ['i' => (int) ($kropp['id'] ?? 0)])
+            : null;
+        $sti = $forslag !== null && $forslag['type'] === 'bilde' ? Medlemsforslag::sti((string) $forslag['fil']) : null;
+        if ($sti === null) {
+            Svar::feil('Forslaget har ikke noe bilde å forbedre.');
+        }
+        try {
+            $b = Gemini::forbedreVarebilde((string) file_get_contents($sti),
+                Galleri::tittel((string) $forslag['tekst']) ?: 'keramikken');
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('forslagsbilde_forbedret', 'medlemsforslag', (int) $forslag['id'], ['nytt' => $b['navn']]);
+        $ore = $b['kostnadOre'];
+        Svar::ok([
+            'url'     => $b['url'],
+            'kostnad' => $ore < 100 ? $ore . ' øre' : Booking::kroner($ore),
+            'beskjed' => 'Det nye bildet er klart. Velg om du vil bruke det.',
+        ]);
+
     // ----------------------------------------------------------- oppsettet
     case 'oppsett':
         $lagre = static function (string $nokkel, string $verdi) use ($admin): void {

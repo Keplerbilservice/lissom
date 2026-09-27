@@ -185,6 +185,40 @@
     })(kar[ki]);
   }
 
+  /* ── Galleriet paa forsida ──────────────────────────────────────────── */
+  // Eieren, 27. september 2026: «jeg vil at de skal rullere». Ett kort om
+  // gangen hvert fjerde sekund; fire synlige paa PC, to paa telefon (CSS:
+  // .lx-galleri-spor). Stopper naar musa eller fingeren er over, og staar i
+  // ro for den som har bedt om mindre bevegelse — som feltene over.
+  //
+  // Rundt, ikke fram og tilbake: sporet glir ett kort til venstre, og det
+  // foerste kortet flyttes bakerst naar glidningen er ferdig. Da ruller ogsaa
+  // fire kort paa PC, der alle fire allerede er synlige. Appen har ingen
+  // egen forside (74a6bcb), saa dette er det eneste stedet det skjer.
+  // Vakta (bin/vakt.mjs) ser etter «data-vakt-karusell» og maaler at det ruller.
+  if (!rolig) {
+    var galPause = 0;
+    d.addEventListener('touchstart', function (e) {
+      if (e.target.closest && e.target.closest('.lx-galleri')) galPause = Date.now() + 8000;
+    }, { passive: true });
+    setInterval(function () {
+      var spor = d.querySelector('[data-galleri-spor]');
+      if (!spor || d.hidden || Date.now() < galPause) return;
+      if (spor.parentElement.matches(':hover')) return;
+      var kort = spor.children;
+      if (kort.length < 2) return;
+      var steg = kort[1].getBoundingClientRect().left - kort[0].getBoundingClientRect().left;
+      if (!(steg > 0)) return;
+      spor.style.transition = '';
+      spor.style.transform = 'translateX(' + (-steg) + 'px)';
+      setTimeout(function () {
+        spor.style.transition = 'none';
+        spor.appendChild(spor.firstElementChild);
+        spor.style.transform = 'translateX(0px)';
+      }, 750);
+    }, 4000);
+  }
+
   /* ── Appen, i bakgrunnen ────────────────────────────────────────────── */
   // «Book», «Min side» og kassa er appen (lissom-2108.html). Den hentes
   // naar sida er ferdig lest og nettleseren har ro, saa den ligger i

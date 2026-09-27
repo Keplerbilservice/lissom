@@ -162,18 +162,33 @@ try {
     // De faste sidene gaar ut uansett.
 }
 
+// Galleribildene paa forsida, som bilder i sidekartet (eieren, 27. september
+// 2026: bildene skal kunne indekseres). De henger paa forsida, der de staar.
+$bilder = [];
+try {
+    foreach (Galleri::kort() as $g) {
+        $bilder[] = ROT . (string) $g['bilde'];
+    }
+} catch (Throwable) {
+}
+
 header('Content-Type: application/xml; charset=UTF-8');
 header('Cache-Control: public, max-age=3600');
 header('X-Content-Type-Options: nosniff');
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
 foreach ($linjer as [$adresse, $endret, $frekvens, $prioritet]) {
     echo "  <url>\n";
     echo '    <loc>' . htmlspecialchars($adresse, ENT_XML1) . "</loc>\n";
     echo '    <lastmod>' . $endret . "</lastmod>\n";
     echo '    <changefreq>' . $frekvens . "</changefreq>\n";
     echo '    <priority>' . $prioritet . "</priority>\n";
+    if ($adresse === ROT . '/') {
+        foreach ($bilder as $b) {
+            echo '    <image:image><image:loc>' . htmlspecialchars($b, ENT_XML1) . "</image:loc></image:image>\n";
+        }
+    }
     echo "  </url>\n";
 }
 echo '</urlset>' . "\n";

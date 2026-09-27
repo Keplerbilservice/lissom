@@ -20706,6 +20706,59 @@ sjekk('kassesalget kan gjores opp i deler',
 sjekk('medlemskapet kan gjores opp i deler',
     str_contains($dbMed, "\$raaDeler = \$handling === 'betaling' ? (Foresporsel::kropp()['deler'] ?? null) : null;"));
 
+// Eieren, 27. september 2026: butikkfeltet paa forsida blir et galleri med
+// medlemmenes godkjente bilder, som ruller. Godkjenningen velger Instagram,
+// galleriet eller begge. Se app/lib/galleri.php og tests/galleri.php.
+echo "\nGalleriet paa forsida\n";
+$glForside = file_get_contents(dirname(__DIR__) . '/app/nett/sider/forside.php');
+$glSida    = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$glApi     = file_get_contents(dirname(__DIR__) . '/api/admin/medlemsforslag.php');
+$glBilde   = file_get_contents(dirname(__DIR__) . '/api/bilde.php');
+$glNett    = file_get_contents(dirname(__DIR__) . '/nett.js');
+$glKart    = file_get_contents(dirname(__DIR__) . '/api/sitemap.php');
+sjekk('forsida viser galleriet naar det finnes bilder',
+    str_contains($glForside, '$galleri = Galleri::kort();')
+    && str_contains($glForside, '>Galleri</div>')
+    && str_contains($glForside, '<h2 style="margin: 0;">Bilder fra verkstedet vårt</h2>'));
+sjekk('… og knappen til butikken er den samme',
+    substr_count($glForside, "Deler::knapp(\$innh('Forside/3/Knapp'), ['href' => '/butikk', 'variant' => 'secondary', 'size' => 'sm', 'iconAfter' => 'arrow-right'])") === 2);
+sjekk('… ellers staar varene som foer',
+    str_contains($glForside, '$produkter = $galleri === [] ? Kort::forsideProdukter() : [];')
+    && str_contains($glForside, 'if ($galleri === []) {'));
+sjekk('kortene ruller, ett om gangen hvert fjerde sekund',
+    str_contains($glNett, "spor.appendChild(spor.firstElementChild);")
+    && str_contains($glNett, '}, 4000);')
+    && str_contains($glForside, 'data-galleri-spor data-vakt-karusell="'));
+sjekk('… stopper under musa og fingeren, og staar i ro ved mindre bevegelse',
+    str_contains($glNett, "if (spor.parentElement.matches(':hover')) return;")
+    && str_contains($glNett, "galPause = Date.now() + 8000;")
+    && str_contains($glSida, '@media (prefers-reduced-motion: reduce) { .lx-galleri-spor { transition: none; } }'));
+sjekk('… fire synlige paa PC og to paa telefon',
+    str_contains($glSida, '.lx-galleri-spor > * { flex: 0 0 calc((100% - 3 * var(--space-8)) / 4); min-width: 0; }')
+    && str_contains($glSida, '.lx-galleri-spor > * { flex-basis: calc((100% - var(--space-5)) / 2); }'));
+sjekk('godkjenningen har Instagram og galleriet, uten forhaandsvalg',
+    str_contains($glSida, 'Legg ut på Instagram')
+    && str_contains($glSida, 'Vis i galleriet på forsiden')
+    && str_contains($glSida, "const tilInsta = !!v.instagram;")
+    && str_contains($glSida, "const v = Object.assign({ instagram: false, galleri: false }, (s.mfValg || {})[id]);"));
+sjekk('… og «Godkjenn» virker bare med minst én',
+    str_contains($glSida, "if (!klar) return;")
+    && str_contains($glApi, "Svar::feil('Velg Instagram, galleriet eller begge.');"));
+sjekk('bare galleriet legger ingenting ut paa Instagram',
+    strpos($glApi, "if (!\$tilInsta) {") !== false
+    && strpos($glApi, "if (!\$tilInsta) {") < strpos($glApi, 'Meta::publiserInstagram('));
+sjekk('bildeforberederen kan brukes paa et forslag',
+    str_contains($glSida, "body: JSON.stringify({ handling: 'forbedreForslag', id }),")
+    && str_contains($glApi, "if (\$handling === 'bruk-bilde') {"));
+sjekk('et bilde kan tas ut av galleriet',
+    str_contains($glSida, "Ta ut av galleriet")
+    && str_contains($glApi, "if (\$handling === 'ut-av-galleri') {"));
+sjekk('bare godkjente galleribilder er offentlige',
+    str_contains($glBilde, "|| (\$rad['status'] === 'galleri' && (int) \$rad['galleri'] === 1);"));
+sjekk('galleribildene er med i bildesidekartet',
+    str_contains($glKart, 'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"')
+    && str_contains($glKart, 'foreach (Galleri::kort() as $g) {'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -44,10 +44,12 @@ kjor "backend"       php tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
 kjor "verving"       php tests/verving.php
+kjor "galleri"       php tests/galleri.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
 kjor "betalingsflyt" bash tests/flyt.sh
 kjor "delt betaling" bash tests/deltbetaling.sh
+kjor "galleri, admin" bash tests/galleri.sh
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

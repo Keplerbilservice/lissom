@@ -203,8 +203,31 @@ if (Nett::bryterPaa('salgsuke') && !Nett::mobilSkjult('salgsuke')) {
         . '</div></section>' . "\n";
 }
 
+// ── Galleriet ────────────────────────────────────────────────────────────
+//
+// Eieren, 27. september 2026: butikkfeltet blir et galleri med medlemmenes
+// egne bilder fra verkstedet, som ruller. Knappen til butikken blir staaende.
+// Er det ikke nok bilder til et galleri, staar butikkfeltet under som foer.
+// Rulleringen er i nett.js: «data-galleri-spor». Appen har ingen egen forside.
+$galleri = Galleri::kort();
+if ($galleri !== []) {
+    $h .= '<section class="lx-tetttopp" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
+        . '<div style="max-width: var(--width-content); margin: 0 auto;">'
+        . '<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">'
+        . '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Galleri</div>'
+        . '<h2 style="margin: 0;">Bilder fra verkstedet vårt</h2></div>'
+        . Deler::knapp($innh('Forside/3/Knapp'), ['href' => '/butikk', 'variant' => 'secondary', 'size' => 'sm', 'iconAfter' => 'arrow-right'])
+        . '</div>'
+        . '<div class="lx-galleri" aria-label="Bilder fra verkstedet vårt"><div class="lx-galleri-spor" data-galleri-spor data-vakt-karusell="' . count($galleri) . '">';
+    foreach ($galleri as $g) {
+        $h .= Deler::galleriKort($g);
+    }
+    $h .= '</div></div></div></section>' . "\n";
+}
+
 // ── Butikken ─────────────────────────────────────────────────────────────
-$produkter = Kort::forsideProdukter();
+$produkter = $galleri === [] ? Kort::forsideProdukter() : [];
+if ($galleri === []) {
 $h .= '<section class="lx-tetttopp" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">'
     . '<div style="max-width: var(--width-content); margin: 0 auto;">'
     . '<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">'
@@ -224,6 +247,7 @@ foreach ($produkter as $i => $p) {
 }
 $h .= '</div><div style="display: flex; gap: 10px; margin-top: var(--space-5);">' . Deler::prikker(array_column($produkter, 'title'), 'but') . '</div></div>';
 $h .= '</div></section>' . "\n";
+}
 
 $h .= '</div>' . "\n";
 $h .= Deler::bunn(true);

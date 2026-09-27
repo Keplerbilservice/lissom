@@ -311,6 +311,24 @@ final class Deler
             . '</div></div></div>';
     }
 
+    /**
+     * Et kort i galleriet paa forsida: samme kort som varene, men med
+     * medlemmets bilde, tittelen og fornavnet — ingen pris og ingen knapp.
+     * Se Galleri::kort(). Appen tegner det samme i lissom-2108.html.
+     *
+     * @param array{bilde: string, tittel: string, navn: string, alt: string} $g
+     */
+    public static function galleriKort(array $g): string
+    {
+        $e = [self::class, 'e'];
+        return '<div class="lx-varekort" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm);">'
+            . '<img src="' . $e($g['bilde']) . '" alt="' . $e($g['alt']) . '" loading="lazy" decoding="async" style="display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: var(--clay-200);">'
+            . '<div style="padding: var(--space-5); display: flex; flex-direction: column; gap: 4px;">'
+            . '<div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">' . $e($g['tittel']) . '</div>'
+            . '<div style="font-size: var(--text-sm); color: var(--text-muted);">' . $e($g['navn']) . '</div>'
+            . '</div></div>';
+    }
+
     // ── Prikkene under et felt som bytter ───────────────────────────────
 
     /** tonePrikker() i nettsida. Den foerste lyser; nett.js flytter lyset. */

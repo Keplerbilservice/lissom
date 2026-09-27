@@ -463,6 +463,43 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kursboost-publiser",
+            "dato": "2026-09-27",
+            "hva": "Kursboost: egne bilder (bibliotek og opplasting), bildet i alle delene, og én «Publiser» = Instagram + Facebook + artikkel publisert på nettsiden. E-post og medlemmer har egne knapper. («poenget er jo at jeg bare skal kunne trykke på publiser»)",
+            "hvor": "Markedsføring › Kursboost-utkast",
+            "kode": [
+                {
+                    "fil": "app/lib/kursboost.php",
+                    "finnes": [
+                        "public static function publiser(array $u, array $tekster): array",
+                        "foreach (['instagram', 'facebook', 'artikkel'] as $del) {",
+                        "public static function instagramBilde(array $u, string $bilde): string",
+                        "$beskjed = 'Publisert ✓';",
+                        "$felter = ['status' => 'publisert'];"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursboost.php",
+                    "finnes": [
+                        "case 'publiser':"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ">Velg fra biblioteket</button>",
+                        ">Last opp<input type=\"file\"",
+                        "Legges ut på Instagram, Facebook og nettsiden nå.",
+                        "artikkel: 'Publiser artikkelen'",
+                        "const UT = ['instagram', 'facebook', 'artikkel'];"
+                    ],
+                    "ikkeFinnes": [
+                        "artikkel: 'Lagre som kladd i Nyheter'"
+                    ]
+                }
+            ]
         }
     ]
 }

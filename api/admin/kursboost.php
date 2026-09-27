@@ -6,6 +6,10 @@
  *   POST handling=bilder    { id }           tre nye bildeforslag (Gemini)
  *   POST handling=velg      { id, bilde }    velg ett av forslagene
  *   POST handling=del       { id, del, tekst }  instagram | facebook | artikkel | nyhetsbrev
+ *   POST handling=publiser  { id, tekster }   Instagram, Facebook og artikkelen i ett trykk
+ *
+ * «velg» tar ogsaa et bilde fra bildebiblioteket — ogsaa ett eieren nettopp
+ * lastet opp der (api/admin/bilder.php last-opp). Se Kursboost::velgBilde().
  *
  * «Send til medlemmene» gaar gjennom api/admin/beskjed.php med «kursboost»,
  * saa utsendingen er den samme som «Melding til medlemmene». Se
@@ -53,6 +57,12 @@ try {
         case 'del':
             $r = Kursboost::utfor($u, Foresporsel::tekst('del'), (string) (Foresporsel::kropp()['tekst'] ?? ''));
             Svar::ok($r + ['pakke' => Kursboost::pakke((array) Kursboost::utkast($id))]);
+
+        case 'publiser':
+            @set_time_limit(240);
+            $tekster = array_map('strval', array_filter((array) (Foresporsel::kropp()['tekster'] ?? []), 'is_string'));
+            $r = Kursboost::publiser($u, $tekster);
+            Svar::ok(['resultat' => $r, 'pakke' => Kursboost::pakke((array) Kursboost::utkast($id))]);
 
         default:
             Svar::feil('Ukjent handling.');

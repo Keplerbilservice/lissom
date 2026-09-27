@@ -65,7 +65,9 @@ jobs:
           mv /tmp/senere/*.sql db/migrations/
           php bin/migrate.php
           # Sjekkene av nettsida bruker terser, som ellers bare ligger lokalt.
-          npm install --no-save --no-package-lock terser
+          npm install --no-save --no-package-lock terser playwright
+          # Nettlesertestene (tests/nettleser) klikker seg gjennom i Chromium.
+          npx playwright install --with-deps chromium
 
       - name: Kjor alle testene
         run: bash tests/alle.sh

@@ -29,3 +29,6 @@ tests/.trekk-status
 tests/.betaling-status
 tests/.trekk-uten-id
 tests/.feillogg
+
+# Nettlesertestene
+app/secrets.php.e2e-kopi

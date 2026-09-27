@@ -57,6 +57,9 @@ kjor "galleri, admin" bash tests/galleri.sh
 kjor "avbestilling"  bash tests/avbestilling.sh
 kjor "kursboost"     bash tests/kursboost.sh
 
+# --- Hele flyter, klikket gjennom i en ekte nettleser ------------------------
+kjor "nettleser"      bash tests/nettleser/kjor.sh
+
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Gikk:   ${#gikk[@]}"

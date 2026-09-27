@@ -66305,6 +66305,10 @@ class Component extends DCLogic {
       // henter det naar det aapnes; kortet staar alltid, saa det hentes
       // med kalenderen. dokHent() henter bare én gang.
       ...(side === 'adminkalender' && !this.state.dok ? (this.dokHent(), {}) : {}),
+      // Synlighet-flisen paa Oversikt teller den samme raden. Uten dette sa
+      // flisen 14 av 22 og arket 15 av 23 til arket hadde vaert aapnet (27.
+      // september 2026, nettlesertestene).
+      ...(side === 'adminoversikt' && !this.state.dok ? (this.dokHent(), {}) : {}),
       erAdminArskalender: side === 'adminarskalender',
       adminNavArskalender: this.adminSideMeny(),
       // ── Aarskalenderen ────────────────────────────────────────────

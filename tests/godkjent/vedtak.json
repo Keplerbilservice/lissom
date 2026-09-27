@@ -1,176 +1,392 @@
 {
-  "om": "Eierens godkjente vedtak. Hver post sier hva som er bestemt, og hvordan det sjekkes: «kode» kjøres av tests/vedtak.mjs i sperren før hver publisering, «live» kjøres av bin/vakt.mjs mot lissom.no hver time. Regel (eieren, 27. september 2026): hver godkjent endring får en post her i samme commit. «finnes»/«ikkeFinnes» er nøyaktige tekstbiter.",
-  "vedtak": [
-    {
-      "id": "flytt-samme-kurs",
-      "dato": "2026-09-27",
-      "hva": "«enklere måte å flytte dato på deltaker på rett i kurset»: Flytt viser bare det samme kursets kommende datoer, uten forhåndsvalg",
-      "hvor": "Admin › Påmeldte › Flytt",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["alleOkter.filter(o => o.kursId === fraOkt.kursId", "&& o.dato >= idagIso) : [])", "flyttOkt: this.state.flyttOkt || '',"], "ikkeFinnes": ["find(o => o.oktId !== p.oktId) || {}).oktId"] },
-        { "fil": "api/admin/pameldte.php", "finnes": ["SELECT cs.id, cs.course_id, cs.start_tid"] }
-      ]
-    },
-    {
-      "id": "delt-betaling",
-      "dato": "2026-09-27",
-      "hva": "Ta betalt kan deles på kontant, Vipps og gavekort; knappen virker bare når det er kr 0 igjen",
-      "hvor": "Admin › Ta betalt",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["+ Legg til betalingsmåte", "Igjen å betale"] }
-      ]
-    },
-    {
-      "id": "vervepremie",
-      "dato": "2026-09-27",
-      "hva": "Vervepremie som banner på Min side, timer settes i admin, godkjente tekster",
-      "hvor": "Min side, Markedsføring › Vervepremie",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["Del skapergleden og få", "Verv en venn til årsmedlemskap via din personlige lenke", "Kopier personlig lenke", "Lenken er kopiert og klar!", "Vervepremie på Min side"] }
-      ]
-    },
-    {
-      "id": "vervepremie-tre-maaneder",
-      "dato": "2026-09-27",
-      "hva": "Vervetimene kan løses inn i 3 måneder fra de gis, og gjelder én gang",
-      "hvor": "app/lib/verving.php, api/gave.php",
-      "kode": [
-        { "fil": "app/lib/verving.php", "finnes": ["->modify('+3 months')->format('Y-m-d')"] },
-        { "fil": "api/gave.php", "finnes": ["if ((string) $g['type'] === 'timer' && $g['member_id'] !== null) {", "DB::oppdater('medlemsgaver', ['gyldig_til' => $ut], ['id' => (int) $g['id']]);"] }
-      ]
-    },
-    {
-      "id": "gavekort-epost",
-      "dato": "2026-09-27",
-      "hva": "Gavekortet sendes bare på e-post; det hentes ikke i verkstedet",
-      "hvor": "/gavekort",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["'Sendes på e-post når betalingen er gjennomført.',"], "ikkeFinnes": ["'Kan hentes i verkstedet.'", "Kan jeg få gavekortet fysisk?"] }
-      ],
-      "live": [
-        { "sti": "/gavekort", "finnes": ["Sendes på e-post når betalingen er gjennomført."], "ikkeFinnes": ["Kan hentes i verkstedet", "Kan jeg få gavekortet fysisk?"] }
-      ]
-    },
-    {
-      "id": "galleri-forside",
-      "dato": "2026-09-27",
-      "hva": "Butikkdelen på forsiden er galleri: «Galleri», «Bilder fra verkstedet vårt», knappen til butikken beholdes, kortene ruller hvert 4. sekund",
-      "hvor": "Forsiden",
-      "kode": [
-        { "fil": "app/nett/sider/forside.php", "finnes": [">Galleri</div>", "<h2 style=\"margin: 0;\">Bilder fra verkstedet vårt</h2>", "'href' => '/butikk'", "data-vakt-karusell=\""] },
-        { "fil": "nett.js", "finnes": ["}, 4000);", "galPause = Date.now() + 8000;"] },
-        { "fil": "app/lib/galleri.php", "finnes": ["public const FYLL_NAVN = 'Lissom';", ", laget på Lissom keramikkverksted på Teie'"] }
-      ],
-      "live": [
-        { "sti": "/", "finnes": ["Bilder fra verkstedet vårt", ">Galleri<"], "selektorer": ["[data-vakt-karusell]", "a[href=\"/butikk\"]"] }
-      ]
-    },
-    {
-      "id": "galleri-fyllbilder",
-      "dato": "2026-09-27",
-      "hva": "De 11 verkstedbildene eieren valgte fyller galleriet, med godkjente titler",
-      "hvor": "galleri-fyll.json",
-      "kode": [
-        { "fil": "galleri-fyll.json", "finnes": ["Hender i dyp konsentrasjon", "Trimming av bolle", "Forming på dreieskiven", "Fargerik kopp med blomstermotiv", "Dreining pågår", "Stablede hvite boller", "Konsentrert arbeid ved dreieskiven", "Kveiling med blondemønster", "Detaljer i leirplaten", "Skjæring langs kanten", "Dreiing på dreieskiven"] }
-      ]
-    },
-    {
-      "id": "paint-on-pots-bestill-tid",
-      "dato": "2026-09-27",
-      "hva": "Google-teksten for Paint on Pots sier «Bestill tid», ikke «Drop-in»",
-      "hvor": "/paint-on-pots",
-      "kode": [
-        { "fil": "seo-kart.json", "finnes": ["Bestill tid på Teie ved Tønsberg."], "ikkeFinnes": ["Drop-in på Teie"] },
-        { "fil": "lissom-2108.html", "finnes": ["Bestill tid på Teie ved Tønsberg."], "ikkeFinnes": ["Drop-in på Teie"] }
-      ],
-      "live": [
-        { "sti": "/paint-on-pots", "finnes": ["Bestill tid på Teie ved Tønsberg."], "ikkeFinnes": ["Drop-in på Teie"] }
-      ]
-    },
-    {
-      "id": "synlighet",
-      "dato": "2026-09-27",
-      "hva": "Synlighet som egen pille ved ⚙ på alle adminsider, flis på Oversikt, alle av/på samlet i arket med «E-post og SMS» nederst",
-      "hvor": "Admin",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["<button type=\"button\" onClick=\"{{ synAapne }}\" style=\"{{ tmSynStil }}\">Synlighet</button>", "synlighetVals()", "E-post og SMS", "Vis kursholderne på nettsiden", "Vervepremie på Min side"] }
-      ]
-    },
-    {
-      "id": "tekst-maler-en-bryter",
-      "dato": "2026-09-27",
-      "hva": "Tekst maler ligger under Markedsføring, med én På/Av-bryter per e-post rett i lista; ingen doble brytere",
-      "hvor": "Markedsføring › Tekst maler",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["case 'adminmaler':         return p('Markedsføring', 'Tekst maler', 'Tekst maler');", "+ ' · ' + alle.filter(m => m.aktiv).length + ' på',"] },
-        { "fil": "bin/cron.php", "ikkeFinnes": ["Config::hent('fortsett_paa'", "Config::hent('anmeldelse_paa'"] },
-        { "fil": "api/admin/varsler.php", "ikkeFinnes": ["'fortsett_paa'", "'anmeldelse_paa'"] }
-      ]
-    },
-    {
-      "id": "del-instagram-og-galleri",
-      "dato": "2026-09-27",
-      "hva": "Bryteren og flisen heter «Del på Instagram og i galleriet», og Min side viser om bildet er i galleriet",
-      "hvor": "Min side, Synlighet",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["Del på Instagram og i galleriet", "'Vises i galleriet på forsiden'", "'Lagt ut på Instagram og i galleriet'"], "ikkeFinnes": ["'Del på Instagram'", ">Del på Instagram<"] },
-        { "fil": "api/medlemsforslag.php", "finnes": ["'galleri' => (int) ($r['galleri'] ?? 0) === 1,"] }
-      ]
-    },
-    {
-      "id": "booking-dato-paa-skjermen",
-      "dato": "2026-09-27",
-      "hva": "Datoen som står på skjermen er den som bookes, også når tida ikke er trykket",
-      "hvor": "Kurssida › booking",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["this._visteOkt = ledigeTider.length === 1 ? ledigeTider[0] : null;", "(this.state.bOktId || (vist && vist.oktId) || (datoer.find(d => !d.full) || {}).oktId)"] }
-      ]
-    },
-    {
-      "id": "hjulet-samme-sted",
-      "dato": "2026-09-27",
-      "hva": "«nå flyttet innstillingshjulet seg?» — ⚙ og «inne» står på samme sted på alle adminsider",
-      "hvor": "Admin, topplinja",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["@media (min-width: 980px) and (max-width: 1499px) {", ".lx-adminaside > .lx-admstatus { display: none !important; }"] }
-      ]
-    },
-    {
-      "id": "piller-felles-maal",
-      "dato": "2026-09-27",
-      "hva": "Pillene i Medlemsforslag, Ta betalt og Min side har samme mål som resten",
-      "hvor": "Admin og Min side",
-      "kode": [
-        { "fil": "lissom-2108.html", "ikkeFinnes": ["padding: '7px 14px'"] }
-      ]
-    },
-    {
-      "id": "forbedre-bildet",
-      "dato": "2026-09-27",
-      "hva": "«Forbedre bildet» laster bildene med data-src og ruller ikke sida bak",
-      "hvor": "Admin › Butikk",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["<img data-src=\"{{ vfbFor }}\"", "<img data-src=\"{{ vfbNy }}\""], "ikkeFinnes": ["<img src=\"{{ vfbFor }}\"", "<img src=\"{{ vfbNy }}\""] }
-      ]
-    },
-    {
-      "id": "sperre-for-publisering",
-      "dato": "2026-09-27",
-      "hva": "Alle testene må gå gjennom før noe legges ut; en test som krasjer teller som feil",
-      "hvor": ".github/workflows/deploy.yml, tests/alle.sh",
-      "kode": [
-        { "fil": ".github/workflows/deploy.yml", "finnes": ["uses: ./.github/workflows/tester.yml", "needs: tester"] },
-        { "fil": "tests/alle.sh", "finnes": ["Ubehandlet feil", "node tests/vedtak.mjs"] }
-      ]
-    },
-    {
-      "id": "ikke-betalt-forst",
-      "dato": "2026-09-06",
-      "hva": "«Default må være ikke betalt» — «Ikke betalt» står først i betalingsmåtene",
-      "hvor": "Admin › registrer påmelding",
-      "kode": [
-        { "fil": "lissom-2108.html", "finnes": ["return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"] }
-      ]
-    }
-  ]
+    "om": "Eierens godkjente vedtak. Hver post sier hva som er bestemt, og hvordan det sjekkes: «kode» kjøres av tests/vedtak.mjs i sperren før hver publisering, «live» kjøres av bin/vakt.mjs mot lissom.no hver time. Regel (eieren, 27. september 2026): hver godkjent endring får en post her i samme commit. «finnes»/«ikkeFinnes» er nøyaktige tekstbiter.",
+    "vedtak": [
+        {
+            "id": "flytt-samme-kurs",
+            "dato": "2026-09-27",
+            "hva": "«enklere måte å flytte dato på deltaker på rett i kurset»: Flytt viser bare det samme kursets kommende datoer, uten forhåndsvalg",
+            "hvor": "Admin › Påmeldte › Flytt",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "alleOkter.filter(o => o.kursId === fraOkt.kursId",
+                        "&& o.dato >= idagIso) : [])",
+                        "flyttOkt: this.state.flyttOkt || '',"
+                    ],
+                    "ikkeFinnes": [
+                        "find(o => o.oktId !== p.oktId) || {}).oktId"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pameldte.php",
+                    "finnes": [
+                        "SELECT cs.id, cs.course_id, cs.start_tid"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "delt-betaling",
+            "dato": "2026-09-27",
+            "hva": "Ta betalt kan deles på kontant, Vipps og gavekort; knappen virker bare når det er kr 0 igjen",
+            "hvor": "Admin › Ta betalt",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "+ Legg til betalingsmåte",
+                        "Igjen å betale"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "vervepremie",
+            "dato": "2026-09-27",
+            "hva": "Vervepremie som banner på Min side, timer settes i admin, godkjente tekster",
+            "hvor": "Min side, Markedsføring › Vervepremie",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Del skapergleden og få",
+                        "Verv en venn til årsmedlemskap via din personlige lenke",
+                        "Kopier personlig lenke",
+                        "Lenken er kopiert og klar!",
+                        "Vervepremie på Min side"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "vervepremie-tre-maaneder",
+            "dato": "2026-09-27",
+            "hva": "Vervetimene kan løses inn i 3 måneder fra de gis, og gjelder én gang",
+            "hvor": "app/lib/verving.php, api/gave.php",
+            "kode": [
+                {
+                    "fil": "app/lib/verving.php",
+                    "finnes": [
+                        "->modify('+3 months')->format('Y-m-d')"
+                    ]
+                },
+                {
+                    "fil": "api/gave.php",
+                    "finnes": [
+                        "if ((string) $g['type'] === 'timer' && $g['member_id'] !== null) {",
+                        "DB::oppdater('medlemsgaver', ['gyldig_til' => $ut], ['id' => (int) $g['id']]);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "gavekort-epost",
+            "dato": "2026-09-27",
+            "hva": "Gavekortet sendes bare på e-post; det hentes ikke i verkstedet",
+            "hvor": "/gavekort",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "'Sendes på e-post når betalingen er gjennomført.',"
+                    ],
+                    "ikkeFinnes": [
+                        "'Kan hentes i verkstedet.'",
+                        "Kan jeg få gavekortet fysisk?"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/gavekort",
+                    "finnes": [
+                        "Sendes på e-post når betalingen er gjennomført."
+                    ],
+                    "ikkeFinnes": [
+                        "Kan hentes i verkstedet",
+                        "Kan jeg få gavekortet fysisk?"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "galleri-forside",
+            "dato": "2026-09-27",
+            "hva": "Butikkdelen på forsiden er galleri: «Galleri», «Bilder fra verkstedet vårt», knappen til butikken beholdes, kortene ruller hvert 4. sekund",
+            "hvor": "Forsiden",
+            "kode": [
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        ">Galleri</div>",
+                        "<h2 style=\"margin: 0;\">Bilder fra verkstedet vårt</h2>",
+                        "'href' => '/butikk'",
+                        "data-vakt-karusell=\""
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "}, 4000);",
+                        "galPause = Date.now() + 8000;"
+                    ]
+                },
+                {
+                    "fil": "app/lib/galleri.php",
+                    "finnes": [
+                        "public const FYLL_NAVN = 'Lissom';",
+                        ", laget på Lissom keramikkverksted på Teie'"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/",
+                    "finnes": [
+                        "Bilder fra verkstedet vårt",
+                        ">Galleri<"
+                    ],
+                    "selektorer": [
+                        "[data-vakt-karusell]",
+                        "a[href=\"/butikk\"]"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "galleri-fyllbilder",
+            "dato": "2026-09-27",
+            "hva": "De 11 verkstedbildene eieren valgte fyller galleriet, med godkjente titler",
+            "hvor": "galleri-fyll.json",
+            "kode": [
+                {
+                    "fil": "galleri-fyll.json",
+                    "finnes": [
+                        "Hender i dyp konsentrasjon",
+                        "Trimming av bolle",
+                        "Forming på dreieskiven",
+                        "Fargerik kopp med blomstermotiv",
+                        "Dreining pågår",
+                        "Stablede hvite boller",
+                        "Konsentrert arbeid ved dreieskiven",
+                        "Kveiling med blondemønster",
+                        "Detaljer i leirplaten",
+                        "Skjæring langs kanten",
+                        "Dreiing på dreieskiven"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "paint-on-pots-bestill-tid",
+            "dato": "2026-09-27",
+            "hva": "Google-teksten for Paint on Pots sier «Bestill tid», ikke «Drop-in»",
+            "hvor": "/paint-on-pots",
+            "kode": [
+                {
+                    "fil": "seo-kart.json",
+                    "finnes": [
+                        "Bestill tid på Teie ved Tønsberg."
+                    ],
+                    "ikkeFinnes": [
+                        "Drop-in på Teie"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Bestill tid på Teie ved Tønsberg."
+                    ],
+                    "ikkeFinnes": [
+                        "Drop-in på Teie"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/paint-on-pots",
+                    "finnes": [
+                        "Bestill tid på Teie ved Tønsberg."
+                    ],
+                    "ikkeFinnes": [
+                        "Drop-in på Teie"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "synlighet",
+            "dato": "2026-09-27",
+            "hva": "Synlighet som egen pille ved ⚙ på alle adminsider, flis på Oversikt, alle av/på samlet i arket med «E-post og SMS» nederst",
+            "hvor": "Admin",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<button type=\"button\" onClick=\"{{ synAapne }}\" style=\"{{ tmSynStil }}\">Synlighet</button>",
+                        "synlighetVals()",
+                        "E-post og SMS",
+                        "Vis kursholderne på nettsiden",
+                        "Vervepremie på Min side",
+                        "...(side === 'adminoversikt' && !this.state.dok ? (this.dokHent(), {}) : {}),"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "tekst-maler-en-bryter",
+            "dato": "2026-09-27",
+            "hva": "Tekst maler ligger under Markedsføring, med én På/Av-bryter per e-post rett i lista; ingen doble brytere",
+            "hvor": "Markedsføring › Tekst maler",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "case 'adminmaler':         return p('Markedsføring', 'Tekst maler', 'Tekst maler');",
+                        "+ ' · ' + alle.filter(m => m.aktiv).length + ' på',"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "ikkeFinnes": [
+                        "Config::hent('fortsett_paa'",
+                        "Config::hent('anmeldelse_paa'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/varsler.php",
+                    "ikkeFinnes": [
+                        "'fortsett_paa'",
+                        "'anmeldelse_paa'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "del-instagram-og-galleri",
+            "dato": "2026-09-27",
+            "hva": "Bryteren og flisen heter «Del på Instagram og i galleriet», og Min side viser om bildet er i galleriet",
+            "hvor": "Min side, Synlighet",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Del på Instagram og i galleriet",
+                        "'Vises i galleriet på forsiden'",
+                        "'Lagt ut på Instagram og i galleriet'"
+                    ],
+                    "ikkeFinnes": [
+                        "'Del på Instagram'",
+                        ">Del på Instagram<"
+                    ]
+                },
+                {
+                    "fil": "api/medlemsforslag.php",
+                    "finnes": [
+                        "'galleri' => (int) ($r['galleri'] ?? 0) === 1,"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "booking-dato-paa-skjermen",
+            "dato": "2026-09-27",
+            "hva": "Datoen som står på skjermen er den som bookes, også når tida ikke er trykket",
+            "hvor": "Kurssida › booking",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "this._visteOkt = ledigeTider.length === 1 ? ledigeTider[0] : null;",
+                        "(this.state.bOktId || (vist && vist.oktId) || (datoer.find(d => !d.full) || {}).oktId)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "hjulet-samme-sted",
+            "dato": "2026-09-27",
+            "hva": "«nå flyttet innstillingshjulet seg?» — ⚙ og «inne» står på samme sted på alle adminsider",
+            "hvor": "Admin, topplinja",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "@media (min-width: 980px) and (max-width: 1499px) {",
+                        ".lx-adminaside > .lx-admstatus { display: none !important; }"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "piller-felles-maal",
+            "dato": "2026-09-27",
+            "hva": "Pillene i Medlemsforslag, Ta betalt og Min side har samme mål som resten",
+            "hvor": "Admin og Min side",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "ikkeFinnes": [
+                        "padding: '7px 14px'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forbedre-bildet",
+            "dato": "2026-09-27",
+            "hva": "«Forbedre bildet» laster bildene med data-src og ruller ikke sida bak",
+            "hvor": "Admin › Butikk",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<img data-src=\"{{ vfbFor }}\"",
+                        "<img data-src=\"{{ vfbNy }}\""
+                    ],
+                    "ikkeFinnes": [
+                        "<img src=\"{{ vfbFor }}\"",
+                        "<img src=\"{{ vfbNy }}\""
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "sperre-for-publisering",
+            "dato": "2026-09-27",
+            "hva": "Alle testene må gå gjennom før noe legges ut; en test som krasjer teller som feil",
+            "hvor": ".github/workflows/deploy.yml, tests/alle.sh",
+            "kode": [
+                {
+                    "fil": ".github/workflows/deploy.yml",
+                    "finnes": [
+                        "uses: ./.github/workflows/tester.yml",
+                        "needs: tester"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "Ubehandlet feil",
+                        "node tests/vedtak.mjs"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ikke-betalt-forst",
+            "dato": "2026-09-06",
+            "hva": "«Default må være ikke betalt» — «Ikke betalt» står først i betalingsmåtene",
+            "hvor": "Admin › registrer påmelding",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "return ['Ikke betalt', 'Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"
+                    ]
+                }
+            ]
+        }
+    ]
 }

@@ -489,7 +489,9 @@ await flyt('Regresjon: faner i admin og hovedsidene', async () => {
     sjekk(`Markedsfoering › ${navn} aapner`, h1.trim() !== '' && skriptfeil.length === foerFeil, h1 + ' ' + skriptfeil.slice(foerFeil).join(' | '));
     if (navn === 'Tekst maler') {
       const rad = await p.locator('main button').evaluateAll(b => b.filter(x => x.getClientRects().length).map(x => x.innerText.trim()));
-      kjent('Tekst maler viser Markedsfoering-fanene som de andre fanene', rad.includes('Tavle') && rad.includes('Vervepremie'), rad.slice(0, 6).join(', '));
+      // Tekst maler er en egen skjerm, som «Tilbud / nyhetsbrev» og «Google»:
+      // rada er «← Markedsføring» og skjermen selv (MARKED_DOERER).
+      sjekk('Tekst maler har veien tilbake til Markedsfoering', rad.includes('← Markedsføring') && rad.includes('Tekst maler'), rad.slice(0, 6).join(', '));
     }
     await gaa(p, '/admin/markedsforing', 2000);
   }

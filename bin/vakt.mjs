@@ -88,6 +88,45 @@ for (const s of skjermer) {
     sjekk(`${navn} har innhold`, maal.tekst > 200, `${maal.tekst} tegn`);
     sjekk(`${navn} er ikke bredere enn skjermen`, maal.bredde <= maal.skjerm + 1, `${maal.bredde} px paa ${maal.skjerm} px`);
 
+    // ── Karusellene ruller ──────────────────────────────────────────────
+    //
+    // Eieren, 27. september 2026: «i den sjekken som gjores hver time, saa
+    // sjekker dere ogsaa om karusellene fungerer som det skal?» Det gjorde
+    // vi ikke. Referansekarusellen paa forsida sto stille i dager 20.
+    // september uten at noen vakt sa fra. Her tas et avtrykk av hver
+    // karusell, det ventes lenger enn den bruker paa ett bytte, og avtrykket
+    // maa ha endret seg. Bare paa PC: musa staar i hjornet, ikke over.
+    // Karuseller med bare ett element ruller ikke, og telles ikke.
+    if (s.navn === 'PC') {
+      const avtrykk = () => side.evaluate(() => {
+        const alle = [...document.querySelectorAll('[data-nett-rot], [data-nett-karusell], [data-vakt-karusell]')];
+        return alle.map((el, i) => {
+          const type = el.getAttribute('data-nett-rot') || (el.hasAttribute('data-nett-karusell') ? 'karusell' : 'galleri');
+          const barn = [...el.querySelectorAll('*')];
+          const antall = type === 'rot' ? (window.lissomRot || []).length
+            : type === 'but' ? el.querySelectorAll(':scope > [data-but]').length
+            : type === 'karusell' ? [...el.children].filter(b => b.hasAttribute('data-nett-bilde') || (b.style && b.style.backgroundImage)).length
+            : Number(el.getAttribute('data-vakt-karusell')) || el.children.length;
+          const synlig = el.getClientRects().length > 0;
+          const spor = el.innerText + '|' + barn.map(b => getComputedStyle(b).opacity + (b.hidden ? 'h' : '') + b.style.transform).join(',')
+            + '|' + el.style.transform + '|' + el.scrollLeft;
+          return { nr: i, type, antall, synlig, spor };
+        });
+      }).catch(() => []);
+      const for_ = await avtrykk();
+      const aktuelle = for_.filter(k => k.synlig && k.antall > 1);
+      if (aktuelle.length) {
+        await side.mouse.move(0, 0);
+        // Referansekarusellen bytter hvert 10. sekund, de andre oftere.
+        await side.waitForTimeout(12500);
+        const etter = await avtrykk();
+        for (const k of aktuelle) {
+          const e = etter.find(x => x.nr === k.nr);
+          sjekk(`${navn}: karusellen «${k.type}» ruller`, !!e && e.spor !== k.spor, 'sto stille i 12 sekunder');
+        }
+      }
+    }
+
     if (status !== 200 || skriptfeil.length || maal.tekst <= 200 || maal.bredde > maal.skjerm + 1) {
       const fil = `${s.navn}${sti.replace(/\//g, '_') || '_forside'}.png`;
       await side.screenshot({ path: path.join(SKJERMBILDER, fil), fullPage: false }).catch(() => {});

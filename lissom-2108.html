@@ -36713,8 +36713,8 @@ class Component extends DCLogic {
     const gebyr = this.state.hlGebyr;
     const gebyrTekst = gebyr ? String(gebyr).replace('.', ',') : '';
     const pille = (paa) => ({
-      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
-      font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px',
+      font: 'var(--type-chip)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
       background: paa ? 'var(--lissom-brown)' : 'var(--clay-100)',
       color: paa ? '#fff' : 'var(--lissom-brown)',
     });
@@ -36873,8 +36873,8 @@ class Component extends DCLogic {
     const st = this.state;
     const type = st.mfType || 'bilde';
     const pille = (paa) => ({
-      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
-      font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px',
+      font: 'var(--type-chip)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
       background: paa ? 'var(--lissom-brown)' : 'var(--clay-100)',
       color: paa ? '#fff' : 'var(--lissom-brown)',
     });
@@ -36979,8 +36979,8 @@ class Component extends DCLogic {
     const tekster = st.mfTekster || {};
     const redigerer = st.mfRedigerer || {};
     const pilleStil = {
-      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
-      font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px',
+      font: 'var(--type-chip)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
       background: 'var(--clay-100)', color: 'var(--lissom-brown)',
     };
     const fjern = id => this.setState(s => ({ mfListe: (s.mfListe || []).filter(x => x.id !== id) }));
@@ -47293,8 +47293,8 @@ class Component extends DCLogic {
     const sum = skrevet !== null && !isNaN(skrevet) ? skrevet : regnet;
     const maate = this.state.tbMaate || '';
     const pille = (paa) => ({
-      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px',
-      font: 'var(--type-body-sm)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px',
+      font: 'var(--type-chip)', fontWeight: 700, border: '2px solid var(--lissom-brown)',
       background: paa ? 'var(--lissom-brown)' : 'var(--clay-100)', color: paa ? '#fff' : 'var(--lissom-brown)',
     });
     const klar = !!maate && (maate !== 'Gavekort' || String(this.state.tbKode || '').trim() !== '');
@@ -57766,8 +57766,8 @@ class Component extends DCLogic {
                 // Stilen staar her, ikke i en «chipStil» fra et annet
                 // omraade: brikkene i denne ruta skal ikke slutte aa virke
                 // den dagen en hjelper flyttes.
-                stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)',
-                        fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)',
+                stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-chip)',
+                        fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--radius-pill)',
                         border: '1.5px solid var(--border-subtle)', background: 'var(--surface-card)',
                         color: 'var(--text-heading)', whiteSpace: 'nowrap' },
                 velg: () => {

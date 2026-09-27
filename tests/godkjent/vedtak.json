@@ -483,6 +483,26 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ingen-github-epost-fra-grener",
+            "dato": "2026-09-27",
+            "hva": "«jeg får eposter fra github hele tiden» — testkjøringer på arbeidsgrener feiler ikke kjøringen (ingen e-post); sperren før publisering stopper og varsler som før",
+            "hvor": ".github/workflows/tester.yml",
+            "kode": [
+                {
+                    "fil": ".github/workflows/tester.yml",
+                    "finnes": [
+                        "continue-on-error: ${{ github.event_name == 'push' }}"
+                    ]
+                },
+                {
+                    "fil": ".github/workflows/deploy.yml",
+                    "finnes": [
+                        "needs: tester"
+                    ]
+                }
+            ]
         }
     ]
 }

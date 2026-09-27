@@ -494,6 +494,8 @@ await flyt('Bilder: last opp, dra og slipp, fokus og Lagre', async () => {
   const stor = kort.locator('[data-bf-stor]');
   // Bildet maa vaere lastet — foer det har det ingen stoerrelse aa trykke i.
   await p.waitForFunction((id) => { const i = document.querySelector(`[data-bf-kurs="${id}"] [data-bf-stor]`); return i && i.complete && i.naturalWidth > 0 && /artikkel=/.test(i.currentSrc || i.src); }, S.kurs, { timeout: 15000 });
+  await stor.scrollIntoViewIfNeeded();
+  await p.waitForTimeout(300);
   const b = await stor.boundingBox();
   await p.mouse.click(b.x + b.width * 0.25, b.y + b.height * 0.75);
   await p.waitForTimeout(400);

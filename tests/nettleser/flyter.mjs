@@ -460,8 +460,15 @@ await flyt('Gavekortsida', async () => {
   const p = await side(null);
   await gaa(p, '/gavekort', 2000);
   const t = await p.locator('body').innerText();
-  sjekk('sier at gavekortet sendes paa e-post', t.includes('Sendes på e-post når betalingen er gjennomført.'));
+  sjekk('sier at gavekortet sendes paa e-post', t.includes('Sendes på e-post så snart betalingen er gjennomført.'));
   sjekk('… og ikke at det kan hentes', !t.includes('Kan hentes i verkstedet') && !t.includes('Kan jeg få gavekortet fysisk?'));
+  // Eieren, 27. september 2026: nye tekster uten «verkstedtid», og en liten
+  // merkelapp som gavepreg. Google-tittelen beholder «Gavekort».
+  sjekk('overskriften er «Gi bort litt tid med leire»', (await p.locator('h1').first().innerText()).trim() === 'Gi bort litt tid med leire');
+  sjekk('… «verkstedtid» står ikke på sida', !/verkstedtid/i.test(t));
+  sjekk('… merkelappen står på kjøpskortet', await p.locator('svg.lx-gavelapp').count() === 1);
+  sjekk('… og tittelen for Google har fortsatt «Gavekort»', /Gavekort/.test(await p.title()));
+  sjekk('… og siden er ikke bredere enn skjermen', await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await p.context().close();
 });
 

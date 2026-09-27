@@ -20687,7 +20687,7 @@ sjekk('«Flytt hit» uten valgt dato gjoer ingenting',
 echo "\nGavekortet sendes paa e-post\n";
 $gkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('gavekortsida sier at kortet sendes paa e-post',
-    str_contains($gkSida, "'Sendes på e-post når betalingen er gjennomført.',"));
+    str_contains($gkSida, "'Sendes på e-post så snart betalingen er gjennomført.',"));
 sjekk('… og ikke at det kan hentes i verkstedet',
     !str_contains($gkSida, "'Kan hentes i verkstedet.'")
     && !str_contains($gkSida, 'Kan jeg få gavekortet fysisk?'));

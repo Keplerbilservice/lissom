@@ -4697,6 +4697,19 @@ window.__resources = {
             </div>
           </div>
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
+            <!-- Gavepreget (eieren, 27. september 2026: «noe som indikerer litt
+                 gave, men ikke for mye, i vaar stil»): en liten brun merkelapp
+                 med kaffekoppen i gult, festet med en tynn hyssing i hjoernet. -->
+            <svg class="lx-gavelapp" viewBox="0 0 92 120" width="92" height="120" aria-hidden="true" focusable="false" style="position: absolute; right: 10px; top: -34px; width: 72px; height: auto; transform: rotate(9deg); pointer-events: none;">
+              <path d="M46 2 C 40 14, 52 22, 46 34" fill="none" stroke="#4D1D12" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M22 36 L70 36 L80 50 L80 112 L12 112 L12 50 Z" fill="#4D1D12"/>
+              <circle cx="46" cy="47" r="4.5" fill="#FFCF38"/>
+              <g fill="#FFCF38" transform="translate(28 64)">
+                <rect x="3" y="0" width="26" height="20" rx="3"/>
+                <path d="M29 4 h4 a6 6 0 0 1 0 12 h-4 v-3 h4 a3 3 0 0 0 0-6 h-4 z"/>
+                <rect x="-2" y="23" width="40" height="3.5" rx="1.75"/>
+              </g>
+            </svg>
             <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">{{ gk2Tittel }}</div>
             <label style="display: block; margin-bottom: var(--space-2); font-size: var(--text-sm); color: var(--text-body);">{{ gk2Feltnavn }}</label>
             <div style="position: relative; margin-bottom: var(--space-2);">
@@ -30771,8 +30784,8 @@ const SIDEINNHOLD = {
   'Gavekort': [
     { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Gavekort' },
-      { l: 'Overskrift', v: 'Gavekort på keramikkurs' },
-      { l: 'Brødtekst', v: 'En opplevelse å glede seg til — og noe håndlaget å ta med hjem. Kan brukes på alle våre tjenester og produkter, med en personlig hilsen fra deg.', lang: true } ] },
+      { l: 'Overskrift', v: 'Gi bort litt tid med leire' },
+      { l: 'Brødtekst', v: 'Et gavekort hos oss er en invitasjon til å senke skuldrene og skape noe med hendene. Enten mottakeren vil delta på et kurs, eller velge seg håndlaget keramikk fra hyllene våre på Teie. Du kan velge et fritt beløp fra 100 til 20 000 kroner, og legge ved en liten hilsen.', lang: true } ] },
     { navn: 'Seksjonstitler', type: 'Overskrifter', synlig: 'Publisert', felter: [
       { l: 'Slik fungerer det', v: 'Slik fungerer det' },
       { l: 'Ofte stilte spørsmål', v: 'Ofte stilte spørsmål' } ] },
@@ -71150,14 +71163,14 @@ class Component extends DCLogic {
       }),
       goKontakt: this.go('kontakt'),
       gvPunkter: [
-        'Kan brukes på alle våre tjenester og produkter.',
-        'Sendes på e-post når betalingen er gjennomført.',
+        'Kan brukes på kurs, events, medlemskap og varer i butikken.',
+        'Sendes på e-post så snart betalingen er gjennomført.',
         'Mottakeren velger selv kurs og dato, og booker med koden på nettsiden.',
         'Gyldig i tre år fra kjøpsdato.',
       ],
       gvFaq: [
-        { sp: 'Hva kan gavekortet brukes på?', sv: 'Alle våre tjenester og produkter — kurs, events, medlemskap, verkstedtid og varer i butikken. Er det du velger dyrere enn gavekortet, betaler du mellomlegget med Vipps.' },
-        { sp: 'Hva om beløpet ikke brukes opp?', sv: 'Resten blir stående på koden og kan brukes senere, helt til gavekortet utløper.' },
+        { sp: 'Hva kan gavekortet brukes på?', sv: 'Det kan brukes på kurs, events, medlemskap og varer i butikken vår. Hvis man velger noe som koster mer enn gavekortets verdi, betales mellomlegget enkelt med Vipps.' },
+        { sp: 'Hva om beløpet ikke brukes opp?', sv: 'Da blir restbeløpet stående på den samme koden. Det kan fritt brukes ved en senere anledning, helt frem til gavekortet utløper.' },
       ],
       // Belopet er fritt. Feltet holdes som tekst mens man skriver, slik at
       // det gaar an aa slette alt og begynne paa nytt — et tall her ville

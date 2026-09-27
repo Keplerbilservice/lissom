@@ -100,6 +100,22 @@ sjekk('butikkbestillingen: tom {betaling} gir ingen tom rad', $r !== null
 sjekk('… uten signatur, fordi den er slått av for system', !str_contains($html, 'Hilsen Monica<br>'));
 sjekk('… og ingen knapp når malen ikke har én', !str_contains($html, 'padding: 14px 28px'));
 
+// ── Gavekortet til mottakeren: nye tekster og merkelappen ─────────────
+// Eieren, 27. september 2026: stryk «verkstedtid», litt følelse av gave.
+$gkFor = DB::verdi('SELECT aktiv FROM notification_templates WHERE navn = :n', ['n' => 'gavekort_mottaker']);
+DB::kjor('UPDATE notification_templates SET aktiv = 1 WHERE navn = :n', ['n' => 'gavekort_mottaker']);
+Varsel::mal('gavekort_mottaker', ['epost' => $til('gave')], [
+    'belop' => 'kr 1 490', 'hilsen' => '«Gratulerer med dagen!»', 'kode' => 'LISSOM-TEST', 'gyldig' => '27. september 2029',
+]);
+$r = $siste($til('gave'));
+$html = (string) ($r['html'] ?? '');
+sjekk('gavekortet: overskriften er «Et gavekort til deg»', $r !== null && str_contains($html, 'Et gavekort til deg'));
+sjekk('… «verkstedtid» står ikke i e-posten', $r !== null && stripos($html . (string) ($r['tekst'] ?? ''), 'verkstedtid') === false);
+sjekk('… merkelappen står ved faktakortet, med full adresse',
+    str_contains($html, 'src="https://lissom.no/e-post-gavelapp.png"') && str_contains($html, 'LISSOM-TEST'));
+sjekk('… og bare på gavekortet', !str_contains((string) (($siste($til('butikk')) ?? [])['html'] ?? ''), 'e-post-gavelapp.png'));
+DB::kjor('UPDATE notification_templates SET aktiv = :a WHERE navn = :n', ['a' => (int) $gkFor, 'n' => 'gavekort_mottaker']);
+
 // ── Medlemsinvitasjonen: avmeldingslenka er med ───────────────────────
 Varsel::mal('fortsett', ['epost' => $til('fortsett')], [
     'navn' => 'Kari', 'visste' => 'Visste du at? Du kan prøve medlemskapet.', 'avmelding' => 'https://lissom.no/avmelding?k=abc',

@@ -1,0 +1,54 @@
+name: Tester
+
+# Kjorer alle testene mot en tom database. Brukes av «Publiser til lissom.no»
+# som sperre: feiler noe her, legges ingenting ut. Kjores ogsaa paa hver
+# gren som ikke er main, saa en endring kan provest foer den slaas sammen.
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  tester:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: lissom
+          MARIADB_USER: lissom
+          MARIADB_PASSWORD: lissom
+          MARIADB_ROOT_PASSWORD: rot
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, curl, gd, intl, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Sett opp testoppsett og database
+        run: |
+          php -r '
+            $s = require "app/secrets.example.php";
+            $s["miljo"] = "test";
+            $s["db_vert"] = "127.0.0.1";
+            $s["db_navn"] = "lissom";
+            $s["db_bruker"] = "lissom";
+            $s["db_passord"] = "lissom";
+            file_put_contents("app/secrets.php", "<?php return " . var_export($s, true) . ";");
+          '
+          php bin/migrate.php
+
+      - name: Kjor alle testene
+        run: bash tests/alle.sh

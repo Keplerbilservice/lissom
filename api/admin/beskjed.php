@@ -136,6 +136,23 @@ if ($mottakere === []) {
     Svar::feil('Ingen å sende til i denne gruppa.', 409);
 }
 
+// Hvor mange som faar den, uten aa sende noe. Kursboost spoer om dette
+// foer «Send til medlemmene», saa bekreftelsen kan si tallet (eieren, 27.
+// september 2026). Samme utvalg som utsendingen under — ikke en kopi.
+if (Foresporsel::tekst('handling') === 'antall') {
+    Svar::ok([
+        'antall' => count(array_filter($mottakere, static fn($m) => !empty($m['epost']))),
+        'hvem'   => $hvem,
+    ]);
+}
+
+// Fra kursboost: samme del skal ikke kunne sendes to ganger ved et uhell.
+// Kursboost::merk() skriver ned at den er gjort etter at koen har tatt imot.
+$kursboostId = Foresporsel::heltall('kursboost');
+if ($kursboostId > 0 && Kursboost::gjort($kursboostId, 'medlemmer') !== null) {
+    Svar::feil('Denne meldingen er alt sendt til medlemmene.', 409);
+}
+
 // Hvem beskjeden gikk til, lagret paa varselet.
 //
 // Sendte beskjeder kunne ikke finnes igjen: koen visste hvem som fikk e-post,
@@ -217,6 +234,11 @@ if ($til === 'medlemmer') {
         // e-postene er alt i koen. Den havner i loggen i stedet.
         logg('Beskjed: fikk ikke lagret til Min side', ['feil' => $e->getMessage()]);
     }
+}
+
+if ($kursboostId > 0) {
+    Kursboost::merk($kursboostId, 'medlemmer', ['epost' => $epost, 'sms' => $antallSms]);
+    revider('kursboost_sendt', 'ai_utkast', $kursboostId, ['del' => 'medlemmer', 'epost' => $epost]);
 }
 
 $beskjed = sprintf(

@@ -39,6 +39,47 @@ final class Artikler
      *
      * @param int|null $utenom Artikkelen som selv har tittelen (ved lagring).
      */
+    /**
+     * En artikkel som kladd, laget av et AI-utkast.
+     *
+     * Staar her og ikke i api/admin/ai.php fordi to veier lager den samme
+     * kladden: «Lagre som kladd» paa et artikkelutkast, og «Lagre som kladd i
+     * Nyheter» i kursboost (eieren, 27. september 2026). Var det to kopier,
+     * kunne den ene faatt en slug-regel den andre ikke hadde.
+     *
+     * @param array<string,mixed> $data kategori, slug, fokusord, ingress, bilde
+     * @return array{id: int, tittel: string}
+     */
+    public static function kladdFraUtkast(string $tittel, string $tekst, array $data): array
+    {
+        $slug = trim((string) ($data['slug'] ?? ''));
+        if ($slug === '') {
+            $slug = mb_strtolower($tittel);
+            $slug = strtr($slug, ['æ' => 'ae', 'ø' => 'o', 'å' => 'a']);
+            $slug = trim(preg_replace('/[^a-z0-9]+/', '-', $slug) ?? '', '-');
+        }
+        // To artikler kan ikke dele adresse.
+        $grunn = $slug;
+        $n = 2;
+        while ((int) DB::verdi('SELECT COUNT(*) FROM articles WHERE slug = :s', ['s' => $slug]) > 0) {
+            $slug = $grunn . '-' . $n++;
+        }
+        $ledig = self::ledigTittel($tittel);
+        $id = DB::settInn('articles', [
+            'tittel'    => $ledig,
+            'kategori'  => $data['kategori'] ?? null,
+            'slug'      => $slug,
+            'fokus_ord' => $data['fokusord'] ?? ($data['sokeord'] ?? null),
+            'ingress'   => $data['ingress'] ?? null,
+            'innhold'   => $tekst,
+            'bilde'     => $data['bilde'] ?? null,
+            'kilde'     => 'ai',
+            // Kladd, ikke publisert. Eieren velger tidspunktet selv.
+            'status'    => 'kladd',
+        ]);
+        return ['id' => (int) $id, 'tittel' => $ledig];
+    }
+
     public static function ledigTittel(string $tittel, ?int $utenom = null): string
     {
         $tittel = trim($tittel) !== '' ? trim($tittel) : 'Uten overskrift';

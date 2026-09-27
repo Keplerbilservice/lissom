@@ -50,6 +50,7 @@ kjor "galleri"       php tests/galleri.php
 kjor "betalingsflyt" bash tests/flyt.sh
 kjor "delt betaling" bash tests/deltbetaling.sh
 kjor "galleri, admin" bash tests/galleri.sh
+kjor "kursboost"     bash tests/kursboost.sh
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

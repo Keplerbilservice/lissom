@@ -100,6 +100,10 @@ foreach ([-5 => 'fortsett', -1 => 'anmeldelse'] as $d => $hvem) {
         'belop_ore' => 280000, 'status' => 'betalt']);
 }
 
+// Kasse-kortet paa Oversikt viser de som har staatt lengst ubetalt. Med
+// andre testers plasser i basen maa denne vaere eldst for aa komme med.
+DB::kjor("UPDATE bookings SET created_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 400 DAY) WHERE id = :i", ['i' => $betal]);
+
 $gavekort = 'E2E-' . strtoupper($tag);
 DB::settInn('gift_cards', ['kode' => $gavekort, 'opprinnelig_ore' => 100000, 'saldo_ore' => 100000,
     'gyldig_til' => gmdate('Y-m-d', time() + 86400 * 365), 'status' => 'aktivt', 'opprinnelse' => 'gitt']);

@@ -40,7 +40,9 @@ const forside = les('app/nett/sider/forside.php');
 //
 // Linja som setter <script> sammen. Begge delene skal staa der, og sidas
 // egne data skal komme forst.
-const linje = (nett.match(/^.*window\.lissomMaal.*$/m) || [''])[0];
+// «<script>» foran: fra 21. september 2026 staar navnet ogsaa i en
+// kommentar hoeyere opp i fila (a277c0b), og den er ikke linja vi mener.
+const linje = (nett.match(/^.*<script>window\.lissomMaal.*$/m) || [''])[0];
 sjekk('linja som setter skriptet sammen finnes', linje !== '');
 
 const iSide = linje.indexOf("$side['skript']");

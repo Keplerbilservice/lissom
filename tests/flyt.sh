@@ -114,10 +114,12 @@ sjekk "riktig signatur godtas" "200" "$(curl -s -m 15 -o /dev/null -w '%{http_co
 sjekk "bookingen er betalt" "betalt" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   echo DB::verdi("SELECT status FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);')"
+# Kundens kvittering. Siden 13. september gaar det ogsaa et internt varsel
+# til verkstedet paa samme booking (46d2eed) — det teller ikke her.
 sjekk "noyaktig én kvittering" "1" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   $b = DB::en("SELECT id FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);
-  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i", ["i" => $b["id"]]);')"
+  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i AND mal = \"ordrebekreftelse\"", ["i" => $b["id"]]);')"
 
 echo
 echo "== Samme webhook om igjen =="
@@ -126,7 +128,7 @@ sjekk "duplikat gjor ingenting" "1" "$(curl -s -m 15 -X POST -H 'Content-Type: a
   php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   $b = DB::en("SELECT id FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);
-  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i", ["i" => $b["id"]]);')"
+  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i AND mal = \"ordrebekreftelse\"", ["i" => $b["id"]]);')"
 
 echo
 echo "── $ok gikk gjennom, $feil feilet"

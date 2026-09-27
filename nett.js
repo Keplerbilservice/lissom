@@ -390,4 +390,30 @@
     });
   }
   maal();
+
+  /* ── Kalenderen: sveip for aa bla i ukene ───────────────────────────── */
+  // Eieren, 27. september 2026: «kan du gjoere saa man kan scrolle eller bla
+  // i den sideveis paa mobil». Sveip mot venstre = neste uke, mot hoeyre =
+  // forrige — de samme adressene som pilene. Bare paa kalendersida, og bare
+  // naar fingeren gaar tydelig sideveis, saa vanlig rulling ikke blir et
+  // ukebytte.
+  var ukeFeltet = d.getElementById('ukedag-0');
+  var ukeSeksjon = ukeFeltet && ukeFeltet.closest('section');
+  if (ukeSeksjon) {
+    var sx = null, sy = 0;
+    ukeSeksjon.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) { sx = null; return; }
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    ukeSeksjon.addEventListener('touchend', function (e) {
+      if (sx === null) return;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - sx, dy = t.clientY - sy;
+      sx = null;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      var pil = d.querySelector(dx < 0 ? '[aria-label="Neste uke"]' : '[aria-label="Forrige uke"]');
+      var h = pil && pil.getAttribute('data-href');
+      if (h) location.href = h;
+    }, { passive: true });
+  }
 })();

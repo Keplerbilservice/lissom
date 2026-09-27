@@ -6,6 +6,15 @@
   'use strict';
   var d = document;
 
+  /* ── Vervelenka ─────────────────────────────────────────────────────── */
+  // lissom.no/medlemskap?verv=KODE tegnes av serveren. Koden huskes her, og
+  // appen sender den med innmeldingen — se vervKode() i lissom-2108.html.
+  try {
+    var verv = (new URLSearchParams(window.location.search).get('verv') || '')
+      .toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+    if (verv) localStorage.setItem('lissom-verv', verv);
+  } catch (e) { /* uten lagring blir det ingen premie, men sida virker */ }
+
   /* ── Toppen ─────────────────────────────────────────────────────────── */
   // Gjennomsiktig over heroen; hvit med skygge naar man har rullet 8 px.
   var topper = d.querySelectorAll('header[data-nett-topp="overlay"]');
@@ -40,7 +49,21 @@
   // stiler sikter paa <button>.
   d.addEventListener('click', function (e) {
     var el = e.target.closest && e.target.closest('[data-href]');
-    if (el) { location.href = el.getAttribute('data-href'); }
+    if (!el) return;
+    var h = el.getAttribute('data-href');
+    // Et anker paa samme side (dagbrikkene i ukekalenderen) skal rulle dit.
+    // Sidene har <base href="/">, saa «location.href = '#…'» gikk til
+    // forsida. Eieren, 27. september 2026: «naar jeg trykker paa f.eks. 26/9
+    // saa viser den ikke kurset den dagen. Popper tilbake til et annet sted».
+    if (h.charAt(0) === '#') {
+      var maal = d.getElementById(h.slice(1));
+      if (maal && maal.getClientRects().length) {
+        maal.style.scrollMarginTop = '90px';
+        maal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+    location.href = h;
   });
 
   /* ── Hover-stilene («style-hover» i appen) ──────────────────────────── */
@@ -160,6 +183,106 @@
         for (var i = 0; i < bilder.length; i++) bilder[i].style.opacity = i === nr ? '1' : '0';
       }, Math.max(2, sek) * 1000);
     })(kar[ki]);
+  }
+
+  /* ── Galleriet paa forsida ──────────────────────────────────────────── */
+  // Eieren, 27. september 2026: «jeg vil at de skal rullere». Ett kort om
+  // gangen hvert fjerde sekund; fire synlige paa PC, to paa telefon (CSS:
+  // .lx-galleri-spor). Stopper naar musa eller fingeren er over, og staar i
+  // ro for den som har bedt om mindre bevegelse — som feltene over.
+  //
+  // Rundt, ikke fram og tilbake: sporet glir ett kort til venstre, og det
+  // foerste kortet flyttes bakerst naar glidningen er ferdig. Da ruller ogsaa
+  // fire kort paa PC, der alle fire allerede er synlige. Appen har ingen
+  // egen forside (74a6bcb), saa dette er det eneste stedet det skjer.
+  // Vakta (bin/vakt.mjs) ser etter «data-vakt-karusell» og maaler at det ruller.
+  if (!rolig) {
+    var galPause = 0;
+    d.addEventListener('touchstart', function (e) {
+      if (e.target.closest && e.target.closest('.lx-galleri')) galPause = Date.now() + 8000;
+    }, { passive: true });
+    setInterval(function () {
+      var spor = d.querySelector('[data-galleri-spor]');
+      if (!spor || d.hidden || Date.now() < galPause) return;
+      if (spor.parentElement.matches(':hover')) return;
+      var kort = spor.children;
+      if (kort.length < 2) return;
+      var steg = kort[1].getBoundingClientRect().left - kort[0].getBoundingClientRect().left;
+      if (!(steg > 0)) return;
+      spor.style.transition = '';
+      spor.style.transform = 'translateX(' + (-steg) + 'px)';
+      setTimeout(function () {
+        spor.style.transition = 'none';
+        spor.appendChild(spor.firstElementChild);
+        spor.style.transform = 'translateX(0px)';
+      }, 750);
+    }, 4000);
+  }
+
+  /* ── Datoene paa kurssida: ingen lasteside, ingen hopp ───────────────── */
+  // Eieren, 27. september 2026: «naar jeg velger dato paa et kurs … hvor maa
+  // den laste da? virker tungvint og siden hopper». Datoen er en lenke inn i
+  // appen (?dag=), og appen er et nytt dokument som maa starte: maalt paa
+  // lissom.no 27.09 var lastesida framme i 2 s paa en treg telefon, og sida
+  // hoppet fra der hun sto til 815 px ned.
+  //
+  // Sideskiftet er det samme, men det hun ser er ikke lenger en lasteside:
+  // sida tar vare paa seg selv (stilen og det som staar, uten skript) og
+  // hvor hun sto, og appen viser akkurat det bildet til bookingen er klar —
+  // se «Overgangen fra kurssida» i lissom-2108.html. Der settes bookingen
+  // saa den valgte datoen staar der hun trykket.
+  //
+  // Bare paa kurssidene, og bare for datolenkene. Gaar noe galt her, gaar
+  // lenka som foer.
+  if (/^\/kurs\/[^\/]+\/?$/.test(window.location.pathname)) {
+    d.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest && e.target.closest('a[href*="?dag="]');
+      if (!a || a.target === '_blank') return;
+      try {
+        var til = new URL(a.getAttribute('href'), window.location.href);
+        if (til.origin !== window.location.origin || til.pathname.replace(/\/$/, '') !== window.location.pathname.replace(/\/$/, '')) return;
+        // Svaret paa trykket vises med det samme: dagen staar valgt.
+        a.style.background = 'var(--lissom-brown)';
+        a.style.color = 'var(--clay-50)';
+        a.style.borderColor = 'var(--lissom-brown)';
+        a.setAttribute('aria-current', 'true');
+        var stil = '';
+        var stiler = d.querySelectorAll('head style');
+        for (var i = 0; i < stiler.length; i++) stil += stiler[i].textContent + '\n';
+        var kropp = d.body.cloneNode(true);
+        var fjern = kropp.querySelectorAll('script, noscript, iframe');
+        for (var j = 0; j < fjern.length; j++) fjern[j].remove();
+        sessionStorage.setItem('lissom-overgang', JSON.stringify({
+          sti: window.location.pathname.replace(/\/$/, ''),
+          dag: til.searchParams.get('dag') || '',
+          t: Date.now(),
+          y: Math.round(window.scrollY),
+          bredde: window.innerWidth,
+          topp: Math.round(a.getBoundingClientRect().top),
+          stil: stil,
+          html: kropp.innerHTML,
+        }));
+      } catch (x) { /* fullt lager eller privat modus: lenka gaar som foer */ }
+    });
+    // Tilbake-knappen viser sida fra bufferen, med dagen fortsatt markert.
+    window.addEventListener('pageshow', function (e) {
+      if (!e.persisted) return;
+      var merket = d.querySelectorAll('a[aria-current="true"][href*="?dag="]');
+      for (var i = 0; i < merket.length; i++) {
+        merket[i].style.background = ''; merket[i].style.color = ''; merket[i].style.borderColor = '';
+        merket[i].removeAttribute('aria-current');
+      }
+    });
+    // Chrome og Edge henter datosida i forveien naar pekeren hviler paa en dato.
+    try {
+      if (HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules')) {
+        var sr = d.createElement('script');
+        sr.type = 'speculationrules';
+        sr.textContent = JSON.stringify({ prefetch: [{ where: { selector_matches: 'a[href*="?dag="]' }, eagerness: 'moderate' }] });
+        d.head.appendChild(sr);
+      }
+    } catch (x) { /* eldre nettlesere: ingen forhaandshenting */ }
   }
 
   /* ── Appen, i bakgrunnen ────────────────────────────────────────────── */
@@ -376,4 +499,33 @@
     });
   }
   maal();
+
+  /* ── Kalenderen: datoraden paa telefon ──────────────────────────────── */
+  // Eieren, 27. september 2026: «jeg vil at datene skal rulle, og ikke noe
+  // annet paa siden ingen hopping osv bare rulle datoer». Raden ruller av
+  // seg selv (CSS). Et trykk paa en dag med kurs viser kursene den dagen i
+  // panelet under — ingen ny side, ingen rulling av sida.
+  d.addEventListener('click', function (e) {
+    var knapp = e.target.closest && e.target.closest('[data-rull-dag]');
+    if (!knapp) return;
+    var dag = knapp.getAttribute('data-rull-dag');
+    if (!dag) return;
+    var alle = d.querySelectorAll('[data-rull-dag]');
+    for (var k = 0; k < alle.length; k++) {
+      var b = alle[k];
+      if (!b.getAttribute('data-rull-dag')) continue;
+      var valgt = b === knapp;
+      b.style.background = valgt ? 'var(--lissom-brown)' : 'var(--lissom-yellow)';
+      b.style.color = valgt ? 'var(--clay-50)' : 'var(--lissom-brown)';
+      var prikk = b.lastElementChild;
+      if (prikk) {
+        prikk.style.background = valgt ? 'var(--lissom-yellow)' : 'var(--lissom-brown)';
+        prikk.style.color = valgt ? 'var(--lissom-brown)' : 'var(--clay-50)';
+      }
+    }
+    var paneler = d.querySelectorAll('[data-rull-panel]');
+    for (var p = 0; p < paneler.length; p++) {
+      paneler[p].style.display = paneler[p].getAttribute('data-rull-panel') === dag ? 'block' : 'none';
+    }
+  });
 })();

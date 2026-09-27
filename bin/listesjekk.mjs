@@ -11,7 +11,7 @@
  * Denne leser malen, finner hver liste og hvert vilkaar, og sier fra om
  * navnet ikke settes noe sted i renderVals().
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const s = readFileSync(new URL('../lissom-2108.html', import.meta.url), 'utf8');
 
@@ -24,6 +24,14 @@ const s = readFileSync(new URL('../lissom-2108.html', import.meta.url), 'utf8');
 // streng kan se slik ut), men denne vakten skal fange det som MANGLER; aa
 // godta for mye gjor den bare mildere, ikke feil.
 const satt = new Set([...s.matchAll(/\b([A-Za-z_$][\w$]*)\s*:/g)].map(m => m[1]));
+
+// Sidene serveren tegner selv (app/nett/sider/, via Mal::tegn) setter
+// verdiene i PHP: «'popHarStripe' => ...» i kalender.php. De teller ogsaa.
+const sider = new URL('../app/nett/sider/', import.meta.url);
+for (const f of readdirSync(sider).filter(f => f.endsWith('.php'))) {
+  const php = readFileSync(new URL(f, sider), 'utf8');
+  for (const m of php.matchAll(/'([A-Za-z_$][\w$]*)'\s*=>/g)) satt.add(m[1]);
+}
 
 // Navn som kommer fra en sc-for: «as="k"» gir k, og k.noe er da lovlig.
 const loopnavn = new Set([...s.matchAll(/\sas="([A-Za-z_$][\w$]*)"/g)].map(m => m[1]));

@@ -239,6 +239,15 @@ $adresse = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL
 $adresse = rtrim($adresse, '/');
 if ($adresse === '') { $adresse = '/'; }
 
+// «Les mer» under «Er dere en gruppe …» paa forsida pekte paa /?skjema=1, og
+// appen har ingen forside lenger — lastesida ble staaende i 40 sekunder
+// (Gemini fant det 27. september 2026). Gruppeskjemaet er det samme som paa
+// /bedrift?skjema=1, saa gamle lenker og bokmerker sendes dit.
+if ($adresse === '/' && isset($_GET['skjema'])) {
+    header('Location: /bedrift?skjema=1', true, 302);
+    exit;
+}
+
 $kart = json_decode((string) @file_get_contents(SIDE_KART), true);
 if (!is_array($kart) || !isset($kart['stier'], $kart['sider'])) {
     $ut($html);
@@ -341,7 +350,8 @@ if ($d === null && str_starts_with($adresse, '/butikk/')) {
         $vareId = Lenker::vareId($adresse);
         $v = $vareId === null ? null : DB::en(
             "SELECT id, tittel, beskrivelse, bilde, pris_ore, lager, kun_medlemmer
-               FROM products WHERE id = :i AND status = 'publisert'",
+               FROM products WHERE id = :i AND status = 'publisert'
+                AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)",
             ['i' => $vareId]
         );
         // Medlemsvarene — leire, ekstra brenning — er verkstedets interne
@@ -482,8 +492,11 @@ if (!$finnes && is_array($alle)) {
                 ) > 0;
             } else {
                 $vareId = Lenker::vareId($adresse);
+                // En utsolgt nettbutikkvare er borte til den er paa lager
+                // igjen (eieren, 27. september 2026).
                 $finnes = $vareId !== null && (int) DB::verdi(
-                    "SELECT COUNT(*) FROM products WHERE id = :i AND status = 'publisert'",
+                    "SELECT COUNT(*) FROM products WHERE id = :i AND status = 'publisert'
+                      AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)",
                     ['i' => $vareId]
                 ) > 0;
             }

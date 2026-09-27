@@ -1229,8 +1229,11 @@ final class Booking
      *
      * @param array<string, mixed> $b bookingen, med start_tid og slutt_tid
      */
-    public static function kursinfo(array $b): string
+    public static function kursinfo(array $b, bool $utenSamlinger = false): string
     {
+        // $utenSamlinger: samlingene staar som egne kort i kursbekreftelsen
+        // (Samlinger::forEpost), saa «Dag 1 … Dag 2» skal ikke staa to ganger.
+        // Lengden og «Praktisk» er med som foer.
         $deler = [];
         $samlinger = !empty($b['course_session_id'])
             ? (Samlinger::forOkter([(int) $b['course_session_id']])[(int) $b['course_session_id']] ?? [])
@@ -1253,7 +1256,7 @@ final class Booking
             }
         }
 
-        if (count($samlinger) > 1) {
+        if (count($samlinger) > 1 && !$utenSamlinger) {
             foreach ($samlinger as $i => $s) {
                 $tittel = trim((string) ($s['overskrift'] ?? ''));
                 $tekst  = trim((string) ($s['tekst'] ?? ''));
@@ -1320,7 +1323,10 @@ final class Booking
         $naar = $b['start_tid']
             ? self::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null)
             : '';
-        $kursinfo = self::kursinfo($b);
+        // Ett kort per samling naar kurset gaar over flere (eieren, 27.
+        // september 2026). Da skrives ikke samlingene i {kursinfo} ogsaa.
+        $samlingskort = Samlinger::forEpost((int) ($b['course_session_id'] ?? 0));
+        $kursinfo = self::kursinfo($b, $samlingskort !== []);
         Varsel::mal('ordrebekreftelse', [
             'epost'   => $b['m_epost'] ?? $b['gjest_epost'],
             'telefon' => $b['m_telefon'] ?? $b['gjest_telefon'],
@@ -1345,6 +1351,9 @@ final class Booking
             'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1
                 ? 'Du betaler ved oppmøte — kontant eller Vipps.'
                 : '',
+            // Samlingskortene. Ikke et felt eieren skriver i malen — Varsel::
+            // oppsett() tegner dem som egne kort under faktakortet.
+            Varsel::SAMLINGER => $samlingskort !== [] ? (string) json_encode($samlingskort, JSON_UNESCAPED_UNICODE) : '',
         ], 'booking', $bookingId);
 
         // ── Og en beskjed til verkstedet ──────────────────────────────
@@ -2103,8 +2112,15 @@ final class Booking
         //
         // Leser vi bare den nye, staar en betalt Vipps-plass som ubetalt her
         // — og det var noeyaktig det som skjedde. Vi leser begge.
+        // Gavekortdelen teller med. Et gavekort er penger som kom inn den
+        // gangen kortet ble kjopt: raden har null kroner i «belop_ore» og
+        // beloepet i «gavekort_ore». Uten den sto en plass betalt med kort pluss
+        // kontant som om bare kontantene var betalt (eieren, 27. september
+        // 2026: «litt gavekort og litt penger og litt vipps»).
+        $gaveFelt = DB::harKolonne('payments', 'gavekort_ore')
+            ? 'COALESCE(p.gavekort_ore, 0) AS gavekort_ore' : '0 AS gavekort_ore';
         $rader = DB::alle(
-            'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, p.status, p.maate,
+            'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, ' . $gaveFelt . ', p.status, p.maate,
                     p.kommentar, p.annullert_at, p.created_at,
                     p.registrert_av, m.navn AS registrert_navn
                FROM payments p
@@ -2119,7 +2135,7 @@ final class Booking
         foreach ($rader as $r) {
             if ($r['annullert_at'] === null
                 && in_array((string) $r['status'], ['betalt', 'autorisert', 'delvis_refundert'], true)) {
-                $sum += (int) $r['belop_ore'];
+                $sum += (int) $r['belop_ore'] + (int) $r['gavekort_ore'];
             }
         }
 

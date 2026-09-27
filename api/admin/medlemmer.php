@@ -1271,6 +1271,117 @@ if (Foresporsel::metode() === 'POST') {
     // Medlemskap::sisteBetalinger(), som er den merket paa medlemmet leser.
     // Uten den siste ville medlemmet blitt staaende som ubetalt selv etter at
     // pengene var talt opp.
+    // ── Medlemskapet gjort opp i flere deler ─────────────────────────
+    //
+    // Eieren, 27. september 2026: «litt gavekort og litt penger og litt
+    // vipps, dele betaling?» — GO paa skissen i «Ta betalt». Én betaling per
+    // del, alle i én transaksjon, samme felter som ett beloep under.
+    //
+    //   POST handling=betaling { medlemId, deler: [{ maate, belop, kode? }] }
+    $raaDeler = $handling === 'betaling' ? (Foresporsel::kropp()['deler'] ?? null) : null;
+    if (is_array($raaDeler) && count($raaDeler) >= 2) {
+        $id = Foresporsel::heltall('medlemId');
+        $medlem = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($medlem === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+        if (count($raaDeler) > 5) {
+            Svar::feil('Legg inn mellom én og fem deler.');
+        }
+        $deler = [];
+        $sum = 0;
+        $kort = null;
+        foreach ($raaDeler as $d) {
+            $m = is_array($d) ? (string) ($d['maate'] ?? '') : '';
+            if (!in_array($m, ['Kontant', 'Vipps', 'Gavekort'], true)) {
+                Svar::feil('Velg betalingsmåte på hver del.');
+            }
+            $t = trim(str_replace(',', '.', str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) ($d['belop'] ?? ''))));
+            if ($t === '' || !is_numeric($t) || (float) $t <= 0) {
+                Svar::feil('Skriv inn et beløp på hver del.');
+            }
+            $ore = (int) round((float) $t * 100);
+            if ($m === 'Gavekort') {
+                if ($kort !== null) {
+                    Svar::feil('Bare ett gavekort per betaling.');
+                }
+                $kort = Booking::finnGavekort((string) ($d['kode'] ?? ''));
+                if ($kort === null) {
+                    Svar::feil('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp '
+                             . 'eller gått ut på dato.');
+                }
+                if ($ore > $kort['saldo_ore']) {
+                    Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                             . ' igjen. Sett ned beløpet på gavekortdelen.');
+                }
+            }
+            $sum += $ore;
+            $deler[] = ['maate' => $m, 'ore' => $ore];
+        }
+        if ($sum > 10000000) {
+            Svar::feil('Beløpet må være under 100 000 kroner.');
+        }
+
+        $avtale = DB::en(
+            "SELECT id FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
+            ['m' => $id]
+        );
+        $adminId = (int) $jeg['id'];
+        [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $id, $avtale, $kort, $adminId): array {
+            $ider = [];
+            $gaveRad = null;
+            foreach ($deler as $i => $d) {
+                $erGavekort = $d['maate'] === 'Gavekort';
+                $felt = [
+                    'vipps_reference' => 'MEDL-' . $id . '-' . gmdate('ymdHis') . '-'
+                                       . strtoupper(bin2hex(random_bytes(2))) . '-' . ($i + 1),
+                    'type'            => 'manuell',
+                    'formal'          => 'medlemskap',
+                    'member_id'       => $id,
+                    'belop_ore'       => $erGavekort ? 0 : $d['ore'],
+                    'status'          => 'betalt',
+                    'idempotency_key' => Vipps::uuid(),
+                ];
+                if ($erGavekort) {
+                    $felt['gavekort_id']  = (int) $kort['id'];
+                    $felt['gavekort_ore'] = $d['ore'];
+                }
+                if ($avtale !== null) {
+                    $felt['subscription_id'] = (int) $avtale['id'];
+                }
+                if (DB::harKolonne('payments', 'maate')) {
+                    $felt['maate'] = $d['maate'];
+                }
+                if (DB::harKolonne('payments', 'registrert_av')) {
+                    $felt['registrert_av'] = $adminId;
+                }
+                $bid = DB::settInn('payments', $felt);
+                $ider[] = $bid;
+                if ($erGavekort) {
+                    $gaveRad = $bid;
+                }
+            }
+            return [$ider, $gaveRad];
+        });
+
+        if ($gaveRad !== null) {
+            Booking::trekkGavekort((int) $gaveRad);
+            revider('gavekort_brukt', 'member', $id, ['kort' => (int) $kort['id']]);
+        }
+        revider('medlem_betaling_registrert', 'member', $id, [
+            'betalinger' => $ider, 'belop' => $sum, 'deler' => $deler,
+        ]);
+
+        Svar::ok([
+            'beskjed' => $medlem['navn'] . ' er registrert betalt ' . Booking::kroner($sum) . ' — '
+                       . implode(', ', array_map(
+                           static fn(array $d): string => mb_strtolower($d['maate']) . ' ' . Booking::kroner($d['ore']),
+                           $deler))
+                       . '. Det er med i regnskapet.',
+        ]);
+    }
+
     if ($handling === 'betaling') {
         $id = Foresporsel::heltall('medlemId');
         $medlem = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);

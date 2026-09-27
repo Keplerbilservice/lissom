@@ -31,6 +31,9 @@ $varer = DB::alle(
     "SELECT id, tittel, beskrivelse, bilde, kategori, pris_ore, lager, kun_medlemmer
        FROM products
       WHERE status = 'publisert' AND {$hvor}
+        -- En utsolgt nettbutikkvare vises ikke, og kommer tilbake naar den
+        -- er paa lager igjen (eieren, 27. september 2026). Internvarene staar.
+        AND (kun_medlemmer = 1 OR lager IS NULL OR lager > 0)
       ORDER BY kun_medlemmer, kategori, tittel"
 );
 

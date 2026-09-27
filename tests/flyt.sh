@@ -77,7 +77,7 @@ echo $t;
 
 OKT=$(php -r 'require "'"$ROT"'/app/bootstrap.php";
 echo (int) DB::verdi("SELECT cs.id FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
-  WHERE c.status = \"publisert\" AND cs.start_tid > UTC_TIMESTAMP() ORDER BY cs.start_tid LIMIT 1");')
+  WHERE c.status = \"publisert\" AND c.pris_ore > 0 AND cs.start_tid > UTC_TIMESTAMP() ORDER BY cs.start_tid LIMIT 1");')
 
 echo
 echo "== Uten innlogging =="
@@ -93,6 +93,7 @@ SVAR=$(curl -s -m 15 -X POST -H "Content-Type: application/json" -H "$ORIG" \
   -H "Cookie: lissom_sesjon=$TOKEN" -d "{\"oktId\":$OKT,\"antall\":1}" "$B/book.php")
 REF=$(echo "$SVAR" | python3 -c "import sys,json;print(json.load(sys.stdin).get('referanse',''))" 2>/dev/null)
 sjekk "booking gir en referanse" "ja" "$([ -n "$REF" ] && echo ja || echo nei)"
+[ -z "$REF" ] && echo "    oekt $OKT, svar: ${SVAR:0:300}"
 sjekk "reservasjon opprettet" "reservert" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   echo $p ? DB::verdi("SELECT status FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]) : "mangler";')"
@@ -114,10 +115,12 @@ sjekk "riktig signatur godtas" "200" "$(curl -s -m 15 -o /dev/null -w '%{http_co
 sjekk "bookingen er betalt" "betalt" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   echo DB::verdi("SELECT status FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);')"
+# Kundens kvittering. Siden 13. september gaar det ogsaa et internt varsel
+# til verkstedet paa samme booking (46d2eed) — det teller ikke her.
 sjekk "noyaktig én kvittering" "1" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   $b = DB::en("SELECT id FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);
-  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i", ["i" => $b["id"]]);')"
+  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i AND mal = \"ordrebekreftelse\"", ["i" => $b["id"]]);')"
 
 echo
 echo "== Samme webhook om igjen =="
@@ -126,7 +129,7 @@ sjekk "duplikat gjor ingenting" "1" "$(curl -s -m 15 -X POST -H 'Content-Type: a
   php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   $b = DB::en("SELECT id FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);
-  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i", ["i" => $b["id"]]);')"
+  echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i AND mal = \"ordrebekreftelse\"", ["i" => $b["id"]]);')"
 
 echo
 echo "── $ok gikk gjennom, $feil feilet"

@@ -249,6 +249,140 @@ $handling = Foresporsel::tekst('handling', 'selg');
 // Fra dette oeyeblikket er salget som ethvert annet kassesalg: samme rad,
 // samme kobling, samme vei inn i omsetningen og dagsoppgjoret. Datoen paa
 // raden er i dag, for det er i dag pengene kom.
+// ── Et ubetalt salg gjort opp i flere deler ────────────────────────────
+//
+// Eieren, 27. september 2026: «litt gavekort og litt penger og litt vipps,
+// dele betaling?» — GO paa skissen i «Ta betalt». Samme rader som et delt
+// salg over disk (handling=delt lenger ned): én betaling per del, alle med
+// «order_id», gavekortet med null kroner og beloepet i «gavekort_ore».
+// Alt i én transaksjon, saa enten staar alle delene, eller ingen.
+//
+//   POST handling=gjorOpp { ordreId, deler: [{ maate, belop, kode? }] }
+if ($handling === 'gjorOpp' && is_array($kropp['deler'] ?? null) && count($kropp['deler']) >= 2) {
+    if (!DB::harKolonne('payments', 'order_id')) {
+        Svar::feil('Delt betaling krever en oppdatering av databasen. '
+                 . 'Kjør «Kjør oppdateringer» under Vedlikehold først.', 503);
+    }
+    $ordreId = (int) ($kropp['ordreId'] ?? 0);
+    $ordre = DB::en('SELECT id, ordrenr, sum_ore, status, payment_id FROM orders WHERE id = :i',
+                    ['i' => $ordreId]);
+    if ($ordre === null) {
+        Svar::feil('Fant ikke salget.', 404);
+    }
+    if ($ordre['payment_id'] !== null) {
+        Svar::feil('Salget er alt gjort opp.', 409);
+    }
+    if (in_array((string) $ordre['status'], ['kansellert', 'refundert'], true)) {
+        Svar::feil('Salget er annullert.', 409);
+    }
+    if (count($kropp['deler']) > 5) {
+        Svar::feil('Et salg kan deles i høyst fem.');
+    }
+
+    $rene = [];
+    $delsum = 0;
+    $kort = null;
+    foreach ($kropp['deler'] as $d) {
+        $m = is_array($d) ? (string) ($d['maate'] ?? '') : '';
+        if (!in_array($m, DELMAATER, true)) {
+            Svar::feil('Velg betalingsmåte på hver del.');
+        }
+        $ore = les_belop($d['belop'] ?? '');
+        if ($ore === null || $ore <= 0) {
+            Svar::feil('Skriv inn et beløp på hver del.');
+        }
+        if ($m === 'Gavekort') {
+            if ($kort !== null) {
+                Svar::feil('Bare ett gavekort per salg.');
+            }
+            $kort = Booking::finnGavekort((string) ($d['kode'] ?? ''));
+            if ($kort === null) {
+                Svar::feil('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp '
+                         . 'eller gått ut på dato.');
+            }
+            if ($ore > $kort['saldo_ore']) {
+                Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                         . ' igjen. Sett ned beløpet på gavekortdelen.');
+            }
+        }
+        $delsum += $ore;
+        $rene[] = ['maate' => $m, 'ore' => $ore];
+    }
+    if ($delsum !== (int) $ordre['sum_ore']) {
+        Svar::feil('Delene er til sammen ' . Booking::kroner($delsum) . ', men salget er på '
+                 . Booking::kroner((int) $ordre['sum_ore']) . '.');
+    }
+
+    // Kontoen i dagsoppgjoret, lest av ordrelinja — samme regel som ett beloep.
+    $linjetittel = (string) DB::verdi(
+        'SELECT tittel FROM order_lines WHERE order_id = :o ORDER BY id LIMIT 1',
+        ['o' => $ordreId]
+    );
+    $formal = 'ordre';
+    foreach (SLAG as $def) {
+        if ($def['tittel'] === $linjetittel) {
+            $formal = $def['formal'];
+            break;
+        }
+    }
+    $adminId = (int) ($admin['id'] ?? 0);
+    $maateTekst = mb_substr(implode(' + ', array_column($rene, 'maate')), 0, 32);
+
+    $gaveRad = DB::iTransaksjon(static function () use ($ordre, $rene, $formal, $kort, $adminId, $maateTekst): ?int {
+        $ider = [];
+        $pengerad = null;
+        $gaveRad = null;
+        foreach ($rene as $i => $r) {
+            $erGavekort = $r['maate'] === 'Gavekort';
+            $felt = [
+                'vipps_reference' => 'KASSE-' . $ordre['ordrenr'] . '-' . ($i + 1),
+                'type'            => 'manuell',
+                'formal'          => $formal,
+                'belop_ore'       => $erGavekort ? 0 : $r['ore'],
+                'status'          => 'betalt',
+                'order_id'        => (int) $ordre['id'],
+                'idempotency_key' => Vipps::uuid(),
+            ];
+            if (DB::harKolonne('payments', 'maate')) {
+                $felt['maate'] = $r['maate'];
+            }
+            if (DB::harKolonne('payments', 'registrert_av') && $adminId > 0) {
+                $felt['registrert_av'] = $adminId;
+            }
+            if ($erGavekort) {
+                $felt['gavekort_id']  = $kort['id'];
+                $felt['gavekort_ore'] = $r['ore'];
+            }
+            $id = DB::settInn('payments', $felt);
+            $ider[] = $id;
+            if ($erGavekort) {
+                $gaveRad = $id;
+            } elseif ($pengerad === null) {
+                $pengerad = $id;
+            }
+        }
+        DB::oppdater('orders', [
+            'betalt_maate' => $maateTekst,
+            'payment_id'   => $pengerad ?? $ider[0],
+        ], ['id' => (int) $ordre['id']]);
+        return $gaveRad;
+    });
+
+    if ($gaveRad !== null) {
+        Booking::trekkGavekort($gaveRad);
+    }
+
+    revider('uttak_gjort_opp', 'ordre', $ordreId, [
+        'ordrenr' => $ordre['ordrenr'], 'sum' => $delsum, 'deler' => $rene,
+        'gavekort' => $kort['kode'] ?? null,
+    ]);
+
+    Svar::ok(['beskjed' => $ordre['ordrenr'] . ' er gjort opp med '
+        . implode(', ', array_map(
+            static fn(array $r): string => mb_strtolower($r['maate']) . ' ' . Booking::kroner($r['ore']),
+            $rene)) . '.']);
+}
+
 if ($handling === 'gjorOpp') {
     $ordreId = (int) ($kropp['ordreId'] ?? 0);
     $maate   = (string) ($kropp['maate'] ?? MAATER[0]);

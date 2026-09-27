@@ -128,11 +128,13 @@ final class Maler
         ],
         'avbestilling' => [
             'tittel' => 'Avbestilling bekreftet',
-            'hvor'   => 'Sendes når en deltaker avbestiller plassen sin.',
+            'hvor'   => 'Sendes når en deltaker avbestiller plassen sin, og når du avbestiller den under Påmeldte.',
             'felter' => [
-                'navn'  => 'Navnet på deltakeren',
-                'kurs'  => 'Kurset som ble avbestilt',
-                'belop' => 'Beløpet som refunderes',
+                'navn'         => 'Navnet på deltakeren',
+                'kurs'         => 'Kurset som ble avbestilt',
+                'belop'        => 'Beløpet som refunderes (tomt når ingenting refunderes)',
+                'refusjon'     => 'Setningen om refusjonen (tom når ingenting refunderes)',
+                'refusjonstid' => 'Når pengene kommer (tom når ingenting refunderes)',
             ],
         ],
         'pamelding_flyttet' => [
@@ -406,22 +408,16 @@ final class Maler
                 'hilsen'     => 'Hilsenen til kortet',
             ],
         ],
+        // Én mal for begge (eieren, 27. september 2026: «rydd opp»). Den
+        // het to: én naar varen venter, én naar den gikk rett ut.
         'intern_ny_vare' => [
-            'tittel' => 'Til deg: vare til godkjenning',
-            'hvor'   => 'Sendes til verkstedet når et medlem legger ut en vare.',
+            'tittel' => 'Til deg: ny vare fra et medlem',
+            'hvor'   => 'Sendes til verkstedet når et medlem legger ut en vare — enten den venter på godkjenning eller gikk rett ut.',
             'felter' => [
                 'produsent' => 'Medlemmet som laget den',
                 'tittel'    => 'Varens navn',
                 'pris'      => 'Prisen de satte',
-            ],
-        ],
-        'intern_ny_vare_ute' => [
-            'tittel' => 'Til deg: vare gikk rett ut',
-            'hvor'   => 'Sendes til verkstedet når et medlem legger ut en vare og auto-godkjenn står på.',
-            'felter' => [
-                'produsent' => 'Medlemmet som laget den',
-                'tittel'    => 'Varens navn',
-                'pris'      => 'Prisen de satte',
+                'status'    => 'Venter på godkjenning, eller gikk rett ut',
             ],
         ],
         'intern_ny_pamelding' => [

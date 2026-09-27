@@ -28,3 +28,10 @@ nav[data-nett-mobilmeny]:not([hidden]) { display: flex !important; }
 @media (max-width: 760px) {
   :root { --nt-ukestrip: grid; --nt-dagmin: 0px; --nt-tomdag: none; }
 }
+/* Datoraden paa telefon: ruller sideveis uten synlig rullefelt, og
+   dagkortene for uka staar ikke under den — kursene for dagen man trykker
+   paa vises i panelet i stedet. Eieren, 27. september 2026. */
+.lx-rull::-webkit-scrollbar { display: none; }
+@media (max-width: 760px) {
+  .lx-rullpanel + .lx-ukeliste { display: none !important; }
+}

@@ -81,6 +81,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Foresporsel' => 'http.php',
         'Frys' => 'frys.php',
         'Katalog' => 'katalog.php',
+        'Kursboost' => 'kursboost.php',
         'Kursholder' => 'kursholder.php',
         'Kursmal' => 'kursmal.php',
         'Lenker' => 'lenker.php',
@@ -88,6 +89,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Maler' => 'maler.php',
         'Medlemskap' => 'medlemskap.php',
         'Medlemsforslag' => 'medlemsforslag.php',
+        'Galleri' => 'galleri.php',
         'Meta' => 'meta.php',
         'Medlemsordre' => 'medlemsordre.php',
         'Oppmote' => 'oppmote.php',
@@ -107,6 +109,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Utsending' => 'varsler.php',
         'Varsel' => 'varsler.php',
         'Veileder' => 'veileder.php',
+        'Verving' => 'verving.php',
         'Vipps' => 'vipps.php',
     ];
     if (isset($kart[$klasse])) {

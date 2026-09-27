@@ -150,10 +150,13 @@ function medlemsinvitasjon(callable $si): void
         $si('Medlemsinvitasjon: databasen er ikke oppdatert (migrasjon 166). Ingenting sendt.');
         return;
     }
-    $paa    = (string) Config::hent('fortsett_paa', '0') === '1';
+    // Én bryter: malen «fortsett» under Markedsfoering › Tekst maler (eieren,
+    // 27. september 2026: «jeg burde jo ha alle eposter som er lagret samlet
+    // paa et sted med bryter send av og paa»). Den egne «fortsett_paa» ble
+    // slaatt sammen med malen i migrasjon 226.
     $malPaa = (int) (DB::verdi("SELECT aktiv FROM notification_templates WHERE navn = 'fortsett'") ?? 0) === 1;
-    if (!$paa || !$malPaa) {
-        $si('Medlemsinvitasjon: står av' . (!$paa ? ' (bryteren)' : '') . (!$malPaa ? ' (malen er slått av)' : '') . '. Ingenting sendt.');
+    if (!$malPaa) {
+        $si('Medlemsinvitasjon: står av (malen er slått av). Ingenting sendt.');
         return;
     }
     $dager = max(1, min(14, (int) Config::hent('fortsett_dager', '3')));
@@ -385,26 +388,24 @@ switch ($jobb) {
     //
     // Oppfoelgingen etter kurset: «takk for sist, legg gjerne igjen noen ord».
     //
-    // Tre sperrer, og alle tre maa vaere aapne for det gaar en melding:
+    // To sperrer, og begge maa vaere aapne for det gaar en melding:
     //
-    //   1. anmeldelse_paa staar paa. Skrus paa under Markedsforing → E-post
-    //      og SMS, av eieren, naar hun vil.
+    //   1. Malen «anmeldelse» er slaatt paa under Markedsfoering › Tekst
+    //      maler. Det er den ene bryteren (migrasjon 226 slo den egne
+    //      «anmeldelse_paa» sammen med malen, eieren 27. september 2026).
     //   2. anmeldelse_lenke er fylt ut. Uten en lenke har meldingen ingenting
     //      aa peke paa, og «legg igjen noen ord» uten sted er bare stoy.
-    //   3. Malen «anmeldelse» er aktiv.
     //
     // Og uansett: aldri lenger tilbake enn tre dogn. Skrur du den paa i
     // november, skal ingen faa «takk for sist» for et kurs i august.
     case 'anmeldelser':
-        $paa    = (string) Config::hent('anmeldelse_paa', '0') === '1';
         $lenke  = trim((string) Config::hent('anmeldelse_lenke', ''));
         $malPaa = (int) (DB::verdi(
             "SELECT aktiv FROM notification_templates WHERE navn = 'anmeldelse'"
         ) ?? 0) === 1;
 
-        if (!$paa || $lenke === '' || !$malPaa) {
+        if ($lenke === '' || !$malPaa) {
             $si('Oppfølging etter kurs: står av'
-                . (!$paa ? ' (bryteren)' : '')
                 . ($lenke === '' ? ' (mangler lenke)' : '')
                 . (!$malPaa ? ' (malen er slått av)' : '')
                 . '. Ingenting sendt.');

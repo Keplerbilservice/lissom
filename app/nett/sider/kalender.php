@@ -224,6 +224,71 @@ if ($popKurs !== null) {
     }
 }
 
+// ── Datoraden paa telefon ─────────────────────────────────────────────
+//
+// Eieren, 27. september 2026: «jeg vil at datene skal rulle, og ikke noe
+// annet paa siden ingen hopping osv bare rulle datoer». Alle dagene fra i
+// dag til uka med det siste kurset staar i én rad som ruller sideveis. Et
+// trykk paa en dag med kurs viser kursene den dagen rett under raden
+// (nett.js) — sida staar stille. Dager uten kurs kan ikke trykkes.
+$MNDK = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+$perDato = [];
+foreach ($katalog as $k) {
+    foreach ($k['datoer'] ?? [] as $o) {
+        if (empty($o['startUtc'])) { continue; }
+        $d = (new DateTimeImmutable((string) $o['startUtc'], new DateTimeZone('UTC')))->setTimezone($oslo);
+        if ($d < $naa->setTime(0, 0)) { continue; }
+        $full = (int) ($o['ledige'] ?? 0) <= 0;
+        $kort = $kurs[(string) $k['slug']] ?? null;
+        $perDato[$d->format('Y-m-d')][] = [
+            't' => $d->format('H:i'),
+            'tekst' => $k['tittel'] . ' · ' . $d->format('H:i'),
+            'href'  => $kort !== null ? $kort['href'] . '?dag=' . rawurlencode((string) ($o['dag'] ?? '')) : '/kurs',
+            'stil'  => 'appearance: none; border: none; width: 100%; text-align: left; cursor: pointer; font-family: inherit; font-size: 14px; line-height: 1.35; padding: 10px 12px; border-radius: var(--radius-sm); background: '
+                . ($full ? 'var(--lissom-brown)' : 'var(--lissom-yellow)') . '; color: ' . ($full ? 'var(--clay-50)' : 'var(--lissom-brown)') . '; font-weight: 600;',
+        ];
+    }
+}
+$rullDager = [];
+$rullPanel = [];
+$forsteMedKurs = null;
+if ($perDato !== []) {
+    $siste = new DateTimeImmutable(max(array_keys($perDato)), $oslo);
+    $slutt = $siste->modify('sunday this week');
+    $DAGLANG = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+    for ($dag = $naa->setTime(0, 0); $dag <= $slutt; $dag = $dag->modify('+1 day')) {
+        $nokkel = $dag->format('Y-m-d');
+        $poster = $perDato[$nokkel] ?? [];
+        usort($poster, static fn(array $a, array $b): int => strcmp($a['t'], $b['t']));
+        $n = count($poster);
+        if ($n > 0 && $forsteMedKurs === null) { $forsteMedKurs = $nokkel; }
+        $valgt = $nokkel === $forsteMedKurs;
+        $rullDager[] = [
+            'nokkel' => $n > 0 ? $nokkel : '',
+            'dagKort' => mb_substr($DAG[(int) $dag->format('N') - 1], 0, 2),
+            'dato' => $dag->format('j'),
+            // Maaneden staar paa den foerste dagen og paa den 1., saa man ser
+            // hvor man er naar man ruller.
+            'mnd' => ($rullDager === [] || $dag->format('j') === '1') ? $MNDK[(int) $dag->format('n') - 1] : '',
+            'antall' => $n > 0 ? (string) $n : '',
+            'stil' => 'appearance: none; font-family: inherit; flex: none; width: 50px; scroll-snap-align: start; cursor: ' . ($n ? 'pointer' : 'default') . '; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px 7px; border-radius: var(--radius-md); border: '
+                . ($n ? '1px solid var(--lissom-brown)' : '1px solid var(--border-subtle)') . '; background: '
+                . ($valgt ? 'var(--lissom-brown)' : ($n ? 'var(--lissom-yellow)' : 'var(--surface-card)')) . '; color: '
+                . ($valgt ? 'var(--clay-50)' : ($n ? 'var(--lissom-brown)' : 'var(--text-muted)')) . ';',
+            'prikkStil' => $n ? 'font-size: 10px; font-weight: 700; line-height: 1; background: ' . ($valgt ? 'var(--lissom-yellow); color: var(--lissom-brown)' : 'var(--lissom-brown); color: var(--clay-50)') . '; border-radius: var(--radius-pill); padding: 2px 6px;' : 'display: none;',
+        ];
+        if ($n > 0) {
+            $rullPanel[] = [
+                'nokkel' => $nokkel,
+                'dag' => $DAGLANG[(int) $dag->format('N') - 1],
+                'dato' => $dag->format('j') . '. ' . $MND[(int) $dag->format('n') - 1],
+                'poster' => $poster,
+                'stil' => 'background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); display: ' . ($nokkel === $forsteMedKurs ? 'block' : 'none') . ';',
+            ];
+        }
+    }
+}
+
 // «Svar paa tre korte spoersmaal …» — kvLokketekst i nettsida, av kursveilederen.
 $lokketekst = 'Svar på noen korte spørsmål, så foreslår vi kurset for deg.';
 try {
@@ -242,7 +307,14 @@ return [
         'ukePilStilV' => $pil($forrige !== null), 'ukePilStilH' => $pil($neste !== null),
         'ukeTom' => $uker === [], 'ukeTomTekst' => 'Ingen kursdatoer er lagt ut ennå. Ta kontakt, så finner vi en tid.', 'ukeTomKnapp' => 'Se alle kurs',
         'ukeAntall' => count($uker) > 1 ? count($uker) . ' uker med kurs framover' : '',
-        'ukeStripStil' => 'display: var(--nt-ukestrip, none); grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: var(--space-5);',
+        // Med datoraden staar ikke den gamle ukestripa paa telefon.
+        'ukeStripStil' => $rullDager !== [] ? 'display: none;' : 'display: var(--nt-ukestrip, none); grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: var(--space-5);',
+        'rullHar' => $rullDager !== [],
+        'rullDager' => $rullDager,
+        'rullPanel' => $rullPanel,
+        // Bare paa telefon (--nt-ukestrip er «grid» der, ellers «none»).
+        'rullStil' => 'display: var(--nt-ukestrip, none); grid-auto-flow: column; grid-auto-columns: 50px; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 2px 6px; margin: 0 0 var(--space-4);',
+        'rullPanelStil' => 'display: var(--nt-ukestrip, none); margin-bottom: var(--space-5);',
         'kvLokketekst' => $lokketekst,
         // Stripa over rutenettet. Gul naar det er plass i dag, dempet ellers.
         'popTittel'    => $popTittel,

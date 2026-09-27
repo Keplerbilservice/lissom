@@ -135,8 +135,18 @@ final class Nett
         // ?vare=1 er «Legg i kurv» paa varesida: kurven bor i appen, og
         // nett.js har ingen. Serveren sier nei, og appen aapner varen.
         // ?kolleksjon=medlem er medlemskolleksjonen i butikken, som bor i appen.
+        // Men bare der appen fortsatt har en skjerm. Forsida, kurslista,
+        // nyhetene, nyttig info og kalenderen tegnes bare her (74a6bcb):
+        // sendt til appen ble de staaende bak lastesida i 40 sekunder —
+        // «Les mer» paa forsida (/?skjema=1) og /?dag= (Gemini fant det 27.
+        // september 2026). For dem betyr parameterne ingenting, og sida
+        // tegnes her som vanlig. «Les mer» gaar til /bedrift?skjema=1, se
+        // side.php.
+        $bareHer = $adresse === '/' || $adresse === '/kurs' || $adresse === '/kalender'
+            || $adresse === '/nyheter' || str_starts_with($adresse, '/nyheter/')
+            || $adresse === '/nyttig-info' || str_starts_with($adresse, '/nyttig-info/');
         foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare', 'kolleksjon'] as $n) {
-            if (isset($_GET[$n])) {
+            if (isset($_GET[$n]) && !$bareHer) {
                 return false;
             }
         }

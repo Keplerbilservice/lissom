@@ -1,0 +1,42 @@
+name: Vakt på lissom.no
+
+# Aapner den ekte nettsida slik en besokende gjor — etter hver publisering
+# og hver time. Feiler den, sender GitHub e-post. Se bin/vakt.mjs.
+# Av fra 27.09.2026: webhotellets robotsperre stopper GitHub. Kjores fra
+# eierens PC i stedet — se bin/vakt.mjs.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: vakt
+  cancel-in-progress: true
+
+jobs:
+  vakt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Hent nettleseren
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+
+      # Webhotellet trenger et oyeblikk paa aa ta imot de nye filene.
+      - name: Vent litt etter publisering
+        if: github.event_name == 'workflow_run'
+        run: sleep 60
+
+      - name: Sjekk sidene
+        run: node bin/vakt.mjs
+
+      - name: Ta vare paa skjermbildene
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vakt-skjermbilder
+          path: vakt-bilder/

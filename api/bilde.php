@@ -154,11 +154,15 @@ if ($forslag !== '') {
     if ($sti === null || !Medlemsforslag::klar()) {
         Svar::feil('Fant ikke fila.', 404);
     }
-    $rad = DB::en('SELECT member_id, status FROM medlemsforslag WHERE fil = :f', ['f' => $forslag]);
+    $rad = DB::en('SELECT member_id, status' . (Galleri::klar() ? ', galleri' : ', 0 AS galleri')
+        . ' FROM medlemsforslag WHERE fil = :f', ['f' => $forslag]);
     if ($rad === null) {
         Svar::feil('Fant ikke fila.', 404);
     }
-    $aapen = in_array($rad['status'], ['godkjent', 'publisert'], true);
+    // «galleri»: godkjent bare til galleriet paa forsida (migrasjon 225).
+    // Offentlig saa lenge det staar der — tas det ut, er det privat igjen.
+    $aapen = in_array($rad['status'], ['godkjent', 'publisert'], true)
+        || ($rad['status'] === 'galleri' && (int) $rad['galleri'] === 1);
     $m = Sesjon::medlem();
     $egen = $m !== null && (int) $rad['member_id'] === (int) $m['id'];
     if (!$aapen && !$egen && !Sesjon::erAdmin()) {

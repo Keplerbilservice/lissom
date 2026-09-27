@@ -49,6 +49,20 @@ final class Meta
     private const MAKS_FORSOK = 12;
     private const PAUSE_SEK = 2;
 
+    /**
+     * Adressen til Graph API. En test kan peke den paa en falsk Meta
+     * (LISSOM_META_BASE), saa det aldri gaar et ekte innlegg ut fra en
+     * testkjoring. Bare utenfor produksjon — samme regel som Config::vippsBase().
+     */
+    private static function base(): string
+    {
+        $fra = (string) (getenv('LISSOM_META_BASE') ?: '');
+        if ($fra !== '' && Config::miljo() !== 'produksjon') {
+            return rtrim($fra, '/') . '/';
+        }
+        return self::BASE;
+    }
+
     public static function token(): string
     {
         return trim((string) Config::hent('meta_token', ''));
@@ -653,7 +667,7 @@ final class Meta
      */
     private static function kall(string $metode, string $sti, array $felter = [], ?string $token = null): array
     {
-        $url = self::BASE . self::versjon() . '/' . ltrim($sti, '/');
+        $url = self::base() . self::versjon() . '/' . ltrim($sti, '/');
         $kropp = null;
 
         if ($metode === 'GET') {

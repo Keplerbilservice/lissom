@@ -20498,6 +20498,42 @@ sjekk('tilbakepila staar ikke oppaa den aapne skuffen',
 sjekk('skuffens egne knapper lukker den som for',
     str_contains($msSida, "    const lukkOg = (fn) => () => { this.setState({ admMobApen: false }); fn(); };"));
 
+// ── Hopp til et sted paa sida ──────────────────────────────────
+//
+// Eieren, 27. september 2026, om ukekalenderen: «naar jeg trykker paa f.eks.
+// 26/9 saa viser den ikke kurset den dagen. Popper tilbake til et annet sted».
+//
+// «window.scrollTo({ top, behavior })» gjoer ikke det den ser ut til her:
+// maalt paa forsida, /kalender, /kurs og /medlemskap, paa 390 og 1280 px,
+// gaar sida til TOPPEN i stedet for dit man ba om. Maalt paa dagbrikka:
+// 255 → 0. Ti steder i fila gjorde det samme.
+$rtSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+echo "\nHopp til et sted paa sida\n";
+sjekk('hjelperen finnes',
+    str_contains($rtSida, '  rullTil(el, luft) {')
+    && str_contains($rtSida, "    el.scrollIntoView({ behavior: 'smooth', block: 'start' });"));
+// Lufta over, saa elementet ikke havner under den faste toppen.
+sjekk('lufta over settes med scroll-margin-top',
+    str_contains($rtSida, "    el.style.scrollMarginTop = (luft === undefined ? 90 : luft) + 'px';"));
+// En dag uten kort, eller et element som ikke er tegnet, skal ikke flytte sida.
+sjekk('et element som ikke staar der flytter ikke sida',
+    str_contains($rtSida, '    if (!el || !el.getClientRects || !el.getClientRects().length) return false;'));
+// Bookingtidene hadde 110 px luft, ikke 90. Den staar.
+sjekk('bookingtidene beholder sine 110 px',
+    str_contains($rtSida, '        this.rullTil(el, 110);'));
+// Alle ti stedene gaar gjennom hjelperen.
+sjekk('ingen av hoppene regner ut posisjonen selv lenger',
+    !str_contains($rtSida, "window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' })")
+    && !str_contains($rtSida, "window.scrollTo({ top: y, behavior: 'smooth' })"));
+sjekk('hjelperen brukes de ti stedene',
+    substr_count($rtSida, 'this.rullTil(') === 12);
+// Dagbrikka i ukekalenderen — det eieren meldte.
+sjekk('dagbrikka i ukekalenderen hopper til dagen',
+    str_contains($rtSida, "          const el = document.getElementById('ukedag-' + dagIdx);\n"
+        . "          if (!el || !el.getClientRects().length) return;\n"
+        . '          this.rullTil(el);'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

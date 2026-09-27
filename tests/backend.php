@@ -20780,6 +20780,22 @@ sjekk('flisen heter Synlighet og sier hvor mange som er paa',
 sjekk('… med én rad for Paa og én for Av',
     str_contains($slSida, "rad('På', synKutt(synPaa), null, syn.synAapne),")
     && str_contains($slSida, "rad('Av', synKutt(synAv), null, syn.synAapne),"));
+sjekk('arket har ogsaa vervepremien, med samme noekkel som Markedsfoering',
+    str_contains($slSida, "rad('Vervepremie på Min side', (this.state.innholdLagret || {})['Vis/verving'] === 'ja',"));
+sjekk('… og kursholderne, med samme bryter som Kursholdere',
+    str_contains($slSida, "rad('Vis kursholderne på nettsiden', this.bryterPaa('kursholdere'),"));
+sjekk('«E-post og SMS» nederst i arket viser antall paa og aapner malene',
+    str_contains($slSida, '>E-post og SMS</span>')
+    && str_contains($slSida, "synMalerTall: (l => l ? l.filter(m => m.aktiv).length + ' av ' + l.length + ' på' : '')(this.state.malListe),")
+    && str_contains($slSida, "this.gaaAdmin('adminmaler', {}); },"));
+sjekk('«Synlighet» er en pille i alle menylinjene paa PC',
+    substr_count($slSida, '<button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>')
+      === substr_count($slSida, '<nav class="lx-tm"'));
+sjekk('… og i menyskuffen paa telefon',
+    str_contains($slSida, "      navn: 'Synlighet',\n      full: 'Hvilke funksjoner som er på og av',"));
+sjekk('alle veiene inn i arket gaar gjennom synAapne',
+    !str_contains($slSida, "this.setState({ synlighetApen: true }),")
+    && substr_count($slSida, 'synlighetApen: true') === 1);
 sjekk('… og lange lister kuttes, saa flisen ikke blir hoeyere enn naboene',
     str_contains($slSida, "n.length > 6 ? n.slice(0, 6).join(' · ') + ' … og ' + (n.length - 6) + ' til'"));
 

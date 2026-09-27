@@ -7171,7 +7171,7 @@ sjekk('… og markupen spor om det',
 // vises for kunden, og staar igjen. Den flyttet til «⊙ Synlighet»
 // 13. september 2026 — samme navn, samme noekkel, ett sted.
 sjekk('… mens av/paa-bryteren med samme navn staar igjen',
-    str_contains($sida, "            rad('Banneret under toppbildet',")
+    str_contains($sida, "        rad('Banneret under toppbildet',")
     && str_contains($sida, "                (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',"));
 
 // ── Ingen priser skrevet inn i koden ──────────────────────────────────
@@ -18534,7 +18534,7 @@ sjekk('knappen gaar bare til steder som finnes',
 // Eieren, 13. september 2026: «Husk vis paa forside og skal staa samlet med
 // det andre». Bryteren staar i ⊙ Synlighet — én bryter, ett sted.
 sjekk('bryteren staar i ⊙ Synlighet og ikke ogsaa paa kortet',
-    str_contains($vis172, "            rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
+    str_contains($vis172, "        rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
     && str_contains($vis172, '>Banneret under kursene. {{ kampanjeStatus }}</div>')
     && !str_contains($vis172, 'checked="{{ kampanjePaa }}"'));
 // Maalt i nettleseren: «velg bilde, lagre» ga «Kampanjen maa ha en
@@ -18607,7 +18607,7 @@ sjekk('… og det stedet er Nettsiden › Innhold',
     'maalt i nettleseren: skjemaet staar paa Innhold, og lagringa virker derfra');
 // Bryteren som slaar banneret av og paa er noe annet, og staar i ⊙ Synlighet.
 sjekk('… mens bryteren staar i ⊙ Synlighet',
-    str_contains($flytt, "            rad('Banneret under toppbildet',"));
+    str_contains($flytt, "        rad('Banneret under toppbildet',"));
 
 echo "\n== ⊙ Synlighet: alle bryterne paa ett sted ==\n";
 // Eieren, 13. september 2026: «alle funksjoner der det er snakk om aa vise paa
@@ -18637,24 +18637,24 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Tjue: Dugnad, Del paa Instagram, Ta med barn og flere kom til
 // (16c5714, d39ef51, 098f089). Dugnad har faatt hvem-valgene med seg.
 sjekk('… og har alle bryterne',
-    substr_count($syn, "            rad('") === 20
-    && str_contains($syn, "            Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),")
-    && str_contains($syn, "            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
-    && str_contains($syn, "            rad('Handlelista', this.bryterPaa('handleliste'),")
-    && str_contains($syn, "            rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),")
-    && str_contains($syn, "            rad('Banneret under toppbildet',")
+    substr_count($syn, "        rad('") === 20
+    && str_contains($syn, "        Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),")
+    && str_contains($syn, "        rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
+    && str_contains($syn, "        rad('Handlelista', this.bryterPaa('handleliste'),")
+    && str_contains($syn, "        rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),")
+    && str_contains($syn, "        rad('Banneret under toppbildet',")
     // Het «Salgsuke-kampanjen» til 13. september 2026; da ble salgsuka en
     // generell salgskampanje, og navnet foelger med.
-    && str_contains($syn, "            rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
-    && str_contains($syn, "            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
-    && str_contains($syn, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),")
-    && str_contains($syn, "            rad('Referansekunder på forsiden', this.bryterPaa('referanser'),")
-    && str_contains($syn, "            rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),")
-    && str_contains($syn, "            rad('Internbutikken', this.bryterPaa('internbutikk'),")
-    && str_contains($syn, "            rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),")
-    && str_contains($syn, "            rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),")
-    && str_contains($syn, "            rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),")
-    && str_contains($syn, "            rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,"));
+    && str_contains($syn, "        rad('Salgskampanjen', this.bryterPaa('salgsuke'),")
+    && str_contains($syn, "        rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
+    && str_contains($syn, "        rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),")
+    && str_contains($syn, "        rad('Referansekunder på forsiden', this.bryterPaa('referanser'),")
+    && str_contains($syn, "        rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),")
+    && str_contains($syn, "        rad('Internbutikken', this.bryterPaa('internbutikk'),")
+    && str_contains($syn, "        rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),")
+    && str_contains($syn, "        rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),")
+    && str_contains($syn, "        rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),")
+    && str_contains($syn, "        rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,"));
 // «Spoer o store krukkemester» laa som en knapp under Verkstedet, der man
 // maatte staa for aa finne den. Eieren, 13. september 2026: «jeg vil kunne
 // skru av og paa o store krukkemsker for medlemmer».
@@ -18700,7 +18700,7 @@ sjekk('… og ingen av de ti bryterne staar to steder',
 // til Synlighet». Den staar ikke lenger i Butikken, men i Synlighet-lista.
 sjekk('… og Auto-godkjenn staar i Synlighet, ikke paa Butikken',
     !str_contains($syn, '>Auto-godkjenn nye varer</div>')
-    && str_contains($vis172, "            rad('Auto-godkjenn nye varer', (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',"));
+    && str_contains($vis172, "        rad('Auto-godkjenn nye varer', (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',"));
 // Kursvelgerbryteren paa Butikken las «visKursvelger» — bryteren OG
 // mobilvisninga. Den sto av naar lenken var skjult paa mobil, selv om
 // bryteren var paa. Den er borte med kortet.
@@ -18923,7 +18923,7 @@ sjekk('raden med pillene og soekefeltet har luft under seg',
 sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
     // Bryteren flyttet til «⊙ Synlighet» 13. september 2026. Samme navn,
     // samme noekkel — nettsida merker ingen forskjell.
-    str_contains($mkSida, "            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),\n                () => this.vekslBryter('sok', 'Søkefeltet')),")
+    str_contains($mkSida, "        rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),\n            () => this.vekslBryter('sok', 'Søkefeltet')),")
     && str_contains($mkSida, "document.documentElement.classList.toggle('lx-uten-sok', !this.bryterPaa('sok'));")
     && str_contains($mkSida, '  html.lx-uten-sok header button[aria-label="Søk"] { display: none !important; }')
     && str_contains($mkSida, "          if (this.bryterPaa('sok')) {\n            if (!this.state.katalog) this.hentKatalog();")
@@ -19534,9 +19534,9 @@ sjekk('… kurs og butikk paa naar raden mangler, medlemskap av',
     && str_contains($ufLib, "return self::verdi('medlemskap') === 'ja';"));
 // Tre rader i ⊙ Synlighet, og ingen andre steder.
 sjekk('bryterne staar i ⊙ Synlighet',
-    str_contains($mt, "            rad('Kurs og arrangementer', this.oppmotePaa('kurs'),")
-    && str_contains($mt, "            rad('Butikken', this.oppmotePaa('butikk'),")
-    && str_contains($mt, "            rad('Medlemskap', this.oppmotePaa('medlemskap'),"));
+    str_contains($mt, "        rad('Kurs og arrangementer', this.oppmotePaa('kurs'),")
+    && str_contains($mt, "        rad('Butikken', this.oppmotePaa('butikk'),")
+    && str_contains($mt, "        rad('Medlemskap', this.oppmotePaa('medlemskap'),"));
 sjekk('… og hakene i kurs-, vare- og planskjemaet er fjernet',
     !str_contains($mt, 'kUtenForskudd')
     && !str_contains($mt, 'npUtenForskudd')

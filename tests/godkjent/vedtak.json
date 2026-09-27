@@ -493,7 +493,7 @@
                 {
                     "fil": ".github/workflows/tester.yml",
                     "finnes": [
-                        "continue-on-error: ${{ github.event_name == 'push' }}"
+                        "continue-on-error: ${{ github.ref != 'refs/heads/main' }}"
                     ]
                 },
                 {

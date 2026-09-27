@@ -75,5 +75,5 @@ jobs:
       # saa der stopper ikke en feil kjoringen. Foer publisering (workflow_call
       # fra «Publiser til lissom.no») stopper den som foer — og varsler.
       - name: Kjor alle testene
-        continue-on-error: ${{ github.event_name == 'push' }}
+        continue-on-error: ${{ github.ref != 'refs/heads/main' }}
         run: bash tests/alle.sh

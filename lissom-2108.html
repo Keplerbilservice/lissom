@@ -47201,6 +47201,105 @@ class Component extends DCLogic {
   // resten. Hele kortet er klikkbart, og hver rad aapner sitt eget sted —
   // de samme stedene de gamle kortene gikk til (se ovKort). Ingen «Åpne» og
   // ingen piler.
+  // ── Synlighet: radene i arket, ett sted ─────────────────────────────
+  //
+  // Arket (⊙ Synlighet) og flisen paa Oversikt leser begge herfra, saa de
+  // aldri kan si hver sitt om hva som er paa (eieren, 27. september 2026:
+  // «jeg trenger aa se hvilke funksjoner jeg har aktive»).
+  synlighetVals() {
+    const rad = (navn, paa, veksl) => ({ navn, paa, veksl });
+    return {
+      synNett: [
+        rad('Banneret under toppbildet',
+            (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',
+            () => this.lagreInnhold(
+              { 'Banner/pa': (this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'ja' : 'nei' },
+              'Banneret er ' + ((this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'slått på' : 'skjult'))),
+        rad('Salgskampanjen', this.bryterPaa('salgsuke'),
+            () => this.vekslBryter('salgsuke', 'Salgskampanjen')),
+        rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),
+            () => this.vekslBryter('kursvelger', 'Kursvelger-lenken')),
+        rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),
+            () => this.vekslBryter('sok', 'Søkefeltet')),
+        rad('Referansekunder på forsiden', this.bryterPaa('referanser'),
+            () => this.vekslBryter('referanser', 'Referansekunder på forsiden')),
+      ],
+      synMin: [
+        rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),
+            () => this.vekslBryter('internkurs', 'Interne kurs og samlinger')),
+        rad('Internbutikken', this.bryterPaa('internbutikk'),
+            () => this.vekslBryter('internbutikk', 'Internbutikken')),
+        rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),
+            () => this.vekslBryter('medlemssalg', 'Selg egne arbeider')),
+        // Flyttet hit fra Nettbutikk. Eieren, 24. september 2026: «auto
+        // godkjenn nye varer, er det en av og på bryter som ikke ligger
+        // sammen de andre?» — valgte «Flytt til Synlighet». Samme nokkel
+        // og samme strenge 'ja' som foer (se gAutoPaa).
+        rad('Auto-godkjenn nye varer', (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',
+            () => {
+              const paa = (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja';
+              this.lagreInnhold({ 'Vis/autogodkjenn': paa ? 'nei' : 'ja' },
+                paa ? 'Auto-godkjenn er slått av' : 'Auto-godkjenn er slått på');
+            }),
+        rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),
+            () => this.vekslBryter('gaven', 'Gaven')),
+        rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),
+            () => this.vekslBryter('medlemfrys', 'Frys av medlemskap')),
+        // Eieren, 13. september 2026: «jeg vil ha bryter til aa skru av
+        // glemte aa stemple for medlemmene. Og den skal og skrus av.»
+        // Migrasjon 181 setter den av; her kan den slaas paa igjen.
+        rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),
+            () => this.vekslBryter('glemtstempling', 'Glemt å stemple ut')),
+        rad('Handlelista', this.bryterPaa('handleliste'),
+            () => this.vekslBryter('handleliste', 'Handlelista')),
+        // Eieren, 24. september 2026: medlemmenes forslag til Instagram
+        // «som jeg maa kunne skru av og paa i synlighet». Migrasjon 207
+        // setter den av.
+        rad('Del på Instagram', this.bryterPaa('medlemsforslag'),
+            () => this.vekslBryter('medlemsforslag', 'Del på Instagram')),
+        // Eieren, 15. september 2026: dugnad «maa kunne skrus av og paa
+        // og legges sammen de andre bryterne». Migrasjon 189 setter den av.
+        Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),
+            () => this.vekslBryter('dugnad', 'Dugnad')), this.dugnadHvemVals()),
+        rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),
+            () => this.vekslBryter('dugnadoverforing', 'Overføring av dugnadstimer')),
+        // Eieren, 15. september 2026: «Ta med barn» paa medlemskapet —
+        // «maa og kunne skrus av og paa og legges sammen de andre».
+        // Migrasjon 192 setter den av.
+        rad('Ta med barn', this.bryterPaa('tilleggbarn'),
+            () => this.vekslBryter('tilleggbarn', 'Ta med barn')),
+        // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
+        // store krukkemsker for medlemmer».
+        //
+        // Bryteren fantes — som en knapp under Verkstedet › Spoer o store
+        // krukkemester, der man maatte staa for aa finne den. Samme
+        // innstilling (verksted_faq_medlem), samme kall; bare flyttet hit
+        // sammen med de andre. Knappen der er fjernet.
+        //
+        // Den eneste raden som ikke bor i content_blocks, saa den leser
+        // og skriver sitt eget sted.
+        rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,
+            () => this.dokKall({ handling: 'veksle-faq' })),
+      ],
+      // ── Betal ved oppmøte ──────────────────────────────────
+      //
+      // Tre rader, ett sted. Se oppmotePaa() over for hvorfor de ikke
+      // bruker bryterPaa(): medlemskap staar AV naar raden mangler.
+      synOppmote: [
+        rad('Kurs og arrangementer', this.oppmotePaa('kurs'),
+            () => this.vekslOppmote('kurs', 'kurs og arrangementer')),
+        rad('Butikken', this.oppmotePaa('butikk'),
+            () => this.vekslOppmote('butikk', 'butikken')),
+        rad('Medlemskap', this.oppmotePaa('medlemskap'),
+            () => this.vekslOppmote('medlemskap', 'medlemskap')),
+      ],
+      synVises: !!this.state.synlighetApen,
+      synAapne: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },
+      synLukk: () => this.setState({ synlighetApen: false }),
+      synStopp: e => e.stopPropagation(),
+    };
+  }
+
   ovNyVals() {
     const tom = { ovGrupper: [], ovSmaa: [], ovOmsStripe: [], ovOmsListeFarge: [], ovOvnPiller: [],
                   ovOmsHarMot: false, ovOmsMotPst: '', ovOmsMotTekst: '', ovOmsMotStil: {}, ovNyttKurs: () => {} };
@@ -47357,6 +47456,33 @@ class Component extends DCLogic {
       rad('Hva medlemmene ser', 'Min side for medlemmer', null, () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
     ];
 
+    // ── Synlighet ── hvilke funksjoner som er paa. Eieren, 27. september
+    // 2026: «paa oversikt, saa maa jeg ha frem en flis med synlighet, jeg
+    // trenger aa se hvilke funksjoner jeg har aktive». Radene er de samme som
+    // i ⊙ Synlighet-arket (synlighetVals), saa flisen og arket kan ikke si
+    // hver sitt. Trykk aapner arket, der de slaas av og paa.
+    //
+    // «Spoer o store krukkemester» leser sitt eget sted (this.state.dok), som
+    // hentes foerst naar arket aapnes. Er det ikke hentet, vet vi ikke om den
+    // er paa, og da staar den verken under Paa eller Av.
+    const syn = this.synlighetVals();
+    const synAlle = [
+      ...syn.synNett,
+      ...syn.synMin.filter(x => x.navn !== 'Spør o store krukkemester' || this.state.dok),
+      // Tre rader som bare heter «Butikken», «Medlemskap» … i arket, under
+      // overskriften «Betal ved oppmøte». Uten den ville «Butikken» staatt
+      // som paa eller av, og sagt noe annet enn det gjor.
+      ...syn.synOppmote.map(x => Object.assign({}, x, { navn: 'Betal ved oppmøte – ' + x.navn })),
+    ];
+    const synPaa = synAlle.filter(x => x.paa).map(x => x.navn);
+    const synAv = synAlle.filter(x => !x.paa).map(x => x.navn);
+    // Kortet skal ikke bli hoeyere enn naboene: seks navn, saa resten telles.
+    const synKutt = n => n.length > 6 ? n.slice(0, 6).join(' · ') + ' … og ' + (n.length - 6) + ' til' : n.join(' · ');
+    const synlighet = [
+      rad('På', synKutt(synPaa), null, syn.synAapne),
+      rad('Av', synKutt(synAv), null, syn.synAapne),
+    ];
+
     // ── Smaa kort ──
     const planlagte = (this.state.adminOkter || []).filter(o => !o.auto).length;
     const kurs = (this.state.adminKursListe || []).length;
@@ -47388,6 +47514,7 @@ class Component extends DCLogic {
         gruppe('Markedsføring', '', marked, () => this.gaaAdmin('adminmarked', {}), false),
         gruppe('Nettbutikk', '', butikk, tilButikk, false),
         gruppe('Medlemmer', '', medlem, () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: '' }), false),
+        gruppe('Synlighet', synPaa.length + ' av ' + synAlle.length + ' på', synlighet, syn.synAapne, false),
       ],
       ovSmaa: [
         lite2('Kurs', kurs + ' kurs · ' + planlagte + ' planlagte datoer', () => this.gaaAdmin('admin', { kursFane: 'alle' })),
@@ -62381,99 +62508,7 @@ class Component extends DCLogic {
       // Naa er det ett panel, aapnet fra Verktoy paa telefon og fra
       // sidemenyen paa PC. Ingen ny bryter: hver rad er den samme
       // «bryterPaa» og den samme «vekslBryter» som for.
-      ...(() => {
-        const rad = (navn, paa, veksl) => ({ navn, paa, veksl });
-        return {
-          synNett: [
-            rad('Banneret under toppbildet',
-                (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',
-                () => this.lagreInnhold(
-                  { 'Banner/pa': (this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'ja' : 'nei' },
-                  'Banneret er ' + ((this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'slått på' : 'skjult'))),
-            rad('Salgskampanjen', this.bryterPaa('salgsuke'),
-                () => this.vekslBryter('salgsuke', 'Salgskampanjen')),
-            rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),
-                () => this.vekslBryter('kursvelger', 'Kursvelger-lenken')),
-            rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),
-                () => this.vekslBryter('sok', 'Søkefeltet')),
-            rad('Referansekunder på forsiden', this.bryterPaa('referanser'),
-                () => this.vekslBryter('referanser', 'Referansekunder på forsiden')),
-          ],
-          synMin: [
-            rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),
-                () => this.vekslBryter('internkurs', 'Interne kurs og samlinger')),
-            rad('Internbutikken', this.bryterPaa('internbutikk'),
-                () => this.vekslBryter('internbutikk', 'Internbutikken')),
-            rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),
-                () => this.vekslBryter('medlemssalg', 'Selg egne arbeider')),
-            // Flyttet hit fra Nettbutikk. Eieren, 24. september 2026: «auto
-            // godkjenn nye varer, er det en av og på bryter som ikke ligger
-            // sammen de andre?» — valgte «Flytt til Synlighet». Samme nokkel
-            // og samme strenge 'ja' som foer (se gAutoPaa).
-            rad('Auto-godkjenn nye varer', (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja',
-                () => {
-                  const paa = (this.state.innholdLagret || {})['Vis/autogodkjenn'] === 'ja';
-                  this.lagreInnhold({ 'Vis/autogodkjenn': paa ? 'nei' : 'ja' },
-                    paa ? 'Auto-godkjenn er slått av' : 'Auto-godkjenn er slått på');
-                }),
-            rad('Gaven («Ta med en venn»)', this.bryterPaa('gaven'),
-                () => this.vekslBryter('gaven', 'Gaven')),
-            rad('Frys av medlemskap', this.bryterPaa('medlemfrys'),
-                () => this.vekslBryter('medlemfrys', 'Frys av medlemskap')),
-            // Eieren, 13. september 2026: «jeg vil ha bryter til aa skru av
-            // glemte aa stemple for medlemmene. Og den skal og skrus av.»
-            // Migrasjon 181 setter den av; her kan den slaas paa igjen.
-            rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),
-                () => this.vekslBryter('glemtstempling', 'Glemt å stemple ut')),
-            rad('Handlelista', this.bryterPaa('handleliste'),
-                () => this.vekslBryter('handleliste', 'Handlelista')),
-            // Eieren, 24. september 2026: medlemmenes forslag til Instagram
-            // «som jeg maa kunne skru av og paa i synlighet». Migrasjon 207
-            // setter den av.
-            rad('Del på Instagram', this.bryterPaa('medlemsforslag'),
-                () => this.vekslBryter('medlemsforslag', 'Del på Instagram')),
-            // Eieren, 15. september 2026: dugnad «maa kunne skrus av og paa
-            // og legges sammen de andre bryterne». Migrasjon 189 setter den av.
-            Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),
-                () => this.vekslBryter('dugnad', 'Dugnad')), this.dugnadHvemVals()),
-            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),
-                () => this.vekslBryter('dugnadoverforing', 'Overføring av dugnadstimer')),
-            // Eieren, 15. september 2026: «Ta med barn» paa medlemskapet —
-            // «maa og kunne skrus av og paa og legges sammen de andre».
-            // Migrasjon 192 setter den av.
-            rad('Ta med barn', this.bryterPaa('tilleggbarn'),
-                () => this.vekslBryter('tilleggbarn', 'Ta med barn')),
-            // Eieren, 13. september 2026: «jeg vil kunne skru av og paa o
-            // store krukkemsker for medlemmer».
-            //
-            // Bryteren fantes — som en knapp under Verkstedet › Spoer o store
-            // krukkemester, der man maatte staa for aa finne den. Samme
-            // innstilling (verksted_faq_medlem), samme kall; bare flyttet hit
-            // sammen med de andre. Knappen der er fjernet.
-            //
-            // Den eneste raden som ikke bor i content_blocks, saa den leser
-            // og skriver sitt eget sted.
-            rad('Spør o store krukkemester', !!(this.state.dok || {}).faqMedlem,
-                () => this.dokKall({ handling: 'veksle-faq' })),
-          ],
-          // ── Betal ved oppmøte ──────────────────────────────────
-          //
-          // Tre rader, ett sted. Se oppmotePaa() over for hvorfor de ikke
-          // bruker bryterPaa(): medlemskap staar AV naar raden mangler.
-          synOppmote: [
-            rad('Kurs og arrangementer', this.oppmotePaa('kurs'),
-                () => this.vekslOppmote('kurs', 'kurs og arrangementer')),
-            rad('Butikken', this.oppmotePaa('butikk'),
-                () => this.vekslOppmote('butikk', 'butikken')),
-            rad('Medlemskap', this.oppmotePaa('medlemskap'),
-                () => this.vekslOppmote('medlemskap', 'medlemskap')),
-          ],
-          synVises: !!this.state.synlighetApen,
-          synAapne: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },
-          synLukk: () => this.setState({ synlighetApen: false }),
-          synStopp: e => e.stopPropagation(),
-        };
-      })(),
+      ...this.synlighetVals(),
       bryterMinInternkurs: this.bryterPaa('internkurs'),
       vekslMinInternkurs: () => this.vekslBryter('internkurs', 'Interne kurs og samlinger'),
       bryterMinInternbutikk: this.bryterPaa('internbutikk'),

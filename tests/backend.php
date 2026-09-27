@@ -20762,6 +20762,27 @@ sjekk('galleribildene er med i bildesidekartet',
     str_contains($glKart, 'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"')
     && str_contains($glKart, 'foreach (Galleri::kort() as $g) {'));
 
+// Eieren, 27. september 2026: «paa oversikt, saa maa jeg ha frem en flis med
+// synlighet, jeg trenger aa se hvilke funksjoner jeg har aktive».
+echo "\nSynlighet paa Oversikt\n";
+$slSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('radene i Synlighet-arket bygges ett sted',
+    str_contains($slSida, '  synlighetVals() {')
+    && substr_count($slSida, "rad('Banneret under toppbildet',") === 1);
+sjekk('… og arket leser derfra',
+    str_contains($slSida, '      ...this.synlighetVals(),'));
+sjekk('flisen paa Oversikt leser det samme stedet',
+    str_contains($slSida, '    const syn = this.synlighetVals();')
+    && str_contains($slSida, '...syn.synNett,') && str_contains($slSida, '...syn.synMin.filter(')
+    && str_contains($slSida, '...syn.synOppmote.map('));
+sjekk('flisen heter Synlighet og sier hvor mange som er paa',
+    str_contains($slSida, "gruppe('Synlighet', synPaa.length + ' av ' + synAlle.length + ' på', synlighet, syn.synAapne, false),"));
+sjekk('… med én rad for Paa og én for Av',
+    str_contains($slSida, "rad('På', synKutt(synPaa), null, syn.synAapne),")
+    && str_contains($slSida, "rad('Av', synKutt(synAv), null, syn.synAapne),"));
+sjekk('… og lange lister kuttes, saa flisen ikke blir hoeyere enn naboene',
+    str_contains($slSida, "n.length > 6 ? n.slice(0, 6).join(' · ') + ' … og ' + (n.length - 6) + ' til'"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

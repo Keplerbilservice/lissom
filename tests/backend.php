@@ -1585,9 +1585,10 @@ sjekk('adminvarsler gaar til adressen som staar i admin',
         true
     ),
     implode(', ', $forNokler));
-// … og til dem som er admin, som for 9. september.
-sjekk('… og til dem som har rollen admin',
-    str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
+// Rollen admin faar dem ikke lenger: siden 14. september gaar interne
+// varsler til én adresse, den i admin (f98b13d).
+sjekk('… og ikke til alle som har rollen admin',
+    !str_contains($varselFil, "WHERE rolle = 'admin' AND epost IS NOT NULL"));
 // Fila bestemmer fortsatt alene naar den er fylt ut.
 sjekk('… mens admin_eposter i fila slaar begge av',
     str_contains($varselFil, "\$fra = Config::hent('admin_eposter', []);")
@@ -1959,11 +1960,15 @@ sjekk('fase 5 skriver ikke — laget med lokale endringer tegnes ikke',
 // avlyser et kurs, så vil jeg at dette kurset forsvinner fra kalenderen».
 // Han fikk sagt at veien tilbake gaar med — «Gjenopprett økten» naas ved aa
 // hoyreklikke brikka — og valgte «Skjul, punktum».
-sjekk('en avlyst oekt staar ikke i kalenderen',
-    str_contains($sida, 'const skjulAvlyste = liste => liste.filter(e => !e.avlyst);')
+// 25. september (d266df0) ble det snudd: avlyste oekter staar skravert, som
+// «spokelse» som ikke tar plassen. Begge veiene ut gaar fortsatt gjennom
+// skjulAvlyste.
+sjekk('en avlyst oekt staar som spokelse i kalenderen',
+    str_contains($sida, 'const skjulAvlyste = liste => liste;')
     && str_contains($sida, 'return skjulAvlyste(evts.map(e => {')
-    && str_contains($sida, 'if (!this.klSkriver) return skjulAvlyste(evts);'),
-    'begge veiene ut av klHendelser maa filtreres');
+    && str_contains($sida, 'if (!this.klSkriver) return skjulAvlyste(evts);')
+    && str_contains($sida, 'spokelse: true'),
+    'begge veiene ut av klHendelser gaar gjennom skjulAvlyste');
 // Menyens «Gjenopprett økten» satte bare «klAvlyst[id] = false» i
 // nettleseren. Den saa gjenopprettet ut til sida ble lastet. Eieren, 8.
 // september: «Prøvde å gjenopprette det, men det gikk ikke».
@@ -2947,9 +2952,10 @@ sjekk('alle stedene som lager kursdatoer er funnet',
     count($lagerDatoer) >= 3, implode(', ', $lagerDatoer));
 sjekk('… og hvert av dem setter kursholder',
     $utenHolder === [], implode(', ', $utenHolder));
+// Siden 26. september (ac5d853) velges kursholderen per dato i kursoppsettet.
 sjekk('kursholderen er et valg i kursoppsettet',
-    str_contains($sida, "felt('kursholderId', 'Kursholder', 'valg',")
-    && str_contains($sida, "[['0', 'Verkstedets standard']].concat("));
+    str_contains($sida, 'kursholderId: this.state.oktHolder')
+    && str_contains($sida, "['kursholderValg', 'oktHolder',"));
 
 // ── Fase 7: menyen ───────────────────────────────────────────────────────
 //
@@ -3052,24 +3058,12 @@ sjekk('linja og lagringen leser den samme lista',
 //
 // Kortene i kurslista kunne bare dras. Ville eieren rette en pris eller en
 // tekst, matte hun ut av kalenderen, inn i kursoppsettet, finne kurset igjen
-// og tilbake. Naa aapner et klikk kurset der det staar.
+// og tilbake. Naa aapner et klikk kurset. Siden 21. september (710d7d9)
+// aapner det hele kursoppsettet, ikke en egen rute ved kortet.
 sjekk('et klikk paa kurskortet aapner kurset',
-    str_contains($sida, 'klApneKursRed(kurs, mv);')
-    && str_contains($sida, 'klApneKursRed(kort, ev) {'));
-// Ruta laa ved kortet. Trykket eieren paa et kort langt nede, aapnet ruta
-// seg nede — utenfor skjermen. Naa staar den midt paa skjermen.
-sjekk('ruta staar midt paa skjermen, ikke ved kortet',
-    !str_contains($sida, "{ x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }")
-    && str_contains($sida, "left: '50%', top: '50%', transform: 'translate(-50%, -50%)',"));
-// Lagrelinja kommer forst naar noe faktisk er endret.
-sjekk('lagrelinja kommer naar noe er endret',
-    str_contains($sida, 'klKursRedEndret: endret.length > 0,'));
-// «Lagre» sender forskjellen. Sendes alt, toemmes et felt skjermen ikke
-// kjenner — og status skrives ubetinget, saa uten den ville kurset falt til
-// kladd og forsvunnet fra nettsida.
-sjekk('lagringen sender det som er endret, pluss tittel og status',
-    str_contains($sida, "endret.forEach(f => { kropp[f.nokkel] = naa[f.nokkel] || ''; });")
-    && str_contains($sida, "status: naa.status || start.status || 'kladd' }"));
+    str_contains($sida, 'this.klApneKursFullt(kurs.navn);')
+    && str_contains($sida, 'klApneKursFullt(navn) {')
+    && !str_contains($sida, 'klApneKursRed('));
 // Endringen gjelder kurset, og datoene peker paa kurset. Svaret sier hvor
 // langt rettelsen rekker.
 sjekk('svaret sier hvor mange planlagte datoer endringen gjelder',
@@ -3168,9 +3162,9 @@ sjekk('kalenderen har sin egen adresse, saa den taaler en omlasting',
 // Manedsrutenettet er sju spalter. Paa en telefon falt sondagen utenfor
 // kanten med «overflow: hidden» — nu ruller rammen sidelengs i stedet.
 sjekk('de brede visningene ruller sidelengs paa telefon',
-    // Maaned, uke og dag i kalenderen — og maaneden under Planlagte kurs.
-    // Alle fire er flere spalter enn en telefon er bred.
-    substr_count($sida, 'class="lx-kalbred"') === 4
+    // Maaned, uke og dag i kalenderen. Maaneden under Planlagte kurs
+    // forsvant med den nye kalenderen 25. september (d266df0).
+    substr_count($sida, 'class="lx-kalbred"') === 3
     && str_contains($sida, '.lx-kalbred { overflow-x: auto !important;'));
 // Og velger hun Uke, Maaned eller Liste paa telefon, skal hun faa det.
 // Dagen er standardvisningen der fra 6. september, ikke den eneste — se
@@ -4590,7 +4584,9 @@ sjekk('… varigheten regnes av tidene paa datoene, alltid',
                   "\$egen = trim((string) (\$kurs['varighet_tekst'] ?? ''));"));
 sjekk('«Kort beskrivelse» og «Dette lager du» har ingen felt lenger',
     !str_contains($sida2, 'id="k-kortom"') && !str_contains($sida2, 'id="k-lagerdu"')
-    && !str_contains($sida2, 'settKKortBeskrivelse') && !str_contains($sida2, 'settKLagerDu'));
+    // Kortteksten fikk et felt igjen 21. september (710d7d9, «kortteksten kan
+    // redigeres igjen») — det er bare «Dette lager du» som skal vaere borte.
+    && !str_contains($sida2, 'settKLagerDu'));
 // Feltene er borte fra skjemaet, ikke fra kursene. Sendte vi ikke verdien
 // videre, ville teksten som staar ute blitt tom foerste gang noen lagret.
 sjekk('… men teksten som staar lagret sendes videre urort',
@@ -4754,7 +4750,12 @@ foreach (['app', 'api'] as $mappe) {
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($rotDi . '/' . $mappe));
     foreach ($it as $fil) {
         if ($fil->isFile() && $fil->getExtension() === 'php') {
-            $innhold = (string) file_get_contents($fil->getPathname());
+            // Kommentarer teller ikke: de forklarer hvorfor drop-in er borte.
+            $innhold = '';
+            foreach (token_get_all((string) file_get_contents($fil->getPathname())) as $tok) {
+                if (is_array($tok) && in_array($tok[0], [T_COMMENT, T_DOC_COMMENT], true)) continue;
+                $innhold .= is_array($tok) ? $tok[1] : $tok;
+            }
             // llms.php nevner vaktskriptet ved navn. Det er ikke drop-in.
             $innhold = str_replace('bin/dropinsjekk.mjs', '', $innhold);
             if (stripos($innhold, 'dropin') !== false || stripos($innhold, 'drop-in') !== false) {
@@ -4768,10 +4769,12 @@ sjekk('ingen PHP-fil nevner drop-in',
 // Og hovedfila. Her sto «DROP-IN · HELE UKA · 7 GJESTER» igjen i demodataene
 // og slapp gjennom til lissom.no, fordi jeg lette etter «drop-in» og
 // «Drop-in» — ikke versaler. Sjekken leter uten aa skille paa store og smaa,
-// og taaler baade «drop-in» og «drop in».
+// og taaler baade «drop-in» og «drop in». Kommentarer teller ikke; tekst som
+// en kunde eller Google kan lese, gjor det.
+$sida2UtenKommentar = preg_replace(['~<!--.*?-->~s', '~/\*.*?\*/~s', '~^\s*//.*$~m'], '', $sida2);
 sjekk('… og hovedfila nevner det ikke, uansett hvordan det skrives',
-    preg_match('~drop.?in~i', $sida2) === 0,
-    (string) (preg_match('~.{0,50}drop.?in.{0,50}~i', $sida2, $t) ? $t[0] : ''));
+    preg_match('~drop.?in~i', $sida2UtenKommentar) === 0,
+    (string) (preg_match('~.{0,50}drop.?in.{0,50}~i', $sida2UtenKommentar, $t) ? $t[0] : ''));
 // Endepunktet som satte opp tidene, reglene og prisen.
 sjekk('… og api/admin/dropin.php finnes ikke',
     !file_exists($rotDi . '/api/admin/dropin.php'));
@@ -4887,12 +4890,14 @@ sjekk('… og kalenderen sender det ogsaa',
 //    fjernes overalt, det er ikke et tema aa beholde», og «det er jo ingen
 //    okter uten kursholder». Han fikk vite at slike okter da ikke vises i
 //    dagsvisningen, og valgte likevel: «Fjern spalta helt».
-sjekk('dagsvisningen har én spalte per kursholder, og ingen for resten',
-    str_contains($sida2, 'const alleKolonner = this.klHoldere().map(kn => {')
+// 26. september (ac5d853, eierens GO): én kolonne, og kursholderen staar paa
+// kurskortet. Ingen «Uten kursholder»-spalte kom tilbake.
+sjekk('dagsvisningen har én spalte, og ingen for dem uten kursholder',
+    str_contains($sida2, "const alleKolonner = ['Verkstedet'].map(kn => {")
     && !str_contains($sida2, "UTEN_HOLDER")
     && !str_contains($sida2, "Uten kursholder'"));
-sjekk('… og hver spalte tar det som hoerer holderen til',
-    str_contains($sida2, "const evs = dagensAlle.filter(e => e.holder === kn);"));
+sjekk('… og spalta tar alt som skjer den dagen',
+    str_contains($sida2, "const evs = dagensAlle.slice();"));
 // Standardholderen staar ogsaa naar dagen er tom; de andre kommer fram naar
 // de har en okt, eller naar de slaas paa.
 sjekk('… og standardholderen staar fast',
@@ -5135,7 +5140,8 @@ sjekk('kalenderen blinker ikke naar den oppfriskes',
 sjekk('… ikke midt i en flytting',
     str_contains($sida2, "    if (this.state.klDrag) return;\n    if (this.state.kRed"));
 sjekk('… og ikke mens et skjema eller en rute staar aapen',
-    str_contains($sida2, "if (this.state.kRed || this.state.detalj || this.state.klKursRedId) return;"));
+    // Kursruta (klKursRedId) forsvant 21. september (710d7d9).
+    str_contains($sida2, "if (this.state.kRed || this.state.detalj) return;"));
 
 // Serveren var aldri feilen. Spoerringene skal fortsatt ta med begge
 // statusene en paamelding kan ha, ellers forsvinner de som ikke har betalt.
@@ -5248,7 +5254,9 @@ sjekk('… og sier hvor mange flere det er',
 
 // Inne i kortet, ikke under det. «date» er kortets eget felt.
 sjekk('datoene staar i kortets eget datofelt',
-    substr_count($sida2, 'date="{{ k.kdDato }}"') === 3);
+    // Én kortliste igjen etter 21. september (74a6bcb): appens kopier av
+    // forsida og kurslista er slettet.
+    substr_count($sida2, 'date="{{ k.kdDato }}"') === 1);
 // Pillene under kortet er borte, og med dem den ekstra ramma rundt.
 sjekk('… og pillestripa under kortet er borte',
     !str_contains($sida2, 'k.kdListe') && !str_contains($sida2, 'kdSeFlere'));
@@ -5438,7 +5446,7 @@ sjekk('… og det gjor plankortet ogsaa',
     str_contains($sida2, "'Lukk', null, false, null, this.aboPlanValg(p.navn)),"));
 sjekk('… og begge gaar til handling=start',
     str_contains($sida2, "const kropp = { handling: 'start', plan: navn, betaling: maate };")
-    && str_contains($sida2, "this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps');"));
+    && str_contains($sida2, "this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps', { vare, hvem });"));
 
 // Kurver som stod aapne da rettelsen gikk ut, skal ikke moete den samme
 // doede enden. De var det eneste stedet en «Abonnement:»-linje kunne
@@ -6439,8 +6447,10 @@ sjekk('… og innstemplinga ogsaa',
 // 1. september kom det én spalte tilbake — «Uten kursholder», som sto naar
 // den hadde noe. Den er borte igjen fra 7. september, etter eierens valg. Naa
 // er det én spalte per kursholder, og ingen andre.
-sjekk('«Verkstedet»-kolonnen er borte, og ingen ny fast kolonne satt i stedet',
-    str_contains($sida, 'const alleKolonner = this.klHoldere().map(kn => {')
+// 26. september (ac5d853) ble det én kolonne igjen, etter eierens GO. Den
+// heter «Verkstedet» fordi dra-og-slipp trenger et navn paa spalta.
+sjekk('én kolonne, og ingen fast kolonne lagt til ved siden av',
+    str_contains($sida, "const alleKolonner = ['Verkstedet'].map(kn => {")
     && !str_contains($sida, "concat(['Verkstedet'])")
     && !str_contains($sida, "concat(['Brenning'])")
     && !str_contains($sida, 'this.klHoldere().concat('));
@@ -6451,8 +6461,8 @@ sjekk('«Verkstedet»-kolonnen er borte, og ingen ny fast kolonne satt i stedet'
 sjekk('brenning og verksted siles bort der hendelsene hentes',
     str_contains($sida, "const alle = this.klAlle(y, m)\n"
         . "      .filter(e => e.type !== 'verksted' && e.type !== 'brenning')"));
-sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
-    str_contains($sida, "const evs = dagensAlle.filter(e => e.holder === kn);"));
+sjekk('… og kolonnen tar alt som skjer den dagen',
+    str_contains($sida, "const evs = dagensAlle.slice();"));
 // Eieren, gang paa gang: «det hvite feltet under alle kurs skulle staa paa
 // linje med det hvite i kallenderen». Overskriftsrada i kalenderen er ulik
 // hoey i de tre visningene, saa hver visning hadde sitt eget loft: dag -18 px,
@@ -6504,20 +6514,11 @@ sjekk('… og de fire kursene med innlimt tekst foelger malen',
 // betyr at nettsida viser standardteksten for kategorien — men ruta viste
 // bare en tom boks, mens kursoppsettet viser teksten som graa hjelpetekst.
 // Samme felt, to skjermer, og bare den ene forklarte seg.
-sjekk('ruta viser standardteksten i de tomme feltene',
-    str_contains($sida, 'placeholder="{{ f.mal }}"')
-    && substr_count($sida, 'placeholder="{{ f.mal }}"') === 2
-    && str_contains($sida, "mal: kortet(mal[MAL_FELT[nokkel]] || '', 150),"));
-// Samme kilde som kursoppsettet — «red.mal», som serveren regner ut i
-// Kursmal::forKurs(). Da kan de to skjermene ikke si hver sin ting om hva
-// som kommer paa nettsida.
-sjekk('… fra samme mal som kursoppsettet bruker',
-    str_contains($sida, 'const mal = red.mal || {};')
-    && str_contains($sida, "om: 'beskrivelse', laerer: 'laerer', medHjem: 'medHjem',"));
-// Og under feltet: hva som faktisk gjelder akkurat naa.
-sjekk('… og sier om standarden brukes eller er overstyrt',
-    str_contains($sida, "? 'Står tomt: nettsiden viser teksten over'")
-    && str_contains($sida, ": 'Egen tekst. Den står foran den anbefalte.',"));
+// Ruta ble fjernet 21. september (710d7d9): kurset i kalenderen aapner det
+// komplette kursoppsettet, som har hjelpeteksten selv. Da kan ikke to
+// skjermer si hver sin ting om det samme kurset.
+sjekk('kalenderen har ingen egen kursrute ved siden av kursoppsettet',
+    !str_contains($sida, 'klKursRedId') && !str_contains($sida, 'klKursRedStil'));
 
 // Eieren, 31. august: «paa disse kortene maa vi fjerne dato». Kortet baerer
 // bare den foerste av datoene kurset har, og det leses som om det er den
@@ -6530,7 +6531,8 @@ sjekk('… og sier om standarden brukes eller er overstyrt',
 // kurskortet» over.
 sjekk('kortet viser aldri bare den forste datoen',
     !str_contains($sida, 'date="{{ k.date }}"')
-    && substr_count($sida, 'CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}"') === 3);
+    // Én kortliste igjen etter 21. september (74a6bcb).
+    && substr_count($sida, 'CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}"') === 1);
 // «Teksten onsdag 9 ….. endrer seg ikke til tross for at jeg velger en annen
 // dato». Linja over «Velg dato» sto paa kursets FOERSTE dato. Foerste forsoek
 // leste «valgtKurs.datoer» — feil liste; datovelgeren bruker ekteDatoer().
@@ -6660,9 +6662,9 @@ sjekk('SMS slaas bare paa av et uttrykkelig ja',
 sjekk('… og ingen steder i fronten gjoer undefined til paa',
     preg_match('~sms[^\n]*!== false~i', $sida) !== 1
     && str_contains($sida, 'sms: this.state.kSms === true,')
-    && str_contains($sida, "kSms: k.sms === true, kGjentak:")
-    && str_contains($sida, 'sms: k.sms === true,')
-    && str_contains($sida, 'sms: jaNei(raa.sms === true),'));
+    // Kursruta med jaNei(raa.sms …) forsvant 21. september (710d7d9).
+    && str_contains($sida, "kSms: k.sms === true,")
+    && str_contains($sida, 'sms: k.sms === true,'));
 // Kolonnen sto med DEFAULT 1 fra 001_init, saa enhver INSERT som ikke nevnte
 // den fikk SMS paa. Migrasjon 106 tar bade standarden og radene som ligger
 // inne.
@@ -6680,7 +6682,11 @@ sjekk('interne samlinger staar ikke i den offentlige kalenderen',
 // Regelen maa gjelde begge steder. Brukes den bare i lista, teller
 // okterEtterUke() dem likevel, og kalenderen aapner paa feil uke.
 sjekk('… ogsaa naar det regnes ut hvilken uke den aapner paa',
-    substr_count($sida, 'if (!this.visesIKalenderen(k)) return;') === 2
+    // Siden 22. september (e360fa4) siles de én gang, i kalenderIndeks(),
+    // og baade lista og uka leser derfra.
+    substr_count($sida, 'if (!this.visesIKalenderen(k)) return;') === 1
+    && str_contains($sida, 'kalenderIndeks() {')
+    && substr_count($sida, 'this.kalenderIndeks().forEach(') >= 2
     && !str_contains($sida, "if (k.tema === 'Kun for medlemmer') return;"));
 // Sida lovet «kurs, events og drop-in samlet». Det stemte ikke lenger.
 sjekk('… og teksten lover ikke et tilbud som ikke finnes',
@@ -6820,10 +6826,11 @@ sjekk('… mens draget fortsatt gir plassen paa den okta du slipper paa',
 sjekk('blokker til samme tid deler bredden',
     // Uka deler hele bredden. Dagsvisningen deler stripa blokka staar i —
     // se «Paint on Pots tar ikke spalta» under.
-    substr_count($sida, "left: 'calc(' + (p.lane / p.av * 100) + '% + ") === 1
-    && substr_count($sida, "width: 'calc(' + (100 / p.av) + '% - ") === 1
-    && str_contains($sida, "left: 'calc(' + (p.fra + p.lane / p.av * p.bredde) + '% + '")
-    && str_contains($sida, "width: 'calc(' + (p.bredde / p.av) + '% - '"));
+    // Avlyste oekter («spokelse») tar hele bredden og deler ikke (d266df0).
+    substr_count($sida, "left: p.spokelse ? '0px' : 'calc(' + (p.lane / p.av * 100) + '% + ") === 1
+    && substr_count($sida, "width: p.spokelse ? '100%' : 'calc(' + (100 / p.av) + '% - ") === 1
+    && str_contains($sida, "left: p.spokelse ? '0px' : 'calc(' + (p.fra + p.lane / p.av * p.bredde) + '% + '")
+    && str_contains($sida, "width: p.spokelse ? '100%' : 'calc(' + (p.bredde / p.av) + '% - '"));
 // Delinga gaar per klynge, ikke per dag: to som kraesjer klokka ti skal ikke
 // gjore alt annet den dagen smalere. Tre kall naa: de smale for seg, de
 // andre for seg, og uka.
@@ -7197,8 +7204,10 @@ sjekk('kortene viser prisen, ikke «Fra»',
     str_contains($sida, "price: k.pris === 'Gratis' ? 'Gratis' : k.pris,"));
 sjekk('… og den store prislinja gjor det samme',
     str_contains($sida, "bPris: k.price === 'Gratis' ? 'Gratis'\n            : (grunn > 0 ? fmt(netto) : (k.price || '')),"));
-sjekk('… ogsaa der gjenstanden velges i verkstedet',
-    str_contains($sida, "bPris: fmt(kat2.prisFraOre / 100 * antall),"));
+// Unntaket: gjenstanden i verkstedet. Eieren valgte 24. september (80af471)
+// «Fra kr. 450,-» paa Paint on Pots, fordi gjenstandene koster ulikt.
+sjekk('… mens gjenstanden i verkstedet viser «Fra»',
+    str_contains($sida, "bPris: 'Fra ' + fmt(kat2.prisFraOre / 100 * antall),"));
 
 // ── Paint on Pots koster 500 ──────────────────────────────────────────
 $mig120 = file_get_contents(dirname(__DIR__) . '/db/migrations/120_paint_on_pots_koster_500.sql');
@@ -7209,8 +7218,11 @@ sjekk('… og slaar av «gjenstand i kassa», som la 300 oppaa',
 if (DB::harTabell('courses') && DB::harKolonne('courses', 'gjenstand_i_kassa')) {
     $pop = DB::en("SELECT pris_ore, gjenstand_i_kassa, status FROM courses WHERE slug = 'paint-on-pots'");
     if ($pop !== null) {
-        sjekk('Paint on Pots koster 500 i basen', (int) $pop['pris_ore'] === 50000,
-            (int) $pop['pris_ore'] . ' oere');
+        // 24. september (migrasjon 209, eierens valg): «Fra kr. 450,-».
+        $mig209 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/209_fra_pris_paa_kurs.sql');
+        $fraMig = preg_match('~pris_ore = (\d+)~', $mig209, $pm) ? (int) $pm[1] : -1;
+        sjekk('Paint on Pots har prisen fra migrasjon 209 i basen', (int) $pop['pris_ore'] === $fraMig,
+            (int) $pop['pris_ore'] . ' oere, migrasjonen sier ' . $fraMig);
         sjekk('… og legger ikke gjenstanden oppaa', (int) $pop['gjenstand_i_kassa'] === 0);
         // Et kurs uten pris far ingen bookingknapp i det hele tatt — knappen
         // ligger inne i «erBetalt» eller «erGratis», og et kurs til 0 er
@@ -7270,7 +7282,9 @@ sjekk('kurssida aapner det enkle skjemaet',
 // Tre steder fra 15. september 2026: det tredje er ?skjema=1 fra
 // serversidene (app/nett/), som aapner det samme skjemaet ved oppstart.
 sjekk('… og gruppeskjemaet aapnes bare fra gruppelenka',
-    substr_count($sida, 'fsApen: true') === 3
+    // Den fjerde kom 24. september (0368f1b): «Passer ikke ønsket dato?»
+    // paa dreiekurset.
+    substr_count($sida, 'fsApen: true') === 4
     && str_contains($sida, 'goForesporsel: () => this.apneForesporsel(),'));
 sjekk('… kurset foelger med som emne til serveren',
     str_contains($sida, "type: (s.ktEmne || '').trim() || 'Kontaktskjema',"));
@@ -7426,7 +7440,7 @@ sjekk('… og den som ikke er innlogget sendes ikke til innlogging foerst',
     !str_contains($sida, "this.sendTilInnlogging('/medlemskap', 'Medlemskapet ble ikke opprettet.');"));
 sjekk('… men til ordren, som eier planen',
     str_contains($sida, "fetch('/api/medlemsordre.php'")
-    && str_contains($sida, "if (d.url) { window.location.href = d.url; return; }"));
+    && str_contains($sida, "          window.location.href = d.url;"));
 // Og naar vi ikke kjenner henne, henter serveren navnet fra Vipps og sender
 // henne rett tilbake til den samme noekkelen.
 sjekk('… og serveren henter navnet fra Vipps og kommer tilbake til noekkelen',
@@ -7522,7 +7536,9 @@ sjekk('sidelastinger under admin og Min side maales',
     str_contains($sideP, "str_starts_with(\$sti, '/admin') || str_starts_with(\$sti, '/min-side')")
     && str_contains($sideP, "logg('SIDE', [")
     && str_contains($sideP, "'ba_om'   => \$sti,")
-    && str_contains($sideP, "'fil'     => \$erAdmin ? 'med admin' : 'uten admin',"),
+    // Siden 4aaccc8 regnes «fil» ogsaa ut fra stien (adminutgaven bare
+    // under /admin), saa uttrykket laases ikke lenger.
+    && str_contains($sideP, "'fil'     =>"),
     'maalt: to linjer for /admin/oversikt og /min-side, ingen for /kurs og /');
 
 // ── Chatten viser hele meldingen ──────────────────────────────────
@@ -7955,10 +7971,12 @@ sjekk('… mens et kurs med datoer fortsatt sier det',
 // faar sitt eget <p>. Malt etter: fire avsnitt paa sida, med luft mellom.
 // Sto laast til den ene kodelinja som gjorde delinga. Paastanden er at
 // teksten DELES og at hvert avsnitt faar sitt eget <p> — ikke hvordan.
+// Siden 76ab924 («Én utgave av kurset») tegnes kurssida av serveren, i
+// app/nett/sider/kursside.php. Der skal delinga skje.
+$kurssideP = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
 sjekk('kurssida deler beskrivelsen i avsnitt',
-    str_contains($sida, '<sc-for list="{{ bOmAvsnitt }}" as="a"')
-    && str_contains($sida, 'const deler = raa.split(/\r?\n+/).map(t => t.trim()).filter(Boolean);')
-    && str_contains($sida, 'bOmAvsnitt: deler.map((t, i) => ({'));
+    str_contains($kurssideP, "preg_split('/\\r?\\n+/', \$raa)")
+    && str_contains($kurssideP, '$deler = array_values(array_filter(array_map(\'trim\','));
 // Kontrollen: det ene avsnittet som tok hele teksten skal vaere borte.
 sjekk('… og det ene avsnittet som tok alt er borte',
     !str_contains($sida, 'text-wrap: pretty;">{{ bOm }}</p>'));
@@ -8159,7 +8177,7 @@ sjekk('… og «eller»-skillet staar ikke alene',
 // Det samme fra plankortet under «Bytt abonnement».
 sjekk('«Forny» sender betalingsmaaten til serveren',
     str_contains($sida, "const kropp = { handling: 'start', plan: navn, betaling: maate };")
-    && str_contains($sida, "this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps');"));
+    && str_contains($sida, "this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps', { vare, hvem });"));
 // Kontrollen: det gamle kallet uten feltet skal vaere borte. Uten denne
 // ville proven over vaere gronn ogsaa om noen la det tilbake ved siden av.
 sjekk('… og det gamle kallet uten feltet er borte',
@@ -8450,7 +8468,9 @@ foreach (glob(dirname(__DIR__) . '/api/admin/*.php') as $f) {
 }
 sort($aapne);
 sjekk('… og ingen andre endepunkter er aapnet',
-    $aapne === ['betalinger', 'dagsoppgjor', 'okonomi', 'transaksjoner'], implode(', ', $aapne));
+    // Timelista kom til 26. september (ac5d853): kursholderne skal kunne
+    // regnes paa av regnskapsfoereren.
+    $aapne === ['betalinger', 'dagsoppgjor', 'okonomi', 'timeliste', 'transaksjoner'], implode(', ', $aapne));
 
 // Skjermen: ett menypunkt, og ingen vei til de andre.
 sjekk('menyen viser bare OEkonomi for rollen',
@@ -8496,10 +8516,7 @@ sjekk('ruta klemmes ikke lenger inn mot kanten',
     !str_contains($sida, "maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px',"));
 sjekk('… og legger seg ikke lenger der du trykket',
     !str_contains($sida, "const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));"));
-// Ruta ruller inni seg selv naar innholdet er hoyere enn plassen.
-sjekk('… og ruller inni seg selv naar den ikke faar plass',
-    str_contains($sida, "maxHeight: '86vh', overflow: 'auto',")
-    && str_contains($sida, "overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',"));
+// Ruta ble fjernet 21. september (710d7d9); kurset aapner kursoppsettet.
 
 // ── Pillene laa oppi kortene over ──────────────────────────────────────
 //
@@ -8536,8 +8553,9 @@ sjekk('… og raden er ute av loftet',
 // igjen, er vi tilbake til 439.
 sjekk('styringen ligger inne i kalenderspalta',
     str_contains($sida, '<div style="{{ klHovedStil }}">')
-    && strpos($sida, '<div style="{{ klStyringStil }}">') > strpos($sida, '<div style="{{ klHovedStil }}">')
-    && strpos($sida, '<div style="{{ klStyringStil }}">') < strpos($sida, 'klErManed }}" hint-placeholder-val="{{ false }}"'));
+    // Fikk id="kl-kalender" 2998aea, saa den kan hoppes til.
+    && strpos($sida, 'style="{{ klStyringStil }}">') > strpos($sida, '<div style="{{ klHovedStil }}">')
+    && strpos($sida, 'style="{{ klStyringStil }}">') < strpos($sida, 'klErManed }}" hint-placeholder-val="{{ false }}"'));
 // Uten bunnkant og med runding bare oppe henger baren sammen med rutenettet
 // under, som ett kort. Med full runding ble det to kort oppaa hverandre.
 sjekk('… og henger sammen med rutenettet under',
@@ -8577,7 +8595,8 @@ sjekk('den smale blokka viser fortsatt plasstall, ansikter og merknader',
     && str_contains($sida, "detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : ''")
     && str_contains($sida, 'harAvatarer: (p.e.deltakere || []).length > 0,'));
 sjekk('… og blokkene ligger foran rutenettet',
-    substr_count($sida, 'zIndex: 2 + p.lane') === 2);
+    // Avlyste («spokelse») legger seg bak (d266df0, #216).
+    substr_count($sida, 'zIndex: p.spokelse ? 0 : 2 + p.lane') === 2);
 
 // ── Statistikken er et kort som de andre ───────────────────────────────
 //
@@ -9458,7 +9477,8 @@ sjekk('… og timer igjen',
 // Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt
 // seks og lista vist sju.
 sjekk('filteret «Ubetalte» finnes',
-    str_contains($sida, "'Alle', 'Aktive', 'Ubetalte', 'Sluttet'"));
+    // Filtrene ble piller per kategori 47a197d («Medlemmer heter Brukere»).
+    preg_match("~medlemFiltre: \[[^\]]*'Ubetalte'~", $sida) === 1);
 sjekk('… og teller det samme som kortet',
     str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;"));
 $okoFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
@@ -10051,7 +10071,14 @@ sjekk('kortene har «Se mer» paa telefonen',
 // oppfoerer kortene seg annerledes enn resten av admin i et smalt belte.
 sjekk('… paa det samme knekkpunktet som resten av admin',
     str_contains($sidaG, 'erSmal() { return (this.state.vw || (typeof window !== \'undefined\' ? window.innerWidth : 1200)) <= 760; }')
-    && substr_count($sidaG, "  .lx-kortmer { display: none; }\n  @media (max-width: 760px) {") === 1);
+    // CSS kom inn mellom de to 21. september (76ab924); knekkpunktet er det samme.
+    && substr_count($sidaG, "  .lx-kortmer { display: none; }\n") === 1
+    && (static function (string $s): bool {
+        $p = strpos($s, '.lx-kortmer  { display: block !important; }');
+        if ($p === false) return false;
+        $m = strrpos(substr($s, 0, $p), '@media');
+        return $m !== false && str_starts_with(substr($s, $m), '@media (max-width: 760px) {');
+    })($sidaG));
 // Begge kortblokkene: Oversikt og omraadesidene. Sto det bare ett sted,
 // ville halvparten av kortene oppfoert seg annerledes.
 sjekk('… paa begge kortblokkene',
@@ -10323,7 +10350,9 @@ sjekk('hver fast adresse i sitemapen har en SEO-oppfoering',
 // det ikke i produksjon.
 sjekk('guidene serveres som ferdige filer, ikke gjennom side.php',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
-        'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guider/$1.html [L]')
+        // Siden a277c0b gaar de via guide.php (samtykke og maaling), men bare
+        // naar den ferdige fila finnes — side.php tegner dem ikke.
+        'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
         'RewriteCond %{DOCUMENT_ROOT}/guider/$1.html -f'));
 // … og hver fil sier selv at den skal indekseres.
@@ -10768,8 +10797,12 @@ sjekk('ingen regner ut tusenskillet med et vanlig mellomrom',
     !str_contains($sidaT, "(?=(\\d{3})+(?!\\d))/g, ' ')"));
 // Seks, ikke fem: konustabellen regner ut to tall paa den samme linja, og
 // linja «maa kreves inn» paa Oversikt kom 5. september.
-sjekk('… og alle seks stedene bruker et hardt',
-    substr_count($sidaT, "(?=(\\d{3})+(?!\\d))/g, '\\u00A0')") === 6);
+// Flere steder er kommet til siden (Oversikt i ny drakt 26. september). Alle
+// skal bruke et hardt mellomrom — skrevet som escape-kode eller tegnet selv.
+$tusenAlle = preg_match_all("~\(\?=\(\\\\d\{3\}\)\+\(\?!\\\\d\)\)/g, '([^']*)'\)~u", $sidaT, $tusenM);
+$tusenHarde = count(array_filter($tusenM[1] ?? [], static fn($t) => in_array($t, ['\u00A0', '\u00a0', "\u{00A0}"], true)));
+sjekk('… og alle stedene bruker et hardt',
+    $tusenAlle >= 6 && $tusenHarde === $tusenAlle, $tusenHarde . ' av ' . $tusenAlle);
 // Vakta som fanger den neste. Den leser teksten slik den staar paa skjermen,
 // saa den finner et mykt mellomrom uansett hvor i koden det kom fra.
 $bredde = file_get_contents(dirname(__DIR__) . '/bin/breddesjekk.mjs');
@@ -11083,7 +11116,8 @@ sjekk('… og teller de samme radene som medlemslista',
     str_contains($sida, 'const m = (this.state.adminMedlemmer ? this.medlemsrader() : [])')
     && str_contains($sida, '.filter(x => x.erMedlem && !x.erAdmin);'));
 sjekk('… og gaar til medlemsskjermen',
-    str_contains($sida, "() => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive', medlemSok: '' }));"));
+    // Filteret heter «Aktive medlemmer» siden 47a197d.
+    str_contains($sida, "() => this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: '' })"));
 // Ordet paa statuspilla sto uten oe. Det staar baade i medlemslista og i
 // kortet paa Oversikt og Kalender — ett sted i koden, saa det ikke kan bli
 // riktig det ene stedet og feil det andre.
@@ -11455,8 +11489,9 @@ sjekk('… to av gangen, med en knapp for resten',
 // Lukker du skuffen, legger lista seg sammen igjen. Ellers sto den utslaatt
 // neste gang du aapnet, uten at du ba om det.
 sjekk('… og lista legger seg sammen naar skuffen lukkes',
-    str_contains($sida, 'admMobVeksle: () => this.setState(s => ({')
-    && str_contains($sida, 'admMobApen: !s.admMobApen, menyInneApen: false,'));
+    // Egen funksjon siden 2464138 (#219), som ogsaa ruller til skuffen.
+    str_contains($sida, 'admMobVeksle: () => {')
+    && str_contains($sida, 'this.setState({ admMobApen: aapner, menyInneApen: false,'));
 sjekk('… over de elleve stedene, ikke under',
     strpos($sida, '{{ admMobVerkStil }}') < strpos($sida, '<sc-for list="{{ admMobPunkter }}"'));
 
@@ -11760,7 +11795,8 @@ sjekk('… og cellene faar lov aa krympe',
 $pam = @file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php') ?: '';
 sjekk('paameldingen kan rettes',
     str_contains($pam, "if (\$handling === 'endre') {")
-    && str_contains($pam, " *   POST handling=endre      { id, antall?, belop? }"));
+    // Rabatten kom til 24. september (7ad6591).
+    && str_contains($pam, " *   POST handling=endre      { id, antall?, belop?, rabatt? }"));
 // Samme grenser som naar plassen legges inn.
 sjekk('… med samme grenser som naar plassen legges inn',
     str_contains($pam, "Antallet må være mellom 1 og 20. Skal plassen bort, fjern den i stedet.")
@@ -11768,7 +11804,8 @@ sjekk('… med samme grenser som naar plassen legges inn',
 // Tomt beloepsfelt: regn det av antallet, med prisen paa datoen foran
 // prisen paa kurset — samme uttrykk som naar plassen legges inn.
 sjekk('… og beloepet foelger antallet naar det ikke tastes inn',
-    str_contains($pam, "\$felt['belop_ore'] = (int) \$pris * \$nyttAntall;")
+    // Med rabatten i prosent (7ad6591); uten rabatt er det det samme tallet.
+    str_contains($pam, "\$felt['belop_ore'] = (int) round((int) \$pris * \$nyttAntall * (1 - (\$rabatt ?? 0) / 100));")
     && substr_count($pam, "COALESCE(cs.pris_ore, c.pris_ore)") === 2);
 // Et tall i feltet gaar foran.
 sjekk('… og et tastet beloep gaar foran',
@@ -11808,7 +11845,8 @@ sjekk('… og begge sier hva et tomt beloepsfelt gjor',
     substr_count($endre, "'Tomt = pris × antall, minus rabatten'") === 2);
 // Rabatt i prosent ved siden av antall og beloep. Eieren, 24. september 2026.
 sjekk('… og begge har et rabattfelt',
-    substr_count($endre, '<label style="{{ mpEtikett }}">Rabatt %</label>') === 2
+    // Det tredje kom med «Ta betalt» (40abbe5).
+    substr_count($endre, '<label style="{{ mpEtikett }}">Rabatt %</label>') === 3
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'), "\$felt['belop_ore'] = (int) round((int) \$pris * \$nyttAntall * (1 - (\$rabatt ?? 0) / 100));"));
 // To aapne paneler paa samme rad er ikke til aa se hvilket som lagres.
 sjekk('… og bare ett panel er aapent om gangen',
@@ -11938,13 +11976,12 @@ sjekk('… men raden i stripa er tom paa telefon',
     str_contains($uKode, 'admToppEkstra: [],')
     && !str_contains($uKode, '.lx-admtopp { display: flex !important; }')
     && str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }'));
-sjekk('… og de to radene staar nederst i menyskuffen',
-    str_contains($uKode, 'const bunnrader = [gruppe(\'\', topp.map(v => ({')
-    && str_contains($uKode, 'admMobPunkter: punkter.concat([snarveiBolk]).concat(bunnrader),'));
-// Snarveiene er kort i dashboardet, men dashboardet finnes bare paa
-// kalenderen. I skuffen naar man dem fra alle de ti stedene.
-sjekk('snarveiene staar som en egen bolk i skuffen',
-    str_contains($uKode, "const snarveiBolk = gruppe('Snarveier', this.adminSnarveier().map(x => ({"));
+// Menyen ble fliser etter skissen 25.–26. september (d266df0): verktoeyene og
+// «Logg ut» staar under «Innstillinger», og snarveiene er egne fliser under
+// «Mer». Ingen egen snarveibolk lenger.
+sjekk('… og verktoeyene og utloggingen staar i menyskuffen',
+    str_contains($uKode, "return [gruppe('Innstillinger', ekstra.map(r => flis({")
+    && str_contains($uKode, 'const utlogg = ekstra.filter(r => r.navn === utNavn);'));
 // Trykk i menyen teller like mye som trykk paa kortet — ellers ville
 // dashboardet ikke laere av det man faktisk bruker.
 sjekk('… og trykk der telles av dashboardet',
@@ -11991,12 +12028,14 @@ sjekk('… den maaler hoyden sin mot bunnmenyen naar den aapnes',
     str_contains($uKode, '  skuffPlass() {')
     && str_contains($uKode, "const stripe = document.querySelector('.lx-admmob');")
     && str_contains($uKode, "const bunn = document.querySelector('.lx-bunnmeny');")
-    && str_contains($uKode, 'admMobPlass: !s.admMobApen ? this.skuffPlass() : 0,'));
+    // Maales etter at skjermen har rullet (2464138).
+    && str_contains($uKode, 'if (aapner) requestAnimationFrame(() => this.setState({ admMobPlass: this.skuffPlass() }));'));
 sjekk('… og skuffen ruller selv',
     str_contains($uKode, "maxHeight: this.state.admMobPlass ? this.state.admMobPlass + 'px' : '60vh',")
     && str_contains($uKode, "overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',"));
 sjekk('… og bolkoverskrifta tegnes som tekst, ikke som knapp',
-    $antBolk === $antSide
+    // Skuffen er to lister med verkstedkortet imellom: to overskrifter per skjerm.
+    $antBolk === 2 * $antSide
     && !str_contains($uKode, 'style="{{ m.knappStil }}"'));
 // «Inne naa» sto mellom Ferie og denne raden fra 9. september 2026. Eieren
 // tok den ut 15. september; verktoeypillene skal fortsatt komme rett etter.
@@ -12668,7 +12707,8 @@ sjekk('… og sier fra at en loepende Vipps-avtale trekker det gamle',
     str_contains($bytt, "WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1")
     && str_contains($bytt, 'trekker fortsatt det. Skal beløpet endres'));
 sjekk('… og byttet blir staaende i endringsloggen',
-    str_contains($medApi, "revider('medlem_plan_byttet', 'member', \$id,")
+    // Samme linje skriver innmeldingen naar hun ikke var medlem (b316e3c).
+    str_contains($medApi, "revider(\$erMedlem ? 'medlem_plan_byttet' : 'medlem_meldt_inn', 'member', \$id,")
     && str_contains($medApi, "if (\$h === 'medlem_plan_byttet') {")
     && str_contains($medApi, "'Byttet medlemskap' . (\$fra !== '' ? ' fra ' . \$fra : '') . ' til ' . \$til"));
 // ── Loggen maa si hvilken vei det gikk ────────────────────────────
@@ -12970,7 +13010,8 @@ sjekk('… og det samme gjor «Registrer betaling» og «Send Vipps-avtale»',
     // medlemskap», «Send Vipps-avtale», «Nullstill medlemmet», «Stopp
     // avtalen naa» og «Avslutt medlemskapet». × kaller den ogsaa, men uten
     // semikolon — se «lukkPerson:» over.
-    && substr_count($sidaB, 'this.lukkPersonruta();') === 7);
+    // Den aattende kom med 8e6e59e (#189).
+    && substr_count($sidaB, 'this.lukkPersonruta();') === 8);
 // «Nullstill medlemmet» sto igjen en runde. Eieren, 7. september 2026, spurt
 // om den skulle staa naar de fire andre gaar tilbake til lista: nei. Lista
 // viser nettopp det nullstillingen endrer — status, plan og betalingspille.
@@ -13217,23 +13258,10 @@ sjekk('… og roerer ikke det som er over',
 if (DB::harKolonne('courses', 'folger_apningstid')) {
     $pop = DB::en("SELECT id, folger_apningstid FROM courses WHERE tittel = 'Paint on Pots'");
     if ($pop !== null) {
-        sjekk('Paint on Pots foelger ikke lenger aapningstidene',
-            (int) $pop['folger_apningstid'] === 0);
-        sjekk('… og har ingen genererte luker igjen framover',
-            (int) DB::verdi(
-                'SELECT COUNT(*) FROM course_sessions
-                  WHERE course_id = :i AND fra_apningstid = 1
-                    AND COALESCE(slutt_tid, start_tid) > UTC_TIMESTAMP()',
-                ['i' => (int) $pop['id']]
-            ) === 0);
-        // Uten dette kunne cron lagt dem ut igjen neste natt, og eieren
-        // staatt med den samme kalenderen om et doegn.
-        $forOkter = (int) DB::verdi('SELECT COUNT(*) FROM course_sessions WHERE course_id = :i',
-            ['i' => (int) $pop['id']]);
-        Apent::leggUtPaaApneTider();
-        sjekk('… og utleggingen lager ingen nye',
-            (int) DB::verdi('SELECT COUNT(*) FROM course_sessions WHERE course_id = :i',
-                ['i' => (int) $pop['id']]) === $forOkter);
+        // Snudd 24. september (de10668, #212, migrasjon 206): Paint on Pots
+        // foelger aapningstidene igjen.
+        sjekk('Paint on Pots foelger aapningstidene igjen',
+            (int) $pop['folger_apningstid'] === 1);
     }
 }
 
@@ -13265,7 +13293,8 @@ sjekk('… og detaljen sier at kortet staar med «Kontakt oss»',
 // Regelen paa nettsida er den beskjeden skal stemme med: et kurs uten datoer
 // vises naar haken er paa. Staar de to ulikt, lyver den ene.
 sjekk('… og nettsida slipper gjennom et kurs uten datoer naar haken er paa',
-    str_contains($sida, ".filter(k => (k.datoer || []).length > 0 || k.utenDatoOk)"));
+    // Skjulte kurs faar kurssida si ogsaa (43f560d), derav ogsaaSkjult.
+    str_contains($sida, ".filter(k => ogsaaSkjult || (k.datoer || []).length > 0 || k.utenDatoOk)"));
 
 echo "\n== Medlemskapskortet er det samme kortet som kurs ==\n";
 //
@@ -13584,8 +13613,11 @@ sjekk('… mens aarsavtalen sier fra at den har fast trekk',
 foreach (['medlemskap' => $medApiV2, 'bli-medlem' => $bliApiV] as $navn => $kode) {
     sjekk('api/' . $navn . '.php lar planen avgjore',
         str_contains($kode, "\$betaling = Medlemskap::kreverFastTrekk(\$plan) ? 'trekk' : 'selv';"));
+    // Unntaket er «verksted» (804be43, #193): bestille uten aa betale i
+    // forkant. Det kan aldri gjore et trekk om til noe annet.
+    $utenVerksted = str_replace("if (\$betaling !== 'trekk' && Foresporsel::tekst('betaling') === 'verksted') {", '', $kode);
     sjekk('… og leser ikke «betaling» fra kallet i api/' . $navn . '.php',
-        !str_contains($kode, "Foresporsel::tekst('betaling')"));
+        !str_contains($utenVerksted, "Foresporsel::tekst('betaling')"));
 }
 
 // Prøven som teller: bare aarsmedlemskapet har flagget i basen. Faar en
@@ -13732,7 +13764,8 @@ sjekk('… men ikke i kassa, som alt viser «Å betale»',
 sjekk('summen regnes ett sted',
     str_contains($sidaB, '  bookSum() {')
     && str_contains($sidaB, "        : ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
-    && substr_count($sidaB, 'this.bookSum()') === 3);
+    // Den fjerde kom med «Bestille uten aa betale i forkant» (804be43).
+    && substr_count($sidaB, 'this.bookSum()') === 4);
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);
@@ -13775,21 +13808,12 @@ $sidaR = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // gronn av feil grunn. Derfor maales koden uten kommentarer.
 $kodeR = preg_replace('/<!--.*?-->/s', '', $sidaR);
 $kodeR = preg_replace('/^\s*\/\/.*$/m', '', (string) $kodeR);
-$stilR = '';
-if (preg_match('/klKursRedStil:\s*\{(.*?)\n\s*\},/s', $sidaR, $m)) { $stilR = $m[1]; }
-sjekk('kursruta i kalenderen har en stil aa maale',
-    $stilR !== '', strlen($stilR) . ' tegn');
-sjekk('kursruta staar midt paa skjermen',
-    str_contains($stilR, "left: '50%'")
-    && str_contains($stilR, "top: '50%'")
-    && str_contains($stilR, "translate(-50%, -50%)"),
-    'left/top 50% + translate');
+// Kursruta i kalenderen ble fjernet 21. september (710d7d9): kurset aapner
+// kursoppsettet. Da er det ingen rute her aa plassere.
 sjekk('kursruta plasseres ikke lenger etter musepekeren',
     !str_contains((string) $kodeR, 'klKursRedPos'),
     'klKursRedPos er borte');
-sjekk('kursruta holder seg innenfor kanten paa smale skjermer',
-    str_contains($stilR, "calc(100vw - 24px)") && str_contains($stilR, "maxHeight: '86vh'"),
-    'bredde og hoeyde er klemt til vinduet');
+
 
 // ── Ingen rute plasseres etter musepekeren ──────────────────────────────
 //
@@ -13816,8 +13840,9 @@ sjekk('Vipps-ruta staar midt paa skjermen',
     substr_count($sidaR, 'position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 86vh') === 2,
     'begge de to rutene');
 sjekk('de fire skjemarutene sentreres av «margin: auto 0»',
-    substr_count($sidaR, 'margin: auto 0;') === 4,
-    'fire ruter');
+    // Den femte kom med «Ta betalt» (40abbe5).
+    substr_count($sidaR, 'margin: auto 0;') === 5,
+    'fem ruter');
 
 // ── Ingen skal falle ut uten beskjed ────────────────────────────────────
 //
@@ -14643,8 +14668,9 @@ sjekk('pillene staar to og to i lik bredde paa telefon',
     && str_contains($sidaP, '      min-width: fit-content !important;'),
     'maalt: 59 rader paa 390 px');
 sjekk('… og alle pilleradene i admin er merket',
-    substr_count($sidaP, 'class="lx-pillerad"') === 115,
-    '115 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
+    // 98 etter at skjermene ble bygd om etter skissene 25.–26. september.
+    substr_count($sidaP, 'class="lx-pillerad"') === 98,
+    '98 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
 
 // Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
 // lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september
@@ -14697,8 +14723,10 @@ sjekk('utloggingen staar i bunnmenyen, ikke ved stemplingsknappen',
     'maalt i nettleseren: seks celler, ingen utenfor kanten, 360/390/820/1280 px');
 sjekk('… og utloggingen skjer ett sted',
     str_contains($sidaP, 'loggUt: () => this.loggUtNaa(),')
-    && substr_count($sidaP, "fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })") === 1,
-    'to nesten like kopier ble én');
+    // Den andre er «Ikke deg? Logg ut» i innmeldingen (608febf), som ogsaa
+    // toemmer skjemaet.
+    && substr_count($sidaP, "fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })") === 2,
+    'utloggingen i menyen og i innmeldingen');
 
 // 4. «Sendes på e-post med en gang» sto paa hver butikkvare som ikke var
 //    merket. Eieren, med bilde av en vase til 800 kroner: «fjern alle steder
@@ -14762,8 +14790,9 @@ sjekk('… og timene leses av den, ikke av salgslista',
 sjekk('… og det samme gjor binding, oppsigelse og engangsregelen',
     substr_count($mlP, "self::planUansett((string) \$avtale['plan']);") === 3);
 sjekk('… mens innmelding og kjop fortsatt krever en plan som selges',
-    substr_count($mlP, 'self::plan($planNavn);') === 2,
-    'startAvtale() og startEngangs()');
+    // startIVerkstedet() kom til med 804be43 (#193).
+    substr_count($mlP, 'self::plan($planNavn);') === 3,
+    'startAvtale(), startEngangs() og startIVerkstedet()');
 $mkP = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
     str_contains($mkP, "\$p = \$harPlan !== '' ? Medlemskap::planUansett(\$harPlan) : null;"),
@@ -17435,7 +17464,8 @@ sjekk('titlene paa hovedsidene er eierens, og forsida sier det samme i hodet',
         $k = json_decode((string) file_get_contents(dirname(__DIR__) . '/seo-kart.json'), true);
         $t = static fn(string $id): string => (string) ($k['sider'][$id]['tittel'] ?? '');
         return $t('forside') === 'Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk'
-            && $t('kurs') === 'Keramikkurs i Tønsberg og Vestfold – se datoer | Lissom'
+            // Ny tittel paa kurssida med eierens godkjenning (f11ae7d, bcdb3b7).
+            && $t('kurs') === 'Dreiekurs, plateteknikk og håndbygging i Tønsberg | Lissom'
             && $t('medlemskap') === 'Medlemskap i keramikkverksted – Tønsberg/Vestfold | Lissom'
             && $t('events') === 'Utdrikningslag, teambuilding og events – Tønsberg | Lissom'
             && $t('gavekort') === 'Gavekort på keramikkurs – opplevelsesgave Vestfold | Lissom'
@@ -17474,7 +17504,7 @@ sjekk('de sju guidene finnes som sider, med tittel, meta, canonical og JSON-LD',
         return str_contains((string) file_get_contents(dirname(__DIR__) . '/guider/vanlige-sporsmal.html'), '"@type":"FAQPage"');
     })());
 sjekk('… .htaccess, sidekartet, llms.txt og Nyttig info kjenner dem',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guider/$1.html [L]')
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/sitemap.php'), "\$linjer[] = [ROT . '/nyttig-info/' . \$slug, \$laget, 'monthly', '0.6'];")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), "'](' . ROT . '/nyttig-info/' . \$slug . '): '")
     && str_contains($mkSida, "eyebrow: 'Guider fra verkstedet', navn: g.navn, om: g.om,")
@@ -17489,7 +17519,8 @@ sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "'bildeAlt'        => 'bilde_alt',")
     && str_contains($mkSida, 'Alt-tekst — hva bildet viser, for den som ikke ser det</label>')
-    && substr_count($mkSida, 'image-alt="{{ k.bildeAlt }}"') === 3
+    // Én kortliste igjen etter 74a6bcb.
+    && substr_count($mkSida, 'image-alt="{{ k.bildeAlt }}"') === 1
     && str_contains($mkSida, '<div role="img" aria-label="{{ bBildeAlt }}"')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.js'), 'alt: imageAlt || title')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.min.js'), 'imageAlt||title'));
@@ -17699,7 +17730,9 @@ sjekk('Tag Manager: container-ID-en lagres som Marked/GTM-id, og bare i riktig f
     && str_contains($mkSida, 'placeholder="GTM-ABC1234"'));
 sjekk('… lastes etter samtykke, ved siden av Analytics, og hendelsene gaar til dataLayer',
     str_contains($mkSida, "const harGtm = /^GTM-[A-Z0-9]{4,12}\$/i.test(gtm) && !this._gtmSatt;")
-    && str_contains($mkSida, "if (this.samtykke() !== 'ja') return;\n    window.dataLayer = window.dataLayer || [];")
+    // Meta-blokka staar mellom de to siden 5a35e42; rekkefoelgen er den samme.
+    && str_contains($mkSida, "if (this.samtykke() !== 'ja') return;")
+    && strpos($mkSida, 'window.dataLayer = window.dataLayer || [];', (int) strpos($mkSida, "if (this.samtykke() !== 'ja') return;")) !== false
     && str_contains($mkSida, "g.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtm.toUpperCase());")
     && str_contains($mkSida, "window.dataLayer.push(Object.assign({ event: navn }, felter || {}));")
     && str_contains($mkSida, "&& this.harMaaling()\n        && (this.state.samtykkeSvart || this.samtykke()) === '',"));
@@ -17736,7 +17769,8 @@ sjekk('… lastes etter samtykke, uten revoke foer init (det laaser koeen), og h
     str_contains($mkSida, "const harMeta = /^\d{15,16}\$/.test(meta) && !this._metaSatt;")
     && !str_contains($mkSida, "window.fbq('consent', 'revoke');\n      let hvem = null;")
     && str_contains($mkSida, "      if (md) window.fbq('init', id, md); else window.fbq('init', id);\n      window.fbq('consent', 'grant');\n      window.fbq('track', 'PageView');")
-    && str_contains($mkSida, "        if (m) window.fbq('track', m.navn, m.felter);")
+    // Kjoepet sendes med event-id fra serveren (0fdcc15).
+    && str_contains($mkSida, "if (eid) window.fbq('track', m.navn, m.felter, eid); else window.fbq('track', m.navn, m.felter);")
     && str_contains($mkSida, "      page_view: 'PageView', purchase: 'Purchase', generate_lead: 'Lead',")
     && str_contains($mkSida, "      if (md) { try { window.fbq('init', this._metaId, md); } catch (e) { /* da gaar kjopet uten */ } }")
     && str_contains($mkSida, "        window.fbq('consent', av ? 'revoke' : 'grant');")
@@ -17752,7 +17786,7 @@ sjekk('… ogsaa paa serversidene, og testsiden faar ingen ID',
             && !str_contains($n, "window.fbq('consent', 'revoke');\n        window.fbq('init', meta);")
             && str_contains($n, "if (typeof window.fbq === 'function' && samtykkeSendt) window.fbq('consent', 'revoke');")
             && str_contains($n, "if (samtykke() === '' && (m.ga || m.gtm || m.meta)) boks.removeAttribute('hidden');")
-            && str_contains($p, "\$maal = json_encode(['ga' => \$gaId, 'gtm' => \$gtmId, 'meta' => \$metaId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);")
+            && str_contains($p, "json_encode(['ga' => \$gaId, 'gtm' => \$gtmId, 'meta' => \$metaId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);")
             && str_contains($p, "unset(\$ut['Marked/GA-id'], \$ut['Marked/GTM-id'], \$ut['Marked/Meta-piksel']);")
             && str_contains($i, "unset(\$ut['Marked/GA-id'], \$ut['Marked/GTM-id'], \$ut['Marked/Meta-piksel']);")
             && str_contains($h, "https://cdn.vippsmobilepay.com https://connect.facebook.net; style-src")
@@ -17777,8 +17811,9 @@ sjekk('Google Ads: kjoepene fyrer booking_fullfort / gavekort_kjopt / medlemskap
     && str_contains($mkSida, "if (m[1] === 'ok') this.maalKjop(hash);"));
 sjekk('… forespurt_kontakt fyres etter serverens OK paa kontakt- og gruppeskjemaet',
     substr_count($mkSida, "this.maal('forespurt_kontakt', { form:") === 2
-    && str_contains($mkSida, "this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });\n        // Google Ads-konverteringen for en forespoersel. Uten verdi — det\n        // er ikke solgt noe ennaa. (Eieren, 12. september 2026.)\n        this.maal('forespurt_kontakt', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });")
-    && str_contains($mkSida, "this.maal('generate_lead', { form: s.fsType || 'Forespørsel' });\n        this.maal('forespurt_kontakt', { form: s.fsType || 'Forespørsel' });"));
+    // generate_lead fikk brukerdata som tredje argument (15c0b47).
+    && str_contains($mkSida, "this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' }, { epost, telefon: tlf });\n        // Google Ads-konverteringen for en forespoersel. Uten verdi — det\n        // er ikke solgt noe ennaa. (Eieren, 12. september 2026.)\n        this.maal('forespurt_kontakt', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });")
+    && str_contains($mkSida, "this.maal('generate_lead', { form: s.fsType || 'Forespørsel' }, this.hvemAv(s.fsKontakt));\n        this.maal('forespurt_kontakt', { form: s.fsType || 'Forespørsel' });"));
 // Aarsmedlemskapet gaar via en Vipps-avtale, ikke en betaling, og kom
 // tilbake til /min-side?avtale=1 uten noe om utfallet. Naa foelger tallene
 // med — bare naar avtalen ble aktiv i det samme kallet.
@@ -17809,7 +17844,9 @@ sjekk('Selg egne arbeider: skjermen spoer serveren, den regner ikke ut selv',
     && !str_contains($mkSida, "medlemPlan: (d.medlem && d.medlem.medlemskap) || '',")
     && !str_contains($mkSida, "(this.state.medlemPlan || '').trim() === 'Årsmedlemskap'")
     && str_contains($mkSida, "if (f === 'selg' && !this.kanSelge()) return 'hjem';")
-    && str_contains($mkSida, "          msFaneSelg:       f === 'selg' && this.kanSelge(),\n          msKanSelge:       this.kanSelge(),")
+    // msNyVals() kom inn mellom de to (f0204c5).
+    && str_contains($mkSida, "          msFaneSelg:       f === 'selg' && this.kanSelge(),\n")
+    && str_contains($mkSida, "          msKanSelge:       this.kanSelge(),")
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msPlSelg.velg }}"') === 1
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msBmSelg.velg }}"') === 1
     && str_contains($mkSida, "visSalgSkjema: this.kanSelge() && this.bryterPaa('medlemssalg'),"));
@@ -17870,7 +17907,8 @@ sjekk('… og langteksten lover ikke lenger salget som noe bare aarsmedlemmer fa
 $vindu = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('bestillingen viser vinduet doeren staar aapen i',
     str_contains($vindu, "          bVinduTekst: (() => {")
-    && str_contains($vindu, "            if (!(kat.folgerApningstid || k.folgerApningstid)) return '';")
+    // Regelen samlet i folgerApningstid() (2dfdf54, #211).
+    && str_contains($vindu, "            if (!this.folgerApningstid()) return '';")
     // Uten sluttid staar det ingenting. Da vet vi ikke naar det lukker.
     && str_contains($vindu, "            const slutt = siste.indexOf('\u2013') > -1 ? siste.split('\u2013')[1] : '';")
     && str_contains($vindu, "            return (start && slutt) ? 'Åpent ' + start + '\u2013' + slutt : '';"));
@@ -17958,7 +17996,8 @@ sjekk('bookingen tar imot et klokkeslett, og rydder opp om den svikter',
 
 // Ikke et nedtrekk: <sc-for> inne i <select> kastes av Safari.
 sjekk('skjermen har ett tidsfelt, ikke en vegg av knapper',
-    str_contains($skjerm, '<input type="time" step="900" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}"')
+    // min/max holder tida innenfor aapningstida (330266d).
+    str_contains($skjerm, '<input type="time" step="900" min="{{ bTidMin }}" max="{{ bTidMaks }}" value="{{ bTidVerdi }}" onChange="{{ bTidSett }}"')
     && str_contains($skjerm, '          bVisTidsknapper: !this.folgerApningstid(),')
     && str_contains($skjerm, '<sc-if value="{{ bVisTidsknapper }}" hint-placeholder-val="{{ true }}">'));
 
@@ -18189,7 +18228,9 @@ sjekk('… og butikken kan ikke staa i en kolleksjon som er slaatt av',
     str_contains($vis172, "  butikkKolleksjonNaa() {\n    if (!this.bryterPaa('medlemssalg')) return 'Lissom';")
     // Én gang: inne i metoden selv. Leser noen andre staten direkte, er
     // sperra hoppet over akkurat der.
-    && substr_count($vis172, "(this.state.butikkKolleksjon || 'Lissom') === 'Medlem'") === 1);
+    // Kolleksjonen kan ogsaa komme fra adressen (80b328b).
+    && substr_count($vis172, "(this.state.butikkKolleksjon || fraAdressen) === 'Medlem'") === 1
+    && !str_contains($vis172, "(this.state.butikkKolleksjon || 'Lissom') === 'Medlem'"));
 sjekk('… og sammenslaainga slaar ingenting paa av seg selv',
     str_contains($mig173, "      WHERE nokkel IN ('Vis/medlemssalg', 'Vis/medlemskolleksjon')\n        AND verdi = 'nei'")
     && str_contains($mig173, "ON DUPLICATE KEY UPDATE verdi = 'nei';")
@@ -18377,13 +18418,17 @@ echo "\n== Markedsfoering: ti faner ble fem grupper ==\n";
 //
 // Fire av gruppenavnene fantes fra foer. «Utsending» er det eneste nye
 // ordet, og han godkjente det.
-sjekk('fanene staar i fem grupper',
-    str_contains($vis172, "          ['Tavle',         ['tavle']],")
-    && str_contains($vis172, "          ['Innhold',       ['artikler', 'bank', 'sosialt']],")
-    && str_contains($vis172, "          ['Utsending',     ['brev', 'kurs']],")
-    && str_contains($vis172, "          ['Analyse',       ['analyse', 'seo']],")
-    && str_contains($vis172, "          ['Innstillinger', ['innstillinger', 'assistent']],"),
-    'maalt: fem piller oeverst, fanene i gruppa under');
+// Gruppene er lagt om etter hva eieren gjoer (a33c057, a055bc5, 501fb5f):
+// sju piller oeverst, fanene i gruppa under.
+sjekk('fanene staar i sine grupper',
+    str_contains($vis172, "          ['Tavle',    ['tavle']],")
+    && str_contains($vis172, "          ['Innboks',  ['innboks']],")
+    && str_contains($vis172, "          ['Medlemsforslag', ['forslag']],")
+    && str_contains($vis172, "          ['Skriv',    ['bank', 'artikler', 'brev', 'sosialt', 'kurs']],")
+    && str_contains($vis172, "          ['Tilbud / nyhetsbrev', ['send']],")
+    && str_contains($vis172, "          ['Google',   ['seo', 'geo', 'analyse']],")
+    && str_contains($vis172, "          ['Oppsett',  ['innstillinger', 'assistent', 'epost']],"),
+    'sju grupper');
 // Tavle er alene om sin gruppe; da skal ikke en tom rad staa igjen.
 sjekk('… og underraden staar bare naar gruppa har flere',
     str_contains($vis172, '          mkHarUnder: minGruppe[1].length > 1,')
@@ -18391,7 +18436,9 @@ sjekk('… og underraden staar bare naar gruppa har flere',
 // SEO er en egen skjerm, ikke en fane her. Staar man der, er det fortsatt
 // «Analyse» som gjelder — og knappen maa fortsatt gaa dit.
 sjekk('… og SEO gaar fortsatt til sin egen skjerm',
-    str_contains($vis172, "            velg: n === 'seo'\n              ? () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); }"),
+    // Egne skjermer staar i Component.MARKED_DOERER (a33c057).
+    str_contains($vis172, "      seo:   ['adminseo',       { seoFra: 'marked' }],")
+    && str_contains($vis172, "          const doer = Component.MARKED_DOERER[n];\n          if (doer) { this.gaaAdmin(doer[0], doer[1]); return; }"),
     'maalt: trykk paa SEO gir «Soekemotoroppsett»');
 
 echo "\n== Kursvelgeren: ett svar aapent om gangen ==\n";
@@ -18473,7 +18520,8 @@ sjekk('… og banneret staar uendret til migrasjonen er kjoert',
 // holder med se utvalget». Prisen er en linje, ikke en knapp ved siden av.
 sjekk('prisen staar som en linje, ikke som en pille til',
     str_contains($vis172, '<sc-if value="{{ kampanjeHarPris }}" hint-placeholder-val="{{ false }}">')
-    && str_contains($vis172, 'font-size: var(--text-3xl); color: var(--lissom-yellow);">{{ kampanjePris }}</div>')
+    // Min side i ny drakt (f0204c5): 22 px.
+    && str_contains($vis172, 'font-size: 22px; color: var(--lissom-yellow);">{{ kampanjePris }}</div>')
     && !str_contains($vis172, 'kampanjePrisStil'));
 // Ingen hardkodet pris: tomt felt er ingen pris, ikke null kroner.
 sjekk('… og tomt prisfelt gir ingen pris',
@@ -18586,9 +18634,11 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Tretten 14. september: handlelista, migrasjon 184, ogsaa av fra start.
 // Femten 15. september 2026: dugnad og overforing av dugnadstimer,
 // migrasjon 189 — dugnad av fra start.
-sjekk('… og har alle seksten bryterne',
-    substr_count($syn, "            rad('") === 16
-    && str_contains($syn, "            rad('Dugnad', this.bryterPaa('dugnad'),")
+// Tjue: Dugnad, Del paa Instagram, Ta med barn og flere kom til
+// (16c5714, d39ef51, 098f089). Dugnad har faatt hvem-valgene med seg.
+sjekk('… og har alle bryterne',
+    substr_count($syn, "            rad('") === 20
+    && str_contains($syn, "            Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),")
     && str_contains($syn, "            rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
     && str_contains($syn, "            rad('Handlelista', this.bryterPaa('handleliste'),")
     && str_contains($syn, "            rad('Glemt å stemple ut', this.bryterPaa('glemtstempling'),")
@@ -18704,19 +18754,21 @@ sjekk('… og slettes for godt, etter et spoersmaal',
 // GO paa skissen: de tre pillene inne i kortet, statusen (siste trykk)
 // oeverst i det samme kortet, paa Min side og kalenderen. Maalt i Chrome.
 sjekk('Ovnkortet: tre piller i kortet paa Min side og kalenderen, statusen oeverst, «Sett» som pulserer til det er sett',
-    substr_count($mkSida, '<button type="button" onClick="{{ ovnRaabrannNaa }}" style="{{ ovnPilleStil }}">Råbrann satt</button>') === 2
-    && substr_count($mkSida, '<button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>') === 2
-    && substr_count($mkSida, '<button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>') === 2
+    // Siden 25. september (d266df0, #216) staar ovnkortet i alle adminsidefelt,
+    // ikke bare paa kalenderen. Like mange av hver.
+    ($ovnAnt = substr_count($mkSida, '<sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">')) >= 2
+    && substr_count($mkSida, '<button type="button" onClick="{{ ovnRaabrannNaa }}" style="{{ ovnPilleStil }}">Råbrann satt</button>') === $ovnAnt
+    && substr_count($mkSida, '<button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>') === $ovnAnt
+    && substr_count($mkSida, '<button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>') === $ovnAnt
     && !str_contains($mkSida, 'class="ms-ovn"')
-    && substr_count($mkSida, '<sc-if value="{{ ovnVis }}" hint-placeholder-val="{{ true }}">') === 2
     && substr_count($mkSida, '<h3 style="margin: 0 0 4px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ ovnTittel }}</h3>') === 2
-    && substr_count($mkSida, '<button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>') === 2
+    && substr_count($mkSida, '<button type="button" onClick="{{ ovnSettNaa }}" style="{{ ovnSettStil }}">Sett</button>') === $ovnAnt
     && str_contains($mkSida, "    const TITTEL = { tomt: 'Ovnen er tømt', raabrann: 'Råbrann er satt', glasurbrann: 'Glasurbrann er satt' };")
     && str_contains($mkSida, "      ovnLinje: o ? (slag === 'tomt' ? 'Tømt av ' : 'Satt av ') + (o.av || 'et medlem') + ' · ' + dag + ' ' + klokke : '',")
     && str_contains($mkSida, "      ovnKortKlasse: usett ? 'lx-ovn-puls' : '',")
     && str_contains($mkSida, "  .lx-ovn-puls { animation: lx-ovn-puls 1.6s ease-in-out infinite; }")
     && str_contains($mkSida, "            if (erMinside) this.hentOvn();")
-    && str_contains($mkSida, "      ...(side === 'adminkalender' ? (this.hentOvn(), this.ovnVals()) : {}),"));
+    && str_contains($mkSida, "      ...((side || '').indexOf('admin') === 0 ? (this.hentOvn(), this.ovnVals()) : {}),"));
 sjekk('… api/ovn.php tar imot raabrann og glasurbrann som slag, og migrasjon 179 legger til kolonnen',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "const SLAG = ['tomt', 'raabrann', 'glasurbrann'];")
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "if (in_array(\$handling, SLAG, true)) {")
@@ -18848,7 +18900,8 @@ sjekk('… og skjermen sier det samme som serveren',
 // 3. Kalender, venteliste, pillene med navn og kurs, større plass til
 // navnet på deltaker, fjerne teksten: hele kurset #1». Maalt i Chrome.
 sjekk('Kalender: «Send beskjed» ved siden av Chat gaar til Medlemmer → Beskjeder',
-    str_contains($mkSida, "                { navn: 'Chat', nokkel: 'chat', velg: () => this.setState({ klChatVis: true }) },\n")
+    // Chat gaar til kalenderen naar man ikke staar der (3fb76ae).
+    str_contains($mkSida, "                { navn: 'Chat', nokkel: 'chat', velg: () => (this.state.side === 'adminkalender' ? this.setState({ klChatVis: true }) : this.gaaAdmin('adminkalender', { klChatVis: true })) },\n")
     && str_contains($mkSida, "                { navn: 'Send beskjed', nokkel: 'beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },"));
 // Kortet ble lukket 15. september 2026. Eieren: «synlighet paa kalender, maa
 // ligge i et kort, jeg vil at fokus skal vaere paa kalender». Naa er det ett
@@ -19389,7 +19442,8 @@ sjekk('sesjonsvakta viser ingen rute naar tida er ute',
     !str_contains($mt, 'Av sikkerhetsgrunner logges du ut etter tre timer.'));
 // Utlogginga selv skal fortsatt skje, og skjermen foelge med.
 sjekk('… men den logger fortsatt ut og sender til innlogginga',
-    str_contains($mt, "              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemPlan: '',\n              side: 'login',\n            });"));
+    // medlemPlan ble medlemKanSelge (ed3ec34, #210).
+    str_contains($mt, "              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', medlemKanSelge: false,\n              side: 'login',\n            });"));
 
 // ── En annen person paa en innlogget konto ───────────────────────────
 //
@@ -19547,6 +19601,14 @@ try {
 // Katalogen sier det samme som serveren: er bryteren av, staar ikke knappen
 // paa kortet heller. Sa de to hver sin ting, ville knappen staatt der uten
 // aa virke.
+//
+// Katalogen husker svaret sitt resten av foresporselen (f5c009e). Paa
+// serveren er hver foresporsel ny; her er hele testen én, saa minnet
+// toemmes foer hvert kall.
+$glemKatalog = static function (): void {
+    (new ReflectionProperty(Katalog::class, 'minne'))->setValue(null, []);
+};
+$glemKatalog();
 $ufKort = null;
 foreach (Katalog::offentlig(false) as $ufK) {
     if (($ufK['slug'] ?? '') === 'testoppmote') {
@@ -19558,6 +19620,7 @@ sjekk('kurskortet mister knappen naar bryteren er av',
     $ufKort !== null && empty($ufKort['utenForskudd']),
     $ufKort === null ? 'fant ikke kurset i katalogen' : 'knappen sto der');
 $ufSett('ja');
+$glemKatalog();
 $ufKort = null;
 foreach (Katalog::offentlig(false) as $ufK) {
     if (($ufK['slug'] ?? '') === 'testoppmote') {
@@ -19682,16 +19745,18 @@ sjekk('datoene paa kurssida er lenker med dagen',
 // Og appen maa faktisk faa adressen naar «?dag=» staar der.
 sjekk('«?dag=» gir adressen til appen',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/app/nett/nett.php'),
-        "foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema'] as \$n) {"));
+        // kjop, vare og kolleksjon kom til med 80b328b.
+        "foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare', 'kolleksjon'] as \$n) {"));
 
 // Ankeret appen sikter paa. Uten id-en treffer rullingen ingenting, og da
 // staar hun oeverst igjen uten at noe sier fra.
 sjekk('datovelgeren i bookingen har et anker',
     str_contains($mt, '<div id="booking-datoer"'));
 sjekk('… og appen ruller dit naar man kommer inn med dagen',
-    str_contains($mt, "    if (dag || alle) this.rullTilDatoene();"));
+    // Med dagen valgt gaar den rett til tidene (9570281); ellers datoene.
+    str_contains($mt, "    if (dag) this.rullTilDatoene('booking-tider');\n    else if (kal) this.rullTilDatoene();"));
 sjekk('… til det samme ankeret',
-    str_contains($mt, "      const el = document.getElementById('booking-datoer');"));
+    str_contains($mt, "|| (!mal || forsok >= 30 ? document.getElementById('booking-datoer') : null);"));
 // Skjermen tegnes etter setState, og kortet kan komme fra katalogen enda
 // senere. Uten flere forsok ville rullingen bommet paa en treg telefon —
 // som er nettopp den telefonen som trenger den.
@@ -20368,7 +20433,8 @@ sjekk('… og rutenettet med kursnavn staar bare paa PC',
     && str_contains($dvSida, '    .lx-adminaside ~ main .lx-mndpc { display: none !important; }'));
 sjekk('hver dag er en knapp som aapner dagen',
     str_contains($dvSida, '<button type="button" onClick="{{ d.velgDag }}" style="{{ d.stil }}">')
-    && str_contains($dvSida, '        velgDag: c.velgDag,'));
+    // Trykk viser dagen rett under paa telefon (1e0c18d).
+    && str_contains($dvSida, "        velgDag: () => this.setState({ klAnker: c.iso, kalMobDag: c.iso,"));
 // Grоnn naar det er fullt, terrakotta ellers, graa naar det bare er avlyst.
 sjekk('prikkene sier hva slags dag det er',
     str_contains($dvSida, "                  ? 'var(--sage-500, #7f9c78)' : 'var(--terracotta-600)' },")

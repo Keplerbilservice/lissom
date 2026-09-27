@@ -1,0 +1,71 @@
+name: Tester
+
+# Kjorer alle testene mot en tom database. Brukes av «Publiser til lissom.no»
+# som sperre: feiler noe her, legges ingenting ut. Kjores ogsaa paa hver
+# gren som ikke er main, saa en endring kan provest foer den slaas sammen.
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  tester:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: lissom
+          MARIADB_USER: lissom
+          MARIADB_PASSWORD: lissom
+          MARIADB_ROOT_PASSWORD: rot
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, curl, gd, intl, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Sett opp testoppsett og database
+        run: |
+          php -r '
+            $s = require "app/secrets.example.php";
+            $s["miljo"] = "test";
+            $s["db_vert"] = "127.0.0.1";
+            $s["db_navn"] = "lissom";
+            $s["db_bruker"] = "lissom";
+            $s["db_passord"] = "lissom";
+            // Testverdier. Vipps er en stubbe i testene, aldri den ekte.
+            foreach (["vipps_msn", "vipps_client_id", "vipps_client_secret", "vipps_sub_key"] as $n) { $s[$n] = "test"; }
+            $s["cron_nokkel"] = "test";
+            // Nummeret testmedlemmet logger inn med, som noedluke til admin.
+            $s["admin_telefoner"] = ["+4791234567"];
+            file_put_contents("app/secrets.php", "<?php return " . var_export($s, true) . ";");
+          '
+          # Verkstedet doepte «30 timer» om til «Basis 30» i admin, ikke i en
+          # migrasjon — foer 128, som skriver teksten ved det nye navnet. Gjor
+          # det samme her: migrasjonene fram til 128, omdoepingen, resten.
+          mkdir -p /tmp/senere
+          for f in db/migrations/*.sql; do
+            [[ "$(basename "$f")" > "128" ]] && mv "$f" /tmp/senere/
+          done
+          php bin/migrate.php
+          mysql -h 127.0.0.1 -u lissom -plissom lissom -e "UPDATE membership_plans SET navn = 'Basis 30' WHERE navn = '30 timer'"
+          mv /tmp/senere/*.sql db/migrations/
+          php bin/migrate.php
+          # Sjekkene av nettsida bruker terser, som ellers bare ligger lokalt.
+          npm install --no-save --no-package-lock terser
+
+      - name: Kjor alle testene
+        run: bash tests/alle.sh

@@ -21080,6 +21080,68 @@ sjekk('arket staar én gang i malen, ikke per adminskjerm',
 sjekk('baandet — og knappen — staar bare i forhaandsvisninga',
     str_contains($syfSida, '      fhBand: !!this.state.fhRolle,'));
 
+// ── Søk i admin ─────────────────────────────────────────────
+//
+// Eieren, 27. september 2026: «jeg kunne godt tenke meg et soekefelt paa
+// admin der jeg skal soeke i funksjoner i admin».
+//
+// Lista bygges av tabellene som alt finnes — menyen, fanene, verktoyradene,
+// snarveiene og bryterne i Synlighet. En haandskreven liste ville sluttet
+// aa stemme den dagen noen la til en skjerm og glemte denne.
+$sokSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+echo "\nSøk i admin\n";
+sjekk('pilla staar i alle adminstripene, ved siden av Synlighet',
+    substr_count($sokSida, 'onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}"') > 0
+    && substr_count($sokSida, 'onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}"')
+       === substr_count($sokSida, 'onClick="{{ synAapne }}" style="{{ tmSynStil }}"'));
+// Pilleraden er skjult paa telefon. Uten flisen i menyskuffen fantes
+// soeket bare paa stor skjerm.
+sjekk('flisen staar først i menyskuffen paa telefon',
+    str_contains($sokSida, "const hoved = gruppe('', [flis({ navn: '⌕ Søk', velg: () => this.adminSokVals().admSokAapne() })]"));
+// Ruta maa staa paa toppnivaa, som Synlighet-arket — ellers ville den
+// blitt tegnet én gang per adminskjerm.
+sjekk('ruta staar én gang i malen, ikke per adminskjerm',
+    substr_count($sokSida, '<sc-if value="{{ admSokVises }}"') === 1
+    && str_contains($sokSida, '      ...this.adminSokVals(),'));
+// Nettsida har sitt eget soek — kurs, varer og sider — og det bruker
+// «sokApen» og «sokTekst». To soek paa de samme noeklene ville aapnet
+// begge samtidig, og feltet i det ene ville skrevet i det andre.
+sjekk('soeket i admin har egne noekler, ikke de samme som soeket paa nettsida',
+    str_contains($sokSida, 'admSokVises: !!this.state.admSokApen,')
+    && str_contains($sokSida, '      sokApen: !!this.state.sokApen,')
+    && !str_contains($sokSida, 'admSokVises: !!this.state.sokApen,'));
+// Ingen haandskrevet liste: tabellene er kilden.
+sjekk('lista bygges av tabellene, ikke skrevet av',
+    str_contains($sokSida, "(Component.ADMIN_MENY || []).forEach(rad => legg(rad[0], 'Meny'")
+    && str_contains($sokSida, 'const faner = Component.ADMIN_FANER || {};')
+    && str_contains($sokSida, "(this.adminSnarveier() || []).forEach(x => legg(x.navn, 'Snarvei', x.velg));")
+    && str_contains($sokSida, ".forEach(r => legg(String(r.navn).replace(/\\s+/g, ' ').trim(), 'Verktøy', r.velg));"));
+// Bryterne kopieres ikke hit: treffet aapner Synlighet-arket, der de staar.
+sjekk('et bryter-treff aapner Synlighet, det lager ingen kopi av bryteren',
+    str_contains($sokSida, ".forEach(par => (par[1] || []).forEach(r => legg(r.navn, par[0], () => syn.synAapne())));"));
+// «← Kurs og deltakere» er veien tilbake i en fanerad, ikke et sted.
+sjekk('veien tilbake i en fanerad staar ikke i lista',
+    str_contains($sokSida, "if (n.charAt(0) === '\\u2190') return;"));
+// Skriver man «kurs», skal «Kurs og deltakere» staa over «Betalinger» —
+// den siste kom bare med fordi den ligger under Kurs og deltakere.
+sjekk('treff i navnet staar over treff paa omraadet',
+    str_contains($sokSida, '      if (ord.every(o => n.indexOf(o) !== -1)) return n.indexOf(ord[0]) === 0 ? 0 : 1;')
+    && str_contains($sokSida, '      .sort((a, b) => a.v - b.v || a.i - b.i)'));
+// Ord for ord, saa «kurs delt» finner «Kurs og deltakere».
+sjekk('soeket tar ett og ett ord, i hvilken som helst rekkefølge',
+    str_contains($sokSida, "      return ord.every(o => h.indexOf(o) !== -1);"));
+// Et treff skal ta deg dit, og lukke ruta paa veien.
+sjekk('et treff lukker ruta og går dit',
+    str_contains($sokSida, "        velg: () => { this.setState({ admSokApen: false, admSokTekst: '' }); r.velg(); },"));
+// Aapner man soeket fra menyskuffen, skal skuffen lukke seg.
+sjekk('soeket lukker menyskuffen og Verktøy-arket naar det aapner',
+    str_contains($sokSida, "admSokAapne: () => this.setState({ admSokApen: true, admSokTekst: '', tmApen: '', admMobApen: false, verktoyApen: false }),"));
+// Et tomt svar uten et ord om det er en blindvei.
+sjekk('den sier fra naar ingenting passer',
+    str_contains($sokSida, "admSokIngen: q !== '' && treff.length === 0,")
+    && str_contains($sokSida, "admSokIngenTekst: 'Ingen treff på «'"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

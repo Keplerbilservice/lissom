@@ -7172,7 +7172,7 @@ sjekk('… og markupen spor om det',
 // 13. september 2026 — samme navn, samme noekkel, ett sted.
 sjekk('… mens av/paa-bryteren med samme navn staar igjen',
     str_contains($sida, "        rad('Banneret under toppbildet',")
-    && str_contains($sida, "                (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',"));
+    && str_contains($sida, "            (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',"));
 
 // ── Ingen priser skrevet inn i koden ──────────────────────────────────
 //
@@ -18664,7 +18664,7 @@ sjekk('… og krukkemesteren er flyttet, ikke kopiert',
     && !str_contains($syn, '{{ dokFaqNavn }}')
     && !str_contains($syn, '{{ dokFaqStil }}')
     && !str_contains($syn, 'dokFaqVeksle:')
-    && str_contains($syn, "                () => this.dokKall({ handling: 'veksle-faq' })),"));
+    && str_contains($syn, "            () => this.dokKall({ handling: 'veksle-faq' })),"));
 // Den eneste raden som ikke bor i content_blocks. Lista hentes bare naar man
 // staar paa Verkstedet, saa uten dette viste raden «av» paa alle andre
 // skjermer, uansett hva som sto i basen.

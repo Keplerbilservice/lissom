@@ -18637,7 +18637,7 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Tjue: Dugnad, Del paa Instagram, Ta med barn og flere kom til
 // (16c5714, d39ef51, 098f089). Dugnad har faatt hvem-valgene med seg.
 sjekk('… og har alle bryterne',
-    substr_count($syn, "        rad('") === 20
+    substr_count($syn, "        rad('") === 22
     && str_contains($syn, "        Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),")
     && str_contains($syn, "        rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
     && str_contains($syn, "        rad('Handlelista', this.bryterPaa('handleliste'),")
@@ -18669,12 +18669,12 @@ sjekk('… og krukkemesteren er flyttet, ikke kopiert',
 // staar paa Verkstedet, saa uten dette viste raden «av» paa alle andre
 // skjermer, uansett hva som sto i basen.
 sjekk('… og lista hentes naar panelet aapnes',
-    substr_count($syn, "{ this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); }") === 2);
+    substr_count($syn, "{ this.dokHent(); this.hentMaler(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); }") === 1);
 // Én vei inn paa telefon (Verktoy-arket) og én paa PC (sidemenyen) — den
 // samme raden fra adminMeny() baerer begge.
 sjekk('… og aapnes fra Verktøy paa telefon og fra sidemenyen paa PC',
     str_contains($syn, "        navn: '⊙  Synlighet',\n        kort: '⊙ Synlighet',")
-    && str_contains($syn, "        velg: () => { this.dokHent(); this.setState({ synlighetApen: true, verktoyApen: false, admMobApen: false }); },"));
+    && str_contains($syn, "        velg: () => this.synlighetVals().synAapne(),"));
 
 // «Flytt og fjern fra gammel plassering»: ingen av kortene skal finnes igjen.
 sjekk('de gamle kortene er fjernet, ikke kopiert',
@@ -18910,7 +18910,7 @@ sjekk('… synlighetskortet paa kalenderen er lukket, og aapner arket',
     substr_count($mkSida, '<sc-for list="{{ synNett }}" as="r" hint-placeholder-count="5">') === 1
     && substr_count($mkSida, '<sc-for list="{{ synMin }}" as="r" hint-placeholder-count="5">') === 1
     && str_contains($mkSida, "kort('Synlighet', ")
-    && str_contains($mkSida, "() => this.setState({ synlighetApen: true }), 'synlighet');"));
+    && str_contains($mkSida, "() => this.synlighetVals().synAapne(), 'synlighet');"));
 sjekk('… ventelista: navnet staar helt ut, kurset kuttes, «Hele kurset · #1» er borte',
     str_contains($mkSida, "              under: v.status || '',\n              harUnder: !!v.status,")
     && !str_contains($mkSida, "? 'Hele kurset'")

@@ -63,6 +63,13 @@ de ble sagt i.
 - Mål i nettleseren, ikke bare i koden. En test kan være grønn av feil grunn.
 - Test på PC, nettbrett og mobil.
 - Behold historikk, sporbarhet og endringslogg.
+- **Hver godkjent endring får en post i `tests/godkjent/vedtak.json` i
+  samme commit** — hva som er bestemt, og hva sjekkene skal se etter (i
+  koden før publisering, og på lissom.no hver time). Eieren, 27. september
+  2026: «alle endringer vi gjør lagres, så det plutselig ikke endrer seg,
+  og sjekkene vet hva de skal se etter».
+- En migrasjon som endrer tekst i e-postmalene eller innholdet, skal ha
+  `-- godkjent av eieren: <dato>` — ellers stopper sperren den.
 
 ## Publisering
 

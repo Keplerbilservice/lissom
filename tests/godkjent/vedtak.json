@@ -649,6 +649,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "kursbilder-nytt-utsnitt",
+            "dato": "2026-09-27",
+            "hva": "Nybegynner dreiekurs og Paint on Pots har fått Gemini-utvidede bilder (alternativ B) — hele motivet synes på kortene, Anniken mindre (eieren: «ikke spør, jeg har sagt hvordan jeg vil ha det»)",
+            "hvor": "uploads_foto-nybegynner.jpg, uploads_foto-paintonpots.jpg",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "\"uploads_foto-nybegynner.jpg\":[400,800,1800]",
+                        "\"uploads_foto-paintonpots.jpg\":[400,800,1800]"
+                    ]
+                }
+            ]
         }
     ]
 }

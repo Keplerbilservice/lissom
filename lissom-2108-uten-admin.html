@@ -4034,7 +4034,7 @@ window.__resources = {
               <sc-for list="{{ beReferanser }}" as="r" hint-placeholder-count="3">
                 <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;">
                   <sc-if value="{{ r.harBilde }}" hint-placeholder-val="{{ true }}">
-                    <img data-src="{{ r.bilde }}" alt="{{ r.alt }}" style="width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block;" loading="lazy" decoding="async">
+                    <img data-src="{{ r.bilde }}" alt="{{ r.alt }}" style="width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 72%; display: block;" loading="lazy" decoding="async">
                   </sc-if>
                   <div style="padding: var(--space-6); display: flex; flex-direction: column; flex: 1; gap: var(--space-3);">
                     <sc-if value="{{ r.harLogo }}" hint-placeholder-val="{{ false }}">

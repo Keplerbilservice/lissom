@@ -24036,7 +24036,7 @@ window.__resources = {
           </div>
 
           <sc-if value="{{ vfbApen }}" hint-placeholder-val="{{ false }}">
-            <div style="position: fixed; inset: 0; background: rgba(31,17,12,.6); z-index: 70; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
+            <div style="position: fixed; inset: 0; background: rgba(31,17,12,.6); z-index: 70; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
               <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 760px; width: 100%; padding: var(--space-7, 28px); display: grid; gap: var(--space-5);">
                 <div style="display: flex; justify-content: space-between; gap: var(--space-4); align-items: flex-start;">
                   <div>
@@ -24047,7 +24047,7 @@ window.__resources = {
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
                   <div style="display: grid; gap: 6px;">
-                    <img src="{{ vfbFor }}" alt="Bildet i dag" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100);">
+                    <img data-src="{{ vfbFor }}" alt="Bildet i dag" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100);">
                     <span style="font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted);">I dag</span>
                   </div>
                   <div style="display: grid; gap: 6px;">
@@ -24055,7 +24055,7 @@ window.__resources = {
                       <div style="aspect-ratio: 3 / 4; border-radius: var(--radius-md); background: var(--clay-100); display: flex; align-items: center; justify-content: center; text-align: center; padding: var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Lager det nye bildet … det tar omtrent ett minutt.</div>
                     </sc-if>
                     <sc-if value="{{ vfbHarNy }}" hint-placeholder-val="{{ false }}">
-                      <img src="{{ vfbNy }}" alt="Det nye bildet" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100);">
+                      <img data-src="{{ vfbNy }}" alt="Det nye bildet" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--radius-md); background: var(--clay-100);">
                     </sc-if>
                     <span style="font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--sage-600, #4f7a46);">Nytt</span>
                   </div>

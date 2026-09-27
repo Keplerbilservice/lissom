@@ -166,6 +166,52 @@ Varsel::mal('avbestilling', ['epost' => $til('fjern3')], [
 ], 'booking', 999998);
 sjekk('malen slått av i Tekst maler: ingen e-post', $siste($til('fjern3')) === null);
 
+// ── Logoen i toppen (eieren, 27. september 2026: «det bør jo være med
+//    logoen vår i alle disse epostenes header, kaffekoppen er en del») ──
+$ordreHtml = (string) (($siste($til('ordre')) ?? [])['html'] ?? '');
+sjekk('logoen står i toppen, med absolutt adresse og alt-tekst',
+    str_contains($ordreHtml, '<img src="https://lissom.no/e-post-logo-topp.png"')
+    && str_contains($ordreHtml, 'alt="Lissom Keramikk &amp; Håndverk"'));
+sjekk('… logofila finnes', is_file(dirname(__DIR__) . '/e-post-logo-topp.png'));
+// Varslene til verkstedet (malTilAdmin) gaar gjennom det samme oppsettet.
+sjekk('… i oppsettet alle e-postene bruker, ogsaa de interne',
+    str_contains((string) file_get_contents(APP_DIR . '/epost/oppsett.html'), 'src="https://lissom.no/e-post-logo-topp.png"')
+    && !str_contains((string) file_get_contents(APP_DIR . '/epost/oppsett.html'), 'font-size: 36px; color: #4D1D12; line-height: 1; padding-bottom: 8px;">lissom<'));
+
+// ── Samlingskort (eieren, 27. september 2026: «jeg vil ha dreiekurs, kort
+//    på dag 1, og eget på dag 2» — i e-postbekreftelsen) ────────────────
+$toSamlinger = (string) json_encode([
+    ['nr' => '1', 'dato' => 'Lørdag 10. oktober', 'tid' => '09:30–13:00', 'tittel' => 'Sentrere og dreie',
+     'beskrivelse' => 'Du lærer å sentrere leiren.'],
+    ['nr' => '2', 'dato' => 'Søndag 11. oktober', 'tid' => '09:30–13:00', 'tittel' => 'Trimme og dekorere',
+     'beskrivelse' => 'Du trimmer foten.'],
+], JSON_UNESCAPED_UNICODE);
+Varsel::mal('ordrebekreftelse', ['epost' => $til('samling2')], [
+    'navn' => 'Kari Nordmann', 'kurs' => 'Nybegynner dreiekurs',
+    'naar' => 'lørdag 10. – søndag 11. oktober, 09:30', 'kursinfo' => '', 'betaling' => '',
+    Varsel::SAMLINGER => $toSamlinger,
+]);
+$r = $siste($til('samling2'));
+$html = (string) ($r['html'] ?? '');
+$tekst = (string) ($r['tekst'] ?? '');
+sjekk('to samlinger: to kort med tittel og dato',
+    substr_count($html, 'SAMLING ') === 2 && str_contains($html, 'SAMLING 1') && str_contains($html, 'SAMLING 2')
+    && str_contains($html, 'Sentrere og dreie') && str_contains($html, 'Søndag 11. oktober kl. 09:30–13:00'));
+sjekk('… under mellomtittelen «Dette skal vi gjøre»', str_contains($html, 'Dette skal vi gjøre'));
+sjekk('… og uten «Tid»-rad i faktakortet', !str_contains($html, 'lørdag 10. – søndag 11. oktober, 09:30'));
+sjekk('… ren tekst har samlingene som linjer', str_contains($tekst, 'Samling 2 – Trimme og dekorere')
+    && str_contains($tekst, 'Søndag 11. oktober kl. 09:30–13:00'));
+sjekk('… ingen plassholdere igjen', !str_contains($html, '{{') && !str_contains($html, 'samlingskort_json'));
+
+Varsel::mal('ordrebekreftelse', ['epost' => $til('samling1')], [
+    'navn' => 'Kari Nordmann', 'kurs' => 'Paint on Pots',
+    'naar' => 'torsdag 1. oktober, 17:00', 'kursinfo' => '', 'betaling' => '',
+    Varsel::SAMLINGER => (string) json_encode([['nr' => '1', 'dato' => 'Torsdag 1. oktober', 'tid' => '17:00–19:00', 'tittel' => 'Mal', 'beskrivelse' => '']]),
+]);
+$html = (string) (($siste($til('samling1')) ?? [])['html'] ?? '');
+sjekk('én samling: som før, med «Tid»-raden og uten samlingskort',
+    str_contains($html, 'torsdag 1. oktober, 17:00') && !str_contains($html, 'SAMLING 1') && !str_contains($html, 'Dette skal vi gjøre'));
+
 // ── Rydd ──────────────────────────────────────────────────────────────
 DB::kjor('DELETE FROM notifications WHERE mottaker LIKE :m OR emne LIKE :e',
     ['m' => '%' . $merke . '%', 'e' => '%' . $merke . '%']);

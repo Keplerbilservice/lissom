@@ -1229,8 +1229,11 @@ final class Booking
      *
      * @param array<string, mixed> $b bookingen, med start_tid og slutt_tid
      */
-    public static function kursinfo(array $b): string
+    public static function kursinfo(array $b, bool $utenSamlinger = false): string
     {
+        // $utenSamlinger: samlingene staar som egne kort i kursbekreftelsen
+        // (Samlinger::forEpost), saa «Dag 1 … Dag 2» skal ikke staa to ganger.
+        // Lengden og «Praktisk» er med som foer.
         $deler = [];
         $samlinger = !empty($b['course_session_id'])
             ? (Samlinger::forOkter([(int) $b['course_session_id']])[(int) $b['course_session_id']] ?? [])
@@ -1253,7 +1256,7 @@ final class Booking
             }
         }
 
-        if (count($samlinger) > 1) {
+        if (count($samlinger) > 1 && !$utenSamlinger) {
             foreach ($samlinger as $i => $s) {
                 $tittel = trim((string) ($s['overskrift'] ?? ''));
                 $tekst  = trim((string) ($s['tekst'] ?? ''));
@@ -1320,7 +1323,10 @@ final class Booking
         $naar = $b['start_tid']
             ? self::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null)
             : '';
-        $kursinfo = self::kursinfo($b);
+        // Ett kort per samling naar kurset gaar over flere (eieren, 27.
+        // september 2026). Da skrives ikke samlingene i {kursinfo} ogsaa.
+        $samlingskort = Samlinger::forEpost((int) ($b['course_session_id'] ?? 0));
+        $kursinfo = self::kursinfo($b, $samlingskort !== []);
         Varsel::mal('ordrebekreftelse', [
             'epost'   => $b['m_epost'] ?? $b['gjest_epost'],
             'telefon' => $b['m_telefon'] ?? $b['gjest_telefon'],
@@ -1345,6 +1351,9 @@ final class Booking
             'betaling' => (int) ($b['uten_forskudd'] ?? 0) === 1
                 ? 'Du betaler ved oppmøte — kontant eller Vipps.'
                 : '',
+            // Samlingskortene. Ikke et felt eieren skriver i malen — Varsel::
+            // oppsett() tegner dem som egne kort under faktakortet.
+            Varsel::SAMLINGER => $samlingskort !== [] ? (string) json_encode($samlingskort, JSON_UNESCAPED_UNICODE) : '',
         ], 'booking', $bookingId);
 
         // ── Og en beskjed til verkstedet ──────────────────────────────

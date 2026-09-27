@@ -13,6 +13,14 @@ declare(strict_types=1);
 final class Varsel
 {
     /**
+     * Feltet som bærer samlingskortene inn i oppsettet (JSON fra
+     * Samlinger::forEpost). Det er ikke et felt eieren skriver i malen:
+     * oppsett() tegner kortene selv. Eieren, 27. september 2026: «jeg vil ha
+     * dreiekurs, kort på dag 1, og eget på dag 2» — i e-postbekreftelsen.
+     */
+    public const SAMLINGER = 'samlingskort_json';
+
+    /**
      * Legger en e-post i kø.
      *
      * «$egenHtml» er ferdig oppsett fra Oppsett::epost — et nyhetsbrev med
@@ -599,9 +607,22 @@ final class Varsel
             }
         }
         $avsnitt = array_values(array_filter(array_map($fl, $raa), static fn($p) => $p !== ''));
+        // Samlingskortene (se SAMLINGER). Bare naar kurset har flere enn én.
+        $samlinger = array_values(array_filter(
+            $liste((string) ($felter[self::SAMLINGER] ?? '')),
+            static fn($s) => is_array($s) && (trim((string) ($s['tittel'] ?? '')) !== '' || trim((string) ($s['dato'] ?? '')) !== '')
+        ));
+        if (count($samlinger) < 2) {
+            $samlinger = [];
+        }
         $kort = [];
         foreach ($liste($mal['kort'] ?? null) as $rad) {
             if (!is_array($rad)) {
+                continue;
+            }
+            // Datoene staar paa samlingskortene. «Tid»-raden ({naar}) ville
+            // sagt det samme en gang til.
+            if ($samlinger !== [] && trim((string) ($rad[1] ?? '')) === '{naar}') {
                 continue;
             }
             $etikett = $fl($rad[0] ?? '');
@@ -657,6 +678,19 @@ final class Varsel
                 $html = str_replace($m[0], $rader, $html);
             }
             $html = $del($html, 'kort', $kort !== []);
+            if (preg_match('~<!--samling:start-->(.*?)<!--samling:slutt-->~s', $html, $m) === 1) {
+                $kortene = '';
+                foreach ($samlinger as $s) {
+                    $naar = trim((string) ($s['dato'] ?? '')) . (trim((string) ($s['tid'] ?? '')) !== '' ? ' kl. ' . trim((string) $s['tid']) : '');
+                    $kortene .= str_replace(
+                        ['{{S_NR}}', '{{S_TITTEL}}', '{{S_NAAR}}', '{{S_BESKRIVELSE}}'],
+                        [$e((string) ($s['nr'] ?? '')), $e((string) ($s['tittel'] ?? '')), $e($naar), $tekstHtml((string) ($s['beskrivelse'] ?? ''))],
+                        $m[1]
+                    );
+                }
+                $html = str_replace($m[0], $kortene, $html);
+            }
+            $html = $del($html, 'samlinger', $samlinger !== []);
             $html = $del($html, 'knapp', $knapp !== null);
             if ($knapp !== null) {
                 $html = str_replace(['{{KNAPP_TEKST}}', '{{KNAPP_URL}}'], [$e($knapp[0]), $e($knapp[1])], $html);
@@ -680,6 +714,14 @@ final class Varsel
         if ($kort !== []) {
             $deler[] = implode("\n", array_map(
                 static fn($r) => ($r[0] !== '' ? $r[0] . ': ' : '') . $r[1], $kort));
+        }
+        if ($samlinger !== []) {
+            $deler[] = 'Dette skal vi gjøre';
+            foreach ($samlinger as $s) {
+                $deler[] = trim('Samling ' . ($s['nr'] ?? '') . ' – ' . ($s['tittel'] ?? ''), ' –') . "\n"
+                    . trim((string) ($s['dato'] ?? '')) . (trim((string) ($s['tid'] ?? '')) !== '' ? ' kl. ' . trim((string) $s['tid']) : '')
+                    . (trim((string) ($s['beskrivelse'] ?? '')) !== '' ? "\n" . trim((string) $s['beskrivelse']) : '');
+            }
         }
         foreach ([$knapp, $lenke2] as $l) {
             if ($l !== null) {

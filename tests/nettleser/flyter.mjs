@@ -522,6 +522,38 @@ await flyt('Regresjon: faner i admin og hovedsidene', async () => {
     await gaa(gjest, sti, 500);
     sjekk(`${sti} blir ikke haengende paa lastesida`, await lasterBorte());
   }
+  // Datoene paa kurssida: eieren, 27.09.2026 — «hvor maa den laste da?
+  // virker tungvint og siden hopper». Trykk paa en dato skal ikke vise
+  // lastesida, og etter landingen skal sida ligge i ro (intet hopp > 50 px).
+  await gaa(gjest, `/kurs/e2e-dreie-${S.tag}`, 1500);
+  const datoLenke = gjest.locator('a[href*="?dag="]').first();
+  if (await datoLenke.count()) {
+    await datoLenke.scrollIntoViewIfNeeded();
+    await datoLenke.click();
+    await gjest.waitForURL(/\?dag=/, { timeout: 15000 }).catch(() => {});
+    let sattLaster = false, landet = null, hopp = 0, bildeBorte = false;
+    for (let i = 0; i < 60; i++) {
+      const s = await gjest.evaluate(() => {
+        const l = document.getElementById('lx-laster');
+        return { l: !!l && getComputedStyle(l).display !== 'none' && !l.classList.contains('lx-ut'),
+                 b: !!document.getElementById('lx-bilde'), y: Math.round(window.scrollY),
+                 booking: !!document.getElementById('booking-datoer') };
+      }).catch(() => null);
+      if (s) {
+        if (s.l) sattLaster = true;
+        if (s.booking && !s.b) {
+          bildeBorte = true;
+          if (landet === null) landet = s.y; else hopp = Math.max(hopp, Math.abs(s.y - landet));
+        }
+      }
+      await gjest.waitForTimeout(100);
+    }
+    sjekk('datoklikk paa kurssida viser ikke lastesida', !sattLaster);
+    sjekk('… bookingen kommer fram', bildeBorte, `landet ${landet}`);
+    sjekk('… og sida hopper ikke etter landingen (maks 50 px)', hopp <= 50, `${hopp} px`);
+  } else {
+    sjekk('kurssida har datolenker', false, 'fant ingen a[href*="?dag="]');
+  }
   await gjest.context().close();
   const kari = await side('medlem');
   const foerFeil = skriptfeil.length;

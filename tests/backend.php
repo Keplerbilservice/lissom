@@ -19774,7 +19774,8 @@ sjekk('datovelgeren i bookingen har et anker',
     str_contains($mt, '<div id="booking-datoer"'));
 sjekk('… og appen ruller dit naar man kommer inn med dagen',
     // Med dagen valgt gaar den rett til tidene (9570281); ellers datoene.
-    str_contains($mt, "    if (dag) this.rullTilDatoene('booking-tider');\n    else if (kal) this.rullTilDatoene();"));
+    // 27.09.2026: fra kurssida med bilde av den lander overgangen den.
+    str_contains($mt, "    if (dag && window.__lxOvergang) window.__lxOvergang.lande();\n    else if (dag) this.rullTilDatoene('booking-tider');\n    else if (kal) this.rullTilDatoene();"));
 sjekk('… til det samme ankeret',
     str_contains($mt, "|| (!mal || forsok >= 30 ? document.getElementById('booking-datoer') : null);"));
 // Skjermen tegnes etter setState, og kortet kan komme fra katalogen enda

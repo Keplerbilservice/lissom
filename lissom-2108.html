@@ -2988,6 +2988,113 @@ window.__resources = {
 </style>
 </head>
 <body>
+<script>
+/* ── Overgangen fra kurssida ──────────────────────────────────────────────
+   Eieren, 27. september 2026: «naar jeg velger dato paa et kurs … hvor maa
+   den laste da? virker tungvint og siden hopper». Trykker hun paa en dato
+   paa kurssida (servertegnet, /kurs/<slug>), tar sida vare paa seg selv
+   foer lenka gaar — se «Datoene paa kurssida» i nett.js. Her vises det
+   bildet i stedet for lastesida, der hun sto, til appen har tegnet
+   bookingen. Da settes bookingen saa den valgte dagen staar der hun
+   trykket, bildet toner bort, og er tid og Vipps under kanten, rulles det
+   rolig dit én gang.
+   Bare naar bildet er ferskt (15 s), for samme kurs og samme skjermbredde.
+   Ellers: lastesida, som foer. Uansett borte etter 8 s. */
+(function () {
+  var o = null;
+  try { o = JSON.parse(sessionStorage.getItem('lissom-overgang') || 'null'); sessionStorage.removeItem('lissom-overgang'); } catch (e) { o = null; }
+  var sti = window.location.pathname.replace(/\/$/, '');
+  var dag = '';
+  try { dag = new URLSearchParams(window.location.search).get('dag') || ''; } catch (e) {}
+  if (!o || o.sti !== sti || o.dag !== dag || Date.now() - o.t > 15000 || Math.abs(o.bredde - window.innerWidth) > 40 || !o.html) return;
+  var de = document.documentElement;
+  de.classList.add('lx-overgang');
+  var st = document.createElement('style');
+  st.textContent = 'html.lx-overgang #lx-laster{display:none!important}'
+    + '#lx-bilde{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483646;background:#FBF6EE;transition:opacity .18s ease}';
+  document.head.appendChild(st);
+  var f = document.createElement('iframe');
+  f.id = 'lx-bilde';
+  f.setAttribute('aria-hidden', 'true');
+  f.setAttribute('tabindex', '-1');
+  f.srcdoc = '<!doctype html><html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>'
+    + o.stil.replace(/<\/style/gi, '<\\/style') + '</style></head><body>' + o.html + '</body></html>';
+  f.addEventListener('load', function () { try { f.contentWindow.scrollTo(0, o.y); } catch (e) {} });
+  document.body.appendChild(f);
+  var ferdig = false;
+  function bort() {
+    if (ferdig) return;
+    ferdig = true;
+    de.classList.remove('lx-overgang');
+    f.style.opacity = '0';
+    setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 220);
+  }
+  setTimeout(bort, 8000);
+  // Hun rører sida selv: da styrer hun, ikke vi.
+  var roert = false;
+  ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (h) {
+    window.addEventListener(h, function () { roert = true; }, { passive: true, capture: true });
+  });
+  // Den valgte dagen i bookingen: det minste elementet i datoboksen som har
+  // dagen i teksten.
+  function dagen(boks) {
+    var alle = boks.querySelectorAll('*'), best = null;
+    var mal = dag.toLowerCase();
+    for (var i = 0; i < alle.length; i++) {
+      var el = alle[i];
+      if (!el.offsetHeight || el.offsetHeight > 220) continue;
+      if ((el.textContent || '').replace(/\s+/g, ' ').toLowerCase().indexOf(mal) !== -1) best = el;
+    }
+    return best;
+  }
+  // Kalles av appen (aapneKursFraAdresse) i stedet for rullTilDatoene().
+  // Bildet staar mens bookingen settes paa plass, og toner bort naar den har
+  // staatt i ro — saa hun ser én rolig overgang, ikke rullingen.
+  window.__lxOvergang = {
+    lande: function () {
+      var forsok = 0, maal = null, rolig = 0, start = 0;
+      function regn() {
+        var boks = document.getElementById('booking-datoer');
+        if (!boks || !boks.offsetHeight) return null;
+        var el = dagen(boks) || boks;
+        var y = el.getBoundingClientRect().top + window.scrollY - o.topp;
+        // Tid, antall og Vipps: staar de under kanten, landes det paa dem
+        // (eierens valg 25. september: «jeg maa scrolle for aa se bestill»).
+        var tider = document.getElementById('booking-tider');
+        if (tider) {
+          var tTopp = tider.getBoundingClientRect().top + window.scrollY;
+          if (tTopp - y > window.innerHeight * 0.55) y = tTopp - 110;
+        }
+        return Math.max(0, Math.round(y));
+      }
+      function gaa() {
+        if (ferdig) return;
+        var ny = regn();
+        if (ny === null) { if (++forsok < 240) return requestAnimationFrame(gaa); return bort(); }
+        if (!start) start = Date.now();
+        if (maal === null || Math.abs(ny - maal) > 2) { maal = ny; rolig = 0; }
+        else rolig++;
+        if (!roert && Math.abs(window.scrollY - maal) > 2) window.scrollTo(0, maal);
+        // Stille i ti bilder, eller et sekund har gaatt: bildet kan gaa.
+        if (rolig >= 10 || Date.now() - start > 1000 || roert) {
+          bort();
+          // Tegnes sida paa nytt rett etterpaa (hoeyden faller et oeyeblikk),
+          // setter vi den tilbake — saa lenge hun ikke har rørt noe.
+          var vakt = Date.now();
+          (function hold() {
+            if (roert || Date.now() - vakt > 1500) return;
+            if (Math.abs(window.scrollY - maal) > 40) window.scrollTo(0, maal);
+            requestAnimationFrame(hold);
+          })();
+          return;
+        }
+        requestAnimationFrame(gaa);
+      }
+      requestAnimationFrame(gaa);
+    },
+  };
+})();
+</script>
 <!-- Lastesiden: eierens tegning, se stilen «Lastesiden» i <head>. Teksten er hans. -->
 <div id="lx-laster" aria-hidden="true">
   <div class="lx-wrap">
@@ -30998,7 +31105,10 @@ class Component extends DCLogic {
     });
     // Kom hun fra datolista paa serversida, skal hun lande PAA datoene.
     // Med dagen valgt: rett ned til tid, antall og Vipps (forslag 3).
-    if (dag) this.rullTilDatoene('booking-tider');
+    // Kom hun med et bilde av kurssida (se «Overgangen fra kurssida» oeverst
+    // i <body>), settes bookingen der hun trykket i stedet for oeverst.
+    if (dag && window.__lxOvergang) window.__lxOvergang.lande();
+    else if (dag) this.rullTilDatoene('booking-tider');
     else if (kal) this.rullTilDatoene();
     return true;
   }

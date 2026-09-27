@@ -463,6 +463,35 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "datovalg-uten-lasting",
+            "dato": "2026-09-27",
+            "hva": "Datovalg på kurssida gir ingen lasteside og ingen hopp: kurssida vises til bookingen står klar («hvor må den laste da? virker tungvint og siden hopper»)",
+            "hvor": "nett.js, lissom-2108.html",
+            "kode": [
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "sessionStorage.setItem('lissom-overgang'",
+                        "a[href*=\"?dag=\"]"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Overgangen fra kurssida",
+                        "html.lx-overgang #lx-laster{display:none!important}",
+                        "if (dag && window.__lxOvergang) window.__lxOvergang.lande();"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108-uten-admin.html",
+                    "finnes": [
+                        "Overgangen fra kurssida"
+                    ]
+                }
+            ]
         }
     ]
 }

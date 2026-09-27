@@ -219,6 +219,72 @@
     }, 4000);
   }
 
+  /* ── Datoene paa kurssida: ingen lasteside, ingen hopp ───────────────── */
+  // Eieren, 27. september 2026: «naar jeg velger dato paa et kurs … hvor maa
+  // den laste da? virker tungvint og siden hopper». Datoen er en lenke inn i
+  // appen (?dag=), og appen er et nytt dokument som maa starte: maalt paa
+  // lissom.no 27.09 var lastesida framme i 2 s paa en treg telefon, og sida
+  // hoppet fra der hun sto til 815 px ned.
+  //
+  // Sideskiftet er det samme, men det hun ser er ikke lenger en lasteside:
+  // sida tar vare paa seg selv (stilen og det som staar, uten skript) og
+  // hvor hun sto, og appen viser akkurat det bildet til bookingen er klar —
+  // se «Overgangen fra kurssida» i lissom-2108.html. Der settes bookingen
+  // saa den valgte datoen staar der hun trykket.
+  //
+  // Bare paa kurssidene, og bare for datolenkene. Gaar noe galt her, gaar
+  // lenka som foer.
+  if (/^\/kurs\/[^\/]+\/?$/.test(window.location.pathname)) {
+    d.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest && e.target.closest('a[href*="?dag="]');
+      if (!a || a.target === '_blank') return;
+      try {
+        var til = new URL(a.getAttribute('href'), window.location.href);
+        if (til.origin !== window.location.origin || til.pathname.replace(/\/$/, '') !== window.location.pathname.replace(/\/$/, '')) return;
+        // Svaret paa trykket vises med det samme: dagen staar valgt.
+        a.style.background = 'var(--lissom-brown)';
+        a.style.color = 'var(--clay-50)';
+        a.style.borderColor = 'var(--lissom-brown)';
+        a.setAttribute('aria-current', 'true');
+        var stil = '';
+        var stiler = d.querySelectorAll('head style');
+        for (var i = 0; i < stiler.length; i++) stil += stiler[i].textContent + '\n';
+        var kropp = d.body.cloneNode(true);
+        var fjern = kropp.querySelectorAll('script, noscript, iframe');
+        for (var j = 0; j < fjern.length; j++) fjern[j].remove();
+        sessionStorage.setItem('lissom-overgang', JSON.stringify({
+          sti: window.location.pathname.replace(/\/$/, ''),
+          dag: til.searchParams.get('dag') || '',
+          t: Date.now(),
+          y: Math.round(window.scrollY),
+          bredde: window.innerWidth,
+          topp: Math.round(a.getBoundingClientRect().top),
+          stil: stil,
+          html: kropp.innerHTML,
+        }));
+      } catch (x) { /* fullt lager eller privat modus: lenka gaar som foer */ }
+    });
+    // Tilbake-knappen viser sida fra bufferen, med dagen fortsatt markert.
+    window.addEventListener('pageshow', function (e) {
+      if (!e.persisted) return;
+      var merket = d.querySelectorAll('a[aria-current="true"][href*="?dag="]');
+      for (var i = 0; i < merket.length; i++) {
+        merket[i].style.background = ''; merket[i].style.color = ''; merket[i].style.borderColor = '';
+        merket[i].removeAttribute('aria-current');
+      }
+    });
+    // Chrome og Edge henter datosida i forveien naar pekeren hviler paa en dato.
+    try {
+      if (HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules')) {
+        var sr = d.createElement('script');
+        sr.type = 'speculationrules';
+        sr.textContent = JSON.stringify({ prefetch: [{ where: { selector_matches: 'a[href*="?dag="]' }, eagerness: 'moderate' }] });
+        d.head.appendChild(sr);
+      }
+    } catch (x) { /* eldre nettlesere: ingen forhaandshenting */ }
+  }
+
   /* ── Appen, i bakgrunnen ────────────────────────────────────────────── */
   // «Book», «Min side» og kassa er appen (lissom-2108.html). Den hentes
   // naar sida er ferdig lest og nettleseren har ro, saa den ligger i

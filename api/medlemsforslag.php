@@ -34,6 +34,8 @@ $tilUt = static fn(array $r): array => [
     'tekst'  => (string) $r['tekst'],
     'status' => (string) $r['status'],
     'lenke'  => (string) $r['lenke'],
+    // Om bildet staar i galleriet paa forsida naa (migrasjon 225).
+    'galleri' => (int) ($r['galleri'] ?? 0) === 1,
 ];
 
 if (Foresporsel::metode() === 'GET') {

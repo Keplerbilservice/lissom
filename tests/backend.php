@@ -20240,7 +20240,7 @@ sjekk('godkjenning legger ut, og settes tilbake om det feiler',
 sjekk('et avvist forslag etterlater ingen fil',
     str_contains($mfAdm, "Medlemsforslag::slettFil((string) \$rad['fil']);"));
 sjekk('raden i Synlighet',
-    str_contains($mfSida, "rad('Del på Instagram', this.bryterPaa('medlemsforslag'),"));
+    str_contains($mfSida, "rad('Del på Instagram og i galleriet', this.bryterPaa('medlemsforslag'),"));
 sjekk('kortet paa Min side styres av bryteren',
     str_contains($mfSida, "const paa = this.medlemsvisning() && this.bryterPaa('medlemsforslag');"));
 sjekk('fanen i Markedsfoering',
@@ -20873,6 +20873,25 @@ foreach ($tmInn as $r) {
     DB::kjor('INSERT INTO innstillinger (nokkel, verdi) VALUES (:k, :v) ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)',
         ['k' => $r['nokkel'], 'v' => $r['verdi']]);
 }
+
+// Eieren, 27. september 2026: «er del paa instagram endret saa den ogsaa tar
+// med galleriet?» Det var den ikke — og et bilde som bare ble lagt i
+// galleriet, forsvant fra medlemmets liste paa Min side.
+echo "\nDel paa Instagram og i galleriet\n";
+$dgSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$dgApi  = file_get_contents(dirname(__DIR__) . '/api/medlemsforslag.php');
+sjekk('bryteren og flisen heter «Del på Instagram og i galleriet»',
+    substr_count($dgSida, 'Del på Instagram og i galleriet') >= 4
+    && !str_contains($dgSida, "'Del på Instagram'")
+    && !str_contains($dgSida, '>Del på Instagram<'));
+sjekk('medlemmet faar vite om bildet staar i galleriet',
+    str_contains($dgApi, "'galleri' => (int) (\$r['galleri'] ?? 0) === 1,"));
+sjekk('… og et bilde som bare er i galleriet, staar i lista',
+    str_contains($dgSida, "ute: f.status === 'publisert' || (f.status === 'galleri' && !!f.galleri),")
+    && str_contains($dgSida, "'Vises i galleriet på forsiden'")
+    && str_contains($dgSida, "'Lagt ut på Instagram og i galleriet'"));
+sjekk('… og statusen hentes fra ett sted',
+    substr_count($dgSida, '{{ f.uteTekst }}') === 2 && !str_contains($dgSida, '>Lagt ut på Instagram<'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

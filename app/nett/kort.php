@@ -22,11 +22,11 @@ final class Kort
      * ikke. Rekkefoelgen betyr ingenting — lista sorteres paa dato.
      */
     private const DESIGN = [
-        ['level' => 'Nybegynner',           'title' => 'Nybegynner dreiekurs', 'tema' => 'Dreiing',      'image' => 'uploads_shutterstock_2630283113.jpg'],
+        ['level' => 'Nybegynner',           'title' => 'Nybegynner dreiekurs', 'tema' => 'Dreiing',      'image' => 'uploads_foto-nybegynner.jpg'],
         ['level' => 'Kurs',                 'title' => 'Kurs boller',          'tema' => 'Plateteknikk', 'image' => self::FOTO . 'handbygging.jpg'],
         ['level' => 'Kurs',                 'title' => 'Store fat kurs',       'tema' => 'Plateteknikk', 'image' => 'uploads_shutterstock_2830576133.jpg'],
         ['level' => 'Event · For dere to',  'title' => 'Date Night',           'tema' => 'Events',       'image' => 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg'],
-        ['level' => 'Event · Den enkleste', 'title' => 'Paint on Pots',        'tema' => 'Events',       'image' => 'uploads_shutterstock_2830576853.jpg'],
+        ['level' => 'Event · Den enkleste', 'title' => 'Paint on Pots',        'tema' => 'Events',       'image' => 'uploads_foto-paintonpots.jpg'],
     ];
 
     /** @var list<array<string,mixed>>|null */
@@ -424,7 +424,7 @@ final class Kort
                 'href'  => Lenker::vare((int) $v['id'], (string) $v['tittel']),
             ];
         }
-        $gavekort = 'uploads_shutterstock_2829108657.jpg';
+        $gavekort = 'uploads_foto-gavekort.jpg';
         $ut[] = [
             'title' => 'Gavekort',
             'tekst' => 'Kan brukes på alle våre tjenester og produkter.',

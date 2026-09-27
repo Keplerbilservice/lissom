@@ -14,7 +14,7 @@ $e = [Nett::class, 'e'];
 $innh = [Nett::class, 'innh'];
 
 // planer() i nettsida.
-$BILDER = ['Prøv Lissom' => 'uploads_shutterstock_2829104351.jpg', '30 timer' => 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap' => 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang' => 'uploads_shutterstock_2829104157.jpg'];
+$BILDER = ['Prøv Lissom' => 'uploads_foto-prov.jpg', '30 timer' => 'uploads_foto-mini.jpg', 'Årsmedlemskap' => 'uploads_foto-aars.jpg', 'Fri tilgang' => 'uploads_shutterstock_2829104157.jpg'];
 $rekke = array_values($BILDER);
 $planer = [];
 foreach (Medlemskap::planer() as $i => $p) {

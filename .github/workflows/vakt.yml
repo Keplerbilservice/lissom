@@ -2,12 +2,9 @@ name: Vakt på lissom.no
 
 # Aapner den ekte nettsida slik en besokende gjor — etter hver publisering
 # og hver time. Feiler den, sender GitHub e-post. Se bin/vakt.mjs.
+# Av fra 27.09.2026: webhotellets robotsperre stopper GitHub. Kjores fra
+# eierens PC i stedet — se bin/vakt.mjs.
 on:
-  workflow_run:
-    workflows: ['Publiser til lissom.no']
-    types: [completed]
-  schedule:
-    - cron: '17 * * * *'
   workflow_dispatch:
 
 concurrency:

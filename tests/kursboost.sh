@@ -33,7 +33,7 @@ opprydding() {
     DB::kjor("DELETE FROM notifications WHERE mottaker LIKE \"kb-%@lissom.test\"");
     DB::kjor("DELETE FROM medlemsbeskjeder WHERE tittel = \"Kursboost-testkurs\"");
     DB::kjor("DELETE FROM articles WHERE tittel LIKE \"Kursboost-test%\"");
-    DB::kjor("DELETE FROM ai_utkast WHERE kontekst = \"Kursboost-testkurs\"");
+    DB::kjor("DELETE FROM ai_utkast WHERE kontekst LIKE \"Kursboost-testkurs%\"");
     $k = array_column(DB::alle("SELECT id FROM courses WHERE slug = \"kursboost-test\""), "id");
     foreach ($k as $c) { DB::kjor("DELETE FROM courses WHERE id = :c", ["c" => $c]); }
     $m = array_column(DB::alle("SELECT id FROM members WHERE epost LIKE \"kb-%@lissom.test\""), "id");
@@ -140,8 +140,8 @@ R=$(post kursboost.php "{\"handling\":\"del\",\"id\":$UTKAST,\"del\":\"facebook\
 sjekk "Facebook legges ut" "Lagt ut på Facebook ✓" "$(echo "$R" | felt '$d["beskjed"] ?? ""')"
 sjekk "… paa sida, med bildet" "1" "$(antall_i_logg '/photos')"
 R=$(post kursboost.php "{\"handling\":\"del\",\"id\":$UTKAST,\"del\":\"artikkel\"}")
-sjekk "artikkelen lagres" "Lagret som kladd i Nyheter ✓" "$(echo "$R" | felt '$d["beskjed"] ?? ""')"
-sjekk "… som kladd, med bildet" "kladd|$BILDE" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; $a = DB::en("SELECT status, bilde FROM articles WHERE tittel LIKE \"Kursboost-test%\" ORDER BY id DESC LIMIT 1"); echo $a["status"] . "|" . $a["bilde"];')"
+sjekk "artikkelen publiseres" "Publisert ✓" "$(echo "$R" | felt '$d["beskjed"] ?? ""')"
+sjekk "… paa nettsida, med bildet som hovedbilde" "publisert|$BILDE" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; $a = DB::en("SELECT status, bilde FROM articles WHERE tittel LIKE \"Kursboost-test%\" ORDER BY id DESC LIMIT 1"); echo $a["status"] . "|" . $a["bilde"];')"
 R=$(post kursboost.php "{\"handling\":\"del\",\"id\":$UTKAST,\"del\":\"nyhetsbrev\"}")
 sjekk "nyhetsbrevet blir et utkast" "Lagt som utkast i Tilbud / nyhetsbrev ✓" "$(echo "$R" | felt '$d["beskjed"] ?? ""')"
 sjekk "… og ingen e-post er sendt derfra" "1|0" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM ai_utkast WHERE type = \"nyhetsbrev\" AND kontekst = \"Kursboost-testkurs\" AND status = \"utkast\"") . "|" . DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"beskjed-medlem\" AND mottaker LIKE \"kb-%@lissom.test\"");')"
@@ -157,6 +157,42 @@ sjekk "… og delen staar som gjort" "True" "$(curl -s -m 20 -H "$ORIG" -H "$C" 
 R=$(curl -s -m 20 -X POST -H "Content-Type: application/json" -H "$ORIG" -H "$C" -d "{\"til\":\"medlemmer\",\"emne\":\"Kursboost-testkurs\",\"tekst\":\"Tips gjerne venner!\",\"kursboost\":$UTKAST}" "$B/beskjed.php")
 sjekk "den kan ikke sendes to ganger" "Denne meldingen er alt sendt til medlemmene." "$(echo "$R" | felt '$d["feil"] ?? ""')"
 sjekk "… og koen fikk ikke en til" "1" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM notifications WHERE mottaker LIKE \"kb-medlem-%@lissom.test\" AND ref_type = \"beskjed-medlem\"");')"
+
+echo
+echo "── Eget bilde og «Publiser» (eieren, 27. september 2026) ──"
+# En ny kursboost for samme kurs, og et liggende bilde eieren laster opp.
+UTKAST2=$(php -r 'require "'"$ROT"'/app/bootstrap.php";
+$k = DB::verdi("SELECT id FROM courses WHERE slug = \"kursboost-test\"");
+$data = ["artikkel" => ["tittel" => "Kursboost-test to: publisert", "tekst" => "Artikkel nummer to."],
+  "facebook" => "Facebook to.", "instagram" => "Instagram to.", "hashtags" => ["teie"],
+  "epost" => ["emne" => "Kursboost-test to", "tekst" => "E-post to."], "medlemmer" => "Til medlemmene to.", "kursId" => (int) $k];
+echo DB::settInn("ai_utkast", ["type" => "kursboost", "tittel" => "Kursboost: Kursboost-testkurs to", "tekst" => "Artikkel nummer to.",
+  "data" => json_encode($data, JSON_UNESCAPED_UNICODE), "kontekst" => "Kursboost-testkurs to", "kostnad_ore" => 0]);')
+php -r '$b = imagecreatetruecolor(1200, 800); imagefill($b, 0, 0, imagecolorallocate($b, 160, 110, 70)); imagejpeg($b, "'"$T"'/eget.jpg");'
+R=$(curl -s -m 30 -X POST -H "$ORIG" -H "$C" -F "handling=last-opp" -F "bilde=@$T/eget.jpg;type=image/jpeg" "$B/bilder.php")
+EGET=$(echo "$R" | felt '$d["url"] ?? ""')
+sjekk "eget bilde lastes opp til biblioteket" "True" "$(echo "$EGET" | grep -qE '^api/bilde\.php\?artikkel=[0-9a-f]{32}\.jpg$' && echo True || echo False)"
+R=$(post kursboost.php "{\"handling\":\"velg\",\"id\":$UTKAST2,\"bilde\":\"$EGET\"}")
+sjekk "… og kan velges i kursboost" "$EGET" "$(echo "$R" | felt '$d["pakke"]["valgt"]')"
+R=$(post kursboost.php "{\"handling\":\"velg\",\"id\":$UTKAST2,\"bilde\":\"kursboost-test-kurs.jpg\"}")
+sjekk "et av nettsidas egne bilder kan ogsaa velges" "kursboost-test-kurs.jpg" "$(echo "$R" | felt '$d["pakke"]["valgt"]')"
+R=$(post kursboost.php "{\"handling\":\"velg\",\"id\":$UTKAST2,\"bilde\":\"https://ondsinnet.example/x.jpg\"}")
+sjekk "… men ikke en adresse utenfra" "Velg ett av forslagene." "$(echo "$R" | felt '$d["feil"] ?? ""')"
+post kursboost.php "{\"handling\":\"velg\",\"id\":$UTKAST2,\"bilde\":\"$EGET\"}" >/dev/null
+FOER_IG=$(antall_i_logg '/media_publish'); FOER_FB=$(antall_i_logg '/photos')
+R=$(post kursboost.php "{\"handling\":\"publiser\",\"id\":$UTKAST2,\"tekster\":{\"instagram\":\"Rettet Instagram to\"}}")
+sjekk "Publiser gjoer Instagram, Facebook og artikkelen" "True|True|True" "$(echo "$R" | felt 'implode("|", array_map(fn($x) => ($x["ok"] ?? false) ? "True" : "False", [$d["resultat"]["instagram"] ?? [], $d["resultat"]["facebook"] ?? [], $d["resultat"]["artikkel"] ?? []]))')"
+sjekk "… én gang hver hos Meta" "$((FOER_IG + 1))|$((FOER_FB + 1))" "$(antall_i_logg '/media_publish')|$(antall_i_logg '/photos')"
+IGURL=$(php -r 'require "'"$ROT"'/app/bootstrap.php"; $u = Kursboost::utkast('"$UTKAST2"'); echo (string) ($u["data"]["kb"]["ig"]["'"$EGET"'"] ?? "");')
+IGFIL=$(find "$T" -name "${IGURL##*=}" 2>/dev/null | head -1)
+sjekk "… Instagram fikk bildet i 4:5" "True" "$([ -n "$IGFIL" ] && php -r '$i = getimagesize($argv[1]); echo abs($i[0] / $i[1] - 0.8) < 0.01 ? "True" : "False";' "$IGFIL" || echo False)"
+sjekk "… og artikkelen er publisert med det egne bildet" "publisert|$EGET" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; $a = DB::en("SELECT status, bilde FROM articles WHERE tittel LIKE \"Kursboost-test to%\" ORDER BY id DESC LIMIT 1"); echo ($a["status"] ?? "") . "|" . ($a["bilde"] ?? "");')"
+sjekk "… med den rettede Instagram-teksten" "Rettet Instagram to" "$(echo "$R" | felt '$d["pakke"]["deler"]["instagram"]["tekst"]')"
+sjekk "Publiser sender ikke e-post eller melding til medlemmene" "0|0|False|False" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM ai_utkast WHERE type = \"nyhetsbrev\" AND kontekst = \"Kursboost-testkurs to\"") . "|" . DB::verdi("SELECT COUNT(*) FROM notifications WHERE mottaker LIKE \"kb-medlem-%@lissom.test\" AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE) AND ref_type = \"beskjed-medlem\" AND ref_id = '"$UTKAST2"'");')|$(echo "$R" | felt 'isset($d["pakke"]["deler"]["nyhetsbrev"]["gjort"]) ? "True" : "False"')|$(echo "$R" | felt 'isset($d["pakke"]["deler"]["medlemmer"]["gjort"]) ? "True" : "False"')"
+R=$(post kursboost.php "{\"handling\":\"publiser\",\"id\":$UTKAST2}")
+sjekk "Publiser igjen hopper over det som er gjort" "True|True|True" "$(echo "$R" | felt 'implode("|", array_map(fn($x) => !empty($x["hoppetOver"]) ? "True" : "False", [$d["resultat"]["instagram"] ?? [], $d["resultat"]["facebook"] ?? [], $d["resultat"]["artikkel"] ?? []]))')"
+sjekk "… og Meta ble ikke spurt paa nytt" "$((FOER_IG + 1))|$((FOER_FB + 1))" "$(antall_i_logg '/media_publish')|$(antall_i_logg '/photos')"
+sjekk "… og det staar i endringsloggen" "True" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo (int) DB::verdi("SELECT COUNT(*) FROM audit_log WHERE handling = \"kursboost_publiser\"") >= 2 ? "True" : "False";' 2>/dev/null || echo False)"
 
 echo
 echo "── $ok gikk gjennom, $feil feilet"

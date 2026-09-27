@@ -28108,8 +28108,18 @@ window.__resources = {
                   <div style="{{ kbKortStil }}">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                       <div style="{{ kbMerkeStil }}">Bilde</div>
-                      <button type="button" onClick="{{ kbLagBilder }}" disabled="{{ kbLager }}" style="{{ kbBildeKnappStil }}">{{ kbBildeKnapp }}</button>
+                      <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                        <button type="button" onClick="{{ kbLagBilder }}" disabled="{{ kbLager }}" style="{{ kbBildeKnappStil }}">{{ kbBildeKnapp }}</button>
+                        <!-- Egne bilder (eieren, 27. september 2026): fra
+                             bildebiblioteket, eller lastet opp her. -->
+                        <button type="button" onClick="{{ kbBibliotek }}" disabled="{{ kbLager }}" style="{{ kbBibliotekStil }}">Velg fra biblioteket</button>
+                        <button type="button" onClick="{{ kbVelgFil }}" disabled="{{ kbLager }}" style="{{ kbBibliotekStil }}">Last opp</button>
+                        <input id="kb-fil" type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ kbLastOpp }}" style="display: none;">
+                      </div>
                     </div>
+                    <sc-if value="{{ kbHarValgt }}" hint-placeholder-val="{{ false }}">
+                      <img data-src="{{ kbValgt }}" alt="Valgt bilde" style="{{ kbValgtStil }}">
+                    </sc-if>
                     <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3);">
                       <sc-for list="{{ kbBilder }}" as="b" hint-placeholder-count="3">
                         <button type="button" onClick="{{ b.velg }}" aria-pressed="{{ b.valgt }}" aria-label="{{ b.alt }}" style="{{ b.stil }}">
@@ -28121,9 +28131,54 @@ window.__resources = {
                       <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600);">{{ kbBildeFeil }}</p>
                     </sc-if>
                   </div>
-                  <sc-for list="{{ kbDeler }}" as="d" hint-placeholder-count="5">
+                  <sc-for list="{{ kbDelerUt }}" as="d" hint-placeholder-count="3">
                     <div style="{{ kbKortStil }}">
                       <div style="{{ kbMerkeStil }}">{{ d.navn }}</div>
+                      <sc-if value="{{ d.harBilde }}" hint-placeholder-val="{{ false }}">
+                        <img data-src="{{ d.bilde }}" alt="" style="{{ d.bildeStil }}">
+                      </sc-if>
+                      <textarea value="{{ d.tekst }}" onChange="{{ d.sett }}" rows="{{ d.rader }}" disabled="{{ d.gjort }}" style="{{ kbFeltStil }}"></textarea>
+                      <sc-if value="{{ d.visKnapp }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" onClick="{{ d.trykk }}" disabled="{{ d.laast }}" style="{{ d.knappStil }}">{{ d.knapp }}</button>
+                      </sc-if>
+                      <sc-if value="{{ d.bekreftVis }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: grid; gap: var(--space-3); background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4);">
+                          <p style="margin: 0; font-size: var(--text-sm); color: var(--text-heading);">{{ d.bekreftTekst }}</p>
+                          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                            <button type="button" onClick="{{ d.bekreft }}" style="{{ d.knappStil }}">{{ d.knapp }}</button>
+                            <button type="button" onClick="{{ d.avbryt }}" style="{{ kbBildeKnappStil }}">Avbryt</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ d.harKvittering }}" hint-placeholder-val="{{ false }}">
+                        <p style="margin: 0; font-size: var(--text-sm); font-weight: 700; color: var(--sage-700, #3F5D3F);">{{ d.kvittering }}</p>
+                      </sc-if>
+                      <sc-if value="{{ d.harFeil }}" hint-placeholder-val="{{ false }}">
+                        <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600);">{{ d.feil }}</p>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <!-- «Publiser»: Instagram, Facebook og artikkelen i ett trykk,
+                       med det samme bildet (eieren, 27. september 2026). E-posten
+                       og meldingen til medlemmene har egne knapper under. -->
+                  <sc-if value="{{ kbPubliserVis }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ kbPubliserSpor }}" disabled="{{ kbPubliserLaast }}" style="{{ kbPubliserStil }}">Publiser</button>
+                  </sc-if>
+                  <sc-if value="{{ kbPubliserBekreftVis }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: grid; gap: var(--space-3); background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4);">
+                      <p style="margin: 0; font-size: var(--text-sm); color: var(--text-heading);">Legges ut på Instagram, Facebook og nettsiden nå.</p>
+                      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                        <button type="button" onClick="{{ kbPubliser }}" disabled="{{ kbPubliserLaast }}" style="{{ kbPubliserStil }}">Publiser</button>
+                        <button type="button" onClick="{{ kbPubliserAvbryt }}" style="{{ kbBildeKnappStil }}">Avbryt</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-for list="{{ kbDelerAndre }}" as="d" hint-placeholder-count="2">
+                    <div style="{{ kbKortStil }}">
+                      <div style="{{ kbMerkeStil }}">{{ d.navn }}</div>
+                      <sc-if value="{{ d.harBilde }}" hint-placeholder-val="{{ false }}">
+                        <img data-src="{{ d.bilde }}" alt="" style="{{ d.bildeStil }}">
+                      </sc-if>
                       <textarea value="{{ d.tekst }}" onChange="{{ d.sett }}" rows="{{ d.rader }}" disabled="{{ d.gjort }}" style="{{ kbFeltStil }}"></textarea>
                       <sc-if value="{{ d.visKnapp }}" hint-placeholder-val="{{ true }}">
                         <button type="button" onClick="{{ d.trykk }}" disabled="{{ d.laast }}" style="{{ d.knappStil }}">{{ d.knapp }}</button>
@@ -38933,6 +38988,17 @@ class Component extends DCLogic {
       this.setState({ npBilde: url || '' });
       return;
     }
+    // Kursboost: bildet fra biblioteket eller en ny opplasting blir bildet
+    // i hele pakken (eieren, 27. september 2026). Serveren sjekker at det
+    // er et bilde fra biblioteket — se Kursboost::velgBilde().
+    if (v.slag === 'kursboost') {
+      if (!url) return;
+      this.kbKall({ handling: 'velg', id: v.id, bilde: String(url).replace(/^\//, '') }).then(({ ok, d }) => {
+        if (ok) this.setState({ kbPakke: d.pakke, kbBildeFeil: '' });
+        else this.setState({ kbBildeFeil: d.feil || 'Det gikk ikke. Prøv igjen.' });
+      }).catch(() => this.setState({ kbBildeFeil: 'Det gikk ikke. Prøv igjen.' }));
+      return;
+    }
     // Kursbildene lagres sammen med kurset, ikke for seg: et nytt kurs har
     // ingen id aa lagre paa foer det er opprettet.
     if (v.slag === 'kurs') {
@@ -39066,6 +39132,8 @@ class Component extends DCLogic {
           ? { tittel: this.state.artTittel || 'artikkelen', bilde: this.state.artBilde || '' }
         : (v && v.slag === 'beskjedbilde')
           ? { tittel: this.state.nbEmne || 'beskjeden', bilde: this.state.nbBilde || '' }
+        : (v && v.slag === 'kursboost')
+          ? { tittel: (this.state.kbPakke || {}).kurs || '', bilde: (this.state.kbPakke || {}).valgt || '' }
           : ((v && kilde.find(x => x.id === v.id)) || {});
     // Ruta viser den lille fila og lagrer den store. Foer lastet velgeren
     // originalene i full stoerrelse — over hundre av dem, hver gang den ble
@@ -39999,7 +40067,7 @@ class Component extends DCLogic {
    * utkastet — se api/admin/kursboost.php.
    */
   kbHent(id) {
-    this.setState({ kbPakke: null, kbTekst: {}, kbKvitt: {}, kbFeil: {}, kbBildeFeil: '', kbBekreft: null });
+    this.setState({ kbPakke: null, kbTekst: {}, kbKvitt: {}, kbFeil: {}, kbBildeFeil: '', kbBekreft: null, kbPubliserBekreft: false });
     fetch('/api/admin/kursboost.php?id=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
       .then(r => r.json())
       .then(d => { if (d && d.pakke) this.setState({ kbPakke: d.pakke }); })
@@ -40017,7 +40085,7 @@ class Component extends DCLogic {
   kbVals() {
     const p = this.state.kbPakke;
     const les = this.state.mkLes;
-    if (!p || !les || les.id !== p.id) return { kbVis: false, kbBilder: [], kbDeler: [] };
+    if (!p || !les || les.id !== p.id) return { kbVis: false, kbBilder: [], kbDelerUt: [], kbDelerAndre: [] };
     const sender = this.state.kbSender || {};
     const tekst = this.state.kbTekst || {};
     const kvitt = this.state.kbKvitt || {};
@@ -40030,11 +40098,13 @@ class Component extends DCLogic {
     });
     const NAVN = { instagram: 'Instagram', facebook: 'Facebook', artikkel: 'Artikkel til nettsiden',
                    nyhetsbrev: 'E-post til kundelisten', medlemmer: 'Melding til medlemmene' };
+    // Artikkelen publiseres nå med det samme, med bildet som hovedbilde
+    // (eieren, 27. september 2026) — derfor «Publiser artikkelen».
     const KNAPP = { instagram: 'Legg ut på Instagram', facebook: 'Legg ut på Facebook',
-                    artikkel: 'Lagre som kladd i Nyheter', nyhetsbrev: 'Lag nyhetsbrev-utkast',
+                    artikkel: 'Publiser artikkelen', nyhetsbrev: 'Lag nyhetsbrev-utkast',
                     medlemmer: 'Send til medlemmene' };
     const KVITT = { instagram: 'Lagt ut på Instagram ✓', facebook: 'Lagt ut på Facebook ✓',
-                    artikkel: 'Lagret som kladd i Nyheter ✓', nyhetsbrev: 'Lagt som utkast i Tilbud / nyhetsbrev ✓',
+                    artikkel: 'Publisert ✓', nyhetsbrev: 'Lagt som utkast i Tilbud / nyhetsbrev ✓',
                     medlemmer: 'Sendt til medlemmene ✓' };
     const sett = (felt, verdi) => this.setState(s => ({ [felt]: Object.assign({}, s[felt] || {}, verdi) }));
     const lagerBilder = !!sender.bilder;
@@ -40071,8 +40141,104 @@ class Component extends DCLogic {
       }).catch(() => { sett('kbSender', { medlemmer: false }); sett('kbFeil', { medlemmer: 'Det gikk ikke. Prøv igjen.' }); });
     };
     const bekreft = this.state.kbBekreft;
+    // Bildet som er valgt — et Gemini-forslag, et fra biblioteket eller et
+    // eieren lastet opp. Det «monteres» i hver del (eieren, 27. september
+    // 2026): Instagram i 4:5, Facebook, artikkelens toppbilde og nyhetsbrevet.
+    const valgtUrl = p.valgt ? '/' + String(p.valgt).replace(/^\//, '') : '';
+    const BILDEFORM = { instagram: '4 / 5', facebook: '1.91 / 1', artikkel: '16 / 9', nyhetsbrev: '16 / 9' };
+    // «Publiser»: Instagram, Facebook og artikkelen i ett trykk. Hver del
+    // svarer for seg; en som alt er gjort, hoppes over.
+    const UT = ['instagram', 'facebook', 'artikkel'];
+    const alleUteGjort = UT.every(d => !!(p.deler[d] || {}).gjort);
+    const publiserer = !!sender.publiser;
+    const publiser = () => {
+      if (publiserer) return;
+      sett('kbSender', { publiser: true });
+      UT.forEach(d => sett('kbFeil', { [d]: '' }));
+      const tekster = {}; UT.forEach(d => { tekster[d] = tekstFor(d); });
+      this.kbKall({ handling: 'publiser', id: p.id, tekster }).then(({ ok, d }) => {
+        sett('kbSender', { publiser: false }); this.setState({ kbPubliserBekreft: false });
+        if (!ok) { UT.forEach(del => sett('kbFeil', { [del]: d.feil || 'Det gikk ikke. Prøv igjen.' })); return; }
+        if (d.pakke) this.setState({ kbPakke: d.pakke });
+        Object.entries(d.resultat || {}).forEach(([del, r]) => {
+          if (r.ok && !r.hoppetOver) sett('kbKvitt', { [del]: r.beskjed || KVITT[del] });
+          if (!r.ok) sett('kbFeil', { [del]: r.feil || 'Det gikk ikke. Prøv igjen.' });
+        });
+      }).catch(() => { sett('kbSender', { publiser: false }); this.setState({ kbPubliserBekreft: false });
+                       UT.forEach(del => sett('kbFeil', { [del]: 'Det gikk ikke. Prøv igjen.' })); });
+    };
+    const lagDel = del => {
+      const gjort = !!(p.deler[del] || {}).gjort;
+      const trengerBilde = del === 'instagram' && !p.valgt;
+      const laast = gjort || !!sender[del] || trengerBilde || publiserer;
+      const kv = kvitt[del] || (gjort ? KVITT[del] : '');
+      return {
+        navn: NAVN[del],
+        tekst: tekstFor(del),
+        sett: e => sett('kbTekst', { [del]: e.target.value }),
+        rader: del === 'artikkel' ? 10 : 5,
+        gjort,
+        harBilde: !!valgtUrl && del !== 'medlemmer',
+        bilde: valgtUrl,
+        bildeStil: { display: 'block', width: del === 'instagram' ? '60%' : '100%', maxWidth: '100%',
+                     aspectRatio: BILDEFORM[del] || '16 / 9', objectFit: 'cover', borderRadius: 'var(--radius-md)', background: 'var(--clay-100)' },
+        visKnapp: !gjort && !(del === 'medlemmer' && bekreft),
+        knapp: KNAPP[del],
+        laast,
+        knappStil: pille(del === 'instagram' || del === 'facebook' || del === 'medlemmer', laast),
+        trykk: () => { if (laast) return; if (del === 'medlemmer') spor(); else utfor(del); },
+        bekreftVis: del === 'medlemmer' && !!bekreft && !gjort,
+        bekreftTekst: bekreft ? bekreft.antall + ' medlemmer får meldingen på e-post, og den legges på Min side.' : '',
+        bekreft: send,
+        avbryt: () => this.setState({ kbBekreft: null }),
+        harKvittering: !!kv,
+        kvittering: kv,
+        harFeil: !!feil[del],
+        feil: feil[del] || '',
+      };
+    };
     return {
       kbVis: true,
+      kbHarValgt: !!valgtUrl,
+      kbValgt: valgtUrl,
+      kbValgtStil: { display: 'block', width: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 'var(--radius-md)', background: 'var(--clay-100)' },
+      kbBibliotek: () => this.apneBildevalg({ slag: 'kursboost', id: p.id }),
+      kbBibliotekStil: pille(false, lagerBilder),
+      kbVelgFil: () => { if (lagerBilder) return; const f = document.getElementById('kb-fil'); if (f) f.click(); },
+      kbLastOpp: e => {
+        const fil = e && e.target && e.target.files && e.target.files[0];
+        if (!fil) return;
+        try { e.target.value = ''; } catch (x) {}
+        // Samme vei som opplastingen i billedvelgeren (krympes i nettleseren,
+        // tas imot av api/admin/bilder.php og ligger i biblioteket etterpå),
+        // men uten at velgeren åpnes — bildet velges med det samme.
+        sett('kbSender', { bilder: true }); this.setState({ kbBildeFeil: '' });
+        this.krympBilde(fil).then(klar => {
+          const skjema = new FormData();
+          skjema.append('handling', 'last-opp');
+          skjema.append('bilde', klar);
+          return fetch('/api/admin/bilder.php', { method: 'POST', credentials: 'same-origin', body: skjema })
+            .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d: d || {} })));
+        }).then(({ ok, d }) => {
+          if (!ok) { sett('kbSender', { bilder: false }); this.setState({ kbBildeFeil: d.feil || 'Bildet kom ikke fram.' }); return null; }
+          this._bilderHentes = false;
+          return this.kbKall({ handling: 'velg', id: p.id, bilde: d.url });
+        }).then(svar => {
+          if (!svar) return;
+          sett('kbSender', { bilder: false });
+          if (svar.ok) this.setState({ kbPakke: svar.d.pakke });
+          else this.setState({ kbBildeFeil: svar.d.feil || 'Det gikk ikke. Prøv igjen.' });
+        }).catch(() => { sett('kbSender', { bilder: false }); this.setState({ kbBildeFeil: 'Det gikk ikke. Prøv igjen.' }); });
+      },
+      kbPubliserVis: !alleUteGjort && !this.state.kbPubliserBekreft,
+      kbPubliserLaast: publiserer,
+      kbPubliserStil: pille(true, publiserer),
+      kbPubliserSpor: () => { if (!publiserer) this.setState({ kbPubliserBekreft: true }); },
+      kbPubliserBekreftVis: !alleUteGjort && !!this.state.kbPubliserBekreft,
+      kbPubliser: publiser,
+      kbPubliserAvbryt: () => this.setState({ kbPubliserBekreft: false }),
+      kbDelerUt: UT.map(lagDel),
+      kbDelerAndre: ['nyhetsbrev', 'medlemmer'].map(lagDel),
       kbKortStil: { display: 'grid', gap: 'var(--space-3)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', background: 'var(--surface-card)' },
       kbMerkeStil: { font: 'var(--type-eyebrow)', letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', color: 'var(--terracotta-600)' },
       kbFeltStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
@@ -40101,32 +40267,6 @@ class Component extends DCLogic {
           if (ok) this.setState({ kbPakke: d.pakke }); else this.setState({ kbBildeFeil: d.feil || 'Det gikk ikke. Prøv igjen.' });
         }),
       })),
-      kbDeler: ['instagram', 'facebook', 'artikkel', 'nyhetsbrev', 'medlemmer'].map(del => {
-        const gjort = !!(p.deler[del] || {}).gjort;
-        const trengerBilde = del === 'instagram' && !p.valgt;
-        const laast = gjort || !!sender[del] || trengerBilde;
-        const kv = kvitt[del] || (gjort ? KVITT[del] : '');
-        return {
-          navn: NAVN[del],
-          tekst: tekstFor(del),
-          sett: e => sett('kbTekst', { [del]: e.target.value }),
-          rader: del === 'artikkel' ? 10 : 5,
-          gjort,
-          visKnapp: !gjort && !(del === 'medlemmer' && bekreft),
-          knapp: KNAPP[del],
-          laast,
-          knappStil: pille(del === 'instagram' || del === 'facebook' || del === 'medlemmer', laast),
-          trykk: () => { if (laast) return; if (del === 'medlemmer') spor(); else utfor(del); },
-          bekreftVis: del === 'medlemmer' && !!bekreft && !gjort,
-          bekreftTekst: bekreft ? bekreft.antall + ' medlemmer får meldingen på e-post, og den legges på Min side.' : '',
-          bekreft: send,
-          avbryt: () => this.setState({ kbBekreft: null }),
-          harKvittering: !!kv,
-          kvittering: kv,
-          harFeil: !!feil[del],
-          feil: feil[del] || '',
-        };
-      }),
     };
   }
 
@@ -56333,6 +56473,7 @@ class Component extends DCLogic {
         : (this.state.bildeFor || {}).slag === 'nyvare' ? 'Bilde til varen'
         : (this.state.bildeFor || {}).slag === 'plan' ? 'Bilde til medlemskapet'
         : (this.state.bildeFor || {}).slag === 'artikkelbilde' ? 'Bilde i artikkelteksten'
+        : (this.state.bildeFor || {}).slag === 'kursboost' ? 'Bilde til kursboosten'
         : (this.state.bildeFor || {}).slag === 'kurs'
           ? ((this.state.bildeFor || {}).rute === 0 ? 'Hovedbilde til kurset' : 'Bilde til kurset')
           : 'Bilde til artikkelen',

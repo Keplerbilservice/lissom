@@ -20990,8 +20990,10 @@ sjekk('meldingen til medlemmene gaar gjennom den vanlige utsendingen, med tallet
 sjekk('… og bekreftelsen staar i siden, ikke i en nettleserboks',
     str_contains($kbSida, "' medlemmer får meldingen på e-post, og den legges på Min side.'")
     && !preg_match('/kbVals\(\)[\s\S]{0,9000}window\.confirm/', $kbSida));
+// Artikkelen publiseres fra 27. september 2026 («Publiser artikkelen»).
 sjekk('knappene og kvitteringene er de godkjente',
-    str_contains($kbSida, "artikkel: 'Lagre som kladd i Nyheter', nyhetsbrev: 'Lag nyhetsbrev-utkast',")
+    str_contains($kbSida, "artikkel: 'Publiser artikkelen', nyhetsbrev: 'Lag nyhetsbrev-utkast',")
+    && str_contains($kbSida, "artikkel: 'Publisert ✓', nyhetsbrev: 'Lagt som utkast i Tilbud / nyhetsbrev ✓',")
     && str_contains($kbSida, "nyhetsbrev: 'Lagt som utkast i Tilbud / nyhetsbrev ✓',")
     && str_contains($kbSida, "kbBildeKnapp: 'Lag nye forslag',"));
 sjekk('kursboost-utkastet husker kurset',

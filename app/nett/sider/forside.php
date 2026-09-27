@@ -69,7 +69,7 @@ $h .= '</div></div></section>' . "\n";
 // ── Banneret under heroen ────────────────────────────────────────────────
 // Alt i det settes i admin under Oversikt — bannerNaa() i nettsida.
 if (($lagret['Banner/pa'] ?? '') !== 'nei' && !Nett::mobilSkjult('apenthus')) {
-    $std = ['tittel' => 'Gi et gavekort', 'tekst' => 'Kan brukes på alle våre tjenester og produkter.', 'knapp' => 'Kjøp gavekort', 'lenke' => 'gavekort', 'bilde' => 'uploads_foto-kontakt.jpg'];
+    $std = ['tittel' => 'Gi et gavekort', 'tekst' => 'Kan brukes på alle våre tjenester og produkter.', 'knapp' => 'Kjøp gavekort', 'lenke' => 'gavekort', 'bilde' => 'assets_photos_butikken.jpg'];
     $b = [];
     foreach ($std as $f => $v) {
         $lag = $lagret['Banner/' . $f] ?? '';

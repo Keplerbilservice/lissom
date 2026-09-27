@@ -40,7 +40,21 @@
   // stiler sikter paa <button>.
   d.addEventListener('click', function (e) {
     var el = e.target.closest && e.target.closest('[data-href]');
-    if (el) { location.href = el.getAttribute('data-href'); }
+    if (!el) return;
+    var h = el.getAttribute('data-href');
+    // Et anker paa samme side (dagbrikkene i ukekalenderen) skal rulle dit.
+    // Sidene har <base href="/">, saa «location.href = '#…'» gikk til
+    // forsida. Eieren, 27. september 2026: «naar jeg trykker paa f.eks. 26/9
+    // saa viser den ikke kurset den dagen. Popper tilbake til et annet sted».
+    if (h.charAt(0) === '#') {
+      var maal = d.getElementById(h.slice(1));
+      if (maal && maal.getClientRects().length) {
+        maal.style.scrollMarginTop = '90px';
+        maal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+    location.href = h;
   });
 
   /* ── Hover-stilene («style-hover» i appen) ──────────────────────────── */

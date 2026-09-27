@@ -93,6 +93,7 @@ SVAR=$(curl -s -m 15 -X POST -H "Content-Type: application/json" -H "$ORIG" \
   -H "Cookie: lissom_sesjon=$TOKEN" -d "{\"oktId\":$OKT,\"antall\":1}" "$B/book.php")
 REF=$(echo "$SVAR" | python3 -c "import sys,json;print(json.load(sys.stdin).get('referanse',''))" 2>/dev/null)
 sjekk "booking gir en referanse" "ja" "$([ -n "$REF" ] && echo ja || echo nei)"
+[ -z "$REF" ] && echo "    oekt $OKT, svar: ${SVAR:0:300}"
 sjekk "reservasjon opprettet" "reservert" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   echo $p ? DB::verdi("SELECT status FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]) : "mangler";')"

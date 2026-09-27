@@ -39,6 +39,9 @@ for f in adminsjekk autolastsjekk innholdssjekk karusellsjekk knappesjekk \
   kjor "$f" node "bin/$f.mjs"
 done
 
+# --- Eierens vedtak (tests/godkjent/vedtak.json) ----------------------------
+kjor "vedtak" node tests/vedtak.mjs
+
 # --- Backend mot databasen --------------------------------------------------
 kjor "backend"       php tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php

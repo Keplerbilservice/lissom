@@ -137,6 +137,42 @@ for (const s of skjermer) {
   }
   await kontekst.close();
 }
+
+// ── Eierens vedtak paa den ekte sida ───────────────────────────────────
+//
+// Eieren, 27. september 2026: «sjekkene vet hva de skal se etter». Det som
+// er godkjent og synlig for kunden, staar i tests/godkjent/vedtak.json under
+// «live»: tekst som skal staa (eller ikke staa), og elementer som skal
+// finnes. Vakta paa PC-en henter fila fra main sammen med denne.
+{
+  let reg = null;
+  try { reg = JSON.parse(fs.readFileSync(path.join(ROT, 'tests/godkjent/vedtak.json'), 'utf8')); }
+  catch { console.log('\n── Vedtak: fant ikke tests/godkjent/vedtak.json — hoppet over'); }
+  const liveVedtak = reg ? reg.vedtak.filter(v => (v.live || []).length) : [];
+  if (liveVedtak.length) {
+    console.log(`\n── Eierens vedtak (${liveVedtak.length}) ──`);
+    const kontekst = await nettleser.newContext({ viewport: { width: 1440, height: 900 } });
+    for (const v of liveVedtak) {
+      for (const l of v.live) {
+        const side = await kontekst.newPage();
+        let html = '';
+        try {
+          await side.goto(ADRESSE + l.sti, { waitUntil: 'networkidle', timeout: 45000 });
+          await side.waitForTimeout(800);
+          html = await side.content();
+        } catch (e) { /* html blir tom, og sjekkene under slaar ut */ }
+        for (const s of l.finnes || []) sjekk(`Vedtak ${v.id}: ${l.sti} viser «${s}»`, html.includes(s), v.hva);
+        for (const s of l.ikkeFinnes || []) sjekk(`Vedtak ${v.id}: ${l.sti} viser ikke «${s}»`, html !== '' && !html.includes(s), v.hva);
+        for (const sel of l.selektorer || []) {
+          const n = await side.locator(sel).count().catch(() => 0);
+          sjekk(`Vedtak ${v.id}: ${l.sti} har ${sel}`, n > 0, v.hva);
+        }
+        await side.close();
+      }
+    }
+    await kontekst.close();
+  }
+}
 await nettleser.close();
 
 // ── Gemini ser over sidene ─────────────────────────────────────────────

@@ -51,6 +51,9 @@ kjor "betalingsflyt" bash tests/flyt.sh
 kjor "delt betaling" bash tests/deltbetaling.sh
 kjor "galleri, admin" bash tests/galleri.sh
 
+# --- Hele flyter, klikket gjennom i en ekte nettleser ------------------------
+kjor "nettleser"      bash tests/nettleser/kjor.sh
+
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Gikk:   ${#gikk[@]}"

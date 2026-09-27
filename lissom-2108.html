@@ -5291,7 +5291,23 @@ window.__resources = {
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-bottom: 2px;">Forhåndsvisning</div>
                 <p style="margin: 0; font-size: var(--text-sm); color: var(--brown-500); max-width: 68ch; text-wrap: pretty;">{{ fhBandTekst }}</p>
               </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>
+              <!-- «⊙ Synlighet» her, ikke bare i adminstripa.
+                   Bryterne for Min side ligger i Synlighet-arket, og arket
+                   aapnes fra en pille i adminstripa. Men den stripa er borte
+                   mens man staar i forhaandsvisninga — dette ER Min side, ikke
+                   en adminskjerm. Runden ble: tilbake, aapne Synlighet, skru,
+                   og inn hit igjen for aa se hva det ble.
+                   Eieren, 27. september 2026: «kan jeg skru av og paa funksjoner
+                   der ogsaa?»
+                   Arket staar én gang i malen, paa toppnivaa, og tegnes derfor
+                   ogsaa her. Ingen ny bryter og ingen kopi: den samme
+                   «synAapne» som pilla i stripa bruker. Bryterne blir liggende
+                   ett sted, slik eieren bestemte 19. september — «alt styres
+                   kun fra Synlighet». Dette er bare en vei inn dit herfra. -->
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ fhSynlighet }}" hint-size="auto,38px">⊙ Synlighet</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>
+              </div>
             </div>
           </sc-if>
 
@@ -73436,6 +73452,9 @@ class Component extends DCLogic {
       // Medlemmer — og en fast vei tilbake ville sendt noen feil vei.
       // Derfor baerer kortet med seg hvor det ble trykket.
       fhTilbake: () => this.gaaAdmin(this.state.fhFra || 'adminomrkurs', {}),
+      // Samme handling som pilla i adminstripa. Arket legger seg oppaa
+      // forhaandsvisninga, saa et trykk paa en bryter sees med det samme.
+      fhSynlighet: () => this.synlighetVals().synAapne(),
       // Skjemaet staar alltid. For sto det ikke naar en gammel soknad laa
       // som «venter», og da kom hen aldri videre: soknader behandles ikke
       // lenger, saa den ville ligget der for alltid.

@@ -21053,6 +21053,33 @@ sjekk('knappene og kvitteringene er de godkjente',
 sjekk('kursboost-utkastet husker kurset',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/ai.php'), "\$r + ['kursId' => (int) \$k['kurs']['id']],"));
 
+// ── Synlighet fra forhaandsvisninga ───────────────────────────────
+//
+// Eieren, 27. september 2026, om «Hva medlemmene ser»: «kan jeg skru av og
+// paa funksjoner der ogsaa?»
+//
+// Bryterne ligger i Synlighet-arket, som aapnes fra en pille i adminstripa.
+// Den stripa er borte i forhaandsvisninga — dette ER Min side, ikke en
+// adminskjerm — saa runden ble: tilbake, aapne Synlighet, skru, og inn hit
+// igjen. Arket staar én gang i malen, paa toppnivaa, saa det tegnes ogsaa
+// her. En knapp i baandet er alt som skal til.
+$syfSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+echo "\nSynlighet fra forhaandsvisninga\n";
+sjekk('knappen staar i baandet, ved siden av «Tilbake»',
+    str_contains($syfSida, 'on-click="{{ fhSynlighet }}" hint-size="auto,38px">⊙ Synlighet</x-import>')
+    && str_contains($syfSida, 'on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>'));
+// Ingen kopi av bryterne: den samme handlingen som pilla i stripa.
+sjekk('den bruker den samme «synAapne» som pilla i adminstripa',
+    str_contains($syfSida, '      fhSynlighet: () => this.synlighetVals().synAapne(),'));
+// Arket maa staa paa toppnivaa i malen, ellers tegnes det ikke paa Min side.
+sjekk('arket staar én gang i malen, ikke per adminskjerm',
+    substr_count($syfSida, '<sc-if value="{{ synVises }}"') === 1
+    && str_contains($syfSida, '      ...this.synlighetVals(),'));
+// Baandet vises bare i forhaandsvisninga, saa knappen naar aldri et medlem.
+sjekk('baandet — og knappen — staar bare i forhaandsvisninga',
+    str_contains($syfSida, '      fhBand: !!this.state.fhRolle,'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

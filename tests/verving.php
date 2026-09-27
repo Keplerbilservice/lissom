@@ -17,6 +17,12 @@ declare(strict_types=1);
 
 require __DIR__ . '/../app/bootstrap.php';
 
+// Stopper testen paa en feil, skal kjoringen feile — ikke se groenn ut.
+$ferdig = false;
+register_shutdown_function(static function () use (&$ferdig): void {
+    if (!$ferdig) { echo "\n  FEIL  testen stoppet foer den var ferdig\n"; exit(1); }
+});
+
 $ok = 0; $feil = 0;
 function sjekk(string $navn, bool $v, string $mer = ''): void {
     global $ok, $feil;
@@ -37,8 +43,8 @@ $bryter = static function (bool $paa): void {
               ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)", ['v' => $paa ? 'ja' : 'nei']);
 };
 
-$aar   = (string) DB::verdi('SELECT navn FROM membership_plans WHERE binding_mnd >= 12 ORDER BY id LIMIT 1');
-$annen = (string) DB::verdi('SELECT navn FROM membership_plans WHERE binding_mnd < 12 ORDER BY id LIMIT 1');
+$aar   = (string) DB::verdi('SELECT navn FROM membership_plans WHERE binding_mnd >= 12 ORDER BY sortering LIMIT 1');
+$annen = (string) DB::verdi('SELECT navn FROM membership_plans WHERE binding_mnd < 12 ORDER BY sortering LIMIT 1');
 sjekk('aarsmedlemskapet finnes', $aar !== '');
 
 $sporTag = 'verv-' . bin2hex(random_bytes(3));
@@ -141,5 +147,6 @@ if ($forTimer !== null && $forTimer !== false) {
     DB::kjor("UPDATE innstillinger SET verdi = :v WHERE nokkel = 'verving_timer'", ['v' => $forTimer]);
 }
 
+$ferdig = true;
 echo "\n── $ok gikk gjennom, $feil feilet\n";
 exit($feil === 0 ? 0 : 1);

@@ -12444,16 +12444,17 @@ sjekk('medlemslista krever at avtalen loeper for den sier «fast trekk»',
     str_contains($medFilA, "\$loeper = (string) \$a['status'] === 'aktiv';")
     && str_contains($medFilA, "'fastTrekk'   => \$loeper"));
 sjekk('… og for den sier at medlemmet er bundet',
-    str_contains($medFilA, "\$bundet = \$loeper && \$planBinder")
-    && str_contains($medFilA, "&& \$a['binding_til'] !== null && (string) \$a['binding_til'] >= \$idag;")
+    str_contains($medFilA, "\$bundet = \$loeper && \$planBinder && \$bindingTil >= \$idag;")
     && str_contains($medFilA, "'bundetTil'   => \$loeper && \$planBinder ? \$dato(\$a['binding_til']) : null,"));
 // Datoen i raden er satt én gang, av planen som gjaldt da avtalen ble laget.
 // Endres planen til null maaneder etterpaa, blir datoen staaende — og lista
 // sa «bundet» paa en plan som ikke binder. Eieren, 5. september, med bilde:
 // «Prøv Lissom har ingen binding».
 sjekk('… og planen gaar foran den lagrede datoen',
-    str_contains($medFilA, "\$p = Medlemskap::planUansett((string) \$a['plan']);")
-    && str_contains($medFilA, "return \$p === null || (int) (\$p['binding_mnd'] ?? 0) > 0;"),
+    // Samme kilde som Min side og oppsigelsen (eieren, 28. september 2026).
+    str_contains($medFilA, "\$bindingTil = Medlemskap::bindingTil(\$a);")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+        "if (\$plan !== null && ((int) (\$plan['engangs'] ?? 0) === 1 || (int) (\$plan['binding_mnd'] ?? 0) <= 0)) {"),
     'planUansett: en plan tatt ut av salg gjelder fortsatt for dem som staar paa den');
 
 echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
@@ -12711,7 +12712,7 @@ sjekk('… og sier at bindingstid ikke er registrert',
 // gratis medlemskap uten ende; byttes det motsatt vei, maa den gamle
 // sluttdatoen bort, ellers stopper medlemskapet paa proeveperiodens dato.
 sjekk('… og sluttdatoen foelger planen begge veier',
-    str_contains($bytt, "'slutt_dato'      => \$engangs ? date('Y-m-d', strtotime('+1 month')) : null,"));
+    str_contains($bytt, "'slutt_dato'      => \$engangs ? Medlemskap::proveSlutt() : null,"));
 // Vipps-avtalen kan vi ikke endre — API-et har ingen vei til det. Da skal
 // det staa i klartekst, ikke oppdages naar pengene kommer.
 sjekk('… og sier fra at en loepende Vipps-avtale trekker det gamle',
@@ -14773,8 +14774,8 @@ sjekk('… mens admin fortsatt forklarer hva malene er',
 //    ute fra aa si opp. Planen er avtalen.
 $mLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('oppsigelsen sperres ikke av en binding planen ikke har',
-    str_contains($mLib, '$binderIDetHeleTatt = $plan === null || (int) ($plan[\'binding_mnd\'] ?? 0) > 0;')
-    && str_contains($mLib, '$binding = $binderIDetHeleTatt ? ($avtale[\'binding_til\'] ?? null) : null;'));
+    str_contains($mLib, 'public static function bindingTil(array $avtale): ?string')
+    && str_contains($mLib, '$binding = self::bindingTil($avtale);'));
 
 
 echo "\n== Min side ryddet: ett kort, dørkode oppe, meny i bunnen ==\n";
@@ -14802,7 +14803,8 @@ sjekk('… og timene leses av den, ikke av salgslista',
     str_contains($mlP, '$plan = self::planUansett($type);'),
     'ellers gir en avslaatt plan ubegrensede timer');
 sjekk('… og det samme gjor binding, oppsigelse og engangsregelen',
-    substr_count($mlP, "self::planUansett((string) \$avtale['plan']);") === 3);
+    // Fire: bindingTil() kom til 28. september 2026.
+    substr_count($mlP, "self::planUansett((string) \$avtale['plan']);") === 4);
 sjekk('… mens innmelding og kjop fortsatt krever en plan som selges',
     // startIVerkstedet() kom til med 804be43 (#193).
     substr_count($mlP, 'self::plan($planNavn);') === 3,
@@ -15073,7 +15075,8 @@ sjekk('avtaler opprettes de tre stedene, og bare der',
 // «Mini 15» naar hen trykket Forny paa et aarsmedlemskap — feil plan, feil
 // pris, og en avtale paa noe hen ikke hadde bedt om.
 sjekk('«Forny» leser medlemmets egen plan',
-    str_contains($sidaA, "aFornyAbo: this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),"),
+    // En proeveperiode aapner velgeren i stedet (eieren, 28. september 2026).
+    str_contains($sidaA, ": this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),"),
     'maalt: dialogen sa «Årsmedlemskap · kr. 1 990,- · fast trekk i Vipps»');
 sjekk('… og det samme gjor start, fornying og oppgraderingsforslaget',
     !str_contains(preg_replace('/^\s*\/\/.*$/m', '', $sidaA), 'this.aktivPlan().navn')
@@ -15207,7 +15210,8 @@ sjekk('… og den sier naar en proeveperiode gaar ut',
 // paa nettsida, gikk veien gjennom betaltEngangs() — og der ble den aldri
 // satt. Kunden betalte 990 kroner én gang og beholdt verkstedet for alltid.
 sjekk('en proeveperiode kjopt paa nettsida faar en sluttdato',
-    str_contains($mlB, "if (\$engangs) {\n            \$felter['slutt_dato'] = gmdate('Y-m-d', strtotime('+1 month'));")
+    // Siste dag i kjoepsmaaneden (eieren, 28. september 2026) — se proveSlutt().
+    str_contains($mlB, "if (\$engangs) {\n            \$felter['slutt_dato'] = self::proveSlutt();")
     , 'maalt: slutt_dato ble 2026-10-05 for en kjopt 5. september');
 sjekk('… og en startdato som alt staar blir ikke rort',
     str_contains($mlB, "'start_dato'      => (\$fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),"),

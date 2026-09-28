@@ -788,6 +788,28 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "henting-uten-vipps",
+            "dato": "2026-09-28",
+            "hva": "«Betal ved henting» i butikken virker som «Betal ved oppmøte» på kurs — gjesten skriver navn, e-post og mobil, uten Vipps-innlogging; mobil kreves",
+            "hvor": "handlekurven (lissom-2108.html) og api/ordre.php",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "if (!this.state.innlogget && betaling !== 'henting') {",
+                        "hentGjest: !this.state.innlogget,",
+                        "on-change=\"{{ settKaTelefon }}\""
+                    ]
+                },
+                {
+                    "fil": "api/ordre.php",
+                    "finnes": [
+                        "if ($vedHenting && $telefon === '') {"
+                    ]
+                }
+            ]
         }
     ]
 }

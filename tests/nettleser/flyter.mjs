@@ -574,6 +574,52 @@ await flyt('Gavekortsida', async () => {
   await p.context().close();
 });
 
+// Eieren, 28. september 2026: «Betal ved henting» i butikken skal virke som
+// «Betal ved oppmøte» paa kurs — navn, e-post og mobil, uten Vipps-innlogging.
+await flyt('Butikk: betal ved henting uten innlogging', async () => {
+  const tittel = 'e2e-henting-' + Date.now();
+  const epost = 'e2e-henting-' + Date.now() + '@e2e.lissom.test';
+  bryter('Vis/oppmotebutikk', true);
+  const felt = { t: tittel };
+  const id = php(`$f = ["tittel" => ${JSON.stringify(tittel)}, "pris_ore" => 16900, "lager" => 5, "status" => "publisert", "kun_medlemmer" => 0, "beskrivelse" => "Testvare"];
+    if (DB::harKolonne("products", "uten_forskudd")) { $f["uten_forskudd"] = 1; }
+    return DB::settInn("products", $f);`);
+  tomBuffer();
+  const p = await side(null);
+  try {
+    await gaa(p, '/butikk', 2500);
+    await p.getByText(tittel).first().click();
+    await p.waitForTimeout(1500);
+    await p.getByRole('button', { name: /LEGG I KURV/i }).first().click();
+    await p.waitForSelector('text=/GÅ TIL BETALING/i', { timeout: 30000 });
+    await p.getByRole('button', { name: /GÅ TIL BETALING/i }).first().click();
+    await p.waitForTimeout(2000);
+    const henting = p.getByRole('button', { name: /Betal ved henting/i }).first();
+    sjekk('«Betal ved henting» står i kassa for en gjest', await henting.count() === 1);
+    const navn = p.getByPlaceholder('Fornavn og etternavn');
+    sjekk('… med feltene fra kursskjemaet: navn, e-post og telefon',
+      await navn.count() >= 1 && await p.getByPlaceholder('navn@epost.no').count() >= 1 && await p.getByPlaceholder('+47 000 00 000').count() >= 1);
+    await navn.first().fill('TEST Gjest');
+    await p.getByPlaceholder('navn@epost.no').first().fill(epost);
+    await p.getByPlaceholder('+47 000 00 000').first().fill('40603093');
+    const vippsKall = [];
+    p.on('request', r => { if (/vipps|apitest|api\.vipps/i.test(r.url())) vippsKall.push(r.url()); });
+    await henting.click();
+    await p.waitForTimeout(3000);
+    sjekk('… bestillingen går uten Vipps-innlogging', new URL(p.url()).hostname === VERT && vippsKall.length === 0, p.url());
+    sjekk('… og kvitteringen vises', (await p.locator('body').innerText()).includes('Bestillingen er registrert'));
+    const o = db('SELECT member_id, kunde_navn, kunde_telefon, payment_id, status FROM orders WHERE kunde_epost = :e', { e: epost })[0] || null;
+    sjekk('… ordren står på gjesten, ubetalt, uten betalingsrad', !!o && o.member_id === null && o.kunde_navn === 'TEST Gjest' && o.payment_id === null && o.status === 'ny', JSON.stringify(o));
+    sjekk('… og kunden har fått «Butikkbestilling — hentes» i køen', varsler(epost).length >= 1);
+  } finally {
+    await p.context().close();
+    php(`foreach (DB::alle("SELECT id FROM orders WHERE kunde_epost = :e", ["e" => ${JSON.stringify(epost)}]) as $o) { DB::kjor("DELETE FROM order_lines WHERE order_id = :i", ["i" => $o["id"]]); DB::kjor("DELETE FROM orders WHERE id = :i", ["i" => $o["id"]]); }
+      DB::kjor("DELETE FROM notifications WHERE mottaker = :e", ["e" => ${JSON.stringify(epost)}]);
+      DB::kjor("DELETE FROM products WHERE id = :i", ["i" => ${Number(id) || 0}]); return true;`);
+    tomBuffer();
+  }
+});
+
 // ── 8. Regresjon: alle faner og hovedsider ────────────────────────────
 await flyt('Regresjon: faner i admin og hovedsidene', async () => {
   const p = await side('admin');

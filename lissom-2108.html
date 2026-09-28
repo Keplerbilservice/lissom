@@ -5224,6 +5224,19 @@ window.__resources = {
                    over. Serveren avviser begge deler ogsaa. -->
               <sc-if value="{{ visHenting }}" hint-placeholder-val="{{ false }}">
                 <div style="margin-top: var(--space-3);">
+                  <!-- Navn, e-post og mobil for den som ikke er logget inn,
+                       som «Betal ved oppmøte» paa kurs. Eieren, 28. september
+                       2026: henting skal gaa uten Vipps-innlogging. Samme
+                       felter og tekster som kursskjemaet. -->
+                  <sc-if value="{{ hentGjest }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-bottom: var(--space-4);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn og etternavn" value="{{ kaNavn }}" on-change="{{ settKaNavn }}" hint-size="100%,66px"></x-import>
+                      <div style="height: var(--space-4);"></div>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ kaEpost }}" on-change="{{ settKaEpost }}" hint-size="100%,66px"></x-import>
+                      <div style="height: var(--space-4);"></div>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47 000 00 000" value="{{ kaTelefon }}" on-change="{{ settKaTelefon }}" hint-size="100%,66px"></x-import>
+                    </div>
+                  </sc-if>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ betalVedHenting }}" hint-size="100%,52px">Betal ved henting</x-import>
                   <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">{{ hentingHjelp }}</p>
                 </div>
@@ -36515,7 +36528,12 @@ class Component extends DCLogic {
 
     // Kassen i designet har ingen felter for navn, e-post og telefon.
     // Vipps-innloggingen gir oss dem, og de blir riktige uten skrivefeil.
-    if (!this.state.innlogget) {
+    //
+    // Unntaket er henting (eieren, 28. september 2026): da skriver gjesten
+    // navn, e-post og mobil selv, som «Betal ved oppmøte» paa kurs, og
+    // serveren (api/ordre.php) sjekker dem. Vipps-betaling krever fortsatt
+    // innlogging.
+    if (!this.state.innlogget && betaling !== 'henting') {
       this.sendTilInnlogging('/kasse', 'Bestillingen ble ikke sendt.');
       return;
     }
@@ -58057,6 +58075,8 @@ class Component extends DCLogic {
         });
       })(),
       hentingHjelp: 'Vi legger varene til side. Du betaler når du henter dem — kontant eller Vipps.',
+      // Gjesten skriver navn, e-post og mobil selv ved henting (28.09.2026).
+      hentGjest: !this.state.innlogget,
       betalVedHenting: () => {
         if (!this.erPublisert()) {
           this.setState({ kvittering: 'Bestillingen er registrert',
@@ -66715,7 +66735,9 @@ class Component extends DCLogic {
       kaNavn: this.state.kaNavn ?? (this.state.vippsNavn || ''),
       settKaNavn: e => this.setState({ kaNavn: e.target.value }),
       kaTelefon: this.state.kaTelefon ?? (this.state.medlemTelefon || ''),
+      settKaTelefon: e => this.setState({ kaTelefon: e.target.value }),
       kaEpost: this.state.kaEpost ?? (this.state.medlemEpost || ''),
+      settKaEpost: e => this.setState({ kaEpost: e.target.value }),
       // Hilsenen paa gaven. Haken «Send som gave» sto bare i nettleseren, og
       // feltet var ikke koblet til noe — verkstedet fikk aldri vite at noe
       // skulle pakkes inn.

@@ -561,6 +561,8 @@ switch ($handling) {
             Svar::feil('Fant ikke kurset.', 404);
         }
         $bilde = preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $raa) === 1
+            // Designmalene ligger i en egen mappe (eieren 28.09.2026).
+            || preg_match('~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~', $raa) === 1
             ? $raa : mb_substr(basename($raa), 0, 191);
         if ($bilde === '' || (!str_starts_with($bilde, 'api/') && !is_file(dirname(__DIR__, 2) . '/' . $bilde))) {
             Svar::feil('Fant ikke bildet.');

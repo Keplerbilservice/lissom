@@ -62,7 +62,16 @@ $medfolgende = static function (): array {
         }
     }
     ksort($ut);
-    return array_values($ut);
+    // Designmalene — underlogoene og profilbildene (Markedsføring ›
+    // Designmaler, eieren 28. september 2026). PNG-utgaven er den som kan
+    // brukes i et innlegg; de andre formatene lastes ned fra fanen.
+    $design = [];
+    foreach (glob($rot . '/design/underlogoer/*/*.png') ?: [] as $sti) {
+        $rel = 'design/underlogoer/' . basename(dirname($sti)) . '/' . basename($sti);
+        $design[$rel] = ['url' => $rel, 'mini' => $rel, 'egen' => false];
+    }
+    ksort($design);
+    return array_merge(array_values($ut), array_values($design));
 };
 
 /** Bildene eieren selv har lastet opp. Nyeste forst — de er mest aktuelle. */

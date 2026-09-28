@@ -766,6 +766,28 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "designmaler",
+            "dato": "2026-09-28",
+            "hva": "Lissoms egne logoer (hovedlogo, koppen, ordmerket, hjertet, e-postlogoene, ikonene — der de ligger, ikke flyttet) og underlogoene (Date Night, Paint on Pots, Sip & Clay) med profilbilder samlet i Markedsføring › Designmaler, med nedlasting per format og «Kopier lenke»; underlogo-PNG-ene er valgbare i bildevelgeren (eieren 28.09: «samler du på et sted»)",
+            "hvor": "Markedsføring › Designmaler, design/underlogoer/",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "['Designmaler', 'adminmarked', { mkFane: 'design' }],",
+                        "designmalAdminVals(fane) {",
+                        "{ navn: 'Lissom', filer: lissom },"
+                    ]
+                },
+                {
+                    "fil": "api/admin/bilder.php",
+                    "finnes": [
+                        "/design/underlogoer/*/*.png"
+                    ]
+                }
+            ]
         }
     ]
 }

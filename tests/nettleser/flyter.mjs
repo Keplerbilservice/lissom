@@ -487,6 +487,25 @@ await flyt('Oversikt: dagens omsetning og bestillinger', async () => {
 // ── Markedsfoering › Bilder ───────────────────────────────────────────
 // Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring, at jeg
 // kan klikke å laste opp eller dra og slipp».
+// Eieren, 28. september 2026: underlogoene i en egen fane.
+await flyt('Designmaler: fanen aapner og filene finnes', async () => {
+  const p = await side('admin');
+  await gaa(p, '/admin/markedsforing', 3000);
+  await p.locator('main').getByRole('button', { name: 'Designmaler', exact: true }).first().click();
+  await p.waitForTimeout(1500);
+  const kort = p.locator('[data-dm-fil]');
+  sjekk('Designmaler viser 29 kort (Lissom 17, og tre underlogoer med logo og profilbilde i brun og gul)', await kort.count() === 29, String(await kort.count()));
+  const lenker = await p.locator('[data-dm-last]').evaluateAll(a => a.map(x => x.getAttribute('data-dm-last')));
+  // Hentes fra sida selv: vertsnavnet finnes bare i nettleseren.
+  const mangler = await p.evaluate(async (ls) => {
+    const ut = [];
+    for (const l of ls) { const r = await fetch(l, { method: 'HEAD' }); if (r.status !== 200) ut.push(l + ' ' + r.status); }
+    return ut;
+  }, lenker);
+  sjekk('… og hver nedlasting peker paa en fil som finnes', lenker.length === 63 && mangler.length === 0, lenker.length + ' ' + mangler.slice(0, 3).join(', '));
+  await p.context().close();
+});
+
 await flyt('Bilder: last opp, dra og slipp, fokus og Lagre', async () => {
   const jpg = php(`$im = imagecreatetruecolor(1600, 1000); imagefill($im, 0, 0, imagecolorallocate($im, 180, 120, 80));
     $f = sys_get_temp_dir() . '/e2e-kursbilde.jpg'; imagejpeg($im, $f, 80); return $f;`);

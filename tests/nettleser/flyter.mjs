@@ -494,11 +494,15 @@ await flyt('Designmaler: fanen aapner og filene finnes', async () => {
   await p.locator('main').getByRole('button', { name: 'Designmaler', exact: true }).first().click();
   await p.waitForTimeout(1500);
   const kort = p.locator('[data-dm-fil]');
-  sjekk('Designmaler viser tolv kort (tre navn, logo og profilbilde, brun og gul)', await kort.count() === 12, String(await kort.count()));
+  sjekk('Designmaler viser 29 kort (Lissom 17, og tre underlogoer med logo og profilbilde i brun og gul)', await kort.count() === 29, String(await kort.count()));
   const lenker = await p.locator('[data-dm-last]').evaluateAll(a => a.map(x => x.getAttribute('data-dm-last')));
-  let mangler = [];
-  for (const l of lenker) { const r = await p.request.get(ADR + l); if (r.status() !== 200) mangler.push(l + ' ' + r.status()); }
-  sjekk('… og hver nedlasting peker paa en fil som finnes', lenker.length === 42 && mangler.length === 0, lenker.length + ' ' + mangler.slice(0, 3).join(', '));
+  // Hentes fra sida selv: vertsnavnet finnes bare i nettleseren.
+  const mangler = await p.evaluate(async (ls) => {
+    const ut = [];
+    for (const l of ls) { const r = await fetch(l, { method: 'HEAD' }); if (r.status !== 200) ut.push(l + ' ' + r.status); }
+    return ut;
+  }, lenker);
+  sjekk('… og hver nedlasting peker paa en fil som finnes', lenker.length === 63 && mangler.length === 0, lenker.length + ' ' + mangler.slice(0, 3).join(', '));
   await p.context().close();
 });
 

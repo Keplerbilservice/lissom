@@ -37773,42 +37773,79 @@ class Component extends DCLogic {
     const paa = fane === 'design';
     if (!paa) return { mkErDesign: false, dmGrupper: [] };
     const st = this.state;
-    const GRUPPER = [['Date Night', 'date-night'], ['Paint on Pots', 'paint-on-pots'], ['Sip & Clay', 'sip-and-clay']];
     const pille = {
       appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px',
       font: 'var(--type-chip)', fontWeight: 700, border: '1.5px solid var(--border-subtle)',
       background: 'var(--surface-card)', color: 'var(--text-heading)', textDecoration: 'none', display: 'inline-block',
     };
-    const fil = (mappe, navn, farge, formater, etikett) => {
-      const base = 'design/underlogoer/' + mappe + '/' + navn + '-' + farge;
-      const kopiert = st.dmKopiert === base;
+    const FLATE = { gul: 'var(--lissom-yellow)', brun: 'var(--lissom-brown)', lys: '#FBF6EE' };
+    // Ett kort: navnet, flaten det skal vises på, og filene (sti uten
+    // ledende «/»). Den første fila er den som vises og kopieres.
+    const kort = (etikett, flate, filer) => {
+      const vis = filer[0];
+      const kopiert = st.dmKopiert === vis;
       return {
         navn: etikett,
-        png: '/' + base + '.png',
+        png: '/' + vis,
         alt: etikett,
-        flateStil: { background: farge === 'brun' ? 'var(--lissom-yellow)' : 'var(--lissom-brown)', aspectRatio: '4 / 3', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px' },
+        flateStil: { background: FLATE[flate], aspectRatio: '4 / 3', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px' },
         bildeStil: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' },
-        formater: formater.map(x => ({ navn: x.toUpperCase(), href: '/' + base + '.' + x, fil: navn + '-' + farge + '.' + x, stil: pille })),
+        // To filer i samme format (ikonene) skilles med størrelsen i navnet.
+        formater: filer.map(f => {
+          const ext = f.split('.').pop().toUpperCase();
+          const flere = filer.filter(g => g.split('.').pop().toUpperCase() === ext).length > 1;
+          const px = (f.match(/(\d{2,4})(?=\.\w+$)/) || [])[1] || (/apple-touch/.test(f) ? '180' : '');
+          return { navn: flere && px ? ext + ' ' + px : ext, href: '/' + f, fil: f.split('/').pop(), stil: pille };
+        }),
         kopierTekst: kopiert ? 'Kopiert ✓' : 'Kopier lenke',
         kopierStil: pille,
         kopier: () => {
-          const url = 'https://lissom.no/' + base + '.png';
-          const ferdig = () => this.setState({ dmKopiert: base });
-          try { navigator.clipboard.writeText(url).then(ferdig, ferdig); } catch (e) { ferdig(); }
+          const ferdig = () => this.setState({ dmKopiert: vis });
+          try { navigator.clipboard.writeText('https://lissom.no/' + vis).then(ferdig, ferdig); } catch (e) { ferdig(); }
         },
       };
     };
+    // Underlogoene: «Brun logo på gul eller lys bakgrunn, gul logo på brun
+    // bakgrunn.» PNG først — den kan brukes i innlegg og velges i bildevelgeren.
+    const under = (mappe) => {
+      const b = (navn, farge, ext) => ext.map(x => 'design/underlogoer/' + mappe + '/' + navn + '-' + farge + '.' + x);
+      return [
+        kort('Logo · brun', 'gul', b('lissom-' + mappe, 'brun', ['png', 'jpg', 'svg', 'pdf'])),
+        kort('Logo · gul', 'brun', b('lissom-' + mappe, 'gul', ['png', 'jpg', 'svg', 'pdf'])),
+        kort('Profilbilde · brun', 'gul', b('profilbilde-' + mappe, 'brun', ['png', 'jpg', 'svg'])),
+        kort('Profilbilde · gul', 'brun', b('profilbilde-' + mappe, 'gul', ['png', 'jpg', 'svg'])),
+      ];
+    };
+    // Lissoms egne logoer ligger der nettsida og e-postene bruker dem. De
+    // vises her, de flyttes ikke (eieren, 28. september 2026: «samler du på
+    // et sted»).
+    const lissom = [
+      kort('Hovedlogo', 'gul', ['logo-lockup.svg']),
+      kort('Hovedlogo · gul', 'brun', ['logo-lockup-yellow.svg']),
+      kort('Hovedlogo · lys', 'lys', ['logo-lockup-cream.svg']),
+      kort('Koppen', 'gul', ['mark-cup.svg']),
+      kort('Koppen · gul', 'brun', ['mark-cup-yellow.svg']),
+      kort('Koppen · lys', 'brun', ['mark-cup-cream.svg']),
+      kort('Koppen · kopp', 'gul', ['mark-cup-top.svg']),
+      kort('Koppen · skål', 'gul', ['mark-cup-saucer.svg']),
+      kort('Ordmerket', 'gul', ['wordmark-lissom.svg']),
+      kort('Hjertet', 'lys', ['mark-heart.png']),
+      kort('Hjertet · maske', 'brun', ['heart-logo-mask.png']),
+      kort('E-post · toppen', 'gul', ['e-post-logo-topp.png']),
+      kort('E-post · signatur', 'lys', ['lissom-signatur-logo.png']),
+      kort('E-post · logo med hjerte', 'lys', ['e-post-logo.png']),
+      kort('E-post · gavelapp', 'lys', ['e-post-gavelapp.png']),
+      kort('Ikon · nettleser', 'lys', ['favicon.svg', 'favicon-32.png', 'favicon.ico']),
+      kort('Ikon · telefon', 'lys', ['icon-512.png', 'icon-192.png', 'apple-touch-icon.png']),
+    ];
     return {
       mkErDesign: true,
-      dmGrupper: GRUPPER.map(([navn, mappe]) => ({
-        navn,
-        filer: [
-          fil(mappe, 'lissom-' + mappe, 'brun', ['png', 'jpg', 'svg', 'pdf'], 'Logo · brun'),
-          fil(mappe, 'lissom-' + mappe, 'gul', ['png', 'jpg', 'svg', 'pdf'], 'Logo · gul'),
-          fil(mappe, 'profilbilde-' + mappe, 'brun', ['png', 'jpg', 'svg'], 'Profilbilde · brun'),
-          fil(mappe, 'profilbilde-' + mappe, 'gul', ['png', 'jpg', 'svg'], 'Profilbilde · gul'),
-        ],
-      })),
+      dmGrupper: [
+        { navn: 'Lissom', filer: lissom },
+        { navn: 'Date Night', filer: under('date-night') },
+        { navn: 'Paint on Pots', filer: under('paint-on-pots') },
+        { navn: 'Sip & Clay', filer: under('sip-and-clay') },
+      ],
     };
   }
 

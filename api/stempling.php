@@ -311,6 +311,15 @@ Svar::json([
         'navn'         => trim((string) ($medlem['medlemskap_type'] ?? '')),
         'egetTimetall' => $medlem['timer_per_mnd'] !== null,
     ],
+    // Timepakken og vinduene paa Min side (eieren, 28. september 2026).
+    // «kanKjope» er den samme regelen serveren bruker ved kjoepet.
+    'timepakke' => [
+        'timer'    => Timepakke::timer(),
+        'prisOre'  => Timepakke::prisOre(),
+        'prove'    => Timepakke::erProve($medlem),
+        'kanKjope' => Timepakke::hvorforIkke($medlem) === '',
+        'tilgode'  => Stempling::timer(Timepakke::tilgodeMin($id)),
+    ],
     'timer' => [
         'brukt'    => Stempling::timer($brukt),
         'bruktMin' => $brukt,

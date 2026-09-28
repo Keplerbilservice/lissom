@@ -1236,6 +1236,11 @@ final class Booking
                 return true;
             }
 
+            // En timepakke (Timepakke::start). Pakken blir betalt her.
+            if (Timepakke::betalt((int) $betaling['id'])) {
+                return true;
+            }
+
             // Et medlemskap uten fast trekk. Betalingen peker paa raden i
             // «subscriptions», og medlemskapet slaas paa naar den er i havn.
             // Uten dette ble medlemmet staaende som «venter» selv om pengene

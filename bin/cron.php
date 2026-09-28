@@ -521,6 +521,16 @@ switch ($jobb) {
             logg('Glemte innstemplinger lukket', ['antall' => $stemplinger]);
         }
 
+        // Timepakkene: hvor mye av pakken som gikk med i maaneder som er over.
+        try {
+            $pakker = Timepakke::lukkMaaneder();
+            if ($pakker > 0) {
+                logg('Timepakkebruk skrevet', ['rader' => $pakker]);
+            }
+        } catch (Throwable $e) {
+            logg_feil('Timepakkebruken ble ikke skrevet', $e);
+        }
+
         // Skoleruta i Vestfold, saa varselet i kursoppsettet stemmer.
         //
         // Ligger her og ikke i en egen cron-jobb: den ville maattet settes

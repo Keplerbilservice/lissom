@@ -692,6 +692,26 @@ await flyt('Prøv Lissom: Forny aapner velgeren', async () => {
     // Varselet vi har fra foer, ogsaa for Prøv Lissom.
     sjekk(`${hva}: varselet om brukte timer vises for Prøv Lissom`,
       await p.getByText('Du har brukt opp timene dine denne måneden.').first().isVisible().catch(() => false));
+    // Vindu 3 (eieren, 28. september 2026): bare «Velg medlemskap» og «Ikke nå» — ingen timepakke.
+    const v3 = p.locator('[data-tp-vindu="3"]');
+    sjekk(`${hva}: timepakke: vindu 3 vises for Prøv Lissom`,
+      await v3.getByText('Du har brukt opp Prøv Lissom').isVisible().catch(() => false));
+    sjekk(`${hva}: … med «Velg medlemskap» og «Ikke nå», uten «Kjøp timepakke»`,
+      await v3.locator('[data-tp-knapp="Velg medlemskap"]').isVisible().catch(() => false)
+      && await v3.locator('[data-tp-knapp="Ikke nå"]').isVisible().catch(() => false)
+      && await v3.locator('[data-tp-knapp="Kjøp timepakke"]').count() === 0);
+    await v3.locator('[data-tp-knapp="Ikke nå"]').click().catch(() => {});
+    await p.waitForTimeout(400);
+    const v4 = p.locator('[data-tp-vindu="4"]');
+    sjekk(`${hva}: … «Ikke nå» gir vindu 4 med spørsmålet`,
+      await v4.getByText('Hva gjør at du venter?').isVisible().catch(() => false)
+      && await v4.getByText('Er det noe vi kan gjøre for at du endrer mening?').isVisible().catch(() => false));
+    await v4.locator('[data-tp-grunn="Mangler utstyr"]').click().catch(() => {});
+    await v4.locator('[data-tp-knapp="Send"]').click().catch(() => {});
+    await p.waitForTimeout(800);
+    sjekk(`${hva}: … svaret lagres med vindu «prove»`,
+      Number(verdi("SELECT COUNT(*) FROM timer_svar WHERE member_id = :m AND grunn = 'Mangler utstyr' AND vindu = 'prove'", { m: jo.id })) >= 1);
+    sjekk(`${hva}: … og vinduet er lukket`, await p.locator('[data-tp-vindu]').count() === 0);
     const forny = p.getByRole('button', { name: /^Forny$/ }).first();
     await forny.scrollIntoViewIfNeeded();
     await forny.click();
@@ -738,6 +758,109 @@ await flyt('Prøv Lissom: Forny aapner velgeren', async () => {
   const d = await api(p2, '/api/medlemskap.php', { handling: 'start', plan: jo.plan, betaling: 'selv' });
   sjekk('et nytt kjoep av Prøv Lissom avvises', d && d.feil === jo.plan + ' kan bare kjøpes én gang. Velg et annet medlemskap.', JSON.stringify(d).slice(0, 140));
   await p2.context().close();
+});
+
+// ── Timepakken og vinduene paa Min side ───────────────────────────────
+//
+// Eieren, 28. september 2026: 6 timer for kr 800, bare naar timene er brukt
+// opp, ikke for Prøv Lissom. Vindu 1 ved 1 time igjen, vindu 2 naar timene
+// er brukt opp, vindu 4 etter «Ikke nå». Tekstene er godkjent i skissen.
+const vanligMedlem = (navn, minutter) => php(`
+  $plan = (string) DB::verdi("SELECT navn FROM membership_plans WHERE engangs = 0 AND aktiv = 1 AND krever_fast_trekk = 0 AND timer IS NOT NULL ORDER BY timer LIMIT 1");
+  $timer = (int) DB::verdi('SELECT timer FROM membership_plans WHERE navn = :n', ['n' => $plan]);
+  $id = DB::settInn('members', ['navn' => '${navn}', 'epost' => '${navn.toLowerCase()}-' . bin2hex(random_bytes(3)) . '@e2e.lissom.test',
+    'telefon' => '+479' . random_int(1000000, 9999999), 'rolle' => 'medlem', 'status' => 'aktiv',
+    'medlemskap_type' => $plan, 'start_dato' => gmdate('Y-m-d')]);
+  DB::settInn('subscriptions', ['member_id' => $id, 'plan' => $plan, 'pris_ore' => 50000, 'status' => 'aktiv']);
+  $min = $timer * 60 + (${minutter});
+  $m = strtotime(Stempling::manedStart() . ' UTC') + 60;
+  DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m),
+    'ut_tid' => gmdate('Y-m-d H:i:s', $m + $min * 60), 'minutter' => $min]);
+  $t = bin2hex(random_bytes(32));
+  DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]);
+  return ['id' => $id, 'token' => $t, 'plan' => $plan, 'timer' => $timer];`);
+
+await flyt('Timepakke: vinduene på Min side', async () => {
+  db('DELETE FROM rate_limits');
+  for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
+    // Vindu 1: 1 time igjen.
+    S.tp1 = vanligMedlem('Tpen', -60);
+    let p = await side('tp1', bredde, hoyde);
+    await gaa(p, '/min-side', 3500);
+    const v1 = p.locator('[data-tp-vindu="1"]');
+    sjekk(`${hva}: timepakke: vindu 1 ved 1 time igjen`,
+      await v1.getByText('Snart tomt for timer').isVisible().catch(() => false)
+      && await v1.getByText('Du har 1 time igjen denne måneden. Når timene er brukt opp, kan du kjøpe en timepakke med 6 timer for kr 800. Timene går ikke ut, og følger med over til neste måned.').isVisible().catch(() => false),
+      (await v1.innerText().catch(() => '')).slice(0, 200));
+    await v1.locator('[data-tp-knapp="Greit å vite"]').click().catch(() => {});
+    await p.waitForTimeout(300);
+    sjekk(`${hva}: … «Greit å vite» lukker det`, await p.locator('[data-tp-vindu]').count() === 0);
+    await gaa(p, '/min-side', 2500);
+    sjekk(`${hva}: … og det kommer ikke igjen samme måned`, await p.locator('[data-tp-vindu]').count() === 0);
+    await p.context().close();
+
+    // Vindu 2: brukt opp (30 minutter over).
+    S.tp2 = vanligMedlem('Tpto', 30);
+    p = await side('tp2', bredde, hoyde);
+    await p.route('https://falsk.vipps/**', r => r.fulfill({ status: 200, body: 'falsk vipps' }));
+    await gaa(p, '/min-side', 3500);
+    const v2 = p.locator('[data-tp-vindu="2"]');
+    sjekk(`${hva}: timepakke: vindu 2 når timene er brukt opp`,
+      await v2.getByText('Månedens timer er brukt opp').isVisible().catch(() => false)
+      && await v2.getByText('Timepakke · 6 timer').isVisible().catch(() => false)
+      && await v2.getByText('kr 800', { exact: true }).isVisible().catch(() => false));
+    sjekk(`${hva}: … med «Kjøp timepakke», «Oppgrader medlemskap» og «Ikke nå»`,
+      await v2.locator('[data-tp-knapp="Kjøp timepakke"]').isVisible().catch(() => false)
+      && await v2.locator('[data-tp-knapp="Oppgrader medlemskap"]').isVisible().catch(() => false)
+      && await v2.locator('[data-tp-knapp="Ikke nå"]').isVisible().catch(() => false));
+    const boks = await v2.locator('div').first().boundingBox().catch(() => null);
+    sjekk(`${hva}: … vinduet får plass på skjermen`, !!boks && boks.x >= 0 && boks.x + boks.width <= bredde + 1, JSON.stringify(boks));
+    if (hva === 'mobil') {
+      await v2.locator('[data-tp-knapp="Ikke nå"]').click();
+      await p.waitForTimeout(400);
+      const v4 = p.locator('[data-tp-vindu="4"]');
+      await v4.locator('[data-tp-grunn="For dyrt"]').click();
+      await v4.locator('textarea').fill('Venter til lønning');
+      await v4.locator('[data-tp-knapp="Send"]').click();
+      await p.waitForTimeout(800);
+      const sv = db("SELECT grunn, fritekst, vindu FROM timer_svar WHERE member_id = :m", { m: S.tp2.id })[0] || {};
+      sjekk(`${hva}: … «Ikke nå» → svaret lagres`, sv.grunn === 'For dyrt' && sv.fritekst === 'Venter til lønning' && sv.vindu === 'vanlig', JSON.stringify(sv));
+      await gaa(p, '/min-side', 2500);
+      sjekk(`${hva}: … og vindu 2 kommer ikke igjen samme dag`, await p.locator('[data-tp-vindu]').count() === 0);
+    } else {
+      await v2.locator('[data-tp-knapp="Kjøp timepakke"]').click();
+      await p.waitForTimeout(2500);
+      const tp = db("SELECT t.id, t.status, t.timer, t.pris_ore, b.vipps_reference AS ref FROM timepakker t JOIN payments b ON b.id = t.payment_id WHERE t.member_id = :m ORDER BY t.id DESC LIMIT 1", { m: S.tp2.id })[0];
+      sjekk(`${hva}: … «Kjøp timepakke» starter Vipps med 6 timer for kr 800`, !!(tp && tp.ref) && Number(tp.timer) === 6 && Number(tp.pris_ore) === 80000, JSON.stringify(tp || {}));
+      if (tp && tp.ref) {
+        await fetch(`http://127.0.0.1:${process.env.E2E_PORT || 8140}/api/betaling-retur.php?ref=${encodeURIComponent(tp.ref)}`,
+          { redirect: 'manual', headers: { Host: VERT + ':' + (process.env.E2E_PORT || 8140) } }).catch(() => null);
+        sjekk(`${hva}: … betalt etter Vipps`, verdi('SELECT status FROM timepakker WHERE id = :i', { i: tp.id }) === 'betalt');
+        const q = await side('tp2', bredde, hoyde);
+        await gaa(q, '/min-side', 3000);
+        const st = await api(q, '/api/stempling.php');
+        sjekk(`${hva}: … 30 minutter over er trukket fra pakken: 5,5 timer igjen`, st?.timer?.igjen === 5.5, JSON.stringify(st?.timer || {}));
+        sjekk(`${hva}: … og vinduet er borte`, await q.locator('[data-tp-vindu]').count() === 0);
+        await q.context().close();
+      }
+    }
+    await p.context().close();
+  }
+  // Serveren: kjoep med timer igjen, og med Prøv Lissom, avvises.
+  const p3 = await side('tp1');
+  await gaa(p3, '/min-side', 1500);
+  db('DELETE FROM rate_limits');
+  const d1 = await api(p3, '/api/timepakke.php', { handling: 'kjop' });
+  sjekk('timepakke: kjøp med timer igjen avvises', d1 && d1.feil === 'Timepakken kan kjøpes når timene er brukt opp.', JSON.stringify(d1).slice(0, 120));
+  await p3.context().close();
+  {
+    S.tpProve = proveMedlem('Tpprove');
+    const p4 = await side('tpProve');
+    await gaa(p4, '/min-side', 1500);
+    const d2 = await api(p4, '/api/timepakke.php', { handling: 'kjop' });
+    sjekk('timepakke: kjøp med Prøv Lissom avvises', d2 && d2.feil === 'Timepakken gjelder ikke Prøv Lissom.', JSON.stringify(d2).slice(0, 120));
+    await p4.context().close();
+  }
 });
 
 // ── 8. Regresjon: alle faner og hovedsider ────────────────────────────

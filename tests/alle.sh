@@ -48,6 +48,7 @@ kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
 kjor "verving"       php tests/verving.php
 kjor "prøv lissom"   php tests/prove.php
+kjor "timepakke"     php tests/timepakke.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php
 kjor "eposter"       php tests/eposter.php

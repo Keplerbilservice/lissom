@@ -14996,6 +14996,25 @@ window.__resources = {
           </div>
         </sc-if>
 
+        <!-- Timepakken (eieren, 28. september 2026): pris og timer settes her.
+             Under: svarene medlemmene ga etter «Ikke nå», talt per grunn. -->
+        <sc-if value="{{ plPakkeVis }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-bottom: var(--space-8); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="flex: 1 1 260px; min-width: 0;">
+              <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">Timepakke — kan kjøpes når timene er brukt opp</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Timene går ikke ut og følger med til neste måned. Ikke for Prøv Lissom.</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ plPakkeSvar }}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <input type="text" inputmode="numeric" value="{{ plPakkeTimer }}" onInput="{{ settPlPakkeTimer }}" aria-label="Timer i pakken" style="width: 56px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+              <span style="font-size: var(--text-sm); color: var(--text-muted);">timer</span>
+              <input type="text" inputmode="decimal" value="{{ plPakkePris }}" onInput="{{ settPlPakkePris }}" aria-label="Pris for pakken" style="width: 80px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+              <span style="font-size: var(--text-sm); color: var(--text-muted);">kr</span>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagrePlPakke }}" hint-size="auto,36px">Lagre</x-import>
+            </div>
+          </div>
+        </sc-if>
+
         <!-- Tekstfeltene kom i en databaseoppdatering. Er den ikke kjort,
              kan teksten ikke lagres. Foer sto det «Ingen tekst er skrevet
              ennaa» paa hvert kort — en paastand om at kortet sto tomt ute,
@@ -21259,6 +21278,28 @@ window.__resources = {
               </div>
             </sc-if>
 
+            <!-- Timepakker og svarene etter «Ikke nå» (eieren, 28. september 2026). -->
+            <sc-if value="{{ personHarTimepakke }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Timepakker</div>
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); padding: 4px 0;">{{ personPakkeIgjen }}</div>
+                <sc-for list="{{ personTimepakker }}" as="t" hint-placeholder-count="1">
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 2px 0;">{{ t.linje }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ personHarTimerSvar }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Svar etter «Ikke nå»</div>
+                <sc-for list="{{ personTimerSvar }}" as="v" hint-placeholder-count="1">
+                  <div style="padding: 4px 0;">
+                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ v.grunn }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.linje }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
             <!-- Hva som er gjort med hen. «revider()» har skrevet dette hele
                  tiden — hvem, naar og hva — men ingen skjerm leste det. -->
             <sc-if value="{{ personHarLogg }}" hint-placeholder-val="{{ true }}">
@@ -22715,6 +22756,28 @@ window.__resources = {
                     <div style="padding: 4px 0;">
                       <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ w.kurs }}</div>
                       <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ w.linje }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <!-- Timepakker og svarene etter «Ikke nå» (eieren, 28. september 2026). -->
+              <sc-if value="{{ personHarTimepakke }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Timepakker</div>
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); padding: 4px 0;">{{ personPakkeIgjen }}</div>
+                  <sc-for list="{{ personTimepakker }}" as="t" hint-placeholder-count="1">
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 2px 0;">{{ t.linje }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ personHarTimerSvar }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Svar etter «Ikke nå»</div>
+                  <sc-for list="{{ personTimerSvar }}" as="v" hint-placeholder-count="1">
+                    <div style="padding: 4px 0;">
+                      <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ v.grunn }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.linje }}</div>
                     </div>
                   </sc-for>
                 </div>
@@ -30287,6 +30350,44 @@ window.__resources = {
            er det et tall medlemmet ikke trenger aa forholde seg til naa. -->
       <sc-if value="{{ utstNaerTomt }}" hint-placeholder-val="{{ false }}">
         <div style="{{ utstIgjenStil }}">{{ utstIgjen }}</div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<!-- Timene tar slutt: timepakken og vinduene 1–4 paa Min side. Eieren,
+     28. september 2026, med tekstene godkjent i skissen. Vindu 1 naar det er
+     1 time igjen, 2 naar timene er brukt opp, 3 for Prøv Lissom (uten
+     timepakke), 4 etter «Ikke nå». Reglene staar i app/lib/timepakke.php. -->
+<sc-if value="{{ tpVis }}" hint-placeholder-val="{{ false }}">
+  <div data-tp-vindu="{{ tpVindu }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 540; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ utstStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(420px, 100%); padding: var(--space-7) var(--space-6) var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+      <sc-if value="{{ tpVanlig }}" hint-placeholder-val="{{ true }}">
+        <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); line-height: 1.2;">{{ tpTittel }}</div>
+        <p style="margin: var(--space-3) 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ tpTekst }}</p>
+        <sc-if value="{{ tpFakta }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; justify-content: space-between; gap: 12px; background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px 14px; font-weight: 700; color: var(--text-heading); margin-bottom: var(--space-5);"><span>{{ tpFaktaNavn }}</span><span>{{ tpFaktaPris }}</span></div>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ tpKnapper }}" as="k" hint-placeholder-count="2">
+            <button type="button" data-tp-knapp="{{ k.tekst }}" onClick="{{ k.klikk }}" style="{{ k.stil }}">{{ k.tekst }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ tpSporsmaal }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); line-height: 1.2;">Hva gjør at du venter?</div>
+        <p style="margin: var(--space-3) 0 var(--space-4); font-size: var(--text-base); color: var(--text-body);">Svaret ditt hjelper oss å bli bedre.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-4);">
+          <sc-for list="{{ tpGrunner }}" as="g" hint-placeholder-count="3">
+            <button type="button" data-tp-grunn="{{ g.tekst }}" onClick="{{ g.klikk }}" style="{{ g.stil }}">{{ g.tekst }}</button>
+          </sc-for>
+        </div>
+        <p style="margin: 0 0 8px; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Er det noe vi kan gjøre for at du endrer mening?</p>
+        <textarea rows="3" maxlength="1000" placeholder="Skriv her (valgfritt)" value="{{ tpFritekst }}" onChange="{{ settTpFritekst }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-5);"></textarea>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button type="button" data-tp-knapp="Send" onClick="{{ tpSend }}" style="{{ tpHovedStil }}">Send</button>
+          <button type="button" data-tp-knapp="Hopp over" onClick="{{ tpHopp }}" style="{{ tpLysStil }}">Hopp over</button>
+        </div>
       </sc-if>
     </div>
   </div>
@@ -43808,6 +43909,117 @@ class Component extends DCLogic {
    * en pil inne i propene, og var derfor ikke naabar for forslaget — som da
    * matte ha skrevet det samme hoppet én gang til.
    */
+  /**
+   * Vinduene naar timene tar slutt (eieren, 28. september 2026). Hvilket
+   * vindu som gjelder, regnes av det serveren sender i «stempling»: timer
+   * igjen, og om medlemmet har Prøv Lissom («timepakke.prove»).
+   *
+   * Vindu 1 vises én gang i maaneden. Vindu 2 og 3 vises hver gang Min side
+   * aapnes, til pakken er kjoept, medlemskapet byttet — eller «Ikke nå» er
+   * trykket den dagen. Huskes i nettleseren; kan den ikke huske, vises
+   * vinduet igjen, som er det trygge.
+   */
+  timepakkeVindu() {
+    const av = { tpVis: false, tpVindu: '', tpVanlig: false, tpSporsmaal: false, tpTittel: '', tpTekst: '',
+      tpFakta: false, tpFaktaNavn: '', tpFaktaPris: '', tpKnapper: [], tpGrunner: [], tpFritekst: '',
+      settTpFritekst: () => {}, tpSend: () => {}, tpHopp: () => {}, tpHovedStil: {}, tpLysStil: {} };
+    const st = this.state.stempling;
+    if (!st || !st.timepakke || !st.timer || st.timer.perMnd === null || !this.medlemsvisning()) return av;
+    if (this.state.side !== 'minside') return av;
+    const tp = st.timepakke;
+    const igjen = st.timer.igjen;
+    const oslo = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    const mnd = oslo.getFullYear() + '-' + String(oslo.getMonth() + 1).padStart(2, '0');
+    const dag = mnd + '-' + String(oslo.getDate()).padStart(2, '0');
+    const les = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const skriv = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* vises igjen neste gang */ } };
+
+    let vindu = this.state.tpVindu || '';
+    if (!vindu && !this.state.tpLukket) {
+      if (igjen === 0) vindu = les('lissom_tp_ikke_na') === dag ? '' : (tp.prove ? '3' : (tp.kanKjope ? '2' : ''));
+      else if (igjen > 0 && igjen <= 1 && !tp.prove) vindu = les('lissom_tp_v1') === mnd ? '' : '1';
+    }
+    if (!vindu) return av;
+
+    const hoved = { background: 'var(--lissom-brown)', color: '#fff', border: 0, borderRadius: 999, padding: '12px 18px',
+      font: '800 15px var(--font-sans)', cursor: 'pointer', width: '100%' };
+    const lys = Object.assign({}, hoved, { background: 'transparent', color: 'var(--text-heading)', border: '1.5px solid var(--lissom-brown)' });
+    const lukk = (merk) => { if (merk) merk(); this.setState({ tpVindu: '', tpLukket: true, tpGrunn: '', tpFritekst: '' }); };
+    const ikkeNa = () => { skriv('lissom_tp_ikke_na', dag); this.setState({ tpVindu: '4', tpGrunn: '', tpFritekst: '', tpFra: vindu }); };
+    const tilAbo = () => { lukk(); this.hoppTilAbo(); };
+    const kr = 'kr ' + Math.round((tp.prisOre || 0) / 100).toLocaleString('nb-NO');
+    const kjop = () => {
+      if (this.state.tpKjoper) return;
+      this.setState({ tpKjoper: true });
+      fetch('/api/timepakke.php', { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handling: 'kjop' }) })
+        .then(r => r.json().then(d => ({ ok: r.ok, d })))
+        .then(({ ok, d }) => {
+          if (ok && d && d.url) { window.location.href = d.url; return; }
+          this.setState({ tpKjoper: false, kvittering: 'Ikke startet', kvitteringDetalj: (d && (d.feil || d.beskjed)) || '' });
+        })
+        .catch(() => this.setState({ tpKjoper: false, kvittering: 'Ikke startet', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+    };
+    const ut = Object.assign({}, av, { tpVis: true, tpVindu: vindu, tpHovedStil: hoved, tpLysStil: lys });
+
+    if (vindu === '4') {
+      const valgt = this.state.tpGrunn || '';
+      const send = (medSvar) => {
+        const fra = this.state.tpFra === '3' ? 'prove' : 'vanlig';
+        if (medSvar) {
+          fetch('/api/timepakke.php', { method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ handling: 'svar', grunn: valgt, fritekst: this.state.tpFritekst || '', vindu: fra }) })
+            .catch(() => {});
+        }
+        lukk();
+      };
+      return Object.assign(ut, {
+        tpSporsmaal: true,
+        tpGrunner: ['For dyrt', 'Ikke som forventet', 'Mangler utstyr'].map(g => ({
+          tekst: g,
+          klikk: () => this.setState({ tpGrunn: valgt === g ? '' : g }),
+          stil: { border: '1.5px solid var(--lissom-brown)', borderRadius: 999, padding: '8px 14px', cursor: 'pointer',
+            font: '800 14px var(--font-sans)', background: valgt === g ? 'var(--lissom-brown)' : 'transparent',
+            color: valgt === g ? '#fff' : 'var(--text-heading)' },
+        })),
+        tpFritekst: this.state.tpFritekst || '',
+        settTpFritekst: (e) => this.setState({ tpFritekst: e.target.value }),
+        tpSend: () => send(true),
+        tpHopp: () => send(false),
+      });
+    }
+    if (vindu === '1') {
+      const tall = String(igjen).replace('.', ',') + (igjen === 1 ? ' time' : ' timer');
+      return Object.assign(ut, { tpVanlig: true,
+        tpTittel: 'Snart tomt for timer',
+        tpTekst: 'Du har ' + tall + ' igjen denne måneden. Når timene er brukt opp, kan du kjøpe en timepakke med '
+          + tp.timer + ' timer for ' + kr + '. Timene går ikke ut, og følger med over til neste måned.',
+        tpKnapper: [{ tekst: 'Greit å vite', stil: hoved, klikk: () => lukk(() => skriv('lissom_tp_v1', mnd)) }],
+      });
+    }
+    if (vindu === '2') {
+      return Object.assign(ut, { tpVanlig: true,
+        tpTittel: 'Månedens timer er brukt opp',
+        tpTekst: 'Fortsett arbeidet med en timepakke. Timene går ikke ut, og følger med over til neste måned.',
+        tpFakta: true, tpFaktaNavn: 'Timepakke · ' + tp.timer + ' timer', tpFaktaPris: kr,
+        tpKnapper: [
+          { tekst: 'Kjøp timepakke', stil: hoved, klikk: kjop },
+          { tekst: 'Oppgrader medlemskap', stil: lys, klikk: tilAbo },
+          { tekst: 'Ikke nå', stil: lys, klikk: ikkeNa },
+        ],
+      });
+    }
+    return Object.assign(ut, { tpVanlig: true,
+      tpTittel: 'Du har brukt opp Prøv Lissom',
+      tpTekst: 'Vil du fortsette, kan du gå over til et vanlig medlemskap nå. Da gjelder timene i det nye medlemskapet allerede fra denne måneden.',
+      tpKnapper: [
+        { tekst: 'Velg medlemskap', stil: hoved, klikk: tilAbo },
+        { tekst: 'Ikke nå', stil: lys, klikk: ikkeNa },
+      ],
+    });
+  }
+
   hoppTilAbo() {
     this.setState({ byttAboApen: true });
     const el = document.getElementById('minside-abonnement');
@@ -47194,6 +47406,7 @@ class Component extends DCLogic {
           this.setState({
             adminPlanerRaa: d.planer,
             plBarnPrisRaa: d.tilleggBarnPris,
+            plPakkeRaa: d.timepakke || null,
             // Serveren sier om tekstkolonnene finnes. Uten dette tolket
             // skjermen tomt svar som «ingen har skrevet noe» — og skrev at
             // kortet sto tomt paa nettsiden, mens det sto helt riktig der.
@@ -59927,6 +60140,21 @@ class Component extends DCLogic {
           })),
           personHarVenteliste: (((d || {}).ventelister) || []).length > 0,
 
+          // Timepakker og svarene etter «Ikke nå» (eieren, 28. september 2026).
+          personTimepakker: (((d || {}).timepakke || {}).kjopt || []).map(t => ({
+            linje: t.timer + ' timer · ' + t.pris + ' · ' + t.dato,
+          })),
+          personHarTimepakke: ((((d || {}).timepakke || {}).kjopt) || []).length > 0,
+          personPakkeIgjen: (() => {
+            const m = (((d || {}).timepakke || {}).igjenMin) || 0;
+            return String(Math.round(m / 6) / 10).replace('.', ',') + ' t igjen av pakkene';
+          })(),
+          personTimerSvar: ((d || {}).timerSvar || []).map(v => ({
+            grunn: v.grunn || 'Uten grunn',
+            linje: v.dato + ' · ' + v.vindu + (v.tekst ? ' · «' + v.tekst + '»' : ''),
+          })),
+          personHarTimerSvar: (((d || {}).timerSvar) || []).length > 0,
+
           // Endringsloggen. «revider()» har skrevet den hele tiden; det
           // manglet bare et sted aa vise den.
           personLogg: ((d || {}).logg || []).map(l => ({
@@ -61708,6 +61936,33 @@ class Component extends DCLogic {
           .then(({ ok, d }) => {
             this.setState({ kvittering: ok && d && d.ok ? 'Lagret' : 'Ikke lagret', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
             if (ok && d && d.ok) { this.setState({ plBarnPris: undefined }); this._planerHentes = false; this.hentPlaner(); }
+          })
+          .catch(() => this.setState({ kvittering: 'Ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+      },
+      // Timepakken — se api/admin/planer.php, handling=timepakke.
+      plPakkeVis: !!this.state.plPakkeRaa,
+      plPakkeTimer: this.state.plPakkeTimer !== undefined ? this.state.plPakkeTimer : String(((this.state.plPakkeRaa || {}).timer) || ''),
+      plPakkePris: this.state.plPakkePris !== undefined ? this.state.plPakkePris : String(((this.state.plPakkeRaa || {}).kroner) || ''),
+      plPakkeSvar: (() => {
+        const t = (this.state.plPakkeRaa || {}).svar || {};
+        const deler = Object.keys(t).filter(k => t[k] > 0).map(k => k + ': ' + t[k]);
+        return 'Svar etter «Ikke nå»: ' + (deler.length ? deler.join(' · ') : 'ingen ennå');
+      })(),
+      settPlPakkeTimer: (e) => this.setState({ plPakkeTimer: e.target.value }),
+      settPlPakkePris: (e) => this.setState({ plPakkePris: e.target.value }),
+      lagrePlPakke: () => {
+        const raa = this.state.plPakkeRaa || {};
+        const timer = String(this.state.plPakkeTimer !== undefined ? this.state.plPakkeTimer : raa.timer || '').trim();
+        const kroner = String(this.state.plPakkePris !== undefined ? this.state.plPakkePris : raa.kroner || '').trim();
+        fetch('/api/admin/planer.php', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handling: 'timepakke', timer, kroner }),
+        })
+          .then(r => r.json().then(d => ({ ok: r.ok, d })))
+          .then(({ ok, d }) => {
+            this.setState({ kvittering: ok && d && d.ok ? 'Lagret' : 'Ikke lagret', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+            if (ok && d && d.ok) { this.setState({ plPakkeTimer: undefined, plPakkePris: undefined }); this._planerHentes = false; this.hentPlaner(); }
           })
           .catch(() => this.setState({ kvittering: 'Ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
       },
@@ -66017,6 +66272,7 @@ class Component extends DCLogic {
           },
         };
       })(),
+      ...this.timepakkeVindu(),
       stemplingKnapp: this.erInne() ? 'Stemple ut' : 'Stemple inn',
       stemplingVariant: this.erInne() ? 'secondary' : 'primary',
       // ── Glemt aa stemple ut ──────────────────────────────────────────

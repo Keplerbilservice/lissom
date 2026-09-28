@@ -104,6 +104,13 @@ if ($vedHenting && trim(Foresporsel::tekst('gavekort')) !== '') {
 if ($vedHenting && !$oppmotePaa) {
     Svar::feil('Bestillingen må betales nå. Betal med Vipps for å fullføre.');
 }
+// Henting uten innlogging (eieren, 28. september 2026): gjesten skriver navn,
+// e-post og mobil selv, som «Betal ved oppmøte» paa kurs. Mobilen kreves som
+// der — det er slik verkstedet faar tak i den som ikke kommer. Samme tekst som
+// api/book.php.
+if ($vedHenting && $telefon === '') {
+    Svar::feil('Vi trenger et mobilnummer.');
+}
 
 if ($sum <= 0) {
     Svar::feil('Bestillingen har ingen sum.');

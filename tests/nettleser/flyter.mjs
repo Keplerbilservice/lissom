@@ -655,6 +655,91 @@ await flyt('Butikk: betal ved henting uten innlogging', async () => {
   }
 });
 
+// ── Prøv Lissom: «Forny» aapner velgeren og erstatter proeveperioden ──
+//
+// Eieren, 28. september 2026: Johanna hadde brukt opp Prøv Lissom, trykket
+// «Forny» og fikk «Du har alt et medlemskap». Naa: Forny aapner velgeren,
+// uten Prøv Lissom (kan bare kjoepes én gang), det nye betales i Vipps,
+// erstatter proeveperioden og gjelder alt denne maaneden.
+const proveMedlem = (navn) => php(`
+  $plan = (string) DB::verdi("SELECT navn FROM membership_plans WHERE engangs = 1 AND aktiv = 1 ORDER BY sortering LIMIT 1");
+  $id = DB::settInn('members', ['navn' => '${navn}', 'epost' => '${navn.toLowerCase()}-' . bin2hex(random_bytes(3)) . '@e2e.lissom.test',
+    'telefon' => '+479' . random_int(1000000, 9999999), 'rolle' => 'medlem', 'status' => 'aktiv',
+    'medlemskap_type' => $plan, 'start_dato' => gmdate('Y-m-d'), 'slutt_dato' => Medlemskap::proveSlutt()]);
+  $s = DB::settInn('subscriptions', ['member_id' => $id, 'plan' => $plan, 'pris_ore' => 99000, 'status' => 'aktiv',
+    'binding_til' => gmdate('Y-m-d', strtotime('+2 months'))]);
+  $m = Stempling::manedStart();
+  foreach ([1, 3, 5] as $i) {
+    DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', strtotime($m . ' UTC') + $i * 60),
+      'ut_tid' => gmdate('Y-m-d H:i:s', strtotime($m . ' UTC') + ($i + 1) * 60), 'minutter' => 240]);
+  }
+  $t = bin2hex(random_bytes(32));
+  DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]);
+  return ['id' => $id, 'token' => $t, 'avtale' => $s, 'plan' => $plan];`);
+
+await flyt('Prøv Lissom: Forny aapner velgeren', async () => {
+  const jo = proveMedlem('Johanna');
+  S.prove = jo;
+  db('DELETE FROM rate_limits');
+  for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
+    const p = await side('prove', bredde, hoyde);
+    await p.route('https://falsk.vipps/**', r => r.fulfill({ status: 200, body: 'falsk vipps' }));
+    await gaa(p, '/min-side', 3500);
+    const meg = await api(p, '/api/medlemskap.php');
+    sjekk(`${hva}: Min side sier ikke «bundet» om proeveperioden`, meg?.min && meg.min.bundetTil === null && meg.min.kanSiOpp === false,
+      JSON.stringify(meg?.min || {}).slice(0, 160));
+    sjekk(`${hva}: … og vet at hen har hatt Prøv Lissom`, meg?.harHattProve === true);
+    // Varselet vi har fra foer, ogsaa for Prøv Lissom.
+    sjekk(`${hva}: varselet om brukte timer vises for Prøv Lissom`,
+      await p.getByText('Du har brukt opp timene dine denne måneden.').first().isVisible().catch(() => false));
+    const forny = p.getByRole('button', { name: /^Forny$/ }).first();
+    await forny.scrollIntoViewIfNeeded();
+    await forny.click();
+    await p.waitForTimeout(800);
+    sjekk(`${hva}: «Forny» aapner medlemskapsvelgeren`,
+      await p.getByText('Det nye medlemskapet starter i dag og erstatter ' + jo.plan + '.').isVisible().catch(() => false));
+    const kort = await p.locator('h3', { hasText: 'Bytt abonnement' }).locator('xpath=ancestor::div[3]').innerText().catch(() => '');
+    sjekk(`${hva}: … uten ${jo.plan}`, !kort.includes(jo.plan + '\n') && !new RegExp('^' + jo.plan + '$', 'm').test(kort), kort.slice(0, 200));
+    sjekk(`${hva}: … og ingenting er valgt paa forhaand`, !/Ditt abonnement/.test(kort));
+    if (hva === 'mobil') { await p.context().close(); continue; }
+
+    // Basis 30 → Betal i Vipps
+    const basis = verdi("SELECT navn FROM membership_plans WHERE engangs = 0 AND aktiv = 1 AND krever_fast_trekk = 0 AND timer IS NOT NULL ORDER BY timer DESC LIMIT 1");
+    const dlg = p.locator('h3', { hasText: 'Bytt abonnement' }).locator('xpath=ancestor::div[3]');
+    await dlg.locator(`xpath=.//span[normalize-space(text())="${basis}"]/ancestor::div[3]//button`).first().click();
+    await p.waitForTimeout(800);
+    await p.getByRole('button', { name: 'Betal i Vipps' }).first().click();
+    await p.waitForTimeout(2500);
+    const ny = db("SELECT s.id, s.status, b.vipps_reference AS ref FROM subscriptions s JOIN payments b ON b.subscription_id = s.id WHERE s.member_id = :m AND s.plan = :p ORDER BY s.id DESC LIMIT 1", { m: jo.id, p: basis })[0];
+    sjekk('Basis 30 startes i Vipps', !!(ny && ny.ref), JSON.stringify(ny || {}));
+    sjekk('… og proeveperioden staar til betalingen er i havn',
+      verdi('SELECT status FROM subscriptions WHERE id = :i', { i: jo.avtale }) === 'aktiv');
+    if (ny && ny.ref) {
+      for (let i = 0; i < 2; i++) {   // returen to ganger: én erstatning
+        await fetch(`http://127.0.0.1:${process.env.E2E_PORT || 8140}/api/betaling-retur.php?ref=${encodeURIComponent(ny.ref)}`,
+          { redirect: 'manual', headers: { Host: VERT + ':' + (process.env.E2E_PORT || 8140) } }).catch(() => null);
+      }
+      sjekk('etter betalingen er det nye aktivt', verdi('SELECT status FROM subscriptions WHERE id = :i', { i: ny.id }) === 'aktiv');
+      sjekk('… og Prøv Lissom avsluttet', verdi('SELECT status FROM subscriptions WHERE id = :i', { i: jo.avtale }) === 'stoppet');
+      sjekk('… nøyaktig én gang', Number(verdi("SELECT COUNT(*) FROM audit_log WHERE handling = 'medlemskap_erstattet' AND objekt_id = :m", { m: jo.id })) === 1);
+      // Eieren vurderer selv timene over proevetimene — de trekkes ikke
+      // automatisk fra det nye (28. september 2026).
+      const brukt = Number(php(`return Stempling::minutterDenneManeden(${jo.id});`));
+      sjekk('det nye gjelder alt denne maaneden, og timene fra proeveperioden trekkes ikke fra', brukt === 0, String(brukt));
+      const over = php(`return Medlemskap::proveOverMin(DB::en('SELECT * FROM members WHERE id = ${jo.id}'), 0);`);
+      sjekk('… og de to timene over staar paa medlemmet', Number(over) === 120, String(over));
+    }
+    await p.context().close();
+  }
+  // Serveren avviser Prøv Lissom for den som har hatt den.
+  const p2 = await side('prove');
+  await gaa(p2, '/min-side', 1500);
+  db('DELETE FROM rate_limits');
+  const d = await api(p2, '/api/medlemskap.php', { handling: 'start', plan: jo.plan, betaling: 'selv' });
+  sjekk('et nytt kjoep av Prøv Lissom avvises', d && d.feil === jo.plan + ' kan bare kjøpes én gang. Velg et annet medlemskap.', JSON.stringify(d).slice(0, 140));
+  await p2.context().close();
+});
+
 // ── 8. Regresjon: alle faner og hovedsider ────────────────────────────
 await flyt('Regresjon: faner i admin og hovedsidene', async () => {
   const p = await side('admin');

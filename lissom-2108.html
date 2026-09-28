@@ -6435,7 +6435,7 @@ window.__resources = {
                   </div>
                   <button type="button" onClick="{{ lukkByttAbo }}" aria-label="Lukk" style="appearance: none; background: var(--clay-100); border: none; border-radius: 999px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; line-height: 1; color: var(--text-heading);">×</button>
                 </div>
-                <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Bytte gjelder fra neste måned. Prøv Lissom kan kun benyttes én gang.</p>
+                <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">{{ byttAboIntro }}</p>
                 <div style="display: flex; flex-direction: column; gap: var(--space-3);">
                   <sc-for list="{{ minePlaner }}" as="p" hint-placeholder-count="3">
                     <div style="{{ p.stil }}" onClick="{{ p.kortKlikk }}">
@@ -23201,7 +23201,7 @@ window.__resources = {
                   <div style="min-width: 0;">
                     <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
                     <sc-if value="{{ m.harTimerIgjen }}" hint-placeholder-val="{{ true }}">
-                      <div style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timerIgjen }}</div>
+                      <div style="{{ m.timerIgjenStil }}">{{ m.timerIgjen }}</div>
                     </sc-if>
                   </div>
                 </div>
@@ -46015,7 +46015,10 @@ class Component extends DCLogic {
         // til medlemmet, som planen og avtalen gjor, og et kall til for tre
         // linjer tekst ville vaert et kall for mye.
         if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null,
-          beskjedListe: Array.isArray(d.beskjeder) ? d.beskjeder : [] });
+          beskjedListe: Array.isArray(d.beskjeder) ? d.beskjeder : [],
+          // Prøv Lissom kan bare kjoepes én gang — velgeren viser den ikke
+          // for den som har hatt den (eieren, 28. september 2026).
+          harHattProve: !!d.harHattProve });
         // Serversida (app/nett/sider/medlemskap.php) sender «Les mer» hit
         // som /medlemskap?plan=<navn>. Naar planene er kommet, aapnes den —
         // det samme som aa trykke paa kortet.
@@ -55414,8 +55417,12 @@ class Component extends DCLogic {
       // «22 av 30» er brukt av taket. «igjen» staar i teksten under, fordi det
       // er det man vil vite naar noen ringer og spor om hen har tid igjen.
       timer: m.timer ? (m.bruktTimer + ' / ' + m.timer) : (m.bruktMin > 0 ? m.bruktTimer + ' t' : '—'),
-      timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',
-      harTimerIgjen: !!m.timerIgjen,
+      // Timer over Prøv Lissom staar tydelig: de trekkes ikke av seg selv,
+      // eieren vurderer dem (28. september 2026).
+      timerIgjen: m.proveOver ? m.proveOver + ' t over Prøv Lissom' : (m.timerIgjen ? m.timerIgjen + ' t igjen' : ''),
+      harTimerIgjen: !!(m.timerIgjen || m.proveOver),
+      timerIgjenStil: { fontSize: 'var(--text-xs)', whiteSpace: 'nowrap',
+        color: m.proveOver ? 'var(--terracotta-600)' : 'var(--text-muted)', fontWeight: m.proveOver ? 700 : 400 },
       andel: m.timer ? Math.min(100, Math.round((m.bruktMin || 0) / (m.timer * 60) * 100)) : 0,
       status: m.erInne ? 'Inne nå' : (tekst[m.status] || m.status),
       tone: m.erInne ? 'success' : (tone[m.status] || 'neutral'),
@@ -57122,7 +57129,9 @@ class Component extends DCLogic {
           // fritt. Er avtalen ukjent — medlemskapet gjores opp direkte med
           // verkstedet — staar det en strek, ikke «Fri»: vi vet det ikke.
           aboBinding: !a ? '—'
-            : (a.slutter ? 'Sagt opp — gjelder ut ' + a.slutter
+            // Proeveperioden er aldri bundet; den slutter 30 dager etter kjoepet.
+            : (a.engangs ? (a.gjelderTil ? 'Ingen bindingstid · slutter ' + a.gjelderTil : 'Ingen bindingstid')
+            : a.slutter ? 'Sagt opp — gjelder ut ' + a.slutter
             : (a.bundetTil ? 'Bundet til ' + a.bundetTil : 'Ingen bindingstid')),
           aboHarHindring: !!(a && a.hindring && !a.slutter),
           aboHindring: (a && a.hindring) || '',
@@ -57256,7 +57265,16 @@ class Component extends DCLogic {
       ], 'Lukk'),
       // Er avtalen alt sagt opp, har kortet for planen ingen oppsigelse aa
       // tilby — serveren svarer «Du har ingen loepende avtale».
-      minePlaner: this.planer().map(p => Object.assign(p, { valgt: p.navn === aboNavn })).map(p => Object.assign(p, {
+      // Fra en proeveperiode starter det nye i dag og erstatter den. Den som
+      // har hatt Prøv Lissom, ser den ikke i velgeren — den kan bare
+      // kjoepes én gang (eieren, 28. september 2026). Serveren avviser den
+      // uansett.
+      byttAboIntro: egen && egen.engangs
+        ? 'Det nye medlemskapet starter i dag og erstatter ' + egen.navn + '.'
+        : 'Bytte gjelder fra neste måned. Prøv Lissom kan kun benyttes én gang.',
+      minePlaner: this.planer()
+        .filter(p => !(p.engangs && ((egen && egen.engangs) || this.state.harHattProve)))
+        .map(p => Object.assign(p, { valgt: p.navn === aboNavn })).map(p => Object.assign(p, {
         velg: p.brukt
           ? this.apne(p.navn, 'Ikke tilgjengelig', [
               { navn: 'Hvorfor', verdi: 'Prøveperioden kan kun benyttes én gang, og ikke når du allerede er medlem.' },
@@ -57305,7 +57323,7 @@ class Component extends DCLogic {
             : this.apne(p.navn, 'Medlemskap · ' + p.pris + ' ' + p.periode, [
                 { navn: 'Pris', verdi: p.pris + ' ' + p.periode },
                 { navn: 'Inneholder', verdi: p.detalj },
-                { navn: 'Bytte', verdi: 'Gjelder fra neste måned' },
+                { navn: 'Bytte', verdi: egen && egen.engangs ? 'Starter i dag' : 'Gjelder fra neste måned' },
                 { navn: 'Oppsigelse', verdi: 'Måned til måned — si opp når du vil' },
               ].concat(Component.BETALINGSTEKST(this.aboPlan(p.navn))),
               'Lukk', null, false, null, this.aboPlanValg(p.navn)),
@@ -66615,7 +66633,13 @@ class Component extends DCLogic {
       // admin har ingen avtalerad — og fikk derfor tilbud om aa starte
       // «Mini 15» naar hen trykket Forny paa et aarsmedlemskap. Feil plan,
       // feil pris. egenPlan() leser raden timene ble regnet av.
-      aFornyAbo: this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),
+      //
+      // En proeveperiode fornyes ikke: den er engangs. Eieren, 28. september
+      // 2026: «Forny» skal la medlemmet velge et nytt medlemskap, som starter
+      // i dag og erstatter Prøv Lissom. Samme velger som «Bytt abonnement».
+      aFornyAbo: (this.egenPlan() || {}).engangs
+        ? () => this.setState({ byttAboApen: true })
+        : this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),
 
       // Synligheten lagres paa medlemmet, ikke i nettleseren.
       synlig: this.state.stempling ? this.state.stempling.visMeg : this.state.synlig,

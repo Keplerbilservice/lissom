@@ -81,6 +81,42 @@ final class Stempling
     }
 
     /**
+     * Minutter fra proeveperioden, naar et medlemskap har erstattet Prøv
+     * Lissom denne maaneden.
+     *
+     * Eieren, 28. september 2026: den som oppgraderer fra Prøv Lissom foer
+     * maaneden er ute, faar timene i det nye medlemskapet allerede denne
+     * maaneden. Det som ble stemplet paa proeveperioden, teller ikke paa det
+     * nye — heller ikke timene over de ti. Dem vurderer eieren selv, og
+     * trekker dem med timetallet paa medlemmet i admin om hen vil (se
+     * «proveOver» i api/admin/medlemmer.php). Oekta som paagaar da byttet
+     * skjer, teller paa det nye fra byttet. Se Medlemskap::erstattProve().
+     */
+    public static function proveFradrag(int $medlemId): int
+    {
+        $fra = self::manedStart();
+        $bytte = DB::en(
+            "SELECT s.sagt_opp_at FROM subscriptions s
+               JOIN membership_plans p ON p.navn = s.plan AND p.engangs = 1
+              WHERE s.member_id = :m AND s.status = 'stoppet' AND s.sagt_opp_at >= :fra
+              ORDER BY s.sagt_opp_at DESC LIMIT 1",
+            ['m' => $medlemId, 'fra' => $fra]
+        );
+        if ($bytte === null) {
+            return 0;
+        }
+        $da = (string) $bytte['sagt_opp_at'];
+        $for = (int) DB::verdi(
+            'SELECT COALESCE(SUM(CASE WHEN ut_tid IS NOT NULL AND ut_tid <= :t1 THEN minutter
+                                      ELSE GREATEST(0, TIMESTAMPDIFF(MINUTE, inn_tid, :t2)) END), 0)
+               FROM check_ins
+              WHERE member_id = :m AND inn_tid >= :fra AND inn_tid < :t3',
+            ['m' => $medlemId, 'fra' => $fra, 't1' => $da, 't2' => $da, 't3' => $da]
+        );
+        return $for;
+    }
+
+    /**
      * Foerste stengetid etter et gitt tidspunkt, i UTC.
      *
      * Regnet i norsk tid og gjort om til UTC, ikke motsatt: klokka 23 i Oslo
@@ -168,7 +204,7 @@ final class Stempling
             ['m' => $medlemId, 'fra' => $fra]
         );
 
-        return max(0, $ferdige + $paagaar);
+        return max(0, $ferdige + $paagaar - self::proveFradrag($medlemId));
     }
 
     /**

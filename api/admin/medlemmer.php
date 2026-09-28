@@ -931,7 +931,7 @@ if (Foresporsel::metode() === 'POST') {
         $engangs = (int) ($plan['engangs'] ?? 0) === 1;
         $endring = [
             'medlemskap_type' => $type,
-            'slutt_dato'      => $engangs ? date('Y-m-d', strtotime('+1 month')) : null,
+            'slutt_dato'      => $engangs ? Medlemskap::proveSlutt() : null,
             // «timer_per_mnd» settes ikke. Den staar paa medlemmet som en
             // overstyring for én person; er den tom, bestemmer planen. Se
             // Medlemskap::timerFor(). Kopierte vi timetallet inn her, ville
@@ -1729,7 +1729,7 @@ if (Foresporsel::metode() === 'POST') {
         'medlemskap_type' => $type !== '' ? $type : null,
         'status'          => $prove ? 'prove' : 'aktiv',
         'start_dato'      => date('Y-m-d'),
-        'slutt_dato'      => $prove ? date('Y-m-d', strtotime('+1 month')) : null,
+        'slutt_dato'      => $prove ? Medlemskap::proveSlutt() : null,
         // «timer_per_mnd» settes IKKE her.
         //
         // Kolonnen paa planen heter «timer»; «timer_per_mnd» staar paa
@@ -2405,6 +2405,17 @@ foreach (DB::alle(
 ) as $r) {
     $brukt[(int) $r['member_id']] = (int) $r['min'];
 }
+// Oppgradert fra Prøv Lissom denne maaneden: proevetimene trekkes fra, samme
+// regel som Min side — se Stempling::proveFradrag(). Bare de faa det gjelder.
+foreach (DB::alle(
+    "SELECT DISTINCT s.member_id FROM subscriptions s
+       JOIN membership_plans p ON p.navn = s.plan AND p.engangs = 1
+      WHERE s.status = 'stoppet' AND s.sagt_opp_at >= :fra",
+    ['fra' => $fra]
+) as $r) {
+    $mid = (int) $r['member_id'];
+    $brukt[$mid] = max(0, ($brukt[$mid] ?? 0) - Stempling::proveFradrag($mid));
+}
 
 // «Ta med barn» (migrasjon 192): aktivt tillegg denne maaneden, per medlem.
 $tilleggBarn = Tillegg::aktiveNaa();
@@ -2517,12 +2528,12 @@ $avtaleInfo = static function (int $id) use ($avtaler, $idag, $dato): array {
     // Det er ikke bare visning. Medlemskap::hvorforIkkeSiOpp() leser den
     // samme datoen og SPERRER oppsigelsen — saa en proevekunde uten binding
     // ikke fikk si opp. Planen er avtalen; sier den null, er det null.
-    $planBinder = (static function () use ($a): bool {
-        $p = Medlemskap::planUansett((string) $a['plan']);
-        return $p === null || (int) ($p['binding_mnd'] ?? 0) > 0;
-    })();
-    $bundet = $loeper && $planBinder
-        && $a['binding_til'] !== null && (string) $a['binding_til'] >= $idag;
+    //
+    // Samme kilde som Min side: Medlemskap::bindingTil(). En engangsplan er
+    // aldri bundet (eieren, 28. september 2026).
+    $bindingTil = Medlemskap::bindingTil($a);
+    $planBinder = $bindingTil !== null;
+    $bundet = $loeper && $planBinder && $bindingTil >= $idag;
     return [
         // Tom avtale-id betyr «gjor opp selv» — ingen automatiske trekk.
         //
@@ -2574,6 +2585,13 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
         }
         $igjen = max(0, $tak * 60 - ($brukt[(int) $m['id']] ?? 0));
         return Stempling::timer($igjen);
+    })(),
+    // Timer stemplet ut over Prøv Lissom denne maaneden. De trekkes ikke av
+    // seg selv — eieren vurderer dem (28. september 2026). Se
+    // Medlemskap::proveOverMin().
+    'proveOver' => (static function () use ($m, $brukt): ?string {
+        $over = Medlemskap::proveOverMin($m, $brukt[(int) $m['id']] ?? 0);
+        return $over > 0 ? Stempling::timer($over) : null;
     })(),
     // Haken i admin. Et gratismedlem skal aldri lyse roedt.
     // Kan hun slettes? Er svaret nei, skal knappen ikke staa der og love

@@ -85,6 +85,8 @@ if (Foresporsel::metode() === 'GET') {
             $harPlan = trim((string) ($medlem['medlemskap_type'] ?? ''));
             $avtalePlan = trim((string) $a['plan']);
             $fastTrekk = trim((string) ($a['vipps_agreement_id'] ?? '')) !== '';
+            $bundet  = Medlemskap::bindingTil($a);
+            $engangs = Medlemskap::erEngangs($avtalePlan);
             $min = [
                 // Planen medlemmet staar paa. Mangler den, er avtalen det
                 // naermeste vi har — da er det ingen uenighet aa melde.
@@ -103,15 +105,22 @@ if (Foresporsel::metode() === 'GET') {
                 'status'     => $a['status'],
                 'nesteTrekk' => $a['neste_trekk']
                     ? Booking::norskDatoKort((string) $a['neste_trekk'] . ' 12:00:00') : null,
-                'binding'    => $a['binding_til']
-                    ? Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00') : null,
+                // Bindingen fra planen, ikke bare fra raden — en engangsplan er
+                // aldri bundet. Se Medlemskap::bindingTil().
+                'binding'    => $bundet !== null
+                    ? Booking::norskDatoKort($bundet . ' 12:00:00') : null,
                 // Hvorfor det ikke gaar, naar det ikke gaar. Min side viser
                 // teksten framfor en knapp som ikke kan trykkes.
+                // En proeveperiode sies ikke opp — den stopper av seg selv.
                 'hindring'   => $a['status'] === 'aktiv'
-                    ? Medlemskap::hvorforIkkeSiOpp($a) : 'Medlemskapet løper ikke nå.',
-                'kanSiOpp'   => $a['status'] === 'aktiv' && Medlemskap::hvorforIkkeSiOpp($a) === null,
-                'bundetTil'  => $a['binding_til']
-                    ? Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00') : null,
+                    ? ($engangs ? null : Medlemskap::hvorforIkkeSiOpp($a)) : 'Medlemskapet løper ikke nå.',
+                'kanSiOpp'   => $a['status'] === 'aktiv' && !$engangs && Medlemskap::hvorforIkkeSiOpp($a) === null,
+                'bundetTil'  => $bundet !== null
+                    ? Booking::norskDatoKort($bundet . ' 12:00:00') : null,
+                // Siste dag proeveperioden gjelder: siste dag i kjoepsmaaneden.
+                'engangs'    => $engangs,
+                'gjelderTil' => $engangs && !empty($medlem['slutt_dato'])
+                    ? Booking::norskDatoKort((string) $medlem['slutt_dato'] . ' 12:00:00') : null,
                 'sagtOpp'    => !empty($a['sagt_opp_at']),
                 'slutter'    => !empty($a['slutter'])
                     ? Booking::norskDatoKort((string) $a['slutter'] . ' 12:00:00') : null,
@@ -172,7 +181,10 @@ if (Foresporsel::metode() === 'GET') {
         }
     }
 
-    Svar::json(['planer' => $planer(), 'min' => $min, 'beskjeder' => $beskjeder]);
+    // Prøv Lissom kan bare kjoepes én gang. Velgeren paa Min side viser den
+    // ikke for den som har hatt den; serveren avviser kjoepet uansett.
+    Svar::json(['planer' => $planer(), 'min' => $min, 'beskjeder' => $beskjeder,
+        'harHattProve' => $medlem !== null && Medlemskap::harHattProve((int) $medlem['id'])]);
 }
 
 // ----------------------------------------------------------------- skriving

@@ -155,6 +155,10 @@ final class Kursboost
             $sti = null;
             if (preg_match('~^api/bilde\.php\?artikkel=([0-9a-f]{32}\.jpg)$~', $b, $m) === 1) {
                 $sti = Bilder::sti($m[1], 'artikler');
+            } elseif (preg_match('~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~', $b) === 1) {
+                // Designmalene (Markedsføring › Designmaler), eieren 28.09.2026.
+                $sti = is_file(dirname(__DIR__, 2) . '/' . $b) ? dirname(__DIR__, 2) . '/' . $b
+                    : (is_file(dirname(__DIR__, 3) . '/public_html/' . $b) ? dirname(__DIR__, 3) . '/public_html/' . $b : null);
             } elseif (basename($b) === $b && preg_match('/\.(jpe?g|png|webp)$/i', $b) === 1) {
                 // Nettsidas egne bilder ligger i rota ved siden av app/ lokalt,
                 // og i public_html paa webhotellet.
@@ -235,6 +239,15 @@ final class Kursboost
     {
         if (preg_match('~^api/bilde\.php\?artikkel=([0-9a-f]{32}\.jpg)$~', $bilde, $m) === 1) {
             return Bilder::sti($m[1], 'artikler');
+        }
+        // Designmalene (Markedsføring › Designmaler), eieren 28.09.2026.
+        if (preg_match('~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~', $bilde) === 1) {
+            foreach ([dirname(__DIR__, 2) . '/' . $bilde, dirname(__DIR__, 3) . '/public_html/' . $bilde] as $mulig) {
+                if (is_file($mulig)) {
+                    return $mulig;
+                }
+            }
+            return null;
         }
         if (basename($bilde) === $bilde && preg_match('/^[A-Za-z0-9._-]+\.(jpe?g|png|webp)$/i', $bilde) === 1) {
             foreach ([dirname(__DIR__, 2) . '/' . $bilde, dirname(__DIR__, 3) . '/public_html/' . $bilde] as $mulig) {

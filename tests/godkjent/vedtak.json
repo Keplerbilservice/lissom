@@ -766,6 +766,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "designmaler",
+            "dato": "2026-09-28",
+            "hva": "Underlogoene (Date Night, Paint on Pots, Sip & Clay) og profilbildene i Markedsføring › Designmaler, med nedlasting per format og «Kopier lenke»; PNG-ene er valgbare i bildevelgeren",
+            "hvor": "Markedsføring › Designmaler, design/underlogoer/",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "['Designmaler', 'adminmarked', { mkFane: 'design' }],",
+                        "designmalAdminVals(fane) {"
+                    ]
+                },
+                {
+                    "fil": "api/admin/bilder.php",
+                    "finnes": [
+                        "/design/underlogoer/*/*.png"
+                    ]
+                }
+            ]
         }
     ]
 }

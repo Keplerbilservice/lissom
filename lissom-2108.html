@@ -27833,6 +27833,38 @@ window.__resources = {
           </sc-for>
         </sc-if>
 
+        <!-- ── Designmaler ──────────────────────────────────────────── -->
+        <!--
+             Eieren, 28. september 2026: underlogoene til Date Night, Paint on
+             Pots og Sip & Clay, med profilbilder. «Brun logo på gul eller
+             lys bakgrunn, gul logo på brun bakgrunn.» Filene ligger i
+             design/underlogoer/. PNG-ene kan velges i bildevelgeren (kursboost
+             og Bilder). Se designmalAdminVals().
+        -->
+        <sc-if value="{{ mkErDesign }}" hint-placeholder-val="{{ false }}">
+          <sc-for list="{{ dmGrupper }}" as="g" hint-placeholder-count="3">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: grid; gap: var(--space-4);">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ g.navn }}</div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4);">
+                <sc-for list="{{ g.filer }}" as="f" hint-placeholder-count="4">
+                  <div data-dm-fil="{{ f.png }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; display: grid;">
+                    <div style="{{ f.flateStil }}"><img data-src="{{ f.png }}" alt="{{ f.alt }}" style="{{ f.bildeStil }}"></div>
+                    <div style="padding: var(--space-3); display: grid; gap: 8px;">
+                      <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ f.navn }}</div>
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <sc-for list="{{ f.formater }}" as="x" hint-placeholder-count="3">
+                          <a href="{{ x.href }}" download="{{ x.fil }}" data-dm-last="{{ x.href }}" style="{{ x.stil }}">{{ x.navn }}</a>
+                        </sc-for>
+                        <button type="button" onClick="{{ f.kopier }}" style="{{ f.kopierStil }}">{{ f.kopierTekst }}</button>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </sc-if>
+
         <!-- ── Medlemsforslag ────────────────────────────────────────── -->
         <!--
              Medlemmenes forslag til Instagram. Eieren, 24. september 2026:
@@ -37729,6 +37761,57 @@ class Component extends DCLogic {
       .catch(() => this.setState(st => ({ bfUtkast: Object.assign({}, st.bfUtkast, { [id]: Object.assign({}, (st.bfUtkast || {})[id], { laster: false, feil: 'Fikk ikke kontakt med serveren.' }) }) })));
   }
 
+  /**
+   * Designmaler — underlogoene og profilbildene (eieren, 28. september 2026).
+   *
+   * Filene ligger fast i design/underlogoer/<navn>/, slik de kom fra
+   * designet: «Bruk alltid de ferdige filene. Skriv aldri navnene inn på
+   * nytt.» Brun logo vises på gul flate, gul logo på brun — slik de skal
+   * brukes. Ingen serverkall: lista er det som ligger i mappa.
+   */
+  designmalAdminVals(fane) {
+    const paa = fane === 'design';
+    if (!paa) return { mkErDesign: false, dmGrupper: [] };
+    const st = this.state;
+    const GRUPPER = [['Date Night', 'date-night'], ['Paint on Pots', 'paint-on-pots'], ['Sip & Clay', 'sip-and-clay']];
+    const pille = {
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px',
+      font: 'var(--type-chip)', fontWeight: 700, border: '1.5px solid var(--border-subtle)',
+      background: 'var(--surface-card)', color: 'var(--text-heading)', textDecoration: 'none', display: 'inline-block',
+    };
+    const fil = (mappe, navn, farge, formater, etikett) => {
+      const base = 'design/underlogoer/' + mappe + '/' + navn + '-' + farge;
+      const kopiert = st.dmKopiert === base;
+      return {
+        navn: etikett,
+        png: '/' + base + '.png',
+        alt: etikett,
+        flateStil: { background: farge === 'brun' ? 'var(--lissom-yellow)' : 'var(--lissom-brown)', aspectRatio: '4 / 3', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px' },
+        bildeStil: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' },
+        formater: formater.map(x => ({ navn: x.toUpperCase(), href: '/' + base + '.' + x, fil: navn + '-' + farge + '.' + x, stil: pille })),
+        kopierTekst: kopiert ? 'Kopiert ✓' : 'Kopier lenke',
+        kopierStil: pille,
+        kopier: () => {
+          const url = 'https://lissom.no/' + base + '.png';
+          const ferdig = () => this.setState({ dmKopiert: base });
+          try { navigator.clipboard.writeText(url).then(ferdig, ferdig); } catch (e) { ferdig(); }
+        },
+      };
+    };
+    return {
+      mkErDesign: true,
+      dmGrupper: GRUPPER.map(([navn, mappe]) => ({
+        navn,
+        filer: [
+          fil(mappe, 'lissom-' + mappe, 'brun', ['png', 'jpg', 'svg', 'pdf'], 'Logo · brun'),
+          fil(mappe, 'lissom-' + mappe, 'gul', ['png', 'jpg', 'svg', 'pdf'], 'Logo · gul'),
+          fil(mappe, 'profilbilde-' + mappe, 'brun', ['png', 'jpg', 'svg'], 'Profilbilde · brun'),
+          fil(mappe, 'profilbilde-' + mappe, 'gul', ['png', 'jpg', 'svg'], 'Profilbilde · gul'),
+        ],
+      })),
+    };
+  }
+
   bilderAdminVals(fane) {
     const paa = fane === 'bilder';
     if (paa && this.erPublisert() && !this._bfHentet) this.bfHent();
@@ -47556,6 +47639,7 @@ class Component extends DCLogic {
         ['Medlemsforslag', 'adminmarked', { mkFane: 'forslag' }],
         ['Vervepremie', 'adminmarked', { mkFane: 'verving' }],
         ['Bilder', 'adminmarked', { mkFane: 'bilder' }],
+        ['Designmaler', 'adminmarked', { mkFane: 'design' }],
         // Eieren, 24. september 2026: «artikler kan du fjerne, den ligger
         // under skriv. og send bør vel hete tilbud / nyhetsbrev». Lista over
         // artiklene er en fane under Skriv (eierens valg samme dag).
@@ -71516,6 +71600,7 @@ class Component extends DCLogic {
           ['forslag', 'Medlemsforslag'],
           ['verving', 'Vervepremie'],
           ['bilder', 'Bilder'],
+          ['design', 'Designmaler'],
           ['maler', 'Tekst maler'],
 
         ];
@@ -71554,6 +71639,8 @@ class Component extends DCLogic {
           // Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring,
           // at jeg kan klikke å laste opp eller dra og slipp» — kursbildene.
           ['Bilder', ['bilder']],
+          // Eieren, 28. september 2026: underlogoene og profilbildene.
+          ['Designmaler', ['design']],
           // «Artikler» ble en fane under Skriv, og «Send» heter
           // «Tilbud / nyhetsbrev». Eieren, 24. september 2026.
           // «Artikkel» og «Artikler» ble én fane: lista, med «Ny artikkel»
@@ -71641,6 +71728,7 @@ class Component extends DCLogic {
           ...this.medlemsforslagAdminVals(fane),
           ...this.vervingAdminVals(fane),
           ...this.bilderAdminVals(fane),
+          ...this.designmalAdminVals(fane),
           ...(() => {
             const erKomm = (this.state.ibFane || 'kommentarer') === 'kommentarer';
             const pilleStil = paa => ({

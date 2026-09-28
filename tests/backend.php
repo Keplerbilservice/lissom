@@ -21017,6 +21017,26 @@ sjekk('… og Gemini lager bare et forslag, som ikke roerer kurset',
     $bfDel !== '' && !str_contains($bfDel, 'DB::oppdater'));
 
 echo "\n";
+// Eieren, 28. september 2026: underlogoene og profilbildene i Markedsføring ›
+// Designmaler, og valgbare i bildevelgeren.
+echo "\nDesignmaler\n";
+$dmRot = dirname(__DIR__) . '/design/underlogoer';
+$dmSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$dmFiler = glob($dmRot . '/*/*') ?: [];
+sjekk('fanen «Designmaler» finnes i Markedsføring',
+    str_contains($dmSida, "['Designmaler', 'adminmarked', { mkFane: 'design' }],")
+    && str_contains($dmSida, "['Designmaler', ['design']],")
+    && str_contains($dmSida, '...this.designmalAdminVals(fane),'));
+sjekk('… og alle 42 filene ligger der (tre navn, fire og tre formater, brun og gul)', count($dmFiler) === 42, (string) count($dmFiler));
+$dmSkitne = array_filter(glob($dmRot . '/*/*.svg') ?: [], static fn($f) =>
+    preg_match('~<script|\son[a-z]+=|javascript:|<foreignObject|href="https?:~i', (string) file_get_contents($f)) === 1);
+sjekk('… og ingen SVG har skript eller lenker ut', $dmSkitne === [], implode(', ', array_map('basename', $dmSkitne)));
+sjekk('… og PNG-ene kan velges i bildevelgeren',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/bilder.php'), "glob(\$rot . '/design/underlogoer/*/*.png')"));
+sjekk('… og kursboost og kursbildet godtar dem',
+    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/kursboost.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~'));
+
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";
 if ($feil) { echo "\nFEIL:\n - ", implode("\n - ", $feil), "\n"; exit(1); }

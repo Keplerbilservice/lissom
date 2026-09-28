@@ -462,9 +462,13 @@ await flyt('Synlighet: pille, flis og ark', async () => {
 await flyt('Oversikt: dagens omsetning og bestillinger', async () => {
   const p = await side('admin');
   await gaa(p, '/admin/oversikt', 3500);
-  const idag = p.locator('.lx-ovoms button', { hasText: 'I dag' }).first();
-  const bg = await idag.evaluate(e => getComputedStyle(e).backgroundColor).catch(() => '');
-  sjekk('«I dag» er valgt når Oversikt åpnes', !!bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent', bg);
+  // Eieren, 28. september 2026: «default visning omsetning skal være denne
+  // måneden». «I dag» er et valg, ikke standarden.
+  const mnd = p.locator('.lx-ovoms button', { hasText: 'Denne måneden' }).first();
+  const bg = await mnd.evaluate(e => getComputedStyle(e).backgroundColor).catch(() => '');
+  sjekk('«Denne måneden» er valgt når Oversikt åpnes', !!bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent', bg);
+  await p.locator('.lx-ovoms button', { hasText: 'I dag' }).first().click();
+  await p.waitForTimeout(600);
   const kort = p.locator('.lx-ovdag');
   sjekk('«Dagens bestillinger» står rett under omsetningen', await kort.getByText('Dagens bestillinger').isVisible().catch(() => false));
   const rader = await kort.locator('.lx-ovrad').count();

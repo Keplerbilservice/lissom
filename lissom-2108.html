@@ -35491,7 +35491,7 @@ class Component extends DCLogic {
   // Omsetningen fordelt paa hva den gjaldt, for valgt periode.
   omsetningsLinjer() {
     const o = (this.state.adminData || {}).omsetning;
-    const idag = (this.state.ovOms || 'I dag') === 'I dag';
+    const idag = (this.state.ovOms || 'Denne måneden') === 'I dag';
 
     if (o) return (idag ? o.linjerIdag : o.linjerMnd) || [];
     if (this.erPublisert()) return [];
@@ -48507,7 +48507,7 @@ class Component extends DCLogic {
     const d = this.state.adminData || {};
     const koer = d.koer || {};
     const oms = d.omsetning || {};
-    const idag = (this.state.ovOms || 'I dag') === 'I dag';
+    const idag = (this.state.ovOms || 'Denne måneden') === 'I dag';
     const stopp = (fn) => (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); fn(); };
     const kr = (ore) => 'kr ' + String(Math.round((ore || 0) / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
@@ -64460,7 +64460,7 @@ class Component extends DCLogic {
       ovOmsValg: ['I dag', 'Denne måneden'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovOms: n }),
-        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovOms || 'I dag') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovOms || 'I dag') ? 'var(--clay-50)' : 'var(--text-muted)' },
+        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovOms || 'Denne måneden') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovOms || 'Denne måneden') ? 'var(--clay-50)' : 'var(--text-muted)' },
       })),
       // Fordelingen kommer fra serveren, gruppert paa hva pengene gjaldt.
       // Sto tidligere som faste tall for «I dag» og ingenting for «Denne
@@ -64478,15 +64478,15 @@ class Component extends DCLogic {
       // stemplingPiller(). To sett verdier for det samme er ett for mye.
       ovOmsListe: this.omsetningsLinjer(),
       ingenOmsLinjer: this.erPublisert() && this.omsetningsLinjer().length === 0,
-      ingenOmsTekst: (this.state.ovOms || 'I dag') === 'I dag'
+      ingenOmsTekst: (this.state.ovOms || 'Denne måneden') === 'I dag'
         ? 'Ingen betalinger registrert i dag ennå.'
         : 'Ingen betalinger registrert denne måneden ennå.',
       // Ekte omsetning fra serveren. Sto tidligere som faste tall, og eieren
       // hadde ingen maate aa se at de var oppdiktet.
       ovOmsSum: (() => {
         const o = (this.state.adminData || {}).omsetning;
-        if (o) return (this.state.ovOms || 'I dag') === 'I dag' ? o.idag : o.maned;
-        return this.erPublisert() ? '–' : ((this.state.ovOms || 'I dag') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
+        if (o) return (this.state.ovOms || 'Denne måneden') === 'I dag' ? o.idag : o.maned;
+        return this.erPublisert() ? '–' : ((this.state.ovOms || 'Denne måneden') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
       })(),
       // Okonomiskjermen. Ukesfordelingen, kildene og innstillingene sto som
       // fast tekst og var tomme paa den ekte siden. Naa kommer alt fra

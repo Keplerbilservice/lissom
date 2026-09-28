@@ -552,7 +552,7 @@ final class Medlemskap
      * Fri tilgang blir staaende fri: har planen ingen grense, er det
      * ingenting aa legge timer til.
      */
-    public static function timerMedGaver(array $medlem): int|float|null
+    public static function timerMedGaver(array $medlem, bool $medPakke = true): int|float|null
     {
         $tak = self::timerFor($medlem);
         if ($tak === null) {
@@ -564,8 +564,13 @@ final class Medlemskap
         // Kursholdertimer for den som faar «Timer» i stedet for lønn (eieren,
         // 26. september 2026). Se Kursholder::minutterTilgode().
         $dugnad += class_exists('Kursholder') ? Kursholder::minutterTilgode($medlem) : 0;
+        // Timepakker (eieren, 28. september 2026): betalte pakketimer som ikke
+        // er brukt i en tidligere maaned. Se Timepakke::tilgodeMin().
+        if ($medPakke && class_exists('Timepakke')) {
+            $dugnad += Timepakke::tilgodeMin((int) ($medlem['id'] ?? 0));
+        }
         $sum = $tak + self::gavetimer((int) ($medlem['id'] ?? 0)) + $dugnad / 60;
-        return $dugnad % 60 === 0 ? (int) $sum : $sum;
+        return $dugnad % 60 === 0 ? (int) $sum : round($sum, 2);
     }
 
     /**

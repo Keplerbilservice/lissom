@@ -1009,6 +1009,115 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "timepakke-regler",
+            "dato": "2026-09-28",
+            "hva": "Timepakke: 6 timer for kr 800 som standard; pris og timer settes i admin (Medlemskap → Timepakke), ingenting hardkodet. Kan bare kjøpes når månedens timer er brukt opp, og bare på vanlige medlemskap — Prøv Lissom avvises på serveren. Timene går aldri ut, følger med til neste måned og brukes etter månedens timer; timer stemplet over før kjøpet trekkes fra pakken. Betales med Vipps som et medlemskap",
+            "hvor": "app/lib/timepakke.php, app/lib/medlemskap.php (timerMedGaver), app/lib/booking.php (markerBetalt), api/timepakke.php, api/admin/planer.php, bin/cron.php, db/migrations/232_timepakke.sql, tests/timepakke.php",
+            "kode": [
+                {
+                    "fil": "app/lib/timepakke.php",
+                    "finnes": [
+                        "return max(1, (int) Config::hent('timepakke_timer', '6'));",
+                        "return max(0, (int) Config::hent('timepakke_pris_ore', '80000'));",
+                        "return 'Timepakken gjelder ikke Prøv Lissom.';",
+                        "return 'Timepakken kan kjøpes når timene er brukt opp.';"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "$dugnad += Timepakke::tilgodeMin((int) ($medlem['id'] ?? 0));"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "if (Timepakke::betalt((int) $betaling['id'])) {"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$pakker = Timepakke::lukkMaaneder();"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/232_timepakke.sql",
+                    "finnes": [
+                        "('timepakke_timer', '6')",
+                        "('timepakke_pris_ore', '80000')"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/timepakke.php"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "timepakke-vinduer",
+            "dato": "2026-09-28",
+            "hva": "Vinduene på Min side når timene tar slutt, med tekstene fra skissen: 1) «Snart tomt for timer» én gang i måneden ved 1 time igjen («Greit å vite»); 2) «Månedens timer er brukt opp» med «Kjøp timepakke», «Oppgrader medlemskap», «Ikke nå»; 3) Prøv Lissom: «Du har brukt opp Prøv Lissom» med bare «Velg medlemskap» og «Ikke nå» — ingen timepakke; 4) etter «Ikke nå»: «Hva gjør at du venter?», pillene «For dyrt», «Ikke som forventet», «Mangler utstyr», «Er det noe vi kan gjøre for at du endrer mening?», «Skriv her (valgfritt)», «Send» / «Hopp over». Oppgrader/Velg medlemskap går til «Bytt medlemskap» som finnes fra før",
+            "hvor": "lissom-2108.html (timepakkeVindu), tests/nettleser/flyter.mjs",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "tpTittel: 'Snart tomt for timer',",
+                        "tpTittel: 'Månedens timer er brukt opp',",
+                        "{ tekst: 'Kjøp timepakke', stil: hoved, klikk: kjop },",
+                        "{ tekst: 'Oppgrader medlemskap', stil: lys, klikk: tilAbo },",
+                        "tpTittel: 'Du har brukt opp Prøv Lissom',",
+                        "{ tekst: 'Velg medlemskap', stil: hoved, klikk: tilAbo },",
+                        ">Hva gjør at du venter?</div>",
+                        "['For dyrt', 'Ikke som forventet', 'Mangler utstyr']",
+                        ">Er det noe vi kan gjøre for at du endrer mening?</p>",
+                        "placeholder=\"Skriv her (valgfritt)\""
+                    ],
+                    "ikkeFinnes": [
+                        "{ tekst: 'Kjøp timepakke', stil: lys"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/flyter.mjs",
+                    "finnes": [
+                        "timepakke: vindu 2"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "timepakke-svar-admin",
+            "dato": "2026-09-28",
+            "hva": "Svarene etter «Ikke nå» lagres (grunn, fritekst, dato, vindu) i timer_svar. Admin ser dem på medlemmet («Svar etter «Ikke nå»») og talt per grunn under Timepakke på Medlemskap-siden; kjøpte pakker og pakketimer igjen står på medlemmet («Timepakker»)",
+            "hvor": "app/lib/timepakke.php (lagreSvar, svarFor, svarTelling, forAdmin), api/timepakke.php, api/admin/medlemmer.php, api/admin/planer.php, lissom-2108.html",
+            "kode": [
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'timerSvar' => Timepakke::svarFor((int) $m['id']),",
+                        "'timepakke' => Timepakke::forAdmin((int) $m['id']),"
+                    ]
+                },
+                {
+                    "fil": "api/admin/planer.php",
+                    "finnes": [
+                        "'svar'   => Timepakke::svarTelling(),"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ">Svar etter «Ikke nå»</div>",
+                        ">Timepakker</div>",
+                        "handling: 'timepakke', timer, kroner"
+                    ]
+                }
+            ]
         }
     ]
 }

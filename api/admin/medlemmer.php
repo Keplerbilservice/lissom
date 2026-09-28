@@ -2344,6 +2344,10 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'siden'    => Booking::norskDato((string) $w['created_at']),
         ], $ventelister),
 
+        // Timepakker og svarene etter «Ikke nå» (eieren, 28. september 2026).
+        'timepakke' => Timepakke::forAdmin((int) $m['id']),
+        'timerSvar' => Timepakke::svarFor((int) $m['id']),
+
         // Endringsloggen. Sto skrevet hele tiden, men ble aldri lest.
         'logg' => array_map(static fn(array $a): array => [
             'hva'  => $loggTekst((string) $a['handling'], $a['detaljer'] ?? null),
@@ -2641,4 +2645,8 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
         // engangsplan varer en maaned, en loepende har ingen slutt.
         'engangs' => (int) ($p['engangs'] ?? 0) === 1,
     ], Medlemskap::planer()),
+    // Svarene etter «Ikke nå», talt per grunn (eieren, 28. september 2026).
+    'timerSvar' => Timepakke::svarTelling(),
+    // Timepakken: pris og timer, som settes i admin.
+    'timepakke' => ['timer' => Timepakke::timer(), 'prisOre' => Timepakke::prisOre()],
 ]);

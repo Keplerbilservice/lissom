@@ -73,6 +73,13 @@ if (Foresporsel::metode() === 'GET') {
         // «Ta med barn» (migrasjon 192): prisen ligger i innstillinger, ikke i
         // koden. Redigeres paa denne skjermen, under planene.
         'tilleggBarnPris' => Tillegg::klar() ? Tillegg::prisOre() / 100 : null,
+        // Timepakken (migrasjon 232): pris og timer, og svarene etter «Ikke
+        // nå» talt per grunn. Null til migrasjonen er kjoert.
+        'timepakke' => DB::harTabell('timepakker') ? [
+            'timer'  => Timepakke::timer(),
+            'kroner' => Timepakke::prisOre() / 100,
+            'svar'   => Timepakke::svarTelling(),
+        ] : null,
         'planer' => array_map(static fn($p) => [
             'navn'      => (string) $p['navn'],
             'pris'      => (int) $p['pris_ore'] / 100,
@@ -143,6 +150,30 @@ if ($handling === 'tillegg_barn_pris') {
     );
     revider('tillegg_barn_pris', null, null, ['kroner' => $kroner]);
     Svar::ok(['beskjed' => 'Prisen på «Ta med barn» er ' . Booking::kroner((int) round($kroner * 100)) . ' per måned.']);
+}
+
+// Timepakken. Eieren, 28. september 2026: 6 timer for kr 800, satt her.
+if ($handling === 'timepakke') {
+    if (!DB::harTabell('timepakker')) {
+        Svar::feil('Kjør oppdatering 232 først.');
+    }
+    $timer = (int) Foresporsel::tekst('timer');
+    $kroner = (float) str_replace(',', '.', Foresporsel::tekst('kroner'));
+    if ($timer < 1 || $timer > 100) {
+        Svar::feil('Timene må være mellom 1 og 100.');
+    }
+    if ($kroner < 1 || $kroner > 100000) {
+        Svar::feil('Prisen må være mellom 1 og 100 000 kroner.');
+    }
+    foreach (['timepakke_timer' => (string) $timer, 'timepakke_pris_ore' => (string) (int) round($kroner * 100)] as $n => $v) {
+        DB::kjor(
+            'INSERT INTO innstillinger (nokkel, verdi, endret_av) VALUES (:n, :v, :a)
+                 ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
+            ['n' => $n, 'v' => $v, 'a' => (int) $jeg['id']]
+        );
+    }
+    revider('timepakke_endret', null, null, ['timer' => $timer, 'kroner' => $kroner]);
+    Svar::ok(['beskjed' => 'Timepakken er ' . $timer . ' timer for ' . Booking::kroner((int) round($kroner * 100)) . '.']);
 }
 
 if ($handling === 'lagre') {

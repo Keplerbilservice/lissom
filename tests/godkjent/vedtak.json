@@ -668,20 +668,20 @@
         {
             "id": "oversikt-dagens-omsetning-og-bestillinger",
             "dato": "2026-09-27",
-            "hva": "«jeg vil at du alltid har dagens omsetning øverst, klikkbar, så jeg kan gå inn å se på den, deretter dagens bestilling selv om den ikke er betalt»",
+            "hva": "«jeg vil at du alltid har dagens omsetning øverst, klikkbar, så jeg kan gå inn å se på den, deretter dagens bestilling selv om den ikke er betalt» — Standardvisning er «Denne måneden» (eieren 28.09: «default visning omsetning skal være denne måneden»); «I dag» er et valg.",
             "hvor": "Admin › Oversikt",
             "kode": [
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "(this.state.ovOms || 'I dag')",
+                        "(this.state.ovOms || 'Denne måneden')",
                         "onClick=\"{{ ovOmsApne }}\"",
                         "Dagens bestillinger",
                         "Ingen bestillinger i dag.",
                         "ovDagRader: dagRader,"
                     ],
                     "ikkeFinnes": [
-                        "(this.state.ovOms || 'Denne måneden')"
+                        "(this.state.ovOms || 'I dag')"
                     ]
                 },
                 {

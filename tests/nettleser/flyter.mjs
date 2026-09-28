@@ -618,7 +618,7 @@ await flyt('Butikk: betal ved henting uten innlogging', async () => {
     const lagerFoer = Number(verdi('SELECT lager FROM products WHERE id = :i', { i: Number(id) }));
     const a = await side('admin');
     try {
-      await gaa(a, '/admin/oversikt', 3500);
+      await gaa(a, '/admin/uttak', 3500);
       const rad = a.locator('div', { has: a.getByText('TEST Gjest', { exact: true }) }).filter({ has: a.getByRole('button', { name: 'Annuller', exact: true }) }).last();
       sjekk('henteordren står under «Ikke betalt» med «Annuller»', await rad.count() > 0);
       await rad.getByRole('button', { name: 'Annuller', exact: true }).first().click();

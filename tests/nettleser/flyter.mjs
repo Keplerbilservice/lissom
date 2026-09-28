@@ -627,8 +627,12 @@ await flyt('Butikk: betal ved henting uten innlogging', async () => {
       sjekk('… trykk gir bekreftelsen i siden', await sporsmal.count() === 1);
       sjekk('… og ingenting er annullert ennå', verdi('SELECT status FROM orders WHERE kunde_epost = :e', { e: epost }) === 'ny');
       await sporsmal.locator('..').getByRole('button', { name: 'Annuller', exact: true }).click();
-      await a.waitForTimeout(3000);
-      sjekk('… kvitteringen vises', (await a.locator('body').innerText()).includes('er annullert. Varene er lagt tilbake på lager, og kunden har fått beskjed.'));
+      // Kvitteringen lukker seg selv etter noen sekunder — den maa fanges
+      // mens den staar.
+      const kvittering = await a.getByText(/er annullert\. Varene er lagt tilbake på lager, og kunden har fått beskjed\./)
+        .first().waitFor({ timeout: 8000 }).then(() => true, () => false);
+      sjekk('… kvitteringen vises', kvittering);
+      await a.waitForTimeout(2500);
       sjekk('… ordren står som kansellert', verdi('SELECT status FROM orders WHERE kunde_epost = :e', { e: epost }) === 'kansellert');
       sjekk('… varen er tilbake på lager', Number(verdi('SELECT lager FROM products WHERE id = :i', { i: Number(id) })) === lagerFoer + 1);
       sjekk('… kunden har fått «Bestillingen er annullert» i køen',

@@ -5450,7 +5450,7 @@ sjekk('… og sier fra naar det ikke finnes noen betaling i det hele tatt',
 sjekk('ingen knapp legger et medlemskap i handlekurven',
     !str_contains($sida2, "leggTil('Abonnement: "));
 sjekk('«Forny» spor hvordan det skal betales i stedet',
-    str_contains($sida2, "aFornyAbo: this.apneFornyValg("));
+    str_contains($sida2, ": this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),"));
 sjekk('… og det gjor plankortet ogsaa',
     str_contains($sida2, "'Lukk', null, false, null, this.aboPlanValg(p.navn)),"));
 sjekk('… og begge gaar til handling=start',
@@ -9482,7 +9482,7 @@ sjekk('medlemsraden viser om det er betalt',
 sjekk('… og et gratismedlem staar som en etikett',
     str_contains($sida, '<span class="lx-medlpille" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
 sjekk('… og timer igjen',
-    str_contains($sida, "timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',"));
+    str_contains($sida, "(m.timerIgjen ? m.timerIgjen + ' t igjen' : ''),"));
 // Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt
 // seks og lista vist sju.
 sjekk('filteret «Ubetalte» finnes',

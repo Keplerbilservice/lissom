@@ -165,6 +165,210 @@ final class Medlemskap
         return DB::en('SELECT * FROM membership_plans WHERE navn = :n', ['n' => $navn]);
     }
 
+    // ── Proeveperioden (engangsplanen) ──────────────────────────────────
+    //
+    // Eieren, 28. september 2026: «prøv lissom må jo ha slutt dato», og «man
+    // kan aldri få bruke prøv lissom mer enn 1 gang». Samme dag: den gjelder
+    // for maaneden den kjoepes i, med sluttdato paa siste dag i maaneden —
+    // samme system som de andre medlemskapene. Oppgraderer hen foer
+    // maaneden er ute («Forny»), gjelder det nye alt denne maaneden. Timer
+    // stemplet ut over de ti trekkes ikke fra det nye: eieren vurderer dem
+    // selv, og ser dem paa medlemmet i admin (proveOverMin()).
+    //
+    // Johanna kjopte den 2. september. Avtaleraden fikk «binding_til» to
+    // maaneder fram (regelen planen hadde da), medlemsraden fikk ingen
+    // sluttdato, og Min side sa «Bundet til 2. nov.». Trykket hun «Forny»,
+    // sa serveren «Du har alt et medlemskap» — en proeveperiode ble lest som
+    // et loepende, bundet medlemskap. Reglene under er den ene kilden:
+    //
+    //   engangsplan  aldri bundet, aldri loepende, sluttdato = siste dag i
+    //                maaneden den er kjoept
+    //   erstattes    et nytt medlemskap avslutter den den dagen det blir aktivt
+    //   én gang      den som har hatt den, faar ikke kjoepe den igjen
+
+    /** Er planen en engangsplan (Prøv Lissom)? Ukjent plan er det ikke. */
+    public static function erEngangs(string $planNavn): bool
+    {
+        $p = self::planUansett(trim($planNavn));
+        return $p !== null && (int) ($p['engangs'] ?? 0) === 1;
+    }
+
+    /**
+     * Siste dag en proeveperiode kjoept $fra (Y-m-d; uten: i dag) gjelder:
+     * siste dag i maaneden, i norsk kalender.
+     */
+    public static function proveSlutt(?string $fra = null): string
+    {
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $dag = $fra !== null && $fra !== ''
+            ? new DateTimeImmutable(substr($fra, 0, 10), $oslo)
+            : new DateTimeImmutable('now', $oslo);
+        return $dag->modify('last day of this month')->format('Y-m-d');
+    }
+
+    /**
+     * Datoen avtalen er bundet til, eller null.
+     *
+     * Planen gaar foran den lagrede datoen: «binding_til» settes én gang,
+     * naar avtalen opprettes, og blir staaende om planen senere faar null
+     * binding. En engangsplan er aldri bundet. Brukes av Min side, admin og
+     * oppsigelsessperren, saa alle sier det samme.
+     *
+     * @param array<string,mixed> $avtale
+     */
+    public static function bindingTil(array $avtale): ?string
+    {
+        $til = $avtale['binding_til'] ?? null;
+        if ($til === null || $til === '') {
+            return null;
+        }
+        $plan = self::planUansett((string) $avtale['plan']);
+        if ($plan !== null && ((int) ($plan['engangs'] ?? 0) === 1 || (int) ($plan['binding_mnd'] ?? 0) <= 0)) {
+            return null;
+        }
+        return (string) $til;
+    }
+
+    /**
+     * Har medlemmet hatt proeveperioden foer?
+     *
+     * Ja naar en engangsavtale er blitt aktiv, er betalt, eller naar
+     * verkstedet har satt hen paa en engangsplan. Et forsoek som aldri ble
+     * betalt, teller ikke.
+     */
+    public static function harHattProve(int $medlemId): bool
+    {
+        $avtaler = (int) DB::verdi(
+            "SELECT COUNT(*) FROM subscriptions s
+               JOIN membership_plans p ON p.navn = s.plan AND p.engangs = 1
+              WHERE s.member_id = :m
+                AND (s.status IN ('aktiv','utlopt')
+                     OR (s.status = 'stoppet' AND s.slutter IS NOT NULL)
+                     OR EXISTS (SELECT 1 FROM payments b
+                                 WHERE b.subscription_id = s.id AND b.status = 'betalt'))",
+            ['m' => $medlemId]
+        );
+        if ($avtaler > 0) {
+            return true;
+        }
+        $m = DB::en('SELECT medlemskap_type, status FROM members WHERE id = :m', ['m' => $medlemId]);
+        return $m !== null
+            && in_array((string) $m['status'], ['aktiv', 'prove', 'pause', 'oppsagt'], true)
+            && self::erEngangs((string) ($m['medlemskap_type'] ?? ''));
+    }
+
+    /**
+     * Stopper et nytt kjoep av proeveperioden for den som har hatt den.
+     *
+     * @param array<string,mixed> $plan
+     */
+    private static function sperrProveIgjen(int $medlemId, array $plan): void
+    {
+        if ((int) ($plan['engangs'] ?? 0) === 1 && self::harHattProve($medlemId)) {
+            throw new RuntimeException((string) $plan['navn'] . ' kan bare kjøpes én gang. Velg et annet medlemskap.');
+        }
+    }
+
+    /**
+     * Hindrer avtalen et nytt medlemskap? En loepende gjor det; en
+     * proeveperiode gjor det ikke — den erstattes naar det nye blir aktivt.
+     *
+     * @param array<string,mixed>|null $fra
+     */
+    private static function hindrerNytt(?array $fra): bool
+    {
+        return $fra !== null && $fra['status'] === 'aktiv' && !self::erEngangs((string) $fra['plan']);
+    }
+
+    /**
+     * Et nytt medlemskap er blitt aktivt: proeveperioden det erstatter,
+     * avsluttes. Ingen refusjon. Kalles naar det nye blir AKTIVT, ikke naar
+     * det startes — snur hun i Vipps, skal proeveperioden staa.
+     *
+     * Hver gammel avtale avsluttes én gang: «AND status = 'aktiv'» i samme
+     * oppdatering, saa to runder samtidig ikke logger det to ganger.
+     *
+     * @return int antall avtaler som ble avsluttet
+     */
+    public static function erstattProve(int $medlemId, int $nyId, string $nyPlan): int
+    {
+        $gamle = DB::alle(
+            "SELECT id, plan FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv' AND id <> :n",
+            ['m' => $medlemId, 'n' => $nyId]
+        );
+        $antall = 0;
+        foreach ($gamle as $g) {
+            if (!self::erEngangs((string) $g['plan'])) {
+                continue;
+            }
+            // Timene paa proeveperioden, foer den avsluttes, til loggen i
+            // admin. Det nye medlemskapet gjelder alt denne maaneden, og det
+            // som ble stemplet paa proeveperioden teller ikke paa det — se
+            // Stempling::proveFradrag(). Timene over vurderer eieren selv
+            // (28. september 2026); de staar i proveOverMin().
+            $rad = DB::en('SELECT * FROM members WHERE id = :m', ['m' => $medlemId]) ?? [];
+            $bruktMin = Stempling::minutterDenneManeden($medlemId);
+            // Taket paa proeveperioden: planens timer, pluss gavetimer og
+            // dugnad. Medlemsraden kan alt staa paa det nye medlemskapet.
+            $provePlan = self::planUansett((string) $g['plan']);
+            $tak = $rad === [] || $provePlan === null || $provePlan['timer'] === null ? null
+                : (int) $provePlan['timer'] + ((self::timerMedGaver($rad) ?? 0) - (self::timerFor($rad) ?? 0));
+            $endret = DB::kjor(
+                "UPDATE subscriptions
+                    SET status = 'stoppet', sagt_opp_at = UTC_TIMESTAMP(),
+                        slutter = CURDATE(), neste_trekk = NULL
+                  WHERE id = :i AND status = 'aktiv'",
+                ['i' => (int) $g['id']]
+            )->rowCount();
+            if ($endret === 1) {
+                $antall++;
+                revider('medlemskap_erstattet', 'member', $medlemId, [
+                    'fra' => (string) $g['plan'], 'fraAvtale' => (int) $g['id'],
+                    'til' => $nyPlan, 'tilAvtale' => $nyId, 'refusjon' => 'ingen',
+                    'timerBrukt' => Stempling::timer($bruktMin),
+                    'timerTak'   => $tak,
+                    'timerOver'  => $tak === null ? null : Stempling::timer((int) max(0, $bruktMin - $tak * 60)),
+                    'timerOverMin' => $tak === null ? 0 : (int) max(0, $bruktMin - $tak * 60),
+                ]);
+            }
+        }
+        // Det nye er ikke en proeveperiode: sluttdatoen hoerte til den gamle,
+        // og ville ellers meldt hen ut den dagen.
+        if ($antall > 0 && !self::erEngangs($nyPlan)) {
+            DB::oppdater('members', ['slutt_dato' => null], ['id' => $medlemId]);
+        }
+        return $antall;
+    }
+
+    /**
+     * Minutter stemplet ut over Prøv Lissom denne maaneden.
+     *
+     * Eieren, 28. september 2026: timene over de ti trekkes ikke av seg
+     * selv. Admin viser dem paa medlemmet, og eieren trekker dem med
+     * timetallet paa medlemmet om hen vil. Staar hen paa proeveperioden,
+     * regnes de av det som er stemplet naa; er den erstattet denne maaneden,
+     * staar tallet i endringsloggen fra byttet.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function proveOverMin(array $medlem, int $bruktMin): int
+    {
+        if (self::erEngangs((string) ($medlem['medlemskap_type'] ?? ''))) {
+            $tak = self::timerMedGaver($medlem);
+            return $tak === null ? 0 : (int) max(0, $bruktMin - $tak * 60);
+        }
+        $d = DB::verdi(
+            "SELECT detaljer FROM audit_log
+              WHERE handling = 'medlemskap_erstattet' AND objekt_type = 'member' AND objekt_id = :m
+                AND created_at >= :fra
+              ORDER BY id DESC LIMIT 1",
+            ['m' => (int) $medlem['id'], 'fra' => Stempling::manedStart()]
+        );
+        $d = is_string($d) ? json_decode($d, true) : null;
+        return is_array($d) ? (int) ($d['timerOverMin'] ?? 0) : 0;
+    }
+
     /**
      * Faar dette medlemmet selge sine egne arbeider?
      *
@@ -874,8 +1078,9 @@ final class Medlemskap
 
         // Har medlemmet en avtale fra for, skal den ikke bli staaende ved
         // siden av den nye. Da ville de blitt trukket to ganger.
+        self::sperrProveIgjen((int) $medlem['id'], $plan);
         $fra = self::avtale((int) $medlem['id']);
-        if ($fra !== null && $fra['status'] === 'aktiv') {
+        if (self::hindrerNytt($fra)) {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
         }
 
@@ -914,7 +1119,7 @@ final class Medlemskap
             throw new RuntimeException('Vipps ga ikke noen avtale tilbake.');
         }
 
-        $binding = (int) $plan['binding_mnd'];
+        $binding = (int) ($plan['engangs'] ?? 0) === 1 ? 0 : (int) $plan['binding_mnd'];
 
         $id = DB::settInn('subscriptions', [
             'member_id'          => (int) $medlem['id'],
@@ -951,8 +1156,9 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Ukjent medlemskap.');
         }
+        self::sperrProveIgjen((int) $medlem['id'], $plan);
         $fra = self::avtale((int) $medlem['id']);
-        if ($fra !== null && $fra['status'] === 'aktiv') {
+        if (self::hindrerNytt($fra)) {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
         }
 
@@ -966,7 +1172,7 @@ final class Medlemskap
         // Og avtaleforsoeket hun gikk fra da hun valgte vanlig Vipps.
         self::avlysMotsattForsok((int) $medlem['id'], $planNavn, false);
 
-        $binding = (int) $plan['binding_mnd'];
+        $binding = (int) ($plan['engangs'] ?? 0) === 1 ? 0 : (int) $plan['binding_mnd'];
         $id = DB::settInn('subscriptions', [
             'member_id'          => (int) $medlem['id'],
             'plan'               => $planNavn,
@@ -1073,6 +1279,7 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Fant ikke medlemskapet.');
         }
+        self::sperrProveIgjen((int) $medlem['id'], $plan);
         if (self::kreverFastTrekk($plan)) {
             throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');
         }
@@ -1081,7 +1288,7 @@ final class Medlemskap
         }
 
         $engangs = (int) ($plan['engangs'] ?? 0) === 1;
-        $binding = (int) $plan['binding_mnd'];
+        $binding = (int) ($plan['engangs'] ?? 0) === 1 ? 0 : (int) $plan['binding_mnd'];
         $medlemId = (int) $medlem['id'];
 
         return DB::iTransaksjon(static function () use ($plan, $planNavn, $medlemId, $engangs, $binding): array {
@@ -1109,9 +1316,10 @@ final class Medlemskap
                 'start_dato'      => ($fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),
             ];
             if ($engangs) {
-                $felter['slutt_dato'] = gmdate('Y-m-d', strtotime('+1 month'));
+                $felter['slutt_dato'] = self::proveSlutt();
             }
             DB::oppdater('members', $felter, ['id' => $medlemId]);
+            self::erstattProve($medlemId, (int) $id, $planNavn);
 
             return ['id' => (int) $id];
         });
@@ -1146,8 +1354,7 @@ final class Medlemskap
         //
         // Eieren, 5. september: «jeg får jo ikke inn pengene mine».
         //
-        // Samme regel som i admin: én maaned fram. Har medlemmet alt en
-        // sluttdato — hun har vaert her for — roerer vi den ikke.
+        // Samme regel som i admin: siste dag i maaneden — se proveSlutt().
         $plan    = self::planUansett((string) $a['plan']);
         $engangs = $plan !== null && (int) ($plan['engangs'] ?? 0) === 1;
         $fra     = DB::en(
@@ -1161,9 +1368,10 @@ final class Medlemskap
             'start_dato'      => ($fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),
         ];
         if ($engangs) {
-            $felter['slutt_dato'] = gmdate('Y-m-d', strtotime('+1 month'));
+            $felter['slutt_dato'] = self::proveSlutt();
         }
         DB::oppdater('members', $felter, ['id' => (int) $a['member_id']]);
+        self::erstattProve((int) $a['member_id'], $abonnementId, (string) $a['plan']);
 
         // ── Kvitteringen ────────────────────────────────────────────────
         //
@@ -1282,6 +1490,9 @@ final class Medlemskap
 
         // Medlemsstatusen folger avtalen. Uten dette ville noen betalt uten aa
         // faa tilgang, eller hatt tilgang uten aa betale.
+        if ($ny === 'aktiv' && (string) $avtale['status'] !== 'aktiv') {
+            self::erstattProve((int) $avtale['member_id'], (int) $avtale['id'], (string) $avtale['plan']);
+        }
         if ($ny === 'aktiv') {
             DB::oppdater('members', [
                 'status'          => 'aktiv',
@@ -1515,10 +1726,10 @@ final class Medlemskap
         // Eieren, 5. september: «Prøv Lissom har ingen binding». Planen staar
         // med binding_mnd = 0, men et medlem sto med «bundet til 2. november»
         // — og kunne dermed ikke si opp. Planen er avtalen.
+        // Samme kilde som Min side og admin — se bindingTil(). En
+        // engangsplan er aldri bundet.
         $plan = self::planUansett((string) $avtale['plan']);
-        $binderIDetHeleTatt = $plan === null || (int) ($plan['binding_mnd'] ?? 0) > 0;
-
-        $binding = $binderIDetHeleTatt ? ($avtale['binding_til'] ?? null) : null;
+        $binding = self::bindingTil($avtale);
         if ($binding !== null && (string) $binding >= gmdate('Y-m-d')) {
             $aar = $plan !== null && (int) $plan['binding_mnd'] >= 12;
             return ($aar

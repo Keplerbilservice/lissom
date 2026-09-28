@@ -852,6 +852,163 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "prove-sluttdato-maaneden",
+            "dato": "2026-09-28",
+            "hva": "Prøv Lissom gir 10 timer og gjelder ut kjøpsmåneden: sluttdato = siste dag i måneden, fra én kilde (Medlemskap::proveSlutt), i nettkjøp, verkstedkjøp og admin. Etter sluttdato går medlemskapet og avtaleraden ut (cron). Eksisterende uten sluttdato får den i migrasjon 231 — unntak: medlem 10 (Ida Kristine) beholder de gamle reglene",
+            "hvor": "app/lib/medlemskap.php, api/admin/medlemmer.php, bin/cron.php, migrasjon 231",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "return $dag->modify('last day of this month')->format('Y-m-d');",
+                        "$felter['slutt_dato'] = self::proveSlutt();"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'slutt_dato'      => $engangs ? Medlemskap::proveSlutt() : null,",
+                        "'slutt_dato'      => $prove ? Medlemskap::proveSlutt() : null,"
+                    ],
+                    "ikkeFinnes": [
+                        "strtotime('+1 month')) : null,"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "SET s.status = 'utlopt', s.slutter = m.slutt_dato, s.neste_trekk = NULL"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/231_prove_sluttdato.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-09-28",
+                        "SET m.slutt_dato = LAST_DAY(k.kjopt)",
+                        "AND m.id <> 10;"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "prove-en-gang",
+            "dato": "2026-09-28",
+            "hva": "Prøv Lissom kan bare kjøpes én gang per person. Serveren avviser et nytt kjøp med «Prøv Lissom kan bare kjøpes én gang. Velg et annet medlemskap.» (nettkjøp, innmelding og verkstedkjøp), og velgeren på Min side viser den ikke for den som har hatt den",
+            "hvor": "app/lib/medlemskap.php (sperrProveIgjen, harHattProve), api/medlemskap.php, lissom-2108.html (minePlaner)",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "' kan bare kjøpes én gang. Velg et annet medlemskap.'",
+                        "self::sperrProveIgjen((int) $medlem['id'], $plan);"
+                    ]
+                },
+                {
+                    "fil": "api/medlemskap.php",
+                    "finnes": [
+                        "'harHattProve' => $medlem !== null && Medlemskap::harHattProve((int) $medlem['id'])"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ".filter(p => !(p.engangs && ((egen && egen.engangs) || this.state.harHattProve)))"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "prove-aldri-bundet",
+            "dato": "2026-09-28",
+            "hva": "En engangsplan (Prøv Lissom) er aldri bundet og aldri et løpende medlemskap: bindingsdatoen leses fra planen via Medlemskap::bindingTil på Min side, i admin og i oppsigelsessperren, engangskjøp får ingen binding_til, og proveperioden sperrer ikke et nytt medlemskap. Årsak: Johanna sto med «Bundet til 2. nov.» og fikk «Du har alt et medlemskap» på Forny",
+            "hvor": "app/lib/medlemskap.php, api/medlemskap.php, api/admin/medlemmer.php",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public static function bindingTil(array $avtale): ?string",
+                        "$binding = self::bindingTil($avtale);",
+                        "$binding = (int) ($plan['engangs'] ?? 0) === 1 ? 0 : (int) $plan['binding_mnd'];",
+                        "&& !self::erEngangs((string) $fra['plan'])"
+                    ]
+                },
+                {
+                    "fil": "api/medlemskap.php",
+                    "finnes": [
+                        "$bundet  = Medlemskap::bindingTil($a);"
+                    ],
+                    "ikkeFinnes": [
+                        "'bundetTil'  => $a['binding_til']"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "$bindingTil = Medlemskap::bindingTil($a);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "prove-forny-oppgrader",
+            "dato": "2026-09-28",
+            "hva": "«Forny» på Prøv Lissom åpner medlemskapsvelgeren («Bytt abonnement», uten forhåndsvalg og uten Prøv Lissom), med teksten «Det nye medlemskapet starter i dag og erstatter Prøv Lissom.». Det nye betales som før (Vipps / fast trekk) og erstatter proveperioden når det blir aktivt: avtalen settes til stoppet én gang, logges som medlemskap_erstattet, ingen refusjon. Det nye gjelder alt fra inneværende måned; det som er stemplet på proveperioden teller ikke på det nye, og timene over 10 trekkes IKKE automatisk — de vises i medlemslista i admin («t over Prøv Lissom») så eieren kan trekke dem selv med timetallet på medlemmet",
+            "hvor": "lissom-2108.html (aFornyAbo, byttAboIntro), app/lib/medlemskap.php (erstattProve, proveOverMin), app/lib/stempling.php (proveFradrag), api/admin/medlemmer.php",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "? () => this.setState({ byttAboApen: true })",
+                        "'Det nye medlemskapet starter i dag og erstatter ' + egen.navn + '.'",
+                        "' t over Prøv Lissom'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public static function erstattProve(int $medlemId, int $nyId, string $nyPlan): int",
+                        "revider('medlemskap_erstattet', 'member', $medlemId, [",
+                        "self::erstattProve((int) $a['member_id'], $abonnementId, (string) $a['plan']);",
+                        "self::erstattProve((int) $avtale['member_id'], (int) $avtale['id'], (string) $avtale['plan']);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/stempling.php",
+                    "finnes": [
+                        "return max(0, $ferdige + $paagaar - self::proveFradrag($medlemId));",
+                        "        return $for;"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'proveOver' => (static function () use ($m, $brukt): ?string {",
+                        "Stempling::proveFradrag($mid)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "prove-timevarsel",
+            "dato": "2026-09-28",
+            "hva": "Varselet vi har fra før om brukte timer («Du har brukt opp timene dine denne måneden.» / «Du har X av Y timer igjen denne måneden.») og «Timene er brukt opp» med Forny vises også for Prøv Lissom. Målt i nettleseren (tests/nettleser/flyter.mjs)",
+            "hvor": "lissom-2108.html (timerVarsel), tests/nettleser/flyter.mjs",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "timerVarsel: igjen === 0 ? 'Du har brukt opp timene dine denne måneden.'"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/flyter.mjs",
+                    "finnes": [
+                        "varselet om brukte timer vises for Prøv Lissom"
+                    ]
+                }
+            ]
         }
     ]
 }

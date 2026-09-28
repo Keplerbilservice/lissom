@@ -566,6 +566,23 @@ switch ($jobb) {
             logg('Medlemskap gaatt ut', ['antall' => $utlopte]);
         }
 
+        // Proeveperioden (engangsplanen) sin avtalerad gaar ut samme dag.
+        // Den sto som «aktiv» etter sluttdatoen, og Min side kalte den et
+        // aktivt medlemskap. Eieren, 28. september 2026: «prøv lissom må jo
+        // ha slutt dato» — siste dag i maaneden den er kjoept.
+        $proveUte = DB::kjor(
+            "UPDATE subscriptions s
+               JOIN membership_plans p ON p.navn = s.plan AND p.engangs = 1
+               JOIN members m ON m.id = s.member_id
+                SET s.status = 'utlopt', s.slutter = m.slutt_dato, s.neste_trekk = NULL
+              WHERE s.status = 'aktiv'
+                AND m.slutt_dato IS NOT NULL
+                AND m.slutt_dato < CURDATE()"
+        )->rowCount();
+        if ($proveUte > 0) {
+            logg('Proeveperioder gaatt ut', ['antall' => $proveUte]);
+        }
+
         // Ubetalte reservasjoner som har stått for lenge frigis, slik at
         // plassen blir ledig for andre.
         $frigitt = DB::kjor(

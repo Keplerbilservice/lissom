@@ -80,6 +80,18 @@ final class Maler
                 'betaling' => 'Setningen om betaling ved henting',
             ],
         ],
+        // Eieren, 28. september 2026: «Annuller» for ubetalte henteordrer.
+        // Migrasjon 230.
+        'ordre_annullert' => [
+            'tittel' => 'Bestilling annullert',
+            'hvor'   => 'Sendes når du annullerer en ubetalt henteordre med «Annuller» under Kasse › Ikke betalt.',
+            'felter' => [
+                'navn'       => 'Fornavnet til kunden',
+                'ordre'      => 'Bestillingsnummeret, f.eks. B-260901-C4D7EC',
+                'varelinjer' => 'Varene, én per linje, med antall og pris',
+                'sum'        => 'Totalsummen',
+            ],
+        ],
         // Bestillingen til leverandoren. Migrasjon 184: handlelistene fra
         // medlemmene, slaatt sammen og sendt videre.
         'leverandorbestilling' => [

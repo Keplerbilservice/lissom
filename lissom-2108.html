@@ -13668,6 +13668,13 @@ window.__resources = {
                       <button type="button" onClick="{{ u.aapne }}" style="{{ u.seStil }}">Se personen</button>
                     </span>
                   </sc-if>
+                  <!-- Henteordre fra nettbutikken: kan annulleres (eieren,
+                       28. september 2026). -->
+                  <sc-if value="{{ u.kanAnnullere }}" hint-placeholder-val="{{ false }}">
+                    <span class="lx-pillerad" style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: 6px;">
+                      <button type="button" onClick="{{ u.annuller }}" style="{{ u.seStil }}">Annuller</button>
+                    </span>
+                  </sc-if>
                 </span>
                 <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
                 <!-- To maater sto over hverandre. Fire i samme stabel ville
@@ -13691,6 +13698,13 @@ window.__resources = {
                     <input value="{{ u.gaveKode }}" onChange="{{ u.settGaveKode }}" placeholder="Gavekortkode" style="box-sizing: border-box; flex: 1 1 180px; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
                     <button type="button" onClick="{{ u.gaveTrekk }}" style="{{ u.gaveKnapp }}">Trekk fra kortet</button>
                     <button type="button" onClick="{{ u.gaveAvbryt }}" style="{{ u.gaveKnapp }}">Avbryt</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ u.annullerApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex: 1 1 100%;">
+                    <span style="flex: 1 1 220px; font-size: var(--text-sm); color: var(--text-heading);">Annullere ordren? Varene legges tilbake på lager, og kunden får beskjed på e-post.</span>
+                    <button type="button" onClick="{{ u.annullerJa }}" style="{{ u.gaveKnapp }}">Annuller</button>
+                    <button type="button" onClick="{{ u.annullerNei }}" style="{{ u.gaveKnapp }}">Avbryt</button>
                   </div>
                 </sc-if>
               </div>
@@ -48935,6 +48949,19 @@ class Component extends DCLogic {
             .then(ok => { if (ok) this.setState({ kaGaveRad: null, kaGaveKode: '' }); });
         },
         gaveAvbryt: () => this.setState({ kaGaveRad: null, kaGaveKode: '' }),
+        // ── Annuller en henteordre ──────────────────────────────────
+        //
+        // Eieren, 28. september 2026: ubetalte henteordrer fra nettbutikken
+        // skal kunne annulleres — varene tilbake paa lager, kunden faar
+        // e-post. Bekreftelsen staar i raden, ikke i et nettleservindu.
+        kanAnnullere: erOrdre && !!u.henteordre,
+        annullerApen: this.state.kaAnnRad === n,
+        annuller: () => this.setState({ kaAnnRad: n, kaGaveRad: null }),
+        annullerNei: () => this.setState({ kaAnnRad: null }),
+        annullerJa: () => {
+          this.uttakKall({ handling: 'annuller', ordreId: u.id })
+            .then(ok => { if (ok) this.setState({ kaAnnRad: null }); });
+        },
       };
       }),
     };

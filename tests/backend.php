@@ -9920,7 +9920,8 @@ sjekk('… og kobler ikke en betaling som ikke finnes',
 // vises noen sted».
 sjekk('«Ikke betalt» viser butikk, kurs og medlemskap',
     str_contains($okoFil3, "'slag'  => 'ordre',")
-    && str_contains($okoFil3, "AND o.betalt_maate = 'Ikke betalt'")
+    // Henteordrene fra nettbutikken kom med 28. september 2026 («Annuller»).
+    && str_contains($okoFil3, "AND (o.betalt_maate = 'Ikke betalt'")
     && str_contains($okoFil3, 'WHERE o.payment_id IS NULL'));
 sjekk('… og ikke forlatte Vipps-forsoek',
     str_contains($okoFil3, "AND o.status NOT IN ('kansellert', 'refundert')"));
@@ -14681,8 +14682,9 @@ sjekk('pillene staar to og to i lik bredde paa telefon',
     'maalt: 59 rader paa 390 px');
 sjekk('… og alle pilleradene i admin er merket',
     // 98 etter at skjermene ble bygd om etter skissene 25.–26. september.
-    substr_count($sidaP, 'class="lx-pillerad"') === 98,
-    '98 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
+    // 99 med «Annuller» paa henteordrene i «Ikke betalt» (28. september).
+    substr_count($sidaP, 'class="lx-pillerad"') === 99,
+    '99 rader; de fire i Kassa har sitt eget rutenett, se .ut-piller');
 
 // Paa telefon stables de tre store under hverandre. Like hoeye, men ulikt
 // lange ga tre ulike hoeyrekanter. Eieren valgte full bredde 13. september

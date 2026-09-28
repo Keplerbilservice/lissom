@@ -810,6 +810,48 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "annuller-henteordre",
+            "dato": "2026-09-28",
+            "hva": "Ubetalte henteordrer står under «Ikke betalt» og har pillen «Annuller»; bekreftelsen står i siden, varene legges tilbake på lager én gang, og kunden får e-posten «Bestillingen er annullert». Betalte ordrer refunderes, og avvises her",
+            "hvor": "Kasse/Oversikt › «Ikke betalt» (lissom-2108.html), api/admin/uttak.php, api/admin/oversikt.php, migrasjon 230",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Annullere ordren? Varene legges tilbake på lager, og kunden får beskjed på e-post.",
+                        "kanAnnullere: erOrdre && !!u.henteordre,",
+                        "this.uttakKall({ handling: 'annuller', ordreId: u.id })"
+                    ]
+                },
+                {
+                    "fil": "api/admin/uttak.php",
+                    "finnes": [
+                        "$henteordre = $ordre['payment_id'] === null",
+                        "Booking::leggTilbakeLager((int) $ordre['id']);",
+                        "Booking::sendOrdreAnnullert((int) $ordre['id']);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        " OR o.uten_forskudd = 1"
+                    ]
+                },
+                {
+                    "fil": "app/lib/maler.php",
+                    "finnes": [
+                        "'ordre_annullert'"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/230_ordre_annullert.sql",
+                    "finnes": [
+                        "overskrift = 'Bestillingen er annullert'"
+                    ]
+                }
+            ]
         }
     ]
 }

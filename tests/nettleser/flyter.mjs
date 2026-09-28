@@ -611,6 +611,37 @@ await flyt('Butikk: betal ved henting uten innlogging', async () => {
     const o = db('SELECT member_id, kunde_navn, kunde_telefon, payment_id, status FROM orders WHERE kunde_epost = :e', { e: epost })[0] || null;
     sjekk('… ordren står på gjesten, ubetalt, uten betalingsrad', !!o && o.member_id === null && o.kunde_navn === 'TEST Gjest' && o.payment_id === null && o.status === 'ny', JSON.stringify(o));
     sjekk('… og kunden har fått «Butikkbestilling — hentes» i køen', varsler(epost).length >= 1);
+
+    // Eieren, 28. september 2026: «Annuller» for ubetalte henteordrer i
+    // admin — bekreftelsen i siden, varen tilbake paa lager, kunden faar
+    // e-post.
+    const lagerFoer = Number(verdi('SELECT lager FROM products WHERE id = :i', { i: Number(id) }));
+    const a = await side('admin');
+    try {
+      await gaa(a, '/admin/uttak', 3500);
+      const rad = a.locator('div', { has: a.getByText('TEST Gjest', { exact: true }) }).filter({ has: a.getByRole('button', { name: 'Annuller', exact: true }) }).last();
+      sjekk('henteordren står under «Ikke betalt» med «Annuller»', await rad.count() > 0);
+      await rad.getByRole('button', { name: 'Annuller', exact: true }).first().click();
+      await a.waitForTimeout(600);
+      const sporsmal = a.getByText('Annullere ordren? Varene legges tilbake på lager, og kunden får beskjed på e-post.', { exact: true });
+      sjekk('… trykk gir bekreftelsen i siden', await sporsmal.count() === 1);
+      sjekk('… og ingenting er annullert ennå', verdi('SELECT status FROM orders WHERE kunde_epost = :e', { e: epost }) === 'ny');
+      await sporsmal.locator('..').getByRole('button', { name: 'Annuller', exact: true }).click();
+      // Kvitteringen lukker seg selv etter noen sekunder — den maa fanges
+      // mens den staar.
+      const kvittering = await a.getByText(/er annullert\. Varene er lagt tilbake på lager, og kunden har fått beskjed\./)
+        .first().waitFor({ timeout: 8000 }).then(() => true, () => false);
+      sjekk('… kvitteringen vises', kvittering);
+      await a.waitForTimeout(2500);
+      sjekk('… ordren står som kansellert', verdi('SELECT status FROM orders WHERE kunde_epost = :e', { e: epost }) === 'kansellert');
+      sjekk('… varen er tilbake på lager', Number(verdi('SELECT lager FROM products WHERE id = :i', { i: Number(id) })) === lagerFoer + 1);
+      sjekk('… kunden har fått «Bestillingen er annullert» i køen',
+        Number(verdi("SELECT COUNT(*) FROM notifications WHERE mottaker = :e AND mal = 'ordre_annullert'", { e: epost })) === 1);
+      sjekk('… og raden er borte fra «Ikke betalt»',
+        await a.locator('div', { has: a.getByText('TEST Gjest', { exact: true }) }).filter({ has: a.getByRole('button', { name: 'Annuller', exact: true }) }).count() === 0);
+    } finally {
+      await a.context().close();
+    }
   } finally {
     await p.context().close();
     php(`foreach (DB::alle("SELECT id FROM orders WHERE kunde_epost = :e", ["e" => ${JSON.stringify(epost)}]) as $o) { DB::kjor("DELETE FROM order_lines WHERE order_id = :i", ["i" => $o["id"]]); DB::kjor("DELETE FROM orders WHERE id = :i", ["i" => $o["id"]]); }

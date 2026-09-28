@@ -960,6 +960,9 @@ Svar::json([
             'telefon' => (string) ($o['kunde_telefon'] ?? ''),
             'maate'   => (string) ($o['betalt_maate'] ?? ''),
             'dager'   => (int) $o['dager'],
+            // Bestilt i nettbutikken med «Betal ved henting». Den kan
+            // annulleres herfra — varene tilbake paa lager, kunden faar e-post.
+            'henteordre' => (int) ($o['henteordre'] ?? 0) === 1,
         ];
     }, DB::alle(
         // Butikken. Eieren, 4. september: «her skal alle som ikke har betalt
@@ -972,13 +975,19 @@ Svar::json([
         // noen sted». Et salg foert som «Ikke betalt» i kassa har ingen rad,
         // og er en gjeld til noen trykker «Kontant» eller «Vipps».
         "SELECT o.id, o.ordrenr, o.kunde_navn, o.kunde_telefon, o.sum_ore, o.betalt_maate,
+                " . (DB::harKolonne('orders', 'uten_forskudd') ? 'o.uten_forskudd' : '0') . " AS henteordre,
                 DATEDIFF(UTC_DATE(), DATE(o.created_at)) AS dager,
                 (SELECT GROUP_CONCAT(CONCAT(ol.antall, ' × ', ol.tittel)
                           ORDER BY ol.id SEPARATOR ', ')
                    FROM order_lines ol WHERE ol.order_id = o.id) AS hva
            FROM orders o
           WHERE o.payment_id IS NULL
-            AND o.betalt_maate = 'Ikke betalt'
+            AND (o.betalt_maate = 'Ikke betalt'"
+            // Henteordrene fra nettbutikken («Betal ved henting») er ogsaa en
+            // gjeld til de er gjort opp. De sto ingen steder der de kunne
+            // gjores opp eller annulleres (eieren, 28. september 2026).
+            . (DB::harKolonne('orders', 'uten_forskudd') ? " OR o.uten_forskudd = 1" : '')
+            . ")
             AND o.status NOT IN ('kansellert', 'refundert')
             AND o.sum_ore > 0
        ORDER BY o.created_at"

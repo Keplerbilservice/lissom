@@ -1133,6 +1133,50 @@ final class Booking
     }
 
     /**
+     * Motstykket til trekkLager(): varene paa ordren legges tilbake paa lager.
+     * Bare der lager telles. Kalles én gang per ordre — sperren mot to
+     * ganger ligger hos den som kaller (statusbyttet i api/admin/uttak.php).
+     */
+    public static function leggTilbakeLager(int $ordreId): void
+    {
+        foreach (DB::alle('SELECT product_id, antall FROM order_lines WHERE order_id = :o',
+                          ['o' => $ordreId]) as $l) {
+            if ($l['product_id'] === null) {
+                continue;
+            }
+            DB::kjor(
+                'UPDATE products SET lager = lager + :a WHERE id = :p AND lager IS NOT NULL',
+                ['a' => (int) $l['antall'], 'p' => (int) $l['product_id']]
+            );
+        }
+    }
+
+    /**
+     * E-post til kunden naar en ubetalt henteordre annulleres i admin.
+     * Eieren, 28. september 2026. Malen «ordre_annullert» kan endres og slaas
+     * av under Markedsfoering › Tekst maler.
+     */
+    public static function sendOrdreAnnullert(int $ordreId): void
+    {
+        $o = DB::en('SELECT * FROM orders WHERE id = :i', ['i' => $ordreId]);
+        if ($o === null || trim((string) ($o['kunde_epost'] ?? '')) === '') {
+            return;
+        }
+        $liste = [];
+        foreach (DB::alle('SELECT tittel, antall, pris_ore FROM order_lines WHERE order_id = :o ORDER BY id',
+                          ['o' => $ordreId]) as $l) {
+            $liste[] = sprintf('%d × %s — %s', $l['antall'], $l['tittel'],
+                self::kroner((int) $l['pris_ore'] * (int) $l['antall']));
+        }
+        Varsel::mal('ordre_annullert', ['epost' => (string) $o['kunde_epost']], [
+            'navn'       => (string) ($o['kunde_navn'] ?? ''),
+            'ordre'      => (string) $o['ordrenr'],
+            'varelinjer' => implode("\n", $liste),
+            'sum'        => self::kroner((int) $o['sum_ore']),
+        ], 'order', $ordreId);
+    }
+
+    /**
      * Markerer en booking som betalt. Kalles fra webhook og fra returen —
      * begge kan komme først, og begge kan komme flere ganger.
      */

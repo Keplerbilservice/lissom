@@ -532,11 +532,48 @@ if ($handling === 'annuller') {
     }
     $ubetaltSalg = $ordre['payment_id'] === null
         && (string) ($ordre['betalt_maate'] ?? '') === 'Ikke betalt';
-    if (!$ubetaltSalg && (string) $ordre['betalingstype'] !== 'manuell') {
+    // Henteordre fra nettbutikken: «Betal ved henting», ingen betalingsrad,
+    // varene lagt til side (Booking::trekkLager). Eieren, 28. september 2026:
+    // «Annuller» for ubetalte henteordrer, som legger varen tilbake på lager
+    // og gir kunden beskjed. En ordre betalt i Vipps har en betalingsrad og
+    // faller utenfor — den refunderes.
+    $henteordre = $ordre['payment_id'] === null
+        && (int) ($ordre['uten_forskudd'] ?? 0) === 1;
+    if (!$ubetaltSalg && !$henteordre && (string) $ordre['betalingstype'] !== 'manuell') {
         Svar::feil('Dette salget er gjort opp i Vipps. Det må refunderes der.', 409);
     }
     if ((string) $ordre['status'] === 'kansellert') {
         Svar::feil('Salget er alt annullert.');
+    }
+
+    if ($henteordre) {
+        // To trykk, eller to faner, skal ikke legge varene tilbake to ganger:
+        // statusen byttes med en betingelse, og bare den som faktisk byttet
+        // den, legger varene tilbake.
+        $byttet = DB::iTransaksjon(static function () use ($ordre): bool {
+            $n = DB::kjor(
+                "UPDATE orders SET status = 'kansellert'
+                  WHERE id = :i AND status NOT IN ('kansellert', 'refundert', 'betalt') AND payment_id IS NULL",
+                ['i' => (int) $ordre['id']]
+            );
+            if ($n->rowCount() < 1) {
+                return false;
+            }
+            Booking::leggTilbakeLager((int) $ordre['id']);
+            return true;
+        });
+        if (!$byttet) {
+            Svar::feil('Ordren er alt annullert eller gjort opp.', 409);
+        }
+        if (trim((string) ($ordre['kunde_epost'] ?? '')) !== '') {
+            Booking::sendOrdreAnnullert((int) $ordre['id']);
+        }
+        revider('henteordre_annullert', 'ordre', (int) $ordre['id'], [
+            'ordrenr' => $ordre['ordrenr'],
+            'sum_ore' => (int) $ordre['sum_ore'],
+        ]);
+        Svar::ok(['beskjed' => $ordre['ordrenr'] . ' er annullert. Varene er lagt tilbake på lager'
+            . (trim((string) ($ordre['kunde_epost'] ?? '')) !== '' ? ', og kunden har fått beskjed.' : '.')]);
     }
 
     // Alle delene salget ble gjort opp med.

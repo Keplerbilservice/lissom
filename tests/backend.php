@@ -2703,7 +2703,7 @@ sjekk('… men bare fra gaver som fortsatt staar',
 sjekk('… og Min side og admin leser den samme regelen',
     // Dugnadstimer kom til 15. september 2026 (migrasjon 189) — rundet til
     // kvarter, saa taket kan vaere 31,75.
-    str_contains($medlFil2, 'public static function timerMedGaver(array $medlem): int|float|null')
+    str_contains($medlFil2, 'public static function timerMedGaver(array $medlem, bool $medPakke = true): int|float|null')
     && str_contains($medlFil2, 'Dugnad::minutterTilgode($medlem)')
     && str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
                     '$perMnd = Medlemskap::timerMedGaver($medlem);')

@@ -258,6 +258,33 @@ if (gNokkel && tilGemini.length && process.env.VAKT_GEMINI !== '0') {
       console.log('  • Fikk ikke lest feilrapportene: ' + String(e.message).split('\n')[0]);
     }
   }
+
+  // ── Medlemmer og salg ──────────────────────────────────────────────
+  //
+  // Eieren, 29. september 2026: Johanna sto med Prøv Lissom etter at hun
+  // hadde betalt Mini 15, og et kurs betalt i verkstedet manglet i dagens
+  // omsetning — «hvorfor fanges det ikke opp?». api/vakt-data.php gaar
+  // gjennom medlemmene (vist plan = aktiv avtale, én aktiv avtale) og
+  // dagens og gaarsdagens salg (alt betalt er med i omsetningen). Hvert
+  // funn er et avvik.
+  console.log('\n── Medlemmer og salg ──');
+  if (!nokkel) {
+    console.log('  • Mangler cron-nøkkel — kan ikke sjekke medlemmer og salg (legg den i cron-nokkel.txt)');
+  } else {
+    try {
+      const svar = await fetch(`${ADRESSE}/api/vakt-data.php?nokkel=${encodeURIComponent(nokkel)}`);
+      const j = svar.ok ? await svar.json() : null;
+      if (!j || !j.ok) {
+        avvik.push(`Medlemmer og salg: fikk ikke svar (status ${svar.status})`);
+      } else {
+        console.log(`  ${j.medlemmer} medlemmer med aktiv avtale, ${j.salg} salg i dag og i går`);
+        if (!(j.avvik || []).length) ok++;
+        for (const a of j.avvik || []) avvik.push(a);
+      }
+    } catch (e) {
+      avvik.push('Medlemmer og salg: ' + String(e.message).split('\n')[0]);
+    }
+  }
 }
 
 console.log(`\n${ok} sjekker i orden, ${avvik.length} avvik.`);

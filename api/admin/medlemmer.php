@@ -1989,6 +1989,17 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 ? 'Fritatt fra betaling' . ($grunn !== '' ? ' — ' . $grunn : '')
                 : 'Skal betale igjen';
         }
+        // Byttet fra Prøv Lissom. Timene over proeveperioden staar her etter
+        // byttet, ikke i timetallet paa lista — der sto «over Prøv Lissom»
+        // i stedet for timene paa det nye medlemskapet, og hun saa ut til aa
+        // staa paa proeveperioden ennaa (eieren 29.09.2026).
+        if ($h === 'medlemskap_erstattet') {
+            $fra = trim((string) ($d['fra'] ?? ''));
+            $til = trim((string) ($d['til'] ?? ''));
+            $over = trim((string) ($d['timerOver'] ?? ''));
+            return 'Byttet medlemskap' . ($fra !== '' ? ' fra ' . $fra : '') . ($til !== '' ? ' til ' . $til : '')
+                . ($over !== '' && ($d['timerOverMin'] ?? 0) > 0 ? ' · ' . $over . ' t over ' . $fra : '');
+        }
         if ($h === 'medlem_plan_byttet') {
             $fra = trim((string) ($d['fra'] ?? ''));
             $til = trim((string) ($d['til'] ?? ''));
@@ -2610,6 +2621,11 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     // seg selv — eieren vurderer dem (28. september 2026). Se
     // Medlemskap::proveOverMin().
     'proveOver' => (static function () use ($m, $brukt): ?string {
+        // Bare mens hen staar paa proeveperioden. Etter byttet staar timene
+        // over i endringsloggen paa personen (eieren 29.09.2026).
+        if (!Medlemskap::erEngangs((string) ($m['medlemskap_type'] ?? ''))) {
+            return null;
+        }
         $over = Medlemskap::proveOverMin($m, $brukt[(int) $m['id']] ?? 0);
         return $over > 0 ? Stempling::timer($over) : null;
     })(),

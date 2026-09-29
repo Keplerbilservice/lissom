@@ -1359,6 +1359,7 @@ $ordreId = DB::iTransaksjon(static function () use ($rader, $sum, $maate, $kunde
                 'UPDATE products SET lager = GREATEST(0, lager - :a) WHERE id = :p AND lager IS NOT NULL',
                 ['a' => (int) $r['antall'], 'p' => (int) $r['vare']['id']]
             );
+            Lager::etterSalg((int) $r['vare']['id'], (int) $r['antall']);
         }
     }
 

@@ -445,6 +445,26 @@ final class Maler
                 'telefon'  => 'Telefonnummeret, eller «(ikke oppgitt)»',
             ],
         ],
+        // ── Bestill mer og lav aktivitet (migrasjon 233, eieren 28.09) ──
+        'intern_bestill_mer' => [
+            'tittel' => 'Til deg: bestill mer',
+            'hvor'   => 'Sendes til verkstedet når et salg tar en vare ned på eller under minimum på lager.',
+            'felter' => [
+                'linje'   => '«Bestill mer: Leire (3 igjen, bestill 7)»',
+                'vare'    => 'Varens navn',
+                'antall'  => 'Hvor mange som er igjen',
+                'bestill' => 'Hvor mange som må bestilles opp til maksimum',
+            ],
+        ],
+        'intern_lav_aktivitet' => [
+            'tittel' => 'Til deg: lav aktivitet',
+            'hvor'   => 'Sendes til verkstedet én gang i døgnet når nye medlemmer ikke har vært innom på en stund.',
+            'felter' => [
+                'antall'    => 'Hvor mange nye på lista',
+                'dager'     => 'Antall dager uten innstempling',
+                'medlemmer' => 'Navn, dager og telefon, én linje hver',
+            ],
+        ],
         'intern_gave_lost_inn' => [
             'tittel' => 'Til deg: gave løst inn',
             'hvor'   => 'Sendes til verkstedet når et medlem løser inn en gave.',

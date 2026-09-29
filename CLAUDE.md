@@ -65,7 +65,7 @@ de ble sagt i.
 - Behold historikk, sporbarhet og endringslogg.
 - **Hver godkjent endring får en post i `tests/godkjent/vedtak.json` i
   samme commit** — hva som er bestemt, og hva sjekkene skal se etter (i
-  koden før publisering, og på lissom.no hver time). Eieren, 27. september
+  koden før publisering, og på lissom.no én gang i døgnet). Eieren, 27. september
   2026: «alle endringer vi gjør lagres, så det plutselig ikke endrer seg,
   og sjekkene vet hva de skal se etter».
 - En migrasjon som endrer tekst i e-postmalene eller innholdet, skal ha

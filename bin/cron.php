@@ -382,6 +382,15 @@ switch ($jobb) {
             DB::oppdater('course_sessions', ['paaminnelse_sendt_at' => gmdate('Y-m-d H:i:s')], ['id' => $okt['id']]);
         }
         $si("Påminnelser: {$antall} lagt i kø for " . count($okter) . " økt(er).");
+
+        // «Lav aktivitet» — én gang i døgnet, med samme jobb (eieren, 28.
+        // september 2026). Bare de som er nye paa lista siden i gaar; malen
+        // intern_lav_aktivitet kan slaas av under Varsler.
+        try {
+            $si('Lav aktivitet: ' . Aktivitet::meldNye() . ' nye meldt til admin.');
+        } catch (Throwable $e) {
+            $si('Lav aktivitet feilet: ' . $e->getMessage());
+        }
         break;
 
     // -----------------------------------------------------------------------

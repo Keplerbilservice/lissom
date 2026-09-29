@@ -71,7 +71,7 @@ if ($skjerm === 'Plakat – Cone til grader') {
 } elseif ($skjerm === 'Plakat – Informasjon til medlemmer') {
     $verdier['medlemsInfoPunkter'] = $punkter('medlemsinfo', [
         'Alle må lage egne råbrente plater til å sette under alt som skal glasurbrennes.',
-        'Bruk av verksted, transparent glasur og brenning følger med i alle medlemsskapene.',
+        'Bruk av verksted og brenning følger med i alle medlemskapene.',
         'Dersom man har mye som skal brennes og ikke vil vente, kan man kjøpe egen brenning kun til sine egne ting.',
         'Det er kun underglasurer som kan benyttes før råbrenning. Glasurer skal KUN brukes etter råbrenning!',
         'Leire, farger og andre glasurer holder man selv, og oppbevarer det i sin egen hylle og på eget ansvar.',

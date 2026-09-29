@@ -792,6 +792,10 @@ Svar::json([
           LIMIT 6"
     )),
     'venteliste' => $venteliste,
+    // «Bestill mer» og «Lav aktivitet» (eieren, 28. september 2026). Bare
+    // for verkstedet — se app/lib/lager.php og app/lib/aktivitet.php.
+    'bestillMer'   => Lager::bestillMer(),
+    'lavAktivitet' => ['antall' => count(Aktivitet::lave()), 'dager' => Aktivitet::dager()],
     'varsler'    => $varsler,
     'hengende'   => $hengendeListe,
     // Tallene kortene leser. De sto bare inni tekstene i «varsler», og et

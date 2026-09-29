@@ -15,6 +15,11 @@ Foresporsel::krevMetode('GET');
 
 $medlem = Sesjon::medlem();
 $hvor = $medlem === null ? 'kun_medlemmer = 0' : '1';
+// Leire er inkludert i Prøv Lissom (eieren, 29. september 2026): den som
+// har den, faar ikke leirevarene i medlemsbutikken. Se Lager::skjulLeire().
+if (Lager::skjulLeire($medlem)) {
+    $hvor .= ' AND leire = 0';
+}
 
 // Frakten. Sto som «kr. 89,-» fire steder i nettleseren og kom aldri hit;
 // naa staar tallet i basen, og kassa henter det derfra. Da kan ikke skjermen

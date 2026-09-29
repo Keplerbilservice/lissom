@@ -155,6 +155,7 @@ $pay = DB::settInn('payments', ['belop_ore' => 150000, 'status' => 'venter', 'ty
 $mangler = DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $okt,
     'gjest_navn' => 'Test Mangler', 'antall' => 1, 'belop_ore' => 150000, 'status' => 'betalt', 'payment_id' => $pay]);
 $v = Vaktdata::sjekk();
+$om = static fn(string $s): bool => (bool) array_filter($v['avvik'], static fn($a) => str_contains($a, $s));
 sjekk('vakta finner et medlem som vises med feil plan', $om('Feil Plan ' . $tag . ') vises som'), implode(' | ', $v['avvik']));
 sjekk('… et medlem med to aktive avtaler', $om('To Avtaler ' . $tag . ') har 2 aktive avtaler'));
 sjekk('… og en betalt paamelding som mangler i omsetningen', $om('påmelding ' . $mangler . ' '));

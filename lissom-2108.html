@@ -712,7 +712,10 @@ img{max-width:100%;display:block}
 .lx-tmgrp > .lx-tmpanel { display: none; position: absolute; top: 100%; left: 0; z-index: 50; margin-top: 6px; }
 .lx-tmgrp > .lx-tmpanel.lx-tmhoyre { left: auto; right: 0; }
 .lx-tmgrp::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 10px; }
-.lx-tmgrp:hover > .lx-tmpanel, .lx-tmgrp:focus-within > .lx-tmpanel { display: block; }
+/* Panelene aapnes og lukkes med trykk, ikke med musa over eller fokus.
+   Eieren, 29. september 2026: «synlighet og se nettsiden etc staar aapen».
+   Med :hover og :focus-within sto panelet oppe etter at man hadde trykket
+   det igjen — knappen beholdt fokus, og musa laa over den. */
 .lx-tm button:focus-visible { outline: 2px solid var(--lissom-yellow); outline-offset: 2px; }
 .lx-tmgrp > .lx-tmpanel[style*="display: block"] { display: block !important; }
 @media (min-width: 980px) {
@@ -17053,6 +17056,8 @@ window.__resources = {
         <!-- Den gule raden: det som brukes oftest, og ovnen. -->
         <div data-theme="sun" class="lx-hurtig" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3) var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Ofte brukt</span>
+          <!-- «Start kurset» foerst: eieren, 29. september 2026, «jeg ser heller ikke hvor jeg kan starte». -->
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ ksStartOversikt }}" hint-size="auto,40px">▶ Start kurset</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ ovNyttKurs }}" hint-size="auto,40px">Nytt kurs</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Melding til medlemmene</x-import>
@@ -42836,11 +42841,33 @@ class Component extends DCLogic {
     document.addEventListener('mouseover', this._radHover, { passive: true });
     document.addEventListener('mouseout', this._radUt, { passive: true });
 
+    // Esc lukker det som staar aapent. Eieren, 29. september 2026: «menyen
+    // faar jeg ikke lukket» og «synlighet og se nettsiden etc staar aapen».
+    // Arkene i admin (Synlighet, verktoyene, Soek, Kursstart), panelene i
+    // stripa paa PC og skuffen paa telefon lukket seg bare med sin egen
+    // knapp — Esc gjorde ingenting med dem.
     this._esc = (e) => {
       if (e.key !== 'Escape') return;
-      this.setState({ kurvApen: false, vippsBetaling: null, kvittering: null });
+      this.setState({
+        kurvApen: false, vippsBetaling: null, kvittering: null,
+        tmApen: '', verktoyApen: false, synlighetApen: false,
+        admSokApen: false, admSokTekst: '', ksApen: false, admMobApen: false,
+      });
     };
     document.addEventListener('keydown', this._esc);
+    // Trykk utenfor lukker panelene i stripa paa PC og skuffen paa telefon.
+    // Arkene har sin egen bakgrunn som lukker, men panelene under «Mer», ⚙
+    // og «inne» hadde ingen: de sto aapne til man traff den samme knappen
+    // igjen. Skuffen paa telefon likedan.
+    this._utenfor = (e) => {
+      const t = e.target;
+      if (!t || !t.closest) return;
+      const nytt = {};
+      if (this.state.tmApen && !t.closest('.lx-tmgrp')) nytt.tmApen = '';
+      if (this.state.admMobApen && !t.closest('.lx-admmob')) nytt.admMobApen = false;
+      if (Object.keys(nytt).length) this.setState(nytt);
+    };
+    document.addEventListener('click', this._utenfor);
     // Her laa det en ruting til: en egen popstate-lytter som leste skjermen
     // ut av «#»-delen av adressen, ved siden av den ekte som leser stien.
     //
@@ -42855,6 +42882,7 @@ class Component extends DCLogic {
 
   componentWillUnmount() {
     this.feilvaktStopp();
+    if (this._utenfor) document.removeEventListener('click', this._utenfor);
     if (this._slippVakt) {
       document.removeEventListener('dragover', this._slippVakt);
       document.removeEventListener('drop', this._slippVakt);
@@ -48943,6 +48971,8 @@ class Component extends DCLogic {
                         tmApen: '', admMobApen: false, verktoyApen: false, admSokApen: false });
       },
       ksLukk: () => this.setState({ ksApen: false }),
+      // Pilla i «Ofte brukt» paa Oversikt: neste kursdato, eller den som er i gang.
+      ksStartOversikt: () => this.kursstartVals().ksAapne(0),
       ksStopp: e => e.stopPropagation(),
       ksNaar: okt ? (okt.tittel + ' · ' + okt.naar) : 'Ingen kursdato funnet',
       ksTittel: naa ? naa.tittel : 'Ingen kort er slått på',
@@ -55172,7 +55202,13 @@ class Component extends DCLogic {
     // onboardinga skal kunne naas fra hvilken som helst adminskjerm naar
     // deltakerne staar i doera.
     this.adminSnarveier().filter(x => x.nokkel === 'chat' || x.nokkel === 'dagsrapport' || x.nokkel === 'kursstart')
-      .forEach(x => mer.push(panelRad({ navn: x.navn, velg: () => { this.kortBrukt(x.nokkel); x.velg(); } }, false)));
+      // Samme radstil som resten av panelet. Uten den fikk de tre nettleserens
+      // egne knapper — ramme, graa bakgrunn og liten skrift under «Admin-brukere».
+      .forEach(x => mer.push(panelRad({ navn: x.navn, velg: () => { this.kortBrukt(x.nokkel); x.velg(); }, stil: {
+        appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+        padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
+        font: 'var(--type-body-sm)', fontWeight: 500, color: 'var(--clay-200)',
+      } }, false)));
     const verktoy = alle.filter(r => !menyNavn.has(r.navn)).map(r => panelRad(r, false));
     // Staar du paa kalenderen, lyser ingen fane — fliken er borte, og «✕ Lukk» gaar tilbake.
     const merAktiv = MER.indexOf(aktiv) >= 0;
@@ -55202,8 +55238,9 @@ class Component extends DCLogic {
       // i admin». Samme pilleform som de andre — stripa skal lese som én rad.
       tmAdmSokStil: pille(false),
       ...(() => {
-        // Trykk aapner og lukker; musa over aapner ogsaa (CSS). Et valg i
-        // panelet lukker det, siden det bytter skjerm.
+        // Trykk aapner og lukker, og det gjoer ogsaa Esc og et trykk utenfor
+        // (se componentDidMount). Et valg i panelet lukker det, siden det
+        // bytter skjerm.
         const apen = this.state.tmApen || '';
         const panel = (hvem) => Object.assign({
           background: 'var(--lissom-brown)', border: '1px solid rgba(244,235,222,.22)', borderRadius: 'var(--radius-md)',

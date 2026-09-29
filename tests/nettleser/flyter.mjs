@@ -1141,6 +1141,84 @@ await flyt('Google-anmeldelser paa forsida', async () => {
   tomBuffer();
 });
 
+// ── Menyer og ark lukker seg, og «Start kurset» er lett aa finne ──────
+// Eieren, 29. september 2026: «menyen faar jeg ikke lukket og jeg ser heller
+// ikke hvor jeg kan starte», og «synlighet og se nettsiden etc staar aapen».
+await flyt('Menyer og ark lukker seg, Start kurset', async () => {
+  const ark = (p, t) => p.evaluate((t) => [...document.querySelectorAll('div')].some(d => getComputedStyle(d).position === 'fixed' && d.offsetHeight > 200 && d.innerText.toLowerCase().indexOf(t.toLowerCase()) >= 0), t);
+  const panel = (p) => p.evaluate(() => [...document.querySelectorAll('.lx-tmpanel')].some(d => d.offsetHeight > 0));
+  const skuff = (p) => p.evaluate(() => !!document.querySelector('.lx-admmobpanel'));
+
+  const pc = await side('admin', 1400, 900);
+  await gaa(pc, '/admin/oversikt', 2500);
+  sjekk('PC: ingen panel eller ark aapent ved lasting', !(await panel(pc)) && !(await ark(pc, 'Kursstart')) && !(await ark(pc, 'Søk i admin')));
+  for (const [navn, sel] of [['Mer', 'button[aria-haspopup]:has-text("Mer")'], ['⚙ verktøy', 'button[aria-label="Verktøy"]']]) {
+    const l = pc.locator(sel).first();
+    await l.click(); await pc.waitForTimeout(300); sjekk(`PC ${navn}: aapnes med trykk`, await panel(pc));
+    await l.click(); await pc.waitForTimeout(300); sjekk(`PC ${navn}: lukkes med nytt trykk`, !(await panel(pc)));
+    await l.click(); await pc.waitForTimeout(300); await pc.keyboard.press('Escape'); await pc.waitForTimeout(300);
+    sjekk(`PC ${navn}: lukkes med Esc`, !(await panel(pc)));
+    await l.click(); await pc.waitForTimeout(300); await pc.locator('h1').first().click(); await pc.waitForTimeout(300);
+    sjekk(`PC ${navn}: lukkes med klikk utenfor`, !(await panel(pc)));
+    await pc.mouse.move(700, 650);
+  }
+  for (const [navn, knapp, tekst] of [
+    ['Synlighet', () => pc.locator('.lx-tm').getByRole('button', { name: 'Synlighet', exact: true }), 'Synlighet'],
+    ['Søk', () => pc.locator('.lx-tm button:has-text("Søk")').first(), 'Søk i admin'],
+    ['Kursstart', () => pc.locator('.lx-hurtig button:has-text("Start kurset")').first(), 'Kursstart'],
+  ]) {
+    for (const maate of ['×', 'utenfor', 'Esc']) {
+      await knapp().click(); await pc.waitForTimeout(600);
+      const aapen = await ark(pc, tekst);
+      if (maate === '×') await pc.locator('button[aria-label="Lukk"]:visible').last().click();
+      if (maate === 'utenfor') await pc.mouse.click(8, 890);
+      if (maate === 'Esc') await pc.keyboard.press('Escape');
+      await pc.waitForTimeout(400);
+      sjekk(`PC ${navn}: aapnes, og lukkes med ${maate}`, aapen && !(await ark(pc, tekst)));
+    }
+  }
+  await pc.locator('.lx-hurtig button:has-text("Start kurset")').first().click(); await pc.waitForTimeout(600);
+  for (let i = 0; i < 6; i++) {
+    const neste = pc.locator('.lx-kursstart button:has-text("Neste")');
+    if (await neste.count() && await neste.first().isEnabled()) { await neste.first().click(); await pc.waitForTimeout(200); }
+  }
+  sjekk('PC: «Start kurset» i Ofte brukt, blar til siste kort', /5 av 5/.test(await pc.locator('.lx-kursstart').innerText()));
+  await pc.keyboard.press('Escape');
+  await pc.context().close();
+
+  const m = await side('admin', 390, 844);
+  await gaa(m, '/admin/oversikt', 2500);
+  const mk = () => m.locator('button[aria-expanded]:has-text("Meny"), button[aria-expanded]:has-text("Lukk")').first();
+  sjekk('Mobil: skuffen er lukket ved lasting', !(await skuff(m)));
+  await mk().tap(); await m.waitForTimeout(500); sjekk('Mobil: skuffen aapnes', await skuff(m));
+  await mk().tap(); await m.waitForTimeout(500); sjekk('Mobil: skuffen lukkes med «Lukk»', !(await skuff(m)));
+  await mk().tap(); await m.waitForTimeout(500);
+  await m.locator('.lx-admmobpanel button:has-text("Kasse")').first().tap(); await m.waitForTimeout(800);
+  sjekk('Mobil: skuffen lukkes etter et valg', !(await skuff(m)));
+  await mk().tap(); await m.waitForTimeout(500);
+  const sk = m.locator('.lx-admmobpanel button:has-text("Start kurset")').first();
+  sjekk('Mobil: «▶ Start kurset» staar i skuffen', await sk.isVisible());
+  await sk.tap(); await m.waitForTimeout(700);
+  sjekk('Mobil: Kursstart aapnes, og skuffen lukkes', (await ark(m, 'Kursstart')) && !(await skuff(m)));
+  for (let i = 0; i < 6; i++) {
+    const neste = m.locator('.lx-kursstart button:has-text("Neste")');
+    if (await neste.count() && await neste.first().isEnabled()) { await neste.first().tap(); await m.waitForTimeout(200); }
+  }
+  sjekk('Mobil: blar til siste kort', /5 av 5/.test(await m.locator('.lx-kursstart').innerText()));
+  await m.locator('.lx-kursstart button[aria-label="Lukk"]').first().tap(); await m.waitForTimeout(400);
+  sjekk('Mobil: Kursstart lukkes med ×', !(await ark(m, 'Kursstart')));
+  await gaa(m, '/admin/oversikt', 2000);
+  const ob = m.locator('.lx-hurtig button:has-text("Start kurset")').first();
+  await ob.scrollIntoViewIfNeeded();
+  sjekk('Mobil: «Start kurset» i Ofte brukt', await ob.isVisible());
+  await ob.tap(); await m.waitForTimeout(600);
+  sjekk('Mobil: aapner Kursstart fra Oversikt', await ark(m, 'Kursstart'));
+  await m.touchscreen.tap(195, 20); await m.waitForTimeout(400);
+  sjekk('Mobil: Kursstart lukkes med trykk utenfor', !(await ark(m, 'Kursstart')));
+  sjekk('Mobil: ingen sidelengs rulling', await m.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  await m.context().close();
+});
+
 await nettleser.close();
 console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjente feil.`);
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }

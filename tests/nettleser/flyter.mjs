@@ -982,6 +982,291 @@ await flyt('Timepakke: vinduene på Min side', async () => {
   }
 });
 
+// ── Medlemsreisen, hele veien ─────────────────────────────────────────
+//
+// Eieren, 29. september 2026: «hva med medlemskap, endringer, oppgradering,
+// kjøp 6 timer osv, full sjekk av dette». Hver flyt er en vanlig medlemsvei
+// fra start til slutt: det medlemmet trykker paa, hva som staar paa Min side
+// og i admin etterpaa, og at pengene kommer med i omsetningen og
+// dagsoppgjoeret. E2E_RAPPORT=mappe tar et skjermbilde fra mobil per steg.
+const rapportBilde = async (p, navn) => {
+  if (!process.env.E2E_RAPPORT) return;
+  await p.screenshot({ path: path.join(process.env.E2E_RAPPORT, navn + '.png') }).catch(() => {});
+};
+const retur = (ref) => fetch(`http://127.0.0.1:${process.env.E2E_PORT || 8140}/api/betaling-retur.php?ref=${encodeURIComponent(ref)}`,
+  { redirect: 'manual', headers: { Host: VERT + ':' + (process.env.E2E_PORT || 8140) } }).catch(() => null);
+const omsIdag = async () => {
+  const a = await side('admin');
+  await gaa(a, '/admin/oversikt', 1500);
+  const o = await api(a, '/api/admin/oversikt.php');
+  const d = await api(a, '/api/admin/dagsoppgjor.php');
+  await a.context().close();
+  const idag = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+  const b = (d.bilag || []).find(x => x.dato === idag);
+  return { oversikt: Number(o?.omsetning?.idagOre || 0), dagsoppgjor: Number(b?.sumOre || 0) };
+};
+const medlemMedPlan = (navn, plan, minutter = 0) => php(`
+  $plan = '${plan}';
+  $id = DB::settInn('members', ['navn' => '${navn}', 'epost' => '${navn.toLowerCase()}-' . bin2hex(random_bytes(3)) . '@e2e.lissom.test',
+    'telefon' => '+479' . random_int(1000000, 9999999), 'rolle' => 'medlem', 'status' => 'aktiv',
+    'medlemskap_type' => $plan, 'start_dato' => gmdate('Y-m-d')]);
+  $p = Medlemskap::plan($plan);
+  $s = DB::settInn('subscriptions', ['member_id' => $id, 'plan' => $plan, 'pris_ore' => (int) $p['pris_ore'], 'status' => 'aktiv',
+    'binding_til' => (int) $p['binding_mnd'] > 0 ? gmdate('Y-m-d', strtotime('+' . (int) $p['binding_mnd'] . ' months')) : null]);
+  if (${minutter} > 0) {
+    $m = strtotime(Stempling::manedStart() . ' UTC') + 60;
+    DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m),
+      'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);
+  }
+  $t = bin2hex(random_bytes(32));
+  DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]);
+  return ['id' => $id, 'token' => $t, 'avtale' => $s, 'plan' => $plan];`);
+const planer = () => db('SELECT navn, pris_ore, timer, binding_mnd, engangs, krever_fast_trekk FROM membership_plans WHERE aktiv = 1 ORDER BY sortering');
+
+await flyt('Medlemsreise 1: ny kunde kjøper Prøv Lissom', async () => {
+  db('DELETE FROM rate_limits');
+  const prove = planer().find(p => Number(p.engangs) === 1);
+  sjekk('Prøv Lissom finnes som engangsplan', !!prove);
+  if (!prove) return;
+  // En leirevare i medlemsbutikken, saa vi ser at den er skjult.
+  const leireId = php(`return DB::settInn('products', ['tittel' => 'E2E Leire 10 kg', 'pris_ore' => 25000, 'lager' => 20,
+    'kun_medlemmer' => 1, 'status' => 'publisert', 'leire' => 1, 'kategori' => 'Materialer']);`);
+  const foer = await omsIdag();
+  const venn = await side(null, 390, 844);
+  await gaa(venn, '/medlemskap', 2000);
+  await rapportBilde(venn, 'r1-medlemskap');
+  const epost = `nyprove-${S.tag}@e2e.lissom.test`;
+  const d = await api(venn, '/api/medlemsordre.php', { type: prove.navn, betaling: 'selv', navn: 'Ny Prøver',
+    epost, telefon: '9' + String(Math.floor(1e6 + Math.random() * 8e6)), vilkaar: 'ja' });
+  sjekk('innmeldingen til Prøv Lissom opprettes', !!(d && d.url), JSON.stringify(d).slice(0, 160));
+  const token = d && d.url ? d.url.split('/').pop() : '';
+  if (token) await fetch(`http://127.0.0.1:${process.env.E2E_PORT || 8140}${d.url}`, { redirect: 'manual', headers: { Host: VERT + ':' + (process.env.E2E_PORT || 8140) } }).catch(() => null);
+  await venn.context().close();
+  const ordre = db('SELECT medlem_id, subscription_id FROM medlemsordrer WHERE token = :t', { t: token })[0] || {};
+  const mid = Number(ordre.medlem_id || 0);
+  const ref = verdi("SELECT vipps_reference FROM payments WHERE member_id = :m AND formal = 'medlemskap' ORDER BY id DESC LIMIT 1", { m: mid });
+  sjekk('… og Vipps-betalingen er laget', !!ref, String(ref));
+  if (ref) await retur(ref);
+  const m = db('SELECT status, medlemskap_type, slutt_dato FROM members WHERE id = :i', { i: mid })[0] || {};
+  const slutt = String(php('return Medlemskap::proveSlutt();'));
+  sjekk('etter betalingen er hen medlem på Prøv Lissom', m.medlemskap_type === prove.navn && ['prove', 'aktiv'].includes(m.status), JSON.stringify(m));
+  sjekk('… med sluttdato siste dag i måneden', String(m.slutt_dato || '').slice(0, 10) === slutt, `${m.slutt_dato} / ${slutt}`);
+  sjekk('… og én aktiv avtale uten binding',
+    db("SELECT binding_til FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: mid }).length === 1
+    && db("SELECT binding_til FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: mid })[0].binding_til === null);
+  const etter = await omsIdag();
+  sjekk('omsetningen i dag øker med prisen', etter.oversikt - foer.oversikt === Number(prove.pris_ore), `${foer.oversikt} → ${etter.oversikt}`);
+  sjekk('… og dagsoppgjøret sier det samme', etter.dagsoppgjor === etter.oversikt, `${etter.dagsoppgjor} / ${etter.oversikt}`);
+  // Min side for den nye proeveren.
+  const t = php(`$t = bin2hex(random_bytes(32)); DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => ${mid},
+    'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]); return $t;`);
+  S.nyProve = { id: mid, token: t };
+  const p = await side('nyProve', 390, 844);
+  await gaa(p, '/min-side', 3500);
+  await rapportBilde(p, 'r1-min-side');
+  const meg = await api(p, '/api/meg.php');
+  sjekk('Min side: medlemskapet er Prøv Lissom', meg?.medlem?.medlemskap === prove.navn, meg?.medlem?.medlemskap);
+  const butikk = await api(p, '/api/butikk.php');
+  const varer = (Array.isArray(butikk) ? butikk : (butikk.varer || Object.values(butikk).find(Array.isArray) || []));
+  sjekk('medlemsbutikken skjuler leire for Prøv Lissom', !varer.some(v => Number(v.id) === Number(leireId)), varer.map(v => v.tittel).join(', ').slice(0, 160));
+  const kjop = await api(p, '/api/ordre.php', { linjer: [{ id: leireId, antall: 1 }] });
+  sjekk('… og serveren avviser et kjøp av leire', !!(kjop && kjop.feil), JSON.stringify(kjop).slice(0, 140));
+  await p.context().close();
+  // Vanlige medlemmer ser leira.
+  const k = await side('medlem');
+  await gaa(k, '/min-side', 1500);
+  const b2 = await api(k, '/api/butikk.php');
+  const v2 = (Array.isArray(b2) ? b2 : (b2.varer || Object.values(b2).find(Array.isArray) || []));
+  sjekk('… mens et vanlig medlem ser leira', v2.some(v => Number(v.id) === Number(leireId)));
+  await k.context().close();
+  db('DELETE FROM products WHERE id = :i', { i: leireId });
+});
+
+await flyt('Medlemsreise 2: fra Prøv Lissom til Mini, Basis og Årsmedlemskap', async () => {
+  const alle = planer().filter(p => Number(p.engangs) === 0 && p.timer !== null);
+  for (const plan of alle) {
+    db('DELETE FROM rate_limits');
+    const jo = proveMedlem('Reise' + plan.navn.replace(/[^A-Za-z]/g, ''));
+    S.reise = jo;
+    const p = await side('reise', 390, 844);
+    await p.route('https://falsk.vipps/**', r => r.fulfill({ status: 200, body: 'falsk vipps' }));
+    await gaa(p, '/min-side', 3500);
+    const v3 = p.locator('[data-tp-vindu="3"]');
+    if (plan === alle[0]) await rapportBilde(p, 'r2-vindu3');
+    await v3.locator('[data-tp-knapp="Velg medlemskap"]').click().catch(() => {});
+    await p.waitForTimeout(800);
+    if (plan === alle[0]) await rapportBilde(p, 'r2-velger');
+    const dlg = p.locator('h3', { hasText: 'Bytt abonnement' }).locator('xpath=ancestor::div[3]');
+    sjekk(`${plan.navn}: «Velg medlemskap» åpner velgeren`, await dlg.isVisible().catch(() => false));
+    await dlg.locator(`xpath=.//span[normalize-space(text())="${plan.navn}"]/ancestor::div[3]//button`).first().click().catch(() => {});
+    await p.waitForTimeout(800);
+    const fast = Number(plan.krever_fast_trekk) === 1;
+    const knapp = p.getByRole('button', { name: fast ? /Fast trekk|Godkjenn|Sett opp/i : 'Betal i Vipps' }).first();
+    if (plan === alle[0]) await rapportBilde(p, 'r2-betal');
+    await knapp.click().catch(() => {});
+    await p.waitForTimeout(2500);
+    const ny = db("SELECT id, status, vipps_agreement_id, binding_til FROM subscriptions WHERE member_id = :m AND plan = :p ORDER BY id DESC LIMIT 1", { m: jo.id, p: plan.navn })[0];
+    sjekk(`${plan.navn}: … betalingen startes`, !!ny, JSON.stringify(ny || {}));
+    if (!ny) { await p.context().close(); continue; }
+    if (fast) {
+      const fs = await import('node:fs');
+      fs.writeFileSync(path.join(ROT, 'tests', '.avtale-status'), 'ACTIVE');
+      php(`$a = DB::en("SELECT * FROM subscriptions WHERE id = ${ny.id}"); return Medlemskap::oppdaterFraVipps($a);`);
+      try { fs.unlinkSync(path.join(ROT, 'tests', '.avtale-status')); } catch { }
+    } else {
+      const ref = verdi('SELECT vipps_reference FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1', { s: ny.id });
+      if (ref) await retur(ref);
+    }
+    const etter = db('SELECT status, vipps_agreement_id, binding_til FROM subscriptions WHERE id = :i', { i: ny.id })[0] || {};
+    sjekk(`${plan.navn}: … aktivt etter Vipps`, etter.status === 'aktiv', JSON.stringify(etter));
+    sjekk(`${plan.navn}: … Prøv Lissom er avsluttet`, verdi('SELECT status FROM subscriptions WHERE id = :i', { i: jo.avtale }) === 'stoppet');
+    sjekk(`${plan.navn}: … én aktiv avtale`, Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: jo.id })) === 1);
+    sjekk(`${plan.navn}: … fast trekk bare når planen krever det`, (String(etter.vipps_agreement_id || '') !== '') === fast, String(etter.vipps_agreement_id));
+    const b = Number(plan.binding_mnd);
+    const venta = b > 0 ? new Date(Date.now() + 0) : null;
+    if (venta) venta.setMonth(venta.getMonth() + b);
+    sjekk(`${plan.navn}: … binding ${b} måneder`, b === 0 ? etter.binding_til === null
+      : Math.abs(new Date(etter.binding_til) - venta) < 3 * 864e5, String(etter.binding_til));
+    await gaa(p, '/min-side', 3000);
+    const meg = await api(p, '/api/meg.php');
+    const min = await api(p, '/api/medlemskap.php');
+    sjekk(`${plan.navn}: Min side viser ${plan.navn}`, meg?.medlem?.medlemskap === plan.navn && min?.min?.plan === plan.navn,
+      (meg?.medlem?.medlemskap || '') + ' / ' + (min?.min?.plan || ''));
+    sjekk(`${plan.navn}: … og ingen Prøv-vinduer`, await p.locator('[data-tp-vindu="3"]').count() === 0);
+    if (plan === alle[alle.length - 1]) await rapportBilde(p, 'r2-etter');
+    const d = await api(p, '/api/medlemskap.php', { handling: 'start', plan: jo.plan });
+    sjekk(`${plan.navn}: … Prøv Lissom kan ikke kjøpes igjen`, !!(d && d.feil), JSON.stringify(d).slice(0, 120));
+    await p.context().close();
+    const a = await side('admin');
+    await gaa(a, '/admin/medlemmer/alle', 2500);
+    const liste = await api(a, '/api/admin/medlemmer.php');
+    const rad = (Array.isArray(liste) ? liste : (liste.medlemmer || Object.values(liste).find(Array.isArray) || [])).find(m => m.id === jo.id) || {};
+    const person = await api(a, '/api/admin/medlemmer.php?person=' + jo.id);
+    sjekk(`${plan.navn}: admin-lista og personen viser ${plan.navn}`, rad.medlemskap === plan.navn && person?.person?.medlemskap === plan.navn,
+      `${rad.medlemskap} / ${person?.person?.medlemskap}`);
+    sjekk(`${plan.navn}: … fast trekk i admin stemmer`, Boolean(rad.fastTrekk) === fast, String(rad.fastTrekk));
+    await a.context().close();
+  }
+});
+
+await flyt('Medlemsreise 3: timepakke betalt, i omsetningen og med til neste måned', async () => {
+  db('DELETE FROM rate_limits');
+  const plan = planer().find(p => Number(p.engangs) === 0 && Number(p.krever_fast_trekk) === 0 && p.timer !== null);
+  const tp = medlemMedPlan('Pakkeper', plan.navn, Number(plan.timer) * 60 + 60);
+  S.pakke = tp;
+  const foer = await omsIdag();
+  const p = await side('pakke', 390, 844);
+  await p.route('https://falsk.vipps/**', r => r.fulfill({ status: 200, body: 'falsk vipps' }));
+  await gaa(p, '/min-side', 3500);
+  await rapportBilde(p, 'r3-vindu2');
+  await p.locator('[data-tp-vindu="2"] [data-tp-knapp="Kjøp timepakke"]').click().catch(() => {});
+  await p.waitForTimeout(2500);
+  const rad = db("SELECT t.id, t.timer, t.pris_ore, b.vipps_reference AS ref FROM timepakker t JOIN payments b ON b.id = t.payment_id WHERE t.member_id = :m ORDER BY t.id DESC LIMIT 1", { m: tp.id })[0];
+  sjekk('«Kjøp timepakke» starter Vipps', !!(rad && rad.ref), JSON.stringify(rad || {}));
+  if (!rad) { await p.context().close(); return; }
+  await retur(rad.ref); await retur(rad.ref);
+  sjekk('… betalt én gang', verdi('SELECT status FROM timepakker WHERE id = :i', { i: rad.id }) === 'betalt'
+    && Number(verdi("SELECT COUNT(*) FROM timepakker WHERE member_id = :m AND status = 'betalt'", { m: tp.id })) === 1);
+  const etter = await omsIdag();
+  sjekk('omsetningen i dag øker med 800', etter.oversikt - foer.oversikt === Number(rad.pris_ore), `${foer.oversikt} → ${etter.oversikt}`);
+  sjekk('… og dagsoppgjøret sier det samme', etter.dagsoppgjor === etter.oversikt, `${etter.dagsoppgjor} / ${etter.oversikt}`);
+  await gaa(p, '/min-side', 3000);
+  const st = await api(p, '/api/stempling.php');
+  sjekk('1 time over er trukket fra pakken: 5 timer igjen', st?.timer?.igjen === 5, JSON.stringify(st?.timer || {}));
+  await rapportBilde(p, 'r3-etter');
+  // Neste maaned: pakketimene gaar ikke ut. Vi lukker maaneden som
+  // maanedsskiftet gjor, og ser hva som er tilgode.
+  const tilgode = Number(php(`return Timepakke::tilgodeMin(${tp.id});`));
+  sjekk('pakken står til gode (6 t; timen over i dag ligger i stemplingen)', tilgode === 360, String(tilgode));
+  php(`DB::kjor("UPDATE check_ins SET inn_tid = DATE_SUB(inn_tid, INTERVAL 1 MONTH), ut_tid = DATE_SUB(ut_tid, INTERVAL 1 MONTH) WHERE member_id = ${tp.id}");
+       DB::kjor("UPDATE timepakker SET created_at = DATE_SUB(created_at, INTERVAL 1 MONTH), betalt_at = DATE_SUB(COALESCE(betalt_at, created_at), INTERVAL 1 MONTH) WHERE member_id = ${tp.id}");
+       return Timepakke::lukkMaaneder();`);
+  const nesteMnd = Number(php(`return Timepakke::tilgodeMin(${tp.id});`));
+  sjekk('… og følger med til neste måned', nesteMnd === 300, String(nesteMnd));
+  await gaa(p, '/min-side', 3000);
+  const st2 = await api(p, '/api/stempling.php');
+  sjekk('… Min side neste måned: månedens timer + 5', st2?.timer?.igjen === Number(plan.timer) + 5 || st2?.timer?.igjen === Number(plan.timer) + 5 + Number(php(`return Medlemskap::gavetimer(${tp.id});`)),
+    JSON.stringify(st2?.timer || {}));
+  await p.context().close();
+});
+
+await flyt('Medlemsreise 4: «Oppgrader medlemskap» fra Mini til Basis', async () => {
+  db('DELETE FROM rate_limits');
+  const alle = planer().filter(p => Number(p.engangs) === 0 && Number(p.krever_fast_trekk) === 0 && p.timer !== null)
+    .sort((a, b) => Number(a.timer) - Number(b.timer));
+  const [liten, stor] = [alle[0], alle[alle.length - 1]];
+  const m = medlemMedPlan('Oppgrader', liten.navn, Number(liten.timer) * 60 + 30);
+  S.opp = m;
+  const p = await side('opp', 390, 844);
+  await p.route('https://falsk.vipps/**', r => r.fulfill({ status: 200, body: 'falsk vipps' }));
+  await gaa(p, '/min-side', 3500);
+  await p.locator('[data-tp-vindu="2"] [data-tp-knapp="Oppgrader medlemskap"]').click().catch(() => {});
+  await p.waitForTimeout(800);
+  const dlg = p.locator('h3', { hasText: 'Bytt abonnement' }).locator('xpath=ancestor::div[3]');
+  sjekk('«Oppgrader medlemskap» åpner velgeren', await dlg.isVisible().catch(() => false));
+  await rapportBilde(p, 'r4-velger');
+  await dlg.locator(`xpath=.//span[normalize-space(text())="${stor.navn}"]/ancestor::div[3]//button`).first().click().catch(() => {});
+  await p.waitForTimeout(800);
+  await rapportBilde(p, 'r4-valgt');
+  const tekst = await p.evaluate(() => document.body.innerText);
+  const betal = p.getByRole('button', { name: 'Betal i Vipps' }).first();
+  const harBetal = await betal.isVisible().catch(() => false);
+  let svar = null;
+  p.on('response', async r => { if (r.url().includes('/api/medlemskap.php') && r.request().method() === 'POST') { try { svar = await r.json(); } catch { } } });
+  if (harBetal) { await betal.click().catch(() => {}); await p.waitForTimeout(2500); }
+  await rapportBilde(p, 'r4-resultat');
+  const ny = db("SELECT id, status FROM subscriptions WHERE member_id = :m AND plan = :p ORDER BY id DESC LIMIT 1", { m: m.id, p: stor.navn })[0];
+  // Eieren (28. september): det nye medlemskapets timer gjelder fra
+  // inneværende måned. Kjent: løpende bytte er ikke bygd — se rapporten.
+  kjent(`oppgradering ${liten.navn} → ${stor.navn} starter betaling`, !!ny,
+    'svar: ' + JSON.stringify(svar || {}).slice(0, 140) + ' · «Bytte»: ' + ((tekst.match(/Bytte\s*\n?\s*([^\n]+)/) || [])[1] || ''));
+  await p.context().close();
+});
+
+await flyt('Medlemsreise 5: si opp, forny og admin som endrer', async () => {
+  db('DELETE FROM rate_limits');
+  const liten = planer().filter(p => Number(p.engangs) === 0 && Number(p.krever_fast_trekk) === 0 && p.timer !== null)
+    .sort((a, b) => Number(a.timer) - Number(b.timer))[0];
+  const m = medlemMedPlan('Sieropp', liten.navn, 60);
+  S.sier = m;
+  const p = await side('sier', 390, 844);
+  await gaa(p, '/min-side', 3000);
+  const min = await api(p, '/api/medlemskap.php');
+  sjekk('Min side sier når bindinga går ut', !!min?.min?.bundetTil, JSON.stringify(min?.min || {}).slice(0, 160));
+  const s1 = await api(p, '/api/medlemskap.php', { handling: 'siOpp' });
+  const st = db('SELECT status FROM subscriptions WHERE id = :i', { i: m.avtale })[0] || {};
+  sjekk('oppsigelse i bindingstida: svaret sier hva som gjelder', !!(s1 && (s1.feil || s1.beskjed || s1.ok)), JSON.stringify(s1).slice(0, 160));
+  sjekk('… og avtalen står til bindinga er ute', st.status === 'aktiv', JSON.stringify(st));
+  const f = await api(p, '/api/medlemskap.php', { handling: 'start', plan: liten.navn });
+  sjekk('«Forny» midt i perioden gir ikke to avtaler',
+    Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status IN ('aktiv','venter')", { m: m.id })) <= 2
+    && Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: m.id })) === 1, JSON.stringify(f).slice(0, 140));
+  // «Forny» staar paa Min side naar timene er brukt opp. Kjent: det gir
+  // «Du har alt et medlemskap» midt i perioden — se rapporten 29.09.
+  kjent('«Forny» med timene brukt opp gir en vei videre', !(f && f.feil), JSON.stringify(f).slice(0, 140));
+  await p.context().close();
+  // Admin bytter plan og legger inn timer for haand.
+  const stor = planer().filter(p => Number(p.engangs) === 0 && Number(p.krever_fast_trekk) === 0 && p.timer !== null)
+    .sort((a, b) => Number(b.timer) - Number(a.timer))[0];
+  const a = await side('admin');
+  await gaa(a, '/admin/medlemmer/alle', 2500);
+  const b = await api(a, '/api/admin/medlemmer.php?handling=bytt-plan', { handling: 'bytt-plan', medlemId: m.id, type: stor.navn });
+  sjekk('admin bytter plan', b && b.ok !== false && !b.feil, JSON.stringify(b).slice(0, 160));
+  const liste = await api(a, '/api/admin/medlemmer.php');
+  const rad = (Array.isArray(liste) ? liste : (liste.medlemmer || Object.values(liste).find(Array.isArray) || [])).find(x => x.id === m.id) || {};
+  sjekk('… lista viser den nye planen', rad.medlemskap === stor.navn, rad.medlemskap);
+  sjekk('… og avtalen følger med', verdi("SELECT plan FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: m.id }) === stor.navn);
+  await a.context().close();
+  const q = await side('sier', 390, 844);
+  await gaa(q, '/min-side', 3000);
+  const meg = await api(q, '/api/meg.php');
+  const min2 = await api(q, '/api/medlemskap.php');
+  sjekk('… og Min side viser den nye planen', meg?.medlem?.medlemskap === stor.navn && min2?.min?.plan === stor.navn,
+    (meg?.medlem?.medlemskap || '') + ' / ' + (min2?.min?.plan || ''));
+  await rapportBilde(q, 'r5-min-side');
+  await q.context().close();
+});
+
 // ── 8. Regresjon: alle faner og hovedsider ────────────────────────────
 await flyt('Regresjon: faner i admin og hovedsidene', async () => {
   const p = await side('admin');

@@ -63,6 +63,11 @@ foreach ($linjer as $l) {
     if ((int) $vare['kun_medlemmer'] === 1 && ($medlem === null || !er_aktivt_medlem($medlem))) {
         Svar::feil('En av varene er kun for medlemmer.', 403);
     }
+    // Leire er inkludert i Prøv Lissom (eieren, 29. september 2026).
+    if (Lager::skjulLeire($medlem)
+        && (int) DB::verdi('SELECT leire FROM products WHERE id = :i', ['i' => (int) $vare['id']]) === 1) {
+        Svar::feil('Leire er inkludert i Prøv Lissom.', 403);
+    }
     if ($vare['lager'] !== null && (int) $vare['lager'] < $antall) {
         Svar::feil('Vi har ikke nok igjen av «' . $vare['tittel'] . '».', 409);
     }

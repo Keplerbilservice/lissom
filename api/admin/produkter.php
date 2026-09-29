@@ -69,6 +69,7 @@ if (Foresporsel::metode() === 'GET') {
         // «Bestill mer», migrasjon 233: minimum og maksimum. null = ikke satt.
         'lagerMin'  => isset($v['lager_min']) && $v['lager_min'] !== null ? (int) $v['lager_min'] : null,
         'lagerMaks' => isset($v['lager_maks']) && $v['lager_maks'] !== null ? (int) $v['lager_maks'] : null,
+        'leire'     => (bool) ($v['leire'] ?? 0),
     ], $varer),
     'leverandorer' => DB::harTabell('leverandorer')
         ? array_map(static fn($l) => ['id' => (int) $l['id'], 'navn' => (string) $l['navn']],
@@ -193,6 +194,10 @@ if (Lager::harGrense()) {
     $data['lager_min'] = $minRaa === '' ? null : max(0, Foresporsel::heltall('lagerMin'));
     $maksRaa = Foresporsel::tekst('lagerMaks');
     $data['lager_maks'] = $maksRaa === '' ? null : max(0, Foresporsel::heltall('lagerMaks'));
+}
+// Leire, inkludert i Prøv Lissom (eieren, 29. september 2026).
+if (DB::harKolonne('products', 'leire')) {
+    $data['leire'] = Foresporsel::tekst('leire') === 'ja' ? 1 : 0;
 }
 
 // Navnet avgjor ingenting. Tidligere ble en vare uten id slaatt sammen med

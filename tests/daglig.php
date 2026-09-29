@@ -85,6 +85,32 @@ sjekk('nettordre trekker lageret', (int) DB::verdi('SELECT lager FROM products W
 sjekk('nettordre under minimum gir beskjed', (int) DB::verdi(
     'SELECT COUNT(*) FROM notifications WHERE emne = :e', ['e' => 'Bestill mer: ' . $vare . ' (3 igjen, bestill 7)']) === 1);
 
+echo "\n── Leire er inkludert i Prøv Lissom ─────────────────────────\n";
+
+sjekk('kolonnen leire finnes (migrasjon 233)', DB::harKolonne('products', 'leire'));
+$prove = (string) DB::verdi('SELECT navn FROM membership_plans WHERE engangs = 1 ORDER BY id LIMIT 1');
+$vanlig = (string) DB::verdi('SELECT navn FROM membership_plans WHERE engangs = 0 AND aktiv = 1 ORDER BY id LIMIT 1');
+sjekk('planene finnes', $prove !== '' && $vanlig !== '', "$prove | $vanlig");
+sjekk('Prøv Lissom (aktiv): leiren skjules', Lager::skjulLeire(['status' => 'aktiv', 'medlemskap_type' => $prove]));
+sjekk('Prøv Lissom (prove): leiren skjules', Lager::skjulLeire(['status' => 'prove', 'medlemskap_type' => $prove]));
+sjekk('vanlig medlemskap: leiren vises', !Lager::skjulLeire(['status' => 'aktiv', 'medlemskap_type' => $vanlig]));
+sjekk('Prøv Lissom som er avsluttet: ingen sperre', !Lager::skjulLeire(['status' => 'oppsagt', 'medlemskap_type' => $prove]));
+sjekk('ikke innlogget: ingen sperre (butikken viser uansett ikke internvarer)', !Lager::skjulLeire(null));
+
+// Endepunktene: butikklista og kjoepet sjekker merket paa serveren.
+$butikk = (string) file_get_contents(dirname(__DIR__) . '/api/butikk.php');
+$ordre  = (string) file_get_contents(dirname(__DIR__) . '/api/ordre.php');
+sjekk('api/butikk.php tar leiren ut for Prøv Lissom', str_contains($butikk, "if (Lager::skjulLeire(\$medlem)) {") && str_contains($butikk, "\$hvor .= ' AND leire = 0';"));
+sjekk('api/ordre.php stopper kjoep av leire med Prøv Lissom', str_contains($ordre, "Svar::feil('Leire er inkludert i Prøv Lissom.', 403);"));
+
+// Spoerringen i butikken, med og uten sperre.
+$lid = DB::settInn('products', ['tittel' => 'Leire ' . $tag, 'pris_ore' => 29000, 'mva_prosent' => 25, 'kun_medlemmer' => 1, 'status' => 'publisert', 'leire' => 1]);
+$vis = static fn(bool $skjul): bool => (int) DB::verdi(
+    "SELECT COUNT(*) FROM products WHERE id = :i AND status = 'publisert'" . ($skjul ? ' AND leire = 0' : ''), ['i' => $lid]) === 1;
+sjekk('leirevaren vises for vanlige medlemmer', $vis(false));
+sjekk('leirevaren er borte for Prøv Lissom', !$vis(true));
+DB::kjor('DELETE FROM products WHERE id = :i', ['i' => $lid]);
+
 echo "\n── Lav aktivitet ────────────────────────────────────────────\n";
 
 sjekk('standard 14 dager', Aktivitet::dager() === 14 || DB::verdi("SELECT verdi FROM innstillinger WHERE nokkel = 'lav_aktivitet_dager'") !== null);

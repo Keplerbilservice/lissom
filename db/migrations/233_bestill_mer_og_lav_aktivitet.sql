@@ -47,3 +47,15 @@ UPDATE notification_templates SET
     knapp = NULL,
     lenke2 = NULL
   WHERE navn = 'intern_lav_aktivitet' AND overskrift IS NULL;
+
+-- 3) Leire er inkludert i Prøv Lissom (eieren, 29. september 2026). Varer
+--    merket «leire» vises ikke i medlemsbutikken for den som har Prøv
+--    Lissom, og kjoepet stoppes paa serveren. Merket settes i vareskjemaet i
+--    admin; her faar de leirevarene som finnes det én gang: internvarer i
+--    kategorien «Leire», eller som heter «Leire …».
+ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS leire TINYINT(1) NOT NULL DEFAULT 0
+        COMMENT 'Leire: inkludert i Prøv Lissom, vises ikke i medlemsbutikken for dem';
+UPDATE products SET leire = 1
+ WHERE kun_medlemmer = 1 AND leire = 0
+   AND (LOWER(COALESCE(kategori, '')) = 'leire' OR LOWER(tittel) LIKE 'leire%');

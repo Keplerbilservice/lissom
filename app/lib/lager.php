@@ -66,6 +66,21 @@ final class Lager
     }
 
     /**
+     * Skal leiren skjules for dette medlemmet? Leire er inkludert i Prøv
+     * Lissom (eieren, 29. september 2026): den som har den, ser ikke
+     * leirevarene i medlemsbutikken og kan ikke kjoepe dem. Andre
+     * medlemskap og kassa i admin paavirkes ikke.
+     */
+    public static function skjulLeire(?array $medlem): bool
+    {
+        if ($medlem === null || !DB::harKolonne('products', 'leire')) {
+            return false;
+        }
+        return in_array((string) ($medlem['status'] ?? ''), ['prove', 'aktiv'], true)
+            && Medlemskap::erEngangs((string) ($medlem['medlemskap_type'] ?? ''));
+    }
+
+    /**
      * Varene paa eller under min — flisen paa Oversikt.
      *
      * @return list<array{id:int,vare:string,antall:int,bestill:int,linje:string}>

@@ -29857,6 +29857,12 @@ window.__resources = {
           <input type="checkbox" checked="{{ npKanBestilles }}" onChange="{{ vekslNpKanBestilles }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
           <span>Kan bestilles (handlelista)</span>
         </label>
+        <!-- Leire er inkludert i Prøv Lissom (eieren, 29. september 2026): varer
+             merket her vises ikke i medlemsbutikken for den som har Prøv Lissom. -->
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+          <input type="checkbox" checked="{{ npLeire }}" onChange="{{ vekslNpLeire }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+          <span>Leire (inkludert i Prøv Lissom)</span>
+        </label>
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-1);">
           <button type="button" onClick="{{ npLeggUt }}" style="{{ npKnappStil }}">{{ npHandling }}</button>
           <button class="lx-radpille" type="button" onClick="{{ npLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
@@ -34687,7 +34693,7 @@ class Component extends DCLogic {
         nokkel: 'medlemsinfo', navn: 'Informasjon til medlemmer', side: 'plakatinfo',
         standard: [
           'Alle må lage egne råbrente plater til å sette under alt som skal glasurbrennes.',
-          'Bruk av verksted, transparent glasur og brenning følger med i alle medlemsskapene.',
+          'Bruk av verksted og brenning følger med i alle medlemskapene.',
           'Dersom man har mye som skal brennes og ikke vil vente, kan man kjøpe egen brenning kun til sine egne ting.',
           'Det er kun underglasurer som kan benyttes før råbrenning. Glasurer skal KUN brukes etter råbrenning!',
           'Leire, farger og andre glasurer holder man selv, og oppbevarer det i sin egen hylle og på eget ansvar.',
@@ -43546,6 +43552,7 @@ class Component extends DCLogic {
         artikkelnr: (s.npArtikkelnr || '').trim(),
         leverandorId: parseInt(String(s.npLeverandor || 0), 10) || 0,
         kanBestilles: s.npKanBestilles ? 'ja' : 'nei',
+        leire: s.npLeire ? 'ja' : 'nei',
         status: 'publisert',
       }),
     })
@@ -55485,7 +55492,7 @@ class Component extends DCLogic {
       // Lav aktivitet: dager siden sist og kontaktpillene, bare i den pilla.
       visLav: (this.state.medlemFilter || '') === 'Lav aktivitet' && !!m.lavAktivitet,
       lavTekst: m.dagerSiden === null || m.dagerSiden === undefined ? '' : m.dagerSiden + ' dager siden sist',
-      harTlf: !!m.tlf, tlfLenke: 'tel:' + String(m.tlf || '').replace(/s+/g, ''),
+      harTlf: !!m.tlf, tlfLenke: 'tel:' + String(m.tlf || '').replace(/\s+/g, ''),
       harEpost: !!m.epostRa, epostLenke: 'mailto:' + (m.epostRa || ''),
       stopp: e => { if (e && e.stopPropagation) e.stopPropagation(); },
       kontaktStil: { display: 'inline-flex', alignItems: 'center', minHeight: 32, padding: '4px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', font: 'var(--type-chip)', fontWeight: 600, textDecoration: 'none' },
@@ -56443,7 +56450,7 @@ class Component extends DCLogic {
               npMin: raa.lagerMin == null ? '' : String(raa.lagerMin), npMaks: raa.lagerMaks == null ? '' : String(raa.lagerMaks),
               npBeskrivelse: raa.beskrivelse || '', npKategori: raa.kategori || '',
               npArtikkelnr: raa.artikkelnr || '', npLeverandor: raa.leverandorId || 0,
-              npKanBestilles: !!raa.kanBestilles,
+              npKanBestilles: !!raa.kanBestilles, npLeire: !!raa.leire,
               npMva: (raa.mva ?? 25) > 0, npKunMedlemmer: true,
               npBilde: raa.bilde || '',
             } : {}
@@ -56571,7 +56578,7 @@ class Component extends DCLogic {
       ],
       medlemViktig: [
         { tittel: 'Én hylleplass', tekst: 'Hvert medlemskap inkluderer én hylle til arbeidene dine.' },
-        { tittel: 'Brenning følger planen', tekst: 'Vi brenner etter verkstedets brenningsplan, vanligvis ukentlig. Glasur og leire kjøpes i internbutikken.' },
+        { tittel: 'Brenning følger planen', tekst: 'Vi brenner etter verkstedets brenningsplan, vanligvis ukentlig.' },
         { tittel: 'Verkstedets regler', tekst: 'Egne materialer og glasurer må godkjennes, og HMS- og ordensreglene gjelder alle medlemmer.' },
       ],
       // ── Kursveilederen ────────────────────────────────────────────────
@@ -62300,7 +62307,7 @@ class Component extends DCLogic {
       // Lav aktivitet: dagene settes her (eieren, 28. september 2026).
       lavValgt: (this.state.medlemFilter || '') === 'Lav aktivitet' && (this.state.medlemSok || '').trim() === '',
       lavDager: this.state.lavDager !== undefined ? this.state.lavDager : String((((this.state.adminData || {}).lavAktivitet) || {}).dager || 14),
-      settLavDager: e => this.setState({ lavDager: e.target.value.replace(/[^d]/g, '') }),
+      settLavDager: e => this.setState({ lavDager: e.target.value.replace(/[^\d]/g, '') }),
       lagreLavDager: () => this.lagreLavDager(),
       lavLagreStil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 14px', font: 'var(--type-chip)', fontWeight: 600, border: '1px solid var(--lissom-brown)', background: 'var(--lissom-brown)', color: 'var(--clay-50)', minHeight: 32 },
       settMedlemSok: e => this.setState({ medlemSok: e.target.value }),
@@ -63691,11 +63698,11 @@ class Component extends DCLogic {
       // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
       // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
       // peker knappene dit.
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
-      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npLeire: false, npBilde: '' }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npLeire: false, npBilde: '' }),
       butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
-        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npBilde: '' })
-        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npBilde: '' })),
+        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npLeire: false, npBilde: '' })
+        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npLeire: false, npBilde: '' })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
       // Handlelista, migrasjon 184. Leverandorene kommer fra basen —
@@ -63704,6 +63711,8 @@ class Component extends DCLogic {
       settNpArtikkelnr: e => this.setState({ npArtikkelnr: e.target.value }),
       npKanBestilles: !!this.state.npKanBestilles,
       vekslNpKanBestilles: () => this.setState(st => ({ npKanBestilles: !st.npKanBestilles })),
+      npLeire: !!this.state.npLeire,
+      vekslNpLeire: () => this.setState(st => ({ npLeire: !st.npLeire })),
       npLeverandorer: [{ id: 0, navn: 'Ingen leverandør' }]
         .concat((this.state.hla || {}).leverandorer || this.state.leverandorer || [])
         .map(l => ({
@@ -63783,9 +63792,9 @@ class Component extends DCLogic {
       npAntall: this.state.npAntall || '',
       settNpAntall: e => this.setState({ npAntall: e.target.value }),
       npMin: this.state.npMin || '',
-      settNpMin: e => this.setState({ npMin: e.target.value.replace(/[^d]/g, '') }),
+      settNpMin: e => this.setState({ npMin: e.target.value.replace(/[^\d]/g, '') }),
       npMaks: this.state.npMaks || '',
-      settNpMaks: e => this.setState({ npMaks: e.target.value.replace(/[^d]/g, '') }),
+      settNpMaks: e => this.setState({ npMaks: e.target.value.replace(/[^\d]/g, '') }),
       npBeskrivelse: this.state.npBeskrivelse || '',
       settNpBeskrivelse: e => this.setState({ npBeskrivelse: e.target.value }),
       npTekstStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', resize: 'vertical', fontFamily: 'inherit' },
@@ -70467,6 +70476,7 @@ class Component extends DCLogic {
           npAntall: v.antall === null ? '' : String(v.antall),
           npMin: v.raa && v.raa.lagerMin != null ? String(v.raa.lagerMin) : '',
           npMaks: v.raa && v.raa.lagerMaks != null ? String(v.raa.lagerMaks) : '',
+          npLeire: !!(v.raa && v.raa.leire),
           npBeskrivelse: v.raa ? (v.raa.beskrivelse || '') : '',
           npKategori: v.raa ? (v.raa.kategori || '') : '',
           npMva: v.raa ? (v.raa.mva ?? 25) > 0 : true,

@@ -92,7 +92,7 @@ foreach ($planer as $p) {
     $h .= '</ul></div>';
 }
 $h .= '</div><div class="lx-cols4" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); margin-top: var(--space-10);">';
-foreach ([['Én hylleplass', 'Hvert medlemskap inkluderer én hylle til arbeidene dine.'], ['Brenning følger planen', 'Vi brenner etter verkstedets brenningsplan, vanligvis ukentlig. Glasur og leire kjøpes i internbutikken.'], ['Verkstedets regler', 'Egne materialer og glasurer må godkjennes, og HMS- og ordensreglene gjelder alle medlemmer.']] as [$vt, $vx]) {
+foreach ([['Én hylleplass', 'Hvert medlemskap inkluderer én hylle til arbeidene dine.'], ['Brenning følger planen', 'Vi brenner etter verkstedets brenningsplan, vanligvis ukentlig.'], ['Verkstedets regler', 'Egne materialer og glasurer må godkjennes, og HMS- og ordensreglene gjelder alle medlemmer.']] as [$vt, $vx]) {
     $h .= '<div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);"><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Viktig å vite</div><h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">' . $e($vt) . '</h3><p style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">' . $e($vx) . '</p></div>';
 }
 $h .= '</div></div></section>' . "\n";

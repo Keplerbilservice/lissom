@@ -44011,6 +44011,13 @@ class Component extends DCLogic {
    * trykket den dagen. Huskes i nettleseren; kan den ikke huske, vises
    * vinduet igjen, som er det trygge.
    */
+  /** Er månedens timer brukt opp, og kan timepakken kjøpes? (vindu 2) */
+  timeneBruktOpp() {
+    const st = this.state.stempling || {};
+    const tp = st.timepakke || {};
+    return !!(st.timer && st.timer.perMnd !== null && st.timer.igjen === 0 && tp.kanKjope && !tp.prove);
+  }
+
   timepakkeVindu() {
     const av = { tpVis: false, tpVindu: '', tpVanlig: false, tpSporsmaal: false, tpTittel: '', tpTekst: '',
       tpFakta: false, tpFaktaNavn: '', tpFaktaPris: '', tpKnapper: [], tpGrunner: [], tpFritekst: '',
@@ -66772,14 +66779,9 @@ class Component extends DCLogic {
       // brukt opp, aapner den vindu 2 — timepakke eller oppgradering.
       aFornyAbo: (this.egenPlan() || {}).engangs
         ? () => this.setState({ byttAboApen: true })
-        : (() => {
-            const st = this.state.stempling || {};
-            const tp = st.timepakke || {};
-            const tomt = st.timer && st.timer.perMnd !== null && st.timer.igjen === 0 && tp.kanKjope && !tp.prove;
-            return tomt
-              ? () => this.setState({ tpVindu: '2', tpLukket: false })
-              : this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || '');
-          })(),
+        : this.timeneBruktOpp()
+          ? () => this.setState({ tpVindu: '2', tpLukket: false })
+          : this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),
 
       // Synligheten lagres paa medlemmet, ikke i nettleseren.
       synlig: this.state.stempling ? this.state.stempling.visMeg : this.state.synlig,

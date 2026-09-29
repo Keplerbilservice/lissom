@@ -335,7 +335,8 @@ final class Medlemskap
     {
         $medlemId = (int) $medlem['id'];
         $avtaleId = (int) $avtale['id'];
-        $plan = self::planUansett((string) $avtale['plan']);
+        $planNavn = (string) $avtale['plan'];
+        $plan = self::planUansett($planNavn);
         if ($plan === null) {
             throw new RuntimeException('Ukjent medlemskap.');
         }

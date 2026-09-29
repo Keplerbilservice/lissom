@@ -3,7 +3,7 @@
  * Paameldinger lagt inn for haand.
  *
  *   POST handling=legg-til   { oktId, navn, epost, telefon, antall,
- *                              betaltMaate, belop, notat, varsle }
+ *                              betaltMaate, belop, notat, varsle, medlemId? }
  *   POST handling=fjern      { id }
  *   POST handling=flytt      { id, oktId }   samme person, ny dato
  *   POST handling=til-venteliste { id }    gir fra seg plassen, staar i koen
@@ -834,6 +834,21 @@ if ($okt === null) {
     Svar::feil('Velg en dato som finnes.');
 }
 
+// Medlemmet plassen hoerer til.
+//
+// Sto alltid «null»: en paamelding lagt inn for haand ble en gjest, ogsaa naar
+// den som ble lagt inn var medlem hos oss. Min side henter bare bookinger med
+// «member_id» (api/mine-plasser.php), saa plassen — og kursbeviset — dukket
+// aldri opp hos medlemmet. Eieren, 27. september 2026, om fem medlemmer som
+// gikk kurs foer systemet: «kan du legge inn kursbevis nybegynner dreiekurs
+// under min side til medlemmene».
+//
+// Valgfritt: den som ringer og ikke er medlem foeres som gjest, som foer.
+$medlemId = Foresporsel::heltall('medlemId');
+if ($medlemId > 0 && DB::en('SELECT id FROM members WHERE id = :i', ['i' => $medlemId]) === null) {
+    Svar::feil('Fant ikke medlemmet.');
+}
+
 $epost   = mb_substr(Foresporsel::tekst('epost'), 0, 191);
 $telefon = normaliser_telefon(Foresporsel::tekst('telefon'));
 
@@ -897,22 +912,33 @@ if ($maate === 'Gavekort') {
 
 // Er noen alt paameldt med samme navn paa samme dato, er det trolig et
 // dobbelttrykk. Vi legger ikke inn to.
-$fra = DB::en(
-    "SELECT id FROM bookings
-      WHERE course_session_id = :o AND gjest_navn = :n AND status <> 'avbestilt'",
-    ['o' => $oktId, 'n' => $navn]
-);
+//
+// Er det et medlem, slaas det opp paa medlemsnummeret ogsaa: navnet i feltet
+// kan vaere skrevet litt annerledes enn det som staar i registeret, og da
+// ville to plasser gaatt gjennom paa samme person.
+$fra = $medlemId > 0
+    ? DB::en(
+        "SELECT id FROM bookings
+          WHERE course_session_id = :o AND status <> 'avbestilt'
+            AND (member_id = :m OR gjest_navn = :n)",
+        ['o' => $oktId, 'm' => $medlemId, 'n' => $navn]
+    )
+    : DB::en(
+        "SELECT id FROM bookings
+          WHERE course_session_id = :o AND gjest_navn = :n AND status <> 'avbestilt'",
+        ['o' => $oktId, 'n' => $navn]
+    );
 if ($fra !== null) {
     Svar::feil($navn . ' står alt på denne datoen.');
 }
 
 $ledige = Booking::ledigePlasser($oktId);
 
-$bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epost, $telefon, $antall, $belop, $status, $maate, $admin): int {
+$bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epost, $telefon, $antall, $belop, $status, $maate, $admin, $medlemId): int {
     return DB::settInn('bookings', [
         'course_id'         => (int) $okt['course_id'],
         'course_session_id' => $oktId,
-        'member_id'         => null,
+        'member_id'         => $medlemId > 0 ? $medlemId : null,
         'gjest_navn'        => $navn,
         'gjest_epost'       => $epost !== '' ? $epost : null,
         'gjest_telefon'     => $telefon !== '' ? $telefon : null,

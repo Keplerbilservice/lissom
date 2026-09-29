@@ -712,7 +712,10 @@ img{max-width:100%;display:block}
 .lx-tmgrp > .lx-tmpanel { display: none; position: absolute; top: 100%; left: 0; z-index: 50; margin-top: 6px; }
 .lx-tmgrp > .lx-tmpanel.lx-tmhoyre { left: auto; right: 0; }
 .lx-tmgrp::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 10px; }
-.lx-tmgrp:hover > .lx-tmpanel, .lx-tmgrp:focus-within > .lx-tmpanel { display: block; }
+/* Panelene aapnes og lukkes med trykk, ikke med musa over eller fokus.
+   Eieren, 29. september 2026: «synlighet og se nettsiden etc staar aapen».
+   Med :hover og :focus-within sto panelet oppe etter at man hadde trykket
+   det igjen — knappen beholdt fokus, og musa laa over den. */
 .lx-tm button:focus-visible { outline: 2px solid var(--lissom-yellow); outline-offset: 2px; }
 .lx-tmgrp > .lx-tmpanel[style*="display: block"] { display: block !important; }
 @media (min-width: 980px) {
@@ -5317,7 +5320,23 @@ window.__resources = {
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-bottom: 2px;">Forhåndsvisning</div>
                 <p style="margin: 0; font-size: var(--text-sm); color: var(--brown-500); max-width: 68ch; text-wrap: pretty;">{{ fhBandTekst }}</p>
               </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>
+              <!-- «⊙ Synlighet» her, ikke bare i adminstripa.
+                   Bryterne for Min side ligger i Synlighet-arket, og arket
+                   aapnes fra en pille i adminstripa. Men den stripa er borte
+                   mens man staar i forhaandsvisninga — dette ER Min side, ikke
+                   en adminskjerm. Runden ble: tilbake, aapne Synlighet, skru,
+                   og inn hit igjen for aa se hva det ble.
+                   Eieren, 27. september 2026: «kan jeg skru av og paa funksjoner
+                   der ogsaa?»
+                   Arket staar én gang i malen, paa toppnivaa, og tegnes derfor
+                   ogsaa her. Ingen ny bryter og ingen kopi: den samme
+                   «synAapne» som pilla i stripa bruker. Bryterne blir liggende
+                   ett sted, slik eieren bestemte 19. september — «alt styres
+                   kun fra Synlighet». Dette er bare en vei inn dit herfra. -->
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ fhSynlighet }}" hint-size="auto,38px">⊙ Synlighet</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>
+              </div>
             </div>
           </sc-if>
 
@@ -7480,6 +7499,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -7971,6 +7991,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -8283,6 +8304,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -8582,6 +8604,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -8991,6 +9014,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -9429,6 +9453,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -9747,6 +9772,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -10220,6 +10246,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -12201,6 +12228,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -12561,6 +12589,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -12981,6 +13010,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -13400,6 +13430,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -14354,6 +14385,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -14646,6 +14678,14 @@ window.__resources = {
                 <sc-if value="{{ nrIngenOkter }}" hint-placeholder-val="{{ false }}">
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">{{ nrIngenOkterTekst }}</p>
                 </sc-if>
+                <!-- Lista gaar tretti dager tilbake. Skal noen foeres inn paa
+                     noe som alt er gjennomfoert, hentes datoene bakover — to
+                     aar. Eieren, 27. september 2026: fem medlemmer som gikk
+                     nybegynnerkurs foer systemet fantes. -->
+                <label style="{{ nrFortidStil }}">
+                  <input type="checkbox" checked="{{ nrFortid }}" onChange="{{ vekslNrFortid }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                  {{ nrFortidTekst }}
+                </label>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--space-4); margin-top: var(--space-4);">
                   <div>
@@ -14780,6 +14820,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -15343,6 +15384,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -16001,6 +16043,18 @@ window.__resources = {
                       <button type="button" onClick="{{ c.velg }}" style="{{ c.stil }}">{{ c.nr }}</button>
                     </sc-for>
                   </div>
+                  <!-- Dager som har vaert er stengt: et kurs lagret paa en dato
+                       bakover forsvant fra nettsida, som bare viser det som
+                       ligger foran, og sto som publisert i admin uten et ord om
+                       hvorfor.
+                       Men noe HAR vaert, og skal kunne foeres inn: eieren, 27.
+                       september 2026, om fem medlemmer som gikk kurs foer
+                       systemet. Bryteren aapner bakover naar man ber om det, og
+                       staar av til man gjoer det. -->
+                  <label style="{{ kFortidStil }}">
+                    <input type="checkbox" checked="{{ kFortid }}" onChange="{{ vekslKFortid }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Datoer som har vært (for å føre inn noe som alt er gjennomført)
+                  </label>
                 </div>
                 <sc-if value="{{ harOkter }}" hint-placeholder-val="{{ false }}">
                   <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-4);">
@@ -16445,6 +16499,7 @@ window.__resources = {
                 <div class="lx-pillerad" style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
                   <button class="lx-radpille" type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <button class="lx-radpille" type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.startKurs }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Start kurset</button>
                   <button class="lx-radpille" type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
                   <!-- Tar bort datoen, ikke kurset. Gjentar kurset seg, blir
                        det mange datoer, og de kunne bare avlyses — de ble
@@ -16716,6 +16771,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -17000,6 +17056,8 @@ window.__resources = {
         <!-- Den gule raden: det som brukes oftest, og ovnen. -->
         <div data-theme="sun" class="lx-hurtig" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3) var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Ofte brukt</span>
+          <!-- «Start kurset» foerst: eieren, 29. september 2026, «jeg ser heller ikke hvor jeg kan starte». -->
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ ksStartOversikt }}" hint-size="auto,40px">▶ Start kurset</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ ovNyttKurs }}" hint-size="auto,40px">Nytt kurs</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Melding til medlemmene</x-import>
@@ -17152,6 +17210,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -17602,6 +17661,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -18013,6 +18073,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -18517,6 +18578,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -18867,6 +18929,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -19205,6 +19268,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -19560,6 +19624,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -19882,6 +19947,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -20492,6 +20558,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -20896,6 +20963,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -21756,6 +21824,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -22111,6 +22180,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -23420,6 +23490,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -23901,6 +23972,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -24705,6 +24777,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -25178,6 +25251,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -25506,6 +25580,44 @@ window.__resources = {
             </div>
           </sc-if>
         </div>
+
+        <!-- ── Kursstart ─────────────────────────────────────────
+             Eieren, 29. september 2026: onboardinga du gaar gjennom med
+             deltakerne ved kursstart. Kortene vises i en karusell fra
+             «Start kurset» paa kursdatoen og fra snarveien i kalenderen —
+             teksten staar her, fordi det er eieren som vet hvor toalettet
+             er og hvor lenge det tar for arbeidene er ferdige.
+
+             Kort 2 har ingen liste aa skrive inn. Der er innholdet de
+             paameldte paa akkurat den datoen, med betalt eller ikke, hentet
+             naar kortet aapnes. Teksten her er bare innledninga over lista. -->
+        <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
+          <div>
+            <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Kursstart</h2>
+            <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">{{ ksRedHjelp }}</p>
+          </div>
+          <sc-for list="{{ ksRedKort }}" as="k" hint-placeholder-count="5">
+            <div style="{{ k.rammeStil }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ k.merke }}</span>
+                <button type="button" onClick="{{ k.veksle }}" aria-pressed="{{ k.paa }}" aria-label="{{ k.bryterNavn }}" style="{{ k.bryterStil }}">{{ k.bryterTekst }}</button>
+              </div>
+              <input value="{{ k.tittel }}" onChange="{{ k.settTittel }}" aria-label="{{ k.tittelNavn }}" placeholder="Overskrift" style="{{ k.feltStil }}">
+              <textarea value="{{ k.tekst }}" onChange="{{ k.settTekst }}" aria-label="{{ k.tekstNavn }}" rows="4" placeholder="Én linje blir ett avsnitt" style="{{ k.omraadeStil }}"></textarea>
+              <sc-if value="{{ k.erBetaling }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Under denne teksten står de påmeldte på datoen, med betalt eller ikke. Den lista hentes når kortet åpnes, og skrives ikke inn her.</p>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+            <sc-if value="{{ ksRedUlagret }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ ksRedForkast }}" hint-size="auto,36px">Forkast</x-import>
+            </sc-if>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ ksRedLagre }}" hint-size="auto,36px">Lagre kursstarten</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ ksRedSe }}" hint-size="auto,36px">Se karusellen</x-import>
+          </div>
+        </div>
       </main>
     </div>
   </sc-if>
@@ -25601,6 +25713,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -26405,6 +26518,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -27132,6 +27246,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -28759,6 +28874,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -29210,6 +29326,7 @@ window.__resources = {
               </sc-if>
             </div>
           </div>
+          <button type="button" onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}" aria-label="Søk i admin" title="Søk i admin">⌕ Søk</button>
           <button type="button" onClick="{{ synAapne }}" style="{{ tmSynStil }}">Synlighet</button>
           <div class="lx-tmgrp">
             <button type="button" aria-haspopup="true" aria-expanded="{{ tmVerkApen }}" onClick="{{ tmVerkVeksle }}" aria-label="Verktøy" title="Verktøy" style="{{ tmVerkStil }}">⚙</button>
@@ -30540,6 +30657,115 @@ window.__resources = {
 
      Arket staar én gang i malen, ikke én gang per adminskjerm. Navnet paa
      hver rad, og hva den gjoer, er det samme som for. -->
+<!-- ── Søk i admin ─────────────────────────────────────────────
+     Eieren, 27. september 2026: «jeg kunne godt tenke meg et soekefelt paa
+     admin der jeg skal soeke i funksjoner i admin».
+
+     Ruta staar én gang i malen, som Synlighet-arket, og naas fra pilla i
+     adminstripa paa PC og fra menyskuffen paa telefon. Treffene bygges av
+     menyen, fanene og bryterne — se adminSokIndeks(). -->
+<sc-if value="{{ admSokVises }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ admSokLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ admSokStopp }}" class="lx-synark" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: var(--space-4);">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Søk i admin</div>
+        <button type="button" onClick="{{ admSokLukk }}" aria-label="Lukk" style="appearance: none; background: var(--clay-100); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 17px; line-height: 1; color: var(--text-heading);">×</button>
+      </div>
+      <input value="{{ admSokTekst }}" onChange="{{ settAdmSokTekst }}" placeholder="Skriv hva du leter etter — for eksempel «venteliste» eller «vedlikehold»" aria-label="Søk i admin" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+      <sc-if value="{{ admSokHarTreff }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column;">
+          <sc-for list="{{ admSokTreff }}" as="t" hint-placeholder-count="5">
+            <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">
+              <span style="{{ t.navnStil }}">{{ t.navn }}</span>
+              <span style="{{ t.hvorStil }}">{{ t.hvor }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ admSokIngen }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ admSokIngenTekst }}</p>
+      </sc-if>
+      <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ admSokAntall }}</p>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ── Kursstart ───────────────────────────────────────────────
+     Eieren, 29. september 2026: «Jeg skulle hatt en slags onboarding til
+     admin, ved oppstart av kurs, i enkel karusellform som er mobilvennlig».
+
+     Fem kort du gaar gjennom med deltakerne foer dere begynner. Arket staar
+     én gang i malen, som Synlighet og Soek, og naas fra «Start kurset» paa
+     datoen i Kurs og deltakere og fra snarveien i kalenderen.
+
+     Ingen sveip. Ingen andre steder i denne malen har roerings-haandterere,
+     og en karusell som bare kan sveipes er en karusell ingen finner fram i
+     med leirete hender. Store knapper og prikker du kan trykke paa. -->
+<sc-if value="{{ ksVises }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ ksLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ ksStopp }}" class="lx-synark lx-kursstart" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-5);">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4);">
+        <div style="min-width: 0;">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kursstart</div>
+          <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ ksNaar }}</div>
+        </div>
+        <button type="button" onClick="{{ ksLukk }}" aria-label="Lukk" style="appearance: none; background: var(--clay-100); border: none; border-radius: 50%; width: 30px; height: 30px; flex: 0 0 auto; cursor: pointer; font-size: 17px; line-height: 1; color: var(--text-heading);">×</button>
+      </div>
+
+      <div>
+        <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl); letter-spacing: 0; text-wrap: pretty;">{{ ksTittel }}</h2>
+        <sc-for list="{{ ksAvsnitt }}" as="a" hint-placeholder-count="3">
+          <p style="margin: 0 0 10px; font-size: var(--text-base); line-height: 1.6; color: var(--text-body); text-wrap: pretty;">{{ a.tekst }}</p>
+        </sc-for>
+      </div>
+
+      <!-- Betalingskortet. Lista er de paameldte paa akkurat denne datoen,
+           med betalt eller ikke. Trykk paa en rad gaar til Paameldte — der
+           betaling alt haandteres, saa det finnes fortsatt bare ett sted
+           som endrer penger. -->
+      <sc-if value="{{ ksErBetaling }}" hint-placeholder-val="{{ false }}">
+        <div style="background: var(--clay-50); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
+          <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">{{ ksBetalingStatus }}</div>
+          <sc-if value="{{ ksHarRader }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ ksRader }}" as="r" hint-placeholder-count="4">
+                <button type="button" onClick="{{ r.velg }}" style="{{ r.radStil }}">
+                  <span style="font-weight: 600;">{{ r.navn }}</span>
+                  <span style="{{ r.merkeStil }}">{{ r.merke }} · {{ r.sum }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- Prikkene sier hvor mange kort det er og hvor du er. De er ogsaa
+           knapper: holder du kurs og vil tilbake til det praktiske, skal du
+           ikke maatte trykke deg bakover fire ganger. -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+        <!-- Ikke «lx-pillerad»: den klassen gir hver knapp halv bredde paa
+             telefon, og prikkene er prikker, ikke piller. -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <sc-for list="{{ ksPrikker }}" as="p" hint-placeholder-count="5">
+            <button type="button" onClick="{{ p.velg }}" aria-label="{{ p.navn }}" title="{{ p.navn }}" style="{{ p.stil }}"></button>
+          </sc-for>
+        </div>
+        <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ ksTeller }}</span>
+      </div>
+
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <button type="button" onClick="{{ ksFor }}" style="{{ ksForStil }}">← Forrige</button>
+        <sc-if value="{{ ksHarNeste }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ ksNeste }}" style="{{ ksNesteStil }}">Neste →</button>
+        </sc-if>
+        <sc-if value="{{ ksErSiste }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ ksLukk }}" style="{{ ksSisteStil }}">Ferdig — vi setter i gang</button>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ synVises }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ synLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ synStopp }}" class="lx-synark" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; overflow-y: auto;">
@@ -38301,6 +38527,12 @@ class Component extends DCLogic {
   adminSnarveier() {
     const d = this.state.adminData || {};
     return [
+                // Eieren, 29. september 2026: onboardinga ved kursstart.
+                // Snarveien plukker okta selv — den forste i dag som ikke er
+                // over, ellers den neste som kommer — saa den kan trykkes i
+                // verkstedet uten aa lete etter datoen forst.
+                { navn: 'Start kurset', nokkel: 'kursstart',
+                  velg: () => this.kursstartVals().ksAapne(0) },
                 { navn: 'Chat', nokkel: 'chat', velg: () => (this.state.side === 'adminkalender' ? this.setState({ klChatVis: true }) : this.gaaAdmin('adminkalender', { klChatVis: true })) },
                 // Eieren, 13. september 2026: «legge til send beskjed ved
                 // siden av chat pillen i kalender … komme til samme sted som
@@ -42609,11 +42841,33 @@ class Component extends DCLogic {
     document.addEventListener('mouseover', this._radHover, { passive: true });
     document.addEventListener('mouseout', this._radUt, { passive: true });
 
+    // Esc lukker det som staar aapent. Eieren, 29. september 2026: «menyen
+    // faar jeg ikke lukket» og «synlighet og se nettsiden etc staar aapen».
+    // Arkene i admin (Synlighet, verktoyene, Soek, Kursstart), panelene i
+    // stripa paa PC og skuffen paa telefon lukket seg bare med sin egen
+    // knapp — Esc gjorde ingenting med dem.
     this._esc = (e) => {
       if (e.key !== 'Escape') return;
-      this.setState({ kurvApen: false, vippsBetaling: null, kvittering: null });
+      this.setState({
+        kurvApen: false, vippsBetaling: null, kvittering: null,
+        tmApen: '', verktoyApen: false, synlighetApen: false,
+        admSokApen: false, admSokTekst: '', ksApen: false, admMobApen: false,
+      });
     };
     document.addEventListener('keydown', this._esc);
+    // Trykk utenfor lukker panelene i stripa paa PC og skuffen paa telefon.
+    // Arkene har sin egen bakgrunn som lukker, men panelene under «Mer», ⚙
+    // og «inne» hadde ingen: de sto aapne til man traff den samme knappen
+    // igjen. Skuffen paa telefon likedan.
+    this._utenfor = (e) => {
+      const t = e.target;
+      if (!t || !t.closest) return;
+      const nytt = {};
+      if (this.state.tmApen && !t.closest('.lx-tmgrp')) nytt.tmApen = '';
+      if (this.state.admMobApen && !t.closest('.lx-admmob')) nytt.admMobApen = false;
+      if (Object.keys(nytt).length) this.setState(nytt);
+    };
+    document.addEventListener('click', this._utenfor);
     // Her laa det en ruting til: en egen popstate-lytter som leste skjermen
     // ut av «#»-delen av adressen, ved siden av den ekte som leser stien.
     //
@@ -42628,6 +42882,7 @@ class Component extends DCLogic {
 
   componentWillUnmount() {
     this.feilvaktStopp();
+    if (this._utenfor) document.removeEventListener('click', this._utenfor);
     if (this._slippVakt) {
       document.removeEventListener('dragover', this._slippVakt);
       document.removeEventListener('drop', this._slippVakt);
@@ -48495,6 +48750,378 @@ class Component extends DCLogic {
   // Arket (⊙ Synlighet) og flisen paa Oversikt leser begge herfra, saa de
   // aldri kan si hver sitt om hva som er paa (eieren, 27. september 2026:
   // «jeg trenger aa se hvilke funksjoner jeg har aktive»).
+  // ------------------------------------------------------- kursstart
+  //
+  // Eieren, 29. september 2026: «Jeg skulle hatt en slags onboarding til
+  // admin, ved oppstart av kurs, i enkel karusellform som er mobilvennlig».
+  //
+  // Fem kort du gaar gjennom med deltakerne foer dere begynner: det
+  // praktiske, betalinga, hva dere skal gjore i dag, naar arbeidene er
+  // ferdige, og e-posten etterpaa. Teksten ligger i basen (migrasjon 234) og
+  // endres under Markedsfoering › Tekst maler — det er eieren som vet hvor
+  // toalettet er, ikke koden.
+  //
+  // Kortet om betaling har ingen lagret liste. Der staar de paameldte paa
+  // akkurat den okta, med betalt eller ikke, hentet fra de paameldingene
+  // skjermen alt har. Ingen ny maate aa endre penger paa: trykker du paa en
+  // som ikke har gjort opp, gaar du til Paameldte, der du alt kan ta betalt.
+
+  /** Kortene slik de staar i forhaandsvisninga, der det ikke finnes noen server. */
+  kursstartStandard() {
+    return [
+      { nr: 1, tittel: 'Velkommen — det praktiske først', paa: true, betaling: false,
+        tekst: 'Toalettet er gjennom døra til venstre.\nRømningsveien er den samme veien du kom inn, og bakdøra ved ovnsrommet.\nKaffe, te og litt å bite i står framme — forsyn dere når som helst.' },
+      { nr: 2, tittel: 'Betaling', paa: true, betaling: true,
+        tekst: 'Er det noen som ikke har gjort opp, tar vi det nå — så slipper vi å tenke på det resten av kvelden.' },
+      { nr: 3, tittel: 'Dette skal vi gjøre i dag', paa: true, betaling: false,
+        tekst: 'Vi begynner med en kort gjennomgang, så setter dere i gang selv.\nDet blir leire på hendene og sannsynligvis på klærne — forkle får dere låne av oss.\nDere trenger ikke å få det til med én gang. Det er helt greit å begynne på nytt.' },
+      { nr: 4, tittel: 'Når får dere med dere arbeidene hjem?', paa: true, betaling: false,
+        tekst: 'Arbeidene skal tørke, brennes, glaseres og brennes en gang til. Det tar noen uker.\nDere får beskjed på Min side og på e-post når de er ferdige, og da kan dere hente dem hos oss.' },
+      { nr: 5, tittel: 'Etter kurset', paa: true, betaling: false,
+        tekst: 'Dere får en e-post med litt info i etterkant, og kursbeviset deres ligger på Min side.' },
+    ];
+  }
+
+  /** Det som er lagret, eller standarden til serveren har svart. */
+  kursstartKort() {
+    const k = this.state.ksKort;
+    return (k && k.length) ? k : this.kursstartStandard();
+  }
+
+  hentKursstart() {
+    if (!this.erPublisert() || this._ksHentes) return;
+    this._ksHentes = true;
+    fetch('/api/admin/kursstart.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._ksHentes = false;
+        if (d && d.kort) this.setState({ ksKort: d.kort });
+      })
+      .catch(() => { this._ksHentes = false; });
+  }
+
+  lagreKursstart() {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'Kursstarten ligger i databasen, og finnes bare på lissom.no.' });
+      return;
+    }
+    if (this._ksLagrer) return;
+    this._ksLagrer = true;
+    const u = this.state.ksUtkast || {};
+    const kort = this.kursstartKort().map(k => Object.assign({ nr: k.nr, tittel: k.tittel, tekst: k.tekst, paa: k.paa }, u[k.nr] || {}));
+    fetch('/api/admin/kursstart.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'lagre', kort: kort }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        this._ksLagrer = false;
+        if (ok) { this.setState({ ksUtkast: null, ksKort: null }); this._ksHentes = false; this.hentKursstart(); }
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: ok ? (d.beskjed || '') : (d.feil || 'Prøv igjen om litt.'),
+        });
+      })
+      .catch(() => {
+        this._ksLagrer = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /**
+   * Okta karusellen gjelder.
+   *
+   * Kom du fra en dato i Kurs og deltakere, er det den. Kom du fra snarveien
+   * i kalenderen, er det den forste okta i dag som ikke er over — og finnes
+   * ingen slik, den neste som kommer. Snarveien skal kunne trykkes uten aa
+   * lete, ogsaa kvelden for.
+   */
+  kursstartOkt() {
+    const okter = this.state.adminOkter || [];
+    const valgt = okter.find(o => String(o.oktId) === String(this.state.ksOkt || ''));
+    if (valgt) return valgt;
+    const naa = Date.now();
+    const tid = (o, felt) => new Date((o.dato || '') + 'T' + (o[felt] || '00:00')).getTime();
+    const idag = okter.filter(o => o.dato === new Date().toISOString().slice(0, 10))
+      .sort((a, b) => tid(a, 'fra') - tid(b, 'fra'));
+    return idag.find(o => tid(o, 'til') >= naa) || idag[0]
+      || okter.filter(o => tid(o, 'fra') >= naa).sort((a, b) => tid(a, 'fra') - tid(b, 'fra'))[0]
+      || null;
+  }
+
+  /**
+   * Redigeringa under Markedsfoering › Tekst maler.
+   *
+   * Samme monster som malene: et utkast i state, «Ikke lagret» naar det er
+   * noe der, forkast eller lagre. Bryteren per kort er ogsaa en del av
+   * utkastet — slaar du et kort av og angrer, skal «Forkast» ta det med.
+   */
+  kursstartRedVals() {
+    const u = this.state.ksUtkast || {};
+    const kort = this.kursstartKort();
+    const felt = {
+      width: '100%', boxSizing: 'border-box', padding: '10px 12px',
+      border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+      font: 'var(--type-body-sm)', background: 'var(--surface-page)',
+      color: 'var(--text-heading)',
+    };
+    const endre = (nr, hva) => this.setState({
+      ksUtkast: Object.assign({}, this.state.ksUtkast || {},
+        { [nr]: Object.assign({}, (this.state.ksUtkast || {})[nr] || {}, hva) }),
+    });
+    return {
+      ksRedHjelp: 'Fem kort du går gjennom med deltakerne før dere begynner. '
+        + 'De åpnes fra «Start kurset» på kursdatoen, og fra snarveien i kalenderen.',
+      ksRedUlagret: Object.keys(u).length > 0,
+      ksRedForkast: () => this.setState({ ksUtkast: null }),
+      ksRedLagre: () => this.lagreKursstart(),
+      ksRedSe: () => this.kursstartVals().ksAapne(0),
+      ksRedKort: kort.map(k => {
+        const v = Object.assign({}, k, u[k.nr] || {});
+        return {
+          nr: k.nr,
+          merke: 'Kort ' + k.nr + (v.betaling ? ' · betaling' : ''),
+          erBetaling: !!v.betaling,
+          tittel: v.tittel || '',
+          tekst: v.tekst || '',
+          paa: !!v.paa,
+          tittelNavn: 'Kort ' + k.nr + ': overskrift',
+          tekstNavn: 'Kort ' + k.nr + ': tekst',
+          bryterNavn: (v.paa ? 'Slå av' : 'Slå på') + ' kort ' + k.nr,
+          bryterTekst: v.paa ? 'På' : 'Av',
+          settTittel: e => endre(k.nr, { tittel: e.target.value }),
+          settTekst: e => endre(k.nr, { tekst: e.target.value }),
+          veksle: () => endre(k.nr, { paa: !v.paa }),
+          feltStil: felt,
+          omraadeStil: Object.assign({}, felt, { resize: 'vertical', lineHeight: 1.55 }),
+          // Et avslaatt kort staar dempet, saa det er til aa se i lista at
+          // det ikke kommer med i karusellen.
+          rammeStil: {
+            display: 'flex', flexDirection: 'column', gap: 8,
+            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-4)', opacity: v.paa ? 1 : 0.55,
+          },
+          bryterStil: {
+            appearance: 'none', cursor: 'pointer', borderRadius: 999,
+            padding: '4px 12px', fontSize: 'var(--text-xs)', fontWeight: 700,
+            border: '1px solid ' + (v.paa ? 'var(--sage-500)' : 'var(--border-subtle)'),
+            background: v.paa ? 'var(--sage-500)' : 'var(--surface-card)',
+            color: v.paa ? '#fff' : 'var(--text-muted)',
+          },
+        };
+      }),
+    };
+  }
+
+  /** Karusellen: kortene, veien fram og tilbake, og betalingslista. */
+  kursstartVals() {
+    const apen = !!this.state.ksApen;
+    const okt = apen ? this.kursstartOkt() : null;
+    // Et kort som er slaatt av hoppes over. Nummereringa folger det du ser,
+    // ikke numrene i basen — «3 av 4» skal stemme med prikkene under.
+    const kort = this.kursstartKort().filter(k => k.paa);
+    const n = kort.length;
+    const nr = n ? Math.min(Math.max(0, this.state.ksNr || 0), n - 1) : 0;
+    const naa = kort[nr] || null;
+
+    // De paameldte paa denne okta. I forhaandsvisninga finnes ingen server,
+    // og da staar designdataene der — ellers ville kortet vaert tomt i alle
+    // proever.
+    const alle = this.erPublisert()
+      ? (this.state.adminDeltakere || []).filter(d => okt && String(d.oktId) === String(okt.oktId))
+      : PAMELDTE.slice(0, 4);
+    const rader = alle.map(d => {
+      const betalt = d.status === 'Betalt' || String(d.status || '').indexOf('Betalt') === 0;
+      return {
+        navn: d.navn + ((d.antall || 1) > 1 ? ' (' + d.antall + ' plasser)' : ''),
+        sum: d.sum || '',
+        betalt: betalt,
+        merke: betalt ? 'Betalt' : 'Ikke betalt',
+        merkeStil: {
+          fontSize: 'var(--text-xs)', fontWeight: 700, whiteSpace: 'nowrap',
+          color: betalt ? 'var(--sage-600)' : 'var(--terracotta-600)',
+        },
+        radStil: {
+          appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+          gap: 'var(--space-4)', background: 'transparent', border: 'none',
+          borderBottom: '1px solid var(--border-subtle)', padding: '11px 2px',
+          font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+        },
+        // Ingen ny vei til pengene: trykk gaar til Paameldte, der betaling
+        // alt haandteres.
+        velg: () => {
+          this.setState({ ksApen: false, side: 'adminpameldte',
+                          pameldtOkt: okt ? okt.oktId : 0, pameldtFilter: 'Alle' });
+          window.scrollTo(0, 0);
+        },
+      };
+    });
+    const ubetalte = rader.filter(r => !r.betalt).length;
+
+    const pille = (aktiv) => ({
+      appearance: 'none', cursor: 'pointer', borderRadius: 999,
+      padding: '11px 18px', font: 'var(--type-body-sm)', fontWeight: 600,
+      border: '1px solid ' + (aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+      background: aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)',
+      color: aktiv ? '#fff' : 'var(--text-heading)',
+      opacity: aktiv ? 1 : 0.55,
+    });
+
+    return {
+      ksVises: apen,
+      ksAapne: (oktId) => {
+        this.hentKursstart();
+        this.setState({ ksApen: true, ksNr: 0, ksOkt: oktId || 0,
+                        tmApen: '', admMobApen: false, verktoyApen: false, admSokApen: false });
+      },
+      ksLukk: () => this.setState({ ksApen: false }),
+      // Pilla i «Ofte brukt» paa Oversikt: neste kursdato, eller den som er i gang.
+      ksStartOversikt: () => this.kursstartVals().ksAapne(0),
+      ksStopp: e => e.stopPropagation(),
+      ksNaar: okt ? (okt.tittel + ' · ' + okt.naar) : 'Ingen kursdato funnet',
+      ksTittel: naa ? naa.tittel : 'Ingen kort er slått på',
+      // Avsnittene, ett per linje i teksten. Tomme linjer faller bort, saa et
+      // ekstra linjeskift i feltet ikke blir et tomt avsnitt paa skjermen.
+      ksAvsnitt: (naa ? String(naa.tekst || '').split('\n') : [])
+        .map(s => s.trim()).filter(Boolean).map((s, i) => ({ nr: i, tekst: s })),
+      ksErBetaling: !!(naa && naa.betaling),
+      ksRader: rader,
+      ksHarRader: rader.length > 0,
+      ksIngenRader: !!(naa && naa.betaling) && rader.length === 0,
+      ksBetalingStatus: rader.length
+        ? (ubetalte === 0
+            ? 'Alle ' + rader.length + ' har betalt.'
+            : ubetalte + ' av ' + rader.length + ' har ikke gjort opp ennå.')
+        : 'Ingen påmeldte på denne datoen.',
+      ksTeller: n ? (nr + 1) + ' av ' + n : '',
+      ksPrikker: kort.map((k, i) => ({
+        nr: i,
+        stil: {
+          width: i === nr ? 22 : 8, height: 8, borderRadius: 999, border: 'none',
+          appearance: 'none', cursor: 'pointer', padding: 0,
+          background: i === nr ? 'var(--lissom-brown)' : 'var(--clay-200)',
+        },
+        navn: 'Kort ' + (i + 1) + ': ' + k.tittel,
+        velg: () => this.setState({ ksNr: i }),
+      })),
+      ksHarFor: nr > 0,
+      ksHarNeste: nr < n - 1,
+      ksFor: () => this.setState({ ksNr: Math.max(0, nr - 1) }),
+      ksNeste: () => this.setState({ ksNr: Math.min(n - 1, nr + 1) }),
+      ksForStil: pille(nr > 0),
+      ksNesteStil: pille(nr < n - 1),
+      // Siste kortet lukker i stedet for aa gaa videre til ingenting.
+      ksSisteStil: pille(true),
+      ksErSiste: n > 0 && nr === n - 1,
+    };
+  }
+
+  /**
+   * Alt man kan soeke opp i admin.
+   *
+   * Eieren, 27. september 2026: «jeg kunne godt tenke meg et soekefelt paa
+   * admin der jeg skal soeke i funksjoner i admin».
+   *
+   * Lista bygges av de tabellene som alt finnes — menypunktene
+   * (ADMIN_MENY), fanene under hvert omraade (ADMIN_FANER) og bryterne i
+   * Synlighet. Skrives en ny skjerm, en ny fane eller en ny bryter inn der,
+   * er den soekbar fra samme oyeblikk. En haandskrevet liste ville sluttet
+   * aa stemme den dagen noen la til noe og glemte denne.
+   */
+  adminSokIndeks() {
+    const ut = [];
+    const sett = {};
+    const legg = (navn, hvor, velg) => {
+      const n = String(navn || '').trim();
+      if (!n || !velg) return;
+      // «← Kurs og deltakere» er veien tilbake i en fanerad, ikke et eget
+      // sted. Den ville staatt i lista som en dublett av menypunktet.
+      if (n.charAt(0) === '\u2190') return;
+      const nokkel = n.toLowerCase() + '|' + hvor;
+      if (sett[nokkel]) return;
+      sett[nokkel] = true;
+      ut.push({ navn: n, hvor: hvor, velg: velg });
+    };
+
+    (Component.ADMIN_MENY || []).forEach(rad => legg(rad[0], 'Meny', () => this.gaaAdmin(rad[1], {})));
+
+    const faner = Component.ADMIN_FANER || {};
+    Object.keys(faner).forEach(omrade => (faner[omrade] || []).forEach(rad =>
+      legg(rad[0], omrade, () => this.gaaAdmin(rad[1], rad[2] || {}))));
+
+    // Radene i sidemenyen som ikke er steder — Vedlikehold, Test Vipps,
+    // Meld inn feil, Synk med mobilen, Se nettsiden. De staar nederst i
+    // menyen, og det er nettopp dem man leter lengst etter.
+    const stedsnavn = (Component.ADMIN_MENY || []).map(r => r[0]);
+    (this.adminMeny() || [])
+      .filter(r => r && r.navn && stedsnavn.indexOf(r.navn) < 0)
+      .forEach(r => legg(String(r.navn).replace(/\s+/g, ' ').trim(), 'Verktøy', r.velg));
+
+    // Snarveiene fra kalenderen: Chat, Send beskjed, Dagsrapport,
+    // Dagsoppgjør og resten.
+    (this.adminSnarveier() || []).forEach(x => legg(x.navn, 'Snarvei', x.velg));
+
+    // Bryterne. Treffet aapner Synlighet-arket — bryteren blir liggende der
+    // den er, slik eieren bestemte 19. september: «alt styres kun fra
+    // Synlighet». Soeket er en vei dit, ikke en kopi.
+    const syn = this.synlighetVals();
+    [['Synlighet · på nettsiden', syn.synNett],
+     ['Synlighet · på Min side', syn.synMin],
+     ['Synlighet · betal ved oppmøte', syn.synOppmote]]
+      .forEach(par => (par[1] || []).forEach(r => legg(r.navn, par[0], () => syn.synAapne())));
+
+    return ut;
+  }
+
+  /** Soekeruta: feltet, treffene og veien videre. */
+  adminSokVals() {
+    const q = (this.state.admSokTekst || '').trim().toLowerCase();
+    const alle = this.state.admSokApen ? this.adminSokIndeks() : [];
+    // Ord for ord: «kurs delt» finner «Kurs og deltakere». Rekkefolgen paa
+    // ordene skal ikke bety noe — man husker sjelden den hele tittelen.
+    const ord = q ? q.split(/\s+/) : [];
+    // Treff i navnet foerst, saa dem som bare treffer paa omraadet. Skriver
+    // man «kurs», skal «Kurs og deltakere» staa over «Betalinger» — den
+    // siste kom bare med fordi den ligger under Kurs og deltakere.
+    const vekt = r => {
+      const n = r.navn.toLowerCase();
+      if (ord.every(o => n.indexOf(o) !== -1)) return n.indexOf(ord[0]) === 0 ? 0 : 1;
+      return 2;
+    };
+    const treff = q === '' ? [] : alle.filter(r => {
+      const h = (r.navn + ' ' + r.hvor).toLowerCase();
+      return ord.every(o => h.indexOf(o) !== -1);
+    }).map((r, i) => ({ r: r, i: i, v: vekt(r) }))
+      .sort((a, b) => a.v - b.v || a.i - b.i)
+      .slice(0, 12).map(x => x.r);
+    return {
+      admSokVises: !!this.state.admSokApen,
+      admSokAapne: () => this.setState({ admSokApen: true, admSokTekst: '', tmApen: '', admMobApen: false, verktoyApen: false }),
+      admSokLukk: () => this.setState({ admSokApen: false, admSokTekst: '' }),
+      admSokStopp: e => e.stopPropagation(),
+      admSokTekst: this.state.admSokTekst || '',
+      settAdmSokTekst: e => this.setState({ admSokTekst: e.target.value }),
+      admSokAntall: alle.length ? alle.length + ' steder i admin' : '',
+      admSokHarTreff: treff.length > 0,
+      admSokIngen: q !== '' && treff.length === 0,
+      admSokIngenTekst: 'Ingen treff på «' + (this.state.admSokTekst || '').trim() + '».',
+      admSokTreff: treff.map(r => Object.assign({}, r, {
+        velg: () => { this.setState({ admSokApen: false, admSokTekst: '' }); r.velg(); },
+        stil: {
+          appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-4)',
+          background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-subtle)',
+          padding: '11px 2px', font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+        },
+        navnStil: { fontWeight: 600 },
+        hvorStil: { fontSize: 'var(--text-xs)', color: 'var(--text-muted)', whiteSpace: 'nowrap' },
+      })),
+    };
+  }
+
   synlighetVals() {
     const rad = (navn, paa, veksl) => ({ navn, paa, veksl });
     return {
@@ -49945,7 +50572,18 @@ class Component extends DCLogic {
       // Chat, Dugnad, Handleliste og Dagsrapport stod bare i kalenderens
       // pillerad; de staar under «Mer» saa ingenting forsvinner.
       admMobPunkterA: (() => {
-        const hoved = gruppe('', ['Oversikt', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'].map(stedFlis), false, true);
+        // ⌕ Søk staar foerst. Pilla i adminstripa er skjult paa telefon,
+        // saa uten denne flisen fantes soeket bare paa stor skjerm.
+        // ⌕ Soek og «Start kurset» staar foerst. Pilla i adminstripa og
+        // snarveien i kalenderen er begge skjult paa telefon, saa uten disse
+        // flisene fantes de bare paa stor skjerm. Eieren, 29. september 2026:
+        // onboardinga skal vaere mobilvennlig, og telefonen er den skjermen
+        // som faktisk staar i verkstedet.
+        const hoved = gruppe('', [
+          flis({ navn: '⌕ Søk', velg: () => this.adminSokVals().admSokAapne() }),
+          flis({ navn: '▶ Start kurset', velg: () => this.kursstartVals().ksAapne(0) }),
+        ]
+          .concat(['Oversikt', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'].map(stedFlis)), false, true);
         const mer = gruppe('Mer', ['Årskalender', 'Til godkjenning', 'Verkstedet', 'Admin-brukere'].map(stedFlis)
           .concat([chatFlis, snar('dugnad'), snar('handleliste'), snar('dagsrapport')]), false, true);
         return (fanerBolk && sted.meny !== 'Kalender' ? [hoved, fanerBolk] : [hoved]).concat([mer]);
@@ -54566,8 +55204,18 @@ class Component extends DCLogic {
     const mer = alle.filter(r => MER.indexOf(r.navn) >= 0).map(r => panelRad(r, r.navn === aktiv));
     // Chat og Dagsrapport stod bare i kalenderens pillerad, som er borte paa PC
     // etter skissen (26. september 2026). De staar her i stedet.
-    this.adminSnarveier().filter(x => x.nokkel === 'chat' || x.nokkel === 'dagsrapport')
-      .forEach(x => mer.push(panelRad({ navn: x.navn, velg: () => { this.kortBrukt(x.nokkel); x.velg(); } }, false)));
+    // «Start kurset» staar her ogsaa (eieren, 29. september 2026). Pilla i
+    // kalenderen ligger i dashboardet, som er slaatt sammen til vanlig — og
+    // onboardinga skal kunne naas fra hvilken som helst adminskjerm naar
+    // deltakerne staar i doera.
+    this.adminSnarveier().filter(x => x.nokkel === 'chat' || x.nokkel === 'dagsrapport' || x.nokkel === 'kursstart')
+      // Samme radstil som resten av panelet. Uten den fikk de tre nettleserens
+      // egne knapper — ramme, graa bakgrunn og liten skrift under «Admin-brukere».
+      .forEach(x => mer.push(panelRad({ navn: x.navn, velg: () => { this.kortBrukt(x.nokkel); x.velg(); }, stil: {
+        appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+        padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
+        font: 'var(--type-body-sm)', fontWeight: 500, color: 'var(--clay-200)',
+      } }, false)));
     const verktoy = alle.filter(r => !menyNavn.has(r.navn)).map(r => panelRad(r, false));
     // Staar du paa kalenderen, lyser ingen fane — fliken er borte, og «✕ Lukk» gaar tilbake.
     const merAktiv = MER.indexOf(aktiv) >= 0;
@@ -54592,9 +55240,14 @@ class Component extends DCLogic {
       // «Synlighet» som egen pille ved siden av «inne» og ⚙ (eieren, 27. september
       // 2026). Aapner det samme arket som flisen paa Oversikt.
       tmSynStil: pille(false),
+      // Soeket staar foerst i stripa. Eieren, 27. september 2026: «jeg kunne
+      // godt tenke meg et soekefelt paa admin der jeg skal soeke i funksjoner
+      // i admin». Samme pilleform som de andre — stripa skal lese som én rad.
+      tmAdmSokStil: pille(false),
       ...(() => {
-        // Trykk aapner og lukker; musa over aapner ogsaa (CSS). Et valg i
-        // panelet lukker det, siden det bytter skjerm.
+        // Trykk aapner og lukker, og det gjoer ogsaa Esc og et trykk utenfor
+        // (se componentDidMount). Et valg i panelet lukker det, siden det
+        // bytter skjerm.
         const apen = this.state.tmApen || '';
         const panel = (hvem) => Object.assign({
           background: 'var(--lissom-brown)', border: '1px solid rgba(244,235,222,.22)', borderRadius: 'var(--radius-md)',
@@ -60397,7 +61050,10 @@ class Component extends DCLogic {
           if (hva === 'Event') return t === 'event';
           return t === 'kurs' || t === 'workshop';
         };
-        const okter = alleOkter.filter(passer);
+        const okter = alleOkter.filter(passer)
+          // Datoene bakover staar sist, og bare naar de er bedt om. De
+          // kommende er det man trenger ni ganger av ti.
+          .concat(st.nrFortid ? (st.nrGamleOkter || []).filter(passer) : []);
         const oktValgt = String(st.nrOkt || (okter[0] ? okter[0].oktId : ''));
 
         const planer = (st.adminPlanerRaa || []).filter(p => p.aktiv !== false);
@@ -60488,6 +61144,27 @@ class Component extends DCLogic {
           settNrPlan: e => this.setState({ nrPlan: e.target.value }),
 
           nrOktEtikett: hva === 'Event' ? 'Event' : 'Kurs og dato',
+          // Datoene bakover. Hentes foerst naar bryteren slaas paa — da er
+          // det et eget kall, og svaret er bare datoer.
+          nrFortid: !!st.nrFortid,
+          nrFortidTekst: st.nrFortidHenter
+            ? 'Henter datoer som har v\u00e6rt \u2026'
+            : 'Vis ogs\u00e5 datoer som har v\u00e6rt',
+          nrFortidStil: {
+            display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+            fontSize: 'var(--text-sm)', color: 'var(--text-muted)',
+            marginTop: 'var(--space-3)', textWrap: 'pretty',
+          },
+          vekslNrFortid: () => {
+            const paa = !this.state.nrFortid;
+            this.setState({ nrFortid: paa });
+            if (!paa || this.state.nrGamleOkter || !this.erPublisert()) return;
+            this.setState({ nrFortidHenter: true });
+            fetch('/api/admin/pameldte.php?historikk=1', { credentials: 'same-origin', cache: 'no-store' })
+              .then(r => (r.ok ? r.json() : null))
+              .then(d => this.setState({ nrFortidHenter: false, nrGamleOkter: (d && d.okter) || [] }))
+              .catch(() => this.setState({ nrFortidHenter: false, nrGamleOkter: [] }));
+          },
           nrOkter: okter.map(o => ({
             verdi: String(o.oktId),
             navn: o.tittel + ' · ' + o.naar + ' · ' + o.ledige + ' ledige',
@@ -60539,6 +61216,12 @@ class Component extends DCLogic {
               handling: 'legg-til',
               oktId: Number(oktNaa.oktId),
               navn: personNavn,
+              // Er den valgte et medlem, foelger medlemsnummeret med. Uten
+              // det ble plassen en gjestepaamelding, og verken den eller
+              // kursbeviset dukket opp paa medlemmets Min side — den henter
+              // bare bookinger med «member_id». Er ingen valgt, eller er den
+              // valgte ikke medlem, sendes 0, og serveren foerer det som gjest.
+              medlemId: valgt ? (valgt.medlemId || 0) : 0,
               epost: valgt ? (valgt.epost || '') : (st.nrEpost || '').trim(),
               telefon: valgt ? (valgt.tlf || '') : (st.nrTlf || '').trim(),
               antall: Number(st.nrAntall) || 1,
@@ -63208,6 +63891,10 @@ class Component extends DCLogic {
             leggTil: () => {
               this.setState({ mpApen: true, mpOkt: String(o.oktId), oktRediger: null });
             },
+            // Kortene du gaar gjennom med deltakerne for dere begynner.
+            // Herfra vet karusellen hvilken dato det gjelder, og
+            // betalingskortet kan vise akkurat de paameldte.
+            startKurs: () => this.kursstartVals().ksAapne(o.oktId),
             sePameldte: () => {
               this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
               window.scrollTo(0, 0);
@@ -63998,6 +64685,9 @@ class Component extends DCLogic {
       // sidemenyen paa PC. Ingen ny bryter: hver rad er den samme
       // «bryterPaa» og den samme «vekslBryter» som for.
       ...this.synlighetVals(),
+      ...this.adminSokVals(),
+      ...this.kursstartVals(),
+      ...this.kursstartRedVals(),
       bryterMinInternkurs: this.bryterPaa('internkurs'),
       vekslMinInternkurs: () => this.vekslBryter('internkurs', 'Interne kurs og samlinger'),
       bryterMinInternbutikk: this.bryterPaa('internbutikk'),
@@ -65494,6 +66184,14 @@ class Component extends DCLogic {
           },
         };
       })(),
+      // Bryteren under kalenderen. Se markupen og «passert» under.
+      kFortid: !!this.state.kFortid,
+      vekslKFortid: () => this.setState(st => ({ kFortid: !st.kFortid })),
+      kFortidStil: {
+        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+        fontSize: 'var(--text-sm)', color: 'var(--text-muted)',
+        marginTop: 'var(--space-3)', textWrap: 'pretty',
+      },
       kalDager: (() => {
         const n = new Date(); const aar = this.state.kalAar ?? n.getFullYear(); const mnd = this.state.kalMnd ?? n.getMonth();
         const forste = (new Date(aar, mnd, 1).getDay() + 6) % 7;
@@ -65512,14 +66210,15 @@ class Component extends DCLogic {
         for (let dag = 1; dag <= antall; dag++) {
           const iso = aar + '-' + String(mnd + 1).padStart(2, '0') + '-' + String(dag).padStart(2, '0');
           const valgt = valgte.indexOf(iso) >= 0;
-          const passert = new Date(aar, mnd, dag) < idag;
+          // Stengt bakover, med mindre bryteren under kalenderen staar paa.
+          const passert = new Date(aar, mnd, dag) < idag && !this.state.kFortid;
           celler.push({
             nr: dag,
             velg: () => {
               if (passert) {
                 this.setState({
                   kvittering: 'Den datoen har vært',
-                  kvitteringDetalj: 'Velg en dag som ligger foran oss — ellers vises ikke kurset på nettsiden.',
+                  kvitteringDetalj: 'Velg en dag som ligger foran oss — ellers vises ikke kurset på nettsiden. Skal du føre inn noe som alt er gjennomført, slå på «Datoer som har vært» under kalenderen.',
                 });
                 return;
               }
@@ -74336,6 +75035,9 @@ class Component extends DCLogic {
       // Medlemmer — og en fast vei tilbake ville sendt noen feil vei.
       // Derfor baerer kortet med seg hvor det ble trykket.
       fhTilbake: () => this.gaaAdmin(this.state.fhFra || 'adminomrkurs', {}),
+      // Samme handling som pilla i adminstripa. Arket legger seg oppaa
+      // forhaandsvisninga, saa et trykk paa en bryter sees med det samme.
+      fhSynlighet: () => this.synlighetVals().synAapne(),
       // Skjemaet staar alltid. For sto det ikke naar en gammel soknad laa
       // som «venter», og da kom hen aldri videre: soknader behandles ikke
       // lenger, saa den ville ligget der for alltid.

@@ -507,9 +507,11 @@ await flyt('Bestill mer og lav aktivitet', async () => {
   const rad = p.locator('div[style*="cursor: pointer"]').filter({ has: p.getByText(navn, { exact: true }) }).last();
   sjekk('Medlemmer › Lav aktivitet viser medlemmet med «30 dager siden sist»',
     await rad.getByText(/^3[01] dager siden sist$/).isVisible().catch(() => false));
+  const lenker = await rad.locator('a').evaluateAll(l => l.map(x => x.className + '|' + x.textContent.trim() + '|' + x.getAttribute('href'))).catch(e => ['feil ' + String(e.message).slice(0, 80)]);
   sjekk('… med Ring og E-post som piller',
     (await rad.locator('a.lx-medlpille', { hasText: 'Ring' }).getAttribute('href').catch(() => '')) === 'tel:+4790000017'
-    && (await rad.locator('a.lx-medlpille', { hasText: 'E-post' }).getAttribute('href').catch(() => '')) === 'mailto:' + tag + '@lissom.test');
+    && (await rad.locator('a.lx-medlpille', { hasText: 'E-post' }).getAttribute('href').catch(() => '')) === 'mailto:' + tag + '@lissom.test',
+    lenker.join(' ; '));
   await p.getByLabel('Antall dager').fill('40');
   await p.locator('[data-lav-dager]').getByRole('button', { name: 'Lagre', exact: true }).click();
   await p.waitForTimeout(2500);

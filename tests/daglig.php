@@ -88,8 +88,8 @@ sjekk('nettordre under minimum gir beskjed', (int) DB::verdi(
 echo "\n── Leire er inkludert i Prøv Lissom ─────────────────────────\n";
 
 sjekk('kolonnen leire finnes (migrasjon 233)', DB::harKolonne('products', 'leire'));
-$prove = (string) DB::verdi('SELECT navn FROM membership_plans WHERE engangs = 1 ORDER BY id LIMIT 1');
-$vanlig = (string) DB::verdi('SELECT navn FROM membership_plans WHERE engangs = 0 AND aktiv = 1 ORDER BY id LIMIT 1');
+$prove = (string) DB::verdi('SELECT navn FROM membership_plans WHERE engangs = 1 ORDER BY sortering LIMIT 1');
+$vanlig = (string) DB::verdi('SELECT navn FROM membership_plans WHERE engangs = 0 AND aktiv = 1 ORDER BY sortering LIMIT 1');
 sjekk('planene finnes', $prove !== '' && $vanlig !== '', "$prove | $vanlig");
 sjekk('Prøv Lissom (aktiv): leiren skjules', Lager::skjulLeire(['status' => 'aktiv', 'medlemskap_type' => $prove]));
 sjekk('Prøv Lissom (prove): leiren skjules', Lager::skjulLeire(['status' => 'prove', 'medlemskap_type' => $prove]));

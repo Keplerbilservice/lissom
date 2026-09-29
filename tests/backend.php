@@ -20549,7 +20549,8 @@ sjekk('redigering av en vare fyller ruta med bildet den har',
     substr_count($nvSida, "npBilde: raa.bilde || '',") === 1
     && substr_count($nvSida, "npBilde: (v.raa && v.raa.bilde) || '',") === 1);
 sjekk('en ny vare aapner med tom rute',
-    substr_count($nvSida, "npKanBestilles: false, npBilde: '' }") === 2);
+    // npLeire kom med leiremerket (Prøv Lissom, 29. september 2026).
+    substr_count($nvSida, "npKanBestilles: false, npLeire: false, npBilde: '' }") === 2);
 
 // ── To knapper som ikke sa fra ─────────────────────────────────
 echo "\nKnapper som ikke sa fra\n";

@@ -23149,7 +23149,7 @@ window.__resources = {
             <!-- Lav aktivitet (eieren, 28. september 2026): hvor mange dager
                  uten innstempling foer et medlem staar her. Settes i admin. -->
             <sc-if value="{{ lavValgt }}" hint-placeholder-val="{{ false }}">
-              <div class="lx-pillerad" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-body);">
+              <div data-lav-dager style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-body);">
                 <span>Lav aktivitet etter</span>
                 <input value="{{ lavDager }}" onInput="{{ settLavDager }}" inputmode="numeric" aria-label="Antall dager" style="width: 64px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                 <span>dager uten innstempling</span>

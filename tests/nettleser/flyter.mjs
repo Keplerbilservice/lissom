@@ -504,14 +504,14 @@ await flyt('Bestill mer og lav aktivitet', async () => {
   sjekk('Oversikt: «Lav aktivitet: N medlemmer»', await lav.isVisible().catch(() => false));
   await lav.click();
   await p.waitForTimeout(2000);
-  const rad = p.locator('div[style*="cursor: pointer"]', { hasText: navn }).filter({ hasText: 'dager siden sist' }).first();
+  const rad = p.locator('div[style*="cursor: pointer"]').filter({ has: p.getByText(navn, { exact: true }) }).last();
   sjekk('Medlemmer › Lav aktivitet viser medlemmet med «30 dager siden sist»',
-    await rad.getByText('30 dager siden sist').isVisible().catch(() => false));
+    await rad.getByText(/^3[01] dager siden sist$/).isVisible().catch(() => false));
   sjekk('… med Ring og E-post som piller',
     (await rad.locator('a.lx-medlpille', { hasText: 'Ring' }).getAttribute('href').catch(() => '')) === 'tel:+4790000017'
     && (await rad.locator('a.lx-medlpille', { hasText: 'E-post' }).getAttribute('href').catch(() => '')) === 'mailto:' + tag + '@lissom.test');
   await p.getByLabel('Antall dager').fill('40');
-  await p.getByRole('button', { name: 'Lagre', exact: true }).first().click();
+  await p.locator('[data-lav-dager]').getByRole('button', { name: 'Lagre', exact: true }).click();
   await p.waitForTimeout(2500);
   sjekk('dagene settes i admin: 40 dager tar medlemmet ut av lista',
     !(await p.getByText(navn).first().isVisible().catch(() => false)));

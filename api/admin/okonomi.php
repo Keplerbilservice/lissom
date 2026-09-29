@@ -32,10 +32,13 @@ $tilUtc = static fn(DateTimeImmutable $d): string => $d->setTimezone($utc)->form
 $MAANEDER = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
              'juli', 'august', 'september', 'oktober', 'november', 'desember'];
 
-// Samme kilde som Oversikt og dagsoppgjoret (Omsetning), saa alle tre viser
-// samme tall. Eieren 29.09.2026: et kurs betalt i verkstedet manglet her.
 $sumMellom = static function (string $fra, string $til): int {
-    return array_sum(Omsetning::perFormal($fra, $til));
+    return (int) DB::verdi(
+        "SELECT COALESCE(SUM(belop_ore - refundert_ore), 0) FROM payments
+          WHERE status IN ('betalt','delvis_refundert')
+            AND created_at >= :fra AND created_at < :til",
+        ['fra' => $fra, 'til' => $til]
+    );
 };
 
 // --- Denne maaneden og forrige --------------------------------------------
@@ -98,7 +101,16 @@ $FORMAL = [
     'medlemskap' => 'Medlemskap',
 ];
 
-$perFormal = Omsetning::perFormal($tilUtc($mndStart), $tilUtc($nesteMnd));
+$perFormal = [];
+foreach (DB::alle(
+    "SELECT formal, SUM(belop_ore - refundert_ore) AS sum FROM payments
+      WHERE status IN ('betalt','delvis_refundert')
+        AND created_at >= :fra AND created_at < :til
+      GROUP BY formal",
+    ['fra' => $tilUtc($mndStart), 'til' => $tilUtc($nesteMnd)]
+) as $r) {
+    $perFormal[(string) $r['formal']] = (int) $r['sum'];
+}
 
 $kilder = [];
 foreach ($FORMAL as $nokkel => $navn) {

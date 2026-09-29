@@ -105,11 +105,13 @@ $dagStart = $naa->setTime(0, 0)->setTimezone($utc)->format('Y-m-d H:i:s');
 $mndStart = $naa->modify('first day of this month')->setTime(0, 0)
                 ->setTimezone($utc)->format('Y-m-d H:i:s');
 
-// Samme kilde som dagsoppgjoret: Omsetning::perFormal(). Foer 29.09.2026
-// summerte denne bare betalingsradene, og et kurs betalt i verkstedet uten
-// betalingsrad falt ut av dagens omsetning (eieren: kr 2 800 manglet).
 $sum = static function (string $fra, ?string $til = null): int {
-    return array_sum(Omsetning::perFormal($fra, $til ?? '9999-12-31 00:00:00'));
+    return (int) DB::verdi(
+        "SELECT COALESCE(SUM(belop_ore - refundert_ore), 0) FROM payments
+          WHERE status = 'betalt' AND created_at >= :fra"
+          . ($til !== null ? " AND created_at < :til" : ""),
+        $til !== null ? ['fra' => $fra, 'til' => $til] : ['fra' => $fra]
+    );
 };
 
 // Fordelingen per formal. Uten den star det bare en sum, og eieren kan ikke se
@@ -122,7 +124,20 @@ $FORMAL = [
 ];
 
 $linjer = static function (string $fra) use ($FORMAL): array {
-    $etter = Omsetning::perFormal($fra, '9999-12-31 00:00:00');
+    $rader = DB::alle(
+        "SELECT formal, SUM(belop_ore - refundert_ore) AS sum FROM payments
+          WHERE status = 'betalt' AND created_at >= :fra
+          GROUP BY formal",
+        ['fra' => $fra]
+    );
+    $etter = [];
+    foreach ($rader as $r) {
+        $ore = (int) $r['sum'];
+        if ($ore === 0) {
+            continue;
+        }
+        $etter[(string) $r['formal']] = $ore;
+    }
     // Fast rekkefolge, slik at listene ikke hopper rundt fra dag til dag.
     $ut = [];
     foreach ($FORMAL as $nokkel => $navn) {

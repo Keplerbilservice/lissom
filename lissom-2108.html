@@ -16952,28 +16952,6 @@ window.__resources = {
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <!-- I verkstedet naa, oeverst paa telefon (eieren, 29. september 2026).
-             Samme liste som i skuffen og i menyen paa PC — se ovMobInne. -->
-        <sc-if value="{{ ovMobInneVis }}" hint-placeholder-val="{{ false }}">
-          <div data-ov-inne="1" style="{{ ovMobInneStil }}">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">I verkstedet nå</div>
-            <sc-for list="{{ ovMobInne }}" as="i" hint-placeholder-count="2">
-              <div>
-                <div style="{{ ovMobInneRadStil }}">
-                  <span style="{{ ovMobInnePrikkStil }}"></span>
-                  <span style="flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ i.navn }}</span>
-                  <span style="{{ ovMobInneKlokkeStil }}">{{ i.klokke }}</span>
-                </div>
-                <sc-if value="{{ i.erSkjult }}" hint-placeholder-val="{{ false }}">
-                  <div style="{{ ovMobInneSkjultStil }}">Skjult for andre</div>
-                </sc-if>
-              </div>
-            </sc-for>
-            <sc-if value="{{ ovMobInneTom }}" hint-placeholder-val="{{ false }}">
-              <div style="{{ ovMobInneRadStil }}"><span style="{{ ovMobInnePrikkStil }}"></span>{{ inneTekst }}</div>
-            </sc-if>
-          </div>
-        </sc-if>
         <!-- ── Oversikt, ny drakt (eieren, 26. september 2026, GO paa skissen) ──
              Toppen: dato og hilsen til venstre, omsetningen til hoeyre — ikke i
              et kort. Saa den gule raden, store kort og smaa kort. Hele kortet
@@ -67472,37 +67450,6 @@ class Component extends DCLogic {
           // Menyen er smal og hoyden er ikke uendelig. Seks navn, og resten
           // telles opp under — samme form som kalenderen bruker naar en dag
           // har flere kurs enn det er plass til.
-          // ── Oeverst paa Oversikt paa telefon ─────────────────────────
-          //
-          // Eieren, 29. september 2026: «jeg vil på mobil, at i verkstedet
-          // nå alltid står synlig på toppen». Paa telefon laa navnene bare
-          // i skuffen. Naa staar de foerst paa Oversikt, foer omsetningen.
-          // PC-en er som foer: der staar de i menyen ved siden av.
-          ovMobInneVis: (this.state.vw || 1400) < 980,
-          ovMobInne: raa.map(r => ({
-            navn: r.navn,
-            klokke: r.siden || '',
-            erSkjult: !!r.skjult,
-          })),
-          ovMobInneTom: raa.length === 0,
-          ovMobInneStil: {
-            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-lg)', padding: 'var(--space-4) var(--space-5)',
-            marginBottom: 'var(--space-6)',
-          },
-          ovMobInneRadStil: {
-            display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0',
-            color: 'var(--text-heading)', fontSize: 'var(--text-sm)',
-          },
-          ovMobInnePrikkStil: {
-            width: 9, height: 9, borderRadius: '50%',
-            background: 'var(--sage-500)', flex: '0 0 auto',
-          },
-          ovMobInneKlokkeStil: {
-            flex: '0 0 auto', fontSize: 12, color: 'var(--text-muted)',
-            fontVariantNumeric: 'tabular-nums',
-          },
-          ovMobInneSkjultStil: { fontSize: 11, color: 'var(--text-muted)', paddingLeft: 17 },
           admMenyInne: raa.slice(0, 6).map(r => ({
             navn: r.navn,
             klokke: r.siden || '',

@@ -2,10 +2,8 @@
 /**
  * Hvem som er paameldt. Den siden dere kommer til aa bruke oftest.
  *
- *   ?oktId=5      deltakerne paa en bestemt dato
- *   ?bevis=1      alle kursbevis, hele veien tilbake
- *   ?historikk=1  bare datoene, to aar bakover — til aa foere inn i ettertid
- *   uten          alle kommende okter med antall paameldte
+ *   ?oktId=5   deltakerne paa en bestemt dato
+ *   uten       alle kommende okter med antall paameldte
  */
 
 declare(strict_types=1);
@@ -65,53 +63,6 @@ if (Foresporsel::heltall('bevis') === 1) {
                 ? '/api/kursbevis.php?booking=' . (int) $d['id']
                 : null,
         ], $rader),
-    ]);
-}
-
-// ── Datoer som har vaert ───────────────────────────────────────
-//
-//   ?historikk=1
-//
-// Oektlista under gaar tretti dager tilbake. Det er det «Paameldte» trenger,
-// og den blir lang nok. Men noe som alt er gjennomfoert skal kunne foeres inn
-// i ettertid — eieren, 27. september 2026, om fem medlemmer som gikk
-// nybegynnerkurs foer systemet fantes. Da maa datoen bakover kunne velges.
-//
-// Bare datoene, ikke deltakerne: dette er til nedtrekkslista i «Ny
-// registrering». Hele deltakerlista bakover ville vaert svar paa noe ingen
-// spurte om, og den er den tunge delen av dette endepunktet.
-//
-// To aar bakover. Lenger tilbake enn det er ikke datoen i systemet uansett —
-// da lager man den paa kurset foerst.
-if (Foresporsel::heltall('historikk') === 1) {
-    $autoKolH = DB::harKolonne('course_sessions', 'fra_apningstid')
-        ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid';
-
-    $gamle = DB::alle(
-        "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.type, c.tema,
-                c.status AS kurs_status{$autoKolH},
-                COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet
-           FROM course_sessions cs
-           JOIN courses c ON c.id = cs.course_id
-          WHERE cs.status <> 'avlyst'
-            AND cs.start_tid <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
-            AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 MONTH)
-          ORDER BY cs.start_tid DESC"
-    );
-
-    Svar::json([
-        'okter' => array_map(static fn(array $o): array => [
-            'oktId'     => (int) $o['id'],
-            'tittel'    => (string) $o['tittel'],
-            'naar'      => Booking::norskDato((string) $o['start_tid']),
-            'type'      => (string) ($o['type'] ?? 'kurs'),
-            'tema'      => (string) ($o['tema'] ?? ''),
-            'kapasitet' => (int) $o['kapasitet'],
-            // Plassene telles ikke her: en dato som har vaert skal kunne ta
-            // imot den som faktisk var der, uansett hva det staar igjen av
-            // ledige plasser.
-            'harVaert'  => true,
-        ], $gamle),
     ]);
 }
 

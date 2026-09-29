@@ -515,7 +515,10 @@ await flyt('Bestill mer og lav aktivitet', async () => {
   await p.waitForTimeout(2500);
   sjekk('dagene settes i admin: 40 dager tar medlemmet ut av lista',
     !(await p.getByText(navn).first().isVisible().catch(() => false)));
-  sjekk('… og lagres', String(db("SELECT verdi FROM innstillinger WHERE nokkel = 'lav_aktivitet_dager'")[0]?.verdi) === '40');
+  const lagret = db("SELECT verdi FROM innstillinger WHERE nokkel = 'lav_aktivitet_dager'");
+  const kv = await p.evaluate(() => (document.body.innerText.match(/Lav aktivitet: \d+ dager\.|Kunne ikke lagre[^\n]*|Skriv et antall dager\./) || [''])[0]);
+  const felt = await p.getByLabel('Antall dager').inputValue().catch(e => 'feil: ' + e.message.split('\n')[0]);
+  sjekk('… og lagres', String(lagret[0]?.verdi) === '40', JSON.stringify(lagret) + ' ' + kv + ' felt=' + felt);
   await api(p, '/api/admin/medlemmer.php', { handling: 'lav-aktivitet-dager', dager: 14 });
   // Vareskjemaet har minimum og maksimum.
   await gaa(p, '/admin/butikk', 3000);

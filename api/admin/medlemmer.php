@@ -200,6 +200,14 @@ if (Foresporsel::metode() === 'POST') {
     //
     // Det er internt. Det staar ikke paa Min side, og det sendes ikke til
     // noen. Skal personen ha en beskjed, gaar den gjennom Beskjeder.
+    // «Lav aktivitet» — hvor mange dager uten innstempling foer et medlem
+    // staar paa lista. Eieren, 28. september 2026: «la oss si ... 14 dager».
+    if ($handling === 'lav-aktivitet-dager') {
+        $d = Aktivitet::settDager(Foresporsel::heltall('dager', Aktivitet::STANDARD_DAGER),
+                                  (int) ($jeg['id'] ?? 0) ?: null);
+        Svar::ok(['dager' => $d, 'beskjed' => 'Lav aktivitet: ' . $d . ' dager.']);
+    }
+
     if ($handling === 'notat') {
         $id = Foresporsel::heltall('medlemId');
         if (DB::en('SELECT id FROM members WHERE id = :i', ['i' => $id]) === null) {
@@ -2557,8 +2565,16 @@ $avtaleInfo = static function (int $id) use ($avtaler, $idag, $dato): array {
     ];
 };
 
-Svar::json(['medlemmer' => array_map(static fn($m) => [
+// «Lav aktivitet» (eieren, 28. september 2026): id → dager siden sist.
+$lave = [];
+foreach (Aktivitet::lave() as $l) {
+    $lave[$l['id']] = $l['dager'];
+}
+
+Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(static fn($m) => [
     'id'         => (int) $m['id'],
+    'lavAktivitet' => isset($lave[(int) $m['id']]),
+    'dagerSiden'   => $lave[(int) $m['id']] ?? null,
     'navn'       => $m['navn'],
     'epost'      => $m['epost'],
     'telefon'    => $m['telefon'],

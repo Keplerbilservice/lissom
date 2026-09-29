@@ -487,6 +487,59 @@ await flyt('Oversikt: dagens omsetning og bestillinger', async () => {
   await p.context().close();
 });
 
+// ── 6c. «Bestill mer» og «Lav aktivitet» ──────────────────────────────
+// Eieren, 28. september 2026: minimum og maksimum per vare, med beskjed om
+// hvor mange som maa bestilles — og medlemmer som ikke har vaert innom paa
+// 14 dager, med dager siden sist og kontakt som piller. Bare i admin.
+await flyt('Bestill mer og lav aktivitet', async () => {
+  const tag = 'pw' + Date.now().toString(36);
+  const vare = 'Leire ' + tag, navn = 'Lav ' + tag;
+  db("INSERT INTO products (tittel, pris_ore, mva_prosent, lager, lager_min, lager_maks, kun_medlemmer, status) VALUES (:t, 25000, 25, 2, 4, 10, 1, 'publisert')", { t: vare });
+  db("INSERT INTO members (navn, epost, telefon, rolle, status, medlemskap_type, start_dato) VALUES (:n, :e, '+4790000017', 'medlem', 'aktiv', 'Basis 30', DATE_SUB(CURDATE(), INTERVAL 30 DAY))", { n: navn, e: tag + '@lissom.test' });
+  const p = await side('admin');
+  await gaa(p, '/admin/oversikt', 3500);
+  sjekk('Oversikt: «Bestill mer: <vare> (2 igjen, bestill 8)» i Trenger handling',
+    await p.locator('.lx-ovrad', { hasText: 'Bestill mer: ' + vare + ' (2 igjen, bestill 8)' }).first().isVisible().catch(() => false));
+  const lav = p.locator('.lx-ovrad', { hasText: /Lav aktivitet: \d+ medlem/ }).first();
+  sjekk('Oversikt: «Lav aktivitet: N medlemmer»', await lav.isVisible().catch(() => false));
+  await lav.click();
+  await p.waitForTimeout(2000);
+  const rad = p.locator('div[style*="cursor: pointer"]', { hasText: navn }).filter({ hasText: 'dager siden sist' }).first();
+  sjekk('Medlemmer › Lav aktivitet viser medlemmet med «30 dager siden sist»',
+    await rad.getByText('30 dager siden sist').isVisible().catch(() => false));
+  sjekk('… med Ring og E-post som piller',
+    (await rad.locator('a.lx-medlpille', { hasText: 'Ring' }).getAttribute('href').catch(() => '')) === 'tel:+4790000017'
+    && (await rad.locator('a.lx-medlpille', { hasText: 'E-post' }).getAttribute('href').catch(() => '')) === 'mailto:' + tag + '@lissom.test');
+  await p.getByLabel('Antall dager').fill('40');
+  await p.getByRole('button', { name: 'Lagre', exact: true }).first().click();
+  await p.waitForTimeout(2500);
+  sjekk('dagene settes i admin: 40 dager tar medlemmet ut av lista',
+    !(await p.getByText(navn).first().isVisible().catch(() => false)));
+  sjekk('… og lagres', String(db("SELECT verdi FROM innstillinger WHERE nokkel = 'lav_aktivitet_dager'")[0]?.verdi) === '40');
+  await api(p, '/api/admin/medlemmer.php', { handling: 'lav-aktivitet-dager', dager: 14 });
+  // Vareskjemaet har minimum og maksimum.
+  await gaa(p, '/admin/butikk', 3000);
+  const intern = p.getByRole('button', { name: 'Medlemssalg', exact: true }).first();
+  if (await intern.count()) { await intern.click(); await p.waitForTimeout(1200); }
+  await p.getByText(vare, { exact: true }).first().click().catch(() => {});
+  await p.waitForTimeout(1200);
+  sjekk('vareskjemaet viser minimum og maksimum',
+    (await p.getByPlaceholder('Minimum på lager').inputValue().catch(() => '')) === '4'
+    && (await p.getByPlaceholder('Maksimum på lager').inputValue().catch(() => '')) === '10');
+  await p.context().close();
+  // Mobil: lista er ikke bredere enn skjermen.
+  const mob = await side('admin', 390, 844);
+  await gaa(mob, '/admin/medlemmer/alle', 3000);
+  await mob.getByRole('button', { name: 'Lav aktivitet', exact: true }).first().click().catch(() => {});
+  await mob.waitForTimeout(1200);
+  const b = await mob.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
+  sjekk('mobil: Lav aktivitet er ikke bredere enn skjermen', b[0] <= b[1] + 1, b.join('/'));
+  sjekk('mobil: dagene kan settes', await mob.getByLabel('Antall dager').isVisible().catch(() => false));
+  await mob.context().close();
+  db('DELETE FROM members WHERE epost = :e', { e: tag + '@lissom.test' });
+  db('DELETE FROM products WHERE tittel = :t', { t: vare });
+});
+
 // ── 7. Gavekortsida ───────────────────────────────────────────────────
 // ── Markedsfoering › Bilder ───────────────────────────────────────────
 // Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring, at jeg

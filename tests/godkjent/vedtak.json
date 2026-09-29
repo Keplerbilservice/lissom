@@ -1,5 +1,5 @@
 {
-    "om": "Eierens godkjente vedtak. Hver post sier hva som er bestemt, og hvordan det sjekkes: «kode» kjøres av tests/vedtak.mjs i sperren før hver publisering, «live» kjøres av bin/vakt.mjs mot lissom.no hver time. Regel (eieren, 27. september 2026): hver godkjent endring får en post her i samme commit. «finnes»/«ikkeFinnes» er nøyaktige tekstbiter.",
+    "om": "Eierens godkjente vedtak. Hver post sier hva som er bestemt, og hvordan det sjekkes: «kode» kjøres av tests/vedtak.mjs i sperren før hver publisering, «live» kjøres av bin/vakt.mjs mot lissom.no én gang i døgnet (kl. 06:17, eieren 28. september 2026). Regel (eieren, 27. september 2026): hver godkjent endring får en post her i samme commit. «finnes»/«ikkeFinnes» er nøyaktige tekstbiter.",
     "vedtak": [
         {
             "id": "flytt-samme-kurs",
@@ -1115,6 +1115,133 @@
                         ">Svar etter «Ikke nå»</div>",
                         ">Timepakker</div>",
                         "handling: 'timepakke', timer, kroner"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "prove-lissom-tekst-ut-maaneden",
+            "dato": "2026-09-29",
+            "hva": "Prøv Lissom-teksten på medlemskapssiden sier «ut måneden», ikke «30 dager» (eieren godkjente 29.09)",
+            "hvor": "lissom.no/medlemskap",
+            "live": [
+                {
+                    "sti": "/medlemskap",
+                    "finnes": [
+                        "10 timer, brukes innen utgangen av måneden",
+                        "Brukes fritt ut måneden"
+                    ],
+                    "ikkeFinnes": [
+                        "brukes i løpet av 30 dager",
+                        "Brukes fritt innen 30 dager",
+                        "en periode på 30 dager"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "vakt-daglig-med-feilrapporter",
+            "dato": "2026-09-28",
+            "hva": "«sjekkene som er satt opp, skal gjøres en gang pr dag»: vakta går én gang i døgnet (kl. 06:17 fra eierens PC) og tar med de innrapporterte feilene i rapporten. Den leser bare — retter og lukker ingenting",
+            "hvor": "bin/vakt.mjs, api/vakt-feil.php, Oppgaveplanleggeren «Lissom vakt»",
+            "kode": [
+                {
+                    "fil": "bin/vakt.mjs",
+                    "finnes": [
+                        "/api/vakt-feil.php?nokkel=",
+                        "cron-nokkel.txt"
+                    ]
+                },
+                {
+                    "fil": "api/vakt-feil.php",
+                    "finnes": [
+                        "Config::hent('cron_nokkel', '')",
+                        "WHERE status <> 'lukket'"
+                    ],
+                    "ikkeFinnes": [
+                        "UPDATE feilrapporter"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lager-min-maks-bestill-mer",
+            "dato": "2026-09-28",
+            "hva": "«antall leirer på lager, så man får beskjed om at hun må bestille mer»: minimum og maksimum per vare; på eller under minimum går e-post til admin og raden i «Trenger handling» på Oversikt viser «Bestill mer: <vare> (<antall> igjen, bestill <maks−lager>)». Ingenting på kundesiden",
+            "hvor": "Admin › Butikk (vareskjemaet), Admin › Oversikt, e-postmalen intern_bestill_mer",
+            "kode": [
+                {
+                    "fil": "app/lib/lager.php",
+                    "finnes": [
+                        "'Bestill mer: ' . $vare . ' (' . $lager . ' igjen' . ($n > 0 ? ', bestill ' . $n : '') . ')'",
+                        "max(0, $maks - $lager)",
+                        "$naa <= $min && $naa + $trukket > $min"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "Lager::etterSalg((int) $l['product_id'], (int) $l['antall']);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/uttak.php",
+                    "finnes": [
+                        "Lager::etterSalg((int) $r['vare']['id'], (int) $r['antall']);"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "placeholder=\"Minimum på lager\"",
+                        "placeholder=\"Maksimum på lager\"",
+                        "...(d.bestillMer || []).map(v => rad(v.linje, 'Minimum er nådd'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lav-aktivitet-14-dager",
+            "dato": "2026-09-28",
+            "hva": "«medlemmer som ikke bruker timene sine ... lav aktivitet etter 14 dager»: raden «Lav aktivitet: N medlemmer» i «Trenger handling» på Oversikt, pillen «Lav aktivitet» i Medlemmer med dager siden sist og Ring/E-post-piller, dagene settes i admin (standard 14), daglig e-post til admin om nye. Ingenting sendes til medlemmene",
+            "hvor": "Admin › Oversikt, Admin › Medlemmer › Lav aktivitet, e-postmalen intern_lav_aktivitet",
+            "kode": [
+                {
+                    "fil": "app/lib/aktivitet.php",
+                    "finnes": [
+                        "public const STANDARD_DAGER = 14;",
+                        "WHERE m.status IN ('prove', 'aktiv')",
+                        "Varsel::malTilAdmin('intern_lav_aktivitet'"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "'Inne nå', 'Lav aktivitet', 'Kontoer uten kjøp']",
+                        "rad('Lav aktivitet: ' + d.lavAktivitet.antall",
+                        "handling: 'lav-aktivitet-dager'"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "Aktivitet::meldNye()"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "forsiden-hopper-ikke-mobil",
+            "dato": "2026-09-28",
+            "hva": "«mobil, når jeg ser på karusellen ... så hopper siden opp noen ganger»: referansefeltet over galleriet får høyden til den høyeste kunden, så byttene ikke flytter siden (målt: 4 skift/CLS 2,19 → 0)",
+            "hvor": "lissom.no forsiden, nett.js",
+            "kode": [
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "function rotHoyde() {",
+                        "kol.style.minHeight = Math.ceil(maks) + 'px';",
+                        "felt('rot', rot.length, 10000, tegnRot);"
                     ]
                 }
             ]

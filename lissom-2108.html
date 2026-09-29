@@ -23146,6 +23146,16 @@ window.__resources = {
                 <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
               </sc-for>
             </div>
+            <!-- Lav aktivitet (eieren, 28. september 2026): hvor mange dager
+                 uten innstempling foer et medlem staar her. Settes i admin. -->
+            <sc-if value="{{ lavValgt }}" hint-placeholder-val="{{ false }}">
+              <div class="lx-pillerad" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-body);">
+                <span>Lav aktivitet etter</span>
+                <input value="{{ lavDager }}" onInput="{{ settLavDager }}" inputmode="numeric" aria-label="Antall dager" style="width: 64px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                <span>dager uten innstempling</span>
+                <button type="button" onClick="{{ lagreLavDager }}" style="{{ lavLagreStil }}">Lagre</button>
+              </div>
+            </sc-if>
             <div class="lx-pillerad" style="display: flex; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
               <button type="button" onClick="{{ sorterNavn }}" style="{{ sortKnappStil }}">Medlem {{ sortNavnPil }}</button><button type="button" onClick="{{ sorterTimer }}" style="{{ sortKnappStil }}">Timer brukt {{ sortTimerPil }}</button>
             </div>
@@ -23201,6 +23211,17 @@ window.__resources = {
                     <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
                     <sc-if value="{{ m.harTimerIgjen }}" hint-placeholder-val="{{ true }}">
                       <div style="{{ m.timerIgjenStil }}">{{ m.timerIgjen }}</div>
+                    </sc-if>
+                    <sc-if value="{{ m.visLav }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 700; white-space: nowrap;">{{ m.lavTekst }}</div>
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                        <sc-if value="{{ m.harTlf }}" hint-placeholder-val="{{ true }}">
+                          <a href="{{ m.tlfLenke }}" onClick="{{ m.stopp }}" class="lx-medlpille" style="{{ m.kontaktStil }}">Ring</a>
+                        </sc-if>
+                        <sc-if value="{{ m.harEpost }}" hint-placeholder-val="{{ true }}">
+                          <a href="{{ m.epostLenke }}" onClick="{{ m.stopp }}" class="lx-medlpille" style="{{ m.kontaktStil }}">E-post</a>
+                        </sc-if>
+                      </div>
                     </sc-if>
                   </div>
                 </div>
@@ -29787,6 +29808,13 @@ window.__resources = {
           <input value="{{ npPris }}" onChange="{{ settNpPris }}" placeholder="Pris i kr *" style="{{ skFeltStil }}">
           <input value="{{ npAntall }}" onChange="{{ settNpAntall }}" placeholder="Antall på lager" style="{{ skFeltStil }}">
         </div>
+        <!-- «Bestill mer» (eieren, 28. september 2026): paa eller under minimum
+             faar admin beskjed om aa bestille opp til maksimum. Tomt = ikke satt.
+             Vises bare i admin, aldri i butikken. -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+          <input value="{{ npMin }}" onChange="{{ settNpMin }}" inputmode="numeric" placeholder="Minimum på lager" style="{{ skFeltStil }}">
+          <input value="{{ npMaks }}" onChange="{{ settNpMaks }}" inputmode="numeric" placeholder="Maksimum på lager" style="{{ skFeltStil }}">
+        </div>
         <textarea value="{{ npBeskrivelse }}" onChange="{{ settNpBeskrivelse }}" placeholder="Kort beskrivelse, f.eks. «Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.»" rows="{{ 3 }}" style="{{ npTekstStil }}"></textarea>
                   <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
                     <button type="button" onClick="{{ fhNpBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhNpBeskrivelseMerke }}</button>
@@ -34874,6 +34902,24 @@ class Component extends DCLogic {
         kvittering: 'Kunne ikke lagre',
         kvitteringDetalj: 'Fikk ikke kontakt med serveren. Endringen er ikke lagret.',
       }));
+  }
+
+  // Lav aktivitet: dagene lagres, og lista hentes paa nytt med den nye
+  // grensa (eieren, 28. september 2026).
+  lagreLavDager() {
+    const d = parseInt(this.state.lavDager, 10);
+    if (!d || d < 1) { this.setState({ kvittering: 'Kunne ikke lagre', kvitteringDetalj: 'Skriv et antall dager.' }); return; }
+    fetch('/api/admin/medlemmer.php', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'lav-aktivitet-dager', dager: d }) })
+      .then(r => r.json())
+      .then(j => {
+        if (!j || !j.ok) { this.setState({ kvittering: 'Kunne ikke lagre', kvitteringDetalj: (j && j.feil) || 'Prøv igjen.' }); return; }
+        this.setState(s => ({ kvittering: 'Lagret', kvitteringDetalj: j.beskjed || '', lavDager: undefined,
+          adminData: Object.assign({}, s.adminData, { lavAktivitet: Object.assign({}, (s.adminData || {}).lavAktivitet, { dager: j.dager }) }) }));
+        return fetch('/api/admin/medlemmer.php', { credentials: 'same-origin', cache: 'no-store' }).then(r => r.json())
+          .then(m => { if (m && m.medlemmer) this.setState({ adminMedlemmer: m.medlemmer }); });
+      })
+      .catch(() => this.setState({ kvittering: 'Kunne ikke lagre', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   apneForesporsel() {
@@ -43480,6 +43526,8 @@ class Component extends DCLogic {
         pris: parseInt(pris, 10),
         // Tomt antall betyr «ikke lagerstyrt», ikke «tomt paa lager».
         lager: (s.npAntall || '').trim(),
+        lagerMin: String(s.npMin || '').trim(),
+        lagerMaks: String(s.npMaks || '').trim(),
         // Sto to ganger i det samme objektet, og den nederste vant:
         // «fra && fra.kunMedlemmer». En NY vare har ingen «fra», saa avkryssinga
         // «Kun for medlemmer (internbutikken)» ble alltid til «nei» — varen havnet
@@ -48572,9 +48620,17 @@ class Component extends DCLogic {
       ...(vt.feilet ? [rad('Varsler kom ikke fram', 'E-post som ikke gikk', vt.feilet, () => this.gaaAdmin('adminvarsler', {}), true)] : []),
       ...(vt.iKo ? [rad('Varsler står i kø', 'Venter på å bli sendt', vt.iKo, () => this.gaaAdmin('adminvarsler', {}), false)] : []),
       ...(hengende ? [rad('Henger i Vipps', 'Betalinger som ikke ble fullført', hengende, () => this.gaaAdmin('adminokonomi', { okonomiFor: 'hengende' }), true)] : []),
+      // «Bestill mer» (eieren, 28. september 2026): én rad per vare som staar
+      // paa eller under minimum, med hvor mange som maa bestilles opp til
+      // maksimum. Se app/lib/lager.php. Trykk aapner internbutikken.
+      ...(d.bestillMer || []).map(v => rad(v.linje, 'Minimum er nådd', null, () => this.gaaAdmin('adminbutikk', { butikkFane: 'Medlemssalg' }), true)),
+      // «Lav aktivitet» (samme dag): medlemmer som ikke har vaert innom paa
+      // N dager. Trykk aapner pilla «Lav aktivitet» i Medlemmer.
+      ...(((d.lavAktivitet || {}).antall) ? [rad('Lav aktivitet: ' + d.lavAktivitet.antall + (d.lavAktivitet.antall === 1 ? ' medlem' : ' medlemmer'),
+        'Ikke innom på ' + d.lavAktivitet.dager + ' dager', null, () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Lav aktivitet', medlemSok: '' }), false)] : []),
     ];
     const handlingTall = nyeste + ubesvarte + ventende.length + dugnad + soknader + (koer.medlemsvarer || 0)
-      + (koer.frys || 0) + venterMelding + feilNye + (vt.feilet || 0) + hengende;
+      + (koer.frys || 0) + venterMelding + feilNye + (vt.feilet || 0) + hengende + (d.bestillMer || []).length;
 
     // ── Kasse · ta betalt ── de to foerste i «Ikke betalt», med Kontant og Vipps.
     const skylder = this.skylderKort().ovSkylder || [];
@@ -55424,6 +55480,13 @@ class Component extends DCLogic {
       status: m.erInne ? 'Inne nå' : (tekst[m.status] || m.status),
       tone: m.erInne ? 'success' : (tone[m.status] || 'neutral'),
       inne: !!m.erInne,
+      // Lav aktivitet: dager siden sist og kontaktpillene, bare i den pilla.
+      visLav: (this.state.medlemFilter || '') === 'Lav aktivitet' && !!m.lavAktivitet,
+      lavTekst: m.dagerSiden === null || m.dagerSiden === undefined ? '' : m.dagerSiden + ' dager siden sist',
+      harTlf: !!m.telefon, tlfLenke: 'tel:' + String(m.telefon || '').replace(/s+/g, ''),
+      harEpost: !!m.epost, epostLenke: 'mailto:' + (m.epost || ''),
+      stopp: e => { if (e && e.stopPropagation) e.stopPropagation(); },
+      kontaktStil: { display: 'inline-flex', alignItems: 'center', minHeight: 32, padding: '4px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', font: 'var(--type-chip)', fontWeight: 600, textDecoration: 'none' },
     }));
   }
 
@@ -56375,6 +56438,7 @@ class Component extends DCLogic {
             raa ? {
               npApen: true, npRediger: true, npId: raa.id, npNavn: raa.tittel,
               npPris: String(raa.pris ?? ''), npAntall: raa.lager === null ? '' : String(raa.lager),
+              npMin: raa.lagerMin == null ? '' : String(raa.lagerMin), npMaks: raa.lagerMaks == null ? '' : String(raa.lagerMaks),
               npBeskrivelse: raa.beskrivelse || '', npKategori: raa.kategori || '',
               npArtikkelnr: raa.artikkelnr || '', npLeverandor: raa.leverandorId || 0,
               npKanBestilles: !!raa.kanBestilles,
@@ -62231,10 +62295,16 @@ class Component extends DCLogic {
       // Soekefeltet over pillene. Staar det noe der, er pillene slaatt av —
       // se filteret i «medlemmer» lenger nede.
       medlemSok: this.state.medlemSok || '',
+      // Lav aktivitet: dagene settes her (eieren, 28. september 2026).
+      lavValgt: (this.state.medlemFilter || '') === 'Lav aktivitet' && (this.state.medlemSok || '').trim() === '',
+      lavDager: this.state.lavDager !== undefined ? this.state.lavDager : String((((this.state.adminData || {}).lavAktivitet) || {}).dager || 14),
+      settLavDager: e => this.setState({ lavDager: e.target.value.replace(/[^d]/g, '') }),
+      lagreLavDager: () => this.lagreLavDager(),
+      lavLagreStil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 14px', font: 'var(--type-chip)', fontWeight: 600, border: '1px solid var(--lissom-brown)', background: 'var(--lissom-brown)', color: 'var(--clay-50)', minHeight: 32 },
       settMedlemSok: e => this.setState({ medlemSok: e.target.value }),
       medlemSokAktivt: (this.state.medlemSok || '').trim() !== '',
       tomMedlemSok: () => this.setState({ medlemSok: '' }),
-      medlemFiltre: ['Aktive medlemmer', 'Tidligere medlemmer', 'Kursdeltakere', 'Admin', 'Ubetalte', 'Inne nå', 'Kontoer uten kjøp'].map(n => {
+      medlemFiltre: ['Aktive medlemmer', 'Tidligere medlemmer', 'Kursdeltakere', 'Admin', 'Ubetalte', 'Inne nå', 'Lav aktivitet', 'Kontoer uten kjøp'].map(n => {
         const valgt = (this.state.medlemFilter || 'Aktive medlemmer') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
       }),
@@ -62292,6 +62362,7 @@ class Component extends DCLogic {
         // steder i admin aapner lista med søk paa navnet — da maa alle med.
         if (fv === 'Alle') return true;
         if (fv === 'Inne nå') return !!m.inne;
+        if (fv === 'Lav aktivitet') return !!m.lavAktivitet;
         if (fv === 'Aktive medlemmer') return !!m.erMedlem && !m.erAdmin;
         if (fv === 'Tidligere medlemmer') return !!m.harSluttet;
         if (fv === 'Kontoer uten kjøp') return !m.erMedlem && !m.erAdmin && !m.harSluttet && (m.antallKurs || 0) === 0;
@@ -63618,11 +63689,11 @@ class Component extends DCLogic {
       // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
       // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
       // peker knappene dit.
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
-      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npBilde: '' }),
       butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
-        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npBilde: '' })
-        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npBilde: '' })),
+        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npBilde: '' })
+        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npBilde: '' })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
       // Handlelista, migrasjon 184. Leverandorene kommer fra basen —
@@ -63709,6 +63780,10 @@ class Component extends DCLogic {
       settNpPris: e => this.setState({ npPris: e.target.value }),
       npAntall: this.state.npAntall || '',
       settNpAntall: e => this.setState({ npAntall: e.target.value }),
+      npMin: this.state.npMin || '',
+      settNpMin: e => this.setState({ npMin: e.target.value.replace(/[^d]/g, '') }),
+      npMaks: this.state.npMaks || '',
+      settNpMaks: e => this.setState({ npMaks: e.target.value.replace(/[^d]/g, '') }),
       npBeskrivelse: this.state.npBeskrivelse || '',
       settNpBeskrivelse: e => this.setState({ npBeskrivelse: e.target.value }),
       npTekstStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', resize: 'vertical', fontFamily: 'inherit' },
@@ -70388,6 +70463,8 @@ class Component extends DCLogic {
           npNavn: v.navn,
           npPris: v.raa ? String(v.raa.pris) : String(v.pris).replace(/[^\d]/g, ''),
           npAntall: v.antall === null ? '' : String(v.antall),
+          npMin: v.raa && v.raa.lagerMin != null ? String(v.raa.lagerMin) : '',
+          npMaks: v.raa && v.raa.lagerMaks != null ? String(v.raa.lagerMaks) : '',
           npBeskrivelse: v.raa ? (v.raa.beskrivelse || '') : '',
           npKategori: v.raa ? (v.raa.kategori || '') : '',
           npMva: v.raa ? (v.raa.mva ?? 25) > 0 : true,

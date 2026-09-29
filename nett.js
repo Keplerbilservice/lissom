@@ -125,7 +125,7 @@
   }
 
   var rot = window.lissomRot || [];
-  felt('rot', rot.length, 10000, function (n) {
+  function tegnRot(n) {
     var r = rot[n], el = d.querySelector('[data-nett-rot="rot"]');
     var q = function (s) { return el.querySelector('[data-rot="' + s + '"]'); };
     var bilde = q('bilde'); bilde.src = r.bilde; bilde.alt = r.alt;
@@ -139,7 +139,37 @@
     // feltet lenger — eieren, 20. september 2026: «kan du soerge for at det
     // kun er referansekunder i denne». En kunde har en lenke, ikke knapper.
     var l = q('lenke'); l.style.display = r.lenke ? 'inline-block' : 'none'; l.href = r.lenke || '#'; l.textContent = r.lenkeTekst || '';
+    rotNr = n;
+  }
+  var rotNr = 0;
+  // Feltet hopper ikke. Eieren, 28. september 2026: «mobil, naar jeg ser paa
+  // karusellen ... saa hopper siden opp noen ganger». Kundene har tekster av
+  // ulik lengde, og tekstkolonna var 337 px hoeyere for den lengste enn for
+  // den korteste (maalt paa lissom.no, iPhone-bredde). Hvert bytte flyttet
+  // alt under — galleriet rett under hoppet opp og ned hvert tiende sekund.
+  // Tekstkolonna faar hoeyden til den hoeyeste kunden, maalt i nettleseren
+  // (alle tegnes i samme oppgave, uten at noe males imellom), og maales paa
+  // nytt naar bredden endres og naar skriftene er lastet.
+  function rotHoyde() {
+    var el = d.querySelector('[data-nett-rot="rot"]');
+    var kol = el && el.children[1];
+    if (!kol || rot.length < 2) return;
+    var naa = rotNr, maks = 0;
+    kol.style.minHeight = '';
+    for (var i = 0; i < rot.length; i++) { tegnRot(i); maks = Math.max(maks, kol.getBoundingClientRect().height); }
+    tegnRot(naa);
+    kol.style.minHeight = Math.ceil(maks) + 'px';
+  }
+  rotHoyde();
+  window.addEventListener('load', rotHoyde);
+  if (d.fonts && d.fonts.ready) d.fonts.ready.then(rotHoyde);
+  var rotBredde = window.innerWidth, rotKlokke = null;
+  window.addEventListener('resize', function () {
+    if (window.innerWidth === rotBredde) return;
+    rotBredde = window.innerWidth;
+    clearTimeout(rotKlokke); rotKlokke = setTimeout(rotHoyde, 150);
   });
+  felt('rot', rot.length, 10000, tegnRot);
 
   var but = d.querySelectorAll('[data-nett-rot="but"] > [data-but]');
   felt('but', but.length, 6000, function (n) {

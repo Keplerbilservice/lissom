@@ -1129,6 +1129,8 @@ final class Booking
                 'UPDATE products SET lager = GREATEST(0, lager - :a) WHERE id = :p AND lager IS NOT NULL',
                 ['a' => (int) $l['antall'], 'p' => (int) $l['product_id']]
             );
+            // «Bestill mer» naar salget tar varen under grensen (eieren, 28.09).
+            Lager::etterSalg((int) $l['product_id'], (int) $l['antall']);
         }
     }
 

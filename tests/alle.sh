@@ -51,6 +51,7 @@ kjor "prøv lissom"   php tests/prove.php
 kjor "timepakke"     php tests/timepakke.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php
+kjor "bestill mer, lav aktivitet" php tests/daglig.php
 kjor "eposter"       php tests/eposter.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------

@@ -66,6 +66,9 @@ if (Foresporsel::metode() === 'GET') {
         'artikkelnr'   => (string) ($v['artikkelnr'] ?? ''),
         'leverandorId' => isset($v['leverandor_id']) && $v['leverandor_id'] !== null ? (int) $v['leverandor_id'] : 0,
         'kanBestilles' => (bool) ($v['kan_bestilles'] ?? 0),
+        // «Bestill mer», migrasjon 233: minimum og maksimum. null = ikke satt.
+        'lagerMin'  => isset($v['lager_min']) && $v['lager_min'] !== null ? (int) $v['lager_min'] : null,
+        'lagerMaks' => isset($v['lager_maks']) && $v['lager_maks'] !== null ? (int) $v['lager_maks'] : null,
     ], $varer),
     'leverandorer' => DB::harTabell('leverandorer')
         ? array_map(static fn($l) => ['id' => (int) $l['id'], 'navn' => (string) $l['navn']],
@@ -182,6 +185,14 @@ if (DB::harKolonne('products', 'artikkelnr')) {
     $data['leverandor_id'] = $lev > 0 && DB::en('SELECT id FROM leverandorer WHERE id = :i', ['i' => $lev]) !== null
                                 ? $lev : null;
     $data['kan_bestilles'] = Foresporsel::tekst('kanBestilles') === 'ja' ? 1 : 0;
+}
+
+// «Bestill mer», migrasjon 233. Minimum og maksimum; tomt felt = ikke satt (eieren, 28.09).
+if (Lager::harGrense()) {
+    $minRaa = Foresporsel::tekst('lagerMin');
+    $data['lager_min'] = $minRaa === '' ? null : max(0, Foresporsel::heltall('lagerMin'));
+    $maksRaa = Foresporsel::tekst('lagerMaks');
+    $data['lager_maks'] = $maksRaa === '' ? null : max(0, Foresporsel::heltall('lagerMaks'));
 }
 
 // Navnet avgjor ingenting. Tidligere ble en vare uten id slaatt sammen med

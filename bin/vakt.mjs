@@ -15,7 +15,7 @@
  * Vakta aapner sidene slik en besokende gjor, paa PC og paa telefon, og
  * feiler naar en side ikke svarer, et skript kaster feil, sida staar tom
  * eller blir bredere enn skjermen. Den kjores etter hver publisering og
- * hver time — se .github/workflows/vakt.yml.
+ * én gang i doegnet (kl. 06:17 fra eierens PC, eieren 28. september 2026).
  */
 
 import fs from 'fs';
@@ -225,6 +225,38 @@ if (gNokkel && tilGemini.length && process.env.VAKT_GEMINI !== '0') {
   } catch (e) {
     // Gemini nede er ikke lissom.no nede. Det skrives ned, men teller ikke.
     console.log('  Gemini kunne ikke spores — hoppet over: ' + String(e.message).split('\n')[0]);
+  }
+}
+
+// ── Innrapporterte feil ──────────────────────────────────────────────
+//
+// Eieren, 28. september 2026: sjekkene gaar én gang i doegnet, og da skal
+// de ta med feilmeldingene som er rapportert inn. De leses fra
+// api/vakt-feil.php med cron_nokkel (miljoevariabelen VAKT_CRON_NOKKEL
+// eller fila cron-nokkel.txt ved siden av vakta). Vakta leser bare — den
+// retter og lukker ingenting. Aapne rapporter er ikke avvik paa sida; de
+// skrives med «•» saa rapporten til eieren kan ta dem med.
+{
+  let nokkel = (process.env.VAKT_CRON_NOKKEL || '').trim();
+  if (!nokkel) {
+    try { nokkel = fs.readFileSync(path.join(ROT, 'cron-nokkel.txt'), 'utf8').trim(); } catch { /* mangler */ }
+  }
+  console.log('\n── Innrapporterte feil ──');
+  if (!nokkel) {
+    console.log('  • Mangler cron-nøkkel — kan ikke lese feilrapportene (legg den i cron-nokkel.txt)');
+  } else {
+    try {
+      const svar = await fetch(`${ADRESSE}/api/vakt-feil.php?nokkel=${encodeURIComponent(nokkel)}`);
+      const j = svar.ok ? await svar.json() : null;
+      if (!j || !j.ok) {
+        console.log(`  • Fikk ikke lest feilrapportene (status ${svar.status})`);
+      } else {
+        console.log(`  Åpne feilrapporter: ${j.apne}`);
+        for (const l of j.linjer || []) console.log(`  • ${l}`);
+      }
+    } catch (e) {
+      console.log('  • Fikk ikke lest feilrapportene: ' + String(e.message).split('\n')[0]);
+    }
   }
 }
 

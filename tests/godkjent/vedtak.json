@@ -1378,6 +1378,91 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "omsetning-en-kilde",
+            "dato": "2026-09-29",
+            "hva": "Dagens omsetning på Oversikt, Økonomi og dagsoppgjøret regnes fra én kilde (Omsetning::rader/perFormal): betalingsradene pluss påmeldinger betalt i verkstedet uten betalingsrad. Et kurs betalt manuelt (kr 2 800 29.09) skal alltid stå i dagens omsetning, og tallene skal være like alle tre steder. Vakta sjekker hver morgen at alt betalt i dag og i går er med",
+            "hvor": "app/lib/omsetning.php, api/admin/oversikt.php, api/admin/okonomi.php, api/admin/dagsoppgjor.php, api/vakt-data.php",
+            "kode": [
+                {
+                    "fil": "app/lib/omsetning.php",
+                    "finnes": [
+                        "public static function rader(string $fraUtc, string $tilUtc): array",
+                        "public static function perFormal(string $fraUtc, string $tilUtc): array",
+                        "WHERE b.payment_id IS NULL"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "return array_sum(Omsetning::perFormal($fra, $til ?? '9999-12-31 00:00:00'));",
+                        "$etter = Omsetning::perFormal($fra, '9999-12-31 00:00:00');"
+                    ],
+                    "ikkeFinnes": [
+                        "SUM(belop_ore - refundert_ore)"
+                    ]
+                },
+                {
+                    "fil": "api/admin/okonomi.php",
+                    "finnes": [
+                        "return array_sum(Omsetning::perFormal($fra, $til));",
+                        "$perFormal = Omsetning::perFormal($tilUtc($mndStart), $tilUtc($nesteMnd));"
+                    ],
+                    "ikkeFinnes": [
+                        "SUM(belop_ore - refundert_ore)"
+                    ]
+                },
+                {
+                    "fil": "api/admin/dagsoppgjor.php",
+                    "finnes": [
+                        "$rader = Omsetning::rader($iUtc($fra), $iUtc($til));"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "plan-etter-bytte",
+            "dato": "2026-09-29",
+            "hva": "Etter bytte fra Prøv Lissom viser Min side og admin det nye medlemskapet overalt. Lista i admin viser «X t over Prøv Lissom» bare mens medlemmet står på Prøv Lissom; etter byttet står timene over i endringsloggen («Byttet medlemskap fra … til … · X t over …»). Vakta går gjennom alle medlemmer hver morgen: vist plan = planen på den aktive avtalen, og ingen har mer enn én aktiv avtale",
+            "hvor": "api/admin/medlemmer.php, app/lib/vaktdata.php, api/vakt-data.php, bin/vakt.mjs, tests/planbytte.php",
+            "kode": [
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "if (!Medlemskap::erEngangs((string) ($m['medlemskap_type'] ?? ''))) {",
+                        "if ($h === 'medlemskap_erstattet') {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vaktdata.php",
+                    "finnes": [
+                        "aktive avtaler: ",
+                        "er ikke med i omsetningen"
+                    ]
+                },
+                {
+                    "fil": "bin/vakt.mjs",
+                    "finnes": [
+                        "/api/vakt-data.php?nokkel="
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "oversikt-mobil-verkstedet-overst",
+            "dato": "2026-09-29",
+            "hva": "På mobil står «I verkstedet nå» alltid øverst på admin-Oversikt, før omsetningen, med alle som er inne (navn, klokkeslett, «Skjult for andre»). PC er uendret — der står navnene i menyen",
+            "hvor": "Admin › Oversikt på telefon (lissom-2108.html)",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<div data-ov-inne=\"1\" style=\"{{ ovMobInneStil }}\">",
+                        "ovMobInneVis: (this.state.vw || 1400) < 980,"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -818,6 +818,67 @@ await flyt('Prøv Lissom: Forny aapner velgeren', async () => {
   await p2.context().close();
 });
 
+// ── Etter byttet: Min side og admin viser det nye overalt ─────────────
+//
+// Eieren, 29. september 2026: Johanna hadde betalt og blitt trukket for Mini
+// 15, men sto fortsatt med Prøv Lissom — lista i admin sa «3,1 t over Prøv
+// Lissom» der timene hennes skulle staa. Etter byttet skal Min side og admin
+// vise det nye medlemskapet, og ingen Prøv-vinduer skal komme.
+await flyt('Etter byttet fra Prøv Lissom: det nye overalt', async () => {
+  const jo = S.prove;
+  const ny = jo && verdi("SELECT plan FROM subscriptions WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1", { m: jo.id });
+  sjekk('byttet fra forrige flyt er gjort', !!ny && ny !== jo.plan, String(ny));
+  if (!ny || ny === jo.plan) return;
+  for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
+    const p = await side('prove', bredde, hoyde);
+    await gaa(p, '/min-side', 3500);
+    const meg = await api(p, '/api/meg.php');
+    const min = await api(p, '/api/medlemskap.php');
+    sjekk(`${hva}: Min side: medlemskapet er ${ny}`, meg?.medlem?.medlemskap === ny && min?.min?.plan === ny,
+      (meg?.medlem?.medlemskap || '') + ' / ' + (min?.min?.plan || ''));
+    sjekk(`${hva}: … og ingen Prøv-vinduer`, await p.locator('[data-tp-vindu="3"]').count() === 0);
+    sjekk(`${hva}: … og «${jo.plan}» står ikke som medlemskapet`,
+      !(await p.getByText('Du har brukt opp ' + jo.plan).isVisible().catch(() => false)));
+    await p.context().close();
+  }
+  const a = await side('admin');
+  await gaa(a, '/admin/medlemmer/alle', 3500);
+  const liste = await api(a, '/api/admin/medlemmer.php');
+  const rad = (Array.isArray(liste) ? liste : (liste.medlemmer || Object.values(liste).find(Array.isArray) || [])).find(m => m.id === jo.id) || {};
+  sjekk(`admin: lista viser ${ny}`, rad.medlemskap === ny, rad.medlemskap);
+  sjekk('admin: … og ikke «over Prøv Lissom» i timene', !rad.proveOver, String(rad.proveOver));
+  const person = await api(a, '/api/admin/medlemmer.php?person=' + jo.id);
+  const logg = (person.logg || []).map(l => l.hva).join(' | ');
+  sjekk('admin: timene over står i endringsloggen', /Byttet medlemskap fra .+ til .+ · .+ t over /.test(logg), logg.slice(0, 200));
+  const tekst = await a.evaluate(() => document.body.innerText);
+  sjekk('admin: medlemsrada sier ikke «over Prøv Lissom»', !/Johanna[sS]{0,200}over Prøv Lissom/.test(tekst));
+  await a.context().close();
+});
+
+// ── I verkstedet nå oeverst paa Oversikt paa telefon ─────────────────
+// Eieren, 29. september 2026: «jeg vil på mobil, at i verkstedet nå alltid
+// står synlig på toppen». PC-en er som foer.
+await flyt('Oversikt paa mobil: I verkstedet nå øverst', async () => {
+  const mob = await side('admin', 390, 844);
+  await gaa(mob, '/admin/oversikt', 3500);
+  const blokk = mob.locator('[data-ov-inne]');
+  sjekk('mobil: «I verkstedet nå» vises på Oversikt', await blokk.getByText('I verkstedet nå').isVisible().catch(() => false));
+  const y = await mob.evaluate(() => {
+    const b = document.querySelector('[data-ov-inne]');
+    const o = document.querySelector('.lx-ovtopp');
+    return [b ? b.getBoundingClientRect().top : -1, o ? o.getBoundingClientRect().top : -1, scrollY];
+  });
+  sjekk('mobil: … over omsetningen', y[0] >= 0 && y[1] > y[0], y.join('/'));
+  sjekk('mobil: … synlig uten å rulle', y[0] >= 0 && y[0] < 844 && y[2] === 0, y.join('/'));
+  const b = await mob.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
+  sjekk('mobil: Oversikt er ikke bredere enn skjermen', b[0] <= b[1] + 1, b.join('/'));
+  await mob.context().close();
+  const pc = await side('admin');
+  await gaa(pc, '/admin/oversikt', 3000);
+  sjekk('PC: blokka står ikke på Oversikt (navnene er i menyen)', await pc.locator('[data-ov-inne]').count() === 0);
+  await pc.context().close();
+});
+
 // ── Timepakken og vinduene paa Min side ───────────────────────────────
 //
 // Eieren, 28. september 2026: 6 timer for kr 800, bare naar timene er brukt

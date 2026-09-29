@@ -16496,6 +16496,7 @@ window.__resources = {
                 <div class="lx-pillerad" style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
                   <button class="lx-radpille" type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <button class="lx-radpille" type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
+                  <button class="lx-radpille" type="button" onClick="{{ o.startKurs }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Start kurset</button>
                   <button class="lx-radpille" type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
                   <!-- Tar bort datoen, ikke kurset. Gjentar kurset seg, blir
                        det mange datoer, og de kunne bare avlyses — de ble
@@ -25552,6 +25553,44 @@ window.__resources = {
             </div>
           </sc-if>
         </div>
+
+        <!-- ── Kursstart ─────────────────────────────────────────
+             Eieren, 29. september 2026: onboardinga du gaar gjennom med
+             deltakerne ved kursstart. Kortene vises i en karusell fra
+             «Start kurset» paa kursdatoen og fra snarveien i kalenderen —
+             teksten staar her, fordi det er eieren som vet hvor toalettet
+             er og hvor lenge det tar for arbeidene er ferdige.
+
+             Kort 2 har ingen liste aa skrive inn. Der er innholdet de
+             paameldte paa akkurat den datoen, med betalt eller ikke, hentet
+             naar kortet aapnes. Teksten her er bare innledninga over lista. -->
+        <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
+          <div>
+            <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Kursstart</h2>
+            <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">{{ ksRedHjelp }}</p>
+          </div>
+          <sc-for list="{{ ksRedKort }}" as="k" hint-placeholder-count="5">
+            <div style="{{ k.rammeStil }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ k.merke }}</span>
+                <button type="button" onClick="{{ k.veksle }}" aria-pressed="{{ k.paa }}" aria-label="{{ k.bryterNavn }}" style="{{ k.bryterStil }}">{{ k.bryterTekst }}</button>
+              </div>
+              <input value="{{ k.tittel }}" onChange="{{ k.settTittel }}" aria-label="{{ k.tittelNavn }}" placeholder="Overskrift" style="{{ k.feltStil }}">
+              <textarea value="{{ k.tekst }}" onChange="{{ k.settTekst }}" aria-label="{{ k.tekstNavn }}" rows="4" placeholder="Én linje blir ett avsnitt" style="{{ k.omraadeStil }}"></textarea>
+              <sc-if value="{{ k.erBetaling }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Under denne teksten står de påmeldte på datoen, med betalt eller ikke. Den lista hentes når kortet åpnes, og skrives ikke inn her.</p>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+            <sc-if value="{{ ksRedUlagret }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ ksRedForkast }}" hint-size="auto,36px">Forkast</x-import>
+            </sc-if>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ ksRedLagre }}" hint-size="auto,36px">Lagre kursstarten</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ ksRedSe }}" hint-size="auto,36px">Se karusellen</x-import>
+          </div>
+        </div>
       </main>
     </div>
   </sc-if>
@@ -30620,6 +30659,80 @@ window.__resources = {
         <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ admSokIngenTekst }}</p>
       </sc-if>
       <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ admSokAntall }}</p>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ── Kursstart ───────────────────────────────────────────────
+     Eieren, 29. september 2026: «Jeg skulle hatt en slags onboarding til
+     admin, ved oppstart av kurs, i enkel karusellform som er mobilvennlig».
+
+     Fem kort du gaar gjennom med deltakerne foer dere begynner. Arket staar
+     én gang i malen, som Synlighet og Soek, og naas fra «Start kurset» paa
+     datoen i Kurs og deltakere og fra snarveien i kalenderen.
+
+     Ingen sveip. Ingen andre steder i denne malen har roerings-haandterere,
+     og en karusell som bare kan sveipes er en karusell ingen finner fram i
+     med leirete hender. Store knapper og prikker du kan trykke paa. -->
+<sc-if value="{{ ksVises }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ ksLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
+    <div onClick="{{ ksStopp }}" class="lx-synark lx-kursstart" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); padding: var(--space-6); box-shadow: var(--shadow-lg); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-5);">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4);">
+        <div style="min-width: 0;">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kursstart</div>
+          <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ ksNaar }}</div>
+        </div>
+        <button type="button" onClick="{{ ksLukk }}" aria-label="Lukk" style="appearance: none; background: var(--clay-100); border: none; border-radius: 50%; width: 30px; height: 30px; flex: 0 0 auto; cursor: pointer; font-size: 17px; line-height: 1; color: var(--text-heading);">×</button>
+      </div>
+
+      <div>
+        <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl); letter-spacing: 0; text-wrap: pretty;">{{ ksTittel }}</h2>
+        <sc-for list="{{ ksAvsnitt }}" as="a" hint-placeholder-count="3">
+          <p style="margin: 0 0 10px; font-size: var(--text-base); line-height: 1.6; color: var(--text-body); text-wrap: pretty;">{{ a.tekst }}</p>
+        </sc-for>
+      </div>
+
+      <!-- Betalingskortet. Lista er de paameldte paa akkurat denne datoen,
+           med betalt eller ikke. Trykk paa en rad gaar til Paameldte — der
+           betaling alt haandteres, saa det finnes fortsatt bare ett sted
+           som endrer penger. -->
+      <sc-if value="{{ ksErBetaling }}" hint-placeholder-val="{{ false }}">
+        <div style="background: var(--clay-50); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
+          <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">{{ ksBetalingStatus }}</div>
+          <sc-if value="{{ ksHarRader }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ ksRader }}" as="r" hint-placeholder-count="4">
+                <button type="button" onClick="{{ r.velg }}" style="{{ r.radStil }}">
+                  <span style="font-weight: 600;">{{ r.navn }}</span>
+                  <span style="{{ r.merkeStil }}">{{ r.merke }} · {{ r.sum }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- Prikkene sier hvor mange kort det er og hvor du er. De er ogsaa
+           knapper: holder du kurs og vil tilbake til det praktiske, skal du
+           ikke maatte trykke deg bakover fire ganger. -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+        <div class="lx-pillerad" style="display: flex; align-items: center; gap: 6px;">
+          <sc-for list="{{ ksPrikker }}" as="p" hint-placeholder-count="5">
+            <button type="button" onClick="{{ p.velg }}" aria-label="{{ p.navn }}" title="{{ p.navn }}" style="{{ p.stil }}"></button>
+          </sc-for>
+        </div>
+        <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ ksTeller }}</span>
+      </div>
+
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <button type="button" onClick="{{ ksFor }}" style="{{ ksForStil }}">← Forrige</button>
+        <sc-if value="{{ ksHarNeste }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ ksNeste }}" style="{{ ksNesteStil }}">Neste →</button>
+        </sc-if>
+        <sc-if value="{{ ksErSiste }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ ksLukk }}" style="{{ ksSisteStil }}">Ferdig — vi setter i gang</button>
+        </sc-if>
+      </div>
     </div>
   </div>
 </sc-if>
@@ -38385,6 +38498,12 @@ class Component extends DCLogic {
   adminSnarveier() {
     const d = this.state.adminData || {};
     return [
+                // Eieren, 29. september 2026: onboardinga ved kursstart.
+                // Snarveien plukker okta selv — den forste i dag som ikke er
+                // over, ellers den neste som kommer — saa den kan trykkes i
+                // verkstedet uten aa lete etter datoen forst.
+                { navn: 'Start kurset', nokkel: 'kursstart',
+                  velg: () => this.kursstartVals().ksAapne(0) },
                 { navn: 'Chat', nokkel: 'chat', velg: () => (this.state.side === 'adminkalender' ? this.setState({ klChatVis: true }) : this.gaaAdmin('adminkalender', { klChatVis: true })) },
                 // Eieren, 13. september 2026: «legge til send beskjed ved
                 // siden av chat pillen i kalender … komme til samme sted som
@@ -48572,6 +48691,273 @@ class Component extends DCLogic {
   // Arket (⊙ Synlighet) og flisen paa Oversikt leser begge herfra, saa de
   // aldri kan si hver sitt om hva som er paa (eieren, 27. september 2026:
   // «jeg trenger aa se hvilke funksjoner jeg har aktive»).
+  // ------------------------------------------------------- kursstart
+  //
+  // Eieren, 29. september 2026: «Jeg skulle hatt en slags onboarding til
+  // admin, ved oppstart av kurs, i enkel karusellform som er mobilvennlig».
+  //
+  // Fem kort du gaar gjennom med deltakerne foer dere begynner: det
+  // praktiske, betalinga, hva dere skal gjore i dag, naar arbeidene er
+  // ferdige, og e-posten etterpaa. Teksten ligger i basen (migrasjon 234) og
+  // endres under Markedsfoering › Tekst maler — det er eieren som vet hvor
+  // toalettet er, ikke koden.
+  //
+  // Kortet om betaling har ingen lagret liste. Der staar de paameldte paa
+  // akkurat den okta, med betalt eller ikke, hentet fra de paameldingene
+  // skjermen alt har. Ingen ny maate aa endre penger paa: trykker du paa en
+  // som ikke har gjort opp, gaar du til Paameldte, der du alt kan ta betalt.
+
+  /** Kortene slik de staar i forhaandsvisninga, der det ikke finnes noen server. */
+  kursstartStandard() {
+    return [
+      { nr: 1, tittel: 'Velkommen — det praktiske først', paa: true, betaling: false,
+        tekst: 'Toalettet er gjennom døra til venstre.\nRømningsveien er den samme veien du kom inn, og bakdøra ved ovnsrommet.\nKaffe, te og litt å bite i står framme — forsyn dere når som helst.' },
+      { nr: 2, tittel: 'Betaling', paa: true, betaling: true,
+        tekst: 'Er det noen som ikke har gjort opp, tar vi det nå — så slipper vi å tenke på det resten av kvelden.' },
+      { nr: 3, tittel: 'Dette skal vi gjøre i dag', paa: true, betaling: false,
+        tekst: 'Vi begynner med en kort gjennomgang, så setter dere i gang selv.\nDet blir leire på hendene og sannsynligvis på klærne — forkle får dere låne av oss.\nDere trenger ikke å få det til med én gang. Det er helt greit å begynne på nytt.' },
+      { nr: 4, tittel: 'Når får dere med dere arbeidene hjem?', paa: true, betaling: false,
+        tekst: 'Arbeidene skal tørke, brennes, glaseres og brennes en gang til. Det tar noen uker.\nDere får beskjed på Min side og på e-post når de er ferdige, og da kan dere hente dem hos oss.' },
+      { nr: 5, tittel: 'Etter kurset', paa: true, betaling: false,
+        tekst: 'Dere får en e-post med litt info i etterkant, og kursbeviset deres ligger på Min side.' },
+    ];
+  }
+
+  /** Det som er lagret, eller standarden til serveren har svart. */
+  kursstartKort() {
+    const k = this.state.ksKort;
+    return (k && k.length) ? k : this.kursstartStandard();
+  }
+
+  hentKursstart() {
+    if (!this.erPublisert() || this._ksHentes) return;
+    this._ksHentes = true;
+    fetch('/api/admin/kursstart.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._ksHentes = false;
+        if (d && d.kort) this.setState({ ksKort: d.kort });
+      })
+      .catch(() => { this._ksHentes = false; });
+  }
+
+  lagreKursstart() {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'Kursstarten ligger i databasen, og finnes bare på lissom.no.' });
+      return;
+    }
+    if (this._ksLagrer) return;
+    this._ksLagrer = true;
+    const u = this.state.ksUtkast || {};
+    const kort = this.kursstartKort().map(k => Object.assign({ nr: k.nr, tittel: k.tittel, tekst: k.tekst, paa: k.paa }, u[k.nr] || {}));
+    fetch('/api/admin/kursstart.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'lagre', kort: kort }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        this._ksLagrer = false;
+        if (ok) { this.setState({ ksUtkast: null, ksKort: null }); this._ksHentes = false; this.hentKursstart(); }
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: ok ? (d.beskjed || '') : (d.feil || 'Prøv igjen om litt.'),
+        });
+      })
+      .catch(() => {
+        this._ksLagrer = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /**
+   * Okta karusellen gjelder.
+   *
+   * Kom du fra en dato i Kurs og deltakere, er det den. Kom du fra snarveien
+   * i kalenderen, er det den forste okta i dag som ikke er over — og finnes
+   * ingen slik, den neste som kommer. Snarveien skal kunne trykkes uten aa
+   * lete, ogsaa kvelden for.
+   */
+  kursstartOkt() {
+    const okter = this.state.adminOkter || [];
+    const valgt = okter.find(o => String(o.oktId) === String(this.state.ksOkt || ''));
+    if (valgt) return valgt;
+    const naa = Date.now();
+    const tid = (o, felt) => new Date((o.dato || '') + 'T' + (o[felt] || '00:00')).getTime();
+    const idag = okter.filter(o => o.dato === new Date().toISOString().slice(0, 10))
+      .sort((a, b) => tid(a, 'fra') - tid(b, 'fra'));
+    return idag.find(o => tid(o, 'til') >= naa) || idag[0]
+      || okter.filter(o => tid(o, 'fra') >= naa).sort((a, b) => tid(a, 'fra') - tid(b, 'fra'))[0]
+      || null;
+  }
+
+  /**
+   * Redigeringa under Markedsfoering › Tekst maler.
+   *
+   * Samme monster som malene: et utkast i state, «Ikke lagret» naar det er
+   * noe der, forkast eller lagre. Bryteren per kort er ogsaa en del av
+   * utkastet — slaar du et kort av og angrer, skal «Forkast» ta det med.
+   */
+  kursstartRedVals() {
+    const u = this.state.ksUtkast || {};
+    const kort = this.kursstartKort();
+    const felt = {
+      width: '100%', boxSizing: 'border-box', padding: '10px 12px',
+      border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+      font: 'var(--type-body-sm)', background: 'var(--surface-page)',
+      color: 'var(--text-heading)',
+    };
+    const endre = (nr, hva) => this.setState({
+      ksUtkast: Object.assign({}, this.state.ksUtkast || {},
+        { [nr]: Object.assign({}, (this.state.ksUtkast || {})[nr] || {}, hva) }),
+    });
+    return {
+      ksRedHjelp: 'Fem kort du går gjennom med deltakerne før dere begynner. '
+        + 'De åpnes fra «Start kurset» på kursdatoen, og fra snarveien i kalenderen.',
+      ksRedUlagret: Object.keys(u).length > 0,
+      ksRedForkast: () => this.setState({ ksUtkast: null }),
+      ksRedLagre: () => this.lagreKursstart(),
+      ksRedSe: () => this.kursstartVals().ksAapne(0),
+      ksRedKort: kort.map(k => {
+        const v = Object.assign({}, k, u[k.nr] || {});
+        return {
+          nr: k.nr,
+          merke: 'Kort ' + k.nr + (v.betaling ? ' · betaling' : ''),
+          erBetaling: !!v.betaling,
+          tittel: v.tittel || '',
+          tekst: v.tekst || '',
+          paa: !!v.paa,
+          tittelNavn: 'Kort ' + k.nr + ': overskrift',
+          tekstNavn: 'Kort ' + k.nr + ': tekst',
+          bryterNavn: (v.paa ? 'Slå av' : 'Slå på') + ' kort ' + k.nr,
+          bryterTekst: v.paa ? 'På' : 'Av',
+          settTittel: e => endre(k.nr, { tittel: e.target.value }),
+          settTekst: e => endre(k.nr, { tekst: e.target.value }),
+          veksle: () => endre(k.nr, { paa: !v.paa }),
+          feltStil: felt,
+          omraadeStil: Object.assign({}, felt, { resize: 'vertical', lineHeight: 1.55 }),
+          // Et avslaatt kort staar dempet, saa det er til aa se i lista at
+          // det ikke kommer med i karusellen.
+          rammeStil: {
+            display: 'flex', flexDirection: 'column', gap: 8,
+            border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-4)', opacity: v.paa ? 1 : 0.55,
+          },
+          bryterStil: {
+            appearance: 'none', cursor: 'pointer', borderRadius: 999,
+            padding: '4px 12px', fontSize: 'var(--text-xs)', fontWeight: 700,
+            border: '1px solid ' + (v.paa ? 'var(--sage-500)' : 'var(--border-subtle)'),
+            background: v.paa ? 'var(--sage-500)' : 'var(--surface-card)',
+            color: v.paa ? '#fff' : 'var(--text-muted)',
+          },
+        };
+      }),
+    };
+  }
+
+  /** Karusellen: kortene, veien fram og tilbake, og betalingslista. */
+  kursstartVals() {
+    const apen = !!this.state.ksApen;
+    const okt = apen ? this.kursstartOkt() : null;
+    // Et kort som er slaatt av hoppes over. Nummereringa folger det du ser,
+    // ikke numrene i basen — «3 av 4» skal stemme med prikkene under.
+    const kort = this.kursstartKort().filter(k => k.paa);
+    const n = kort.length;
+    const nr = n ? Math.min(Math.max(0, this.state.ksNr || 0), n - 1) : 0;
+    const naa = kort[nr] || null;
+
+    // De paameldte paa denne okta. I forhaandsvisninga finnes ingen server,
+    // og da staar designdataene der — ellers ville kortet vaert tomt i alle
+    // proever.
+    const alle = this.erPublisert()
+      ? (this.state.adminDeltakere || []).filter(d => okt && String(d.oktId) === String(okt.oktId))
+      : PAMELDTE.slice(0, 4);
+    const rader = alle.map(d => {
+      const betalt = d.status === 'Betalt' || String(d.status || '').indexOf('Betalt') === 0;
+      return {
+        navn: d.navn + ((d.antall || 1) > 1 ? ' (' + d.antall + ' plasser)' : ''),
+        sum: d.sum || '',
+        betalt: betalt,
+        merke: betalt ? 'Betalt' : 'Ikke betalt',
+        merkeStil: {
+          fontSize: 'var(--text-xs)', fontWeight: 700, whiteSpace: 'nowrap',
+          color: betalt ? 'var(--sage-600)' : 'var(--terracotta-600)',
+        },
+        radStil: {
+          appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+          gap: 'var(--space-4)', background: 'transparent', border: 'none',
+          borderBottom: '1px solid var(--border-subtle)', padding: '11px 2px',
+          font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+        },
+        // Ingen ny vei til pengene: trykk gaar til Paameldte, der betaling
+        // alt haandteres.
+        velg: () => {
+          this.setState({ ksApen: false, side: 'adminpameldte',
+                          pameldtOkt: okt ? okt.oktId : 0, pameldtFilter: 'Alle' });
+          window.scrollTo(0, 0);
+        },
+      };
+    });
+    const ubetalte = rader.filter(r => !r.betalt).length;
+
+    const pille = (aktiv) => ({
+      appearance: 'none', cursor: 'pointer', borderRadius: 999,
+      padding: '11px 18px', font: 'var(--type-body-sm)', fontWeight: 600,
+      border: '1px solid ' + (aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+      background: aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)',
+      color: aktiv ? '#fff' : 'var(--text-heading)',
+      opacity: aktiv ? 1 : 0.55,
+    });
+
+    return {
+      ksVises: apen,
+      ksAapne: (oktId) => {
+        this.hentKursstart();
+        this.setState({ ksApen: true, ksNr: 0, ksOkt: oktId || 0,
+                        tmApen: '', admMobApen: false, verktoyApen: false, admSokApen: false });
+      },
+      ksLukk: () => this.setState({ ksApen: false }),
+      ksStopp: e => e.stopPropagation(),
+      ksNaar: okt ? (okt.tittel + ' · ' + okt.naar) : 'Ingen kursdato funnet',
+      ksTittel: naa ? naa.tittel : 'Ingen kort er slått på',
+      // Avsnittene, ett per linje i teksten. Tomme linjer faller bort, saa et
+      // ekstra linjeskift i feltet ikke blir et tomt avsnitt paa skjermen.
+      ksAvsnitt: (naa ? String(naa.tekst || '').split('\n') : [])
+        .map(s => s.trim()).filter(Boolean).map((s, i) => ({ nr: i, tekst: s })),
+      ksErBetaling: !!(naa && naa.betaling),
+      ksRader: rader,
+      ksHarRader: rader.length > 0,
+      ksIngenRader: !!(naa && naa.betaling) && rader.length === 0,
+      ksBetalingStatus: rader.length
+        ? (ubetalte === 0
+            ? 'Alle ' + rader.length + ' har betalt.'
+            : ubetalte + ' av ' + rader.length + ' har ikke gjort opp ennå.')
+        : 'Ingen påmeldte på denne datoen.',
+      ksTeller: n ? (nr + 1) + ' av ' + n : '',
+      ksPrikker: kort.map((k, i) => ({
+        nr: i,
+        stil: {
+          width: i === nr ? 22 : 8, height: 8, borderRadius: 999, border: 'none',
+          appearance: 'none', cursor: 'pointer', padding: 0,
+          background: i === nr ? 'var(--lissom-brown)' : 'var(--clay-200)',
+        },
+        navn: 'Kort ' + (i + 1) + ': ' + k.tittel,
+        velg: () => this.setState({ ksNr: i }),
+      })),
+      ksHarFor: nr > 0,
+      ksHarNeste: nr < n - 1,
+      ksFor: () => this.setState({ ksNr: Math.max(0, nr - 1) }),
+      ksNeste: () => this.setState({ ksNr: Math.min(n - 1, nr + 1) }),
+      ksForStil: pille(nr > 0),
+      ksNesteStil: pille(nr < n - 1),
+      // Siste kortet lukker i stedet for aa gaa videre til ingenting.
+      ksSisteStil: pille(true),
+      ksErSiste: n > 0 && nr === n - 1,
+    };
+  }
+
   /**
    * Alt man kan soeke opp i admin.
    *
@@ -50127,7 +50513,15 @@ class Component extends DCLogic {
       admMobPunkterA: (() => {
         // ⌕ Søk staar foerst. Pilla i adminstripa er skjult paa telefon,
         // saa uten denne flisen fantes soeket bare paa stor skjerm.
-        const hoved = gruppe('', [flis({ navn: '⌕ Søk', velg: () => this.adminSokVals().admSokAapne() })]
+        // ⌕ Soek og «Start kurset» staar foerst. Pilla i adminstripa og
+        // snarveien i kalenderen er begge skjult paa telefon, saa uten disse
+        // flisene fantes de bare paa stor skjerm. Eieren, 29. september 2026:
+        // onboardinga skal vaere mobilvennlig, og telefonen er den skjermen
+        // som faktisk staar i verkstedet.
+        const hoved = gruppe('', [
+          flis({ navn: '⌕ Søk', velg: () => this.adminSokVals().admSokAapne() }),
+          flis({ navn: '▶ Start kurset', velg: () => this.kursstartVals().ksAapne(0) }),
+        ]
           .concat(['Oversikt', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'].map(stedFlis)), false, true);
         const mer = gruppe('Mer', ['Årskalender', 'Til godkjenning', 'Verkstedet', 'Admin-brukere'].map(stedFlis)
           .concat([chatFlis, snar('dugnad'), snar('handleliste'), snar('dagsrapport')]), false, true);
@@ -54749,7 +55143,11 @@ class Component extends DCLogic {
     const mer = alle.filter(r => MER.indexOf(r.navn) >= 0).map(r => panelRad(r, r.navn === aktiv));
     // Chat og Dagsrapport stod bare i kalenderens pillerad, som er borte paa PC
     // etter skissen (26. september 2026). De staar her i stedet.
-    this.adminSnarveier().filter(x => x.nokkel === 'chat' || x.nokkel === 'dagsrapport')
+    // «Start kurset» staar her ogsaa (eieren, 29. september 2026). Pilla i
+    // kalenderen ligger i dashboardet, som er slaatt sammen til vanlig — og
+    // onboardinga skal kunne naas fra hvilken som helst adminskjerm naar
+    // deltakerne staar i doera.
+    this.adminSnarveier().filter(x => x.nokkel === 'chat' || x.nokkel === 'dagsrapport' || x.nokkel === 'kursstart')
       .forEach(x => mer.push(panelRad({ navn: x.navn, velg: () => { this.kortBrukt(x.nokkel); x.velg(); } }, false)));
     const verktoy = alle.filter(r => !menyNavn.has(r.navn)).map(r => panelRad(r, false));
     // Staar du paa kalenderen, lyser ingen fane — fliken er borte, og «✕ Lukk» gaar tilbake.
@@ -63422,6 +63820,10 @@ class Component extends DCLogic {
             leggTil: () => {
               this.setState({ mpApen: true, mpOkt: String(o.oktId), oktRediger: null });
             },
+            // Kortene du gaar gjennom med deltakerne for dere begynner.
+            // Herfra vet karusellen hvilken dato det gjelder, og
+            // betalingskortet kan vise akkurat de paameldte.
+            startKurs: () => this.kursstartVals().ksAapne(o.oktId),
             sePameldte: () => {
               this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
               window.scrollTo(0, 0);
@@ -64213,6 +64615,8 @@ class Component extends DCLogic {
       // «bryterPaa» og den samme «vekslBryter» som for.
       ...this.synlighetVals(),
       ...this.adminSokVals(),
+      ...this.kursstartVals(),
+      ...this.kursstartRedVals(),
       bryterMinInternkurs: this.bryterPaa('internkurs'),
       vekslMinInternkurs: () => this.vekslBryter('internkurs', 'Interne kurs og samlinger'),
       bryterMinInternbutikk: this.bryterPaa('internbutikk'),

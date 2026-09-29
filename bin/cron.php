@@ -555,6 +555,15 @@ switch ($jobb) {
                  ['perioder' => $sr['perioder'], 'feil' => $sr['feil']]);
         }
 
+        // Google-anmeldelsene paa forsida (eieren, 29. september 2026). Én
+        // gang i doegnet, her og ikke i en egen jobb av samme grunn som
+        // skoleruta. Uten noekkel gjoer den ingenting; feiler den, staar
+        // forrige svar urort og forsida viser det.
+        if (trim((string) Config::hent('google_places_nokkel', '')) !== '') {
+            $an = Anmeldelser::oppdater();
+            logg($an['ok'] ? 'Google-anmeldelser hentet' : 'Google-anmeldelser ble ikke hentet', ['feil' => $an['feil']]);
+        }
+
         // Kurs med fast ukedag: legg ut oktene som mangler framover.
         //
         // Uten dette ville en serie gaatt tom etter aatte uker, og kurset

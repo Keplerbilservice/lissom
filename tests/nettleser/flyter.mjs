@@ -1028,6 +1028,58 @@ await flyt('Regresjon: faner i admin og hovedsidene', async () => {
   await kari.context().close();
 });
 
+// ── Google-anmeldelser nederst paa forsida (eieren, 29. september 2026) ──
+await flyt('Google-anmeldelser paa forsida', async () => {
+  const lagre = (k, v) => db('INSERT INTO innstillinger (nokkel, verdi) VALUES (:k, :v) ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)', { k, v });
+  const dag = n => new Date(Date.now() - n * 864e5).toISOString();
+  lagre('google_anmeldelser', JSON.stringify({
+    rating: 4.9, antall: 87, lenke: 'https://maps.google.com/?cid=42', hentet: new Date().toISOString(),
+    kort: [
+      { stjerner: 5, tekst: 'E2E fantastisk dreiekurs', navn: 'Kari N.', navnLenke: '', tid: dag(15), tidTekst: '' },
+      { stjerner: 5, tekst: 'E2E paint on pots med venninnene', navn: 'Liv M.', navnLenke: '', tid: dag(40), tidTekst: '' },
+      { stjerner: 4, tekst: 'E2E koselig verksted og flinke folk', navn: 'Per H.', navnLenke: '', tid: dag(70), tidTekst: '' },
+      { stjerner: 5, tekst: 'E2E beste gaven jeg har gitt', navn: 'Siri A.', navnLenke: '', tid: dag(100), tidTekst: '' },
+    ],
+  }));
+  bryter('Vis/anmeldelser', true);
+  tomBuffer();
+  for (const [navn, b, h] of [['PC', 1358, 900], ['mobil', 390, 844]]) {
+    const p = await side(null, b, h);
+    await gaa(p, '/', 2500);
+    const s = p.locator('[data-anmeldelser]');
+    sjekk(`${navn}: seksjonen vises nederst paa forsida`, await s.count() === 1);
+    const tekst = await s.innerText();
+    sjekk(`${navn}: overskrift og snitt`, tekst.includes('Hva sier andre om oss') && tekst.includes('4,9 av 5 · 87 anmeldelser på Google'), tekst.slice(0, 120));
+    sjekk(`${navn}: fire kort`, await s.locator('[data-anm-kort]').count() === 4);
+    const lenke = s.getByRole('link', { name: /Les alle på Google/i });
+    sjekk(`${navn}: «Les alle på Google» går til Google`, (await lenke.getAttribute('href')) === 'https://maps.google.com/?cid=42');
+    // Rett over bunnen: ingen seksjon mellom anmeldelsene og footeren.
+    const etter = await p.evaluate(() => {
+      const a = document.querySelector('[data-anmeldelser]');
+      const f = document.querySelector('footer');
+      return a && f ? a.getBoundingClientRect().bottom <= f.getBoundingClientRect().top + 1 : false;
+    });
+    sjekk(`${navn}: ligger over bunnen av sida`, etter);
+    const bredt = await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+    sjekk(`${navn}: ingen sidelengs rulling`, bredt);
+    // Ingen flytting naar seksjonen rulles fram (den er tegnet paa serveren).
+    await s.scrollIntoViewIfNeeded();
+    const cls = await p.evaluate(() => new Promise(r => { let v = 0; new PerformanceObserver(l => { for (const e of l.getEntries()) if (!e.hadRecentInput) v += e.value; }).observe({ type: 'layout-shift', buffered: true }); setTimeout(() => r(v), 1500); }));
+    sjekk(`${navn}: CLS under 0,1`, cls < 0.1, String(cls));
+    if (process.env.E2E_BILDER) await s.screenshot({ path: path.join(process.env.E2E_BILDER, `anmeldelser-${navn}.png`) });
+    await p.context().close();
+  }
+  bryter('Vis/anmeldelser', false);
+  tomBuffer();
+  const av = await side(null);
+  await gaa(av, '/', 1500);
+  sjekk('bryteren av: seksjonen er borte', await av.locator('[data-anmeldelser]').count() === 0);
+  await av.context().close();
+  db("DELETE FROM innstillinger WHERE nokkel = 'google_anmeldelser'");
+  db("DELETE FROM content_blocks WHERE nokkel = 'Vis/anmeldelser'");
+  tomBuffer();
+});
+
 await nettleser.close();
 console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjente feil.`);
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }

@@ -1330,6 +1330,54 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "google-anmeldelser-forsiden",
+            "dato": "2026-09-29",
+            "hva": "Google-anmeldelser nederst på forsiden (GO på skissen): kicker «Google-anmeldelser», overskrift «Hva sier andre om oss», «{snitt} av 5 · {antall} anmeldelser på Google» (Googles tall for alle), maks 4 kort med bare 4 og 5 stjerner, «Les alle på Google» til Google-profilen, «Kilde: Google Maps». Hentes med Places API (New) i vedlikeholdsjobben én gang i døgnet — forsiden spør aldri Google. Uten nøkkel/data eller med bryteren av under Synlighet vises ingen seksjon. Nøkkelen (google_places_nokkel) limes inn under Markedsføring → Innstillinger → Google-anmeldelser og sendes aldri tilbake",
+            "hvor": "app/lib/anmeldelser.php, app/nett/sider/forside.php, bin/cron.php (vedlikehold), api/admin/maaling.php, lissom-2108.html",
+            "kode": [
+                {
+                    "fil": "app/lib/anmeldelser.php",
+                    "finnes": [
+                        "public const MAKS = 4;",
+                        "if ($stjerner < 4 || $tekst === '') {",
+                        "'X-Goog-FieldMask: rating,userRatingCount,reviews,googleMapsUri'"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/forside.php",
+                    "finnes": [
+                        "$anm = Nett::bryterPaa('anmeldelser') ? Anmeldelser::forForsida() : null;",
+                        "<h2 style=\"margin: 0;\">Hva sier andre om oss</h2>",
+                        "' av 5 · ' . (int) $anm['antall'] . ' anmeldelser på Google'",
+                        "Deler::knapp('Les alle på Google'",
+                        "Kilde: Google Maps"
+                    ],
+                    "ikkeFinnes": [
+                        "places.googleapis.com"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$an = Anmeldelser::oppdater();"
+                    ]
+                },
+                {
+                    "fil": "api/admin/maaling.php",
+                    "finnes": [
+                        "'google_places_nokkel'];"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "rad('Google-anmeldelser på forsiden', this.bryterPaa('anmeldelser'),",
+                        "google_places_nokkel: (this.state.mkAnmNokkel || '').trim(),"
+                    ]
+                }
+            ]
         }
     ]
 }

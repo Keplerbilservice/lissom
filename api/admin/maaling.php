@@ -21,7 +21,9 @@ require __DIR__ . '/../_boot.php';
 
 krev_admin();
 
-const MAAL_FELTER = ['maal_ga_api_secret', 'maal_meta_token'];
+// google_places_nokkel: Google-anmeldelsene paa forsida (app/lib/anmeldelser.php).
+// Samme regler som de andre noeklene: kommer aldri tilbake hit.
+const MAAL_FELTER = ['maal_ga_api_secret', 'maal_meta_token', 'google_places_nokkel'];
 
 if (Foresporsel::metode() === 'POST') {
     Foresporsel::krevSammeOpphav();
@@ -65,6 +67,14 @@ if (Foresporsel::metode() === 'POST') {
     }
     Config::glemBasen();
     revider('maaling_lagret', null, null, ['felter' => $lagret]);
+    // Ny Places-noekkel: hent anmeldelsene med det samme, saa eieren ser at
+    // den virker — og slipper aa vente til natta.
+    $places = trim((string) ($kropp['google_places_nokkel'] ?? ''));
+    if ($places !== '' && $places !== 'slett') {
+        $an = Anmeldelser::oppdater();
+        Svar::json(['ok' => true, 'beskjed' => $an['ok'] ? 'Lagret. Anmeldelsene er hentet fra Google.'
+            : 'Lagret, men Google svarte: ' . $an['feil']] + status());
+    }
     Svar::json(['ok' => true, 'beskjed' => 'Lagret.'] + status());
 }
 
@@ -78,6 +88,7 @@ function status(): array
         'harGaSecret'  => trim((string) Config::hent('maal_ga_api_secret', '')) !== '',
         'harMetaToken' => trim((string) Config::hent('maal_meta_token', '')) !== '',
         'harSporing'   => $harSporing,
+        'anmeldelser'  => DB::harTabell('innstillinger') ? Anmeldelser::status() : null,
         // Hvor mange betalinger siste 30 dager som hadde samtykke (sporing)
         // — de som kunne maales fra serveren — mot alle betalte.
         'betalte30'    => (int) DB::verdi(

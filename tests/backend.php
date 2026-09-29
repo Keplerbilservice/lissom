@@ -18658,8 +18658,9 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // migrasjon 189 — dugnad av fra start.
 // Tjue: Dugnad, Del paa Instagram, Ta med barn og flere kom til
 // (16c5714, d39ef51, 098f089). Dugnad har faatt hvem-valgene med seg.
+// Tjuetre 29. september 2026: Google-anmeldelser paa forsida (eieren).
 sjekk('… og har alle bryterne',
-    substr_count($syn, "        rad('") === 22
+    substr_count($syn, "        rad('") === 23
     && str_contains($syn, "        Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),")
     && str_contains($syn, "        rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
     && str_contains($syn, "        rad('Handlelista', this.bryterPaa('handleliste'),")
@@ -18671,6 +18672,7 @@ sjekk('… og har alle bryterne',
     && str_contains($syn, "        rad('Kursvelger-lenken i toppen', this.bryterPaa('kursvelger'),")
     && str_contains($syn, "        rad('Søkefeltet på nettsiden', this.bryterPaa('sok'),")
     && str_contains($syn, "        rad('Referansekunder på forsiden', this.bryterPaa('referanser'),")
+    && str_contains($syn, "        rad('Google-anmeldelser på forsiden', this.bryterPaa('anmeldelser'),")
     && str_contains($syn, "        rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),")
     && str_contains($syn, "        rad('Internbutikken', this.bryterPaa('internbutikk'),")
     && str_contains($syn, "        rad('Selg egne arbeider', this.bryterPaa('medlemssalg'),")

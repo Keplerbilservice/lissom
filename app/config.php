@@ -107,6 +107,9 @@ final class Config
         // og Metas Conversions API-token. Legges inn under Markedsføring →
         // Måling; skal aldri i content_blocks, som alle kan lese.
         'maal_ga_api_secret', 'maal_meta_token',
+        // Google Places (New) til anmeldelsene paa forsida (app/lib/anmeldelser.php).
+        // Legges inn under Markedsfoering → Innstillinger → Google-anmeldelser.
+        'google_places_nokkel',
     ];
 
     /** @var array<string,string>|null */

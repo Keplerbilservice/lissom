@@ -8282,7 +8282,9 @@ window.__resources = {
            knapper: holder du kurs og vil tilbake til det praktiske, skal du
            ikke maatte trykke deg bakover fire ganger. -->
       <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
-        <div class="lx-pillerad" style="display: flex; align-items: center; gap: 6px;">
+        <!-- Ikke «lx-pillerad»: den klassen gir hver knapp halv bredde paa
+             telefon, og prikkene er prikker, ikke piller. -->
+        <div style="display: flex; align-items: center; gap: 6px;">
           <sc-for list="{{ ksPrikker }}" as="p" hint-placeholder-count="5">
             <button type="button" onClick="{{ p.velg }}" aria-label="{{ p.navn }}" title="{{ p.navn }}" style="{{ p.stil }}"></button>
           </sc-for>

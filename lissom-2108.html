@@ -55371,7 +55371,7 @@ class Component extends DCLogic {
       // har begge delene skal kunne finnes paa nummeret sitt.
       tlf: m.telefon || '',
       // Lav aktivitet (eieren, 28. september 2026) — se api/admin/medlemmer.php.
-      lavAktivitet: !!m.lavAktivitet, dagerSiden: m.dagerSiden ?? null, epostRa: m.epost || '',
+      lavAktivitet: !!m.lavAktivitet, dagerSiden: m.dagerSiden ?? null,
       initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
       erAdmin: !!m.erAdmin,
       // Raden bygges som et NYTT objekt, ikke en kopi av svaret: alt som
@@ -55492,8 +55492,8 @@ class Component extends DCLogic {
       // Lav aktivitet: dager siden sist og kontaktpillene, bare i den pilla.
       visLav: (this.state.medlemFilter || '') === 'Lav aktivitet' && !!m.lavAktivitet,
       lavTekst: m.dagerSiden === null || m.dagerSiden === undefined ? '' : m.dagerSiden + ' dager siden sist',
-      harTlf: !!m.tlf, tlfLenke: 'tel:' + String(m.tlf || '').replace(/\s+/g, ''),
-      harEpost: !!m.epostRa, epostLenke: 'mailto:' + (m.epostRa || ''),
+      harTlf: !!m.telefon, tlfLenke: 'tel:' + String(m.telefon || '').replace(/\s+/g, ''),
+      harEpost: !!m.epost, epostLenke: 'mailto:' + (m.epost || ''),
       stopp: e => { if (e && e.stopPropagation) e.stopPropagation(); },
       kontaktStil: { display: 'inline-flex', alignItems: 'center', minHeight: 32, padding: '4px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', font: 'var(--type-chip)', fontWeight: 600, textDecoration: 'none' },
     }));

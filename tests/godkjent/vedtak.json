@@ -1463,6 +1463,42 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "oppgrader-og-forny",
+            "dato": "2026-09-29",
+            "hva": "«Oppgrader medlemskap» til et større medlemskap (flere timer, ubegrenset er størst) midt i måneden: det nye betales i Vipps og gjelder fra i dag, med det nye medlemskapets timer for inneværende måned, og timene som alt er stemplet teller på det nye. Det gamle stopper i dag uten refusjon (fast trekk stoppes også i Vipps), bindingen for det nye starter i dag, og det blir aldri to aktive avtaler. Et mindre eller samme medlemskap sperres fortsatt. Velgeren sier «Gjelder fra i dag» ved oppgradering. «Forny» på Mini og Basis betaler neste periode i Vipps på avtalen som løper, gjeldende fra der forrige betaling slutter (fra i dag når den er forfalt); når timene er brukt opp, åpner «Forny» vindu 2",
+            "hvor": "app/lib/medlemskap.php, api/medlemskap.php, lissom-2108.html, db/migrations/235_forny_periode.sql, tests/planbytte.php, tests/nettleser/flyter.mjs",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "&& !self::erStorre($nyPlan, (string) $fra['plan']);",
+                        "self::stoppErstattet((int) $g['id'], $medlemId, (string) $g['plan'], $nyId, $nyPlan);",
+                        "public static function fornyPeriode(array $medlem, array $avtale): array",
+                        "$dekkerTil = self::dekkerTil($siste);"
+                    ]
+                },
+                {
+                    "fil": "api/medlemskap.php",
+                    "finnes": [
+                        "Medlemskap::fornyPeriode($medlem, $naa)"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "? () => this.setState({ tpVindu: '2', tpLukket: false })",
+                        "'Gjelder fra i dag' : 'Gjelder fra neste måned'"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/235_forny_periode.sql",
+                    "finnes": [
+                        "ADD COLUMN IF NOT EXISTS gjelder_fra DATE NULL"
+                    ]
+                }
+            ]
         }
     ]
 }

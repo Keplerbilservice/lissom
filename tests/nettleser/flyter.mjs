@@ -1216,10 +1216,32 @@ await flyt('Medlemsreise 4: «Oppgrader medlemskap» fra Mini til Basis', async 
   if (harBetal) { await betal.click().catch(() => {}); await p.waitForTimeout(2500); }
   await rapportBilde(p, 'r4-resultat');
   const ny = db("SELECT id, status FROM subscriptions WHERE member_id = :m AND plan = :p ORDER BY id DESC LIMIT 1", { m: m.id, p: stor.navn })[0];
-  // Eieren (28. september): det nye medlemskapets timer gjelder fra
-  // inneværende måned. Kjent: løpende bytte er ikke bygd — se rapporten.
-  kjent(`oppgradering ${liten.navn} → ${stor.navn} starter betaling`, !!ny,
-    'svar: ' + JSON.stringify(svar || {}).slice(0, 140) + ' · «Bytte»: ' + ((tekst.match(/Bytte\s*\n?\s*([^\n]+)/) || [])[1] || ''));
+  // Eieren, 29. september 2026: det nye gjelder fra i dag, det gamle stopper
+  // i dag uten refusjon, og timene som alt er stemplet teller paa det nye.
+  sjekk('velgeren sier «Gjelder fra i dag» ved oppgradering', /Bytte\s*\n?\s*Gjelder fra i dag/.test(tekst),
+    (tekst.match(/Bytte\s*\n?\s*([^\n]+)/) || [])[1] || '');
+  sjekk(`oppgradering ${liten.navn} → ${stor.navn} starter betaling`, !!ny, 'svar: ' + JSON.stringify(svar || {}).slice(0, 140));
+  if (!ny) { await p.context().close(); return; }
+  const ref = verdi("SELECT vipps_reference FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1", { s: ny.id });
+  sjekk('… det gamle står til det nye er betalt', verdi('SELECT status FROM subscriptions WHERE id = :i', { i: m.avtale }) === 'aktiv');
+  await retur(ref); await retur(ref);
+  sjekk('… betalt: det nye er aktivt', verdi('SELECT status FROM subscriptions WHERE id = :i', { i: ny.id }) === 'aktiv');
+  const gml = db('SELECT status, slutter FROM subscriptions WHERE id = :i', { i: m.avtale })[0] || {};
+  const idag = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+  sjekk('… det gamle er stoppet i dag', gml.status === 'stoppet' && String(gml.slutter).slice(0, 10) === idag, JSON.stringify(gml));
+  sjekk('… én aktiv avtale', Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: m.id })) === 1);
+  const bind = verdi('SELECT binding_til FROM subscriptions WHERE id = :i', { i: ny.id });
+  const venter = Number(stor.binding_mnd) > 0
+    ? php(`return (new DateTimeImmutable('now'))->modify('+${Number(stor.binding_mnd)} months')->format('Y-m-d');`) : null;
+  sjekk('… bindinga for det nye starter i dag', (bind ? String(bind).slice(0, 10) : null) === venter, `${bind} / ${venter}`);
+  await gaa(p, '/min-side', 3000);
+  const st = await api(p, '/api/stempling.php');
+  const brukt = Number(liten.timer) * 60 + 30;
+  sjekk('… timene i det nye gjelder denne måneden, og det stemplede teller',
+    st?.plan?.navn === stor.navn && st?.timer?.perMnd === Number(stor.timer)
+      && Math.abs(Number(st?.timer?.igjen) - (Number(stor.timer) + Number(php(`return Medlemskap::gavetimer(${m.id});`)) - brukt / 60)) < 0.01,
+    JSON.stringify({ plan: st?.plan?.navn, timer: st?.timer }));
+  await rapportBilde(p, 'r4-etter');
   await p.context().close();
 });
 
@@ -1241,10 +1263,40 @@ await flyt('Medlemsreise 5: si opp, forny og admin som endrer', async () => {
   sjekk('«Forny» midt i perioden gir ikke to avtaler',
     Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status IN ('aktiv','venter')", { m: m.id })) <= 2
     && Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: m.id })) === 1, JSON.stringify(f).slice(0, 140));
-  // «Forny» staar paa Min side naar timene er brukt opp. Kjent: det gir
-  // «Du har alt et medlemskap» midt i perioden — se rapporten 29.09.
-  kjent('«Forny» med timene brukt opp gir en vei videre', !(f && f.feil), JSON.stringify(f).slice(0, 140));
+  // Eieren, 29. september 2026: «Forny» betaler neste periode paa avtalen
+  // som loeper, fra der forrige betaling slutter.
+  sjekk('«Forny» starter betaling for neste periode', !!(f && f.url && f.fornyelse), JSON.stringify(f).slice(0, 140));
+  const fb = db("SELECT vipps_reference AS ref, gjelder_fra FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1", { s: m.avtale })[0] || {};
+  sjekk('… på den samme avtalen, gjeldende fra i dag (ingen betaling før)', !!fb.ref
+    && String(fb.gjelder_fra).slice(0, 10) === new Date().toISOString().slice(0, 10), JSON.stringify(fb));
+  await retur(fb.ref);
+  const f2 = await api(p, '/api/medlemskap.php', { handling: 'start', plan: liten.navn });
+  const fb2 = db("SELECT vipps_reference AS ref, gjelder_fra FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1", { s: m.avtale })[0] || {};
+  const nesteFra = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +1 month'));`);
+  sjekk('… neste «Forny» gjelder fra der forrige periode slutter', !!(f2 && f2.url) && String(fb2.gjelder_fra).slice(0, 10) === nesteFra,
+    JSON.stringify(fb2));
+  await retur(fb2.ref);
+  const liste0 = await (async () => { const a = await side('admin'); await gaa(a, '/admin/oversikt', 1500);
+    const l = await api(a, '/api/admin/medlemmer.php'); await a.context().close(); return l; })();
+  const r0 = (Array.isArray(liste0) ? liste0 : (liste0.medlemmer || Object.values(liste0).find(Array.isArray) || [])).find(x => x.id === m.id) || {};
+  const nesteNeste = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +2 month'));`);
+  sjekk('… admin: betalt, neste forfall to perioder fram', r0.betaling === 'betalt'
+    && String(r0.betalingTekst || '').includes(php(`return Booking::norskDatoKort('${nesteNeste} 12:00:00');`)), r0.betalingTekst || '');
+  sjekk('… og fortsatt én aktiv avtale', Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: m.id })) === 1);
   await p.context().close();
+  // «Forny» med timene brukt opp aapner vindu 2.
+  const tom = medlemMedPlan('Fornytom', liten.navn, Number(liten.timer) * 60 + 10);
+  S.fornytom = tom;
+  const t = await side('fornytom', 390, 844);
+  await gaa(t, '/min-side', 3500);
+  await t.evaluate(() => { try { localStorage.setItem('lissom_tp_ikke_na', new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' })); } catch (e) {} });
+  await gaa(t, '/min-side', 3500);
+  sjekk('(vindu 2 står ikke åpent før «Forny»)', !(await t.locator('[data-tp-vindu="2"]').isVisible().catch(() => false)));
+  await t.getByRole('button', { name: 'Forny' }).first().click().catch(() => {});
+  await t.waitForTimeout(800);
+  sjekk('«Forny» med timene brukt opp åpner vindu 2', await t.locator('[data-tp-vindu="2"] [data-tp-knapp="Kjøp timepakke"]').isVisible().catch(() => false));
+  await rapportBilde(t, 'r5-forny-tom');
+  await t.context().close();
   // Admin bytter plan og legger inn timer for haand.
   const stor = planer().filter(p => Number(p.engangs) === 0 && Number(p.krever_fast_trekk) === 0 && p.timer !== null)
     .sort((a, b) => Number(b.timer) - Number(a.timer))[0];

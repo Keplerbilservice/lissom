@@ -293,6 +293,24 @@ switch (Foresporsel::tekst('handling')) {
         // kan uansett ikke ha fast trekk, og faar det ikke her heller.
         $betaling = Medlemskap::kreverFastTrekk($plan) ? 'trekk' : 'selv';
 
+        // ── «Forny» paa det medlemskapet hen alt har ────────────────────
+        //
+        // Eieren, 29. september 2026 (full sjekk): «Forny» paa Mini og Basis
+        // ga «Du har alt et medlemskap». Et medlemskap som gjores opp selv,
+        // fornyes med én betaling for neste periode paa avtalen som alt
+        // loeper — ingen ny avtale, og ingen ny innmeldings-e-post.
+        $naa = Medlemskap::avtale((int) $medlem['id']);
+        if ($naa !== null && $naa['status'] === 'aktiv' && (string) $naa['plan'] === $planNavn
+            && !Medlemskap::erEngangs($planNavn)
+            && trim((string) ($naa['vipps_agreement_id'] ?? '')) === '') {
+            try {
+                $ut = Medlemskap::fornyPeriode($medlem, $naa);
+            } catch (RuntimeException $e) {
+                Svar::feil($e->getMessage());
+            }
+            Svar::ok(['url' => $ut['url'], 'maaGodkjennes' => false, 'plan' => $planNavn, 'fornyelse' => true]);
+        }
+
         try {
             $ut = $betaling === 'trekk'
                 ? Medlemskap::startAvtale($medlem, $planNavn)

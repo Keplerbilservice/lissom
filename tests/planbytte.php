@@ -104,11 +104,67 @@ foreach ($navnene as $fra) {
             : Medlemskap::startEngangs($medlem($id), $til));
         $m = $medlem($id);
         $hva = $fra === $til ? 'fornyelse' : 'bytte';
-        sjekk("$fra → $til ($hva): sperres paa serveren", $svar !== '', 'ble ikke sperret');
+        $sperret = 'Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.';
+        if (Medlemskap::erStorre($til, $fra)) {
+            // Eieren, 29. september 2026: oppgradering til et stoerre
+            // medlemskap gjelder fra i dag. Serveren sperrer ikke (Vipps kan
+            // ikke naas herfra, saa betalingen startes ikke), og naar det nye
+            // er betalt, stopper det gamle i dag uten refusjon.
+            sjekk("$fra → $til (oppgradering): sperres ikke", $svar !== $sperret, $svar);
+            $pris = (int) DB::verdi('SELECT pris_ore FROM membership_plans WHERE navn = :n', ['n' => $til]);
+            DB::kjor("DELETE FROM subscriptions WHERE member_id = :m AND status = 'venter'", ['m' => $id]);
+            $ny = DB::settInn('subscriptions', ['member_id' => $id, 'plan' => $til, 'pris_ore' => $pris, 'status' => 'venter',
+                'binding_til' => gmdate('Y-m-d', strtotime('+2 months'))]);
+            Medlemskap::betaltEngangs($ny);
+            $m = $medlem($id);
+            $gml = DB::en("SELECT status, slutter FROM subscriptions WHERE member_id = :m AND plan = :p AND id <> :n",
+                ['m' => $id, 'p' => $fra, 'n' => $ny]) ?? [];
+            sjekk("… betalt: planen er $til, én aktiv avtale", $m['medlemskap_type'] === $til && $aktive($id) === [$til],
+                $m['medlemskap_type'] . ' / ' . implode(',', $aktive($id)));
+            sjekk('… det gamle er stoppet i dag, uten refusjon',
+                ($gml['status'] ?? '') === 'stoppet' && ($gml['slutter'] ?? '') === (string) DB::verdi('SELECT CURDATE()'),
+                json_encode($gml));
+            continue;
+        }
+        sjekk("$fra → $til ($hva): sperres paa serveren", $svar === $sperret, $svar === '' ? 'ble ikke sperret' : $svar);
         sjekk("… planen staar paa $fra, én aktiv avtale",
             $m['medlemskap_type'] === $fra && $aktive($id) === [$fra], $m['medlemskap_type'] . ' / ' . implode(',', $aktive($id)));
     }
 }
+
+// ── 2b. «Forny» paa et medlemskap som gjores opp selv ─────────────────
+echo "\n── Forny ────────────────────────────────────────────────────\n";
+$selv = array_key_first(array_filter($loepende, static fn($p) => (int) $p['krever_fast_trekk'] === 0));
+$id = $nytt('Forny ' . $selv, 'aktiv', $selv);
+$av = DB::settInn('subscriptions', ['member_id' => $id, 'plan' => $selv, 'pris_ore' => 179000, 'status' => 'aktiv']);
+$betal = static function (int $id, int $av, string $naar, ?string $fra) use ($tag): void {
+    $rad = ['vipps_reference' => 'MED-' . $tag . '-' . bin2hex(random_bytes(3)), 'type' => 'epayment', 'formal' => 'medlemskap',
+        'member_id' => $id, 'subscription_id' => $av, 'belop_ore' => 179000, 'status' => 'betalt',
+        'idempotency_key' => bin2hex(random_bytes(8)), 'created_at' => $naar . ' 12:00:00'];
+    if ($fra !== null) { $rad['gjelder_fra'] = $fra; }
+    DB::settInn('payments', $rad);
+};
+$idag = gmdate('Y-m-d');
+$betal($id, $av, gmdate('Y-m-d', strtotime('-20 days')), null);
+$siste = Medlemskap::sisteBetalinger([$id])[$id];
+$forrigeSlutt = gmdate('Y-m-d', strtotime(gmdate('Y-m-d', strtotime('-20 days')) . ' +1 month'));
+sjekk('uten gjelder_fra dekker betalingen én maaned fra betalingsdagen', Medlemskap::dekkerTil($siste) === $forrigeSlutt,
+    Medlemskap::dekkerTil($siste));
+// Fornyelsen betalt i dag, gjeldende fra der forrige slutter.
+$betal($id, $av, $idag, $forrigeSlutt);
+$siste = Medlemskap::sisteBetalinger([$id])[$id];
+$nesteSlutt = gmdate('Y-m-d', strtotime($forrigeSlutt . ' +1 month'));
+sjekk('fornyelse foer forfall dekker fra der forrige slutter', Medlemskap::dekkerTil($siste) === $nesteSlutt,
+    Medlemskap::dekkerTil($siste));
+$b = Medlemskap::betalingsstatus($medlem($id), DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $av]), $siste);
+sjekk('… admin sier betalt, neste ' . $nesteSlutt, $b['tilstand'] === 'betalt'
+    && str_contains($b['tekst'], Booking::norskDatoKort($nesteSlutt . ' 12:00:00')), $b['tekst']);
+sjekk('… og det er fortsatt én aktiv avtale', $aktive($id) === [$selv], implode(',', $aktive($id)));
+$api = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('«Forny» paa samme plan gaar til fornyPeriode(), ikke en ny avtale', str_contains($api, 'Medlemskap::fornyPeriode($medlem, $naa)'));
+$lib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('fornyPeriode() regner fra der forrige betaling slutter',
+    str_contains($lib, '$slutt = self::dekkerTil($siste);') && str_contains($lib, "\$rad['gjelder_fra'] = \$gjelderFra;"));
 
 // ── 3. Omsetningen ────────────────────────────────────────────────────
 echo "\n── Omsetningen ──────────────────────────────────────────────\n";

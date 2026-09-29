@@ -275,9 +275,130 @@ final class Medlemskap
      *
      * @param array<string,mixed>|null $fra
      */
-    private static function hindrerNytt(?array $fra): bool
+    private static function hindrerNytt(?array $fra, string $nyPlan = ''): bool
     {
-        return $fra !== null && $fra['status'] === 'aktiv' && !self::erEngangs((string) $fra['plan']);
+        // Eieren, 29. september 2026: «Oppgrader medlemskap» til et stoerre
+        // medlemskap midt i maaneden. Det nye gjelder fra i dag, og det gamle
+        // stopper naar det nye er betalt (erstattProve()). Et mindre, eller
+        // det samme, hindres fortsatt — det er ingen vei rundt bindinga.
+        return $fra !== null && $fra['status'] === 'aktiv' && !self::erEngangs((string) $fra['plan'])
+            && !self::erStorre($nyPlan, (string) $fra['plan']);
+    }
+
+    /**
+     * Er $ny et stoerre medlemskap enn $gammel? Flere timer i maaneden, og
+     * ubegrenset er stoerst. En engangsplan er aldri stoerre.
+     */
+    public static function erStorre(string $ny, string $gammel): bool
+    {
+        $n = self::planUansett(trim($ny));
+        $g = self::planUansett(trim($gammel));
+        if ($n === null || $g === null || (int) ($n['engangs'] ?? 0) === 1 || $n['navn'] === $g['navn']) {
+            return false;
+        }
+        if ($g['timer'] === null) {
+            return false;
+        }
+        return $n['timer'] === null || (int) $n['timer'] > (int) $g['timer'];
+    }
+
+    /**
+     * Siste dag en betaling for et loepende medlemskap dekker (Y-m-d): én
+     * maaned fra dagen perioden starter — «gjelder_fra», ellers dagen den
+     * ble betalt.
+     *
+     * @param array<string,mixed> $betaling
+     */
+    public static function dekkerTil(array $betaling): string
+    {
+        $fra = trim((string) ($betaling['gjelder_fra'] ?? ''));
+        if ($fra === '') {
+            $fra = substr((string) $betaling['created_at'], 0, 10);
+        }
+        return gmdate('Y-m-d', strtotime($fra . ' +1 month'));
+    }
+
+    /**
+     * «Forny» paa et medlemskap som gjores opp selv: én betaling i Vipps for
+     * neste periode, paa avtalen som alt loeper. Ingen ny avtale.
+     *
+     * Eieren, 29. september 2026: perioden gjelder fra der forrige betaling
+     * slutter. Er den forfalt, gjelder den fra i dag. Naar betalingen er i
+     * havn, er det den som er «siste betaling», og betalingsstatus() regner
+     * neste forfall av den.
+     *
+     * @param array<string,mixed> $medlem
+     * @param array<string,mixed> $avtale den aktive avtalen
+     * @return array{url:string,id:int,gjentakelse:bool}
+     */
+    public static function fornyPeriode(array $medlem, array $avtale): array
+    {
+        $medlemId = (int) $medlem['id'];
+        $avtaleId = (int) $avtale['id'];
+        $plan = self::planUansett((string) $avtale['plan']);
+        if ($plan === null) {
+            throw new RuntimeException('Ukjent medlemskap.');
+        }
+
+        // Samme forsoek to ganger skal gi den samme betalingen, ikke to.
+        $igjen = DB::en(
+            "SELECT id FROM payments
+              WHERE subscription_id = :s AND formal = 'medlemskap' AND status IN ('opprettet','venter')
+                AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
+              ORDER BY id DESC LIMIT 1",
+            ['s' => $avtaleId]
+        );
+        $url = trim((string) (DB::verdi('SELECT vipps_url FROM subscriptions WHERE id = :i', ['i' => $avtaleId]) ?? ''));
+        if ($igjen !== null && $url !== '') {
+            return ['url' => $url, 'id' => $avtaleId, 'gjentakelse' => true];
+        }
+
+        $idag = gmdate('Y-m-d');
+        $siste = self::sisteBetalinger([$medlemId])[$medlemId] ?? null;
+        $gjelderFra = $idag;
+        if ($siste !== null) {
+            $slutt = self::dekkerTil($siste);
+            if ($slutt > $idag) {
+                $gjelderFra = $slutt;
+            }
+        }
+
+        $pris = (int) $plan['pris_ore'];
+        $referanse = Vipps::nyReferanse('MED');
+        $rad = [
+            'vipps_reference' => $referanse,
+            'type'            => 'epayment',
+            'formal'          => 'medlemskap',
+            'member_id'       => $medlemId,
+            'subscription_id' => $avtaleId,
+            'belop_ore'       => $pris,
+            'status'          => 'opprettet',
+            'idempotency_key' => Vipps::uuid(),
+        ];
+        if (DB::harKolonne('payments', 'gjelder_fra')) {
+            $rad['gjelder_fra'] = $gjelderFra;
+        }
+        $betalingId = DB::settInn('payments', $rad);
+
+        try {
+            $betaling = Vipps::opprettBetaling(
+                $referanse,
+                $pris,
+                Vipps::beskrivelse('Medlemskap hos Lissom — ' . (string) $avtale['plan'], (string) ($medlem['navn'] ?? '')),
+                Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
+                $medlem['telefon'] ?? null
+            );
+        } catch (Throwable $e) {
+            DB::oppdater('payments', ['status' => 'feilet'], ['id' => $betalingId]);
+            logg_feil('Fikk ikke startet fornyelse for medlem ' . $medlemId, $e);
+            throw new RuntimeException('Fikk ikke startet betalingen. Prøv igjen om litt.');
+        }
+
+        DB::oppdater('payments', ['status' => 'venter'], ['id' => $betalingId]);
+        self::husk($avtaleId, (string) $betaling['url']);
+        revider('medlemskap_fornyelse_startet', 'subscription', $avtaleId,
+            ['plan' => (string) $avtale['plan'], 'gjelderFra' => $gjelderFra]);
+        return ['url' => (string) $betaling['url'], 'id' => $avtaleId, 'gjentakelse' => false];
     }
 
     /**
@@ -300,6 +421,11 @@ final class Medlemskap
         $antall = 0;
         foreach ($gamle as $g) {
             if (!self::erEngangs((string) $g['plan'])) {
+                // Et loepende medlemskap som er oppgradert (eieren, 29.
+                // september 2026): det nye gjelder fra i dag, og det gamle
+                // stopper i dag. Ingen refusjon. Timene som alt er stemplet
+                // denne maaneden, teller paa det nye.
+                self::stoppErstattet((int) $g['id'], $medlemId, (string) $g['plan'], $nyId, $nyPlan);
                 continue;
             }
             // Timene paa proeveperioden, foer den avsluttes, til loggen i
@@ -339,6 +465,39 @@ final class Medlemskap
             DB::oppdater('members', ['slutt_dato' => null], ['id' => $medlemId]);
         }
         return $antall;
+    }
+
+    /**
+     * Stopper et loepende medlemskap et nytt har erstattet. Har det fast
+     * trekk, stoppes avtalen ogsaa i Vipps, saa den ikke trekkes igjen.
+     */
+    private static function stoppErstattet(int $gammelId, int $medlemId, string $gammelPlan, int $nyId, string $nyPlan): void
+    {
+        $g = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $gammelId]);
+        if ($g === null) {
+            return;
+        }
+        $endret = DB::kjor(
+            "UPDATE subscriptions
+                SET status = 'stoppet', sagt_opp_at = UTC_TIMESTAMP(),
+                    slutter = CURDATE(), neste_trekk = NULL
+              WHERE id = :i AND status = 'aktiv'",
+            ['i' => $gammelId]
+        )->rowCount();
+        if ($endret !== 1) {
+            return;
+        }
+        if (trim((string) ($g['vipps_agreement_id'] ?? '')) !== '') {
+            try {
+                Vipps::stoppAvtale((string) $g['vipps_agreement_id']);
+            } catch (Throwable $e) {
+                logg_feil('Fikk ikke stoppet avtale ' . $gammelId . ' i Vipps etter oppgradering', $e);
+            }
+        }
+        revider('medlemskap_erstattet', 'member', $medlemId, [
+            'fra' => $gammelPlan, 'fraAvtale' => $gammelId,
+            'til' => $nyPlan, 'tilAvtale' => $nyId, 'refusjon' => 'ingen', 'oppgradert' => true,
+        ]);
     }
 
     /**
@@ -778,8 +937,10 @@ final class Medlemskap
             return $ut('betalt', 'Betalt ' . $kort($betaltDen));
         }
 
-        // Loepende medlemskap: betalingen dekker én maaned fram.
-        $dekkerTil = gmdate('Y-m-d', strtotime($betaltDen . ' +1 month'));
+        // Loepende medlemskap: betalingen dekker én maaned fram — fra dagen
+        // perioden starter. En fornyelse betalt foer forfall gjelder fra der
+        // forrige periode slutter (se fornyPeriode()).
+        $dekkerTil = self::dekkerTil($siste);
         if ($dekkerTil < $idag) {
             return $ut('forfalt', 'Forfalt ' . $kort($dekkerTil)
                 . ' · sist betalt ' . $kort($betaltDen), true);
@@ -841,8 +1002,10 @@ final class Medlemskap
         }
         $inn = implode(',', array_map('intval', $medlemIder));
         $ut = [];
+        // gjelder_fra: migrasjon 235 («Forny» fra der forrige periode slutter).
+        $fra = DB::harKolonne('payments', 'gjelder_fra') ? ', p.gjelder_fra' : '';
         foreach (DB::alle(
-            "SELECT p.member_id, p.created_at, p.belop_ore, p.maate, p.type
+            "SELECT p.member_id, p.created_at, p.belop_ore, p.maate, p.type{$fra}
                FROM payments p
                JOIN (SELECT member_id, MAX(id) AS siste
                        FROM payments
@@ -1085,7 +1248,7 @@ final class Medlemskap
         // siden av den nye. Da ville de blitt trukket to ganger.
         self::sperrProveIgjen((int) $medlem['id'], $plan);
         $fra = self::avtale((int) $medlem['id']);
-        if (self::hindrerNytt($fra)) {
+        if (self::hindrerNytt($fra, $planNavn)) {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
         }
 
@@ -1163,7 +1326,7 @@ final class Medlemskap
         }
         self::sperrProveIgjen((int) $medlem['id'], $plan);
         $fra = self::avtale((int) $medlem['id']);
-        if (self::hindrerNytt($fra)) {
+        if (self::hindrerNytt($fra, $planNavn)) {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
         }
 

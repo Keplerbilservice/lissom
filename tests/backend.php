@@ -20633,6 +20633,60 @@ sjekk('dagbrikka i ukekalenderen hopper til dagen',
         . "          if (!el || !el.getClientRects().length) return;\n"
         . '          this.rullTil(el);'));
 
+// ── Kursbevis for noe som alt er gjennomfoert ───────────────────────
+//
+// Eieren, 27. september 2026: «kan du legge inn kursbevis nybegynner dreiekurs
+// under min side til medlemmene» — fem medlemmer som gikk kurset foer systemet
+// fantes.
+//
+// Et kursbevis lagres ikke. Det bygges av paameldingen, og staar paa Min side
+// naar den er betalt og datoen har vaert. Tre ting sto i veien:
+//
+//   1. En paamelding lagt inn for haand fikk alltid «member_id = null», og
+//      Min side henter bare bookinger med member_id.
+//   2. Datovelgeren nektet dager som har vaert.
+//   3. Oektlista gikk bare tretti dager tilbake.
+$kvbSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kvbPam  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+$kvbPmd  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
+
+echo "\nKursbevis i ettertid\n";
+// 1. Medlemmet foelger med paameldingen.
+sjekk('en paamelding lagt inn for haand kan baere medlemmet',
+    str_contains($kvbPam, "\$medlemId = Foresporsel::heltall('medlemId');")
+    && str_contains($kvbPam, "        'member_id'         => \$medlemId > 0 ? \$medlemId : null,"));
+sjekk('et medlemsnummer som ikke finnes avvises',
+    str_contains($kvbPam, "if (\$medlemId > 0 && DB::en('SELECT id FROM members WHERE id = :i', ['i' => \$medlemId]) === null) {"));
+// Navnet i feltet kan staa litt annerledes enn i registeret.
+sjekk('dobbelttrykk fanges paa medlemsnummeret ogsaa',
+    str_contains($kvbPam, "            AND (member_id = :m OR gjest_navn = :n)"));
+sjekk('skjermen sender medlemmet videre',
+    str_contains($kvbSida, '              medlemId: valgt ? (valgt.medlemId || 0) : 0,'));
+// Den som ringer og ikke er medlem skal fortsatt kunne foeres som gjest.
+sjekk('uten medlem foeres det som gjest, som for',
+    str_contains($kvbPam, "\$medlemId > 0 ? \$medlemId : null"));
+
+// 2. Datovelgeren.
+sjekk('dager som har vaert er stengt til man ber om dem',
+    str_contains($kvbSida, '          const passert = new Date(aar, mnd, dag) < idag && !this.state.kFortid;'));
+sjekk('bryteren finnes under kalenderen',
+    str_contains($kvbSida, 'checked="{{ kFortid }}" onChange="{{ vekslKFortid }}"')
+    && str_contains($kvbSida, "      vekslKFortid: () => this.setState(st => ({ kFortid: !st.kFortid })),"));
+sjekk('og meldinga peker paa bryteren',
+    str_contains($kvbSida, '«Datoer som har vært» under kalenderen.'));
+
+// 3. Oektlista bakover.
+sjekk('datoene bakover hentes for seg, og bare datoene',
+    str_contains($kvbPmd, "if (Foresporsel::heltall('historikk') === 1) {")
+    && str_contains($kvbPmd, "            AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 MONTH)"));
+sjekk('de gaar ikke inn i den vanlige lista',
+    str_contains($kvbPmd, "          WHERE cs.status <> 'avlyst' AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)"));
+sjekk('skjermen henter dem foerst naar bryteren slaas paa',
+    str_contains($kvbSida, "            if (!paa || this.state.nrGamleOkter || !this.erPublisert()) return;")
+    && str_contains($kvbSida, "            fetch('/api/admin/pameldte.php?historikk=1'"));
+sjekk('og de staar sist i lista',
+    str_contains($kvbSida, '          .concat(st.nrFortid ? (st.nrGamleOkter || []).filter(passer) : []);'));
+
 // Eieren, 27. september 2026: «enklere maate aa flytte dato paa deltaker paa
 // rett i kurset». «Flytt» paa Paameldte viste alle kurs, ogsaa datoer som
 // hadde vaert, med én dato valgt paa forhaand.
@@ -21008,6 +21062,98 @@ sjekk('knappene og kvitteringene er de godkjente',
 sjekk('kursboost-utkastet husker kurset',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/ai.php'), "\$r + ['kursId' => (int) \$k['kurs']['id']],"));
 
+// ── Synlighet fra forhaandsvisninga ───────────────────────────────
+//
+// Eieren, 27. september 2026, om «Hva medlemmene ser»: «kan jeg skru av og
+// paa funksjoner der ogsaa?»
+//
+// Bryterne ligger i Synlighet-arket, som aapnes fra en pille i adminstripa.
+// Den stripa er borte i forhaandsvisninga — dette ER Min side, ikke en
+// adminskjerm — saa runden ble: tilbake, aapne Synlighet, skru, og inn hit
+// igjen. Arket staar én gang i malen, paa toppnivaa, saa det tegnes ogsaa
+// her. En knapp i baandet er alt som skal til.
+$syfSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+echo "\nSynlighet fra forhaandsvisninga\n";
+sjekk('knappen staar i baandet, ved siden av «Tilbake»',
+    str_contains($syfSida, 'on-click="{{ fhSynlighet }}" hint-size="auto,38px">⊙ Synlighet</x-import>')
+    && str_contains($syfSida, 'on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>'));
+// Ingen kopi av bryterne: den samme handlingen som pilla i stripa.
+sjekk('den bruker den samme «synAapne» som pilla i adminstripa',
+    str_contains($syfSida, '      fhSynlighet: () => this.synlighetVals().synAapne(),'));
+// Arket maa staa paa toppnivaa i malen, ellers tegnes det ikke paa Min side.
+sjekk('arket staar én gang i malen, ikke per adminskjerm',
+    substr_count($syfSida, '<sc-if value="{{ synVises }}"') === 1
+    && str_contains($syfSida, '      ...this.synlighetVals(),'));
+// Baandet vises bare i forhaandsvisninga, saa knappen naar aldri et medlem.
+sjekk('baandet — og knappen — staar bare i forhaandsvisninga',
+    str_contains($syfSida, '      fhBand: !!this.state.fhRolle,'));
+
+// ── Søk i admin ─────────────────────────────────────────────
+//
+// Eieren, 27. september 2026: «jeg kunne godt tenke meg et soekefelt paa
+// admin der jeg skal soeke i funksjoner i admin».
+//
+// Lista bygges av tabellene som alt finnes — menyen, fanene, verktoyradene,
+// snarveiene og bryterne i Synlighet. En haandskreven liste ville sluttet
+// aa stemme den dagen noen la til en skjerm og glemte denne.
+$sokSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+echo "\nSøk i admin\n";
+sjekk('pilla staar i alle adminstripene, ved siden av Synlighet',
+    substr_count($sokSida, 'onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}"') > 0
+    && substr_count($sokSida, 'onClick="{{ admSokAapne }}" style="{{ tmAdmSokStil }}"')
+       === substr_count($sokSida, 'onClick="{{ synAapne }}" style="{{ tmSynStil }}"'));
+// Pilleraden er skjult paa telefon. Uten flisen i menyskuffen fantes
+// soeket bare paa stor skjerm.
+// Rekkefolgen: soeket forst, saa «Start kurset» (eieren, 29. september
+// 2026), saa stedene. Paastanden holder paa foersteplassen, ikke paa at
+// flisen staar alene — det gjorde den til kursstarten kom.
+sjekk('flisen staar først i menyskuffen paa telefon',
+    str_contains($sokSida, "const hoved = gruppe('', [\n          flis({ navn: '⌕ Søk', velg: () => this.adminSokVals().admSokAapne() }),"));
+// Ruta maa staa paa toppnivaa, som Synlighet-arket — ellers ville den
+// blitt tegnet én gang per adminskjerm.
+sjekk('ruta staar én gang i malen, ikke per adminskjerm',
+    substr_count($sokSida, '<sc-if value="{{ admSokVises }}"') === 1
+    && str_contains($sokSida, '      ...this.adminSokVals(),'));
+// Nettsida har sitt eget soek — kurs, varer og sider — og det bruker
+// «sokApen» og «sokTekst». To soek paa de samme noeklene ville aapnet
+// begge samtidig, og feltet i det ene ville skrevet i det andre.
+sjekk('soeket i admin har egne noekler, ikke de samme som soeket paa nettsida',
+    str_contains($sokSida, 'admSokVises: !!this.state.admSokApen,')
+    && str_contains($sokSida, '      sokApen: !!this.state.sokApen,')
+    && !str_contains($sokSida, 'admSokVises: !!this.state.sokApen,'));
+// Ingen haandskrevet liste: tabellene er kilden.
+sjekk('lista bygges av tabellene, ikke skrevet av',
+    str_contains($sokSida, "(Component.ADMIN_MENY || []).forEach(rad => legg(rad[0], 'Meny'")
+    && str_contains($sokSida, 'const faner = Component.ADMIN_FANER || {};')
+    && str_contains($sokSida, "(this.adminSnarveier() || []).forEach(x => legg(x.navn, 'Snarvei', x.velg));")
+    && str_contains($sokSida, ".forEach(r => legg(String(r.navn).replace(/\\s+/g, ' ').trim(), 'Verktøy', r.velg));"));
+// Bryterne kopieres ikke hit: treffet aapner Synlighet-arket, der de staar.
+sjekk('et bryter-treff aapner Synlighet, det lager ingen kopi av bryteren',
+    str_contains($sokSida, ".forEach(par => (par[1] || []).forEach(r => legg(r.navn, par[0], () => syn.synAapne())));"));
+// «← Kurs og deltakere» er veien tilbake i en fanerad, ikke et sted.
+sjekk('veien tilbake i en fanerad staar ikke i lista',
+    str_contains($sokSida, "if (n.charAt(0) === '\\u2190') return;"));
+// Skriver man «kurs», skal «Kurs og deltakere» staa over «Betalinger» —
+// den siste kom bare med fordi den ligger under Kurs og deltakere.
+sjekk('treff i navnet staar over treff paa omraadet',
+    str_contains($sokSida, '      if (ord.every(o => n.indexOf(o) !== -1)) return n.indexOf(ord[0]) === 0 ? 0 : 1;')
+    && str_contains($sokSida, '      .sort((a, b) => a.v - b.v || a.i - b.i)'));
+// Ord for ord, saa «kurs delt» finner «Kurs og deltakere».
+sjekk('soeket tar ett og ett ord, i hvilken som helst rekkefølge',
+    str_contains($sokSida, "      return ord.every(o => h.indexOf(o) !== -1);"));
+// Et treff skal ta deg dit, og lukke ruta paa veien.
+sjekk('et treff lukker ruta og går dit',
+    str_contains($sokSida, "        velg: () => { this.setState({ admSokApen: false, admSokTekst: '' }); r.velg(); },"));
+// Aapner man soeket fra menyskuffen, skal skuffen lukke seg.
+sjekk('soeket lukker menyskuffen og Verktøy-arket naar det aapner',
+    str_contains($sokSida, "admSokAapne: () => this.setState({ admSokApen: true, admSokTekst: '', tmApen: '', admMobApen: false, verktoyApen: false }),"));
+// Et tomt svar uten et ord om det er en blindvei.
+sjekk('den sier fra naar ingenting passer',
+    str_contains($sokSida, "admSokIngen: q !== '' && treff.length === 0,")
+    && str_contains($sokSida, "admSokIngenTekst: 'Ingen treff på «'"));
+
 // Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring, at jeg
 // kan klikke å laste opp eller dra og slipp» — Markedsføring › Bilder.
 echo "\nMarkedsfoering › Bilder\n";
@@ -21045,6 +21191,71 @@ sjekk('… og PNG-ene kan velges i bildevelgeren',
 sjekk('… og kursboost og kursbildet godtar dem',
     str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/kursboost.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~'));
+
+// ── Kursstart ───────────────────────────────────────────────
+//
+// Eieren, 29. september 2026: «Jeg skulle hatt en slags onboarding til admin,
+// ved oppstart av kurs, i enkel karusellform som er mobilvennlig».
+//
+// Karusellen er proevd i nettleser paa 390 og 1280 px. Det disse paastandene
+// holder fast er det en nettleserproeve ikke ser: at kortene bygges av det som
+// er lagret og ikke av kode, at knappen staar i kursdatoraden — som er tom i
+// forhaandsvisninga, og derfor ikke kan trykkes paa der — og at
+// betalingskortet ikke har faatt sin egen vei til pengene.
+echo "\nKursstart\n";
+$ksSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$ksApi  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kursstart.php');
+$ksMig  = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/234_kursstart.sql');
+
+sjekk('arket staar én gang i malen, ikke per adminskjerm',
+    substr_count($ksSida, '<sc-if value="{{ ksVises }}"') === 1);
+sjekk('«Start kurset» staar i raden for kursdatoen',
+    str_contains($ksSida, 'onClick="{{ o.startKurs }}"')
+    && str_contains($ksSida, 'startKurs: () => this.kursstartVals().ksAapne(o.oktId),'));
+sjekk('… og som snarvei i kalenderen',
+    str_contains($ksSida, "{ navn: 'Start kurset', nokkel: 'kursstart',"));
+sjekk('… og som flis i menyskuffen, for pilleraden er skjult paa telefon',
+    str_contains($ksSida, "flis({ navn: '▶ Start kurset', velg: () => this.kursstartVals().ksAapne(0) }),"));
+sjekk('… og i adminstripa paa PC, ved siden av Chat og Dagsrapport',
+    str_contains($ksSida, "x.nokkel === 'chat' || x.nokkel === 'dagsrapport' || x.nokkel === 'kursstart'"));
+
+sjekk('teksten kommer fra det som er lagret, ikke fra malen',
+    str_contains($ksSida, 'kursstartKort() {')
+    && str_contains($ksSida, 'fetch(\'/api/admin/kursstart.php\''));
+sjekk('fem kort, og det andre er betalingskortet',
+    substr_count($ksMig, "('kursstart_") === 15
+    && str_contains($ksApi, 'const KURSSTART_ANTALL = 5;')
+    && str_contains($ksApi, 'const KURSSTART_BETALING = 2;'));
+sjekk('et kort som er slaatt av hoppes over, og telleren foelger det du ser',
+    str_contains($ksSida, 'const kort = this.kursstartKort().filter(k => k.paa);'));
+
+sjekk('betalingslista er de paameldte paa akkurat den okta',
+    str_contains($ksSida, "(this.state.adminDeltakere || []).filter(d => okt && String(d.oktId) === String(okt.oktId))"));
+sjekk('… og kortet lager ingen ny vei til pengene — treffet gaar til Paameldte',
+    str_contains($ksSida, "this.setState({ ksApen: false, side: 'adminpameldte',")
+    && !str_contains($ksSida, 'ksTaBetalt'));
+sjekk('… og serveren har ingenting aa lagre for det kortet',
+    !str_contains($ksApi, 'betalt') && !str_contains($ksApi, 'payments'));
+
+sjekk('snarveien plukker okta selv naar ingen dato er valgt',
+    str_contains($ksSida, 'kursstartOkt() {')
+    && str_contains($ksSida, 'ksAapne(0)'));
+
+sjekk('tomt felt betyr tomt felt — standarden gjelder bare det som aldri er lagret',
+    str_contains($ksApi, "array_key_exists('kursstart_' . \$nr . '_tittel', \$s)"));
+sjekk('serveren avviser et kortnummer som ikke finnes',
+    str_contains($ksApi, "if (\$nr < 1 || \$nr > KURSSTART_ANTALL) {"));
+sjekk('… og kutter tittel og tekst framfor aa lagre en roman',
+    str_contains($ksApi, "mb_substr(trim((string) (\$k['tittel'] ?? '')), 0, 120)")
+    && str_contains($ksApi, "mb_substr(trim((string) (\$k['tekst'] ?? '')), 0, 1200)"));
+
+sjekk('kortene kan endres under Markedsfoering › Tekst maler',
+    str_contains($ksSida, 'kursstartRedVals() {')
+    && str_contains($ksSida, '<sc-for list="{{ ksRedKort }}" as="k"')
+    && str_contains($ksSida, '...this.kursstartRedVals(),'));
+sjekk('… med «Ikke lagret» og forkast, som malene har',
+    str_contains($ksSida, 'ksRedUlagret: Object.keys(u).length > 0,')
+    && str_contains($ksSida, "ksRedForkast: () => this.setState({ ksUtkast: null }),"));
 
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

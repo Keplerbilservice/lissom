@@ -1463,6 +1463,41 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "admin-ark-og-menyer-lukkes",
+            "dato": "2026-09-29",
+            "hva": "Alle ark og menyer i admin åpnes lukket og lukker seg igjen: panelene i stripa på PC («Mer», ⚙ verktøy, «inne») med nytt trykk, Esc og klikk utenfor; arkene Synlighet, Søk, verktøy og Kursstart med ×, klikk utenfor og Esc; skuffen på telefon med «Lukk» og etter et valg. Panelene åpnes med trykk, ikke med musa over eller fokus. Eieren: «menyen får jeg ikke lukket» og «synlighet og se nettsiden etc står åpen»",
+            "hvor": "Admin på PC og telefon (lissom-2108.html)",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "document.addEventListener('click', this._utenfor);",
+                        "tmApen: '', verktoyApen: false, synlighetApen: false,",
+                        "admSokApen: false, admSokTekst: '', ksApen: false, admMobApen: false,"
+                    ],
+                    "ikkeFinnes": [
+                        ".lx-tmgrp:hover > .lx-tmpanel, .lx-tmgrp:focus-within > .lx-tmpanel { display: block; }"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "start-kurset-lett-aa-finne",
+            "dato": "2026-09-29",
+            "hva": "«▶ Start kurset» står først i «Ofte brukt» på Oversikt (PC og telefon), som andre flis i menyskuffen på telefon og under «Mer» på PC, og åpner Kursstart. Eieren: «jeg ser heller ikke hvor jeg kan starte»",
+            "hvor": "Admin › Oversikt og menyene (lissom-2108.html)",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "on-click=\"{{ ksStartOversikt }}\" hint-size=\"auto,40px\">▶ Start kurset</x-import>",
+                        "ksStartOversikt: () => this.kursstartVals().ksAapne(0),",
+                        "flis({ navn: '▶ Start kurset', velg: () => this.kursstartVals().ksAapne(0) }),"
+                    ]
+                }
+            ]
         }
     ]
 }

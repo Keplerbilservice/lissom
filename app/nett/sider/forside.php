@@ -251,6 +251,53 @@ $h .= '</div><div style="display: flex; gap: 10px; margin-top: var(--space-5);">
 $h .= '</div></section>' . "\n";
 }
 
+// ── Google-anmeldelser ───────────────────────────────────────────────────
+//
+// Eieren, 29. september 2026, GO paa skissen: nederst paa forsida, bare 4 og
+// 5 stjerner, maks 4 kort. Snittet og antallet er Googles tall for alle
+// anmeldelsene, saa utvalget er aerlig. Leses fra det vedlikeholdsjobben
+// lagret (app/lib/anmeldelser.php) — sida spoer aldri Google selv. Uten data
+// ingen seksjon. Bryter under Synlighet («Vis/anmeldelser»).
+$anm = Nett::bryterPaa('anmeldelser') ? Anmeldelser::forForsida() : null;
+if ($anm !== null) {
+    $stj = static fn(int $n): string => '<span aria-hidden="true" style="color: #C98A00; letter-spacing: 2px;">'
+        . str_repeat('★', max(0, min(5, $n))) . str_repeat('☆', 5 - max(0, min(5, $n))) . '</span>';
+    $snitt = number_format((float) $anm['rating'], 1, ',', '');
+    $h .= '<section data-anmeldelser style="background: var(--clay-100); padding: var(--section-y) var(--space-8);">'
+        . '<div style="max-width: var(--width-content); margin: 0 auto;">'
+        . '<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-8);">'
+        . '<div><div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Google-anmeldelser</div>'
+        . '<h2 style="margin: 0;">Hva sier andre om oss</h2></div>'
+        . '<div style="display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text-heading);">'
+        . $stj((int) round((float) $anm['rating']))
+        . '<span data-anm-snitt>' . $e($snitt . ' av 5 · ' . (int) $anm['antall'] . ' anmeldelser på Google') . '</span></div>'
+        . '</div>'
+        . '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-8);">';
+    foreach ($anm['kort'] as $k) {
+        $navn = $e((string) $k['navn']);
+        // Google krever at forfatteren krediteres med lenke til profilen.
+        if ((string) ($k['navnLenke'] ?? '') !== '') {
+            $navn = '<a href="' . $e((string) $k['navnLenke']) . '" target="_blank" rel="noopener nofollow" style="color: inherit; text-decoration: none;">' . $navn . '</a>';
+        }
+        $h .= '<figure data-anm-kort style="margin: 0; background: var(--surface-card, #fff); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: grid; gap: var(--space-3); align-content: start;">'
+            . $stj((int) $k['stjerner'])
+            . '<blockquote style="margin: 0; color: var(--text-body); text-wrap: pretty;">«' . nl2br($e((string) $k['tekst'])) . '»</blockquote>'
+            . '<figcaption style="display: grid; gap: 2px;"><span style="font-weight: 700; color: var(--text-heading);">' . $navn . '</span>'
+            . '<span style="font-size: var(--text-sm); color: var(--text-muted);">' . $e(Anmeldelser::siden((string) $k['tid'], (string) ($k['tidTekst'] ?? ''))) . '</span></figcaption>'
+            . '</figure>';
+    }
+    $h .= '</div>'
+        . '<div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">'
+        . ((string) $anm['lenke'] !== ''
+            ? Deler::knapp('Les alle på Google', ['href' => (string) $anm['lenke'], 'lenke' => true, 'variant' => 'primary', 'size' => 'sm', 'attr' => 'target="_blank" rel="noopener"'])
+            : '<span></span>')
+        // Attribusjonen Google Maps Platform krever naar innhold fra Places
+        // vises uten et Google-kart.
+        . '<span style="font-size: var(--text-xs); color: var(--text-muted);">Kilde: Google Maps</span>'
+        . '</div>'
+        . '</div></section>' . "\n";
+}
+
 $h .= '</div>' . "\n";
 $h .= Deler::bunn(true);
 

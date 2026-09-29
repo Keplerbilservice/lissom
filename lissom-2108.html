@@ -28228,6 +28228,21 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreMaal }}" hint-size="auto,40px">Lagre</x-import>
             </div>
 
+            <!-- Google-anmeldelsene nederst paa forsida (app/lib/anmeldelser.php).
+                 Eieren, 29. september 2026. Noekkelen er «Maps Platform API
+                 Key» i Google Cloud-prosjektet Lissom; den lagres i
+                 innstillinger og sendes aldri tilbake hit. Lagres den, hentes
+                 anmeldelsene med det samme — ellers én gang i doegnet. -->
+            <div data-anm-innst style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Google-anmeldelser</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Anmeldelsene med 4 og 5 stjerner vises nederst på forsiden, sammen med snittet og antallet fra Google. De hentes én gang i døgnet.</p>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ mkAnmStatus }}</div>
+              <label style="display: block; font: var(--type-label); color: var(--text-heading); margin-bottom: 6px;">Google Places-nøkkel</label>
+              <input type="password" autocomplete="new-password" value="{{ mkAnmNokkel }}" onChange="{{ mkSettAnmNokkel }}" placeholder="{{ mkAnmPlass }}" style="{{ mkFeltStil }}">
+              <p style="margin: 6px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Google Cloud → prosjektet Lissom → APIs &amp; Services → Credentials → «Maps Platform API Key» → Show key. Skriv «slett» for å fjerne nøkkelen.</p>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ mkLagreAnm }}" hint-size="auto,40px">Lagre</x-import>
+            </div>
+
             <!-- Gemini lager bildene (app/lib/gemini.php). Noekkelen lagres i
                  innstillinger-tabellen — ikke i content_blocks, som nettsida
                  leser — og sendes aldri tilbake hit. Feltet staar tomt, og
@@ -39173,7 +39188,7 @@ class Component extends DCLogic {
         this.setState({
           kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
-          mkMaalGa: '', mkMaalMeta: '',
+          mkMaalGa: '', mkMaalMeta: '', mkAnmNokkel: '',
           mkGemNokkel: '', mkGemModell: undefined,
           ...(ok && d ? { mkMaal: d } : {}),
         });
@@ -48468,6 +48483,9 @@ class Component extends DCLogic {
             () => this.vekslBryter('sok', 'Søkefeltet')),
         rad('Referansekunder på forsiden', this.bryterPaa('referanser'),
             () => this.vekslBryter('referanser', 'Referansekunder på forsiden')),
+        // Eieren, 29. september 2026: Google-anmeldelsene nederst paa forsida.
+        rad('Google-anmeldelser på forsiden', this.bryterPaa('anmeldelser'),
+            () => this.vekslBryter('anmeldelser', 'Google-anmeldelser på forsiden')),
         // Eieren, 27. september 2026: samme bryter som i Kursholdere, vist
         // her ogsaa, saa alt som vises paa nettsida staar samlet.
         rad('Vis kursholderne på nettsiden', this.bryterPaa('kursholdere'),
@@ -72890,6 +72908,24 @@ class Component extends DCLogic {
                 handling: 'lagre',
                 maal_ga_api_secret: (this.state.mkMaalGa || '').trim(),
                 maal_meta_token: (this.state.mkMaalMeta || '').trim(),
+              }),
+              // Google-anmeldelsene (api/admin/maaling.php, app/lib/anmeldelser.php).
+              mkAnmStatus: (() => {
+                const a = m && m.anmeldelser;
+                if (!m) return 'Henter status …';
+                if (!a || !a.harNokkel) return 'Nøkkel mangler. Uten den vises ikke anmeldelsene.';
+                if (a.feil) return 'Nøkkel lagt inn, men Google svarte: ' + a.feil;
+                if (!a.hentet) return 'Nøkkel lagt inn. Anmeldelsene hentes i natt.';
+                const d = new Date(a.hentet);
+                return 'Nøkkel lagt inn · ' + String(a.rating).replace('.', ',') + ' av 5 · ' + a.antall + ' anmeldelser · '
+                  + a.kort + ' vises på forsiden · hentet ' + d.toLocaleDateString('nb-NO') + ' kl. ' + d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' }) + '.';
+              })(),
+              mkAnmNokkel: this.state.mkAnmNokkel ?? '',
+              mkSettAnmNokkel: e => this.setState({ mkAnmNokkel: e.target.value }),
+              mkAnmPlass: m && m.anmeldelser && m.anmeldelser.harNokkel ? '•••••••• (lagt inn)' : 'Lim inn nøkkelen',
+              mkLagreAnm: () => this.maalingKall({
+                handling: 'lagre',
+                google_places_nokkel: (this.state.mkAnmNokkel || '').trim(),
               }),
             };
           })(),

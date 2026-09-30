@@ -2214,13 +2214,21 @@ await flyt('Nytt admin holder seg til du lukker det', async () => {
     await p.locator('main a[href="/admin/kalender?apne=nydato"]').first().click(); await p.waitForTimeout(3000);
     const f = p.frameLocator('main.ramme iframe');
     sjekk(`${b} px: «Ny kursdato» åpen i rammen`, await DYPF.nydato(f).catch(() => false));
-    await f.locator('body').press('Escape'); await p.waitForTimeout(500);
-    sjekk(`${b} px: vinduet i rammen lukkes med Esc`, !(await DYPF.nydato(f).catch(() => false)));
+    // «Ny kursdato» lukkes med × i det gamle admin (det har ingen Esc der).
+    await f.locator('button[aria-label="Lukk"]:has-text("×")').first().click(); await p.waitForTimeout(500);
+    sjekk(`${b} px: vinduet i rammen lukkes med ×`, !(await DYPF.nydato(f).catch(() => false)));
     await p.reload(); await p.waitForTimeout(3500);
     const etter = await lesRamme(p);
     sjekk(`${b} px: oppdatering blir stående i samme skjerm`, etter && etter.topp === '/admin2' && norm(etter.sti) === '/admin/kalender', JSON.stringify(etter));
-    await p.goBack(); await p.waitForTimeout(1500);
-    sjekk(`${b} px: Tilbake går til «I dag» i det nye admin`, new URL(p.url()).pathname === '/admin2' && await p.locator('main h1', { hasText: 'I dag' }).isVisible().catch(() => false), p.url());
+    // Tilbake gaar foerst bakover inni rammen (det gamle admin har egne steg),
+    // men forlater aldri det nye admin, og kommer til slutt til «I dag».
+    let hjemme = false, blittIgjen = true;
+    for (let i = 0; i < 4 && !hjemme; i++) {
+      await p.goBack(); await p.waitForTimeout(1500);
+      blittIgjen = blittIgjen && new URL(p.url()).pathname === '/admin2';
+      hjemme = await p.locator('main h1', { hasText: 'I dag' }).isVisible().catch(() => false);
+    }
+    sjekk(`${b} px: Tilbake blir i det nye admin og kommer til «I dag»`, blittIgjen && hjemme, p.url());
 
     // Ut av det nye admin: bare med «Lukk nytt admin» (og «Gammelt admin» paa PC).
     await p.locator('a.lukknytt').click(); await p.waitForTimeout(2500);

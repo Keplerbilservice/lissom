@@ -80,6 +80,12 @@ if ($handling === 'godkjenn') {
     if ($m === null) {
         Svar::feil('Fant ikke medlemmet.', 404);
     }
+    // Bare et medlemskap som loeper, kan fryses. Et oppsagt eller avsluttet
+    // medlemskap satt paa pause ville blitt aktivt igjen naar frysen tok
+    // slutt (Codex-gjennomgangen, eieren 30.09.2026).
+    if (!in_array((string) $m['status'], ['aktiv', 'prove', 'pause'], true)) {
+        Svar::feil('Medlemmet står ikke på noe medlemskap. Sett det først.');
+    }
 
     DB::iTransaksjon(static function () use ($id, $medlemId, $m, $svar, $jeg, $f): void {
         DB::oppdater('medlem_frys', [
@@ -135,7 +141,10 @@ if ($handling === 'avslutt') {
         ? (string) $f['status_for'] : 'aktiv';
     DB::iTransaksjon(static function () use ($id, $medlemId, $tilbake, $svar): void {
         DB::oppdater('medlem_frys', ['status' => 'avsluttet', 'svar' => $svar ?: null], ['id' => $id]);
-        DB::oppdater('members', ['status' => $tilbake], ['id' => $medlemId]);
+        // Bare et medlemskap frysen selv satte paa pause, aapnes igjen. Er
+        // det sagt opp i mellomtiden, skal det ikke bli aktivt av dette.
+        DB::kjor("UPDATE members SET status = :s WHERE id = :i AND status = 'pause'",
+            ['s' => $tilbake, 'i' => $medlemId]);
     });
     revider('frys_avsluttet', 'member', $medlemId, ['frys' => $id]);
     Svar::ok(['beskjed' => 'Frysen er avsluttet. Medlemskapet er aktivt igjen.']);

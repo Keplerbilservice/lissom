@@ -218,6 +218,11 @@ if ($handling === 'endre') {
     }
 
     DB::oppdater('members', $data, ['id' => $id]);
+    // Nytt passord: alle andre innlogginger paa kontoen avsluttes. Den som
+    // bytter, blir sittende i sin egen fane.
+    if (isset($data['passord_hash'])) {
+        Sesjon::avsluttAndreFor((int) $id);
+    }
     revider('bruker_endret', 'member', $id, ['felter' => array_keys($data)]);
     Svar::ok([
         'id'      => $id,

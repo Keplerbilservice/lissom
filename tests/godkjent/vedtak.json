@@ -2139,6 +2139,52 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "codex-c-innlogging-sesjoner-bilder-frys",
+            "dato": "2026-09-30",
+            "hva": "Codex-gjennomgangen, høye funn eieren sa ja til å rette (30.09): Vipps-innlogging bundet til nettleseren som startet den; nytt passord i admin logger ut alle andre innlogginger på kontoen; private bilder mellomlagres bare i egen nettleser; en planlagt frys gjenåpner aldri et oppsagt medlemskap. Eieren 30.09: admin kan ikke godkjenne frys for et oppsagt eller avsluttet medlemskap, og «Avslutt frys» åpner bare et medlemskap som står på pause",
+            "hvor": "Innlogging, Admin › Brukere, Admin › Frys, bilder, frys",
+            "kode": [
+                {
+                    "fil": "api/vipps-callback.php",
+                    "finnes": [
+                        "Vipps::stateTilhorerNettleser($state)"
+                    ]
+                },
+                {
+                    "fil": "api/vipps-login.php",
+                    "finnes": [
+                        "Vipps::bindState($state);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/brukere.php",
+                    "finnes": [
+                        "Sesjon::avsluttAndreFor((int) $id);"
+                    ]
+                },
+                {
+                    "fil": "api/bilde.php",
+                    "finnes": [
+                        "($privat ? 'private' : 'public')",
+                        "lever($sti, $rad !== null && $rad['status'] !== 'publisert');"
+                    ]
+                },
+                {
+                    "fil": "app/lib/frys.php",
+                    "finnes": [
+                        "AND m.status IN ('aktiv', 'prove')"
+                    ]
+                },
+                {
+                    "fil": "api/admin/frys.php",
+                    "finnes": [
+                        "if (!in_array((string) $m['status'], ['aktiv', 'prove', 'pause'], true)) {",
+                        "UPDATE members SET status = :s WHERE id = :i AND status = 'pause'"
+                    ]
+                }
+            ]
         }
     ]
 }

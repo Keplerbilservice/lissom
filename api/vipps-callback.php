@@ -40,6 +40,12 @@ if ($lagret === null) {
     $avbryt('ukjent eller utløpt state');
 }
 
+// Og state maa komme tilbake til nettleseren som startet innloggingen. Se
+// Vipps::bindState().
+if (!Vipps::stateTilhorerNettleser($state)) {
+    $avbryt('state tilhører en annen nettleser');
+}
+
 try {
     $profil = Vipps::hentProfil($kode);
 } catch (Throwable $e) {

@@ -22,7 +22,9 @@ if (!str_starts_with($retur, '/') || str_starts_with($retur, '//')) {
 $state = bin2hex(random_bytes(32));
 
 try {
-    Svar::omdiriger(Vipps::loginUrl($state, $retur));
+    $url = Vipps::loginUrl($state, $retur);
+    Vipps::bindState($state);
+    Svar::omdiriger($url);
 } catch (Throwable $e) {
     logg_feil('Kunne ikke starte Vipps-innlogging', $e);
     Svar::omdiriger(Config::nettsted() . '/?innlogging=feilet');

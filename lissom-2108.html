@@ -6570,6 +6570,11 @@ window.__resources = {
                 <sc-if value="{{ hlGebyrTekst }}" hint-placeholder-val="{{ 'x' }}">
                   <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: 12px 14px; margin-top: var(--space-4); font-size: var(--text-sm); color: var(--text-body); line-height: 1.5;"><strong style="color: var(--text-heading);">Kommer i tillegg:</strong> {{ hlGebyrTekst }}</div>
                 </sc-if>
+                <!-- Frakten min fra Pakke-Express naar bestillingen er priset
+                     (migrasjon 237). Eieren godkjente teksten «Frakt» 30.09. -->
+                <sc-if value="{{ hlFrakt }}" hint-placeholder-val="{{ '' }}">
+                  <div style="display: flex; justify-content: space-between; gap: var(--space-3); background: var(--clay-100); border-radius: var(--radius-md); padding: 12px 14px; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-heading);"><strong>Frakt</strong><span>{{ hlFrakt }}</span></div>
+                </sc-if>
 
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5);">
                   <sc-if value="{{ hlHarLinjer }}" hint-placeholder-val="{{ true }}">
@@ -24223,6 +24228,13 @@ window.__resources = {
                     <div style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700; color: var(--terracotta-600);">{{ v.leverandor }}</div>
                   </div>
                   <div style="flex: none; width: 54px; text-align: right; font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ v.antall }}</div>
+                  <!-- Vekt per stk for frakten (migrasjon 237). -->
+                  <sc-if value="{{ v.vektFelt }}" hint-placeholder-val="{{ false }}">
+                    <input type="text" inputmode="decimal" value="{{ v.vekt }}" onChange="{{ v.vektEndre }}" placeholder="kg" aria-label="Vekt per stk i kilo" style="flex: none; width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 6px 9px; font: var(--type-body-sm); color: var(--text-heading);">
+                  </sc-if>
+                  <sc-if value="{{ v.vektTekst }}" hint-placeholder-val="{{ '' }}">
+                    <div style="{{ v.vektTekstStil }}">{{ v.vektTekst }}</div>
+                  </sc-if>
                   <input type="text" inputmode="decimal" value="{{ v.pris }}" onChange="{{ v.prisEndre }}" placeholder="0,00" style="flex: none; width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 6px 9px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);">
                   <div style="flex: none; width: 96px; text-align: right; font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ v.sum }}</div>
                   <button type="button" onClick="{{ v.vekk }}" title="{{ v.vekkTittel }}" style="flex: none; appearance: none; cursor: pointer; width: 30px; height: 30px; border-radius: var(--radius-pill); border: 2px solid var(--clay-200); background: transparent; color: var(--text-muted); line-height: 1;">{{ v.vekkTegn }}</button>
@@ -24245,6 +24257,30 @@ window.__resources = {
               <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-5); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Frakt for bestillingen</div>
                 <sc-for list="{{ hlaFrakt }}" as="f" hint-placeholder-count="2">
+                  <!-- Pakke-Express (migrasjon 237): sone, totalvekt, pris og
+                       andelene regnes av serveren. -->
+                  <sc-if value="{{ f.auto }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); color: var(--text-heading); border-top: 1px dashed var(--border-subtle); padding-top: var(--space-3);">
+                      <span style="font-weight: 700;">{{ f.navn }} · Pakke-Express</span>
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <sc-for list="{{ f.soner }}" as="s" hint-placeholder-count="3">
+                          <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}</button>
+                        </sc-for>
+                      </div>
+                      <label style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">Totalvekt
+                        <input type="text" inputmode="decimal" value="{{ f.vekt }}" onChange="{{ f.vektEndre }}" placeholder="auto" aria-label="Totalvekt i kilo" style="width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 6px 12px; font: var(--type-body-sm); color: var(--text-heading);"> kg
+                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.vektHjelp }}</span>
+                      </label>
+                      <sc-if value="{{ f.harPris }}" hint-placeholder-val="{{ true }}">
+                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.prisLinje }}</div>
+                        <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.delingLinje }}</div>
+                      </sc-if>
+                      <sc-if value="{{ f.harAdvarsel }}" hint-placeholder-val="{{ false }}">
+                        <div role="alert" style="background: var(--terracotta-100, #f8e2dc); color: var(--terracotta-600); border-radius: 9px; padding: 8px 12px; font-size: var(--text-xs); font-weight: 700;">{{ f.advarsel }}</div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ f.manuell }}" hint-placeholder-val="{{ true }}">
                   <label style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; font-size: var(--text-sm); color: var(--text-heading);">
                     <span style="min-width: 150px; font-weight: 700;">{{ f.navn }}</span>
                     <span style="display: inline-flex; align-items: center; gap: 6px;">kr <input type="text" inputmode="decimal" value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="0,00" aria-label="Frakt i kroner" style="width: 92px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: var(--radius-pill); padding: 6px 12px; font: var(--type-body-sm); color: var(--text-heading);"></span>
@@ -24256,6 +24292,7 @@ window.__resources = {
                         <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}</button>
                       </sc-for>
                     </div>
+                  </sc-if>
                   </sc-if>
                 </sc-for>
               </div>
@@ -24294,6 +24331,38 @@ window.__resources = {
           </div>
         </div>
 
+        <!-- Frakt (Pakke-Express), migrasjon 237. Eieren, 30. september 2026:
+             prisene fra tilbudet 24.09.2026, delt etter vekt. Ingen pris i
+             koden — alt her. Lagres med «Lagre» nederst i kortet. -->
+        <sc-if value="{{ hlaHarFo }}" hint-placeholder-val="{{ false }}">
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
+          <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Frakt (Pakke-Express)</div>
+          <div style="padding: var(--space-4) var(--space-6); overflow-x: auto;">
+            <div style="display: flex; gap: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); min-width: 460px; padding-bottom: 6px;">
+              <span style="width: 150px;">Vekt</span>
+              <sc-for list="{{ hlaFoSoner }}" as="s" hint-placeholder-count="2"><span style="width: 120px; text-align: right;">{{ s.navn }}</span></sc-for>
+            </div>
+            <sc-for list="{{ hlaFoKlasser }}" as="k" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: 6px 0; min-width: 460px; font-size: var(--text-sm); color: var(--text-heading);">
+                <span style="width: 150px; display: inline-flex; align-items: center; gap: 6px;">{{ k.fra }} –
+                  <input type="text" inputmode="numeric" value="{{ k.tilKg }}" onChange="{{ k.tilEndre }}" aria-label="Øvre grense i kilo" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); color: var(--text-heading);"> kg</span>
+                <sc-for list="{{ k.priser }}" as="p" hint-placeholder-count="2">
+                  <span style="width: 120px; display: inline-flex; justify-content: flex-end; align-items: center; gap: 6px;">kr
+                    <input type="text" inputmode="decimal" value="{{ p.kr }}" onChange="{{ p.endre }}" aria-label="{{ p.navn }}" style="width: 84px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); color: var(--text-heading);"></span>
+                </sc-for>
+              </div>
+            </sc-for>
+            <label style="display: flex; align-items: center; gap: 8px; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-heading);">Energitillegg
+              <input type="text" inputmode="decimal" value="{{ hlaFoEnergi }}" onChange="{{ hlaFoEnergiEndre }}" aria-label="Energitillegg i prosent" style="width: 64px; box-sizing: border-box; text-align: right; appearance: none; border: 2px solid var(--clay-200); background: var(--clay-50); border-radius: 9px; padding: 5px 8px; font: var(--type-body-sm); font-weight: 700; color: var(--text-heading);"> %
+            </label>
+            <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ hlaFoBud }}</p>
+            <div style="display: flex; justify-content: flex-end; padding-top: var(--space-2);">
+              <button type="button" onClick="{{ hlaLagreOppsett }}" style="{{ hlaLagreStil }}">Lagre</button>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
         <!-- Leverandorene. Adressen legger verkstedet inn selv; API-valget
              staar der for den dagen en av dem faar et. -->
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
@@ -24308,6 +24377,15 @@ window.__resources = {
                 </sc-for>
                 <sc-if value="{{ l.harVis }}" hint-placeholder-val="{{ true }}">
                   <button type="button" onClick="{{ l.visVeksle }}" style="{{ l.visStil }}">{{ l.visTekst }}</button>
+                </sc-if>
+                <!-- Standard sone hos Pakke-Express (migrasjon 237). -->
+                <sc-if value="{{ l.harSone }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex-basis: 100%; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Frakt</span>
+                    <sc-for list="{{ l.sonePiller }}" as="s" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">{{ s.navn }}</button>
+                    </sc-for>
+                  </div>
                 </sc-if>
                 <!-- Fraktsatsene og bestillingsrutinen (migrasjon 210). Eieren,
                      24. september 2026: «fraktpriser og bestillingsrutiner som
@@ -29991,6 +30069,9 @@ window.__resources = {
           <input value="{{ npMin }}" onChange="{{ settNpMin }}" inputmode="numeric" placeholder="Minimum på lager" style="{{ skFeltStil }}">
           <input value="{{ npMaks }}" onChange="{{ settNpMaks }}" inputmode="numeric" placeholder="Maksimum på lager" style="{{ skFeltStil }}">
         </div>
+        <!-- Vekt per stk, for frakten paa samlebestillingen (migrasjon 237).
+             Vises bare i admin. -->
+        <input value="{{ npVekt }}" onChange="{{ settNpVekt }}" inputmode="decimal" placeholder="Vekt per stk i kg (for frakt)" style="{{ skFeltStil }}">
         <textarea value="{{ npBeskrivelse }}" onChange="{{ settNpBeskrivelse }}" placeholder="Kort beskrivelse, f.eks. «Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.»" rows="{{ 3 }}" style="{{ npTekstStil }}"></textarea>
                   <div style="display: flex; justify-content: flex-start; margin-top: 4px;">
                     <button type="button" onClick="{{ fhNpBeskrivelseSkriv }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 2px 0; font: var(--type-label); font-size: var(--text-xs); color: var(--terracotta-600);">✦ {{ fhNpBeskrivelseMerke }}</button>
@@ -37763,7 +37844,7 @@ class Component extends DCLogic {
         this._hlHentes = false;
         this._hlHentet = true;
         if (d) this.setState({ hlPaa: !!d.paa, hlVarer: d.varer || [], hlMine: d.mine || [],
-          hlLevListe: d.leverandorer || [], hlGebyr: typeof d.gebyr === 'number' ? d.gebyr : null });
+          hlLevListe: d.leverandorer || [], hlGebyr: typeof d.gebyr === 'number' ? d.gebyr : null, hlFraktAndel: d.frakt || '' });
       })
       .catch(() => { this._hlHentes = false; });
   }
@@ -37892,6 +37973,7 @@ class Component extends DCLogic {
       },
       // Gebyret staar i admin (Nettbutikk → Handlelister), frakten deles
       // paa dem som er med. Eieren, 24. september 2026: «det må komme frem».
+      hlFrakt: this.state.hlFraktAndel || '',
       hlGebyrTekst: (gebyrTekst ? 'administrasjonsgebyr på ' + gebyrTekst + ' % og en andel av frakten.' : 'en andel av frakten.')
         + ' Frakten deles likt mellom alle som er med på bestillingen.',
     };
@@ -38841,7 +38923,7 @@ class Component extends DCLogic {
    * — som resten av admin.
    */
   hlaUtkast() {
-    return this.state.hlaUtkast || { pris: {}, epost: {}, frakt: {}, satser: {}, rutine: {}, gebyr: null, nyNavn: '', nyEpost: '' };
+    return this.state.hlaUtkast || { pris: {}, epost: {}, frakt: {}, satser: {}, rutine: {}, gebyr: null, nyNavn: '', nyEpost: '', fraktVekt: {}, linjeVekt: {}, fo: null };
   }
 
   /** Kroner for fraktsatsene: «850» eller «850,50», med mellomrom i tusen. */
@@ -38932,7 +39014,27 @@ class Component extends DCLogic {
             .map(x => ({ kg: String(x.kg).trim(), kroner: String(x.kr).trim() })),
           rutine: (u.rutine || {})[l.id] !== undefined ? u.rutine[l.id] : (l.rutine || ''),
         })));
-    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, frakt: {}, satser: {}, rutine: {}, gebyr: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
+    // Frakt fra Pakke-Express (migrasjon 237): rettet totalvekt per
+    // leverandoer, vekt paa oensker uten vare, og prisene i oppsettet.
+    const fo = d.fraktOppsett || null;
+    const foUtkast = u.fo || (fo ? {
+      energi: String(fo.energiProsent).replace('.', ','),
+      klasser: fo.klasser.map(k => ({ tilKg: String(k.tilKg), kr: Object.fromEntries(fo.soner.map(s => [s.kode, this.hlKr(k.ore[s.kode] || 0).replace(/\s/g, '')])) })),
+    } : null);
+    const foEndret = !!u.fo;
+    prisKall.push(...lev
+      .filter(l => l.fraktAuto && (u.fraktVekt || {})[l.id] !== undefined && u.fraktVekt[l.id] !== (l.fraktAuto.overstyrtKg || ''))
+      .map(l => ({ handling: 'fraktvekt', leverandorId: l.id, kg: u.fraktVekt[l.id] })));
+    prisKall.push(...varer
+      .filter(v => v.vektPaaLinja && (u.linjeVekt || {})[v.produktId] !== undefined && u.linjeVekt[v.produktId] !== (v.vektKg || ''))
+      .map(v => ({ handling: 'linjevekt', produktId: v.produktId, kg: u.linjeVekt[v.produktId] })));
+    if (foEndret && foUtkast) {
+      oppsettKall.push({ handling: 'fraktoppsett', oppsett: {
+        energiProsent: foUtkast.energi,
+        klasser: foUtkast.klasser.filter(k => String(k.tilKg).trim() !== '').map(k => ({ tilKg: String(k.tilKg).trim(), kroner: k.kr })),
+      } });
+    }
+    const lagret = () => ({ hlaUtkast: { ...this.hlaUtkast(), pris: {}, epost: {}, frakt: {}, satser: {}, rutine: {}, gebyr: null, fraktVekt: {}, linjeVekt: {}, fo: null }, kvitteringTone: 'success', kvitteringDetalj: 'Handlelista er oppdatert.', kvittering: 'Lagret' });
 
     const pille = (aktiv) => ({
       appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -38977,6 +39079,14 @@ class Component extends DCLogic {
         },
         pris: u.pris[v.produktId] !== undefined ? u.pris[v.produktId] : (v.pris || ''),
         prisEndre: (e) => this.hlaSkriv('pris', v.produktId, e.target.value),
+        // Vekt per stk for frakten. En vare har vekten paa varen (Nettbutikk);
+        // et oenske uten vare faar den her.
+        harVekt: !!d.fraktKlar,
+        vektFelt: !!d.fraktKlar && !!v.vektPaaLinja,
+        vektTekst: !!d.fraktKlar && !v.vektPaaLinja ? (v.vektKg ? v.vektKg + ' kg' : 'Mangler vekt') : '',
+        vektTekstStil: { flex: 'none', width: '92px', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 700, color: v.vektKg ? 'var(--text-muted)' : 'var(--terracotta-600)', whiteSpace: 'nowrap' },
+        vekt: (u.linjeVekt || {})[v.produktId] !== undefined ? u.linjeVekt[v.produktId] : (v.vektKg || ''),
+        vektEndre: (e) => this.hlaSkriv('linjeVekt', v.produktId, e.target.value),
         vekk: () => this.hlaKall({ handling: v.fjernet ? 'angre' : 'fjern', produktId: v.produktId }),
         vekkTegn: v.fjernet ? '↺' : '✕',
         vekkTittel: v.fjernet ? 'Legg tilbake' : 'Ikke på lager',
@@ -38995,13 +39105,31 @@ class Component extends DCLogic {
       // Frakten for bestillingen hos hver leverandoer, delt likt paa dem som
       // har varer der. Eieren, 24. september 2026: «fraktregning delt».
       hlaHarFrakt: !!d.har208 && lev.length > 0,
-      hlaFrakt: lev.map(l => {
+      // En Pakke-Express-leverandoer uten varer i lista har ingen frakt aa
+      // vise, og staar ikke her.
+      hlaFrakt: lev.filter(l => !l.fraktAuto || l.fraktAuto.linjer > 0).map(l => {
         const verdi = (u.frakt || {})[l.id] !== undefined ? u.frakt[l.id] : (l.frakt || '');
         const kr = parseFloat(String(verdi).replace(/\s/g, '').replace(',', '.')) || 0;
         const n = l.antallMedlemmer || 0;
         const hver = n > 0 && kr > 0 ? Math.ceil(kr * 100 / n) / 100 : 0;
+        const a = l.fraktAuto;
         return {
           navn: l.navn,
+          // Pakke-Express: regnes av vekten og deles etter vekt. Da skrives
+          // ikke beloepet for haand.
+          auto: !!a,
+          manuell: !a,
+          soner: a && fo ? [{ navn: 'Standard (' + (fo.soner.find(s => s.kode === l.soneStandard) || { navn: '—' }).navn + ')', verdi: '' }]
+            .concat(fo.soner.map(s => ({ navn: s.navn, verdi: s.kode })))
+            .map(s => ({ navn: s.navn, stil: pille(a.soneValgt === s.verdi), velg: () => this.hlaKall({ handling: 'fraktsone', leverandorId: l.id, sone: s.verdi }) })) : [],
+          vekt: a ? ((u.fraktVekt || {})[l.id] !== undefined ? u.fraktVekt[l.id] : (a.overstyrtKg || '')) : '',
+          vektEndre: (e) => this.hlaSkriv('fraktVekt', l.id, e.target.value),
+          vektHjelp: a ? 'Summen av linjene: ' + (a.vektKg || '0') + ' kg' + (a.mangler ? ' · ' + a.mangler + (a.mangler === 1 ? ' linje' : ' linjer') + ' uten vekt' : '') : '',
+          harPris: !!(a && a.ok),
+          prisLinje: a && a.ok ? a.brukKg + ' kg · ' + a.klasse + ' · ' + a.soneNavn + ' · ' + a.grunn + ' + energitillegg ' + a.energiProsent + ' % ' + a.energi + ' = ' + a.sum : '',
+          delingLinje: a && a.ok ? (a.deling === 'vekt' ? 'Delt etter vekt' : a.deling === 'belop' ? 'Delt etter beløp (noen linjer mangler vekt)' : 'Delt likt') : '',
+          harAdvarsel: !!(a && a.advarsel),
+          advarsel: a ? a.advarsel : '',
           verdi,
           endre: (e) => this.hlaSkriv('frakt', l.id, e.target.value),
           // Trykk paa en sats, saa staar beloepet i feltet — lagres med «Lagre».
@@ -39015,6 +39143,23 @@ class Component extends DCLogic {
             : n + (n === 1 ? ' medlem' : ' medlemmer') + (hver > 0 ? ' · kr ' + hver.toFixed(2).replace('.', ',') + ' hver' : ''),
         };
       }),
+      // Prisene fra Pakke-Express (migrasjon 237), redigeres her og lagres
+      // med «Lagre». Sonene staar fast; klassene og tillegget kan endres.
+      hlaHarFo: !!foUtkast,
+      hlaFoSoner: fo ? fo.soner.map(s => ({ navn: s.navn })) : [],
+      hlaFoKlasser: foUtkast ? foUtkast.klasser.map((k, i, alle) => {
+        const bytt = (ny) => this.hlaSkriv('fo', null, { ...foUtkast, klasser: alle.map((y, j) => (j === i ? ny : y)) });
+        const forrige = i === 0 ? 0 : (parseInt(alle[i - 1].tilKg, 10) || 0) + 1;
+        return {
+          fra: String(forrige),
+          tilKg: k.tilKg,
+          tilEndre: (e) => bytt({ ...k, tilKg: e.target.value }),
+          priser: fo.soner.map(s => ({ navn: s.navn, kr: k.kr[s.kode] || '', endre: (e) => bytt({ ...k, kr: { ...k.kr, [s.kode]: e.target.value } }) })),
+        };
+      }) : [],
+      hlaFoEnergi: foUtkast ? foUtkast.energi : '',
+      hlaFoEnergiEndre: (e) => this.hlaSkriv('fo', null, { ...foUtkast, energi: e.target.value }),
+      hlaFoBud: fo && fo.budKrPerKm ? 'Bud og ekspress: ' + fo.budKrPerKm + ' kr per km (én vei). Brukes ikke automatisk.' : '',
       hlaBestill: lev.map(l => ({
         navn: 'Bestill hos ' + l.navn,
         send: () => this.hlaKall({ handling: 'bestill', leverandorId: l.id }),
@@ -39051,6 +39196,11 @@ class Component extends DCLogic {
         visVeksle: () => this.hlaKall({ handling: 'vis', id: l.id, paa: l.vis ? 0 : 1 }),
         epost: u.epost[l.id] !== undefined ? u.epost[l.id] : (l.epost || ''),
         epostEndre: (e) => this.hlaSkriv('epost', l.id, e.target.value),
+        // Standard sone hos Pakke-Express. «Ikke Pakke-Express» = frakten
+        // skrives inn for haand, som foer.
+        harSone: !!fo,
+        sonePiller: fo ? [{ navn: 'Ikke Pakke-Express', verdi: '' }].concat(fo.soner.map(s => ({ navn: s.navn, verdi: s.kode })))
+          .map(s => ({ navn: s.navn, stil: pille((l.soneStandard || '') === s.verdi), velg: () => this.hlaKall({ handling: 'sonestandard', id: l.id, sone: s.verdi }) })) : [],
         harSatser: !!d.har210,
         satser: this.hlaSatser(l).map((x, i, alle) => {
           const bytt = (felt, verdi) => this.hlaSkriv('satser', l.id, alle.map((y, j) => (j === i ? { ...y, [felt]: verdi } : y)));
@@ -43863,6 +44013,7 @@ class Component extends DCLogic {
         lager: (s.npAntall || '').trim(),
         lagerMin: String(s.npMin || '').trim(),
         lagerMaks: String(s.npMaks || '').trim(),
+        vektKg: String(s.npVekt || '').trim(),
         // Sto to ganger i det samme objektet, og den nederste vant:
         // «fra && fra.kunMedlemmer». En NY vare har ingen «fra», saa avkryssinga
         // «Kun for medlemmer (internbutikken)» ble alltid til «nei» — varen havnet
@@ -57210,7 +57361,7 @@ class Component extends DCLogic {
             raa ? {
               npApen: true, npRediger: true, npId: raa.id, npNavn: raa.tittel,
               npPris: String(raa.pris ?? ''), npAntall: raa.lager === null ? '' : String(raa.lager),
-              npMin: raa.lagerMin == null ? '' : String(raa.lagerMin), npMaks: raa.lagerMaks == null ? '' : String(raa.lagerMaks),
+              npMin: raa.lagerMin == null ? '' : String(raa.lagerMin), npMaks: raa.lagerMaks == null ? '' : String(raa.lagerMaks), npVekt: raa.vektKg || '',
               npBeskrivelse: raa.beskrivelse || '', npKategori: raa.kategori || '',
               npArtikkelnr: raa.artikkelnr || '', npLeverandor: raa.leverandorId || 0,
               npKanBestilles: !!raa.kanBestilles, npLeire: !!raa.leire,
@@ -64507,11 +64658,11 @@ class Component extends DCLogic {
       // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
       // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
       // peker knappene dit.
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npLeire: false, npBilde: '' }),
-      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npLeire: false, npBilde: '' }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npVekt: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npLeire: false, npBilde: '' }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npVekt: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npArtikkelnr: '', npLeverandor: 0, npKanBestilles: false, npLeire: false, npBilde: '' }),
       butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
-        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npLeire: false, npBilde: '' })
-        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npLeire: false, npBilde: '' })),
+        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npVekt: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true, npLeire: false, npBilde: '' })
+        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npMin: '', npMaks: '', npVekt: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false, npLeire: false, npBilde: '' })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
       // Handlelista, migrasjon 184. Leverandorene kommer fra basen —
@@ -64602,6 +64753,8 @@ class Component extends DCLogic {
       settNpAntall: e => this.setState({ npAntall: e.target.value }),
       npMin: this.state.npMin || '',
       settNpMin: e => this.setState({ npMin: e.target.value.replace(/[^\d]/g, '') }),
+      npVekt: this.state.npVekt || '',
+      settNpVekt: e => this.setState({ npVekt: e.target.value.replace(/[^\d,.]/g, '') }),
       npMaks: this.state.npMaks || '',
       settNpMaks: e => this.setState({ npMaks: e.target.value.replace(/[^\d]/g, '') }),
       npBeskrivelse: this.state.npBeskrivelse || '',
@@ -71334,6 +71487,7 @@ class Component extends DCLogic {
           npAntall: v.antall === null ? '' : String(v.antall),
           npMin: v.raa && v.raa.lagerMin != null ? String(v.raa.lagerMin) : '',
           npMaks: v.raa && v.raa.lagerMaks != null ? String(v.raa.lagerMaks) : '',
+          npVekt: v.raa ? (v.raa.vektKg || '') : '',
           npLeire: !!(v.raa && v.raa.leire),
           npBeskrivelse: v.raa ? (v.raa.beskrivelse || '') : '',
           npKategori: v.raa ? (v.raa.kategori || '') : '',

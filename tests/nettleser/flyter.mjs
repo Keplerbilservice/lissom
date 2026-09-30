@@ -1682,6 +1682,80 @@ await flyt('Skisser: tegne, bilde, notat, lagre og dele', async () => {
   php(`foreach (DB::alle("SELECT s.id FROM skisser s JOIN members m ON m.id = s.eier_id WHERE m.navn = 'Skisse Annen'") as $r) { DB::kjor('DELETE FROM skisse_sider WHERE skisse_id = :i', ['i' => $r['id']]); DB::kjor('DELETE FROM skisser WHERE id = :i', ['i' => $r['id']]); } DB::kjor("DELETE FROM members WHERE navn = 'Skisse Annen'"); return true;`);
 });
 
+// ── Frakt fra Pakke-Express paa samlebestillingen ─────────────────────
+// Eieren, 30. september 2026: prisene fra Pakke-Express paa handlelista,
+// delt etter vekt per vare. Admin priser, medlemmet ser «Frakt».
+await flyt('Frakt (Pakke-Express) paa samlebestillingen', async () => {
+  const tag = 'pe' + Date.now().toString(36);
+  const lev = php(`return DB::settInn('leverandorer', ['navn' => '${tag} Lev', 'epost' => 'lev@lissom.test', 'bestillingsmaate' => 'epost', 'aktiv' => 1, 'vis_medlemmer' => 1, 'frakt_sone_standard' => 'tonsberg']);`);
+  const vare = php(`return DB::settInn('products', ['tittel' => '${tag} Leire', 'pris_ore' => 25000, 'mva_prosent' => 25, 'kun_medlemmer' => 1, 'status' => 'publisert', 'leverandor_id' => ${lev}, 'kan_bestilles' => 1, 'vekt_g' => 2000]);`);
+  php(`DB::settInn('handleliste_linjer', ['member_id' => ${S.medlem.id}, 'product_id' => ${vare}, 'antall' => 2, 'status' => 'sendt', 'pris_ore' => 25000, 'opprettet' => date('Y-m-d H:i:s')]); return true;`);
+  bryter('Vis/handleliste', true);
+
+  const p = await side('admin');
+  await gaa(p, '/admin/butikk', 2500);
+  await p.getByRole('button', { name: 'Handlelister', exact: true }).first().click();
+  await p.waitForTimeout(2500);
+  sjekk('Handlelister: kortet «Frakt (Pakke-Express)» med prisene', await p.getByText('Frakt (Pakke-Express)', { exact: true }).isVisible().catch(() => false));
+  sjekk('… energitillegget står på 9,5 %', (await p.getByLabel('Energitillegg i prosent').inputValue().catch(() => '')) === '9,5');
+  const kort = p.locator('div', { hasText: tag + ' Lev · Pakke-Express' }).last();
+  sjekk('Frakt for bestillingen: 4 kg · 4–10 kg · kr 160 + 9,5 % = kr 175,20',
+    await p.getByText(/4 kg · 4–10 kg · Tønsberg og omegn · kr\.\s160,- \+ energitillegg 9,5 % kr\.\s15,20 = kr\.\s175,20/).first().isVisible().catch(() => false),
+    await kort.innerText().catch(() => ''));
+  sjekk('… delt etter vekt', await p.getByText('Delt etter vekt').first().isVisible().catch(() => false));
+  sjekk('oppgjøret: medlemmet har «Andel av frakt» kr 175,20',
+    await p.locator('div', { hasText: /Andel av frakt\s*kr\.\s175,20/ }).first().isVisible().catch(() => false));
+
+  // Admin retter totalvekten til 12 kg: klassen 11–30 kg
+  await p.locator('div', { hasText: tag + ' Lev · Pakke-Express' }).last().getByLabel('Totalvekt i kilo').fill('12');
+  await p.locator("xpath=//button[normalize-space()='Send krav']/following-sibling::button[normalize-space()='Lagre']").first().click();
+  await p.waitForTimeout(2500);
+  sjekk('rettet totalvekt (12 kg) gir 11–30 kg og kr 246,38',
+    await p.getByText(/12 kg · 11–30 kg · Tønsberg og omegn · kr\.\s225,- \+ energitillegg 9,5 % kr\.\s21,38 = kr\.\s246,38/).first().isVisible().catch(() => false));
+  sjekk('… og lagres', Number(verdi('SELECT frakt_vekt_g FROM leverandorer WHERE id = :i', { i: lev })) === 12000);
+  sjekk('Pakke-Express-leverandører uten varer i lista står ikke under frakten',
+    !(await p.getByText('Waldemar Ellefsen · Pakke-Express').isVisible().catch(() => false)));
+
+  // Oslo/Bærum for denne bestillingen
+  await p.locator('div', { hasText: tag + ' Lev · Pakke-Express' }).last().getByRole('button', { name: 'Oslo/Bærum', exact: true }).click();
+  await p.waitForTimeout(2500);
+  sjekk('sonen Oslo/Bærum for bestillingen: kr 425 + 9,5 %',
+    await p.getByText(/12 kg · 11–30 kg · Oslo\/Bærum · kr\.\s425,-/).first().isVisible().catch(() => false));
+  // Prisene og tillegget endres i kortet «Frakt (Pakke-Express)»
+  await p.getByLabel('Energitillegg i prosent').fill('10');
+  await p.locator("xpath=//label[contains(normalize-space(.),'Energitillegg')]/following::button[normalize-space()='Lagre'][1]").click();
+  await p.waitForTimeout(2500);
+  const lagretFo = JSON.parse(verdi("SELECT verdi FROM innstillinger WHERE nokkel = 'frakt_pakke_express'") || '{}');
+  sjekk('energitillegget endres i admin og lagres', lagretFo.energiProsent === 10, JSON.stringify(lagretFo).slice(0, 120));
+  sjekk('… og prisene står som før', (lagretFo.klasser || [])[0]?.ore?.tonsberg === 13000 && (lagretFo.klasser || [])[5]?.ore?.oslo === 115000);
+  await api(p, '/api/admin/handlelister.php', { handling: 'fraktoppsett', oppsett: { energiProsent: '9,5', klasser: (lagretFo.klasser || []).map(k => ({ tilKg: String(k.tilKg), kroner: { tonsberg: String(k.ore.tonsberg / 100), oslo: String(k.ore.oslo / 100) } })) } });
+  await api(p, '/api/admin/handlelister.php', { handling: 'fraktsone', leverandorId: lev, sone: '' });
+  await api(p, '/api/admin/handlelister.php', { handling: 'fraktvekt', leverandorId: lev, kg: '' });
+  await p.context().close();
+
+  // Medlemmet ser frakten sin paa Min side
+  for (const [b, h] of [[1358, 900], [390, 844]]) {
+    const m = await side('medlem', b, h);
+    await gaa(m, '/min-side', 3000);
+    const legg = m.getByRole('button', { name: '+ Legg til', exact: true }).first();
+    if (await legg.count()) { await legg.click(); await m.waitForTimeout(1500); }
+    const rad = m.locator('#minside-handleliste div', { hasText: /^Frakt\s*kr\.\s175,20$/ }).first();
+    sjekk(`Min side (${b} px): «Frakt» med kr 175,20`, await rad.isVisible().catch(() => false),
+      await m.locator('#minside-handleliste').innerText().catch(() => 'fant ikke kortet'));
+    await m.context().close();
+  }
+
+  // En linje uten vekt stopper kravet
+  php(`DB::settInn('handleliste_linjer', ['member_id' => ${S.medlem.id}, 'product_id' => null, 'tekst' => '${tag} uten vekt', 'leverandor_id' => ${lev}, 'antall' => 1, 'status' => 'sendt', 'pris_ore' => 1000, 'opprettet' => date('Y-m-d H:i:s')]); return true;`);
+  const a2 = await side('admin');
+  await gaa(a2, '/admin/butikk', 1500);
+  const krav = await api(a2, '/api/admin/handlelister.php', { handling: 'krav' });
+  sjekk('krav stoppes når en linje mangler vekt', krav && krav.ok === false && /mangler vekt/.test(krav.feil || ''), JSON.stringify(krav).slice(0, 200));
+  await a2.context().close();
+
+  php(`DB::kjor("DELETE FROM handleliste_linjer WHERE member_id = ${S.medlem.id} AND (product_id = ${vare} OR tekst LIKE '${tag}%')"); DB::kjor('DELETE FROM products WHERE id = ${vare}'); DB::kjor('DELETE FROM leverandorer WHERE id = ${lev}'); return true;`);
+});
+
 await nettleser.close();
 console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjente feil.`);
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }

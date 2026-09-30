@@ -54,6 +54,7 @@ kjor "anmeldelser"   php tests/anmeldelser.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php
 kjor "skisser"       php tests/skisser.php
+kjor "frakt"         php tests/frakt.php
 kjor "bestill mer, lav aktivitet" php tests/daglig.php
 kjor "eposter"       php tests/eposter.php
 

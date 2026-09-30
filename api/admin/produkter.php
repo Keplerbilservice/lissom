@@ -70,6 +70,8 @@ if (Foresporsel::metode() === 'GET') {
         'lagerMin'  => isset($v['lager_min']) && $v['lager_min'] !== null ? (int) $v['lager_min'] : null,
         'lagerMaks' => isset($v['lager_maks']) && $v['lager_maks'] !== null ? (int) $v['lager_maks'] : null,
         'leire'     => (bool) ($v['leire'] ?? 0),
+        // Vekt per stk for frakten paa samlebestillingen (migrasjon 237).
+        'vektKg'    => isset($v['vekt_g']) && $v['vekt_g'] !== null ? Frakt::kg((int) $v['vekt_g']) : '',
     ], $varer),
     'leverandorer' => DB::harTabell('leverandorer')
         ? array_map(static fn($l) => ['id' => (int) $l['id'], 'navn' => (string) $l['navn']],
@@ -194,6 +196,15 @@ if (Lager::harGrense()) {
     $data['lager_min'] = $minRaa === '' ? null : max(0, Foresporsel::heltall('lagerMin'));
     $maksRaa = Foresporsel::tekst('lagerMaks');
     $data['lager_maks'] = $maksRaa === '' ? null : max(0, Foresporsel::heltall('lagerMaks'));
+}
+// Vekt per stk i kilo, for frakten fra Pakke-Express (migrasjon 237).
+// Tomt felt = ukjent. Sendes feltet ikke med, roeres vekten ikke.
+if (Frakt::klar() && array_key_exists('vektKg', Foresporsel::kropp())) {
+    try {
+        $data['vekt_g'] = Frakt::gramFraKg(Foresporsel::tekst('vektKg'));
+    } catch (InvalidArgumentException $e) {
+        Svar::feil($e->getMessage());
+    }
 }
 // Leire, inkludert i Prøv Lissom (eieren, 29. september 2026).
 if (DB::harKolonne('products', 'leire')) {

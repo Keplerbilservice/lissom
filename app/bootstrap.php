@@ -80,6 +80,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Ferie' => 'ferie.php',
         'Foresporsel' => 'http.php',
         'Frys' => 'frys.php',
+        'Frakt' => 'frakt.php',
         'Katalog' => 'katalog.php',
         'Kursboost' => 'kursboost.php',
         'Kursholder' => 'kursholder.php',

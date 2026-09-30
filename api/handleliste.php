@@ -93,6 +93,19 @@ if (Foresporsel::metode() === 'GET') {
             'nummer' => (string) $v['artikkelnr'],
         ], $varer),
         'mine'  => $mine(),
+        // Andelen min av frakten fra Pakke-Express (migrasjon 237), naar
+        // bestillingen er priset. Null naar det ikke er noe aa vise.
+        'frakt' => (static function () use ($klar, $paa, $medlemId): ?string {
+            if (!$klar || !$paa || !Frakt::klar()) {
+                return null;
+            }
+            $ore = Frakt::andelFor($medlemId);
+            if ($ore <= 0) {
+                return null;
+            }
+            // Med oere naar det har oere, som i oppgjoret i admin.
+            return $ore % 100 === 0 ? Booking::kroner($ore) : "kr.\u{a0}" . number_format($ore / 100, 2, ',', "\u{a0}");
+        })(),
         // Leverandoerene admin har slaatt paa, med soeket i nettbutikken,
         // fraktsatsene og bestillingsrutinen (migrasjon 210).
         'leverandorer' => $harLev && $paa ? array_map(static function ($l) {

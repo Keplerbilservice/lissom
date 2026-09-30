@@ -1674,6 +1674,52 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "frakt-pakke-express-innkjop",
+            "dato": "2026-09-30",
+            "hva": "Fraktprisene fra Pakke-Express (tilbud 24.09.2026) brukes på handlelista og samlebestillingen: pris per sending etter vektklasse (0–3, 4–10, 11–30, 31–100, 101–200, 201–400 kg) og sone (Tønsberg og omegn / Oslo/Bærum), pluss energitillegg (9,5 %). Vekt per vare; admin kan rette totalvekten. Frakten deles på medlemmene etter vekt, går alltid opp i øret, og krav/bestilling stoppes når en linje mangler vekt. Frakten får ikke gebyr. Prisene står i innstillinger, ikke i koden. Medlemmet ser «Frakt» på Min side.",
+            "hvor": "Admin › Nettbutikk › Handlelister (Frakt for bestillingen, kortet «Frakt (Pakke-Express)», Leverandører), vareskjemaet, Min side › Handleliste",
+            "kode": [
+                {
+                    "fil": "app/lib/frakt.php",
+                    "finnes": [
+                        "public const NOKKEL = 'frakt_pakke_express';",
+                        "$energi = (int) round($grunn * $oppsett['energiProsent'] / 100);",
+                        "$gram <= $k['tilKg'] * 1000",
+                        " varelinjer mangler'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/handlelister.php",
+                    "finnes": [
+                        "$sperre = handleliste_fraktsperre();",
+                        "$sperre = handleliste_fraktsperre($leverandorId);",
+                        "$m['gebyrOre'] = (int) round($m['varerOre'] * $gebyr / 100);"
+                    ]
+                },
+                {
+                    "fil": "api/handleliste.php",
+                    "finnes": [
+                        "$ore = Frakt::andelFor($medlemId);"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/237_frakt_pakke_express.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-09-30",
+                        "\"energiProsent\":9.5"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Frakt (Pakke-Express)</div>",
+                        "<strong>Frakt</strong><span>{{ hlFrakt }}</span>",
+                        "placeholder=\"Vekt per stk i kg (for frakt)\""
+                    ]
+                }
+            ]
         }
     ]
 }

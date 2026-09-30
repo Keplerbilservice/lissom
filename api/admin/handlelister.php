@@ -14,6 +14,11 @@
  *   POST handling=frakt          { leverandorId, kroner }  frakten for bestillingen
  *   POST handling=vis            { id, paa }               vises paa Min side
  *   POST handling=satser         { id, satser: [{kg, kroner}], rutine }
+ *   POST handling=fraktoppsett   { oppsett: {klasser:[{tilKg, kroner:{sone}}], energiProsent} }
+ *   POST handling=fraktsone      { leverandorId, sone }    sonen for bestillingen
+ *   POST handling=sonestandard   { id, sone }              standard sone
+ *   POST handling=fraktvekt      { leverandorId, kg }      rettet totalvekt
+ *   POST handling=linjevekt      { produktId (<0), kg }    vekt paa et oenske
  *
  * Fraktsatsene og bestillingsrutinen (migrasjon 210): eieren, 24. september
  * 2026, «fraktpriser og bestillingsrutiner som styres fra admin». Satsene er
@@ -115,12 +120,56 @@ function handleliste_kroner(int $ore): string
     return "kr.\u{a0}" . number_format($ore / 100, 2, ',', "\u{a0}");
 }
 
+/** Pakke-Express-bildet til én leverandoer slik skjermen viser det. */
+function handleliste_autobilde(array $b): array
+{
+    return [
+        'sone'       => (string) $b['sone'],
+        'soneNavn'   => (string) $b['soneNavn'],
+        'soneValgt'  => (string) $b['soneValgt'],
+        'linjer'     => (int) $b['linjer'],
+        'mangler'    => (int) $b['mangler'],
+        'vektKg'     => Frakt::kg((int) $b['vektG']),
+        'overstyrtKg'=> Frakt::kg($b['overstyrtG']),
+        'brukKg'     => Frakt::kg((int) $b['brukG']),
+        'ok'         => (bool) $b['ok'],
+        'advarsel'   => (string) $b['advarsel'],
+        'klasse'     => (string) ($b['klasse'] ?? ''),
+        'grunn'      => isset($b['grunnOre']) ? handleliste_kroner((int) $b['grunnOre']) : '',
+        'energi'     => isset($b['energiOre']) ? handleliste_kroner((int) $b['energiOre']) : '',
+        'energiProsent' => rtrim(rtrim(number_format((float) $b['energiProsent'], 2, ',', ''), '0'), ','),
+        'sum'        => isset($b['sumOre']) ? handleliste_kroner((int) $b['sumOre']) : '',
+        'sumOre'     => (int) ($b['sumOre'] ?? 0),
+        'deling'     => (string) $b['deling'],
+    ];
+}
+
+/**
+ * Stopper krav og bestilling naar frakten hos en leverandoer ikke kan regnes:
+ * en linje mangler vekt og totalen er ikke rettet, eller vekten er over det
+ * Pakke-Express har pris for. Null = alt i orden.
+ */
+function handleliste_fraktsperre(?int $bareLev = null): ?string
+{
+    foreach (Frakt::perLeverandor() as $levId => $b) {
+        if ($bareLev !== null && $levId !== $bareLev) {
+            continue;
+        }
+        if ($b['linjer'] > 0 && !$b['ok']) {
+            $navn = (string) DB::verdi('SELECT navn FROM leverandorer WHERE id = :i', ['i' => $levId]);
+            return 'Frakten hos ' . $navn . ' kan ikke regnes ennå: ' . $b['advarsel'];
+        }
+    }
+    return null;
+}
+
 /** Alle linjene som ligger til behandling, med medlem og vare. */
 function handleliste_linjer(): array
 {
     if (handleliste_har208()) {
+        $vekt = Frakt::klar() ? 'h.vekt_g AS linje_vekt_g, p.vekt_g AS vare_vekt_g' : 'NULL AS linje_vekt_g, NULL AS vare_vekt_g';
         return DB::alle(
-            "SELECT h.id, h.member_id, h.product_id, h.antall, h.status, h.pris_ore, h.order_id,
+            "SELECT h.id, h.member_id, h.product_id, h.antall, h.status, h.pris_ore, h.order_id, {$vekt},
                     COALESCE(p.tittel, h.tekst) AS tittel,
                     COALESCE(NULLIF(p.artikkelnr, ''), h.artikkelnr) AS artikkelnr,
                     COALESCE(p.leverandor_id, h.leverandor_id) AS leverandor_id,
@@ -183,6 +232,12 @@ function handleliste_bilde(): array
                 'antall'     => 0,
                 'prisOre'    => $l['pris_ore'] === null ? null : (int) $l['pris_ore'],
                 'fjernet'    => $l['status'] === 'fjernet',
+                // Vekt per stk for frakten (migrasjon 237). En vare har vekten
+                // sin paa varen; et oenske uten vare faar den paa linja.
+                'vektKg'     => Frakt::kg(isset($l['linje_vekt_g']) && $l['linje_vekt_g'] !== null
+                    ? (int) $l['linje_vekt_g']
+                    : (isset($l['vare_vekt_g']) && $l['vare_vekt_g'] !== null ? (int) $l['vare_vekt_g'] : null)),
+                'vektPaaLinja' => $l['product_id'] === null,
                 'hvem'       => [],
                 'kravSendt'  => false,
             ];
@@ -237,8 +292,17 @@ function handleliste_bilde(): array
             $hvemHosLev[(int) $l['leverandor_id']][(int) $l['member_id']] = true;
         }
     }
+    // Pakke-Express (migrasjon 237): der leverandoeren har en sone, regnes
+    // frakten av vekten og deles etter vekt. Da gjelder ikke beloepet over.
+    $auto = Frakt::perLeverandor();
+    foreach ($auto as $levId => $_) {
+        unset($fraktPerLev[$levId]);
+    }
     foreach ($medlemmer as &$m) {
         $m['fraktOre'] = 0;
+        foreach ($auto as $b) {
+            $m['fraktOre'] += (int) ($b['andeler'][$m['medlemId']] ?? 0);
+        }
         foreach ($fraktPerLev as $levId => $ore) {
             $med = $hvemHosLev[$levId] ?? [];
             if (isset($med[$m['medlemId']])) {
@@ -257,8 +321,10 @@ function handleliste_bilde(): array
     $lev = DB::alle(handleliste_har208()
         ? 'SELECT id, navn, epost, bestillingsmaate, vis_medlemmer, sok_url, frakt_ore, '
             . (handleliste_har210() ? 'frakt_satser, bestillingsrutine' : 'NULL AS frakt_satser, NULL AS bestillingsrutine')
+            . (Frakt::klar() ? ', frakt_sone_standard' : ', NULL AS frakt_sone_standard')
             . ' FROM leverandorer WHERE aktiv = 1 ORDER BY navn'
-        : "SELECT id, navn, epost, bestillingsmaate, 0 AS vis_medlemmer, '' AS sok_url, NULL AS frakt_ore, NULL AS frakt_satser, NULL AS bestillingsrutine FROM leverandorer WHERE aktiv = 1 ORDER BY navn");
+        : "SELECT id, navn, epost, bestillingsmaate, 0 AS vis_medlemmer, '' AS sok_url, NULL AS frakt_ore, NULL AS frakt_satser, NULL AS bestillingsrutine, NULL AS frakt_sone_standard FROM leverandorer WHERE aktiv = 1 ORDER BY navn");
+    $fraktOppsett = Frakt::klar() ? Frakt::oppsett() : null;
 
     // Hvor mange som har sendt inn, uansett om prisen er satt. Oppgjoret
     // under teller bare dem som har en pris — det er noe annet.
@@ -285,7 +351,11 @@ function handleliste_bilde(): array
             'satser' => handleliste_satser($l['frakt_satser']),
             'rutine' => (string) $l['bestillingsrutine'],
             'antallMedlemmer' => count($hvemHosLev[(int) $l['id']] ?? []),
+            'soneStandard' => (string) ($l['frakt_sone_standard'] ?? ''),
+            'fraktAuto' => isset($auto[(int) $l['id']]) ? handleliste_autobilde($auto[(int) $l['id']]) : null,
         ], $lev),
+        'fraktKlar'    => Frakt::klar(),
+        'fraktOppsett' => $fraktOppsett,
         'har208'       => handleliste_har208(),
         'har210'       => handleliste_har210(),
         'gebyr'        => $gebyr,
@@ -406,6 +476,109 @@ if ($handling === 'satser') {
     Svar::ok(handleliste_bilde());
 }
 
+// ------------------------------------------------ Pakke-Express (237)
+//
+// Eieren, 30. september 2026: fraktprisene fra Pakke-Express paa
+// samlebestillingen, delt etter vekt. Ingen pris i koden: alt her.
+if (in_array($handling, ['fraktoppsett', 'fraktsone', 'sonestandard', 'fraktvekt', 'linjevekt'], true) && !Frakt::klar()) {
+    Svar::feil('Frakten fra Pakke-Express krever oppdatering 237. Kjør oppdateringen først.');
+}
+
+if ($handling === 'fraktoppsett') {
+    $inn = Foresporsel::kropp()['oppsett'] ?? null;
+    $fra = Frakt::oppsett();
+    if (!is_array($inn) || $fra === null) {
+        Svar::feil('Fraktprisene kunne ikke leses.');
+    }
+    // Sonene endres ikke herfra — bare prisene, klassene og tillegget.
+    $klasser = [];
+    foreach ((array) ($inn['klasser'] ?? []) as $k) {
+        $til = (int) round((float) str_replace(',', '.', (string) ($k['tilKg'] ?? '')));
+        if ($til <= 0 || $til > 100000) {
+            Svar::feil('Hver vektklasse må ha en øvre grense i hele kilo.');
+        }
+        $ore = [];
+        foreach ($fra['soner'] as $sone) {
+            $t = trim((string) (($k['kroner'] ?? [])[$sone['kode']] ?? ''));
+            $kr = (float) str_replace([',', ' '], ['.', ''], $t);
+            if ($t === '' || $kr < 0 || $kr > 100000) {
+                Svar::feil('Prisen for ' . $sone['navn'] . ' må være mellom null og 100 000 kroner.');
+            }
+            $ore[$sone['kode']] = (int) round($kr * 100);
+        }
+        $klasser[] = ['tilKg' => $til, 'ore' => $ore];
+    }
+    $energi = (float) str_replace(',', '.', (string) ($inn['energiProsent'] ?? ''));
+    if ($energi < 0 || $energi > 100) {
+        Svar::feil('Energitillegget må være mellom 0 og 100 prosent.');
+    }
+    $nytt = Frakt::rens([
+        'soner' => $fra['soner'], 'klasser' => $klasser,
+        'energiProsent' => $energi, 'budKrPerKm' => (int) ($inn['budKrPerKm'] ?? $fra['budKrPerKm']),
+    ]);
+    if ($nytt === null) {
+        Svar::feil('Det må være minst én vektklasse.');
+    }
+    DB::kjor(
+        'INSERT INTO innstillinger (nokkel, verdi, endret_av) VALUES (:n, :v, :a)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
+        ['n' => Frakt::NOKKEL, 'v' => json_encode($nytt, JSON_UNESCAPED_UNICODE), 'a' => (int) $admin['id']]
+    );
+    revider('frakt_oppsett', 'innstilling', null, ['energi' => $energi, 'klasser' => count($klasser)]);
+    Svar::ok(handleliste_bilde());
+}
+
+// Sonen for bestillingen som ligger naa ('' = leverandoerens standard), og
+// standarden selv ('' = ikke Pakke-Express, da skrives frakten for haand).
+if ($handling === 'fraktsone' || $handling === 'sonestandard') {
+    $id = Foresporsel::heltall($handling === 'fraktsone' ? 'leverandorId' : 'id');
+    if (DB::en('SELECT id FROM leverandorer WHERE id = :i', ['i' => $id]) === null) {
+        Svar::feil('Fant ikke leverandøren.');
+    }
+    $sone = trim(Foresporsel::tekst('sone'));
+    if ($sone !== '' && !Frakt::harSone(Frakt::oppsett(), $sone)) {
+        Svar::feil('Ukjent sone.');
+    }
+    DB::oppdater('leverandorer', [$handling === 'fraktsone' ? 'frakt_sone' : 'frakt_sone_standard' => $sone === '' ? null : $sone], ['id' => $id]);
+    revider('leverandor_' . $handling, 'leverandor', $id, ['sone' => $sone]);
+    Svar::ok(handleliste_bilde());
+}
+
+// Totalvekten rettet av admin for bestillingen ('' = summen av linjene).
+if ($handling === 'fraktvekt') {
+    $id = Foresporsel::heltall('leverandorId');
+    if (DB::en('SELECT id FROM leverandorer WHERE id = :i', ['i' => $id]) === null) {
+        Svar::feil('Fant ikke leverandøren.');
+    }
+    try {
+        $gram = Frakt::gramFraKg(Foresporsel::tekst('kg'));
+    } catch (InvalidArgumentException $e) {
+        Svar::feil($e->getMessage());
+    }
+    DB::oppdater('leverandorer', ['frakt_vekt_g' => $gram], ['id' => $id]);
+    revider('leverandor_fraktvekt', 'leverandor', $id, ['gram' => $gram]);
+    Svar::ok(handleliste_bilde());
+}
+
+// Vekt per stk paa et oenske uten vare. «produktId» er negativ linje-id,
+// som ellers i lista.
+if ($handling === 'linjevekt') {
+    $produktId = Foresporsel::heltall('produktId');
+    if ($produktId >= 0) {
+        Svar::feil('Vekten på en vare settes på varen under Nettbutikk.');
+    }
+    try {
+        $gram = Frakt::gramFraKg(Foresporsel::tekst('kg'));
+    } catch (InvalidArgumentException $e) {
+        Svar::feil($e->getMessage());
+    }
+    DB::kjor(
+        "UPDATE handleliste_linjer SET vekt_g = :g WHERE id = :p AND product_id IS NULL AND status = 'sendt'",
+        ['g' => $gram, 'p' => -$produktId]
+    );
+    Svar::ok(handleliste_bilde());
+}
+
 // Hvilke leverandoerer medlemmene kan velge. Eieren, 24. september 2026:
 // «admin kan velge hvem leverandør som skal vises».
 if ($handling === 'vis') {
@@ -471,6 +644,10 @@ if ($handling === 'nyleverandor') {
 // hun staar foran skjermen. Salgsenheten maa ha lov til det; har den ikke
 // det, sier Vipps fra, og meldingen sendes videre som den er.
 if ($handling === 'krav') {
+    $sperre = handleliste_fraktsperre();
+    if ($sperre !== null) {
+        Svar::feil($sperre);
+    }
     $bilde = handleliste_bilde();
     $gebyr = handleliste_gebyr();
     $sendt = [];
@@ -632,6 +809,10 @@ if ($handling === 'bestill') {
     if ($utenPris > 0) {
         Svar::feil('Noen varelinjer hos ' . $lev['navn'] . ' mangler pris. Sett prisen først, så blir kravet riktig.');
     }
+    $sperre = handleliste_fraktsperre($leverandorId);
+    if ($sperre !== null) {
+        Svar::feil($sperre);
+    }
 
     $perMedlem = [];
     foreach ($linjer as $l) {
@@ -664,6 +845,10 @@ if ($handling === 'bestill') {
     // Frakten gjaldt denne bestillingen. Neste gang skrives den inn paa nytt.
     if (handleliste_har208()) {
         DB::oppdater('leverandorer', ['frakt_ore' => null], ['id' => $leverandorId]);
+    }
+    // Sonen og totalvekten gjaldt ogsaa bare denne bestillingen.
+    if (Frakt::klar()) {
+        DB::oppdater('leverandorer', ['frakt_sone' => null, 'frakt_vekt_g' => null], ['id' => $leverandorId]);
     }
     revider('handleliste_bestilt', 'leverandor', $leverandorId, ['nummer' => $nummer, 'linjer' => count($linjer)]);
 

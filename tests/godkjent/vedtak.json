@@ -1756,6 +1756,114 @@
             ]
         },
         {
+            "id": "omsetning-uten-mva",
+            "dato": "2026-09-30",
+            "hva": "Omsetning vises uten mva, med mva på egen linje. Omsetningen (det store tallet og totalen, i dag og denne måneden) er summen UTEN mva for alle kontoene. Hver konto viser beløpet uten mva; kontoene med mva får «Mva 25 %» (satsen fra mva-koden i regnskapsoppsettet) på egen linje, som informasjon. Det innbetalte med mva står som en liten linje «Innbetalt inkl. mva», ikke som omsetning. Regnes i øre fra én kilde (Omsetning::mvaFor / sumUtenMva); brutto = eks + mva. Dagsoppgjøret (bilaget) er uendret og balanserer mot innbetalingene. De gamle API-feltene (idagOre, manedOre, omsetning) er fortsatt med mva; de nye ligger ved siden av.",
+            "hvor": "Admin › Oversikt (Omsetning, I dag og Denne måneden), Admin › Økonomi, nytt admin (/admin2) › I dag og Penger",
+            "kode": [
+                {
+                    "fil": "app/lib/omsetning.php",
+                    "finnes": [
+                        "public const MVA_SATS = ['3' => 25, '31' => 15, '33' => 12];",
+                        "'mvaOre' => $bruttoOre - $eks",
+                        "public static function sumUtenMva(array $perFormal): array"
+                    ]
+                },
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "+ Omsetning::mvaFor($nokkel, $etter[$nokkel]);",
+                        "'idagEksOre'",
+                        "'manedEksOre'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/okonomi.php",
+                    "finnes": [
+                        "'omsetningEks'",
+                        "Omsetning::mvaFor($nokkel, $perFormal[$nokkel])"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        ">Omsetning (uten mva)</span>",
+                        "'Mva ' + l.mvaSats + ' %'",
+                        "navn: 'Innbetalt inkl. mva'",
+                        ">Omsetning (uten mva) hittil i måneden</div>",
+                        "'Innbetalt inkl. mva ' + k.sum"
+                    ],
+                    "ikkeFinnes": [
+                        "Sum inkl. mva"
+                    ]
+                },
+                {
+                    "fil": "nyadmin/omsetning.js",
+                    "finnes": [
+                        "tekst: 'Omsetning (uten mva)'",
+                        "'Mva ' + l.mvaSats + ' %'",
+                        "'Innbetalt inkl. mva '"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin2-ved-siden-av",
+            "dato": "2026-09-30",
+            "hva": "Det nye admin bygges på /admin2 VED SIDEN AV det gamle, og byttes når alt er klart. Egen side (admin2.html) og egne moduler under /nyadmin (I dag · Kurs · Folk · Penger · Mer), hver med egen fil og bryter (Vis/admin2_<modul>). «I dag» henter tallene fra de samme API-ene som Oversikt, med uendret svarformat. «Er du sikker?» før viktige trykk, Angre før ovnen settes, hurtigvalg eieren velger selv («Tilpass», lagret per admin), og én «+»-knapp. Det gamle admin er urørt, bortsett fra pilla «Prøv nytt admin» i toppstripa, som bare vises når bryteren «Nytt admin (prøve)» under Synlighet er på (av fra start).",
+            "hvor": "/admin2, og pilla i toppstripa i det gamle admin",
+            "kode": [
+                {
+                    "fil": "admin2.html",
+                    "finnes": [
+                        "<script type=\"module\" src=\"/nyadmin/app.js\"></script>"
+                    ]
+                },
+                {
+                    "fil": "nyadmin/app.js",
+                    "finnes": [
+                        "const MODULER = [idag, kurs, folk, penger, mer];",
+                        "oppsett.moduler[m.id] !== false"
+                    ]
+                },
+                {
+                    "fil": "nyadmin/kjerne.js",
+                    "finnes": [
+                        "el('h2', { tekst: 'Er du sikker?' })",
+                        "export function medAngre("
+                    ]
+                },
+                {
+                    "fil": "nyadmin/idag.js",
+                    "finnes": [
+                        "hent('/api/admin/oversikt.php')",
+                        "medAngre(navn,",
+                        "'✎ Tilpass'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/admin2.php",
+                    "finnes": [
+                        "$admin = krev_admin();",
+                        "'admin2_hurtigvalg_' . $id"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^admin2/?$ /admin2.html [L]"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "<a href=\"/admin2\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>",
+                        "(this.state.innholdLagret || {})['Vis/admin2'] === 'ja'"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "minside-vakt-for-publisering",
             "dato": "2026-09-30",
             "hva": "Min side-vakt kjører før hver publisering. Hele Min side for et medlem og for en kursdeltaker klikkes gjennom på telefon (390 px med berøring) og PC, og svarene fra API-ene Min side leser sammenlignes med en lagret fasit for åtte testmedlemmer. Endres noe, stopper publiseringen. Det nye admin (/admin2) bygges ved siden av, og Min side skal ikke påvirkes.",

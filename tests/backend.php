@@ -18664,8 +18664,10 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Tjuetre 29. september 2026: Google-anmeldelser paa forsida (eieren).
 // Tjueseks 30. september 2026: Skisser — modulen, medlemmer og kursdeltakere (eieren).
 // Tjuesju 30. september 2026: Svar automatisk paa kommentarer (eieren).
+// Tjueaatte 30. september 2026: Nytt admin (prøve), pilla til /admin2 (eieren).
 sjekk('… og har alle bryterne',
-    substr_count($syn, "        rad('") === 27
+    substr_count($syn, "        rad('") === 28
+    && str_contains($syn, "        rad('Nytt admin (prøve)', (this.state.innholdLagret || {})['Vis/admin2'] === 'ja',")
     && str_contains($syn, "        rad('Svar automatisk på kommentarer', (this.state.innholdLagret || {})['Vis/autosvar'] === 'ja',")
     && str_contains($syn, "        rad('Skisser for medlemmer', (this.state.innholdLagret || {})['Vis/skissermedlemmer'] === 'ja',")
     && str_contains($syn, "        Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),")

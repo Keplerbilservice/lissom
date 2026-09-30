@@ -46,6 +46,12 @@ $forrigeMnd = $mndStart->modify('-1 month');
 $naaSum     = $sumMellom($tilUtc($mndStart), $tilUtc($nesteMnd));
 $forrigeSum = $sumMellom($tilUtc($forrigeMnd), $tilUtc($mndStart));
 
+// Omsetningen er UTEN mva (eieren, 30. september 2026: «kontoen total maa
+// vaere alt uten mva, det er dette som er omsetning»). Mva-en for seg. De
+// gamle feltene (omsetning, omsetningOre) er fortsatt med mva.
+$naaMva     = Omsetning::sumUtenMva(Omsetning::perFormal($tilUtc($mndStart), $tilUtc($nesteMnd)));
+$forrigeEks = Omsetning::sumUtenMva(Omsetning::perFormal($tilUtc($forrigeMnd), $tilUtc($mndStart)))['eksOre'];
+
 // ── Sammenlikningen med forrige maaned ────────────────────────────────
 //
 // Eieren, 23. september 2026, med «+4073900 % mot august» paa skjermen:
@@ -66,7 +72,8 @@ const SAMMENLIKNBART_ORE = 100000;
 $endring = null;
 $mndNavn  = $MAANEDER[(int) $forrigeMnd->format('n') - 1];
 if ($forrigeSum >= SAMMENLIKNBART_ORE) {
-    $pst = (int) round(($naaSum - $forrigeSum) / $forrigeSum * 100);
+    // Paa omsetningen uten mva, som tallet det staar under.
+    $pst = $forrigeEks > 0 ? (int) round(($naaMva['eksOre'] - $forrigeEks) / $forrigeEks * 100) : 0;
     $endring = ($pst >= 0 ? '+' : '') . $pst . ' % mot ' . $mndNavn;
 } elseif ($forrigeSum > 0) {
     $endring = 'mot ' . Booking::kroner($forrigeSum) . ' i ' . $mndNavn;
@@ -103,10 +110,19 @@ $perFormal = Omsetning::perFormal($tilUtc($mndStart), $tilUtc($nesteMnd));
 $kilder = [];
 foreach ($FORMAL as $nokkel => $navn) {
     if (($perFormal[$nokkel] ?? 0) !== 0) {
+        // Beloepet uten mva og mva-en for seg, for kontoene som har mva
+        // (eieren, 30. september 2026). «sum» er fortsatt brutto.
+        $mva = Omsetning::mvaFor($nokkel, $perFormal[$nokkel]);
         $kilder[] = [
             'navn'  => $navn,
             'sum'   => Booking::kroner($perFormal[$nokkel]),
-            'andel' => $naaSum > 0 ? (int) round($perFormal[$nokkel] / $naaSum * 100) : 0,
+            'andel' => $naaMva['eksOre'] > 0 ? (int) round(Omsetning::mvaFor($nokkel, $perFormal[$nokkel])['eksOre'] / $naaMva['eksOre'] * 100) : 0,
+            'ore'   => $perFormal[$nokkel],
+            'eksOre'  => $mva['eksOre'],
+            'mvaOre'  => $mva['mvaOre'],
+            'mvaSats' => $mva['mvaSats'],
+            'eks'     => Booking::kroner($mva['eksOre']),
+            'mva'     => Booking::kroner($mva['mvaOre']),
         ];
     }
 }
@@ -183,6 +199,10 @@ Svar::json([
     'aar'       => (int) $mndStart->format('Y'),
     'omsetning' => Booking::kroner($naaSum),
     'omsetningOre' => $naaSum,
+    'omsetningEks'    => Booking::kroner($naaMva['eksOre']),
+    'omsetningEksOre' => $naaMva['eksOre'],
+    'mvaOre'          => $naaMva['mvaOre'],
+    'mva'             => Booking::kroner($naaMva['mvaOre']),
     'endring'   => $endring,
     'uker'      => array_map(static fn($u) => [
         'uke'   => $u['uke'],

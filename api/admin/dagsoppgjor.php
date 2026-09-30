@@ -237,7 +237,7 @@ foreach ($dager as $d => $v) {
             'belopOre' => $ore,
             'belop'    => $kr($ore),
             'mangler'  => $konto === '',
-        ];
+        ] + Omsetning::mvaFor((string) $formal, (int) $ore);
         $sum += $ore;
     }
 

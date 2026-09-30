@@ -1810,6 +1810,104 @@ await flyt('Frakt (Pakke-Express) paa samlebestillingen', async () => {
   php(`DB::kjor("DELETE FROM handleliste_linjer WHERE member_id = ${S.medlem.id} AND (product_id = ${vare} OR tekst LIKE '${tag}%')"); DB::kjor('DELETE FROM products WHERE id = ${vare}'); DB::kjor('DELETE FROM leverandorer WHERE id = ${lev}'); return true;`);
 });
 
+// ── Det nye admin (/admin2) ved siden av det gamle (eieren, 30.09) ───────
+//
+// «I dag» skal vise de samme tallene som Oversikt (samme API-er), menyene
+// skal aapne og lukke, «Er du sikker?» og Angre skal virke, og omsetningen
+// er uten mva, med mva paa egen linje. Det gamle admin skal staa urort:
+// pilla «Prøv nytt admin» vises bare naar bryteren er paa.
+await flyt('Nytt admin: I dag, menyer, bekreft og angre, mva', async () => {
+  // En medlemskapsbetaling i dag, saa det finnes en konto med mva.
+  const tag = 'a2-' + Math.random().toString(36).slice(2, 8);
+  const pay = php(`return DB::settInn('payments', ['belop_ore' => 179000, 'status' => 'betalt', 'type' => 'manuell', 'formal' => 'medlemskap', 'member_id' => ${S.medlem.id}, 'vipps_reference' => 'V-${tag}', 'idempotency_key' => 'i-${tag}']);`);
+
+  for (const [b, h] of [[1358, 900], [390, 844]]) {
+    const mob = b < 600;
+    const p = await side('admin', b, h);
+    await gaa(p, '/admin2', 1500);
+    const o = await api(p, '/api/admin/oversikt.php');
+    const d = await api(p, '/api/admin/dagsoppgjor.php');
+    const idag = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+    const bilag = (d.bilag || []).find(x => x.dato === idag) || {};
+    const oms = o.omsetning || {};
+    const vist = Number(await p.locator('[data-kort="betalt"] [data-sum]').getAttribute('data-sum').catch(() => '-1'));
+    sjekk(`${b} px: «I dag» viser omsetningen uten mva, lik Oversikt`, vist === Number(oms.idagEksOre), `${vist} mot ${oms.idagEksOre}`);
+    const inn = Number(await p.locator('[data-kort="betalt"] [data-innbetalt]').getAttribute('data-innbetalt').catch(() => '-1'));
+    sjekk(`${b} px: «Innbetalt inkl. mva» = Oversikt = dagsoppgjøret`, inn === Number(oms.idagOre) && inn === Number(bilag.sumOre), `${inn} / ${oms.idagOre} / ${bilag.sumOre}`);
+    const lm = (oms.linjerIdag || []).find(l => l.nokkel === 'medlemskap') || {};
+    sjekk(`${b} px: medlemskap vises uten mva, med «Mva 25 %» på egen linje`,
+      lm.mvaSats === 25 && lm.eksOre + lm.mvaOre === lm.ore
+      && await p.locator('[data-kort="betalt"] .mva', { hasText: 'Mva 25 %' }).count() > 0);
+    sjekk(`${b} px: omsetningen uten mva = summen av linjene`,
+      (oms.linjerIdag || []).reduce((n, l) => n + (l.mvaSats > 0 ? l.eksOre : l.ore), 0) === Number(oms.idagEksOre));
+    sjekk(`${b} px: åtte rader i «Må gjøres», hele raden trykkbar`, await p.locator('[data-kort="maagjores"] a.rad[data-rad]').count() === 8);
+    sjekk(`${b} px: ingen sidelengs rulling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
+    sjekk(`${b} px: ${mob ? 'bunnmenyen vises, toppmenyen er skjult' : 'toppmenyen vises'}`,
+      mob ? (await p.locator('nav.bunn').isVisible() && !(await p.locator('nav.meny').isVisible()))
+          : await p.locator('nav.meny').isVisible());
+
+    // Søk og «+»: aapner, og lukkes med Esc og med trykk utenfor.
+    await p.locator(mob ? '.sokknapp-mob' : 'button.sok').click(); await p.waitForTimeout(200);
+    sjekk(`${b} px: søket åpner`, await p.locator('.ark h2', { hasText: 'Søk i admin' }).isVisible());
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    sjekk(`${b} px: søket lukkes med Esc`, await p.locator('.bak').count() === 0);
+    await p.locator('.pluss').click(); await p.waitForTimeout(200);
+    sjekk(`${b} px: «+» åpner «Lag noe nytt»`, await p.locator('.ark h2', { hasText: 'Lag noe nytt' }).isVisible());
+    await p.mouse.click(5, h - 5 - (mob ? 70 : 0)); await p.waitForTimeout(200);
+    sjekk(`${b} px: «+» lukkes med trykk utenfor`, await p.locator('.bak').count() === 0);
+
+    // Ovnen: «Er du sikker?», og Angre gjoer at ingenting skjer.
+    const foer = Number(verdi('SELECT COUNT(*) AS n FROM ovn_tomt'));
+    await p.locator('[data-ovn="tomt"]').click(); await p.waitForTimeout(200);
+    sjekk(`${b} px: ovnen spør «Er du sikker?»`, await p.locator('.ark h2', { hasText: 'Er du sikker?' }).isVisible());
+    await p.locator('[data-bekreft="ja"]').click(); await p.waitForTimeout(200);
+    await p.locator('[data-angre="ja"]').click(); await p.waitForTimeout(7000);
+    sjekk(`${b} px: Angre — ingenting er lagret`, Number(verdi('SELECT COUNT(*) AS n FROM ovn_tomt')) === foer);
+    await p.locator('[data-ovn="tomt"]').click(); await p.waitForTimeout(200);
+    await p.locator('[data-bekreft="ja"]').click(); await p.waitForTimeout(7500);
+    sjekk(`${b} px: uten Angre lagres «Ovn tømt» etter noen sekunder`, Number(verdi('SELECT COUNT(*) AS n FROM ovn_tomt')) === foer + 1);
+
+    // Penger viser maaneden uten mva, lik Oversikt.
+    await p.locator(mob ? 'nav.bunn a[href="#penger"]' : 'nav.meny a[href="#penger"]').click(); await p.waitForTimeout(1200);
+    const mnd = Number(await p.locator('[data-kort="omsetning"] [data-sum]').getAttribute('data-sum').catch(() => '-1'));
+    sjekk(`${b} px: Penger viser måneden uten mva, lik Oversikt`, mnd === Number(oms.manedEksOre), `${mnd} mot ${oms.manedEksOre}`);
+    await p.context().close();
+  }
+
+  // Tilpass hurtigvalg: lagres per admin, og bare kjente valg.
+  const a = await side('admin');
+  await gaa(a, '/admin2', 1500);
+  await a.getByRole('button', { name: '✎ Tilpass' }).click(); await a.waitForTimeout(200);
+  await a.locator('[data-valg="dagsoppgjor"]').uncheck();
+  await a.locator('[data-valg="skisser"]').check();
+  await a.getByRole('button', { name: 'Lagre', exact: true }).click(); await a.waitForTimeout(800);
+  const hv = await api(a, '/api/admin/admin2.php');
+  sjekk('Tilpass: hurtigvalgene er lagret', JSON.stringify(hv.hurtigvalg) === JSON.stringify(['startkurs', 'tabetalt', 'nykursdato', 'skisser']), JSON.stringify(hv.hurtigvalg));
+  sjekk('Tilpass: det nye valget vises', await a.locator('a.pille', { hasText: 'Skisser' }).count() > 0);
+  const tull = await api(a, '/api/admin/admin2.php', { handling: 'hurtigvalg', valg: ['startkurs', 'slett-alt'] });
+  sjekk('Tilpass: ukjente valg lagres ikke', JSON.stringify(tull.hurtigvalg) === JSON.stringify(['startkurs']));
+  await api(a, '/api/admin/admin2.php', { handling: 'hurtigvalg', valg: ['startkurs', 'tabetalt', 'nykursdato', 'dagsoppgjor'] });
+
+  // Det gamle admin: pilla bare med bryteren paa.
+  bryter('Vis/admin2', false);
+  await gaa(a, '/admin/oversikt', 2000);
+  sjekk('gammelt admin: «Prøv nytt admin» vises ikke når bryteren er av', !(await a.locator('a:has-text("Prøv nytt admin")').first().isVisible().catch(() => false)));
+  db("INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/admin2', 'ja') ON DUPLICATE KEY UPDATE verdi = 'ja'");
+  await gaa(a, '/admin/oversikt', 2000);
+  sjekk('gammelt admin: «Prøv nytt admin» vises når bryteren er på', await a.locator('a:has-text("Prøv nytt admin")').first().isVisible().catch(() => false));
+  sjekk('gammelt admin: omsetningen står som «Omsetning (uten mva)»', await a.locator('text=Omsetning (uten mva)').first().isVisible().catch(() => false));
+  bryter('Vis/admin2', false);
+  await a.context().close();
+
+  // Uten innlogging: /admin2 ber om innlogging og viser ingen tall.
+  const g = await side(null);
+  await gaa(g, '/admin2', 1000);
+  sjekk('uten innlogging: /admin2 ber om innlogging', await g.locator('h1', { hasText: 'Logg inn først' }).isVisible());
+  await g.context().close();
+
+  php(`DB::kjor('DELETE FROM payments WHERE id = ${pay}'); DB::kjor("DELETE FROM innstillinger WHERE nokkel LIKE 'admin2_hurtigvalg_%'"); return true;`);
+});
+
 await nettleser.close();
 console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjente feil.`);
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }

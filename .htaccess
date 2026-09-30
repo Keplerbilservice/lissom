@@ -366,6 +366,10 @@ RewriteRule ^avmelding/?$ /api/avmelding.php [L,QSA]
 RewriteCond %{DOCUMENT_ROOT}/guider/$1.html -f
 RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]
 
+# Det nye admin (eieren, 30. september 2026): bygges ved siden av det
+# gamle, som egen side. Tilgangen sjekkes av API-et (krev_admin).
+RewriteRule ^admin2/?$ /admin2.html [L]
+
 RewriteRule ^$ /side.php [L]
 
 # Ekte filer, mapper og /api går uendret gjennom.

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Nytt admin · Lissom</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/ds-fonts.css">
+<!--
+  Det nye admin (eieren, 30. september 2026): bygges VED SIDEN AV det gamle
+  og byttes naar alt er klart. Egen side og egne moduler under /nyadmin —
+  ingenting her lastes av lissom-2108.html, og ingenting der lastes her.
+  Tallene hentes fra de samme API-ene som Oversikt i det gamle admin.
+
+  Designet: plan A v3 (I dag · Kurs · Folk · Penger · Mer). Eierens valg:
+  summen oeverst, «Er du sikker?» foer betaling og viktige trykk, hurtigvalg
+  han velger selv, ovnen med ord og tid, «+» for aa lage noe nytt.
+-->
+<style>
+:root{--brun:#4D1D12;--gul:#FFCF38;--porselen:#FBF6EE;--flate:#F4EBDE;--kort:#fff;--linje:#E6D9C7;--dempet:#7A5A4E;--terra:#A2502B;--tekst:#4D1D12;--ok:#2f6b3b;--okbg:#e3f1e5;--feil:#9b2b1c;--feilbg:#f8e2dc}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--flate);color:var(--tekst);font:16px/1.5 'Alegreya Sans',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;min-height:100vh}
+button,input{font:inherit;color:inherit}
+a{color:inherit}
+.topp{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:6px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--brun);color:#fff;flex-wrap:wrap}
+.logo{font:800 22px/1 'Bitter',Georgia,serif;color:var(--gul);text-decoration:none;margin-right:10px}
+.meny{display:flex;gap:4px}
+.meny a{padding:9px 16px;border-radius:999px;font-weight:800;font-size:15px;color:#fff;text-decoration:none;min-height:42px;display:inline-flex;align-items:center}
+.meny a[aria-current="page"]{background:var(--gul);color:var(--brun)}
+.hoyre{margin-left:auto;display:flex;gap:8px;align-items:center}
+.sok{appearance:none;border:0;background:#fff;color:var(--dempet);border-radius:999px;padding:9px 16px;min-width:200px;min-height:42px;text-align:left;cursor:pointer;font-size:15px}
+.pille{appearance:none;cursor:pointer;border-radius:999px;padding:9px 16px;min-height:44px;font-weight:800;font-size:15px;border:1.5px solid var(--brun);display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--brun);text-decoration:none;white-space:nowrap}
+.pille.f{background:var(--brun);color:#fff}
+.pille.g{background:var(--gul);border-color:var(--gul);color:var(--brun)}
+.pille.lys{background:transparent;border-color:rgba(255,255,255,.55);color:#fff}
+.pille.stor{min-height:52px;padding:12px 20px;font-size:17px}
+.pille:disabled{opacity:.45;cursor:default}
+.gammelt{font-size:13px;color:rgba(255,255,255,.75);text-decoration:none;padding:6px 8px}
+main{max-width:1240px;margin:0 auto;padding:18px 16px 110px}
+.hode{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.eb{font:800 13px/1 'Alegreya Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--terra)}
+h1{font:800 clamp(26px,4vw,34px)/1.1 'Bitter',Georgia,serif;margin:4px 0 0}
+h2{font:800 19px/1.2 'Bitter',Georgia,serif;margin:0}
+.dempet{color:var(--dempet)}
+.g{display:grid;gap:14px;align-content:start}
+.to{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.k{background:var(--kort);border:1px solid var(--linje);border-radius:16px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
+.stor{font:800 36px/1 'Bitter',Georgia,serif}
+.rad{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-radius:12px;background:var(--porselen);border:1px solid #F0E6D8;text-decoration:none;color:inherit;width:100%;text-align:left;cursor:pointer;appearance:none}
+button.rad,a.rad{font:inherit}
+.rad:hover{border-color:var(--linje)}
+.rad b{font-weight:800;font-variant-numeric:tabular-nums}
+.rad .tall{font-weight:800;font-variant-numeric:tabular-nums}
+.rad .tall.haster{color:var(--terra)}
+.rad.tom{cursor:default;color:var(--dempet)}
+.tag{border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800;background:var(--okbg);color:var(--ok);white-space:nowrap}
+.tag.u{background:var(--feilbg);color:var(--feil)}
+.pl{display:flex;gap:8px;flex-wrap:wrap}
+.ovn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ovn button{appearance:none;cursor:pointer;border-radius:14px;border:0;background:var(--gul);color:var(--brun);min-height:64px;padding:10px;font-weight:800;font-size:15px;display:grid;align-content:center;gap:2px;text-align:left}
+.ovn button.paa{background:var(--brun);color:#fff}
+.ovn button span{font-weight:500;font-size:13px;opacity:.85}
+.lasting{color:var(--dempet);padding:18px 0}
+.feilboks{background:var(--feilbg);color:var(--feil);border-radius:12px;padding:14px;display:grid;gap:8px}
+.tomt{color:var(--dempet);padding:6px 2px}
+/* Mobil: bunnmeny der tommelen er, og «I dag» i riktig rekkefoelge */
+.bunn{display:none}
+@media (max-width:760px){
+  .meny,.sok,.gammelt{display:none}
+  .topp{padding:10px 12px}
+  .bunn{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--linje);padding-bottom:env(safe-area-inset-bottom)}
+  .bunn a{display:grid;place-items:center;gap:2px;min-height:58px;font-size:12px;font-weight:800;text-decoration:none;color:var(--brun)}
+  .bunn a i{font-style:normal;font-size:19px;line-height:1}
+  .bunn a[aria-current="page"]{color:var(--terra)}
+  main{padding:14px 12px 150px}
+  .stor{font-size:32px}
+}
+.idag{display:grid;gap:14px}
+@media (max-width:760px){.idag-hurtig{order:2}}
+.sokknapp-mob{display:none}
+@media (max-width:760px){.sokknapp-mob{display:inline-flex}}
+/* «+» */
+.pluss{position:fixed;right:18px;bottom:22px;z-index:45;width:60px;height:60px;border-radius:50%;border:0;background:var(--gul);color:var(--brun);font:800 32px/1 'Alegreya Sans',sans-serif;box-shadow:0 8px 22px rgba(77,29,18,.25);cursor:pointer}
+@media (max-width:760px){.pluss{bottom:calc(78px + env(safe-area-inset-bottom))}}
+/* Ark (dialoger) */
+.bak{position:fixed;inset:0;z-index:60;background:rgba(46,16,2,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.ark{background:#fff;border-radius:20px;width:min(460px,100%);max-height:88vh;overflow:auto;padding:20px;display:grid;gap:14px;box-shadow:0 18px 40px rgba(0,0,0,.25)}
+.ark .knapper{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.ark input[type=text]{width:100%;border:1px solid var(--linje);border-radius:999px;padding:12px 16px;min-height:48px;background:var(--porselen)}
+.sjekk{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;border-radius:12px;background:var(--porselen);cursor:pointer}
+.sjekk input{width:22px;height:22px}
+/* Angre */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:70;background:var(--brun);color:#fff;border-radius:14px;padding:10px 12px 10px 16px;display:flex;gap:12px;align-items:center;box-shadow:0 10px 26px rgba(0,0,0,.3);max-width:calc(100% - 32px)}
+@media (max-width:760px){.toast{bottom:calc(88px + env(safe-area-inset-bottom))}}
+.toast button{appearance:none;border:0;background:var(--gul);color:var(--brun);border-radius:999px;padding:8px 14px;font-weight:800;min-height:40px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app"><main><p class="lasting">Laster …</p></main></div>
+<script type="module" src="/nyadmin/app.js"></script>
+</body>
+</html>

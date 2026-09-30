@@ -49,12 +49,23 @@ function betaltIdag(ov) {
   const eksOre = typeof oms.idagEksOre === "number" ? oms.idagEksOre : oms.idagOre;
   // «Betalt i dag»: alt som er kjøpt i dag, også det som ikke er betalt ennå.
   const best = ov.dagensBestillinger || [];
+  // Maks fem rader i kortet, saa det ikke vokser nedover. Resten i et ark.
+  // Eieren, 30.09: «kortenes plassering maa optimaliseres».
+  const linje = (b) => rad([b.kl, b.navn, b.hva].filter(Boolean).join(" · "),
+    el("span", {}, el("b", { tekst: String(b.belop || "").replace(/^kr.s/u, "kr ").replace(/,-$/, "") }), " ",
+      el("span", { class: "tag" + (b.status === "Betalt" ? "" : " u"), tekst: b.status === "Betalt" ? "Betalt" : "Ubetalt" })),
+    "/admin/oversikt");
   const liste = best.length
-    ? best.slice(0, 8).map(b => rad([b.kl, b.navn, b.hva].filter(Boolean).join(" · "),
-        el("span", {}, el("b", { tekst: String(b.belop || "").replace(/^kr\.\s/u, "kr ").replace(/,-$/, "") }), " ",
-          el("span", { class: "tag" + (b.status === "Betalt" ? "" : " u"), tekst: b.status === "Betalt" ? "Betalt" : "Ubetalt" })),
-        "/admin/oversikt"))
+    ? best.slice(0, 5).map(linje)
     : [el("p", { class: "tomt", tekst: "Ingenting er kjøpt i dag ennå." })];
+  if (best.length > 5) {
+    liste.push(el("div", {}, el("button", { class: "pille", type: "button", "data-vis-alle": String(best.length),
+      onclick: () => { const { lukk } = ark([
+        el("h2", { tekst: "Betalt i dag" }),
+        el("div", { class: "g", style: "gap:6px" }, best.map(linje)),
+        el("div", { class: "knapper" }, el("button", { class: "pille", type: "button", tekst: "Lukk", onclick: () => lukk(false) })),
+      ]); } }, "Vis alle (" + best.length + ")")));
+  }
   const kort = omsetningKort("Betalt i dag", oms.linjerIdag || [], eksOre, oms.idagOre,
     ubetalte ? el("div", {}, el("a", { class: "pille g", href: "/admin/uttak" }, ubetalte + " ubetalt · Ta betalt")) : null);
   kort.setAttribute("data-kort", "betalt");
@@ -116,7 +127,7 @@ function maaGjores(t) {
   ];
   return el('section', { class: 'k', 'data-kort': 'maagjores' },
     el('h2', { tekst: 'Må gjøres' }),
-    el('div', { class: 'g', style: 'gap:6px' }, rader.map(([n, v, m]) => {
+    el('div', { class: 'g maa-rader', style: 'gap:6px' }, rader.map(([n, v, m]) => {
       const r = rad(n, tall(v), m);
       r.setAttribute('data-rad', n);
       return r;
@@ -203,10 +214,15 @@ export default {
       el('div', { class: 'hode' }, el('div', {}, el('div', { class: 'eb', tekst: dato }), el('h1', { tekst: 'I dag' }))),
       // PC: hurtigvalgene oeverst over kortene. Mobil: summen foerst, og
       // hurtigvalgene nederst (se .idag-hurtig i admin2.html).
+      // Ett rutenett med navngitte felt (grid-template-areas i admin2.html),
+      // saa kortene fordeles utover siden i stedet for to lange soeyler.
       el('div', { class: 'idag' },
         el('div', { class: 'idag-hurtig' }, hurtigBoks),
-        el('div', { class: 'g to' },
-          el('div', { class: 'g' }, betaltIdag(d), kursIdag(d)),
-          el('div', { class: 'g' }, maaGjores(t), ovnBoks, inne(d)))));
+        el('div', { class: 'idag-rute' },
+          el('div', { class: 'omr omr-betalt' }, betaltIdag(d)),
+          el('div', { class: 'omr omr-kurs' }, kursIdag(d)),
+          el('div', { class: 'omr omr-inne' }, inne(d)),
+          el('div', { class: 'omr omr-maa' }, maaGjores(t)),
+          el('div', { class: 'omr omr-ovn' }, ovnBoks))));
   },
 };

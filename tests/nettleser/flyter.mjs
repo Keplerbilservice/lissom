@@ -1842,6 +1842,24 @@ await flyt('Nytt admin: I dag, menyer, bekreft og angre, mva', async () => {
       (oms.linjerIdag || []).reduce((n, l) => n + (l.mvaSats > 0 ? l.eksOre : l.ore), 0) === Number(oms.idagEksOre));
     sjekk(`${b} px: åtte rader i «Må gjøres», hele raden trykkbar`, await p.locator('[data-kort="maagjores"] a.rad[data-rad]').count() === 8);
     sjekk(`${b} px: ingen sidelengs rulling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
+    // Oppsettet (eieren, 30.09): kortene fordelt utover, ikke to lange soeyler.
+    // PC: summen til venstre over hele hoeyden, «Maa gjoeres» og ovnen til
+    // hoeyre, med like bunner. Mobil: én kolonne i rekkefoelgen sum, kurs,
+    // Maa gjoeres, ovn, inne. Maks fem betalinger i kortet.
+    const oppsett = await p.evaluate(() => {
+      const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { x: Math.round(b.x), y: Math.round(b.y), bunn: Math.round(b.bottom) }; };
+      return { betalt: r('.omr-betalt'), kurs: r('.omr-kurs'), maa: r('.omr-maa'), ovn: r('.omr-ovn'), inne: r('.omr-inne'),
+        rader: document.querySelectorAll('[data-kort="betalt"] a.rad').length };
+    });
+    sjekk(`${b} px: maks fem betalinger i «Betalt i dag»`, oppsett.rader <= 5, String(oppsett.rader));
+    if (mob) {
+      const y = ['betalt', 'kurs', 'maa', 'ovn', 'inne'].map(k => oppsett[k] && oppsett[k].y);
+      sjekk(`${b} px: én kolonne i rekkefølgen sum, kurs, Må gjøres, ovn, inne`, y.every((v, i) => i === 0 || v > y[i - 1]), y.join(','));
+    } else {
+      sjekk(`${b} px: kortene fordelt utover (Må gjøres til høyre for summen, like bunner)`,
+        oppsett.maa.x > oppsett.betalt.x + 100 && oppsett.kurs.x > oppsett.betalt.x + 100 && Math.abs(oppsett.betalt.bunn - oppsett.ovn.bunn) <= 2,
+        JSON.stringify(oppsett));
+    }
     sjekk(`${b} px: ${mob ? 'bunnmenyen vises, toppmenyen er skjult' : 'toppmenyen vises'}`,
       mob ? (await p.locator('nav.bunn').isVisible() && !(await p.locator('nav.meny').isVisible()))
           : await p.locator('nav.meny').isVisible());

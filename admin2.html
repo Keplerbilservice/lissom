@@ -38,7 +38,7 @@ a{color:inherit}
 .pille.stor{min-height:52px;padding:12px 20px;font-size:17px}
 .pille:disabled{opacity:.45;cursor:default}
 .gammelt{font-size:13px;color:rgba(255,255,255,.75);text-decoration:none;padding:6px 8px}
-main{max-width:1240px;margin:0 auto;padding:18px 16px 110px}
+main{max-width:1440px;margin:0 auto;padding:18px 16px 110px}
 .hode{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .eb{font:800 13px/1 'Alegreya Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--terra)}
 h1{font:800 clamp(26px,4vw,34px)/1.1 'Bitter',Georgia,serif;margin:4px 0 0}
@@ -79,6 +79,22 @@ button.rad,a.rad{font:inherit}
 }
 .idag{display:grid;gap:14px}
 @media (max-width:760px){.idag-hurtig{order:2}}
+/* «I dag»: kortene fordelt i et rutenett (eieren, 30.09). Mobil: én kolonne i
+   rekkefoelgen sum, kurs, Maa gjoeres, ovn, inne. */
+.idag-rute{display:grid;gap:14px;grid-template-columns:minmax(0,1fr);grid-template-areas:"betalt" "kurs" "maa" "ovn" "inne"}
+.omr{min-width:0;display:grid}
+.omr>*{min-width:0}
+.omr-betalt{grid-area:betalt}.omr-kurs{grid-area:kurs}.omr-inne{grid-area:inne}.omr-maa{grid-area:maa}.omr-ovn{grid-area:ovn}
+.omr .tomt{padding:2px 2px 0;margin:0}
+.idag-rute [data-kort="kurs"],.idag-rute [data-kort="inne"]{align-content:start}
+@media (min-width:761px) and (max-width:1199px){
+  .idag-rute{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"betalt maa" "betalt kurs" "ovn kurs" "ovn inne";align-items:start}
+}
+@media (min-width:1200px){
+  .idag-rute{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"betalt kurs inne" "betalt maa maa" "betalt ovn ovn";align-items:start}
+  .omr-betalt,.omr-kurs,.omr-inne{align-self:stretch}.omr-betalt>section,.omr-kurs>section,.omr-inne>section{height:100%}
+  .maa-rader{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
 .sokknapp-mob{display:none}
 @media (max-width:760px){.sokknapp-mob{display:inline-flex}}
 /* «+» */

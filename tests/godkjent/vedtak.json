@@ -1876,6 +1876,29 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "admin2-i-dag-oppsett",
+            "dato": "2026-09-30",
+            "sitat": "kortenes plassering må optimaliseres, nå bygges det nedover og ikke fordeles ut på siden for et visuelt godt inntrykk",
+            "hva": "«I dag» i /admin2 fordeler kortene utover siden i et rutenett (grid-template-areas), ikke to lange søyler. PC: summen til venstre over hele høyden, Kurs i dag og I verkstedet nå øverst, Må gjøres (to kolonner) og Ovnen under, maksbredde 1440 px. Nettbrett: to balanserte kolonner. Mobil: sum, kurs, Må gjøres, ovn, inne. «Betalt i dag» viser maks fem betalinger, resten under «Vis alle (N)».",
+            "hvor": "/admin2 «I dag»",
+            "kode": [
+                {
+                    "fil": "admin2.html",
+                    "finnes": [
+                        "grid-template-areas:\"betalt kurs inne\" \"betalt maa maa\" \"betalt ovn ovn\"",
+                        "main{max-width:1440px;"
+                    ]
+                },
+                {
+                    "fil": "nyadmin/idag.js",
+                    "finnes": [
+                        "best.slice(0, 5).map(linje)",
+                        "\"Vis alle (\" + best.length + \")\""
+                    ]
+                }
+            ]
         }
     ]
 }

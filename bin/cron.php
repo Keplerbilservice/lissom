@@ -516,11 +516,6 @@ switch ($jobb) {
         medlemsinvitasjon($si);
         break;
 
-    // Takkesvarene paa kommentarer, for seg (til aa kjoere for haand).
-    case 'autosvar':
-        kommentarsvar($si);
-        break;
-
     // -----------------------------------------------------------------------
     // -----------------------------------------------------------------------
     // Nattlig kopi av databasen.

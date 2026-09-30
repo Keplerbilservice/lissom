@@ -1676,6 +1676,21 @@
             ]
         },
         {
+            "id": "utstempling-aldri-sperret",
+            "dato": "2026-09-30",
+            "hva": "Utstempling er aldri sperret. Den som står inne kan alltid stemple UT fra Min side, også når timene er brukt opp mens hen var der. Bare INN kan sperres.",
+            "hvor": "Min side › stemplingskortet (harTimer/erTom i lissom-2108.html); api/stempling.php ut og glemt",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "harTimer: somMedlem && (igjen > 0 || this.erInne()),",
+                        "erTom: somMedlem && igjen === 0 && !this.erInne(),"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "frakt-pakke-express-innkjop",
             "dato": "2026-09-30",
             "hva": "Fraktprisene fra Pakke-Express (tilbud 24.09.2026) brukes på handlelista og samlebestillingen: pris per sending etter vektklasse (0–3, 4–10, 11–30, 31–100, 101–200, 201–400 kg) og sone (Tønsberg og omegn / Oslo/Bærum), pluss energitillegg (9,5 %). Vekt per vare; admin kan rette totalvekten. Frakten deles på medlemmene etter vekt, går alltid opp i øret, og krav/bestilling stoppes når en linje mangler vekt. Frakten får ikke gebyr. Prisene står i innstillinger, ikke i koden. Medlemmet ser «Frakt» på Min side.",

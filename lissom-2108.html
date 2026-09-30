@@ -67220,8 +67220,8 @@ class Component extends DCLogic {
         // stemple inn i et verksted hen ikke har nokkel til.
         const somMedlem = this.medlemsvisning();
         if (!st) return {
-          harTimer: somMedlem && !this.erPublisert() && (t.igjen === 'Fritt' || t.igjen > 0),
-          erTom: somMedlem && !this.erPublisert() && t.igjen === 0,
+          harTimer: somMedlem && !this.erPublisert() && (t.igjen === 'Fritt' || t.igjen > 0 || this.erInne()),
+          erTom: somMedlem && !this.erPublisert() && t.igjen === 0 && !this.erInne(),
           timerBarStil: { width: t.andel + '%', height: '100%', background: t.igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
           timerVarsel: t.varsel,
           timerVarselStil: t.varselStil,
@@ -67239,8 +67239,11 @@ class Component extends DCLogic {
         });
 
         return {
-          harTimer: somMedlem && igjen > 0,
-          erTom: somMedlem && igjen === 0,
+          // Utstempling er aldri sperret. Knappen ble grå «Stemple inn» i det
+          // timene var brukt opp — også for den som sto inne — og medlemmet
+          // kom seg ikke ut (eieren, 30. september 2026). Bare INN sperres.
+          harTimer: somMedlem && (igjen > 0 || this.erInne()),
+          erTom: somMedlem && igjen === 0 && !this.erInne(),
           timerBarStil: { width: st.timer.andel + '%', height: '100%', background: igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
           // ── Varselet: 20 %, ikke fire timer ──────────────────────────
           //

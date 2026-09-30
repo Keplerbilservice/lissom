@@ -982,6 +982,60 @@ await flyt('Timepakke: vinduene på Min side', async () => {
   }
 });
 
+// ── Utstempling er aldri sperret ──────────────────────────────────────
+//
+// Eieren, 30. september 2026, med beskjeden fra et medlem: timene var brukt
+// opp mens hun var i verkstedet, knappen ble en grå «Stemple inn», og hun
+// kom seg ikke ut. Bare INN kan sperres; ut og «glemt å stemple ut» virker
+// alltid.
+const lukkTpVindu = async (p) => {
+  const v = p.locator('[data-tp-vindu]');
+  if (await v.count() === 0) return;
+  await p.locator('[data-tp-knapp="Ikke nå"]').click().catch(() => {});
+  await p.waitForTimeout(300);
+  await p.locator('[data-tp-knapp="Hopp over"]').click().catch(() => {});
+  await p.waitForTimeout(300);
+};
+await flyt('Utstempling er aldri sperret', async () => {
+  db('DELETE FROM rate_limits');
+  // A: timene ble brukt opp mens hun sto inne.
+  S.utA = vanligMedlem('Utinne', 0);
+  php(`DB::settInn('check_ins', ['member_id' => ${S.utA.id}, 'inn_tid' => gmdate('Y-m-d H:i:s', time() - 5400)]); return true;`);
+  let p = await side('utA', 390, 844);
+  await gaa(p, '/min-side', 3500);
+  await lukkTpVindu(p);
+  const knapp = p.getByRole('button', { name: 'Stemple ut' }).first();
+  sjekk('0 timer igjen og inne: «Stemple ut» står der og kan trykkes',
+    await knapp.isVisible().catch(() => false) && await knapp.isEnabled().catch(() => false));
+  sjekk('… og ingen grå «Stemple inn»', !(await p.getByRole('button', { name: 'Stemple inn' }).first().isVisible().catch(() => false)));
+  await knapp.tap().catch(() => knapp.click());
+  await p.waitForTimeout(500);
+  await p.getByRole('button', { name: 'Bekreft' }).first().tap().catch(() => {});
+  await p.waitForTimeout(1500);
+  sjekk('… trykket stempler ut', verdi('SELECT COUNT(*) FROM check_ins WHERE member_id = :m AND ut_tid IS NULL', { m: S.utA.id }) === 0);
+  await p.context().close();
+
+  // B: glemte å stemple ut, økta ble lukket av systemet, og hun retter selv.
+  bryter('Vis/glemtstempling', true);
+  S.utB = vanligMedlem('Utglemt', 0);
+  const okt = php(`return DB::settInn('check_ins', ['member_id' => ${S.utB.id}, 'inn_tid' => gmdate('Y-m-d H:i:s', time() - 3 * 3600),
+    'ut_tid' => gmdate('Y-m-d H:i:s', time() - 60), 'minutter' => 179, 'auto_lukket' => 1]);`);
+  const klokke = php(`return (new DateTimeImmutable('@' . (time() - 2 * 3600)))->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i');`);
+  p = await side('utB', 390, 844);
+  await gaa(p, '/min-side', 3500);
+  await lukkTpVindu(p);
+  const glemt = p.getByRole('button', { name: 'Glemt å stemple ut' }).first();
+  sjekk('0 timer igjen og lukket automatisk: «Glemt å stemple ut» står der', await glemt.isVisible().catch(() => false));
+  await glemt.tap().catch(() => glemt.click());
+  await p.locator('input[aria-label="Klokkeslettet du gikk"]').first().fill(klokke);
+  await p.getByRole('button', { name: 'Lagre' }).first().tap().catch(() => {});
+  await p.waitForTimeout(1500);
+  const r = db('SELECT minutter, auto_lukket FROM check_ins WHERE id = :i', { i: okt })[0] || {};
+  sjekk('… medlemmet retter selv til riktig klokkeslett', Number(r.minutter) >= 55 && Number(r.minutter) <= 65 && Number(r.auto_lukket) === 0, JSON.stringify(r));
+  await p.context().close();
+  bryter('Vis/glemtstempling', false);
+});
+
 // ── Medlemsreisen, hele veien ─────────────────────────────────────────
 //
 // Eieren, 29. september 2026: «hva med medlemskap, endringer, oppgradering,

@@ -1876,6 +1876,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "lyslykter-egen-overskrift",
+            "dato": "2026-09-30",
+            "hva": "Lyslyktene får egen gruppeoverskrift «Lyslykter» blant malene, som de andre gruppene (Min side og admin)",
+            "hvor": "Min side › Nyttig info › Keramikk maler; Admin › Verkstedet",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "if (s.indexOf('mal-lyslykter-') === 0) return 'Lyslykter';"
+                    ]
+                }
+            ]
         }
     ]
 }

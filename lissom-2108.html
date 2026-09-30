@@ -51270,6 +51270,9 @@ class Component extends DCLogic {
     if (s.indexOf('mal-55-85-') === 0) return 'Maler 55 til 85';
     if (s.indexOf('mal-85-100-') === 0) return 'Maler 85 til 100';
     if (s.indexOf('mal-ekstra-') === 0) return 'Ekstra maler';
+    // Eieren, 30. september 2026: lyslyktene faar egen overskrift, som de
+    // andre gruppene.
+    if (s.indexOf('mal-lyslykter-') === 0) return 'Lyslykter';
     return '';
   }
 

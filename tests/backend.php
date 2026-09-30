@@ -16852,14 +16852,17 @@ $mkM   = is_file($mkMan) ? json_decode(file_get_contents($mkMan), true) : null;
 // 69 maler staar: det ER en avgjorelse. Lyshus og Buet espressokopp mangler
 // malfil, og eieren vil ikke ha dem (11. september). Kommer det en mal til
 // uten at noen har bestemt det, skal proven si fra.
+//
+// 75 fra 30. september 2026: eieren bestilte seks lyslykter (gruppen
+// «Lyslykter», mal-lyslykter-*), hver med mal, guide og bilde.
 sjekk('importpakka ligger i repoet med manifest',
-    is_array($mkM) && count($mkM['maler'] ?? []) === 69
+    is_array($mkM) && count($mkM['maler'] ?? []) === 75
     && count($mkM['dokumenter'] ?? []) >= 6,
     is_array($mkM) ? count($mkM['maler']) . ' maler, ' . count($mkM['dokumenter']) . ' dokumenter' : 'fant ikke manifestet');
 sjekk('… hver mal har navn, slug, bilde og minst ett dokument',
     is_array($mkM) && count(array_filter($mkM['maler'], static fn($m) =>
         ($m['navn'] ?? '') !== '' && ($m['slug'] ?? '') !== ''
-        && ($m['bilde'] ?? '') !== '' && count($m['dokumenter'] ?? []) > 0)) === 69);
+        && ($m['bilde'] ?? '') !== '' && count($m['dokumenter'] ?? []) > 0)) === 75);
 // Ingen mal uten malfil. Eieren, 11. september 2026: «dersom det mangler
 // maler, saa vil jeg at disse slettes og ikke vises i admin».
 sjekk('… og hver mal har en malfil',

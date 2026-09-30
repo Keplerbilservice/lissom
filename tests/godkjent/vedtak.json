@@ -2077,6 +2077,43 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "codex-vipps-betaling",
+            "dato": "2026-09-30",
+            "hva": "Codex-gjennomgangen, høye funn (eieren: «Sjekk og rett de høye»): retur fra Vipps markerer betalt bare når trekket gikk; webhook-signaturen følger Vipps' format; det som alt er trukket (capturedAmount) trekkes ikke igjen; et månedstrekk Vipps aldri tok imot, prøves igjen neste runde.",
+            "hvor": "Betaling (Vipps) og medlemskap",
+            "kode": [
+                {
+                    "fil": "api/betaling-retur.php",
+                    "finnes": [
+                        "Vipps::anvendTilstand($referanse, $status);"
+                    ],
+                    "ikkeFinnes": [
+                        "logg_feil('Trekk feilet ved retur for ' . $referanse, $e);"
+                    ]
+                },
+                {
+                    "fil": "api/vipps-webhook.php",
+                    "finnes": [
+                        "$signert = Vipps::webhookSignert($raa, $hemmelighet, $server);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vipps.php",
+                    "finnes": [
+                        "'HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature='",
+                        "$trukket  = (int) ($status['aggregate']['capturedAmount']['value'] ?? 0);",
+                        "self::trekk($referanse, $godkjent - $trukket);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "if ($fra !== null && (string) $fra['status'] === 'feilet' && ($fra['vipps_psp_ref'] ?? null) === null) {"
+                    ]
+                }
+            ]
         }
     ]
 }

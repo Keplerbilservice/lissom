@@ -155,6 +155,8 @@ http.createServer((req, res) => {
       return svar(res, 204, {});
     }
     if (p.endsWith('/charges') && req.method === 'POST') {
+      // Vipps er nede: trekket blir aldri laget. Styres med .trekk-feiler.
+      if (styrt('.trekk-feiler', '') === 'ja') { return svar(res, 500, { detail: 'falsk feil' }); }
       const tid = 'chg_' + Date.now().toString(36) + '_' + (trekk.size + 1);
       trekk.set(tid, kropp);
       // «201 uten chargeId» er tilfellet der trekket trolig finnes hos Vipps,

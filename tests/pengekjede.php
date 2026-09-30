@@ -587,6 +587,39 @@ sjekk('en ti dager gammel betaling blir fortsatt sjekket', $spurt,
     'med sju dagers grense ble den aldri sett paa igjen');
 DB::kjor("DELETE FROM payments WHERE vipps_reference = 'TEST-GAMMEL'");
 
+// ─────────────────────────────────────────────────────────────────────────
+bolk('12. Vipps er nede naar maanedstrekket bes om');
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Raden ble «feilet» uten trekk-id, og neste natt sa runden «alt fort» —
+// hver natt, for alltid. Maaneden ble aldri krevd inn.
+
+DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $sid]);
+DB::kjor("UPDATE subscriptions SET status = 'aktiv', neste_trekk = CURDATE() WHERE id = :s",
+         ['s' => $sid]);
+vippsSvarer('.trekk-feiler', 'ja');
+Medlemskap::kjorTrekkrunde();
+vippsSvarer('.trekk-feiler', '');
+$rad = DB::en('SELECT id, status, vipps_psp_ref FROM payments WHERE subscription_id = :s
+               ORDER BY id DESC LIMIT 1', ['s' => $sid]);
+sjekk('trekket som ikke kom fram, staar «feilet»', ($rad['status'] ?? '') === 'feilet');
+sjekk('… og neste trekk er ikke flyttet',
+    (string) DB::verdi('SELECT neste_trekk FROM subscriptions WHERE id = :s', ['s' => $sid]) === gmdate('Y-m-d'));
+
+Medlemskap::kjorTrekkrunde();
+$rader = DB::alle('SELECT id, status, vipps_psp_ref FROM payments WHERE subscription_id = :s', ['s' => $sid]);
+sjekk('neste runde proever igjen — paa samme rad',
+    count($rader) === 1 && (int) $rader[0]['id'] === (int) ($rad['id'] ?? 0),
+    count($rader) . ' rader');
+sjekk('… og naa er trekket bestilt',
+    ($rader[0]['status'] ?? '') === 'venter' && trim((string) ($rader[0]['vipps_psp_ref'] ?? '')) !== '',
+    'status: ' . ($rader[0]['status'] ?? '—'));
+sjekk('… og neste trekk staar en maaned fram',
+    (string) DB::verdi('SELECT neste_trekk FROM subscriptions WHERE id = :s', ['s' => $sid]) > gmdate('Y-m-d', strtotime('+20 days')));
+Medlemskap::kjorTrekkrunde();
+sjekk('… og en runde til gir ingen ny rad',
+    (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE subscription_id = :s', ['s' => $sid]) === 1);
+
 // ── Rydder ───────────────────────────────────────────────────────────────
 DB::kjor("DELETE p FROM payments p JOIN members m ON m.id = p.member_id WHERE m.epost IN ({$EPOSTER})");
 DB::kjor("DELETE s FROM subscriptions s JOIN members m ON m.id = s.member_id WHERE m.epost IN ({$EPOSTER})");

@@ -50,7 +50,7 @@ file_put_contents("'"$T"'/lissom-secrets/secrets.php", "<?php return " . var_exp
 
 php -S "127.0.0.1:$PORT_WEB" -t "$T/public_html" >/dev/null 2>&1 &
 PID_WEB=$!
-php -S "127.0.0.1:$PORT_VIPPS" tests/vipps-stub.php >/dev/null 2>&1 &
+VIPPS_STUB_STYR="$T/styr.json" php -S "127.0.0.1:$PORT_VIPPS" tests/vipps-stub.php >/dev/null 2>&1 &
 PID_VIPPS=$!
 
 for _ in $(seq 1 20); do
@@ -91,7 +91,7 @@ echo
 echo "== Booking =="
 SVAR=$(curl -s -m 15 -X POST -H "Content-Type: application/json" -H "$ORIG" \
   -H "Cookie: lissom_sesjon=$TOKEN" -d "{\"oktId\":$OKT,\"antall\":1}" "$B/book.php")
-REF=$(echo "$SVAR" | python3 -c "import sys,json;print(json.load(sys.stdin).get('referanse',''))" 2>/dev/null)
+REF=$(echo "$SVAR" | php -r '$j = json_decode(stream_get_contents(STDIN), true); echo is_array($j) ? ($j["referanse"] ?? "") : "";' 2>/dev/null)
 sjekk "booking gir en referanse" "ja" "$([ -n "$REF" ] && echo ja || echo nei)"
 [ -z "$REF" ] && echo "    oekt $OKT, svar: ${SVAR:0:300}"
 sjekk "reservasjon opprettet" "reservert" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
@@ -101,17 +101,30 @@ sjekk "reservasjon opprettet" "reservert" "$(php -r 'require "'"$ROT"'/app/boots
 echo
 echo "== Webhook =="
 KROPP="{\"eventId\":\"flyt-$$\",\"name\":\"AUTHORIZED\",\"reference\":\"$REF\"}"
-SIG=$(python3 -c "
-import hmac, hashlib, base64, sys
-print('HMAC-SHA256 ' + base64.b64encode(
-    hmac.new(sys.argv[1].encode(), sys.argv[2].encode(), hashlib.sha256).digest()).decode())" \
-  "$HEMMELIGHET" "$KROPP")
+# Signert slik Vipps gjor det: «POST\n<sti>\n<dato>;<host>;<innholdshash>»,
+# ikke bare kroppen. https://developer.vippsmobilepay.com/docs/APIs/webhooks-api/request-authentication/
+DATO="Tue, 30 Sep 2026 12:00:00 GMT"
+VERT="127.0.0.1:$PORT_WEB"
+signer() { # signer kropp → «hash|autorisasjon»
+  php -r '$h = base64_encode(hash("sha256", $argv[1], true));
+    echo $h, "|HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature=",
+      base64_encode(hash_hmac("sha256", "POST\n/api/vipps-webhook.php\n" . $argv[2] . ";" . $argv[3] . ";" . $h, $argv[4], true));' \
+    "$1" "$DATO" "$VERT" "$HEMMELIGHET"
+}
+SIGNERT=$(signer "$KROPP")
+HASH="${SIGNERT%%|*}"; SIG="${SIGNERT#*|}"
+VH=(-H 'Content-Type: application/json' -H "x-ms-date: $DATO" -H "x-ms-content-sha256: $HASH")
 
 sjekk "feil signatur avvises" "401" "$(curl -s -m 10 -o /dev/null -w '%{http_code}' -X POST \
-  -H 'Content-Type: application/json' -H 'Authorization: HMAC-SHA256 tull' \
-  -d "{\"eventId\":\"tull-$$\",\"name\":\"AUTHORIZED\",\"reference\":\"$REF\"}" "$B/vipps-webhook.php")"
+  "${VH[@]}" -H 'Authorization: HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature=tull' \
+  -d "$KROPP" "$B/vipps-webhook.php")"
+sjekk "bare kroppen signert (gammelt format) avvises" "401" "$(curl -s -m 10 -o /dev/null -w '%{http_code}' -X POST \
+  "${VH[@]}" -H "Authorization: HMAC-SHA256 $(php -r 'echo base64_encode(hash_hmac("sha256", $argv[1], $argv[2], true));' "$KROPP" "$HEMMELIGHET")" \
+  -d "$KROPP" "$B/vipps-webhook.php")"
+sjekk "endret kropp avvises" "401" "$(curl -s -m 10 -o /dev/null -w '%{http_code}' -X POST \
+  "${VH[@]}" -H "Authorization: $SIG" -d "{\"eventId\":\"tull-$$\",\"name\":\"AUTHORIZED\",\"reference\":\"$REF\"}" "$B/vipps-webhook.php")"
 sjekk "riktig signatur godtas" "200" "$(curl -s -m 15 -o /dev/null -w '%{http_code}' -X POST \
-  -H 'Content-Type: application/json' -H "Authorization: $SIG" -d "$KROPP" "$B/vipps-webhook.php")"
+  "${VH[@]}" -H "Authorization: $SIG" -d "$KROPP" "$B/vipps-webhook.php")"
 sjekk "bookingen er betalt" "betalt" "$(php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   echo DB::verdi("SELECT status FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);')"
@@ -125,11 +138,48 @@ sjekk "noyaktig én kvittering" "1" "$(php -r 'require "'"$ROT"'/app/bootstrap.p
 echo
 echo "== Samme webhook om igjen =="
 sjekk "duplikat gjor ingenting" "1" "$(curl -s -m 15 -X POST -H 'Content-Type: application/json' \
-  -H "Authorization: $SIG" -d "$KROPP" "$B/vipps-webhook.php" >/dev/null;
+  "${VH[@]}" -H "Authorization: $SIG" -d "$KROPP" "$B/vipps-webhook.php" >/dev/null;
   php -r 'require "'"$ROT"'/app/bootstrap.php";
   $p = DB::en("SELECT id FROM payments WHERE vipps_reference = :r", ["r" => "'"$REF"'"]);
   $b = DB::en("SELECT id FROM bookings WHERE payment_id = :p", ["p" => $p["id"]]);
   echo (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE ref_type = \"booking\" AND ref_id = :i AND mal = \"ordrebekreftelse\"", ["i" => $b["id"]]);')"
+
+# --- Retur fra Vipps: trekket feiler, og trekket er alt gjort ---------------
+ny_betaling() { # ny_betaling ref
+  php -r 'require "'"$ROT"'/app/bootstrap.php";
+  DB::settInn("payments", ["vipps_reference" => $argv[1], "type" => "epayment", "formal" => "ordre",
+    "belop_ore" => 100, "status" => "venter", "idempotency_key" => Vipps::uuid()]);' "$1"
+}
+status_for() { php -r 'require "'"$ROT"'/app/bootstrap.php";
+  echo DB::verdi("SELECT status FROM payments WHERE vipps_reference = :r", ["r" => $argv[1]]);' "$1"; }
+utfall() { curl -s -m 15 -o /dev/null -w '%{redirect_url}' "$B/betaling-retur.php?ref=$1" | sed 's/.*#betaling=\([a-z]*\).*/\1/'; }
+antall_trekk() { if [ -f "$T/styr.json.trekk" ]; then wc -l < "$T/styr.json.trekk" | tr -d ' '; else echo 0; fi; }
+
+echo
+echo "== Retur: trekket feiler =="
+R1="FLYT-FEIL-$$"
+ny_betaling "$R1"
+echo '{"trekkFeiler":true}' > "$T/styr.json"; rm -f "$T/styr.json.trekk"
+sjekk "kunden sendes til «venter»" "venter" "$(utfall "$R1")"
+sjekk "betalingen er IKKE betalt" "venter" "$(status_for "$R1")"
+sjekk "det ble bedt om trekk" "1" "$(antall_trekk)"
+
+echo
+echo "== Retur: Vipps har alt trukket (AUTHORIZED + capturedAmount) =="
+echo '{"trukket":100}' > "$T/styr.json"; rm -f "$T/styr.json.trekk"
+sjekk "kunden sendes til «ok»" "ok" "$(utfall "$R1")"
+sjekk "betalingen er betalt" "betalt" "$(status_for "$R1")"
+sjekk "ingen nytt trekk" "0" "$(antall_trekk)"
+
+echo
+echo "== Retur: vanlig trekk =="
+R2="FLYT-OK-$$"
+ny_betaling "$R2"
+echo '{}' > "$T/styr.json"; rm -f "$T/styr.json.trekk"
+sjekk "kunden sendes til «ok»" "ok" "$(utfall "$R2")"
+sjekk "betalingen er betalt" "betalt" "$(status_for "$R2")"
+sjekk "ett trekk" "1" "$(antall_trekk)"
+rm -f "$T/styr.json"
 
 echo
 echo "── $ok gikk gjennom, $feil feilet"

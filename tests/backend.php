@@ -18659,8 +18659,10 @@ sjekk('synlighetsarket staar bare én gang i malen',
 // Tjue: Dugnad, Del paa Instagram, Ta med barn og flere kom til
 // (16c5714, d39ef51, 098f089). Dugnad har faatt hvem-valgene med seg.
 // Tjuetre 29. september 2026: Google-anmeldelser paa forsida (eieren).
+// Tjueseks 30. september 2026: Skisser — modulen, medlemmer og kursdeltakere (eieren).
 sjekk('… og har alle bryterne',
-    substr_count($syn, "        rad('") === 23
+    substr_count($syn, "        rad('") === 26
+    && str_contains($syn, "        rad('Skisser for medlemmer', (this.state.innholdLagret || {})['Vis/skissermedlemmer'] === 'ja',")
     && str_contains($syn, "        Object.assign(rad('Dugnad', this.bryterPaa('dugnad'),")
     && str_contains($syn, "        rad('Dugnadstimer overføres til neste måned', this.bryterPaa('dugnadoverforing'),")
     && str_contains($syn, "        rad('Handlelista', this.bryterPaa('handleliste'),")

@@ -1556,6 +1556,132 @@ await flyt('Menyer og ark lukker seg, Start kurset', async () => {
   await m.context().close();
 });
 
+// ── Skisser: egen modul (eieren, 30. september 2026) ─────────────────
+//
+// Admin lager en tavle, tegner, legger inn et bilde og et notat, lagrer, laster
+// siden paa nytt og ser at alt er der, og laster ned PNG. Paa telefonen
+// tegnes det med ekte beroering (touch-hendelser gjennom Chrome). Et medlem
+// ser sin egen tavle og den admin har delt — ikke andres.
+await flyt('Skisser: tegne, bilde, notat, lagre og dele', async () => {
+  bryter('Vis/skisser', true); bryter('Vis/skissermedlemmer', true); bryter('Vis/skisserdeltakere', false);
+  const tegnMus = async (p, fra, til) => {
+    const b = await p.locator('.upper-canvas').boundingBox();
+    await p.mouse.move(b.x + fra[0], b.y + fra[1]); await p.mouse.down();
+    for (let i = 1; i <= 12; i++) await p.mouse.move(b.x + fra[0] + (til[0] - fra[0]) * i / 12, b.y + fra[1] + (til[1] - fra[1]) * i / 12);
+    await p.mouse.up();
+  };
+  const tegnFinger = async (p, fra, til) => {
+    const b = await p.locator('.upper-canvas').boundingBox();
+    const cdp = await p.context().newCDPSession(p);
+    const pkt = (x, y) => [{ x: b.x + x, y: b.y + y, id: 1 }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pkt(...fra) });
+    for (let i = 1; i <= 12; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pkt(fra[0] + (til[0] - fra[0]) * i / 12, fra[1] + (til[1] - fra[1]) * i / 12) });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+  const objekter = (p) => p.evaluate(() => window.__skisse.lerret().getObjects().map(o => String(o.type).toLowerCase()));
+
+  for (const [hvem, bredde, hoyde] of [['PC', 1358, 900], ['Mobil', 390, 844]]) {
+    const p = await side('admin', bredde, hoyde);
+    await gaa(p, '/skisser.html', 1500);
+    sjekk(`${hvem}: Skisser aapnes for admin`, await p.locator('h2:has-text("Skisser")').isVisible());
+    await p.locator('[data-test="ny-tavle"]').click();
+    await p.waitForSelector('.upper-canvas', { timeout: 10000 }); await p.waitForTimeout(500);
+    const id = await p.evaluate(() => window.__skisse.tavle().id);
+    sjekk(`${hvem}: ny tavle er laget`, Number(verdi('SELECT COUNT(*) FROM skisser WHERE id = :i', { i: id })) === 1);
+    if (hvem === 'PC') await tegnMus(p, [120, 120], [320, 220]); else await tegnFinger(p, [60, 120], [260, 260]);
+    await p.waitForTimeout(400);
+    sjekk(`${hvem}: streken er tegnet`, (await objekter(p)).includes('path'), JSON.stringify(await objekter(p)));
+    // Bilde fra fil
+    const velger = p.waitForEvent('filechooser');
+    await p.locator('[data-test="bilde"]').click();
+    await (await velger).setFiles(path.join(ROT, 'uploads_galleri-1-400.jpg'));
+    await p.waitForFunction(() => window.__skisse.lerret().getObjects().some(o => String(o.type).toLowerCase() === 'image'), null, { timeout: 15000 });
+    sjekk(`${hvem}: bildet er lagt inn`, (await objekter(p)).includes('image'));
+    sjekk(`${hvem}: bildet ligger i skisse_bilder`, Number(verdi('SELECT COUNT(*) FROM skisse_bilder WHERE skisse_id = :i', { i: id })) === 1);
+    // Notat
+    await p.locator('[data-verktoy="notat"]').click();
+    const b = await p.locator('.upper-canvas').boundingBox();
+    if (hvem === 'PC') await p.mouse.click(b.x + 40, b.y + 40); else await p.touchscreen.tap(b.x + 40, b.y + 40);
+    await p.waitForTimeout(300);
+    await p.keyboard.type('Glasur blå');
+    await p.evaluate(() => { const c = window.__skisse.lerret(); const a = c.getActiveObject(); if (a && a.exitEditing) a.exitEditing(); c.discardActiveObject(); });
+    await p.evaluate(() => window.__skisse.lagreNaa());
+    await p.waitForTimeout(500);
+    const lagret = String(verdi('SELECT data FROM skisse_sider WHERE skisse_id = :i AND nr = 1', { i: id }) || '');
+    sjekk(`${hvem}: strek, bilde og notat er lagret i basen`, /"path"/i.test(lagret) && /image/i.test(lagret) && lagret.includes('Glasur bl'), lagret.slice(0, 160));
+    // Last inn paa nytt
+    await gaa(p, '/skisser.html', 1500);
+    await p.locator(`[data-tavle="${id}"]`).click();
+    await p.waitForSelector('.upper-canvas'); await p.waitForTimeout(1500);
+    const etter = await objekter(p);
+    sjekk(`${hvem}: etter ny innlasting er strek, bilde og notat der`, etter.includes('path') && etter.includes('image') && etter.includes('textbox'), JSON.stringify(etter));
+    // PNG
+    await p.locator('[data-test="png"]').click(); await p.waitForTimeout(600);
+    const png = await p.evaluate(() => window.__skissePng || '');
+    sjekk(`${hvem}: last ned gir PNG`, png.startsWith('data:image/png;base64,') && png.length > 2000, String(png.length));
+    sjekk(`${hvem}: ingen sidelengs rulling`, await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    if (hvem === 'PC') {
+      await p.locator('[data-test="del"]').click(); await p.waitForTimeout(300);
+      await p.locator('button[role="switch"][aria-label="Del med medlemmer"]').click(); await p.waitForTimeout(800);
+      sjekk('PC: delt med medlemmer', Number(verdi('SELECT delt_medlemmer FROM skisser WHERE id = :i', { i: id })) === 1);
+      await p.keyboard.press('Escape');
+      S.skisseDelt = id;
+    } else {
+      S.skisseMobil = id;
+    }
+    if (process.env.E2E_BILDER) await p.screenshot({ path: path.join(process.env.E2E_BILDER, 'skisser-' + hvem + '.png') }).catch(() => {});
+    await p.context().close();
+  }
+
+  // Et annet medlem sin tavle, som Kari ikke skal se.
+  const annen = Number(php(`$o = DB::settInn('members', ['navn' => 'Skisse Annen', 'epost' => 'skisse-annen-' . bin2hex(random_bytes(3)) . '@e2e.lissom.test', 'telefon' => '+4790000099', 'rolle' => 'medlem', 'status' => 'aktiv']); return Skisser::ny(DB::en('SELECT * FROM members WHERE id = :i', ['i' => $o]), 'Andres tavle');`));
+  const k = await side('medlem', 390, 844);
+  await gaa(k, '/skisser.html', 1500);
+  sjekk('Medlem: ser tavla admin delte', await k.locator(`[data-tavle="${S.skisseDelt}"]`).count() === 1);
+  sjekk('Medlem: ser ikke admins udelte tavle', await k.locator(`[data-tavle="${S.skisseMobil}"]`).count() === 0);
+  sjekk('Medlem: ser ikke et annet medlems tavle', await k.locator(`[data-tavle="${annen}"]`).count() === 0);
+  const fremmed = await api(k, '/api/skisser.php?id=' + annen);
+  sjekk('Medlem: serveren gir ikke ut et annet medlems tavle', fremmed.ok !== true);
+  await k.locator('[data-test="ny-tavle"]').click();
+  await k.waitForSelector('.upper-canvas'); await k.waitForTimeout(500);
+  await tegnFinger(k, [80, 100], [240, 300]); await k.waitForTimeout(300);
+  await k.evaluate(() => window.__skisse.lagreNaa());
+  const egen = await k.evaluate(() => window.__skisse.tavle());
+  sjekk('Medlem: tegner paa egen tavle med fingeren', /"path"/i.test(String(verdi('SELECT data FROM skisse_sider WHERE skisse_id = :i AND nr = 1', { i: egen.id }) || '')));
+  await k.locator('[data-test="ferdig"]').click(); await k.waitForTimeout(800);
+  await k.locator(`[data-tavle="${S.skisseDelt}"]`).click();
+  await k.waitForSelector('.upper-canvas'); await k.waitForTimeout(800);
+  sjekk('Medlem: den delte tavla kan ikke endres', await k.locator('[data-verktoy="penn"]').count() === 0);
+  const endre = await api(k, '/api/skisser.php', { handling: 'lagre', id: S.skisseDelt, nr: 1, data: '{"objects":[]}' });
+  sjekk('Medlem: serveren avviser endring av delt tavle', endre.ok !== true);
+  await k.context().close();
+
+  // Min side-flisen
+  const k2 = await side('medlem', 390, 844);
+  await gaa(k2, '/min-side', 3000);
+  sjekk('Min side: flisen «Skisser» vises naar bryteren er paa', await k2.locator('[data-skisser="1"]').count() > 0);
+  await k2.context().close();
+
+  // Bryteren av: serveren stopper
+  bryter('Vis/skissermedlemmer', false);
+  const k3 = await side('medlem');
+  await gaa(k3, '/skisser.html', 1000);
+  const av = await k3.evaluate(async () => (await fetch('/api/skisser.php', { credentials: 'same-origin' })).status);
+  sjekk('Bryteren av: medlemmet faar 403', av === 403, String(av));
+  await gaa(k3, '/min-side', 3000);
+  sjekk('Bryteren av: flisen er borte fra Min side', await k3.locator('[data-skisser="1"]').count() === 0);
+  await k3.context().close();
+  bryter('Vis/skisser', false);
+  const a3 = await side('admin');
+  await gaa(a3, '/skisser.html', 500);
+  const avA = await a3.evaluate(async () => (await fetch('/api/admin/skisser.php', { credentials: 'same-origin' })).status);
+  sjekk('Modulen av: admin faar 403', avA === 403, String(avA));
+  await a3.context().close();
+  bryter('Vis/skisser', true);
+  bryter('Vis/skisserdeltakere', false);
+  php(`foreach (DB::alle("SELECT s.id FROM skisser s JOIN members m ON m.id = s.eier_id WHERE m.navn = 'Skisse Annen'") as $r) { DB::kjor('DELETE FROM skisse_sider WHERE skisse_id = :i', ['i' => $r['id']]); DB::kjor('DELETE FROM skisser WHERE id = :i', ['i' => $r['id']]); } DB::kjor("DELETE FROM members WHERE navn = 'Skisse Annen'"); return true;`);
+});
+
 await nettleser.close();
 console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjente feil.`);
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }

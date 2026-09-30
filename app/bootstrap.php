@@ -107,6 +107,8 @@ spl_autoload_register(static function (string $klasse): void {
         'Skolerute' => 'skolerute.php',
         'Sesjon' => 'session.php',
         'Sikkerhetskopi' => 'sikkerhetskopi.php',
+        'Skisser' => 'skisser.php',
+        'SkisserApi' => 'skisser_api.php',
         'Stempling' => 'stempling.php',
         'Svar' => 'http.php',
         'Tikk' => 'tikk.php',

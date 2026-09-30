@@ -161,6 +161,7 @@ const FASIT_API = ['/api/meg.php', '/api/medlemskap.php', '/api/stempling.php', 
 const MND = 'januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember';
 const DAG = 'mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag';
 const normTekst = (s) => String(s)
+  .replace(/\r\n/g, '\n')
   .replace(new RegExp(S.tag, 'g'), '<tag>')
   .replace(/([?&][A-Za-z_]+=)\d+/g, '$1<id>')
   .replace(/(\/)\d{2,}(?=[/?.#]|$)/g, '$1<id>')
@@ -187,13 +188,14 @@ const norm = (v, nokkel = '') => {
 const form = (v) => Array.isArray(v) ? '<liste>' : (v && typeof v === 'object') ? Object.fromEntries(Object.keys(v).sort().map(k => [k, form(v[k])])) : (v === null ? null : `<${typeof v}>`);
 const FELLES = {
   '/api/butikk.php': [''], '/api/mine-dokumenter.php': [''], '/api/medlemssalg.php': [''],
-  '/api/handleliste.php': ['leverandorer', 'frakt', 'fraktOppsett', 'soner'], '/api/meg.php': ['verving', 'internInfo'],
+  '/api/handleliste.php': ['leverandorer', 'varer', 'frakt', 'fraktOppsett', 'soner'], '/api/meg.php': ['verving', 'internInfo'],
   '/api/stempling.php': ['inne', 'ressurser'],
 };
 const felles = (a, d) => {
   const stier = FELLES[a];
   if (!stier || !d || typeof d !== 'object') return d;
-  if (stier.includes('')) return form(d);
+  // Hele svaret er felles (varene i butikken): bare at det svarer.
+  if (stier.includes('')) return '<felles>';
   const k = { ...d };
   for (const n of stier) if (n in k) k[n] = form(k[n]);
   return k;

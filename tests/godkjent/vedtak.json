@@ -2127,7 +2127,7 @@
                         "public static function gavekortDekker(int $kortId, int $belop): bool",
                         "private static function kanBliBetalt(array $b): bool",
                         "DB::en('SELECT id FROM ressurser WHERE id = :r FOR UPDATE', ['r' => $ressursId]);",
-                        "'Må refunderes: betalt etter at plassen var borte',",
+                        "Varsel::malTilAdmin('intern_betalt_uten_plass', [",
                         "self::varsleBetaltUtenPlass((int) $booking['id'], $referanse);"
                     ]
                 },
@@ -2136,6 +2136,13 @@
                     "finnes": [
                         "$lager = DB::en('SELECT lager, tittel FROM products WHERE id = :i FOR UPDATE', ['i' => $vareId]);",
                         "!Booking::gavekortDekker((int) $gavekortId, (int) $gavekortOre)"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/240_betalt_uten_plass.sql",
+                    "finnes": [
+                        "('intern_betalt_uten_plass', 'epost', 'Må refunderes: betalt etter at plassen var borte',",
+                        "Refunder under Kasse › Betalinger — søk på referansen."
                     ]
                 }
             ]

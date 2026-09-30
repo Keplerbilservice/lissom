@@ -1241,8 +1241,8 @@ final class Booking
      * Beskjed til verkstedet: pengene kom, men plassen var borte.
      *
      * Eieren, 30. september 2026: «Bare varsle, refunder for haand». Ingen
-     * automatisk refusjon. Beskjeden gaar samme vei som andre ting som maa
-     * tas for haand (Varsel::tilAdmin), med referansen saa betalingen finnes
+     * automatisk refusjon. Beskjeden er en intern mal som de andre beskjedene
+     * til verkstedet (Varsel::malTilAdmin), med referansen saa betalingen finnes
      * med soeket i Kasse › Betalinger, der refusjonen gjoeres.
      */
     private static function varsleBetaltUtenPlass(int $bookingId, string $referanse): void
@@ -1260,17 +1260,14 @@ final class Booking
         if ($b === null) {
             return;
         }
-        Varsel::tilAdmin(
-            'Må refunderes: betalt etter at plassen var borte',
-            "Betalingen kom inn etter at plassen var sluppet og solgt til en annen. Kunden har ikke fått plass.\n\n"
-            . 'Kunde: ' . (string) ($b['navn'] ?? '') . "\n"
-            . 'Kurs: ' . (string) $b['tittel'] . ', ' . self::norskDato((string) $b['start_tid']) . "\n"
-            . 'Beløp: ' . self::kroner((int) $b['belop_ore']) . "\n"
-            . 'Referanse: ' . $referanse . "\n\n"
-            . 'Refunder under Kasse › Betalinger — søk på referansen.',
-            'booking',
-            $bookingId
-        );
+        // Malen «intern_betalt_uten_plass» (migrasjon 240), som Monica kan
+        // endre i Tekst maler.
+        Varsel::malTilAdmin('intern_betalt_uten_plass', [
+            'navn'      => (string) ($b['navn'] ?? ''),
+            'kurs'      => (string) $b['tittel'] . ', ' . self::norskDato((string) $b['start_tid']),
+            'belop'     => self::kroner((int) $b['belop_ore']),
+            'referanse' => $referanse,
+        ], 'booking', $bookingId);
     }
 
     /**

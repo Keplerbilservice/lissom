@@ -2077,6 +2077,29 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "codex-kjop-en-gang",
+            "dato": "2026-09-30",
+            "hva": "«Sjekk og rett de høye» (Codex-gjennomgangen): gavekort, siste plass, delt ressurs og siste vare selges én gang — også når to kjøp kommer samtidig eller betalingen kommer sent",
+            "hvor": "Booking, butikk og betaling (app/lib/booking.php, api/ordre.php)",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function gavekortDekker(int $kortId, int $belop): bool",
+                        "private static function kanBliBetalt(array $b): bool",
+                        "DB::en('SELECT id FROM ressurser WHERE id = :r FOR UPDATE', ['r' => $ressursId]);"
+                    ]
+                },
+                {
+                    "fil": "api/ordre.php",
+                    "finnes": [
+                        "$lager = DB::en('SELECT lager, tittel FROM products WHERE id = :i FOR UPDATE', ['i' => $vareId]);",
+                        "!Booking::gavekortDekker((int) $gavekortId, (int) $gavekortOre)"
+                    ]
+                }
+            ]
         }
     ]
 }

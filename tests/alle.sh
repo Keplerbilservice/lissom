@@ -46,6 +46,7 @@ kjor "vedtak" node tests/vedtak.mjs
 kjor "backend"       php tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
+kjor "kjopslaas"     php tests/kjopslaas.php
 kjor "verving"       php tests/verving.php
 kjor "prøv lissom"   php tests/prove.php
 kjor "timepakke"     php tests/timepakke.php

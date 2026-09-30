@@ -89,7 +89,8 @@ DB::kjor('UPDATE products SET lager = 0 WHERE id = :i', ['i' => $tom]);
 
 echo "\n── En ordre kan ikke legges paa en vare med 0 ───────────────\n";
 $ordre = (string) file_get_contents(dirname(__DIR__) . '/api/ordre.php');
-sjekk('ordren sjekker lageret', str_contains($ordre, "if (\$vare['lager'] !== null && (int) \$vare['lager'] < \$antall) {"));
+// Hele kurven teller: samme vare paa to linjer summeres (Codex-gjennomgang 30.09).
+sjekk('ordren sjekker lageret', str_contains($ordre, "if (\$vare['lager'] !== null && (int) \$vare['lager'] < \$iKurven[(int) \$vare['id']]) {"));
 
 $rydd();
 echo "\n$ok sjekker i orden, $feil feilet.\n";

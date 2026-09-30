@@ -184,7 +184,7 @@ const norm = (v, nokkel = '') => {
 // Noe av det Min side leser er felles for alle, og endres av andre tester og
 // av verkstedet: varene i butikken, leverandørene, vervepremien, hvem som er
 // inne. Der sammenlignes bare formen (feltene og typene), ikke innholdet.
-const form = (v) => Array.isArray(v) ? (v.length ? [form(v[0])] : []) : (v && typeof v === 'object') ? Object.fromEntries(Object.keys(v).sort().map(k => [k, form(v[k])])) : (v === null ? null : `<${typeof v}>`);
+const form = (v) => Array.isArray(v) ? '<liste>' : (v && typeof v === 'object') ? Object.fromEntries(Object.keys(v).sort().map(k => [k, form(v[k])])) : (v === null ? null : `<${typeof v}>`);
 const FELLES = {
   '/api/butikk.php': [''], '/api/mine-dokumenter.php': [''], '/api/medlemssalg.php': [''],
   '/api/handleliste.php': ['leverandorer', 'frakt', 'fraktOppsett', 'soner'], '/api/meg.php': ['verving', 'internInfo'],

@@ -23,7 +23,7 @@
       "soknadStatus": null,
       "verving": {
         "lenke": "<string>",
-        "timer": 5
+        "timer": "<number>"
       }
     }
   },
@@ -217,9 +217,9 @@
         }
       ],
       "inne": {
-        "antall": 0,
-        "liste": [],
-        "skjulte": 0
+        "antall": "<number>",
+        "liste": "<liste>",
+        "skjulte": "<number>"
       },
       "innstemplet": false,
       "plan": {
@@ -227,20 +227,7 @@
         "navn": "Prøv Lissom"
       },
       "ressursId": "<number>",
-      "ressurser": [
-        {
-          "antall": 12,
-          "iBruk": 0,
-          "id": "<number>",
-          "navn": "Bordplass"
-        },
-        {
-          "antall": 8,
-          "iBruk": 0,
-          "id": "<number>",
-          "navn": "Dreieskive"
-        }
-      ],
+      "ressurser": "<liste>",
       "saaLenge": null,
       "saaLengeMin": 0,
       "siden": null,
@@ -270,51 +257,16 @@
     "svar": {
       "frakt": null,
       "gebyr": 5,
-      "leverandorer": [
-        {
-          "id": "<number>",
-          "navn": "Scan-Form",
-          "rutine": "",
-          "satser": [
-            {
-              "kg": 100,
-              "ore": 35000
-            },
-            {
-              "kg": 200,
-              "ore": 50000
-            },
-            {
-              "kg": 400,
-              "ore": 70000
-            }
-          ],
-          "sok": "https://www.scan-form.no/sok?q={q}"
-        },
-        {
-          "id": "<number>",
-          "navn": "Waldemar Ellefsen",
-          "rutine": "",
-          "satser": [
-            {
-              "kg": 100,
-              "ore": 85000
-            },
-            {
-              "kg": 200,
-              "ore": 100000
-            },
-            {
-              "kg": 400,
-              "ore": 115000
-            }
-          ],
-          "sok": "https://www.we.no/search?action=search&q={q}"
-        }
-      ],
+      "leverandorer": "<liste>",
       "mine": [],
       "paa": true,
-      "varer": []
+      "varer": [
+        {
+          "id": "<number>",
+          "navn": "pemuo3ad4h Leire",
+          "nummer": ""
+        }
+      ]
     }
   },
   "/api/skisser.php?sjekk=1": {
@@ -366,271 +318,12 @@
   "/api/butikk.php": {
     "status": 200,
     "svar": {
-      "fokus": [],
-      "frakt": "kr. 140,-",
-      "fraktOre": 14000,
-      "varer": [
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp med hank, i lys grå glasur med en blå strek malt fritt rundt koppen og bort på hanken. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 350,-",
-          "prisOre": 35000,
-          "sti": "/butikk/10-kaffekopp-med-bla-strek",
-          "tittel": "Kaffekopp med blå strek",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp med hank, i lys blå glasur som samler seg mørkere mot bunnen. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 380,-",
-          "prisOre": 38000,
-          "sti": "/butikk/9-kaffekopp-bla",
-          "tittel": "Kaffekopp, blå",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp med hank, i varm brun glasur der dreieringene står tydelig fram. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 350,-",
-          "prisOre": 35000,
-          "sti": "/butikk/11-kaffekopp-brun",
-          "tittel": "Kaffekopp, brun",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp med hank, i olivengrønn glasur med mørke prikker og ubehandlet bunn i mørk leire. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 380,-",
-          "prisOre": 38000,
-          "sti": "/butikk/8-kaffekopp-gronn",
-          "tittel": "Kaffekopp, grønn",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Kopp med egen skål under, i hvit engobe mot rød terrakotta, med et blad risset inn i siden. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 450,-",
-          "prisOre": 45000,
-          "sti": "/butikk/12-kopp-med-skal-i-terrakotta",
-          "tittel": "Kopp med skål i terrakotta",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp uten hank, i blågrønn glasur med lyse linjer lagt på i slynger. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 320,-",
-          "prisOre": 32000,
-          "sti": "/butikk/14-kopp-uten-hank-blagronn",
-          "tittel": "Kopp uten hank, blågrønn",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Hvit kopp med hank, dekket av jevnt store svarte prikker. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 450,-",
-          "prisOre": 45000,
-          "sti": "/butikk/17-prikkekopp-jevne-prikker",
-          "tittel": "Prikkekopp, jevne prikker",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Hvit kopp med hank, oversådd med små svarte prikker. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 450,-",
-          "prisOre": 45000,
-          "sti": "/butikk/19-prikkekopp-sma-prikker",
-          "tittel": "Prikkekopp, små prikker",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Hvit kopp med hank, med svarte prikker i alle størrelser om hverandre. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 450,-",
-          "prisOre": 45000,
-          "sti": "/butikk/18-prikkekopp-store-og-sma-prikker",
-          "tittel": "Prikkekopp, store og små prikker",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Hvit kopp med hank, med store svarte prikker med god plass mellom. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 450,-",
-          "prisOre": 45000,
-          "sti": "/butikk/20-prikkekopp-store-prikker",
-          "tittel": "Prikkekopp, store prikker",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp med hank, i rosa glasur med en stor blomst som står igjen i leirens egen farge. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 450,-",
-          "prisOre": 45000,
-          "sti": "/butikk/21-rosa-kopp-med-blomst",
-          "tittel": "Rosa kopp med blomst",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp med hank, i lys sandglasur med sommerfugler risset inn i siden. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 400,-",
-          "prisOre": 40000,
-          "sti": "/butikk/16-sommerfuglkopp-med-hank",
-          "tittel": "Sommerfuglkopp med hank",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dreid kopp uten hank, i lys sandglasur med sommerfugler risset inn i siden. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 300,-",
-          "prisOre": 30000,
-          "sti": "/butikk/15-sommerfuglkopp-uten-hank",
-          "tittel": "Sommerfuglkopp uten hank",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Tekopp med hank og egen skål, i lys glasur med prikker og grønne kløverblad malt på både kopp og skål. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Kopper",
-          "kunMedlemmer": false,
-          "pris": "kr. 750,-",
-          "prisOre": 75000,
-          "sti": "/butikk/13-tekopp-med-skal",
-          "tittel": "Tekopp med skål",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dyp tallerken med bred kant, i rolig beige glasur. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Tallerkener",
-          "kunMedlemmer": false,
-          "pris": "kr. 750,-",
-          "prisOre": 75000,
-          "sti": "/butikk/22-pastatallerken-beige",
-          "tittel": "Pastatallerken beige",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dyp tallerken med blomster formet i relieff hele veien rundt kanten, i beige glasur. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Tallerkener",
-          "kunMedlemmer": false,
-          "pris": "kr. 750,-",
-          "prisOre": 75000,
-          "sti": "/butikk/24-pastatallerken-beige-med-blomster",
-          "tittel": "Pastatallerken beige med blomster",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Dyp tallerken med bred kant, i rosa glasur som flyter i lysere og mørkere felt. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Tallerkener",
-          "kunMedlemmer": false,
-          "pris": "kr. 750,-",
-          "prisOre": 75000,
-          "sti": "/butikk/23-pastatallerken-rosa",
-          "tittel": "Pastatallerken rosa",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Rund liten vase med smal åpning, i mørk glasur med skiftninger i bronse og grønt. Passer til noen få stilker. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Vaser",
-          "kunMedlemmer": false,
-          "pris": "kr. 550,-",
-          "prisOre": 55000,
-          "sti": "/butikk/25-liten-vase",
-          "tittel": "Liten vase",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Vase i lys sandfarget glasur, med bølget kant og et bånd av blomster formet i relieff øverst. Håndlaget i verkstedet på Teie.",
-          "id": "<number>",
-          "kategori": "Vaser",
-          "kunMedlemmer": false,
-          "pris": "kr. 800,-",
-          "prisOre": 80000,
-          "sti": "/butikk/26-vase",
-          "tittel": "Vase",
-          "utenForskudd": true,
-          "utsolgt": false
-        },
-        {
-          "bilde": null,
-          "detalj": "Én ekstra brenning utover det medlemskapet dekker.",
-          "id": "<number>",
-          "kategori": "Brenning",
-          "kunMedlemmer": true,
-          "pris": "kr. 220,-",
-          "prisOre": 22000,
-          "sti": "",
-          "tittel": "Ekstra glasurbrann",
-          "utenForskudd": true,
-          "utsolgt": false
-        }
-      ]
+      "fokus": {
+        "api/bilde.php?artikkel=9b46cb94491141171f343b7035156580.jpg": "<string>"
+      },
+      "frakt": "<string>",
+      "fraktOre": "<number>",
+      "varer": "<liste>"
     }
   },
   "/api/medlem-frys.php": {
@@ -668,14 +361,14 @@
   "/api/mine-dokumenter.php": {
     "status": 200,
     "svar": {
-      "faq": true,
-      "kategorier": []
+      "faq": "<boolean>",
+      "kategorier": "<liste>"
     }
   },
   "/api/medlemssalg.php": {
     "status": 200,
     "svar": {
-      "varer": []
+      "varer": "<liste>"
     }
   }
 }

@@ -1965,6 +1965,23 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "handleliste-frakttekst",
+            "dato": "2026-09-30",
+            "hva": "Handlelista på Min side sier at frakten deles etter vekt eller volum på varene hver enkelt bestiller, ikke likt (eieren 30.09).",
+            "hvor": "Min side › Handleliste",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Frakten deles etter vekt eller volum på varene hver enkelt bestiller."
+                    ],
+                    "ikke": [
+                        "Frakten deles likt mellom alle som er med på bestillingen."
+                    ]
+                }
+            ]
         }
     ]
 }

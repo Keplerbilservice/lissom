@@ -109,6 +109,83 @@ final class Omsetning
         return $rader;
     }
 
+    // ── Mva ─────────────────────────────────────────────────────────────
+    //
+    // Eieren, 30. september 2026: «omsetning som vises, paa de kontoene som
+    // har mva, saa vis uten mva og mva paa egen linje».
+    //
+    // Satsen kommer fra mva-koden i regnskapsoppsettet (Oekonomi › Regnskap,
+    // regnskap_mva_*), den samme koden dagsoppgjoret skriver paa bilaget.
+    // Kodene er Tripletex sine: 3 er hoey sats (25 %), 31 middels (15 %),
+    // 33 lav (12 %). Alt annet — 6 (avgiftsfri, kursene), 5 (fritatt) og tom
+    // (gavekort, som er gjeld) — har ingen mva, og da vises bare beloepet.
+
+    /** Mva-kode → sats i prosent. Koder som ikke staar her, har ingen mva. */
+    public const MVA_SATS = ['3' => 25, '31' => 15, '33' => 12];
+
+    /** Formaal → innstillingen som har mva-koden. */
+    public const MVA_KODE = [
+        'booking'    => 'regnskap_mva_kurs',
+        'medlemskap' => 'regnskap_mva_medlemskap',
+        'ordre'      => 'regnskap_mva_butikk',
+        'gavekort'   => 'regnskap_mva_gavekort',
+    ];
+
+    /** Mva-satsen (prosent) for et formaal, eller 0 naar det ikke har mva. */
+    public static function mvaSats(string $formal): int
+    {
+        $n = self::MVA_KODE[$formal] ?? null;
+        if ($n === null) {
+            return 0;
+        }
+        $kode = trim((string) Config::hent($n, ''));
+        return self::MVA_SATS[$kode] ?? 0;
+    }
+
+    /**
+     * Brutto delt i beloep uten mva og mva, i oere. Mva-en er resten, saa
+     * eks + mva er alltid noeyaktig brutto.
+     *
+     * @return array{eksOre:int, mvaOre:int, mvaSats:int}
+     */
+    public static function delMva(int $bruttoOre, int $sats): array
+    {
+        if ($sats <= 0) {
+            return ['eksOre' => $bruttoOre, 'mvaOre' => 0, 'mvaSats' => 0];
+        }
+        $eks = (int) round($bruttoOre * 100 / (100 + $sats));
+        return ['eksOre' => $eks, 'mvaOre' => $bruttoOre - $eks, 'mvaSats' => $sats];
+    }
+
+    /** delMva() med satsen fra oppsettet for formaalet. */
+    public static function mvaFor(string $formal, int $bruttoOre): array
+    {
+        return self::delMva($bruttoOre, self::mvaSats($formal));
+    }
+
+    /**
+     * Omsetningen: summen UTEN mva over formaalene, og mva-en for seg.
+     *
+     * Eieren, 30. september 2026: «kontoen total maa vaere alt uten mva, det
+     * er dette som er omsetning». Mva-en er informasjon, ikke omsetning.
+     * Delt per formaal foer summen, saa totalen er noeyaktig summen av
+     * linjene som vises.
+     *
+     * @param array<string,int> $perFormal fra perFormal()
+     * @return array{eksOre:int, mvaOre:int, bruttoOre:int}
+     */
+    public static function sumUtenMva(array $perFormal): array
+    {
+        $eks = 0;
+        $mva = 0;
+        foreach ($perFormal as $f => $ore) {
+            $d = self::mvaFor((string) $f, (int) $ore);
+            $eks += $d['eksOre'];
+            $mva += $d['mvaOre'];
+        }
+        return ['eksOre' => $eks, 'mvaOre' => $mva, 'bruttoOre' => $eks + $mva];
+    }
+
     /**
      * Inntekt per formaal i perioden, i oere. Tomme formaal er ikke med.
      *

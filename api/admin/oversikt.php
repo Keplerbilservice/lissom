@@ -111,6 +111,11 @@ $mndStart = $naa->modify('first day of this month')->setTime(0, 0)
 $sum = static function (string $fra, ?string $til = null): int {
     return array_sum(Omsetning::perFormal($fra, $til ?? '9999-12-31 00:00:00'));
 };
+// Omsetningen er UTEN mva (eieren, 30. september 2026: «kontoen total maa
+// vaere alt uten mva, det er dette som er omsetning»). Mva-en for seg.
+$eks = static function (string $fra, ?string $til = null): array {
+    return Omsetning::sumUtenMva(Omsetning::perFormal($fra, $til ?? '9999-12-31 00:00:00'));
+};
 
 // Fordelingen per formal. Uten den star det bare en sum, og eieren kan ikke se
 // hva pengene kom fra.
@@ -128,13 +133,19 @@ $linjer = static function (string $fra) use ($FORMAL): array {
     foreach ($FORMAL as $nokkel => $navn) {
         if (isset($etter[$nokkel])) {
             // «ore» er med saa Oversikt kan tegne fordelingen som en stripe.
-            $ut[] = ['navn' => $navn, 'verdi' => Booking::kroner($etter[$nokkel]), 'ore' => $etter[$nokkel], 'nokkel' => $nokkel];
+            // eksOre / mvaOre / mvaSats: beloepet uten mva og mva-en for seg,
+            // for kontoene som har mva (eieren, 30. september 2026). Lagt til
+            // ved siden av de gamle feltene; «ore» er fortsatt brutto.
+            $ut[] = ['navn' => $navn, 'verdi' => Booking::kroner($etter[$nokkel]), 'ore' => $etter[$nokkel], 'nokkel' => $nokkel]
+                + Omsetning::mvaFor($nokkel, $etter[$nokkel]);
         }
     }
     return $ut;
 };
 
 $betaltIdag = $sum($dagStart);
+$eksIdag    = $eks($dagStart);
+$eksMnd     = $eks($mndStart);
 $betaltMnd  = $sum($mndStart);
 
 // Sammenligningen paa Oversikt (eieren, 26. september 2026: «en liten
@@ -153,11 +164,19 @@ $betaltForrigeMnd = $sum(
     $forrigeMndStartOslo->setTimezone($utc)->format('Y-m-d H:i:s'),
     $forrigeMndTilOslo->setTimezone($utc)->format('Y-m-d H:i:s')
 );
+$eksForrigeMnd = $eks(
+    $forrigeMndStartOslo->setTimezone($utc)->format('Y-m-d H:i:s'),
+    $forrigeMndTilOslo->setTimezone($utc)->format('Y-m-d H:i:s')
+)['eksOre'];
 $uke = $naa->modify('-7 days');
 $betaltForrigeUkedag = $sum(
     $uke->setTime(0, 0)->setTimezone($utc)->format('Y-m-d H:i:s'),
     $uke->setTimezone($utc)->format('Y-m-d H:i:s')
 );
+$eksForrigeUkedag = $eks(
+    $uke->setTime(0, 0)->setTimezone($utc)->format('Y-m-d H:i:s'),
+    $uke->setTimezone($utc)->format('Y-m-d H:i:s')
+)['eksOre'];
 $MND_NAVN = [1 => 'januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
 
 // --- Bookinger ------------------------------------------------------------
@@ -667,6 +686,14 @@ Svar::json([
         'forrigeMndOre'    => $betaltForrigeMnd,
         'forrigeMndNavn'   => $MND_NAVN[(int) $forrigeMndStartOslo->format('n')],
         'forrigeUkedagOre' => $betaltForrigeUkedag,
+        // Omsetningen UTEN mva, og mva-en for seg (eieren, 30. september 2026).
+        // Lagt til ved siden av de gamle feltene, som fortsatt er med mva.
+        'idagEksOre'          => $eksIdag['eksOre'],
+        'manedEksOre'         => $eksMnd['eksOre'],
+        'idagMvaOre'          => $eksIdag['mvaOre'],
+        'manedMvaOre'         => $eksMnd['mvaOre'],
+        'forrigeMndEksOre'    => $eksForrigeMnd,
+        'forrigeUkedagEksOre' => $eksForrigeUkedag,
     ],
     // ── Hvem som er i huset ───────────────────────────────────────────
     //

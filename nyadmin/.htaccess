@@ -1,0 +1,9 @@
+# Det nye admin (/admin2). Modulene lastes med import og har ingen versjon i
+# adressen, saa uka med mellomlagring fra rota (.js) gjorde at nettleseren
+# viste den gamle utgaven etter en publisering (30. september 2026).
+# «no-cache» betyr «spør først»: uendret fil svarer 304 uten innhold.
+<IfModule mod_headers.c>
+    <FilesMatch "\.js$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>

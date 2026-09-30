@@ -156,11 +156,19 @@ for (const s of skjermer) {
       for (const l of v.live) {
         const side = await kontekst.newPage();
         let html = '';
+        let hoder = {};
         try {
-          await side.goto(ADRESSE + l.sti, { waitUntil: 'networkidle', timeout: 45000 });
+          const svar = await side.goto(ADRESSE + l.sti, { waitUntil: 'networkidle', timeout: 45000 });
+          hoder = svar ? svar.headers() : {};
           await side.waitForTimeout(800);
           html = await side.content();
         } catch (e) { /* html blir tom, og sjekkene under slaar ut */ }
+        // «hode»: en header som skal inneholde en tekst, for eksempel
+        // Cache-Control paa skriptene i det nye admin.
+        for (const [navn, tekst] of Object.entries(l.hode || {})) {
+          const verdi = String(hoder[navn.toLowerCase()] || '');
+          sjekk(`Vedtak ${v.id}: ${l.sti} har ${navn} med «${tekst}»`, verdi.includes(tekst), v.hva);
+        }
         for (const s of l.finnes || []) sjekk(`Vedtak ${v.id}: ${l.sti} viser «${s}»`, html.includes(s), v.hva);
         for (const s of l.ikkeFinnes || []) sjekk(`Vedtak ${v.id}: ${l.sti} viser ikke «${s}»`, html !== '' && !html.includes(s), v.hva);
         for (const sel of l.selektorer || []) {

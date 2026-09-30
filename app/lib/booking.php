@@ -1238,6 +1238,42 @@ final class Booking
     }
 
     /**
+     * Beskjed til verkstedet: pengene kom, men plassen var borte.
+     *
+     * Eieren, 30. september 2026: «Bare varsle, refunder for haand». Ingen
+     * automatisk refusjon. Beskjeden gaar samme vei som andre ting som maa
+     * tas for haand (Varsel::tilAdmin), med referansen saa betalingen finnes
+     * med soeket i Kasse › Betalinger, der refusjonen gjoeres.
+     */
+    private static function varsleBetaltUtenPlass(int $bookingId, string $referanse): void
+    {
+        $b = DB::en(
+            'SELECT COALESCE(m.navn, b.gjest_navn) AS navn, c.tittel, cs.start_tid, p.belop_ore
+               FROM bookings b
+               JOIN courses c          ON c.id = b.course_id
+               JOIN course_sessions cs ON cs.id = b.course_session_id
+               JOIN payments p         ON p.id = b.payment_id
+          LEFT JOIN members m          ON m.id = b.member_id
+              WHERE b.id = :i',
+            ['i' => $bookingId]
+        );
+        if ($b === null) {
+            return;
+        }
+        Varsel::tilAdmin(
+            'Må refunderes: betalt etter at plassen var borte',
+            "Betalingen kom inn etter at plassen var sluppet og solgt til en annen. Kunden har ikke fått plass.\n\n"
+            . 'Kunde: ' . (string) ($b['navn'] ?? '') . "\n"
+            . 'Kurs: ' . (string) $b['tittel'] . ', ' . self::norskDato((string) $b['start_tid']) . "\n"
+            . 'Beløp: ' . self::kroner((int) $b['belop_ore']) . "\n"
+            . 'Referanse: ' . $referanse . "\n\n"
+            . 'Refunder under Kasse › Betalinger — søk på referansen.',
+            'booking',
+            $bookingId
+        );
+    }
+
+    /**
      * Markerer en booking som betalt. Kalles fra webhook og fra returen —
      * begge kan komme først, og begge kan komme flere ganger.
      */
@@ -1273,6 +1309,7 @@ final class Booking
                 ]);
                 revider('betalt_uten_plass', 'booking', (int) $booking['id'],
                     ['betaling' => (int) $betaling['id']]);
+                self::varsleBetaltUtenPlass((int) $booking['id'], $referanse);
                 return true;
             }
 

@@ -129,6 +129,23 @@ sjekk('… og det staar i revisjonsloggen',
     DB::verdi("SELECT id FROM audit_log WHERE handling = 'betalt_uten_plass' AND objekt_id = :b",
         ['b' => $y['b']]) !== null);
 
+// Eieren, 30. september 2026: «Bare varsle, refunder for haand».
+$beskjed = DB::en(
+    "SELECT emne, tekst FROM notifications
+      WHERE kanal = 'epost' AND ref_type = 'booking' AND ref_id = :b
+        AND emne = 'Må refunderes: betalt etter at plassen var borte'",
+    ['b' => $y['b']]
+);
+sjekk('… verkstedet faar beskjed om aa refundere for haand', $beskjed !== null);
+sjekk('… med referansen, saa den finnes i Kasse › Betalinger',
+    $beskjed !== null && str_contains((string) $beskjed['tekst'], 'Referanse: ' . $y['ref'])
+    && str_contains((string) $beskjed['tekst'], 'Refunder under Kasse › Betalinger — søk på referansen.'));
+sjekk('… og beloepet er det som ble betalt i Vipps (gavekortet er ikke trukket)',
+    $beskjed !== null && str_contains((string) $beskjed['tekst'], 'Beløp: ' . Booking::kroner(40000)),
+    (string) ($beskjed['tekst'] ?? ''));
+sjekk('… uten at noe refunderes av seg selv', $pstatus($y['p']) === 'betalt'
+    && (int) DB::verdi('SELECT refundert_ore FROM payments WHERE id = :i', ['i' => $y['p']]) === 0);
+
 // Plassen er fri igjen: da faar den som betalte sent den.
 DB::oppdater('bookings', ['status' => 'avbestilt'], ['id' => $annenB['b']]);
 $z = $lagBooking($oktB, 'avbestilt', $for(-30), $for(-25));

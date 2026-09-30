@@ -25,7 +25,7 @@ const STEDER = [
   ['Medlemmer', '/admin/medlemmer/alle'], ['Kursdeltakere', '/admin/deltakere/alle'], ['Medlemskap', '/admin/medlemskap'],
   ['Forespørsler', '/admin/ubesvarte'], ['Til godkjenning', '/admin/godkjenning'], ['Beskjeder', '/admin/beskjeder'],
   ['Kasse · ta betalt', '/admin/uttak'], ['Økonomi og dagsoppgjør', '/admin/okonomi'], ['Nettbutikk', '/admin/butikk'],
-  ['Markedsføring', '/admin/markedsforing'], ['Innboks (SoMe)', '/admin/markedsforing'], ['SEO', '/admin/seo'],
+  ['Markedsføring', '/admin/markedsforing'], ['Innboks (SoMe)', '/admin/markedsforing?apne=innboks'], ['SEO', '/admin/seo'],
   ['Maler', '/admin/maler'], ['Varsler', '/admin/varsler'], ['Feilmeldinger', '/admin/feilmeldinger'],
   ['Skisser', '/skisser.html'], ['Det gamle admin', '/admin'],
 ];
@@ -52,7 +52,7 @@ function sok() {
 
 function lagNytt() {
   const valg = [
-    ['Ny kursdato', '/admin/kalender'], ['Nytt kurs', '/admin/kurs'], ['Nytt medlem', '/admin/ny-registrering'],
+    ['Ny kursdato', '/admin/kalender?apne=nydato'], ['Nytt kurs', '/admin/kurs'], ['Nytt medlem', '/admin/ny-registrering'],
     ['Melding til medlemmene', '/admin/beskjeder'], ['Legg ut på SoMe', '/admin/markedsforing'], ['Ny tavle i Skisser', '/skisser.html'],
   ];
   ark([

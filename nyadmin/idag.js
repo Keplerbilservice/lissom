@@ -22,16 +22,17 @@ import { omsetningKort } from './omsetning.js';
 
 /** Hurtigvalgene eieren kan velge mellom («Tilpass»). */
 const HURTIG = {
-  startkurs:    { navn: '▶ Start kurset', maal: '/admin/oversikt', klasse: 'f' },
+  startkurs:    { navn: '▶ Start kurset', maal: '/admin/oversikt?apne=kursstart', klasse: 'f' },
   tabetalt:     { navn: 'Ta betalt', maal: '/admin/uttak', klasse: 'g' },
-  nykursdato:   { navn: 'Ny kursdato', maal: '/admin/kalender' },
-  dagsoppgjor:  { navn: 'Dagsoppgjør', maal: '/admin/okonomi' },
+  nykursdato:   { navn: 'Ny kursdato', maal: '/admin/kalender?apne=nydato' },
+  dagsoppgjor:  { navn: 'Dagsoppgjør', maal: '/admin/oversikt?apne=dagsoppgjor' },
   nyttkurs:     { navn: 'Nytt kurs', maal: '/admin/kurs' },
   melding:      { navn: 'Melding til medlemmene', maal: '/admin/beskjeder' },
   tildeltakere: { navn: 'Til deltakere', maal: '/admin/beskjeder' },
   leggut:       { navn: 'Legg ut på SoMe', maal: '/admin/markedsforing' },
   kasse:        { navn: 'Kasse', maal: '/admin/uttak' },
   skisser:      { navn: 'Skisser', maal: '/skisser.html' },
+  arskalender:  { navn: 'Årskalender', maal: '/admin/arskalender' },
 };
 
 const OVN = [
@@ -52,7 +53,7 @@ function betaltIdag(ov) {
   // Maks fem rader i kortet, saa det ikke vokser nedover. Resten i et ark.
   // Eieren, 30.09: «kortenes plassering maa optimaliseres».
   const linje = (b) => rad([b.kl, b.navn, b.hva].filter(Boolean).join(" · "),
-    el("span", {}, el("b", { tekst: String(b.belop || "").replace(/^kr.s/u, "kr ").replace(/,-$/, "") }), " ",
+    el("span", {}, el("b", { tekst: String(b.belop || "").replace(/^kr\.\s/u, "kr ").replace(/,-$/, "") }), " ",
       el("span", { class: "tag" + (b.status === "Betalt" ? "" : " u"), tekst: b.status === "Betalt" ? "Betalt" : "Ubetalt" })),
     "/admin/oversikt");
   const liste = best.length
@@ -107,7 +108,7 @@ function kursIdag(ov) {
     ? kurs.map(k => el('div', { class: 'g', style: 'gap:8px' },
         rad(k.klokke + ' · ' + k.tittel, el('span', { class: 'dempet', tekst: (k.pameldte || 0) + ' påmeldt' }), '/admin/pameldte'),
         el('div', { class: 'pl' },
-          el('a', { class: 'pille f stor', href: '/admin/oversikt' }, '▶ Start kurset'),
+          el('a', { class: 'pille f stor', href: '/admin/oversikt?apne=kursstart' }, '▶ Start kurset'),
           el('a', { class: 'pille g stor', href: '/admin/uttak' }, 'Ta betalt'))))
     : [el('p', { class: 'tomt', tekst: 'Ingen kurs i dag.' })];
   return el('section', { class: 'k', 'data-kort': 'kurs' }, el('h2', { tekst: 'Kurs i dag' }), innhold);
@@ -117,12 +118,12 @@ function maaGjores(t) {
   const tall = (n) => el('span', { class: 'tall' + (n > 0 ? ' haster' : ''), tekst: String(n) });
   const rader = [
     ['Nye påmeldinger', t.pameldinger, '/admin/nye-pameldinger'],
-    ['Venter på svar', t.svar, t.forespUbesvart > 0 || !t.innboks ? '/admin/ubesvarte' : '/admin/markedsforing'],
+    ['Venter på svar', t.svar, t.forespUbesvart > 0 || !t.innboks ? '/admin/ubesvarte' : '/admin/markedsforing?apne=innboks'],
     ['Til godkjenning', t.godkjenning, '/admin/godkjenning'],
     ['Venteliste', t.venteliste, '/admin/venteliste'],
     ['Klar til henting', t.henting, '/admin/ferdigbrent'],
-    ['Lav aktivitet', t.lav, '/admin/medlemmer/alle'],
-    ['Bestill mer', t.bestill, '/admin/butikk'],
+    ['Lav aktivitet', t.lav, '/admin/medlemmer/alle?apne=lav'],
+    ['Bestill mer', t.bestill, '/admin/butikk?apne=bestillmer'],
     ['Feil meldt inn', t.feil, '/admin/feilmeldinger'],
   ];
   return el('section', { class: 'k', 'data-kort': 'maagjores' },

@@ -1881,14 +1881,15 @@
             "id": "admin2-i-dag-oppsett",
             "dato": "2026-09-30",
             "sitat": "kortenes plassering må optimaliseres, nå bygges det nedover og ikke fordeles ut på siden for et visuelt godt inntrykk",
-            "hva": "«I dag» i /admin2 fordeler kortene utover siden i et rutenett (grid-template-areas), ikke to lange søyler. PC: summen til venstre over hele høyden, Kurs i dag og I verkstedet nå øverst, Må gjøres (to kolonner) og Ovnen under, maksbredde 1440 px. Nettbrett: to balanserte kolonner. Mobil: sum, kurs, Må gjøres, ovn, inne. «Betalt i dag» viser maks fem betalinger, resten under «Vis alle (N)».",
+            "hva": "«I dag» i /admin2 fordeler kortene utover siden i et rutenett (grid-template-areas), ikke to lange søyler. PC: summen til venstre over hele høyden, Kurs i dag og I verkstedet nå øverst, Må gjøres (to kolonner) og Ovnen under, maksbredde 1600 px for hele /admin2, og radlistene i Kurs, Folk og Penger i flere kolonner på store skjermer. Nettbrett: to balanserte kolonner. Mobil: sum, kurs, Må gjøres, ovn, inne. «Betalt i dag» viser maks fem betalinger, resten under «Vis alle (N)».",
             "hvor": "/admin2 «I dag»",
             "kode": [
                 {
                     "fil": "admin2.html",
                     "finnes": [
                         "grid-template-areas:\"betalt kurs inne\" \"betalt maa maa\" \"betalt ovn ovn\"",
-                        "main{max-width:1440px;"
+                        "main{max-width:1600px;",
+                        ".rader{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}"
                     ]
                 },
                 {
@@ -1896,6 +1897,61 @@
                     "finnes": [
                         "best.slice(0, 5).map(linje)",
                         "\"Vis alle (\" + best.length + \")\""
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin2-alle-knapper",
+            "dato": "2026-09-30",
+            "hva": "Alle knapper i admin2 går til riktig funksjon. Knappene som ikke er flyttet ennå, lenker til det gamle admin med dyplenker som åpner selve funksjonen: ?apne=kursstart (Kursstart for dagens økt), ?apne=nydato (Ny kursdato), ?apne=dagsoppgjor (dagsoppgjøret for i dag), ?apne=lav (Medlemmer filtrert på lav aktivitet), ?apne=bestillmer (internbutikken), ?apne=innboks (Innboks-fanen) og ?maaned=AAAA-MM (måneden i kalenderen). Nettlesertesten «Nytt admin: alle knapper går til riktig funksjon» trykker på hver lenke og knapp på PC og 390 px og sjekker hvor den havner.",
+            "sitat": "dette vil jeg ikke bruke tid på",
+            "hvor": "/admin2 og dyplenkene i det gamle admin",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "apneFraAdresse() {",
+                        "kursstart:   () => this.kursstartVals().ksAapne(0),",
+                        "maaned:      () => this.gaaAdmin('adminkalender', { klAnker: maaned + '-01', klVisning: 'maned' }),"
+                    ]
+                },
+                {
+                    "fil": "nyadmin/idag.js",
+                    "finnes": [
+                        "maal: '/admin/oversikt?apne=kursstart'",
+                        "'/admin/kalender?apne=nydato'",
+                        "'/admin/oversikt?apne=dagsoppgjor'",
+                        "'/admin/medlemmer/alle?apne=lav'",
+                        "'/admin/butikk?apne=bestillmer'"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/flyter.mjs",
+                    "finnes": [
+                        "await flyt('Nytt admin: alle knapper går til riktig funksjon'"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "arskalender-maaned-klikkbar",
+            "dato": "2026-09-30",
+            "hva": "Årskalender: hver av de tolv månedene kan trykkes (månedsnavnet) og åpner måneden i kalenderen (Måned-visning). /admin/kalender?maaned=AAAA-MM gjør det samme. I /admin2 åpner «Årskalender (hele året)» under Kurs og hurtigvalget «Årskalender» hele året.",
+            "sitat": "kan man klikke og åpne hele året?",
+            "hvor": "Årskalender i admin, /admin2 Kurs og hurtigvalg",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "data-aar-mnd=\"{{ m.mndIso }}\"",
+                        "aapneKalender: () => this.gaaAdmin('adminkalender'"
+                    ]
+                },
+                {
+                    "fil": "nyadmin/kurs.js",
+                    "finnes": [
+                        "rad('Årskalender (hele året)', null, '/admin/arskalender')"
                     ]
                 }
             ]

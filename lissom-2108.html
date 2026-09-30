@@ -10919,6 +10919,7 @@ window.__resources = {
           </div>
 
         <sc-if value="{{ klErManed }}" hint-placeholder-val="{{ false }}">
+          <span hidden data-kl-visning="maned"></span>
           <!-- Maaneden paa telefon: bare tall og prikker, og hver dag er en
                knapp. Eieren, 25. september 2026: «om jeg trykker måned
                åpner det seg en kalender med dager jeg kan klikke på? Som er
@@ -12452,7 +12453,7 @@ window.__resources = {
           <sc-for list="{{ aarMaaneder }}" as="m" hint-placeholder-count="12">
             <div id="{{ m.domId }}" style="{{ m.kortStil }}">
               <div style="display: flex; align-items: baseline; gap: var(--space-2);">
-                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ m.navn }}</span>
+                <button type="button" onClick="{{ m.aapneKalender }}" data-aar-mnd="{{ m.mndIso }}" title="Åpne måneden i kalenderen" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); text-decoration: none;">{{ m.navn }}</button>
                 <span style="margin-left: auto; font-size: 11px; font-weight: 700; color: var(--text-muted);">{{ m.antall }}</span>
               </div>
 
@@ -33793,6 +33794,48 @@ class Component extends DCLogic {
 
   // Setter skjermen ut fra adressen i feltet. Kalles ved oppstart og naar
   // noen bruker tilbakeknappen.
+  // ── Dyplenker fra /admin2 ───────────────────────────────────────
+  //
+  // Eieren, 30. september 2026, etter forste klikk i det nye admin: «Start
+  // kurset» aapnet bare Oversikt. Hver knapp der skal starte riktig funksjon.
+  // Til skjermene er flyttet, lenker /admin2 hit med «?apne=<hva>», og det
+  // gamle admin kjorer den samme handlingen som knappen sin egen gjor.
+  // Parameteren tas ut av adressen med det samme, saa den ikke foelger med
+  // naar siden lastes paa nytt.
+  apneFraAdresse() {
+    let hva = '';
+    let maaned = '';
+    try {
+      const q = new URLSearchParams(window.location.search);
+      hva = q.get('apne') || '';
+      maaned = /^\d{4}-(0[1-9]|1[0-2])$/.test(q.get('maaned') || '') ? q.get('maaned') : '';
+    } catch (e) { return; }
+    if (maaned && !hva) hva = 'maaned';
+    const HANDLING = {
+      kursstart:   () => this.kursstartVals().ksAapne(0),
+      nydato:      () => this.apneNyKursdato(),
+      dagsoppgjor: () => { if (this._aDagsoppgjor) this._aDagsoppgjor(); },
+      lav:         () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Lav aktivitet', medlemSok: '' }),
+      bestillmer:  () => this.gaaAdmin('adminbutikk', { butikkFane: 'Medlemssalg' }),
+      innboks:     () => this.gaaAdmin('adminmarked', { mkFane: 'innboks' }),
+      maaned:      () => this.gaaAdmin('adminkalender', { klAnker: maaned + '-01', klVisning: 'maned' }),
+    };
+    if (!HANDLING[hva]) return;
+    try {
+      const rest = window.location.search.replace(/([?&])apne=[a-z]+&?/, '$1').replace(/([?&])maaned=[\d-]+&?/, '$1').replace(/[?&]$/, '');
+      history.replaceState(history.state, '', window.location.pathname + rest + window.location.hash);
+    } catch (e) { /* adressen blir staaende */ }
+    // Handlingene trenger admin-dataene. Vent paa dem, i hoyst 15 sekunder.
+    let forsok = 0;
+    const prov = () => {
+      const klar = this.state.erAdminBruker && (hva === 'maaned' || this.state.adminData)
+        && (hva !== 'dagsoppgjor' || this._aDagsoppgjor);
+      if (klar) { try { HANDLING[hva](); } catch (e) { /* knappen i det gamle admin virker fortsatt */ } return; }
+      if (++forsok < 60) setTimeout(prov, 250);
+    };
+    setTimeout(prov, 0);
+  }
+
   ruteFraAdresse() {
     let sti = window.location.pathname.replace(/\/+$/, '') || '/';
 
@@ -42769,6 +42812,9 @@ class Component extends DCLogic {
     if (rute) {
       this.folgRute(rute);
     }
+    // Dyplenker fra det nye admin (/admin2): «?apne=» aapner noyaktig den
+    // funksjonen knappen der heter. Se apneFraAdresse().
+    this.apneFraAdresse();
     // Serversidene (app/nett/) sender «Send forespoersel» hit som
     // /kontakt?skjema=1 og /bedrift?skjema=1: ruta med skjemaet aapnes med
     // det samme, som om man hadde trykket paa knappen.
@@ -68555,6 +68601,10 @@ class Component extends DCLogic {
             const naaMnd = aar === naa.getFullYear() && mnd === (naa.getMonth() + 1);
             return {
               navn: navn,
+              // Eieren, 30.09: «kan man klikke og aapne hele aaret?» Maanedsnavnet
+              // aapner maaneden i kalenderen (samme som ?maaned=AAAA-MM).
+              mndIso: aar + '-' + String(mnd).padStart(2, '0'),
+              aapneKalender: () => this.gaaAdmin('adminkalender', { klAnker: aar + '-' + String(mnd).padStart(2, '0') + '-01', klVisning: 'maned' }),
               domId: 'aarmnd-' + mnd,
               antall: mine.length ? String(mine.length) : '—',
               tom: mine.length === 0,

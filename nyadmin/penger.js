@@ -22,7 +22,7 @@ export default {
       el('div', { class: 'g to' },
         omsetningKort('Denne måneden', o.linjerMnd || [], eks, o.manedOre),
         el('section', { class: 'k' }, el('h2', { tekst: 'Gå til' }),
-          el('div', { class: 'g', style: 'gap:6px' },
+          el('div', { class: 'rader' },
             rad('Ta betalt (Kasse)', null, '/admin/uttak'),
             rad('Økonomi og dagsoppgjør', null, '/admin/okonomi'),
             rad('Nettbutikk og ordre', null, '/admin/butikk')))));

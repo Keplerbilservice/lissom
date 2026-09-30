@@ -14,13 +14,13 @@ export default {
       el('div', { class: 'hode' }, el('div', {}, el('div', { class: 'eb', tekst: 'Kurs' }), el('h1', { tekst: 'Kurs' }))),
       el('section', { class: 'k' },
         el('p', { class: 'dempet', style: 'margin:0', tekst: 'Denne delen flyttes snart. Til da åpner radene det samme i det gamle admin.' }),
-        el('div', { class: 'g', style: 'gap:6px' },
+        el('div', { class: 'rader' },
           rad('Kalender', null, '/admin/kalender'),
           rad('Kurs og datoer', null, '/admin/kurs'),
           rad('Påmeldte', null, '/admin/pameldte'),
           rad('Venteliste', null, '/admin/venteliste'),
           rad('Klar til henting', null, '/admin/ferdigbrent'),
-          rad('Årskalender', null, '/admin/arskalender'),
+          rad('Årskalender (hele året)', null, '/admin/arskalender'),
           rad('Kursholdere', null, '/admin/kursholdere'))));
   },
 };

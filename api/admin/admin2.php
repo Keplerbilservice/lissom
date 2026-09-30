@@ -31,7 +31,7 @@ $admin = krev_admin();
 $id = (int) $admin['id'];
 
 const ADMIN2_MODULER = ['idag', 'kurs', 'folk', 'penger', 'mer'];
-const ADMIN2_HURTIGVALG = ['startkurs', 'tabetalt', 'nykursdato', 'dagsoppgjor', 'nyttkurs', 'melding', 'tildeltakere', 'leggut', 'kasse', 'skisser'];
+const ADMIN2_HURTIGVALG = ['startkurs', 'tabetalt', 'nykursdato', 'dagsoppgjor', 'nyttkurs', 'melding', 'tildeltakere', 'leggut', 'kasse', 'skisser', 'arskalender'];
 const ADMIN2_STANDARD = ['startkurs', 'tabetalt', 'nykursdato', 'dagsoppgjor'];
 
 $nokkel = 'admin2_hurtigvalg_' . $id;

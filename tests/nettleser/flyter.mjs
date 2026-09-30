@@ -1926,8 +1926,183 @@ await flyt('Nytt admin: I dag, menyer, bekreft og angre, mva', async () => {
   php(`DB::kjor('DELETE FROM payments WHERE id = ${pay}'); DB::kjor("DELETE FROM innstillinger WHERE nokkel LIKE 'admin2_hurtigvalg_%'"); return true;`);
 });
 
+// ── Alle knapper i /admin2 går til riktig funksjon (eieren, 30.09) ─────
+//
+// Eieren fant en feil paa forste klikk: «Start kurset» aapnet bare Oversikt.
+// «dette vil jeg ikke bruke tid paa». Flyten finner HVER lenke og knapp i
+// /admin2 — i rammen, paa I dag, i «+», i soket og i alle hurtigvalgene
+// under «Tilpass» — paa PC og paa 390 px, sjekker at den kan trykkes, og at
+// den havner der den skal: riktig skjerm i det gamle admin, og for
+// dyplenkene («?apne=») at selve funksjonen er aapnet. Knappene som gjoer
+// noe (ovn, stempling) sjekkes med «Er du sikker?» og Avbryt, uten aa lagre.
+await flyt('Nytt admin: alle knapper går til riktig funksjon', async () => {
+  const tabell = [];
+  const rad = (bredde, knapp, forventet, faktisk, ok) => { tabell.push({ bredde, knapp, forventet, faktisk, ok }); sjekk(`${bredde} px: «${knapp}» → ${forventet}`, ok, ok ? '' : faktisk); };
+  // Dyplenkene: selve funksjonen skal vaere aapen.
+  const DYP = {
+    kursstart:   ['Kursstart åpen', (p) => p.getByText('Kursstart', { exact: true }).first().isVisible()],
+    nydato:      ['«Ny kursdato» åpen', (p) => p.getByText('Kurs eller event', { exact: true }).first().isVisible()],
+    dagsoppgjor: ['dagsoppgjøret åpent', (p) => p.getByText(/betalt med Vipps/).first().isVisible()],
+    lav:         ['Medlemmer filtrert på lav aktivitet', (p) => p.locator('[data-lav-dager]').first().isVisible()],
+    bestillmer:  ['Internbutikken (varene med minimum)', (p) => p.locator('h1', { hasText: 'Internbutikk' }).first().isVisible()],
+    innboks:     ['Innboks-fanen', (p) => p.getByRole('button', { name: /^Kommentarer/ }).first().isVisible()],
+  };
+  // Alle hurtigvalgene synlige, saa hvert av dem blir prøvd.
+  const a0 = await side('admin');
+  await gaa(a0, '/admin2', 1200);
+  const foerHv = (await api(a0, '/api/admin/admin2.php')).hurtigvalg;
+  await api(a0, '/api/admin/admin2.php', { handling: 'hurtigvalg', valg: ['startkurs', 'tabetalt', 'nykursdato', 'dagsoppgjor', 'nyttkurs', 'melding', 'tildeltakere', 'leggut', 'kasse', 'skisser', 'arskalender'] });
+  await a0.context().close();
+
+  const lenker = new Map(); // href -> [tekster]
+  const synlige = async (p, rot) => p.evaluate((rot) => {
+    const ut = [];
+    for (const e of document.querySelectorAll(rot + ' a[href], ' + rot + ' button')) {
+      const r = e.getBoundingClientRect(); const st = getComputedStyle(e);
+      if (!r.width || !r.height || st.visibility === 'hidden' || st.display === 'none') continue;
+      ut.push({ tag: e.tagName.toLowerCase(), href: e.getAttribute('href') || '', tekst: (e.getAttribute('aria-label') || e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60),
+        attr: e.getAttribute('data-ovn') ? 'ovn:' + e.getAttribute('data-ovn') : (e.hasAttribute('data-stemple') ? 'stemple' : (e.hasAttribute('data-vis-alle') ? 'visalle' : (e.className || ''))) });
+    }
+    return ut;
+  }, rot);
+
+  for (const [b, h] of [[1358, 900], [390, 844]]) {
+    const mob = b < 600;
+    const p = await side('admin', b, h);
+    await gaa(p, '/admin2', 1500);
+    const feilFoer = skriptfeil.length;
+    const elementer = await synlige(p, 'body');
+    // Hver synlig lenke/knapp skal kunne trykkes (ikke dekket av noe annet).
+    for (let i = 0; i < elementer.length; i++) {
+      const e = elementer[i];
+      const loc = e.href ? p.locator(`a[href="${e.href}"]`).filter({ hasText: e.tekst.slice(0, 20) }).first() : null;
+      if (e.href) {
+        const kan = await loc.click({ trial: true, timeout: 3000 }).then(() => true).catch(() => false);
+        if (!kan) rad(b, e.tekst, 'kan trykkes', 'dekket eller ikke klikkbar', false);
+        if (!e.href.startsWith('#')) { if (!lenker.has(e.href)) lenker.set(e.href, new Set()); lenker.get(e.href).add(e.tekst); }
+      }
+    }
+    // Menyen: hver del åpner sin skjerm.
+    for (const [adr, navn] of [['#kurs', 'Kurs'], ['#folk', 'Folk'], ['#penger', 'Penger'], ['#mer', 'Mer'], ['#i-dag', 'I dag']]) {
+      await p.locator(`${mob ? 'nav.bunn' : 'nav.meny'} a[href="${adr}"]`).click(); await p.waitForTimeout(900);
+      const h1 = (await p.locator('main h1').first().textContent().catch(() => '')).trim();
+      rad(b, navn + ' (meny)', `skjermen «${navn}»`, h1, h1 === navn);
+      if (adr !== '#i-dag') for (const e of await synlige(p, 'main')) if (e.href && !e.href.startsWith('#')) { if (!lenker.has(e.href)) lenker.set(e.href, new Set()); lenker.get(e.href).add(e.tekst); }
+    }
+    await p.waitForTimeout(600);
+    // Søk: åpner, viser stedene, lukkes.
+    await p.locator(mob ? '.sokknapp-mob' : 'button.sok').click(); await p.waitForTimeout(300);
+    const sokApen = await p.locator('.ark h2', { hasText: 'Søk i admin' }).isVisible();
+    rad(b, 'Søk', 'arket «Søk i admin»', sokApen ? 'åpnet' : 'åpnet ikke', sokApen);
+    for (const e of await synlige(p, '.ark')) if (e.href && !e.href.startsWith('#')) { if (!lenker.has(e.href)) lenker.set(e.href, new Set()); lenker.get(e.href).add('Søk › ' + e.tekst); }
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    // «+»: åpner, viser valgene, lukkes.
+    await p.locator('.pluss').click(); await p.waitForTimeout(300);
+    const plussApen = await p.locator('.ark h2', { hasText: 'Lag noe nytt' }).isVisible();
+    rad(b, '+', 'arket «Lag noe nytt»', plussApen ? 'åpnet' : 'åpnet ikke', plussApen);
+    for (const e of await synlige(p, '.ark')) if (e.href) { if (!lenker.has(e.href)) lenker.set(e.href, new Set()); lenker.get(e.href).add('+ › ' + e.tekst); }
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    // Tilpass: åpner og lukkes med Avbryt, uten å lagre.
+    await p.getByRole('button', { name: '✎ Tilpass' }).click(); await p.waitForTimeout(300);
+    const tpApen = await p.locator('.ark h2', { hasText: 'Tilpass hurtigvalg' }).isVisible();
+    await p.locator('.ark button', { hasText: 'Avbryt' }).click(); await p.waitForTimeout(200);
+    rad(b, '✎ Tilpass', 'arket «Tilpass hurtigvalg», Avbryt lukker', tpApen ? 'åpnet' : 'åpnet ikke', tpApen && await p.locator('.bak').count() === 0);
+    // Stemple inn: «Er du sikker?», og Avbryt endrer ingenting.
+    const stFoer = Number(verdi('SELECT COUNT(*) AS n FROM check_ins'));
+    await p.locator('[data-stemple]').click(); await p.waitForTimeout(400);
+    const stSp = await p.locator('.ark h2', { hasText: 'Er du sikker?' }).isVisible();
+    await p.locator('.ark button', { hasText: 'Avbryt' }).click(); await p.waitForTimeout(400);
+    rad(b, 'Stemple inn', '«Er du sikker?», Avbryt lagrer ingenting', stSp ? 'spurte' : 'spurte ikke', stSp && Number(verdi('SELECT COUNT(*) AS n FROM check_ins')) === stFoer);
+    // Ovnen: hver knapp spør, og Avbryt lagrer ingenting.
+    for (const slag of ['raabrann', 'glasurbrann', 'tomt']) {
+      const foer = Number(verdi('SELECT COUNT(*) AS n FROM ovn_tomt'));
+      await p.locator(`[data-ovn="${slag}"]`).click(); await p.waitForTimeout(300);
+      const sp = await p.locator('.ark h2', { hasText: 'Er du sikker?' }).isVisible();
+      await p.locator('.ark button', { hasText: 'Avbryt' }).click(); await p.waitForTimeout(300);
+      rad(b, 'Ovnen: ' + slag, '«Er du sikker?», Avbryt lagrer ingenting', sp ? 'spurte' : 'spurte ikke', sp && Number(verdi('SELECT COUNT(*) AS n FROM ovn_tomt')) === foer);
+    }
+    // Knapper vi ikke kjenner, skal ikke finnes.
+    const kjent = (e) => e.href || /pluss|sok|sokknapp|pille/.test(e.attr) || /^ovn:|^stemple$|^visalle$/.test(e.attr);
+    const ukjente = elementer.filter(e => !kjent(e));
+    rad(b, 'alle knappene', 'bare kjente knapper', ukjente.map(e => e.tekst).join(', ') || 'ingen ukjente', ukjente.length === 0);
+    rad(b, 'hele siden', 'ingen JS-feil', skriptfeil.slice(feilFoer).join(' | ') || 'ingen', skriptfeil.length === feilFoer);
+    await p.context().close();
+  }
+
+  // Hver lenke: åpnes, og havner på riktig skjerm eller funksjon.
+  const s = await side('admin');
+  for (const [href, tekster] of lenker) {
+    const feilFoer = skriptfeil.length;
+    const knapp = [...tekster].join(' / ');
+    await gaa(s, href, 2800);
+    const u = new URL(s.url());
+    const apne = new URL(href, ADR).searchParams.get('apne');
+    const ikkeFunnet = await s.getByText(/side som ikke finnes/).first().isVisible().catch(() => false);
+    const loggInn = u.pathname.startsWith('/admin/logg-inn');
+    if (href === '/skisser.html') {
+      const t = await s.title();
+      rad(1358, knapp, 'Skisser', t, /Skisser/.test(t));
+    } else if (apne) {
+      const [forv, fn] = DYP[apne] || ['kjent dyplenke', async () => false];
+      const ok = await fn(s).catch(() => false);
+      rad(1358, knapp, forv + ' (' + href + ')', ok ? 'åpnet' : 'åpnet ikke · ' + u.pathname, ok && !ikkeFunnet && !loggInn);
+    } else {
+      // /admin og /admin/oversikt er samme skjerm (det gamle admin skriver om adressen).
+      const norm = (x) => { const y = x.replace(/\/$/, '') || '/'; return y === '/admin/oversikt' ? '/admin' : y; };
+      const forvSti = norm(new URL(href, ADR).pathname);
+      const ok = !ikkeFunnet && !loggInn && norm(u.pathname) === forvSti;
+      rad(1358, knapp, 'skjermen ' + forvSti, u.pathname + (ikkeFunnet ? ' · finnes ikke' : ''), ok);
+    }
+    if (skriptfeil.length !== feilFoer) rad(1358, knapp, 'ingen JS-feil', skriptfeil.slice(feilFoer).join(' | '), false);
+  }
+  // Aarskalenderen: alle tolv maanedene kan trykkes og aapner maaneden i kalenderen.
+  {
+    const ar = await side('admin');
+    await gaa(ar, '/admin/arskalender', 2500);
+    const mnd = await ar.locator('[data-aar-mnd]').count();
+    rad(1358, 'Årskalender', 'alle tolv månedene kan trykkes', mnd + ' måneder', mnd === 12);
+    const iso = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' }).slice(0, 7);
+    await ar.locator(`[data-aar-mnd="${iso}"]`).click(); await ar.waitForTimeout(1800);
+    const paaMnd = new URL(ar.url()).pathname === '/admin/kalender' && await ar.locator('[data-kl-visning="maned"]').count() > 0;
+    rad(1358, 'Årskalender › ' + iso, 'måneden i kalenderen', new URL(ar.url()).pathname, paaMnd);
+    await gaa(ar, '/admin/kalender?maaned=' + iso, 2500);
+    const dyp = await ar.locator('[data-kl-visning="maned"]').count() > 0 && !/maaned=/.test(ar.url());
+    rad(1358, 'Dyplenke ?maaned=' + iso, 'måneden i kalenderen, adressen ryddet', ar.url(), dyp);
+    await ar.context().close();
+  }
+  // Store skjermer: hele /admin2 bruker bredden (maks 1600 px), uten sidelengs rulling.
+  for (const b of [1920, 2560]) {
+    const w = await side('admin', b, 1200);
+    await gaa(w, '/admin2', 1500);
+    for (const [adr, navn] of [['#i-dag', 'I dag'], ['#kurs', 'Kurs'], ['#folk', 'Folk'], ['#penger', 'Penger'], ['#mer', 'Mer']]) {
+      await w.locator(`nav.meny a[href="${adr}"]`).click(); await w.waitForTimeout(900);
+      const m = await w.evaluate(() => ({ bredde: Math.round(document.querySelector('main').getBoundingClientRect().width), rull: document.documentElement.scrollWidth > innerWidth }));
+      rad(b, navn, 'bruker bredden (1560–1600 px), ingen sidelengs rulling', m.bredde + ' px' + (m.rull ? ' · ruller sidelengs' : ''), m.bredde >= 1560 && m.bredde <= 1600 && !m.rull);
+      if (process.env.E2E_BILDER) await w.screenshot({ path: path.join(process.env.E2E_BILDER, `admin2-${b}-${adr.slice(1)}.png`), fullPage: true }).catch(() => {});
+    }
+    await w.context().close();
+  }
+  await s.context().close();
+  // Hurtigvalgene tilbake slik de var.
+  const a1 = await side('admin');
+  await gaa(a1, '/admin2', 800);
+  await api(a1, '/api/admin/admin2.php', { handling: 'hurtigvalg', valg: foerHv });
+  await a1.context().close();
+
+  if (process.env.E2E_KLIKKTEST) {
+    const fs = await import('node:fs');
+    const md = ['# Klikktest /admin2', '', `Kjørt ${new Date().toISOString()}. ${tabell.filter(r => r.ok).length} av ${tabell.length} i orden.`, '',
+      '| Bredde | Knapp | Forventet | Faktisk | |', '|---|---|---|---|---|',
+      ...tabell.map(r => `| ${r.bredde} | ${r.knapp.replace(/\|/g, '/')} | ${r.forventet.replace(/\|/g, '/')} | ${String(r.faktisk).replace(/\|/g, '/')} | ${r.ok ? 'OK' : 'FEIL'} |`)];
+    fs.writeFileSync(process.env.E2E_KLIKKTEST, md.join('\n') + '\n');
+  }
+});
+
 await nettleser.close();
 console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjente feil.`);
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }
 if (skriptfeil.length) { console.log('\nSkriptfeil underveis:'); for (const s of [...new Set(skriptfeil)].slice(0, 10)) console.log('  · ' + s); }
 if (feil.length) { console.log('\nFeil:'); for (const f of feil) console.log('  ✗ ' + f); process.exit(1); }
+
+
+

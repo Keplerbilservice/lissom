@@ -38,7 +38,7 @@ a{color:inherit}
 .pille.stor{min-height:52px;padding:12px 20px;font-size:17px}
 .pille:disabled{opacity:.45;cursor:default}
 .gammelt{font-size:13px;color:rgba(255,255,255,.75);text-decoration:none;padding:6px 8px}
-main{max-width:1440px;margin:0 auto;padding:18px 16px 110px}
+main{max-width:1600px;margin:0 auto;padding:18px 16px 110px}
 .hode{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .eb{font:800 13px/1 'Alegreya Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--terra)}
 h1{font:800 clamp(26px,4vw,34px)/1.1 'Bitter',Georgia,serif;margin:4px 0 0}
@@ -46,6 +46,8 @@ h2{font:800 19px/1.2 'Bitter',Georgia,serif;margin:0}
 .dempet{color:var(--dempet)}
 .g{display:grid;gap:14px;align-content:start}
 .to{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+/* Radlistene i Kurs, Folk og Penger bruker bredden paa store skjermer. */
+.rader{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
 .k{background:var(--kort);border:1px solid var(--linje);border-radius:16px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
 .stor{font:800 36px/1 'Bitter',Georgia,serif}
 .rad{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-radius:12px;background:var(--porselen);border:1px solid #F0E6D8;text-decoration:none;color:inherit;width:100%;text-align:left;cursor:pointer;appearance:none}
@@ -92,7 +94,7 @@ button.rad,a.rad{font:inherit}
 }
 @media (min-width:1200px){
   .idag-rute{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"betalt kurs inne" "betalt maa maa" "betalt ovn ovn";align-items:start}
-  .omr-betalt,.omr-kurs,.omr-inne{align-self:stretch}.omr-betalt>section,.omr-kurs>section,.omr-inne>section{height:100%}
+  .omr{align-self:stretch}.omr>section,.omr>div>section{height:100%}.omr-ovn>div{display:grid}
   .maa-rader{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 }
 .sokknapp-mob{display:none}

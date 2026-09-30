@@ -14,7 +14,7 @@ export default {
       el('div', { class: 'hode' }, el('div', {}, el('div', { class: 'eb', tekst: 'Folk' }), el('h1', { tekst: 'Folk' }))),
       el('section', { class: 'k' },
         el('p', { class: 'dempet', style: 'margin:0', tekst: 'Denne delen flyttes snart. Til da åpner radene det samme i det gamle admin.' }),
-        el('div', { class: 'g', style: 'gap:6px' },
+        el('div', { class: 'rader' },
           rad('Medlemmer', null, '/admin/medlemmer/alle'),
           rad('Kursdeltakere', null, '/admin/deltakere/alle'),
           rad('Medlemskap', null, '/admin/medlemskap'),

@@ -1864,6 +1864,81 @@
             ]
         },
         {
+            "id": "minside-vakt-for-publisering",
+            "dato": "2026-09-30",
+            "hva": "Min side-vakt kjører før hver publisering. Hele Min side for et medlem og for en kursdeltaker klikkes gjennom på telefon (390 px med berøring) og PC, og svarene fra API-ene Min side leser sammenlignes med en lagret fasit for åtte testmedlemmer. Endres noe, stopper publiseringen. Det nye admin (/admin2) bygges ved siden av, og Min side skal ikke påvirkes.",
+            "hvor": "tests/nettleser/minside.mjs (kjøres av tests/alle.sh), fasiten i tests/godkjent/minside-fasit/",
+            "kode": [
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "kjor \"min side-vakt\"  bash tests/nettleser/kjor.sh minside.mjs"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/kjor.sh",
+                    "finnes": [
+                        "node \"tests/nettleser/${1:-flyter.mjs}\""
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/minside.mjs",
+                    "finnes": [
+                        "await flyt('Fasit: svarene Min side leser er uendret'",
+                        "await flyt('Forhåndsvisningen i admin = ekte Min side'"
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/prove.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/mini.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/basis.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/aar.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/pakke.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/over.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/frosset.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                },
+                {
+                    "fil": "tests/godkjent/minside-fasit/betalerikke.json",
+                    "finnes": [
+                        "\"/api/meg.php\""
+                    ]
+                }
+            ]
+        },
+        {
             "id": "maler-under-nyttig-info-min-side",
             "dato": "2026-09-30",
             "hva": "«det må ligge under nyttig info»: malene og dokumentene som er delt med medlemmer vises under Nyttig info på Min side (/min-side/nyttig)",
@@ -1966,6 +2041,39 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "if (s.indexOf('mal-lyslykter-') === 0) return 'Lyslykter';"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "handleliste-frakttekst",
+            "dato": "2026-09-30",
+            "hva": "Handlelista på Min side sier at frakten deles etter vekt eller volum på varene hver enkelt bestiller, ikke likt (eieren 30.09).",
+            "hvor": "Min side › Handleliste",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Frakten deles etter vekt eller volum på varene hver enkelt bestiller."
+                    ],
+                    "ikke": [
+                        "Frakten deles likt mellom alle som er med på bestillingen."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "skisser-medlemsbryter-gjelder-alle-medlemmer",
+            "dato": "2026-09-30",
+            "hva": "Bryteren «Skisser for medlemmer» bestemmer for alle medlemmer, også de som er påmeldt et kurs. «Skisser for kursdeltakere» gjelder bare dem som ikke er medlemmer (eieren 30.09).",
+            "hvor": "Min side › Skisser",
+            "kode": [
+                {
+                    "fil": "app/lib/skisser.php",
+                    "finnes": [
+                        "if (self::erMedlem($m)) {",
+                        "return self::forMedlemmer();",
+                        "!self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m)"
                     ]
                 }
             ]

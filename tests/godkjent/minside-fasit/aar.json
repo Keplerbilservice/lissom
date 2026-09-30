@@ -1,0 +1,356 @@
+{
+  "/api/meg.php": {
+    "status": 200,
+    "svar": {
+      "adminKreverPassord": false,
+      "adminUtenPassord": false,
+      "erAdmin": false,
+      "erMedlem": true,
+      "erRegnskap": false,
+      "innlogget": true,
+      "internInfo": {},
+      "kanSelge": true,
+      "medlem": {
+        "epost": "minside-aar-<tag>@e2e.lissom.test",
+        "id": "<number>",
+        "medlemskap": "Årsmedlemskap",
+        "navn": "Minside Aar",
+        "startDato": "<string>",
+        "status": "aktiv",
+        "telefon": "<telefon>"
+      },
+      "medlemsrabatt": 20,
+      "soknadStatus": null,
+      "verving": {
+        "lenke": "<string>",
+        "timer": "<number>"
+      }
+    }
+  },
+  "/api/medlemskap.php": {
+    "status": 200,
+    "svar": {
+      "beskjeder": [],
+      "harHattProve": false,
+      "min": {
+        "avtalePlan": null,
+        "avtalePris": "kr. 1 990,-",
+        "binding": "<dato>",
+        "bundetTil": "<dato>",
+        "engangs": false,
+        "fastTrekk": false,
+        "gjelderTil": null,
+        "hindring": "Årsavtalen kan ikke sies opp før året er ute. Den løper til <dato>. Ta kontakt om noe har endret seg, så finner vi ut av det.",
+        "kanSiOpp": false,
+        "nesteTrekk": null,
+        "oppsigelseMnd": 1,
+        "plan": "Årsmedlemskap",
+        "pris": "kr. 1 990,-",
+        "sagtOpp": false,
+        "sluttHvisOppsagt": "<dato>",
+        "slutter": null,
+        "status": "aktiv"
+      },
+      "planer": [
+        {
+          "beskrivelse": "En måned med verkstedtilgang, så du finner ut om dette er noe for deg.",
+          "bilde": "<string>",
+          "binding": 0,
+          "engangs": true,
+          "fastTrekk": false,
+          "fremhevet": false,
+          "langtekst": "Prøv Lissom – prøv keramikkverkstedet i ditt eget tempo\n\nEr du nysgjerrig på keramikk og lurer på om verkstedmedlemskap er noe for deg? Da er Prøv Lissom den perfekte starten.\n\nDette medlemskapet gir deg muligheten til å bruke verkstedet vårt i en begrenset periode, slik at du kan kjenne på arbeidsformen, miljøet og gleden ved å skape med leire før du eventuelt velger et fast medlemskap.\n\nDu får tilgang til verkstedet i totalt 10 timer, som kan brukes fritt innenfor en periode på 30 dager. Tiden kan fordeles slik det passer deg, enten du ønsker noen korte økter eller lengre arbeidsøkter.\n\nPrøv Lissom passer like godt for deg som nettopp har fullført et kurs hos oss, som for deg som har erfaring med keramikk fra tidligere. For å kunne benytte verkstedet på egen hånd må du enten ha deltatt på kurs hos oss eller ha tilstrekkelig erfaring fra før.\n\nLeire, glasur og brenning er inkludert i medlemskapet.\n\nDette er ikke et abonnement, og medlemskapet avsluttes automatisk når perioden er over. Du trenger derfor ikke å si opp noe eller være bekymret for videre trekk. Ordningen er ment som en introduksjon til verkstedet og kan kun benyttes én gang per person.\n\nPrøv Lissom er for deg som ønsker å utforske keramikk i ro og mak, bli kjent med verkstedet og finne ut om dette er en hobby du vil ta videre.",
+          "merke": "Prøveperiode",
+          "navn": "Prøv Lissom",
+          "oppsigelse": 0,
+          "passerFor": "deg som er nysgjerrig etter et kurs",
+          "periode": "engangs",
+          "pris": "kr. 990,-",
+          "prisOre": 99000,
+          "punkter": [
+            "10 verkstedtimer",
+            "Medlemmer får 20 % rabatt på alle våre kurs",
+            "Brukes fritt innen 30 dager",
+            "Tilgang til et inspirerende keramikkverksted",
+            "Ingen bindingstid eller automatisk fornyelse",
+            "Perfekt for deg som vil prøve før du bestemmer deg",
+            "Leire og glasur er inkludert"
+          ],
+          "timer": 10,
+          "undertekst": "10 timer, brukes i løpet av 30 dager",
+          "utenForskudd": false,
+          "viktig": [
+            "Krever kurs hos oss eller tidligere erfaring",
+            "Kan kun benyttes én gang per person",
+            "Går ikke automatisk over til abonnement"
+          ]
+        },
+        {
+          "beskrivelse": "Mini 15 er medlemskapet for deg som ønsker regelmessig tilgang til verkstedet, god fleksibilitet og tid til å utvikle keramikkgleden i ditt eget tempo.",
+          "bilde": "",
+          "binding": 2,
+          "engangs": false,
+          "fastTrekk": false,
+          "fremhevet": false,
+          "langtekst": "Mini 15 – fleksibelt medlemskap for deg som vil skape jevnlig\n\nMini 15 passer perfekt for deg som ønsker fast tilgang til verkstedet, men ikke har behov for like mange timer som våre mest aktive medlemmer. Dette er et fleksibelt medlemskap for deg som vil ha keramikk som en fast del av hverdagen, uten å føle at du må være på verkstedet hele tiden.\n\nMed 15 verkstedtimer per måned får du god tid til egne prosjekter, øving og kreativ utfoldelse. Du kan bruke timene når det passer deg, og med tilgang til verkstedet døgnet rundt har du frihet til å arbeide både på dagtid, kveldstid og i helger.\n\nSom medlem får du også din egen hylleplass i verkstedet, slik at du enkelt kan oppbevare arbeider, verktøy og prosjekter mellom besøkene.\n\nMini 15 er et godt valg for deg som ønsker å bygge erfaring over tid, videreutvikle det du har lært på kurs eller ha et fast kreativt fristed i en travel hverdag.\n\nFor å kunne arbeide selvstendig i verkstedet må du enten ha gjennomført kurs hos oss eller ha tilsvarende erfaring fra tidligere.\n\nMini 15 er medlemskapet for deg som ønsker regelmessig tilgang til verkstedet, god fleksibilitet og tid til å utvikle keramikkgleden i ditt eget tempo.",
+          "merke": "Medlemskap",
+          "navn": "Mini 15",
+          "oppsigelse": 1,
+          "passerFor": "vil starte med keramikk, men ikke har så mye tid",
+          "periode": "per måned",
+          "pris": "kr. 1 790,-",
+          "prisOre": 179000,
+          "punkter": [
+            "15 verkstedtimer per måned",
+            "Medlemmer får 20 % rabatt på alle våre kurs",
+            "Egen hylle i verkstedet",
+            "Tilgang 24/7 med personlig dørkode",
+            "Mulighet til å jobbe med egne prosjekter i eget tempo",
+            "Del av et kreativt og inkluderende verkstedmiljø",
+            "Tilgang til egen nettbutikk",
+            "Dine egne produkter i vår butikk på Teie"
+          ],
+          "timer": 15,
+          "undertekst": "15 timer i måneden",
+          "utenForskudd": false,
+          "viktig": [
+            "Krever kurs hos oss eller tidligere erfaring",
+            "Leire, glassur og brenning kjøpes i tillegg",
+            "2 måneders bindingstid ved oppstart",
+            "Oppsigelsestid 1 måned"
+          ]
+        },
+        {
+          "beskrivelse": "Tretti timer i måneden, brukt når det passer deg. Fornyes automatisk.",
+          "bilde": "<string>",
+          "binding": 2,
+          "engangs": false,
+          "fastTrekk": false,
+          "fremhevet": true,
+          "langtekst": "Basis 30 – frihet til å skape, når det passer deg\n\nBasis 30 er vårt mest populære medlemskap og passer perfekt for deg som ønsker å være en aktiv del av verkstedet. Her får du god tid til å utvikle prosjektene dine, prøve nye teknikker og jobbe i ditt eget tempo.\n\nMed dette medlemskapet får du 30 verkstedtimer hver måned, som du kan bruke når det passer deg. Du har tilgang til verkstedet døgnet rundt med personlig dørkode, slik at du kan komme innom både tidlig om morgenen, på kveldstid eller i helger.\n\nFor å gjøre det enkelt å ha flere prosjekter gående samtidig får du også din egen hylleplass i verkstedet. Her kan du oppbevare arbeider som tørker, venter på glasering eller rett og slett trenger litt mer tid før de er ferdige.\n\nBasis 30 passer både for deg som ønsker en fast kreativ hobby og for deg som vil ha muligheten til å komme og gå fritt gjennom måneden. Mange av våre medlemmer bruker dette medlemskapet som sitt faste ukentlige pusterom, hvor de kan koble av, være kreative og bli en del av det hyggelige miljøet på Lissom.\n\nFor å kunne arbeide selvstendig i verkstedet må du enten ha gjennomført kurs hos oss eller ha tilsvarende erfaring fra før.\n\nBasis 30 er medlemskapet for deg som ønsker god tilgang til verkstedet, fast plass i miljøet og friheten til å skape på dine egne premisser.",
+          "merke": "Mest valgt",
+          "navn": "Basis 30",
+          "oppsigelse": 1,
+          "passerFor": "deg som vil ha fast plass i uka",
+          "periode": "per måned",
+          "pris": "kr. 2 590,-",
+          "prisOre": 259000,
+          "punkter": [
+            "30 verkstedtimer hver måned",
+            "Medlemmer får 20 % rabatt på alle våre kurs",
+            "Tilgang til verkstedet 24/7 med dørkode",
+            "Egen hylleplass til prosjekter og utstyr",
+            "Frihet til å komme og gå når det passer deg",
+            "Mulighet til å jobbe med egne prosjekter over tid",
+            "Tilgang til egen nettbutikk",
+            "Dine egne produkter i vår butikk på Teie"
+          ],
+          "timer": 30,
+          "undertekst": "30 timer i måneden",
+          "utenForskudd": false,
+          "viktig": [
+            "Krever kurs hos oss eller tidligere erfaring",
+            "2 måneders bindingstid ved oppstart",
+            "Oppsigelsestid 1 måned",
+            "Leire, glassur og brenning kjøpes i tillegg"
+          ]
+        },
+        {
+          "beskrivelse": "Få mer, betal mindre: 35 timer i måneden til lavere pris, med årsavtale.",
+          "bilde": "<string>",
+          "binding": 12,
+          "engangs": false,
+          "fastTrekk": true,
+          "fremhevet": false,
+          "langtekst": "Årsmedlemskap – mest verkstedtid og flere muligheter\n\nFor deg som vet at keramikk er mer enn bare en hobby, er Årsmedlemskap det beste valget. Dette medlemskapet gir deg mest verkstedtid til lavest månedspris, og er laget for deg som ønsker å bruke verkstedet aktivt gjennom hele året.\n\nMed 35 verkstedtimer hver måned får du god tid til å utvikle ferdigheter, arbeide med større prosjekter og fordype deg i det kreative arbeidet. Du har tilgang til verkstedet døgnet rundt med personlig dørkode, slik at du kan jobbe når inspirasjonen kommer, enten det er tidlig om morgenen, sent på kvelden eller i helgene.\n\nSom medlem får du din egen hylleplass i verkstedet hvor du kan oppbevare arbeider, verktøy og prosjekter som er under utvikling. Dette gir deg muligheten til å jobbe over tid uten å måtte ta med deg alt hjem mellom hver økt.\n\nMed et løpende medlemskap får du din egen nettbutikk på lissom.no, og du kan ha dine egne produkter i butikken vår på Teie. Lager du noe du vil tilby andre, har du et sted å gjøre det fra – og blir en del av det kreative fellesskapet rundt Lissom.\n\nDette medlemskapet passer for deg som ønsker å være en fast del av verkstedmiljøet og som ser for deg å bruke keramikk aktivt gjennom året. For å kunne arbeide selvstendig må du enten ha gjennomført kurs hos oss eller ha tilsvarende erfaring fra tidligere.\n\nÅrsmedlemskapet har 12 måneders bindingstid og gir deg den beste timeprisen av alle våre medlemskap.",
+          "merke": "Mest for pengene",
+          "navn": "Årsmedlemskap",
+          "oppsigelse": 1,
+          "passerFor": "deg som bruker verkstedet fast hele året",
+          "periode": "per måned",
+          "pris": "kr. 1 990,-",
+          "prisOre": 199000,
+          "punkter": [
+            "35 verkstedtimer hver måned",
+            "Medlemmer får 20 % rabatt på alle våre kurs",
+            "Tilgang til verkstedet 24/7 med personlig dørkode",
+            "Egen hylleplass i verkstedet",
+            "Beste timepris av våre medlemskap",
+            "Fast plass i et kreativt og inkluderende verkstedmiljø",
+            "Tilgang til egen nettbutikk",
+            "Dine egne produkter i vår butikk på Teie"
+          ],
+          "timer": 35,
+          "undertekst": "35 timer i måneden · årsavtale",
+          "utenForskudd": false,
+          "viktig": [
+            "Krever kurs hos oss eller tidligere erfaring",
+            "Leire, glassur og brenning kjøpes i tillegg",
+            "Årsavtale",
+            "Bindingstid på 12 måneder"
+          ]
+        }
+      ]
+    }
+  },
+  "/api/stempling.php": {
+    "status": 200,
+    "svar": {
+      "historikk": [
+        {
+          "maaned": "<måned>",
+          "naaddeTaket": false,
+          "timer": "0",
+          "timerMin": 0
+        },
+        {
+          "maaned": "<måned>",
+          "naaddeTaket": false,
+          "timer": "0",
+          "timerMin": 0
+        },
+        {
+          "maaned": "<måned>",
+          "naaddeTaket": false,
+          "timer": "0",
+          "timerMin": 0
+        }
+      ],
+      "inne": {
+        "antall": "<number>",
+        "liste": "<liste>",
+        "skjulte": "<number>"
+      },
+      "innstemplet": false,
+      "plan": {
+        "egetTimetall": false,
+        "navn": "Årsmedlemskap"
+      },
+      "ressursId": "<number>",
+      "ressurser": "<liste>",
+      "saaLenge": null,
+      "saaLengeMin": 0,
+      "siden": null,
+      "siste": null,
+      "timepakke": {
+        "kanKjope": false,
+        "prisOre": 80000,
+        "prove": false,
+        "tilgode": "0",
+        "timer": 6
+      },
+      "timer": {
+        "andel": 3,
+        "brukt": "1",
+        "bruktMin": 60,
+        "dugnadMin": 0,
+        "gaver": 0,
+        "igjen": 34,
+        "perMnd": 35,
+        "plan": 35
+      },
+      "visMeg": true
+    }
+  },
+  "/api/handleliste.php": {
+    "status": 200,
+    "svar": {
+      "frakt": null,
+      "gebyr": 5,
+      "leverandorer": "<liste>",
+      "mine": [],
+      "paa": true,
+      "varer": "<liste>"
+    }
+  },
+  "/api/skisser.php?sjekk=1": {
+    "status": 200,
+    "svar": {
+      "ok": true,
+      "paa": true
+    }
+  },
+  "/api/mine-plasser.php": {
+    "status": 200,
+    "svar": {
+      "plasser": [
+        {
+          "bilder": [],
+          "frist": "Kurset har vært.",
+          "id": "<number>",
+          "kanAvbestille": false,
+          "kursbevis": "/api/kursbevis.php?booking=<id>",
+          "naar": "<dag> <dato>, <kl>",
+          "referanse": null,
+          "status": "Bekreftet",
+          "sum": "kr. 2 800,-",
+          "tittel": "E2E Dreiekurs",
+          "tone": "success"
+        },
+        {
+          "bilder": [],
+          "frist": "Full refusjon fram til 2 dager før kursstart.",
+          "id": "<number>",
+          "kanAvbestille": true,
+          "kursbevis": null,
+          "naar": "<dag> <dato>, <kl>",
+          "referanse": null,
+          "status": "Bekreftet",
+          "sum": "kr. 2 800,-",
+          "tittel": "E2E Dreiekurs",
+          "tone": "success"
+        }
+      ]
+    }
+  },
+  "/api/mine-kjop.php": {
+    "status": 200,
+    "svar": {
+      "kjop": []
+    }
+  },
+  "/api/butikk.php": {
+    "status": 200,
+    "svar": "<felles>"
+  },
+  "/api/medlem-frys.php": {
+    "status": 200,
+    "svar": {
+      "gjeldende": null,
+      "kanSoke": true,
+      "maksDager": 186,
+      "mine": []
+    }
+  },
+  "/api/gave.php": {
+    "status": 200,
+    "svar": {
+      "gave": null
+    }
+  },
+  "/api/medlemsforslag.php": {
+    "status": 200,
+    "svar": {
+      "erMedlem": true,
+      "mine": [],
+      "ok": true,
+      "paa": true,
+      "venter": false
+    }
+  },
+  "/api/mine-bilder.php": {
+    "status": 404,
+    "svar": {
+      "feil": "Fant ikke påmeldingen.",
+      "ok": false
+    }
+  },
+  "/api/mine-dokumenter.php": {
+    "status": 200,
+    "svar": "<felles>"
+  },
+  "/api/medlemssalg.php": {
+    "status": 200,
+    "svar": "<felles>"
+  }
+}

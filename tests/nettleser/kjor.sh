@@ -59,4 +59,4 @@ for _ in $(seq 1 30); do
 done
 
 SEED=$(php tests/nettleser/seed.php) || { echo "Fikk ikke laget testdata."; exit 1; }
-E2E_SEED="$SEED" E2E_PORT="$PORT" node tests/nettleser/flyter.mjs
+E2E_SEED="$SEED" E2E_PORT="$PORT" node "tests/nettleser/${1:-flyter.mjs}"

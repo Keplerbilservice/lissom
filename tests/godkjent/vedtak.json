@@ -1534,6 +1534,37 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "autosvar-kommentarer",
+            "dato": "2026-09-30",
+            "hva": "«svar på alle kommentarer automatisk», «hold det mye enklere»: hver time får alle nye kommentarer (Instagram, Facebook og Facebook-annonser, siste 14 dager) ett av fire faste svar. Egne, skjulte og besvarte hoppes over. Bryter under Synlighet, av til den skrus på",
+            "hvor": "app/lib/meta.php, bin/cron.php (anmeldelser/autosvar), Admin › Synlighet",
+            "kode": [
+                {
+                    "fil": "app/lib/meta.php",
+                    "finnes": [
+                        "'Tusen takk! ❤️',",
+                        "'Takk! 😊',",
+                        "'Så hyggelig 🙌',",
+                        "'Tusen takk for fine ord 💛',",
+                        "WHERE nokkel = 'Vis/autosvar'\""
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "        kommentarsvar($si);",
+                        "    case 'autosvar':"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "rad('Svar automatisk på kommentarer', (this.state.innholdLagret || {})['Vis/autosvar'] === 'ja',"
+                    ]
+                }
+            ]
         }
     ]
 }

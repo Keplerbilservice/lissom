@@ -144,6 +144,25 @@ $si = static function (string $t) use ($tilSkjerm, $ut): void {
  * «fortsett». Prisboksen fylles fra membership_plans («Prøv Lissom») — ingen
  * faste priser i teksten.
  */
+/**
+ * Faste takkesvar paa nye kommentarer. Eieren, 30. september 2026: «svar
+ * paa alle kommentarer automatisk», «hold det mye enklere». Gaar i
+ * timeslinja «anmeldelser» — ingen ny linje i cPanel.
+ */
+function kommentarsvar(callable $si): void
+{
+    if (!Meta::autosvarPaa()) {
+        $si('Svar på kommentarer: står av (Synlighet). Ingenting sendt.');
+        return;
+    }
+    $r = Meta::autosvar();
+    $si('Svar på kommentarer: ' . $r['svart'] . ' svart.'
+        . ($r['feil'] === [] ? '' : ' Feil: ' . implode(' | ', $r['feil'])));
+    if ($r['feil'] !== []) {
+        logg('Autosvar paa kommentarer feilet delvis', ['feil' => $r['feil']]);
+    }
+}
+
 function medlemsinvitasjon(callable $si): void
 {
     if (!DB::harKolonne('course_sessions', 'fortsett_sendt_at') || !Avmelding::klar()) {
@@ -485,6 +504,7 @@ switch ($jobb) {
         $si("Oppfølging etter kurs: {$antall} lagt i kø for " . count($okter) . ' økt(er).');
         // Medlemsinvitasjonen gaar i den samme timeslinja — ingen ny linje i
         // cPanel. Se «fortsett» under.
+        kommentarsvar($si);
         medlemsinvitasjon($si);
         break;
 
@@ -494,6 +514,11 @@ switch ($jobb) {
     // Timeslinja «anmeldelser» kjoerer den ogsaa.
     case 'fortsett':
         medlemsinvitasjon($si);
+        break;
+
+    // Takkesvarene paa kommentarer, for seg (til aa kjoere for haand).
+    case 'autosvar':
+        kommentarsvar($si);
         break;
 
     // -----------------------------------------------------------------------

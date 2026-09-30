@@ -49146,6 +49146,15 @@ class Component extends DCLogic {
         // her ogsaa, saa alt som vises paa nettsida staar samlet.
         rad('Vis kursholderne på nettsiden', this.bryterPaa('kursholdere'),
             () => this.vekslBryter('kursholdere', 'Kursholderne')),
+        // Eieren, 30. september 2026: faste takkesvar paa kommentarer paa
+        // Instagram og Facebook (bin/cron.php kommentarsvar). Streng 'ja':
+        // av til den skrus paa.
+        rad('Svar automatisk på kommentarer', (this.state.innholdLagret || {})['Vis/autosvar'] === 'ja',
+            () => {
+              const paa = (this.state.innholdLagret || {})['Vis/autosvar'] === 'ja';
+              this.lagreInnhold({ 'Vis/autosvar': paa ? 'nei' : 'ja' },
+                paa ? 'Automatiske svar er slått av' : 'Automatiske svar er slått på');
+            }),
       ],
       synMin: [
         rad('Interne kurs og samlinger', this.bryterPaa('internkurs'),

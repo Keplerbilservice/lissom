@@ -331,6 +331,8 @@ final class Meta
     // Alt her LESER, eller svarer paa noe en kunde har skrevet foerst. Et
     // svar fra verkstedet staar offentlig, og det finnes ingen vei hit fra
     // en cron-jobb eller fra Autopilot — samme regel som publisering.
+    // Unntak: de faste takkesvarene i autosvar() under (eieren, 30.
+    // september 2026), bak bryteren Vis/autosvar.
 
     /** Hvor mange innlegg og samtaler vi henter om gangen. */
     public const INNBOKS_ANTALL = 15;
@@ -643,6 +645,117 @@ final class Meta
     {
         $t = trim((string) preg_replace('/\s+/u', ' ', $tekst));
         return $t === '' ? '' : (mb_strlen($t) > 60 ? mb_substr($t, 0, 60) . ' …' : $t);
+    }
+
+    // ── Automatiske svar paa kommentarer ─────────────────────────────
+    //
+    // Eieren, 30. september 2026: «skulle ikke du svare automatisk da?» —
+    // valgte «svar paa alle kommentarer automatisk», og deretter «hold det
+    // mye enklere»: en fast liste med korte takk, ingen AI. Dette er det
+    // eneste unntaket fra regelen over om at ingenting gaar ut fra en jobb:
+    // eieren har bedt om det, teksten er hans, og bryteren
+    // Vis/autosvar under Synlighet skrur det av.
+    //
+    // Hvilket svar en kommentar faar, avgjoeres av id-en. Da blir det ikke
+    // det samme svaret under hver kommentar, og en kjoering som gjentas
+    // velger det samme.
+
+    /** De fire svarene eieren godkjente, 30. september 2026. */
+    public const AUTOSVAR = [
+        'Tusen takk! ❤️',
+        'Takk! 😊',
+        'Så hyggelig 🙌',
+        'Tusen takk for fine ord 💛',
+    ];
+
+    /** Aldri lenger tilbake enn dette. Det gamle ble liggende for lenge. */
+    private const AUTOSVAR_DAGER = 14;
+
+    /** Et tak per kjoering, saa en feil ikke blir hundre svar. */
+    private const AUTOSVAR_MAKS = 20;
+
+    public static function autosvarPaa(): bool
+    {
+        return (string) DB::verdi(
+            "SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/autosvar'"
+        ) === 'ja';
+    }
+
+    /**
+     * Svarer paa alle ubesvarte kommentarer fra de siste to ukene.
+     *
+     * Hopper over: vaare egne, skjulte (de ordene som er stengt ute paa
+     * Facebook-sida — et svar ville bare trukket blikket dit), og alle som
+     * alt har et svar under seg. Annonsene paa Facebook tas med; de ligger
+     * ikke i sidas feed. Instagram-annonser naas ikke av Graph.
+     *
+     * @return array{svart: int, feil: list<string>}
+     */
+    public static function autosvar(): array
+    {
+        $grense = gmdate('Y-m-d\TH:i:s', time() - self::AUTOSVAR_DAGER * 86400);
+        $kandidater = [];
+        $feil = [];
+
+        if (self::klarForInstagram()) {
+            try {
+                $meg = (string) (self::kall('GET', self::igId(), ['fields' => 'username'])['username'] ?? '');
+                $svar = self::kall('GET', self::igId() . '/media', [
+                    'fields' => 'id,comments.limit(50){id,username,timestamp,hidden,replies{id}}',
+                    'limit'  => (string) self::INNBOKS_ANTALL,
+                ]);
+                foreach ((array) ($svar['data'] ?? []) as $innlegg) {
+                    foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
+                        if ((string) ($k['username'] ?? '') === $meg
+                            || !empty($k['hidden'])
+                            || ((array) ($k['replies']['data'] ?? [])) !== []
+                            || substr((string) ($k['timestamp'] ?? ''), 0, 19) < $grense) {
+                            continue;
+                        }
+                        $kandidater[] = ['id' => (string) $k['id'], 'kanal' => 'Instagram'];
+                    }
+                }
+            } catch (RuntimeException $e) {
+                $feil[] = 'Instagram: ' . $e->getMessage();
+            }
+        }
+
+        if (self::klarForFacebook()) {
+            foreach (['feed', 'ads_posts'] as $kilde) {
+                try {
+                    $svar = self::kall('GET', self::sideId() . '/' . $kilde, [
+                        'fields' => 'id,comments.limit(50){id,from,created_time,is_hidden,comments{id}}',
+                        'limit'  => (string) self::INNBOKS_ANTALL,
+                    ], self::sideToken());
+                    foreach ((array) ($svar['data'] ?? []) as $innlegg) {
+                        foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
+                            if ((string) ($k['from']['id'] ?? '') === self::sideId()
+                                || !empty($k['is_hidden'])
+                                || ((array) ($k['comments']['data'] ?? [])) !== []
+                                || substr((string) ($k['created_time'] ?? ''), 0, 19) < $grense) {
+                                continue;
+                            }
+                            $kandidater[(string) $k['id']] = ['id' => (string) $k['id'], 'kanal' => 'Facebook'];
+                        }
+                    }
+                } catch (RuntimeException $e) {
+                    $feil[] = 'Facebook (' . $kilde . '): ' . $e->getMessage();
+                }
+            }
+        }
+
+        $svart = 0;
+        foreach (array_slice(array_values($kandidater), 0, self::AUTOSVAR_MAKS) as $k) {
+            $tekst = self::AUTOSVAR[crc32($k['id']) % count(self::AUTOSVAR)];
+            try {
+                self::svarKommentar($k['id'], $tekst, $k['kanal']);
+                $svart++;
+            } catch (RuntimeException $e) {
+                $feil[] = $k['kanal'] . ' ' . $k['id'] . ': ' . $e->getMessage();
+            }
+        }
+
+        return ['svart' => $svart, 'feil' => $feil];
     }
 
     // ── Selve kallet ─────────────────────────────────────────────────

@@ -26,9 +26,17 @@ $hemmelighet = (string) Config::hent('vipps_webhook_secret', '');
 $signert = false;
 
 if ($hemmelighet !== '') {
-    $oppgitt = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
-    $ventet = 'HMAC-SHA256 ' . base64_encode(hash_hmac('sha256', $raa, $hemmelighet, true));
-    $signert = $oppgitt !== '' && hash_equals($ventet, $oppgitt);
+    // Vipps sitt format — se Vipps::webhookSignert(). Noen webhotell tar
+    // Authorization ut av $_SERVER; da hentes den fra hodene direkte.
+    $server = $_SERVER;
+    if (empty($server['HTTP_AUTHORIZATION']) && function_exists('getallheaders')) {
+        foreach ((array) getallheaders() as $n => $v) {
+            if (strtolower((string) $n) === 'authorization') {
+                $server['HTTP_AUTHORIZATION'] = (string) $v;
+            }
+        }
+    }
+    $signert = Vipps::webhookSignert($raa, $hemmelighet, $server);
 
     if (!$signert) {
         logg_feil('Webhook med feil signatur avvist');

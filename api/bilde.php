@@ -73,7 +73,7 @@ function avledet(string $sti, int $bredde, bool $webp): string
  * Bildene endrer seg aldri — navnet er tilfeldig, saa en ny fil faar et nytt
  * navn. Da kan nettleseren beholde det i et aar uten aa sporre igjen.
  */
-function lever(string $sti): never
+function lever(string $sti, bool $privat = false): never
 {
     // Bredden er valgfri, og bare disse tallene tas imot — de samme som
     // filene i rota har.
@@ -94,7 +94,11 @@ function lever(string $sti): never
     // Navnet er en hash av innholdet — en ny fil faar et nytt navn. Da kan
     // nettleseren beholde den i et aar uten aa sporre igjen. Sto paa sju
     // dager, og bildene ble hentet paa nytt hver uke uten grunn.
-    header('Cache-Control: public, max-age=31536000, immutable');
+    //
+    // Et bilde bak innlogging skal bare ligge i nettleseren til den som
+    // fikk se det — «private» — aldri i en delt mellomlagring som kan gi det
+    // videre til nestemann som spoer (Codex-gjennomgangen 30.09.2026).
+    header('Cache-Control: ' . ($privat ? 'private' : 'public') . ', max-age=31536000, immutable');
     header('X-Content-Type-Options: nosniff');
     readfile($sti);
     exit;
@@ -128,7 +132,7 @@ if ($deltaker !== '') {
     if (!$egen && !Sesjon::erAdmin()) {
         Svar::feil('Fant ikke bildet.', 404);
     }
-    lever($sti);
+    lever($sti, true);
 }
 
 // ── Skjermbildet som fulgte en feilmelding ────────────────────────────────
@@ -142,7 +146,7 @@ if ($feil !== '') {
     if ($sti === null || !Sesjon::erAdmin()) {
         Svar::feil('Fant ikke bildet.', 404);
     }
-    lever($sti);
+    lever($sti, true);
 }
 
 // Medlemmenes forslag til Instagram. Private til verkstedet har godkjent:
@@ -207,7 +211,7 @@ if ($referanse !== '') {
     if ($sti === null || !Sesjon::erAdmin()) {
         Svar::feil('Fant ikke bildet.', 404);
     }
-    lever($sti);
+    lever($sti, true);
 }
 
 // Bilder til artikler er aapne for alle — de staar paa nettsida uansett.
@@ -238,4 +242,4 @@ if ($rad !== null && $rad['status'] !== 'publisert') {
     }
 }
 
-lever($sti);
+lever($sti, $rad !== null && $rad['status'] !== 'publisert');

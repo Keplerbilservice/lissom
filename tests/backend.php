@@ -14010,9 +14010,15 @@ sjekk('… saa ingen av dem har sin egen utgave lenger',
 // Det statusen sier, skal faktisk gjores.
 sjekk('AUTHORIZED trekker pengene og markerer betalt',
     str_contains($vippsU, "if (\$tilstand === 'AUTHORIZED') {")
-    && str_contains($vippsU, 'self::trekk($referanse, (int) ($status[\'aggregate\'][\'authorizedAmount\'][\'value\'] ?? 0));')
+    && str_contains($vippsU, 'self::trekk($referanse, $godkjent - $trukket);')
     && str_contains($vippsU, 'Booking::markerBetalt($referanse);'),
     'trekk + markerBetalt');
+// ePayment staar paa AUTHORIZED ogsaa etter trekket (Codex 30.09.2026): bare
+// det som gjenstaar, trekkes.
+sjekk('… og det som alt er trukket, trekkes ikke igjen',
+    str_contains($vippsU, "\$trukket  = (int) (\$status['aggregate']['capturedAmount']['value'] ?? 0);")
+    && str_contains($vippsU, 'if ($godkjent > $trukket) {'),
+    'capturedAmount');
 sjekk('CAPTURED markerer betalt',
     str_contains($vippsU, "} elseif (\$tilstand === 'CAPTURED') {"),
     'egen gren');
@@ -14581,6 +14587,21 @@ sjekk('… og synkroniser() bruker den',
     str_contains($vK, 'return self::anvendTilstand($referanse, $status);'), 'etter oppslaget');
 sjekk('… og webhooken ogsaa',
     str_contains($wK, 'Vipps::anvendTilstand($referanse, $status);'), 'uten eget regelsett');
+// Signaturen slik Vipps faktisk lager den (Codex-gjennomgangen 30.09.2026):
+// metode, sti, dato, vert og innholdshash — ikke bare kroppen.
+$wsKropp = '{"name":"AUTHORIZED","reference":"X"}';
+$wsHash = base64_encode(hash('sha256', $wsKropp, true));
+$wsServer = ['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/api/vipps-webhook.php', 'HTTP_HOST' => 'lissom.no',
+             'HTTP_X_MS_DATE' => 'Tue, 30 Sep 2026 12:00:00 GMT', 'HTTP_X_MS_CONTENT_SHA256' => $wsHash];
+$wsServer['HTTP_AUTHORIZATION'] = 'HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature='
+    . base64_encode(hash_hmac('sha256', "POST\n/api/vipps-webhook.php\nTue, 30 Sep 2026 12:00:00 GMT;lissom.no;" . $wsHash, 'hemmelig', true));
+sjekk('webhook: Vipps-signaturen godtas', Vipps::webhookSignert($wsKropp, 'hemmelig', $wsServer));
+sjekk('… feil hemmelighet avvises', !Vipps::webhookSignert($wsKropp, 'annen', $wsServer));
+sjekk('… endret kropp avvises', !Vipps::webhookSignert($wsKropp . ' ', 'hemmelig', $wsServer));
+sjekk('… annen sti avvises', !Vipps::webhookSignert($wsKropp, 'hemmelig', ['REQUEST_URI' => '/api/annet.php'] + $wsServer));
+sjekk('… gammelt format (bare kroppen) avvises', !Vipps::webhookSignert($wsKropp, 'hemmelig',
+    ['HTTP_AUTHORIZATION' => 'HMAC-SHA256 ' . base64_encode(hash_hmac('sha256', $wsKropp, 'hemmelig', true))] + $wsServer));
+sjekk('… uten hemmelighet godtas ingenting', !Vipps::webhookSignert($wsKropp, '', $wsServer));
 sjekk('… saa webhooken ikke har sin egen utgave lenger',
     !str_contains($wK, "case 'CAPTURED':") && !str_contains($wK, "Booking::markerBetalt(\$referanse);"),
     'switchen er borte');

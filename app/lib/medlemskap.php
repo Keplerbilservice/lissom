@@ -2067,26 +2067,42 @@ final class Medlemskap
         // Er trekket alt fort, gjor vi ikke noe mer. Uten denne kunne en
         // halvveis kjoring gitt to rader i payments for samme maaned.
         $fra = DB::en(
-            "SELECT id FROM payments WHERE subscription_id = :s AND idempotency_key = :k",
+            "SELECT id, status, vipps_psp_ref FROM payments WHERE subscription_id = :s AND idempotency_key = :k",
             ['s' => (int) $avtale['id'], 'k' => $nokkel]
         );
+
+        // Et trekk Vipps aldri tok imot, proeves igjen. Kastet belastAvtale()
+        // — nett nede, Vipps svarte 500 — ble raden «feilet» uten trekk-id.
+        // Foer sto den der og sa «alt fort» hver natt, og neste_trekk ble
+        // aldri flyttet: maaneden ble aldri krevd inn. Raden gjenbrukes med
+        // samme noekkel, saa kom trekket likevel fram hos Vipps forrige gang,
+        // gir Vipps det samme trekket tilbake — ikke et nytt.
+        $paaNytt = null;
+        if ($fra !== null && (string) $fra['status'] === 'feilet' && ($fra['vipps_psp_ref'] ?? null) === null) {
+            $paaNytt = (int) $fra['id'];
+            $fra = null;
+        }
         if ($fra !== null) {
             return 'alt fort';
         }
 
         $forfall = (new DateTimeImmutable('now'))->modify('+' . self::VARSEL_DAGER . ' days')->format('Y-m-d');
-        $referanse = Vipps::nyReferanse('MED');
 
-        $betalingId = DB::settInn('payments', [
-            'vipps_reference' => $referanse,
-            'type'            => 'recurring_charge',
-            'formal'          => 'medlemskap',
-            'member_id'       => (int) $avtale['member_id'],
-            'subscription_id' => (int) $avtale['id'],
-            'belop_ore'       => (int) $avtale['pris_ore'],
-            'status'          => 'opprettet',
-            'idempotency_key' => $nokkel,
-        ]);
+        if ($paaNytt !== null) {
+            $betalingId = $paaNytt;
+            DB::oppdater('payments', ['status' => 'opprettet'], ['id' => $betalingId]);
+        } else {
+            $betalingId = DB::settInn('payments', [
+                'vipps_reference' => Vipps::nyReferanse('MED'),
+                'type'            => 'recurring_charge',
+                'formal'          => 'medlemskap',
+                'member_id'       => (int) $avtale['member_id'],
+                'subscription_id' => (int) $avtale['id'],
+                'belop_ore'       => (int) $avtale['pris_ore'],
+                'status'          => 'opprettet',
+                'idempotency_key' => $nokkel,
+            ]);
+        }
 
         try {
             $trekkId = Vipps::belastAvtale(

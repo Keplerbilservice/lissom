@@ -153,6 +153,51 @@ final class Vipps
         ]);
     }
 
+    /** Cookien som binder en innlogging til nettleseren som startet den. */
+    public const STATE_COOKIE = 'lissom_vipps_state';
+
+    /**
+     * Knytter state til denne nettleseren.
+     *
+     * Raden i login_states beviser bare at state er laget av oss — ikke at
+     * det er samme nettleser som kommer tilbake. Uten dette kunne noen
+     * starte en innlogging selv, stoppe foer retur, og sende lenken videre:
+     * den som trykket, ble da logget inn paa en annens konto
+     * (Codex-gjennomgangen 30.09.2026). Cookien holder bare en hash av state.
+     */
+    public static function bindState(string $state): void
+    {
+        $verdi = hash('sha256', $state);
+        if (!headers_sent()) {
+            setcookie(self::STATE_COOKIE, $verdi, [
+                'expires'  => time() + 600,
+                'path'     => '/',
+                'httponly' => true,
+                'secure'   => !Config::erUtvikling(),
+                // Lax sendes med paa en vanlig GET-retur fra Vipps.
+                'samesite' => 'Lax',
+            ]);
+        }
+        $_COOKIE[self::STATE_COOKIE] = $verdi;
+    }
+
+    /** Kom state tilbake til den samme nettleseren? Cookien slettes uansett. */
+    public static function stateTilhorerNettleser(string $state): bool
+    {
+        $cookie = $_COOKIE[self::STATE_COOKIE] ?? '';
+        if (!headers_sent()) {
+            setcookie(self::STATE_COOKIE, '', [
+                'expires'  => time() - 3600,
+                'path'     => '/',
+                'httponly' => true,
+                'secure'   => !Config::erUtvikling(),
+                'samesite' => 'Lax',
+            ]);
+        }
+        unset($_COOKIE[self::STATE_COOKIE]);
+        return is_string($cookie) && $cookie !== '' && hash_equals($cookie, hash('sha256', $state));
+    }
+
     /** Må stemme nøyaktig med det som er hvitlistet i Vipps-portalen. */
     public static function returAdresse(): string
     {
@@ -883,7 +928,16 @@ final class Vipps
 
         try {
             if ($tilstand === 'AUTHORIZED') {
-                self::trekk($referanse, (int) ($status['aggregate']['authorizedAmount']['value'] ?? 0));
+                // ePayment staar paa AUTHORIZED ogsaa etter at pengene er
+                // trukket — det som er trukket, staar i aggregate. Foer ble
+                // hele beloepet bedt trukket paa nytt: Vipps sa nei, og
+                // «betalt» ble aldri satt om svaret fra et vellykket trekk
+                // gikk tapt underveis. Naa trekkes bare det som gjenstaar.
+                $godkjent = (int) ($status['aggregate']['authorizedAmount']['value'] ?? 0);
+                $trukket  = (int) ($status['aggregate']['capturedAmount']['value'] ?? 0);
+                if ($godkjent > $trukket) {
+                    self::trekk($referanse, $godkjent - $trukket);
+                }
                 Booking::markerBetalt($referanse);
             } elseif ($tilstand === 'CAPTURED') {
                 Booking::markerBetalt($referanse);
@@ -978,6 +1032,44 @@ final class Vipps
         'epayments.payment.expired.v1',
         'epayments.payment.terminated.v1',
     ];
+
+    /**
+     * Er webhooken signert av Vipps?
+     *
+     * Vipps signerer ikke meldingskroppen alene. De signerer
+     * «POST\n<sti og spoerring>\n<x-ms-date>;<host>;<x-ms-content-sha256>»,
+     * der den siste er base64 av SHA-256 over kroppen, og sender
+     * «HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature=…».
+     * Foer ble bare kroppen signert, og ekte hendelser fra Vipps fikk 401.
+     * https://developer.vippsmobilepay.com/docs/APIs/webhooks-api/request-authentication/
+     *
+     * @param array<string,mixed> $server $_SERVER, eller det samme fra en test
+     */
+    public static function webhookSignert(string $raa, string $hemmelighet, array $server): bool
+    {
+        if ($hemmelighet === '') {
+            return false;
+        }
+        $autorisasjon = (string) ($server['HTTP_AUTHORIZATION'] ?? $server['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+        $dato   = (string) ($server['HTTP_X_MS_DATE'] ?? '');
+        $hash   = (string) ($server['HTTP_X_MS_CONTENT_SHA256'] ?? '');
+        $vert   = (string) ($server['HTTP_HOST'] ?? '');
+        $sti    = (string) ($server['REQUEST_URI'] ?? '');
+        $metode = strtoupper((string) ($server['REQUEST_METHOD'] ?? 'POST'));
+        if ($autorisasjon === '' || $dato === '' || $hash === '' || $vert === '' || $sti === '') {
+            return false;
+        }
+
+        // Kroppen maa vaere den som ble signert.
+        if (!hash_equals(base64_encode(hash('sha256', $raa, true)), $hash)) {
+            return false;
+        }
+
+        $streng = $metode . "\n" . $sti . "\n" . $dato . ';' . $vert . ';' . $hash;
+        $ventet = 'HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature='
+            . base64_encode(hash_hmac('sha256', $streng, $hemmelighet, true));
+        return hash_equals($ventet, $autorisasjon);
+    }
 
     /** Adressen Vipps skal melde fra til. Maa vaere https. */
     public static function webhookAdresse(): string

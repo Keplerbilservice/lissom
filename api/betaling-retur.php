@@ -66,13 +66,16 @@ DB::oppdater('payments', [
 $tilstand = strtoupper((string) ($status['state'] ?? ''));
 
 if ($tilstand === 'AUTHORIZED') {
-    try {
-        Vipps::trekk($referanse, (int) ($status['aggregate']['authorizedAmount']['value'] ?? 0));
-    } catch (Throwable $e) {
-        logg_feil('Trekk feilet ved retur for ' . $referanse, $e);
+    // Samme regel som webhooken og cron: Vipps::anvendTilstand() trekker det
+    // som gjenstaar og markerer betalt bare naar trekket gikk. Foer ble
+    // «betalt» satt ogsaa naar trekket feilet — plassen var kundens, uten at
+    // pengene var trukket. Gikk trekket ikke, venter kunden; cron proever igjen.
+    Vipps::anvendTilstand($referanse, $status);
+    $naa = (string) DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => $betaling['id']]);
+    if ($naa === 'betalt') {
+        $tilbake('ok', $kvittering($betaling));
     }
-    Booking::markerBetalt($referanse);
-    $tilbake('ok', $kvittering($betaling));
+    $tilbake('venter');
 }
 
 if ($tilstand === 'TERMINATED' || $tilstand === 'ABORTED' || $tilstand === 'EXPIRED') {

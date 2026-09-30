@@ -47,6 +47,7 @@ kjor "maalingscookies" php tests/maaling-cookie.php
 kjor "backend"       php tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
+kjor "kjopslaas"     php tests/kjopslaas.php
 kjor "verving"       php tests/verving.php
 kjor "prøv lissom"   php tests/prove.php
 kjor "timepakke"     php tests/timepakke.php
@@ -59,6 +60,7 @@ kjor "frakt"         php tests/frakt.php
 kjor "mva, nytt admin" php tests/mva.php
 kjor "bestill mer, lav aktivitet" php tests/daglig.php
 kjor "eposter"       php tests/eposter.php
+kjor "sikkerhet (Codex C)" php tests/sikkerhet-c.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
 kjor "betalingsflyt" bash tests/flyt.sh

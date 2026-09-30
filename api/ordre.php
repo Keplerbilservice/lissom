@@ -46,6 +46,8 @@ if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
 // --- Sett sammen ordren fra databasens priser ----------------------------
 $rader = [];
 $sum = 0;
+/** @var array<int, int> $iKurven productId => antall i hele kurven */
+$iKurven = [];
 
 foreach ($linjer as $l) {
     $id = (int) ($l['id'] ?? 0);
@@ -68,7 +70,10 @@ foreach ($linjer as $l) {
         && (int) DB::verdi('SELECT leire FROM products WHERE id = :i', ['i' => (int) $vare['id']]) === 1) {
         Svar::feil('Leire er inkludert i Prøv Lissom.', 403);
     }
-    if ($vare['lager'] !== null && (int) $vare['lager'] < $antall) {
+    // Samme vare paa flere linjer teller sammen. Lageret ble sjekket linje
+    // for linje, saa to linjer med én hver gikk gjennom paa den siste.
+    $iKurven[(int) $vare['id']] = ($iKurven[(int) $vare['id']] ?? 0) + $antall;
+    if ($vare['lager'] !== null && (int) $vare['lager'] < $iKurven[(int) $vare['id']]) {
         Svar::feil('Vi har ikke nok igjen av «' . $vare['tittel'] . '».', 409);
     }
 
@@ -209,7 +214,45 @@ $leveringsfelt = DB::harKolonne('orders', 'levering')
        'adresse' => $adresse ?: null, 'postnr' => $postnr ?: null, 'poststed' => $poststed ?: null]
     : [];
 
-$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt, $leveringsfelt, $fraktOre, $vedHenting): array {
+try {
+$opprettet = DB::iTransaksjon(static function () use ($rader, $iKurven, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt, $leveringsfelt, $fraktOre, $vedHenting): array {
+    // ── Lageret én gang til, med laas ────────────────────────────────
+    //
+    // Sjekken over leser bare hva som staar paa hylla. Lageret trekkes
+    // foerst naar pengene er i havn, saa to kunder kunne begge betale for
+    // den siste vara. Varene laases her, i fast rekkefolge, og det som
+    // allerede er paa vei i Vipps holder sitt: ubetalte ordrer med en
+    // betaling som er aapen og under en time gammel.
+    ksort($iKurven);
+    $telte = [];
+    foreach ($iKurven as $vareId => $antall) {
+        $lager = DB::en('SELECT lager, tittel FROM products WHERE id = :i FOR UPDATE', ['i' => $vareId]);
+        if ($lager !== null && $lager['lager'] !== null) {
+            $telte[$vareId] = $lager;
+        }
+    }
+    foreach ($telte as $vareId => $lager) {
+        $paaVei = (int) DB::verdi(
+            "SELECT COALESCE(SUM(l.antall), 0)
+               FROM order_lines l
+               JOIN orders o   ON o.id = l.order_id
+               JOIN payments p ON p.id = o.payment_id
+              WHERE l.product_id = :v
+                AND o.status = 'ny'
+                AND p.status IN ('opprettet','venter','autorisert')
+                AND p.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 MINUTE)",
+            ['v' => $vareId]
+        );
+        if ((int) $lager['lager'] - $paaVei < $iKurven[$vareId]) {
+            throw new DomainException('Vi har ikke nok igjen av «' . $lager['tittel'] . '».', 409);
+        }
+    }
+
+    // Kortet kan vaere i bruk i et annet kjop som er paa vei i Vipps.
+    if ($gavekortId !== null && !Booking::gavekortDekker((int) $gavekortId, (int) $gavekortOre)) {
+        throw new DomainException('Fant ikke gavekortet, eller det er brukt opp.', 400);
+    }
+
     // Betales det ved henting, finnes det ingenting aa betale i Vipps — og
     // da skal det heller ikke ligge en betalingsrad og vente paa en webhook
     // som aldri kommer.
@@ -284,6 +327,11 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
 
     return ['ordreId' => $ordreId, 'paymentId' => $paymentId];
 });
+} catch (DomainException $e) {
+    // Bare stoppene over, med meldingen til kunden. En databasefeil
+    // (PDOException) er ingen DomainException og gaar videre som for.
+    Svar::feil($e->getMessage(), $e->getCode());
+}
 
 // ── Betales ved henting: ferdig her ───────────────────────────────────
 //

@@ -150,6 +150,27 @@ final class Booking
         // «3 plasser igjen» skal heller ikke laase noe.
         if ($medLaas && DB::kobling()->inTransaction()) {
             DB::en('SELECT id FROM course_sessions WHERE id = :id FOR UPDATE', ['id' => $oktId]);
+
+            // Okta alene er ikke nok. Plassene deles med alle oektene som
+            // bruker den samme ressursen samtidig — og uten ressurs med
+            // kursets andre oekter. To kjop paa hver sin oekt laaste hver sin
+            // rad, leste det samme bildet og fikk begge den siste skiva.
+            // Kursraden og ressursraden laases derfor ogsaa, i fast
+            // rekkefolge (oekt, kurs, ressurs), saa den andre venter til den
+            // forste er ferdig. Laasene tas foer noen vanlig lesing i
+            // transaksjonen, saa regnestykket under ser det som ble lagret.
+            $harRessurs = DB::harKolonne('courses', 'ressurs_id');
+            $kurs = DB::en(
+                'SELECT c.id' . ($harRessurs ? ', c.ressurs_id' : '') . '
+                   FROM courses c
+                   JOIN course_sessions cs ON cs.course_id = c.id
+                  WHERE cs.id = :id FOR UPDATE',
+                ['id' => $oktId]
+            );
+            $ressursId = (int) ($kurs['ressurs_id'] ?? 0);
+            if ($ressursId > 0 && DB::harTabell('ressurser')) {
+                DB::en('SELECT id FROM ressurser WHERE id = :r FOR UPDATE', ['r' => $ressursId]);
+            }
         }
 
         // Regnestykket staar ett sted, i ledigePlasserFlere. Sto det ogsaa
@@ -987,6 +1008,11 @@ final class Booking
                 throw new RuntimeException('Plassen ble tatt mens du fylte ut skjemaet.');
             }
 
+            // Kortet kan vaere i bruk i et annet kjop som er paa vei i Vipps.
+            if ($gavekortId !== null && !self::gavekortDekker((int) $gavekortId, (int) $gavekortOre)) {
+                throw new RuntimeException('Fant ikke gavekortet, eller det er brukt opp.');
+            }
+
             $paymentId = null;
             if (!$gratis && !$oppmote) {
                 $felt = [
@@ -1179,6 +1205,72 @@ final class Booking
     }
 
     /**
+     * Kan en booking settes til betalt naar pengene kommer?
+     *
+     * Ja naar den fortsatt holder plassen: reservert og innenfor fristen,
+     * eller allerede betalt. Er fristen gaatt ut — og cron har kanskje alt
+     * satt den til avbestilt — bare om plassen fortsatt er ledig. En booking
+     * som er avbestilt foer fristen gikk ut (for haand, av verkstedet eller
+     * kunden) vekkes aldri; det samme gjelder refundert og ikke moett.
+     *
+     * Kalles inne i transaksjonen i markerBetalt(), med bookingen laast.
+     */
+    private static function kanBliBetalt(array $b): bool
+    {
+        $status = (string) $b['status'];
+        $frist  = $b['reservert_til'] !== null ? (string) $b['reservert_til'] : null;
+        $naa    = gmdate('Y-m-d H:i:s');
+
+        if ($status === 'betalt') {
+            return true;
+        }
+        if ($status === 'reservert' && ($frist === null || $frist > $naa)) {
+            return true;
+        }
+        $utloptAvCron = $status === 'avbestilt' && $frist !== null
+            && $b['avbestilt_at'] !== null && (string) $b['avbestilt_at'] >= $frist;
+        if ($status !== 'reservert' && !$utloptAvCron) {
+            return false;
+        }
+        // Fristen er ute: bookingen teller ikke lenger med i regnestykket,
+        // saa plassen maa vaere ledig for den. Samme laas som ved booking.
+        return self::ledigePlasser((int) $b['course_session_id'], true) >= (int) $b['antall'];
+    }
+
+    /**
+     * Beskjed til verkstedet: pengene kom, men plassen var borte.
+     *
+     * Eieren, 30. september 2026: «Bare varsle, refunder for haand». Ingen
+     * automatisk refusjon. Beskjeden er en intern mal som de andre beskjedene
+     * til verkstedet (Varsel::malTilAdmin), med referansen saa betalingen finnes
+     * med soeket i Kasse › Betalinger, der refusjonen gjoeres.
+     */
+    private static function varsleBetaltUtenPlass(int $bookingId, string $referanse): void
+    {
+        $b = DB::en(
+            'SELECT COALESCE(m.navn, b.gjest_navn) AS navn, c.tittel, cs.start_tid, p.belop_ore
+               FROM bookings b
+               JOIN courses c          ON c.id = b.course_id
+               JOIN course_sessions cs ON cs.id = b.course_session_id
+               JOIN payments p         ON p.id = b.payment_id
+          LEFT JOIN members m          ON m.id = b.member_id
+              WHERE b.id = :i',
+            ['i' => $bookingId]
+        );
+        if ($b === null) {
+            return;
+        }
+        // Malen «intern_betalt_uten_plass» (migrasjon 240), som Monica kan
+        // endre i Tekst maler.
+        Varsel::malTilAdmin('intern_betalt_uten_plass', [
+            'navn'      => (string) ($b['navn'] ?? ''),
+            'kurs'      => (string) $b['tittel'] . ', ' . self::norskDato((string) $b['start_tid']),
+            'belop'     => self::kroner((int) $b['belop_ore']),
+            'referanse' => $referanse,
+        ], 'booking', $bookingId);
+    }
+
+    /**
      * Markerer en booking som betalt. Kalles fra webhook og fra returen —
      * begge kan komme først, og begge kan komme flere ganger.
      */
@@ -1195,6 +1287,29 @@ final class Booking
             }
 
             DB::oppdater('payments', ['status' => 'betalt'], ['id' => $betaling['id']]);
+
+            // En betaling hoerer enten til en booking eller en butikkordre.
+            // Begge kommer inn her, fra webhook og fra returen.
+            $booking = DB::en(
+                'SELECT id, status, reservert_til, avbestilt_at, course_session_id, antall
+                   FROM bookings WHERE payment_id = :p FOR UPDATE',
+                ['p' => $betaling['id']]
+            );
+
+            // Kommer pengene etter at plassen er sluppet, skal ikke bookingen
+            // vekkes til live uten at plassen fortsatt er der. For ble den satt
+            // til betalt uansett — ogsaa naar plassen i mellomtiden var solgt
+            // til en annen, eller bookingen var avbestilt for haand.
+            if ($booking !== null && !self::kanBliBetalt($booking)) {
+                logg('Betaling kom inn etter at plassen var sluppet', [
+                    'booking' => (int) $booking['id'], 'betaling' => (int) $betaling['id'],
+                ]);
+                revider('betalt_uten_plass', 'booking', (int) $booking['id'],
+                    ['betaling' => (int) $betaling['id']]);
+                self::varsleBetaltUtenPlass((int) $booking['id'], $referanse);
+                return true;
+            }
+
             // Til maalingen etter transaksjonen — se under.
             $betaltId = (int) $betaling['id'];
 
@@ -1202,13 +1317,12 @@ final class Booking
             // handlekurv som blir forlatt i Vipps skal ikke spise av saldoen.
             self::trekkGavekort((int) $betaling['id']);
 
-            // En betaling hoerer enten til en booking eller en butikkordre.
-            // Begge kommer inn her, fra webhook og fra returen.
-            $booking = DB::en('SELECT id FROM bookings WHERE payment_id = :p', ['p' => $betaling['id']]);
             if ($booking !== null) {
                 DB::oppdater('bookings', [
                     'status'        => 'betalt',
                     'reservert_til' => null,
+                    // Vekket etter at cron slapp den: den er ikke avbestilt.
+                    'avbestilt_at'  => null,
                 ], ['id' => $booking['id']]);
 
                 self::sendBekreftelse((int) $booking['id']);
@@ -1448,6 +1562,43 @@ final class Booking
      *
      * @return array{id:int,kode:string,saldo_ore:int}|null
      */
+    /**
+     * Holder kortet det beloepet som skal brukes, naar andre kjop som er paa
+     * vei i Vipps er regnet med?
+     *
+     * Saldoen trekkes foerst naar betalingen er bekreftet. Uten dette kunne
+     * to kjop startet samtidig med det samme kortet begge regne med hele
+     * saldoen; det siste trekket fant ingen dekning, ble bare logget, og
+     * kjoepet ble levert likevel. Naa holder et kjop som er paa vei beloepet
+     * sitt, og det neste ser bare det som er igjen.
+     *
+     * Kortraden laases for resten av transaksjonen, og de aapne betalingene
+     * leses med laas — da ser vi det som er lagret, ikke et gammelt bilde.
+     * En betaling som har staatt aapen i over en time holder ikke lenger.
+     */
+    public static function gavekortDekker(int $kortId, int $belop): bool
+    {
+        if ($kortId <= 0 || $belop <= 0) {
+            return true;
+        }
+        $saldo = DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i FOR UPDATE', ['i' => $kortId]);
+        if ($saldo === null) {
+            return false;
+        }
+        $bundet = 0;
+        if (DB::harKolonne('payments', 'gavekort_id')) {
+            $bundet = (int) DB::verdi(
+                "SELECT COALESCE(SUM(gavekort_ore), 0) FROM payments
+                  WHERE gavekort_id = :k
+                    AND status IN ('opprettet','venter','autorisert')
+                    AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 MINUTE)
+                    FOR UPDATE",
+                ['k' => $kortId]
+            );
+        }
+        return (int) $saldo - $bundet >= $belop;
+    }
+
     public static function finnGavekort(string $kode): ?array
     {
         $rent = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $kode) ?? '');

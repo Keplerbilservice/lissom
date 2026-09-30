@@ -140,6 +140,16 @@ if (!Frys::klar()) {
         DB::verdi('SELECT status FROM members WHERE id = :i', ['i' => $prove]) === 'prove');
 }
 
+// Admin kan ikke godkjenne frys for et medlemskap som ikke loeper, og
+// «Avslutt frys» aapner bare et medlemskap som staar paa pause.
+$af = (string) file_get_contents(__DIR__ . '/../api/admin/frys.php');
+sjekk('admin godkjenner ikke frys for oppsagt/avsluttet',
+    str_contains($af, "if (!in_array((string) \$m['status'], ['aktiv', 'prove', 'pause'], true)) {")
+    && str_contains($af, "Svar::feil('Medlemmet står ikke på noe medlemskap. Sett det først.');"));
+sjekk('«Avslutt frys» aapner bare et medlemskap paa pause',
+    str_contains($af, "UPDATE members SET status = :s WHERE id = :i AND status = 'pause'")
+    && !str_contains($af, "DB::oppdater('members', ['status' => \$tilbake], ['id' => \$medlemId]);"));
+
 // ── Rydd ─────────────────────────────────────────────────────────────────
 foreach ($rydd as $id) {
     DB::kjor('DELETE FROM sessions WHERE member_id = :m', ['m' => $id]);

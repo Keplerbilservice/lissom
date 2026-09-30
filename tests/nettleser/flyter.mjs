@@ -2098,6 +2098,129 @@ await flyt('Nytt admin: alle knapper går til riktig funksjon', async () => {
   }
 });
 
+// ── Nytt admin holder seg til du lukker det (eieren, 30.09) ────────────
+//
+// «når jeg bruker prøv ny admin, så bør den holde seg der også når jeg
+// klikker inn på funksjonene helt til jeg trykker lukk ny admin eller gå til
+// gammel admin». Det som ikke er flyttet, aapnes i en ramme i /admin2 med den
+// nye menyen rundt. Flyten trykker paa hver lenke paa «I dag», i «+» og i
+// Kurs/Folk/Penger/Mer, og sjekker at vi fortsatt er paa /admin2, at rammen
+// viser riktig skjerm uten egen meny, og at dyplenkene aapner funksjonen der.
+await flyt('Nytt admin holder seg til du lukker det', async () => {
+  const DYPF = {
+    kursstart:   (f) => f.getByText('Kursstart', { exact: true }).first().isVisible(),
+    nydato:      (f) => f.getByText('Kurs eller event', { exact: true }).first().isVisible(),
+    dagsoppgjor: (f) => f.getByText(/betalt med Vipps/).first().isVisible(),
+    lav:         (f) => f.locator('[data-lav-dager]').first().isVisible(),
+    bestillmer:  (f) => f.locator('h1', { hasText: 'Internbutikk' }).first().isVisible(),
+    innboks:     (f) => f.getByRole('button', { name: /^Kommentarer/ }).first().isVisible(),
+  };
+  const norm = (x) => { const y = (x || '').replace(/\/$/, '') || '/'; return y === '/admin/oversikt' ? '/admin' : y; };
+  const lesRamme = (p) => p.evaluate(() => {
+    const r = document.querySelector('main.ramme iframe');
+    if (!r) return null;
+    let sti = '', innebygd = false, aside = true, kalflik = true;
+    try {
+      const l = r.contentWindow.location; sti = l.pathname;
+      const d = r.contentDocument;
+      innebygd = d.documentElement.classList.contains('lx-innebygd');
+      const vis = (s) => { const e = d.querySelector(s); return !!e && getComputedStyle(e).display !== 'none'; };
+      aside = vis('.lx-adminaside'); kalflik = vis('.lx-kalflik');
+    } catch (e) { /* annet opphav */ }
+    const b = r.getBoundingClientRect();
+    const bunn = document.querySelector('nav.bunn');
+    const bb = bunn && getComputedStyle(bunn).display !== 'none' ? bunn.getBoundingClientRect().top : innerHeight;
+    return { sti, innebygd, aside, kalflik, topp: location.pathname, hash: location.hash,
+      dekket: Math.round(b.bottom) > Math.round(bb) + 1, rullerSiden: document.documentElement.scrollHeight > innerHeight + 1 };
+  });
+
+  for (const [b, h] of [[1358, 900], [390, 844]]) {
+    const mob = b < 600;
+    const p = await side('admin', b, h);
+    await gaa(p, '/admin2', 1500);
+    // Lenkene: fra I dag, fra «+» og fra hver meny.
+    const lenker = new Map();
+    const samle = async (rot) => {
+      for (const e of await p.evaluate((rot) => [...document.querySelectorAll(rot + ' a[href]')]
+        .filter(a => { const r = a.getBoundingClientRect(); return r.width && r.height && !a.dataset.forlat; })
+        .map(a => ({ href: a.getAttribute('href'), tekst: (a.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40) })), rot)) {
+        if (/^\/(admin(\/|\?|$)|skisser\.html)/.test(e.href) && !lenker.has(e.href)) lenker.set(e.href, e.tekst);
+      }
+    };
+    await samle('main');
+    await p.locator('.pluss').click(); await p.waitForTimeout(250);
+    await samle('.ark'); await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    for (const adr of ['#kurs', '#folk', '#penger', '#mer']) {
+      await p.locator(`${mob ? 'nav.bunn' : 'nav.meny'} a[href="${adr}"]`).click(); await p.waitForTimeout(700);
+      await samle('main');
+    }
+    sjekk(`${b} px: fant lenker å prøve`, lenker.size >= 10, String(lenker.size));
+
+    for (const [href, tekst] of lenker) {
+      await gaa(p, '/admin2#i-dag', 900);
+      // Finn lenken der den ligger: I dag, «+», eller en av menyene.
+      let loc = p.locator(`main a[href="${href}"]`).first();
+      if (!(await loc.isVisible().catch(() => false))) {
+        for (const adr of ['#kurs', '#folk', '#penger', '#mer']) {
+          await p.locator(`${mob ? 'nav.bunn' : 'nav.meny'} a[href="${adr}"]`).click(); await p.waitForTimeout(500);
+          loc = p.locator(`main a[href="${href}"]`).first();
+          if (await loc.isVisible().catch(() => false)) break;
+        }
+      }
+      if (!(await loc.isVisible().catch(() => false))) {
+        await p.locator('.pluss').click(); await p.waitForTimeout(250);
+        loc = p.locator(`.ark a[href="${href}"]`).first();
+      }
+      await loc.click();
+      await p.waitForTimeout(3200);
+      const r = await lesRamme(p);
+      const forv = norm(new URL(href, ADR).pathname);
+      const ok = r && r.topp === '/admin2' && r.hash.startsWith('#vis/') && norm(r.sti) === forv;
+      sjekk(`${b} px: «${tekst}» åpnes i det nye admin (${href})`, !!ok, JSON.stringify(r));
+      if (!ok || href.startsWith('/skisser')) continue;
+      sjekk(`${b} px: «${tekst}»: det gamle admin uten egen meny og kalenderflik`, r.innebygd && !r.aside && !r.kalflik, JSON.stringify(r));
+      sjekk(`${b} px: «${tekst}»: bare rammen ruller${mob ? ', bunnmenyen dekker ikke' : ''}`, !r.rullerSiden && !r.dekket, JSON.stringify(r));
+      const apne = new URL(href, ADR).searchParams.get('apne');
+      if (apne && DYPF[apne]) {
+        const f = p.frameLocator('main.ramme iframe');
+        sjekk(`${b} px: «${tekst}»: funksjonen er åpen i rammen (${apne})`, await DYPF[apne](f).catch(() => false));
+      }
+    }
+
+    // Tilbake og oppdatering: blir staaende.
+    await gaa(p, '/admin2#i-dag', 900);
+    await p.locator('main a[href="/admin/kalender?apne=nydato"]').first().click(); await p.waitForTimeout(3000);
+    const f = p.frameLocator('main.ramme iframe');
+    sjekk(`${b} px: «Ny kursdato» åpen i rammen`, await DYPF.nydato(f).catch(() => false));
+    await f.locator('body').press('Escape'); await p.waitForTimeout(500);
+    sjekk(`${b} px: vinduet i rammen lukkes med Esc`, !(await DYPF.nydato(f).catch(() => false)));
+    await p.reload(); await p.waitForTimeout(3500);
+    const etter = await lesRamme(p);
+    sjekk(`${b} px: oppdatering blir stående i samme skjerm`, etter && etter.topp === '/admin2' && norm(etter.sti) === '/admin/kalender', JSON.stringify(etter));
+    await p.goBack(); await p.waitForTimeout(1500);
+    sjekk(`${b} px: Tilbake går til «I dag» i det nye admin`, new URL(p.url()).pathname === '/admin2' && await p.locator('main h1', { hasText: 'I dag' }).isVisible().catch(() => false), p.url());
+
+    // Ut av det nye admin: bare med «Lukk nytt admin» (og «Gammelt admin» paa PC).
+    await p.locator('a.lukknytt').click(); await p.waitForTimeout(2500);
+    sjekk(`${b} px: «Lukk nytt admin» går til det gamle admin`, /^\/admin(\/oversikt)?\/?$/.test(new URL(p.url()).pathname), p.url());
+    if (!mob) {
+      await gaa(p, '/admin2', 1000);
+      await p.locator('a.gammelt').click(); await p.waitForTimeout(2500);
+      sjekk(`${b} px: «Gammelt admin» går til det gamle admin`, /^\/admin(\/oversikt)?\/?$/.test(new URL(p.url()).pathname), p.url());
+    }
+    // Rett i /admin (ikke i rammen) har det gamle admin sin egen meny.
+    await gaa(p, '/admin/kalender', 2500);
+    sjekk(`${b} px: /admin utenfor rammen har sin egen meny`, await p.evaluate(() => !document.documentElement.classList.contains('lx-innebygd')));
+    if (process.env.E2E_BILDER) {
+      await gaa(p, '/admin2#vis/admin/kalender', 3500);
+      await p.screenshot({ path: path.join(process.env.E2E_BILDER, `ramme-kalender-${b}.png`) }).catch(() => {});
+      await gaa(p, '/admin2#vis/admin/oversikt?apne=kursstart', 4000);
+      await p.screenshot({ path: path.join(process.env.E2E_BILDER, `ramme-kursstart-${b}.png`) }).catch(() => {});
+    }
+    await p.context().close();
+  }
+});
+
 await nettleser.close();
 console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjente feil.`);
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }

@@ -217,6 +217,12 @@ AddDefaultCharset UTF-8
     <FilesMatch "\.(js|css)$">
         Header set Cache-Control "public, max-age=604800, must-revalidate"
     </FilesMatch>
+    # Skisser har ingen versjon i adressen, og en uke gammel utgave ble
+    # vist etter publisering. Spør først, som .html. Det nye admin
+    # (/nyadmin) har sin egen .htaccess med samme regel.
+    <FilesMatch "^skisser\.js$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
     # Ingen regel for .php her med vilje. API-et setter sine egne headere:
     # «no-store» der eieren nettopp har lagret noe, og sju dagers
     # mellomlagring paa api/bilde.php, som serverer medlemmenes bilder. En

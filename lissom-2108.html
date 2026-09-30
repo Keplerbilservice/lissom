@@ -2988,7 +2988,22 @@ window.__resources = {
   @media (max-width: 640px) {
     .lx-klsok { flex: 1 1 100% !important; margin-right: 0 !important; }
   }
+  /* Innebygd i det nye admin (/admin2). Eieren, 30. september 2026: det nye
+     admin skal holde seg til han lukker det — det gamle vises da i en ramme
+     der, og egen toppstripe, meny og kalenderflik skjules. Bare innholdet. */
+  html.lx-innebygd .lx-adminaside,
+  html.lx-innebygd .lx-kalflik,
+  html.lx-innebygd .lx-admkal { display: none !important; }
+  html.lx-innebygd .lx-adminaside + main { padding-bottom: 24px !important; }
 </style>
+<script>
+  // Bare naar siden faktisk ligger i en ramme i /admin2 paa samme nettsted.
+  try {
+    if (window.self !== window.top && window.top.location.pathname.indexOf('/admin2') === 0) {
+      document.documentElement.classList.add('lx-innebygd');
+    }
+  } catch (e) { /* annet opphav: vises som vanlig */ }
+</script>
 </head>
 <body>
 <script>

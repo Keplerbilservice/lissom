@@ -1862,6 +1862,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "maler-under-nyttig-info-min-side",
+            "dato": "2026-09-30",
+            "hva": "«det må ligge under nyttig info»: malene og dokumentene som er delt med medlemmer vises under Nyttig info på Min side (/min-side/nyttig)",
+            "hvor": "Min side › Nyttig info",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "const iNyttig = side === 'nyttig' || (side === 'minside' && this.msFane() === 'nyttig');"
+                    ]
+                }
+            ]
         }
     ]
 }

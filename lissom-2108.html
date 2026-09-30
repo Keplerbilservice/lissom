@@ -68694,8 +68694,15 @@ class Component extends DCLogic {
       //
       // Blokka staar bare naar det er noe aa vise. Slaar eieren av alle
       // kortene, forsvinner den — ikke en tom overskrift.
+      //
+      // Blokka staar under Nyttig info paa Min side (/min-side/nyttig). Den
+      // aapne Nyttig info tegnes paa serveren (app/nett/sider/nyttig.php) og
+      // har den ikke. Her sto bare «side === 'nyttig'», og paa Min side er
+      // side «minside» — da ble malene aldri vist. Eieren, 30. september
+      // 2026: «det må ligge under nyttig info».
       ...(() => {
-        if (side !== 'nyttig') return { mdHarNoe: false, mdHarKort: false, mdFaq: false };
+        const iNyttig = side === 'nyttig' || (side === 'minside' && this.msFane() === 'nyttig');
+        if (!iNyttig) return { mdHarNoe: false, mdHarKort: false, mdFaq: false };
         this.minDokHent();
         const d = this.state.minDok || {};
         // Kort i kortet: malene ligger som underkort under «Keramikk maler»,

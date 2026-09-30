@@ -1982,6 +1982,22 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "skisser-medlemsbryter-gjelder-alle-medlemmer",
+            "dato": "2026-09-30",
+            "hva": "Bryteren «Skisser for medlemmer» bestemmer for alle medlemmer, også de som er påmeldt et kurs. «Skisser for kursdeltakere» gjelder bare dem som ikke er medlemmer (eieren 30.09).",
+            "hvor": "Min side › Skisser",
+            "kode": [
+                {
+                    "fil": "app/lib/skisser.php",
+                    "finnes": [
+                        "if (self::erMedlem($m)) {",
+                        "return self::forMedlemmer();",
+                        "!self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m)"
+                    ]
+                }
+            ]
         }
     ]
 }

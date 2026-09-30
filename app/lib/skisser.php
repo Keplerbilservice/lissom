@@ -113,8 +113,13 @@ final class Skisser
         if (self::erAdmin($m)) {
             return true;
         }
-        return (self::forMedlemmer() && self::erMedlem($m))
-            || (self::forDeltakere() && self::erDeltaker($m));
+        // Eieren, 30. september 2026: bryteren for medlemmer bestemmer for
+        // alle medlemmer, ogsaa de som er paameldt et kurs. Bryteren for
+        // kursdeltakere gjelder bare dem som ikke er medlemmer.
+        if (self::erMedlem($m)) {
+            return self::forMedlemmer();
+        }
+        return self::forDeltakere() && self::erDeltaker($m);
     }
 
     /**
@@ -137,7 +142,7 @@ final class Skisser
             if (self::forMedlemmer() && self::erMedlem($m)) {
                 $vilkaar[] = 's.delt_medlemmer = 1';
             }
-            if (self::forDeltakere() && self::erDeltaker($m)) {
+            if (!self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m)) {
                 $vilkaar[] = 's.delt_deltakere = 1';
             }
             $rader = DB::alle($sql . ' WHERE ' . implode(' OR ', $vilkaar) . ' ORDER BY s.updated_at DESC, s.id DESC',
@@ -182,7 +187,7 @@ final class Skisser
             return true;
         }
         return ((int) $r['delt_medlemmer'] === 1 && self::forMedlemmer() && self::erMedlem($m))
-            || ((int) $r['delt_deltakere'] === 1 && self::forDeltakere() && self::erDeltaker($m));
+            || ((int) $r['delt_deltakere'] === 1 && !self::erMedlem($m) && self::forDeltakere() && self::erDeltaker($m));
     }
 
     /**

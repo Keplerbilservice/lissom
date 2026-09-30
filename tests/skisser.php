@@ -90,6 +90,19 @@ sjekk('… og ikke den som verken er medlem eller deltaker', !Skisser::slippInn(
 $bryter('skisserdeltakere', 'ja');
 sjekk('deltakerbryteren på: deltakeren slipper inn', Skisser::slippInn($deltaker));
 
+// Eieren, 30. september 2026: medlemsbryteren bestemmer for alle medlemmer,
+// ogsaa et medlem som er paameldt et kurs.
+$medDeltaker = $person('medlem', 'aktiv');
+if ($kurs !== null) {
+    DB::settInn('bookings', ['member_id' => (int) $medDeltaker['id'], 'course_id' => (int) $kurs['id'], 'status' => 'betalt',
+        'gjest_navn' => 'Skisse medlem på kurs', 'belop_ore' => 0]);
+}
+$bryter('skissermedlemmer', 'nei');
+sjekk('medlem på kurs: medlemsbryteren av stenger, selv med deltakerbryteren på', !Skisser::slippInn($medDeltaker));
+sjekk('… mens deltakeren som ikke er medlem fortsatt slipper inn', Skisser::slippInn($deltaker));
+$bryter('skissermedlemmer', 'ja');
+sjekk('… og med medlemsbryteren på slipper medlemmet inn igjen', Skisser::slippInn($medDeltaker));
+
 // ── Egne tavler er private ────────────────────────────────────────────
 $tA = Skisser::ny($a, 'Kari sin');
 $tB = Skisser::ny($b, 'Ola sin');

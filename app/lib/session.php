@@ -228,6 +228,24 @@ final class Sesjon
         DB::kjor('DELETE FROM sessions WHERE member_id = :m', ['m' => $medlemId]);
     }
 
+    /**
+     * Logger ut medlemmet paa alle andre nettlesere enn denne.
+     *
+     * Brukes naar passordet byttes. En sesjon noen har stjaalet, skal ikke
+     * overleve at passordet blir skiftet — men den som bytter sitt eget
+     * passord, skal ikke kastes ut av sin egen fane (Codex-gjennomgangen
+     * 30.09.2026).
+     */
+    public static function avsluttAndreFor(int $medlemId): int
+    {
+        $token = $_COOKIE[self::COOKIE] ?? '';
+        $hash = is_string($token) && strlen($token) === 64 ? hash('sha256', $token) : '';
+        return DB::kjor(
+            'DELETE FROM sessions WHERE member_id = :m AND token_hash <> :h',
+            ['m' => $medlemId, 'h' => $hash]
+        )->rowCount();
+    }
+
     public static function ryddUtlopte(): int
     {
         return DB::kjor('DELETE FROM sessions WHERE expires_at < UTC_TIMESTAMP()')->rowCount();

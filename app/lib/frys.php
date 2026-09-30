@@ -69,15 +69,21 @@ final class Frys
         if (!self::klar()) {
             return;
         }
+        // Bare et medlemskap som loeper, kan settes paa pause. Er medlemmet
+        // sagt opp mellom godkjenningen og startdagen, skal frysen ikke gjoere
+        // det til «pause» — da ville gjenapneForfalte() aapnet det igjen som
+        // aktivt naar perioden var over (Codex-gjennomgangen 30.09.2026).
         $begynt = DB::alle(
-            "SELECT f.id, f.member_id
+            "SELECT f.id, f.member_id, m.status AS medlem_status
                FROM medlem_frys f
                JOIN members m ON m.id = f.member_id
               WHERE f.status = 'godkjent'
                 AND f.fra_dato <= CURDATE() AND f.til_dato >= CURDATE()
-                AND m.status <> 'pause'"
+                AND m.status IN ('aktiv', 'prove')"
         );
         foreach ($begynt as $f) {
+            // Statusen akkurat naa er den medlemmet skal tilbake til.
+            DB::oppdater('medlem_frys', ['status_for' => (string) $f['medlem_status']], ['id' => (int) $f['id']]);
             DB::oppdater('members', ['status' => 'pause'], ['id' => (int) $f['member_id']]);
         }
     }

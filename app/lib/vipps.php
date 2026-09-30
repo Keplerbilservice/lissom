@@ -153,6 +153,51 @@ final class Vipps
         ]);
     }
 
+    /** Cookien som binder en innlogging til nettleseren som startet den. */
+    public const STATE_COOKIE = 'lissom_vipps_state';
+
+    /**
+     * Knytter state til denne nettleseren.
+     *
+     * Raden i login_states beviser bare at state er laget av oss — ikke at
+     * det er samme nettleser som kommer tilbake. Uten dette kunne noen
+     * starte en innlogging selv, stoppe foer retur, og sende lenken videre:
+     * den som trykket, ble da logget inn paa en annens konto
+     * (Codex-gjennomgangen 30.09.2026). Cookien holder bare en hash av state.
+     */
+    public static function bindState(string $state): void
+    {
+        $verdi = hash('sha256', $state);
+        if (!headers_sent()) {
+            setcookie(self::STATE_COOKIE, $verdi, [
+                'expires'  => time() + 600,
+                'path'     => '/',
+                'httponly' => true,
+                'secure'   => !Config::erUtvikling(),
+                // Lax sendes med paa en vanlig GET-retur fra Vipps.
+                'samesite' => 'Lax',
+            ]);
+        }
+        $_COOKIE[self::STATE_COOKIE] = $verdi;
+    }
+
+    /** Kom state tilbake til den samme nettleseren? Cookien slettes uansett. */
+    public static function stateTilhorerNettleser(string $state): bool
+    {
+        $cookie = $_COOKIE[self::STATE_COOKIE] ?? '';
+        if (!headers_sent()) {
+            setcookie(self::STATE_COOKIE, '', [
+                'expires'  => time() - 3600,
+                'path'     => '/',
+                'httponly' => true,
+                'secure'   => !Config::erUtvikling(),
+                'samesite' => 'Lax',
+            ]);
+        }
+        unset($_COOKIE[self::STATE_COOKIE]);
+        return is_string($cookie) && $cookie !== '' && hash_equals($cookie, hash('sha256', $state));
+    }
+
     /** Må stemme nøyaktig med det som er hvitlistet i Vipps-portalen. */
     public static function returAdresse(): string
     {

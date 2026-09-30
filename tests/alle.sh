@@ -58,6 +58,7 @@ kjor "frakt"         php tests/frakt.php
 kjor "mva, nytt admin" php tests/mva.php
 kjor "bestill mer, lav aktivitet" php tests/daglig.php
 kjor "eposter"       php tests/eposter.php
+kjor "sikkerhet (Codex C)" php tests/sikkerhet-c.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
 kjor "betalingsflyt" bash tests/flyt.sh

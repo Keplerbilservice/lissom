@@ -1534,6 +1534,85 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "skisser-modul",
+            "dato": "2026-09-30",
+            "hva": "Skisser er en egen modul: egen side (skisser.html), eget API og egne tabeller, utenfor lissom-2108.html. Admin, medlemmer og kursdeltakere tegner med finger eller penn, legger inn bilder og notater. Egne tavler ser bare eieren og admin; admin kan dele sine tavler med medlemmer og/eller kursdeltakere. Bryterne «Skisser for medlemmer» og «Skisser for kursdeltakere» er av fra start, og av betyr at serveren også stopper (403). Eieren 30.09: «jeg vil ha et skisseprogram … bryter på synlighet … tegne med fingeren og ta notater», og «moduler nå».",
+            "hvor": "skisser.html, skisser.js, api/skisser.php, api/admin/skisser.php, app/lib/skisser.php, ⊙ Synlighet › Min side, Min side-flisen «Skisser»",
+            "kode": [
+                {
+                    "fil": "skisser.html",
+                    "finnes": [
+                        "<script src=\"/vendor/fabric-6.9.1.min.js\"></script>",
+                        "<script src=\"/skisser.js\"></script>"
+                    ],
+                    "ikkeFinnes": [
+                        "cdn.jsdelivr",
+                        "unpkg.com",
+                        "cdnjs"
+                    ]
+                },
+                {
+                    "fil": "vendor/fabric-6.9.1.min.js",
+                    "finnes": [
+                        "fabric"
+                    ]
+                },
+                {
+                    "fil": "api/skisser.php",
+                    "finnes": [
+                        "if (!Skisser::slippInn($medlem)) {",
+                        "Svar::feil('Skisser er ikke slått på.', 403);",
+                        "$medlem = krev_medlem();"
+                    ]
+                },
+                {
+                    "fil": "api/admin/skisser.php",
+                    "finnes": [
+                        "$admin = krev_admin();",
+                        "Svar::feil('Skisser er slått av under Synlighet.', 403);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/skisser.php",
+                    "finnes": [
+                        "return self::modulPaa() && self::bryter('skissermedlemmer') === 'ja';",
+                        "return self::modulPaa() && self::bryter('skisserdeltakere') === 'ja';",
+                        "throw new DomainException('Tavla er medlemmets egen, og kan ikke deles.');"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/236_skisser.sql",
+                    "finnes": [
+                        "SELECT 'Vis/skissermedlemmer', 'nei' FROM (SELECT 1) AS d",
+                        "SELECT 'Vis/skisserdeltakere', 'nei' FROM (SELECT 1) AS d"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "rad('Skisser for medlemmer', (this.state.innholdLagret || {})['Vis/skissermedlemmer'] === 'ja',",
+                        "rad('Skisser for kursdeltakere', (this.state.innholdLagret || {})['Vis/skisserdeltakere'] === 'ja',",
+                        "rad('Skisser (hele modulen)', this.bryterPaa('skisser'),",
+                        "fetch('/api/skisser.php?sjekk=1',",
+                        "<div class=\"ms-fh\"><span class=\"ms-ft\">Skisser</span></div>"
+                    ],
+                    "ikkeFinnes": [
+                        "new fabric.Canvas",
+                        "fabric-6.9.1.min.js"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/skisser.html",
+                    "finnes": [
+                        "/vendor/fabric-6.9.1.min.js",
+                        "/skisser.js"
+                    ]
+                }
+            ]
         }
     ]
 }

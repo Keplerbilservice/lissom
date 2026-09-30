@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Skisser · Lissom</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/ds-fonts.css">
+<!--
+  Skisser — den første modulen (eieren, 30. september 2026: «moduler nå»).
+
+  Egen side, eget skript (skisser.js), eget API og egne tabeller. Ingenting her
+  lastes av lissom-2108.html, og ingenting der lastes her: går tegneflaten i
+  stykker, blir admin, Min side og nettsiden ikke berørt.
+
+  Tegneflaten er Fabric.js 6 (MIT), lagt på vår egen server under /vendor —
+  ingen CDN, og CSP-en i .htaccess gjelder uendret.
+-->
+<style>
+:root{--brun:#4D1D12;--gul:#FFCF38;--porselen:#FBF6EE;--flate:#F4EBDE;--kort:#fff;--linje:#E6D9C7;--dempet:#7A5A4E;--terra:#A2502B;--tekst:#4D1D12}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--flate);color:var(--tekst);font:16px/1.5 'Alegreya Sans',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.topp{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--brun);color:#fff;flex-wrap:wrap}
+.topp .logo{font:800 20px/1 'Bitter',Georgia,serif;color:var(--gul);text-decoration:none}
+.topp h1{font:800 18px/1.2 'Bitter',Georgia,serif;margin:0;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topp h1 input{font:inherit;color:#fff;background:transparent;border:0;border-bottom:1px dashed rgba(255,255,255,.4);width:100%;padding:2px 0}
+.pille{appearance:none;cursor:pointer;border-radius:999px;padding:8px 14px;font-weight:800;font-size:14px;border:1.5px solid var(--brun);background:transparent;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;min-height:40px}
+.pille.fylt{background:var(--brun);color:#fff}
+.pille.gul{background:var(--gul);border-color:var(--gul);color:var(--brun)}
+.topp .pille{border-color:rgba(255,255,255,.45);color:#fff}
+.topp .pille.gul{color:var(--brun);border-color:var(--gul)}
+.innhold{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+.overskrift{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.overskrift h2{font:800 clamp(24px,4vw,32px)/1.15 'Bitter',Georgia,serif;margin:0}
+.rutenett{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.tavle{background:var(--kort);border:1px solid var(--linje);border-radius:14px;padding:16px;cursor:pointer;display:grid;gap:6px;min-height:110px;text-align:left;appearance:none;width:100%}
+.tavle b{font:800 17px/1.25 'Bitter',Georgia,serif}
+.tavle small{color:var(--dempet)}
+.merke{justify-self:start;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;background:#e3f1e5;color:#2f6b3b}
+.tom{color:var(--dempet);padding:30px 0}
+.melding{background:var(--kort);border:1px solid var(--linje);border-radius:14px;padding:22px;max-width:520px}
+
+/* Tegneflaten */
+.redigerer{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--flate)}
+.verktoy{display:flex;gap:6px;align-items:center;padding:8px 10px;background:#fff;border-bottom:1px solid var(--linje);overflow-x:auto;scrollbar-width:none}
+.verktoy::-webkit-scrollbar{display:none}
+.verktoy .pille{padding:6px 12px;min-height:38px;font-size:13px}
+.verktoy .pille[aria-pressed="true"]{background:var(--brun);color:#fff}
+.skille{width:1px;align-self:stretch;background:var(--linje);margin:0 2px;flex:none}
+.farge{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--linje);cursor:pointer;flex:none;padding:0}
+.farge[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--brun)}
+.tykk{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--linje);background:#fff;display:grid;place-items:center;cursor:pointer;flex:none;padding:0}
+.tykk span{display:block;border-radius:50%;background:var(--brun)}
+.tykk[aria-pressed="true"]{border-color:var(--brun);border-width:2.5px}
+.flate{position:relative;flex:1 1 auto;min-height:0;touch-action:none;overflow:hidden;background:#fff;background-image:radial-gradient(#E6D9C7 1px,transparent 1px);background-size:20px 20px}
+.flate canvas{touch-action:none}
+.bunn{display:flex;align-items:center;gap:8px;padding:8px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--linje);flex-wrap:wrap}
+.bunn .status{color:var(--dempet);font-size:13px;margin-left:auto}
+.sidenr{font-weight:800;min-width:48px;text-align:center}
+.ark{position:fixed;inset:0;background:rgba(46,16,2,.42);display:flex;align-items:flex-end;justify-content:center;z-index:30}
+.ark>div{background:var(--kort);border-radius:18px 18px 0 0;width:min(520px,100%);max-height:80vh;overflow:auto;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));display:grid;gap:12px}
+@media (min-width:700px){.ark{align-items:center}.ark>div{border-radius:18px}}
+.ark h3{font:800 20px 'Bitter',Georgia,serif;margin:0}
+.rad{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--linje)}
+.rad:first-of-type{border-top:0}
+.bryter{width:46px;height:28px;border-radius:999px;background:var(--linje);position:relative;flex:none;border:0;cursor:pointer;padding:0}
+.bryter::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
+.bryter[aria-checked="true"]{background:var(--brun)}
+.bryter[aria-checked="true"]::after{left:21px}
+.versjon{appearance:none;background:transparent;border:0;border-top:1px solid var(--linje);text-align:left;padding:10px 2px;cursor:pointer;width:100%}
+.skjult{display:none!important}
+</style>
+</head>
+<body>
+<div id="app"><div class="innhold"><p class="tom">…</p></div></div>
+<script src="/vendor/fabric-6.9.1.min.js"></script>
+<script src="/skisser.js"></script>
+</body>
+</html>

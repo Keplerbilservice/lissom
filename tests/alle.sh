@@ -69,6 +69,11 @@ kjor "henting"       bash tests/henting.sh
 
 # --- Hele flyter, klikket gjennom i en ekte nettleser ------------------------
 kjor "nettleser"      bash tests/nettleser/kjor.sh
+# Min side for medlemmer og kursdeltakere, hele veien, og fasiten over
+# svarene Min side leser (tests/godkjent/minside-fasit/). Eieren, 30.
+# september 2026: det nye admin bygges ved siden av, og Min side skal ikke
+# røres. Endres noe her, stopper publiseringen.
+kjor "min side-vakt"  bash tests/nettleser/kjor.sh minside.mjs
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

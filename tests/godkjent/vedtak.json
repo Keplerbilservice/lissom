@@ -1674,6 +1674,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "utstempling-aldri-sperret",
+            "dato": "2026-09-30",
+            "hva": "Utstempling er aldri sperret. Den som står inne kan alltid stemple UT fra Min side, også når timene er brukt opp mens hen var der. Bare INN kan sperres.",
+            "hvor": "Min side › stemplingskortet (harTimer/erTom i lissom-2108.html); api/stempling.php ut og glemt",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "harTimer: somMedlem && (igjen > 0 || this.erInne()),",
+                        "erTom: somMedlem && igjen === 0 && !this.erInne(),"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -2082,7 +2082,7 @@
             "id": "nytt-admin-holder-seg",
             "dato": "2026-09-30",
             "sitat": "når jeg bruker prøv ny admin, så bør den holde seg der også når jeg klikker inn på funksjonene helt til jeg trykker lukk ny admin eller gå til gammel admin",
-            "hva": "Nytt admin holder seg til du lukker det. Funksjoner som ikke er flyttet ennå, åpnes i en ramme inni /admin2 (adresse /admin2#vis/admin/…), med den nye menyen rundt; det gamle admin skjuler da sin egen toppstripe, meny og kalenderflik. Tilbake og oppdatering blir stående. Bare «Lukk nytt admin» og «Gammelt admin» går til /admin. Skriptene i /nyadmin og skisser.js mellomlagres med «no-cache», så en ny utgave vises med en gang.",
+            "hva": "Nytt admin holder seg til du lukker det. Funksjoner som ikke er flyttet ennå, åpnes i en ramme inni /admin2 (adresse /admin2#vis/admin/…), med den nye menyen rundt; det gamle admin skjuler da sin egen toppstripe, meny og kalenderflik. Tilbake og oppdatering blir stående. Bare «Lukk nytt admin» og «Gammelt admin» går til /admin. Skriptene i /nyadmin og skisser.js mellomlagres med «no-cache», så en ny utgave vises med en gang. På telefon står «Prøv nytt admin» også som flis i menyskuffen i det gamle admin, bak den samme bryteren (Vis/admin2).",
             "hvor": "/admin2 og det gamle admin i ramme (lx-innebygd)",
             "kode": [
                 {
@@ -2098,7 +2098,8 @@
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "html.lx-innebygd .lx-adminaside,",
-                        "document.documentElement.classList.add('lx-innebygd');"
+                        "document.documentElement.classList.add('lx-innebygd');",
+                        "? flis({ navn: 'Prøv nytt admin', velg: () => { window.location.href = '/admin2'; } }) : null,"
                     ]
                 },
                 {

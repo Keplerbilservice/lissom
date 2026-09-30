@@ -2134,6 +2134,26 @@ await flyt('Nytt admin holder seg til du lukker det', async () => {
       dekket: Math.round(b.bottom) > Math.round(bb) + 1, rullerSiden: document.documentElement.scrollHeight > innerHeight + 1 };
   });
 
+  // Paa telefon er pilla i stripa skjult. «Prøv nytt admin» staar derfor ogsaa
+  // som flis i menyskuffen, bak den samme bryteren (eieren, 30.09).
+  {
+    const m = await side('admin', 390, 844);
+    const mk = () => m.locator('button[aria-expanded]:has-text("Meny"), button[aria-expanded]:has-text("Lukk")').first();
+    const flis = () => m.locator('.lx-admmobpanel button:has-text("Prøv nytt admin")').first();
+    bryter('Vis/admin2', false);
+    await gaa(m, '/admin/oversikt', 2500);
+    await mk().tap(); await m.waitForTimeout(500);
+    sjekk('Mobil: «Prøv nytt admin» står ikke i skuffen når bryteren er av', !(await flis().isVisible().catch(() => false)));
+    db("INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/admin2', 'ja') ON DUPLICATE KEY UPDATE verdi = 'ja'");
+    await gaa(m, '/admin/oversikt', 2500);
+    await mk().tap(); await m.waitForTimeout(500);
+    sjekk('Mobil: «Prøv nytt admin» står i skuffen når bryteren er på', await flis().isVisible().catch(() => false));
+    await flis().tap(); await m.waitForTimeout(2000);
+    sjekk('Mobil: flisen åpner det nye admin', new URL(m.url()).pathname === '/admin2', m.url());
+    bryter('Vis/admin2', false);
+    await m.context().close();
+  }
+
   for (const [b, h] of [[1358, 900], [390, 844]]) {
     const mob = b < 600;
     const p = await side('admin', b, h);
@@ -2173,6 +2193,8 @@ await flyt('Nytt admin holder seg til du lukker det', async () => {
       }
       await loc.click();
       await p.waitForTimeout(3200);
+      sjekk(`${b} px: «${tekst}»: ingen ark ligger igjen oppå`, await p.locator('.bak').count() === 0);
+      if (await p.locator('.bak').count()) { await p.keyboard.press('Escape'); await p.waitForTimeout(200); }
       const r = await lesRamme(p);
       const forv = norm(new URL(href, ADR).pathname);
       const ok = r && r.topp === '/admin2' && r.hash.startsWith('#vis/') && norm(r.sti) === forv;

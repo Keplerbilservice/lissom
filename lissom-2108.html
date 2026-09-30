@@ -50928,6 +50928,10 @@ class Component extends DCLogic {
         const hoved = gruppe('', [
           flis({ navn: '⌕ Søk', velg: () => this.adminSokVals().admSokAapne() }),
           flis({ navn: '▶ Start kurset', velg: () => this.kursstartVals().ksAapne(0) }),
+          // Eieren, 30. september 2026, fant ikke «Prøv nytt admin» paa
+          // telefon: pilla i stripa er skjult der. Samme bryter (Vis/admin2).
+          (this.state.innholdLagret || {})['Vis/admin2'] === 'ja'
+            ? flis({ navn: 'Prøv nytt admin', velg: () => { window.location.href = '/admin2'; } }) : null,
         ]
           .concat(['Oversikt', 'Kurs og deltakere', 'Kasse', 'Brukere', 'Nettbutikk', 'Markedsføring', 'Økonomi'].map(stedFlis)), false, true);
         const mer = gruppe('Mer', ['Årskalender', 'Til godkjenning', 'Verkstedet', 'Admin-brukere'].map(stedFlis)

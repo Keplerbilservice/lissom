@@ -102,9 +102,11 @@ function lagNytt() {
     ['Ny kursdato', '/admin/kalender?apne=nydato'], ['Nytt kurs', '/admin/kurs'], ['Nytt medlem', '/admin/ny-registrering'],
     ['Melding til medlemmene', '/admin/beskjeder'], ['Legg ut på SoMe', '/admin/markedsforing'], ['Ny tavle i Skisser', '/skisser.html'],
   ];
-  ark([
+  // Arket lukkes naar et valg er trykket. Lenken aapnes da i rammen, og
+  // arket ble ellers liggende oppaa den.
+  const { lukk } = ark([
     el('h2', { tekst: 'Lag noe nytt' }),
-    el('div', { class: 'g' }, valg.map(([n, a]) => el('a', { class: 'rad', href: a }, el('span', { tekst: n })))),
+    el('div', { class: 'g' }, valg.map(([n, a]) => el('a', { class: 'rad', href: a, onclick: () => lukk() }, el('span', { tekst: n })))),
   ]);
 }
 

@@ -456,6 +456,17 @@ final class Maler
                 'bestill' => 'Hvor mange som må bestilles opp til maksimum',
             ],
         ],
+        // ── Betalt etter at plassen var borte (migrasjon 240, eieren 30.09) ──
+        'intern_betalt_uten_plass' => [
+            'tittel' => 'Til deg: må refunderes',
+            'hvor'   => 'Sendes til verkstedet når en betaling kommer inn etter at plassen er solgt til en annen.',
+            'felter' => [
+                'navn'      => 'Kundens navn',
+                'kurs'      => 'Kurset og når det er',
+                'belop'     => 'Beløpet betalt i Vipps',
+                'referanse' => 'Vipps-referansen, som søkes opp i Kasse › Betalinger',
+            ],
+        ],
         'intern_lav_aktivitet' => [
             'tittel' => 'Til deg: lav aktivitet',
             'hvor'   => 'Sendes til verkstedet én gang i døgnet når nye medlemmer ikke har vært innom på en stund.',

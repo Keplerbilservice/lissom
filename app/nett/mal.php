@@ -303,6 +303,7 @@ final class Mal
                         . ($ikon !== '' ? '<span style="position: absolute; left: 14px; color: var(--text-faint); display: flex;">' . Deler::ikon($ikon, 18) . '</span>' : '')
                         . '<input id="' . $e($id) . '"' . ($felt !== '' ? ' data-nett-felt="' . $e($felt) . '"' : '')
                         . ' type="' . $e((string) ($a('type') ?? 'text')) . '"'
+                        . ($a('auto-complete') !== null ? ' autocomplete="' . $e((string) $a('auto-complete')) . '"' : '')
                         . ($a('placeholder') !== null ? ' placeholder="' . $e($tekstAv($a('placeholder'))) . '"' : '')
                         . ' value="' . $e($tekstAv($a('value'))) . '"'
                         . ' style="width: 100%; box-sizing: border-box; padding: var(--field-pad-y) var(--field-pad-x);' . ($ikon !== '' ? ' padding-left: 42px;' : '')

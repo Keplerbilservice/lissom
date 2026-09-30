@@ -314,6 +314,7 @@ RewriteRule ^forside-topp\.html$ / [R=301,L]
 # Den staar her, over regelen som sender alt annet til nettsiden, fordi
 # «/kurs/kurs-boller» ellers ville blitt servert som en vanlig side.
 RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
+RewriteRule ^kurs/boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
 
 # Dreiekurset byttet adresse 11. september 2026 (SEO-instruksen: kort adresse
 # for det kurset flest soeker etter). Migrasjon 164 flyttet slug-en; den
@@ -328,6 +329,7 @@ RewriteRule ^personvernerklaering/?$ /personvern [R=301,L]
 # /om-lissom/ fra det gamle WordPress-nettstedet faar fortsatt klikk fra
 # Google (Search Console 21. september 2026: 2 klikk, 52 visninger).
 RewriteRule ^om-lissom/?$ /om-oss [R=301,L]
+RewriteRule ^om-lissom-keramikk/?$ /om-oss [R=301,L]
 
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #

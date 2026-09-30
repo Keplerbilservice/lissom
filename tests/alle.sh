@@ -41,6 +41,7 @@ done
 
 # --- Eierens vedtak (tests/godkjent/vedtak.json) ----------------------------
 kjor "vedtak" node tests/vedtak.mjs
+kjor "maalingscookies" php tests/maaling-cookie.php
 
 # --- Backend mot databasen --------------------------------------------------
 kjor "backend"       php tests/backend.php

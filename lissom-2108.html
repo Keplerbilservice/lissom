@@ -3788,10 +3788,10 @@ window.__resources = {
                        imot gjester hele tiden — det var nettsida som sendte dem
                        til Vipps-innlogging foerst. -->
                   <sc-if value="{{ bGjest }}" hint-placeholder-val="{{ false }}">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn og etternavn" value="{{ bNavn }}" on-change="{{ settBNavn }}" hint-size="100%,66px"></x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" auto-complete="name" placeholder="Fornavn og etternavn" value="{{ bNavn }}" on-change="{{ settBNavn }}" hint-size="100%,66px"></x-import>
                     <div style="height: var(--space-4);"></div>
                   </sc-if>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bEpost }}" on-change="{{ settBEpost }}" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" type="email" auto-complete="email" icon="mail" placeholder="navn@epost.no" value="{{ bEpost }}" on-change="{{ settBEpost }}" hint-size="100%,66px"></x-import>
                   <div style="height: var(--space-4);"></div>
                   <!-- Telefonnummeret.
                        Serveren har krevd det hele tiden — api/book.php
@@ -3800,7 +3800,7 @@ window.__resources = {
                        fikk «Vi trenger telefonnummeret ditt» uten et felt
                        aa skrive det i. Verkstedet trenger det ogsaa: det er
                        slik de faar tak i folk samme dag. -->
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47 000 00 000" value="{{ bTelefon }}" on-change="{{ settBTelefon }}" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" type="tel" auto-complete="tel" icon="phone" placeholder="+47 000 00 000" value="{{ bTelefon }}" on-change="{{ settBTelefon }}" hint-size="100%,66px"></x-import>
                   <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Vi bruker det bare hvis vi må få tak i deg om kurset — for eksempel hvis en dato må flyttes.</div>
                 </sc-if>
                 <sc-if value="{{ visIdentitet }}" hint-placeholder-val="{{ true }}">
@@ -31130,7 +31130,7 @@ window.__resources = {
 <sc-if value="{{ visSamtykke }}" hint-placeholder-val="{{ false }}">
   <div style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; background: var(--lissom-brown); color: var(--clay-100); padding: var(--space-5) var(--space-6); box-shadow: 0 -6px 24px rgba(31, 17, 12, .22);">
     <div style="max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
-      <p style="margin: 0; font-size: var(--text-sm); line-height: 1.6; max-width: 62ch; color: var(--clay-100);">Vi vil gjerne se hvor mange som besøker nettsiden, og hvilke sider de leser. Det krever informasjonskapsler fra Google Analytics. Sier du nei, virker alt akkurat som før — vi teller bare ikke besøket. <a href="/personvern" onClick="{{ samtykkeLesMer }}" style="color: var(--lissom-yellow); text-decoration: underline;">Les mer om personvern</a></p>
+      <p style="margin: 0; font-size: var(--text-sm); line-height: 1.6; max-width: 62ch; color: var(--clay-100);">Vi bruker Google Analytics til besøksstatistikk og Google Ads og Meta til å måle og tilpasse annonser. Hvis du sier ja, bruker disse tjenestene informasjonskapsler og mottar opplysninger om besøket og kjøpene dine. Ved kjøp kan hashet e-post og telefon brukes til å knytte kjøpet til annonser. Du kan si nei og bruke nettsiden som vanlig, og endre valget på personvernsiden. <a href="/personvern" onClick="{{ samtykkeLesMer }}" style="color: var(--lissom-yellow); text-decoration: underline;">Les mer om personvern</a></p>
       <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ godtaAnalyse }}" hint-size="auto,40px">Ja, det er greit</x-import>
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="ink" on-click="{{ avslaAnalyse }}" hint-size="auto,40px">Nei takk</x-import>
@@ -31538,10 +31538,10 @@ const SIDEINNHOLD = {
       { l: 'Tekst', v: 'Vi tar bilder på kurs og events. Si fra til oss hvis du ikke vil være med på bilder som brukes på nett eller i sosiale medier, så respekterer vi det.', lang: true } ] },
     { navn: 'Informasjonskapsler', type: 'Avsnitt', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Informasjonskapsler' },
-      { l: 'Tekst', v: 'Logger du inn, får du én informasjonskapsel som holder deg innlogget. Den er nødvendig for at innloggingen skal virke, varer i tre timer uten aktivitet, og forsvinner når du logger ut. Den trenger vi ikke spørre om. Første gang du er innom spør vi derimot om vi får måle besøket med Google Analytics. Svarer du nei, lastes ingenting fra Google — vi lagrer bare selve svaret i nettleseren din, slik at du slipper å bli spurt hver gang. Svarer du ja, setter Google Analytics informasjonskapsler som teller besøket. Ingen måling skjer før du har sagt ja, og du kan ombestemme deg når som helst lenger ned på denne siden.', lang: true } ] },
+      { l: 'Tekst', v: 'Logger du inn, får du én informasjonskapsel som holder deg innlogget. Den er nødvendig for at innloggingen skal virke, varer i tre timer uten aktivitet, og forsvinner når du logger ut. Den trenger vi ikke spørre om. Vi bruker Google Analytics til besøksstatistikk og Google Ads og Meta til å måle og tilpasse annonser. Hvis du sier ja, bruker disse tjenestene informasjonskapsler og mottar opplysninger om besøket og kjøpene dine. Ved kjøp kan hashet e-post og telefon brukes til å knytte kjøpet til annonser. Du kan si nei og bruke nettsiden som vanlig, og endre valget på personvernsiden.', lang: true } ] },
     { navn: 'Andre vi deler med', type: 'Avsnitt', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Andre vi deler med' },
-      { l: 'Tekst', v: 'Vipps, for betaling og innlogging. E-post og SMS sendes gjennom leverandørene til webhotellet vårt. Nettsiden ligger hos Domene.no i Norge. Har du sagt ja til besøksmåling, deler vi i tillegg statistikk om besøket med Google Analytics: hvilke sider som blir lest, omtrent hvor i landet du er, og hva slags enhet du bruker. Vi ber om at IP-adressen din ikke lagres, og vi kobler ikke målingen til navnet ditt eller kontoen din. Facebook-piksel eller andre sporere har vi ikke, og skriftene på siden ligger på vår egen server nettopp for at ingen andre skal få vite at du var innom.', lang: true } ] },
+      { l: 'Tekst', v: 'Vipps, for betaling og innlogging. E-post og SMS sendes gjennom leverandørene til webhotellet vårt. Nettsiden ligger hos Domene.no i Norge. Vi bruker Google Analytics til besøksstatistikk og Google Ads og Meta til å måle og tilpasse annonser. Hvis du sier ja, bruker disse tjenestene informasjonskapsler og mottar opplysninger om besøket og kjøpene dine. Ved kjøp kan hashet e-post og telefon brukes til å knytte kjøpet til annonser. Du kan si nei og bruke nettsiden som vanlig, og endre valget på personvernsiden.', lang: true } ] },
     { navn: 'Rettighetene dine', type: 'Avsnitt', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Rettighetene dine' },
       { l: 'Tekst', v: 'Du kan be om innsyn i det vi har lagret, få rettet feil, eller be om at opplysningene dine slettes. Send en e-post, så ordner vi det. Du kan også klage til Datatilsynet.', lang: true } ] },
@@ -37158,11 +37158,20 @@ class Component extends DCLogic {
    * er den riktige veien aa feile: ingen maaling, framfor maaling uten ja.
    */
   samtykke() {
-    try { return localStorage.getItem('lissom-analyse') || ''; } catch (e) { return 'nei'; }
+    let svar = 'nei';
+    try {
+      svar = localStorage.getItem('lissom-analyse') || '';
+      if (svar === 'ja' && localStorage.getItem('lissom-analyse-versjon') !== '2026-09-30') svar = '';
+    } catch (e) {}
+    const verdi = svar === 'ja' && !this.erIntern() ? 'ja-20260930' : '';
+    const na = (document.cookie.split(';').map(s => s.trim()).find(s => s.startsWith('lissom-maaling=')) || '').slice(15);
+    if (na !== verdi) document.cookie = 'lissom-maaling=' + verdi + '; Path=/; SameSite=Lax; Max-Age=' + (verdi ? '31536000' : '0') + (location.protocol === 'https:' ? '; Secure' : '');
+    return svar;
   }
 
   settSamtykke(svar) {
-    try { localStorage.setItem('lissom-analyse', svar); } catch (e) { /* da blir det nei */ }
+    try { localStorage.setItem('lissom-analyse', svar); localStorage.setItem('lissom-analyse-versjon', '2026-09-30'); } catch (e) { /* da blir det nei */ }
+    this.samtykke();
     this.setState({ samtykkeSvart: svar });
     this.gaAv(svar !== 'ja');
     if (svar === 'ja') this.settOppAnalyse();
@@ -37223,7 +37232,8 @@ class Component extends DCLogic {
    */
   angreSamtykke() {
     this.gaAv(true);
-    try { localStorage.removeItem('lissom-analyse'); } catch (e) { /* da blir det staaende */ }
+    try { localStorage.removeItem('lissom-analyse'); localStorage.removeItem('lissom-analyse-versjon'); } catch (e) { /* da blir det staaende */ }
+    this.samtykke();
     this.setState({ samtykkeSvart: '' });
   }
 

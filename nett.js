@@ -336,7 +336,17 @@
   /* ── Samtykke og maaling ────────────────────────────────────────────── */
   // Ingen maaling foer noen har sagt ja — samme noekkel («lissom-analyse»)
   // og samme rekkefoelge (consent default → update → config) som i appen.
-  function samtykke() { try { return localStorage.getItem('lissom-analyse') || ''; } catch (e) { return 'nei'; } }
+  function samtykke() {
+    var svar = 'nei';
+    try {
+      svar = localStorage.getItem('lissom-analyse') || '';
+      if (svar === 'ja' && localStorage.getItem('lissom-analyse-versjon') !== '2026-09-30') svar = '';
+    } catch (e) {}
+    var verdi = svar === 'ja' && !intern() ? 'ja-20260930' : '';
+    var na = (d.cookie.split(';').map(function (s) { return s.trim(); }).find(function (s) { return s.indexOf('lissom-maaling=') === 0; }) || '').slice(15);
+    if (na !== verdi) d.cookie = 'lissom-maaling=' + verdi + '; Path=/; SameSite=Lax; Max-Age=' + (verdi ? '31536000' : '0') + (location.protocol === 'https:' ? '; Secure' : '');
+    return svar;
+  }
   var felt = ['ad_storage', 'ad_user_data', 'ad_personalization', 'analytics_storage'];
   var sett = function (v) { var o = {}; for (var i = 0; i < felt.length; i++) o[felt[i]] = v; return o; };
   var samtykkeSendt = false;
@@ -434,7 +444,8 @@
         ? 'Du har sagt ja til at vi måler besøket. Vil du ombestemme deg, stopper målingen med en gang du trykker under.'
         : 'Du har sagt nei, og ingenting blir målt. Trykker du under, kan du svare på nytt.';
       endre.addEventListener('click', function () {
-        try { localStorage.removeItem('lissom-analyse'); } catch (e) {}
+        try { localStorage.removeItem('lissom-analyse'); localStorage.removeItem('lissom-analyse-versjon'); } catch (e) {}
+        samtykke();
         try { window['ga-disable-' + (m0.ga || '')] = true; } catch (e) {}
         // Og si fra til Google, som gaAv() i appen: «ga-disable» stopper
         // Analytics, men Tag Manager og Ads leser samtykket.
@@ -450,7 +461,7 @@
   if (boks) {
     var m = window.lissomMaal || {};
     if (samtykke() === '' && (m.ga || m.gtm || m.meta)) boks.removeAttribute('hidden');
-    var svar = function (v) { try { localStorage.setItem('lissom-analyse', v); } catch (e) {} boks.setAttribute('hidden', ''); if (v === 'ja') maal(); };
+    var svar = function (v) { try { localStorage.setItem('lissom-analyse', v); localStorage.setItem('lissom-analyse-versjon', '2026-09-30'); } catch (e) {} samtykke(); boks.setAttribute('hidden', ''); if (v === 'ja') maal(); };
     var ja = boks.querySelector('[data-nett-samtykke-ja]'), nei = boks.querySelector('[data-nett-samtykke-nei]');
     if (ja) ja.addEventListener('click', function () { svar('ja'); });
     if (nei) nei.addEventListener('click', function () { svar('nei'); });

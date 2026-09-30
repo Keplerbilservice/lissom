@@ -20,10 +20,9 @@
  * ── Samtykke ───────────────────────────────────────────────────────────
  *
  * Nettsiden laster ingen måling før noen har sagt ja (nett.js / appen,
- * «lissom-analyse»). Da finnes heller ingen _ga- eller _fbp-cookie. Derfor
- * er cookiene selve samtykket her: står de ikke i forespørselen som startet
- * betalingen, sendes ingenting fra serveren heller. Ingen bakvei rundt
- * boksen.
+ * «lissom-analyse»). Serveren krever i tillegg det versjonerte signalet
+ * «lissom-maaling». Gamle _ga- og _fbp-cookies alene er ikke samtykke:
+ * etter nei eller tilbaketrekking skal en ny betaling ikke bli maalt.
  *
  * ── Dobbelttelling ─────────────────────────────────────────────────────
  *
@@ -48,20 +47,31 @@ final class Maaling
      * Det fra nettleseren som trengs for å knytte kjøpet til besøket:
      * GA4 sin client_id og session_id, Metas _fbp/_fbc, IP og user-agent.
      * Lagres som JSON på betalingen når den opprettes (migrasjon 203).
-     * Tom streng når kunden ikke har samtykket (ingen cookies).
+     * Tom streng når kunden ikke har gyldig samtykke.
      */
     public static function sporingFraNettleser(): string
     {
         $c = $_COOKIE;
+        if (($c['lissom-maaling'] ?? '') !== 'ja-20260930') { return ''; }
         $ut = [];
         // _ga = GA1.1.<client_id-del1>.<del2>
         if (preg_match('~^GA1\.\d\.(\d+\.\d+)$~', (string) ($c['_ga'] ?? ''), $m) === 1) {
             $ut['cid'] = $m[1];
         }
-        // _ga_<måle-id uten G-> = GS1.1.<session_id>.<antall>.…
+        // GS1 bruker punktfelter; GS2 bruker navngitte felt (s = oekt).
+        // Begge finnes i nettlesere. Maalt paa lissom.no 30. sep 2026:
+        // GS2.1.s...$o... ga ingen sid med den gamle leseren.
         foreach ($c as $navn => $verdi) {
-            if (str_starts_with((string) $navn, '_ga_') && preg_match('~^GS\d\.\d\.(\d+)\.~', (string) $verdi, $m) === 1) {
-                $ut['sid'] = $m[1];
+            if (!str_starts_with((string) $navn, '_ga_')) { continue; }
+            $sid = null;
+            if (preg_match('~^GS1\.\d\.(\d+)\.~', (string) $verdi, $m) === 1) {
+                $sid = $m[1];
+            } elseif (preg_match('~^GS2\.\d\.(.*)$~', rawurldecode((string) $verdi), $m) === 1
+                && preg_match('~(?:^|\$)s(\d+)(?:\$|$)~', $m[1], $felt) === 1) {
+                $sid = $felt[1];
+            }
+            if ($sid !== null) {
+                $ut['sid'] = $sid;
                 break;
             }
         }

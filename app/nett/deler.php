@@ -478,7 +478,7 @@ final class Deler
     {
         return '<div data-nett-samtykke hidden style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; background: var(--lissom-brown); color: var(--clay-100); padding: var(--space-5) var(--space-6); box-shadow: 0 -6px 24px rgba(31, 17, 12, .22);">'
             . '<div style="max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">'
-            . '<p style="margin: 0; font-size: var(--text-sm); line-height: 1.6; max-width: 62ch; color: var(--clay-100);">Vi vil gjerne se hvor mange som besøker nettsiden, og hvilke sider de leser. Det krever informasjonskapsler fra Google Analytics. Sier du nei, virker alt akkurat som før — vi teller bare ikke besøket.</p>'
+            . '<p style="margin: 0; font-size: var(--text-sm); line-height: 1.6; max-width: 62ch; color: var(--clay-100);">Vi bruker Google Analytics til besøksstatistikk og Google Ads og Meta til å måle og tilpasse annonser. Hvis du sier ja, bruker disse tjenestene informasjonskapsler og mottar opplysninger om besøket og kjøpene dine. Ved kjøp kan hashet e-post og telefon brukes til å knytte kjøpet til annonser. Du kan si nei og bruke nettsiden som vanlig, og endre valget på personvernsiden.</p>'
             . '<div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">'
             . self::knapp('Ja, det er greit', ['size' => 'sm', 'attr' => 'data-nett-samtykke-ja'])
             . self::knapp('Nei takk', ['size' => 'sm', 'variant' => 'ink', 'attr' => 'data-nett-samtykke-nei'])

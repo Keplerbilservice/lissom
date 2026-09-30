@@ -2135,6 +2135,94 @@
                     }
                 }
             ]
+        },
+        {
+            "id": "seo-bestilling-20260930",
+            "dato": "2026-09-30",
+            "hva": "Rett bekreftede feil etter full sjekk: gammel om-adresse videresendes; bestilling får e-post- og telefonfelt med autofyll",
+            "hvor": "Kundesiden: gammel adresse og kursbestilling",
+            "kode": [
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "RewriteRule ^om-lissom-keramikk/?$ /om-oss [R=301,L]",
+                        "RewriteRule ^kurs/boller/?$ /kurs/lag-din-egen-bolle [R=301,L]"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "type=\"email\" auto-complete=\"email\"",
+                        "type=\"tel\" auto-complete=\"tel\"",
+                        "label=\"Navn\" auto-complete=\"name\""
+                    ]
+                },
+                {
+                    "fil": "app/nett/mal.php",
+                    "finnes": [
+                        "autocomplete="
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "maaling-gs2-20260930",
+            "dato": "2026-09-30",
+            "hva": "Rett oekt-ID i servermaaling: stoetter baade GS1 og GS2, kontrollert med gyldige og ugyldige cookies",
+            "hvor": "Servermaaling av kjoep",
+            "kode": [
+                {
+                    "fil": "app/lib/maaling.php",
+                    "finnes": [
+                        "rawurldecode((string) $verdi)",
+                        "GS2"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/maaling-cookie.php"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "samtykke-google-meta-20260930",
+            "dato": "2026-09-30",
+            "hva": "Eieren godkjente korrekt samtykketekst for Analytics, Ads og Meta; samme tekst paa personvernsiden. Gammelt ja maa fornyes; servermaaling krever gyldig samtykke.",
+            "hvor": "Samtykkeboks, personvern og servermaaling",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Vi bruker Google Analytics til besøksstatistikk og Google Ads og Meta til å måle og tilpasse annonser. Hvis du sier ja, bruker disse tjenestene informasjonskapsler og mottar opplysninger om besøket og kjøpene dine. Ved kjøp kan hashet e-post og telefon brukes til å knytte kjøpet til annonser. Du kan si nei og bruke nettsiden som vanlig, og endre valget på personvernsiden.",
+                        "localStorage.getItem('lissom-analyse-versjon') !== '2026-09-30'",
+                        "lissom-maaling="
+                    ],
+                    "ikkeFinnes": [
+                        "Facebook-piksel eller andre sporere har vi ikke"
+                    ]
+                },
+                {
+                    "fil": "app/nett/deler.php",
+                    "finnes": [
+                        "Vi bruker Google Analytics til besøksstatistikk og Google Ads og Meta til å måle og tilpasse annonser. Hvis du sier ja, bruker disse tjenestene informasjonskapsler og mottar opplysninger om besøket og kjøpene dine. Ved kjøp kan hashet e-post og telefon brukes til å knytte kjøpet til annonser. Du kan si nei og bruke nettsiden som vanlig, og endre valget på personvernsiden."
+                    ]
+                },
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "ja-20260930",
+                        "lissom-analyse-versjon"
+                    ]
+                },
+                {
+                    "fil": "app/lib/maaling.php",
+                    "finnes": [
+                        "($c['lissom-maaling'] ?? '') !== 'ja-20260930'"
+                    ]
+                }
+            ]
         }
     ]
 }

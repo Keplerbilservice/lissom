@@ -1613,6 +1613,114 @@
           "navn": "Mal"
         }
       ]
+    },
+    {
+      "slug": "mal-lyslykter-1-prikkelykta",
+      "navn": "Prikkelykta",
+      "under": "Lyslykter",
+      "sortering": 72,
+      "bilde": "maler/mal-lyslykter-1-prikkelykta/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-lyslykter-1-prikkelykta/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-lyslykter-1-prikkelykta/Monteringsguide.pdf",
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-lyslykter-1-prikkelykta/Monteringsguide.txt"
+        }
+      ]
+    },
+    {
+      "slug": "mal-lyslykter-2-husbyen",
+      "navn": "Husbyen",
+      "under": "Lyslykter",
+      "sortering": 73,
+      "bilde": "maler/mal-lyslykter-2-husbyen/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-lyslykter-2-husbyen/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-lyslykter-2-husbyen/Monteringsguide.pdf",
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-lyslykter-2-husbyen/Monteringsguide.txt"
+        }
+      ]
+    },
+    {
+      "slug": "mal-lyslykter-3-sjohusrekka",
+      "navn": "Sjøhusrekka",
+      "under": "Lyslykter",
+      "sortering": 74,
+      "bilde": "maler/mal-lyslykter-3-sjohusrekka/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-lyslykter-3-sjohusrekka/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-lyslykter-3-sjohusrekka/Monteringsguide.pdf",
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-lyslykter-3-sjohusrekka/Monteringsguide.txt"
+        }
+      ]
+    },
+    {
+      "slug": "mal-lyslykter-4-stjernelykta",
+      "navn": "Stjernelykta",
+      "under": "Lyslykter",
+      "sortering": 75,
+      "bilde": "maler/mal-lyslykter-4-stjernelykta/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-lyslykter-4-stjernelykta/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-lyslykter-4-stjernelykta/Monteringsguide.pdf",
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-lyslykter-4-stjernelykta/Monteringsguide.txt"
+        }
+      ]
+    },
+    {
+      "slug": "mal-lyslykter-5-fyrlykta",
+      "navn": "Fyrlykta",
+      "under": "Lyslykter",
+      "sortering": 76,
+      "bilde": "maler/mal-lyslykter-5-fyrlykta/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-lyslykter-5-fyrlykta/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-lyslykter-5-fyrlykta/Monteringsguide.pdf",
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-lyslykter-5-fyrlykta/Monteringsguide.txt"
+        }
+      ]
+    },
+    {
+      "slug": "mal-lyslykter-6-bladlykta",
+      "navn": "Bladlykta",
+      "under": "Lyslykter",
+      "sortering": 77,
+      "bilde": "maler/mal-lyslykter-6-bladlykta/bilde.jpg",
+      "dokumenter": [
+        {
+          "fil": "maler/mal-lyslykter-6-bladlykta/mal.pdf",
+          "navn": "Mal"
+        },
+        {
+          "fil": "maler/mal-lyslykter-6-bladlykta/Monteringsguide.pdf",
+          "navn": "Monteringsguide",
+          "tekst": "maler/mal-lyslykter-6-bladlykta/Monteringsguide.txt"
+        }
+      ]
     }
   ]
 }

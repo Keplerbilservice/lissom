@@ -1735,6 +1735,25 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "lyslykter-maler",
+            "dato": "2026-09-30",
+            "hva": "«jeg vil ha noen maler til lyslykter … vi må ha maler til de, jeg vil også ha 3 alternativer til» + «det må være malen på alle»: seks lyslykter (Prikkelykta, Husbyen, Sjøhusrekka, Stjernelykta, Fyrlykta, Bladlykta) under Keramikk maler, gruppen «Lyslykter», hver med bilde, Mal og Monteringsguide",
+            "hvor": "Verkstedet › Keramikk maler › Lyslykter",
+            "kode": [
+                {
+                    "fil": "db/dokumenter/manifest.json",
+                    "finnes": [
+                        "maler/mal-lyslykter-1-prikkelykta/mal.pdf",
+                        "maler/mal-lyslykter-2-husbyen/mal.pdf",
+                        "maler/mal-lyslykter-3-sjohusrekka/mal.pdf",
+                        "maler/mal-lyslykter-4-stjernelykta/mal.pdf",
+                        "maler/mal-lyslykter-5-fyrlykta/mal.pdf",
+                        "maler/mal-lyslykter-6-bladlykta/mal.pdf"
+                    ]
+                }
+            ]
         }
     ]
 }

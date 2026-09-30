@@ -151,12 +151,14 @@ $si = static function (string $t) use ($tilSkjerm, $ut): void {
  */
 function kommentarsvar(callable $si): void
 {
-    if (!Meta::autosvarPaa()) {
-        $si('Svar på kommentarer: står av (Synlighet). Ingenting sendt.');
-        return;
-    }
-    $r = Meta::autosvar();
-    $si('Svar på kommentarer: ' . $r['svart'] . ' svart.'
+    // Telles ogsaa naar bryteren staar av: tallet paa Innboks-fana
+    // (innstillinger.meta_ubesvart) viser hvor mange som venter.
+    $paa = Meta::autosvarPaa();
+    $r = Meta::autosvar($paa);
+    DB::kjor("INSERT INTO innstillinger (nokkel, verdi) VALUES ('meta_ubesvart', :v)
+              ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)", ['v' => (string) $r['igjen']]);
+    $si('Svar på kommentarer: ' . ($paa ? $r['svart'] . ' svart' : 'står av (Synlighet)')
+        . ', ' . $r['igjen'] . ' venter.'
         . ($r['feil'] === [] ? '' : ' Feil: ' . implode(' | ', $r['feil'])));
     if ($r['feil'] !== []) {
         logg('Autosvar paa kommentarer feilet delvis', ['feil' => $r['feil']]);

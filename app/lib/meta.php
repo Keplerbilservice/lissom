@@ -354,15 +354,27 @@ final class Meta
         $ut = [];
         $feil = [];
 
+        // Eieren, 30. september 2026: innboksen skal vise HVA som ble svart,
+        // om svaret var automatisk, og kommentarene paa annonsene. «svar» er
+        // vaart siste svar under kommentaren, «auto» at det er ett av de
+        // faste (AUTOSVAR), «skjult» at kommentaren er skjult.
         if (self::klarForInstagram()) {
             try {
+                $meg = (string) (self::kall('GET', self::igId(), ['fields' => 'username'])['username'] ?? '');
                 $svar = self::kall('GET', self::igId() . '/media', [
                     'fields' => 'id,permalink,caption,timestamp,'
-                              . 'comments{id,text,username,timestamp,replies{id}}',
+                              . 'comments{id,text,username,timestamp,hidden,replies{id,text,username}}',
                     'limit'  => (string) $maks,
                 ]);
                 foreach ((array) ($svar['data'] ?? []) as $innlegg) {
                     foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
+                        $svarene = (array) ($k['replies']['data'] ?? []);
+                        $vaart = '';
+                        foreach ($svarene as $s) {
+                            if ((string) ($s['username'] ?? '') === $meg) {
+                                $vaart = (string) ($s['text'] ?? '');
+                            }
+                        }
                         $ut[] = [
                             'id'      => (string) ($k['id'] ?? ''),
                             'kanal'   => 'Instagram',
@@ -371,7 +383,11 @@ final class Meta
                             'tid'     => (string) ($k['timestamp'] ?? ''),
                             'paa'     => self::kort((string) ($innlegg['caption'] ?? '')),
                             'lenke'   => (string) ($innlegg['permalink'] ?? ''),
-                            'svart'   => ((array) ($k['replies']['data'] ?? [])) !== [],
+                            'svart'   => $svarene !== [],
+                            'svar'    => $vaart,
+                            'auto'    => in_array($vaart, self::AUTOSVAR, true),
+                            'skjult'  => !empty($k['hidden']),
+                            'annonse' => false,
                         ];
                     }
                 }
@@ -381,33 +397,49 @@ final class Meta
         }
 
         if (self::klarForFacebook()) {
-            try {
-                $svar = self::kall('GET', self::sideId() . '/feed', [
-                    'fields' => 'id,permalink_url,message,created_time,'
-                              . 'comments{id,message,from,created_time,comments{id}}',
-                    'limit'  => (string) $maks,
-                ], self::sideToken());
-                foreach ((array) ($svar['data'] ?? []) as $innlegg) {
-                    foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
-                        // Vaare egne svar skal ikke staa som ubesvarte
-                        // spoersmaal i innboksen.
-                        if ((string) ($k['from']['id'] ?? '') === self::sideId()) {
-                            continue;
+            $sett = [];
+            foreach (['feed' => false, 'ads_posts' => true] as $kilde => $annonse) {
+                try {
+                    $svar = self::kall('GET', self::sideId() . '/' . $kilde, [
+                        'fields' => 'id,permalink_url,message,created_time,'
+                                  . 'comments{id,message,from,created_time,is_hidden,comments{id,message,from}}',
+                        'limit'  => (string) $maks,
+                    ], self::sideToken());
+                    foreach ((array) ($svar['data'] ?? []) as $innlegg) {
+                        foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
+                            $id = (string) ($k['id'] ?? '');
+                            // Vaare egne svar skal ikke staa som ubesvarte
+                            // spoersmaal i innboksen.
+                            if ((string) ($k['from']['id'] ?? '') === self::sideId() || isset($sett[$id])) {
+                                continue;
+                            }
+                            $sett[$id] = true;
+                            $svarene = (array) ($k['comments']['data'] ?? []);
+                            $vaart = '';
+                            foreach ($svarene as $s) {
+                                if ((string) ($s['from']['id'] ?? '') === self::sideId()) {
+                                    $vaart = (string) ($s['message'] ?? '');
+                                }
+                            }
+                            $ut[] = [
+                                'id'      => $id,
+                                'kanal'   => 'Facebook',
+                                'fra'     => (string) ($k['from']['name'] ?? 'Ukjent'),
+                                'tekst'   => (string) ($k['message'] ?? ''),
+                                'tid'     => (string) ($k['created_time'] ?? ''),
+                                'paa'     => self::kort((string) ($innlegg['message'] ?? '')),
+                                'lenke'   => (string) ($innlegg['permalink_url'] ?? ''),
+                                'svart'   => $svarene !== [],
+                                'svar'    => $vaart,
+                                'auto'    => in_array($vaart, self::AUTOSVAR, true),
+                                'skjult'  => !empty($k['is_hidden']),
+                                'annonse' => $annonse,
+                            ];
                         }
-                        $ut[] = [
-                            'id'      => (string) ($k['id'] ?? ''),
-                            'kanal'   => 'Facebook',
-                            'fra'     => (string) ($k['from']['name'] ?? 'Ukjent'),
-                            'tekst'   => (string) ($k['message'] ?? ''),
-                            'tid'     => (string) ($k['created_time'] ?? ''),
-                            'paa'     => self::kort((string) ($innlegg['message'] ?? '')),
-                            'lenke'   => (string) ($innlegg['permalink_url'] ?? ''),
-                            'svart'   => ((array) ($k['comments']['data'] ?? [])) !== [],
-                        ];
                     }
+                } catch (RuntimeException $e) {
+                    $feil[] = ($annonse ? 'Facebook-annonser: ' : 'Facebook: ') . $e->getMessage();
                 }
-            } catch (RuntimeException $e) {
-                $feil[] = 'Facebook: ' . $e->getMessage();
             }
         }
 
@@ -689,9 +721,12 @@ final class Meta
      * alt har et svar under seg. Annonsene paa Facebook tas med; de ligger
      * ikke i sidas feed. Instagram-annonser naas ikke av Graph.
      *
-     * @return array{svart: int, feil: list<string>}
+     * Med $svarOgsaa = false svares det ikke — da telles bare de som
+     * venter, til tallet paa Innboks-fana (bryteren staar av).
+     *
+     * @return array{svart: int, igjen: int, feil: list<string>}
      */
-    public static function autosvar(): array
+    public static function autosvar(bool $svarOgsaa = true): array
     {
         $grense = gmdate('Y-m-d\TH:i:s', time() - self::AUTOSVAR_DAGER * 86400);
         $kandidater = [];
@@ -745,17 +780,19 @@ final class Meta
         }
 
         $svart = 0;
-        foreach (array_slice(array_values($kandidater), 0, self::AUTOSVAR_MAKS) as $k) {
-            $tekst = self::AUTOSVAR[crc32($k['id']) % count(self::AUTOSVAR)];
-            try {
-                self::svarKommentar($k['id'], $tekst, $k['kanal']);
-                $svart++;
-            } catch (RuntimeException $e) {
-                $feil[] = $k['kanal'] . ' ' . $k['id'] . ': ' . $e->getMessage();
+        if ($svarOgsaa) {
+            foreach (array_slice(array_values($kandidater), 0, self::AUTOSVAR_MAKS) as $k) {
+                $tekst = self::AUTOSVAR[crc32($k['id']) % count(self::AUTOSVAR)];
+                try {
+                    self::svarKommentar($k['id'], $tekst, $k['kanal']);
+                    $svart++;
+                } catch (RuntimeException $e) {
+                    $feil[] = $k['kanal'] . ' ' . $k['id'] . ': ' . $e->getMessage();
+                }
             }
         }
 
-        return ['svart' => $svart, 'feil' => $feil];
+        return ['svart' => $svart, 'igjen' => count($kandidater) - $svart, 'feil' => $feil];
     }
 
     // ── Selve kallet ─────────────────────────────────────────────────

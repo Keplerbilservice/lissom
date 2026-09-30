@@ -28261,8 +28261,23 @@ window.__resources = {
                   <sc-if value="{{ k.svart }}" hint-placeholder-val="{{ false }}">
                     <span style="font-size: var(--text-xs); color: var(--sage-600); font-weight: 600;">Besvart</span>
                   </sc-if>
+                  <!-- Eieren, 30. september 2026: kommentarene paa annonsene
+                       i samme liste, merket. -->
+                  <sc-if value="{{ k.annonse }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted); font-weight: 600;">Annonse</span>
+                  </sc-if>
                 </div>
                 <p style="margin: 0 0 var(--space-2); font-size: var(--text-base); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ k.tekst }}</p>
+                <!-- Hva Lissom svarte, og om det var et av de faste
+                     automatiske svarene. Eieren, 30. september 2026. -->
+                <sc-if value="{{ k.harSvar }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin: 0 0 var(--space-3) var(--space-5); padding-left: var(--space-3); border-left: 2px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-body);">
+                    {{ k.svarLinje }}
+                    <sc-if value="{{ k.auto }}" hint-placeholder-val="{{ false }}">
+                      <span style="margin-left: 6px; font-size: var(--text-xs); color: var(--sage-600); font-weight: 600;">Automatisk</span>
+                    </sc-if>
+                  </div>
+                </sc-if>
                 <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-4);">{{ k.paaTekst }}</div>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                   <input value="{{ k.svar }}" onChange="{{ k.settSvar }}" placeholder="Skriv et svar …" style="flex: 1 1 260px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
@@ -72998,8 +73013,17 @@ class Component extends DCLogic {
 
         return {
           // Gaar man til en gruppe, aapnes den foerste fana i den.
+          // Innboks faar tallet paa kommentarer som venter paa svar.
+          // Eieren, 30. september 2026. Fra cron (innboksVenter) til
+          // innboksen er hentet — da teller vi det som faktisk staar der.
           mkGrupper: GRUPPER.map(([g, faner]) => ({
-            navn: g, stil: faneStil(minGruppe[0] === g),
+            navn: g === 'Innboks' ? (() => {
+              const n = this.state.ibHentet
+                ? (this.state.ibKomm || []).filter(k => !k.svart && !k.skjult).length
+                : (d.innboksVenter || 0);
+              return n > 0 ? 'Innboks (' + n + ')' : 'Innboks';
+            })() : g,
+            stil: faneStil(minGruppe[0] === g),
             velg: () => gaaTil(faner[0]),
           })),
           // Under staar fanene i gruppa man er i. «Tavle» er alene om sin,
@@ -73099,6 +73123,8 @@ class Component extends DCLogic {
                 merkeStil: merkeStil(k.kanal),
                 naar: naarTekst(k.tid),
                 paaTekst: k.paa ? 'På: ' + k.paa : '',
+                harSvar: !!k.svar,
+                svarLinje: k.svar ? 'Svar fra Lissom: «' + k.svar + '»' : '',
                 svar: (this.state.ibSvar || {})[k.id] || '',
                 settSvar: e => this.setState({
                   ibSvar: Object.assign({}, this.state.ibSvar, { [k.id]: e.target.value }),

@@ -25,7 +25,7 @@ echo json_encode(match (true) {
         'id' => 'm1',
         'comments' => ['data' => [
             ['id' => 'ig-ny', 'username' => 'flowhelse', 'timestamp' => $naa],
-            ['id' => 'ig-svart', 'username' => 'kunde2', 'timestamp' => $naa, 'replies' => ['data' => [['id' => 'r1']]]],
+            ['id' => 'ig-svart', 'username' => 'kunde2', 'timestamp' => $naa, 'replies' => ['data' => [['id' => 'r1', 'username' => 'lissom_keramikk', 'text' => 'Takk! 😊']]]],
             ['id' => 'ig-skjult', 'username' => 'kunde3', 'timestamp' => $naa, 'hidden' => true],
             ['id' => 'ig-egen', 'username' => 'lissom_keramikk', 'timestamp' => $naa],
             ['id' => 'ig-gammel', 'username' => 'kunde4', 'timestamp' => $gammel],
@@ -37,6 +37,7 @@ echo json_encode(match (true) {
         'comments' => ['data' => [
             ['id' => 'fb-ny', 'from' => ['id' => '99'], 'created_time' => $naa],
             ['id' => 'fb-egen', 'from' => ['id' => 'side1'], 'created_time' => $naa],
+            ['id' => 'fb-haand', 'from' => ['id' => '96', 'name' => 'Kari'], 'created_time' => $naa, 'comments' => ['data' => [['id' => 'c9', 'from' => ['id' => 'side1'], 'message' => 'Vi ses torsdag!']]]],
         ]],
     ]]],
     str_ends_with($sti, '/side1/ads_posts') => ['data' => [[

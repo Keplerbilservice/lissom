@@ -291,6 +291,9 @@ if (Foresporsel::metode() === 'GET') {
 
     Svar::json([
         'ai'          => AI::status(),
+        // Kommentarer som venter paa svar, talt av cron hver time
+        // (bin/cron.php kommentarsvar). Tallet paa Innboks-fana.
+        'innboksVenter' => (int) (DB::verdi("SELECT verdi FROM innstillinger WHERE nokkel = 'meta_ubesvart'") ?? 0),
         'kursTomme'   => $tomme,
         'kursFulle'   => $fulle,
         'muligheter'  => $muligheter,

@@ -34,7 +34,9 @@ require $rot . '/app/lib/meta.php';
 putenv('LISSOM_META_BASE=http://127.0.0.1:' . $port);
 
 $r = Meta::autosvar();
+$innboks = Meta::kommentarer();
 proc_terminate($tjener);
+$finn = fn(string $id) => array_values(array_filter($innboks['poster'], fn($k) => $k['id'] === $id))[0] ?? [];
 
 $linjer = array_values(array_filter(explode("\n", (string) file_get_contents($logg))));
 $ok = 0; $feil = 0;
@@ -45,6 +47,12 @@ $sjekk = function (string $navn, bool $sant) use (&$ok, &$feil): void {
 
 $sjekk('tre svar (ig-ny, fb-ny, ann-ny)', $r['svart'] === 3 && count($linjer) === 3);
 $sjekk('ingen feil', $r['feil'] === []);
+$sjekk('ingen igjen etterpaa', $r['igjen'] === 0);
+$sjekk('innboksen: vaart automatiske svar vises', ($finn('ig-svart')['svar'] ?? '') === 'Takk! 😊' && ($finn('ig-svart')['auto'] ?? false) === true);
+$sjekk('innboksen: haandskrevet svar er ikke automatisk', ($finn('fb-haand')['svar'] ?? '') === 'Vi ses torsdag!' && ($finn('fb-haand')['auto'] ?? true) === false);
+$sjekk('innboksen: annonsekommentaren er med og merket', ($finn('ann-ny')['annonse'] ?? false) === true);
+$sjekk('innboksen: skjult kommentar er merket', ($finn('ann-skjult')['skjult'] ?? false) === true);
+$sjekk('innboksen: ingen feil', $innboks['feil'] === []);
 $sjekk('Instagram svarer under /replies', (bool) array_filter($linjer, fn($l) => str_contains($l, '/ig-ny/replies ')));
 $sjekk('Facebook svarer under /comments', (bool) array_filter($linjer, fn($l) => str_contains($l, '/fb-ny/comments ')));
 $sjekk('annonsekommentaren faar svar', (bool) array_filter($linjer, fn($l) => str_contains($l, '/ann-ny/comments ')));

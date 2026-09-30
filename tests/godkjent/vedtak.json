@@ -1644,6 +1644,36 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "innboks-viser-svar",
+            "dato": "2026-09-30",
+            "hva": "Innboks viser Lissoms svar under hver kommentar («Svar fra Lissom: «…»», merket «Automatisk» når det er et av de faste), kommentarene på Facebook-annonsene (merket «Annonse»), og tallet på ventende kommentarer på Innboks-fana",
+            "hvor": "Admin › Markedsføring › Innboks; app/lib/meta.php kommentarer(); bin/cron.php kommentarsvar; api/admin/marked.php",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "svarLinje: k.svar ? 'Svar fra Lissom: «' + k.svar + '»' : '',",
+                        "return n > 0 ? 'Innboks (' + n + ')' : 'Innboks';",
+                        ">Automatisk</span>",
+                        ">Annonse</span>"
+                    ]
+                },
+                {
+                    "fil": "app/lib/meta.php",
+                    "finnes": [
+                        "'auto'    => in_array($vaart, self::AUTOSVAR, true),",
+                        "foreach (['feed' => false, 'ads_posts' => true] as $kilde => $annonse) {"
+                    ]
+                },
+                {
+                    "fil": "api/admin/marked.php",
+                    "finnes": [
+                        "'innboksVenter' => (int)"
+                    ]
+                }
+            ]
         }
     ]
 }

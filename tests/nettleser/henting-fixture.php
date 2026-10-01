@@ -24,7 +24,9 @@ if ($mode==='member') {
  $min=(int)$plan['timer']*60;
  $start=strtotime(Stempling::manedStart().' UTC')+60;
  DB::settInn('check_ins',['member_id'=>$s['admin'],'inn_tid'=>gmdate('Y-m-d H:i:s',$start),'ut_tid'=>gmdate('Y-m-d H:i:s',$start+$min*60),'minutter'=>$min]);
- DB::settInn('check_ins',['member_id'=>$s['admin'],'inn_tid'=>gmdate('Y-m-d H:i:s',time()-1800)]);
+ // A current open session must not cross the real 23:00 closing boundary.
+ // A fixed 30-minute offset made evening tests exercise automatic closing instead.
+ DB::settInn('check_ins',['member_id'=>$s['admin'],'inn_tid'=>gmdate('Y-m-d H:i:s')]);
 }
 if ($mode==='kontakt') DB::oppdater('members',['start_dato'=>'2026-09-01','slutt_dato'=>'2027-09-01','timer_per_mnd'=>11],['id'=>$s['admin']]);
 if ($mode==='kontaktstatus') { echo json_encode(DB::en('SELECT start_dato,slutt_dato,timer_per_mnd,navn FROM members WHERE id=:i',['i'=>$s['admin']])); exit; }

@@ -156,8 +156,18 @@ await flyt('Delt betaling i Ta betalt', async () => {
   await beloep.nth(1).fill('1000');
   await beloep.nth(2).fill('800');
   const kode = vindu.locator('div:has(> label:text-is("Gavekortkode")) > input').last();
+  // Vent på det faktiske svaret, ikke et vilkårlig antall millisekunder.
+  // Lokal PHP behandler forespørsler sekvensielt, også når varselkøen tømmes.
+  const kortSvar = p.waitForResponse(r => {
+    const u = new URL(r.url());
+    return u.pathname === '/api/gavekort.php' && u.searchParams.get('kode') === S.gavekort;
+  }, { timeout: 15000 }).catch(() => null);
   await kode.fill(S.gavekort);
-  await p.waitForTimeout(2000);
+  const kortResponse = await kortSvar;
+  const kortData = kortResponse ? await kortResponse.json().catch(() => null) : null;
+  sjekk('gavekortoppslaget svarer med riktig saldo', kortResponse?.status() === 200 && kortData?.gyldig === true && Number(kortData?.saldo_ore) === 100000,
+    JSON.stringify({ status: kortResponse?.status(), data: kortData }).slice(0, 200));
+  await vindu.getByText(/Gavekortet har.*1\s?000/).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   const saldo = await vindu.getByText(/igjen|saldo/i).allInnerTexts();
   sjekk('saldoen paa gavekortet hentes', saldo.some(t => /1\s?000/.test(t)), saldo.join(' | ').slice(0, 120));
   await beloep.nth(3).fill('1000');

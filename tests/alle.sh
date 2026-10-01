@@ -88,6 +88,8 @@ kjor "nettleser"      bash tests/nettleser/kjor.sh
 # alle moduler med vis/skjul, samt sperring av ubetalt medlemskap.
 kjor "min side-vakt"  bash tests/nettleser/kjor.sh minside.mjs
 kjor "ny admin"       bash tests/nettleser/kjor.sh admin-ny
+kjor "varsler SMTP"    node tests/varsler-smtp.mjs
+kjor "varsler og kursbevis" bash tests/nettleser/kjor.sh varsler.mjs
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

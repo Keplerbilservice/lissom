@@ -2597,7 +2597,7 @@
         {
             "id": "maanedstimer-og-overfort-ekstrapakke",
             "dato": "2026-10-01",
-            "hva": "Eieren: Månedstimer krever ny betaling ved månedsskiftet. «ekstra timepakken skal overføres til andre måneder». Gjør opp selv følger kalendermåneden; fast trekk beholder foreløpig sin betalingsperiode mens egen avklaring pågår. Ekstra timepakker regnes ikke som betaling for medlemskapet.",
+            "hva": "Eieren: Månedstimer krever betaling for hver kalendermåned, også ved fast Vipps-trekk (bekreftet etter avklaring). «ekstra timepakken skal overføres til andre måneder». Trekkdatoer beholdes. Ekstra timepakker regnes ikke som betaling for medlemskapet.",
             "hvor": "Medlemstilgang, Min side og betalingsstatus",
             "kode": [
                 {
@@ -2606,7 +2606,29 @@
                         "Kjøp midt i september utløper 1. oktober",
                         "Ekstra timepakkens seks timer overføres til neste måned",
                         "Overførte ekstra timer åpner ikke et ubetalt månedsmedlemskap",
-                        "Fast trekk beholder betalt periode over månedsskiftet"
+                        "Fast trekk fra forrige måned åpner ikke ny måned"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "fast-trekk-forfall-og-prove-uten-sluttdato",
+            "dato": "2026-10-01",
+            "hva": "Kontrollen av Lene og Eirin viste at dagens bestilte trekk fortsatt venter. Fremtidige trekk bestilles dagen før oppført trekkdato, med samme idempotensnøkkel og eksplisitt betalingsmåned. Eksisterende bestillinger gjentas ikke. Prøv Lissom uten sluttdato gir bare tilgang i betalt prøvemåned.",
+            "hvor": "Trekkrunden og betalt medlemstilgang",
+            "kode": [
+                {
+                    "fil": "tests/trekkplan.php",
+                    "finnes": [
+                        "Trekk 1. november bestilt 31. oktober beholder forfallet",
+                        "Betalingen knyttes til trekkmåneden, ikke bestillingsmåneden",
+                        "Bare én betalingsrad etter gjentatt forsøk"
+                    ]
+                },
+                {
+                    "fil": "tests/betalt-periode.php",
+                    "finnes": [
+                        "Prøv uten sluttdato gir ikke ubegrenset tilgang etter månedsskiftet"
                     ]
                 }
             ]

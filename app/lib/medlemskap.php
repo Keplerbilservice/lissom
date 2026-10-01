@@ -331,8 +331,6 @@ final class Medlemskap
         $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $id = (int) ($medlem['id'] ?? 0);
         if ($id <= 0) return false;
-        $avtale = self::loepende($id);
-        $fastTrekk = $avtale !== null && trim((string) ($avtale['vipps_agreement_id'] ?? '')) !== '';
         $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
         if ($plan === null) return false;
         $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
@@ -352,16 +350,15 @@ final class Medlemskap
                 $fra = (new DateTimeImmutable((string) $betaling['created_at'], new DateTimeZone('UTC')))
                     ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
             }
-            if (!$fastTrekk && (int) ($plan['engangs'] ?? 0) !== 1) {
+            if ((int) ($plan['engangs'] ?? 0) !== 1) {
                 $fra = (new DateTimeImmutable($fra))->modify('first day of this month')->format('Y-m-d');
             }
             if ($fra > $idag) continue;
             if ((int) ($plan['engangs'] ?? 0) === 1) {
                 $til = (string) ($medlem['slutt_dato'] ?? '');
+                if ($til === '') $til = self::proveSlutt($fra);
                 if ($til !== '' && $idag <= $til) return true;
-            } elseif ($idag < ($fastTrekk
-                ? self::nesteTrekkdato($fra, isset($avtale['trekk_dag']) ? (int) $avtale['trekk_dag'] : null)
-                : self::dekkerTil(['gjelder_fra' => $fra]))) {
+            } elseif ($idag < self::dekkerTil(['gjelder_fra' => $fra])) {
                 return true;
             }
         }
@@ -880,6 +877,11 @@ final class Medlemskap
                     . ' · venter på Vipps', false, true);
             }
             if ($tstatus === 'betalt' || $tstatus === 'delvis_refundert') {
+                $betaltTil = self::dekkerTil($siste ?? $trekk);
+                if ($betaltTil <= $idag) {
+                    return $ut('forfalt', 'Inneværende måned er ikke betalt · sist trukket '
+                        . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
+                }
                 return $ut('betalt', 'Trukket '
                     . $kort(substr((string) $trekk['created_at'], 0, 10))
                     . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
@@ -890,8 +892,11 @@ final class Medlemskap
                 return $ut('forfalt', 'Skulle vært trukket ' . $kort($neste), true);
             }
             if ($sist !== '') {
-                return $ut('betalt', 'Trukket ' . $kort($sist)
-                    . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
+                if ($siste !== null && self::dekkerTil($siste) > $idag) {
+                    return $ut('betalt', 'Betalt ' . $kort(substr((string) $siste['created_at'], 0, 10))
+                        . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
+                }
+                return $ut('venter', 'Ingen mottatt betaling for inneværende måned', true, true);
             }
             // Avtalen er godkjent i Vipps, men ingen krone har flyttet seg.
             // Ikke roedt — det er ikke noe galt — men det skal telles.
@@ -2094,18 +2099,31 @@ final class Medlemskap
      */
     public static function tilTrekk(): array
     {
+        $senest = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+            ->modify('+' . self::VARSEL_DAGER . ' days')->format('Y-m-d');
         return DB::alle(
             "SELECT s.*, m.navn, m.epost, m.telefon
                FROM subscriptions s
                JOIN members m ON m.id = s.member_id
               WHERE s.status = 'aktiv'
                 AND s.neste_trekk IS NOT NULL
-                AND s.neste_trekk <= CURDATE()
+                AND s.neste_trekk <= :senest
+                AND COALESCE(s.vipps_agreement_id, '') <> ''
                 -- Er det sagt opp, trekkes det ikke for en periode som
                 -- begynner etter siste dag.
                 AND (s.slutter IS NULL OR s.neste_trekk <= s.slutter)
-                AND m.anonymisert_at IS NULL"
+                AND m.anonymisert_at IS NULL",
+            ['senest' => $senest]
         );
+    }
+
+    /** Oppført trekkdato er Vipps-forfall. Et forsinket forsøk får tidligst i morgen. */
+    public static function trekkForfall(array $avtale, ?string $idag = null): string
+    {
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $minst = (new DateTimeImmutable($idag ?? 'now', $oslo))
+            ->modify('+' . self::VARSEL_DAGER . ' days')->format('Y-m-d');
+        return max($minst, (string) $avtale['neste_trekk']);
     }
 
     /**
@@ -2142,11 +2160,13 @@ final class Medlemskap
             return 'alt fort';
         }
 
-        $forfall = (new DateTimeImmutable('now'))->modify('+' . self::VARSEL_DAGER . ' days')->format('Y-m-d');
+        $forfall = self::trekkForfall($avtale);
+        $periodeFra = (new DateTimeImmutable((string) $avtale['neste_trekk']))
+            ->modify('first day of this month')->format('Y-m-d');
 
         if ($paaNytt !== null) {
             $betalingId = $paaNytt;
-            DB::oppdater('payments', ['status' => 'opprettet'], ['id' => $betalingId]);
+            DB::oppdater('payments', ['status' => 'opprettet', 'gjelder_fra' => $periodeFra], ['id' => $betalingId]);
         } else {
             $betalingId = DB::settInn('payments', [
                 'vipps_reference' => Vipps::nyReferanse('MED'),
@@ -2157,6 +2177,7 @@ final class Medlemskap
                 'belop_ore'       => (int) $avtale['pris_ore'],
                 'status'          => 'opprettet',
                 'idempotency_key' => $nokkel,
+                'gjelder_fra'     => $periodeFra,
             ]);
         }
 

@@ -140,6 +140,7 @@ http.createServer((req, res) => {
       return svar(res, 200, {
         id: tid, amount: trekk.get(tid)?.amount ?? 0,
         status: styrt('.trekk-status', 'CHARGED'),
+        due: trekk.get(tid)?.due,
         agreementId: id,
       });
     }

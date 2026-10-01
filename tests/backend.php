@@ -1227,7 +1227,7 @@ $mine = static fn(int $id): int => count(array_filter(Medlemskap::tilTrekk(), st
 sjekk('avtale med forfall i dag skal trekkes', $mine($avtaleId) === 1);
 
 DB::oppdater('subscriptions', ['neste_trekk' => gmdate('Y-m-d', time() + 86400)], ['id' => $avtaleId]);
-sjekk('avtale med forfall i morgen skal ikke trekkes', $mine($avtaleId) === 0);
+sjekk('avtale med forfall i morgen bestilles i dag', $mine($avtaleId) === 1);
 
 DB::oppdater('subscriptions', ['neste_trekk' => gmdate('Y-m-d'), 'status' => 'stoppet'], ['id' => $avtaleId]);
 sjekk('stoppet avtale trekkes ikke', $mine($avtaleId) === 0);
@@ -9259,9 +9259,8 @@ $avt = static fn(string $neste, string $sist = ''): array => [
 $medlemFil = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('trekket bes om et dogn for forfall, som er Vipps sitt minimum',
     str_contains($medlemFil, 'private const VARSEL_DAGER = 1;'));
-sjekk('… og forfallet regnes ut av den, ikke av et tall i koden',
-    str_contains($medlemFil,
-        "\$forfall = (new DateTimeImmutable('now'))->modify('+' . self::VARSEL_DAGER . ' days')"));
+sjekk('… og oppført trekkdato beholdes når bestillingen skjer dagen før',
+    Medlemskap::trekkForfall(['neste_trekk'=>'2026-11-01'],'2026-10-31') === '2026-11-01');
 // Kunden skal ikke faa et tall aa telle paa. Sier vi «tre dager» i en tekst,
 // blir den loegn i det tallet endres.
 sjekk('… og kunden faar «om noen dager», ikke et tall',
@@ -9336,9 +9335,14 @@ DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $tSub]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $tMed]);
 
 $b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
-    $avt(gmdate('Y-m-d', strtotime('+20 days')), $iDag), null);
+    $avt(gmdate('Y-m-d', strtotime('+20 days')), $iDag), null,
+    ['status'=>'betalt','created_at'=>$iDag.' 12:00:00']);
 sjekk('fast trekk som har gaatt gjennom er betalt',
     $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+$b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
+    $avt(gmdate('Y-m-d', strtotime('+20 days')), $iDag), null);
+sjekk('oppført trekkdato uten mottatt betaling er ikke betalt',
+    $b['tilstand'] === 'venter' && $b['utestaaende'] === true, $b['tekst']);
 $b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
     $avt(gmdate('Y-m-d', strtotime('-5 days')), $iDag), null);
 sjekk('… og et trekk som ikke gikk er forfalt',

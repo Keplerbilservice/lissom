@@ -63,7 +63,7 @@ $loepende = array_column(DB::alle(
     'SELECT navn, krever_fast_trekk FROM membership_plans WHERE engangs = 0 AND aktiv = 1 ORDER BY sortering'), null, 'navn');
 sjekk('planene finnes', $prove !== '' && count($loepende) >= 2, $prove . ' | ' . implode(', ', array_keys($loepende)));
 
-$adm = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$adm = str_replace("\r\n", "\n", file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'));
 sjekk('lista viser «over Prøv Lissom» bare paa proeveperioden',
     str_contains($adm, "if (!Medlemskap::erEngangs((string) (\$m['medlemskap_type'] ?? ''))) {\n            return null;"));
 sjekk('… og timene over staar i endringsloggen etter byttet',

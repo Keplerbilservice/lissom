@@ -47,6 +47,7 @@ $aar   = (string) DB::verdi('SELECT navn FROM membership_plans WHERE binding_mnd
 $annen = (string) DB::verdi('SELECT navn FROM membership_plans WHERE binding_mnd < 12 ORDER BY sortering LIMIT 1');
 sjekk('aarsmedlemskapet finnes', $aar !== '');
 
+require __DIR__ . '/betalt-fixture.php';
 $sporTag = 'verv-' . bin2hex(random_bytes(3));
 $nyttMedlem = static function (string $navn, string $status) use ($sporTag): int {
     return DB::settInn('members', [
@@ -70,6 +71,7 @@ $gaver = static fn(int $id): int => (int) DB::verdi(
     "SELECT COUNT(*) FROM medlemsgaver WHERE member_id = :m AND type = 'timer'", ['m' => $id]);
 
 $verver = $nyttMedlem('Verver Test', 'aktiv');
+test_betalt_medlem($verver);
 $kode   = Verving::kodeFor($verver);
 sjekk('medlemmet faar en kode', preg_match('/^[a-z0-9]{8}$/', $kode) === 1, $kode);
 sjekk('… den samme hver gang', Verving::kodeFor($verver) === $kode);
@@ -144,6 +146,7 @@ sjekk('en ukjent kode gir ingen premie', Verving::premier($venn7, $a7, $aar) ===
 // og vervingene gaar med medlemmene; medlemsordrene har ingen noekkel dit.
 DB::kjor('DELETE FROM medlemsordrer WHERE medlem_id IN (SELECT id FROM members WHERE epost LIKE :e)',
     ['e' => $sporTag . '-%']);
+DB::kjor('DELETE FROM payments WHERE member_id IN (SELECT id FROM members WHERE epost LIKE :e)', ['e' => $sporTag . '-%']);
 DB::kjor('DELETE FROM members WHERE epost LIKE :e', ['e' => $sporTag . '-%']);
 if ($forBryter === null || $forBryter === false) {
     DB::kjor("DELETE FROM content_blocks WHERE nokkel = 'Vis/verving'");

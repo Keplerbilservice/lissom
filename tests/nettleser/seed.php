@@ -89,6 +89,9 @@ $admin = DB::settInn('members', ['navn' => 'E2E Admin', 'epost' => $epost('admin
 $medlem = DB::settInn('members', ['navn' => 'Kari E2E', 'epost' => $epost('kari'), 'telefon' => '+4790000001',
     'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => $aar]);
 
+require dirname(__DIR__) . '/betalt-fixture.php';
+test_betalt_medlem($medlem);
+
 $kurs = DB::settInn('courses', ['slug' => "e2e-dreie-$tag", 'tittel' => 'E2E Dreiekurs', 'type' => 'kurs',
     'pris_ore' => 280000, 'kapasitet' => 8, 'status' => 'publisert']);
 $annet = DB::settInn('courses', ['slug' => "e2e-annet-$tag", 'tittel' => 'E2E Annet kurs', 'type' => 'kurs',

@@ -110,6 +110,8 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
       DB::settInn('subscriptions', ['member_id' => $id, 'plan' => $plan, 'pris_ore' => (int) $pl['pris_ore'], 'status' => 'aktiv',
         'binding_til' => $b ? gmdate('Y-m-d', strtotime('+' . $b . ' months')) : null]);
     }
+    require dirname(__DIR__) . '/betalt-fixture.php';
+    test_betalt_medlem($id);
     if (${minutter} > 0) {
       $m = strtotime(Stempling::manedStart() . ' UTC') + 120;
       $oktId = DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m), 'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);

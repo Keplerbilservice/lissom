@@ -64,7 +64,7 @@ async function side(hvem, bredde = 1358, hoyde = 900) {
   p.on('dialog', d => d.accept());
   return p;
 }
-const gaa = async (p, sti, ms = 2500) => { await p.goto(ADR + sti, { waitUntil: 'networkidle', timeout: 45000 }); await p.waitForTimeout(ms); };
+const gaa = async (p, sti, ms = 2500) => { await p.goto(ADR + sti, { waitUntil: 'domcontentloaded', timeout: 45000 }); await p.waitForTimeout(ms); };
 const api = (p, sti, kropp) => p.evaluate(async ([sti, kropp]) => {
   const r = await fetch(sti, kropp ? { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kropp) } : { credentials: 'same-origin', cache: 'no-store' });
   try { return await r.json(); } catch { return { status: r.status }; }
@@ -1851,7 +1851,7 @@ await flyt('Nytt admin: I dag, menyer, bekreft og angre, mva', async () => {
       && await p.locator('[data-kort="betalt"] .mva', { hasText: 'Mva 25 %' }).count() > 0);
     sjekk(`${b} px: omsetningen uten mva = summen av linjene`,
       (oms.linjerIdag || []).reduce((n, l) => n + (l.mvaSats > 0 ? l.eksOre : l.ore), 0) === Number(oms.idagEksOre));
-    sjekk(`${b} px: åtte rader i «Må gjøres», hele raden trykkbar`, await p.locator('[data-kort="maagjores"] a.rad[data-rad]').count() === 8);
+    sjekk(`${b} px: ni rader i «Må gjøres», hele raden trykkbar`, await p.locator('[data-kort="maagjores"] a.rad[data-rad]').count() === 9);
     sjekk(`${b} px: ingen sidelengs rulling`, !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
     // Oppsettet (eieren, 30.09): kortene fordelt utover, ikke to lange soeyler.
     // PC: summen til venstre over hele hoeyden, «Maa gjoeres» og ovnen til
@@ -1951,6 +1951,13 @@ await flyt('Nytt admin: alle knapper går til riktig funksjon', async () => {
   const rad = (bredde, knapp, forventet, faktisk, ok) => { tabell.push({ bredde, knapp, forventet, faktisk, ok }); sjekk(`${bredde} px: «${knapp}» → ${forventet}`, ok, ok ? '' : faktisk); };
   // Dyplenkene: selve funksjonen skal vaere aapen.
   const DYP = {
+    verktoy: ['verktoy åpen', (p) => p.getByText('Verktøy', { exact: true }).last().isVisible()],
+    synlighet: ['synlighet åpen', (p) => p.locator('.lx-synark').filter({ has: p.getByText('Synlighet', { exact: true }) }).first().isVisible()],
+    handlelister: ['handlelister åpen', (p) => p.getByRole('heading', { name: 'Handlelister', exact: true }).first().isVisible()],
+    oppskrifter: ['oppskrifter åpen', (p) => p.getByRole('heading', { name: 'Oppskrifter', exact: true }).first().isVisible()],
+    brenninger: ['brenninger åpen', (p) => p.getByRole('heading', { name: 'Brenning', exact: true }).first().isVisible()],
+    vakter: ['vakter åpen', (p) => p.getByRole('heading', { name: 'Vakter', exact: true }).first().isVisible()],
+    dugnad: ['dugnad åpen', (p) => p.locator('#admin-dugnad').isVisible()],
     kursstart:   ['Kursstart åpen', (p) => p.getByText('Kursstart', { exact: true }).first().isVisible()],
     nydato:      ['«Ny kursdato» åpen', (p) => p.getByText('Kurs eller event', { exact: true }).first().isVisible()],
     dagsoppgjor: ['dagsoppgjøret åpent', (p) => p.getByText(/betalt med Vipps/).first().isVisible()],
@@ -2119,6 +2126,13 @@ await flyt('Nytt admin: alle knapper går til riktig funksjon', async () => {
 // viser riktig skjerm uten egen meny, og at dyplenkene aapner funksjonen der.
 await flyt('Nytt admin holder seg til du lukker det', async () => {
   const DYPF = {
+    verktoy: (p) => p.getByText('Verktøy', { exact: true }).last().isVisible(),
+    synlighet: (p) => p.locator('.lx-synark').filter({ has: p.getByText('Synlighet', { exact: true }) }).first().isVisible(),
+    handlelister: (p) => p.getByRole('heading', { name: 'Handlelister', exact: true }).first().isVisible(),
+    oppskrifter: (p) => p.getByRole('heading', { name: 'Oppskrifter', exact: true }).first().isVisible(),
+    brenninger: (p) => p.getByRole('heading', { name: 'Brenning', exact: true }).first().isVisible(),
+    vakter: (p) => p.getByRole('heading', { name: 'Vakter', exact: true }).first().isVisible(),
+    dugnad: (p) => p.locator('#admin-dugnad').isVisible(),
     kursstart:   (f) => f.getByText('Kursstart', { exact: true }).first().isVisible(),
     nydato:      (f) => f.getByText('Kurs eller event', { exact: true }).first().isVisible(),
     dagsoppgjor: (f) => f.getByText(/betalt med Vipps/).first().isVisible(),

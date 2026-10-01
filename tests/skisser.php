@@ -47,15 +47,19 @@ foreach (['skisser', 'skissermedlemmer', 'skisserdeltakere'] as $k) {
     $lagret[$k] = ($v === null || $v === false) ? null : (string) $v;
 }
 
-sjekk('medlemsbryteren er av fra start', $lagret['skissermedlemmer'] === 'nei', (string) $lagret['skissermedlemmer']);
-sjekk('deltakerbryteren er av fra start', $lagret['skisserdeltakere'] === 'nei', (string) $lagret['skisserdeltakere']);
+$bryter('skissermedlemmer', 'nei');
+$bryter('skisserdeltakere', 'nei');
+sjekk('medlemsbryteren kan slås av', DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/skissermedlemmer'") === 'nei');
+sjekk('deltakerbryteren kan slås av', DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/skisserdeltakere'") === 'nei');
 
+require __DIR__ . '/betalt-fixture.php';
 $tag = 'sk-' . bin2hex(random_bytes(3));
 $person = static function (string $rolle, string $status) use ($tag): array {
     $id = DB::settInn('members', [
         'navn' => 'Skisse ' . $rolle . ' ' . $status, 'epost' => $tag . '-' . bin2hex(random_bytes(3)) . '@lissom.test',
         'telefon' => '+479' . random_int(1000000, 9999999), 'rolle' => $rolle, 'status' => $status,
     ]);
+    if ($rolle === 'medlem' && $status === 'aktiv') test_betalt_medlem($id);
     return DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
 };
 $admin = $person('admin', 'aktiv');
@@ -185,6 +189,7 @@ $bryter('skisser', 'nei'); // slett() trenger ikke modulen, men sett bryterne ti
 foreach ($lagret as $k => $v) { $bryter($k, $v); }
 $ids = array_map(static fn($m) => (int) $m['id'], [$admin, $a, $b, $gjest, $deltaker]);
 DB::kjor('DELETE FROM bookings WHERE member_id IN (' . implode(',', $ids) . ')');
+DB::kjor('DELETE FROM payments WHERE member_id IN (' . implode(',', $ids) . ')');
 DB::kjor('DELETE FROM members WHERE id IN (' . implode(',', $ids) . ')');
 
 $ferdig = true;

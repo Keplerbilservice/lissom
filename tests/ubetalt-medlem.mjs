@@ -6,7 +6,7 @@ const browser=await chromium.launch({args:['--host-resolver-rules=MAP lokal.liss
 try {for(const width of [390,1280]){
  const s=fixture('seed');fixture('member',s);const c=await browser.newContext({viewport:{width,height:900}});
  try {
- const kontroll=execFileSync('php',['tests/betalt-periode.php',JSON.stringify(s)],{encoding:'utf8'}).trim();assert.match(kontroll,/^15 betalingsperiodekontroller bestått$/);console.log(kontroll);
+ const kontroll=execFileSync('php',['tests/betalt-periode.php',JSON.stringify(s)],{encoding:'utf8'}).trim();assert.match(kontroll,/^24 betalingsperiodekontroller bestått$/);console.log(kontroll);
  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
  await p.goto('http://lokal.lissom.no:8140/min-side');await p.getByRole('heading',{name:'Medlemskapet venter på betaling'}).waitFor();
  const før=await p.evaluate(async()=>{const meg=await fetch('/api/meg.php').then(r=>r.json()),chat=await fetch('/api/chat.php');const inn=await fetch('/api/stempling.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'inn'})});return {meg,chat:chat.status,inn:inn.status};});

@@ -147,8 +147,8 @@ $betal = static function (int $id, int $av, string $naar, ?string $fra) use ($ta
 $idag = gmdate('Y-m-d');
 $betal($id, $av, gmdate('Y-m-d', strtotime('-20 days')), null);
 $siste = Medlemskap::sisteBetalinger([$id])[$id];
-$forrigeSlutt = gmdate('Y-m-d', strtotime(gmdate('Y-m-d', strtotime('-20 days')) . ' +1 month'));
-sjekk('uten gjelder_fra dekker betalingen én maaned fra betalingsdagen', Medlemskap::dekkerTil($siste) === $forrigeSlutt,
+$forrigeSlutt = (new DateTimeImmutable(gmdate('Y-m-d', strtotime('-20 days'))))->modify('first day of next month')->format('Y-m-d');
+sjekk('uten gjelder_fra dekker betalingen betalingsmåneden', Medlemskap::dekkerTil($siste) === $forrigeSlutt,
     Medlemskap::dekkerTil($siste));
 // Fornyelsen betalt i dag, gjeldende fra der forrige slutter.
 $betal($id, $av, $idag, $forrigeSlutt);

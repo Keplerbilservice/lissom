@@ -303,9 +303,8 @@ final class Medlemskap
     }
 
     /**
-     * Siste dag en betaling for et loepende medlemskap dekker (Y-m-d): én
-     * maaned fra dagen perioden starter — «gjelder_fra», ellers dagen den
-     * ble betalt.
+     * Første dag etter den betalte kalendermåneden (Y-m-d).
+     * gjelder_fra bestemmer måneden; ellers brukes betalingsdatoen i Oslo.
      *
      * @param array<string,mixed> $betaling
      */
@@ -313,9 +312,11 @@ final class Medlemskap
     {
         $fra = trim((string) ($betaling['gjelder_fra'] ?? ''));
         if ($fra === '') {
-            $fra = substr((string) $betaling['created_at'], 0, 10);
+            $fra = (new DateTimeImmutable((string) $betaling['created_at'], new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
         }
-        return gmdate('Y-m-d', strtotime($fra . ' +1 month'));
+        return (new DateTimeImmutable($fra, new DateTimeZone('Europe/Oslo')))
+            ->modify('first day of next month')->format('Y-m-d');
     }
 
     /** Betalt tilgang, uavhengig av om avtalen fortsatt står som aktiv. */
@@ -330,6 +331,8 @@ final class Medlemskap
         $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $id = (int) ($medlem['id'] ?? 0);
         if ($id <= 0) return false;
+        $avtale = self::loepende($id);
+        $fastTrekk = $avtale !== null && trim((string) ($avtale['vipps_agreement_id'] ?? '')) !== '';
         $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
         if ($plan === null) return false;
         $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
@@ -349,11 +352,16 @@ final class Medlemskap
                 $fra = (new DateTimeImmutable((string) $betaling['created_at'], new DateTimeZone('UTC')))
                     ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
             }
+            if (!$fastTrekk && (int) ($plan['engangs'] ?? 0) !== 1) {
+                $fra = (new DateTimeImmutable($fra))->modify('first day of this month')->format('Y-m-d');
+            }
             if ($fra > $idag) continue;
             if ((int) ($plan['engangs'] ?? 0) === 1) {
                 $til = (string) ($medlem['slutt_dato'] ?? '');
                 if ($til !== '' && $idag <= $til) return true;
-            } elseif ($idag < self::dekkerTil(['gjelder_fra' => $fra])) {
+            } elseif ($idag < ($fastTrekk
+                ? self::nesteTrekkdato($fra, isset($avtale['trekk_dag']) ? (int) $avtale['trekk_dag'] : null)
+                : self::dekkerTil(['gjelder_fra' => $fra]))) {
                 return true;
             }
         }
@@ -980,9 +988,8 @@ final class Medlemskap
             return $ut('betalt', 'Betalt ' . $kort($betaltDen));
         }
 
-        // Loepende medlemskap: betalingen dekker én maaned fram — fra dagen
-        // perioden starter. En fornyelse betalt foer forfall gjelder fra der
-        // forrige periode slutter (se fornyPeriode()).
+        // Gjør opp selv: betalingen dekker sin kalendermåned. En fornyelse
+        // før månedsskiftet gjelder neste måned, uten å overføre månedstimer.
         $dekkerTil = self::dekkerTil($siste);
         if ($dekkerTil <= $idag) {
             return $ut('forfalt', 'Forfalt ' . $kort($dekkerTil)

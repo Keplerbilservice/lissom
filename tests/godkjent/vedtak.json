@@ -2593,6 +2593,23 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "maanedstimer-og-overfort-ekstrapakke",
+            "dato": "2026-10-01",
+            "hva": "Eieren: Månedstimer krever ny betaling ved månedsskiftet. «ekstra timepakken skal overføres til andre måneder». Gjør opp selv følger kalendermåneden; fast trekk beholder foreløpig sin betalingsperiode mens egen avklaring pågår. Ekstra timepakker regnes ikke som betaling for medlemskapet.",
+            "hvor": "Medlemstilgang, Min side og betalingsstatus",
+            "kode": [
+                {
+                    "fil": "tests/betalt-periode.php",
+                    "finnes": [
+                        "Kjøp midt i september utløper 1. oktober",
+                        "Ekstra timepakkens seks timer overføres til neste måned",
+                        "Overførte ekstra timer åpner ikke et ubetalt månedsmedlemskap",
+                        "Fast trekk beholder betalt periode over månedsskiftet"
+                    ]
+                }
+            ]
         }
     ]
 }

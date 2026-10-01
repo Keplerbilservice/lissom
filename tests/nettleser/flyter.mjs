@@ -1339,20 +1339,20 @@ await flyt('Medlemsreise 5: si opp, forny og admin som endrer', async () => {
   // som loeper, fra der forrige betaling slutter.
   sjekk('«Forny» starter betaling for neste periode', !!(f && f.url && f.fornyelse), JSON.stringify(f).slice(0, 140));
   const fb = db("SELECT vipps_reference AS ref, gjelder_fra FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1", { s: m.avtale })[0] || {};
-  const nesteFra = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +1 month'));`);
+  const nesteFra = php(`return (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('first day of this month')->modify('+1 month')->format('Y-m-d');`);
   sjekk('… på den samme avtalen, fra neste periode (inneværende er betalt)', !!fb.ref
     && String(fb.gjelder_fra).slice(0, 10) === nesteFra, JSON.stringify(fb));
   await retur(fb.ref);
   const f2 = await api(p, '/api/medlemskap.php', { handling: 'start', plan: liten.navn });
   const fb2 = db("SELECT vipps_reference AS ref, gjelder_fra FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1", { s: m.avtale })[0] || {};
-  const nesteNeste = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +2 month'));`);
+  const nesteNeste = php(`return (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('first day of this month')->modify('+2 month')->format('Y-m-d');`);
   sjekk('… neste «Forny» gjelder fra der forrige periode slutter', !!(f2 && f2.url) && String(fb2.gjelder_fra).slice(0, 10) === nesteNeste,
     JSON.stringify(fb2));
   await retur(fb2.ref);
   const liste0 = await (async () => { const a = await side('admin'); await gaa(a, '/admin/oversikt', 1500);
     const l = await api(a, '/api/admin/medlemmer.php'); await a.context().close(); return l; })();
   const r0 = (Array.isArray(liste0) ? liste0 : (liste0.medlemmer || Object.values(liste0).find(Array.isArray) || [])).find(x => x.id === m.id) || {};
-  const nesteForfall = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +3 month'));`);
+  const nesteForfall = php(`return (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('first day of this month')->modify('+3 month')->format('Y-m-d');`);
   sjekk('… admin: betalt, neste forfall etter inneværende og to fornyelser', r0.betaling === 'betalt'
     && String(r0.betalingTekst || '').includes(php(`return Booking::norskDatoKort('${nesteForfall} 12:00:00');`)), r0.betalingTekst || '');
   sjekk('… og fortsatt én aktiv avtale', Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: m.id })) === 1);

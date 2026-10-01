@@ -189,7 +189,14 @@ if (Foresporsel::tekst('handling') === 'kvittering') {
     Svar::ok(['beskjed' => 'Kvitteringen er sendt på nytt.']);
 }
 
-if ($betaling['status'] !== 'betalt' && $betaling['status'] !== 'delvis_refundert') {
+$operasjonId = Foresporsel::tekst('operasjonId');
+if (!preg_match('/^[a-zA-Z0-9_-]{16,64}$/', $operasjonId)) {
+    Svar::feil('Vipps godtok ikke refusjonen. Prøv igjen, eller sjekk i portalen.', 409);
+}
+$replay = DB::en("SELECT id FROM payment_refunds WHERE payment_id = :p
+    AND (client_operation_id = :o OR (client_operation_id IS NULL AND status = 'pending')) LIMIT 1",
+    ['p' => $betaling['id'], 'o' => $operasjonId]);
+if ($replay === null && $betaling['status'] !== 'betalt' && $betaling['status'] !== 'delvis_refundert') {
     Svar::feil('Denne betalingen kan ikke refunderes — den er ikke gjennomfort.', 409);
 }
 
@@ -206,22 +213,20 @@ $maks = (int) $betaling['belop_ore'] - (int) $betaling['refundert_ore'];
 $onsket = Foresporsel::heltall('belop') * 100;   // kroner inn, ore ut
 $belop = $onsket > 0 ? min($onsket, $maks) : $maks;
 
-if ($belop <= 0) {
+if ($replay === null && $belop <= 0) {
     Svar::feil('Hele beløpet er allerede refundert.', 409);
 }
 
 try {
-    Vipps::refunder($referanse, $belop);
+    $resultat = Booking::refunderBetaling((int) $betaling['id'], $onsket, $operasjonId);
+    $belop = $resultat['belop'];
 } catch (Throwable $e) {
     logg_feil('Refusjon feilet for ' . $referanse, $e);
     Svar::feil('Vipps godtok ikke refusjonen. Prøv igjen, eller sjekk i portalen.', 502);
 }
 
-$nyRefundert = (int) $betaling['refundert_ore'] + $belop;
-DB::oppdater('payments', [
-    'refundert_ore' => $nyRefundert,
-    'status'        => $nyRefundert >= (int) $betaling['belop_ore'] ? 'refundert' : 'delvis_refundert',
-], ['id' => $betaling['id']]);
+$nyRefundert = $resultat['refundert'];
+$maks = $belop + $resultat['gjenstaar'];
 
 // Booking foelger betalingen — men bare naar hele beloepet er sendt tilbake.
 //

@@ -837,7 +837,8 @@ final class Booking
     public static function faarMedlemsrabatt(?array $medlem): bool
     {
         return $medlem !== null
-            && in_array((string) ($medlem['status'] ?? 'ingen'), ['aktiv', 'prove'], true);
+            && in_array((string) ($medlem['status'] ?? 'ingen'), ['aktiv', 'prove'], true)
+            && Medlemskap::harBetaltPeriode($medlem);
     }
 
     /**
@@ -1274,6 +1275,97 @@ final class Booking
      * Markerer en booking som betalt. Kalles fra webhook og fra returen —
      * begge kan komme først, og begge kan komme flere ganger.
      */
+    /**
+     * Serialiserer refusjon paa betalingsraden, og lagrer operasjonen foer
+     * nettverkskallet. Etter timeout brukes samme operasjon, aldri en ny.
+     * $onsket = 0 betyr hele restbeloepet.
+     * @return array{belop:int,refundert:int,gjenstaar:int}
+     */
+    public static function refunderBetaling(int $paymentId, int $onsket = 0, ?string $operasjonId = null, ?callable $claim = null): array
+    {
+        $laas = 'lissom-refund-' . $paymentId;
+        if ((int) DB::verdi('SELECT GET_LOCK(:n, 0)', ['n' => $laas]) !== 1) {
+            throw new RuntimeException('Refusjon behandles allerede.');
+        }
+        try {
+            $op = DB::iTransaksjon(static function () use ($paymentId, $onsket, $operasjonId, $claim): array {
+                $p = DB::en('SELECT * FROM payments WHERE id = :i FOR UPDATE', ['i' => $paymentId]);
+                if ($claim !== null) { $claim(); }
+                if ($operasjonId !== null) {
+                    $tidligere = DB::en('SELECT * FROM payment_refunds WHERE payment_id = :p AND client_operation_id = :o', ['p' => $paymentId, 'o' => $operasjonId]);
+                    if ($tidligere !== null && (int) $tidligere['requested_ore'] !== $onsket) {
+                        throw new RuntimeException('Operasjonen har et annet beloep.');
+                    }
+                    if ($tidligere !== null && $tidligere['status'] === 'done') {
+                        return $tidligere + ['replay' => true];
+                    }
+                }
+                if ($p === null || (string) $p['type'] === 'manuell'
+                    || !in_array((string) $p['status'], ['betalt', 'delvis_refundert', 'refundert'], true)) {
+                    throw new RuntimeException('Betalingen kan ikke refunderes.');
+                }
+                $avtale = (string) ($p['type'] === 'recurring_charge'
+                    ? DB::verdi('SELECT vipps_agreement_id FROM subscriptions WHERE id = :i', ['i' => $p['subscription_id']]) : '');
+                $rute = ['referanse' => (string) $p['vipps_reference'], 'type' => (string) $p['type'],
+                    'avtale' => $avtale, 'trekk' => (string) ($p['vipps_psp_ref'] ?? '')];
+                if ($p['type'] === 'recurring_charge' && ($avtale === '' || $rute['trekk'] === '')) {
+                    throw new RuntimeException('Trekket hoerer ikke til en avtale i Vipps.');
+                }
+                $pending = DB::en("SELECT * FROM payment_refunds WHERE payment_id = :p AND status = 'pending' ORDER BY id LIMIT 1", ['p' => $paymentId]);
+                if ($pending !== null) {
+                    if ($operasjonId !== null && $pending['client_operation_id'] !== $operasjonId) {
+                        if ($pending['client_operation_id'] !== null) {
+                            throw new RuntimeException('Refusjon behandles allerede.');
+                        }
+                        // Admin kan fortsette en avbestilling som mistet svar.
+                        DB::oppdater('payment_refunds', ['client_operation_id' => $operasjonId,
+                            'requested_ore' => $onsket], ['id' => $pending['id']]);
+                    }
+                    // Ingen ny eller stoerre operasjon mens utfallet er uklart.
+                    return $pending + $rute;
+                }
+                $foer = (int) $p['refundert_ore'];
+                $rest = max(0, (int) $p['belop_ore'] - $foer);
+                $belop = $onsket > 0 ? min($onsket, $rest) : $rest;
+                if ($belop <= 0) {
+                    return ['id' => 0, 'amount_ore' => 0, 'before_ore' => $foer] + $rute;
+                }
+                $id = DB::settInn('payment_refunds', ['payment_id' => $paymentId, 'before_ore' => $foer, 'amount_ore' => $belop,
+                    'client_operation_id' => $operasjonId, 'requested_ore' => $onsket]);
+                return ['id' => $id, 'amount_ore' => $belop, 'before_ore' => $foer] + $rute;
+            });
+            if (!empty($op['replay'])) {
+                return ['belop' => (int) $op['amount_ore'], 'refundert' => (int) $op['result_refunded_ore'],
+                    'gjenstaar' => (int) $op['result_remaining_ore']];
+            }
+            if ((int) $op['id'] > 0) {
+                if ($op['type'] === 'recurring_charge') {
+                    Vipps::refunderTrekk($op['avtale'], $op['trekk'], (int) $op['amount_ore'], $op['referanse'], 'refund:' . $op['id']);
+                } else {
+                    Vipps::refunder((string) $op['referanse'], (int) $op['amount_ore'], 'refund:' . $op['id']);
+                }
+            }
+            return DB::iTransaksjon(static function () use ($paymentId, $op): array {
+                $p = DB::en('SELECT * FROM payments WHERE id = :i FOR UPDATE', ['i' => $paymentId]);
+                // Webhook kan ha bekreftet samme aggregate mens kallet gikk.
+                $refundert = max((int) $p['refundert_ore'], (int) $op['before_ore'] + (int) $op['amount_ore']);
+                $rest = max(0, (int) $p['belop_ore'] - $refundert);
+                if ((int) $op['id'] > 0) {
+                    DB::oppdater('payments', ['refundert_ore' => $refundert,
+                        'status' => $rest === 0 ? 'refundert' : 'delvis_refundert'], ['id' => $paymentId]);
+                    DB::oppdater('payment_refunds', ['status' => 'done', 'completed_at' => gmdate('Y-m-d H:i:s'),
+                        'result_refunded_ore' => $refundert, 'result_remaining_ore' => $rest], ['id' => $op['id']]);
+                }
+                if ($rest === 0) {
+                    DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+                }
+                return ['belop' => (int) $op['amount_ore'], 'refundert' => $refundert, 'gjenstaar' => $rest];
+            });
+        } finally {
+            DB::verdi('SELECT RELEASE_LOCK(:n)', ['n' => $laas]);
+        }
+    }
+
     public static function markerBetalt(string $referanse): bool
     {
         $betaltId = 0;
@@ -1282,7 +1374,7 @@ final class Booking
                 'SELECT id, status, belop_ore FROM payments WHERE vipps_reference = :r FOR UPDATE',
                 ['r' => $referanse]
             );
-            if ($betaling === null || $betaling['status'] === 'betalt') {
+            if ($betaling === null || in_array($betaling['status'], ['betalt', 'delvis_refundert', 'refundert'], true)) {
                 return false; // ukjent, eller allerede håndtert
             }
 

@@ -15,8 +15,8 @@
 
 import fs from 'node:fs';
 
-const sti = new URL('../lissom-2108.html', import.meta.url).pathname;
-const s = fs.readFileSync(sti, 'utf8');
+const sti = new URL('../lissom-2108.html', import.meta.url);
+const s = fs.readFileSync(sti, 'utf8').replace(/\r\n/g, '\n');
 
 const a = s.indexOf('const SIDEINNHOLD = {');
 const b = s.indexOf('\n};\n', a) + 4;

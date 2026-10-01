@@ -17,7 +17,11 @@ final class DB
 
         $vert = Config::hent('db_vert', 'localhost');
         $navn = Config::krev('db_navn');
-        $dsn  = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $vert, $navn);
+        $port = (int) Config::hent('db_port', 3306);
+        if ($port < 1 || $port > 65535) {
+            throw new RuntimeException('Ugyldig databaseport.');
+        }
+        $dsn  = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $vert, $port, $navn);
 
         self::$pdo = new PDO($dsn, Config::krev('db_bruker'), Config::krev('db_passord'), [
             // Ekte forberedte spørringer, ikke emulerte. Uten dette sender PDO

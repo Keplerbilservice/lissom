@@ -1,6 +1,15 @@
 <?php
 require dirname(__DIR__) . '/app/bootstrap.php';
 
+/** Kildekontroller skal gi samme resultat med Windows- og Unix-linjeskift. */
+function les_testfil(string $sti): string
+{
+    $innhold = file_get_contents($sti);
+    if ($innhold === false) {
+        throw new RuntimeException('Kunne ikke lese testfil: ' . $sti);
+    }
+    return str_replace("\r\n", "\n", $innhold);
+}
 $ok = 0; $feil = [];
 function sjekk(string $hva, bool $stemmer, string $detalj = ''): void {
     global $ok, $feil;
@@ -43,6 +52,11 @@ function nullstill(): void
         : [];
 
     if ($bookinger) {
+        // Adminvarsler har ikke testkundens e-post. Rydd ogsaa disse foer
+        // bookingen forsvinner, ellers blokkerer innholdsdedupliseringen
+        // samme syntetiske booking ved neste kjoring innen femten minutter.
+        DB::kjor("DELETE FROM notifications WHERE ref_type = 'booking' AND ref_id IN ("
+            . implode(',', $bookinger) . ')');
         DB::kjor('DELETE FROM bookings WHERE id IN (' . implode(',', $bookinger) . ')');
     }
     if ($betalinger) {
@@ -122,12 +136,12 @@ sjekk('bollekurset heter «Lag din egen bolle»',
 // flyttet, maa .htaccess sende den videre — ellers er lenkene doede.
 if ($boller !== null && $boller['slug'] === 'lag-din-egen-bolle') {
     sjekk('den gamle bolleadressen sendes videre',
-        str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'),
+        str_contains(les_testfil(dirname(__DIR__) . '/.htaccess'),
                      'kurs/kurs-boller'));
 }
 // Kursteksten henger paa navnet. Byttes det ene uten det andre, faller
 // kurssida tilbake paa den generelle plateteknikk-malen.
-$malFil = file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php');
+$malFil = les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php');
 sjekk('kursteksten folger med det nye navnet',
     str_contains($malFil, "'Lag din egen bolle' => \$bolle,")
     && str_contains($malFil, "'Kurs boller'        => \$bolle,"));
@@ -630,7 +644,7 @@ sjekk('… med harde mellomrom, saa linja ikke brekker',
 // CSV-ene til regnskapsforeren har hver sin egen formaterer uten tusenskille
 // i det hele tatt. De skal ikke faa harde mellomrom inn i tallkolonnene.
 foreach (['dagsoppgjor', 'transaksjoner', 'deltakerliste'] as $csv) {
-    $f = file_get_contents(dirname(__DIR__) . '/api/admin/' . $csv . '.php');
+    $f = les_testfil(dirname(__DIR__) . '/api/admin/' . $csv . '.php');
     sjekk('CSV-en i ' . $csv . ' har ikke tusenskille i det hele tatt',
         str_contains($f, "number_format(\$ore / 100, 2, ',', '')"));
 }
@@ -660,7 +674,7 @@ sjekk('innlogget kunde er ikke medlem', er_aktivt_medlem($hent()) === false, $he
 
 foreach (['prove', 'aktiv', 'pause'] as $st) {
     DB::oppdater('members', ['status' => $st], ['id' => $kundeId]);
-    sjekk("status «{$st}» gir tilgang", er_aktivt_medlem($hent()) === true);
+    sjekk("status «{$st}» uten betaling gir ikke tilgang", er_aktivt_medlem($hent()) === false);
 }
 
 DB::oppdater('members', ['status' => 'oppsagt'], ['id' => $kundeId]);
@@ -685,7 +699,7 @@ sjekk('soknad apner ikke medlemsdelen i seg selv', er_aktivt_medlem($hent()) ===
 
 DB::oppdater('membership_applications', ['status' => 'godkjent'], ['id' => $soknadId]);
 DB::oppdater('members', ['status' => 'prove', 'medlemskap_type' => '30 timer'], ['id' => $kundeId]);
-sjekk('godkjenning apner medlemsdelen', er_aktivt_medlem($hent()) === true);
+sjekk('godkjenning alene apner ikke medlemsdelen uten betaling', er_aktivt_medlem($hent()) === false);
 
 // Medlemsarrangementene er gratis og skjult fra den offentlige lista. Skjult
 // er ikke stengt — book.php slaar opp temaet, og det oppslaget testes her.
@@ -1350,7 +1364,7 @@ sjekk('det finnes medlemskap aa soke om', count($planer) > 0, implode(', ', $pla
 // liste i nettsida med «30 timer», mens basen heter «Basis 30» — soknaden ble
 // sendt med et medlemskap som ikke fantes.
 $iSida = [];
-$html = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$html = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 if (preg_match('/bmTyper: this\.medlemsplaner\(\)/', $html) === 1) {
     sjekk('skjemaet henter medlemskapene fra basen, ikke fra en fast liste', true);
 } else {
@@ -1549,7 +1563,7 @@ sjekk('et vippskrav uten telefonnummer avvises for det gaar til Vipps', $utenNr)
 // Regelen som fjerner gjentakelsen. Den staar i nettsida; her kontrolleres
 // at den finnes og at kortet bruker den — ellers staar «Passer for: deg som
 // deg som er nysgjerrig» der igjen ved neste endring.
-$sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('nettsida har regelen som fjerner gjentatt «Passer for»',
     str_contains($sida, 'utenGjentakelse(tekst, ledd)'));
 sjekk('medlemskapskortet bruker den',
@@ -1579,7 +1593,7 @@ sjekk('ingen adresse staar to ganger i adminlista',
 //
 // «admin_eposter» i secrets.php slaar fortsatt begge av og bestemmer lista
 // selv — det er der en som vil ha kontroll setter den.
-$varselFil = file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+$varselFil = les_testfil(dirname(__DIR__) . '/app/lib/varsler.php');
 sjekk('adminvarsler gaar til adressen som staar i admin',
     in_array(
         (string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no')),
@@ -1598,9 +1612,9 @@ sjekk('… mens admin_eposter i fila slaar begge av',
 // Rollen avgjor fortsatt hvem som kommer INN i admin — det er en annen sak,
 // og den skal ikke ryke med her.
 sjekk('rollen avgjor fortsatt adgangen til admin',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/auth.php'), "rolle = 'admin'"));
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/auth.php'), "rolle = 'admin'"));
 
-$betFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+$betFil = les_testfil(dirname(__DIR__) . '/api/admin/kursbetaling.php');
 
 // ── Betaling registrert for haand ────────────────────────────────────────
 //
@@ -1718,7 +1732,7 @@ sjekk('ruta paastaar ikke aa vite hvem som registrerte den',
 // lages for bookingen — den maa ha en referanse for kunden sendes til Vipps —
 // saa koblingen settes rett etter at bookingen finnes.
 sjekk('en ny Vipps-betaling kobles til paameldingen med det samme',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/booking.php'),
         "DB::oppdater('payments', ['booking_id' => \$bookingId], ['id' => \$paymentId])"));
 
 // Endepunktet skal ikke ha sine egne regler ved siden av bibliotekets.
@@ -1729,11 +1743,11 @@ sjekk('kursbetaling.php bruker reglene i Booking, ikke sine egne',
 // Regelen er den samme — referansen skal si at dette ikke er Vipps — men den
 // staar ett sted nå, og det er der den skal sjekkes.
 sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/booking.php'),
         "'MANUELL-' . Vipps::nyReferanse"));
 sjekk('begge veiene til «betalt» lager den samme betalingsraden',
     str_contains($betFil, 'Booking::manuellBetaling(')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php'),
         'Booking::manuellBetaling('));
 
 // ── Kursholder paa den enkelte datoen ────────────────────────────────────
@@ -1808,16 +1822,16 @@ sjekk('begge veiene til «betalt» lager den samme betalingsraden',
 
 // Endepunktet skal avvise en kursholder som ikke finnes — ellers ville datoen
 // pekt paa noe som ikke er der, og navnet blitt borte uten forklaring.
-$kursFil = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$kursFil = les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('kurs.php slaar opp kursholderen for den lagres',
     str_contains($kursFil, "Svar::feil('Fant ikke kursholderen.')"));
 sjekk('en ny dato foreslaar verkstedets standard',
     str_contains($kursFil, 'Kursholder::forKurs($kursId)')
     && str_contains(
-        file_get_contents(dirname(__DIR__) . '/app/lib/kursholder.php'),
+        les_testfil(dirname(__DIR__) . '/app/lib/kursholder.php'),
         "SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1"
     ));
-$khFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursholdere.php');
+$khFil = les_testfil(dirname(__DIR__) . '/api/admin/kursholdere.php');
 sjekk('standarden byttes i én transaksjon, saa bare én staar igjen',
     str_contains($khFil, "UPDATE kursholdere SET standard = 0 WHERE standard = 1"));
 sjekk('en som har sluttet kan ikke vaere standard',
@@ -1885,8 +1899,8 @@ sjekk('en som har sluttet kan ikke vaere standard',
     DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
 })();
 
-$vlFil  = file_get_contents(dirname(__DIR__) . '/api/venteliste.php');
-$vlAdm  = file_get_contents(dirname(__DIR__) . '/api/admin/venteliste.php');
+$vlFil  = les_testfil(dirname(__DIR__) . '/api/venteliste.php');
+$vlAdm  = les_testfil(dirname(__DIR__) . '/api/admin/venteliste.php');
 sjekk('ventelista lagrer bare en dato som hoerer til kurset',
     str_contains($vlFil, 'SELECT id FROM course_sessions WHERE id = :o AND course_id = :k'));
 sjekk('dublettsjekken gaar paa datoen naar den er kjent',
@@ -1902,7 +1916,7 @@ sjekk('kvelden hen venter paa foreslaas foerst naar plassen gis',
 // konto — de fleste av dem — hadde ingen rute aa aapne: navnet i lista var
 // dodt, og verkstedet kom ikke inn til historikken, kursbeviset eller
 // notatet. Naa kan den ogsaa aapnes av en paamelding.
-$medFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medFil = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('personruta kan aapnes av en paamelding, ikke bare av en konto',
     str_contains($medFil, "Foresporsel::heltall('booking') > 0"));
 sjekk('en paamelding med konto aapner kontoen, ikke en gjest',
@@ -1926,7 +1940,7 @@ sjekk('endringsloggen leses ut av audit_log',
 
 // Notatet ligger paa medlemsraden. En gjest har ingen, og da skal skjermen
 // ikke prove aa lagre paa en konto som ikke finnes.
-$sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('notatet lagres bare naar personen faktisk har en konto',
     str_contains($sida, "const id = this.state.personMedlemId;"));
 sjekk('deltakerraden aapner personen ogsaa uten konto',
@@ -1939,7 +1953,7 @@ sjekk('deltakerraden aapner personen ogsaa uten konto',
 // hendelsene fra basen. Endepunktet er et LESEENDEPUNKT — alt som skal
 // endres gaar til kurs.php, pamelding.php og venteliste.php, saa reglene
 // deres gjelder ogsaa naar kalenderen kobles i fase 6.
-$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$kalFil = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('kalenderen er et leseendepunkt', str_contains($kalFil, "Foresporsel::krevMetode('GET')"));
 sjekk('kalenderen krever admin', str_contains($kalFil, 'krev_admin()'));
 sjekk('deltakerne hentes i ett kall, ikke ett per okt',
@@ -1953,7 +1967,7 @@ sjekk('stengte dager leses av apningstider, ikke av en ny tabell',
 sjekk('innsjekk leses av check_ins, ikke av den tomme checkins',
     str_contains($kalFil, 'FROM check_ins') && !str_contains($kalFil, 'FROM checkins'));
 
-$sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kalenderen henter fra basen, ikke fra en generator',
     str_contains($sida, "fetch('/api/admin/kalender.php?fra=") && !str_contains($sida, 'klGen(y, m) {'));
 sjekk('fase 5 skriver ikke — laget med lokale endringer tegnes ikke',
@@ -2019,7 +2033,7 @@ sjekk('stengte dager leses av det serveren sier',
 sjekk('klMin finnes, saa dra-og-slipp av et kurs ikke stopper',
     str_contains($sida, 'klMin(t) {'));
 
-$kursFil6 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$kursFil6 = les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
 
 // ── Resten av fase 6 ─────────────────────────────────────────────────────
 //
@@ -2084,7 +2098,7 @@ sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
 // Kalenderabonnementet tok med hver av dem, og telefonen til eieren fylte seg
 // med tomme oppforinger: 25 Paint on Pots i basen her, ingen med
 // paameldte. Da druknet de ekte kursene.
-$icsFil = file_get_contents(dirname(__DIR__) . '/api/kalender-abonnement.php');
+$icsFil = les_testfil(dirname(__DIR__) . '/api/kalender-abonnement.php');
 sjekk('tomme aapningstider staar ikke i kalenderabonnementet',
     str_contains($icsFil, 'cs.fra_apningstid = 0')
     && str_contains($icsFil, 'WHERE b2.course_session_id = cs.id'));
@@ -2102,7 +2116,7 @@ sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
 // 301 ville den vaert en blindvei: 200, riktig tittel i toppen, og «siden
 // finnes ikke» under — samme fella som /kurs/lag-din-egen-bolle sto i for
 // migrasjon 091 og 092.
-$ht = file_get_contents(dirname(__DIR__) . '/.htaccess');
+$ht = les_testfil(dirname(__DIR__) . '/.htaccess');
 sjekk('den gamle bolleadressen gaar videre med 301',
     str_contains($ht, 'RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]'));
 // Regelen maa staa over den som sender alt annet til side.php, ellers ville
@@ -2120,7 +2134,7 @@ sjekk('omdirigeringen staar for oppsamlingsregelen',
 // «courses.slug» er unik, og kladden 091 satte til side holder fortsatt paa
 // «lag-din-egen-bolle». Settes den nye adressen for den gamle raden har
 // sluppet den, feiler hele migrasjonen paa den unike noekkelen.
-$m92 = file_get_contents(dirname(__DIR__) . '/db/migrations/092_bolleadressen.sql');
+$m92 = les_testfil(dirname(__DIR__) . '/db/migrations/092_bolleadressen.sql');
 sjekk('kladden slipper adressen for det publiserte kurset tar den',
     strpos($m92, "SET slug = ''lag-din-egen-bolle-gammel''")
     < strpos($m92, "SET slug = ''lag-din-egen-bolle'' WHERE id = @kurs"));
@@ -2141,7 +2155,7 @@ sjekk('slug er unik, saa to kurs ikke kan dele adresse',
 // haand, men to sto igjen som ren jpeg — og da hadde .htaccess ingenting aa
 // servere. Verre enn de kilobytene: det neste bildet noen laster opp ville
 // havnet i samme hull.
-$bildFil = file_get_contents(dirname(__DIR__) . '/bin/bilder.php');
+$bildFil = les_testfil(dirname(__DIR__) . '/bin/bilder.php');
 sjekk('bildeskriptet lager webp ogsaa for originalen',
     str_contains($bildFil, "\$tvilling = \$sti . '.webp';")
     && str_contains($bildFil, 'imagewebp($im, $tvilling, 78);'));
@@ -2171,7 +2185,7 @@ sjekk('bare delingsbildet mangler en webp-tvilling', (static function (): bool {
 //
 // Proeven staar igjen, men snudd: sperren skal vaere borte, og skal ikke
 // snike seg inn igjen uten at noen ser det.
-$kursFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$kursFil2 = les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('ingen sperre mot samme kursholder paa to okter samtidig',
     !str_contains($kursFil2, '$krevLedigHolder(')
     && !str_contains($kursFil2, '$holderOpptatt = static')
@@ -2179,7 +2193,7 @@ sjekk('ingen sperre mot samme kursholder paa to okter samtidig',
     && !str_contains($kursFil2, 'står allerede på'));
 // Hjelperen i Samlinger fantes bare for den sperren.
 sjekk('samlinger har ingen opptattMellom igjen',
-    !str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/samlinger.php'), 'opptattMellom'));
+    !str_contains(les_testfil(dirname(__DIR__) . '/app/lib/samlinger.php'), 'opptattMellom'));
 // Kursholderen skal fortsatt kunne settes og endres paa en dato.
 sjekk('kursholder kan fortsatt velges paa en dato',
     str_contains($kursFil2, "\$endring['kursholder_id'] = \$holderId('kursholderId');")
@@ -2200,7 +2214,7 @@ sjekk('kurskortet finner kurset paa nummer, ikke paa navn',
     str_contains($sida, 'const kat = (k.katId ? katalog.find(x => x.id === k.katId) : null)')
     && str_contains($sida, '|| katalog.find(x => x.tittel === tittel);'));
 // Dubletten selv ryddes av migrasjon 091 — men bare naar den er tom.
-$m91 = file_get_contents(dirname(__DIR__) . '/db/migrations/091_ett_bollekurs.sql');
+$m91 = les_testfil(dirname(__DIR__) . '/db/migrations/091_ett_bollekurs.sql');
 sjekk('migrasjon 091 tar bare ned et kurs uten paameldte og venteliste',
     str_contains($m91, "WHERE b.course_id = @id AND b.status <> 'avbestilt'")
     && str_contains($m91, 'SELECT COUNT(*) FROM waitlist w WHERE w.course_id = @id')
@@ -2213,7 +2227,7 @@ sjekk('kurset settes til kladd, det slettes ikke',
 // Sitemap tar bare med publiserte kurs, saa et kladd forsvinner derfra av seg
 // selv.
 sjekk('sitemap tar bare med publiserte kurs',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/sitemap.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/sitemap.php'),
                  "WHERE c.status = 'publisert'"));
 
 // ── Oppsigelse: én regel, uansett hvem som sier opp ──────────────────────
@@ -2221,7 +2235,7 @@ sjekk('sitemap tar bare med publiserte kurs',
 // Eieren, 29. august: «settes til den siste dagen i maaneden man sier opp,
 // pluss oppsigelsestiden». Den forrige regelen la maanedene rett paa dagen i
 // dag, saa to som sa opp samme maaned fikk hver sin sluttdato.
-$medlFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$medlFil = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('sluttdatoen er siste dag i maaneden pluss oppsigelsestida',
     str_contains($medlFil, "->modify('first day of this month')")
     && str_contains($medlFil, "->modify('+' . (\$mnd + 1) . ' months')")
@@ -2250,7 +2264,7 @@ sjekk('sluttdatoen regnes i norsk tid',
 // Verkstedets egen avslutning fulgte en annen regel: sluttdato i dag, og
 // medlemmet mistet tilgangen samme sekund. Loep det en Vipps-avtale, ble hele
 // avslutningen avvist, saa eieren maatte inn i Vipps for haand.
-$medFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medFil = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('verkstedets avslutning bruker den samme regelen',
     str_contains($medFil, '$slutter = Medlemskap::sluttdato(')
     && !str_contains($medFil, "'slutt_dato' => date('Y-m-d'),"));
@@ -2262,7 +2276,7 @@ sjekk('en loepende Vipps-avtale stopper ikke lenger avslutningen',
 sjekk('medlemmet staar aktivt ut oppsigelsestida',
     str_contains($medFil, "DB::oppdater('members', ['slutt_dato' => \$slutter], ['id' => \$id]);"));
 sjekk('cron avslutter naar sluttdatoen har passert',
-    str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/bin/cron.php'),
                  'AND slutt_dato < CURDATE()'));
 // Aapnes medlemskapet igjen, maa oppsigelsen trekkes tilbake ogsaa paa
 // avtalen — ellers stopper cron den i Vipps paa den gamle datoen.
@@ -2271,7 +2285,7 @@ sjekk('gjenaapning trekker oppsigelsen tilbake',
 
 // Medlemmet skal se datoen foer det bekrefter, ikke etterpaa.
 sjekk('medlemmet faar datoen foer det sier opp',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/medlemskap.php'),
                  "'sluttHvisOppsagt' => Booking::norskDatoKort(")
     && str_contains($sida, 'const naar = (a && (a.slutter || a.sluttHvisOppsagt))'));
 // «Én maaned» sto fast i teksten. Tallet hoerer til planen.
@@ -2286,7 +2300,7 @@ sjekk('oppsigelsestida i teksten leses av planen',
 // timene paa én rad og kursbevisene paa en annen. «Slettes for haand under
 // Medlemmer» sto det i de aapne punktene — men aa slette den ene er aa miste
 // historikken hennes, ikke aa rydde.
-$dubFil = file_get_contents(dirname(__DIR__) . '/api/admin/dubletter.php');
+$dubFil = les_testfil(dirname(__DIR__) . '/api/admin/dubletter.php');
 // E-post og telefon er sikre funn; navn alene er et forslag. To personer kan
 // hete det samme, men de deler ikke innboks.
 sjekk('navn alene er et forslag, ikke et funn',
@@ -2301,7 +2315,7 @@ sjekk('et nummer mange deler regnes ikke som sikkert',
 // nullstillingen under Medlemmer trenger den samme.
 sjekk('tabellene som peker paa medlemmet finnes av basen',
     str_contains($dubFil, 'return Medlemskap::pekere();')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php'),
                     "AND column_name IN ('member_id', 'registrert_av')"));
 // Alt eller ingenting. Foerste forsoek flyttet innstemplingene og falt saa
 // paa en unik noekkel: bookingene sto paa den nye raden mens den gamle
@@ -2349,7 +2363,7 @@ sjekk('listene hentes paa nytt etter en sammenslaaing',
 // med Vipps og oppga en e-post som alt sto paa en annen rad, og to mennesker
 // sto som «SAMME PERSON» — med sammenslaaing som eneste knapp, og ingen
 // maate aa si fra paa. Paret ble staaende for alltid.
-$m196 = file_get_contents(dirname(__DIR__) . '/db/migrations/196_ikke_samme_person.sql');
+$m196 = les_testfil(dirname(__DIR__) . '/db/migrations/196_ikke_samme_person.sql');
 sjekk('paret som ikke er det samme mennesket har et sted aa staa',
     str_contains($m196, 'CREATE TABLE IF NOT EXISTS dublett_ikke_samme')
     && str_contains($m196, 'UNIQUE KEY uq_ikke_samme (medlem_lav, medlem_hoy)'));
@@ -2406,7 +2420,7 @@ sjekk('… og sier «Fritt», ikke et matematikktegn',
     !str_contains(preg_replace('/^\s*\/\/.*$/m', '', $sida), '∞'),
     'ordet sier det samme');
 sjekk('endepunktet regner ut timene',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/stempling.php'),
                  'Stempling::minutterDenneManeden($id)'));
 // Lista over hvem som er i verkstedet leses ogsaa derfra.
 sjekk('«i verkstedet naa» leses av innstemplingene',
@@ -2419,7 +2433,7 @@ sjekk('«i verkstedet naa» leses av innstemplingene',
 // medlemskapet venter paa svar. Begge har hver sin skjerm i admin, men ingen
 // vei dit fra Oversikt — man maatte vite at koen fantes for aa gaa og se
 // etter, og da kan noe bli liggende i ukevis.
-$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovFil = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('oversikten teller de to koene',
     str_contains($ovFil, "SELECT COUNT(*) FROM member_sales WHERE status = 'til_godkjenning'")
     && str_contains($ovFil, "SELECT COUNT(*) FROM medlem_frys WHERE status = 'sokt'"));
@@ -2499,7 +2513,7 @@ sjekk('attrappdialogene «Ny serie» og «Endre aapningstider» er borte',
 // tar imot den.
 sjekk('kursserien lages for ekte',
     str_contains($sida, "handling: 'serie',")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "case 'serie':"));
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/admin/kurs.php'), "case 'serie':"));
 // Aapningstidene redigeres for ekte fra kalenderen. En egen skjerm var
 // den andre veien inn; den er borte — se docs/DROP-IN.md.
 sjekk('aapningstidene redigeres for ekte',
@@ -2508,7 +2522,7 @@ sjekk('aapningstidene redigeres for ekte',
 // To tabeller fra 001_init som ingen SQL leser. «checkins» er tvillingen til
 // «check_ins» med understrek — den ekte — og «hour_usage» ble aldri bygget:
 // timene regnes ut av check_ins.
-$m90 = file_get_contents(dirname(__DIR__) . '/db/migrations/090_rydder_to_doede_tabeller.sql');
+$m90 = les_testfil(dirname(__DIR__) . '/db/migrations/090_rydder_to_doede_tabeller.sql');
 sjekk('migrasjon 090 dropper bare tabeller som er tomme',
     str_contains($m90, 'SELECT COUNT(*) INTO @rader FROM checkins')
     && str_contains($m90, 'IF(@n = 1 AND @rader = 0, \'DROP TABLE checkins\', \'DO 0\')')
@@ -2516,7 +2530,7 @@ sjekk('migrasjon 090 dropper bare tabeller som er tomme',
 // Er de droppet, skal ingen SQL savne dem.
 sjekk('ingen SQL leser de to doede tabellene',
     !preg_match('/(FROM|INTO|UPDATE|JOIN)\s+`?(checkins|hour_usage)`?\b/',
-        $sida . file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php')));
+        $sida . les_testfil(dirname(__DIR__) . '/api/admin/kalender.php')));
 // Innstemplingen leser den ekte.
 sjekk('innstemplingen leser check_ins med understrek',
     DB::harTabell('check_ins'));
@@ -2541,7 +2555,7 @@ sjekk('det som sto i nettleseren flyttes inn i basen én gang',
     && str_contains($sida, "localStorage.removeItem('lissomKlNotat')"));
 // Notatet er personlig. Uten «member_id» i betingelsen kunne en admin slettet
 // en annens paaminnelse ved aa gjette nummeret.
-$vstFil = file_get_contents(dirname(__DIR__) . '/api/admin/verkstedet.php');
+$vstFil = les_testfil(dirname(__DIR__) . '/api/admin/verkstedet.php');
 sjekk('paaminnelsene er personlige, ogsaa naar de slettes',
     str_contains($vstFil, 'DELETE FROM verksted_paaminnelser WHERE id = :i AND member_id = :m'));
 // En brenning gaar ofte over natta.
@@ -2619,7 +2633,7 @@ sjekk('kurset mister ikke kursholderen naar noen slutter',
           WHERE constraint_schema = DATABASE() AND constraint_name = :n
             AND delete_rule = :r',
         ['n' => 'fk_kurs_holder', 'r' => 'SET NULL']) === 1);
-$kursFil = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$kursFil = les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('kursholderen kan lagres paa kurset',
     str_contains($kursFil, "if (\$har('kursholderId') && DB::harKolonne('courses', 'kursholder_id')) {")
     && str_contains($kursFil, "\$data['kursholder_id'] = \$holderId('kursholderId');"));
@@ -2636,12 +2650,12 @@ sjekk('en ny dato arver kursets kursholder, ellers verkstedets standard',
 // ingen vei tilbake for aa sporre. Regnskapet viste null betalte maanedstrekk
 // uansett hvor mange som gikk gjennom, og de to malene «Medlemskapet ditt er
 // fornyet» og «Vi fikk ikke trukket betalingen» sto i basen uten avsender.
-$medlFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$medlFil = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('trekk-id-en fra Vipps tas vare paa',
     str_contains($medlFil, "\$trekkId = Vipps::belastAvtale(")
     && str_contains($medlFil, "'vipps_psp_ref' => \$trekkId !== '' ? \$trekkId : null,"));
 sjekk('… og et trekk slaas opp under avtalen sin, ikke som en ePayment',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/vipps.php'),
                  "'/charges/' . rawurlencode(\$trekkId)"));
 sjekk('CHARGED gjor raden betalt og sender kvitteringen',
     str_contains($medlFil, "if (\$status === 'CHARGED') {")
@@ -2649,10 +2663,10 @@ sjekk('CHARGED gjor raden betalt og sender kvitteringen',
 sjekk('FAILED sier fra til medlemmet',
     str_contains($medlFil, "if (\$status === 'FAILED' || \$status === 'CANCELLED') {")
     && str_contains($medlFil, "Varsel::mal('betaling_feilet'"));
-$cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$cronFil = les_testfil(dirname(__DIR__) . '/bin/cron.php');
 // Runden ble flyttet ut av cron 5. september, saa trafikken paa sida kan
 // kjore den ogsaa — cron-jobben ble aldri satt opp. Samme kode, nytt hjem.
-$runden = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$runden = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('trekkrunden sporr om trekkene som ikke har fatt svar',
     str_contains($runden, 'foreach (self::trekkUtenSvar($maks) as $p) {')
     && str_contains($runden, 'self::sjekkTrekk($p)')
@@ -2665,7 +2679,7 @@ sjekk('trekkrunden sporr om trekkene som ikke har fatt svar',
 // Eieren, 8. september 2026: «pillene gi gave, send beskjed og nytt medlem
 // maa plassere mer synlig, for eksempel etter interne samlinger». Vist i to
 // utgaver for de ble bygget; han valgte egen rad, uten gul bakgrunn.
-$pilleFil = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$pilleFil = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('de tre staar i egen rad under Interne samlinger',
     str_contains($pilleFil, '<div style="max-width: 860px; display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">')
     && strpos($pilleFil, 'Ny intern samling</x-import>')
@@ -2689,8 +2703,8 @@ sjekk('… mens deltakerskjermen staar som for',
 //
 // Maalt i nettleseren: 30 timer for, 31 etter, og admin sier det samme.
 echo "\n== En timegave gir timer ==\n";
-$msFil0 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$medlFil2 = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$msFil0 = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$medlFil2 = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('gavetimer telles opp fra de innloeste gavene',
     str_contains($medlFil2, 'public static function gavetimer(int $medlemId): int')
     && str_contains($medlFil2, 'FROM medlemsgave_bruk b')
@@ -2705,9 +2719,9 @@ sjekk('… og Min side og admin leser den samme regelen',
     // kvarter, saa taket kan vaere 31,75.
     str_contains($medlFil2, 'public static function timerMedGaver(array $medlem, bool $medPakke = true): int|float|null')
     && str_contains($medlFil2, 'Dugnad::minutterTilgode($medlem)')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/stempling.php'),
                     '$perMnd = Medlemskap::timerMedGaver($medlem);')
-    && substr_count(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
+    && substr_count(les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php'),
                     'Medlemskap::timerMedGaver($m)') === 2);
 // Fri tilgang blir staaende fri — har planen ingen grense, er det ingenting
 // aa legge timer til.
@@ -2717,7 +2731,7 @@ sjekk('… mens fri tilgang blir staaende fri',
             return null;
         }"));
 // Kvitteringen lovet noe fysisk. Det gjor en timegave ikke.
-$gaveFil = file_get_contents(dirname(__DIR__) . '/api/gave.php');
+$gaveFil = les_testfil(dirname(__DIR__) . '/api/gave.php');
 sjekk('kvitteringen sier at timene er lagt til',
     str_contains($gaveFil, "'timer' => 'Timene er lagt til. Du ser dem på Min side nå.',"));
 sjekk('… og ruta sier det samme for du trykker',
@@ -2729,7 +2743,7 @@ sjekk('… og timetallet hentes paa nytt naar gaven er loest inn',
 // Én time er ikke «1 ekstra timer».
 sjekk('én time heter «1 ekstra time»',
     str_contains($gaveFil, "' ekstra time' . (((int) \$g['timer']) === 1 ? '' : 'r')")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/gaver.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/admin/gaver.php'),
                     "' ekstra time' . (((int) \$g['timer']) === 1 ? '' : 'r')"));
 
 // ── «0 inne» paa Min side ────────────────────────────────────────────
@@ -2743,16 +2757,16 @@ sjekk('én time heter «1 ekstra time»',
 // inne... på min side vi er to. Det vises riktig på admin, men ikke min
 // side». Maalt i nettleseren: api/stempling.php svarte «antall: 2» mens
 // pilla sto paa null. Etter rettinga sier den «2 inne».
-$msFil = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$msFil = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('verkstedspilla teller dem som faktisk er inne',
     str_contains($msFil, 'const antall = st && st.inne ? (st.inne.antall || 0) : 0;')
     && !str_contains($msFil, 'const antall = this.state.inne ? this.state.inne.length : 0;'));
 // «antall», ikke lista: den som har slaatt av «Vis meg for andre medlemmer»
 // staar fortsatt i verkstedet, og kortet sier «x medlemmer er skjult» fra for.
 sjekk('… ogsaa de som har skjult seg for de andre',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/stempling.php'),
                  "return ['synlige' => \$synlige, 'skjulte' => \$skjulte, 'antall' => count(\$alle)];")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/stempling.php'),
                     "'antall'  => \$inne['antall'],"));
 
 // ── Sporsmaalet gaar oftere enn trekket ──────────────────────────────
@@ -2765,7 +2779,7 @@ sjekk('… ogsaa de som har skjult seg for de andre',
 // Eieren, 8. september 2026, med Lene paa traaden: «naa staar det i vipps
 // appen hennes ogsaa, eneste som ikke er oppdatert er paa medlemsiden, staar
 // fortsatt som ubetalt». Han valgte «hvert tiende minutt».
-$tikkFil = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+$tikkFil = les_testfil(dirname(__DIR__) . '/app/lib/tikk.php');
 sjekk('statusen hentes hvert tiende minutt, ikke bare i dognrunden',
     str_contains($tikkFil, "if (!Rate::tillat('trekkstatus', 1, 600, 'server')) {")
     && str_contains($tikkFil, 'self::trekkstatus();'));
@@ -2891,7 +2905,7 @@ sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
     Kursholder::glem();
     // Og oppslaget maa faktisk sporre om det, ikke bare lese feltet.
     sjekk('… fordi oppslaget sporr om hen fortsatt holder kurs',
-        str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/kursholder.php'),
+        str_contains(les_testfil(dirname(__DIR__) . '/app/lib/kursholder.php'),
                      'JOIN kursholdere k ON k.id = c.kursholder_id AND k.aktiv = 1'));
 
     // 4. Er ingen standard, staar datoen tom. Da skal ingen faa et
@@ -2941,7 +2955,7 @@ sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
 $lagerDatoer = [];
 $utenHolder  = [];
 foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) as $f) {
-    $kode = file_get_contents($f);
+    $kode = les_testfil($f);
     if (!preg_match('/INSERT[^;]{0,80}INTO course_sessions|settInn\(\s*\'course_sessions\'/', $kode)) {
         continue;
     }
@@ -3079,7 +3093,7 @@ sjekk('stemplingen leser den samme kilden som resten',
     && !str_contains($sida, 'klInneTid'));
 // En avlyst dato kunne ikke settes tilbake. Da matte den settes opp paa nytt,
 // og de paameldte fulgte ikke med.
-$apnFil6  = file_get_contents(dirname(__DIR__) . '/api/admin/apningstider.php');
+$apnFil6  = les_testfil(dirname(__DIR__) . '/api/admin/apningstider.php');
 sjekk('en avlyst dato kan gjenopprettes',
     str_contains($kursFil6, "case 'gjenopprett':")
     && str_contains($kursFil6, "DB::oppdater('course_sessions', ['status' => 'planlagt'], ['id' => \$oktId]);"));
@@ -3201,7 +3215,7 @@ sjekk('«Viser»-raden med kursholderne er borte',
     && !str_contains($sida, 'har noe denne dagen og kan ikke skjules'));
 sjekk('… og en kursholder med en okt faar spalte uansett',
     str_contains($sida, 'const visesNa = k => k.harNoe || staarFast(k.navn);'));
-$kalFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$kalFil2 = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('kalenderen faar vite hvem som er standard kursholder',
     str_contains($kalFil2, "'standard' => isset(\$h['standard'])"));
 // Kolonnen kom med migrasjon 086. Uten den skal endepunktet svare, ikke doe.
@@ -3225,8 +3239,8 @@ sjekk('kursholderne i kalenderen kommer fra registeret',
 // Proevene under er snudd: de sjekker at den er borte, og at ingenting av
 // det den hang i henger igjen. Ryddingen etter et krav som ikke gikk
 // gjennom sto her ogsaa; den gikk ut med kravet.
-$pamFil = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
-$sida2  = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$pamFil = les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php');
+$sida2  = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('vippskrav kan ikke lenger velges paa en paamelding',
     !str_contains($pamFil, "'Vipps i verkstedet', 'Vippskrav'")
@@ -3241,7 +3255,7 @@ sjekk('… og heller ikke skjermene tilbyr den',
     && !str_contains($sida2, 'Send vippskrav')
     && !str_contains($sida2, 'Send Vipps-krav'));
 sjekk('… og kassa har mistet sin egen',
-    !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php'),
+    !str_contains(les_testfil(dirname(__DIR__) . '/api/admin/uttak.php'),
                   "\$handling === 'vippskrav'"));
 // Gamle rader beholder maaten sin: «betalt_maate» er en tekst i basen, og
 // lista i koden sier bare hva som kan settes naa. En plass som ble lagt inn
@@ -3315,7 +3329,7 @@ sjekk('… og standarden er «Ikke betalt», ikke noe som er gjort opp',
 // Eieren: «legg til ikke betalt paa alle manuelle betalinger», og «lag et
 // kort som varsler ikke betalt saa kan jeg kreve inn betaling fra dette
 // kortet».
-$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovFil = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('Oversikt vet om de ubetalte',
     // Kursplassene som for, men slaatt sammen med medlemskapene: kortet
     // holder begge slag siden eieren spurte om dem 2. september.
@@ -3388,7 +3402,7 @@ sjekk('kalenderen hentes paa nytt saa belegget stemmer',
 // Paint on Pots foelger aapningstida, og den klippes i plasser paa halvannen
 // time. En aapen dag ble til seks like rader i kalenderen. Eieren, 29.
 // august: «jeg vil ikke at det skal splittes».
-$kalFil3 = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$kalFil3 = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('kalenderen faar vite hvilke oekter en regel har laget',
     str_contains($kalFil3, "'auto'   => \$harAuto && (int) \$o['fra_apningstid'] === 1,"));
 sjekk('kolonnen kan mangle uten at kalenderen doer',
@@ -3458,7 +3472,7 @@ sjekk('spennet naar over et maanedsskifte',
 // Feeden sendte start og slutt raatt, saa et kurs onsdag og torsdag ble én
 // hendelse fra onsdag 17:00 til torsdag 20:00 — 27 timer i strekk. Naa er det
 // én hendelse per kursdag.
-$icsFil = file_get_contents(dirname(__DIR__) . '/api/kalender-abonnement.php');
+$icsFil = les_testfil(dirname(__DIR__) . '/api/kalender-abonnement.php');
 sjekk('feeden henter samlingene', str_contains($icsFil, 'Samlinger::forOkter(array_map('));
 sjekk('feeden lager én hendelse per kursdag',
     str_contains($icsFil, 'foreach ($moter as $mt) {')
@@ -3476,7 +3490,7 @@ sjekk('en samling uten sluttid faar den samme reserven som en okt',
     str_contains($icsFil, "\$mStart->modify('+3 hours')"));
 // Samlingene ligger i sin egen tabell, saa okta rorte seg ikke naar de ble
 // rettet — og SEQUENCE er det telefonen leser for aa se at noe er endret.
-$samlFil = file_get_contents(dirname(__DIR__) . '/app/lib/samlinger.php');
+$samlFil = les_testfil(dirname(__DIR__) . '/app/lib/samlinger.php');
 sjekk('okta merkes som endret naar samlingene rettes',
     str_contains($samlFil, "UPDATE course_sessions SET updated_at = UTC_TIMESTAMP() WHERE id = :s"));
 sjekk('… og taaler at kolonnen mangler',
@@ -3489,7 +3503,7 @@ sjekk('… og taaler at kolonnen mangler',
 // nokler, en salgsenhet uten lov til aa sende betalingskrav, et nummer uten
 // Vipps. Eieren kunne ikke se forskjell, og ingen av dem loeses ved aa prove
 // igjen.
-$vippsFil = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$vippsFil = les_testfil(dirname(__DIR__) . '/app/lib/vipps.php');
 sjekk('grunnen fra Vipps naar fram', str_contains($vippsFil, 'private static function grunn(array $svar): string'));
 sjekk('betalingen kaster grunnen, ikke en gjetning',
     str_contains($vippsFil, 'throw new RuntimeException(self::grunn($svar));')
@@ -3513,7 +3527,7 @@ sjekk('feil 5080 sier hva som skal gjores',
 // med det 6. september 2026. Grunnen naar fortsatt fram der Vipps brukes:
 // QR-en i kassa og betalingen fra nettsida kaster den samme meldingen.
 sjekk('grunnen naar fortsatt fram der Vipps brukes',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/admin/uttak.php'),
                  "\$e->getMessage()"));
 
 // ── Vipps-QR i kassa ───────────────────────────────────────────────────
@@ -3521,7 +3535,7 @@ sjekk('grunnen naar fortsatt fram der Vipps brukes',
 // Salgsenheten har ikke lov til aa sende betalingskrav (ErrorCode 5080). En
 // vanlig betaling virker, og adressen den gir tilbake vises som en kode
 // kunden skanner.
-$utFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+$utFil = les_testfil(dirname(__DIR__) . '/api/admin/uttak.php');
 sjekk('kassa kan lage en Vipps-QR', str_contains($utFil, "if (\$handling === 'vippsqr') {"));
 // Ingen telefon og ingen push: dette er den vanlige veien, den som virker.
 sjekk('QR-en bruker den vanlige betalingen, ikke kravet',
@@ -3534,7 +3548,7 @@ sjekk('skjermen kan sporre om det er betalt',
     str_contains($utFil, "if (\$handling === 'betalstatus') {"));
 $qrFil = dirname(__DIR__) . '/vendor/qrcode-2.0.4.js';
 sjekk('QR-biblioteket ligger hos oss, ikke paa et fremmed nettsted',
-    is_file($qrFil) && str_contains((string) file_get_contents($qrFil), 'MIT license'));
+    is_file($qrFil) && str_contains((string) les_testfil($qrFil), 'MIT license'));
 sjekk('biblioteket lastes forst naar koden skal vises',
     str_contains($sida2, "s.src = '/vendor/qrcode-2.0.4.js';")
     && str_contains($sida2, 'if (window.qrcode) return Promise.resolve(window.qrcode);'));
@@ -3563,7 +3577,7 @@ sjekk('uttakKall gir svaret tilbake uten aa velte de andre',
 sjekk('den manuelle paameldingen leser prisen paa datoen',
     str_contains($pamFil, "'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore'"));
 sjekk('… med det samme uttrykket som resten av systemet',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/booking.php'),
                  "'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore'"));
 sjekk('… og taaler at kolonnen mangler',
     str_contains($pamFil, "DB::harKolonne('course_sessions', 'pris_ore')"));
@@ -3619,7 +3633,7 @@ sjekk('… og setterne er de samme som for',
 // Vipps sin egen faste kode vil ha en landingsside med Hurtigkasse — Vipps
 // Checkout, et annet produkt enn ePayment som nettsida bruker. /betal gjor
 // det samme med det vi alt har.
-$betalFil = file_get_contents(dirname(__DIR__) . '/api/betal.php');
+$betalFil = les_testfil(dirname(__DIR__) . '/api/betal.php');
 sjekk('betalingssida har sitt eget endepunkt', is_file(dirname(__DIR__) . '/api/betal.php'));
 // Kunden staar i doera. Et passord der er én ting for mye.
 sjekk('den krever ingen innlogging', !str_contains($betalFil, 'krev_admin()')
@@ -3722,22 +3736,22 @@ sjekk('et ferskt utkast kan aapnes for lista er hentet',
 // Overskriften er UNIQUE i articles. To utkast om det samme ga hele
 // SQLSTATE-feilen paa skjermen, og ingenting ble publisert.
 sjekk('en dublett-overskrift gir et tall bak, ikke en SQL-feil',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/artikler.php'), 'public static function ledigTittel')
+    str_contains(les_testfil(__DIR__ . '/../app/lib/artikler.php'), 'public static function ledigTittel')
     // Kladden lages ett sted fra 27. september 2026 (kursboost bruker den
     // ogsaa): ai.php kaller kladdFraUtkast(), som bruker ledigTittel().
-    && str_contains(file_get_contents(__DIR__ . '/../api/admin/ai.php'), 'Artikler::kladdFraUtkast(')
-    && str_contains(file_get_contents(__DIR__ . '/../app/lib/artikler.php'), '$ledig = self::ledigTittel($tittel);'));
+    && str_contains(les_testfil(__DIR__ . '/../api/admin/ai.php'), 'Artikler::kladdFraUtkast(')
+    && str_contains(les_testfil(__DIR__ . '/../app/lib/artikler.php'), '$ledig = self::ledigTittel($tittel);'));
 sjekk('… og skjemaet i Kunnskapsbank sier fra i klartekst',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/artikler.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/artikler.php'),
                  'Det finnes allerede en artikkel som heter'));
 
 // Emneknaggene lagres uten «#», og skjermen setter ett foran. Kom de fra
 // AI-en med tegnet alt paa, sto det «##keramikk».
-$marked = file_get_contents(__DIR__ . '/../api/admin/marked.php');
+$marked = les_testfil(__DIR__ . '/../api/admin/marked.php');
 sjekk('emneknagger renskes for «#» naar de leses',
     str_contains($marked, "ltrim(trim((string) \$h), '#')"));
 sjekk('… og naar de lagres',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/ai.php'), "ltrim(trim((string) \$h), '#')"));
+    str_contains(les_testfil(__DIR__ . '/../api/admin/ai.php'), "ltrim(trim((string) \$h), '#')"));
 // Serveren beskriver oppsettet for hver type, ikke bare for sosialt.
 sjekk('serveren gir et oppsett til artikkel og brev ogsaa',
     str_contains($marked, "'slag'    => 'artikkel'") && str_contains($marked, "'slag'    => 'brev'"));
@@ -3773,7 +3787,7 @@ sjekk('… og staar under Nettsiden', str_contains($sida2, "['Feilmeldinger', 'a
 sjekk('kortet paa Oversikt staar bare naar noe venter',
     str_contains($sida2, "kort('Feil meldt inn',"));
 // Endepunktene.
-$fapi = file_get_contents(__DIR__ . '/../api/feil.php');
+$fapi = les_testfil(__DIR__ . '/../api/feil.php');
 sjekk('api/feil.php lagrer ikke IP-adressen', !str_contains($fapi, "'ip'"));
 sjekk('… og tar nettleseren fra hodet, ikke fra kroppen',
     str_contains($fapi, 'Foresporsel::userAgent()'));
@@ -3861,7 +3875,7 @@ sjekk('… med et tak paa stoerrelsen',
     str_contains($fapi, 'strlen($data) > 10 * 1024 * 1024'));
 // Et skjermbilde fra admin kan vise hva som helst — deltakerlister,
 // e-postadresser, en halvferdig ordre.
-$bildeFil = file_get_contents(__DIR__ . '/../api/bilde.php');
+$bildeFil = les_testfil(__DIR__ . '/../api/bilde.php');
 sjekk('skjermbildet er bare for verkstedet',
     str_contains($bildeFil, "\$sti = Bilder::sti(\$feil, 'feilrapporter');")
     && str_contains($bildeFil, 'if ($sti === null || !Sesjon::erAdmin()) {'));
@@ -3897,7 +3911,7 @@ if (DB::harKolonne('feilrapporter', 'bilde')) {
 // rapporten alt paa «lukket» — sett paa i en annen fane, paa telefonen, eller
 // bare en liste som var noen minutter gammel — endret UPDATE ingenting, og
 // endepunktet svarte at rapporten ikke fantes. Den fantes.
-$frapi = file_get_contents(__DIR__ . '/../api/admin/feilrapporter.php');
+$frapi = les_testfil(__DIR__ . '/../api/admin/feilrapporter.php');
 sjekk('rapporten slaas opp for den avvises',
     str_contains($frapi, "if (DB::en('SELECT id FROM feilrapporter WHERE id = :id', ['id' => \$id]) === null) {"));
 sjekk('… og statusen settes uten aa telle endrede rader',
@@ -3953,10 +3967,10 @@ sjekk('statistikk-kortet staar paa Oversikt',
     str_contains($sida2, 'Statistikk · mest populære kurs')
     && str_contains($sida2, 'list="{{ ovPopulaere }}"'));
 sjekk('… og tallene kommer fra serveren',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'), "'populaere' => array_map")
+    str_contains(les_testfil(__DIR__ . '/../api/admin/oversikt.php'), "'populaere' => array_map")
     && str_contains($sida2, "(this.state.adminData || {}).populaere"));
 sjekk('… regnet av solgte plasser, ikke av antall datoer',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/oversikt.php'),
                  "COALESCE(SUM(b.antall), 0) AS plasser"));
 
 // De tre pillene nederst i bunnteksten skal vaere like store (eieren,
@@ -3994,8 +4008,8 @@ sjekk('snarveiene i de gule radene er like store paa telefon',
 sjekk('kort med gjenstand i kassa viser en fra-pris',
     substr_count($sida2, "? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')") === 2);
 sjekk('… og serveren regner den ut av den rimeligste varen',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), "'prisFraOre'      => \$fra,")
-    && str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'SELECT MIN(pris_ore) FROM products'));
+    str_contains(les_testfil(__DIR__ . '/../app/lib/katalog.php'), "'prisFraOre'      => \$fra,")
+    && str_contains(les_testfil(__DIR__ . '/../app/lib/katalog.php'), 'SELECT MIN(pris_ore) FROM products'));
 
 // «Velg» paa medlemskapssiden gikk til bookingskjermen, som alltid opprettet
 // en avtale i Vipps — uten valget mellom fast trekk og aa ordne selv
@@ -4013,7 +4027,7 @@ sjekk('… og skjemaet har et anker aa rulle til',
 // Planen avgjor, ikke kallet. Eieren, 3. september: fast trekk skal ikke
 // vaere et alternativ noe annet sted enn paa aarsavtalen.
 sjekk('innmeldingen lar planen avgjore betalingsmaaten',
-    str_contains(file_get_contents(__DIR__ . '/../api/bli-medlem.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/bli-medlem.php'),
                  "\$betaling = Medlemskap::kreverFastTrekk(\$plan) ? 'trekk' : 'selv';"));
 
 // ── Frakt og adresse ───────────────────────────────────────────────────
@@ -4023,7 +4037,7 @@ sjekk('innmeldingen lar planen avgjore betalingsmaaten',
 // varene alene, og valget «Send som pakke» fulgte ikke med i det hele tatt.
 // Bestilte noen med sending, betalte verkstedet portoen selv — og ingen fikk
 // vite hvor pakken skulle.
-$ordre = file_get_contents(__DIR__ . '/../api/ordre.php');
+$ordre = les_testfil(__DIR__ . '/../api/ordre.php');
 sjekk('serveren legger frakten paa summen',
     str_contains($ordre, "\$levering = Foresporsel::tekst('levering') === 'pakke' ? 'pakke' : 'hent';")
     && str_contains($ordre, '$sum += $fraktOre;'));
@@ -4052,7 +4066,7 @@ sjekk('… og kortet «Kontaktopplysninger» er borte',
 sjekk('fraktprisen staar ingen steder i koden',
     !str_contains($sida2, 'Send som pakke (kr. 89,-)'));
 sjekk('… men kan endres i admin',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/produkter.php'), "if (\$handling === 'frakt') {"));
+    str_contains(les_testfil(__DIR__ . '/../api/admin/produkter.php'), "if (\$handling === 'frakt') {"));
 // Gavekortfeltet tok like mye plass som leveringen. De fleste har ikke et.
 sjekk('gavekortfeltet er en lenke til man trenger det',
     str_contains($sida2, 'Har du gavekort eller rabattkode?')
@@ -4064,7 +4078,7 @@ sjekk('gavekortfeltet er en lenke til man trenger det',
 // verkstedets standard. Da falt vaktlista tilbake paa «Ikke tildelt» paa
 // hver eneste rad. Eieren 30. august: «alle kurs og vakter skal vaere
 // default Monica».
-$m096 = file_get_contents(__DIR__ . '/../db/migrations/096_monica_er_standard.sql');
+$m096 = les_testfil(__DIR__ . '/../db/migrations/096_monica_er_standard.sql');
 sjekk('Monica settes som standard kursholder',
     str_contains($m096, "SET standard = 1") && str_contains($m096, "navn = 'Monica'"));
 sjekk('… men bare naar hun finnes én gang og ingen andre er standard',
@@ -4076,12 +4090,12 @@ sjekk('… og en som har sluttet kan ikke bli staaende som standard',
 // aktivert.» Uten «aktiv = 1» paa oppslaget sto navnet til en som hadde
 // sluttet igjen paa hver dato hen var satt opp paa — og COALESCE gikk aldri
 // videre til standarden, fordi navnet var der.
-$vst = file_get_contents(__DIR__ . '/../api/admin/verkstedet.php');
+$vst = les_testfil(__DIR__ . '/../api/admin/verkstedet.php');
 sjekk('vaktlista henter bare navn fra aktive kursholdere',
     str_contains($vst, 'LEFT JOIN kursholdere kh ON kh.id = cs.kursholder_id AND kh.aktiv = 1')
     && str_contains($vst, 'LEFT JOIN kursholdere kk ON kk.id = c.kursholder_id AND kk.aktiv = 1'));
 sjekk('… og kalenderen gjor det samme',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/kalender.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/kalender.php'),
                  'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id AND h.aktiv = 1'));
 // Overskriften sier «kursene framover». Lista viste en uke bakover.
 sjekk('vaktlista starter i dag, ikke sist uke',
@@ -4099,33 +4113,33 @@ sjekk('vaktlista starter i dag, ikke sist uke',
 // steder aa se etter, og to steder aa ta feil.
 sjekk('ferien bygger paa apningstider, ikke en egen tabell',
     !file_exists(__DIR__ . '/../db/migrations/097_ferie.sql')
-    && str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'),
+    && str_contains(les_testfil(__DIR__ . '/../app/lib/ferie.php'),
                     "SELECT dato FROM apningstider WHERE stengt = 1"));
 // Det som var nytt: en stengt dag skjuler kursdatoene, ikke bare
 // aapningstidene i bunnteksten.
 // Fra 25. september 2026 gaar det via Ferie::skjult(): en oekt eieren har
 // lagt ut i ferien «likevel» (ferie_ok, migrasjon 211) skal vises.
 sjekk('en stengt dag skjuler kursdatoene paa nettsida',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::skjult($o)')
-    && str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'), 'public static function skjult(array $okt): bool'));
+    str_contains(les_testfil(__DIR__ . '/../app/lib/katalog.php'), 'Ferie::skjult($o)')
+    && str_contains(les_testfil(__DIR__ . '/../app/lib/ferie.php'), 'public static function skjult(array $okt): bool'));
 sjekk('… og aapningstidene folger med',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/apent.php'), '$okter = Ferie::utenom($okter);'));
+    str_contains(les_testfil(__DIR__ . '/../app/lib/apent.php'), '$okter = Ferie::utenom($okter);'));
 // Skjult er ikke det samme som stengt: en gammel fane kan sende okt-id-en
 // rett til serveren lenge etterpaa.
 sjekk('… og bookingen stoppes paa serveren',
-    str_contains(file_get_contents(__DIR__ . '/../api/book.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/book.php'),
                  'Verkstedet holder stengt denne dagen. Velg en annen dato.'));
 // Sammenlikningen skjer i PHP: CONVERT_TZ krever tidssonetabeller som ofte
 // ikke er lastet paa et delt webhotell, og svarer da NULL.
 sjekk('… og datoen regnes om i PHP, ikke med CONVERT_TZ',
-    !str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'), 'CONVERT_TZ(')
-    && str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'), "new DateTimeZone('Europe/Oslo')"));
+    !str_contains(les_testfil(__DIR__ . '/../app/lib/ferie.php'), 'CONVERT_TZ(')
+    && str_contains(les_testfil(__DIR__ . '/../app/lib/ferie.php'), "new DateTimeZone('Europe/Oslo')"));
 // Hele uker med ett trykk.
 sjekk('hele uka kan stenges med ett trykk',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/apningstider.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/apningstider.php'),
                  "if (Foresporsel::tekst('handling') === 'uke') {"));
 sjekk('… men dager som har vaert hoppes over',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/apningstider.php'), 'if ($d < $idag) {'));
+    str_contains(les_testfil(__DIR__ . '/../api/admin/apningstider.php'), 'if ($d < $idag) {'));
 // Skjermen og pillen.
 sjekk('ferieskjermen finnes, med ukenummer aa trykke paa',
     str_contains($sida2, 'data-screen-label="Admin – ferie"')
@@ -4161,7 +4175,7 @@ sjekk('skjermen sier fra naar noen alt har booket',
 // Eieren, 30. august: «finn en mer oversiktlig loesning for planlagte kurs,
 // samme som kallender visningen er best», og etterpaa: «jeg vil at denne skal
 // se lik ut og vises likt som kalenderen».
-$pameldteFil = file_get_contents(__DIR__ . '/../api/admin/pameldte.php');
+$pameldteFil = les_testfil(__DIR__ . '/../api/admin/pameldte.php');
 sjekk('rutenettet paa sju spalter er borte',
     !str_contains($sida2, 'class="lx-week"'));
 sjekk('planlagte kurs staar dag for dag nedover',
@@ -4205,7 +4219,7 @@ sjekk('… og alle veiene inn bruker den samme',
 // Deltakerraden sa «Reservert» — at plassen er holdt av, ikke om den er
 // gjort opp. Eieren, 6. september: «i stedet for reservert, saa vil jeg at
 // betalingsstatusen kommer opp, altsaa ikke betalt, betalt».
-$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$kalFil = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('deltakerraden sier om det er betalt, ikke om plassen er holdt av',
     !str_contains($kalFil, "'Betalt' : 'Reservert'")
     && str_contains($kalFil, "'reservert' => 'Ikke betalt',"));
@@ -4223,7 +4237,7 @@ sjekk('… og refundert og ikke moett staar for seg',
 // stoppet der hver eneste gang.
 //
 // Eieren, 6. september, med bilde fra Kursmarkedsfoering: «denne virker ikke».
-$aiFil = file_get_contents(dirname(__DIR__) . '/api/admin/ai.php');
+$aiFil = les_testfil(dirname(__DIR__) . '/api/admin/ai.php');
 sjekk('kursboost binder hvert plassholdernavn for seg',
     str_contains($aiFil, "(SELECT kapasitet FROM courses WHERE id = :k)")
     && str_contains($aiFil, "['i' => \$kursId, 'k' => \$kursId]"));
@@ -4273,7 +4287,7 @@ sjekk('… i alle seks dra-handlerne',
 // den. Da var e-posten eneste vei til kunden — gikk den i soeppelposten,
 // hadde verkstedet ingenting aa gi henne. Eieren, 6. september: «jeg maa ha
 // pengene mine», og paa spoersmaal om hvordan: vis den alltid.
-$medlFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medlFil = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('personruta faar godkjenningslenka fra serveren',
     str_contains($medlFil, "'avtaleLenke' => (static function () use (\$m): string {"));
 // Bare naar det faktisk mangler en avtale. Er den godkjent, skal det ikke
@@ -4288,7 +4302,7 @@ sjekk('… og skjermen viser den med en kopiknapp',
 // Lenka er innmeldingsordren naa. Finner vi ikke planen, staar det ingen
 // lenke — framfor en som peker paa noe som ikke finnes.
 sjekk('… og staar tom naar planen er borte',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php'),
                  "if (Medlemskap::plan(\$type) === null) {\n                    return '';\n                }"));
 
 // Kalenderen sto paa «Liste» paa smal skjerm. Begrunnelsen gjaldt
@@ -4355,7 +4369,7 @@ sjekk('… og adressen foelger med kallet',
 // betalt, staar paa kursdatoen — det er ingenting aa gjore fra kortet ut over
 // aa se det, og da skal det tomme seg selv framfor aa vise et tall som ikke
 // gaar ned.
-$oversiktFil = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+$oversiktFil = les_testfil(__DIR__ . '/../api/admin/oversikt.php');
 sjekk('nye paameldinger er avgrenset til tre dager',
     str_contains($oversiktFil, 'AND b.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)'));
 // Kortet paa Oversikt teller den samme lista, saa tallet foelger med.
@@ -4369,10 +4383,10 @@ sjekk('… og kortet teller den samme lista',
 // for; det var knappen som manglet, saa alt annet enn kundens egen
 // avbestilling matte gjores i portalen hos Vipps — og da visste ikke basen
 // om det.
-$betFil = file_get_contents(__DIR__ . '/../api/admin/betalinger.php');
+$betFil = les_testfil(__DIR__ . '/../api/admin/betalinger.php');
 sjekk('refusjonen kaller Vipps og skriver den ned',
-    str_contains($betFil, 'Vipps::refunder($referanse, $belop);')
-    && str_contains($betFil, "'status'        => \$nyRefundert >= (int) \$betaling['belop_ore'] ? 'refundert' : 'delvis_refundert',"));
+    str_contains($betFil, 'Booking::refunderBetaling((int) $betaling[\'id\'], $onsket, $operasjonId)')
+    && str_contains(les_testfil(__DIR__ . '/../app/lib/booking.php'), "'result_refunded_ore' => \$refundert"));
 // En delrefusjon etter vilkaarene (50 % inntil sju dager for) skal ikke ta
 // plassen fra deltakeren. Her sto oppdateringen uten betingelse.
 sjekk('… og plassen settes bare som refundert naar alt er sendt tilbake',
@@ -4394,7 +4408,7 @@ sjekk('… og bare der det er noe aa refundere',
 // referansekundene, saa slipper jeg aa slette de». Bryteren fantes bare inne
 // i redigeringsskjemaet: aapne, finn haken, lagre — og det samme igjen naar
 // kortet skulle tilbake.
-$refFil = file_get_contents(__DIR__ . '/../api/admin/referanser.php');
+$refFil = les_testfil(__DIR__ . '/../api/admin/referanser.php');
 sjekk('referansekunder kan skjules uten aa slettes',
     str_contains($refFil, "if (\$handling === 'veksle') {")
     && str_contains($refFil, "DB::oppdater('referansekunder', ['aktiv' => \$paa ? 1 : 0], ['id' => \$id]);"));
@@ -4474,7 +4488,7 @@ sjekk('… og navnet staar ikke igjen i fargekartet heller',
 sjekk('… og lagres som tema «Håndbygging»',
     str_contains($sida2, "'Håndbygging': 'Håndbygging', 'Workshop': 'Håndbygging',"));
 // Gamle rader skal foelge med, ellers faller et kurs ut av sin egen kategori.
-$m099 = file_get_contents(__DIR__ . '/../db/migrations/099_handbygging_og_events.sql');
+$m099 = les_testfil(__DIR__ . '/../db/migrations/099_handbygging_og_events.sql');
 sjekk('migrasjonen flytter de gamle temaene',
     str_contains($m099, "WHERE tema IN ('Workshop', 'Plateteknikk')")
     && str_contains($m099, "WHERE tittel = 'Lag din egen bolle'"));
@@ -4501,7 +4515,7 @@ sjekk('… og et trykk paa raden aapner kursoppsettet',
 // deler signaturen, den maa skaleres». Logoen tok 152 piksler pluss 20 i luft
 // paa hver side av streken; da fikk «Monica Vaethe-Larsen» 165 piksler aa staa
 // paa, og navnet brakk over to linjer.
-$sigFil = file_get_contents(__DIR__ . '/../e-post-signatur.html');
+$sigFil = les_testfil(__DIR__ . '/../e-post-signatur.html');
 sjekk('logoen i signaturen er skalert ned',
     substr_count($sigFil, 'width="100" height="92"') === 2
     && !str_contains($sigFil, 'width="152" height="139"'));
@@ -4511,7 +4525,7 @@ sjekk('… begge utgavene paa sida er like',
     substr_count($sigFil, 'padding:0 12px 0 0') === 2);
 // Signaturen som gaar ut ligger i innstillingene — eieren limte den inn der.
 // Rettes bare fila, gaar meldingene fortsatt ut med den gamle.
-$m100 = file_get_contents(__DIR__ . '/../db/migrations/100_signatur_skalerer.sql');
+$m100 = les_testfil(__DIR__ . '/../db/migrations/100_signatur_skalerer.sql');
 sjekk('… og den lagrede signaturen rettes med',
     str_contains($m100, "REPLACE(verdi, 'width=\"152\" height=\"139\"', 'width=\"100\" height=\"92\"')")
     && str_contains($m100, "AND verdi LIKE '%lissom-signatur-logo.png%'"));
@@ -4585,7 +4599,7 @@ sjekk('varighetsbrikkene er borte fra kursoppsettet',
 sjekk('… og varighetsfeltet ogsaa',
     !str_contains($sida2, 'id="k-varighet"') && !str_contains($sida2, 'settKVarighetTekst'));
 sjekk('… varigheten regnes av tidene paa datoene, alltid',
-    !str_contains(file_get_contents(__DIR__ . '/../app/lib/kursmal.php'),
+    !str_contains(les_testfil(__DIR__ . '/../app/lib/kursmal.php'),
                   "\$egen = trim((string) (\$kurs['varighet_tekst'] ?? ''));"));
 sjekk('«Kort beskrivelse» og «Dette lager du» har ingen felt lenger',
     !str_contains($sida2, 'id="k-kortom"') && !str_contains($sida2, 'id="k-lagerdu"')
@@ -4618,7 +4632,7 @@ sjekk('… og «Neste», «Tilbake» og stegbrikkene bruker det',
 // Eieren: «feltene godt aa vite, naar er den ferdig, alt som er inkludert og
 // praktisk informasjon — dette vil jeg kunne redigere default tekst, enkelt
 // rett i feltene og faa opp lagre». Standarden foelger kategorien.
-$kmal = file_get_contents(__DIR__ . '/../app/lib/kursmal.php');
+$kmal = les_testfil(__DIR__ . '/../app/lib/kursmal.php');
 sjekk('de tre feltene har en standardtekst per kategori',
     str_contains($kmal, "public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid'];")
     && str_contains($kmal, 'public static function standardtekster(): array'));
@@ -4633,7 +4647,7 @@ sjekk('… kategorien leses av temaet, ogsaa de gamle navnene',
 // standardtekst, ikke en hvit side paa kurssida.
 sjekk('… og en oedelagt verdi gir ingen tekst, ikke en feil',
     str_contains($kmal, '} catch (Throwable $e) {'));
-$akurs = file_get_contents(__DIR__ . '/../api/admin/kurs.php');
+$akurs = les_testfil(__DIR__ . '/../api/admin/kurs.php');
 sjekk('standardteksten lagres per kategori og felt',
     str_contains($akurs, "case 'standardtekst':")
     && str_contains($akurs, "in_array(\$kategori, Kursmal::KATEGORIER, true)")
@@ -4644,7 +4658,7 @@ sjekk('… uten aa slette de andre',
     str_contains($akurs, '$alle = Kursmal::standardtekster();')
     && str_contains($akurs, "'n' => 'kurs_standardtekster'"));
 sjekk('praktisk informasjon faller tilbake paa standarden ute',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'),
+    str_contains(les_testfil(__DIR__ . '/../app/lib/katalog.php'),
                  "(string) (Kursmal::forKurs(\$k)['praktisk'] ?? '')"));
 sjekk('lagre-lenka staar bare naar teksten er endret',
     str_contains($sida2, 'harLagre: kategori !== \'\' && naa !== \'\' && naa !== fasit,'));
@@ -4695,7 +4709,7 @@ sjekk('seksjon 12 lover ikke lenger en e-post den ikke sender',
 //
 // Kurset sto med temaet «Kurs» i basen — ingen ekte kategori — og kortet
 // gjettet «Dreiing» av kurstypen. Eieren: «store fat er haandbygging».
-$m101 = file_get_contents(__DIR__ . '/../db/migrations/101_store_fat_er_handbygging.sql');
+$m101 = les_testfil(__DIR__ . '/../db/migrations/101_store_fat_er_handbygging.sql');
 sjekk('«Store fat kurs» faar temaet Haandbygging',
     str_contains($m101, "SET tema = 'Håndbygging'")
     && str_contains($m101, "WHERE tittel = 'Store fat kurs'"));
@@ -4727,9 +4741,9 @@ sjekk('… og faar en beskrivelse, ikke reservemalen',
 // Vakta staar igjen her og i bin/dropinsjekk.mjs. Den siste aapner skjermene
 // i en nettleser og leser hva som faktisk staar; denne passer paa kildekoden,
 // saa en gjeninnfoering ikke sklir inn ubemerket.
-$m136 = file_get_contents(__DIR__ . '/../db/migrations/136_drop_in_finnes_ikke.sql');
+$m136 = les_testfil(__DIR__ . '/../db/migrations/136_drop_in_finnes_ikke.sql');
 sjekk('migrasjon 136 fjerner kurset',
-    str_contains($m136, 'DELETE c' . PHP_EOL . '  FROM courses c')
+    str_contains($m136, "DELETE c\n  FROM courses c")
     && str_contains($m136, "c.type = 'dropin' OR c.slug = 'drop-in' OR c.tema = 'Drop-in'"));
 // En rad et bilag peker paa, slettes ikke.
 sjekk('… men lar et kurs med bookinger staa',
@@ -4757,7 +4771,7 @@ foreach (['app', 'api'] as $mappe) {
         if ($fil->isFile() && $fil->getExtension() === 'php') {
             // Kommentarer teller ikke: de forklarer hvorfor drop-in er borte.
             $innhold = '';
-            foreach (token_get_all((string) file_get_contents($fil->getPathname())) as $tok) {
+            foreach (token_get_all((string) les_testfil($fil->getPathname())) as $tok) {
                 if (is_array($tok) && in_array($tok[0], [T_COMMENT, T_DOC_COMMENT], true)) continue;
                 $innhold .= is_array($tok) ? $tok[1] : $tok;
             }
@@ -4840,7 +4854,7 @@ sjekk('… etter at datoene er lagt ut, ikke for',
     || strpos($sida2, ".then(serieKall)") > strpos($sida2, "handling: 'nydato',"));
 // Og Serier::fyllPaa maa faktisk telle en dato som alt laa der. Uten $alt++
 // utenfor if-en ville regelen lagt ut ti nye i tillegg til den ene.
-$serier = file_get_contents(__DIR__ . '/../app/lib/serier.php');
+$serier = les_testfil(__DIR__ . '/../app/lib/serier.php');
 sjekk('… og en dato som alt laa der teller med i «ti ganger»',
     str_contains($serier, '$laget += $ny;')
     && str_contains($serier, '$alt++;'));
@@ -4914,7 +4928,7 @@ sjekk('… og standardholderen staar fast',
 //
 // Bare fra og med i dag. En okt som alt er holdt skal ikke faa et navn den
 // ikke hadde — da ville basen paastaa hvem som sto der en kveld i august.
-$m150 = file_get_contents(dirname(__DIR__) . '/db/migrations/150_kursholder_paa_datoene_som_manglet.sql');
+$m150 = les_testfil(dirname(__DIR__) . '/db/migrations/150_kursholder_paa_datoene_som_manglet.sql');
 sjekk('… og gamle datoer uten holder fylles av migrasjon 150',
     str_contains($m150, 'UPDATE course_sessions cs')
     && str_contains($m150, 'WHERE k.id = c.kursholder_id AND k.aktiv = 1')
@@ -4977,7 +4991,7 @@ foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) a
     if (in_array($kort, ['varsler.php', 'beskjed.php', 'test-varsel.php'], true)) {
         continue;
     }
-    $kode = file_get_contents($f);
+    $kode = les_testfil($f);
     foreach (['Varsel::epost(', 'Varsel::sms(', 'Varsel::tilAdmin('] as $kall) {
         if (str_contains($kode, $kall)) {
             $sendere[] = $kort . ' → ' . rtrim($kall, '(');
@@ -5001,7 +5015,7 @@ foreach (array_merge(
     if (basename($f) === 'maler.php') {
         continue;
     }
-    $kode = file_get_contents($f);
+    $kode = les_testfil($f);
     $kildekode .= $kode;
     preg_match_all("/Varsel::mal(?:TilAdmin)?\(\s*'([a-z_]+)'/", $kode, $m);
     foreach ($m[1] as $navn) {
@@ -5061,7 +5075,7 @@ if (DB::harTabell('notification_templates')) {
 }
 
 // Skjermen og endepunktet.
-$malApi = file_get_contents(dirname(__DIR__) . '/api/admin/maler.php');
+$malApi = les_testfil(dirname(__DIR__) . '/api/admin/maler.php');
 sjekk('malene kan endres fra admin', str_contains($malApi, "if (\$handling !== 'lagre') {"));
 sjekk('… og slettes', str_contains($malApi, "if (\$handling === 'slett') {"));
 // Her sto en sperre: maler koden kaller kunne ikke slettes. Eieren,
@@ -5094,7 +5108,7 @@ sjekk('… med feltene til aa kopiere', str_contains($sida2, 'navigator.clipboar
 // Sidene sa «to uker» fire steder og «2–3 uker» tre steder, og butikkassa
 // lovet «Hentetid i butikken: to uker» mens e-posten lovet to virkedager.
 sjekk('hentetida staar som 2–4 uker, ett sted',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php'),
         "klar til henting etter 2–4 uker"));
 sjekk('… og ingen side sier noe annet',
     !str_contains($sida2, '2–3 uker') && !str_contains($sida2, 'etter ca. to uker'));
@@ -5107,7 +5121,7 @@ sjekk('… og butikkbekreftelsen heller ikke',
     $butikkmal === '' || (!str_contains($butikkmal, 'virkedager') && !str_contains($butikkmal, 'to uker')));
 // Den som valgte «Send som pakke» skal ikke faa beskjed om aa hente paa Teie.
 sjekk('butikkbekreftelsen leser leveringsvalget',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/booking.php'),
         "\$erPakke ? 'butikkordre_pakke' : 'butikkordre'"));
 
 // ── Admin henter paa nytt naar noen andre har endret noe ───────────────
@@ -5154,7 +5168,7 @@ sjekk('… og ikke mens et skjema eller en rute staar aapen',
 
 // Serveren var aldri feilen. Spoerringene skal fortsatt ta med begge
 // statusene en paamelding kan ha, ellers forsvinner de som ikke har betalt.
-$ovr = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovr = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('nye paameldinger tar med baade betalte og reserverte',
     str_contains($ovr, "WHERE b.status IN ('betalt','reservert')"));
 
@@ -5169,7 +5183,7 @@ sjekk('nye paameldinger tar med baade betalte og reserverte',
 // samme refusjon; den staar naa der den brukes. Paa sporsmaal om omfang
 // svarte han: alt, med sok — og i tillegg dagsoppgjor, kvittering paa nytt
 // og sok.
-$bet = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+$bet = les_testfil(dirname(__DIR__) . '/api/admin/betalinger.php');
 
 sjekk('kassa har en egen fane for betalinger',
     str_contains($sida2, "['Betalinger',       'betalinger', 'adminuttak'],"));
@@ -5305,8 +5319,8 @@ sjekk('… med samme utgangspunkt som kortet paa oversikten',
 //
 // Maalt: for rettelsen svarte «Prov Lissom» «Field 'idempotency_key' doesn't
 // have a default value». Etterpaa kommer alle fire helt fram til Vipps.
-$mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
-$mlibEngangs = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mapi = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
+$mlibEngangs = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 
 // Én linje avgjor alt: krever planen fast trekk, blir det trekk — ellers
 // vanlig Vipps. En engangsplan krever aldri fast trekk, saa den faar det
@@ -5329,7 +5343,7 @@ sjekk('engangsbetalingen setter idempotency-noekkelen',
 // det er nok til at den veien er doed.
 $utenNokkel = [];
 foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) as $f) {
-    $kode = file_get_contents($f);
+    $kode = les_testfil($f);
     $fra = 0;
     while (($i = strpos($kode, "DB::settInn('payments'", $fra)) !== false) {
         // Fram til den avsluttende «]);» — et fast vindu kutter en lang
@@ -5403,8 +5417,8 @@ sjekk('… og det er faktisk kall aa se paa', count($kurvKall) >= 3, count($kurv
 // Maalt paa den gamle koden: soknad med betaling «selv» og betalingsraden paa
 // «venter» ga {"ok":true}, medlemmet ble «prove», og betalingen sto fortsatt
 // som «venter». Ingen penger, full tilgang.
-$soknader = file_get_contents(dirname(__DIR__) . '/api/admin/soknader.php');
-$mlib     = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$soknader = les_testfil(dirname(__DIR__) . '/api/admin/soknader.php');
+$mlib     = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 
 sjekk('«ordner selv» sjekkes for godkjenning',
     str_contains($soknader, "if (\$vedtak === 'godkjent' && \$betaling === 'selv') {"));
@@ -5475,7 +5489,7 @@ sjekk('… og medlemskapet tas ut av kurven naar avtalen startes',
 
 // Serveren skal fortsatt vaere den som avgjor. Den er den eneste som vet
 // hva som staar i Vipps, og den hindrer to avtaler ved siden av hverandre.
-$mlib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mlib = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 
 // ── Foerste trekk gaar ved godkjenning ─────────────────────────────────
 //
@@ -5488,7 +5502,7 @@ $mlib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 // Vipps trekke ved godkjenning».
 //
 // Maalt ende til ende mot den falske Vippsen: 41 av 41.
-$vFilInit = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$vFilInit = les_testfil(dirname(__DIR__) . '/app/lib/vipps.php');
 sjekk('Vipps blir bedt om aa trekke ved godkjenning',
     str_contains($vFilInit, "'initialCharge'         => [")
     && str_contains($vFilInit, "'amount'          => \$prisOre,")
@@ -5583,7 +5597,7 @@ sjekk('… og «hvem passer det for» bare paa kurs og events',
 
 // llms.txt er fila AI-tjenestene leser forst. Uten dette blir svarene
 // eieren skriver liggende i basen uten aa naa noen.
-$llms = file_get_contents(dirname(__DIR__) . '/api/llms.php');
+$llms = les_testfil(dirname(__DIR__) . '/api/llms.php');
 sjekk('llms.txt henter svarene fra basen',
     str_contains($llms, "WHERE nokkel LIKE 'GEO/%'"));
 sjekk('… og hopper over dem uten svar',
@@ -5743,10 +5757,10 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
 // at noen ser det.
 // Katalogen laa i api/kurs.php til 15. september 2026; naa i
 // app/lib/katalog.php, saa serversidene (app/nett/) tegner av den samme.
-$kursFil = file_get_contents(__DIR__ . '/../app/lib/katalog.php');
+$kursFil = les_testfil(__DIR__ . '/../app/lib/katalog.php');
 sjekk('katalogen sender antall opptatte plasser per dato',
     str_contains($kursFil, "'solgt'    => \$solgtKart[(int) \$o['id']] ?? 0,"));
-$stempFil = file_get_contents(__DIR__ . '/../api/stempling.php');
+$stempFil = les_testfil(__DIR__ . '/../api/stempling.php');
 sjekk('stemplingen sender hvor mye av ressursen som er i bruk naa',
     str_contains($stempFil, "'iBruk'  => min("));
 // «Alt — medlemmer og kurs»: begge halvdelene maa staa der.
@@ -5779,7 +5793,7 @@ sjekk('… og setningen som paasto at alle skivene var opptatt er borte',
 // hoerer til en avlyst oekt («!e.avlyst»), og da forsvant hun derfra. Naa
 // loesnes de fra kvelden naar den avlyses: de venter paa kurset i stedet, og
 // den som venter paa kurset staar paa hver kommende dato.
-$kursKode = file_get_contents(__DIR__ . '/../api/admin/kurs.php');
+$kursKode = les_testfil(__DIR__ . '/../api/admin/kurs.php');
 sjekk('avlysing loesner ventelista fra kvelden',
     str_contains($kursKode, 'UPDATE waitlist SET course_session_id = NULL'));
 // Bare de som fortsatt venter. En som alt har faatt plass eller er fjernet
@@ -5793,7 +5807,7 @@ sjekk('… og ingen ventelisterad slettes ved avlysing',
 // avlyst kveld har ingen plass aa gi bort. Poenget er at personen ikke lenger
 // henger paa den.
 sjekk('kalenderen viser dem som venter paa kurset paa hver kommende dato',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/kalender.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/kalender.php'),
                  'WHERE w.course_session_id IS NULL'));
 
 // ── «Ikke betalt» tar med dem som har sagt opp ─────────────────────────
@@ -5805,7 +5819,7 @@ sjekk('kalenderen viser dem som venter paa kurset paa hver kommende dato',
 // sto ubetalt forsvant fra kortet som skulle minne om aa kreve det inn, mens
 // pilla paa medlemsraden fortsatte aa si «Ubetalt». Han valgte «Ja, ta dem
 // med».
-$ovKode = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+$ovKode = les_testfil(__DIR__ . '/../api/admin/oversikt.php');
 sjekk('«Ikke betalt» henter ogsaa oppsagte',
     str_contains($ovKode, "WHERE status IN ('prove','aktiv','pause','oppsagt')"));
 sjekk('… og raden sier at medlemskapet er sagt opp',
@@ -5909,7 +5923,7 @@ sjekk('… og hoyreklikkmenyen virker fortsatt',
 // skjermen spor ikke etter «reservert_til». De to skjermene svarte ulikt om
 // samme rad. Han valgte «Vis dem i Kassa naar reservasjonen er utloept».
 if (DB::harKolonne('bookings', 'reservert_til')) {
-    $ovKode2 = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+    $ovKode2 = les_testfil(__DIR__ . '/../api/admin/oversikt.php');
     sjekk('utloepte nettbestillinger kommer med i «Ikke betalt»',
         str_contains($ovKode2, "AND (b.lagt_inn_av IS NOT NULL
                  OR b.reservert_til IS NULL
@@ -5929,7 +5943,7 @@ if (DB::harKolonne('bookings', 'reservert_til')) {
     // nekter aa sette en betalt paamelding paa venteliste. Staar de ulikt,
     // sier systemet to ting om den samme betalingen.
     sjekk('… med de samme tre ordene som resten av systemet bruker',
-        str_contains(file_get_contents(__DIR__ . '/../api/admin/pamelding.php'),
+        str_contains(les_testfil(__DIR__ . '/../api/admin/pamelding.php'),
                      "\$BETALT_VIPPS = ['autorisert', 'betalt', 'delvis_refundert'];"));
 
     // Maalt, ikke bare lest: en fersk nettbestilling venter faktisk paa
@@ -6024,7 +6038,7 @@ $vFiler = ['api/admin/kalender.php', 'api/admin/kurs.php', 'api/admin/medlemmer.
            'api/mine-plasser.php', 'api/venteliste.php'];
 $vAndre = [];
 foreach ($vFiler as $f) {
-    $kode = file_get_contents(__DIR__ . '/../' . $f);
+    $kode = les_testfil(__DIR__ . '/../' . $f);
     // Enhver tabell som ser ut som en venteliste ved siden av «waitlist».
     if (preg_match('/FROM\s+(vente\w*|wait(?!list)\w*|ko_\w*)/i', $kode, $m)) {
         $vAndre[] = $f . ': ' . $m[1];
@@ -6045,7 +6059,7 @@ sjekk('ventelista finnes bare ett sted', $vAndre === [], implode(', ', $vAndre))
 // personen staar fortsatt i koen. Hun venter, og skal telles.
 $vUlike = [];
 foreach ($vFiler as $f) {
-    $kode = file_get_contents(__DIR__ . '/../' . $f);
+    $kode = les_testfil(__DIR__ . '/../' . $f);
     // Et sted som spor etter «venter» alene, uten «varslet» ved siden av.
     if (preg_match("/status\s*=\s*'venter'/", $kode)) {
         $vUlike[] = $f;
@@ -6054,11 +6068,11 @@ foreach ($vFiler as $f) {
 sjekk('… og ingen av dem teller «venter» uten «varslet»',
     $vUlike === [], implode(', ', $vUlike));
 sjekk('… kortet paa Oversikt teller begge',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/oversikt.php'),
                  "SELECT COUNT(*) FROM waitlist WHERE status IN ('venter', 'varslet')"));
 sjekk('… og alle stedene leser «waitlist»',
     count(array_filter($vFiler, static fn(string $f): bool
-        => str_contains(file_get_contents(__DIR__ . '/../' . $f), 'waitlist'))) === count($vFiler));
+        => str_contains(les_testfil(__DIR__ . '/../' . $f), 'waitlist'))) === count($vFiler));
 
 // ── Gamle rader paa avlyste oekter ─────────────────────────────────────
 //
@@ -6072,7 +6086,7 @@ sjekk('… og alle stedene leser «waitlist»',
 $mig153 = __DIR__ . '/../db/migrations/153_ventelista_loesnes_fra_avlyste_okter.sql';
 sjekk('migrasjon 153 loesner de gamle radene', file_exists($mig153));
 if (file_exists($mig153)) {
-    $sql153 = file_get_contents($mig153);
+    $sql153 = les_testfil($mig153);
     sjekk('… bare for dem som fortsatt venter',
         str_contains($sql153, "AND w.status IN ('venter', 'varslet')"));
     // «booket», «utloept» og «fjernet» er ferdige, og skal ikke vekkes.
@@ -6118,7 +6132,7 @@ sjekk('… og innholdet er det samme som for',
 sjekk('… og chatten staar der den sto',
     str_contains($sida, '<sc-if value="{{ msFaneChat }}"'));
 
-$ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
+$ress = les_testfil(__DIR__ . '/../api/admin/ressurser.php');
 // Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
 // forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte
 // skiver uten at noe sa fra.
@@ -6138,7 +6152,7 @@ sjekk('kurset velger ressurs i oppsettet',
 // En id som ikke finnes avvises: ellers ville kurset staatt uten tak uten
 // aa si fra.
 sjekk('… og en ukjent ressurs avvises ved lagring',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/kurs.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/kurs.php'),
                  "Svar::feil('Fant ikke ressursen.');"));
 
 // ── Medlemmet velger selv ──────────────────────────────────────────────
@@ -6214,7 +6228,7 @@ sjekk('valget staar paa Min side, der medlemmet stempler inn',
 // En ressurs som er slettet eller slaatt av skal ikke gjore at innstemplinga
 // mislykkes — medlemmet staar med telefonen i haanda i dora.
 sjekk('… og en ukjent ressurs stopper ikke innstemplinga',
-    str_contains(file_get_contents(__DIR__ . '/../api/stempling.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/stempling.php'),
                  "\$rid = 0;"));
 
 // ── Et flerdagerskurs sperrer ikke natta ───────────────────────────────
@@ -6355,7 +6369,7 @@ sjekk('nettsida skriver «Kurs i verkstedet», ikke «Fullbooket»',
 // Grunnen maa foelge med helt ut. Regnes den ett sted og vises et annet,
 // kommer de to til aa si forskjellige ting.
 sjekk('… og grunnen sendes med fra serveren',
-    str_contains(file_get_contents(__DIR__ . '/../app/lib/katalog.php'),
+    str_contains(les_testfil(__DIR__ . '/../app/lib/katalog.php'),
                  "'sperret'  => \$sperretKart[(int) \$o['id']] ?? false,"));
 
 // ── Ressursene staar oeverst ───────────────────────────────────────────
@@ -6382,14 +6396,14 @@ sjekk('… og «Endre» ruller ned til skjemaet',
 // Uten «api/» finnes ingen slik fil, og ruteren svarte med hele nettsida.
 // Maalt paa lissom.no: den klippede adressen ga 1,2 MB HTML, den hele ga
 // 180 kB image/jpeg.
-$akurs2 = file_get_contents(__DIR__ . '/../api/admin/kurs.php');
+$akurs2 = les_testfil(__DIR__ . '/../api/admin/kurs.php');
 sjekk('et opplastet kursbilde beholder api/-adressen',
     str_contains($akurs2, "preg_match('~^api/bilde\\.php\\?artikkel=[A-Za-z0-9._-]{1,120}\$~', \$raa) === 1"));
 // Men en sti utenfra skal fortsatt klippes. Vakta er ikke fjernet, den er
 // gjort presis — samme regel som api/admin/referanser.php alt hadde.
 sjekk('… men en sti utenfra klippes fortsatt',
     str_contains($akurs2, '$navn = basename($raa);'));
-$m105 = file_get_contents(__DIR__ . '/../db/migrations/105_kursbilder_far_adressen_sin.sql');
+$m105 = les_testfil(__DIR__ . '/../db/migrations/105_kursbilder_far_adressen_sin.sql');
 sjekk('… og radene som alt er lagret rettes',
     str_contains($m105, "SET bilde = CONCAT('api/', bilde)")
     && str_contains($m105, "WHERE bilde LIKE 'bilde.php?artikkel=%'")
@@ -6433,7 +6447,7 @@ sjekk('… og det er tegnet, ikke et krympet bilde',
 //
 // Resten av kodebasen spor alltid foerst — se $oppsettFelt, $bilderFelt og
 // $apenFelt i api/kurs.php.
-$bok = file_get_contents(__DIR__ . '/../app/lib/booking.php');
+$bok = les_testfil(__DIR__ . '/../app/lib/booking.php');
 sjekk('ledige plasser spor om de delte ressursene finnes',
     str_contains($bok, "\$delteRessurser = DB::harKolonne('courses', 'ressurs_id')")
     && str_contains($bok, "&& DB::harTabell('ressurser');"));
@@ -6444,7 +6458,7 @@ sjekk('… og har det gamle regnestykket som reserve',
 sjekk('kurslagringa taaler det samme',
     str_contains($akurs2, "if (\$har('ressursId') && DB::harKolonne('courses', 'ressurs_id') && DB::harTabell('ressurser'))"));
 sjekk('… og innstemplinga ogsaa',
-    str_contains(file_get_contents(__DIR__ . '/../api/stempling.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/stempling.php'),
                  "if (\$rid > 0 && (!DB::harTabell('ressurser')"));
 
 // ── Kalenderen ─────────────────────────────────────────────────────────
@@ -6499,7 +6513,7 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
 // hjem» endte paa en fast setning om henting — skrevet for feltet «Naar er
 // den ferdig» fantes — og paa kurssida sto de rett under hverandre og sa
 // «2–3 uker» og «2-4 uker». Eieren, 31. august: «2-4 uker er riktig».
-$mal = file_get_contents(__DIR__ . '/../app/lib/kursmal.php');
+$mal = les_testfil(__DIR__ . '/../app/lib/kursmal.php');
 sjekk('hentetiden staar bare i «Naar er den ferdig»',
     substr_count($mal, 'self::HENTING') === 6
     && !preg_match("~'medHjem'[^\n]*(\n\s*\.[^\n]*)*self::HENTING~", $mal));
@@ -6516,7 +6530,7 @@ sjekk('… og teksten sier hvor man kan se det selv',
 // Fire kurs hadde den innlimte teksten. Migrasjonen toemmer bare den
 // noeyaktige — har noen skrevet noe eget, blir det staaende.
 sjekk('… og de fire kursene med innlimt tekst foelger malen',
-    str_contains(file_get_contents(__DIR__ . '/../db/migrations/109_hentetiden_staar_ett_sted.sql'),
+    str_contains(les_testfil(__DIR__ . '/../db/migrations/109_hentetiden_staar_ett_sted.sql'),
                  "WHERE TRIM(ferdig_tid) = 'Klart til henting etter 2-4 uker. Vi gir beskjed.';"));
 
 // Eieren, 31. august: «jeg forstaar ikke alle de tomme feltene». Et tomt felt
@@ -6603,26 +6617,26 @@ sjekk('… og ingen andre overlegg som ruller mangler den',
 // satt til «publisert», saa den ble staaende under «Godkjent — klar til
 // bruk» for alltid. Eieren, 31. august: «disse ligger her og jeg kan trykke
 // publiser, men de er publisert».
-$ai = file_get_contents(__DIR__ . '/../api/admin/ai.php');
+$ai = les_testfil(__DIR__ . '/../api/admin/ai.php');
 sjekk('et utkast som publiseres blir merket publisert',
     str_contains($ai, "'status'      => \$utNaa ? 'publisert' : 'godkjent',")
     && str_contains($ai, "DB::oppdater('ai_utkast', ['status' => 'publisert'], ['id' => \$id]);"));
 // Tavla henter fortsatt bare «godkjent» — det er den som er gjorelista.
 sjekk('… og tavla lister bare det som ikke er brukt ennaa',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/marked.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/marked.php'),
                  "FROM ai_utkast WHERE status = 'godkjent' ORDER BY id DESC LIMIT 20"));
 // Migrasjon 108 rydder dem som alt laa ute. Bare utkast som peker paa en
 // artikkel som faktisk er publisert — et utkast med en kladd bak seg har
 // fortsatt noe ugjort.
 sjekk('… og de som alt laa ute er ryddet',
-    str_contains(file_get_contents(__DIR__ . '/../db/migrations/108_publiserte_utkast_er_ferdige.sql'),
+    str_contains(les_testfil(__DIR__ . '/../db/migrations/108_publiserte_utkast_er_ferdige.sql'),
                  "WHERE u.status = 'godkjent'\n    AND a.status = 'publisert';"));
 
 // Kursbeviset leste «courses.instruktor», et fritekstfelt ingen annen del av
 // systemet bruker. Eieren, 31. august: «dersom noen andre holder kurset saa er
 // vel dette valgt i kursoppsettet? Saa da henter det her infra» — og «fiks
 // kursbeviset da». Naa henter det derfra: oekta foerst, saa kurset.
-$bevis = file_get_contents(__DIR__ . '/../api/kursbevis.php');
+$bevis = les_testfil(__DIR__ . '/../api/kursbevis.php');
 sjekk('kursbeviset henter kursholderen fra oekta foerst, saa kurset',
     str_contains($bevis, "LEFT JOIN kursholdere kho ON kho.id = cs.kursholder_id")
     && str_contains($bevis, "LEFT JOIN kursholdere khk ON khk.id = c.kursholder_id")
@@ -6642,14 +6656,14 @@ sjekk('… og et ark uten signatur skrives uten, ikke med Monicas',
 // signatur paa raden hennes ville hvert eneste bevis mistet signaturen i det
 // beviset begynte aa lese kursholderen.
 sjekk('… og Monica faar signaturen sin med i samme migrasjon',
-    str_contains(file_get_contents(__DIR__ . '/../db/migrations/107_kursholder_signatur.sql'),
+    str_contains(les_testfil(__DIR__ . '/../db/migrations/107_kursholder_signatur.sql'),
                  "ADD COLUMN IF NOT EXISTS signatur VARCHAR(255) NULL")
-    && str_contains(file_get_contents(__DIR__ . '/../db/migrations/107_kursholder_signatur.sql'),
+    && str_contains(les_testfil(__DIR__ . '/../db/migrations/107_kursholder_signatur.sql'),
                  "SET signatur = 'signatur-monica.png'"));
 sjekk('… og signaturen kan legges inn paa kursholderen',
     str_contains($sida, "khVelgSignatur: () => this.apneBildevalg({ slag: 'signatur' }),")
     && str_contains($sida, "if (v.slag === 'signatur') {")
-    && str_contains(file_get_contents(__DIR__ . '/../api/admin/kursholdere.php'),
+    && str_contains(les_testfil(__DIR__ . '/../api/admin/kursholdere.php'),
                     "if (DB::harKolonne('kursholdere', 'signatur')) {"));
 // Metoden regnes ut av kategorien. Skrev du noe i feltet, ble det overskrevet
 // neste gang kurset ble lagret fra oppsettet.
@@ -6666,7 +6680,7 @@ sjekk('… men lagringa sender verdiene videre urort',
 // som skrev «alt som ikke er nei blir 1», og tre steder i fronten som leste
 // «!== false» — og det gjor undefined til paa.
 sjekk('SMS slaas bare paa av et uttrykkelig ja',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/kurs.php'),
+    str_contains(les_testfil(__DIR__ . '/../api/admin/kurs.php'),
                  "\$data['sms_paaminnelse'] = Foresporsel::tekst('sms') === 'ja' ? 1 : 0;"));
 sjekk('… og ingen steder i fronten gjoer undefined til paa',
     preg_match('~sms[^\n]*!== false~i', $sida) !== 1
@@ -6678,9 +6692,9 @@ sjekk('… og ingen steder i fronten gjoer undefined til paa',
 // den fikk SMS paa. Migrasjon 106 tar bade standarden og radene som ligger
 // inne.
 sjekk('… og kolonnen staar av som standard',
-    str_contains(file_get_contents(__DIR__ . '/../db/migrations/106_sms_er_av_som_standard.sql'),
+    str_contains(les_testfil(__DIR__ . '/../db/migrations/106_sms_er_av_som_standard.sql'),
                  'MODIFY COLUMN sms_paaminnelse TINYINT(1) NOT NULL DEFAULT 0;')
-    && str_contains(file_get_contents(__DIR__ . '/../db/migrations/106_sms_er_av_som_standard.sql'),
+    && str_contains(les_testfil(__DIR__ . '/../db/migrations/106_sms_er_av_som_standard.sql'),
                  'UPDATE courses SET sms_paaminnelse = 0 WHERE sms_paaminnelse <> 0;'));
 
 // Det som bare gjelder medlemmer hoerer ikke hjemme paa en side hvem som
@@ -6856,7 +6870,7 @@ sjekk('… og bredden deles per klynge, ikke per dag',
 //   «Det skal ikke vaere debet- og kreditkolonner men man bruker fortegn i
 //    beloep (positivt beloep = debet, negativt beloep = kredit). For oevrig
 //    ser det bra ut.»
-$doFil = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+$doFil = les_testfil(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
 sjekk('fila har ett beloepsfelt, ikke debet og kredit',
     str_contains($doFil, "fputcsv(\$f, ['Dato', 'Bilagstekst', 'Konto', 'Mva-kode', 'Beløp', 'Beskrivelse']")
     && !str_contains($doFil, "'Debet', 'Kredit'"));
@@ -6879,7 +6893,7 @@ sjekk('… og ikke blant feltene i admin heller',
     && !str_contains($sida, "'regnskap_mva_dropin'"));
 
 // Kontoene hun opprettet i Tripletex.
-$m116 = file_get_contents(dirname(__DIR__) . '/db/migrations/116_kontoene_fra_regnskapsforeren.sql');
+$m116 = les_testfil(dirname(__DIR__) . '/db/migrations/116_kontoene_fra_regnskapsforeren.sql');
 foreach ([['regnskap_konto_kurs', '3200'], ['regnskap_mva_kurs', '6'],
           ['regnskap_konto_medlemskap', '3000'], ['regnskap_mva_medlemskap', '3'],
           ['regnskap_konto_butikk', '3020'], ['regnskap_mva_butikk', '3'],
@@ -6921,7 +6935,7 @@ if (DB::harTabell('innstillinger')) {
 //
 // Koppen er ikke tegnet paa nytt: banene er hentet ordrett fra mark-cup.svg,
 // samme merke som staar oeverst til venstre. Bade koppen og skaala.
-$merket = file_get_contents(dirname(__DIR__) . '/mark-cup.svg');
+$merket = les_testfil(dirname(__DIR__) . '/mark-cup.svg');
 preg_match_all('~<path[^>]*\sd="(.*?)"~s', $merket, $mm);
 $reint = static fn(string $b): string => trim((string) preg_replace('~(&#xA;|&#x9;|\s)+~', ' ', $b));
 sjekk('merket har skaala, koppen og ordmerket', count($mm[1]) === 3);
@@ -6983,7 +6997,7 @@ sjekk('hver kopp baerer fortsatt navnet til den paameldte',
 // Malt paa denne basen for og etter: Venteliste-skjermen fant 1 rad,
 // kalenderen fant 0 paa alle 69 oektene i sju uker — etterpaa 10, alle
 // merket «paaKurset».
-$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$kalFil = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('kalenderen henter ogsaa dem som venter paa kurset',
     str_contains($kalFil, 'WHERE w.course_session_id IS NULL'));
 sjekk('… og merker dem, saa skjermen kan si hvorfor de staar der',
@@ -7109,7 +7123,7 @@ sjekk('grupperte oekter teller ikke den samme personen flere ganger',
 //
 // Eieren, 1. september, om det som sto under Systemmeldinger: «denne staar jo
 // to ganger og eposten ser jo helt feil ut».
-$mig119 = file_get_contents(dirname(__DIR__) . '/db/migrations/119_tre_eposter_med_samme_emne.sql');
+$mig119 = les_testfil(dirname(__DIR__) . '/db/migrations/119_tre_eposter_med_samme_emne.sql');
 sjekk('kurspaameldingen far sitt eget emne',
     str_contains($mig119, "SET emne  = 'Du er påmeldt {kurs}',"));
 sjekk('… henting far sitt', str_contains($mig119, "SET emne = 'Bestillingen din er klar til henting'"));
@@ -7131,7 +7145,7 @@ sjekk('… og en mal hun har endret selv roeres ikke',
 //   emne   «Du er paameldt Paint on Pots»
 //   naar   «onsdag 2. september, 11:24»
 //   to kvelder: «onsdag 14. – torsdag 15. oktober, 17:00»
-$bkFil = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$bkFil = les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
 sjekk('kurset og naar er to felt', str_contains($bkFil, "'kurs'  => (string) \$b['tittel'],")
     && str_contains($bkFil, "'naar'  => \$naar,"));
 // Sluttida maa hentes, ellers kan et flerdagerskurs ikke si begge dagene.
@@ -7143,7 +7157,7 @@ sjekk('… og sluttida hentes, saa to kvelder blir to kvelder',
 sjekk('… mens {ordre} staar igjen for vinduet for vedlikeholdet er kjort',
     str_contains($bkFil, "'ordre' => (string) \$b['tittel'] . (\$naar !== '' ? ' — ' . \$naar : ''),"));
 sjekk('… og registeret lover de nye feltene',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/maler.php'),
                  "'kurs'  => 'Navnet på kurset',"));
 
 // Malen i basen, naar vedlikeholdet er kjort.
@@ -7219,7 +7233,7 @@ sjekk('… mens gjenstanden i verkstedet viser «Fra»',
     str_contains($sida, "bPris: 'Fra ' + fmt(kat2.prisFraOre / 100 * antall),"));
 
 // ── Paint on Pots koster 500 ──────────────────────────────────────────
-$mig120 = file_get_contents(dirname(__DIR__) . '/db/migrations/120_paint_on_pots_koster_500.sql');
+$mig120 = les_testfil(dirname(__DIR__) . '/db/migrations/120_paint_on_pots_koster_500.sql');
 sjekk('migrasjonen setter prisen til 500',
     str_contains($mig120, 'SET pris_ore = 50000,'));
 sjekk('… og slaar av «gjenstand i kassa», som la 300 oppaa',
@@ -7228,7 +7242,7 @@ if (DB::harTabell('courses') && DB::harKolonne('courses', 'gjenstand_i_kassa')) 
     $pop = DB::en("SELECT pris_ore, gjenstand_i_kassa, status FROM courses WHERE slug = 'paint-on-pots'");
     if ($pop !== null) {
         // 24. september (migrasjon 209, eierens valg): «Fra kr. 450,-».
-        $mig209 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/209_fra_pris_paa_kurs.sql');
+        $mig209 = (string) les_testfil(dirname(__DIR__) . '/db/migrations/209_fra_pris_paa_kurs.sql');
         $fraMig = preg_match('~pris_ore = (\d+)~', $mig209, $pm) ? (int) $pm[1] : -1;
         sjekk('Paint on Pots har prisen fra migrasjon 209 i basen', (int) $pop['pris_ore'] === $fraMig,
             (int) $pop['pris_ore'] . ' oere, migrasjonen sier ' . $fraMig);
@@ -7306,7 +7320,7 @@ sjekk('… og emnet toemmes naar skjemaet er sendt',
     str_contains($sida, "ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '', ktEmne: '' });"));
 
 // ── Date Night koster 2990 ────────────────────────────────────────────
-$mig121 = file_get_contents(dirname(__DIR__) . '/db/migrations/121_date_night_koster_2990.sql');
+$mig121 = les_testfil(dirname(__DIR__) . '/db/migrations/121_date_night_koster_2990.sql');
 sjekk('migrasjonen setter Date Night til 2990', str_contains($mig121, 'SET pris_ore = 299000'));
 if (DB::harTabell('courses')) {
     $dn = DB::en("SELECT pris_ore FROM courses WHERE tittel = 'Date Night'");
@@ -7332,7 +7346,7 @@ if (DB::harTabell('courses')) {
 //
 // En engangsbetaling har ingen avtale i Vipps, og skal staa uten. NULL
 // teller ikke som en verdi i en unik noekkel, saa flere rader kan staa slik.
-$mlib2 = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mlib2 = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('engangsbetalingen staar uten avtale-id, ikke med tom streng',
     str_contains($mlib2, "'vipps_agreement_id' => null,"));
 // Kontrollen: den tomme strengen skal vaere borte.
@@ -7342,7 +7356,7 @@ sjekk('… og den tomme strengen er borte',
 sjekk('… mens en ekte avtale fortsatt lagres',
     str_contains($mlib2, "'vipps_agreement_id' => \$vipps['avtaleId'],"));
 // Raden som alt staar med '' sperrer for alle andre til den ryddes.
-$mig125 = file_get_contents(dirname(__DIR__) . '/db/migrations/125_tom_avtale_id_sperret_betaling.sql');
+$mig125 = les_testfil(dirname(__DIR__) . '/db/migrations/125_tom_avtale_id_sperret_betaling.sql');
 sjekk('migrasjonen rydder raden som sperrer',
     str_contains($mig125, 'SET vipps_agreement_id = NULL')
     && str_contains($mig125, "WHERE vipps_agreement_id = ''"));
@@ -7453,7 +7467,7 @@ sjekk('… men til ordren, som eier planen',
 // Og naar vi ikke kjenner henne, henter serveren navnet fra Vipps og sender
 // henne rett tilbake til den samme noekkelen.
 sjekk('… og serveren henter navnet fra Vipps og kommer tilbake til noekkelen',
-    str_contains($meldInn = file_get_contents(dirname(__DIR__) . '/api/meld-inn.php'),
+    str_contains($meldInn = les_testfil(dirname(__DIR__) . '/api/meld-inn.php'),
         "header('Location: /api/vipps-login.php?retur='")
     && str_contains($meldInn, "rawurlencode('/meld-inn/' . \$token)"));
 // Kortet aapner seg selv naar planene er lastet. Uten dette lander hun paa
@@ -7465,7 +7479,7 @@ sjekk('… og kortet aapner seg selv naar hun er tilbake',
 // Regelen som gjorde det usynlig staar urort: admin skal fortsatt komme inn
 // paa medlemsdelen. Det var skjemaets port som var feil sted aa lande.
 sjekk('… og admin teller fortsatt som medlem paa serveren',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/auth.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/auth.php'),
                  "if ((string) (\$medlem['rolle'] ?? '') === 'admin') {"));
 
 // ── Bunnmenyen paa Min side var ment for telefonen ────────────────────
@@ -7540,7 +7554,7 @@ sjekk('… og den heter «Hjem» paa telefonen og «Min side» paa PC',
 //
 // Maalt lokalt: /admin/oversikt og /min-side ga hver sin linje, /kurs og /
 // ga ingen.
-$sideP = file_get_contents(dirname(__DIR__) . '/side.php');
+$sideP = les_testfil(dirname(__DIR__) . '/side.php');
 sjekk('sidelastinger under admin og Min side maales',
     str_contains($sideP, "str_starts_with(\$sti, '/admin') || str_starts_with(\$sti, '/min-side')")
     && str_contains($sideP, "logg('SIDE', [")
@@ -7624,7 +7638,7 @@ sjekk('… mens panelet i admin har serverens regel',
 // «slettetAvMeg» skiller «jeg slettet den» fra «verkstedet slettet den».
 // Uten den ville admin kunne hente tilbake fra Min side ogsaa.
 sjekk('… og serveren sier om det var du som slettet den',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/chat.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/chat.php'),
                  "'slettetAvMeg' => \$slettet && \$vetHvemSomSlettet"),
     'et medlem henter bare tilbake det det selv har slettet');
 // Raden sto uten knapp til neste runde hadde hentet svaret fra serveren.
@@ -7804,7 +7818,7 @@ sjekk('… og omskrivingen av innlimingen er tatt bort',
 // som vanlig medlem: 403 paa begge for en annens melding, 200 paa sin egen.
 // I nettleseren: knappene gikk «Slett» → «Angre sletting» → «Slett», og
 // teksten kom tilbake.
-$chatP = file_get_contents(dirname(__DIR__) . '/api/chat.php');
+$chatP = les_testfil(dirname(__DIR__) . '/api/chat.php');
 sjekk('admin kan slette en melding som ikke er hans egen',
     str_contains($chatP, '$erAdmin = Sesjon::erAdmin();')
     && str_contains($chatP, '$egen = (int) $rad[\'member_id\'] === $megId;')
@@ -7837,7 +7851,7 @@ sjekk('… og det staar i loggen naar admin roerer andres',
 // tilbake. Slettet medlemmet sin egen, fikk det kanHente=true og hentet den
 // tilbake selv.
 sjekk('migrasjon 156 husker hvem som slettet meldingen',
-    str_contains($mig156 = file_get_contents(dirname(__DIR__) . '/db/migrations/156_hvem_slettet_meldingen.sql'), 'ALTER TABLE chat_meldinger')
+    str_contains($mig156 = les_testfil(dirname(__DIR__) . '/db/migrations/156_hvem_slettet_meldingen.sql'), 'ALTER TABLE chat_meldinger')
     && str_contains($mig156, 'ADD COLUMN slettet_av BIGINT UNSIGNED NULL'),
     'uten den kan ingen skille «jeg slettet den» fra «verkstedet slettet den»');
 sjekk('… og den som slettet blir skrevet ned',
@@ -7912,7 +7926,7 @@ sjekk('… og rullingen sendes videre til rullefeltet',
     && str_contains($sida, 'return f ? f.scrollTop : document.documentElement.scrollTop;'),
     'maalt: scrollTo(0,600), scrollTo({top:300}) og scrollTo(0,0) traff alle');
 sjekk('… og skriptet ligger i begge filene, ogsaa den uten admin',
-    str_contains(file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'), 'lx-laast'),
+    str_contains(les_testfil(dirname(__DIR__) . '/lissom-2108-uten-admin.html'), 'lx-laast'),
     'Min side ligger i den fila');
 // ── Navnene i bunnmenyen ──────────────────────────────────────────
 //
@@ -7982,14 +7996,14 @@ sjekk('… mens et kurs med datoer fortsatt sier det',
 // teksten DELES og at hvert avsnitt faar sitt eget <p> — ikke hvordan.
 // Siden 76ab924 («Én utgave av kurset») tegnes kurssida av serveren, i
 // app/nett/sider/kursside.php. Der skal delinga skje.
-$kurssideP = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
+$kurssideP = (string) les_testfil(dirname(__DIR__) . '/app/nett/sider/kursside.php');
 sjekk('kurssida deler beskrivelsen i avsnitt',
     str_contains($kurssideP, "preg_split('/\\r?\\n+/', \$raa)")
     && str_contains($kurssideP, '$deler = array_values(array_filter(array_map(\'trim\','));
 // Kontrollen: det ene avsnittet som tok hele teksten skal vaere borte.
 sjekk('… og det ene avsnittet som tok alt er borte',
     !str_contains($sida, 'text-wrap: pretty;">{{ bOm }}</p>'));
-$mig123 = file_get_contents(dirname(__DIR__) . '/db/migrations/123_eierens_tekst_pa_date_night.sql');
+$mig123 = les_testfil(dirname(__DIR__) . '/db/migrations/123_eierens_tekst_pa_date_night.sql');
 sjekk('migrasjonen skriver eierens tekst med avsnitt',
     str_contains($mig123, "'Date Night i keramikkverkstedet 💕'")
     && str_contains($mig123, 'CHAR(10)')
@@ -8057,7 +8071,7 @@ sjekk('… og koden legger ikke paa salgslinja',
     !str_contains($sida, "concat(['Selg egne arbeider gjennom lissom.no'])")
     && !str_contains($sida, "const SALG = 'Selg egne arbeider gjennom lissom.no';"));
 // Migrasjonen flytter den dit den hoerer hjemme.
-$mig124 = file_get_contents(dirname(__DIR__) . '/db/migrations/124_salgslinja_bare_pa_arsmedlemskap.sql');
+$mig124 = les_testfil(dirname(__DIR__) . '/db/migrations/124_salgslinja_bare_pa_arsmedlemskap.sql');
 sjekk('… migrasjonen tar den av alt som ikke er aarsavtale',
     str_contains($mig124, 'WHERE binding_mnd < 12'));
 sjekk('… og setter den paa aarsmedlemskapet',
@@ -8222,7 +8236,7 @@ sjekk('… og dialogen henter dem derfra',
 
 // Serveren skal fortsatt avgjore. Skjermen kan ta feil; det er bare basen
 // som vet hva planen krever.
-$mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$mapi = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('serveren tvinger fast trekk der planen krever det',
     str_contains($mapi, "\$betaling = Medlemskap::kreverFastTrekk(\$plan) ? 'trekk' : 'selv';"));
 // Og bare der. En engangsplan har aldri «krever_fast_trekk», saa den kan
@@ -8302,7 +8316,7 @@ sjekk('… og «Fullbooket» er fortsatt ordet ledigTekst gir',
 // Teksten ligger i «05 · Beskrivelse» i kursoppsettet, og vises oeverst paa
 // kurssida og paa det store kortet under «Kursene vaare». Malt i nettleseren
 // etter migrasjonen: begge stedene staar med den nye teksten.
-$mig122 = file_get_contents(dirname(__DIR__) . '/db/migrations/122_teksten_pa_date_night.sql');
+$mig122 = les_testfil(dirname(__DIR__) . '/db/migrations/122_teksten_pa_date_night.sql');
 sjekk('migrasjonen skriver den nye teksten paa Date Night',
     str_contains($mig122, 'En romantisk og kreativ kveld for to.')
     && str_contains($mig122, 'minnene varer lenge.'));
@@ -8382,15 +8396,15 @@ sjekk('… og en dag uten okter star som for',
 //
 // En kunde som leste SMS-en trodde hen hadde en uke ekstra. Eieren,
 // 1. september: «to uker».
-$fbFil = file_get_contents(dirname(__DIR__) . '/api/admin/ferdigbrent.php');
-sjekk('arbeidene oppbevares i to uker', str_contains($fbFil, 'const UKER_OPPBEVARING = 2;'));
+$fbFil = les_testfil(dirname(__DIR__) . '/api/admin/ferdigbrent.php');
+sjekk('arbeidene oppbevares i tre uker', str_contains($fbFil, 'const UKER_OPPBEVARING = 3;'));
 sjekk('… og skjermen sier det samme foer serveren svarer',
-    str_contains($sida, 'const uker = (d && d.uker) || 2;'));
+    str_contains($sida, 'const uker = (d && d.uker) || 3;'));
 sjekk('… og malen kunden faar sier det ogsaa',
-    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/118_oppbevaring_i_to_uker.sql'),
-                 "'Vi oppbevarer den hos oss i to uker.'"));
+    str_contains(les_testfil(dirname(__DIR__) . '/db/migrations/242_oppbevaring_i_tre_uker.sql'),
+                 "'Innen tre uker'"));
 sjekk('… og spoersmaal og svar staar som for',
-    str_contains($sida, 'Vi oppbevarer ferdige arbeider i to uker etter at du har fått beskjed'));
+    str_contains($sida, 'Vi oppbevarer ferdige arbeider i tre uker etter at du har fått beskjed'));
 
 // Butikken lover ingen frist i det hele tatt. Eieren, 1. september:
 // «butikken skal ikke si vi holder av varen, fjern det fra systemet».
@@ -8403,12 +8417,12 @@ sjekk('butikken lover ikke aa holde av varen',
 
 // Brennetida er noe annet, og skal fortsatt vaere to til fire uker.
 sjekk('brennetida er to til fire uker, og staar ett sted',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php'),
                  "const HENTING = 'Den er normalt klar til henting etter 2–4 uker."));
-// Ingen av de to tallene skal si «tre uker» noe sted i det kunden ser.
-sjekk('ingen tekst lover tre uker lenger',
-    !preg_match('~oppbevar\w*[^.]{0,40}tre uker~iu', $sida)
-    && !preg_match('~oppbevar\w*[^.]{0,40}tre uker~iu', $fbFil));
+// Oppbevaring skal si tre uker; brennetiden er fortsatt to til fire uker.
+sjekk('ingen oppbevaringstekst lover to uker lenger',
+    !preg_match('~oppbevar\w*[^.]{0,40}to uker~iu', $sida)
+    && !preg_match('~oppbevar\w*[^.]{0,40}to uker~iu', $fbFil));
 
 if (DB::harTabell('notification_templates')) {
     // Kanalen: e-post, ikke SMS. Eieren, 13. september 2026: «Bare e-post»
@@ -8418,8 +8432,8 @@ if (DB::harTabell('notification_templates')) {
     sjekk('«ferdig brent» gaar paa e-post',
         (string) DB::verdi("SELECT kanal FROM notification_templates WHERE navn = 'ferdig_brent'") === 'epost');
     $fb = (string) DB::verdi("SELECT tekst FROM notification_templates WHERE navn = 'ferdig_brent'");
-    sjekk('malen i basen sier to uker',
-        $fb === '' || (str_contains($fb, 'to uker') && !str_contains($fb, 'tre uker')),
+    sjekk('malen i basen sier tre uker',
+        $fb === '' || (str_contains($fb, 'tre uker') && !str_contains($fb, 'to uker')),
         mb_substr($fb, 0, 120));
 }
 
@@ -8433,9 +8447,9 @@ if (DB::harTabell('notification_templates')) {
 // e-postadressene til alle som har vaert paa kurs. Uten en tredje rolle var
 // valget mellom aa gi henne hele verkstedet eller aa sende filene for haand.
 sjekk('rollen finnes i basen',
-    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/117_regnskapsforeren_far_egen_bruker.sql'),
+    str_contains(les_testfil(dirname(__DIR__) . '/db/migrations/117_regnskapsforeren_far_egen_bruker.sql'),
                  "ENUM('medlem', 'admin', 'regnskap')"));
-$sesjFil = file_get_contents(dirname(__DIR__) . '/app/lib/session.php');
+$sesjFil = les_testfil(dirname(__DIR__) . '/app/lib/session.php');
 sjekk('… og krever passord, som admin',
     str_contains($sesjFil, "if (\$m === null || (\$m['rolle'] ?? '') !== 'regnskap') {")
     && str_contains($sesjFil, "return (\$m['innlogging_maate'] ?? '') === 'passord';"));
@@ -8444,7 +8458,7 @@ sjekk('… og krever passord, som admin',
 sjekk('… og en admin gaar alltid gjennom',
     str_contains($sesjFil, "if (self::erAdmin()) {\n            return true;\n        }"));
 
-$authFil = file_get_contents(dirname(__DIR__) . '/app/lib/auth.php');
+$authFil = les_testfil(dirname(__DIR__) . '/app/lib/auth.php');
 sjekk('krev_regnskap() svarer 404, ikke 403',
     str_contains($authFil, 'function krev_regnskap(): array')
     && str_contains($authFil, "logg('Avvist regnskapsforsøk', ['medlem' => \$m['id']]);"));
@@ -8453,11 +8467,11 @@ sjekk('krev_regnskap() svarer 404, ikke 403',
 // 200 paa de fire, 404 paa ti andre, og 404 paa refusjon.
 foreach (['okonomi', 'dagsoppgjor', 'transaksjoner', 'betalinger'] as $e) {
     sjekk('regnskapet er aapent: ' . $e,
-        str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/' . $e . '.php'), 'krev_regnskap();'));
+        str_contains(les_testfil(dirname(__DIR__) . '/api/admin/' . $e . '.php'), 'krev_regnskap();'));
 }
 // Aa flytte penger er verkstedets avgjorelse. Refusjon og «send kvittering
 // paa nytt» ligger bak krev_admin() i det samme endepunktet.
-$betFil = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+$betFil = les_testfil(dirname(__DIR__) . '/api/admin/betalinger.php');
 sjekk('… men refusjon krever fortsatt admin',
     str_contains($betFil, 'krev_regnskap();')
     && str_contains($betFil, "Foresporsel::krevMetode('POST');")
@@ -8471,7 +8485,7 @@ sjekk('… men refusjon krever fortsatt admin',
 // Og resten av admin er stengt: ingen andre endepunkter slipper rollen inn.
 $aapne = [];
 foreach (glob(dirname(__DIR__) . '/api/admin/*.php') as $f) {
-    if (str_contains(file_get_contents($f), 'krev_regnskap();')) {
+    if (str_contains(les_testfil($f), 'krev_regnskap();')) {
         $aapne[] = basename($f, '.php');
     }
 }
@@ -8479,7 +8493,7 @@ sort($aapne);
 sjekk('… og ingen andre endepunkter er aapnet',
     // Timelista kom til 26. september (ac5d853): kursholderne skal kunne
     // regnes paa av regnskapsfoereren.
-    $aapne === ['betalinger', 'dagsoppgjor', 'okonomi', 'timeliste', 'transaksjoner'], implode(', ', $aapne));
+    $aapne === ['arbeidsrom', 'betalinger', 'dagsoppgjor', 'okonomi', 'timeliste', 'transaksjoner'], implode(', ', $aapne));
 
 // Skjermen: ett menypunkt, og ingen vei til de andre.
 sjekk('menyen viser bare OEkonomi for rollen',
@@ -8500,7 +8514,7 @@ sjekk('en ny bruker kan faa hvilken som helst av de tre rollene',
     && str_contains($sida2, "rolle: this.state.brNyRolle || 'admin',")
     && !str_contains($sida2, "rolle: this.state.brNyAdmin === false ? 'medlem' : 'admin',"));
 sjekk('… og serveren tar imot alle tre',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/brukere.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/admin/brukere.php'),
                  "in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)"));
 
 // ── Ruter som aapner seg utenfor skjermen ──────────────────────────────
@@ -8776,7 +8790,7 @@ sjekk('… og klumpen med linjeskift er borte',
 // tolv, og om proveperioden som ikke har binding i det hele tatt.
 echo "\n== Vilkaarene maa godtas ==\n";
 
-$mig133 = file_get_contents(dirname(__DIR__) . '/db/migrations/133_medlemsvilkar_godtas.sql');
+$mig133 = les_testfil(dirname(__DIR__) . '/db/migrations/133_medlemsvilkar_godtas.sql');
 sjekk('migrasjon 133 lagrer samtykket',
     str_contains($mig133, 'ADD COLUMN vilkaar_godtatt_at')
     && str_contains($mig133, 'vilkaar_versjon'));
@@ -8790,7 +8804,7 @@ sjekk('utgaven av vilkaarene staar ett sted',
 // Kravet maa staa paa SERVEREN. Haken i nettleseren er en hoeflighet mot den
 // som fyller ut; det er kallet som avgjor om noen blir medlem, og en graa
 // knapp stopper ikke den som sender kallet utenom nettleseren.
-$bliVilkaar = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$bliVilkaar = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
 sjekk('serveren krever samtykket',
     str_contains($bliVilkaar, "\$vilkaar = Foresporsel::tekst('vilkaar') === 'ja';")
     && str_contains($bliVilkaar, "Svar::feil('Du må godta medlemsvilkårene for å melde deg inn.');"));
@@ -8820,13 +8834,13 @@ sjekk('bindingslinja leses av planen',
     && str_contains($sida, "const o = parseInt(pl.oppsigelse, 10);"));
 sjekk('… og den gamle faste linja er borte',
     !str_contains($sida, "'Medlemskapet har 2 måneders bindingstid fra du melder deg inn, '"));
-$medApiV = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$medApiV = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('… og serveren sender oppsigelsestida med',
     str_contains($medApiV, "'oppsigelse' => (int) (\$p['oppsigelse_mnd'] ?? 1),"));
 
 // Samtykket skal kunne vises fram i ettertid. En hake som bare laaser opp en
 // knapp er ikke noe bevis.
-$medlApiV = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medlApiV = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('medlemsruta viser naar vilkaarene ble godtatt',
     str_contains($medlApiV, "'Godtok medlemsvilkårene '"));
 sjekk('… og skjermen tegner den, begge steder',
@@ -8926,12 +8940,12 @@ sjekk('ingen faar lenger halvparten', !in_array(0.5, $andeler, true),
 // for mye.
 foreach (['avbestill', 'mine-plasser'] as $fil) {
     sjekk($fil . '.php bruker den felles regelen',
-        str_contains(file_get_contents(dirname(__DIR__) . '/api/' . $fil . '.php'),
+        str_contains(les_testfil(dirname(__DIR__) . '/api/' . $fil . '.php'),
             'Booking::avbestillingsregel('));
 }
 sjekk('… og har ingen egen kopi av tallene',
-    !str_contains(file_get_contents(dirname(__DIR__) . '/api/avbestill.php'), '14 * 24')
-    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/mine-plasser.php'), '$dager > '));
+    !str_contains(les_testfil(dirname(__DIR__) . '/api/avbestill.php'), '14 * 24')
+    && !str_contains(les_testfil(dirname(__DIR__) . '/api/mine-plasser.php'), '$dager > '));
 
 // Og det kunden leser skal stemme med det hen faar.
 sjekk('teksten til kunden folger regelen',
@@ -8982,7 +8996,7 @@ sjekk('koden gir den oppsigelsestida vilkaarene lover',
 // «du faar beskjed for hvert trekk» — sant, men ikke NAAR.
 echo "\n== Naar gaar pengene ==\n";
 
-$bliTekst = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$bliTekst = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
 sjekk('sida sier naar forste trekk kommer',
     str_contains($bliTekst, 'Første trekk kommer om noen dager — du får en e-post fra oss først.'));
 // Bare paa fast trekk. Den som gjor opp selv betaler NAA, i Vipps, og skal
@@ -8990,7 +9004,7 @@ sjekk('sida sier naar forste trekk kommer',
 sjekk('… og bare paa fast trekk',
     str_contains($bliTekst, "        : 'Betal i Vipps, så er du i gang.',"));
 
-$mig132 = file_get_contents(dirname(__DIR__) . '/db/migrations/132_velkomsten_sier_naar_pengene_gaar.sql');
+$mig132 = les_testfil(dirname(__DIR__) . '/db/migrations/132_velkomsten_sier_naar_pengene_gaar.sql');
 sjekk('migrasjon 132 retter velkomstmalen',
     str_contains($mig132, "WHERE navn = 'innmelding_fast_trekk'"));
 
@@ -9034,7 +9048,7 @@ foreach (['{navn}', '{type}', '{belop}'] as $felt) {
 // Ingen av stedene som sender den skal sende en lenke lenger.
 foreach (['api/bli-medlem.php', 'api/medlemskap.php', 'api/admin/medlemmer.php'] as $fil) {
     sjekk('… og ' . $fil . ' sender ingen lenke til malen',
-        !str_contains(file_get_contents(dirname(__DIR__) . '/' . $fil), "'lenke' =>"));
+        !str_contains(les_testfil(dirname(__DIR__) . '/' . $fil), "'lenke' =>"));
 }
 
 // ── Rekkefolgen i medlemstrekket ───────────────────────────────────────
@@ -9051,7 +9065,7 @@ echo "\n== Rekkefolgen i medlemstrekket ==\n";
 // Runden laa i bin/cron.php til 5. september. Den ligger i Medlemskap naa,
 // saa baade cron og trafikken paa sida kan kjore den — rekkefolgen er den
 // samme, og den er like viktig.
-$cronKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$cronKode = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 $posMedlemstrekk = strpos($cronKode, 'public static function kjorTrekkrunde(');
 $posAktiver = strpos($cronKode, "WHERE status = 'venter'", $posMedlemstrekk);
 $posTrekk   = strpos($cronKode, 'self::tilTrekk()', $posMedlemstrekk);
@@ -9075,7 +9089,7 @@ sjekk('avtalene aktiveres FOER trekkrunden',
 // To e-poster er irriterende. To avtaler er to trekk.
 echo "\n== Det samme forsoeket to ganger ==\n";
 
-$mig131 = file_get_contents(dirname(__DIR__) . '/db/migrations/131_samme_forsok_samme_avtale.sql');
+$mig131 = les_testfil(dirname(__DIR__) . '/db/migrations/131_samme_forsok_samme_avtale.sql');
 sjekk('migrasjon 131 husker adressen forsoeket godkjennes paa',
     str_contains($mig131, 'ADD COLUMN vipps_url'));
 sjekk('… og kolonna staar i basen', DB::harKolonne('subscriptions', 'vipps_url'));
@@ -9117,7 +9131,7 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $dMedlem]);
 
 // Begge veiene inn maa ha vakta. Bare den ene, og halvparten av innmeldingene
 // kunne fortsatt bli dobbelt.
-$mlKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mlKode = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('bade fast trekk og engangs sjekker om forsoeket paagaar',
     str_contains($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn, true);")
     && str_contains($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn, false);"));
@@ -9126,7 +9140,7 @@ sjekk('… og begge lagrer adressen',
 
 // Endepunktet maa la vaere aa sende varslene om igjen. Uten dette ville
 // avtalen blitt gjenbrukt, men e-postene kommet dobbelt likevel.
-$bliKode = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$bliKode = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
 sjekk('innmeldingen sender ikke varslene om igjen',
     str_contains($bliKode, "if (!empty(\$avtale['gjentakelse'])) {"));
 // Kontrollen: vakta maa staa FOER varslene, ellers rekker de aa gaa ut.
@@ -9140,7 +9154,7 @@ sjekk('… og vakta staar foer dem',
 // samme nummeret der to ganger — «40603093» og «+47 406 03 093» er den samme
 // telefonen — gikk varselet to ganger. Varsel::adminEposter() har hatt den
 // samme regelen for e-postadressene lenge; nummerne manglet den.
-$cfg = file_get_contents(dirname(__DIR__) . '/app/config.php');
+$cfg = les_testfil(dirname(__DIR__) . '/app/config.php');
 sjekk('adminnumrene telles én gang hver',
     str_contains($cfg, 'array_values(array_unique(array_filter(array_map('));
 sjekk('… og skrivemaaten avgjor ikke',
@@ -9185,7 +9199,7 @@ sjekk('… og Vipps-knappen staar i Kassa, saa skriptet maa lastes der ogsaa',
 // steder, kunne de svart hver sitt om den samme personen.
 echo "\n== Har medlemmet betalt ==\n";
 
-$mig130 = file_get_contents(dirname(__DIR__) . '/db/migrations/130_medlem_som_ikke_betaler.sql');
+$mig130 = les_testfil(dirname(__DIR__) . '/db/migrations/130_medlem_som_ikke_betaler.sql');
 sjekk('migrasjon 130 gir medlemmet «betaler ikke»',
     str_contains($mig130, 'ADD COLUMN betaler_ikke')
     && str_contains($mig130, 'betaler_ikke_grunn'));
@@ -9242,7 +9256,7 @@ $avt = static fn(string $neste, string $sist = ''): array => [
 //
 // Denne vakta finnes for at tallet ikke skal krype opp igjen uten at noen
 // bestemte det.
-$medlemFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$medlemFil = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('trekket bes om et dogn for forfall, som er Vipps sitt minimum',
     str_contains($medlemFil, 'private const VARSEL_DAGER = 1;'));
 sjekk('… og forfallet regnes ut av den, ikke av et tall i koden',
@@ -9251,7 +9265,7 @@ sjekk('… og forfallet regnes ut av den, ikke av et tall i koden',
 // Kunden skal ikke faa et tall aa telle paa. Sier vi «tre dager» i en tekst,
 // blir den loegn i det tallet endres.
 sjekk('… og kunden faar «om noen dager», ikke et tall',
-    str_contains($sidaBli = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'),
+    str_contains($sidaBli = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php'),
         'Første trekk kommer om noen dager')
     && !str_contains($sidaBli, 'om tre dager'));
 
@@ -9395,7 +9409,7 @@ sjekk('… og et fritatt medlem er hverken forfalt eller utestaaende',
     $b['utestaaende'] === false && $b['forfalt'] === false);
 
 // Kortet og filteret maa telle det samme — og det maa vaere «utestaaende».
-$ovU = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovU = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('Oversikt teller det som er utestaaende',
     str_contains($ovU, "} elseif (!empty(\$b['utestaaende'])) {"));
 sjekk('… og filteret «Ubetalte» det samme',
@@ -9437,7 +9451,7 @@ DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $sbMedlem]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $sbMedlem]);
 
 // ── Serveren maa sende det ut ──────────────────────────────────────────
-$medlApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medlApi = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('medlemslista regner ut betalingen',
     str_contains($medlApi, 'Medlemskap::betalingsstatus(')
     && str_contains($medlApi, "'betaling' => \$b['tilstand'], 'betalingTekst' => \$b['tekst']"));
@@ -9461,7 +9475,7 @@ sjekk('… og glemmer grunnen naar haken skrus av',
 sjekk('innmeldingen kan sette haken med det samme',
     str_contains($medlApi, "\$fri      = Foresporsel::tekst('betalerIkke') === 'ja';"));
 
-$ovApi = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovApi = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('Oversikt teller de ubetalte med den samme regelen',
     str_contains($ovApi, 'Medlemskap::betalingsstatus(')
     // Tallet og radene i «Ikke betalt» leser det samme regnestykket, som
@@ -9490,7 +9504,7 @@ sjekk('filteret «Ubetalte» finnes',
     preg_match("~medlemFiltre: \[[^\]]*'Ubetalte'~", $sida) === 1);
 sjekk('… og teller det samme som kortet',
     str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;"));
-$okoFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$okoFil2 = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 // Kortet «Medlemmer og betaling» sto her. Eieren, 4. september: «jeg vil
 // fjerne kortet og at medlemmer som ikke har betalt skal vises i oversikten
 // ikke betalt, slik at vi har en oversikt naturligvis».
@@ -9526,7 +9540,7 @@ sjekk('… og medlemsruta lagrer den',
 // et til.
 echo "\n== Utfyllende info paa medlemskapene ==\n";
 
-$mig127 = file_get_contents(dirname(__DIR__) . '/db/migrations/127_utfyllende_info_pa_medlemskap.sql');
+$mig127 = les_testfil(dirname(__DIR__) . '/db/migrations/127_utfyllende_info_pa_medlemskap.sql');
 sjekk('migrasjon 127 gir planene langtekst og viktig',
     str_contains($mig127, 'ADD COLUMN langtekst TEXT')
     && str_contains($mig127, 'ADD COLUMN viktig    TEXT'));
@@ -9550,7 +9564,7 @@ foreach (['Prøv Lissom', 'Basis 30', 'Årsmedlemskap'] as $navn) {
 }
 
 // Serveren sender dem ut. Uten dette staar teksten i basen og ingen ser den.
-$medApi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$medApi = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('api/medlemskap.php sender langtekst og viktig',
     str_contains($medApi, "'langtekst'  => (string) (\$p['langtekst'] ?? '')")
     && str_contains($medApi, "'viktig'     => Medlemskap::punkter(\$p['viktig'] ?? null)"));
@@ -9576,7 +9590,7 @@ sjekk('… lagringen sender dem',
     str_contains($sida, "langtekst: d.langtekst || '', viktig: d.viktig || '',"));
 sjekk('… og «Rediger» henter dem',
     str_contains($sida, "langtekst: pl.langtekst || '', viktig: pl.viktig || '',"));
-$planApi127 = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+$planApi127 = les_testfil(dirname(__DIR__) . '/api/admin/planer.php');
 sjekk('… og serveren tar dem imot',
     str_contains($planApi127, "'langtekst'   => mb_substr(trim((string) (\$kropp['langtekst'] ?? '')), 0, 20000),")
     && str_contains($planApi127, "'viktig'      => implode(\"\\n\", Medlemskap::punkter((string) (\$kropp['viktig'] ?? ''))),"));
@@ -9705,7 +9719,7 @@ sjekk('kurslista merker det som ikke er publisert',
     substr_count($sida, "k.status && k.status !== 'publisert' ? 'Ikke publisert' : ''") === 2);
 
 // Serveren tar imot «kladd» — den har gjort det hele tida.
-$kursApi = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$kursApi = les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('serveren tar imot kladd, publisert og avlyst',
     str_contains($kursApi, "in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)"));
 // … og nettsida henter bare det som er publisert. Det er dette som gjor at
@@ -9713,7 +9727,7 @@ sjekk('serveren tar imot kladd, publisert og avlyst',
 foreach (['app/lib/katalog.php', 'api/venteliste.php', 'app/lib/apent.php', 'app/lib/booking.php'] as $fil) {
     // booking.php skriver spoersmaalet i en enkeltfnuttet streng, saa fnuttene
     // rundt «publisert» staar escapet der. Samme krav, annen skrivemaate.
-    $kode = file_get_contents(dirname(__DIR__) . '/' . $fil);
+    $kode = les_testfil(dirname(__DIR__) . '/' . $fil);
     sjekk('«' . $fil . '» krever status = publisert',
         str_contains($kode, "status = 'publisert'")
         || str_contains($kode, "status = \\'publisert\\'"));
@@ -9727,7 +9741,7 @@ foreach (['app/lib/katalog.php', 'api/venteliste.php', 'app/lib/apent.php', 'app
 // henter bare rader med aktiv = 1. Migrasjonen setter den av.
 echo "\n== «Fri tilgang» ut av salg ==\n";
 
-$mig126 = file_get_contents(dirname(__DIR__) . '/db/migrations/126_fri_tilgang_ut_av_salg.sql');
+$mig126 = les_testfil(dirname(__DIR__) . '/db/migrations/126_fri_tilgang_ut_av_salg.sql');
 sjekk('migrasjon 126 tar «Fri tilgang» ut av salg',
     str_contains($mig126, "SET aktiv = 0")
     && str_contains($mig126, "WHERE navn = 'Fri tilgang'"));
@@ -9747,7 +9761,7 @@ sjekk('… men raden er ikke slettet',
 // «krever_fast_trekk» ble skrevet ubetinget i api/admin/planer.php, og
 // planskjemaet sender ikke feltet. Aarsmedlemskapet krever fast trekk, og det
 // ville falt bort i det noen rettet en skrivefeil paa planen.
-$planApi = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+$planApi = les_testfil(dirname(__DIR__) . '/api/admin/planer.php');
 sjekk('planlagringen roerer ikke fast trekk naar feltet ikke er med',
     str_contains($planApi, "if (!array_key_exists('fastTrekk', \$kropp)\n        || !DB::harKolonne('membership_plans', 'krever_fast_trekk')) {"));
 sjekk('… og aarsmedlemskapet krever fortsatt fast trekk',
@@ -9778,7 +9792,7 @@ echo "\n== Delt betaling og to slag gavekort ==\n";
 // dele opp. og regnskapsmessig, saa vil jeg ha to typer gavekort, et som er
 // ting vi gir ut som ikke skal skatteberegnes og et som faktisk er kjopt av
 // oss.»
-$m134 = file_get_contents(dirname(__DIR__) . '/db/migrations/134_delt_betaling_og_gavekort.sql');
+$m134 = les_testfil(dirname(__DIR__) . '/db/migrations/134_delt_betaling_og_gavekort.sql');
 
 // «payments.order_id» er det som gjor at flere betalinger kan hore til det
 // samme salget. Uten den er et delt oppgjor bare tre lose rader.
@@ -9797,7 +9811,7 @@ sjekk('migrasjon 134 skiller kjopte gavekort fra dem som ble gitt bort',
 sjekk('… og husker hvem som utstedte det over disk',
     str_contains($m134, 'ADD COLUMN IF NOT EXISTS utstedt_av'));
 
-$utFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+$utFil = les_testfil(dirname(__DIR__) . '/api/admin/uttak.php');
 
 // Gavekortet er ikke en betalingsmaate — det er ingen penger inn — men det er
 // en del av oppgjoret. Derfor to lister.
@@ -9832,7 +9846,7 @@ sjekk('… og et tomt felt betyr null naar det er gratis',
 sjekk('nettleseren henter maatene for fritt beloep fra serveren',
     str_contains($utFil, "'salgmaater' => SALGMAATER,"));
 
-$sidaG = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaG = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kassa viser «Gratis» bare ved det frie beloepet',
     str_contains($sidaG, '<sc-for list="{{ utSalgMaater }}" as="m" hint-placeholder-count="3">')
     && substr_count($sidaG, '<sc-for list="{{ utMaater }}" as="m" hint-placeholder-count="2">') === 1);
@@ -9886,7 +9900,7 @@ sjekk('… og bare der',
 sjekk('… uten rutenettbredden fra Oversikt',
     !str_contains($sidaG, "ovSkylderRamme: {\n        gridColumn:"));
 
-$okoFil3 = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$okoFil3 = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 // ── Kassa kan foere et salg som ubetalt ────────────────────────────────
 //
 // Eieren, 4. september: «her skal alle som ikke har betalt vises, om det er
@@ -10340,8 +10354,8 @@ sjekk('datoraden staar paa én linje paa stor skjerm',
 //
 // Vakta leser sitemapen og SEO-kartet og krever at de er enige: hver fast
 // adresse sitemapen melder, skal ha en oppfoering — ellers faar den noindex.
-$sitemapKode = (string) file_get_contents(dirname(__DIR__) . '/api/sitemap.php');
-$seoKart = json_decode((string) file_get_contents(dirname(__DIR__) . '/seo-kart.json'), true);
+$sitemapKode = (string) les_testfil(dirname(__DIR__) . '/api/sitemap.php');
+$seoKart = json_decode((string) les_testfil(dirname(__DIR__) . '/seo-kart.json'), true);
 preg_match_all("/\\['(\\/[a-z0-9\\/-]*)',\\s+'[0-9.]+'/", $sitemapKode, $tSm);
 $fasteISitemap = array_map(static fn($x) => $x === '' ? '/' : $x, $tSm[1]);
 $utenOppforing = array_values(array_filter(
@@ -10360,17 +10374,17 @@ sjekk('hver fast adresse i sitemapen har en SEO-oppfoering',
 // testserveren ikke har regelen. Guidene saa ut som de hadde noindex; de har
 // det ikke i produksjon.
 sjekk('guidene serveres som ferdige filer, ikke gjennom side.php',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/.htaccess'),
         // Siden a277c0b gaar de via guide.php (samtykke og maaling), men bare
         // naar den ferdige fila finnes — side.php tegner dem ikke.
         'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/.htaccess'),
         'RewriteCond %{DOCUMENT_ROOT}/guider/$1.html -f'));
 // … og hver fil sier selv at den skal indekseres.
 sjekk('… og hver guidefil staar paa index',
     (static function (): bool {
         foreach (glob(dirname(__DIR__) . '/guider/*.html') ?: [] as $f) {
-            if (!str_contains((string) file_get_contents($f), '<meta name="robots" content="index,follow">')) {
+            if (!str_contains((string) les_testfil($f), '<meta name="robots" content="index,follow">')) {
                 return false;
             }
         }
@@ -10378,7 +10392,7 @@ sjekk('… og hver guidefil staar paa index',
     })());
 // Sidene som IKKE skal i soket skal fortsatt staa utenfor.
 sjekk('… mens kassa og Min side fortsatt staar paa noindex',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/side.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/side.php'),
         "\$ikkeISoket = \$d === null || strtolower((string) (\$d['index'] ?? 'Index')) === 'noindex';"));
 
 // ── «Ubetalt»-kortet fører dit de ubetalte står ────────────────────────
@@ -10514,7 +10528,7 @@ sjekk('… og annullerte staar utenfor',
 // Regnet ut over alle 48 halvtimer i doegnet: gammel seeding roed 1 gang,
 // ny seeding roed 0.
 sjekk('rettingstestene seedes mot siste passerte stengetid',
-    str_contains($sidaEgen = file_get_contents(__FILE__), '$osloKveld = static function (string $kl): string {')
+    str_contains($sidaEgen = les_testfil(__FILE__), '$osloKveld = static function (string $kl): string {')
     && str_contains($sidaEgen, '$stengte = $naa->setTime(23, 0);'));
 // Maalt paa seedingslinja og ikke paa ordet: navnet staar igjen i teksten
 // her, og en test som leser sin egen fil finner da seg selv.
@@ -10596,7 +10610,7 @@ sjekk('et bortgitt gavekort lager ingen betaling',
 sjekk('et solgt gavekort foeres som gavekort, ikke som salg',
     str_contains($utFil, "'formal'          => 'gavekort',"));
 
-$bokFil = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$bokFil = les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
 // Gavekortraden i et delt oppgjor er ikke orders.payment_id. Uten oppslaget
 // paa order_id ville uttaket blitt staaende uloggfoert.
 sjekk('gavekorttrekket finner ordren gjennom payments.order_id',
@@ -10605,7 +10619,7 @@ sjekk('et kort utstedt over disk uten adresse maser ikke paa admin',
     str_contains($bokFil, 'public static function aktiverGavekort(int $kortId, bool $varsle = true): void')
     && str_contains($bokFil, 'if (!$varsle || !$til) {'));
 
-$doFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+$doFil2 = les_testfil(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
 // Ordren staar én gang for hele salget og kan ikke skille kontantdelen fra
 // Vipps-delen. Raden kan.
 sjekk('dagsoppgjoret leser maaten paa raden foer den paa ordren',
@@ -10620,7 +10634,7 @@ sjekk('… og kontoen kan settes av regnskapsfoereren',
     str_contains($doFil2, "'regnskap_konto_gavekort_gitt',"));
 // Config leser bare noekler som staar paa lista. Uten denne ville kontoen
 // vaert lagret, men aldri lest — og bilaget sagt MANGLER.
-$cfgFil = file_get_contents(dirname(__DIR__) . '/app/config.php');
+$cfgFil = les_testfil(dirname(__DIR__) . '/app/config.php');
 sjekk('… og leses faktisk ut av basen',
     str_contains($cfgFil, "'regnskap_konto_gavekort_gitt',"));
 sjekk('… og staar som felt under OEkonomi',
@@ -10734,14 +10748,14 @@ echo "\n== Bare det som ble penger, overalt ==\n";
 // Naa staar regelen paa serveren. Svaret inneholder bare det som faktisk ble
 // penger: betalt, og det som er sendt helt eller delvis tilbake etterpaa — en
 // refusjon hoerer til et salg som skjedde. Begge listene leser det samme.
-$betApi = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+$betApi = les_testfil(dirname(__DIR__) . '/api/admin/betalinger.php');
 sjekk('serveren sender bare ut det som ble penger',
     str_contains($betApi, "WHERE p.status IN ('betalt', 'delvis_refundert', 'refundert')"));
 // En annullert betaling settes til «avbrutt» — se kursbetaling.php — saa den
 // faller ut av det samme filteret, uten en egen regel.
 sjekk('… og en annullert rad faller ut av det samme filteret',
     !str_contains($betApi, "annullert_at IS NULL"));
-$sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaS = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Kopien paa skjermen er borte: to lister som skal vaere like er én for mye.
 sjekk('kopien i kassa er borte, saa regelen bare finnes ett sted',
     !str_contains($sidaS, "const PENGER = ['betalt', 'delvis_refundert', 'refundert'];")
@@ -10762,7 +10776,7 @@ echo "\n== En feilført betaling kan angres ==\n";
 // opprette penger, men ingenting kunne ta dem tilbake: annulleringen krevde
 // en paamelding, og et medlemskap har ingen. Da sto det en feilfoering ingen
 // kunne rette — heller ikke fra admin.
-$kbApi = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+$kbApi = les_testfil(dirname(__DIR__) . '/api/admin/kursbetaling.php');
 sjekk('et medlemskap kan annulleres, selv om det ikke har en paamelding',
     str_contains($kbApi, "\$erMedlemskap = \$p['booking_id'] === null")
     && str_contains($kbApi, "&& (string) (\$p['formal'] ?? '') === 'medlemskap';"));
@@ -10780,7 +10794,7 @@ sjekk('… og raden blir staaende som annullert, ikke slettet',
 sjekk('… og annulleringen foeres paa medlemmet',
     str_contains($kbApi, "revider('betaling_annullert', 'member', (int) \$p['member_id'], ["));
 
-$sidaA = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaA = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kassa har knappen for aa angre',
     str_contains($sidaA, '>Annuller betalingen</x-import>')
     && str_contains($sidaA, "this.betalingKall({ handling: 'annuller', betalingId: b.id, grunn: grunn })"));
@@ -10789,7 +10803,7 @@ sjekk('… bare paa det som er fort inn for haand',
     str_contains($sidaA, 'kanAnnullere: !b.kanRefunderes && b.formal !== \'ordre\''));
 // Medlemskapsmerket leser betalingene paa nytt, og hopper over det som er
 // annullert. Uten det ville medlemmet staatt som betalt etterpaa.
-$medLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$medLib = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('… og merket paa medlemmet hopper over det som er annullert',
     str_contains($medLib, 'AND annullert_at IS NULL'));
 
@@ -10803,7 +10817,7 @@ echo "\n== Beløp brekker ikke midt i tallet ==\n";
 //
 // Booking::kroner() paa serveren har brukt harde mellomrom hele tida. De tre
 // stedene som regner ut beloepet i nettleseren gjorde det ikke.
-$sidaT = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaT = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('ingen regner ut tusenskillet med et vanlig mellomrom',
     !str_contains($sidaT, "(?=(\\d{3})+(?!\\d))/g, ' ')"));
 // Seks, ikke fem: konustabellen regner ut to tall paa den samme linja, og
@@ -10816,7 +10830,7 @@ sjekk('… og alle stedene bruker et hardt',
     $tusenAlle >= 6 && $tusenHarde === $tusenAlle, $tusenHarde . ' av ' . $tusenAlle);
 // Vakta som fanger den neste. Den leser teksten slik den staar paa skjermen,
 // saa den finner et mykt mellomrom uansett hvor i koden det kom fra.
-$bredde = file_get_contents(dirname(__DIR__) . '/bin/breddesjekk.mjs');
+$bredde = les_testfil(dirname(__DIR__) . '/bin/breddesjekk.mjs');
 sjekk('breddesjekken fanger beloep som kan brekke',
     str_contains($bredde, 'const myktTall = () => {')
     && str_contains($bredde, 'const mt = await p.evaluate(myktTall);'));
@@ -10870,7 +10884,7 @@ echo "\n== Kassa deler dagen på måten, ikke på refusjonsevnen ==\n";
 // Dagsoppgjoret som gaar til regnskapet leste «p.maate» og var riktig hele
 // tida (api/admin/dagsoppgjor.php). Det var kortet man teller kassa mot som
 // sa noe annet — de to sa ikke det samme om den samme dagen.
-$betApi = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+$betApi = les_testfil(dirname(__DIR__) . '/api/admin/betalinger.php');
 sjekk('maaten leses av raden, ikke regnet ut av «type»',
     str_contains($betApi, "\$m = trim((string) (\$p['maate'] ?? ''));")
     && str_contains($betApi, "'maate'         => \$maateAv(\$p),"));
@@ -10886,7 +10900,7 @@ sjekk('… og de to spoersmaalene er skilt',
     && str_contains($betApi, "'kanRefunderes' => (string) \$p['type'] !== 'manuell',")
     && !str_contains($betApi, "'erVipps'"));
 
-$sidaK2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaK2 = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kassa deler dagen paa maaten',
     str_contains($sidaK2, 'const kontant = iDag.filter(b => !b.medVipps)')
     && str_contains($sidaK2, 'const vipps = iDag.filter(b => b.medVipps)'));
@@ -10910,7 +10924,7 @@ echo "\n== Betalingen registreres der man står ==\n";
 // Betalingen kunne registreres fra for, men bare paa «Ikke betalt»-kortet paa
 // Oversikt. Sto man i personruta, maatte man ut av den og finne personen igjen
 // et annet sted. Ingenting nytt bak: samme kall som det kortet bruker.
-$sidaP = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaP = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('pilla er en knapp, ikke bare en etikett',
     str_contains($sidaP, '<button type="button" onClick="{{ vekslPersonBetaling }}" title="Registrer betaling" style="{{ personBetalingStil }}">{{ personBetalingMerke }}</button>')
     // Ruta staar to steder — Medlemmer og Deltakere — og deler verdiene.
@@ -10934,7 +10948,7 @@ sjekk('… og boksen nullstilles naar en annen person aapnes',
     str_contains($sidaP, "personBetalingApen: !!medBetaling, personBetalingBelop: '',")
     && substr_count($sidaP, 'apnePerson(m.id, 0, true)') === 1);
 
-$medApiB = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medApiB = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 // Ikke en hake: raden er en ekte betaling, med formaal «medlemskap», saa den
 // teller i dagsoppgjoret og i regnskapet.
 sjekk('serveren lager en ekte betalingsrad',
@@ -10958,7 +10972,7 @@ echo "\n== Én betalingspille, og den er klikkbar ==\n";
 // Han hadde rett: den var en Badge, uten klikk og uten pekefinger, mens
 // handlingen laa i en tekstlenke lenger ute paa raden. Maalt i nettleseren
 // for endringen: «cursor: auto», ingen klikkbar forelder.
-$sidaP3 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaP3 = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // ── Ett sted for ordet og fargen ──────────────────────────────────────
 //
@@ -11022,7 +11036,7 @@ echo "\n== Færre betalingsmåter å velge i ==\n";
 //
 // Lista sto med fem valg paa kurs, to i kassa og to paa medlemskap. Naa er
 // det tre paa kurs, og ordet for Vipps er det samme alle tre stedene.
-$bookLib = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+$bookLib = les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
 sjekk('kurs tilbyr tre maater, ikke fem',
     str_contains($bookLib, "public const MAATER = ['Kontant', 'Vipps', 'Gratis'];"));
 sjekk('… og «Vipps i verkstedet» heter «Vipps», som i kassa',
@@ -11031,18 +11045,18 @@ sjekk('… og «Vipps i verkstedet» heter «Vipps», som i kassa',
 // ── Det som alt er foert staar urort ──────────────────────────────────
 //
 // Aa slutte aa tilby en maate er ikke det samme som aa slette den.
-$pamLib = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+$pamLib = les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php');
 sjekk('gamle rader beholder maaten sin',
     str_contains($pamLib, "'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];")
     && str_contains($pamLib, "'Vipps i verkstedet'"));
 // Dagsoppgjoret maa fortsatt kunne foere et gammelt fakturabilag.
-$dagLib = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+$dagLib = les_testfil(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
 sjekk('… og dagsoppgjoret har fortsatt en motkonto for Faktura',
     str_contains($dagLib, "'Faktura'  => 'regnskap_motkonto_faktura',")
     && str_contains($dagLib, "if (\$m === 'Faktura') {"));
 // «Gratis» er null kroner, saa den forstyrrer ikke delingen mellom Kontant
 // og Vipps i dagsoppgjoret — den legger null til Vipps-kolonnen.
-$kbLib = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+$kbLib = les_testfil(dirname(__DIR__) . '/api/admin/kursbetaling.php');
 sjekk('«Gratis» er null kroner, og forstyrrer ingen kolonne',
     str_contains($kbLib, "if (\$maate === 'Gratis') {\n            \$belop = 0;"));
 
@@ -11051,7 +11065,7 @@ echo "\n== Pilla i medlemslista er klikkbar ==\n";
 //
 // Den sto som en etikett i lista og som en knapp i personruta — samme
 // pille, samme farge, men den virket bare det ene stedet.
-$sidaM2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaM2 = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('pilla i medlemslista er en knapp',
     str_contains($sidaM2, '<button type="button" class="lx-medlpille" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>'));
@@ -11074,8 +11088,8 @@ echo "\n== Hvem som er i huset ==\n";
 // Sidemenyen har hatt et tall — «3 medlemmer» — men ingen navn. Navnene laa
 // bare i api/stempling.php, som medlemmene leser, og der er de skjulte tatt
 // bort med vilje.
-$stFil = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');
-$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$stFil = les_testfil(dirname(__DIR__) . '/app/lib/stempling.php');
+$ovFil = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 
 sjekk('admin faar hele lista, ogsaa de skjulte',
     str_contains($stFil, 'public static function alleInne(): array')
@@ -11088,7 +11102,7 @@ sjekk('… og medlemmenes liste bygger paa den samme spoerringen',
 // Medlemmene skal fortsatt ikke se navnene. api/stempling.php gaar om
 // inneNa(), som tar dem bort.
 sjekk('… mens medlemmene fortsatt bare ser de synlige',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/stempling.php'),
                  'Stempling::inneNa()'));
 // Kortet sto begge steder til 7. september. Da flyttet navnene til
 // sidemenyen, og boksen i kalenderen ble tatt bort — eieren: «i kalender maa
@@ -11204,7 +11218,7 @@ sjekk('… og bare paa PC — telefonen har skuffen',
 // Medlemskap::avtale() leser den NYESTE raden. Ligger det en gammel igjen paa
 // «aktiv», sto den ingen steder i admin — men Medlemskap::tilTrekk() plukker
 // den opp, for den tar ALLE aktive avtaler. Da trekkes medlemmet to ganger.
-$medlFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medlFil = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('personruta faar hele avtaletabellen, ikke bare den nyeste',
     str_contains($medlFil, "'SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC',")
     && str_contains($sida, '<sc-for list="{{ personAvtaler }}" as="av"'));
@@ -11236,9 +11250,9 @@ sjekk('… og raden roeres ikke naar Vipps sier nei',
     && strpos($medlFil, "Svar::feil('Vipps stoppet ikke trekket")
        < strpos($medlFil, "DB::oppdater('payments', ['status' => 'avbrutt']"));
 sjekk('… og Vipps faar en ekte sletting',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/vipps.php'),
                  "public static function avlysTrekk(string \$avtaleId, string \$trekkId): void")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/nett.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/lib/nett.php'),
                     "function http_delete_json(string \$url, array \$headere = []): array"));
 
 // ── Betal tilbake et trekk som alt har gaatt ────────────────────────────
@@ -11250,7 +11264,10 @@ sjekk('… og Vipps faar en ekte sletting',
 // «Stopp trekket» over virker bare til forfallsdagen. Etter den sa skjermen
 // bare at det «maa refunderes i stedet», uten aa si hvor — og da maatte det
 // gjores i Vipps-portalen.
-$vippsFil = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$vippsFil = les_testfil(dirname(__DIR__) . '/app/lib/vipps.php');
+$refusjonsFil = les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
+$refusjonsFil = substr($refusjonsFil, (int) strpos($refusjonsFil, 'public static function refunderBetaling'),
+    (int) strpos($refusjonsFil, 'public static function markerBetalt') - (int) strpos($refusjonsFil, 'public static function refunderBetaling'));
 sjekk('et gjennomfoert trekk kan betales tilbake',
     str_contains($sida, 'onClick="{{ t.tilbake }}"')
     && str_contains($sida, 'Betal tilbake</button>')
@@ -11258,14 +11275,18 @@ sjekk('et gjennomfoert trekk kan betales tilbake',
 // Et avtaletrekk ligger under avtalen sin, ikke som en ePayment. Gikk det paa
 // «/epayment/v1», ville Vipps ikke funnet trekket i det hele tatt.
 sjekk('… og gaar mot avtalen sitt eget endepunkt',
-    str_contains($vippsFil, "public static function refunderTrekk(string \$avtaleId, string \$trekkId, int \$belopOre): array")
-    && str_contains($vippsFil, "'/recurring/v3/agreements/' . rawurlencode(\$avtaleId)
-                . '/charges/' . rawurlencode(\$trekkId) . '/refund'"),
+    str_contains($vippsFil, "public static function refunderTrekk(string \$avtaleId, string \$trekkId, int \$belopOre, string \$referanse, string \$operasjonsId): array")
+    && str_contains($vippsFil, "'/recurring/v3/agreements/' . rawurlencode(\$avtaleId)")
+    && str_contains($vippsFil, "'/charges/' . rawurlencode(\$trekkId) . '/refund'")
+    && str_contains($refusjonsFil, 'Vipps::refunderTrekk('),
     'et trekk er ikke en ePayment');
 // Id-en kommer fra skjermen. Samme tre ledd som «Stopp trekket» krever, men
 // paa gjennomfoerte rader i stedet for ventende.
 sjekk('… og bare et trekk som hoerer til medlemmet og ER gjort opp',
-    str_contains($medlFil, "AND p.status IN ('betalt', 'delvis_refundert')"));
+    str_contains($medlFil, "WHERE p.id = :p AND p.member_id = :m")
+    && str_contains($medlFil, "AND p.type = 'recurring_charge'")
+    && str_contains($medlFil, "AND p.status IN ('betalt', 'delvis_refundert', 'refundert')")
+    && str_contains($medlFil, 'if ($replay === null && $igjen <= 0)'));
 // Taket er det som staar igjen, ikke hele trekket. Uten dette kunne det samme
 // trekket betales tilbake om og om igjen.
 sjekk('… og aldri mer enn det som staar igjen',
@@ -11274,12 +11295,13 @@ sjekk('… og aldri mer enn det som staar igjen',
 // Sier Vipps nei, endres ingenting her. En rad som staar «refundert» mens
 // pengene ligger hos oss, er verre enn ingen endring.
 sjekk('… og raden roeres ikke naar Vipps sier nei',
-    strpos($medlFil, "Svar::feil('Vipps betalte ikke tilbake.")
-       < strpos($medlFil, "'refundert_ore' => \$nyRefundert,"));
+    str_contains($medlFil, 'Booking::refunderBetaling((int) $p[\'id\'], $belop, $operasjonId)')
+    && strpos($refusjonsFil, 'Vipps::refunderTrekk(') < strpos($refusjonsFil, "DB::oppdater('payments'"));
 // Dagsoppgjoret leser «refundert_ore» fra for og trekker det fra. Statusen er
 // vaar egen: «refundert» naar ingenting staar igjen, ellers «delvis».
 sjekk('… og beloepet foeres saa regnskapet ser det',
-    str_contains($medlFil, "'status'        => \$nyRefundert >= (int) \$p['belop_ore'] ? 'refundert' : 'delvis_refundert',")
+    str_contains($refusjonsFil, "'refundert_ore' => \$refundert")
+    && str_contains($refusjonsFil, "'status' => \$rest === 0 ? 'refundert' : 'delvis_refundert'")
     && str_contains($medlFil, "revider('medlem_betalt_tilbake', 'member', \$id,"));
 // «Betal tilbake» begynner paa «Betal». Uten unntaket fanger pengeHandling()
 // den paa den publiserte sida, og eieren faar «Betaling kommer snart» i
@@ -11309,7 +11331,7 @@ sjekk('… og medlemmet faar ingen e-post om det',
 // «Solgt i dag» spurte bare etter salg foert for haand. Et kjop gjort paa
 // nett og betalt med Vipps sto ingen steder i kassa, selv om pengene var
 // inne — og varenavnene laa i ordrelinjene hele tida.
-$uttakFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+$uttakFil = les_testfil(dirname(__DIR__) . '/api/admin/uttak.php');
 sjekk('kassa tar med dagens nettkjop',
     str_contains($uttakFil, "OR p.status IN ('betalt', 'delvis_refundert'))")
     && str_contains($uttakFil, "(p.type IS NOT NULL AND p.type <> 'manuell') AS fra_nett,"));
@@ -11364,7 +11386,7 @@ sjekk('… og sier fra naar datoen er passert',
 // 3. mai — datoen vandrer, og et medlem satt til den 31. ender paa en helt
 // annen dag. Eieren valgte «Siste dag i maaneden: 31. januar → 28. februar →
 // 31. mars. Ligger fast.»
-$mFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mFil = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('trekkdatoen flyttes ikke med «+1 month» lenger',
     str_contains($mFil, 'public static function nesteTrekkdato(string $fra, ?int $dag = null): string')
     && !str_contains($mFil, "->modify('+1 month')->format('Y-m-d'),"));
@@ -11374,7 +11396,7 @@ sjekk('… og regner fra foerste i maaneden',
     && str_contains($mFil, 'min($onsket, $sisteDag)'));
 // Dagen maa huskes. Klipper vi bare til 28., er den 31. tapt for godt.
 sjekk('… og dagen huskes, saa den 31. kommer tilbake',
-    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/149_trekkdagen_ligger_fast.sql'),
+    str_contains(les_testfil(dirname(__DIR__) . '/db/migrations/149_trekkdagen_ligger_fast.sql'),
                  'ADD COLUMN trekk_dag TINYINT NULL')
     && str_contains($medlFil, "\$endring['trekk_dag'] = (int) \$d->format('j');"));
 // Regnestykket, slik det faktisk gaar. Samme utregning som i medlemskap.php.
@@ -11515,7 +11537,7 @@ echo "\n== «Stopp avtalen nå» ==\n";
 // Eieren, 7. september 2026, om Eirin og Lene: «de har ingen avtale aa
 // godkjenne, de faar aldri beskjed om aa godkjenne noe, det er ingen slik
 // info i vipps hos de to».
-$mFilS = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$mFilS = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('avtalen kan stoppes med det samme',
     str_contains($mFilS, "if (\$handling === 'stopp-avtale') {"));
 // Baade «venter» og «aktiv»: et forsoek som aldri ble godkjent har ogsaa en
@@ -11633,7 +11655,7 @@ echo "\n== «Butikk» heter «Nettbutikk» i admin ==\n";
 //
 // Bare i admin. Kundene har en butikk, og den heter «Butikk» paa nettsida —
 // i menyen, i tittelen og i adressen. Den er ikke rort.
-$sidaN2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaN2 = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('menypunktet heter Nettbutikk',
     str_contains($sidaN2, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],")
@@ -11689,7 +11711,7 @@ sjekk('… og sidetittelen i soek staar urort',
 // overskrift, og er ikke rort — se funnet i rapporten.
 sjekk('regnskapskategorien er ikke dopt om',
     str_contains($sidaN2, "ordre: 'Butikk', medlemskap: 'Medlemskap',")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/okonomi.php'), "'ordre'      => 'Butikk',"));
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/admin/okonomi.php'), "'ordre'      => 'Butikk',"));
 
 echo "\n== Bunnmeny på telefon, seks valg ==\n";
 // Eieren, 4. september, valgte alternativ A av de to skissene: seks synlige
@@ -11698,7 +11720,7 @@ echo "\n== Bunnmeny på telefon, seks valg ==\n";
 // Skuffen («Meny») staar som for — den har alle ti stedene med
 // underpunktene sine. Bunnmenyen er de seks man er i hele dagen, ett trykk
 // unna, og den aapner de samme hovedsidene: ingen forenklede kopier.
-$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaB = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Menyen staar i hver adminskjerm, som logoen og stemplingspillene.
 $logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til oversikten"');
@@ -11785,7 +11807,7 @@ sjekk('… med en dempet flate bak som lukker ved klikk',
 // Målt før og etter. Nå brekker raden i stedet, og «min-width: 0» lar
 // datofeltet krympe — uten den sprenger raden uansett hvor mange spalter
 // den får lov å ha.
-$klipp = @file_get_contents(dirname(__DIR__) . '/lissom-2108.html') ?: '';
+$klipp = @les_testfil(dirname(__DIR__) . '/lissom-2108.html') ?: '';
 sjekk('dato- og klokkeslettraden brekker naar det er trangt',
     !str_contains($klipp, 'grid-template-columns: 1.4fr 1fr 1fr;')
     && substr_count($klipp, 'grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);') === 2);
@@ -11803,7 +11825,7 @@ sjekk('… og cellene faar lov aa krympe',
 //
 // Fem handlinger fantes — legg til, fjern, flytt, status, kursbevis — og
 // ingen av dem kunne rette et tall.
-$pam = @file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php') ?: '';
+$pam = @les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php') ?: '';
 sjekk('paameldingen kan rettes',
     str_contains($pam, "if (\$handling === 'endre') {")
     // Rabatten kom til 24. september (7ad6591).
@@ -11828,7 +11850,7 @@ sjekk('… og loggen sier hva som sto foer og hva som staar naa',
     && str_contains($pam, "'antall_for' => (int) \$rad['antall'],")
     && str_contains($pam, "'belop_for'  => (int) \$rad['belop_ore'],"));
 sjekk('… og loggen har en tekst i historikken',
-    str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php') ?: '',
+    str_contains(@les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php') ?: '',
         "'pamelding_endret'      => 'Antall og beløp rettet',"));
 
 // Globalt: begge stedene én paamelding rettes fra.
@@ -11849,7 +11871,7 @@ sjekk('… og antallet foelger med inn i deltakerruta',
     str_contains($endre, 'klDeltakerliste(evt) {')
     && str_contains($endre, 'antall: p.antall || 1,'));
 sjekk('… og kalenderen faar antallet fra serveren',
-    str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php') ?: '',
+    str_contains(@les_testfil(dirname(__DIR__) . '/api/admin/kalender.php') ?: '',
         "'antall'    => (int) \$b['antall'],"));
 // Begge stedene sier hva et tomt beloepsfelt betyr.
 sjekk('… og begge sier hva et tomt beloepsfelt gjor',
@@ -11858,7 +11880,7 @@ sjekk('… og begge sier hva et tomt beloepsfelt gjor',
 sjekk('… og begge har et rabattfelt',
     // Det tredje kom med «Ta betalt» (40abbe5).
     substr_count($endre, '<label style="{{ mpEtikett }}">Rabatt %</label>') === 3
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'), "\$felt['belop_ore'] = (int) round((int) \$pris * \$nyttAntall * (1 - (\$rabatt ?? 0) / 100));"));
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php'), "\$felt['belop_ore'] = (int) round((int) \$pris * \$nyttAntall * (1 - (\$rabatt ?? 0) / 100));"));
 // To aapne paneler paa samme rad er ikke til aa se hvilket som lagres.
 sjekk('… og bare ett panel er aapent om gangen',
     str_contains($endre, 'flyttRad: apen ? this.state.flyttRad : null,')
@@ -11946,7 +11968,7 @@ sjekk('… og Kasse-kortet paa Oversikt sier fra og gaar til Kassa',
 //
 // Maalt: en som har bestilt Aarsmedlemskap uten aa godkjenne ser bare «Bli
 // medlem i verkstedet» og innmeldingsskjemaet paa nytt.
-$mig141 = @file_get_contents(dirname(__DIR__) . '/db/migrations/141_lenken_ligger_ikke_paa_min_side.sql') ?: '';
+$mig141 = @les_testfil(dirname(__DIR__) . '/db/migrations/141_lenken_ligger_ikke_paa_min_side.sql') ?: '';
 sjekk('migrasjon 141 tar setningen ut av brevet',
     str_contains($mig141, "WHERE navn = 'innmelding_fast_trekk'")
     && str_contains($mig141, 'Har du lukket siden, finner du den samme lenken'));
@@ -12100,7 +12122,7 @@ echo "\n== Stemple inn og Ferie står under logoen, overalt ==\n";
 // maatte du innom Oversikt for aa finne knappen.
 //
 // Spurt om stripa paa Oversikt skulle bli staaende i tillegg: «nei».
-$sidaP2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaP2 = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Sidemenyen staar i hver eneste adminskjerm. Tallet er ikke poenget —
 // poenget er at pillene staar like mange steder som logoen gjor, saa ingen
@@ -12206,7 +12228,7 @@ echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
 // eneste som saa ut som en vei tilbake, og den var et bilde — ingenting
 // skjedde naar man trykket. Adminpanelet har hatt den samme knappen hele
 // tida (se «adminHjem»); her sto den ikke.
-$sidaL = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaL = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('logoen paa innloggingsskjermen er en knapp',
     str_contains($sidaL, '<button type="button" onClick="{{ goForside }}" title="Til forsiden"'));
 sjekk('… og den gaar til forsida',
@@ -12258,7 +12280,7 @@ sjekk('… og «members» selv staar ikke i den',
 sjekk('… og alle navnene er rene tabellnavn',
     count(array_filter($navnene,
         static fn(string $n): bool => (bool) preg_match('/^[a-z_]+\.[a-z_]+$/', $n))) === count($navnene));
-$dubFil = file_get_contents(dirname(__DIR__) . '/api/admin/dubletter.php');
+$dubFil = les_testfil(dirname(__DIR__) . '/api/admin/dubletter.php');
 sjekk('… og dublettene leser den samme lista, ikke sin egen',
     str_contains($dubFil, 'return Medlemskap::pekere();')
     && !str_contains($dubFil, "AND column_name IN ('member_id', 'registrert_av')"));
@@ -12296,7 +12318,7 @@ sjekk('… og i riktig rekkefolge gaar begge',
     && (int) DB::verdi('SELECT COUNT(*) FROM bookings WHERE member_id = :m', ['m' => $rMed]) === 0);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $rMed]);
 
-$medApiN = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medApiN = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('handleren tar paameldinger og ordrer foer betalingene',
     strpos($medApiN, "\$tell('bookings', 'DELETE FROM bookings")
       < strpos($medApiN, "\$tell('payments', 'DELETE FROM payments"));
@@ -12351,7 +12373,7 @@ sjekk('… men ikke naar Vipps har fullmakten',
     str_contains($medApiN, "\$fastTrekk = \$avtale !== null\n            && trim((string) (\$avtale['vipps_agreement_id'] ?? '')) !== '';")
     && str_contains($medApiN, "if (\$avtale !== null && !\$fastTrekk) {"));
 
-$sidaN = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaN = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('knappen staar i personruta, begge steder ruta brukes',
     substr_count($sidaN, '{{ personNullstillKnapp }}') === 2
     && substr_count($sidaN, '{{ personKanNullstille }}') === 2);
@@ -12432,14 +12454,14 @@ DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $eSub]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMed]);
 
 // Kortet «Ikke betalt» paa Oversikt leste prisen av avtalen uansett status.
-$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovFil = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('«Ikke betalt» henter plan og pris av avtalen bare naar den loeper',
     str_contains($ovFil, "\$loeper = \$a !== null && (string) \$a['status'] === 'aktiv';")
     && str_contains($ovFil, "\$plan = (string) ((\$loeper ? \$a['plan'] : null) ?? \$m['medlemskap_type'] ?? '');")
     && str_contains($ovFil, "\$pris = \$loeper"));
 
 // Lista sa «Fast trekk» og «Bundet til» paa forsok som aldri ble godkjent.
-$medFilA = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medFilA = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('medlemslista krever at avtalen loeper for den sier «fast trekk»',
     str_contains($medFilA, "\$loeper = (string) \$a['status'] === 'aktiv';")
     && str_contains($medFilA, "'fastTrekk'   => \$loeper"));
@@ -12453,7 +12475,7 @@ sjekk('… og for den sier at medlemmet er bundet',
 sjekk('… og planen gaar foran den lagrede datoen',
     // Samme kilde som Min side og oppsigelsen (eieren, 28. september 2026).
     str_contains($medFilA, "\$bindingTil = Medlemskap::bindingTil(\$a);")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php'),
         "if (\$plan !== null && ((int) (\$plan['engangs'] ?? 0) === 1 || (int) (\$plan['binding_mnd'] ?? 0) <= 0)) {"),
     'planUansett: en plan tatt ut av salg gjelder fortsatt for dem som staar paa den');
 
@@ -12468,7 +12490,7 @@ echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
 //
 // Klassen sto paa elementet fra for; regelen manglet. lx-cols2 og lx-cols4
 // har hatt sin hele tida.
-$sidaK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaK = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kortet har klassen som faar spaltene til aa falle sammen',
     str_contains($sidaK, '<div class="lx-cols3"'));
 sjekk('… og regelen finnes, sammen med de andre',
@@ -12568,7 +12590,7 @@ echo "\n== Flerdagerskurs settes opp der kvelden settes opp ==\n";
 // Feltet fantes — men bare i den dype redigeringen, under «Datoer som ligger
 // ute». Fra kalenderen, der kvelden faktisk settes opp, var det ingen vei
 // dit. «Det maa komme frem i det feltet saa klart.»
-$sidaD = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaD = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('kalenderruta har feltet for flere dager',
     str_contains($sidaD, '>Går kurset over flere dager?</label>')
     && str_contains($sidaD, '<sc-for list="{{ klRSamlingerResten }}" as="sa"')
@@ -12655,7 +12677,7 @@ sjekk('… og datoen sendes for samlingene, saa spennet ikke kappes',
     && str_contains($sidaD, '      stilleSamlinger = true;'));
 // Serveren tar imot lista paa den samme handlingen fra for, og roerer bare
 // samlingene naar nokkelen er med.
-$kursApi = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$kursApi = les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('serveren skriver samlingene bare naar de foelger med',
     str_contains($kursApi, "if (array_key_exists('samlinger', \$kropp)) {")
     && str_contains($kursApi, '$antall = Samlinger::lagre($oktId, (array) $kropp[\'samlinger\']);'));
@@ -12668,7 +12690,7 @@ echo "\n== Bytte medlemskap på et medlem ==\n";
 // nytt: status til aktiv, start_dato til i dag, sluttdatoen paa nytt. Brukt
 // paa et medlem som alt er inne, ville en i pause blitt aktiv igjen og
 // «medlem siden mai» blitt «medlem siden i dag».
-$medApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medApi = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('serveren kan bytte plan uten aa melde inn paa nytt',
     str_contains($medApi, "if (\$handling === 'bytt-plan') {"));
 // Det som IKKE skal roeres. Byttet er ett felt, pluss sluttdatoen som
@@ -12753,7 +12775,7 @@ echo "\n== Flytt medlemskapet til rett person ==\n";
 // api/bli-medlem.php begynner med krev_medlem(). Melder én seg inn fra en
 // annens innlogging, havner plan, avtale og betaling der.
 sjekk('innmeldingen gaar paa den innloggede, og det er derfor dette trengs',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/bli-medlem.php'),
                  '$medlem = krev_medlem();'));
 // Og saa fantes det ingen vei tilbake: det eneste verktoyet som liknet var
 // sammenslaaingen, som slaar sammen to MENNESKER og skjuler den ene.
@@ -12861,7 +12883,7 @@ echo "\n== Timer som aldri ble stemplet ==\n";
 //
 // «Glemt aa stemple ut» retter klokkeslettet paa en oekt som FINNES. Sto det
 // ingen oekt der, fantes det ingen vei inn, og timene ble borte for medlemmet.
-$stemp = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');
+$stemp = les_testfil(dirname(__DIR__) . '/app/lib/stempling.php');
 sjekk('en oekt kan legges inn etterpaa',
     str_contains($stemp, 'public static function leggInnOkt(int $medlemId, string $dato, string $fra, string $til): array')
     && str_contains($medApi, "if (\$handling === 'timer') {"));
@@ -12904,7 +12926,7 @@ echo "\n== Innloggingen som gikk ut midt i dagen ==\n";
 // med utloep tre timer fram. Nettleseren kastet den presis tre timer etter
 // innlogging, uansett hvor mye man hadde brukt sida. «Tre timer uten
 // aktivitet» var i praksis «tre timer».
-$sesj = file_get_contents(dirname(__DIR__) . '/app/lib/session.php');
+$sesj = les_testfil(dirname(__DIR__) . '/app/lib/session.php');
 sjekk('cookien skyves sammen med sesjonen',
     str_contains($sesj, '$skjovet = DB::kjor(')
     && str_contains($sesj, 'if ($skjovet->rowCount() > 0 && !headers_sent()) {')
@@ -12921,7 +12943,7 @@ echo "\n== To like e-poster om det samme ==\n";
 // Sperren gikk paa hendelsen — «ref_type#ref_id». La medlemmet ut den samme
 // varen to ganger, ble det to rader, to id-er, og to beskjeder som slapp
 // gjennom. For den som leser innboksen er de helt like.
-$vars = file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+$vars = les_testfil(dirname(__DIR__) . '/app/lib/varsler.php');
 sjekk('to helt like beskjeder til admin blir én',
     str_contains($vars, "WHERE kanal = 'epost' AND emne = :e AND tekst = :t")
     && str_contains($vars, 'INTERVAL 15 MINUTE'));
@@ -12943,7 +12965,7 @@ sjekk('en intern SMS som ikke kan gaa blir ikke en e-post til',
     str_contains($vars, "if (str_starts_with(\$malNavn, 'intern_')) {\n            logg('Intern SMS kunne ikke sendes — e-posten er alt sendt', ['mal' => \$malNavn]);\n            return;\n        }"));
 // … og den stanses der den lages ogsaa. To sperrer for det samme: det er
 // «uansett aarsak».
-$bliApi2 = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$bliApi2 = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
 sjekk('innmeldingen sender ikke SMS til verkstedet uten SMS-leverandoer',
     str_contains($bliApi2, "foreach (Varsel::smsMulig() ? Config::adminNumre() : [] as \$nr) {"));
 // Sperren mot to helt like beskjeder gjaldt bare dem som kom av en mal. De
@@ -12984,7 +13006,7 @@ sjekk('… og svaret sier at den andre raden er urort',
     str_contains($medApi, '» står med de samme opplysningene fra før,')
     && str_contains($medApi, 'slår du dem sammen under «Samme person flere ganger».'));
 
-$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaB = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Valgene skal vaere de samme som nettsida tilbyr, ikke en liste skrevet av
 // paa nytt. Planene kommer med det samme svaret som medlemslista.
 sjekk('personruta tilbyr medlemskapene fra basen',
@@ -13049,7 +13071,7 @@ sjekk('hjelpelinja under medlemskapet sier «hen»',
 // eneste — den var ikke det.
 sjekk('… og det samme gjor lenkehjelpen og svaret fra serveren',
     str_contains($sidaB, 'virker i fjorten dager. Hen åpner den på telefonen, og Vipps ')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php'),
                     '. Medlemskapet starter når hen har godkjent avtalen i Vipps.'));
 sjekk('«Avslutt medlemskapet» staar i personruta',
     substr_count($sidaB, '>Avslutt medlemskapet</x-import>') === 2
@@ -13092,7 +13114,7 @@ $rad = static fn(string $navn, int $frist): int => DB::settInn('bookings', [
 $nyLever = $rad('Nye Levende', 1200);
 $nyDod   = $rad('Nye Avbrutt', -60);
 
-$ovKilde = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovKilde = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 preg_match('/\$nyeste = DB::alle\(\s*"(.*?)"\s*\);/s', $ovKilde, $t);
 sjekk('spoerringa for «Nye paameldinger» lar seg hente ut', isset($t[1]) && $t[1] !== '');
 $ider = array_map(static fn($r) => (int) $r['id'], DB::alle($t[1] ?? 'SELECT 1 AS id'));
@@ -13118,7 +13140,7 @@ echo "\n== Medlemskapene i «Ikke betalt» ==\n";
 // Kortet ble bygget 29. august for kursplasser lagt inn for haand, for
 // medlemmene hadde noen betalingsstatus i det hele tatt. Forste gang han
 // spurte, endret jeg telleren i Medlemmer-kortet og ikke kortet han pekte paa.
-$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$ovFil = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 
 // To steder trenger regnestykket: tallet og radene. Regnet hvert sitt sted
 // kunne de svart hver sitt om det samme medlemmet.
@@ -13147,7 +13169,7 @@ sjekk('alle med utestaaende kommer med, ikke bare de forfalte',
 sjekk('ukjent pris staar tomt, ikke som null kroner',
     str_contains($ovFil, "'belop' => \$m['pris'] > 0 ? Booking::kroner(\$m['pris']) : '',"));
 
-$mFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$mFil = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 // Knappene i kortet gjorde opp en kursplass. For et medlemskap fantes det
 // ikke noe sted i systemet aa registrere at pengene kom.
 sjekk('et medlemskap kan registreres betalt',
@@ -13249,7 +13271,7 @@ echo "\n== Paint on Pots settes opp for haand ==\n";
 // Kurset sto med folger_apningstid = 1, og da satte utleggingen oektene opp
 // selv — halvannen time om gangen gjennom hele den aapne tida. Én aapen dag
 // ga fire til seks linjer i kalenderen, mot én for et ekte kurs.
-$m135 = file_get_contents(dirname(__DIR__) . '/db/migrations/135_paint_on_pots_settes_opp_for_haand.sql');
+$m135 = les_testfil(dirname(__DIR__) . '/db/migrations/135_paint_on_pots_settes_opp_for_haand.sql');
 
 // Utleggingen henter «WHERE folger_apningstid = 1». Nullen tar kurset ut av
 // den, og ingen nye oekter lages.
@@ -13320,7 +13342,7 @@ echo "\n== Medlemskapskortet er det samme kortet som kurs ==\n";
 // medlemskap sto to betalingspiller og en knapp. Det som hoerer til en
 // kurskveld — dato, tid, plasser, allergier — finnes ikke paa et medlemskap.
 // Det som gjor det, gjor det naa ogsaa her.
-$sidaM = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaM = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Felte for felt, i den rekkefolgen de staar paa kortet.
 sjekk('medlemskapskortet har e-postfeltet',
@@ -13372,7 +13394,7 @@ sjekk('… mens «Forny» og kassa gaar samme vei uten dem',
 // Feltene betyr noe fordi de lagres: medlemsvarslene «medlemstrekk_varsel»
 // og «medlemskap_fornyet» gaar til members.epost, og nummeret Vipps faar av
 // startAvtale() og startEngangs() er members.telefon.
-$medApiK = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$medApiK = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('api/medlemskap.php tar imot e-post og telefon',
     str_contains($medApiK, "\$epost   = mb_substr(Foresporsel::tekst('epost'), 0, 191);")
     && str_contains($medApiK, "\$telefon = mb_substr(Foresporsel::tekst('telefon'), 0, 32);"));
@@ -13419,8 +13441,8 @@ echo "\n== Salgsvilkaarene ==\n";
 //
 // Eieren, 3. september: «kan du fjerne vilkaar og angrerett i footer, lag en
 // som heter Salgsvilkaar, og bruk denne teksten. slett den gamle».
-$sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$vilkFil = file_get_contents(dirname(__DIR__) . '/vilkar.html');
+$sidaS = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$vilkFil = les_testfil(dirname(__DIR__) . '/vilkar.html');
 
 // Navnet, alle stedene det sto.
 sjekk('bunnteksten sier «Salgsvilkår»',
@@ -13435,14 +13457,14 @@ sjekk('… ogsaa i den frittstaaende fila Vipps leser',
     str_contains($vilkFil, '<h1>Salgsvilkår</h1>')
     && str_contains($vilkFil, '<title>Salgsvilkår — Lissom Keramikk</title>'));
 sjekk('… og i llms.txt',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/llms.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/llms.php'),
         "\$ut[] = '- [Salgsvilkår](' . ROT . '/vilkar)';"));
 
 // Adressa er den samme. Byttes den, blir alle gamle lenker og treff i Google
 // blindveier — og sitemap-en peker feil sted.
 sjekk('adressa er fortsatt /vilkar',
     str_contains($sidaS, "{ sti: '/vilkar',        side: 'vilkar' },")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/sitemap.php'), "['/vilkar',"));
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/sitemap.php'), "['/vilkar',"));
 
 // Nummereringen er eierens, og loeper 1 til 16 i ett.
 sjekk('punktene er nummerert 1 til 16',
@@ -13512,7 +13534,7 @@ sjekk('oppsigelsen sier hvor den skal sendes — begge steder',
 
 // Migrasjonen. Uten den ville sida fortsatt hett «Vilkår og angrerett» paa
 // lissom.no: innh() leser content_blocks foer malen.
-$mig138 = @file_get_contents(dirname(__DIR__) . '/db/migrations/138_salgsvilkar.sql');
+$mig138 = @les_testfil(dirname(__DIR__) . '/db/migrations/138_salgsvilkar.sql');
 sjekk('migrasjon 138 rydder den gamle overskrifta ut av basen',
     $mig138 !== false
     && str_contains($mig138, "WHERE nokkel = 'Vilkår/0/Overskrift'")
@@ -13527,10 +13549,10 @@ echo "\n== Vanlig Vipps, ikke fast trekk ==\n";
 // Eieren, 3. september: «Eirin forsokte aa betale med vanlig vipps, men hun
 // fikk kun alternativet fast trekk. selv om hun valgte noe annet i losningen
 // vaart» — og «vipps fast trekk skal kun vaere paa aarsmedlemskap».
-$sidaV = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$mlV   = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
-$medApiV2 = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
-$bliApiV  = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$sidaV = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$mlV   = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$medApiV2 = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
+$bliApiV  = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
 
 // ── Feilen: avtaleforsoeket ble gjenbrukt som engangsbetaling ──────────
 //
@@ -13654,8 +13676,8 @@ echo "\n== Vipps sine egne betalingsknapper ==\n";
 // Knappene som starter en betaling er naa <vipps-mobilepay-button>, som Vipps
 // leverer fra sin egen CDN. Da staar logoen, fargen og ordlyden slik Vipps
 // krever, og vi kopierer ingen logo inn i repoet.
-$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$htacc = file_get_contents(dirname(__DIR__) . '/.htaccess');
+$sidaB = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$htacc = les_testfil(dirname(__DIR__) . '/.htaccess');
 
 sjekk('skriptet lastes fra Vipps, uten aa sinke sida',
     str_contains($sidaB, '<script async type="text/javascript" src="https://cdn.vippsmobilepay.com/js/button/button.js"></script>'));
@@ -13814,7 +13836,7 @@ sjekk('… og det er faktisk filer aa sjekke', count($phpFiler) > 50, count($php
 // «kan du bekrefte at sant ikke skjer igjen? at alt aapnes midt paa
 // skjermen». Naa staar den sentrert som de andre rutene. Denne sjekken
 // er der for at den ikke skal gli tilbake til pekeren.
-$sidaR = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaR = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Kommentarene forteller HVORFOR pekeren er tatt bort, og navngir det som er
 // fjernet. Leser sjekken hele fila, finner den sine egne ord igjen og blir
 // gronn av feil grunn. Derfor maales koden uten kommentarer.
@@ -13877,7 +13899,7 @@ sjekk('de fire skjemarutene sentreres av «margin: auto 0»',
 //                         for: «Book plass · kr. 2 800,-»
 //                       etter: «Logg inn med Vipps for aa melde deg paa»
 //   vanlig beskjed (gavekort, feil e-post): ingen ring, gronn tone som for
-$sidaI = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaI = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 $kodeI = (string) preg_replace('/<!--.*?-->/s', '', $sidaI);
 $kodeI = (string) preg_replace('/^\s*\/\/.*$/m', '', $kodeI);
 
@@ -13981,9 +14003,9 @@ sjekk('… og linja over Vipps-knappen sier det samme',
 //   TERMINATED  for:   betaling «venter»
 //               etter: betaling «avbrutt»
 //   en rad som alt sto «betalt» ble staaende «betalt»
-$vippsK = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
-$cronK  = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$tikkK  = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+$vippsK = les_testfil(dirname(__DIR__) . '/app/lib/vipps.php');
+$cronK  = les_testfil(dirname(__DIR__) . '/bin/cron.php');
+$tikkK  = les_testfil(dirname(__DIR__) . '/app/lib/tikk.php');
 $utenKomm = static fn(string $t): string =>
     (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '', $t);
 $vippsU = $utenKomm($vippsK);
@@ -14010,7 +14032,7 @@ sjekk('… saa ingen av dem har sin egen utgave lenger',
 // Det statusen sier, skal faktisk gjores.
 sjekk('AUTHORIZED trekker pengene og markerer betalt',
     str_contains($vippsU, "if (\$tilstand === 'AUTHORIZED') {")
-    && str_contains($vippsU, 'self::trekk($referanse, $godkjent - $trukket);')
+    && str_contains($vippsU, 'self::trekk($referanse, $godkjent - $trukket, $trukket);')
     && str_contains($vippsU, 'Booking::markerBetalt($referanse);'),
     'trekk + markerBetalt');
 // ePayment staar paa AUTHORIZED ogsaa etter trekket (Codex 30.09.2026): bare
@@ -14025,9 +14047,9 @@ sjekk('CAPTURED markerer betalt',
 sjekk('TERMINATED, ABORTED og EXPIRED avbryter',
     str_contains($vippsU, "in_array(\$tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)"),
     'alle tre');
-sjekk('… men en betalt rad faller aldri tilbake til avbrutt',
-    str_contains($vippsU, "WHERE vipps_reference = :r AND status <> 'betalt'"),
-    'vernet staar');
+sjekk('… men betalt og refundert faller aldri tilbake til avbrutt',
+    str_contains($vippsU, "WHERE vipps_reference = :r AND status NOT IN ('betalt', 'delvis_refundert', 'refundert')"),
+    'vernet bevarer alle gjennomfoerte oppgjoer');
 sjekk('et mislykket oppslag lar raden staa som for',
     str_contains($vippsU, "logg_feil('Statusoppslag feilet for ' . \$referanse, \$e);\n            return '';"),
     'ingen halv oppdatering');
@@ -14066,7 +14088,7 @@ sjekk('cron teller bare de oppslagene som faktisk gikk',
 //   etter: gavekortet + kurskjopet       → «2 betalinger har hengt i over en
 //          time: Ukjent (gavekort) · kr. 1 490,- — og 1 til», og hele lista
 //          med «Provekunde Hengende · Store former, viderekomne · kr. 2 800,-»
-$overK = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$overK = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 $overU = (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '', $overK);
 
 sjekk('det er kode aa maale i varselsjekken', strlen($overU) > 8000, strlen($overU) . ' tegn');
@@ -14168,7 +14190,7 @@ if ($oktH > 0) {
 //               Ukjent (gavekort) · Gavekort · hengt i ett dogn · kr. 1 490,-
 //               Gina Borjesson · Kursplass · Store former, viderekomne
 //                              · hengt i 3 timer · kr. 2 800,-
-$hvK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$hvK = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 $hvU = (string) preg_replace('/<!--.*?-->/s', '', $hvK);
 $hvU = (string) preg_replace('/^\s*\/\/.*$/m', '', $hvU);
 
@@ -14198,8 +14220,8 @@ sjekk('betalingslista leser de hengende fra oversikten',
 // api/admin/betalinger.php svarer bare med de gjennomforte. Sto de hengende
 // og ventet paa den lista, ville skjermen vaert tom.
 sjekk('… fordi betalings-API-et bare svarer med de gjennomforte',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php'),
-                 'betalt') && !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/admin/betalinger.php'),
+                 'betalt') && !str_contains(les_testfil(dirname(__DIR__) . '/api/admin/betalinger.php'),
                  "'opprettet'"),
     'ingen «opprettet» der');
 sjekk('radene beholder navnet sitt i lista',
@@ -14227,7 +14249,7 @@ sjekk('refusjonsruta staar ikke aapen paa en rad uten referanse',
     'vernet staar');
 // API-et gir radene samme form som resten av lista.
 $ovU2 = (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '',
-    file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php'));
+    les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php'));
 foreach (["'navn'", "'hva'", "'tid'", "'sum'", "'status'"] as $felt) {
     sjekk('den hengende raden har feltet ' . $felt,
         (bool) preg_match('/\$hengendeListe\[\] = \[.*?' . preg_quote($felt, '/') . '\s*=>/s', $ovU2),
@@ -14258,7 +14280,7 @@ sjekk('tiden skrives i timer og dogn, ikke bare «over en time»',
 //   /stemple:    utlogget «Du må logge inn med Vipps …»; innlogget «Hei,
 //                Testadmin · 3 av 15 timer igjen» og ett trykk stemplet inn
 //                — bekreftet i basen med innstemplet=true, siden=20:25.
-$msK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$msK = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 $msU = (string) preg_replace('/<!--.*?-->/s', '', $msK);
 $msU = (string) preg_replace('/^\s*\/\/.*$/m', '', $msU);
 sjekk('det er kode aa maale i Min side-sjekkene', strlen($msU) > 500000, strlen($msU) . ' tegn');
@@ -14332,15 +14354,15 @@ sjekk('… og de er piller, ikke understreket tekst',
 //    fjernes. Gruppechatten skal bestå.» Samtalen er borte; da er kortet en
 //    oppslagstavle, og heter det den er.
 sjekk('kortet heter det det er — beskjeder fra verkstedet',
-    (bool) preg_match('/id="minside-beskjeder".{0,400}>Beskjeder<\/div>/s', $msU)
-    && (bool) preg_match('/id="minside-beskjeder".{0,700}>Fra verkstedet<\/h3>/s', $msU));
+    (bool) preg_match('/id="minside-beskjeder".{0,1600}>Beskjeder<\/div>/s', $msU)
+    && (bool) preg_match('/id="minside-beskjeder".{0,1900}>Fra verkstedet<\/h3>/s', $msU));
 // Oppslagstavla var tom i produksjon fram til 13. september 2026. Kortet
 // fantes, men renderVals sa det selv: «finnes ikke som endepunkt ennaa».
 // Eieren: «paa min side, saa ser det ut til at beskjeder til medlemmene ikke
 // vises». Maalt i nettleseren samme dag: admin sendte «Ovnen går natt til
 // torsdag» til alle medlemmer, og den sto paa Min side som «I dag».
-$beskjedApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/beskjed.php');
-$medlemApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$beskjedApi = (string) les_testfil(dirname(__DIR__) . '/api/admin/beskjed.php');
+$medlemApi  = (string) les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('… og en beskjed til medlemmene lagres, ikke bare sendes',
     str_contains($beskjedApi, "if (\$til === 'medlemmer') {")
     && str_contains($beskjedApi, "DB::settInn('medlemsbeskjeder', ["));
@@ -14394,7 +14416,7 @@ sjekk('… og den staar bak sitt eget valg, ikke paa forsiden',
     'maalt i nettleseren paa 1440, 1024 og 390 px: borte fra forsiden, der bak valget');
 sjekk('… og menyvalget gaar dit',
     str_contains($msU, "chat:       p('Chat', 'Chat mellom medlemmene', 'chat'),")
-    && str_contains($msU, "msFaneChat:       f === 'chat',"),
+    && str_contains($msU, "msFaneChat:       (f === 'chat' || f === 'hjem'),"),
     'maalt: ett trykk paa Chat, og rommet staar');
 // Endepunktet staar: det er det samme kontaktskjemaet paa nettsiden bruker,
 // og henvendelsene fra for ligger der de laa.
@@ -14471,7 +14493,7 @@ sjekk('bindingstida staar som egen rad',
 //    måneden — og trekker det til den sies opp.»
 //   «Neste trekk  1. oktober 2026 · kr. 1 790,-»   (avtalens beloep)
 //   «av 35 timer · 23»                             (medlemskapets timer)
-$medK = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$medK = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('svaret navngir medlemskapet medlemmet staar paa',
     str_contains($medK, "'plan'       => \$harPlan !== '' ? \$harPlan : \$avtalePlan,"),
     'ikke avtalens plan');
@@ -14492,16 +14514,16 @@ sjekk('«Neste trekk» viser det som faktisk trekkes',
     str_contains($msU, "a.nesteTrekk + ' · ' + (a.avtalePris || a.pris)"),
     'avtalens beloep gaar foran planens');
 sjekk('timene og navnet kommer fra samme plan',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/stempling.php'),
                  "'navn'         => trim((string) \$medlem['medlemskap_type'] ?? ''),")
-    || str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+    || str_contains(les_testfil(dirname(__DIR__) . '/api/stempling.php'),
                  "'navn'         => trim((string) (\$medlem['medlemskap_type'] ?? '')),"),
     'begge leser medlemskap_type');
 
 
 // ── Serveren: de tre siste hele maanedene ───────────────────────────────
-$stK = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');
-$apiK = file_get_contents(dirname(__DIR__) . '/api/stempling.php');
+$stK = les_testfil(dirname(__DIR__) . '/app/lib/stempling.php');
+$apiK = les_testfil(dirname(__DIR__) . '/api/stempling.php');
 sjekk('Stempling teller en hel maaned tilbake',
     str_contains($stK, 'public static function minutterIManed(int $medlemId, int $tilbake): int'),
     'ny metode');
@@ -14541,7 +14563,7 @@ if ($mId > 0) {
 //
 // Eieren, 4. september: «Gjør ferdig alt». Tre punkter sto igjen og var
 // skrevet ned i docs/APNE-PUNKTER.md.
-$restK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$restK = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 $restU = (string) preg_replace('/<!--.*?-->/s', '', $restK);
 $restU = (string) preg_replace('/^\s*\/\/.*$/m', '', $restU);
 sjekk('det er kode aa maale i restsjekkene', strlen($restU) > 500000, strlen($restU) . ' tegn');
@@ -14578,15 +14600,15 @@ sjekk('… og et ugyldig lager velter ikke sida',
     'JSON.parse staar inne i try');
 
 // 2. Webhooken og cron deler regel, uten aa dele oppslag.
-$vK = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
-$wK = file_get_contents(dirname(__DIR__) . '/api/vipps-webhook.php');
+$vK = les_testfil(dirname(__DIR__) . '/app/lib/vipps.php');
+$wK = les_testfil(dirname(__DIR__) . '/api/vipps-webhook.php');
 sjekk('regelen for hva en tilstand betyr staar ett sted',
-    str_contains($vK, 'public static function anvendTilstand(string $referanse, array $status): string'),
+    str_contains($vK, 'public static function anvendTilstand(string $referanse, array $status, bool $kastFeil = false): string'),
     'Vipps::anvendTilstand()');
 sjekk('… og synkroniser() bruker den',
     str_contains($vK, 'return self::anvendTilstand($referanse, $status);'), 'etter oppslaget');
 sjekk('… og webhooken ogsaa',
-    str_contains($wK, 'Vipps::anvendTilstand($referanse, $status);'), 'uten eget regelsett');
+    str_contains($wK, 'Vipps::anvendTilstand($referanse, $status, true);'), 'uten eget regelsett, med feilreplay');
 // Signaturen slik Vipps faktisk lager den (Codex-gjennomgangen 30.09.2026):
 // metode, sti, dato, vert og innholdshash — ikke bare kroppen.
 $wsKropp = '{"name":"AUTHORIZED","reference":"X"}';
@@ -14605,17 +14627,18 @@ sjekk('… uten hemmelighet godtas ingenting', !Vipps::webhookSignert($wsKropp, 
 sjekk('… saa webhooken ikke har sin egen utgave lenger',
     !str_contains($wK, "case 'CAPTURED':") && !str_contains($wK, "Booking::markerBetalt(\$referanse);"),
     'switchen er borte');
-// Hendelsen er signert og sier hva som har skjedd. Leseadressen kan ligge et
-// hakk bak, saa et oppslag her kunne lest en CAPTURED-hendelse som AUTHORIZED
-// og forsokt aa trekke en betaling som alt var trukket.
-sjekk('webhooken sporr ikke Vipps om igjen',
-    str_contains($wK, "\$status = \$navn === 'AUTHORIZED'\n        ? Vipps::hentBetaling(\$referanse)\n        : ['state' => \$navn];"),
-    'bare AUTHORIZED, som trenger beloepet');
+// Operasjonsloggen avstemmer delvis/fullt oppgjoer. Hendelsens tilstand
+// beholdes, saa en CAPTURED aldri blir til AUTHORIZED og starter nytt trekk.
+sjekk('webhook avstemmer oppgjoer uten aa endre hendelsens tilstand',
+    str_contains($wK, "\$status = \$navn === 'AUTHORIZED' ? Vipps::hentBetaling(\$referanse) : ['state' => \$navn];")
+    && str_contains($wK, 'Vipps::avstemHendelse($referanse, $psp, $navn)')
+    && str_contains($wK, "\$status['state'] = \$navn;"),
+    'CAPTURED/REFUNDED blir aldri en utilsiktet capture');
 sjekk('REFUNDED behandles fortsatt',
     str_contains($vK, "} elseif (\$tilstand === 'REFUNDED') {"), 'flyttet inn i regelen');
 
 // 3. Varslene som ikke vistes noe sted.
-$oK = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$oK = les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('tallene foelger med som tall, ikke bare som setninger',
     str_contains($oK, "'varselTall' => [") && str_contains($oK, "'feilet' => \$feiledeVarsler,")
     && str_contains($oK, "'iKo'    => \$iKo,"),
@@ -14635,7 +14658,7 @@ echo "\n== Piller, faner og en vase som ikke sendes på e-post ==\n";
 // Eieren, 5. september, i tur og orden: «pillene passer ikke, sjekk globalt»,
 // «piller over hverandre», «de går ut på siden», «de er for brede», og med
 // bilde av bindinga: «pillen er alt for stor og passer ikke i stilen».
-$sidaP = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sidaP = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Egne kommentarer skal ikke svare for koden.
 $utenKomm = (string) preg_replace('/^\s*\/\/.*$/m', '',
     (string) preg_replace('/<!--.*?-->/s', '', $sidaP));
@@ -14793,7 +14816,7 @@ sjekk('… mens admin fortsatt forklarer hva malene er',
 
 // 5. Oppsigelsen leste den samme lagrede datoen og sperret et proevemedlem
 //    ute fra aa si opp. Planen er avtalen.
-$mLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mLib = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('oppsigelsen sperres ikke av en binding planen ikke har',
     str_contains($mLib, 'public static function bindingTil(array $avtale): ?string')
     && str_contains($mLib, '$binding = self::bindingTil($avtale);'));
@@ -14806,7 +14829,7 @@ echo "\n== Min side ryddet: ett kort, dørkode oppe, meny i bunnen ==\n";
 // opprydding.» Og videre: «Dørkode kan stå fast mer diskret lenger opp»,
 // «Nyttiginfo kan legges i en meny på bunnen ala vi har på admin»,
 // «Medlemskap på menyen i bunnen», «Internbutkikk også», «Og chat».
-$msP = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$msP = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 $msRen = (string) preg_replace('/^\s*\/\/.*$/m', '',
     (string) preg_replace('/<!--.*?-->/s', '', $msP));
 
@@ -14816,7 +14839,7 @@ $msRen = (string) preg_replace('/^\s*\/\/.*$/m', '',
 // Medlemskap::plan() leter bare blant aktive, og alt som BESKREV et medlem
 // kalte den. En avslaatt plan ble ikke funnet — og «ikke funnet» ble tolket
 // som «ingen grense»: timerFor() ga null, som betyr fri tilgang paa doera.
-$mlP = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mlP = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('en plan et medlem staar paa finnes selv om den er avslaatt',
     str_contains($mlP, 'public static function planUansett(string $navn): ?array')
     && str_contains($mlP, "DB::en('SELECT * FROM membership_plans WHERE navn = :n', ['n' => \$navn])"));
@@ -14830,7 +14853,7 @@ sjekk('… mens innmelding og kjop fortsatt krever en plan som selges',
     // startIVerkstedet() kom til med 804be43 (#193).
     substr_count($mlP, 'self::plan($planNavn);') === 3,
     'startAvtale(), startEngangs() og startIVerkstedet()');
-$mkP = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$mkP = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
     str_contains($mkP, "\$p = \$harPlan !== '' ? Medlemskap::planUansett(\$harPlan) : null;"),
     'sto planen ikke i salgslista, falt prisen tilbake paa Vipps-avtalens');
@@ -14958,7 +14981,7 @@ echo "\n== Kortet, skivene og «Selg» sier det som er sant ==\n";
 // med bilde av «Mini 15 · kr 1 790,- · 15 timer i måneden» og «Fritt» rett
 // under. Og: «Og nå sjekker du grundig, jeg er fittelei av å sjekke og
 // sjekke.»
-$k2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$k2 = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 $k2Ren = (string) preg_replace('/^\s*\/\/.*$/m', '',
     (string) preg_replace('/<!--.*?-->/s', '', $k2));
 
@@ -15002,7 +15025,7 @@ sjekk('… og gjetter ikke lenger paa kursnavn',
     && str_contains($k2Ren, "const skiva = alle.find(r => /dreieskive/i.test(r.navn || ''));")
     && str_contains($k2Ren, 'if (!k || !skiva || k.ressursId !== skiva.id) return;'),
     'maalt: dreiekurset kom med, bordplasskurset samme dag kom ikke');
-$kursApi2 = file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php');
+$kursApi2 = les_testfil(dirname(__DIR__) . '/app/lib/katalog.php');
 sjekk('… fordi ressursen foelger med kurset naa',
     str_contains($kursApi2, "\$ressursFelt = DB::harKolonne('courses', 'ressurs_id') ? ', ressurs_id' : '';")
     && str_contains($kursApi2, "'ressursId' => (\$k['ressurs_id'] ?? null) === null ? null : (int) \$k['ressurs_id'],"),
@@ -15042,8 +15065,8 @@ echo "\n== Årsavtalen: ingen avtale, ingen penger ==\n";
 // Aarsmedlemskapet har «krever_fast_trekk = 1»: det kan ikke gjores opp én
 // maaned om gangen. Kjopet paa nettsida oppretter en Vipps-avtale kunden maa
 // godkjenne i appen.
-$mlA = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
-$sidaA = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mlA = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$sidaA = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // ── Verkstedet maa se at avtalen mangler ───────────────────────────
 //
@@ -15084,10 +15107,10 @@ sjekk('… og den teller som forfalt, ikke som «venter»',
 // Admin lager den ikke selv: der sendes innmeldingslenka, og avtalen lages
 // naar mottakeren trykker. Se docs/AVTALETREKK.md.
 sjekk('avtaler opprettes de tre stedene, og bare der',
-    substr_count(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'), 'Medlemskap::startAvtale(') === 1
-    && substr_count(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'), 'Medlemskap::startAvtale(') === 1
-    && substr_count(file_get_contents(dirname(__DIR__) . '/api/meld-inn.php'), 'Medlemskap::startAvtale(') === 1
-    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'Medlemskap::startAvtale('));
+    substr_count(les_testfil(dirname(__DIR__) . '/api/medlemskap.php'), 'Medlemskap::startAvtale(') === 1
+    && substr_count(les_testfil(dirname(__DIR__) . '/api/bli-medlem.php'), 'Medlemskap::startAvtale(') === 1
+    && substr_count(les_testfil(dirname(__DIR__) . '/api/meld-inn.php'), 'Medlemskap::startAvtale(') === 1
+    && !str_contains(les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'Medlemskap::startAvtale('));
 
 // ── «Forny» skal fornye DIN plan ───────────────────────────────────
 //
@@ -15113,12 +15136,12 @@ echo "\n== Kunden får beskjed om å godkjenne i Vipps ==\n";
 //
 // Fast trekk i Vipps er en FULLMAKT kunden gir i appen. Avtalen er ikke
 // gyldig for hun har godkjent den — og det sto ingen steder.
-$mig = file_get_contents(dirname(__DIR__) . '/db/migrations/139_avtalen_ma_godkjennes_i_vipps.sql');
-$sidaV = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$mkV   = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
-$bmV   = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
-$admV  = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
-$cronV = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$mig = les_testfil(dirname(__DIR__) . '/db/migrations/139_avtalen_ma_godkjennes_i_vipps.sql');
+$sidaV = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$mkV   = les_testfil(dirname(__DIR__) . '/api/medlemskap.php');
+$bmV   = les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
+$admV  = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$cronV = les_testfil(dirname(__DIR__) . '/bin/cron.php');
 
 // 1. E-posten.
 sjekk('velkomstmalen sier at avtalen maa godkjennes',
@@ -15177,8 +15200,8 @@ echo "\n== De andre medlemskapene: kvittering når pengene er inne ==\n";
 // Eieren, 5. september: «Hvilken info får de som kjøper et av de andre
 // medlemskapene». Svaret var: et brev som paastod noe som ikke hadde skjedd
 // enda, og ingenting naar det faktisk skjedde.
-$mig140 = file_get_contents(dirname(__DIR__) . '/db/migrations/140_kvittering_nar_pengene_faktisk_er_inne.sql');
-$mlB    = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mig140 = les_testfil(dirname(__DIR__) . '/db/migrations/140_kvittering_nar_pengene_faktisk_er_inne.sql');
+$mlB    = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 
 // 1. Brevet ved start sa «Du har betalt» — for kunden hadde betalt.
 //    startEngangs() oppretter betalingen, e-posten legges i koen, og FORST
@@ -15251,9 +15274,9 @@ echo "\n== Trekkrunden kjores ogsaa av trafikken ==\n";
 // Den teksten naas bare naar det ikke finnes en eneste betalingsrad — og
 // Medlemskap::trekk() skriver raden FOER den ringer Vipps. Hadde runden gaatt,
 // ville det staatt «Trekket er bestilt».
-$tikk = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
-$kron = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$mlT  = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$tikk = les_testfil(dirname(__DIR__) . '/app/lib/tikk.php');
+$kron = les_testfil(dirname(__DIR__) . '/bin/cron.php');
+$mlT  = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 
 // Én utgave, ikke to. Runden laa i cron; naa ligger den i Medlemskap, og
 // begge veier kaller den samme.
@@ -15299,8 +15322,8 @@ echo "\n== Cron-jobbene i koden og i oppsettet er de samme ==\n";
 // som «case»-ene i koden. Legges det til en jobb uten aa skrive den ned,
 // blir dette roedt — og ingen trenger aa oppdage det med et bilde av en
 // skjerm igjen.
-$cronKilde = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$oppsett   = file_get_contents(dirname(__DIR__) . '/docs/OPPSETT.md');
+$cronKilde = les_testfil(dirname(__DIR__) . '/bin/cron.php');
+$oppsett   = les_testfil(dirname(__DIR__) . '/docs/OPPSETT.md');
 
 preg_match_all("/^    case '([a-z]+)':/m", $cronKilde, $t);
 $iKoden = $t[1];
@@ -15363,7 +15386,7 @@ echo "\n== «Send Vipps-avtale» lager ikke en avtale nummer to ==\n";
 //   uten rettinga:  agr_gammel «venter» + agr_ny «venter»  → 2 trekk
 //   med rettinga:   agr_gammel «stoppet» + agr_ny «venter» → 1 trekk
 // Og Vipps fikk en PATCH paa den gamle avtalen, ikke bare vaar egen rad.
-$dbl = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$dbl = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('et gammelt, ugodkjent avtaleforsoek stoppes foerst',
     str_contains($dbl, 'foreach (self::gamleAvtaleforsok((int) $medlem[\'id\']) as $gammelt) {')
     && str_contains($dbl, 'self::avlysForsok($gammelt);'),
@@ -15398,7 +15421,7 @@ echo "\n== Medlemslista og Kassa sier det samme om det samme trekket ==\n";
 //   betalingsrad «feilet»  → begge: «Trekket gikk ikke — proevd …»
 //   betalingsrad «betalt»  → ute av Kassa, «Trukket …» i lista
 // For rettinga sa medlemslista «Trukket 4. september» i alle tre.
-$medlL = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medlL = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('medlemslista faar med seg trekket den slaar opp',
     str_contains($medlL,
         'use ($m, $avtaler, $sisteBetaling, $sisteTrekk): array {'),
@@ -15424,8 +15447,8 @@ echo "\n== Ende-til-ende-testen finnes og maaler det den skal ==\n";
 //
 // Maalt: med «$sisteTrekk» tatt ut av use-lista igjen gikk den fra 31 av 31
 // til 27 av 31, og navnga begge skjermene og hva hver av dem sa.
-$e2e = @file_get_contents(dirname(__DIR__) . '/tests/pengekjede.php') ?: '';
-$falsk = @file_get_contents(dirname(__DIR__) . '/tests/falsk-vipps.mjs') ?: '';
+$e2e = @les_testfil(dirname(__DIR__) . '/tests/pengekjede.php') ?: '';
+$falsk = @les_testfil(dirname(__DIR__) . '/tests/falsk-vipps.mjs') ?: '';
 sjekk('ende-til-ende-testen ligger i repoet', $e2e !== '' && $falsk !== '',
     'uten den falske Vipps kan ingen kjore den paa nytt');
 // Selve kjernen: den sammenligner de to skjermene, i hver tilstand.
@@ -15443,7 +15466,7 @@ sjekk('… i hver tilstand en betalingsrad kan staa i',
 sjekk('… og nekter aa kjore mot ekte Vipps',
     str_contains($e2e, 'serveren snakker ikke med den falske Vipps'));
 // Miljovariabelen som gjor det mulig, og vakta som holder den unna produksjon.
-$cfg = file_get_contents(dirname(__DIR__) . '/app/config.php');
+$cfg = les_testfil(dirname(__DIR__) . '/app/config.php');
 sjekk('… uten at testadressen kan naa produksjon',
     str_contains($cfg, "getenv('LISSOM_VIPPS_BASE')")
     && str_contains($cfg, "self::miljo() !== 'produksjon'"));
@@ -15461,7 +15484,7 @@ sjekk('… uten at testadressen kan naa produksjon',
 // paa raden aapner fortsatt deltakeren, kortet dras inn paa en ny dato,
 // bekreftelsen kommer midt paa skjermen, «Avbryt» sender ingenting, og
 // «Ja, flytt og send beskjed» sender flyttingen og legger e-posten i koen.
-$byttSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$byttSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('«Bytt dato» staar i kalenderens sidemeny',
     str_contains($byttSida, '>Bytt dato</span>')
     && str_contains($byttSida, 'id="klbd-sone"')
@@ -15509,7 +15532,7 @@ sjekk('… og flyttingen gaar til pamelding.php',
 //
 // Samme rute som «Bytt dato», bare den andre veien: hun gir fra seg stolen,
 // og den blir ledig for andre.
-$pamFil = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+$pamFil = les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php');
 sjekk('«til-venteliste» finnes i pamelding.php',
     str_contains($pamFil, "if (\$handling === 'til-venteliste') {"));
 sjekk('… og en Vipps-betalt plass avvises, med refusjon som svar',
@@ -15555,8 +15578,8 @@ sjekk('… og deltakerkortet har den samme knappen',
 // ingen medlemstrekk. Det er grunnen til at pengene aldri ble trukket.
 //
 // Hele avgjorelsen kjores for alle SAPI-ene i tests/cronvakt.php: 11 av 11.
-$cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$vaktFil = file_get_contents(dirname(__DIR__) . '/app/lib/foresporsel.php');
+$cronFil = les_testfil(dirname(__DIR__) . '/bin/cron.php');
+$vaktFil = les_testfil(dirname(__DIR__) . '/app/lib/foresporsel.php');
 sjekk('cron-vakta spor om det finnes en foresporsel, ikke om SAPI-navnet',
     str_contains($vaktFil, 'function er_nettforesporsel(string $sapi, array $server): bool')
     && str_contains($vaktFil, "return isset(\$server['REQUEST_METHOD']) || isset(\$server['HTTP_HOST']);")
@@ -15568,7 +15591,7 @@ sjekk('… og vakta staar fortsatt',
     && str_contains($cronFil, '    http_response_code(404);'));
 // Regelen staar ett sted. Tikk sto som «PHP_SAPI === 'cli'» og tok feil den
 // andre veien: under CGI la den nettsidens bakgrunnsarbeid oppaa cron-jobben.
-$tikkFil = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+$tikkFil = les_testfil(dirname(__DIR__) . '/app/lib/tikk.php');
 sjekk('… og Tikk bruker den samme regelen, ikke sin egen',
     str_contains($tikkFil, 'if (!er_nettforesporsel(PHP_SAPI, $_SERVER)) {')
     && !str_contains($tikkFil, "if (PHP_SAPI === 'cli') {"));
@@ -15611,7 +15634,7 @@ sjekk('deltakerkortet henter maatene fra den samme lista som skjemaet',
 sjekk('… saa «Gratis» og «Gavekort» staar der ogsaa',
     str_contains($sida, "return ['Ikke betalt', 'Kontant', 'Vipps', 'Gavekort', 'Gratis'];"));
 sjekk('… og serveren tar imot begge to',
-    str_contains($pamP = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php'),
+    str_contains($pamP = les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php'),
         "'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'")
     && str_contains($pamP, "'Gavekort'"));
 
@@ -15632,7 +15655,7 @@ sjekk('… og serveren tar imot begge to',
 //   Testperson Bekreft #2              (samme)
 //   Proeve Kontantsen  #3 · Kontant    (dratt ut, foert som Kontant)
 //   Proeve Ubetalt     #4 · Ikke betalt (dratt ut, aldri gjort opp)
-$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$kalFil = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('ventelista henter kontaktopplysningene, saa raden kan kobles',
     str_contains($kalFil, 'w.epost, w.telefon'));
 sjekk('… og serveren sender med hva den avbestilte paameldingen sto med',
@@ -15646,7 +15669,7 @@ sjekk('… og maaten gaar foran, med de samme ordene som deltakerraden',
 // gikk med; betalingsstatusen — det denne vakta er til for — staar igjen
 // alene paa raden under navnet, og bare naar den finnes.
 sjekk('… og ventelistepilla viser den, som «Bytt dato» gjor',
-    str_contains($sidaKal = file_get_contents(dirname(__DIR__) . '/lissom-2108.html'),
+    str_contains($sidaKal = les_testfil(dirname(__DIR__) . '/lissom-2108.html'),
         "under: v.status || '',")
     && str_contains($sidaKal, "harUnder: !!v.status,"));
 sjekk('… og den som meldte seg paa koen selv faar ingen status',
@@ -15696,7 +15719,7 @@ sjekk('betalingsstatusen foelger deltakeren ut av kurset',
 sjekk('… og staar i pilla under navnet',
     str_contains($byttSida, "+ (v.status ? ' · ' + v.status : ''),"));
 sjekk('… og ventelista baerer fortsatt bare koeplassen',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php'),
+    str_contains(les_testfil(dirname(__DIR__) . '/api/admin/kalender.php'),
                  'venteliste: [{ navn, posisjon, varslet }],'));
 
 // ── Avtaletrekk: feltet som aldri hadde en knapp ─────────────────────
@@ -15713,11 +15736,11 @@ sjekk('… og ventelista baerer fortsatt bare koeplassen',
 // Maalt i nettleseren: 12 av 12. Haken staar, den er paa for Aarsmedlemskap
 // og av for Mini 15, den kan slaas av og paa, og verdien staar etter
 // omlasting begge veier.
-$mig146 = file_get_contents(dirname(__DIR__) . '/db/migrations/146_avtaletrekk_bare_paa_arsmedlemskapet.sql');
+$mig146 = les_testfil(dirname(__DIR__) . '/db/migrations/146_avtaletrekk_bare_paa_arsmedlemskapet.sql');
 sjekk('migrasjon 146 setter avtaletrekk bare paa aarsmedlemskapet',
     str_contains($mig146, "SET krever_fast_trekk = CASE WHEN navn = 'Årsmedlemskap' THEN 1 ELSE 0 END;"));
 
-$planFil = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+$planFil = les_testfil(dirname(__DIR__) . '/api/admin/planer.php');
 sjekk('planlista sender feltet ut',
     str_contains($planFil, "'fastTrekk' => Medlemskap::kreverFastTrekk(\$p),"));
 sjekk('… og skriver det bare naar det er med i kallet',
@@ -15823,7 +15846,7 @@ sjekk('… og Chat gaar til medlemschatten',
 // Fanen finnes paa Min side, og henting og oppfrisking starter av seg selv
 // naar sida staar aapen — eller naar panelet i admin staar aapent.
 sjekk('… og fanen den peker paa finnes',
-    str_contains($byttSida, "msFaneChat:       f === 'chat',")
+    str_contains($byttSida, "msFaneChat:       (f === 'chat' || f === 'hjem'),")
     && str_contains($byttSida, "if ((side === 'minside' || this.state.klChatVis) && this.state.innlogget) {"));
 sjekk('… i sin egen rad, over hele bredden',
     str_contains($byttSida, "klSnarveiRadStil: {")
@@ -15865,22 +15888,22 @@ sjekk('… og «Synk med mobilen» er ute av kortraden',
 sjekk('godkjenningslenka er borte',
     !DB::harTabell('avtale_lenker')
     && !file_exists(dirname(__DIR__) . '/api/godkjenn.php')
-    && !str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'), 'godkjenn'));
-$mig151 = file_get_contents(dirname(__DIR__) . '/db/migrations/151_avtalelenka_er_borte.sql');
+    && !str_contains(les_testfil(dirname(__DIR__) . '/.htaccess'), 'godkjenn'));
+$mig151 = les_testfil(dirname(__DIR__) . '/db/migrations/151_avtalelenka_er_borte.sql');
 sjekk('… og migrasjon 151 tar tabellen og malen',
     str_contains($mig151, 'DROP TABLE IF EXISTS avtale_lenker;')
     && str_contains($mig151, "DELETE FROM notification_templates WHERE navn = 'avtale_ikke_godkjent';"));
-$mlLenke = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$mlLenke = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('… og koden kjenner den ikke lenger',
     !str_contains($mlLenke, 'godkjennLenke')
     && !str_contains($mlLenke, 'avtale_lenker')
     && !str_contains($mlLenke, 'avtale_ikke_godkjent'));
 sjekk('… og malen er ute av malregisteret',
-    !str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), 'avtale_ikke_godkjent'));
+    !str_contains(les_testfil(dirname(__DIR__) . '/app/lib/maler.php'), 'avtale_ikke_godkjent'));
 // Verkstedet skal fortsatt kunne sende en lenke. Den er innmeldingsordren naa,
 // og den lever i fjorten dager naar admin lager den — ett doegn er for kort
 // for noe som skal ut i en e-post.
-$admFil151 = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$admFil151 = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('«Send Vipps-avtale» sender innmeldingslenka',
     str_contains($admFil151, "\$lenke = Config::nettsted() . '/meld-inn/' . Medlemsordre::forMedlem(\$id, \$type, [")
     && str_contains($admFil151, '], 14 * 24);'));
@@ -15888,7 +15911,7 @@ sjekk('… og «Kopier lenka» viser den samme',
     str_contains($admFil151, "return Config::nettsted() . '/meld-inn/'\n                     . Medlemsordre::forMedlem((int) \$m['id'], \$type, ["));
 // Personruta tegnes hver gang den aapnes. Lages ordren der, ville hver visning
 // lagt igjen en ny rad og en ny gyldig lenke.
-$moFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemsordre.php');
+$moFil = les_testfil(dirname(__DIR__) . '/app/lib/medlemsordre.php');
 sjekk('… og lenka lages ikke paa nytt hver gang ruta aapnes',
     str_contains($moFil, 'public static function forMedlem(int $medlemId, string $planNavn, array $felter,')
     && str_contains($moFil, "WHERE medlem_id = :m AND plan = :p AND status = 'ny'")
@@ -15919,7 +15942,7 @@ sjekk('kvitteringen lukker seg etter to sekunder',
 //
 // Eieren, 6. september: «dessuten maa jeg kunne endre epost paa medlemmer og
 // deltakere, noen legge inn feil». Adressen kunne bare settes ved innmelding.
-$medlFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$medlFil2 = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('«kontakt» finnes i medlemmer.php',
     str_contains($medlFil2, "if (\$handling === 'kontakt') {"));
 sjekk('… og en ugyldig adresse avvises',
@@ -16051,7 +16074,7 @@ sjekk('… og «Vis som fullbooket» staar der, med den samme handlingen som hak
     && str_contains($byttSida, "handling: 'visFullt', oktId: menyEvt.oktId,"));
 
 // Serveren: beskjeden som ikke ble sendt for.
-$pmFlytt = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+$pmFlytt = les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php');
 sjekk('flyttingen sender beskjed til deltakeren',
     str_contains($pmFlytt, "Varsel::mal('pamelding_flyttet', ['epost' => \$b['epost']], [")
     && str_contains($pmFlytt, "'fra'   => \$b['fra_tid'] ? Booking::norskDato((string) \$b['fra_tid']) : '',"));
@@ -16061,14 +16084,14 @@ sjekk('… og sier fra naar den ikke kunne sendes',
     str_contains($pmFlytt, "(\$varslet ? 'Beskjeden er sendt.' : 'Husk å gi beskjed.')"));
 
 // Malen. Ordlyden er den eieren godkjente 6. september.
-$mig143 = @file_get_contents(dirname(__DIR__) . '/db/migrations/143_ny_dato_pa_kurset.sql') ?: '';
+$mig143 = @les_testfil(dirname(__DIR__) . '/db/migrations/143_ny_dato_pa_kurset.sql') ?: '';
 sjekk('malen «Ny dato på kurset» ligger i migrasjon 143',
     str_contains($mig143, "'pamelding_flyttet',")
     && str_contains($mig143, "'Ny dato på {kurs}',")
     && str_contains($mig143, 'Plassen din på {kurs} er flyttet fra {fra} til {til}.')
     && str_contains($mig143, 'Du trenger ikke gjøre noe — betalingen følger med.')
     && str_contains($mig143, "'kurs',"));
-$malerFlytt = file_get_contents(dirname(__DIR__) . '/app/lib/maler.php');
+$malerFlytt = les_testfil(dirname(__DIR__) . '/app/lib/maler.php');
 sjekk('… og den kan redigeres under E-postmaler',
     str_contains($malerFlytt, "'pamelding_flyttet' => [")
     // «hen», ikke «hun»: raden kan vaere hvem som helst. Eieren, 8.
@@ -16090,7 +16113,7 @@ sjekk('… og den kan redigeres under E-postmaler',
 // sender ingenting og sier hva som mangler, bekreftelsen kommer midt paa
 // skjermen, «Avbryt» sender ingenting, og et ja legger raden inn, tommer
 // feltene og legger e-posten i koen. Dobbeltforing stoppes.
-$vlSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$vlSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('«Legg til på venteliste» staar paa Venteliste-siden',
     str_contains($vlSida, '>Legg til på venteliste</span>')
     && str_contains($vlSida, '>Velg kurs og dato</div>')
@@ -16108,7 +16131,7 @@ sjekk('… og den spoer foer noen legges inn',
 sjekk('… og kallet gaar til den ventelista som finnes',
     str_contains($vlSida, "handling: 'legg-til', oktId: q.oktId, navn: q.navn,"));
 
-$vlApi = file_get_contents(dirname(__DIR__) . '/api/admin/venteliste.php');
+$vlApi = les_testfil(dirname(__DIR__) . '/api/admin/venteliste.php');
 sjekk('serveren tar imot «legg-til»',
     str_contains($vlApi, "if (Foresporsel::tekst('handling') === 'legg-til') {")
     && str_contains($vlApi, "Svar::feil('Fant ikke datoen.');"));
@@ -16143,7 +16166,7 @@ sjekk('… og gir skjermen kveldene aa velge blant',
 // Etter rydding: 467 noder. Maalt paa aatte skjermer x to bredder, og
 // kalenderen tegner fortsatt Dag, Uke, Maaned og Liste, mobiltoppen har
 // sine fem knapper, og menypanelet aapner seg.
-$ryddSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$ryddSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('malrestene ryddes bort etter hver tegning',
     str_contains($ryddSida, 'ryddMalrester() {')
     && str_contains($ryddSida, 'this.ryddMalrester();'));
@@ -16174,7 +16197,7 @@ sjekk('… og bare det som bade er skjult og ubehandlet roeres',
 // Maalt paa en ekte telefonprofil (390 px, beroering, ingen mus), 17 av 17:
 // trykk paa okta, trykk paa deltakeren, 28 datoer i lista, bekreftelsen kom,
 // «Avbryt» sendte ingenting, og et ja flyttet og sendte beskjeden.
-$mobSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mobSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('deltakerkortet tilbyr hele programmet, ikke bare kursets egne datoer',
     str_contains($mobSida, "klDFlyttValg: (dv ? alle.filter(e => e.oktId && e.oktId !== dv.oktId")
     && str_contains($mobSida, "&& !e.avlyst && e.dato >= idagIso) : [])"));
@@ -16213,7 +16236,7 @@ sjekk('… og brikkene har en overskrift som sier hva de er',
 // maaned med et trykk, dratt tilbake med musa, bekreftelsen kom midt paa
 // skjermen, «Avbryt» slettet ingenting, og et ja slettet punktet. Raden
 // oeverst paa kalendersida maalt paa 390, 1024 og 1500 px.
-$aarSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$aarSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('«Årskalender» er et eget menypunkt',
     str_contains($aarSida, "['Årskalender', 'adminarskalender'],")
     && str_contains($aarSida, "{ sti: '/admin/arskalender',  side: 'adminarskalender' },")
@@ -16250,7 +16273,7 @@ sjekk('… og fylles bare av det eieren skriver selv',
     !str_contains($aarSida, 'aarKurs')
     && str_contains($aarSida, "const punkter = this.state.aarData || [];"));
 
-$aarApi = @file_get_contents(dirname(__DIR__) . '/api/admin/arskalender.php') ?: '';
+$aarApi = @les_testfil(dirname(__DIR__) . '/api/admin/arskalender.php') ?: '';
 sjekk('serveren tar imot alle fire handlingene',
     str_contains($aarApi, "if (\$handling === 'legg-til') {")
     && str_contains($aarApi, "if (\$handling === 'endre') {")
@@ -16262,7 +16285,7 @@ sjekk('… og krever et aar, en maaned og en tekst',
 // Svaret baerer hele aaret, saa skjermen slipper aa hente paa nytt.
 sjekk('… og svarer med hele aaret',
     substr_count($aarApi, "'punkter' => \$les(\$aar)") >= 3);
-$mig144 = @file_get_contents(dirname(__DIR__) . '/db/migrations/144_arskalender.sql') ?: '';
+$mig144 = @les_testfil(dirname(__DIR__) . '/db/migrations/144_arskalender.sql') ?: '';
 sjekk('tabellen ligger i migrasjon 144',
     str_contains($mig144, 'CREATE TABLE IF NOT EXISTS arskalender')
     && str_contains($mig144, 'sortering INT NOT NULL DEFAULT 0')
@@ -16282,7 +16305,7 @@ sjekk('tabellen ligger i migrasjon 144',
 //
 // Maalt i nettleseren: paa 390 px er begge kortene borte fra hovedspalta og
 // begge fortsatt i bunnmenyen; paa 1500 px staar begge som for.
-$kortSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kortSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('Kasse-kortet paa Oversikt staar bare paa PC',
     str_contains($kortSida, "...(this.erSmal() ? [] : [kort('Kasse',"));
 sjekk('… og Nettbutikk-kortet likesaa',
@@ -16309,13 +16332,13 @@ sjekk('… og begge staar fortsatt i hovedmenyen',
 // den EXPIRED for godt — ingen rekker aa kopiere en lenke ut av admin, sende
 // den, og faa den aapnet innenfor det. Naa deles Vipps sin adresse ikke ut i
 // det hele tatt.
-$lenkeApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$lenkeApi = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('Vipps sin egen adresse deles ikke ut lenger',
     !str_contains($lenkeApi, 'SELECT vipps_url FROM subscriptions')
     && !str_contains($lenkeApi, 'INTERVAL 5 MINUTE'));
 sjekk('… og skjermen har ingen «for gammel»-tilstand aa vise',
     str_contains($lenkeApi, "'avtaleLenkeGammel' => false,"));
-$lenkeSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$lenkeSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('… og skjermen sier at lenka virker i fjorten dager',
     str_contains($lenkeSida, "personAvtaleLenkeGammel: false,")
     && str_contains($lenkeSida, "+ 'virker i fjorten dager. Hen åpner den på telefonen, og Vipps '")
@@ -16342,7 +16365,7 @@ sjekk('… og skjermen sier at lenka virker i fjorten dager',
 // Maalt i nettleseren paa 1500 og 390 px, 9 av 9 hver: pillene staar,
 // begge aapner sin skjerm, «Legg til person» gaar til skjemaet, kortet staar
 // paa Oversikt, og raden med lenka er borte.
-$veiSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$veiSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Understreket lenke ble til pille. Eieren, 6. september: «jeg vil ha samme
 // pille som resten, kan du ikke lagre dette» — se «Piller, ikke lenker» i
 // CLAUDE.md.
@@ -16384,12 +16407,12 @@ sjekk('… og aarskalenderen har et eget kort paa Oversikt',
 // PDF og PNG gaar inn, visningen aapner med «Skriv ut», «Last ned» og
 // «Lukk», teksten lagres, sletting fjerner raden, og medlemssida viser bare
 // de kortene som er slaatt paa.
-$dokLib  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
-$dokApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
-$dokFil  = file_get_contents(dirname(__DIR__) . '/api/dokument.php');
-$dokMine = file_get_contents(dirname(__DIR__) . '/api/mine-dokumenter.php');
-$dokFaq  = file_get_contents(dirname(__DIR__) . '/api/spor-verkstedet.php');
-$dokMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/154_verksted_dokumenter.sql');
+$dokLib  = les_testfil(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$dokApi  = les_testfil(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$dokFil  = les_testfil(dirname(__DIR__) . '/api/dokument.php');
+$dokMine = les_testfil(dirname(__DIR__) . '/api/mine-dokumenter.php');
+$dokFaq  = les_testfil(dirname(__DIR__) . '/api/spor-verkstedet.php');
+$dokMig  = les_testfil(dirname(__DIR__) . '/db/migrations/154_verksted_dokumenter.sql');
 
 sjekk('de seks kortene ligger i migrasjon 154',
     str_contains($dokMig, "('kontrakter',")
@@ -16473,7 +16496,7 @@ sjekk('… og hvert kall koster penger, saa det er et tak per person',
     str_contains($dokFaq, "Rate::sjekk('spor-verkstedet'"));
 
 // Skjermen.
-$dokSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$dokSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // De seks dokumentkortene staar rett paa forsida. Eieren, 10. september
 // 2026: «jeg vil at disse skal ligge paa forsiden paa verksted, ikke under
 // dokumenter» — saa kortet som het «Dokumenter» er borte.
@@ -16677,8 +16700,8 @@ sjekk('… og kortet sier fra i klartekst om serveren ikke kan pakke ut',
 
 // Taket heves to steder, fordi webhotellet kan kjore PHP paa to maater.
 // .user.ini leses av PHP-FPM og PHP-CGI; mod_php hoerer bare paa .htaccess.
-$dokIni  = file_get_contents(dirname(__DIR__) . '/.user.ini');
-$dokHtac = file_get_contents(dirname(__DIR__) . '/.htaccess');
+$dokIni  = les_testfil(dirname(__DIR__) . '/.user.ini');
+$dokHtac = les_testfil(dirname(__DIR__) . '/.htaccess');
 sjekk('… og de to oppsettfilene sier det samme',
     str_contains($dokIni, 'upload_max_filesize = 64M')
     && str_contains($dokIni, 'post_max_size = 66M')
@@ -16690,8 +16713,8 @@ sjekk('… og php_value staar bak <IfModule>, saa den ikke tar ned nettstedet',
 
 // Nyttig info er aapen med vilje. Dokumentene gaar en annen vei.
 sjekk('… og den aapne Nyttig info-veien er urort',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'Aapent med vilje')
-    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/nyttig.php'), 'verksted_dokumenter'));
+    str_contains(les_testfil(dirname(__DIR__) . '/api/nyttig.php'), 'Aapent med vilje')
+    && !str_contains(les_testfil(dirname(__DIR__) . '/api/nyttig.php'), 'verksted_dokumenter'));
 
 // ── Kassa: varen aapnes med bildet, og prisen kan justeres ───────────────
 //
@@ -16702,8 +16725,8 @@ sjekk('… og den aapne Nyttig info-veien er urort',
 // legger den i salget, og et prisfelt paa linja endret summen fra kr. 380,-
 // til kr. 250,-. Maalt over API-et: ordrelinja fikk 25000 ore, varens faste
 // pris sto igjen paa 38000, og en urimelig pris ble avvist.
-$kasseApi  = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
-$kasseSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kasseApi  = les_testfil(dirname(__DIR__) . '/api/admin/uttak.php');
+$kasseSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Bildet laa i basen hele tida; kassa spurte bare aldri etter det.
 sjekk('kassa henter bildet til varen',
@@ -16758,10 +16781,10 @@ sjekk('… og prisene nullstilles naar salget er ferdig',
 // var satt. Maalt over API-et: en dato lagt inn med én ekstra dag ble to
 // samlinger, 15:00–18:00 hver. Maalt mot kalenderen: begge dagene staar, dag
 // to merket «Samling 2 av 2».
-$fdSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$fdKurs = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
-$fdKal  = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
-$fdMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/155_flerdagerskurs_far_dagene_sine.sql');
+$fdSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$fdKurs = les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
+$fdKal  = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
+$fdMig  = les_testfil(dirname(__DIR__) . '/db/migrations/155_flerdagerskurs_far_dagene_sine.sql');
 
 sjekk('«Sluttdato» er byttet ut med dager',
     !str_contains($fdSida, 'ndSluttdato')
@@ -16793,7 +16816,7 @@ sjekk('migrasjon 155 gir de gamle flerdagerskursene dagene sine',
 // staar i Samlinger::speilOkt().
 sjekk('… men lar en kveld som slutter ved midnatt staa',
     str_contains($fdMig, 'TIME(cs.slutt_tid) > TIME(cs.start_tid)')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/samlinger.php'),
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/lib/samlinger.php'),
                     "\$slutt->format('H:i:s') <= \$start->format('H:i:s')"));
 // Oekter som alt har samlinger er riktige, og skal ikke roeres.
 sjekk('… og roerer ikke dem som alt har samlinger',
@@ -16821,14 +16844,14 @@ sjekk('en samling uten sluttid arver oektas egen',
 // paa «Keramikk maler» gikk fra «Skjult» til «Vises», medlemssida viste de
 // 71 malene og leverte fila (200) — og etter avslaaing saa medlemmet
 // ingenting. Import nummer to la inn 0 og hoppet over 191.
-$mkLib  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
-$mkMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/157_maler_som_kort_i_kortet.sql');
-$mkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$mkMine = file_get_contents(dirname(__DIR__) . '/api/mine-dokumenter.php');
-$mkFil  = file_get_contents(dirname(__DIR__) . '/api/dokument.php');
-$mkMigr = file_get_contents(dirname(__DIR__) . '/api/migrer.php');
-$mkApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
-$mkDep  = file_get_contents(dirname(__DIR__) . '/.github/workflows/deploy.yml');
+$mkLib  = les_testfil(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$mkMig  = les_testfil(dirname(__DIR__) . '/db/migrations/157_maler_som_kort_i_kortet.sql');
+$mkSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$mkMine = les_testfil(dirname(__DIR__) . '/api/mine-dokumenter.php');
+$mkFil  = les_testfil(dirname(__DIR__) . '/api/dokument.php');
+$mkMigr = les_testfil(dirname(__DIR__) . '/api/migrer.php');
+$mkApi  = les_testfil(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$mkDep  = les_testfil(dirname(__DIR__) . '/.github/workflows/deploy.yml');
 
 sjekk('migrasjon 157 gir kortene forelder, undertekst og bilde',
     str_contains($mkMig, 'ADD COLUMN forelder_id INT UNSIGNED NULL')
@@ -16864,7 +16887,7 @@ sjekk('… uten aa bruke samme PDO-parameter to ganger',
 
 // Importen: manifestet sier hvor alt hoerer hjemme.
 $mkMan = dirname(__DIR__) . '/db/dokumenter/manifest.json';
-$mkM   = is_file($mkMan) ? json_decode(file_get_contents($mkMan), true) : null;
+$mkM   = is_file($mkMan) ? json_decode(les_testfil($mkMan), true) : null;
 // Her sto «count(dokumenter) === 6». Pakka vokser hver gang eieren legger
 // inn en haandbok — 26 kom inn 11. og 12. september — og da var proven roed
 // uten at noe var galt. Et tall som endrer seg av at systemet brukes, er
@@ -16968,7 +16991,7 @@ sjekk('«Kjør oppdateringer» importerer etter migrasjonene',
     str_contains($mkMigr, 'DB::glemSkjema();')
     && str_contains($mkMigr, '$import = Dokumenter::importer();')
     && str_contains($mkMigr, "'import'    => \$import,")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/db.php'), 'public static function glemSkjema(): void'));
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/lib/db.php'), 'public static function glemSkjema(): void'));
 sjekk('… men ikke naar en migrasjon stoppet',
     str_contains($mkMigr, "if (!\$stoppet) {"));
 sjekk('… og kvitteringa sier hva som kom inn',
@@ -17029,9 +17052,9 @@ sjekk('«for stor fil» gjelder bare skjemaer med fil',
 // «Hvordan lager jeg en fuglekasse?» og «Vindspill · Monteringsguide» for
 // «… vindspillet», og holdt seg under 200 000 tegn (61 dokumenter er
 // 319 000).
-$mkLib  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
-$mkFaq  = file_get_contents(dirname(__DIR__) . '/api/spor-verkstedet.php');
-$mkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mkLib  = les_testfil(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$mkFaq  = les_testfil(dirname(__DIR__) . '/api/spor-verkstedet.php');
+$mkSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Her sto «6» og «55». Begge tallene vokser naar eieren legger inn en
 // haandbok til. Det som betyr noe er at HVERT dokument i pakka har tekst —
 // uten den kan «Spor o store krukkemester» ikke svare fra det — og at ingen
@@ -17069,8 +17092,8 @@ sjekk('kvitteringa sier hvor mange som fikk AI-tekst',
 sjekk('Spør verkstedet velger de dokumentene som ligner mest, innenfor taket',
     str_contains($mkFaq, "\$utvalg   = Dokumenter::utvalg(\$kilder, \$sporsmal, 60000);")
     && str_contains($mkFaq, "@set_time_limit(150);")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/.user.ini'), 'max_execution_time = 150')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'), 'php_value max_execution_time 150')
+    && str_contains(les_testfil(dirname(__DIR__) . '/.user.ini'), 'max_execution_time = 150')
+    && str_contains(les_testfil(dirname(__DIR__) . '/.htaccess'), 'php_value max_execution_time 150')
     && str_contains($mkFaq, "\$kilder   = \$utvalg['kilder'];")
     && str_contains($mkLib, "public static function utvalg(array \$kilder, string \$sporsmal, int \$maks = 200000): array")
     && str_contains($mkLib, "if (str_starts_with(\$o, \$w) || str_starts_with(\$w, \$o)) {")
@@ -17143,7 +17166,7 @@ sjekk('gruppa leses ut av slug-en, ett sted, for admin og Min side',
     && str_contains($mkSida, "return 'Maler 1 til 20';")
     && str_contains($mkSida, "return 'Ekstra maler';")
     && substr_count($mkSida, 'Component.malGruppe(') >= 2
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/mine-dokumenter.php'), "'slug'     => \$k['slug'],"));
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/mine-dokumenter.php'), "'slug'     => \$k['slug'],"));
 sjekk('admin har soek og grupper over malene',
     str_contains($mkSida, 'placeholder="Søk i malene"')
     && str_contains($mkSida, '<sc-for list="{{ dokUnderGrupper }}" as="g"')
@@ -17236,11 +17259,11 @@ sjekk('… men serveren vet fortsatt hvilket dokument svaret kom fra',
 //
 // Selve lesingen maales med ekte PDF-er lenger nede. Her staar reglene som
 // ikke maa forsvinne i en opprydding.
-$pdLib  = file_get_contents(dirname(__DIR__) . '/app/lib/pdftekst.php');
-$pdDok  = file_get_contents(dirname(__DIR__) . '/app/lib/dokumenter.php');
-$pdApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
-$pdCron = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$pdAi   = file_get_contents(dirname(__DIR__) . '/app/lib/ai.php');
+$pdLib  = les_testfil(dirname(__DIR__) . '/app/lib/pdftekst.php');
+$pdDok  = les_testfil(dirname(__DIR__) . '/app/lib/dokumenter.php');
+$pdApi  = les_testfil(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$pdCron = les_testfil(dirname(__DIR__) . '/bin/cron.php');
+$pdAi   = les_testfil(dirname(__DIR__) . '/app/lib/ai.php');
 
 sjekk('en PDF som lastes opp leses av serveren med en gang',
     str_contains($pdDok, "\$tekst = \$mime === 'application/pdf' ? Pdftekst::les(\$mappe . '/' . \$navn) : '';")
@@ -17276,7 +17299,7 @@ sjekk('en AI som ikke svarer stopper runden, den tommer den ikke',
     'taket naadd eller Anthropic nede: raden staar, og natta proever igjen');
 
 sjekk('AI-adressen kan bare byttes utenfor produksjon',
-    str_contains($mkSecrets = file_get_contents(dirname(__DIR__) . '/app/config.php'), "getenv('LISSOM_AI_BASE')")
+    str_contains($mkSecrets = les_testfil(dirname(__DIR__) . '/app/config.php'), "getenv('LISSOM_AI_BASE')")
     && str_contains($mkSecrets, "if (\$fra !== '' && self::miljo() !== 'produksjon') {\n            return rtrim(\$fra, '/');\n        }\n        return 'https://api.anthropic.com';"),
     'samme regel som vippsBase()');
 
@@ -17308,9 +17331,9 @@ sjekk('sproeyt fra en feiltolket font godkjennes ikke',
 // Eieren, 11. september 2026: «kalender, kan jeg dra aa legge til notater,
 // ikke bare kurs? rett i kalender». Han valgte «Trykk paa dagen», «Bare
 // admin» og «Med klokkeslett», og godkjente ruta paa bilde.
-$knMig  = file_get_contents(dirname(__DIR__) . '/db/migrations/162_notater_i_kalenderen.sql');
-$knVst  = file_get_contents(dirname(__DIR__) . '/api/admin/verkstedet.php');
-$knKal  = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+$knMig  = les_testfil(dirname(__DIR__) . '/db/migrations/162_notater_i_kalenderen.sql');
+$knVst  = les_testfil(dirname(__DIR__) . '/api/admin/verkstedet.php');
+$knKal  = les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
 
 sjekk('notatene har sin egen tabell, ikke en kolonne paa den gamle',
     str_contains($knMig, 'CREATE TABLE IF NOT EXISTS kalender_notater')
@@ -17371,7 +17394,7 @@ sjekk('notatene staar paa klokkeslettet sitt i dagsvisningen, tvers over spalten
 
 sjekk('notatene staar ikke i den lette utgaven',
     !str_contains(
-        file_get_contents(dirname(__DIR__) . '/lissom-2108-uten-admin.html'),
+        les_testfil(dirname(__DIR__) . '/lissom-2108-uten-admin.html'),
         'placeholder="Skriv notatet"'
     ),
     'kalenderen er admin, og medlemmene laster ikke ned det de ikke skal se');
@@ -17391,11 +17414,11 @@ sjekk('notatene staar ikke i den lette utgaven',
 // under person-/kurstreffene. Selve api/kunnskap-sok.php er ikke kjoert —
 // ingen PHP paa maskinen det ble bygget paa.
 sjekk('migrasjon 159 legger til Leire og Dreiing etter de seks',
-    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/159_leire_og_dreiing.sql'),
+    str_contains(les_testfil(dirname(__DIR__) . '/db/migrations/159_leire_og_dreiing.sql'),
         "    ('leire',   'Leire',   7),\n    ('dreiing', 'Dreiing', 8);"));
 sjekk('… og pakka har de tolv dokumentene i de to kortene',
     (static function (): bool {
-        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        $m = json_decode((string) les_testfil(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
         $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
         $alleHarTekst = !array_filter($m['dokumenter'] ?? [], static fn($d) => in_array($d['kort'] ?? '', ['leire', 'dreiing'], true)
             && !is_file(dirname(__DIR__) . '/db/dokumenter/' . ($d['tekst'] ?? 'finnes-ikke')));
@@ -17404,11 +17427,11 @@ sjekk('… og pakka har de tolv dokumentene i de to kortene',
 // Runde to samme dag (GO): fjorten dokumenter til, to nye kort. «Regler i
 // verkstedet (plakat)» med vilje ikke med — se migrasjon 160.
 sjekk('migrasjon 160 legger til Håndbygging og HMS og vedlikehold',
-    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/160_handbygging_og_hms.sql'),
+    str_contains(les_testfil(dirname(__DIR__) . '/db/migrations/160_handbygging_og_hms.sql'),
         "    ('handbygging', 'Håndbygging',        9),\n    ('hms',         'HMS og vedlikehold', 10);"));
 sjekk('… og pakka har de fjorten i kortene sine, uten plakaten',
     (static function (): bool {
-        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        $m = json_decode((string) les_testfil(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
         $iKort = static fn(string $k): int => count(array_filter($m['dokumenter'] ?? [], static fn($d) => ($d['kort'] ?? '') === $k));
         $navn = array_column($m['dokumenter'] ?? [], 'navn');
         // Migrasjon 162: Vanlige spoersmaal til Leire, Glasurhaandboken til
@@ -17416,7 +17439,7 @@ sjekk('… og pakka har de fjorten i kortene sine, uten plakaten',
         return $iKort('dreiing') === 9 && $iKort('glassering') === 4 && $iKort('brenning') === 2 && $iKort('leire') === 10
             && $iKort('handbygging') === 3 && $iKort('hms') === 2 && $iKort('dekorasjon') === 1
             && !in_array('Regler i verkstedet (plakat)', $navn, true)
-            && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/haandboker/hms/hms-i-verkstedet.txt'), 'Åpne først under 100 °C');
+            && str_contains((string) les_testfil(dirname(__DIR__) . '/db/dokumenter/haandboker/hms/hms-i-verkstedet.txt'), 'Åpne først under 100 °C');
     })());
 // Runde tre (GO): «Materialkunnskap» i Leire, og handbok.css med layoutfiks
 // («skal overskrive den gamle») — de 26 PDF-ene laget paa nytt under samme
@@ -17426,7 +17449,7 @@ sjekk('… og pakka har de fjorten i kortene sine, uten plakaten',
 sjekk('migrasjon 161 finnes, og Materialkunnskap ligger i Leire',
     is_file(dirname(__DIR__) . '/db/migrations/161_materialkunnskap_og_ny_layout.sql')
     && (static function (): bool {
-        $m = json_decode((string) file_get_contents(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
+        $m = json_decode((string) les_testfil(dirname(__DIR__) . '/db/dokumenter/manifest.json'), true);
         foreach ($m['dokumenter'] ?? [] as $d) {
             if (($d['navn'] ?? '') === 'Materialkunnskap') {
                 return ($d['kort'] ?? '') === 'leire' && is_file(dirname(__DIR__) . '/db/dokumenter/' . $d['tekst']);
@@ -17447,7 +17470,7 @@ sjekk('… og importen bytter fila paa en kilde som alt er inne naar stoerrelsen
 // bin/cron.php «anmeldelser»), saa inaktiv mal = ingenting sendes.
 sjekk('migrasjon 163 gir «anmeldelse» plakatens tekst, som e-post, og setter den inaktiv',
     (static function (): bool {
-        $m = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/163_anmeldelse_etter_kurs_i_plakatens_stemme.sql');
+        $m = (string) les_testfil(dirname(__DIR__) . '/db/migrations/163_anmeldelse_etter_kurs_i_plakatens_stemme.sql');
         return str_contains($m, "SET kanal = 'epost',")
             && str_contains($m, "emne  = 'Likte du deg hos oss, {navn}?',")
             && str_contains($m, "«Leiren husker alt du gjør med den – og vi husker alle som tar seg tid.»")
@@ -17455,7 +17478,7 @@ sjekk('migrasjon 163 gir «anmeldelse» plakatens tekst, som e-post, og setter d
             && str_contains($m, "WHERE navn = 'anmeldelse'")
             // Den egne bryteren «anmeldelse_paa» ble slaatt sammen med malen
             // i migrasjon 226 (eieren, 27. september 2026).
-            && str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'), "if (\$lenke === '' || !\$malPaa) {");
+            && str_contains(les_testfil(dirname(__DIR__) . '/bin/cron.php'), "if (\$lenke === '' || !\$malPaa) {");
     })());
 // ── Sidene slik robotene ser dem ─────────────────────────────────────────
 //
@@ -17473,7 +17496,7 @@ sjekk('Robottekst: kroner, dato og ingress',
     && mb_strlen(Robottekst::ingress(str_repeat('x', 300))) <= 160);
 sjekk('… side.php legger JSON-LD i hodet og teksten etter <body>, og aldri paa noindex',
     (static function (): bool {
-        $s = (string) file_get_contents(dirname(__DIR__) . '/side.php');
+        $s = (string) les_testfil(dirname(__DIR__) . '/side.php');
         return str_contains($s, "\$robot = Robottekst::lag(\$adresse, \$d, \$kart);")
             && str_contains($s, "if (!\$ikkeISoket && \$d !== null) {")
             && str_contains($s, "'<script type=\"application/ld+json\" data-lissom-ld=\"1\">'")
@@ -17486,15 +17509,15 @@ sjekk('… skriptet fjerner teksten naar en ekte skjerm staar, paa alle sider',
     && str_contains($mkSida, "if (!skjermFinnes()) return false;")
     && str_contains($mkSida, "tekst.remove();"));
 sjekk('… og deployen lint-sjekker side.php',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/.github/workflows/deploy.yml'), 'php -l side.php'));
+    str_contains((string) les_testfil(dirname(__DIR__) . '/.github/workflows/deploy.yml'), 'php -l side.php'));
 sjekk('… llms.txt bruker den samme kurslista',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::kurs() as $k) {')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::medlemskap() as $p) {'));
+    str_contains((string) les_testfil(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::kurs() as $k) {')
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/llms.php'), 'foreach (Robottekst::medlemskap() as $p) {'));
 // Eieren, 11. september 2026: «under hms, så ligger det generell kunnskap om
 // leire» — gjennomgang av alle 33; tre svar, se migrasjon 162.
 sjekk('migrasjon 162 flytter paa kilde og gir kortet navnet Dekorteknikker',
     (static function (): bool {
-        $m = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/162_vanlige_sporsmal_og_glasur_paa_riktig_kort.sql');
+        $m = (string) les_testfil(dirname(__DIR__) . '/db/migrations/162_vanlige_sporsmal_og_glasur_paa_riktig_kort.sql');
         return str_contains($m, "WHERE d.kilde = 'haandboker/hms/keramikk-vanlige-sporsmal.pdf';")
             && str_contains($m, "WHERE d.kilde = 'haandboker/dekorasjon/glasurhandbok-for-keramikere.pdf';")
             && str_contains($m, "SET navn = 'Dekorteknikker'");
@@ -17505,7 +17528,7 @@ sjekk('migrasjon 162 flytter paa kilde og gir kortet navnet Dekorteknikker',
 // koordinater. Meta-tekstene sto (eieren: «behold dagens meta»).
 sjekk('titlene paa hovedsidene er eierens, og forsida sier det samme i hodet',
     (static function (): bool {
-        $k = json_decode((string) file_get_contents(dirname(__DIR__) . '/seo-kart.json'), true);
+        $k = json_decode((string) les_testfil(dirname(__DIR__) . '/seo-kart.json'), true);
         $t = static fn(string $id): string => (string) ($k['sider'][$id]['tittel'] ?? '');
         return $t('forside') === 'Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk'
             // Ny tittel paa kurssida med eierens godkjenning (f11ae7d, bcdb3b7).
@@ -17514,16 +17537,16 @@ sjekk('titlene paa hovedsidene er eierens, og forsida sier det samme i hodet',
             && $t('events') === 'Utdrikningslag, teambuilding og events – Tønsberg | Lissom'
             && $t('gavekort') === 'Gavekort på keramikkurs – opplevelsesgave Vestfold | Lissom'
             && $t('omoss') === 'Om Lissom – keramikkverkstedet på Teie | Lissom'
-            && str_contains((string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html'), '<title>Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk</title>');
+            && str_contains((string) les_testfil(dirname(__DIR__) . '/lissom-2108.html'), '<title>Keramikkurs i Tønsberg og Vestfold | Lissom Keramikk</title>');
     })());
 sjekk('dreiekurset: slug, 301 og egen tittel/meta paa server og klient',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/164_dreiekurs_adressen.sql'), "SET slug       = 'dreiekurs',")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/side.php'), "'tittel'        => \$egenTittel !== '' ? \$egenTittel : \$navn . ' i Tønsberg | Lissom Keramikk',")
+    str_contains((string) les_testfil(dirname(__DIR__) . '/db/migrations/164_dreiekurs_adressen.sql'), "SET slug       = 'dreiekurs',")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^kurs/nybegynner-dreiekurs/?$ /kurs/dreiekurs [R=301,L]')
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/side.php'), "'tittel'        => \$egenTittel !== '' ? \$egenTittel : \$navn . ' i Tønsberg | Lissom Keramikk',")
     && str_contains($mkSida, "tittel: egenTittel || navn + ' i Tønsberg | Lissom Keramikk',")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php'), "'seoTittel'       => trim((string) (\$k['seo_tittel'] ?? '')),"));
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/katalog.php'), "'seoTittel'       => trim((string) (\$k['seo_tittel'] ?? '')),"));
 sjekk('LocalBusiness har org.nr og koordinater',
-    str_contains($mkLib2 = (string) file_get_contents(dirname(__DIR__) . '/app/lib/robottekst.php'), "'taxID'       => '938280819',")
+    str_contains($mkLib2 = (string) les_testfil(dirname(__DIR__) . '/app/lib/robottekst.php'), "'taxID'       => '938280819',")
     && str_contains($mkLib2, "'latitude' => 59.246898, 'longitude' => 10.415572"));
 // ── De sju aapne guidene ─────────────────────────────────────────────────
 // Eieren, 11. september 2026, SEO-instruksen; GO paa titler og meta. Egne
@@ -17532,12 +17555,12 @@ sjekk('LocalBusiness har org.nr og koordinater',
 // px uten sidescroll, tabeller i eget rullefelt, pille til dreiekurset.
 sjekk('de sju guidene finnes som sider, med tittel, meta, canonical og JSON-LD',
     (static function (): bool {
-        $g = json_decode((string) file_get_contents(dirname(__DIR__) . '/guider/guider.json'), true);
+        $g = json_decode((string) les_testfil(dirname(__DIR__) . '/guider/guider.json'), true);
         if (count($g['guider'] ?? []) !== 7) {
             return false;
         }
         foreach ($g['guider'] as $x) {
-            $h = (string) @file_get_contents(dirname(__DIR__) . '/guider/' . $x['slug'] . '.html');
+            $h = (string) @les_testfil(dirname(__DIR__) . '/guider/' . $x['slug'] . '.html');
             if ($h === '' || !str_contains($h, '<title>' . htmlspecialchars($x['tittel'], ENT_QUOTES) . '</title>')
                 || !str_contains($h, '<link rel="canonical" href="https://lissom.no/nyttig-info/' . $x['slug'] . '">')
                 || !str_contains($h, 'application/ld+json') || str_contains($h, '<image-slot') || str_contains($h, 'slot="footer"')
@@ -17545,12 +17568,12 @@ sjekk('de sju guidene finnes som sider, med tittel, meta, canonical og JSON-LD',
                 return false;
             }
         }
-        return str_contains((string) file_get_contents(dirname(__DIR__) . '/guider/vanlige-sporsmal.html'), '"@type":"FAQPage"');
+        return str_contains((string) les_testfil(dirname(__DIR__) . '/guider/vanlige-sporsmal.html'), '"@type":"FAQPage"');
     })());
 sjekk('… .htaccess, sidekartet, llms.txt og Nyttig info kjenner dem',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/sitemap.php'), "\$linjer[] = [ROT . '/nyttig-info/' . \$slug, \$laget, 'monthly', '0.6'];")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/llms.php'), "'](' . ROT . '/nyttig-info/' . \$slug . '): '")
+    str_contains((string) les_testfil(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]')
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/sitemap.php'), "\$linjer[] = [ROT . '/nyttig-info/' . \$slug, \$laget, 'monthly', '0.6'];")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/llms.php'), "'](' . ROT . '/nyttig-info/' . \$slug . '): '")
     && str_contains($mkSida, "eyebrow: 'Guider fra verkstedet', navn: g.navn, om: g.om,")
     && str_contains($mkSida, "static get GUIDER() {"));
 // ── Alt-tekst paa kursbildet ─────────────────────────────────────────────
@@ -17560,14 +17583,14 @@ sjekk('… .htaccess, sidekartet, llms.txt og Nyttig info kjenner dem',
 // kurssida (role="img"). Tomt = kursnavnet, som foer.
 sjekk('alt-teksten paa kursbildet gaar fra feltet til kort og kursside',
     is_file(dirname(__DIR__) . '/db/migrations/165_alt_tekst_paa_kursbildet.sql')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/katalog.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "'bildeAlt'        => 'bilde_alt',")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/katalog.php'), "'bildeAlt'        => trim((string) (\$k['bilde_alt'] ?? '')),")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/admin/kurs.php'), "'bildeAlt'        => 'bilde_alt',")
     && str_contains($mkSida, 'Alt-tekst — hva bildet viser, for den som ikke ser det</label>')
     // Én kortliste igjen etter 74a6bcb.
     && substr_count($mkSida, 'image-alt="{{ k.bildeAlt }}"') === 1
     && str_contains($mkSida, '<div role="img" aria-label="{{ bBildeAlt }}"')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.js'), 'alt: imageAlt || title')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/ds-bundle.min.js'), 'imageAlt||title'));
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/ds-bundle.js'), 'alt: imageAlt || title')
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/ds-bundle.min.js'), 'imageAlt||title'));
 // Dokumentsoeket er borte. Eieren sa GO til det 11. september 2026, for to
 // soekefelt: soeket paa nettsida og soekefeltet i kalender admin. 13.
 // september tok vi det ut av nettsida — «Soek paa nettsiden skal ikke faa
@@ -17754,7 +17777,7 @@ sjekk('Min side: «Spør o store krukkemester» som kort under pillene, bare naa
 // admin» — «Alt unntatt Kontrakter». Kortene paa Min side styres fortsatt
 // av bryterne; AI-en leser forbi dem.
 sjekk('Spør o store krukkemester leser alt for medlemmene, unntatt Kontrakter',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/spor-verkstedet.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/api/spor-verkstedet.php'),
         "\$kilder = \$erAdmin\n    ? Dokumenter::kunnskap(false, \$valgte)\n    : Dokumenter::kunnskap(false, [], ['kontrakter']);")
     && str_contains($mkLib, "public static function kunnskap(bool \$bareMedlem, array \$kategorier = [], array \$utenSlug = []): array")
     && str_contains($mkLib, "? '(k.slug NOT IN (' . implode(', ', \$ut) . \") AND IFNULL(p.slug, '') NOT IN (\" . implode(', ', \$ut2) . '))'"));
@@ -17766,7 +17789,7 @@ sjekk('Spør o store krukkemester leser alt for medlemmene, unntatt Kontrakter',
 // den, hendelsene ogsaa i dataLayer, CSP aapnet for Ads-taggene. Maalt i
 // Chrome: ingen gtm.js foer «ja»; etter «ja» lastes gtm.js?id=GTM-…, og
 // purchase ligger i dataLayer som {event: 'purchase', value, …}.
-$gtmMarked = (string) file_get_contents(dirname(__DIR__) . '/api/admin/marked.php');
+$gtmMarked = (string) les_testfil(dirname(__DIR__) . '/api/admin/marked.php');
 sjekk('Tag Manager: container-ID-en lagres som Marked/GTM-id, og bare i riktig form',
     str_contains($gtmMarked, "if (\$gtm !== '' && preg_match('/^GTM-[A-Z0-9]{4,12}\$/i', \$gtm) !== 1) {")
     && str_contains($gtmMarked, "\$lagre('Marked/GTM-id', strtoupper(\$gtm));")
@@ -17782,7 +17805,7 @@ sjekk('… lastes etter samtykke, ved siden av Analytics, og hendelsene gaar til
     && str_contains($mkSida, "&& this.harMaaling()\n        && (this.state.samtykkeSvart || this.samtykke()) === '',"));
 sjekk('… og CSP-en slipper gjennom Tag Manager og Google Ads',
     (static function (): bool {
-        $h = (string) file_get_contents(dirname(__DIR__) . '/.htaccess');
+        $h = (string) les_testfil(dirname(__DIR__) . '/.htaccess');
         return str_contains($h, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net")
             && str_contains($h, "frame-src 'self' https://www.googletagmanager.com https://td.doubleclick.net https://tagassistant.google.com;");
     })());
@@ -17802,7 +17825,7 @@ sjekk('… og CSP-en slipper gjennom Tag Manager og Google Ads',
 // Og: et «consent revoke» FOER skriptet er lastet holder alt tilbake, ogsaa
 // «grant» som kommer etter i koeen — derfor ingen revoke ved lasting.
 // Pikselen lastes uansett bare etter «ja», saa det er ingenting aa holde.
-$metaMarked = (string) file_get_contents(dirname(__DIR__) . '/api/admin/marked.php');
+$metaMarked = (string) les_testfil(dirname(__DIR__) . '/api/admin/marked.php');
 sjekk('Meta-piksel: ID-en lagres som Marked/Meta-piksel, bare som 15–16 siffer',
     str_contains($metaMarked, "if (\$meta !== '' && preg_match('/^\d{15,16}\$/', \$meta) !== 1) {")
     && str_contains($metaMarked, "\$lagre('Marked/Meta-piksel', \$meta);")
@@ -17821,10 +17844,10 @@ sjekk('… lastes etter samtykke, uten revoke foer init (det laaser koeen), og h
     && str_contains($mkSida, "      || /^\d{15,16}\$/.test(String(i['Marked/Meta-piksel'] || '').trim());"));
 sjekk('… ogsaa paa serversidene, og testsiden faar ingen ID',
     (static function (): bool {
-        $n = (string) file_get_contents(dirname(__DIR__) . '/nett.js');
-        $p = (string) file_get_contents(dirname(__DIR__) . '/app/nett/nett.php');
-        $i = (string) file_get_contents(dirname(__DIR__) . '/api/innhold.php');
-        $h = (string) file_get_contents(dirname(__DIR__) . '/.htaccess');
+        $n = (string) les_testfil(dirname(__DIR__) . '/nett.js');
+        $p = (string) les_testfil(dirname(__DIR__) . '/app/nett/nett.php');
+        $i = (string) les_testfil(dirname(__DIR__) . '/api/innhold.php');
+        $h = (string) les_testfil(dirname(__DIR__) . '/.htaccess');
         return str_contains($n, "    var meta = /^\d{15,16}\$/.test(m.meta || '') ? m.meta : '';\n    if (!ga && !gtm && !meta) return;")
             && str_contains($n, "        window.fbq('init', meta);\n        window.fbq('consent', 'grant');\n        window.fbq('track', 'PageView');")
             && !str_contains($n, "window.fbq('consent', 'revoke');\n        window.fbq('init', meta);")
@@ -17839,7 +17862,7 @@ sjekk('… ogsaa paa serversidene, og testsiden faar ingen ID',
 // Maalt live 11. september 2026: CSP-en stoppet region1.analytics.google.com
 // /g/collect og stats.g.doubleclick.net — innsendingen til Analytics.
 sjekk('… og CSP-en slipper selve innsendingen til Analytics gjennom (EU-region)',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/.htaccess'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/.htaccess'),
         "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.google-analytics.com https://stats.g.doubleclick.net"));
 // ── Google Ads-konverteringene ───────────────────────────────────────────
 //
@@ -17863,7 +17886,7 @@ sjekk('… forespurt_kontakt fyres etter serverens OK paa kontakt- og gruppeskje
 // med — bare naar avtalen ble aktiv i det samme kallet.
 sjekk('… aarsmedlemskapet telles naar avtalen ble aktiv ved retur, og bare da',
     (static function () use ($mkSida): bool {
-        $r = (string) file_get_contents(dirname(__DIR__) . '/api/vipps-avtale-retur.php');
+        $r = (string) les_testfil(dirname(__DIR__) . '/api/vipps-avtale-retur.php');
         return str_contains($r, "if (\$ny === 'aktiv' && \$for !== 'aktiv') {")
             && str_contains($r, "\$kvittering = '&kjop=A' . (int) \$a['id']")
             && str_contains($r, ". '&slag=medlemskap';")
@@ -17889,7 +17912,7 @@ sjekk('Selg egne arbeider: skjermen spoer serveren, den regner ikke ut selv',
     && !str_contains($mkSida, "(this.state.medlemPlan || '').trim() === 'Årsmedlemskap'")
     && str_contains($mkSida, "if (f === 'selg' && !this.kanSelge()) return 'hjem';")
     // msNyVals() kom inn mellom de to (f0204c5).
-    && str_contains($mkSida, "          msFaneSelg:       f === 'selg' && this.kanSelge(),\n")
+    && str_contains($mkSida, "          msFaneSelg:       (f === 'selg' || f === 'hjem') && this.kanSelge(),\n")
     && str_contains($mkSida, "          msKanSelge:       this.kanSelge(),")
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msPlSelg.velg }}"') === 1
     && substr_count($mkSida, '<sc-if value="{{ msKanSelge }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ msBmSelg.velg }}"') === 1
@@ -17897,7 +17920,7 @@ sjekk('Selg egne arbeider: skjermen spoer serveren, den regner ikke ut selv',
 // Proevemaaneden kjennes paa «engangs = 1», ikke paa navnet. Da taaler
 // regelen at verkstedet doper om en plan eller legger til en ny.
 sjekk('… og regelen bor ett sted, og gaar etter engangs — ikke etter navn',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php'),
         "    public static function kanSelge(array \$medlem): bool\n"
         . "    {\n"
         . "        if ((string) (\$medlem['rolle'] ?? '') === 'admin') {\n"
@@ -17909,21 +17932,21 @@ sjekk('… og regelen bor ett sted, og gaar etter engangs — ikke etter navn',
         . "        \$plan = self::planUansett(trim((string) (\$medlem['medlemskap_type'] ?? '')));\n"
         . "        return \$plan !== null && (int) (\$plan['engangs'] ?? 0) === 0;\n"
         . "    }")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/meg.php'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/meg.php'),
         "    'kanSelge'       => Medlemskap::kanSelge(\$m),"));
 sjekk('… serveren avviser innlegging fra proevemaaneden, og migrasjon 170 slaar bryterne paa',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/api/medlemssalg.php'),
         "if (!Medlemskap::kanSelge(\$medlem)) {\n    Svar::feil('Salg av egne arbeider krever et løpende medlemskap.', 403);")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
         "INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/medlemssalg', 'ja')\nON DUPLICATE KEY UPDATE verdi = 'ja';")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/db/migrations/170_selg_egne_arbeider_paa.sql'),
         "VALUES ('Vis/salgsskjema', 'ja')"));
 // ── Teksten paa medlemskapene ────────────────────────────────────────────
 //
 // Eieren, 22. september 2026: «Tilgang til egen nettbutikk» og «Dine egne
 // produkter i vaar butikk paa teie». Begge linjene skal paa hvert loepende
 // medlemskap, og den gamle formuleringa ut overalt.
-$mig205 = (string) file_get_contents(dirname(__DIR__)
+$mig205 = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/205_nettbutikk_paa_alle_lopende_medlemskap.sql');
 sjekk('de to linjene legges paa hvert loepende medlemskap, og den gamle tas ut',
     str_contains($mig205, "'Tilgang til egen nettbutikk')\n WHERE engangs = 0")
@@ -17948,7 +17971,7 @@ sjekk('… og langteksten lover ikke lenger salget som noe bare aarsmedlemmer fa
 //
 // Dette er foerste steg: vinduet staar over tidene. Det frie kvartersvalget
 // kommer for seg.
-$vindu = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$vindu = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('bestillingen viser vinduet doeren staar aapen i',
     str_contains($vindu, "          bVinduTekst: (() => {")
     // Regelen samlet i folgerApningstid() (2dfdf54, #211).
@@ -17969,11 +17992,11 @@ sjekk('… og den staar i skjermen, mellom overskriften og knappene',
 //
 // Foer dette var plassene ferdig utklipte oekter — 10:00, 11:30 — og man
 // kunne bare velge en av dem.
-$apentFil = (string) file_get_contents(dirname(__DIR__) . '/app/lib/apent.php');
-$bookFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
-$tiderFil = (string) file_get_contents(dirname(__DIR__) . '/api/tider.php');
-$bookApi  = (string) file_get_contents(dirname(__DIR__) . '/api/book.php');
-$skjerm   = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$apentFil = (string) les_testfil(dirname(__DIR__) . '/app/lib/apent.php');
+$bookFil  = (string) les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
+$tiderFil = (string) les_testfil(dirname(__DIR__) . '/api/tider.php');
+$bookApi  = (string) les_testfil(dirname(__DIR__) . '/api/book.php');
+$skjerm   = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Vinduene doeren staar aapen i sto inne i utleggingen. To veier trenger det
 // samme svaret naa, og da skal det ikke regnes to steder.
@@ -18060,12 +18083,12 @@ sjekk('… og sender kurset og tida, ikke en oekt',
 //
 // Lengden sto paa to timer til 27. august, da Lissom ba om det motsatte:
 // «endre ... paint on pots fra 2 timer, til 1,5 timer». Naa er den tilbake.
-$apent2  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/apent.php');
-$malFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php');
-$kalFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
-$pamFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
-$kursFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
-$skjerm2 = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$apent2  = (string) les_testfil(dirname(__DIR__) . '/app/lib/apent.php');
+$malFil  = (string) les_testfil(dirname(__DIR__) . '/app/lib/kursmal.php');
+$kalFil  = (string) les_testfil(dirname(__DIR__) . '/api/admin/kalender.php');
+$pamFil  = (string) les_testfil(dirname(__DIR__) . '/api/admin/pameldte.php');
+$kursFil = (string) les_testfil(dirname(__DIR__) . '/api/admin/kurs.php');
+$skjerm2 = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('plassen varer to timer, og tallet staar ett sted',
     str_contains($apent2, '    public const PLASS_MINUTTER = 120;')
@@ -18101,7 +18124,7 @@ sjekk('… ogsaa tellingen av datoer framover',
 // Migrasjon 135 slo den av 2. september, og grunnen sto der: «hvorfor vises
 // paint on pots i kalenderen naar det ikke er kurs?» Den grunnen er borte —
 // skjulUtenBooking() tar dem ut av admin til noen har booket.
-$mig206 = (string) file_get_contents(dirname(__DIR__)
+$mig206 = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/206_paint_on_pots_folger_apningstidene_igjen.sql');
 sjekk('migrasjonen slaar automatikken paa igjen',
     str_contains($mig206, "UPDATE courses\n   SET folger_apningstid = 1\n WHERE tittel = 'Paint on Pots';"));
@@ -18136,7 +18159,7 @@ if (DB::harTabell('courses') && DB::harKolonne('courses', 'folger_apningstid')) 
 // aapningstida — Apent::oktForTid() — men foerst etter at kunden hadde fylt ut
 // resten og trykket. Da er det ikke et valg lenger, det er en beskjed om at du
 // valgte feil.
-$tidFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$tidFil = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('feltet er sperret til vinduet',
     str_contains($tidFil, '<input type="time" step="900" min="{{ bTidMin }}" max="{{ bTidMaks }}"')
@@ -18164,9 +18187,9 @@ sjekk('… og knappen slipper den ikke gjennom',
 // Eieren, 23. september 2026, med «+4073900 % mot august» paa skjermen:
 // «se paa prosentokningen mot august, for svada». Og: «se paa teksten som
 // ikke passer i pillene».
-$okFil  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/okonomi.php');
-$bkFil  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
-$skjFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$okFil  = (string) les_testfil(dirname(__DIR__) . '/api/admin/okonomi.php');
+$bkFil  = (string) les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
+$skjFil = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // «$forrigeSum > 0» var ikke nok: august hadde én krone, og da blir 40 740
 // mot 1 til fire millioner prosent. Riktig regnet, og fullstendig meningsloest.
@@ -18211,7 +18234,7 @@ sjekk('… og kortformen runder slik den skal',
 // kolonne saa smal at «KURS OG EVENTS» brakk over to linjer, og da skled
 // beloepet under den ned et hakk mens «kr. 700,-» og «kr. 10 240,-» ble
 // staaende hoeyere.
-$kildeFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kildeFil = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('kildekolonnene bryter i stedet for aa presses sammen',
     str_contains($kildeFil, 'grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-5);'));
@@ -18228,9 +18251,9 @@ sjekk('… og overskriftene holder beloepene i flukt',
 // tema?». «Selg egne arbeider» paa Oversikt og «"Selg keramikk" paa Min side»
 // paa Butikken var to noekler som koden krevde at BEGGE sto paa. Slo du paa
 // den ene, skjedde ingenting, og skjermen sa ikke hvilken som manglet.
-$mig172 = (string) file_get_contents(dirname(__DIR__)
+$mig172 = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/172_en_bryter_for_selg_egne_arbeider.sql');
-$vis172 = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$vis172 = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('begge bryterne leser den samme noekkelen',
     str_contains($vis172, "      salgSkjemaPaa: this.bryterPaa('medlemssalg'),")
     && str_contains($vis172, "      salgSkjemaEtikett: this.bryterPaa('medlemssalg') ? 'Synlig' : 'Skjult',")
@@ -18256,7 +18279,7 @@ sjekk('… og den gamle raden tas ut av basen',
 // funksjonen selg egne arbeider». Sto skjemaet paa og «Medlemskolleksjonen i
 // butikken» av, kunne medlemmene legge ut varer og Monica godkjenne dem uten
 // at en eneste kunde saa dem — og ingen skjerm sa fra.
-$mig173 = (string) file_get_contents(dirname(__DIR__)
+$mig173 = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/173_en_bryter_for_hele_medlemssalget.sql');
 sjekk('butikkfanen foelger bryteren for medlemssalg',
     str_contains($vis172, "      visMedlemskolleksjon: this.bryterPaa('medlemssalg'),")
@@ -18283,8 +18306,8 @@ sjekk('… og sammenslaainga slaar ingenting paa av seg selv',
 echo "\n== Auto-godkjenn, og varer som kan fjernes ==\n";
 // Eieren, 12. september 2026: «Jeg vil fortsatt godkjenne eller sette auto
 // godkjenn, men maa kunne fjerne disse produktene».
-$salgApi = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
-$mig174  = (string) file_get_contents(dirname(__DIR__)
+$salgApi = (string) les_testfil(dirname(__DIR__) . '/api/medlemssalg.php');
+$mig174  = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/174_auto_godkjenn_og_ny_mal.sql');
 
 // Defaulten er den viktige. bryterPaa() sier PAA naar raden mangler — det gaar
@@ -18311,7 +18334,7 @@ sjekk('… og varen gaar rett ut naar den staar paa',
 sjekk('… og verkstedet faar sin egen beskjed om det',
     str_contains($salgApi, "    Varsel::malTilAdmin('intern_ny_vare', [")
     && str_contains($salgApi, "'status'    => \$auto ? 'Gikk rett ut (auto-godkjenn står på)' : 'Venter på godkjenning',")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/maler.php'),
         "                'status'    => 'Venter på godkjenning, eller gikk rett ut',"),
     'malen skal kunne endres under Maler, som de andre');
 
@@ -18321,8 +18344,8 @@ echo "\n== Medlemmet ser bildet det legger ut ==\n";
 // bilde men det ser saann ut.» Ruta viste filnavnet «IMG_4637.jpeg» og ikke
 // bildet — og rett under sto «Fokuspunkt: velg hvilken del av bildet som
 // skal ligge i midten».
-$msApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
-$mig177 = (string) file_get_contents(dirname(__DIR__)
+$msApi  = (string) les_testfil(dirname(__DIR__) . '/api/medlemssalg.php');
+$mig177 = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/177_fokuspunkt_paa_medlemsvarer.sql');
 sjekk('bildet vises i ruta, ikke filnavnet',
     str_contains($vis172, "        this._skUrl = URL.createObjectURL(f);")
@@ -18390,7 +18413,7 @@ sjekk('… og migrasjonen taaler aa kjores om igjen',
 // Maalt: hele koen kjort mot en tjener uten sendmail. For: «Leverandoren
 // svarte med feil» x 13. Etter: «SMTP er ikke satt opp, og serverens egen
 // e-post tok ikke imot meldingen» x 13, lest i admin.
-$varslerKode = (string) file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
+$varslerKode = (string) les_testfil(dirname(__DIR__) . '/app/lib/varsler.php');
 sjekk('serverens egen e-post sier ogsaa hvorfor det gikk galt',
     str_contains($varslerKode, "\$ok = @mail(\$til, \$emneKodet, \$kropp, \$headere, '-f' . \$fra);")
     && str_contains($varslerKode, "self::\$sisteFeil = 'SMTP er ikke satt opp, og serverens egen e-post tok ikke imot meldingen'"));
@@ -18417,8 +18440,8 @@ echo "\n== Verkstedet faar e-post ved ny paamelding ==\n";
 // den var aldri bygget: verkstedet fikk e-post ved nytt medlem, ny
 // foresporsel, ny vare, gave som skal pakkes og gave lost inn, men ikke ved
 // en paamelding. Varselet han saa er tallet paa Oversikt.
-$bokLib = (string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
-$mig176 = (string) file_get_contents(dirname(__DIR__)
+$bokLib = (string) les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
+$mig176 = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/176_varsel_ved_ny_pamelding.sql');
 sjekk('paameldinga varsler verkstedet',
     str_contains($bokLib, "        Varsel::malTilAdmin('intern_ny_pamelding', [")
@@ -18436,7 +18459,7 @@ sjekk('… og staar uten et loest skille naar kontakten mangler',
     str_contains($bokLib, "            'epost'    => (string) (\$b['m_epost'] ?: \$b['gjest_epost']) ?: '(ikke oppgitt)',"));
 // Malen skal kunne endres under Tekst maler, som de andre.
 sjekk('… og malen er redigerbar som de andre',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/maler.php'),
         "        'intern_ny_pamelding' => ["),
     'maalt: staar i lista under Verkstedet -> Tekst maler');
 
@@ -18445,7 +18468,7 @@ echo "\n== Betalingskortet sier hva betalinga gjaldt ==\n";
 // bestilte, men jeg ser ikke naar og hvilket kurs hun skal paa. Det maa vi
 // ha». Kursnavnet staar paa kurset og datoen paa oekta, saa det er to hopp
 // fra betalinga.
-$betApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+$betApi = (string) les_testfil(dirname(__DIR__) . '/api/admin/betalinger.php');
 sjekk('betalinga henter kurset og kursdatoen',
     str_contains($betApi, "                (SELECT c.tittel FROM bookings b\n                   JOIN courses c ON c.id = b.course_id")
     && str_contains($betApi, "                (SELECT cs.start_tid FROM bookings b\n                   JOIN course_sessions cs ON cs.id = b.course_session_id")
@@ -18537,8 +18560,8 @@ echo "\n== Salgsuka blir en generell salgskampanje ==\n";
 // et generelt salgs kampanje. Her vil jeg legge til og redigere bilde og
 // tekster og mulighet for aa vise pris / De kan godt lagres som maler saa har
 // vi». Han saa forslaget og valgte «GO — bygg alt».
-$kmpApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kampanjer.php');
-$mig175 = (string) file_get_contents(dirname(__DIR__)
+$kmpApi = (string) les_testfil(dirname(__DIR__) . '/api/admin/kampanjer.php');
+$mig175 = (string) les_testfil(dirname(__DIR__)
     . '/db/migrations/175_salgskampanjer.sql');
 
 sjekk('hver kampanje er en rad, ikke tre tekstfelt',
@@ -18615,7 +18638,7 @@ echo "\n== Omsetninga som piller, og banneret dit teksten redigeres ==\n";
 // Eieren, 13. september 2026: «Okonomi og omsetning kan staa paa kalender som
 // piller», og om banner-redigeringa: «redigering av banneret gaar til der du
 // foreslo» — Nettsiden › Innhold.
-$flytt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$flytt = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Tallet staar i pilla, saa man slipper aa aapne noe for aa se det.
 // «Denne måneden» flyttet opp 16. september 2026. Eieren: «pilla denne
@@ -18660,7 +18683,7 @@ echo "\n== ⊙ Synlighet: alle bryterne paa ett sted ==\n";
 // siden, min side skal samles og legges paa menyen verktoy», «paa pc, vis meg
 // et forslag for aa enkle tilgang», «ikke lag dobbelt, men flytt og fjern fra
 // gammel plassering».
-$syn = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$syn = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Arket staar én gang, blant de andre overleggene — ikke én gang per skjerm.
 //
@@ -18824,18 +18847,18 @@ sjekk('Ovnkortet: tre piller i kortet paa Min side og kalenderen, statusen oever
     && str_contains($mkSida, "            if (erMinside) this.hentOvn();")
     && str_contains($mkSida, "      ...((side || '').indexOf('admin') === 0 ? (this.hentOvn(), this.ovnVals()) : {}),"));
 sjekk('… api/ovn.php tar imot raabrann og glasurbrann som slag, og migrasjon 179 legger til kolonnen',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "const SLAG = ['tomt', 'raabrann', 'glasurbrann'];")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "if (in_array(\$handling, SLAG, true)) {")
+    str_contains((string) les_testfil(dirname(__DIR__) . '/api/ovn.php'), "const SLAG = ['tomt', 'raabrann', 'glasurbrann'];")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/ovn.php'), "if (in_array(\$handling, SLAG, true)) {")
     // Sto som «'slag' => in_array(...)» i svaret til 13. september 2026. Da
     // fikk toemminga en egen levetid, og slaget maatte leses foer tida kunne
     // proeves paa den — derfor staar det i en variabel over svaret naa.
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/ovn.php'), "    \$slag = in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt';")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/db/migrations/179_ovnkortet_raabrann_glasurbrann.sql'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/ovn.php'), "    \$slag = in_array((string) (\$r['slag'] ?? ''), SLAG, true) ? (string) \$r['slag'] : 'tomt';")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/db/migrations/179_ovnkortet_raabrann_glasurbrann.sql'),
         "    ADD COLUMN IF NOT EXISTS slag VARCHAR(24) NOT NULL DEFAULT 'tomt'"));
 sjekk('… api/ovn.php: siste doegn, sett per medlem, den som toemte har sett det; migrasjon 171 lager tabellene',
     (static function (): bool {
-        $a = (string) file_get_contents(dirname(__DIR__) . '/api/ovn.php');
-        $m = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/171_ovnen_er_tomt.sql');
+        $a = (string) les_testfil(dirname(__DIR__) . '/api/ovn.php');
+        $m = (string) les_testfil(dirname(__DIR__) . '/db/migrations/171_ovnen_er_tomt.sql');
         return str_contains($a, "          WHERE created_at >= UTC_TIMESTAMP() - INTERVAL 24 HOUR")
             && str_contains($a, "        'SELECT 1 FROM ovn_tomt_sett WHERE tomt_id = :t AND member_id = :m',")
             && str_contains($a, "    \$id = DB::settInn('ovn_tomt', \$rad);")
@@ -18860,7 +18883,7 @@ sjekk('«Glemt å stemple ut» staar bak bryteren',
     str_contains($sida, "        const si = this.bryterPaa('glemtstempling')\n          ? (this.state.stempling || {}).siste : null;"));
 sjekk('… og migrasjon 181 setter den av fra start',
     (static function (): bool {
-        $m = (string) @file_get_contents(dirname(__DIR__) . '/db/migrations/181_glemt_stempling_av.sql');
+        $m = (string) @les_testfil(dirname(__DIR__) . '/db/migrations/181_glemt_stempling_av.sql');
         // INSERT IGNORE og ikke REPLACE: har noen slaatt den paa med vilje,
         // skal ikke en ny kjoering slaa den av igjen.
         return str_contains($m, "INSERT IGNORE INTO content_blocks (nokkel, verdi) VALUES ('Vis/glemtstempling', 'nei');");
@@ -18882,7 +18905,7 @@ sjekk('… mens «Feil tid — si fra» staar uansett',
 // «Du var inne i 2 t 15 min», «Stemplet inn 19:49». «Feil tid — si fra»
 // lukket oekta (0 aapne igjen) og la én henvendelse av typen «Feil
 // stemplingstid» i admin.
-$stemplApi = (string) file_get_contents(dirname(__DIR__) . '/api/stempling.php');
+$stemplApi = (string) les_testfil(dirname(__DIR__) . '/api/stempling.php');
 // Innstempling ogsaa via ei rute fra 15. september 2026. Eieren: «man maa
 // faa spoersmaal, er du sikker, samme opplegg naar man stempler ut».
 sjekk('utstempling og innstempling gaar begge via ei rute',
@@ -18935,7 +18958,7 @@ sjekk('… og fri tilgang faar ingen nedtelling',
 // toemming som har gaatt ut paa tid.
 sjekk('«Ovn er tømt» staar i 12 timer, brenningene i 24',
     (static function (): bool {
-        $a = (string) file_get_contents(dirname(__DIR__) . '/api/ovn.php');
+        $a = (string) les_testfil(dirname(__DIR__) . '/api/ovn.php');
         return str_contains($a, "    \$timer = \$slag === 'tomt' ? 12 : 24;")
             && str_contains($a, "    if (\$naar->getTimestamp() < time() - \$timer * 3600) {")
             // Den nyeste raden hentes foerst, og tida proeves paa den. Snur
@@ -18991,7 +19014,7 @@ sjekk('bryteren «Søkefeltet på nettsiden» skjuler soekeknappen for alle',
 // Maalt lokalt med stubbet base: e-posten bygges med hilsenen, prisboksen
 // fra «Prøv Lissom» og en avmeldingslenke per adresse; /avmelding?k=…
 // viser «Meldt av», feil kode «Lenken virker ikke».
-$fortsettMig = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/166_medlemsinvitasjon_etter_kurs.sql');
+$fortsettMig = (string) les_testfil(dirname(__DIR__) . '/db/migrations/166_medlemsinvitasjon_etter_kurs.sql');
 sjekk('migrasjon 166: malen «fortsett» staar paa, med hilsenen eieren ba om',
     str_contains($fortsettMig, "'Vil du fortsette med leire?',")
     && str_contains($fortsettMig, "'Hei {navn}, det var så hyggelig å ha deg på kurs, så vi håper du vil fortsette som medlem.")
@@ -18999,7 +19022,7 @@ sjekk('migrasjon 166: malen «fortsett» staar paa, med hilsenen eieren ba om',
     && str_contains($fortsettMig, "Meld deg av: {avmelding}'")
     && str_contains($fortsettMig, "('fortsett_paa',   '1'),")
     && str_contains($fortsettMig, "CREATE TABLE IF NOT EXISTS epost_avmelding ("));
-$fortsettHtml = (string) file_get_contents(dirname(__DIR__) . '/app/epost/fortsett.html');
+$fortsettHtml = (string) les_testfil(dirname(__DIR__) . '/app/epost/fortsett.html');
 // 25. september 2026 (GO paa det nye forslaget): «Hei {navn}!» uten dobbel
 // takk — se migrasjon 213.
 sjekk('eierens HTML har «Hei {navn}!» foer teksten, prisboksen som {visste} og avmeldinga som lenke',
@@ -19011,7 +19034,7 @@ sjekk('eierens HTML har «Hei {navn}!» foer teksten, prisboksen som {visste} og
     && str_contains($fortsettHtml, 'href="{avmelding}"'));
 sjekk('… og prisen i boksen kommer fra medlemskapet, ikke fra koden',
     str_contains($cronFil, "SELECT pris_ore, timer FROM membership_plans WHERE navn = 'Prøv Lissom' AND aktiv = 1")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/epost/fortsett-visste.html'), 'kun kr {provPris} for en hel måned')
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/epost/fortsett-visste.html'), 'kun kr {provPris} for en hel måned')
     && !str_contains($cronFil, '990'));
 sjekk('jobben gaar bare til dem som betalte, og hopper over medlemmer og avmeldte',
     str_contains($cronFil, 'function medlemsinvitasjon(callable $si): void')
@@ -19026,17 +19049,17 @@ sjekk('… i samme cron-linje som oppfoelgingen, og som egen jobb',
 sjekk('Varsel::mal kan sende eierens egen HTML i stedet for tekstmalen',
     str_contains($varselFil, "?int \$refId = null, ?string \$egenHtml = null")
     && str_contains($varselFil, "self::medSignatur(\$tekst, \$gruppe, \$egenHtml)"));
-$avmFil = (string) file_get_contents(dirname(__DIR__) . '/api/avmelding.php');
+$avmFil = (string) les_testfil(dirname(__DIR__) . '/api/avmelding.php');
 sjekk('/avmelding?k=… setter reservasjonen og viser «Meldt av»',
-    str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^avmelding/?$ /api/avmelding.php [L,QSA]')
+    str_contains(les_testfil(dirname(__DIR__) . '/.htaccess'), 'RewriteRule ^avmelding/?$ /api/avmelding.php [L,QSA]')
     && str_contains($avmFil, "\$ok = Avmelding::reserver(\$kode);")
     && str_contains($avmFil, "\$ok ? 'Meldt av' : 'Lenken virker ikke'")
     && str_contains($avmFil, 'Du får ikke flere e-poster om medlemskap og tilbud fra oss.')
     && str_contains($avmFil, 'class="pille" href="https://lissom.no/">Til lissom.no</a>'));
 sjekk('koden i lenka er tilfeldig og avsloerer ikke adressen',
-    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/avmelding.php'), '$kode = bin2hex(random_bytes(16));')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/avmelding.php'), "preg_match('/^[a-f0-9]{32}$/', \$kode)"));
-$vaFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/varsler.php');
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/avmelding.php'), '$kode = bin2hex(random_bytes(16));')
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/lib/avmelding.php'), "preg_match('/^[a-f0-9]{32}$/', \$kode)"));
+$vaFil = (string) les_testfil(dirname(__DIR__) . '/api/admin/varsler.php');
 // Eieren, 27. september 2026: én bryter per e-post. Den egne bryteren
 // «Send medlemsinvitasjon etter kurs» er borte; av og paa staar paa malen.
 sjekk('admin: medlemsinvitasjonen har dager og status, men ingen egen bryter',
@@ -19057,10 +19080,10 @@ sjekk('admin: medlemsinvitasjonen har dager og status, men ingen egen bryter',
 //
 // Kortet heter «Dokumenter» fra migrasjon 168, men slug-en er fortsatt
 // «kontrakter» — og det er slug-en alt annet kjenner det paa.
-$kkApi   = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$kkApi   = les_testfil(dirname(__DIR__) . '/api/admin/dokumenter.php');
 $kkSida  = $sida;
-$kkMig168 = file_get_contents(dirname(__DIR__) . '/db/migrations/168_kortet_kontrakter_heter_dokumenter.sql');
-$kkMig169 = file_get_contents(dirname(__DIR__) . '/db/migrations/169_dokumentkortet_skjules_for_medlemmer.sql');
+$kkMig168 = les_testfil(dirname(__DIR__) . '/db/migrations/168_kortet_kontrakter_heter_dokumenter.sql');
+$kkMig169 = les_testfil(dirname(__DIR__) . '/db/migrations/169_dokumentkortet_skjules_for_medlemmer.sql');
 
 sjekk('kortet heter «Dokumenter», men slug-en staar',
     str_contains($kkMig168, "UPDATE verksted_kategorier SET navn = 'Dokumenter' WHERE slug = 'kontrakter';")
@@ -19098,8 +19121,8 @@ sjekk('… mens de andre kortene fortsatt kan veksles',
 //      henger gir ingen feilmelding, fordi ingenting feilet.
 //   2. «Slipp filen her» har staatt paa kortet siden 10. september uten at
 //      noe tok imot et slipp. Det fantes ikke én onDrop i hele nettsiden.
-$opApi  = file_get_contents(dirname(__DIR__) . '/api/admin/dokumenter.php');
-$opHttp = file_get_contents(dirname(__DIR__) . '/app/lib/http.php');
+$opApi  = les_testfil(dirname(__DIR__) . '/api/admin/dokumenter.php');
+$opHttp = les_testfil(dirname(__DIR__) . '/app/lib/http.php');
 $opSida = $sida;
 
 sjekk('opplastingen svarer foer AI-en leser',
@@ -19190,7 +19213,7 @@ sjekk('… og gclid og utm lager ikke hver sin side i rapporten',
 //     <0021> Tj  7.21 0 Td <0019> Tj  5.61 0 Td <0032> Tj
 //
 // — og «Td gir linjeskift» gjorde «LISSOM» til seks linjer.
-$bfLib  = file_get_contents(dirname(__DIR__) . '/app/lib/pdftekst.php');
+$bfLib  = les_testfil(dirname(__DIR__) . '/app/lib/pdftekst.php');
 $bfSida = $sida;
 
 sjekk('linjeskift bare naar skrivehodet flytter seg NEDOVER',
@@ -19247,7 +19270,7 @@ sjekk('… og vakta tas ned igjen naar skjermen forsvinner',
 // Maalt i nettleseren for dette ble skrevet: medlemmet la til, telte opp og
 // sendte; admin satte pris, saa oppgjoret med gebyret, og sendte bestillingen.
 
-$hlM = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/184_handleliste_og_samlebestilling.sql');
+$hlM = (string) les_testfil(dirname(__DIR__) . '/db/migrations/184_handleliste_og_samlebestilling.sql');
 sjekk('migrasjon 184 lager linjene, leverandorene og malen',
     str_contains($hlM, 'CREATE TABLE IF NOT EXISTS handleliste_linjer')
     && str_contains($hlM, 'CREATE TABLE IF NOT EXISTS leverandorer')
@@ -19263,7 +19286,7 @@ sjekk('… og bryteren staar av fra start',
 sjekk('… og gebyrsatsen er en innstilling, ikke et tall i koden',
     str_contains($hlM, "INSERT IGNORE INTO innstillinger (nokkel, verdi) VALUES ('handleliste_gebyr_prosent', '5');"));
 
-$hlMedlem = (string) file_get_contents(dirname(__DIR__) . '/api/handleliste.php');
+$hlMedlem = (string) les_testfil(dirname(__DIR__) . '/api/handleliste.php');
 sjekk('medlemmets liste er stengt naar bryteren staar av',
     str_contains($hlMedlem, "\$paa = (string) DB::verdi(\"SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/handleliste'\") !== 'nei';")
     && str_contains($hlMedlem, "Svar::feil('Handlelista er ikke åpen nå. Ta kontakt med verkstedet.', 403);"));
@@ -19274,7 +19297,7 @@ sjekk('… og samme vare to ganger blir én linje',
 sjekk('… og «send» flytter bare mine egne aapne linjer',
     str_contains($hlMedlem, "UPDATE handleliste_linjer SET status = 'sendt', sendt_at = NOW()\n          WHERE member_id = :m AND status = 'apen'"));
 
-$hlAdmin = (string) file_get_contents(dirname(__DIR__) . '/api/admin/handlelister.php');
+$hlAdmin = (string) les_testfil(dirname(__DIR__) . '/api/admin/handlelister.php');
 sjekk('gebyret hentes fra basen hver gang',
     str_contains($hlAdmin, "SELECT verdi FROM innstillinger WHERE nokkel = 'handleliste_gebyr_prosent'")
     // Ingen sats skrevet inn i koden. «/ 100» er prosentregninga selv.
@@ -19304,14 +19327,14 @@ sjekk('… og bestillingen ut er delt per medlem',
 // Teksten til leverandoren er en mal, som alt annet som sendes ut.
 sjekk('… og teksten til leverandoren ligger som mal',
     str_contains($hlAdmin, "Varsel::mal(\n        'leverandorbestilling',")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'leverandorbestilling' => ["));
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/maler.php'), "'leverandorbestilling' => ["));
 // Beloepet paa skjermen og beloepet i kravet er det samme. Booking::kroner
 // runder til hele kroner, og gebyret har oere.
 sjekk('… og beloep med oere vises med oere',
     str_contains($hlAdmin, 'function handleliste_kroner(int $ore): string')
     && str_contains($hlAdmin, 'if ($ore % 100 === 0) {'));
 
-$hlS = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$hlS = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Eieren, 24. september 2026: «her vil jeg ha et bedre oppsett» — handlelista
 // staar bredt til venstre, internbutikken og historikken til hoeyre.
 sjekk('kortet staar paa Min side, ved siden av internbutikken',
@@ -19332,7 +19355,7 @@ sjekk('… og linja har leverandoer, artikkelnummer, varenavn og antall',
     && str_contains($hlS, '<a href="{{ hlLevSokUrl }}" target="_blank" rel="noopener"'));
 sjekk('… og gebyret og frakten staar paa kortet',
     str_contains($hlS, "'administrasjonsgebyr på ' + gebyrTekst + ' % og en andel av frakten.'"));
-$hl208 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/208_handleliste_leverandorer_og_frakt.sql');
+$hl208 = (string) les_testfil(dirname(__DIR__) . '/db/migrations/208_handleliste_leverandorer_og_frakt.sql');
 sjekk('… og migrasjon 208 legger til leverandoer, synlighet, soek og frakt',
     str_contains($hl208, 'ADD COLUMN IF NOT EXISTS leverandor_id BIGINT UNSIGNED NULL')
     && str_contains($hl208, 'ADD COLUMN IF NOT EXISTS vis_medlemmer TINYINT(1) NOT NULL DEFAULT 0')
@@ -19367,7 +19390,7 @@ sjekk('… og vareskjemaet har artikkelnummer, leverandor og «kan bestilles»',
 // Maalt: jobben kjort mot to kursdatoer. Ett moete ga «Hei Mia! ... tirsdag
 // 15. september, 03:00–06:00»; flerdagerskurset ga «Dag 1: ...» og «Dag 2: ...».
 
-$pmM = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/185_paaminnelsen_sier_ikke_i_morgen.sql');
+$pmM = (string) les_testfil(dirname(__DIR__) . '/db/migrations/185_paaminnelsen_sier_ikke_i_morgen.sql');
 sjekk('migrasjon 185 tar «i morgen» ut av paaminnelsen',
     str_contains($pmM, "SET emne  = 'Påminnelse: {kurs} kl. {tid}',")
     && str_contains($pmM, 'Hei {fornavn}! Vi gleder oss til å se deg.')
@@ -19376,7 +19399,7 @@ sjekk('migrasjon 185 tar «i morgen» ut av paaminnelsen',
 sjekk('… og en tekst han har endret selv blir staaende',
     str_contains($pmM, "AND tekst LIKE 'Hei {navn}! Vi gleder oss til å se deg i morgen.%';"));
 
-$cron = (string) file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$cron = (string) les_testfil(dirname(__DIR__) . '/bin/cron.php');
 sjekk('paaminnelsen sender fornavn, ikke hele navnet',
     str_contains($cron, "'fornavn' => fornavnet(\$heleNavnet),")
     && str_contains($cron, 'function fornavnet(string $navn): string')
@@ -19394,8 +19417,8 @@ sjekk('… og flerdagerskurs faar én linje per dag',
 sjekk('… og oekta henter sluttiden sin',
     str_contains($cron, "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.sms_paaminnelse"));
 sjekk('… og feltene staar i malregisteret',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'fornavn' => 'Fornavnet til deltakeren',")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'), "'naar'    => 'Dagen og klokkeslettet."));
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/maler.php'), "'fornavn' => 'Fornavnet til deltakeren',")
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/maler.php'), "'naar'    => 'Dagen og klokkeslettet."));
 
 // ── Medlemstallet, og lukkeknappen i ⊙ Synlighet ─────────────────
 //
@@ -19410,7 +19433,7 @@ sjekk('… og feltene staar i malregisteret',
 // Maalt i nettleseren, med én admin som ogsaa har status «aktiv»: begge
 // skjermene sier det samme tallet.
 
-$mt = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mt = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('medlemstallet regnes ett sted, og admin teller ikke',
     // Pilla paa kalenderen.
     str_contains($mt, "{ navn: 'Medlemmer', nokkel: 'medlemmer', verdi: String(this.medlemsrader()\n                    .filter(x => x.erMedlem && !x.erAdmin).length || ''),")
@@ -19557,8 +19580,8 @@ DB::kjor('DELETE FROM members WHERE id IN (' . (int) $apMonica . ',' . (int) $ap
 // dem, og tre rader i content_blocks avgjor for alle.
 echo "\n== Betal ved oppmote ==\n";
 
-$ufMig = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/197_uten_forskudd.sql');
-$ufMig198 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/198_oppmote_en_bryter.sql');
+$ufMig = (string) les_testfil(dirname(__DIR__) . '/db/migrations/197_uten_forskudd.sql');
+$ufMig198 = (string) les_testfil(dirname(__DIR__) . '/db/migrations/198_oppmote_en_bryter.sql');
 sjekk('kurs staar paa fra start',
     str_contains($ufMig198, "SELECT 'Vis/oppmotekurs', 'ja'"));
 sjekk('butikken ogsaa',
@@ -19585,7 +19608,7 @@ sjekk('«verksted» er en lovlig betalingsmaate paa medlemsordren',
 // mangler. Sa de hver sin ting, ville knappen staatt der uten aa virke.
 sjekk('skjermen leser bryterne med samme regel som serveren',
     str_contains($mt, "  oppmotePaa(nokkel) {\n    const v = (this.state.innholdLagret || {})['Vis/oppmote' + nokkel];\n    return nokkel === 'medlemskap' ? v === 'ja' : v !== 'nei';\n  }"));
-$ufLib = (string) file_get_contents(dirname(__DIR__) . '/app/lib/oppmote.php');
+$ufLib = (string) les_testfil(dirname(__DIR__) . '/app/lib/oppmote.php');
 sjekk('… kurs og butikk paa naar raden mangler, medlemskap av',
     str_contains($ufLib, "return self::verdi('kurs') !== 'nei';")
     && str_contains($ufLib, "return self::verdi('butikk') !== 'nei';")
@@ -19701,7 +19724,7 @@ if ($ufFor === null) {
 
 // Medlemskapet som gjores opp over disken. Fast trekk gaar foran: der er
 // fullmakten i Vipps hele poenget, og da finnes valget ikke.
-$ufMed = (string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$ufMed = (string) les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('fast trekk og betaling i verkstedet gaar ikke sammen',
     str_contains($ufMed, "if (self::kreverFastTrekk(\$plan)) {\n            throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');"));
 sjekk('… og bryteren avgjor, ikke nettleseren',
@@ -19716,7 +19739,7 @@ sjekk('avtalen i verkstedet har ingen fullmakt og intet neste trekk',
 //
 // Bryteren gjelder hele butikken. Og skal pakken sendes, er det ingen disk
 // aa betale over.
-$ufOrdre = (string) file_get_contents(dirname(__DIR__) . '/api/ordre.php');
+$ufOrdre = (string) les_testfil(dirname(__DIR__) . '/api/ordre.php');
 sjekk('bryteren avgjor for hele kurven',
     str_contains($ufOrdre, '$oppmotePaa = Oppmote::butikk();')
     && str_contains($ufOrdre, "if (\$vedHenting && !\$oppmotePaa) {"));
@@ -19730,7 +19753,7 @@ sjekk('ingen betalingsrad naar det betales ved henting',
     str_contains($ufOrdre, "if (!\$vedHenting) {\n        \$paymentId = DB::settInn('payments', \$betalingsfelt);\n    }"));
 
 // ── Innmeldinga ──────────────────────────────────────────────────────
-$ufBli = (string) file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$ufBli = (string) les_testfil(dirname(__DIR__) . '/api/bli-medlem.php');
 sjekk('bryteren avgjor om medlemskapet kan tegnes uten forskudd',
     str_contains($ufBli, "if (\$betaling !== 'trekk' && Foresporsel::tekst('betaling') === 'verksted') {")
     && str_contains($ufBli, 'if (!Oppmote::medlemskap()) {'));
@@ -19749,7 +19772,7 @@ sjekk('kvitteringa paa kurset sier hva som betales ved oppmote',
 sjekk('… og butikkvitteringa det samme for henting',
     str_contains($ufMig, "WHERE navn = 'butikkordre'\n   AND tekst NOT LIKE '%{betaling}%'"));
 sjekk('feltet staar i Maler, saa verkstedet kan flytte det',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/maler.php'),
         "'betaling' => 'Setningen om betaling ved oppmøte',"));
 
 // ── Skjermen ─────────────────────────────────────────────────────────
@@ -19797,12 +19820,12 @@ sjekk('… og kassaknappen likedan',
 echo "\n== Datovalget lander paa datoene ==\n";
 
 // Serversida maa fortsatt peke inn i appen med dagen.
-$dvSide = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
+$dvSide = (string) les_testfil(dirname(__DIR__) . '/app/nett/sider/kursside.php');
 sjekk('datoene paa kurssida er lenker med dagen',
     str_contains($dvSide, "'?dag=' . rawurlencode(\$rad['dag'])"));
 // Og appen maa faktisk faa adressen naar «?dag=» staar der.
 sjekk('«?dag=» gir adressen til appen',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/nett/nett.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/nett/nett.php'),
         // kjop, vare og kolleksjon kom til med 80b328b.
         "foreach (['dag', 'alle', 'book', 'venteliste', 'plan', 'skjema', 'kjop', 'vare', 'kolleksjon'] as \$n) {"));
 
@@ -19836,8 +19859,8 @@ sjekk('… og proever om igjen til skjermen er tegnet',
 // som finnes — og hvert som blir laget.
 echo "\n== Kurssida paa mobil ==\n";
 
-$ksFil = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
-$ncFil = (string) file_get_contents(dirname(__DIR__) . '/nett.css');
+$ksFil = (string) les_testfil(dirname(__DIR__) . '/app/nett/sider/kursside.php');
+$ncFil = (string) les_testfil(dirname(__DIR__) . '/nett.css');
 
 // Venstre spalte er delt i to, saa boksen kan staa imellom paa mobil.
 sjekk('rutenettet paa kurssida er merket',
@@ -19932,8 +19955,8 @@ echo "\n== De to utgavene av kurset ==\n";
 
 $tuFil = dirname(__DIR__) . '/bin/toutgaversjekk.mjs';
 sjekk('vakta mot to ulike utgaver finnes', is_file($tuFil));
-$tuApp = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$tuPhp = (string) file_get_contents(dirname(__DIR__) . '/app/nett/sider/kursside.php');
+$tuApp = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$tuPhp = (string) les_testfil(dirname(__DIR__) . '/app/nett/sider/kursside.php');
 
 // Begge utgavene deler venstre spalte i to, saa boksen kan staa imellom.
 foreach ([['kursside.php', $tuPhp], ['lissom-2108.html', $tuApp]] as [$navn, $tekst]) {
@@ -19946,7 +19969,7 @@ foreach ([['kursside.php', $tuPhp], ['lissom-2108.html', $tuApp]] as [$navn, $te
 // Rekkefoelgen paa mobil maa staa i BEGGE stilarkene. Staar den bare i det
 // ene, havner boksen nederst i den ene utgaven — som var nettopp feilen.
 foreach ([['nett.css', 'nett.css'], ['appens stilark', 'lissom-2108.html']] as [$navn, $fil]) {
-    $t = (string) file_get_contents(dirname(__DIR__) . '/' . $fil);
+    $t = (string) les_testfil(dirname(__DIR__) . '/' . $fil);
     sjekk('rekkefoelgen paa mobil staar i ' . $navn,
         str_contains($t, '.lx-kurs > .lx-kurs-topp   { order: 1; }')
         && str_contains($t, '.lx-kurs > .lx-kurs-boks   { order: 2; position: static !important; }')
@@ -19977,7 +20000,7 @@ sjekk('det foerste avsnittet staar igjen over boksen',
 // igjen: kallet sto bak «&& !this.state.adminSalg».
 echo "\n== Varer til godkjenning ==\n";
 
-$gkFil = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$gkFil = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 // Den gamle betingelsen skal vaere borte.
 sjekk('lista laases ikke til den foerste hentinga',
@@ -19992,13 +20015,13 @@ sjekk('… og to hentinger samtidig er fortsatt stengt',
     str_contains($gkFil, "    if (!this.erPublisert() || this._adminSalgHentes) return;\n    this._adminSalgHentes = true;"));
 
 // Serveren har aldri vaert problemet: den henter alt, uten grense.
-$gkApi = (string) file_get_contents(dirname(__DIR__) . '/api/admin/medlemssalg.php');
+$gkApi = (string) les_testfil(dirname(__DIR__) . '/api/admin/medlemssalg.php');
 sjekk('serveren gir hele lista, uten grense',
     str_contains($gkApi, "ORDER BY ms.status = 'til_godkjenning' DESC, ms.id DESC")
     && !str_contains($gkApi, 'LIMIT'));
 // Og varselet gaar én gang per vare, ikke én per adresse.
 sjekk('varselet gaar én gang per vare',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/varsler.php'),
         '// Én adresse: den foerste. Staar det flere i «admin_eposter», er det'));
 
 
@@ -20014,7 +20037,7 @@ sjekk('varselet gaar én gang per vare',
 // svart «Fant ikke varen».
 echo "\n== Varer uten medlemsrad ==\n";
 
-$msFil = (string) file_get_contents(dirname(__DIR__) . '/api/admin/medlemssalg.php');
+$msFil = (string) les_testfil(dirname(__DIR__) . '/api/admin/medlemssalg.php');
 sjekk('lista skjuler ikke varer uten medlemsrad',
     str_contains($msFil, "       FROM member_sales ms\n       LEFT JOIN members m ON m.id = ms.member_id\n      ORDER BY ms.status = 'til_godkjenning' DESC"));
 sjekk('… og knappene finner dem ogsaa',
@@ -20030,7 +20053,7 @@ sjekk('… og selgeren varsles bare naar vi har en adresse',
 
 // Butikken skal fortsatt ikke vise varer fra anonymiserte medlemmer.
 sjekk('butikklista filtrerer fortsatt bort anonymiserte',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/api/medlemssalg.php'),
         "WHERE ms.status = 'publisert' AND m.anonymisert_at IS NULL"));
 
 
@@ -20048,7 +20071,7 @@ sjekk('butikklista filtrerer fortsatt bort anonymiserte',
 echo "\n== Teksten Vipps faar ==\n";
 
 // Halen er det som skiller to like betalinger, saa den skal alltid staa.
-$vbVipps = (string) file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$vbVipps = (string) les_testfil(dirname(__DIR__) . '/app/lib/vipps.php');
 $vbKort = Vipps::beskrivelse('Nybegynner dreiekurs',
     'onsdag 12. september, 17:30', '2 plasser', 'Mia Sørensen');
 sjekk('kurset, datoen, antallet og navnet staar i teksten',
@@ -20081,7 +20104,7 @@ $vbSteder = [
 ];
 foreach ($vbSteder as $vbFil => $vbHva) {
     sjekk('… ' . $vbHva . ' sender en beskrivelse med navn',
-        str_contains((string) file_get_contents(dirname(__DIR__) . '/' . $vbFil),
+        str_contains((string) les_testfil(dirname(__DIR__) . '/' . $vbFil),
             'Vipps::beskrivelse('),
         $vbFil);
 }
@@ -20110,25 +20133,25 @@ sjekk('… og navnet staar ogsaa naar plannavnet er langt',
     && str_ends_with($vbTrekkLang, '· Kristoffer Andreas Bergqvist'),
     mb_strlen($vbTrekkLang) . ' tegn: ' . $vbTrekkLang);
 sjekk('… og trekket henter navnet fra avtalen',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php'),
         "                    (string) (\$avtale['navn'] ?? '')")
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php'),
         'SELECT s.*, m.navn, m.epost, m.telefon'));
 
 // Et barns navn har ingenting aa gjore hos en betalingsleverandor som
 // ikke trenger det. Maaneden og medlemmets navn skiller betalingen fra
 // alle andre; verkstedet har barnets navn i medlem_tillegg.
 sjekk('barnets navn sendes ikke til Vipps',
-    !str_contains((string) file_get_contents(dirname(__DIR__) . '/api/tillegg-barn.php'),
+    !str_contains((string) les_testfil(dirname(__DIR__) . '/api/tillegg-barn.php'),
         "                \$barnNavn,\n"));
 // Kursbookingen er den som hadde minst fra for: bare tittelen.
 sjekk('kursbookingen sender ikke lenger bare tittelen',
-    !str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+    !str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/booking.php'),
         "mb_substr(\$okt['tittel'], 0, 100)"));
 // Vipps kutter selv paa hundre; vaar egen grense maa vaere den samme.
 sjekk('grensa er den samme som Vipps sin',
     Vipps::BESKRIVELSE_MAKS === 100
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/vipps.php'),
         "'paymentDescription'=> mb_substr(\$beskrivelse, 0, 100),"));
 
 // ── «Til godkjenning» sier ogsaa hvor varene ble av ──────────────────
@@ -20144,7 +20167,7 @@ sjekk('grensa er den samme som Vipps sin',
 // skjult, og skjermen kjente bare den ene av de tre tilstandene.
 echo "\n== Til godkjenning viser hvor varene ble av ==\n";
 
-$tgSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$tgSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 // Begge gruppene staar naa paa «Til godkjenning» OG paa Nettbutikk. Det er
 // den samme lista begge steder, saa de kan ikke komme i utakt.
 sjekk('«Ute i butikken» staar paa begge skjermene',
@@ -20181,7 +20204,7 @@ sjekk('… og gruppene staar bare naar de har noe',
 // kalenderen for aa se hva som ventet.
 echo "\n== Til godkjenning staar i menyen ==\n";
 
-$tgMeny = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$tgMeny = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('skjermen har et fast punkt i adminmenyen',
     str_contains($tgMeny, "      ['Til godkjenning', 'admingodkjenning'],"));
 // Ved siden av kalenderne: det er der man staar naar man ser over dagen.
@@ -20210,8 +20233,8 @@ sjekk('… og pilla paa Kalender staar som for',
 // kunne bare legge ut og ta ned.
 echo "\n== Medlemmet endrer sin egen vare ==\n";
 
-$rdApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemssalg.php');
-$rdSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$rdApi  = (string) les_testfil(dirname(__DIR__) . '/api/medlemssalg.php');
+$rdSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 sjekk('serveren tar imot en endring',
     str_contains($rdApi, " *   POST handling=rediger  endre min egen vare")
@@ -20254,12 +20277,12 @@ sjekk('… og sier «Lagret», ikke «Sendt til godkjenning»',
 // Eieren, 24. september 2026: medlemmer foreslaar et innlegg — ett bilde
 // eller én video paa maks 15 sekunder — og verkstedet godkjenner for det
 // legges ut paa @lissom_keramikk. Bryteren i ⊙ Synlighet staar av fra start.
-$mfMig  = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/207_medlemsforslag_til_instagram.sql');
-$mfLib  = (string) file_get_contents(dirname(__DIR__) . '/app/lib/medlemsforslag.php');
-$mfApi  = (string) file_get_contents(dirname(__DIR__) . '/api/medlemsforslag.php');
-$mfAdm  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/medlemsforslag.php');
-$mfBild = (string) file_get_contents(dirname(__DIR__) . '/api/bilde.php');
-$mfSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mfMig  = (string) les_testfil(dirname(__DIR__) . '/db/migrations/207_medlemsforslag_til_instagram.sql');
+$mfLib  = (string) les_testfil(dirname(__DIR__) . '/app/lib/medlemsforslag.php');
+$mfApi  = (string) les_testfil(dirname(__DIR__) . '/api/medlemsforslag.php');
+$mfAdm  = (string) les_testfil(dirname(__DIR__) . '/api/admin/medlemsforslag.php');
+$mfBild = (string) les_testfil(dirname(__DIR__) . '/api/bilde.php');
+$mfSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 echo "\nMedlemsforslag til Instagram\n";
 sjekk('bryteren staar av fra start',
     str_contains($mfMig, "SELECT 'Vis/medlemsforslag', 'nei'"));
@@ -20304,7 +20327,7 @@ sjekk('forslagene staar i «Venter paa deg»',
 // til nytt oppsett paa denne siden, sykt uoversiktlig» — og av ni forslag:
 // «jeg liker fliser». Skuffen er seks navngitte bolker i stedet for 22
 // piller i tre bunker, og hver ting staar ett sted.
-$fmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$fmSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 echo "\nAdminmenyen som fliser\n";
 sjekk('bolkene staar i den rekkefoelgen eieren ba om',
     str_contains($fmSida, "    const bolkNaa = gruppe('N\u{e5}', [")
@@ -20338,7 +20361,7 @@ sjekk('den samme knappen tegner baade fliser og piller',
 // Eieren, 25. september 2026, etter aa ha sett alle 37 skjermene tegnet:
 // «ja bygg det». Tre ting gikk igjen, og to av dem overstyrer valg han
 // selv tok 13. september — han ble spurt, og svarte «ja, bygg skissen».
-$flSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$flSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 echo "\nAdmin paa telefon: fliser\n";
 sjekk('fanerekka ruller sidelengs',
     str_contains($flSida, "    .lx-adminaside ~ main .lx-fanerad {\n      flex-wrap: nowrap !important;")
@@ -20400,7 +20423,7 @@ sjekk('ingen av de aatte reglene lekker ut paa kundesida',
 // uoversiktlig». Av tre forslag valgte han B — det som gaar naa oeverst — og
 // «Jeg vil ha b» da han ble spurt om den lange lista skulle erstatte
 // Dag/Uke/Maaned/Liste. Rutenettene staar derfor som for under.
-$kmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kmSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 echo "\nKalenderen paa telefon\n";
 sjekk('blokka staar bare paa telefon',
     str_contains($kmSida, '  .lx-kalmob { display: none; }')
@@ -20435,7 +20458,7 @@ sjekk('ingen nye kall — hendelsene er de samme rutenettene tegner',
 // Eieren, 25. september 2026: «avlyste kurs kan stå som skravert eller
 // transparente, men de må ikke okkupere plassen i kalenderen». De var
 // filtrert helt bort siden 8. september.
-$avSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$avSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 echo "\nAvlyste okter i kalenderen\n";
 sjekk('de er ikke filtrert bort lenger',
     str_contains($avSida, '    const skjulAvlyste = liste => liste;')
@@ -20477,7 +20500,7 @@ sjekk('«Denne måneden» staar fortsatt ved siden av tittelen',
 // Eieren, 25. september 2026: «vi kan ikke ha ukesvisning, dagvisningen er
 // fin, om jeg trykker måned åpner det seg en kalender med dager jeg kan
 // klikke på? Som er indikerte når det er kurs?»
-$dvSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$dvSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 echo "\nKalendervisningene paa telefon\n";
 sjekk('ukesvisningen finnes ikke paa telefon',
     str_contains($dvSida, "    if (smalKal && visning === 'uke') visning = 'dag';")
@@ -20515,7 +20538,7 @@ sjekk('prikkeraden har fast hoyde, saa tallene staar i ro',
 //
 // Maalt i den ekte feeden samme dag: 25 av 178 hendelser var avlyste, ti av
 // dem bakover i tid.
-$kfFil = (string) file_get_contents(dirname(__DIR__) . '/api/kalender-abonnement.php');
+$kfFil = (string) les_testfil(dirname(__DIR__) . '/api/kalender-abonnement.php');
 echo "\nKalenderfeeden\n";
 sjekk('en avlyst dato som har vaert sendes ikke',
     str_contains($kfFil, "AND (cs.status <> 'avlyst'")
@@ -20544,7 +20567,7 @@ sjekk('ferske avlysninger sendes som for, merket avlyst',
 // Eieren, 25. september 2026: «legge ut varer i nettbutikk virker ikke, faar
 // ikke lastet bildet». Bilderuta i «Ny vare» var tre stiplede firkanter fra
 // designet: ingen fil aa velge, ingen handling, ingenting som ble lagret.
-$nvSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$nvSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 echo "\nBildet til en ny vare\n";
 sjekk('bilderuta er en knapp som aapner velgeren',
@@ -20600,7 +20623,7 @@ sjekk('et AI-kall som alt er i gang sier fra i stedet for aa tie',
 // Eieren, 26. september 2026: «naar jeg trykker paa meny hamburger, kommer det
 // bare tilbakepilen frem» og «jeg trykker paa kalender etter aa ha trykket paa
 // meny, kommer ikke i kalender opp». Tre feil i skuffen fra #216.
-$msSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$msSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 echo "\nMenyskuffen paa telefon\n";
 // Stripa staar oeverst i dokumentet. Hadde man rullet ned, var «bottom»
@@ -20636,7 +20659,7 @@ sjekk('skuffens egne knapper lukker den som for',
 // maalt paa forsida, /kalender, /kurs og /medlemskap, paa 390 og 1280 px,
 // gaar sida til TOPPEN i stedet for dit man ba om. Maalt paa dagbrikka:
 // 255 → 0. Ti steder i fila gjorde det samme.
-$rtSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$rtSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 echo "\nHopp til et sted paa sida\n";
 sjekk('hjelperen finnes',
@@ -20656,7 +20679,7 @@ sjekk('ingen av hoppene regner ut posisjonen selv lenger',
     !str_contains($rtSida, "window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' })")
     && !str_contains($rtSida, "window.scrollTo({ top: y, behavior: 'smooth' })"));
 sjekk('hjelperen brukes de ti stedene',
-    substr_count($rtSida, 'this.rullTil(') === 12);
+    substr_count($rtSida, 'this.rullTil(') === 13);
 // Dagbrikka i ukekalenderen — det eieren meldte.
 sjekk('dagbrikka i ukekalenderen hopper til dagen',
     str_contains($rtSida, "          const el = document.getElementById('ukedag-' + dagIdx);\n"
@@ -20676,9 +20699,9 @@ sjekk('dagbrikka i ukekalenderen hopper til dagen',
 //      Min side henter bare bookinger med member_id.
 //   2. Datovelgeren nektet dager som har vaert.
 //   3. Oektlista gikk bare tretti dager tilbake.
-$kvbSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$kvbPam  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
-$kvbPmd  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
+$kvbSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$kvbPam  = (string) les_testfil(dirname(__DIR__) . '/api/admin/pamelding.php');
+$kvbPmd  = (string) les_testfil(dirname(__DIR__) . '/api/admin/pameldte.php');
 
 echo "\nKursbevis i ettertid\n";
 // 1. Medlemmet foelger med paameldingen.
@@ -20723,11 +20746,11 @@ sjekk('og de staar sist i lista',
 // Eieren, 27. september 2026: vervepremien. tests/verving.php proever
 // reglene mot databasen; her staar koblingene mellom delene.
 echo "\nVervepremien\n";
-$vpSida  = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$vpNett  = file_get_contents(dirname(__DIR__) . '/nett.js');
-$vpOrdre = file_get_contents(dirname(__DIR__) . '/api/medlemsordre.php');
-$vpMed   = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
-$vpMeg   = file_get_contents(dirname(__DIR__) . '/api/meg.php');
+$vpSida  = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$vpNett  = les_testfil(dirname(__DIR__) . '/nett.js');
+$vpOrdre = les_testfil(dirname(__DIR__) . '/api/medlemsordre.php');
+$vpMed   = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$vpMeg   = les_testfil(dirname(__DIR__) . '/api/meg.php');
 sjekk('premien gis naar avtalen gaar over til aktiv',
     str_contains($vpMed, "if (\$ny === 'aktiv' && (string) \$avtale['status'] !== 'aktiv') {")
     && str_contains($vpMed, "Verving::premier((int) \$avtale['member_id'], (int) \$avtale['id'], (string) \$avtale['plan']);"));
@@ -20758,8 +20781,8 @@ sjekk('bryteren er av naar raden mangler, som paa serveren',
     str_contains($vpSida, "const bryter = (st.innholdLagret || {})['Vis/verving'] === 'ja';"));
 
 echo "\nFlytt en deltaker til en annen dato\n";
-$flSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$flApi  = file_get_contents(dirname(__DIR__) . '/api/admin/pameldte.php');
+$flSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$flApi  = les_testfil(dirname(__DIR__) . '/api/admin/pameldte.php');
 sjekk('datoene sier hvilket kurs de hoerer til',
     str_contains($flApi, "'kursId'    => (int) \$o['course_id'],")
     && str_contains($flApi, 'SELECT cs.id, cs.course_id, cs.start_tid'));
@@ -20778,7 +20801,7 @@ sjekk('«Flytt hit» uten valgt dato gjoer ingenting',
 // Eieren, 27. september 2026: gavekortet sendes bare paa e-post, det hentes
 // ikke i verkstedet.
 echo "\nGavekortet sendes paa e-post\n";
-$gkSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$gkSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('gavekortsida sier at kortet sendes paa e-post',
     str_contains($gkSida, "'Sendes på e-post så snart betalingen er gjennomført.',"));
 sjekk('… og ikke at det kan hentes i verkstedet',
@@ -20789,11 +20812,11 @@ sjekk('… og ikke at det kan hentes i verkstedet',
 // dele betaling?» — GO paa skissen i «Ta betalt». Ende-til-ende-testen
 // staar i tests/deltbetaling.sh; her vaktes det som leses av koden.
 echo "\nDelt betaling i «Ta betalt»\n";
-$dbSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$dbBook = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
-$dbKurs = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
-$dbUtt  = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
-$dbMed  = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$dbSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$dbBook = les_testfil(dirname(__DIR__) . '/app/lib/booking.php');
+$dbKurs = les_testfil(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+$dbUtt  = les_testfil(dirname(__DIR__) . '/api/admin/uttak.php');
+$dbMed  = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('knappen «+ Legg til betalingsmåte» finnes',
     str_contains($dbSida, '>+ Legg til betalingsmåte</button>'));
 sjekk('… og «Igjen å betale» vises naar betalingen deles',
@@ -20827,12 +20850,12 @@ sjekk('medlemskapet kan gjores opp i deler',
 // medlemmenes godkjente bilder, som ruller. Godkjenningen velger Instagram,
 // galleriet eller begge. Se app/lib/galleri.php og tests/galleri.php.
 echo "\nGalleriet paa forsida\n";
-$glForside = file_get_contents(dirname(__DIR__) . '/app/nett/sider/forside.php');
-$glSida    = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$glApi     = file_get_contents(dirname(__DIR__) . '/api/admin/medlemsforslag.php');
-$glBilde   = file_get_contents(dirname(__DIR__) . '/api/bilde.php');
-$glNett    = file_get_contents(dirname(__DIR__) . '/nett.js');
-$glKart    = file_get_contents(dirname(__DIR__) . '/api/sitemap.php');
+$glForside = les_testfil(dirname(__DIR__) . '/app/nett/sider/forside.php');
+$glSida    = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$glApi     = les_testfil(dirname(__DIR__) . '/api/admin/medlemsforslag.php');
+$glBilde   = les_testfil(dirname(__DIR__) . '/api/bilde.php');
+$glNett    = les_testfil(dirname(__DIR__) . '/nett.js');
+$glKart    = les_testfil(dirname(__DIR__) . '/api/sitemap.php');
 sjekk('forsida viser galleriet naar det finnes bilder',
     str_contains($glForside, '$galleri = Galleri::kort();')
     && str_contains($glForside, '>Galleri</div>')
@@ -20879,7 +20902,7 @@ sjekk('galleribildene er med i bildesidekartet',
 // Eieren, 27. september 2026: «paa oversikt, saa maa jeg ha frem en flis med
 // synlighet, jeg trenger aa se hvilke funksjoner jeg har aktive».
 echo "\nSynlighet paa Oversikt\n";
-$slSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$slSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('radene i Synlighet-arket bygges ett sted',
     str_contains($slSida, '  synlighetVals() {')
     && substr_count($slSida, "rad('Banneret under toppbildet',") === 1);
@@ -20921,9 +20944,9 @@ sjekk('… og lange lister kuttes, saa flisen ikke blir hoeyere enn naboene',
 // paa». To e-poster hadde to brytere hver. Naa er malen den ene, og Tekst
 // maler ligger under Markedsfoering.
 echo "\nÉn bryter per e-post\n";
-$tmSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$tmCron = (string) file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$tmVa   = (string) file_get_contents(dirname(__DIR__) . '/api/admin/varsler.php');
+$tmSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$tmCron = (string) les_testfil(dirname(__DIR__) . '/bin/cron.php');
+$tmVa   = (string) les_testfil(dirname(__DIR__) . '/api/admin/varsler.php');
 sjekk('hver rad i Tekst maler har en av/paa-bryter',
     str_contains($tmSida, '<button type="button" class="lx-malbryter" onClick="{{ m.veksle }}" aria-pressed="{{ m.paa }}"')
     && str_contains($tmSida, "bryterTekst: m.aktiv ? 'På' : 'Av',"));
@@ -20951,7 +20974,7 @@ sjekk('Tekst maler ligger under Markedsfoering',
 
 // Migrasjon 226 skal ta vare paa det som faktisk gikk: stod den egne bryteren
 // av, slaas malen av — ingenting skal begynne aa sendes av seg selv.
-$m226 = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/226_en_bryter_per_epost.sql');
+$m226 = (string) les_testfil(dirname(__DIR__) . '/db/migrations/226_en_bryter_per_epost.sql');
 $m226Ren = (string) preg_replace('/^--.*$/m', '', $m226);
 $tmFor = DB::alle("SELECT navn, aktiv FROM notification_templates WHERE navn IN ('fortsett', 'anmeldelse')");
 $tmInn = DB::alle("SELECT nokkel, verdi FROM innstillinger WHERE nokkel IN ('fortsett_paa', 'anmeldelse_paa')");
@@ -20982,8 +21005,8 @@ foreach ($tmInn as $r) {
 // med galleriet?» Det var den ikke — og et bilde som bare ble lagt i
 // galleriet, forsvant fra medlemmets liste paa Min side.
 echo "\nDel paa Instagram og i galleriet\n";
-$dgSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$dgApi  = file_get_contents(dirname(__DIR__) . '/api/medlemsforslag.php');
+$dgSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$dgApi  = les_testfil(dirname(__DIR__) . '/api/medlemsforslag.php');
 sjekk('bryteren og flisen heter «Del på Instagram og i galleriet»',
     substr_count($dgSida, 'Del på Instagram og i galleriet') >= 4
     && !str_contains($dgSida, "'Del på Instagram'")
@@ -21001,7 +21024,7 @@ sjekk('… og statusen hentes fra ett sted',
 // valgt paa kurssida, uten aa trykke paa tida — bookingen havnet paa onsdag
 // 7. oktober, og kvitteringen sa «Onsdag 19. august».
 echo "\nDatoen paa skjermen er den som bookes\n";
-$btSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$btSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('dagen som vises husker sin ene ledige tid',
     str_contains($btSida, 'this._visteOkt = ledigeTider.length === 1 ? ledigeTider[0] : null;'));
 sjekk('… og bookingen bruker den foer den foerste ledige datoen',
@@ -21014,11 +21037,11 @@ sjekk('… og kvitteringen faar datoen som ble booket',
 // Eieren, 27. september 2026: «ikke bra nok, jeg vil ha med knapper og kort».
 // Det felles oppsettet for e-postene, og redigeringen av det i Tekst maler.
 echo "\nE-postene i det felles oppsettet\n";
-$eoVars = (string) file_get_contents(dirname(__DIR__) . '/app/lib/varsler.php');
-$eoApi  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/maler.php');
-$eoSide = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$eoMig  = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/227_epost_oppsett.sql');
-$eoRam  = (string) file_get_contents(dirname(__DIR__) . '/app/epost/oppsett.html');
+$eoVars = (string) les_testfil(dirname(__DIR__) . '/app/lib/varsler.php');
+$eoApi  = (string) les_testfil(dirname(__DIR__) . '/api/admin/maler.php');
+$eoSide = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$eoMig  = (string) les_testfil(dirname(__DIR__) . '/db/migrations/227_epost_oppsett.sql');
+$eoRam  = (string) les_testfil(dirname(__DIR__) . '/app/epost/oppsett.html');
 sjekk('oppsettet har kort, knapp, lenke og signatur som kan tas bort',
     str_contains($eoRam, '<!--kort:start-->') && str_contains($eoRam, '<!--knapp:start-->')
     && str_contains($eoRam, '<!--lenke2:start-->') && str_contains($eoRam, '<!--signatur:start-->'));
@@ -21052,10 +21075,10 @@ sjekk('… forhåndsvisningen lages av den samme koden som sender',
 // bilder og én knapp per del. tests/kursboost.sh kjorer hele flyten mot en
 // falsk Gemini og Meta; her staar det som skal holde seg i koden.
 echo "\nKursboost som ferdig flyt\n";
-$kbSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$kbLib  = file_get_contents(dirname(__DIR__) . '/app/lib/kursboost.php');
-$kbGem  = file_get_contents(dirname(__DIR__) . '/app/lib/gemini.php');
-$kbBesk = file_get_contents(dirname(__DIR__) . '/api/admin/beskjed.php');
+$kbSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$kbLib  = les_testfil(dirname(__DIR__) . '/app/lib/kursboost.php');
+$kbGem  = les_testfil(dirname(__DIR__) . '/app/lib/gemini.php');
+$kbBesk = les_testfil(dirname(__DIR__) . '/api/admin/beskjed.php');
 sjekk('bildet lages av kursets egne bilder, foran verkstedets referanser',
     str_contains($kbGem, 'public static function lagKursbilde(array $kursbilder, string $kurs, int $variant = 1): array')
     && str_contains($kbGem, '$deler = array_merge($deler, self::referanseDeler());'));
@@ -21066,7 +21089,7 @@ sjekk('… og kostnaden gaar under det samme taket',
     substr_count($kbGem, 'if (AI::bruktDenneMaaneden() >= $tak * 100) {') >= 3);
 sjekk('Gemini og Meta kan bare pekes til en test utenfor produksjon',
     str_contains($kbGem, "\$base = \$fra !== '' && Config::miljo() !== 'produksjon' ? rtrim(\$fra, '/') . '/' : self::BASE;")
-    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/meta.php'), "if (\$fra !== '' && Config::miljo() !== 'produksjon') {"));
+    && str_contains(les_testfil(dirname(__DIR__) . '/app/lib/meta.php'), "if (\$fra !== '' && Config::miljo() !== 'produksjon') {"));
 sjekk('en del som er gjort kan ikke gjoeres igjen',
     str_contains($kbLib, "if (isset(\$u['data']['kb']['gjort'][\$del])) {")
     && str_contains($kbBesk, "if (\$kursboostId > 0 && Kursboost::gjort(\$kursboostId, 'medlemmer') !== null) {"));
@@ -21075,7 +21098,7 @@ sjekk('Instagram er laast til et bilde er valgt',
     && str_contains($kbLib, "'Velg et bilde først. Instagram tar ikke imot innlegg uten.'"));
 sjekk('artikkelen blir kladd samme vei som et artikkelutkast',
     str_contains($kbLib, 'Artikler::kladdFraUtkast(')
-    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/ai.php'), 'Artikler::kladdFraUtkast('));
+    && str_contains(les_testfil(dirname(__DIR__) . '/api/admin/ai.php'), 'Artikler::kladdFraUtkast('));
 sjekk('meldingen til medlemmene gaar gjennom den vanlige utsendingen, med tallet foerst',
     str_contains($kbSida, "beskjed({ handling: 'antall' })")
     && str_contains($kbSida, 'beskjed({ kursboost: p.id })')
@@ -21090,7 +21113,7 @@ sjekk('knappene og kvitteringene er de godkjente',
     && str_contains($kbSida, "nyhetsbrev: 'Lagt som utkast i Tilbud / nyhetsbrev ✓',")
     && str_contains($kbSida, "kbBildeKnapp: 'Lag nye forslag',"));
 sjekk('kursboost-utkastet husker kurset',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/ai.php'), "\$r + ['kursId' => (int) \$k['kurs']['id']],"));
+    str_contains(les_testfil(dirname(__DIR__) . '/api/admin/ai.php'), "\$r + ['kursId' => (int) \$k['kurs']['id']],"));
 
 // ── Synlighet fra forhaandsvisninga ───────────────────────────────
 //
@@ -21102,7 +21125,7 @@ sjekk('kursboost-utkastet husker kurset',
 // adminskjerm — saa runden ble: tilbake, aapne Synlighet, skru, og inn hit
 // igjen. Arket staar én gang i malen, paa toppnivaa, saa det tegnes ogsaa
 // her. En knapp i baandet er alt som skal til.
-$syfSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$syfSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 echo "\nSynlighet fra forhaandsvisninga\n";
 sjekk('knappen staar i baandet, ved siden av «Tilbake»',
@@ -21127,7 +21150,7 @@ sjekk('baandet — og knappen — staar bare i forhaandsvisninga',
 // Lista bygges av tabellene som alt finnes — menyen, fanene, verktoyradene,
 // snarveiene og bryterne i Synlighet. En haandskreven liste ville sluttet
 // aa stemme den dagen noen la til en skjerm og glemte denne.
-$sokSida = (string) file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$sokSida = (string) les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 
 echo "\nSøk i admin\n";
 sjekk('pilla staar i alle adminstripene, ved siden av Synlighet',
@@ -21187,8 +21210,8 @@ sjekk('den sier fra naar ingenting passer',
 // Eieren, 27. september 2026: «jeg vil gjøre det selv i markedsføring, at jeg
 // kan klikke å laste opp eller dra og slipp» — Markedsføring › Bilder.
 echo "\nMarkedsfoering › Bilder\n";
-$bfSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$bfGem  = file_get_contents(dirname(__DIR__) . '/api/admin/gemini.php');
+$bfSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$bfGem  = les_testfil(dirname(__DIR__) . '/api/admin/gemini.php');
 sjekk('fanen Bilder staar i Markedsfoering',
     str_contains($bfSida, "['Bilder', 'adminmarked', { mkFane: 'bilder' }],") && str_contains($bfSida, "['Bilder', ['bilder']],"));
 sjekk('… med dra og slipp og «Velg bilde»',
@@ -21206,7 +21229,7 @@ echo "\n";
 // Designmaler, og valgbare i bildevelgeren.
 echo "\nDesignmaler\n";
 $dmRot = dirname(__DIR__) . '/design/underlogoer';
-$dmSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$dmSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
 $dmFiler = glob($dmRot . '/*/*') ?: [];
 sjekk('fanen «Designmaler» finnes i Markedsføring',
     str_contains($dmSida, "['Designmaler', 'adminmarked', { mkFane: 'design' }],")
@@ -21214,13 +21237,13 @@ sjekk('fanen «Designmaler» finnes i Markedsføring',
     && str_contains($dmSida, '...this.designmalAdminVals(fane),'));
 sjekk('… og alle 42 filene ligger der (tre navn, fire og tre formater, brun og gul)', count($dmFiler) === 42, (string) count($dmFiler));
 $dmSkitne = array_filter(glob($dmRot . '/*/*.svg') ?: [], static fn($f) =>
-    preg_match('~<script|\son[a-z]+=|javascript:|<foreignObject|href="https?:~i', (string) file_get_contents($f)) === 1);
+    preg_match('~<script|\son[a-z]+=|javascript:|<foreignObject|href="https?:~i', (string) les_testfil($f)) === 1);
 sjekk('… og ingen SVG har skript eller lenker ut', $dmSkitne === [], implode(', ', array_map('basename', $dmSkitne)));
 sjekk('… og PNG-ene kan velges i bildevelgeren',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/bilder.php'), "glob(\$rot . '/design/underlogoer/*/*.png')"));
+    str_contains((string) les_testfil(dirname(__DIR__) . '/api/admin/bilder.php'), "glob(\$rot . '/design/underlogoer/*/*.png')"));
 sjekk('… og kursboost og kursbildet godtar dem',
-    str_contains((string) file_get_contents(dirname(__DIR__) . '/app/lib/kursboost.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~')
-    && str_contains((string) file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~'));
+    str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/kursboost.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~')
+    && str_contains((string) les_testfil(dirname(__DIR__) . '/api/admin/kurs.php'), '~^design/underlogoer/[a-z0-9-]+/[a-z0-9-]+\.(png|jpe?g)$~'));
 
 // ── Kursstart ───────────────────────────────────────────────
 //
@@ -21233,9 +21256,9 @@ sjekk('… og kursboost og kursbildet godtar dem',
 // forhaandsvisninga, og derfor ikke kan trykkes paa der — og at
 // betalingskortet ikke har faatt sin egen vei til pengene.
 echo "\nKursstart\n";
-$ksSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-$ksApi  = (string) file_get_contents(dirname(__DIR__) . '/api/admin/kursstart.php');
-$ksMig  = (string) file_get_contents(dirname(__DIR__) . '/db/migrations/234_kursstart.sql');
+$ksSida = les_testfil(dirname(__DIR__) . '/lissom-2108.html');
+$ksApi  = (string) les_testfil(dirname(__DIR__) . '/api/admin/kursstart.php');
+$ksMig  = (string) les_testfil(dirname(__DIR__) . '/db/migrations/234_kursstart.sql');
 
 sjekk('arket staar én gang i malen, ikke per adminskjerm',
     substr_count($ksSida, '<sc-if value="{{ ksVises }}"') === 1);

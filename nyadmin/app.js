@@ -18,17 +18,7 @@ const app = document.getElementById('app');
 let oppsett = null;
 
 /** Steder søket kan finne. Det som ikke er flyttet ennå, går til det gamle admin. */
-const STEDER = [
-  ['I dag', '#i-dag'], ['Kurs og datoer', '/admin/kurs'], ['Kalender', '/admin/kalender'],
-  ['Påmeldte', '/admin/pameldte'], ['Venteliste', '/admin/venteliste'], ['Klar til henting', '/admin/ferdigbrent'],
-  ['Årskalender', '/admin/arskalender'], ['Kursholdere', '/admin/kursholdere'],
-  ['Medlemmer', '/admin/medlemmer/alle'], ['Kursdeltakere', '/admin/deltakere/alle'], ['Medlemskap', '/admin/medlemskap'],
-  ['Forespørsler', '/admin/ubesvarte'], ['Til godkjenning', '/admin/godkjenning'], ['Beskjeder', '/admin/beskjeder'],
-  ['Kasse · ta betalt', '/admin/uttak'], ['Økonomi og dagsoppgjør', '/admin/okonomi'], ['Nettbutikk', '/admin/butikk'],
-  ['Markedsføring', '/admin/markedsforing'], ['Innboks (SoMe)', '/admin/markedsforing?apne=innboks'], ['SEO', '/admin/seo'],
-  ['Maler', '/admin/maler'], ['Varsler', '/admin/varsler'], ['Feilmeldinger', '/admin/feilmeldinger'],
-  ['Skisser', '/skisser.html'], ['Det gamle admin', '/admin'],
-];
+import { STEDER } from './steder.js';
 
 function hvilken() {
   const h = (location.hash || '').replace(/^#/, '');
@@ -55,7 +45,7 @@ function modulFor(sti) {
   const s = sti.split(/[?#]/)[0];
   const er = (...p) => p.some(x => s === x || s.startsWith(x + '/'));
   let id = 'mer';
-  if (er('/admin', '/admin/oversikt')) id = 'idag';
+  if (s === '/admin' || er('/admin/oversikt')) id = 'idag';
   else if (er('/admin/kurs', '/admin/kalender', '/admin/pameldte', '/admin/venteliste', '/admin/ferdigbrent',
     '/admin/arskalender', '/admin/kursholdere', '/admin/nye-pameldinger')) id = 'kurs';
   else if (er('/admin/medlemmer', '/admin/deltakere', '/admin/medlemskap', '/admin/ubesvarte', '/admin/godkjenning',
@@ -88,8 +78,11 @@ function sok() {
   const liste = el('div', { class: 'g' });
   const tegn = () => {
     const q = felt.value.trim().toLowerCase();
-    liste.replaceChildren(...STEDER.filter(([n]) => !q || n.toLowerCase().includes(q)).slice(0, 12)
+    const ord = q.split(/\s+/).filter(Boolean);
+    const treff = STEDER.filter(([n]) => ord.every(o => n.toLowerCase().includes(o)));
+    liste.replaceChildren(...treff.slice(0, 12)
       .map(([n, a]) => el('a', { class: 'rad', href: a, onclick: () => lukk() }, el('span', { tekst: n }))));
+    if (!treff.length) liste.append(el('p', { class: 'tomt', tekst: 'Ingen treff på «' + felt.value.trim() + '».' }));
   };
   felt.addEventListener('input', tegn);
   const { lukk } = ark([el('h2', { tekst: 'Søk i admin' }), felt, liste]);
@@ -255,6 +248,13 @@ async function start() {
   oppsett = r.d;
   window.addEventListener('hashchange', vis);
   vis();
+  const oppfrisk = () => {
+    if (document.hidden || iRamme() || document.querySelector('.bak') || !['idag', 'penger'].includes(hvilken().id)) return;
+    vis();
+  };
+  document.addEventListener('visibilitychange', oppfrisk);
+  window.addEventListener('focus', oppfrisk);
+  setInterval(oppfrisk, 60000);
 }
 
 start();

@@ -11,7 +11,21 @@
  * trenger ingen passord.
  */
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+require __DIR__ . '/testdatabase.php';
+try {
+    $testoppsett = krev_testdatabase(dirname(__DIR__, 2));
+} catch (Throwable $e) {
+    fwrite(STDERR, $e->getMessage() . "\n");
+    exit(1);
+}
 require dirname(__DIR__, 2) . '/app/bootstrap.php';
+// Kontroller også tilkoblingen appen faktisk bruker, før første write.
+try {
+    krev_testdatabase_identitet($testoppsett, DB::verdi('SELECT DATABASE()'));
+} catch (Throwable $e) {
+    fwrite(STDERR, "Appens testdatabase kunne ikke bekreftes.\n");
+    exit(1);
+}
 
 $rydd = static function (): void {
     $m = array_column(DB::alle("SELECT id FROM members WHERE epost LIKE '%@e2e.lissom.test'"), 'id');

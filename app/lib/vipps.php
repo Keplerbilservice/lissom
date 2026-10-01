@@ -735,13 +735,16 @@ final class Vipps
      * hele trekket. Vi sender aldri mer enn det som staar igjen — se
      * «betal-tilbake» i api/admin/medlemmer.php.
      */
-    public static function refunderTrekk(string $avtaleId, string $trekkId, int $belopOre): array
+    public static function refunderTrekk(string $avtaleId, string $trekkId, int $belopOre, string $referanse, string $operasjonsId): array
     {
+        if ($operasjonsId === '') {
+            throw new RuntimeException('Mangler varig betalingsoperasjon.');
+        }
         $svar = http_post_json(
             Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId)
                 . '/charges/' . rawurlencode($trekkId) . '/refund',
             ['amount' => $belopOre, 'description' => 'Tilbakebetaling'],
-            self::headere(self::uuid())
+            self::headere(self::operasjonsnokkel($referanse, 'recurring-refund:' . $avtaleId . ':' . $trekkId . ':' . $operasjonsId . ':' . $belopOre))
         );
 
         if ($svar['status'] >= 300) {
@@ -864,6 +867,47 @@ final class Vipps
         return $svar['json'];
     }
 
+    /** Bekreft hendelsen i den autoritative operasjonsloggen og summer oppgjoer. */
+    public static function avstemHendelse(string $referanse, string $pspReferanse, string $navn): array
+    {
+        $svar = http_get_json(
+            Config::vippsBase() . '/epayment/v1/payments/' . rawurlencode($referanse) . '/events',
+            self::headere()
+        );
+        if ($svar['status'] !== 200 || !is_array($svar['json']) || !array_is_list($svar['json'])) {
+            throw new RuntimeException('Fikk ikke avstemt betalingshendelsen fra Vipps.');
+        }
+        $funnet = false;
+        $trukket = 0;
+        $refundert = 0;
+        foreach ($svar['json'] as $hendelse) {
+            if (!is_array($hendelse) || ($hendelse['success'] ?? false) !== true
+                || ($hendelse['reference'] ?? '') !== $referanse) {
+                continue;
+            }
+            $type = strtoupper((string) ($hendelse['name'] ?? ''));
+            if (($hendelse['pspReference'] ?? '') === $pspReferanse && $type === $navn) {
+                $funnet = true;
+            }
+            if (($hendelse['amount']['currency'] ?? '') !== 'NOK') {
+                throw new RuntimeException('Uventet valuta i betalingshendelsen.');
+            }
+            $belop = (int) ($hendelse['amount']['value'] ?? 0);
+            if ($belop < 0) {
+                throw new RuntimeException('Ugyldig beloep i betalingshendelsen.');
+            }
+            if ($type === 'CAPTURED') { $trukket += $belop; }
+            if ($type === 'REFUNDED') { $refundert += $belop; }
+        }
+        if (!$funnet) {
+            throw new RuntimeException('Betalingshendelsen er ennå ikke avstemt.');
+        }
+        return ['state' => $navn, 'aggregate' => [
+            'capturedAmount' => ['value' => $trukket],
+            'refundedAmount' => ['value' => $refundert],
+        ]];
+    }
+
     /**
      * Henter status fra Vipps — og gjor det statusen sier.
      *
@@ -908,13 +952,9 @@ final class Vipps
     /**
      * Gjor det tilstanden sier. Selve regelen, uten oppslaget.
      *
-     * Skilt fra synkroniser() fordi webhooken alt VET hvilken tilstand det
-     * gjelder — Vipps sender den, signert — og ikke skal sporre om igjen.
-     *
-     * Et nytt oppslag der ville ikke bare kostet et kall: leseadressen kan
-     * ligge et hakk bak hendelsen, saa en CAPTURED-hendelse kunne blitt lest
-     * som AUTHORIZED, og vi ville forsokt aa trekke en betaling som alt var
-     * trukket. Da feiler trekket, og «betalt» blir aldri satt.
+     * Webhooken beholder den signerte hendelsens tilstand ved avstemming.
+     * CAPTURED/REFUNDED bruker operasjonsloggen for delvis/fullt oppgjoer;
+     * et gammelt statusoppslag skal aldri starte et nytt trekk etter capture.
      *
      * Cron og Tikk maa sporre, for de har ingen hendelse. Webhooken har den.
      * Begge veier ender her, saa regelen finnes ett sted.
@@ -922,7 +962,7 @@ final class Vipps
      * @param array<string,mixed> $status Svaret fra Vipps, eller minst
      *                                    ['state' => 'CAPTURED'] fra en hendelse.
      */
-    public static function anvendTilstand(string $referanse, array $status): string
+    public static function anvendTilstand(string $referanse, array $status, bool $kastFeil = false): string
     {
         $tilstand = strtoupper((string) ($status['state'] ?? ''));
 
@@ -936,10 +976,17 @@ final class Vipps
                 $godkjent = (int) ($status['aggregate']['authorizedAmount']['value'] ?? 0);
                 $trukket  = (int) ($status['aggregate']['capturedAmount']['value'] ?? 0);
                 if ($godkjent > $trukket) {
-                    self::trekk($referanse, $godkjent - $trukket);
+                    self::trekk($referanse, $godkjent - $trukket, $trukket);
                 }
                 Booking::markerBetalt($referanse);
             } elseif ($tilstand === 'CAPTURED') {
+                if (isset($status['aggregate'])) {
+                    $betaling = DB::en('SELECT belop_ore FROM payments WHERE vipps_reference = :r', ['r' => $referanse]);
+                    $trukket = (int) ($status['aggregate']['capturedAmount']['value'] ?? 0);
+                    if ($betaling !== null && $trukket < (int) $betaling['belop_ore']) {
+                        throw new RuntimeException('Capture er delvis eller ennå ikke avstemt.');
+                    }
+                }
                 Booking::markerBetalt($referanse);
             } elseif (in_array($tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)) {
                 // «status <> betalt» staar der fordi en betaling som ER gjort
@@ -947,29 +994,40 @@ final class Vipps
                 // sier om en gammel reservasjon.
                 DB::kjor(
                     "UPDATE payments SET status = 'avbrutt'
-                      WHERE vipps_reference = :r AND status <> 'betalt'",
+                      WHERE vipps_reference = :r AND status NOT IN ('betalt', 'delvis_refundert', 'refundert')",
                     ['r' => $referanse]
                 );
             } elseif ($tilstand === 'REFUNDED') {
+                $refundert = (int) ($status['aggregate']['refundedAmount']['value'] ?? 0);
+                if ($refundert <= 0 || $refundert < (int) ($status['hendelsesbelop_ore'] ?? 0)) {
+                    throw new RuntimeException('Refusjonen er ennå ikke avstemt.');
+                }
                 DB::kjor(
-                    "UPDATE payments SET status = 'refundert' WHERE vipps_reference = :r",
-                    ['r' => $referanse]
+                    "UPDATE payments
+                        SET status = CASE WHEN GREATEST(refundert_ore, :s) >= belop_ore
+                                          THEN 'refundert' ELSE 'delvis_refundert' END,
+                            refundert_ore = GREATEST(refundert_ore, :b)
+                      WHERE vipps_reference = :r",
+                    ['s' => $refundert, 'b' => $refundert, 'r' => $referanse]
                 );
             }
         } catch (Throwable $e) {
             logg_feil('Kunne ikke gjore opp betaling ' . $referanse, $e);
+            if ($kastFeil) {
+                throw $e;
+            }
         }
 
         return $tilstand;
     }
 
     /** Trekker pengene etter at betalingen er godkjent. */
-    public static function trekk(string $referanse, int $belopOre): array
+    public static function trekk(string $referanse, int $belopOre, int $alleredeTrukketOre = 0): array
     {
         $svar = http_post_json(
             Config::vippsBase() . '/epayment/v1/payments/' . rawurlencode($referanse) . '/capture',
             ['modificationAmount' => ['currency' => 'NOK', 'value' => $belopOre]],
-            self::headere(self::uuid())
+            self::headere(self::operasjonsnokkel($referanse, 'capture:' . $alleredeTrukketOre . ':' . $belopOre))
         );
 
         if ($svar['status'] >= 300) {
@@ -980,12 +1038,15 @@ final class Vipps
     }
 
     /** Refusjon. Beløpet regnes ut fra avbestillingsreglene i vilkårene. */
-    public static function refunder(string $referanse, int $belopOre): array
+    public static function refunder(string $referanse, int $belopOre, string $operasjonsId): array
     {
+        if ($operasjonsId === '') {
+            throw new RuntimeException('Mangler varig betalingsoperasjon.');
+        }
         $svar = http_post_json(
             Config::vippsBase() . '/epayment/v1/payments/' . rawurlencode($referanse) . '/refund',
             ['modificationAmount' => ['currency' => 'NOK', 'value' => $belopOre]],
-            self::headere(self::uuid())
+            self::headere(self::operasjonsnokkel($referanse, 'refund:' . $operasjonsId . ':' . $belopOre))
         );
 
         if ($svar['status'] >= 300) {
@@ -993,6 +1054,18 @@ final class Vipps
             throw new RuntimeException('Fikk ikke refundert betalingen.');
         }
         return is_array($svar['json']) ? $svar['json'] : [];
+    }
+
+    /** Samme varige betalings-/operasjonsidentitet gir samme UUID ved retry. */
+    private static function operasjonsnokkel(string $referanse, string $operasjonsId): string
+    {
+        $betaling = DB::en('SELECT idempotency_key FROM payments WHERE vipps_reference = :r', ['r' => $referanse]);
+        if ($betaling === null || $operasjonsId === '') {
+            throw new RuntimeException('Mangler varig betalingsoperasjon.');
+        }
+        $hex = hash('sha256', $betaling['idempotency_key'] . ':' . $operasjonsId);
+        return substr($hex, 0, 8) . '-' . substr($hex, 8, 4) . '-5' . substr($hex, 13, 3)
+            . '-8' . substr($hex, 17, 3) . '-' . substr($hex, 20, 12);
     }
 
     /** Avbryter en betaling som ennå ikke er trukket. */

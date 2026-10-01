@@ -70,27 +70,56 @@ $refunderes = (int) round($betalt * $andel);
 $refundert = false;
 $manuelt = false;
 
+$harClaim = false;
+$claim = static function () use ($bookingId, $medlem, $b, &$harClaim): void {
+    $endret = DB::kjor(
+    "UPDATE bookings SET status = 'avbestilt', avbestilt_at = UTC_TIMESTAMP()
+      WHERE id = :i AND member_id = :m AND status = :s AND avbestilt_at IS NULL",
+    ['i' => $bookingId, 'm' => $medlem['id'], 's' => $b['status']]
+    )->rowCount();
+    if ($endret !== 1) {
+        throw new RuntimeException('Denne plassen er allerede avbestilt.', 409);
+    }
+    $harClaim = true;
+};
+
 // --- Selve refusjonen -----------------------------------------------------
-if ($refunderes > 0 && $b['vipps_reference'] && $b['betalingsstatus'] === 'betalt') {
+$viaVipps = $refunderes > 0 && $b['vipps_reference']
+    && in_array($b['betalingsstatus'], ['betalt', 'delvis_refundert'], true);
+if ($viaVipps) {
     try {
-        Vipps::refunder((string) $b['vipps_reference'], $refunderes);
-        DB::oppdater('payments', [
-            'refundert_ore' => (int) $b['refundert_ore'] + $refunderes,
-            'status'        => $refunderes >= $betalt ? 'refundert' : 'delvis_refundert',
-        ], ['id' => $b['pid']]);
-        $refundert = true;
+        // Bookingclaim og varig refusjonsintent committes i samme transaksjon.
+        $resultat = Booking::refunderBetaling((int) $b['pid'], $refunderes, null, $claim);
+        $refunderes = $resultat['belop'];
+        $refundert = $resultat['gjenstaar'] === 0;
+        $manuelt = !$refundert;
     } catch (Throwable $e) {
+        if (!$harClaim && $e instanceof RuntimeException && $e->getMessage() === 'Refusjon behandles allerede.') {
+            Svar::feil('Noe gikk galt. Prøv igjen, eller ta kontakt med oss.', 409);
+        }
+        if ($e->getCode() === 409) {
+            Svar::feil('Denne plassen er allerede avbestilt.', 409);
+        }
+        if (!$harClaim) { throw $e; }
+        $avbestilt = DB::verdi('SELECT avbestilt_at FROM bookings WHERE id = :i', ['i' => $bookingId]);
+        if ($avbestilt === null) { throw $e; }
         // Avbestillingen staar uansett. Pengene ordnes for haand framfor aa
         // late som ingenting skjedde — kunden har jo mistet plassen.
         logg_feil('Refusjon feilet ved avbestilling av booking ' . $bookingId, $e);
         $manuelt = true;
     }
+} elseif ($refunderes > 0) {
+    // Ingen bekreftet Vipps-refusjon: bruk den eksisterende manuell-teksten.
+    $manuelt = true;
+}
+if (!$viaVipps) {
+    try { $claim(); }
+    catch (RuntimeException $e) { Svar::feil('Denne plassen er allerede avbestilt.', 409); }
 }
 
-DB::oppdater('bookings', [
-    'status'       => $refundert ? 'refundert' : 'avbestilt',
-    'avbestilt_at' => gmdate('Y-m-d H:i:s'),
-], ['id' => $bookingId]);
+if ($refundert) {
+    DB::oppdater('bookings', ['status' => 'refundert'], ['id' => $bookingId]);
+}
 
 revider('avbestilling', 'booking', $bookingId, [
     'refundert_ore' => $refundert ? $refunderes : 0,
@@ -118,7 +147,7 @@ Svar::ok([
     'manuelt'    => $manuelt,
     'beskjed'    => $manuelt
         ? 'Plassen er avbestilt. Refusjonen måtte vi ta manuelt — du hører fra oss i løpet av kort tid.'
-        : ($refunderes > 0
+        : ($refundert
             ? 'Plassen er avbestilt. Pengene er på vei tilbake til Vipps, vanligvis innen tre virkedager.'
             : 'Plassen er avbestilt.'),
 ]);

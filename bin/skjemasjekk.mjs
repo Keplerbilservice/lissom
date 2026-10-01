@@ -24,7 +24,7 @@
 
 import fs from 'node:fs';
 
-const s = fs.readFileSync(new URL('../lissom-2108.html', import.meta.url).pathname, 'utf8');
+const s = fs.readFileSync(new URL('../lissom-2108.html', import.meta.url), 'utf8');
 const mal = s.slice(s.indexOf('<x-dc>'), s.indexOf('<script type="text/x-dc"'));
 
 /** Felter som med vilje staar uten binding, med grunnen. */

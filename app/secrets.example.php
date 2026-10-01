@@ -27,6 +27,7 @@ return [
 
     // --- Database (fra cPanel → MySQL Database) ---------------------------
     'db_vert'    => 'localhost',
+    'db_port'    => 3306,
     'db_navn'    => 'BRUKER_lissom',
     'db_bruker'  => 'BRUKER_lissom',
     'db_passord' => '',

@@ -3,11 +3,14 @@
  * neste trinn; til da går hver rad til samme sted i det gamle admin.
  */
 import { el, rad } from './kjerne.js';
+import { STEDER } from './steder.js';
 
 const GRUPPER = [
+  ['Alle funksjoner', STEDER.filter(([,sti]) => sti.startsWith('/'))],
+  ['Verkstedet', [['Verkstedoversikt', '/admin/oppskrifter'], ['Vakter', '/admin/oppskrifter?apne=vakter'], ['Brenninger', '/admin/oppskrifter?apne=brenninger'], ['Oppskrifter', '/admin/oppskrifter?apne=oppskrifter'], ['Ferie', '/admin/ferie'], ['Ressurser', '/admin/ressurser']]],
   ['Nettside og SoMe', [['Markedsføring og Innboks', '/admin/markedsforing'], ['SEO', '/admin/seo'], ['GEO', '/admin/geo'], ['Nyttig info', '/admin/nyttig']]],
   ['Innhold og maler', [['Maler', '/admin/maler'], ['Innhold', '/admin/innhold'], ['Referanser', '/admin/referanser'], ['Skisser', '/skisser.html']]],
-  ['System', [['Varsler', '/admin/varsler'], ['Feilmeldinger', '/admin/feilmeldinger'], ['Brukere', '/admin/brukere'], ['Det gamle admin', '/admin']]],
+  ['System', [['Synlighet', '/admin/oppskrifter?apne=synlighet'], ['Vedlikehold og verktøy', '/admin/oppskrifter?apne=verktoy'], ['Mobilvisning', '/admin/mobilvisning'], ['Varsler', '/admin/varsler'], ['Feilmeldinger', '/admin/feilmeldinger'], ['Brukere', '/admin/brukere'], ['Det gamle admin', '/admin']]],
 ];
 
 export default {

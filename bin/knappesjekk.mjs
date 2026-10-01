@@ -14,7 +14,7 @@
 
 import fs from 'node:fs';
 
-const sti = new URL('../lissom-2108.html', import.meta.url).pathname;
+const sti = new URL('../lissom-2108.html', import.meta.url);
 const s = fs.readFileSync(sti, 'utf8');
 
 // Malen staar i <x-dc>, og logikken i dc-skriptet etter den.

@@ -16,7 +16,7 @@ jobs:
       db:
         image: mariadb:10.11
         env:
-          MARIADB_DATABASE: lissom
+          MARIADB_DATABASE: lissom_test
           MARIADB_USER: lissom
           MARIADB_PASSWORD: lissom
           MARIADB_ROOT_PASSWORD: rot
@@ -43,7 +43,7 @@ jobs:
             $s = require "app/secrets.example.php";
             $s["miljo"] = "test";
             $s["db_vert"] = "127.0.0.1";
-            $s["db_navn"] = "lissom";
+            $s["db_navn"] = "lissom_test";
             $s["db_bruker"] = "lissom";
             $s["db_passord"] = "lissom";
             // Testverdier. Vipps er en stubbe i testene, aldri den ekte.
@@ -61,7 +61,7 @@ jobs:
             [[ "$(basename "$f")" > "128" ]] && mv "$f" /tmp/senere/
           done
           php bin/migrate.php
-          mysql -h 127.0.0.1 -u lissom -plissom lissom -e "UPDATE membership_plans SET navn = 'Basis 30' WHERE navn = '30 timer'"
+          mysql -h 127.0.0.1 -u lissom -plissom lissom_test -e "UPDATE membership_plans SET navn = 'Basis 30' WHERE navn = '30 timer'"
           mv /tmp/senere/*.sql db/migrations/
           php bin/migrate.php
           # Sjekkene av nettsida bruker terser, som ellers bare ligger lokalt.
@@ -76,4 +76,6 @@ jobs:
       # fra «Publiser til lissom.no») stopper den som foer — og varsler.
       - name: Kjor alle testene
         continue-on-error: ${{ github.ref != 'refs/heads/main' }}
-        run: bash tests/alle.sh
+        run: |
+          php tests/nettleser/testdatabase-test.php
+          bash tests/alle.sh

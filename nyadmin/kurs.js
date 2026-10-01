@@ -3,6 +3,7 @@
  * gamle admin.
  */
 import { el, rad } from './kjerne.js';
+import { tegnKalender } from './kalender.js';
 
 export default {
   id: 'kurs',
@@ -13,7 +14,6 @@ export default {
     main.replaceChildren(
       el('div', { class: 'hode' }, el('div', {}, el('div', { class: 'eb', tekst: 'Kurs' }), el('h1', { tekst: 'Kurs' }))),
       el('section', { class: 'k' },
-        el('p', { class: 'dempet', style: 'margin:0', tekst: 'Denne delen flyttes snart. Til da åpner radene det samme i det gamle admin.' }),
         el('div', { class: 'rader' },
           rad('Kalender', null, '/admin/kalender'),
           rad('Kurs og datoer', null, '/admin/kurs'),
@@ -22,5 +22,6 @@ export default {
           rad('Klar til henting', null, '/admin/ferdigbrent'),
           rad('Årskalender (hele året)', null, '/admin/arskalender'),
           rad('Kursholdere', null, '/admin/kursholdere'))));
+    await tegnKalender(main);
   },
 };

@@ -38,14 +38,12 @@ $harDeltakernivaa = DB::harTabell('deltaker_bilder') && DB::harKolonne('bookings
 /**
  * Hvor lenge arbeidene oppbevares, og dermed hvor lenge meldingen staar.
  *
- * To uker. Sto som tre her og i malen, mens spoersmaal og svar paa nettsiden
- * sa to — en kunde som leste SMS-en trodde hen hadde en uke ekstra. Eieren,
- * 1. september: «to uker».
+ * Tre uker fra publisering. Samme frist gjelder e-post og nettside.
  *
  * Merk at dette er noe annet enn brennetida. Den er to til fire uker, og
  * staar i Kursmal::HENTING.
  */
-const UKER_OPPBEVARING = 2;
+const UKER_OPPBEVARING = 3;
 
 /** Malen som sier at keramikken er ferdig. Har ligget i basen siden 002. */
 const MAL = 'ferdig_brent';
@@ -158,7 +156,7 @@ function deltakerne(int $oktId, bool $medDetaljer): array
             // Lagt i koen, ikke sendt enda. Verkstedet har gjort sitt; koen
             // staar for resten. Da skal ikke «send til alle» sende paa nytt.
             'venter'   => $st['status'] === 'I kø',
-            'kanSende' => ($r['epost'] ?? '') !== '' || ($r['telefon'] ?? '') !== '',
+            'kanSende' => trim((string) ($r['epost'] ?? '')) !== '',
             'hentet'   => ($r['hentet_at'] ?? null) !== null,
             'notat'    => (string) ($r['internt_notat'] ?? ''),
             'bilder'   => deltakerbilder($id),
@@ -319,7 +317,7 @@ $handling = Foresporsel::tekst('handling');
  */
 function meldEn(array $b, string $kurs, string $naar): bool
 {
-    if (($b['epost'] ?? '') === '' && ($b['telefon'] ?? '') === '') {
+    if (trim((string) ($b['epost'] ?? '')) === '') {
         return false;
     }
     $for = (int) DB::verdi(
@@ -371,7 +369,7 @@ if ($handling === 'meld-en') {
     }
     $naar = Booking::norskDato((string) ($b['start_tid'] ?? ''));
     if (!meldEn($b, (string) $b['tittel'], $naar)) {
-        Svar::feil($b['navn'] . ' har verken e-post eller telefon, og må få beskjed på annen måte.');
+        Svar::feil($b['navn'] . ' har ingen e-postadresse og må få beskjed på annen måte.');
     }
     revider('ferdigbrent_meldt_en', 'booking', (int) $b['id'], ['kurs' => $b['tittel']]);
     Svar::ok([
@@ -421,30 +419,26 @@ if ($handling === 'meld-alle') {
         }
     }
 
-    // Linja på nettsida settes når noen faktisk har fått beskjed.
-    if ($sendt > 0) {
-        DB::kjor(
-            'UPDATE course_sessions SET hentemelding_at = COALESCE(hentemelding_at, UTC_TIMESTAMP()),
-                    hentemelding_av = :a WHERE id = :i',
-            ['a' => (Sesjon::medlem()['id'] ?? null), 'i' => $oktId]
-        );
-    }
+    // Publisering er uavhengig av kontaktinfo og meldingskø.
+    DB::kjor(
+        'UPDATE course_sessions SET hentemelding_at = COALESCE(hentemelding_at, UTC_TIMESTAMP()),
+                hentemelding_av = :a WHERE id = :i',
+        ['a' => (Sesjon::medlem()['id'] ?? null), 'i' => $oktId]
+    );
 
     revider('ferdigbrent_meldt_alle', 'course_session', $oktId,
-            ['kurs' => $okt['tittel'], 'sendt' => $sendt]);
+            ['kurs' => $okt['tittel'], 'sendt' => $sendt, 'publisert' => true]);
 
     $tekst = $sendt === 0
         ? ($ikoe > 0 ? 'Alle beskjedene ligger alt i kø. Ingen fikk den to ganger.' : 'Ingen fikk beskjed.')
-        : ($sendt === 1 ? 'Én deltaker har fått beskjed.' : $sendt . ' deltakere har fått beskjed.');
+        : ($sendt === 1 ? 'Beskjed lagt i kø til én deltaker.' : 'Beskjed lagt i kø til ' . $sendt . ' deltakere.');
     if ($sendt > 0 && $ikoe > 0) {
         $tekst .= ' ' . $ikoe . ' lå alt i kø og fikk den ikke på nytt.';
     }
     if ($uten !== []) {
-        $tekst .= ' ' . implode(', ', $uten) . ' står uten e-post og telefon og må kontaktes selv.';
+        $tekst .= ' ' . implode(', ', $uten) . ' har ingen e-postadresse og må kontaktes selv.';
     }
-    if ($sendt > 0) {
-        $tekst .= ' Meldingen står på lissom.no/ferdigbrent i ' . UKER_OPPBEVARING . ' uker.';
-    }
+    $tekst .= ' Meldingen står på lissom.no/ferdigbrent i ' . UKER_OPPBEVARING . ' uker.';
 
     Svar::ok([
         'beskjed'   => $tekst,

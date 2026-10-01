@@ -45,6 +45,7 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('utkast') !== '') {
         'tittel'    => $u['tittel'],
         'tekst'     => (string) $u['tekst'],
         'kontekst'  => (string) $u['kontekst'],
+        'forslag'   => $u['kontekst'] === 'autopilot' ? $data : null,
         'status'    => $u['status'],
         // Emneknagger og billedforslag ligger i data-feltet, ikke i teksten.
         // De skal limes inn hver for seg, saa de vises hver for seg.

@@ -19,6 +19,9 @@ export default {
           rad('Kursdeltakere', null, '/admin/deltakere/alle'),
           rad('Medlemskap', null, '/admin/medlemskap'),
           rad('Forespørsler', null, '/admin/ubesvarte'),
+          rad('Dugnad', null, '/admin/ubesvarte?apne=dugnad'),
+          rad('Medlemssøknader', null, '/admin/medlemssoknader'),
+          rad('Registrer medlem', null, '/admin/ny-registrering'),
           rad('Til godkjenning', null, '/admin/godkjenning'),
           rad('Beskjeder', null, '/admin/beskjeder'))));
   },

@@ -30,6 +30,8 @@ $soknad = DB::en(
 // De laa som fast tekst i designfila — «4 7 1 2» — og var dermed enten feil,
 // eller den ekte koden aapent i kildekoden til nettsiden.
 $internInfo = [];
+$harTilgang = er_aktivt_medlem($m);
+$betalingMangler = !$harTilgang && in_array((string) $m['status'], ['prove', 'aktiv', 'pause'], true);
 if (er_aktivt_medlem($m)) {
     foreach (DB::alle("SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'Privat/%'") as $r) {
         $internInfo[substr((string) $r['nokkel'], 7)] = (string) $r['verdi'];
@@ -50,6 +52,7 @@ Svar::json([
     // staa tydelig at det bor settes.
     'adminUtenPassord'   => Sesjon::adminUtenPassord(),
     'erMedlem'       => er_aktivt_medlem($m),
+    'betalingMangler' => $betalingMangler,
     // 20 % paa kurs. Samme regel som bookingen bruker — Booking::
     // faarMedlemsrabatt() — saa skjermen viser det serveren trekker.
     'medlemsrabatt'  => Booking::faarMedlemsrabatt($m) ? Booking::MEDLEMSRABATT : 0,
@@ -70,7 +73,7 @@ Svar::json([
         'epost'     => $m['epost'],
         'telefon'   => $m['telefon'],
         'medlemskap'=> $m['medlemskap_type'],
-        'status'    => (string) $m['status'],
+        'status'    => $betalingMangler ? 'venterbetaling' : (string) $m['status'],
         'startDato' => $m['start_dato'],
     ],
 ]);

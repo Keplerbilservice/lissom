@@ -41,6 +41,14 @@ $hent = static fn(): array => [
 ];
 
 if (Foresporsel::metode() === 'GET') {
+    $dokumentId = Foresporsel::heltall('dokumentId');
+    if ($dokumentId > 0) {
+        $dokument = Dokumenter::en($dokumentId);
+        if ($dokument === null) {
+            Svar::feil('Fant ikke dokumentet.', 404);
+        }
+        Svar::json(['id' => $dokumentId, 'tekst' => (string) ($dokument['tekst'] ?? '')]);
+    }
     Svar::json($hent());
 }
 

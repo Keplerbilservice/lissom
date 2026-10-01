@@ -519,6 +519,10 @@ if (Foresporsel::metode() === 'POST') {
         $id       = Foresporsel::heltall('medlemId');
         $trekkRad = Foresporsel::heltall('trekkId');
         $belop    = Foresporsel::heltall('belopOre');
+        $operasjonId = Foresporsel::tekst('operasjonId');
+        if (!preg_match('/^[a-zA-Z0-9_-]{16,64}$/', $operasjonId)) {
+            Svar::feil('Vipps betalte ikke tilbake. Prøv igjen, eller gjør det i Vipps-portalen.');
+        }
         $m = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
         if ($m === null) {
             Svar::feil('Fant ikke medlemmet.', 404);
@@ -534,7 +538,7 @@ if (Foresporsel::metode() === 'POST') {
                JOIN subscriptions s ON s.id = p.subscription_id
               WHERE p.id = :p AND p.member_id = :m
                 AND p.type = 'recurring_charge'
-                AND p.status IN ('betalt', 'delvis_refundert')
+                AND p.status IN ('betalt', 'delvis_refundert', 'refundert')
                 AND p.vipps_psp_ref IS NOT NULL",
             ['p' => $trekkRad, 'm' => $id]
         );
@@ -551,30 +555,27 @@ if (Foresporsel::metode() === 'POST') {
         // betalt tilbake av kr 1 990, kan bare kr 1 490 gaa. Uten dette kunne
         // det samme trekket betales tilbake om og om igjen.
         $igjen = (int) $p['belop_ore'] - (int) ($p['refundert_ore'] ?? 0);
-        if ($igjen <= 0) {
+        $replay = DB::en('SELECT id FROM payment_refunds WHERE payment_id = :p AND client_operation_id = :o',
+            ['p' => $p['id'], 'o' => $operasjonId]);
+        if ($replay === null && $igjen <= 0) {
             Svar::feil('Hele trekket er alt betalt tilbake.');
         }
         if ($belop <= 0) {
             Svar::feil('Skriv et beløp.');
         }
-        if ($belop > $igjen) {
+        if ($replay === null && $belop > $igjen) {
             Svar::feil('Det er bare ' . Booking::kroner($igjen) . ' igjen på trekket.');
         }
 
         try {
-            Vipps::refunderTrekk($avtaleId, (string) $p['vipps_psp_ref'], $belop);
+            $resultat = Booking::refunderBetaling((int) $p['id'], $belop, $operasjonId);
+            $belop = $resultat['belop'];
         } catch (Throwable $e) {
             logg_feil('Fikk ikke betalt tilbake trekk ' . $p['id'] . ' i Vipps', $e);
             Svar::feil('Vipps betalte ikke tilbake. Prøv igjen, eller gjør det i Vipps-portalen.');
         }
 
-        $nyRefundert = (int) ($p['refundert_ore'] ?? 0) + $belop;
-        DB::oppdater('payments', [
-            'refundert_ore' => $nyRefundert,
-            // Dagsoppgjoret leser «refundert_ore» fra for og trekker det fra.
-            // Statusen er for oss: «refundert» naar ingenting staar igjen.
-            'status'        => $nyRefundert >= (int) $p['belop_ore'] ? 'refundert' : 'delvis_refundert',
-        ], ['id' => (int) $p['id']]);
+        $nyRefundert = $resultat['refundert'];
 
         revider('medlem_betalt_tilbake', 'member', $id,
                 ['betaling' => (int) $p['id'], 'avtale' => (int) $p['avtale_id'],
@@ -1506,6 +1507,9 @@ if (Foresporsel::metode() === 'POST') {
         if (DB::harKolonne('payments', 'registrert_av')) {
             $felt['registrert_av'] = (int) $jeg['id'];
         }
+        if (DB::harKolonne('payments', 'kommentar')) {
+            $felt['kommentar'] = mb_substr(trim(Foresporsel::tekst('kommentar')), 0, 300) ?: null;
+        }
         $betalingId = DB::settInn('payments', $felt);
 
         // Trekket skjer etter at raden finnes, saa sporet i «gift_card_uses»
@@ -1919,6 +1923,21 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
         );
     }
 
+    // Membership payments have no booking and must still be visible on the person.
+    if ($pid > 0) {
+        $medlemsbetalinger = DB::alle(
+            "SELECT p.id, NULL AS booking_id, p.type, p.belop_ore, p.status,
+                    p.maate, p.kommentar, p.annullert_at, p.created_at,
+                    NULL AS tittel, r.navn AS registrert_navn
+               FROM payments p LEFT JOIN members r ON r.id = p.registrert_av
+              WHERE p.member_id = :m AND p.formal = 'medlemskap'
+              ORDER BY p.id DESC",
+            ['m' => $pid]
+        );
+        $betalinger = array_merge($betalinger, $medlemsbetalinger);
+        usort($betalinger, static fn(array $a, array $b): int => (int) $b['id'] <=> (int) $a['id']);
+    }
+
     // ── Ventelistene hen staar paa ─────────────────────────────────────
     //
     // «Staar jeg fortsatt paa lista?» er et vanlig sporsmaal, og svaret laa
@@ -2068,6 +2087,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 return $ore > 0 ? Booking::kroner($ore) : '';
             })(),
             'status'     => $m['status'],
+    'betalingMangler' => !er_aktivt_medlem($m) && in_array((string) $m['status'], ['prove','aktiv','pause'], true),
             // Uten konto er det ingen Min side aa vise, ingen medlemskap aa
             // endre, og notatet hoerer til paameldingen. Skjermen maa vite
             // det — ellers tilbyr den ting som ikke finnes.
@@ -2343,6 +2363,10 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
 
         // Betalingene, med hvem som registrerte dem og naar.
         'betalinger' => array_map(static fn(array $p): array => [
+            'id'       => (int) $p['id'],
+            'status'   => (string) $p['status'],
+            'kanAnnulleres' => (string) $p['type'] === 'manuell'
+                && $p['annullert_at'] === null && (string) $p['status'] === 'betalt',
             'belop'     => Booking::kroner((int) $p['belop_ore']),
             'kurs'      => (string) ($p['tittel'] ?? ''),
             'maate'     => (string) $p['type'] === 'manuell'
@@ -2596,6 +2620,7 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     // medlemmer saa admin ser dette».
     'barn'       => isset($tilleggBarn[(int) $m['id']]) ? Tillegg::ut($tilleggBarn[(int) $m['id']]) : null,
     'status'     => $m['status'],
+    'betalingMangler' => !er_aktivt_medlem($m) && in_array((string) $m['status'], ['prove','aktiv','pause'], true),
     'startDato'  => $m['start_dato'],
     // Planen bestemmer timetallet, medlemsraden overstyrer. «timer_per_mnd»
     // alene sto tom for alle — se Medlemskap::timerFor().

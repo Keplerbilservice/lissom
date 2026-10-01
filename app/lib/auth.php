@@ -42,7 +42,7 @@ function er_aktivt_medlem(array $medlem): bool
     if ((string) ($medlem['rolle'] ?? '') === 'admin') {
         return true;
     }
-    return in_array((string) ($medlem['status'] ?? 'ingen'), ['prove', 'aktiv', 'pause'], true);
+    return Medlemskap::harBetaltPeriode($medlem);
 }
 
 /**

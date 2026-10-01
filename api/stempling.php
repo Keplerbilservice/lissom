@@ -16,8 +16,19 @@ declare(strict_types=1);
 
 require __DIR__ . '/_boot.php';
 
-$medlem = krev_aktivt_medlem();
+$medlem = krev_medlem();
 $id = (int) $medlem['id'];
+$harTilgang = er_aktivt_medlem($medlem);
+if (!$harTilgang && !in_array((string) $medlem['status'], ['prove', 'aktiv', 'pause'], true)
+    && Stempling::apenOkt($id) === null) {
+    Svar::feil('Denne delen er for medlemmer.', 403, ['ikkeMedlem' => true]);
+}
+// En utløpt betalingsperiode skal aldri låse en åpen økt inne.
+if (!$harTilgang && Foresporsel::metode() !== 'GET'
+    && !in_array(Foresporsel::tekst('handling'), ['ut', 'glemt', 'feiltid'], true)) {
+    Svar::feil('Medlemsperioden er ikke betalt. Forny medlemskapet før du stempler inn.', 403,
+        ['betalingMangler' => true]);
+}
 
 // Okter som har staatt aapne for lenge lukkes for vi teller. Ellers ville
 // noen som glemte aa stemple ut i forrige uke staatt som «i verkstedet naa».
@@ -151,6 +162,11 @@ $brukt = Stempling::minutterDenneManeden($id);
 // — samme regel som medlemslista i admin, saa de to ikke kan sprike.
 $perMnd = Medlemskap::timerMedGaver($medlem);
 $inne = Stempling::inneNa();
+if (!$harTilgang) {
+    $perMnd = 0;
+    $inne = ['antall' => 0, 'skjulte' => 0, 'synlige' => []];
+}
+
 
 // Ressursene medlemmet kan velge mellom, og hva det valgte sist. Lista
 // kommer herfra og ikke fra nettsida: legger verkstedet til en ressurs, skal
@@ -299,7 +315,7 @@ Svar::json([
     'saaLengeMin' => $saaLengeMin,
     'visMeg'      => (bool) ($medlem['vis_innstempling'] ?? 1),
     // Hva medlemmet kan velge mellom, og hva det staar med naa.
-    'ressurser'   => $ressurser,
+    'ressurser'   => $harTilgang ? $ressurser : [],
     'ressursId'   => $valgtRessurs,
     // Hvilken plan timene ble regnet etter.
     //
@@ -317,7 +333,7 @@ Svar::json([
         'timer'    => Timepakke::timer(),
         'prisOre'  => Timepakke::prisOre(),
         'prove'    => Timepakke::erProve($medlem),
-        'kanKjope' => Timepakke::hvorforIkke($medlem) === '',
+        'kanKjope' => $harTilgang && Timepakke::hvorforIkke($medlem) === '',
         'tilgode'  => Stempling::timer(Timepakke::tilgodeMin($id)),
     ],
     'timer' => [

@@ -43,7 +43,13 @@ done
 kjor "vedtak" node tests/vedtak.mjs
 
 # --- Backend mot databasen --------------------------------------------------
-kjor "backend"       php tests/backend.php
+kjor "testdatabasesperre" php tests/nettleser/testdatabase-test.php
+kjor "betalingsidempotens" php tests/vipps-idempotens.php
+kjor "webhook replay" php tests/webhook-replay.php
+kjor "refusjonsjournal" php tests/refusjon.php
+kjor "avbestillingsrefusjon" php tests/avbestill-refusjon.php
+kjor "refusjonsklient" node tests/refusjon-klient.mjs
+kjor "backend"       php -d memory_limit=512M tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
 kjor "kjopslaas"     php tests/kjopslaas.php
@@ -77,6 +83,7 @@ kjor "nettleser"      bash tests/nettleser/kjor.sh
 # september 2026: det nye admin bygges ved siden av, og Min side skal ikke
 # røres. Endres noe her, stopper publiseringen.
 kjor "min side-vakt"  bash tests/nettleser/kjor.sh minside.mjs
+kjor "ny admin"       bash tests/nettleser/kjor.sh admin-ny
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

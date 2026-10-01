@@ -1,2 +1,5 @@
 # Designmalene er ferdige filer fra designet — git skal aldri roere linjeskift i dem.
 design/underlogoer/** -text
+
+# Kildetestene har strengforventninger med Unix-linjeskift.
+tests/backend.php text eol=lf

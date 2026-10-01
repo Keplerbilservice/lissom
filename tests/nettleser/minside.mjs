@@ -99,6 +99,8 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
   const p = php(`
     $plan = ${plan ? `'${plan}'` : 'null'};
     $pl = $plan ? Medlemskap::plan($plan) : null;
+    $forventetSiste = null;
+    $retteTil = null;
     $id = DB::settInn('members', ['navn' => '${navn}', 'epost' => 'minside-${nokkel}-' . '${S.tag}' . '@e2e.lissom.test',
       'telefon' => '+4791${String(Object.keys(brukere).length).padStart(6, '0')}', 'rolle' => 'medlem', 'status' => '${status}',
       'medlemskap_type' => $plan, 'start_dato' => gmdate('Y-m-01'), 'betaler_ikke' => ${betalerIkke ? 1 : 0},
@@ -110,7 +112,16 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
     }
     if (${minutter} > 0) {
       $m = strtotime(Stempling::manedStart() . ' UTC') + 120;
-      DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m), 'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);
+      $oktId = DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m), 'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);
+      // Samme kjente testokt er gammel de fleste dager, men nylig ved
+      // maanedsskiftet. Regelen er ett doegn etter norsk stengetid kl. 23.
+      $oslo = new DateTimeZone('Europe/Oslo');
+      $inn = (new DateTimeImmutable('@' . $m))->setTimezone($oslo);
+      $ut = (new DateTimeImmutable('@' . ($m + ${minutter} * 60)))->setTimezone($oslo);
+      $retteTil = $inn->setTime(23, 0)->modify('+24 hours')->getTimestamp();
+      $forventetSiste = ['id' => $oktId, 'auto' => false, 'apen' => false,
+        'dag' => Booking::norskDatoKort(gmdate('Y-m-d H:i:s', $m)),
+        'inn' => $inn->format('H:i'), 'ut' => $ut->format('H:i')];
     }
     if (${timepakke} > 0) {
       DB::settInn('timepakker', ['member_id' => $id, 'timer' => ${timepakke}, 'pris_ore' => 80000, 'status' => 'betalt', 'betalt_at' => gmdate('Y-m-d H:i:s')]);
@@ -124,7 +135,7 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
     }
     $t = bin2hex(random_bytes(32));
     DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 7200)]);
-    return ['id' => $id, 'token' => $t];`);
+    return ['id' => $id, 'token' => $t, 'forventetSiste' => $forventetSiste, 'retteTil' => $retteTil];`);
   brukere[nokkel] = p;
   return p;
 };
@@ -207,8 +218,10 @@ await flyt('Fasit: svarene Min side leser er uendret', async () => {
     const p = await side(hvem, 390, 844);
     await gaa(p, '/min-side', 1200);
     const svar = {};
+    let faktiskSiste = null;
     for (const a of FASIT_API) {
       const r = await api(p, a);
+      if (a === '/api/stempling.php') faktiskSiste = r.d?.siste ?? null;
       svar[a] = { status: r.status, svar: norm(felles(a, r.d)) };
     }
     await p.context().close();
@@ -217,6 +230,15 @@ await flyt('Fasit: svarene Min side leser er uendret', async () => {
     if (skriv) { fs.writeFileSync(fil, ny); sjekk(`fasit skrevet for ${hvem}`, true); continue; }
     if (!fs.existsSync(fil)) { sjekk(`fasit finnes for ${hvem}`, false, fil); continue; }
     const gammel = JSON.parse(fs.readFileSync(fil, 'utf8'));
+    // Behold den lagrede fasiten. Bare den datostyrte retten til aa rette
+    // akkurat den seedede okta har en annen forventning ved maanedsskiftet.
+    // Objektet kommer fra fixturedata, ikke fra svaret vi kontrollerer.
+    const siste = brukere[hvem].retteTil !== null && Date.now() / 1000 <= brukere[hvem].retteTil
+      ? brukere[hvem].forventetSiste : null;
+    const sortertSiste = (v) => JSON.stringify(v === null ? null : Object.fromEntries(Object.entries(v).sort()));
+    sjekk(`${hvem}: siste okt har riktig id, klokkeslett og rettingsvindu`,
+      sortertSiste(faktiskSiste) === sortertSiste(siste));
+    gammel['/api/stempling.php'].svar.siste = norm(siste);
     const ulike = FASIT_API.filter(a => JSON.stringify(gammel[a]) !== JSON.stringify(svar[a]));
     sjekk(`${hvem}: alle ${FASIT_API.length} svar er som i fasiten`, ulike.length === 0,
       ulike.map(a => { const g = JSON.stringify(gammel[a]) || '', n = JSON.stringify(svar[a]) || ''; let i = 0; while (i < g.length && g[i] === n[i]) i++; return `${a}: …${g.slice(Math.max(0, i - 60), i + 80)} ≠ …${n.slice(Math.max(0, i - 60), i + 80)}`; }).join(' | '));

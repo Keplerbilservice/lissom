@@ -726,7 +726,7 @@ Svar::json([
     // Regnestykket er Medlemskap::betalingsstatus(), det samme som
     // medlemslista bruker. To regnestykker ville kunne svare hver sitt.
     'medlemmer' => [
-        'aktive'      => (int) DB::verdi("SELECT COUNT(*) FROM members WHERE status = 'aktiv'"),
+        'aktive'      => count(array_filter(DB::alle("SELECT * FROM members WHERE status = 'aktiv'"), 'er_aktivt_medlem')),
         'totalt'      => (int) DB::verdi('SELECT COUNT(*) FROM members WHERE anonymisert_at IS NULL'),
         // Alle fire kommer fra $medlemsstatus, som er regnet én gang lenger
         // oppe. Kortet «Ikke betalt» leser de samme radene, saa tallet og

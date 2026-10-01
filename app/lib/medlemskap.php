@@ -318,6 +318,45 @@ final class Medlemskap
         return gmdate('Y-m-d', strtotime($fra . ' +1 month'));
     }
 
+    /** Betalt tilgang, uavhengig av om avtalen fortsatt står som aktiv. */
+    public static function harBetaltPeriode(array $medlem, ?string $idag = null): bool
+    {
+        if (!in_array((string) ($medlem['status'] ?? ''), ['prove', 'aktiv', 'pause'], true)) {
+            return false;
+        }
+        if (!empty($medlem['betaler_ikke'])) {
+            return true;
+        }
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        $id = (int) ($medlem['id'] ?? 0);
+        if ($id <= 0) return false;
+        $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
+        if ($plan === null) return false;
+        $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
+        $betalinger = DB::alle(
+            "SELECT p.created_at, {$fraKol} FROM payments p
+             WHERE p.member_id = :m AND p.formal = 'medlemskap'
+               AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+             ORDER BY p.id DESC",
+            ['m' => $id]
+        );
+        foreach ($betalinger as $betaling) {
+            $fra = trim((string) ($betaling['gjelder_fra'] ?? ''));
+            if ($fra === '') {
+                $fra = (new DateTimeImmutable((string) $betaling['created_at'], new DateTimeZone('UTC')))
+                    ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+            }
+            if ($fra > $idag) continue;
+            if ((int) ($plan['engangs'] ?? 0) === 1) {
+                $til = (string) ($medlem['slutt_dato'] ?? '');
+                if ($til !== '' && $idag <= $til) return true;
+            } elseif ($idag < self::dekkerTil(['gjelder_fra' => $fra])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * «Forny» paa et medlemskap som gjores opp selv: én betaling i Vipps for
      * neste periode, paa avtalen som alt loeper. Ingen ny avtale.
@@ -354,7 +393,7 @@ final class Medlemskap
             return ['url' => $url, 'id' => $avtaleId, 'gjentakelse' => true];
         }
 
-        $idag = gmdate('Y-m-d');
+        $idag = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $siste = self::sisteBetalinger([$medlemId])[$medlemId] ?? null;
         $gjelderFra = $idag;
         if ($siste !== null) {
@@ -791,7 +830,7 @@ final class Medlemskap
             return $ut('ingen', '');
         }
 
-        $idag = gmdate('Y-m-d');
+        $idag = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $kort = static fn(string $d): string => Booking::norskDatoKort($d . ' 12:00:00');
 
         // ── Fast trekk i Vipps ──────────────────────────────────────────
@@ -942,7 +981,7 @@ final class Medlemskap
         // perioden starter. En fornyelse betalt foer forfall gjelder fra der
         // forrige periode slutter (se fornyPeriode()).
         $dekkerTil = self::dekkerTil($siste);
-        if ($dekkerTil < $idag) {
+        if ($dekkerTil <= $idag) {
             return $ut('forfalt', 'Forfalt ' . $kort($dekkerTil)
                 . ' · sist betalt ' . $kort($betaltDen), true);
         }
@@ -1849,11 +1888,15 @@ final class Medlemskap
                 $svar = Vipps::hentBetaling($ref);
                 $tilstand = strtoupper((string) ($svar['state'] ?? ''));
                 if ($tilstand === 'AUTHORIZED') {
-                    Vipps::trekk($ref, (int) ($svar['aggregate']['authorizedAmount']['value'] ?? 0));
+                    Vipps::anvendTilstand($ref, $svar, true);
                     $tilstand = 'CAPTURED';
                 }
                 if ($tilstand === 'CAPTURED') {
-                    Booking::markerBetalt($ref);
+                    // AUTHORIZED ble nettopp trukket gjennom den samme
+                    // avstemmingen; ved CAPTURED fra oppslaget brukes aggregate.
+                    if (strtoupper((string) ($svar['state'] ?? '')) === 'CAPTURED') {
+                        Vipps::anvendTilstand($ref, $svar, true);
+                    }
                     return ['status' => 'aktiv', 'avtale' => $a];
                 }
             } catch (Throwable $e) {

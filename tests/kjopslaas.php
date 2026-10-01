@@ -70,7 +70,7 @@ $oktB = DB::settInn('course_sessions', ['course_id' => $kurs, 'start_tid' => "$d
     'slutt_tid' => "$dag 13:00:00", 'kapasitet' => 1]);
 
 // En annen kobling holder ressursen, som et kjop midt i transaksjonen sin.
-$annen = new PDO('mysql:host=' . Config::hent('db_vert', 'localhost') . ';dbname=' . Config::krev('db_navn') . ';charset=utf8mb4',
+$annen = new PDO('mysql:host=' . Config::hent('db_vert', 'localhost') . ';port=' . (int) Config::hent('db_port', 3306) . ';dbname=' . Config::krev('db_navn') . ';charset=utf8mb4',
     Config::krev('db_bruker'), Config::krev('db_passord'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $annen->beginTransaction();
 $annen->query('SELECT id FROM ressurser WHERE id = ' . (int) $ressurs . ' FOR UPDATE')->fetchAll();

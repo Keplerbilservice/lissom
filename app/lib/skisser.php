@@ -81,7 +81,7 @@ final class Skisser
     /** @param array<string,mixed> $m */
     public static function erMedlem(array $m): bool
     {
-        return in_array((string) ($m['status'] ?? ''), ['prove', 'aktiv', 'pause'], true);
+        return Medlemskap::harBetaltPeriode($m);
     }
 
     /**

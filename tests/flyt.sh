@@ -12,11 +12,11 @@
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
-ROT="$(pwd)"
+ROT="$(pwd -W 2>/dev/null || pwd)"
 
 PORT_WEB=${PORT_WEB:-8123}
 PORT_VIPPS=${PORT_VIPPS:-8144}
-T=$(mktemp -d)
+T=$(mktemp -d); T=$(cd "$T" && (pwd -W 2>/dev/null || pwd))
 HEMMELIGHET="hemmelig-test-$$"
 
 ok=0; feil=0

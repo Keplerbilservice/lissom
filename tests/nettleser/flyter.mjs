@@ -79,12 +79,15 @@ async function flyt(navn, fn) {
   // E2E_BARE=«starten av navnet» kjorer bare den flyten. E2E_BILDER=mappe
   // tar et skjermbilde av siste side naar en flyt stopper.
   if (process.env.E2E_BARE && !navn.startsWith(process.env.E2E_BARE)) return;
+  const tidligere=new Set(nettleser.contexts());
   console.log(`\n── ${navn} ──`);
   try { await fn(); } catch (e) {
     sjekk(`${navn} kjorte ferdig`, false, String(e.message).split('\n')[0]);
     if (process.env.E2E_BILDER && sistSide) {
       await sistSide.screenshot({ path: path.join(process.env.E2E_BILDER, navn.replace(/[^a-z0-9]+/gi, '-') + '.png'), fullPage: true }).catch(() => {});
     }
+  } finally {
+    for(const context of nettleser.contexts())if(!tidligere.has(context))await context.close().catch(()=>{});
   }
 }
 
@@ -384,7 +387,7 @@ await flyt('Tekst maler: én bryter per e-post', async () => {
   sjekk('… og kan trykkes tilbake', Number(verdi("SELECT aktiv FROM notification_templates WHERE navn = 'fortsett'")) === foer);
   // Cron sender ikke en mal som er av.
   // Cron: av = ingen e-post, paa = e-post til dem som var paa kurset.
-  const cron = (jobb) => { try { execFileSync('php', ['bin/cron.php', jobb], { cwd: ROT, stdio: 'ignore' }); } catch { } };
+  const cron = (jobb) => execFileSync('php', ['bin/cron.php', jobb], { cwd: ROT, stdio: 'pipe' });
   const tilE2e = (hvem) => Number(verdi('SELECT COUNT(*) FROM notifications WHERE mottaker = :m', { m: `${hvem}-${S.tag}@e2e.lissom.test` }));
   const aktivFoer = db("SELECT navn, aktiv FROM notification_templates WHERE navn IN ('fortsett', 'anmeldelse')");
   db("UPDATE notification_templates SET aktiv = 0 WHERE navn IN ('fortsett', 'anmeldelse')");
@@ -1232,8 +1235,16 @@ await flyt('Medlemsreise 3: timepakke betalt, i omsetningen og med til neste må
   // maanedsskiftet gjor, og ser hva som er tilgode.
   const tilgode = Number(php(`return Timepakke::tilgodeMin(${tp.id});`));
   sjekk('pakken står til gode (6 t; timen over i dag ligger i stemplingen)', tilgode === 360, String(tilgode));
-  php(`DB::kjor("UPDATE check_ins SET inn_tid = DATE_SUB(inn_tid, INTERVAL 1 MONTH), ut_tid = DATE_SUB(ut_tid, INTERVAL 1 MONTH) WHERE member_id = ${tp.id}");
-       DB::kjor("UPDATE timepakker SET created_at = DATE_SUB(created_at, INTERVAL 1 MONTH), betalt_at = DATE_SUB(COALESCE(betalt_at, created_at), INTERVAL 1 MONTH) WHERE member_id = ${tp.id}");
+  // Flytt til en norsk kalendermaaned, ikke en UTC-dato minus én maaned.
+  // Den foerste norske dagen begynner i forrige UTC-maaned.
+  php(`$forrige = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+         ->modify('first day of last month')->setTime(12, 0)->setTimezone(new DateTimeZone('UTC'));
+       $inn = $forrige->modify('+1 day');
+       $min = ${Number(plan.timer) * 60 + 60};
+       DB::kjor("UPDATE check_ins SET inn_tid = :inn, ut_tid = :ut WHERE member_id = ${tp.id}",
+         ['inn' => $inn->format('Y-m-d H:i:s'), 'ut' => $inn->modify('+' . $min . ' minutes')->format('Y-m-d H:i:s')]);
+       DB::kjor("UPDATE timepakker SET created_at = :dato, betalt_at = :betalt WHERE member_id = ${tp.id}",
+         ['dato' => $forrige->format('Y-m-d H:i:s'), 'betalt' => $forrige->format('Y-m-d H:i:s')]);
        return Timepakke::lukkMaaneder();`);
   const nesteMnd = Number(php(`return Timepakke::tilgodeMin(${tp.id});`));
   sjekk('… og følger med til neste måned', nesteMnd === 300, String(nesteMnd));

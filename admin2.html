@@ -20,6 +20,7 @@
 <style>
 :root{--brun:#4D1D12;--gul:#FFCF38;--porselen:#FBF6EE;--flate:#F4EBDE;--kort:#fff;--linje:#E6D9C7;--dempet:#7A5A4E;--terra:#A2502B;--tekst:#4D1D12;--ok:#2f6b3b;--okbg:#e3f1e5;--feil:#9b2b1c;--feilbg:#f8e2dc}
 *{box-sizing:border-box}
+.kal-dager{display:grid;gap:12px}.kal-maaned{grid-template-columns:repeat(7,minmax(0,1fr))}.kal-dag{border:1px solid var(--linje);border-radius:12px;padding:12px;min-width:0}.kal-dag h3{font-size:16px;margin:0 0 8px}.kal-idag{border:2px solid var(--terra)}.kal-hendelse{display:grid;gap:4px;background:var(--porselen);border-radius:8px;padding:10px;margin:6px 0;text-decoration:none;overflow-wrap:anywhere}.kal-hendelse span{font-size:14px}.kal-filter{margin:12px 0}.kal-filter input{flex:1;min-width:150px}.kal-filter input,.kal-filter select,input[type=date]{padding:10px;border:1px solid var(--linje);border-radius:8px;background:#fff;max-width:100%;font:inherit;color:inherit}@media(max-width:1000px){.kal-maaned{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.kal-maaned{grid-template-columns:1fr}.kal-filter>*{width:100%}}
 html,body{margin:0}
 body{background:var(--flate);color:var(--tekst);font:16px/1.5 'Alegreya Sans',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;min-height:100vh}
 button,input{font:inherit;color:inherit}

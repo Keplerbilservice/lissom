@@ -2162,7 +2162,7 @@
                     "finnes": [
                         "'HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature='",
                         "$trukket  = (int) ($status['aggregate']['capturedAmount']['value'] ?? 0);",
-                        "self::trekk($referanse, $godkjent - $trukket);"
+                        "self::trekk($referanse, $godkjent - $trukket, $trukket);"
                     ]
                 },
                 {
@@ -2250,6 +2250,317 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "lokal-testdatabase-sperre-20261001",
+            "dato": "2026-10-01",
+            "hva": "Godkjent lokal retting: nettlesertester skal kreve bekreftet isolert testdatabase før seed og opprydding.",
+            "hvor": "Testoppsett og CI",
+            "kode": [
+                {
+                    "fil": "tests/nettleser/seed.php",
+                    "finnes": [
+                        "krev_testdatabase("
+                    ]
+                },
+                {
+                    "fil": ".github/workflows/tester.yml",
+                    "finnes": [
+                        "MARIADB_DATABASE: lissom_test"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "tests/nettleser/testdatabase-test.php"
+                    ]
+                }
+            ],
+            "kontroll": "24 negativ-/konfigurasjonskontroller og SELECT DATABASE mot lokal testbase; ingen produksjonstest."
+        },
+        {
+            "id": "vipps-replay-idempotens-20261001",
+            "dato": "2026-10-01",
+            "hva": "Godkjent lokal retting: bare verifiserte webhooker, gjenopptakelse ved feil, stabile leverandøroperasjoner og økonomisk monotoni.",
+            "hvor": "Vipps, booking og medlemsbetaling",
+            "kode": [
+                {
+                    "fil": "api/vipps-webhook.php",
+                    "finnes": [
+                        "GET_LOCK",
+                        "pspReference",
+                        "avstemHendelse"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "tests/vipps-idempotens.php",
+                        "tests/webhook-replay.php"
+                    ]
+                }
+            ],
+            "kontroll": "Isolerte adapter- og HTTP-kontroller, inkludert parallelle hendelser, deloppgjør og tapt svar. Driftens secret og produksjonsversjon må bekreftes før publisering."
+        },
+        {
+            "id": "refusjonsjournal-20261001",
+            "dato": "2026-10-01",
+            "hva": "Godkjent lokal retting: varig refusjonsjournal, atomisk avbestilling, restbeløp og klientoperasjon som gjenbrukes ved retry.",
+            "hvor": "Admin, kundeavbestilling og avtaletrekk",
+            "kode": [
+                {
+                    "fil": "db/migrations/241_refusjonsoperasjoner.sql",
+                    "finnes": [
+                        "payment_refunds",
+                        "client_operation_id"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "refunderBetaling",
+                        "GET_LOCK"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "operasjonId",
+                        "nyRefusjonsId"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "tests/refusjon.php",
+                        "tests/avbestill-refusjon.php",
+                        "tests/refusjon-klient.mjs"
+                    ]
+                }
+            ],
+            "kontroll": "Isolert DB/HTTP/klient og nettleser med syntetiske data. Migrasjon241 er bare kjørt lokalt; kreves før produksjonskode aktiveres."
+        },
+        {
+            "id": "backend-linjeskift-20261001",
+            "dato": "2026-10-01",
+            "hva": "Lokal utbedring etter agentvurderingen: kildekontroller skal gi samme resultat paa Windows og Linux uten aa svekke forventningene. Testvarsler som peker paa testbookingene ryddes foer bookingene slettes, saa gjentatt kjoring ikke treffer gamle duplikater.",
+            "hvor": "Tests og Git-uttrekk",
+            "kode": [
+                {
+                    "fil": "tests/backend.php",
+                    "finnes": [
+                        "function les_testfil(string $sti): string",
+                        "return str_replace(\"\\r\\n\", \"\\n\", $innhold);",
+                        "DELETE FROM notifications WHERE ref_type = 'booking' AND ref_id IN ("
+                    ]
+                },
+                {
+                    "fil": ".gitattributes",
+                    "finnes": [
+                        "tests/backend.php text eol=lf"
+                    ]
+                }
+            ],
+            "kontroll": "Bred backendkontroll i fersk isolert testdatabase, og sammenligning med separat kontrollkopi med Unix-linjeskift."
+        },
+        {
+            "id": "admin-faneavstand-20261001",
+            "dato": "2026-10-01",
+            "hva": "Lokal utbedring etter agentvurderingen: hovedfanene bruker mindre sideavstand under 1500 px saa PC-menyen faar plass paa én rad ved 1358 px. Alle funksjoner og tekster beholdes.",
+            "hvor": "Felles adminmeny",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "padding: (this.state.vw || 1400) < 1500 ? '7px 8px' : '7px 12px'"
+                    ]
+                }
+            ],
+            "kontroll": "Nettlesermaaling, navigasjon og Synlighet paa adminskjermene; PC, nettbrett og mobil kontrolleres."
+        },
+        {
+            "id": "timepakke-testmaaned-20261001",
+            "dato": "2026-10-01",
+            "hva": "Lokal utbedring etter agentvurderingen: forrige maaned i timepakkereisen settes som norsk kalendermaaned foer konvertering til UTC.",
+            "hvor": "Nettlesertestens medlemsreise 3",
+            "kode": [
+                {
+                    "fil": "tests/nettleser/flyter.mjs",
+                    "finnes": [
+                        "->modify('first day of last month')->setTime(12, 0)->setTimezone(new DateTimeZone('UTC'))"
+                    ],
+                    "ikkeFinnes": [
+                        "SET inn_tid = DATE_SUB(inn_tid, INTERVAL 1 MONTH)"
+                    ]
+                }
+            ],
+            "kontroll": "Faktisk kjoep, betaling og overfoering av fem ubrukte timer til neste maaned, inkludert Min side."
+        },
+        {
+            "id": "windows-kildeverktoy-20261001",
+            "dato": "2026-10-01",
+            "hva": "Lokal utbedring etter agentvurderingen: kildeverktoey leser fil-URL direkte og innholdskontrollen normaliserer linjeskift paa Windows.",
+            "hvor": "Knappe-, skjema- og innholdskontroller",
+            "kode": [
+                {
+                    "fil": "bin/knappesjekk.mjs",
+                    "finnes": [
+                        "const sti = new URL('../lissom-2108.html', import.meta.url);"
+                    ],
+                    "ikkeFinnes": [
+                        "import.meta.url).pathname"
+                    ]
+                },
+                {
+                    "fil": "bin/skjemasjekk.mjs",
+                    "finnes": [
+                        "fs.readFileSync(new URL('../lissom-2108.html', import.meta.url), 'utf8')"
+                    ]
+                },
+                {
+                    "fil": "bin/innholdssjekk.mjs",
+                    "finnes": [
+                        ".replace(/\\r\\n/g, '\\n')"
+                    ]
+                }
+            ],
+            "kontroll": "912 knappebindinger, 528 skjemafelt og 210 innholdsfelt; generert utgave uten admin kontrolleres med adminsjekk."
+        },
+        {
+            "id": "minside-fasit-rettingsvindu-20261001",
+            "dato": "2026-10-01",
+            "hva": "Lokal utbedring etter agentvurderingen: fasitkontrollen tar hensyn til at maanedens seedede stempling er innenfor rettingsvinduet ved maanedsskiftet. Lagrede fasitfiler og applikasjonens regel beholdes.",
+            "hvor": "Min side-vakt",
+            "kode": [
+                {
+                    "fil": "tests/nettleser/minside.mjs",
+                    "finnes": [
+                        "$retteTil = $inn->setTime(23, 0)->modify('+24 hours')->getTimestamp();",
+                        "sortertSiste(faktiskSiste) === sortertSiste(siste)",
+                        "gammel['/api/stempling.php'].svar.siste = norm(siste);"
+                    ]
+                }
+            ],
+            "kontroll": "Alle 14 API-svar for aatte medlemstyper sammenlignes med eksisterende fasit. Siste okt kontrolleres i tillegg med eksakt id, dato, klokkeslett og status fra fixturedata."
+        },
+        {
+            "id": "henting-tre-uker-uten-epost-20261001",
+            "dato": "2026-10-01",
+            "hva": "Kurs kan publiseres på ferdigbrent uten e-postadresser. Hentefristen er tre uker i e-post, nettside og spørsmål og svar.",
+            "hvor": "Klar til henting",
+            "kode": [
+                {
+                    "fil": "api/admin/ferdigbrent.php",
+                    "finnes": [
+                        "const UKER_OPPBEVARING = 3;",
+                        "Publisering er uavhengig av kontaktinfo og meldingskø."
+                    ]
+                },
+                {
+                    "fil": "db/migrations/242_oppbevaring_i_tre_uker.sql",
+                    "finnes": [
+                        "Innen tre uker"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "Publiser på ferdigbrent",
+                        "const uker = (d && d.uker) || 3;",
+                        "Vi oppbevarer ferdige arbeider i tre uker"
+                    ],
+                    "ikkeFinnes": [
+                        "Vi oppbevarer ferdige arbeider i to uker"
+                    ]
+                }
+            ],
+            "kontroll": "node tests/henting.mjs kontrollerer lokal API, meldingskø, offentlig liste, duplikater, frist, angre og klientbekreftelse. Ingen ekte e-post sendes."
+        },
+        {
+            "id": "nyadmin-kalender-og-minside-20261001",
+            "dato": "2026-10-01",
+            "hva": "Egen kalender i ny admin, alle adminfunksjoner tilgjengelige, og tilgjengelige Min side-moduler synlige med personlige Vis/skjul-brytere. Utstempling holdes tilgjengelig uten gjenværende timer.",
+            "hvor": "Ny admin og Min side",
+            "kode": [
+                {
+                    "fil": "nyadmin/kurs.js",
+                    "finnes": [
+                        "await tegnKalender(main);"
+                    ]
+                },
+                {
+                    "fil": "nyadmin/mer.js",
+                    "finnes": [
+                        "['Alle funksjoner', STEDER.filter"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "msModulVals()",
+                        "if (this.erInne() || this.state.utstApen || this.state.innstRute || this.state.kvittering) return av;"
+                    ]
+                }
+            ],
+            "kontroll": "node tests/nyadmin-kalender.mjs og node tests/minside-moduler-ut.mjs tester faktisk lokal nettleser på 390 og 1280 px. Ingen produksjonsendringer."
+        },
+        {
+            "id": "betalt-periode-styrer-tilgang-20261001",
+            "dato": "2026-10-01",
+            "hva": "Aktiv medlemsavtale uten betalt periode gir ikke aktiv medlemstilgang. Fullført betaling åpner tilgangen, fritak beholdes, og åpne økter kan alltid stemples ut.",
+            "hvor": "Medlemskap, adgang, timer, medlemsrabatt og adminstatus",
+            "kode": [
+                {
+                    "fil": "app/lib/auth.php",
+                    "finnes": [
+                        "return Medlemskap::harBetaltPeriode($medlem);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public static function harBetaltPeriode",
+                        "if ($dekkerTil <= $idag)"
+                    ]
+                },
+                {
+                    "fil": "api/meg.php",
+                    "finnes": [
+                        "'betalingMangler' => $betalingMangler"
+                    ]
+                },
+                {
+                    "fil": "api/stempling.php",
+                    "finnes": [
+                        "['ut', 'glemt', 'feiltid']",
+                        "'ressurser'   => $harTilgang ? $ressurser : []"
+                    ]
+                }
+            ],
+            "kontroll": "tests/betalt-periode.php har 13 målrettede databasekontroller; tests/ubetalt-medlem.mjs verifiserer API, sperret innstempling, skjult privat info, utstempling og gjenåpning etter betaling på 390 og 1280 px. Kun isolert testdatabase."
+        },
+        {
+            "id": "uavhengig-adminsjekk-20261001",
+            "dato": "2026-10-01",
+            "hva": "Ny uavhengig kontroll av alle admininnganger mot registrerte ruter, egne moduler og dyplenker på PC og mobil.",
+            "hvor": "Ny admin",
+            "kode": [
+                {
+                    "fil": "tests/nyadmin-uavhengig.mjs",
+                    "finnes": [
+                        "const mangler=ruter.filter",
+                        "rad.apiFeil=[...apiFeil]"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-dyplenker.mjs",
+                    "finnes": [
+                        "Avbryt stempling gjør ingen endring",
+                        "Logg inn først"
+                    ]
+                }
+            ],
+            "kontroll": "51 innganger åpnet på 390 og 1280 px, 102 kontroller totalt. Ingen manglende registrerte ruter, skriptfeil, API-feil eller vannrett overløp. Fem egne moduler, syv dyplenker, innloggingskrav og avbryt kontrollert separat. Navigasjonskontroll er ikke full ende-til-ende-kontroll av alle skrivehandlinger."
         }
     ]
 }

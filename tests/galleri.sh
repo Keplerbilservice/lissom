@@ -14,9 +14,9 @@
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
-ROT="$(pwd)"
+ROT="$(pwd -W 2>/dev/null || pwd)"
 PORT=${PORT_GALLERI:-8131}
-T=$(mktemp -d)
+T=$(mktemp -d); T=$(cd "$T" && (pwd -W 2>/dev/null || pwd))
 
 ok=0; feil=0
 sjekk() { # sjekk "navn" "ventet" "fikk"

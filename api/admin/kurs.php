@@ -34,6 +34,9 @@ if (Foresporsel::metode() === 'GET') {
     // skjermen Lissom har oppe oftest, og den kan fort telle et par hundre
     // datoer. Da ble det over 250 sporringer for aa tegne én skjerm.
     $ekstra   = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
+    if (DB::harKolonne('course_sessions', 'vis_fullt')) {
+        $ekstra .= ', vis_fullt';
+    }
     // Kursholderen paa den enkelte datoen (migrasjon 085). Kolonnen kan
     // mangle om vedlikeholdet ikke er kjort — da staar feltet tomt i skjemaet
     // og alt annet virker som for.
@@ -94,6 +97,8 @@ if (Foresporsel::metode() === 'GET') {
         return [
             'id'         => (int) $k['id'],
             'slug'       => $k['slug'],
+            'seoTittel'  => (string) ($k['seo_tittel'] ?? ''),
+            'seoMeta'    => (string) ($k['seo_meta'] ?? ''),
             'tittel'     => $k['tittel'],
             'type'       => $k['type'],
             'tema'       => $k['tema'],
@@ -170,6 +175,8 @@ if (Foresporsel::metode() === 'GET') {
                 // — en okt uten varighet.
                 'sluttUtc'  => $o['slutt_tid'],
                 'status'    => $o['status'],
+                'visFullt'  => (bool) ($o['vis_fullt'] ?? false),
+                'kapasitet' => $o['kapasitet'] === null ? null : (int) $o['kapasitet'],
                 'ledige'    => $ledigeKart[(int) $o['id']] ?? 0,
                 // Pris og informasjon som gjelder bare denne datoen. NULL
                 // betyr «som kurset» — da skal feltet staa tomt i skjemaet,

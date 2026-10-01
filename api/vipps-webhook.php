@@ -20,10 +20,15 @@ if (!is_array($data)) {
 }
 
 // Signaturen bekreftes naar webhooken er registrert hos Vipps og hemmeligheten
-// ligger i secrets.php. Uten den godtar vi kun aa notere hendelsen — vi lar
-// aldri en usignert melding endre en betalingsstatus.
+// ligger i secrets.php. Uten den avvises meldingen foer inboxen skrives.
 $hemmelighet = (string) Config::hent('vipps_webhook_secret', '');
 $signert = false;
+
+// Uten verifisering skal hendelsen heller ikke kunne blokkere senere replay.
+if ($hemmelighet === '') {
+    Rate::sjekk('webhook-usignert', maks: 60, vindu: 600);
+    Svar::feil('Ugyldig signatur.', 401);
+}
 
 if ($hemmelighet !== '') {
     // Vipps sitt format — se Vipps::webhookSignert(). Noen webhotell tar
@@ -44,59 +49,71 @@ if ($hemmelighet !== '') {
     }
 }
 
-// Uten hemmelighet i secrets.php kan hvem som helst sende hit. Hendelsen far
-// aldri endre en betaling — men den blir notert, og uten en grense kunne noen
-// fylt tabellen med tusenvis av rader. Med hemmeligheten satt er signaturen
-// alt som trengs, og da gjelder ingen grense: Vipps kan sende sa mange
-// hendelser den vil.
-if ($hemmelighet === '') {
-    Rate::sjekk('webhook-usignert', maks: 60, vindu: 600);
-}
-
-$hendelsesId = (string) ($data['eventId'] ?? ($data['reference'] ?? '') . ':' . ($data['name'] ?? ''));
+$hendelsesId = (string) ($data['eventId'] ?? $data['pspReference'] ?? ($data['reference'] ?? '') . ':' . ($data['name'] ?? ''));
 $referanse   = (string) ($data['reference'] ?? '');
 $navn        = strtoupper((string) ($data['name'] ?? ''));
 
-// Har vi sett denne for? Da er vi ferdige.
-$sett = DB::en('SELECT event_id FROM vipps_webhook_events WHERE event_id = :e', ['e' => $hendelsesId]);
-if ($sett !== null) {
-    Svar::ok(['duplikat' => true]);
+if ($hendelsesId === '' || mb_strlen($hendelsesId) > 191 || $referanse === '' || mb_strlen($referanse) > 64) {
+    Svar::feil('Ugyldig innhold.', 400);
 }
 
-DB::settInn('vipps_webhook_events', [
-    'event_id'  => mb_substr($hendelsesId, 0, 191),
-    'type'      => mb_substr($navn, 0, 128),
-    'referanse' => $referanse !== '' ? mb_substr($referanse, 0, 64) : null,
-    'payload'   => $raa,
-]);
-
-if (!$signert) {
-    logg('Webhook mottatt uten signaturkontroll — hemmelighet mangler i secrets.php');
-    Svar::ok(['notert' => true]);
+// Forbindelseslaas serialiserer replay uten en ytre transaksjon rundt HTTP
+// eller Booking::markerBetalt(), som har sin egen transaksjon.
+$laas = 'vipps-event:' . substr(hash('sha256', mb_strtolower($hendelsesId)), 0, 48);
+if ((int) DB::verdi('SELECT GET_LOCK(:l, 5)', ['l' => $laas]) !== 1) {
+    Svar::json(['ok' => false], 503);
 }
+$httpStatus = 200;
+$svar = ['ok' => true];
 
 // Hva tilstanden betyr, staar ett sted: Vipps::anvendTilstand(). Her sto
 // den samme regelen én gang til, og cron hadde sin egen halve utgave — tre
 // steder som kunne komme i utakt om ett av dem ble rettet.
 //
-// Vi sporr IKKE Vipps om igjen. Hendelsen er signert og sier hva som har
-// skjedd; leseadressen kan ligge et hakk bak, og et oppslag her kunne lest
-// en CAPTURED-hendelse som AUTHORIZED og forsokt aa trekke en betaling som
-// alt var trukket. Unntaket er AUTHORIZED, der vi trenger beloepet som ble
-// godkjent — det staar ikke i hendelsen.
+// Aggregate trengs for aa skille delvis/full capture og refusjon. Hendelsens
+// tilstand beholdes ved avstemming: et tregt oppslag maa ikke gjoere en
+// CAPTURED-hendelse til AUTHORIZED og starte et nytt trekk.
 try {
-    $status = $navn === 'AUTHORIZED'
-        ? Vipps::hentBetaling($referanse)
-        : ['state' => $navn];
-    Vipps::anvendTilstand($referanse, $status);
+    DB::kjor(
+        'INSERT INTO vipps_webhook_events (event_id, type, referanse, payload)
+         VALUES (:e, :t, :r, :p) ON DUPLICATE KEY UPDATE event_id = event_id',
+        ['e' => $hendelsesId, 't' => mb_substr($navn, 0, 128), 'r' => $referanse, 'p' => $raa]
+    );
+    $sett = DB::en('SELECT behandlet_at FROM vipps_webhook_events WHERE event_id = :e', ['e' => $hendelsesId]);
+    if ($sett !== null && $sett['behandlet_at'] !== null) {
+        $svar['duplikat'] = true;
+    } else {
+        // Tidligere usignerte/feilede rader er ikke ferdigbehandlet. Bruk den
+        // verifiserte meldingen som kom naa, ikke det gamle lagrede innholdet.
+        DB::oppdater('vipps_webhook_events', ['payload' => $raa, 'type' => mb_substr($navn, 0, 128), 'referanse' => $referanse], ['event_id' => $hendelsesId]);
+        if (($data['success'] ?? true) !== false) {
+            $status = $navn === 'AUTHORIZED' ? Vipps::hentBetaling($referanse) : ['state' => $navn];
+            if (in_array($navn, ['CAPTURED', 'REFUNDED'], true)) {
+                $psp = (string) ($data['pspReference'] ?? '');
+                $status = $psp !== ''
+                    ? Vipps::avstemHendelse($referanse, $psp, $navn)
+                    : Vipps::hentBetaling($referanse);
+                $status['state'] = $navn; // legacy eventId-meldinger beholder ogsaa hendelsens tilstand
+                $status['hendelsesbelop_ore'] = (int) ($data['amount']['value'] ?? 0);
+            }
+            Vipps::anvendTilstand($referanse, $status, true);
+        }
 
-    DB::oppdater('vipps_webhook_events', ['behandlet_at' => gmdate('Y-m-d H:i:s')], ['event_id' => $hendelsesId]);
+        DB::oppdater('vipps_webhook_events', ['behandlet_at' => gmdate('Y-m-d H:i:s'), 'feilmelding' => null], ['event_id' => $hendelsesId]);
+    }
 } catch (Throwable $e) {
     logg_feil('Webhook-behandling feilet for ' . $referanse, $e);
-    DB::oppdater('vipps_webhook_events', [
-        'feilmelding' => mb_substr($e->getMessage(), 0, 500),
-    ], ['event_id' => $hendelsesId]);
-    // 200 uansett: Vipps skal ikke sende om igjen i det uendelige. Cron rydder opp.
+    try {
+        DB::oppdater('vipps_webhook_events', [
+            'feilmelding' => mb_substr($e->getMessage(), 0, 500),
+        ], ['event_id' => $hendelsesId]);
+    } catch (Throwable $lagringsfeil) {
+        logg_feil('Kunne ikke lagre webhook-feil', $lagringsfeil);
+    }
+    $httpStatus = 503;
+    $svar = ['ok' => false];
+} finally {
+    DB::verdi('SELECT RELEASE_LOCK(:l)', ['l' => $laas]);
 }
 
-Svar::ok();
+Svar::json($svar, $httpStatus);

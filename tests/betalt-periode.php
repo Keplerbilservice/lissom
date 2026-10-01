@@ -14,6 +14,10 @@ $sjekk(!er_aktivt_medlem($m), 'Aktiv avtale uten betaling skal ikke gi tilgang')
 $p = DB::settInn('payments',['member_id'=>$m['id'],'subscription_id'=>$a['id'],'formal'=>'medlemskap','type'=>'epayment','status'=>'venter','belop_ore'=>50000,'gjelder_fra'=>$dag,'created_at'=>gmdate('Y-m-d H:i:s'),'idempotency_key'=>Vipps::uuid(),'vipps_reference'=>'TEST-'.$s['tag']]);
 $sjekk(!er_aktivt_medlem($m),'Ventende betaling skal ikke gi tilgang');
 DB::oppdater('payments',['status'=>'betalt'],['id'=>$p]);
+$tp=DB::settInn('timepakker',['member_id'=>$m['id'],'payment_id'=>$p,'timer'=>6,'pris_ore'=>50000,'status'=>'betalt','betalt_at'=>gmdate('Y-m-d H:i:s')]);
+$sjekk(!er_aktivt_medlem($m),'Ekstra timepakke er ikke betaling for medlemskapet');
+$sjekk(!isset(Medlemskap::sisteBetalinger([(int)$m['id']])[(int)$m['id']]),'Ekstra timepakke vises ikke som siste medlemskapsbetaling');
+DB::kjor('DELETE FROM timepakker WHERE id=:i',['i'=>$tp]);
 $sjekk(er_aktivt_medlem($m),'Fullført betaling åpner tilgang');
 $sjekk(Booking::faarMedlemsrabatt($m),'Betalt medlem har rabatt');
 DB::oppdater('subscriptions',['plan'=>'Tidligere plannavn'],['id'=>$a['id']]);

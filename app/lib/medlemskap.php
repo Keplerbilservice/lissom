@@ -333,10 +333,13 @@ final class Medlemskap
         $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
         if ($plan === null) return false;
         $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
         $betalinger = DB::alle(
             "SELECT p.created_at, {$fraKol} FROM payments p
              WHERE p.member_id = :m AND p.formal = 'medlemskap'
                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+               {$utenTimepakke}
              ORDER BY p.id DESC",
             ['m' => $id]
         );
@@ -1044,6 +1047,8 @@ final class Medlemskap
         $ut = [];
         // gjelder_fra: migrasjon 235 («Forny» fra der forrige periode slutter).
         $fra = DB::harKolonne('payments', 'gjelder_fra') ? ', p.gjelder_fra' : '';
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = payments.id)' : '';
         foreach (DB::alle(
             "SELECT p.member_id, p.created_at, p.belop_ore, p.maate, p.type{$fra}
                FROM payments p
@@ -1053,6 +1058,7 @@ final class Medlemskap
                         AND status IN ('betalt','delvis_refundert')
                         AND annullert_at IS NULL
                         AND member_id IN ({$inn})
+                        {$utenTimepakke}
                    GROUP BY member_id) n ON n.siste = p.id"
         ) as $r) {
             $ut[(int) $r['member_id']] = $r;

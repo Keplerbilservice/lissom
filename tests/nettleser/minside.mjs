@@ -265,7 +265,7 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
     sjekk(`${hva}: «Se medlemskapet»`, await synlig(p, 'Se medlemskapet'));
     sjekk(`${hva}: Mine påmeldinger og Kursbevis`, await synlig(p, 'Mine påmeldinger') && await synlig(p, 'Kursbevis'));
     sjekk(`${hva}: Internbutikk`, await synlig(p, 'Internbutikk', true));
-    sjekk(`${hva}: Chat`, await synlig(p, 'Chat', true));
+    sjekk(`${hva}: Chat`, await p.locator('#minside-chat').isVisible());
     sjekk(`${hva}: Handleliste`, await synlig(p, 'Handleliste', true));
     sjekk(`${hva}: Selg mine produkter`, await synlig(p, 'Selg mine produkter'));
     sjekk(`${hva}: Del på Instagram og i galleriet`, await synlig(p, 'Del på Instagram og i galleriet'));
@@ -401,7 +401,7 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
     sjekk(`${hva}: Neste kurs`, await synlig(p, /Neste kurs/i));
     sjekk(`${hva}: Mine påmeldinger med kurset`, await synlig(p, 'Mine påmeldinger') && await synlig(p, 'E2E Dreiekurs'));
     sjekk(`${hva}: Kursbevis`, await synlig(p, /^Kursbevis/));
-    sjekk(`${hva}: Bilder av det du laget`, await synlig(p, 'Bilder av det du laget') && await synlig(p, 'Last opp fra kurset'));
+    sjekk(`${hva}: Bilder av det du laget`, await synlig(p, 'Bilder av det du laget') && await p.locator('#minside-pameldinger input[type="file"]').first().isVisible());
     sjekk(`${hva}: Bli medlem med planene`, await synlig(p, 'Bli medlem i verkstedet') && await synlig(p, PROVE));
     sjekk(`${hva}: Skisser (bryteren for deltakere er på)`, await synlig(p, 'Skisser', true));
     sjekk(`${hva}: ingen medlemsting (stempling, internbutikk, chat)`,

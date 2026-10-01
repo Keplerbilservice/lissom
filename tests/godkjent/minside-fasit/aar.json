@@ -4,6 +4,7 @@
     "svar": {
       "adminKreverPassord": false,
       "adminUtenPassord": false,
+      "betalingMangler": false,
       "erAdmin": false,
       "erMedlem": true,
       "erRegnskap": false,
@@ -306,7 +307,18 @@
   "/api/mine-kjop.php": {
     "status": 200,
     "svar": {
-      "kjop": []
+      "kjop": [
+        {
+          "betaltMed": "Vipps",
+          "detalj": "Månedstrekk · <måned>",
+          "kvittering": "Ikke sendt",
+          "navn": "Medlemskap",
+          "ref": "<string>",
+          "refundert": null,
+          "sum": "kr. 1 990,-",
+          "tid": "<dato> <kl>"
+        }
+      ]
     }
   },
   "/api/butikk.php": {

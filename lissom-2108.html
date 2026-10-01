@@ -456,7 +456,7 @@ img{max-width:100%;display:block}
 .ms-modulbryter{margin-left:auto;appearance:none;cursor:pointer;border:1px solid var(--border-subtle);border-radius:999px;background:var(--surface-card);color:var(--lissom-brown);padding:6px 12px;min-height:36px;font:700 13px var(--font-sans);flex:0 0 auto}
 .ms-modulbryter[aria-checked=false]{background:var(--clay-100)}
 .lx-msalle .ms-o-pamld2,.lx-msalle .ms-o-forslag2,.lx-msalle .ms-o-dugnad2,.lx-msalle .ms-o-bevis2,.lx-msalle .ms-o-chat,.lx-msalle .ms-o-butikk,.lx-msalle .ms-o-selg{display:none!important}
-.lx-msalle .ms-o-pamld,.lx-msalle .ms-o-forslag,.lx-msalle .ms-o-dugnad,.lx-msalle .ms-o-bevis{display:block!important}
+.lx-mshjem.lx-msalle .ms-o-pamld,.lx-mshjem.lx-msalle .ms-o-forslag,.lx-mshjem.lx-msalle .ms-o-dugnad,.lx-mshjem.lx-msalle .ms-o-bevis{display:block!important}
 .lx-msalle [data-ms-modul]{min-width:0;box-sizing:border-box;align-self:start;order:30}
 .lx-msalle [data-ms-modul="nyttig"]{grid-column:1 / -1!important}.lx-msalle .ms-o-stempel{order:4}.lx-msalle .ms-o-inne{order:5}.lx-msalle .ms-o-ovn{order:7}.lx-msalle .ms-o-faq{order:8}
 @media(min-width:761px){.lx-msalle [data-ms-modul]{grid-column:span 1!important}.lx-msalle .ms-o-stempel{grid-column:span 2!important}}
@@ -5455,7 +5455,7 @@ window.__resources = {
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ msVerkstedVis }}" hint-placeholder-val="{{ false }}">
               <div class="ms-o-inne" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);" data-ms-modul="inne">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.inne.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.inne.navn }}</strong></sc-if><button type="button" role="switch" aria-label="I verkstedet nå: vis/skjul" aria-checked="{{ msModuler.inne.aria }}" onClick="{{ msModuler.inne.veksle }}" class="ms-modulbryter">{{ msModuler.inne.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.inne.navn }}</strong><button type="button" role="switch" aria-label="I verkstedet nå: vis/skjul" aria-checked="{{ msModuler.inne.aria }}" onClick="{{ msModuler.inne.veksle }}" class="ms-modulbryter">{{ msModuler.inne.tekst }}</button></div>
 <sc-if value="{{ msModuler.inne.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
@@ -5503,7 +5503,7 @@ window.__resources = {
                    medlemmer («Vises for medlemmer» under Verkstedet). -->
               <sc-if value="{{ msFaq }}" hint-placeholder-val="{{ false }}">
               <div class="ms-o-faq" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);" data-ms-modul="faq">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.faq.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.faq.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Spør o store krukkemester: vis/skjul" aria-checked="{{ msModuler.faq.aria }}" onClick="{{ msModuler.faq.veksle }}" class="ms-modulbryter">{{ msModuler.faq.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.faq.navn }}</strong><button type="button" role="switch" aria-label="Spør o store krukkemester: vis/skjul" aria-checked="{{ msModuler.faq.aria }}" onClick="{{ msModuler.faq.veksle }}" class="ms-modulbryter">{{ msModuler.faq.tekst }}</button></div>
 <sc-if value="{{ msModuler.faq.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Spør o store krukkemester</div>
@@ -5545,7 +5545,7 @@ window.__resources = {
                Pulserer til man selv har trykket «Sett»; borte etter 24
                timer. Se ovnVals(). -->
           <div class="{{ ovnKortKlasse }} ms-o-ovn" style="{{ ovnKortStil }}" data-ms-modul="ovn">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.ovn.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.ovn.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Ovnen: vis/skjul" aria-checked="{{ msModuler.ovn.aria }}" onClick="{{ msModuler.ovn.veksle }}" class="ms-modulbryter">{{ msModuler.ovn.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.ovn.navn }}</strong><button type="button" role="switch" aria-label="Ovnen: vis/skjul" aria-checked="{{ msModuler.ovn.aria }}" onClick="{{ msModuler.ovn.veksle }}" class="ms-modulbryter">{{ msModuler.ovn.tekst }}</button></div>
 <sc-if value="{{ msModuler.ovn.vis }}" hint-placeholder-val="{{ true }}">
 
             <span style="font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--lissom-brown);">Ovnen</span>
@@ -5568,7 +5568,7 @@ window.__resources = {
             </div>
             <sc-if value="{{ barnVis }}" hint-placeholder-val="{{ false }}">
             <div class="ms-o-barn" style="margin-left: auto; min-width: 0; max-width: 460px;" data-ms-modul="barn">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.barn.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.barn.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Ta med barn: vis/skjul" aria-checked="{{ msModuler.barn.aria }}" onClick="{{ msModuler.barn.veksle }}" class="ms-modulbryter">{{ msModuler.barn.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.barn.navn }}</strong><button type="button" role="switch" aria-label="Ta med barn: vis/skjul" aria-checked="{{ msModuler.barn.aria }}" onClick="{{ msModuler.barn.veksle }}" class="ms-modulbryter">{{ msModuler.barn.tekst }}</button></div>
 <sc-if value="{{ msModuler.barn.vis }}" hint-placeholder-val="{{ true }}">
 
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
@@ -5598,7 +5598,7 @@ window.__resources = {
 </sc-if>
 </div>
           <div class="ms-o-stempel" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);" data-ms-modul="stempel">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.stempel.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.stempel.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Stemple inn og timene dine: vis/skjul" aria-checked="{{ msModuler.stempel.aria }}" onClick="{{ msModuler.stempel.veksle }}" class="ms-modulbryter">{{ msModuler.stempel.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.stempel.navn }}</strong><button type="button" role="switch" aria-label="Stemple inn og timene dine: vis/skjul" aria-checked="{{ msModuler.stempel.aria }}" onClick="{{ msModuler.stempel.veksle }}" class="ms-modulbryter">{{ msModuler.stempel.tekst }}</button></div>
 <sc-if value="{{ msModuler.stempel.vis }}" hint-placeholder-val="{{ true }}">
 
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4);">
@@ -5734,7 +5734,7 @@ window.__resources = {
 </div>
             <sc-if value="{{ dugVis }}" hint-placeholder-val="{{ false }}">
             <div class="ms-o-kort ms-o-dugnad" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);" data-ms-modul="dugnad">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.dugnad.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.dugnad.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Dugnad: vis/skjul" aria-checked="{{ msModuler.dugnad.aria }}" onClick="{{ msModuler.dugnad.veksle }}" class="ms-modulbryter">{{ msModuler.dugnad.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.dugnad.navn }}</strong><button type="button" role="switch" aria-label="Dugnad: vis/skjul" aria-checked="{{ msModuler.dugnad.aria }}" onClick="{{ msModuler.dugnad.veksle }}" class="ms-modulbryter">{{ msModuler.dugnad.tekst }}</button></div>
 <sc-if value="{{ msModuler.dugnad.vis }}" hint-placeholder-val="{{ true }}">
 
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: 6px;">
@@ -5918,7 +5918,7 @@ window.__resources = {
                  en lenke; serveren avgjoer om den vises (hentSkisserPaa). -->
             <sc-if value="{{ visSkisser }}" hint-placeholder-val="{{ false }}">
               <div class="ms-o-kort ms-flis" role="button" tabindex="0" onClick="{{ msApneSkisser }}" style="{{ msFlisStil }}" data-skisser="1" data-ms-modul="skisser">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.skisser.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.skisser.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Skisser: vis/skjul" aria-checked="{{ msModuler.skisser.aria }}" onClick="{{ msModuler.skisser.veksle }}" class="ms-modulbryter">{{ msModuler.skisser.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.skisser.navn }}</strong><button type="button" role="switch" aria-label="Skisser: vis/skjul" aria-checked="{{ msModuler.skisser.aria }}" onClick="{{ msModuler.skisser.veksle }}" class="ms-modulbryter">{{ msModuler.skisser.tekst }}</button></div>
 <sc-if value="{{ msModuler.skisser.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div class="ms-fh"><span class="ms-ft">Skisser</span></div>
@@ -6028,7 +6028,7 @@ window.__resources = {
           <div class="ms-o-inn" style="{{ msRuterStil }}">
             <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
             <div class="ms-o-kort ms-o-skiver" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;" data-ms-modul="skiver">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.skiver.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.skiver.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Dreieskivene denne uka: vis/skjul" aria-checked="{{ msModuler.skiver.aria }}" onClick="{{ msModuler.skiver.veksle }}" class="ms-modulbryter">{{ msModuler.skiver.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.skiver.navn }}</strong><button type="button" role="switch" aria-label="Dreieskivene denne uka: vis/skjul" aria-checked="{{ msModuler.skiver.aria }}" onClick="{{ msModuler.skiver.veksle }}" class="ms-modulbryter">{{ msModuler.skiver.tekst }}</button></div>
 <sc-if value="{{ msModuler.skiver.vis }}" hint-placeholder-val="{{ true }}">
 
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
@@ -6079,7 +6079,7 @@ window.__resources = {
                  alt. Samme kort som for — flyttet bak menyvalget. -->
             <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
             <div id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;" data-ms-modul="abonnement">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.abonnement.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.abonnement.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Medlemskapet ditt: vis/skjul" aria-checked="{{ msModuler.abonnement.aria }}" onClick="{{ msModuler.abonnement.veksle }}" class="ms-modulbryter">{{ msModuler.abonnement.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.abonnement.navn }}</strong><button type="button" role="switch" aria-label="Medlemskapet ditt: vis/skjul" aria-checked="{{ msModuler.abonnement.aria }}" onClick="{{ msModuler.abonnement.veksle }}" class="ms-modulbryter">{{ msModuler.abonnement.tekst }}</button></div>
 <sc-if value="{{ msModuler.abonnement.vis }}" hint-placeholder-val="{{ true }}">
 
               <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
@@ -6558,7 +6558,7 @@ window.__resources = {
                    har slaatt paa under Nettbutikk → Handlelister. -->
               <sc-if value="{{ visHandleliste }}" hint-placeholder-val="{{ true }}">
               <div id="minside-handleliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);" data-ms-modul="handleliste">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.handleliste.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.handleliste.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Handleliste: vis/skjul" aria-checked="{{ msModuler.handleliste.aria }}" onClick="{{ msModuler.handleliste.veksle }}" class="ms-modulbryter">{{ msModuler.handleliste.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.handleliste.navn }}</strong><button type="button" role="switch" aria-label="Handleliste: vis/skjul" aria-checked="{{ msModuler.handleliste.aria }}" onClick="{{ msModuler.handleliste.veksle }}" class="ms-modulbryter">{{ msModuler.handleliste.tekst }}</button></div>
 <sc-if value="{{ msModuler.handleliste.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
@@ -6673,7 +6673,7 @@ window.__resources = {
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
               <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
               <div id="minside-internbutikk" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);" data-ms-modul="butikk">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.butikk.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.butikk.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Internbutikk: vis/skjul" aria-checked="{{ msModuler.butikk.aria }}" onClick="{{ msModuler.butikk.veksle }}" class="ms-modulbryter">{{ msModuler.butikk.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.butikk.navn }}</strong><button type="button" role="switch" aria-label="Internbutikk: vis/skjul" aria-checked="{{ msModuler.butikk.aria }}" onClick="{{ msModuler.butikk.veksle }}" class="ms-modulbryter">{{ msModuler.butikk.tekst }}</button></div>
 <sc-if value="{{ msModuler.butikk.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
@@ -6757,7 +6757,7 @@ window.__resources = {
               </sc-if>
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
               <div id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="salg">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.salg.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.salg.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Selg mine produkter: vis/skjul" aria-checked="{{ msModuler.salg.aria }}" onClick="{{ msModuler.salg.veksle }}" class="ms-modulbryter">{{ msModuler.salg.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.salg.navn }}</strong><button type="button" role="switch" aria-label="Selg mine produkter: vis/skjul" aria-checked="{{ msModuler.salg.aria }}" onClick="{{ msModuler.salg.veksle }}" class="ms-modulbryter">{{ msModuler.salg.tekst }}</button></div>
 <sc-if value="{{ msModuler.salg.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Medlemsfordel</div>
@@ -6929,7 +6929,7 @@ window.__resources = {
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ harBeskjeder }}" hint-placeholder-val="{{ true }}">
               <div id="minside-beskjeder" class="ms-o-kort ms-o-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="beskjeder">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.beskjeder.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.beskjeder.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Beskjeder: vis/skjul" aria-checked="{{ msModuler.beskjeder.aria }}" onClick="{{ msModuler.beskjeder.veksle }}" class="ms-modulbryter">{{ msModuler.beskjeder.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.beskjeder.navn }}</strong><button type="button" role="switch" aria-label="Beskjeder: vis/skjul" aria-checked="{{ msModuler.beskjeder.aria }}" onClick="{{ msModuler.beskjeder.veksle }}" class="ms-modulbryter">{{ msModuler.beskjeder.tekst }}</button></div>
 <sc-if value="{{ msModuler.beskjeder.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Beskjeder</div>
@@ -6975,7 +6975,7 @@ window.__resources = {
               <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ visForslag }}" hint-placeholder-val="{{ true }}">
               <div id="minside-forslag" class="ms-o-kort ms-o-forslag" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="forslag">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.forslag.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.forslag.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Del på Instagram og i galleriet: vis/skjul" aria-checked="{{ msModuler.forslag.aria }}" onClick="{{ msModuler.forslag.veksle }}" class="ms-modulbryter">{{ msModuler.forslag.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.forslag.navn }}</strong><button type="button" role="switch" aria-label="Del på Instagram og i galleriet: vis/skjul" aria-checked="{{ msModuler.forslag.aria }}" onClick="{{ msModuler.forslag.veksle }}" class="ms-modulbryter">{{ msModuler.forslag.tekst }}</button></div>
 <sc-if value="{{ msModuler.forslag.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Del på Instagram og i galleriet</div>
@@ -7055,7 +7055,7 @@ window.__resources = {
                    paameldingen gaar samme vei og havner i kalenderen. -->
               <sc-if value="{{ harMedlemskurs }}" hint-placeholder-val="{{ true }}">
               <div id="minside-internkurs" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="internkurs">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.internkurs.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.internkurs.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Kurs for medlemmer: vis/skjul" aria-checked="{{ msModuler.internkurs.aria }}" onClick="{{ msModuler.internkurs.veksle }}" class="ms-modulbryter">{{ msModuler.internkurs.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.internkurs.navn }}</strong><button type="button" role="switch" aria-label="Kurs for medlemmer: vis/skjul" aria-checked="{{ msModuler.internkurs.aria }}" onClick="{{ msModuler.internkurs.veksle }}" class="ms-modulbryter">{{ msModuler.internkurs.tekst }}</button></div>
 <sc-if value="{{ msModuler.internkurs.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="min-width: 0; flex: 1 1 320px;">
@@ -7094,7 +7094,7 @@ window.__resources = {
                    paa, og timene settes, i Markedsfoering › Vervepremie. -->
               <sc-if value="{{ msVervVis }}" hint-placeholder-val="{{ false }}">
               <div id="minside-verving" class="ms-o-banner" style="{{ msBannerStil }}" data-ms-modul="verving">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.verving.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.verving.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Verv en venn: vis/skjul" aria-checked="{{ msModuler.verving.aria }}" onClick="{{ msModuler.verving.veksle }}" class="ms-modulbryter">{{ msModuler.verving.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.verving.navn }}</strong><button type="button" role="switch" aria-label="Verv en venn: vis/skjul" aria-checked="{{ msModuler.verving.aria }}" onClick="{{ msModuler.verving.veksle }}" class="ms-modulbryter">{{ msModuler.verving.tekst }}</button></div>
 <sc-if value="{{ msModuler.verving.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="min-width: 0; flex: 1 1 320px;">
@@ -7112,7 +7112,7 @@ window.__resources = {
 
               <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
               <div id="minside-pameldinger" class="ms-o-kort ms-o-pamld" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="pameldinger">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.pameldinger.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.pameldinger.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Mine påmeldinger: vis/skjul" aria-checked="{{ msModuler.pameldinger.aria }}" onClick="{{ msModuler.pameldinger.veksle }}" class="ms-modulbryter">{{ msModuler.pameldinger.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.pameldinger.navn }}</strong><button type="button" role="switch" aria-label="Mine påmeldinger: vis/skjul" aria-checked="{{ msModuler.pameldinger.aria }}" onClick="{{ msModuler.pameldinger.veksle }}" class="ms-modulbryter">{{ msModuler.pameldinger.tekst }}</button></div>
 <sc-if value="{{ msModuler.pameldinger.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Mine påmeldinger</div>
@@ -7181,7 +7181,7 @@ window.__resources = {
               </sc-if>
               <sc-if value="{{ msKursbevisVis }}" hint-placeholder-val="{{ false }}">
               <div id="minside-kursbevis" class="ms-o-kort ms-o-bevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);" data-ms-modul="kursbevis">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.kursbevis.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.kursbevis.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Kursbevis: vis/skjul" aria-checked="{{ msModuler.kursbevis.aria }}" onClick="{{ msModuler.kursbevis.veksle }}" class="ms-modulbryter">{{ msModuler.kursbevis.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.kursbevis.navn }}</strong><button type="button" role="switch" aria-label="Kursbevis: vis/skjul" aria-checked="{{ msModuler.kursbevis.aria }}" onClick="{{ msModuler.kursbevis.veksle }}" class="ms-modulbryter">{{ msModuler.kursbevis.tekst }}</button></div>
 <sc-if value="{{ msModuler.kursbevis.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
@@ -7227,7 +7227,7 @@ window.__resources = {
                    verkstedet og timene dine. -->
               <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
               <div id="minside-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;" data-ms-modul="chat">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.chat.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.chat.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Medlemschat: vis/skjul" aria-checked="{{ msModuler.chat.aria }}" onClick="{{ msModuler.chat.veksle }}" class="ms-modulbryter">{{ msModuler.chat.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.chat.navn }}</strong><button type="button" role="switch" aria-label="Medlemschat: vis/skjul" aria-checked="{{ msModuler.chat.aria }}" onClick="{{ msModuler.chat.veksle }}" class="ms-modulbryter">{{ msModuler.chat.tekst }}</button></div>
 <sc-if value="{{ msModuler.chat.vis }}" hint-placeholder-val="{{ true }}">
 
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
@@ -7290,7 +7290,7 @@ window.__resources = {
           <sc-if value="{{ msFaneNyttig }}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
           <div id="minside-ordensregler" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-top: var(--space-6);" data-ms-modul="hms">
-<div class="ms-modulvalg"><sc-if value="{{ msModuler.hms.skjult }}" hint-placeholder-val="{{ false }}"><strong>{{ msModuler.hms.navn }}</strong></sc-if><button type="button" role="switch" aria-label="Ordensregler og HMS: vis/skjul" aria-checked="{{ msModuler.hms.aria }}" onClick="{{ msModuler.hms.veksle }}" class="ms-modulbryter">{{ msModuler.hms.tekst }}</button></div>
+<div class="ms-modulvalg"><strong>{{ msModuler.hms.navn }}</strong><button type="button" role="switch" aria-label="Ordensregler og HMS: vis/skjul" aria-checked="{{ msModuler.hms.aria }}" onClick="{{ msModuler.hms.veksle }}" class="ms-modulbryter">{{ msModuler.hms.tekst }}</button></div>
 <sc-if value="{{ msModuler.hms.vis }}" hint-placeholder-val="{{ true }}">
 
             <button type="button" onClick="{{ vekslOrdensregler }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); text-align: left;">

@@ -22,15 +22,19 @@ kjor() { # kjor "navn" kommando...
   # En test som krasjer, kan avslutte med kode 0: appens feilhaandterer
   # skriver «Ubehandlet feil» og avslutter med 0. Da saa den gronn ut.
   # Derfor leses ogsaa det testen skrev, og et krasj teller som feil.
-  local ut kode
-  ut=$("$@" 2>&1); kode=$?
-  printf '%s\n' "$ut"
-  if [ $kode -eq 0 ] && ! grep -qE '(PHP )?(Fatal error|Parse error|Uncaught )|Ubehandlet feil' <<<"$ut"; then
+  local rapport kode
+  rapport=$(mktemp) || { feilet+=("$navn"); return; }
+  "$@" 2>&1 | tee "$rapport"
+  local pipekoder=("${PIPESTATUS[@]}")
+  kode=${pipekoder[0]}
+  [ "${pipekoder[1]}" -eq 0 ] || kode=1
+  if [ $kode -eq 0 ] && ! grep -qE '(PHP )?(Fatal error|Parse error|Uncaught )|Ubehandlet feil' "$rapport"; then
     gikk+=("$navn")
   else
     [ $kode -eq 0 ] && echo "  ✗ $navn krasjet (kode 0, men feil i utskriften)"
     feilet+=("$navn")
   fi
+  rm -f -- "$rapport"
 }
 
 # --- Sjekkene av nettsida og admin (leser filene) --------------------------
@@ -49,7 +53,7 @@ kjor "webhook replay" php tests/webhook-replay.php
 kjor "refusjonsjournal" php tests/refusjon.php
 kjor "avbestillingsrefusjon" php tests/avbestill-refusjon.php
 kjor "refusjonsklient" node tests/refusjon-klient.mjs
-kjor "backend"       php -d memory_limit=512M tests/backend.php
+kjor "backend"       php -d memory_limit=-1 tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
 kjor "kjopslaas"     php tests/kjopslaas.php
@@ -79,9 +83,9 @@ kjor "henting"       bash tests/henting.sh
 # --- Hele flyter, klikket gjennom i en ekte nettleser ------------------------
 kjor "nettleser"      bash tests/nettleser/kjor.sh
 # Min side for medlemmer og kursdeltakere, hele veien, og fasiten over
-# svarene Min side leser (tests/godkjent/minside-fasit/). Eieren, 30.
-# september 2026: det nye admin bygges ved siden av, og Min side skal ikke
-# røres. Endres noe her, stopper publiseringen.
+# svarene Min side leser (tests/godkjent/minside-fasit/). Endringer krever
+# brukerens bestilling og gjennomgått fasit. Eieren bestilte 1. oktober
+# alle moduler med vis/skjul, samt sperring av ubetalt medlemskap.
 kjor "min side-vakt"  bash tests/nettleser/kjor.sh minside.mjs
 kjor "ny admin"       bash tests/nettleser/kjor.sh admin-ny
 

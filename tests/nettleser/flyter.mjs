@@ -78,7 +78,7 @@ const bryter = (nokkel, paa) => db("INSERT INTO content_blocks (nokkel, verdi) V
 async function flyt(navn, fn) {
   // E2E_BARE=«starten av navnet» kjorer bare den flyten. E2E_BILDER=mappe
   // tar et skjermbilde av siste side naar en flyt stopper.
-  if (process.env.E2E_BARE && !navn.startsWith(process.env.E2E_BARE)) return;
+  if (process.env.E2E_BARE && !process.env.E2E_BARE.split('|').filter(Boolean).some(prefix => navn.startsWith(prefix))) return;
   const tidligere=new Set(nettleser.contexts());
   console.log(`\n── ${navn} ──`);
   try { await fn(); } catch (e) {
@@ -292,7 +292,7 @@ await flyt('Galleri: fra Min side til forsiden', async () => {
   bryter('Vis/medlemsforslag', true);
   const kari = await side('medlem');
   await gaa(kari, '/min-side', 3500);
-  await kari.getByText('Del på Instagram og i galleriet').first().click();
+  await kari.getByText('Del på Instagram og i galleriet').filter({ visible: true }).first().click();
   await kari.waitForTimeout(1200);
   const fs = await import('node:fs');
   // Min side avviser bilder under 1080 piksler (for smaa for Instagram).
@@ -302,9 +302,10 @@ await flyt('Galleri: fra Min side til forsiden', async () => {
     imagefill($b, 0, 0, imagecolorallocate($b, 160, 110, 80));
     imagefilledellipse($b, 700, 760, 900, 700, imagecolorallocate($b, 70, 110, 150));
     return imagejpeg($b, '${bilde}', 85);`);
-  await kari.locator('label', { hasText: 'Velg bilde' }).locator('input[type="file"]').first().setInputFiles(bilde);
-  await kari.locator('textarea').last().fill('E2E bolle i blå glasur');
-  await kari.getByRole('button', { name: 'Send forslag' }).click();
+  const forslag = kari.locator('#minside-forslag');
+  await forslag.locator('input[type="file"]').setInputFiles(bilde);
+  await forslag.locator('textarea').fill('E2E bolle i blå glasur');
+  await forslag.getByRole('button', { name: 'Send forslag' }).click();
   await kari.waitForTimeout(3000);
   const f = db("SELECT id, status FROM medlemsforslag WHERE member_id = :m ORDER BY id DESC LIMIT 1", { m: S.medlem.id })[0];
   sjekk('forslaget fra Min side er lagret', !!f && f.status === 'venter', JSON.stringify(f));
@@ -348,7 +349,7 @@ await flyt('Galleri: fra Min side til forsiden', async () => {
 
   await gaa(kari, '/min-side', 3500);
   sjekk('Min side sier «Vises i galleriet på forsiden»',
-    await kari.getByText('Vises i galleriet på forsiden').first().isVisible().catch(() => false));
+    await kari.locator('#minside-forslag').getByText('Vises i galleriet på forsiden').isVisible().catch(() => false));
 
   await gaa(a, '/admin/markedsforing', 2500);
   await a.locator('main button', { hasText: 'Medlemsforslag' }).first().click();
@@ -439,11 +440,11 @@ await flyt('Synlighet: pille, flis og ark', async () => {
   const kari = await side('medlem');
   await gaa(kari, '/min-side', 3500);
   sjekk('Min side viser «Del på Instagram og i galleriet» naar bryteren er paa',
-    await kari.getByText('Del på Instagram og i galleriet').first().isVisible().catch(() => false));
+    await kari.getByText('Del på Instagram og i galleriet').filter({ visible: true }).first().isVisible().catch(() => false));
   bryter('Vis/medlemsforslag', false);
   await gaa(kari, '/min-side', 3500);
   sjekk('… og skjuler den naar bryteren er av',
-    !(await kari.getByText('Del på Instagram og i galleriet').first().isVisible().catch(() => false)));
+    !(await kari.getByText('Del på Instagram og i galleriet').filter({ visible: true }).first().isVisible().catch(() => false)));
   await kari.context().close();
   // Mobil: pillen i menyskuffen.
   const mob = await side('admin', 390, 844);
@@ -1338,21 +1339,22 @@ await flyt('Medlemsreise 5: si opp, forny og admin som endrer', async () => {
   // som loeper, fra der forrige betaling slutter.
   sjekk('«Forny» starter betaling for neste periode', !!(f && f.url && f.fornyelse), JSON.stringify(f).slice(0, 140));
   const fb = db("SELECT vipps_reference AS ref, gjelder_fra FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1", { s: m.avtale })[0] || {};
-  sjekk('… på den samme avtalen, gjeldende fra i dag (ingen betaling før)', !!fb.ref
-    && String(fb.gjelder_fra).slice(0, 10) === new Date().toISOString().slice(0, 10), JSON.stringify(fb));
+  const nesteFra = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +1 month'));`);
+  sjekk('… på den samme avtalen, fra neste periode (inneværende er betalt)', !!fb.ref
+    && String(fb.gjelder_fra).slice(0, 10) === nesteFra, JSON.stringify(fb));
   await retur(fb.ref);
   const f2 = await api(p, '/api/medlemskap.php', { handling: 'start', plan: liten.navn });
   const fb2 = db("SELECT vipps_reference AS ref, gjelder_fra FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1", { s: m.avtale })[0] || {};
-  const nesteFra = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +1 month'));`);
-  sjekk('… neste «Forny» gjelder fra der forrige periode slutter', !!(f2 && f2.url) && String(fb2.gjelder_fra).slice(0, 10) === nesteFra,
+  const nesteNeste = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +2 month'));`);
+  sjekk('… neste «Forny» gjelder fra der forrige periode slutter', !!(f2 && f2.url) && String(fb2.gjelder_fra).slice(0, 10) === nesteNeste,
     JSON.stringify(fb2));
   await retur(fb2.ref);
   const liste0 = await (async () => { const a = await side('admin'); await gaa(a, '/admin/oversikt', 1500);
     const l = await api(a, '/api/admin/medlemmer.php'); await a.context().close(); return l; })();
   const r0 = (Array.isArray(liste0) ? liste0 : (liste0.medlemmer || Object.values(liste0).find(Array.isArray) || [])).find(x => x.id === m.id) || {};
-  const nesteNeste = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +2 month'));`);
-  sjekk('… admin: betalt, neste forfall to perioder fram', r0.betaling === 'betalt'
-    && String(r0.betalingTekst || '').includes(php(`return Booking::norskDatoKort('${nesteNeste} 12:00:00');`)), r0.betalingTekst || '');
+  const nesteForfall = php(`return gmdate('Y-m-d', strtotime(gmdate('Y-m-d') . ' +3 month'));`);
+  sjekk('… admin: betalt, neste forfall etter inneværende og to fornyelser', r0.betaling === 'betalt'
+    && String(r0.betalingTekst || '').includes(php(`return Booking::norskDatoKort('${nesteForfall} 12:00:00');`)), r0.betalingTekst || '');
   sjekk('… og fortsatt én aktiv avtale', Number(verdi("SELECT COUNT(*) FROM subscriptions WHERE member_id = :m AND status = 'aktiv'", { m: m.id })) === 1);
   await p.context().close();
   // «Forny» med timene brukt opp aapner vindu 2.
@@ -2287,6 +2289,3 @@ console.log(`\n${ok} sjekker i orden, ${feil.length} feil, ${kjente.length} kjen
 if (kjente.length) { console.log('\nKjente feil (stopper ikke publiseringen):'); for (const k of kjente) console.log('  ! ' + k); }
 if (skriptfeil.length) { console.log('\nSkriptfeil underveis:'); for (const s of [...new Set(skriptfeil)].slice(0, 10)) console.log('  · ' + s); }
 if (feil.length) { console.log('\nFeil:'); for (const f of feil) console.log('  ✗ ' + f); process.exit(1); }
-
-
-

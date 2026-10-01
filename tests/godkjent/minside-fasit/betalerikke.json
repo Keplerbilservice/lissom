@@ -4,6 +4,7 @@
     "svar": {
       "adminKreverPassord": false,
       "adminUtenPassord": false,
+      "betalingMangler": false,
       "erAdmin": false,
       "erMedlem": true,
       "erRegnskap": false,

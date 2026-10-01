@@ -1857,11 +1857,13 @@
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
-                        "<a href=\"/admin2\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>",
+                        "<a href=\"/admin-ny\" style=\"{{ tmAdmin2Stil }}\">Prøv nytt admin</a>",
                         "(this.state.innholdLagret || {})['Vis/admin2'] === 'ja'"
                     ]
                 }
-            ]
+            ],
+            "endret": "2026-10-01",
+            "tillegg": "Eieren valgte egen selvstendig admin («ja jeg vil gå for din»), ferdig før publisering. Prøv nytt admin peker nå på /admin-ny; /admin2 bevares som tidligere utgave."
         },
         {
             "id": "minside-vakt-for-publisering",
@@ -2561,6 +2563,36 @@
                 }
             ],
             "kontroll": "51 innganger åpnet på 390 og 1280 px, 102 kontroller totalt. Ingen manglende registrerte ruter, skriptfeil, API-feil eller vannrett overløp. Fem egne moduler, syv dyplenker, innloggingskrav og avbryt kontrollert separat. Navigasjonskontroll er ikke full ende-til-ende-kontroll av alle skrivehandlinger."
+        },
+        {
+            "id": "eget-arbeidsrom-og-alle-moduler",
+            "dato": "2026-10-01",
+            "hva": "Eieren velger selvstendig admin med vanlig admins funksjoner, forbedret kalender og regnskapsførertilgang. Alle tilgjengelige Min side-moduler vises med personlig vis/skjul-bryter. Ubetalt periode gir ikke medlemstilgang, men utstempling skal virke.",
+            "hvor": "/admin-ny og Min side",
+            "kode": [
+                {
+                    "fil": "admin-ny.html",
+                    "finnes": [
+                        "/admin-ny/app.js"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "msModulVals()",
+                        "data-ms-modul=\"pameldinger\"",
+                        ".lx-mshjem.lx-msalle .ms-o-pamld"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/kjor.sh",
+                    "finnes": [
+                        "regnskapsforer-nyadmin",
+                        "ubetalt-medlem",
+                        "minside-moduler-ut"
+                    ]
+                }
+            ]
         }
     ]
 }

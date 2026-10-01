@@ -3,7 +3,7 @@ declare(strict_types=1);
 // Bare testdata: en mottatt betaling for perioden som løper.
 function test_betalt_medlem(int $id): void {
     $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
-    if (!$m || !in_array($m['status'], ['aktiv','prove','pause'], true)) return;
+    if (!$m || !empty($m['betaler_ikke']) || !in_array($m['status'], ['aktiv','prove','pause'], true)) return;
     $plan = Medlemskap::planUansett((string) ($m['medlemskap_type'] ?? ''));
     if (!$plan) {
         $plan = DB::en('SELECT * FROM membership_plans WHERE aktiv = 1 AND engangs = 0 ORDER BY sortering LIMIT 1');

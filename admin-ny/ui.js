@@ -1,6 +1,9 @@
 export function el(tag,attrs={},...children){const n=document.createElement(tag);for(const [key,value]of Object.entries(attrs)){if(value===undefined||value===null||value===false)continue;if(key==='text')n.textContent=value;else if(key.startsWith('on'))n.addEventListener(key.slice(2),value);else n.setAttribute(key,value===true?'':String(value));}for(const c of children.flat(Infinity)){if(c===null||c===undefined||c===false)continue;n.append(c instanceof Node?c:document.createTextNode(String(c)));}return n;}
 export const money=ore=>new Intl.NumberFormat('nb-NO',{style:'currency',currency:'NOK',maximumFractionDigits:0}).format((Number(ore)||0)/100);
 export function operationId(){if(typeof crypto.randomUUID==='function')return crypto.randomUUID();const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;}
+const refundIds=new Map();
+export function refundId(key){if(refundIds.has(key))return refundIds.get(key);let id;try{id=sessionStorage.getItem(key);}catch{}if(!id||!/^[a-zA-Z0-9_-]{16,64}$/.test(id))id=operationId();refundIds.set(key,id);try{sessionStorage.setItem(key,id);}catch{}return id;}
+export function finishRefund(key){refundIds.delete(key);try{sessionStorage.removeItem(key);}catch{}}
 export const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Oslo'}).format(new Date());
 export const date=s=>new Date(`${s}T12:00:00`);
 export const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;

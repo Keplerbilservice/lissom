@@ -359,6 +359,9 @@ if ($d === null && str_starts_with($adresse, '/butikk/')) {
         // kan dele. Da er det ingen side her.
         if ($v !== null && (int) $v['kun_medlemmer'] === 0) {
             $navn = (string) $v['tittel'];
+            // Bivoks er ikke keramikk; behold varens egen beskrivelse.
+            $bivoks = stripos($navn, 'bivoks') !== false;
+            $vareTittel = $navn . ($bivoks ? ' | Lissom' : ' — håndlaget keramikk | Lissom');
             $meta = trim((string) preg_replace('/\s+/u', ' ', (string) ($v['beskrivelse'] ?? '')));
             if (mb_strlen($meta) > 158) {
                 $kort = mb_substr($meta, 0, 158);
@@ -368,18 +371,18 @@ if ($d === null && str_starts_with($adresse, '/butikk/')) {
                     : trim($kort) . ' …';
             }
             if ($meta === '') {
-                $meta = $navn . ' — håndlaget keramikk fra verkstedet på Teie i Tønsberg. '
+                $meta = $bivoks ? $navn : $navn . ' — håndlaget keramikk fra verkstedet på Teie i Tønsberg. '
                       . 'Hvert stykke er dreid for hånd, så farge og form varierer litt.';
             }
             $bilde = trim((string) ($v['bilde'] ?? ''));
             $d = [
-                'tittel'        => $navn . ' — håndlaget keramikk | Lissom',
+                'tittel'        => $vareTittel,
                 'meta'          => $meta,
                 'canonical'     => ROT . Lenker::vare((int) $v['id'], $navn),
-                'ogTittel'      => $navn . ' — håndlaget keramikk | Lissom',
+                'ogTittel'      => $vareTittel,
                 'ogBeskrivelse' => $meta,
                 'delingsbilde'  => $bilde !== '' ? ROT . '/' . ltrim($bilde, '/') : '',
-                'altTekst'      => $navn . ', håndlaget keramikk fra Lissom i Tønsberg',
+                'altTekst'      => $bivoks ? $navn : $navn . ', håndlaget keramikk fra Lissom i Tønsberg',
                 'index'         => 'Index',
             ];
         }

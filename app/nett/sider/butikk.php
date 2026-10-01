@@ -97,7 +97,8 @@ if ($valgt !== null) {
     $bilde = $bildeFor($valgt);
     $kat   = trim((string) ($valgt['kategori'] ?? ''));
     $tomt  = $utsolgt($valgt);
-    $alt   = $navn . ', håndlaget keramikk fra Lissom i Tønsberg';
+    $bivoks = stripos($navn, 'bivoks') !== false;
+    $alt   = $bivoks ? $navn : $navn . ', håndlaget keramikk fra Lissom i Tønsberg';
     $ss    = Nett::srcset($bilde);
     // Bildet er LCP paa varesida.
     $hode  = '<link rel="preload" as="image" fetchpriority="high" href="' . $e($bilde) . '"'
@@ -126,7 +127,7 @@ if ($valgt !== null) {
     $h .= '<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-body);">';
     foreach (array_filter([
         $merknad,
-        'Dreid for hånd i verkstedet på Teie — farge og form varierer litt fra bildet',
+        $bivoks ? '' : 'Dreid for hånd i verkstedet på Teie — farge og form varierer litt fra bildet',
         'Hent i butikken på Teie, eller få den sendt. Betal med Vipps.',
     ]) as $linje) {
         $h .= '<div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>' . $e($linje) . '</span></div>';

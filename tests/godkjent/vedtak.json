@@ -2338,6 +2338,78 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlemsintro-20261001",
+            "dato": "2026-10-01",
+            "hva": "Eieren godkjente aa fjerne loeftet om fri oppsigelse fra introen; medlemsvilkaar og avtaler endres ikke.",
+            "hvor": "Medlemskap, intro",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "{ l: 'Ingress', v: 'Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true }"
+                    ],
+                    "ikkeFinnes": [
+                        "Abonnementet løper fra måned til måned og kan sies opp når du vil."
+                    ]
+                },
+                {
+                    "fil": "innhold-standard.json",
+                    "finnes": [
+                        "\"Medlemskap/0/Ingress\": \"Du må ha tatt et kurs hos oss, eller ha erfaring fra før.\""
+                    ]
+                },
+                {
+                    "fil": "db/migrations/241_medlemsintro.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-10-01",
+                        "WHERE nokkel = 'Medlemskap/0/Ingress'",
+                        "AND verdi = 'Abonnementet"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "produkttekst-20261001",
+            "dato": "2026-10-01",
+            "hva": "Eieren godkjente Kaffekopp, blågrønn (8), Kaffekopp med hank, blå (9), og aa fjerne keramikk- og dreiepaastander fra bivokslys.",
+            "hvor": "Butikk, metadata og produkttekst",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "piHarDreietekst: !!p && !/bivoks/i.test",
+                        "const bivoks = /bivoks/i.test(navn);",
+                        "tittel: vareTittel,"
+                    ]
+                },
+                {
+                    "fil": "side.php",
+                    "finnes": [
+                        "$bivoks = stripos($navn, 'bivoks') !== false;",
+                        "'tittel'        => $vareTittel",
+                        "'altTekst'      => $bivoks ? $navn"
+                    ]
+                },
+                {
+                    "fil": "app/nett/sider/butikk.php",
+                    "finnes": [
+                        "$bivoks ? '' : 'Dreid for hånd",
+                        "$alt   = $bivoks ? $navn"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/242_kopptitler.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-10-01",
+                        "SET tittel = 'Kaffekopp, blågrønn'",
+                        "SET tittel = 'Kaffekopp med hank, blå'",
+                        "WHERE id = 8 AND tittel = 'Kaffekopp, blå'",
+                        "WHERE id = 9 AND tittel = 'Kaffekopp, blå'"
+                    ]
+                }
+            ]
         }
     ]
 }

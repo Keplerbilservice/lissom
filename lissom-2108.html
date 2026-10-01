@@ -30022,7 +30022,9 @@ window.__resources = {
           <sc-if value="{{ piHarMerknad }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>{{ piMerknad }}</span></div>
           </sc-if>
-          <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>Dreid for hånd i verkstedet på Teie — farge og form varierer litt fra bildet</span></div>
+          <sc-if value="{{ piHarDreietekst }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>Dreid for hånd i verkstedet på Teie — farge og form varierer litt fra bildet</span></div>
+          </sc-if>
           <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--sage-600); font-weight: 700;">✓</span><span>Hent i butikken på Teie, eller få den sendt. Betal med Vipps.</span></div>
         </div>
         <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
@@ -31245,7 +31247,7 @@ const SIDEINNHOLD = {
     { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Medlemskap' },
       { l: 'Overskrift', v: 'Verkstedet er ditt, døgnet rundt' },
-      { l: 'Ingress', v: 'Abonnementet løper fra måned til måned og kan sies opp når du vil. Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true } ] },
+      { l: 'Ingress', v: 'Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true } ] },
     { navn: 'Hvorfor bli medlem', type: 'Tekst og lister', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Fellesskapet' },
       { l: 'Overskrift', v: 'Hvorfor bli medlem?' },
@@ -45950,6 +45952,8 @@ class Component extends DCLogic {
     if (this.state.side !== 'butikk' || !v || !v.sti) return null;
 
     const navn = v.title || v.tittel || '';
+    const bivoks = /bivoks/i.test(navn);
+    const vareTittel = navn + (bivoks ? ' | Lissom' : ' — håndlaget keramikk | Lissom');
     let meta = String(v.detalj || '').replace(/\s+/g, ' ').trim();
     if (meta.length > 158) {
       const kort = meta.slice(0, 158);
@@ -45957,15 +45961,15 @@ class Component extends DCLogic {
       meta = punktum > 60 ? kort.slice(0, punktum + 1) : kort.trim() + ' …';
     }
     if (!meta) {
-      meta = navn + ' — håndlaget keramikk fra verkstedet på Teie i Tønsberg. '
+      meta = bivoks ? navn : navn + ' — håndlaget keramikk fra verkstedet på Teie i Tønsberg. '
            + 'Hvert stykke er dreid for hånd, så farge og form varierer litt.';
     }
 
     return {
-      tittel: navn + ' — håndlaget keramikk | Lissom',
+      tittel: vareTittel,
       meta: meta,
       canonical: 'https://lissom.no' + v.sti,
-      ogTittel: navn + ' — håndlaget keramikk | Lissom',
+      ogTittel: vareTittel,
       ogBeskrivelse: meta,
       delingsbilde: v.image ? 'https://lissom.no/' + String(v.image).replace(/^\//, '') : '',
       index: 'Index',
@@ -66834,6 +66838,7 @@ class Component extends DCLogic {
           piApen: !!p,
           piLukk: () => this.setState({ piProdukt: null }),
           piTittel: p ? p.title : '',
+          piHarDreietekst: !!p && !/bivoks/i.test(p.title || p.tittel || ''),
           piBadge: p ? p.badge : '',
           piPris: p ? p.pris : '',
           piTekst: p ? p.detalj : '',

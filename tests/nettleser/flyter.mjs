@@ -734,6 +734,8 @@ const proveMedlem = (navn) => php(`
     DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', strtotime($m . ' UTC') + $i * 60),
       'ut_tid' => gmdate('Y-m-d H:i:s', strtotime($m . ' UTC') + ($i + 1) * 60), 'minutter' => 240]);
   }
+  require dirname(__DIR__) . '/betalt-fixture.php';
+  test_betalt_medlem($id);
   $t = bin2hex(random_bytes(32));
   DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]);
   return ['id' => $id, 'token' => $t, 'avtale' => $s, 'plan' => $plan];`);
@@ -898,6 +900,8 @@ const vanligMedlem = (navn, minutter) => php(`
   $m = strtotime(Stempling::manedStart() . ' UTC') + 60;
   DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m),
     'ut_tid' => gmdate('Y-m-d H:i:s', $m + $min * 60), 'minutter' => $min]);
+  require dirname(__DIR__) . '/betalt-fixture.php';
+  test_betalt_medlem($id);
   $t = bin2hex(random_bytes(32));
   DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]);
   return ['id' => $id, 'token' => $t, 'plan' => $plan, 'timer' => $timer];`);
@@ -1075,6 +1079,8 @@ const medlemMedPlan = (navn, plan, minutter = 0) => php(`
     DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m),
       'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);
   }
+  require dirname(__DIR__) . '/betalt-fixture.php';
+  test_betalt_medlem($id);
   $t = bin2hex(random_bytes(32));
   DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]);
   return ['id' => $id, 'token' => $t, 'avtale' => $s, 'plan' => $plan];`);
@@ -1699,7 +1705,7 @@ await flyt('Skisser: tegne, bilde, notat, lagre og dele', async () => {
   }
 
   // Et annet medlem sin tavle, som Kari ikke skal se.
-  const annen = Number(php(`$o = DB::settInn('members', ['navn' => 'Skisse Annen', 'epost' => 'skisse-annen-' . bin2hex(random_bytes(3)) . '@e2e.lissom.test', 'telefon' => '+4790000099', 'rolle' => 'medlem', 'status' => 'aktiv']); return Skisser::ny(DB::en('SELECT * FROM members WHERE id = :i', ['i' => $o]), 'Andres tavle');`));
+  const annen = Number(php(`$o = DB::settInn('members', ['navn' => 'Skisse Annen', 'epost' => 'skisse-annen-' . bin2hex(random_bytes(3)) . '@e2e.lissom.test', 'telefon' => '+4790000099', 'rolle' => 'medlem', 'status' => 'aktiv']); require dirname(__DIR__) . '/betalt-fixture.php'; test_betalt_medlem($o); return Skisser::ny(DB::en('SELECT * FROM members WHERE id = :i', ['i' => $o]), 'Andres tavle');`));
   const k = await side('medlem', 390, 844);
   await gaa(k, '/skisser.html', 1500);
   sjekk('Medlem: ser tavla admin delte', await k.locator(`[data-tavle="${S.skisseDelt}"]`).count() === 1);

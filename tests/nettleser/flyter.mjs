@@ -1232,8 +1232,15 @@ await flyt('Medlemsreise 3: timepakke betalt, i omsetningen og med til neste må
   // maanedsskiftet gjor, og ser hva som er tilgode.
   const tilgode = Number(php(`return Timepakke::tilgodeMin(${tp.id});`));
   sjekk('pakken står til gode (6 t; timen over i dag ligger i stemplingen)', tilgode === 360, String(tilgode));
-  php(`DB::kjor("UPDATE check_ins SET inn_tid = DATE_SUB(inn_tid, INTERVAL 1 MONTH), ut_tid = DATE_SUB(ut_tid, INTERVAL 1 MONTH) WHERE member_id = ${tp.id}");
-       DB::kjor("UPDATE timepakker SET created_at = DATE_SUB(created_at, INTERVAL 1 MONTH), betalt_at = DATE_SUB(COALESCE(betalt_at, created_at), INTERVAL 1 MONTH) WHERE member_id = ${tp.id}");
+  // Flytt til forrige norske kalendermåned, ikke en måned bakover i UTC.
+  // 1. oktober kl. 00 norsk tid er 30. september i UTC; DATE_SUB paa
+  // UTC-datoen flyttet dermed teststemplingen helt tilbake til august.
+  php(`$forrige = (new DateTimeImmutable('first day of last month', new DateTimeZone('Europe/Oslo')))
+          ->setTime(12, 0)->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+       DB::kjor("UPDATE check_ins SET inn_tid = :fra, ut_tid = DATE_ADD(:fra2, INTERVAL minutter MINUTE) WHERE member_id = ${tp.id}",
+           ['fra' => $forrige, 'fra2' => $forrige]);
+       DB::kjor("UPDATE timepakker SET created_at = :fra, betalt_at = :betalt WHERE member_id = ${tp.id}",
+           ['fra' => $forrige, 'betalt' => $forrige]);
        return Timepakke::lukkMaaneder();`);
   const nesteMnd = Number(php(`return Timepakke::tilgodeMin(${tp.id});`));
   sjekk('… og følger med til neste måned', nesteMnd === 300, String(nesteMnd));

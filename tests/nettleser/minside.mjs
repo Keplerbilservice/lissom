@@ -111,6 +111,13 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
     if (${minutter} > 0) {
       $m = strtotime(Stempling::manedStart() . ' UTC') + 120;
       DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m), 'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);
+      // En nylig avsluttet oekt uten hele minutter gjor «siste» stabil.
+      // Maanedsstart er fersk den forste, men gammel resten av maaneden.
+      // Null minutter bevarer timetallene; API-fasiten sjekker hele oekta.
+      $slutt = time() - 180;
+      DB::settInn('check_ins', ['member_id' => $id,
+        'inn_tid' => gmdate('Y-m-d H:i:s', $slutt - 20),
+        'ut_tid' => gmdate('Y-m-d H:i:s', $slutt), 'minutter' => 0]);
     }
     if (${timepakke} > 0) {
       DB::settInn('timepakker', ['member_id' => $id, 'timer' => ${timepakke}, 'pris_ore' => 80000, 'status' => 'betalt', 'betalt_at' => gmdate('Y-m-d H:i:s')]);

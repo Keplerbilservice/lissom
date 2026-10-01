@@ -231,7 +231,14 @@
       "saaLenge": null,
       "saaLengeMin": 0,
       "siden": null,
-      "siste": null,
+      "siste": {
+        "apen": false,
+        "auto": false,
+        "dag": "<dato>",
+        "id": "<number>",
+        "inn": "<kl>",
+        "ut": "<kl>"
+      },
       "timepakke": {
         "kanKjope": true,
         "prisOre": 80000,

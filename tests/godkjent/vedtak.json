@@ -2410,6 +2410,29 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "testdatoer-20261001",
+            "dato": "2026-10-01",
+            "hva": "Eieren godkjente aa rette de to datoavhengige testoppsettene som feilet ogsaa paa uendret main. Norsk kalendermaned og en kontrollert nylig avsluttet oekt; medlemskode og kundeside bevares.",
+            "hvor": "Bare nettlesertester og deres fasit",
+            "kode": [
+                {
+                    "fil": "tests/nettleser/flyter.mjs",
+                    "finnes": [
+                        "DateTimeImmutable('first day of last month', new DateTimeZone('Europe/Oslo'))",
+                        "nesteMnd === 300"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/minside.mjs",
+                    "finnes": [
+                        "$slutt = time() - 180",
+                        "'ut_tid' => gmdate('Y-m-d H:i:s', $slutt), 'minutter' => 0",
+                        "ulike.length === 0"
+                    ]
+                }
+            ]
         }
     ]
 }

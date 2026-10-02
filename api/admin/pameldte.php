@@ -6,6 +6,10 @@
  *   ?bevis=1      alle kursbevis, hele veien tilbake
  *   ?historikk=1  bare datoene, to aar bakover — til aa foere inn i ettertid
  *   uten          alle kommende okter med antall paameldte
+ *   ?booking=7    som «uten», og i tillegg den ene paameldingen i «valgt» —
+ *                 ogsaa naar den er eldre enn lista eller ikke staar som
+ *                 betalt/reservert. «Rediger påmelding» i nytt admin
+ *                 aapner akkurat den (eieren, 2. oktober 2026).
  */
 
 declare(strict_types=1);
@@ -180,7 +184,7 @@ if ($oktId <= 0) {
     // Kolonnen kommer med migrasjon 057.
     $allergiKol = DB::harKolonne('bookings', 'allergier') ? 'b.allergier,' : '';
 
-    $alle = DB::alle(
+    $utvalg =
         "SELECT b.id, b.antall, b.status, b.belop_ore, b.folge_medlem,
                 b.betalt_maate, b.notat, b.lagt_inn_av, {$bevisKol} {$allergiKol}
                 b.member_id, b.course_session_id,
@@ -193,14 +197,20 @@ if ($oktId <= 0) {
            JOIN courses c ON c.id = b.course_id
       LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
       LEFT JOIN members m ON m.id = b.member_id
-      LEFT JOIN payments p ON p.id = b.payment_id
+      LEFT JOIN payments p ON p.id = b.payment_id";
+    $alle = DB::alle(
+        $utvalg . "
           WHERE b.status IN ('betalt','reservert')
             AND (cs.start_tid IS NULL OR cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY))
           ORDER BY cs.start_tid, b.id"
     );
 
-    Svar::json([
-        'deltakere' => array_map(static fn($d) => [
+    // Den ene paameldingen «Rediger påmelding» peker paa. Den kan ligge
+    // utenfor lista over: eldre enn 30 dager, eller med en annen status.
+    $valgtId = Foresporsel::heltall('booking');
+    $valgt = $valgtId > 0 ? DB::en($utvalg . ' WHERE b.id = :b', ['b' => $valgtId]) : null;
+
+    $rad = static fn($d) => [
             'id'      => (int) $d['id'],
             // Hvem raden gjelder, ikke bare hva den heter.
             //
@@ -244,7 +254,11 @@ if ($oktId <= 0) {
             'bevisNavn'    => (string) ($d['bevis_navn'] ?? ''),
             'bevisKurs'    => (string) ($d['bevis_kurs'] ?? ''),
             'bevisSperret' => !empty($d['bevis_sperret']),
-        ], $alle),
+        ];
+
+    Svar::json([
+        'deltakere' => array_map($rad, $alle),
+        'valgt'     => $valgt === null ? null : $rad($valgt),
         // Ledige plasser paa alle oektene i én sporring. Sto det ett kall
         // per oekt, var det tre sporringer per dato — og datoene lages naa av
         // aapningstidene, saa de blir mange.

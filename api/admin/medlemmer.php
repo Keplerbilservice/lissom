@@ -1324,8 +1324,14 @@ if (Foresporsel::metode() === 'POST') {
             ['m' => $id]
         );
         if ($engangs) {
+            // Uten avtalerad (meldt inn for haand): en engangsbetaling uten
+            // avtale siden innmeldingen teller (Codex, 2. oktober 2026).
+            $start = substr(trim((string) DB::verdi('SELECT start_dato FROM members WHERE id = :i', ['i' => $id])), 0, 10);
             foreach ($betalt as $r) {
-                if ($avtale !== null && (int) ($r['subscription_id'] ?? 0) === (int) $avtale['id']) {
+                $samme = $avtale !== null
+                    ? (int) ($r['subscription_id'] ?? 0) === (int) $avtale['id']
+                    : empty($r['subscription_id']) && ($start === '' || (string) $r['created_at'] >= $start . ' 00:00:00');
+                if ($samme) {
                     throw new RuntimeException($navn . ' har allerede betalt ' . $planNavn
                         . '. Betalingen er ikke registrert på nytt.', 409);
                 }

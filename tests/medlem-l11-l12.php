@@ -238,6 +238,14 @@ try {
     sjekk('… uten gjelder_fra (engangsplanen gjelder kjøpsdagen)', count(rader($p1)) === 1 && rader($p1)[0]['gjelder_fra'] === null, json_encode(rader($p1)));
     $svar = kall([[$porter[0], $API, $kontant($p1), $token]]);
     sjekk('andre betaling nektes (409)', $svar[0][0] === 409, (string) $svar[0][0]);
+    // Meldt inn for haand uten avtalerad (Codex P2): ogsaa da én gang.
+    [$p2, $p2S] = nyttMedlem($proveplan, 'L12 Prøve uten avtale');
+    DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $p2S]);
+    $svar = kall([[$porter[0], $API, $kontant($p2), $token], [$porter[1], $API, $kontant($p2), $token]]);
+    sjekk('uten avtalerad: dobbelttrykk gir én betaling', count(array_filter($svar, static fn($s) => $s[0] === 200)) === 1
+        && count(rader($p2)) === 1, json_encode(array_column($svar, 0)));
+    $svar = kall([[$porter[0], $API, $kontant($p2), $token]]);
+    sjekk('… og en ny betaling senere nektes (409)', $svar[0][0] === 409, (string) $svar[0][0]);
 
     // ══ markerBetalt: kortet foer betalingen ═════════════════════════════
     echo "\n── markerBetalt låser gavekortet før betalingen ──\n";

@@ -970,6 +970,10 @@ $ledige = Booking::ledigePlasser($oktId);
 
 try {
 $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epost, $telefon, $antall, $belop, $status, $maate, $admin, $medlemId, $kort): int {
+    // Samme laaserekkefoelge som ellers: kortet foer betalingene.
+    if ($maate === 'Gavekort' && $kort !== null) {
+        Booking::laasKort([(int) $kort['id']]);
+    }
     $bookingId = DB::settInn('bookings', [
         'course_id'         => (int) $okt['course_id'],
         'course_session_id' => $oktId,

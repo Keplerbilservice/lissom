@@ -330,6 +330,10 @@ if ($handling === 'gjorOpp' && is_array($kropp['deler'] ?? null) && count($kropp
 
     try {
     $gaveRad = DB::iTransaksjon(static function () use ($ordre, $rene, $formal, $kort, $adminId, $maateTekst): ?int {
+        // Samme laaserekkefoelge som ellers: kortet foer betalingene.
+        if ($kort !== null) {
+            Booking::laasKort([(int) $kort['id']]);
+        }
         $ider = [];
         $pengerad = null;
         $gaveRad = null;
@@ -474,6 +478,10 @@ if ($handling === 'gjorOpp') {
     $betalingId = 0;
     try {
     DB::iTransaksjon(static function () use ($ordre, $sum, $maate, $adminId, $formal, $kort, &$betalingId): void {
+        // Samme laaserekkefoelge som ellers: kortet foer betalingene.
+        if ($kort !== null) {
+            Booking::laasKort([(int) $kort['id']]);
+        }
         $felt = [
             'vipps_reference' => 'KASSE-' . $ordre['ordrenr'],
             'type'            => 'manuell',
@@ -1031,6 +1039,10 @@ if ($handling === 'delt') {
     $laget = DB::iTransaksjon(
         static function () use ($rene, $sum, $kunde, $ordrenr, $formal, $tittel,
                                 $kort, $adminId, $maateTekst): array {
+            // Samme laaserekkefoelge som ellers: kortet foer betalingene.
+            if ($kort !== null) {
+                Booking::laasKort([(int) $kort['id']]);
+            }
             // Ordren opprettes med hovedraden som mangler, og fylles inn
             // etterpaa: radene trenger ordrens id, og ordren trenger den
             // forste raden. Én av dem maa komme forst.

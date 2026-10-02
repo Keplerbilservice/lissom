@@ -49054,13 +49054,17 @@ class Component extends DCLogic {
   }
 
   betalingsPille(tilstand, somKnapp) {
+    // «over»: Prøv Lissom er over (eieren, 2. oktober 2026). Ikke betalt,
+    // ikke ubetalt — graa, som et gratismedlem. Teksten ved siden av sier
+    // naar den sluttet.
     const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
-                    forfalt: 'Forfalt', venter: 'Ikke betalt' };
+                    forfalt: 'Forfalt', venter: 'Ikke betalt', over: 'Sluttet' };
     // «Bestilt» er sitt eget svar: trekket er bedt om, men Vipps krever
     // forvarsel, saa pengene har ikke flyttet seg enda. Sto det «Betalt»
     // her, ville verkstedet trodd noe var gjort opp som ikke var det.
     const F = {
       fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+      over:    ['rgba(120,120,120,.16)', 'var(--text-muted)'],
       betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
       bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
       // «Forfalt» og «Ikke betalt» hadde samme farge. To ulike betydninger
@@ -56710,8 +56714,8 @@ class Component extends DCLogic {
       //
       // Et gratismedlem har ingenting aa registrere. Da staar pilla som for.
       betalingStil: this.betalingsPille(m.betaling, m.betaling !== 'fri').stil,
-      kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen',
-      kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen',
+      kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen' && m.betaling !== 'over',
+      kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen' || m.betaling === 'over',
       betalingHjelp: m.betaling === 'fri' ? '' : 'Registrer betaling',
       // Ett trykk aapner personen med betalingsboksen framme. Andre trykk —
       // Kontant eller Vipps — er det som faktisk foerer pengene. Pilla alene

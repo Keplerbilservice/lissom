@@ -22,7 +22,7 @@ $ok = 0; $feil = 0;
 function sjekk(string $n, bool $v, string $mer = ''): void
 { global $ok, $feil; if ($v) { $ok++; echo "  OK    $n\n"; } else { $feil++; echo "  FEIL  $n" . ($mer !== '' ? "  — $mer" : '') . "\n"; } }
 
-$servere = []; $porter = []; $kortene = []; $admin = 0; $kurs = 0; $okt = 0;
+$servere = []; $porter = []; $kortene = []; $medlemmer = []; $admin = 0; $kurs = 0; $okt = 0;
 $tag = 'SAMT-' . strtoupper(bin2hex(random_bytes(3)));
 $logg = sys_get_temp_dir() . '/lissom-samtidig-' . bin2hex(random_bytes(4)) . '.log';
 
@@ -119,6 +119,38 @@ try {
         sjekk('nøyaktig ett trykk lykkes', $lyktes === 1, json_encode(array_column($svar, 0)) . ' ' . json_encode(array_column($svar, 1), JSON_UNESCAPED_UNICODE));
         sjekk('ett trekk: saldo 50000, én betaling', $saldo === 50000 && $bet === 1, "saldo $saldo, betalinger $bet");
     }
+
+    // ── Medlemsbetaling med gavekort etter flettingen med «nytt etter 20.» ──
+    // Kontrolloeren: nøyaktig ÉN betalingsrad, med gjelder_fra satt, og
+    // kortet trukket. Avtalen er kjoept den 25. forrige maaned, saa foerste
+    // betaling gjelder denne maaneden (Medlemskap::gjelderFraForsteBetaling).
+    $plan = (string) DB::verdi('SELECT navn FROM membership_plans WHERE engangs = 0 AND aktiv = 1 AND krever_fast_trekk = 0 ORDER BY pris_ore LIMIT 1');
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $kjopt = (new DateTimeImmutable('now', $oslo))->modify('first day of last month')->setDate(
+        (int) (new DateTimeImmutable('now', $oslo))->modify('first day of last month')->format('Y'),
+        (int) (new DateTimeImmutable('now', $oslo))->modify('first day of last month')->format('n'), 25)->setTime(12, 0);
+    $forventet = (new DateTimeImmutable('now', $oslo))->modify('first day of this month')->format('Y-m-d');
+    foreach (['én del' => false, 'delt gavekort + kontant' => true] as $navn => $delt) {
+        echo "\n── Medlemsbetaling med gavekort, $navn ──\n";
+        $m = DB::settInn('members', ['navn' => "Samtidig medlem $navn", 'epost' => strtolower($tag) . '-' . bin2hex(random_bytes(3)) . '@lissom.test',
+            'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => $plan, 'start_dato' => $kjopt->format('Y-m-d')]);
+        $medlemmer[] = $m;
+        DB::settInn('subscriptions', ['member_id' => $m, 'plan' => $plan, 'pris_ore' => 50000, 'status' => 'aktiv',
+            'created_at' => $kjopt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')]);
+        $kode = $tag . '-M' . ($delt ? 'D' : 'E'); $k = nyttKort($kode);
+        $kropp = $delt
+            ? ['handling' => 'betaling', 'medlemId' => $m, 'deler' => [
+                ['maate' => 'Gavekort', 'belop' => '300', 'kode' => $kode], ['maate' => 'Kontant', 'belop' => '200']]]
+            : ['handling' => 'betaling', 'medlemId' => $m, 'maate' => 'Gavekort', 'kode' => $kode, 'belop' => '500'];
+        $svar = parallelt([[$porter[0], '/api/admin/medlemmer.php', $kropp, $token]]);
+        $rader = DB::alle('SELECT id, gavekort_ore, belop_ore, gjelder_fra FROM payments WHERE member_id = :m', ['m' => $m]);
+        $saldo = (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :k', ['k' => $k]);
+        sjekk('betalingen godtas', $svar[0][0] === 200 && ($svar[0][1]['ok'] ?? false) === true, json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+        sjekk($delt ? 'to rader (én per del)' : 'nøyaktig ÉN betalingsrad', count($rader) === ($delt ? 2 : 1), (string) count($rader));
+        sjekk("… gjelder_fra = $forventet på alle", $rader !== [] && count(array_filter($rader, static fn($r) => $r['gjelder_fra'] === $forventet)) === count($rader),
+            json_encode(array_column($rader, 'gjelder_fra')));
+        sjekk('… kortet trukket ' . ($delt ? 30000 : 50000) . ' øre', $saldo === ($delt ? 20000 : 0), (string) $saldo);
+    }
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getLine());
 } finally {
@@ -147,6 +179,12 @@ try {
         DB::kjor('DELETE FROM course_sessions WHERE id = :o', ['o' => $okt]);
     }
     if ($kurs) { DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kurs]); }
+    foreach ($medlemmer as $m) {
+        DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $m]);
+        DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $m]);
+        DB::kjor("DELETE FROM audit_log WHERE objekt_type = 'member' AND objekt_id = :m", ['m' => $m]);
+        DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $m]);
+    }
     if ($admin) {
         DB::kjor('DELETE FROM audit_log WHERE member_id = :m', ['m' => $admin]);
         DB::kjor('DELETE FROM sessions WHERE member_id = :m', ['m' => $admin]);

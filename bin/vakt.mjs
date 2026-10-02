@@ -288,6 +288,29 @@ if (gNokkel && tilGemini.length && process.env.VAKT_GEMINI !== '0') {
         console.log(`  ${j.medlemmer} medlemmer med aktiv avtale, ${j.salg} salg i dag og i går`);
         if (!(j.avvik || []).length) ok++;
         for (const a of j.avvik || []) avvik.push(a);
+
+        // Eieren, 2. oktober 2026: ja til daglig datasjekk. Reglene L4–L13
+        // (Vaktdata::regler()) kommer i «funn» som {regel, id, navn, tekst}.
+        // Hvert funn er et avvik, akkurat som «avvik» over. Bare regel,
+        // navn og tekst skrives ut — aldri e-post eller telefon.
+        const regelfunn = Array.isArray(j.funn) ? j.funn : [];
+        if (!regelfunn.length) {
+          ok++;
+          console.log('  OK    Datasjekk: ingen funn');
+        } else {
+          const perRegel = {};
+          for (const f of regelfunn) {
+            const regel = String(f?.regel ?? 'ukjent');
+            perRegel[regel] = (perRegel[regel] || 0) + 1;
+          }
+          console.log('  Datasjekk per regel:');
+          for (const [regel, antall] of Object.entries(perRegel)) console.log(`    ${regel}: ${antall}`);
+          for (const f of regelfunn) {
+            const linje = [f?.regel ?? 'ukjent', f?.navn || '–', f?.tekst ?? ''].map(String).join(' · ');
+            avvik.push(`Datasjekk: ${linje}`);
+            console.log(`  AVVIK Datasjekk: ${linje}`);
+          }
+        }
       }
     } catch (e) {
       avvik.push('Medlemmer og salg: ' + String(e.message).split('\n')[0]);

@@ -5513,12 +5513,15 @@ sjekk('Vipps blir bedt om aa trekke ved godkjenning',
 // dette laa pengene der uten aa staa i Kassa eller i regnskapet.
 sjekk('… og trekket hentes og foeres hos oss',
     str_contains($vFilInit, 'public static function trekkPaaAvtale(string $avtaleId, bool $kastVedFeil = false): array')
-    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale): void')
+    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): void')
     && str_contains($mlib, "'vipps_psp_ref'   => \$trekkId,"));
 // Det farligste her: staar «neste_trekk» paa i dag, ber runden om et trekk
-// til samme natt, og hun er trukket to ganger.
+// til samme natt, og hun er trukket to ganger. Kjoept etter den 20. gjelder
+// foerste trekk neste maaned, og da er neste trekk maaneden etter den
+// (eieren, 2. oktober 2026).
 sjekk('… og neste trekk staar en maaned fram, ikke i dag',
-    str_contains($mlib, "\$endring['neste_trekk'] = self::nesteTrekkdato(")
+    str_contains($mlib, "? self::nesteTrekkdato(\$forsteFra, \$dag ?? (int) substr(\$idagDato, 8, 2))")
+    && str_contains($mlib, ": self::nesteTrekkdato(\$idagDato, \$dag);")
     && !str_contains($mlib, "\$endring['neste_trekk'] = (new DateTimeImmutable('now'))->format('Y-m-d');"));
 // Noekkelen er trekkets egen id hos Vipps. To runder gir én rad.
 sjekk('… og to runder gir én rad',
@@ -9356,6 +9359,73 @@ $ikkeMedlem = ['id' => 0, 'navn' => 'Kursdeltaker', 'medlemskap_type' => null,
 sjekk('en som ikke er medlem har ingen betalingsstatus',
     Medlemskap::betalingsstatus($ikkeMedlem, null, null)['tilstand'] === 'ingen');
 
+// ── Nytt medlemskap kjoept etter den 20. ───────────────────────────────
+//
+// Eieren, 2. oktober 2026 (Johanna, Mini 15 kjoept 29. september): et NYTT
+// medlemskap kjoept den 21. eller senere gjelder neste kalendermaaned.
+// Tilgang med en gang; maanedstimene telles for neste maaned. Engangsplanen
+// og «Forny» er uendret. Hele flyten mot basen og en falsk Vipps staar i
+// tests/nytt-etter-20.php.
+echo "\n== Nytt medlemskap etter den 20. ==\n";
+$n20Planer = Medlemskap::planer();
+$n20Lop = array_values(array_filter($n20Planer, static fn($p) => (int) $p['engangs'] === 0))[0]['navn'] ?? '';
+$n20Prove = array_values(array_filter($n20Planer, static fn($p) => (int) $p['engangs'] === 1))[0]['navn'] ?? '';
+$n20 = static fn(string $t, ?string $naa = null) => Medlemskap::gjelderFraNytt(0, $n20Lop, $t, $naa ?? $t);
+sjekk('dag 20 (23.59 norsk tid) teller kjoepsmaaneden', $n20('2026-09-20 21:59:59') === null);
+sjekk('dag 21 (00.00 norsk tid) gjelder fra den 1. i neste maaned', $n20('2026-09-20 22:00:00') === '2026-10-01');
+sjekk('maanedsskiftet leses i norsk tid', $n20('2026-10-31 22:30:00') === '2026-11-01'
+    && $n20('2026-10-31 23:30:00') === null);
+sjekk('desember → januar', $n20('2026-12-28 10:00:00') === '2027-01-01');
+sjekk('engangsplanen (Prøv Lissom) er uendret',
+    Medlemskap::gjelderFraNytt(0, $n20Prove, '2026-09-29 10:00:00', '2026-09-29 10:00:00') === null);
+sjekk('betalingen dekker neste maaned', Medlemskap::dekkerTil(['gjelder_fra' => '2026-10-01', 'created_at' => '2026-09-29 10:00:00']) === '2026-11-01');
+sjekk('tilgang fra kjoepet kjennes paa formen, ikke paa enhver dato fram i tid',
+    Medlemskap::erForskuttert(['created_at' => '2026-09-29 10:00:00', 'gjelder_fra' => '2026-10-01'])
+    && !Medlemskap::erForskuttert(['created_at' => '2026-09-15 10:00:00', 'gjelder_fra' => '2026-10-01'])
+    && !Medlemskap::erForskuttert(['created_at' => '2026-09-29 10:00:00', 'gjelder_fra' => '2026-11-01']));
+sjekk('fast trekk: neste trekk er maaneden etter den foerste betalte',
+    Medlemskap::nesteTrekkdato('2026-10-01', 25) === '2026-11-25'
+    && Medlemskap::nesteTrekkdato('2027-01-01', 28) === '2027-02-28');
+$n20Lib = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$n20Adm = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('én regel, brukt i startEngangs(), foerste trekk og Kassa',
+    str_contains($n20Lib, '$gjelderFra = self::gjelderFraNytt((int) $medlem[\'id\'], $planNavn);')
+    && str_contains($n20Lib, 'self::foerForsteTrekk($avtale, $forsteFra);')
+    && substr_count($n20Adm, 'Medlemskap::gjelderFraForsteBetaling($id)') === 2);
+sjekk('«Forny» bruker ikke regelen', !preg_match('/function fornyPeriode\(.*?gjelderFraNytt.*?function erstattProve/s', $n20Lib));
+sjekk('maanedstimene telles fra kjoepet, saa de ikke dobles',
+    str_contains(les_testfil(dirname(__DIR__) . '/app/lib/stempling.php'),
+        '$fra = Medlemskap::timerTellesFra($medlemId, self::manedStart());'));
+$n20Mig = les_testfil(dirname(__DIR__) . '/db/migrations/244_nytt_medlemskap_etter_20.sql');
+sjekk('migrasjon 244 er trygg aa kjoere to ganger og rorer ikke engangsplanen',
+    str_contains($n20Mig, 'WHERE p.gjelder_fra IS NULL;') && str_contains($n20Mig, 'AND mp.engangs = 0')
+    && str_contains($n20Mig, "AND COALESCE(s.vipps_agreement_id, '') = ''")
+    && !preg_match('/\b(DROP|DELETE|TRUNCATE)\b/i', $n20Mig));
+
+// ── Prøv Lissom som er over ─────────────────────────────────────────────
+//
+// Eieren, 2. oktober 2026 (Ida): ikke «Betalt», ikke «Venter paa betaling»,
+// men «Prøv Lissom sluttet …». Ute av «Ikke betalt» i Kassa, ikke purret.
+echo "\n== Prøv Lissom som er over ==\n";
+$n20Ida = ['id' => 0, 'navn' => 'Ida', 'status' => 'prove', 'medlemskap_type' => $n20Prove,
+           'start_dato' => '2026-09-07', 'slutt_dato' => '2026-09-30', 'betaler_ikke' => 0, 'betaler_ikke_grunn' => null];
+sjekk('sluttet 30. september, sett 2. oktober', Medlemskap::proveSluttet($n20Ida, '2026-10-02') === '2026-09-30');
+sjekk('… men ikke den siste dagen selv', Medlemskap::proveSluttet($n20Ida, '2026-09-30') === null);
+sjekk('… og aldri for et loepende medlemskap',
+    Medlemskap::proveSluttet(['medlemskap_type' => $n20Lop] + $n20Ida, '2026-10-02') === null);
+$n20Igaar = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('-1 day')->format('Y-m-d');
+$b = Medlemskap::betalingsstatus(['slutt_dato' => $n20Igaar] + $n20Ida, null, $bBetaling('2026-09-07'));
+sjekk('betalingsstatus sier «sluttet», ikke betalt og ikke utestaaende',
+    $b['tilstand'] === 'over' && $b['utestaaende'] === false && $b['forfalt'] === false
+    && str_contains($b['tekst'], $n20Prove . ' sluttet '), $b['tilstand'] . ' · ' . $b['tekst']);
+sjekk('… og betalingen mangler ikke', !Medlemskap::betalingMangler(['slutt_dato' => $n20Igaar] + $n20Ida, false));
+sjekk('Min side, medlemslista og personruta bruker den samme regelen',
+    str_contains(les_testfil(dirname(__DIR__) . '/api/meg.php'), '$betalingMangler = Medlemskap::betalingMangler($m, $harTilgang);')
+    && substr_count($n20Adm, "'betalingMangler' => Medlemskap::betalingMangler(\$m, er_aktivt_medlem(\$m)),") === 2);
+sjekk('Oversikt og Kassa faar sluttdatoen med',
+    str_contains(les_testfil(dirname(__DIR__) . '/api/admin/oversikt.php'),
+        '"SELECT id, navn, epost, status, medlemskap_type, start_dato, slutt_dato"'));
+
 // ── Forfalt og utestaaende er to forskjellige ting ─────────────────────
 //
 // Eieren, 2. september: «verken hun eller Eirin kommer opp i kortet ikke
@@ -11638,10 +11708,11 @@ sjekk('… og fra Paameldte, der ankeret ikke finnes, gaar det til toppen',
     str_contains($sidaM2, "window.scrollTo({ top: 0, behavior: 'smooth' });\n    };\n    window.requestAnimationFrame(proev);"));
 
 // Et gratismedlem har ingenting aa registrere. Da staar pilla som en
-// etikett — den skal ikke love en handling som ikke finnes.
+// etikett — den skal ikke love en handling som ikke finnes. Det samme for
+// en Prøv Lissom som er over (eieren, 2. oktober 2026).
 sjekk('et gratismedlem har ingen knapp',
-    str_contains($sidaM2, "kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen',")
-    && str_contains($sidaM2, "kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen',")
+    str_contains($sidaM2, "kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen' && m.betaling !== 'over',")
+    && str_contains($sidaM2, "kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen' || m.betaling === 'over',")
     && str_contains($sidaM2, '<span class="lx-medlpille" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
 // Begge greinene maa finnes som verdier. Mangler én, tegnes hele skjermen
 // som «{{ }}».

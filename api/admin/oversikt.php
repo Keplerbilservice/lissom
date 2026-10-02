@@ -406,7 +406,7 @@ $nyeste = DB::alle(
 // ogsaa bruker. Den staar ett sted, og bare der.
 $medlemsstatus = (static function (): array {
     $aktive = DB::alle(
-        "SELECT id, navn, epost, status, medlemskap_type, start_dato"
+        "SELECT id, navn, epost, status, medlemskap_type, start_dato, slutt_dato"
         . (DB::harKolonne('members', 'betaler_ikke')
             ? ', betaler_ikke, betaler_ikke_grunn'
             : ', 0 AS betaler_ikke, NULL AS betaler_ikke_grunn')

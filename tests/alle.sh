@@ -22,8 +22,37 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-GRUPPER=(statisk backend betaling diverse flyt nettleser nettleser2)
+GRUPPER=(statisk backend betaling diverse flyter1 flyter2 flyter3 flyter4 minside nyadmin)
 if [ "${1:-}" = "--grupper" ]; then printf '%s\n' "${GRUPPER[@]}"; exit 0; fi
+
+# Nettleserflytene (tests/nettleser/flyter.mjs) deles etter navnets begynnelse
+# (E2E_BARE, skilt med |). Hver flyt maa treffe noyaktig én av delene, ellers
+# feiler skriptet — ingen flyt kan falle ut. Malt lokalt 2. oktober 2026
+# (sek.): «holder seg» ~450 (alene), «alle knapper» + «I dag» + menyer/skisser/
+# frakt ~360, Regresjon + medlemsreisene + Prøv/timepakke ~290, resten ~190.
+FLYTDEL_1='Nytt admin holder seg'
+FLYTDEL_2='Nytt admin: alle knapper|Nytt admin: I dag|Menyer og ark|Skisser:|Frakt ('
+FLYTDEL_3='Regresjon:|Google-anmeldelser|Medlemsreise|Prøv Lissom|Etter byttet|Oversikt paa mobil|Timepakke:|Utstempling'
+FLYTDEL_4='Flytt deltaker|Delt betaling|Vervepremie|Galleri:|Tekst maler|Synlighet:|Oversikt: dagens|Bestill mer|Designmaler|Bilder:|Gavekortsida|Butikk:'
+sjekk_flytdeler() {
+  local navn n treff d p feil=0
+  while IFS= read -r navn; do
+    treff=0
+    for d in 1 2 3 4; do
+      local v="FLYTDEL_$d"; IFS='|' read -ra pre <<< "${!v}"
+      for p in "${pre[@]}"; do [[ "$navn" == "$p"* ]] && treff=$((treff+1)); done
+    done
+    [ $treff -eq 1 ] || { echo "✗ flyten «$navn» treffer $treff deler av FLYTDEL_ (maa vaere 1)"; feil=1; }
+  done < <(sed -n "s/^await flyt('\(.*\)', async.*/\1/p" tests/nettleser/flyter.mjs)
+  for d in 1 2 3 4; do
+    local v="FLYTDEL_$d"; IFS='|' read -ra pre <<< "${!v}"
+    for p in "${pre[@]}"; do
+      grep -q "^await flyt('$p" tests/nettleser/flyter.mjs || { echo "✗ delen «$p» treffer ingen flyt"; feil=1; }
+    done
+  done
+  return $feil
+}
+if [ -n "${ALLE_TORR:-}" ]; then sjekk_flytdeler || exit 1; fi
 if [ -n "${ALLE_GRUPPE:-}" ]; then
   [[ " ${GRUPPER[*]} " == *" $ALLE_GRUPPE "* ]] || { echo "Ukjent gruppe: $ALLE_GRUPPE"; exit 1; }
 fi
@@ -107,7 +136,9 @@ kjor "eposter"       php tests/eposter.php
 kjor "sikkerhet (Codex C)" php tests/sikkerhet-c.php
 
 # --- Betalingskjeden ende til ende mot en falsk Vipps -----------------------
-gruppe flyt
+# Betalingsflyten henter en publisert, betalt kursokt fram i tid fra basen,
+# og den okta legger «backend» igjen. Derfor samme gruppe, backend foerst.
+gruppe backend
 kjor "betalingsflyt" bash tests/flyt.sh
 kjor "delt betaling" bash tests/deltbetaling.sh
 kjor "galleri, admin" bash tests/galleri.sh
@@ -117,18 +148,32 @@ kjor "dagens"        bash tests/dagens.sh
 kjor "henting"       bash tests/henting.sh
 
 # --- Hele flyter, klikket gjennom i en ekte nettleser ------------------------
-gruppe nettleser
-kjor "nettleser"      bash tests/nettleser/kjor.sh
-gruppe nettleser2
+gruppe flyter1
+kjor "nettleser, del 1" env E2E_BARE="$FLYTDEL_1" bash tests/nettleser/kjor.sh
+gruppe flyter2
+kjor "nettleser, del 2" env E2E_BARE="$FLYTDEL_2" bash tests/nettleser/kjor.sh
+gruppe flyter3
+kjor "nettleser, del 3" env E2E_BARE="$FLYTDEL_3" bash tests/nettleser/kjor.sh
+gruppe flyter4
+kjor "nettleser, del 4" env E2E_BARE="$FLYTDEL_4" bash tests/nettleser/kjor.sh
+gruppe minside
 # Min side for medlemmer og kursdeltakere, hele veien, og fasiten over
 # svarene Min side leser (tests/godkjent/minside-fasit/). Endringer krever
 # brukerens bestilling og gjennomgått fasit. Eieren bestilte 1. oktober
 # alle moduler med vis/skjul, samt sperring av ubetalt medlemskap.
 kjor "min side-vakt"  bash tests/nettleser/kjor.sh minside.mjs
+gruppe nyadmin
+# «minside-moduler-ut» (i admin-ny) venter at handlelista og skissene er
+# slaatt paa — det gjorde flytene i flyter.mjs tidligere. Naa har gruppen sin
+# egen base, saa det settes her (bare i gruppekjoring; ellers er det alt gjort).
+if [ -n "${ALLE_GRUPPE:-}" ] && [ "$ALLE_GRUPPE" = "nyadmin" ] && [ -z "${ALLE_TORR:-}" ]; then
+  php -r 'require "app/bootstrap.php"; foreach (["Vis/handleliste", "Vis/skisser"] as $k) { DB::kjor("INSERT INTO content_blocks (nokkel, verdi) VALUES (:k, \"ja\") ON DUPLICATE KEY UPDATE verdi = \"ja\"", ["k" => $k]); }' \
+    || { echo "Fikk ikke satt oppsettet for nyadmin."; exit 1; }
+fi
 kjor "ny admin"       bash tests/nettleser/kjor.sh admin-ny
 gruppe statisk
 kjor "varsler SMTP"    node tests/varsler-smtp.mjs
-gruppe nettleser2
+gruppe minside
 kjor "varsler og kursbevis" bash tests/nettleser/kjor.sh varsler.mjs
 
 [ $uten_gruppe -eq 0 ] || { echo "$uten_gruppe testsett uten gruppe."; exit 1; }

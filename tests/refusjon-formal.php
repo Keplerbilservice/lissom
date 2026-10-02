@@ -218,6 +218,12 @@ try {
     Booking::refunderBetaling($p);
     sjekk('fornyelse 179000 oere refundert: avtalen stoppes ikke av seg selv', $rad('subscriptions', $s)['status'] === 'aktiv');
     sjekk('… men den flagges i loggen', $logget('medlemskap_refundert_flagg', 'member', $m));
+    // Codex runde 5: den andre (foerste) perioden refunderes ogsaa. Den er ikke
+    // et engangskjoep bare fordi den andre alt er refundert.
+    $p1 = (int) DB::verdi("SELECT MIN(id) FROM payments WHERE subscription_id = :s", ['s' => $s]);
+    Booking::refunderBetaling($p1);
+    sjekk('begge periodene refundert (2 x 179000): avtalen stoppes fortsatt ikke av seg selv',
+        $rad('subscriptions', $s)['status'] === 'aktiv' && $rad('members', $m)['status'] === 'aktiv');
 
     // ── Codex runde 3 ──────────────────────────────────────────────────
     echo "\n── Codex runde 3: barnetillegg og eldre uttak ────────────────\n";

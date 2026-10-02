@@ -1274,10 +1274,13 @@ final class Medlemskap
             return 'uendret';
         }
         $type = (string) DB::verdi('SELECT type FROM payments WHERE id = :p', ['p' => $betalingId]);
+        // Alle andre betalinger som noen gang gikk gjennom paa avtalen —
+        // ogsaa de som er refundert senere. Ellers ble den siste av flere
+        // refunderte fornyelser tatt for et engangskjoep (Codex runde 5).
         $andre = (int) DB::verdi(
             "SELECT COUNT(*) FROM payments
               WHERE subscription_id = :s AND id <> :p
-                AND status IN ('betalt','delvis_refundert') AND annullert_at IS NULL",
+                AND status IN ('betalt','delvis_refundert','refundert') AND annullert_at IS NULL",
             ['s' => $abonnementId, 'p' => $betalingId]
         );
         $harAvtale = trim((string) ($a['vipps_agreement_id'] ?? '')) !== '';

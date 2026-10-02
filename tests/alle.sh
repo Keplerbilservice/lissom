@@ -147,6 +147,7 @@ kjor "galleri, admin" bash tests/galleri.sh
 kjor "avbestilling"  bash tests/avbestilling.sh
 kjor "kursboost"     bash tests/kursboost.sh
 kjor "dagens"        bash tests/dagens.sh
+kjor "nye påmeldinger, medlemskap" bash tests/nye-pameldinger-medlem.sh
 kjor "henting"       bash tests/henting.sh
 
 # --- Hele flyter, klikket gjennom i en ekte nettleser ------------------------

@@ -8156,8 +8156,10 @@ sjekk('… og kortet bygges ett sted',
     str_contains($sida, 'apneMedlemskort(o) {')
     && str_contains($sida, 'const visMer = () => this.apneMedlemskort(o);')
     // Tre fra 15. september 2026: det tredje er /medlemskap?plan= fra
-    // serversida, som aapner kortet naar planene er kommet.
-    && substr_count($sida, 'this.apneMedlemskort(') === 3);
+    // serversida, som aapner kortet naar planene er kommet. Fire fra
+    // 2. oktober 2026: /booking?plan= aapner samme kort ved direkte lenke
+    // og ny innlasting (planEtterVenting).
+    && substr_count($sida, 'this.apneMedlemskort(') === 4);
 
 // ── Kunden ser bare Vipps ─────────────────────────────────────────────
 //

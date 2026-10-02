@@ -5411,7 +5411,7 @@ window.__resources = {
 <section class="ms-o-stempel" style="background:var(--surface-card);border:2px solid var(--terracotta-600);border-radius:var(--radius-lg);padding:var(--space-6);">
 <sc-if value="{{ ubetaltFryst }}" hint-placeholder-val="{{ false }}"><h2>{{ frystTittel }}</h2></sc-if>
 <sc-if value="{{ ubetaltIkkeFryst }}" hint-placeholder-val="{{ true }}"><h2>Medlemskapet venter på betaling</h2><p>Perioden er ikke betalt. Medlemstilgang og nye timer åpnes når betalingen er registrert.</p></sc-if>
-<button type="button" onClick="{{ goMedlemskap }}">Forny og betal medlemskap</button>
+<sc-if value="{{ ubetaltIkkeFryst }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ goMedlemskap }}">Forny og betal medlemskap</button></sc-if>
 <sc-if value="{{ ubetaltKanStempleUt }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ ubetaltStempleUt }}">Stemple ut</button></sc-if>
 </section></sc-if>
 <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
@@ -5610,6 +5610,9 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Stemple inn og timene dine</div>
               <span style="{{ aboBadgeStil }}">{{ aboBadge }}</span>
             </div>
+            <sc-if value="{{ frysStarterVis }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ frysStarterTekst }}</p>
+            </sc-if>
 
             <!-- Bare stemplingsknappen staar her.
                  «Logg ut» sto ved siden av den. Eieren, 5. september, med
@@ -22721,7 +22724,7 @@ window.__resources = {
                 </div>
               </sc-for>
             </div>
-            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Godkjenner du, settes medlemmet i pause og åpnes igjen av seg selv når perioden er over. Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.</p>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Godkjenner du, settes medlemmet i pause og åpnes igjen av seg selv når perioden er over. Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.</p>
           </div>
         </sc-if>
 
@@ -36193,6 +36196,9 @@ class Component extends DCLogic {
           // Fryst medlemskap (eieren, 2. oktober 2026): { til, tilTekst }
           // naar serveren sier at medlemmet er fryst i dag, ellers null.
           fryst: d.fryst || null,
+          // Godkjent frys, men betalt for i dag: { fra, fraTekst } — dagen
+          // medlemmet blir stengt ute. Ellers null.
+          frysStarter: d.frysStarter || null,
           // 20 % paa kurs for aktive medlemmer. Serveren avgjor (api/meg.php
           // og Booking::faarMedlemsrabatt); skjermen viser bare det samme tallet.
           medlemsrabatt: Number(d.medlemsrabatt) || 0,
@@ -49074,12 +49080,16 @@ class Component extends DCLogic {
     // naar den sluttet.
     const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
                     forfalt: 'Forfalt', venter: 'Ikke betalt', over: 'Sluttet' };
+    // Stengt ute av en frys (eieren, 2. oktober 2026): ikke ubetalt.
+    MERKE.fryst = 'Fryst';
     // «Bestilt» er sitt eget svar: trekket er bedt om, men Vipps krever
     // forvarsel, saa pengene har ikke flyttet seg enda. Sto det «Betalt»
     // her, ville verkstedet trodd noe var gjort opp som ikke var det.
     const F = {
       fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
       over:    ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+      // Stengt ute av en frys (eieren, 2. oktober 2026): ikke ubetalt.
+      fryst:   ['rgba(120,120,120,.16)', 'var(--text-muted)'],
       betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
       bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
       // «Forfalt» og «Ikke betalt» hadde samme farge. To ulike betydninger
@@ -58428,6 +58438,7 @@ class Component extends DCLogic {
         const a = this.state.minAvtale;
         const oppsagt = this.harSagtOpp();
         const fryst = this.state.fryst || null;
+        const starter = !fryst ? (this.state.frysStarter || null) : null;
         const status = a
           ? ({
               aktiv:   a.nesteTrekk ? 'Trekkes automatisk i Vipps' : 'Aktiv',
@@ -58477,14 +58488,21 @@ class Component extends DCLogic {
           // Fryst medlemskap: «Fryst til <dato>» i stedet for «Aktivt»
           // (eieren, 2. oktober 2026). Serveren avgjør (api/meg.php).
           aboBadge: fryst ? this.frystTekst()
+                      : starter ? 'Fryst fra ' + starter.fraTekst
                       : a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
                       : (oppsagt ? 'Sagt opp' : 'Aktivt'),
           aboBadgeStil: {
             fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
             padding: '3px 10px', borderRadius: 999,
-            background: fryst ? 'var(--lissom-yellow)' : oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
-            color: fryst ? 'var(--lissom-brown)' : oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
+            background: (fryst || starter) ? 'var(--lissom-yellow)' : oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
+            color: (fryst || starter) ? 'var(--lissom-brown)' : oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
           },
+          // Eieren, 2. oktober 2026 (ordrett): linja under merket naar frysen
+          // er godkjent, men den betalte perioden ikke er over.
+          frysStarterVis: !!starter,
+          frysStarterTekst: starter
+            ? 'Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter ' + starter.fraTekst + '.'
+            : '',
           // Beloepet som faktisk trekkes, ikke det planen koster.
           //
           // «a.pris» er prisen paa medlemskapet medlemmet staar paa. Er
@@ -68012,7 +68030,9 @@ class Component extends DCLogic {
         };
         const venter = naa && naa.status === 'sokt';
         return {
-          frysVis: this.bryterPaa('medlemfrys') && this.medlemsvisning(),
+          // Ogsaa for den som er stengt ute av frysen: hen skal se den
+          // (eieren, 2. oktober 2026).
+          frysVis: this.bryterPaa('medlemfrys') && (this.medlemsvisning() || !!this.state.fryst),
           frysHarNaa: !!naa,
           frysKanSoke: !naa,
           frysHarMerke: !!naa,
@@ -75655,17 +75675,19 @@ class Component extends DCLogic {
       visAdminUtenPassord: this.erPublisert() && !!this.state.adminUtenPassord,
       tilPassordinnlogging: () => { this.setState({ side: 'adminlogin', liFeil: null }); window.scrollTo(0, 0); },
       erMedlem: this.medlemsvisning(),
-      visUbetaltMedlemskap: this.erPublisert() && !!this.state.betalingMangler,
+      // Et medlem som er stengt ute av en frys mangler ikke betaling
+      // (Medlemskap::betalingMangler), men faar den samme ruta med «Fryst til».
+      visUbetaltMedlemskap: this.erPublisert() && (!!this.state.betalingMangler || !!this.state.fryst),
       // Fryst og stengt ute etter den betalte perioden (eieren, 2. oktober
       // 2026): «Fryst til <dato>» i stedet for «venter på betaling».
       ubetaltFryst: !!this.state.fryst,
       ubetaltIkkeFryst: !this.state.fryst,
       frystTittel: this.frystTekst(),
-      ubetaltKanStempleUt: !!this.state.betalingMangler && this.erInne(),
+      ubetaltKanStempleUt: (!!this.state.betalingMangler || !!this.state.fryst) && this.erInne(),
       ubetaltStempleUt: () => { if (this.erInne()) this.vekslStempling(); },
       visBliMedlem: this.state.fhRolle
         ? this.state.fhRolle === 'deltaker'
-        : (this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker && !this.state.betalingMangler),
+        : (this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker && !this.state.betalingMangler && !this.state.fryst),
 
       // Forhandsvisningen fra admin.
       //

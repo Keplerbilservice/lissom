@@ -624,9 +624,12 @@ final class Medlemskap
      */
     public static function betalingMangler(array $medlem, bool $harTilgang): bool
     {
+        // Fryst og stengt ute etter den betalte perioden: ikke ubetalt — trekket
+        // for frysen hoppes over (eieren, 2. oktober 2026).
         return !$harTilgang
             && in_array((string) ($medlem['status'] ?? ''), ['prove', 'aktiv', 'pause'], true)
-            && self::proveSluttet($medlem) === null;
+            && self::proveSluttet($medlem) === null
+            && Frys::frystNaa($medlem) === null;
     }
 
     /** Betalt tilgang, uavhengig av om avtalen fortsatt står som aktiv. */
@@ -785,8 +788,28 @@ final class Medlemskap
      * @param array<string,mixed> $avtale den aktive avtalen
      * @return array{url:string,id:int,gjentakelse:bool}
      */
+    /**
+     * Ingen fornyelse eller betaling for en frosset periode (eieren, 2. oktober
+     * 2026). Gjelder den som er stengt ute av en frys (Frys::frystNaa); har
+     * medlemmet betalt for i dag, er det ikke stengt, og kan fornye som foer.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    private static function sperrFryst(array $medlem): void
+    {
+        $rad = isset($medlem['status']) ? $medlem
+            : (DB::en('SELECT * FROM members WHERE id = :i', ['i' => (int) ($medlem['id'] ?? 0)]) ?? $medlem);
+        $fryst = Frys::frystNaa($rad);
+        if ($fryst === null) {
+            return;
+        }
+        throw new RuntimeException('Medlemskapet ditt er fryst til ' . Booking::norskDatoKort($fryst['til'])
+            . '. Du kan forny medlemskapet igjen når frysen er over.');
+    }
+
     public static function fornyPeriode(array $medlem, array $avtale): array
     {
+        self::sperrFryst($medlem);
         $medlemId = (int) $medlem['id'];
         $avtaleId = (int) $avtale['id'];
         $planNavn = (string) $avtale['plan'];
@@ -1260,6 +1283,16 @@ final class Medlemskap
             $pNavn = (string) (self::planUansett((string) ($medlem['medlemskap_type'] ?? ''))['navn']
                 ?? $medlem['medlemskap_type']);
             return $ut('over', $pNavn . ' sluttet ' . $kort($sluttet), false, false);
+        }
+
+        // ── Stengt ute av en frys ───────────────────────────────────────
+        //
+        // Eieren, 2. oktober 2026: et medlem som er fryst etter den betalte
+        // perioden, skylder ingenting — trekket for frysen hoppes over. Ikke
+        // «Ikke betalt» i admin eller Kassa, og ikke utestaaende.
+        $fryst = Frys::frystNaa($medlem, $idag);
+        if ($fryst !== null) {
+            return $ut('fryst', 'Fryst til ' . $kort($fryst['til']), false, false);
         }
 
         // ── Fast trekk i Vipps ──────────────────────────────────────────
@@ -1807,6 +1840,7 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Ukjent medlemskap.');
         }
+        self::sperrFryst($medlem);
 
         // Har medlemmet en avtale fra for, skal den ikke bli staaende ved
         // siden av den nye. Da ville de blitt trukket to ganger.
@@ -1888,6 +1922,7 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Ukjent medlemskap.');
         }
+        self::sperrFryst($medlem);
         self::sperrProveIgjen((int) $medlem['id'], $plan);
         $fra = self::avtale((int) $medlem['id']);
         if (self::hindrerNytt($fra, $planNavn)) {
@@ -2018,6 +2053,7 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Fant ikke medlemskapet.');
         }
+        self::sperrFryst($medlem);
         self::sperrProveIgjen((int) $medlem['id'], $plan);
         if (self::kreverFastTrekk($plan)) {
             throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');

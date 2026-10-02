@@ -137,7 +137,7 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
       // Godkjent frys som dekker i dag (eieren, 2. oktober 2026): medlemmet
       // er fryst, med en betalt periode. Foer laa det en soknad fram i tid her,
       // og det frosne medlemmet sto som «Aktivt» med «Stemple inn».
-      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 5), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 25), 'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
+      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 5), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 60), 'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
     }
     if (${plasser ? 1 : 0}) {
       DB::settInn('bookings', ['course_id' => ${S.kurs}, 'course_session_id' => ${S.okter.a}, 'member_id' => $id, 'antall' => 1, 'belop_ore' => 280000, 'status' => 'betalt']);
@@ -333,6 +333,16 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     sjekk(`${hva}: /stemple viser «Fryst til ${tekst}»`, await synlig(p, 'Fryst til ' + tekst, true));
     sjekk(`${hva}: /stemple har ingen «Stemple inn»`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
     sjekk(`${hva}: /stemple sier ikke «Innstempling er for medlemmer»`, !(await synlig(p, /Innstempling er for medlemmer/)));
+    // Eieren, 2. oktober 2026: ingen «Forny og betal», ikke «venter på
+    // betaling», og frysen sin ser hen fortsatt.
+    await gaa(p, '/min-side', 3000);
+    sjekk(`${hva}: ingen «Forny og betal medlemskap»`, !(await p.getByRole('button', { name: 'Forny og betal medlemskap' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: ingen «Bli medlem»-tilbud`, !(await p.locator('#bli-medlem').filter({ visible: true }).count()));
+    sjekk(`${hva}: frysen står på Min side («Frys av medlemskap», Godkjent)`, await synlig(p, /Frys av medlemskap/i) && await synlig(p, 'Godkjent', true));
+    const megP = await api(p, '/api/meg.php');
+    sjekk(`${hva}: meg.php — ikke «betalingMangler», status ikke «venterbetaling»`, megP.d?.betalingMangler === false && megP.d?.medlem?.status !== 'venterbetaling', JSON.stringify({ b: megP.d?.betalingMangler, s: megP.d?.medlem?.status }));
+    const fornyP = await api(p, '/api/medlemskap.php', { handling: 'start', plan: MINI });
+    sjekk(`${hva}: serveren avviser fornyelse mens frysen gjelder`, fornyP.status >= 400 && /fryst til/i.test(fornyP.d?.feil || ''), JSON.stringify(fornyP));
     await p.context().close();
     // Kontroll: godkjent frys, men den betalte perioden er ikke over. Eieren,
     // 2. oktober 2026: dager som er betalt for, har medlemmet alltid tilgang i.
@@ -347,6 +357,13 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
       && await q.locator('#minside-internkurs').filter({ visible: true }).count() > 0
       && await q.getByRole('button', { name: /Bordplass/ }).filter({ visible: true }).count() > 0);
     sjekk(`${hva}: betalt med frys — ingen «Fryst til»`, !(await synlig(q, /^Fryst til/i)));
+    // Eieren, 2. oktober 2026 (ordrett): «Fryst fra <dato>» og linja under.
+    const fra = megQ.d?.frysStarter?.fraTekst || '';
+    sjekk(`${hva}: betalt med frys — meg.php sier når frysen starter`, fra !== '', JSON.stringify(megQ.d?.frysStarter));
+    const fraMerke = q.locator('.ms-o-stempel span').filter({ hasText: /^Fryst fra / }).filter({ visible: true }).first();
+    sjekk(`${hva}: betalt med frys — «Fryst fra ${fra}» øverst`, await fraMerke.isVisible().catch(() => false)
+      && (await fraMerke.innerText()).trim().toLowerCase() === ('Fryst fra ' + fra).toLowerCase());
+    sjekk(`${hva}: betalt med frys — linja under merket`, await synlig(q, `Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter ${fra}.`, true));
     await gaa(q, '/stemple', 2500);
     sjekk(`${hva}: betalt med frys — «Stemple inn» på /stemple`, await q.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count() > 0);
     await q.context().close();

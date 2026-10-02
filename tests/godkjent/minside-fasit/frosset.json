@@ -8,6 +8,10 @@
       "erAdmin": false,
       "erMedlem": true,
       "erRegnskap": false,
+      "frysStarter": {
+        "fra": "<dato>",
+        "fraTekst": "<dato>"
+      },
       "innlogget": true,
       "internInfo": {},
       "kanSelge": true,
@@ -330,7 +334,7 @@
     "svar": {
       "gjeldende": {
         "begrunnelse": "Reise",
-        "dager": 31,
+        "dager": 66,
         "fra": "<dato>",
         "fraIso": "<dato>",
         "id": "<number>",
@@ -346,7 +350,7 @@
       "mine": [
         {
           "begrunnelse": "Reise",
-          "dager": 31,
+          "dager": 66,
           "fra": "<dato>",
           "fraIso": "<dato>",
           "id": "<number>",

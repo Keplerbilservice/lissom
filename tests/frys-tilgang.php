@@ -212,6 +212,39 @@ sjekk('fryst: meg.php svarer 200 med «fryst» og sluttdatoen', $r['status'] ===
 sjekk('… og datoen som tekst', ($r['d']['fryst']['tilTekst'] ?? '') === Booking::norskDatoKort($dag(15)));
 sjekk('fryst: ingen dørkode eller wifi i meg.php', ((array) ($r['d']['internInfo'] ?? [])) === [],
     json_encode($r['d']['internInfo'] ?? null));
+// Eieren, 2. oktober 2026: et medlem som er stengt ute ser frysen sin og kan
+// trekke en soknad, og «venter» ikke paa betaling.
+$r = $kall('/api/medlem-frys.php', $tc);
+sjekk('stengt ute: frys-statusen svarer 200 med den godkjente frysen', $r['status'] === 200
+    && ($r['d']['gjeldende']['status'] ?? null) === 'godkjent', json_encode($r));
+$sokt = $frys($c, $dag(40), $dag(50), 'sokt');
+$r = $kall('/api/medlem-frys.php', $tc, ['handling' => 'trekk', 'id' => $sokt]);
+sjekk('stengt ute: kan trekke en soknad', $r['status'] === 200
+    && (string) DB::verdi('SELECT status FROM medlem_frys WHERE id = :i', ['i' => $sokt]) === 'trukket', json_encode($r));
+$r = $kall('/api/meg.php', $tc);
+sjekk('stengt ute: ikke «betalingMangler», status ikke «venterbetaling»', ($r['d']['betalingMangler'] ?? null) === false
+    && ($r['d']['medlem']['status'] ?? '') !== 'venterbetaling', json_encode([$r['d']['betalingMangler'] ?? null, $r['d']['medlem']['status'] ?? null]));
+sjekk('… betalingMangler() er nei for den som er fryst', !Medlemskap::betalingMangler($rad($c), false));
+$u = $nytt('aktiv', false);
+sjekk('… men ja for den som bare ikke har betalt (som foer)', Medlemskap::betalingMangler($rad($u), er_aktivt_medlem($rad($u))));
+$bs = Medlemskap::betalingsstatus($rad($c), null, null);
+sjekk('admin/Kassa: «Fryst til <dato>», ikke utestaaende', $bs['tilstand'] === 'fryst' && $bs['utestaaende'] === false
+    && $bs['forfalt'] === false && str_starts_with($bs['tekst'], 'Fryst til '), json_encode($bs));
+// Ingen fornyelse eller betaling for en frosset periode.
+$feilFra = static function (callable $f): string { try { $f(); return ''; } catch (Throwable $e) { return $e->getMessage(); } };
+sjekk('stengt ute: startEngangs() avvises', str_contains($feilFra(fn() => Medlemskap::startEngangs($rad($c), $plan)), 'fryst til'));
+sjekk('… startAvtale() avvises', str_contains($feilFra(fn() => Medlemskap::startAvtale($rad($c), $plan)), 'fryst til'));
+sjekk('… startIVerkstedet() avvises', str_contains($feilFra(fn() => Medlemskap::startIVerkstedet($rad($c), $plan)), 'fryst til'));
+$r = $kall('/api/medlemskap.php', $tc, ['handling' => 'start', 'plan' => $plan]);
+sjekk('… og «Forny» paa Min side avvises av serveren', $r['status'] >= 400 && str_contains((string) ($r['d']['feil'] ?? ''), 'fryst til'), json_encode($r));
+sjekk('… ingen ny betaling lagret', (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE member_id = :m", ['m' => $c]) === 1);
+// Betalt med frys: «Fryst fra <dato>»
+$st = Frys::frysStarter($rad($p));
+sjekk('betalt med frys: frysen starter den dagen perioden er over', $st === ['fra' => $forfall, 'til' => $dag(60)], json_encode($st));
+$r = $kall('/api/meg.php', $token($p));
+sjekk('… og meg.php sender «frysStarter»', ($r['d']['frysStarter']['fra'] ?? null) === $forfall
+    && ($r['d']['frysStarter']['fraTekst'] ?? null) === Booking::norskDatoKort($forfall));
+sjekk('stengt ute: ingen «frysStarter»', Frys::frysStarter($rad($c)) === null);
 $r = $kall('/api/mine-plasser.php', $tc);
 sjekk('fryst: kursplassene svarer 200', $r['status'] === 200, (string) $r['status']);
 

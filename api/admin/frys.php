@@ -115,7 +115,9 @@ if ($handling === 'godkjenn') {
         // L-10 (2. oktober 2026): avtalen skal IKKE stoppes. Trekkrunden
         // hopper over maaneden pausen dekker (Medlemskap::hoppOverPause).
         . ($avtale !== null
-            ? ' Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.'
+            // Eieren, 2. oktober 2026 (ordrett), i takt med 15-dagersregelen
+            // i Medlemskap::hoppOverPause().
+            ? ' Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.'
             : '')]);
 }
 

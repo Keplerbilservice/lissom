@@ -46,9 +46,16 @@ if (er_aktivt_medlem($m) && $fryst === null) {
     }
 }
 
+// Godkjent frys, men betalt for i dag: «Fryst fra <dato>» (eieren, 2. oktober
+// 2026). Sendes bare naar det finnes en slik frys.
+$starter = $fryst === null && (string) ($m['rolle'] ?? '') !== 'admin' ? Frys::frysStarter($m) : null;
+
 Svar::json(($fryst !== null ? ['fryst' => [
     'til'      => $fryst['til'],
     'tilTekst' => $fryst['til'] !== null ? Booking::norskDatoKort($fryst['til']) : null,
+]] : []) + ($starter !== null ? ['frysStarter' => [
+    'fra'      => $starter['fra'],
+    'fraTekst' => Booking::norskDatoKort($starter['fra']),
 ]] : []) + [
     'innlogget'      => true,
     'internInfo'     => (object) $internInfo,

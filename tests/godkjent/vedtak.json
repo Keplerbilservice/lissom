@@ -3095,7 +3095,7 @@
         {
             "id": "nye-pameldinger-medlemskap",
             "dato": "2026-10-02",
-            "hva": "«det meldte seg på et nytt medlem, men det vises ikke under nye påmeldinger» — nye medlemskap (betalt, Prøv Lissom, betal i verkstedet og lagt inn i admin) står i «Nye påmeldinger» med plannavnet der kursnavnet står, i de samme tre dagene og med samme regel for avbrutt/feilet Vipps; telleren tar dem med; trykk åpner medlemmet; «Dagens bestillinger» tar dem med fra samme kilde",
+            "hva": "«det meldte seg på et nytt medlem, men det vises ikke under nye påmeldinger» — nye medlemskap (betalt, Prøv Lissom, betal i verkstedet og lagt inn i admin) står i «Nye påmeldinger» med plannavnet der kursnavnet står, i de samme tre dagene og med samme regel for avbrutt/feilet Vipps; telleren tar dem med; trykk åpner medlemmet; «Dagens bestillinger» tar dem med fra samme kilde; bare HELT NYE medlemmer — planbytte og avtale sendt til et medlem som fantes fra før står ikke (eieren 02.10); ingen grense før dedup, så Dagens bestillinger tar med alle (kontrolløren 02.10); Dagens bestillinger åpner personen med medlemId",
             "hvor": "Admin › Oversikt › Nye påmeldinger og Dagens bestillinger (gamle admin, admin-ny og nyadmin)",
             "kode": [
                 {
@@ -3105,17 +3105,22 @@
                         "WHERE a.handling = 'medlem_meldt_inn' AND a.objekt_type = 'member'",
                         "AND p.status IN ('avbrutt','feilet'))))",
                         "'nyeste' => $blandNye(array_map($paameldingRad = static fn($b) => [",
-                        "foreach ($nyeMedlemskap($dagStart) as $m) {"
+                        "foreach ($nyeMedlemskap($dagStart) as $m) {",
+                        "WHERE s0.member_id = s.member_id AND s0.id < s.id",
+                        "AND a0.objekt_id = s.member_id AND a0.created_at < s.created_at",
+                        "AND a0.objekt_id = n.member_id AND a0.created_at < :fra2"
                     ],
                     "ikkeFinnes": [
-                        "WHERE o.opprettet >= :fra AND o.status = 'fullfort'"
+                        "WHERE o.opprettet >= :fra AND o.status = 'fullfort'",
+                        "          LIMIT 50\","
                     ]
                 },
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "hvaNaar: n.slag === 'medlemskap' ? n.hva",
-                        ".map(n => (n.slag === 'medlemskap' && n.medlemId ? Object.assign({}, n, {"
+                        ".map(n => (n.slag === 'medlemskap' && n.medlemId ? Object.assign({}, n, {",
+                        "} else if (r.slag === 'medlemskap' && r.medlemId) {"
                     ]
                 },
                 {
@@ -3135,7 +3140,9 @@
                     "fil": "tests/nye-pameldinger-medlem.sh",
                     "finnes": [
                         "avbrutt i Vipps står ikke med",
-                        "nytt betalt medlemskap står med"
+                        "nytt betalt medlemskap står med",
+                        "flere enn 50 nye i dag: alle 55 står med",
+                        "planbytte står ikke i Nye påmeldinger"
                     ]
                 }
             ]

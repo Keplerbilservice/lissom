@@ -557,8 +557,10 @@ $medlemsstatus = (static function (): array {
 // og bare så lenge betalingen ikke er avbrutt eller feilet. Avslått og
 // utløpt står aldri med.
 //
-// Én rad per medlem — den nyeste. Pilla er den samme som medlemslista
-// (Medlemskap::betalingsstatus).
+// Bare helt nye medlemmer: den første avtalen, eller første gang hen ble lagt
+// inn i admin. Planbytte og avtale sendt fra admin til et medlem som alt
+// fantes, står ikke (eieren, 2. oktober 2026). Én rad per medlem. Pilla er
+// den samme som medlemslista (Medlemskap::betalingsstatus).
 $nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {
     $MERKE = ['betalt' => 'Betalt', 'bestilt' => 'Bestilt', 'forfalt' => 'Forfalt',
               'fri' => 'Fri', 'over' => 'Sluttet'];
@@ -580,8 +582,20 @@ $nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {
                      AND NOT EXISTS (SELECT 1 FROM payments p
                                       WHERE p.subscription_id = s.id
                                         AND p.status IN ('avbrutt','feilet'))))
-          ORDER BY s.created_at DESC, s.id DESC
-          LIMIT 50",
+            -- Bare HELT NYE medlemmer (eieren, 2. oktober 2026): hadde hen en
+            -- avtale fra foer, er dette et planbytte eller en avtale sendt
+            -- fra admin, og det skal ikke staa her. Heller ikke den som ble
+            -- lagt inn i admin foer avtalen kom.
+            AND NOT EXISTS (SELECT 1 FROM subscriptions s0
+                             WHERE s0.member_id = s.member_id AND s0.id < s.id
+                               AND s0.status IN ('aktiv','stoppet'))
+            AND NOT EXISTS (SELECT 1 FROM audit_log a0
+                             WHERE a0.handling = 'medlem_meldt_inn' AND a0.objekt_type = 'member'
+                               AND a0.objekt_id = s.member_id AND a0.created_at < s.created_at)
+          -- Ingen LIMIT her: én rad per medlem tas ut under, og en grense
+          -- foer det kunne kuttet medlemmer fra «Dagens bestillinger»
+          -- (kontrolloeren 02.10). Tredagerslista begrenses i blandNye.
+          ORDER BY s.created_at DESC, s.id DESC",
         ['fra' => $fra]
     ) as $s) {
         $mid = (int) $s['member_id'];
@@ -600,17 +614,24 @@ $nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {
         $planpris[(string) $p['navn']] = (int) $p['pris_ore'];
     }
     foreach (DB::alle(
-        "SELECT a.objekt_id AS member_id, MAX(a.created_at) AS naar,
-                m.navn, m.epost, m.medlemskap_type
-           FROM audit_log a
-           JOIN members m ON m.id = a.objekt_id
-          WHERE a.handling = 'medlem_meldt_inn' AND a.objekt_type = 'member'
-            AND a.created_at >= :fra
-            AND m.status IN ('prove','aktiv') AND m.anonymisert_at IS NULL
-          GROUP BY a.objekt_id, m.navn, m.epost, m.medlemskap_type
-          ORDER BY naar DESC
-          LIMIT 50",
-        ['fra' => $fra]
+        "SELECT n.member_id, n.naar, m.navn, m.epost, m.medlemskap_type
+           FROM (SELECT a.objekt_id AS member_id, MIN(a.created_at) AS naar
+                   FROM audit_log a
+                  WHERE a.handling = 'medlem_meldt_inn' AND a.objekt_type = 'member'
+                    AND a.created_at >= :fra
+                  GROUP BY a.objekt_id) n
+           JOIN members m ON m.id = n.member_id
+          WHERE m.status IN ('prove','aktiv') AND m.anonymisert_at IS NULL
+            -- Bare helt nye: ikke lagt inn i admin foer, og ingen avtale
+            -- foer (eieren, 2. oktober 2026).
+            AND NOT EXISTS (SELECT 1 FROM audit_log a0
+                             WHERE a0.handling = 'medlem_meldt_inn' AND a0.objekt_type = 'member'
+                               AND a0.objekt_id = n.member_id AND a0.created_at < :fra2)
+            AND NOT EXISTS (SELECT 1 FROM subscriptions s0
+                             WHERE s0.member_id = n.member_id AND s0.created_at < n.naar
+                               AND s0.status IN ('aktiv','stoppet'))
+          ORDER BY n.naar DESC",
+        ['fra' => $fra, 'fra2' => $fra]
     ) as $a) {
         $mid = (int) $a['member_id'];
         if (isset($rader[$mid])) {

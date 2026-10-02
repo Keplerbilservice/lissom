@@ -118,6 +118,41 @@ $okt = DB::settInn("course_sessions", ["course_id" => $kurs, "start_tid" => gmda
 DB::settInn("bookings", ["course_id" => $kurs, "course_session_id" => $okt, "gjest_navn" => "Kurs Gjest", "gjest_epost" => "nyemedlem-k@lissom.test",
     "antall" => 1, "belop_ore" => 100000, "status" => "betalt", "created_at" => gmdate("Y-m-d H:i:s", time() - 120)]);
 
+// Flere Avtaler: tre avtaler i dag på samme medlem. Én rad, og det er den
+// første — de to neste er planbytter (eieren 02.10: bare helt nye).
+$f = $medlem("Flere Avtaler", "prove", $prove);
+foreach ([[300, $plan], [200, $plan], [90, $prove]] as [$sek, $pl]) {
+    DB::settInn("subscriptions", ["member_id" => $f, "plan" => $pl, "pris_ore" => 99000, "status" => "aktiv",
+        "created_at" => gmdate("Y-m-d H:i:s", time() - $sek)]);
+}
+
+// Planbytte: medlem siden forrige måned (avtalen stoppet), ny plan i dag.
+$b = $medlem("Planbytte Medl", "aktiv", $prove);
+DB::settInn("subscriptions", ["member_id" => $b, "plan" => $plan, "pris_ore" => 259000, "status" => "stoppet",
+    "created_at" => gmdate("Y-m-d H:i:s", time() - 30 * 86400)]);
+DB::settInn("subscriptions", ["member_id" => $b, "plan" => $prove, "pris_ore" => 99000, "status" => "aktiv", "created_at" => $naa]);
+
+// Sendt Avtale: lagt inn i admin for ti dager siden, avtalen sendt og godkjent i dag.
+$sa = $medlem("Sendt Avtale", "aktiv", $plan);
+DB::settInn("audit_log", ["member_id" => $admin, "handling" => "medlem_meldt_inn", "objekt_type" => "member", "objekt_id" => $sa,
+    "created_at" => gmdate("Y-m-d H:i:s", time() - 10 * 86400)]);
+DB::settInn("subscriptions", ["member_id" => $sa, "plan" => $plan, "pris_ore" => 259000, "status" => "aktiv", "created_at" => $naa]);
+
+// Admin Igjen: lagt inn i admin for ti dager siden, og på nytt i dag (byttet plan).
+$ai = $medlem("Admin Igjen", "aktiv", $plan);
+foreach ([10 * 86400, 60] as $sek) {
+    DB::settInn("audit_log", ["member_id" => $admin, "handling" => "medlem_meldt_inn", "objekt_type" => "member", "objekt_id" => $ai,
+        "created_at" => gmdate("Y-m-d H:i:s", time() - $sek)]);
+}
+
+// Mengde 01–55: flere enn 50 nye medlemskap i dag. Ingen skal falle ut av
+// «Dagens bestillinger» (kontrolløren 02.10: LIMIT 50 kom før dedup).
+for ($i = 1; $i <= 55; $i++) {
+    $x = $medlem(sprintf("Mengde %02d", $i), "aktiv", $plan);
+    DB::settInn("subscriptions", ["member_id" => $x, "plan" => $plan, "pris_ore" => 259000, "status" => "aktiv",
+        "created_at" => gmdate("Y-m-d H:i:s", time() - 400 - $i)]);
+}
+
 echo $t;')
 # Plannavnene kan ha mellomrom («30 timer», «Prøv Lissom»).
 PLAN=$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT navn FROM membership_plans WHERE engangs = 0 ORDER BY sortering, navn LIMIT 1");')
@@ -156,6 +191,18 @@ sjekk "nytt medlemskap står med" "Medlemskap · $PLAN" "$(rad dagensBestillinge
 sjekk "… med medlemmet på raden" "$ID_A" "$(rad dagensBestillinger 'Nytt Betalt' medlemId)"
 sjekk "Prøv Lissom lagt inn i admin står med" "Medlemskap · $PROVE" "$(rad dagensBestillinger 'Ny Prove' hva)"
 sjekk "avbrutt i Vipps står ikke med" "" "$(rad dagensBestillinger 'Avbrutt Vipps' hva)"
+sjekk "flere enn 50 nye i dag: alle 55 står med" "55" "$(echo "$O" | felt 'count(array_filter($d["dagensBestillinger"], fn($r) => str_starts_with($r["navn"] ?? "", "Mengde ")))')"
+sjekk "tre avtaler på samme medlem gir én rad, den første" "Medlemskap · $PLAN" "$(rad dagensBestillinger 'Flere Avtaler' hva)"
+sjekk "… og én rad i Nye påmeldinger" "$PLAN" "$(rad nyeste 'Flere Avtaler' hva)"
+
+echo
+echo "── Bare helt nye medlemmer (eieren 02.10) ──"
+sjekk "planbytte står ikke i Nye påmeldinger" "" "$(rad nyeste 'Planbytte Medl' hva)"
+sjekk "… og ikke i Dagens bestillinger" "" "$(rad dagensBestillinger 'Planbytte Medl' hva)"
+sjekk "avtale sendt til et medlem lagt inn før står ikke" "" "$(rad nyeste 'Sendt Avtale' hva)"
+sjekk "… og ikke i Dagens bestillinger" "" "$(rad dagensBestillinger 'Sendt Avtale' hva)"
+sjekk "lagt inn i admin på nytt står ikke" "" "$(rad nyeste 'Admin Igjen' hva)"
+sjekk "tredagerslista er fortsatt begrenset (høyst 12 medlemskap)" "ja" "$(echo "$O" | felt 'count(array_filter($d["nyeste"], fn($r) => ($r["slag"] ?? "") === "medlemskap")) <= 12')"
 
 echo
 echo "── $ok gikk gjennom, $feil feilet"

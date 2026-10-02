@@ -49964,6 +49964,11 @@ class Component extends DCLogic {
         window.scrollTo(0, 0);
       } else if (r.slag === 'ordre') {
         this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' });
+      } else if (r.slag === 'medlemskap' && r.medlemId) {
+        // Personen selv, ikke et navnesoek — to med samme navn gikk ikke
+        // aa skille (kontrolloeren 02.10). Samme vei som «Nye påmeldinger».
+        this.gaaAdmin('adminmedlem', {});
+        this.apnePerson(r.medlemId, 0);
       } else if (r.slag === 'medlemskap') {
         this.gaaAdmin('adminmedlem', { medlemFilter: 'Aktive medlemmer', medlemSok: r.navn || '' });
       } else {

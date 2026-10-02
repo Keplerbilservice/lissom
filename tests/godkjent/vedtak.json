@@ -3218,6 +3218,64 @@
             ]
         },
         {
+            "id": "nye-pameldinger-medlemskap",
+            "dato": "2026-10-02",
+            "hva": "«det meldte seg på et nytt medlem, men det vises ikke under nye påmeldinger» — nye medlemskap (betalt, Prøv Lissom, betal i verkstedet og lagt inn i admin) står i «Nye påmeldinger» med plannavnet der kursnavnet står, i de samme tre dagene og med samme regel for avbrutt/feilet Vipps; telleren tar dem med; trykk åpner medlemmet; «Dagens bestillinger» tar dem med fra samme kilde; bare HELT NYE medlemmer — planbytte og avtale sendt til et medlem som fantes fra før står ikke (eieren 02.10); ingen grense før dedup, så Dagens bestillinger tar med alle (kontrolløren 02.10); Dagens bestillinger åpner personen med medlemId; et avbrutt førsteforsøk (stoppet, aldri godkjent eller betalt) gjør ikke kunden til et gammelt medlem (kontrolløren 02.10)",
+            "hvor": "Admin › Oversikt › Nye påmeldinger og Dagens bestillinger (gamle admin, admin-ny og nyadmin)",
+            "kode": [
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "$nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {",
+                        "WHERE a.handling = 'medlem_meldt_inn' AND a.objekt_type = 'member'",
+                        "AND p.status IN ('avbrutt','feilet'))))",
+                        "'nyeste' => $blandNye(array_map($paameldingRad = static fn($b) => [",
+                        "foreach ($nyeMedlemskap($dagStart) as $m) {",
+                        "WHERE s0.member_id = s.member_id AND s0.id < s.id",
+                        "AND a0.objekt_id = s.member_id AND a0.created_at < s.created_at",
+                        "AND a0.objekt_id = n.member_id AND a0.created_at < :fra2",
+                        "OR s0.siste_trekk IS NOT NULL OR s0.neste_trekk IS NOT NULL"
+                    ],
+                    "ikkeFinnes": [
+                        "WHERE o.opprettet >= :fra AND o.status = 'fullfort'",
+                        "          LIMIT 50\",",
+                        "AND s0.status IN ('aktiv','stoppet'))"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "hvaNaar: n.slag === 'medlemskap' ? n.hva",
+                        ".map(n => (n.slag === 'medlemskap' && n.medlemId ? Object.assign({}, n, {",
+                        "} else if (r.slag === 'medlemskap' && r.medlemId) {"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "card('Nye påmeldinger',",
+                        "href:n.slag==='medlemskap'?'#folk?person='+n.medlemId:'#pameldte?booking='+n.id"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "r==='pameldte'&&(d.nyeste||[]).length?[' ',badge(String(d.nyeste.length),'warn')]:null"
+                    ]
+                },
+                {
+                    "fil": "tests/nye-pameldinger-medlem.sh",
+                    "finnes": [
+                        "avbrutt i Vipps står ikke med",
+                        "nytt betalt medlemskap står med",
+                        "flere enn 50 nye i dag: alle 55 står med",
+                        "planbytte står ikke i Nye påmeldinger",
+                        "avbrutt fast trekk, så engangs: står som ny"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "fryst-medlem-ingen-tilgang",
             "dato": "2026-10-02",
             "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag stenges ute — men først når den betalte perioden er over (eieren samme dag: dager som er betalt for, har medlemmet alltid tilgang i, også med godkjent frys; samme periodelogikk som harBetaltPeriode, gratismedlem er fryst med en gang). Stengt ute betyr: ingen innstempling, ingen medlemstid, ingen dørkode og wifi (meg.php og «Dørkode» i toppen), ingen «Kun for medlemmer»-banner, Bordplass/Dreieskive eller knapp på /stemple. Min side og /stemple viser «Fryst til <dato>» (ja fra eieren) i stedet for «venter på betaling»/«Aktivt». Stemple ut, kjøp og kurs betalt for seg virker som før. «pause» satt for hånd uten godkjent frys er ikke fryst. «Flytt medlemskap» tar med frys-rader som er søkt/godkjent, og avsluttede som fortsatt kan hoppe over et trekk (til_dato fra denne måneden eller avtalens neste trekk), med avslutningsdagen urørt. Eieren (samme dag, ordrett): når frysen er godkjent, men den betalte perioden ikke er over, viser Min side merket «Fryst fra <dato>» og linja «Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter <dato>.». Et medlem som er stengt ute ser frysen sin og kan trekke en søknad (api/medlem-frys.php slipper inn prove/aktiv/pause), står ikke som «venter på betaling» (betalingMangler og betalingsstatus unntar fryst: «Fryst til <dato>», ikke utestående), får ikke «Forny og betal» og kan ikke starte fornyelse eller betaling (startEngangs, startAvtale, startIVerkstedet, fornyPeriode avviser). Admin-teksten ved godkjenning: «Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.» Kontrolløren og betalingseksperten (STOPP 2. oktober 2026) og eierens valg samme dag: «stengt ute» og «fritatt for betaling» er to ting. «Fryst»/«Fryst til <dato>» (godkjent av eieren) og fritak vises bare når det ikke står noe ubetalt; et trekk som feilet, eller en måned frysen dekker under 15 dager av, står fortsatt som forfalt/utestående og kan betales (sperrFryst sperrer bare ny periode og fornyelse når ingenting skyldes). En måned frysen dekker minst 15 dager av er fritatt: trekket hoppes over, og dagene frysen ikke dekker har medlemmet gratis tilgang i (frys 20.2–25.3 gir tilgang 26.–31.3, trekket fortsetter 1.4) — i periodelogikken (harBetaltPeriode/fritattTilgang), så stempling, Min side, Kassa og admin er enige. Admin ser «Står ubetalt: …» i frys-søknaden og får en advarsel ved godkjenning. Eieren godkjente advarselstekstene ordrett: «Står ubetalt: <betalingsteksten>» og «<navn> har noe ubetalt: <betalingsteksten>. Frysen fjerner det ikke.». Betalingseksperten (samme dag): betaler et fryst medlem noe utestående, gjelder betalingen måneden som skyldes (skyldigMaaned), ikke den fryste; bare fornyPeriode slipper gjennom, ny avtale/nytt medlemskap sperres under frys. At trekkrunden hoppet over en måned, lagres som faktum i audit_log på avtalen («trekk_hoppet_over_frys», ingen migrasjon), så måneden er fritatt også om frysen avsluttes tidlig. Eieren (samme dag): et fryst medlem med fast trekk og et feilet trekk betaler via «Forny og betal» BARE måneden som skyldes, med én engangsbetaling på avtalen som løper (fornyPeriode, gjelder_fra = skyldigMaaned); avtalen beholdes, og trekkrunden bestiller ikke samme måned på nytt (L-12).",

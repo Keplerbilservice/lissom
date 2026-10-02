@@ -41,7 +41,15 @@ if (er_aktivt_medlem($m)) {
     }
 }
 
-Svar::json([
+// Fryst medlemskap (eieren, 2. oktober 2026): Min side viser «Fryst til
+// <dato>» og skjuler «Stemple inn». Feltet sendes bare naar medlemmet er
+// fryst, saa svaret for alle andre er som foer.
+$fryst = (string) ($m['rolle'] ?? '') !== 'admin' ? Frys::frystNaa($m) : null;
+
+Svar::json(($fryst !== null ? ['fryst' => [
+    'til'      => $fryst['til'],
+    'tilTekst' => $fryst['til'] !== null ? Booking::norskDatoKort($fryst['til']) : null,
+]] : []) + [
     'innlogget'      => true,
     'internInfo'     => (object) $internInfo,
     'erAdmin'        => Sesjon::erAdmin(),

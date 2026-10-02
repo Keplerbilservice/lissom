@@ -115,6 +115,51 @@ final class Frys
         );
     }
 
+    /**
+     * Er medlemmet fryst i dag? Gir ['til' => Y-m-d|null], ellers null.
+     *
+     * Eieren, 2. oktober 2026: et fryst medlem med en betalt periode kom inn
+     * og kunne stemple inn og booke medlemstid, fordi tilgangen bare sjekket
+     * betalingen. Fryst er en godkjent frys som dekker dagen i dag — uansett
+     * om members.status alt er satt til «pause» (startForfalte() kjoeres
+     * bare der frys leses). Er frysen over, er medlemmet ikke fryst, selv om
+     * statusen ikke er satt tilbake ennaa: perioden etter frysen skal virke
+     * som foer. «pause» uten noen frys bak seg (satt for haand) teller som
+     * fryst, uten sluttdato.
+     *
+     * @param array<string,mixed> $medlem
+     * @return array{til:?string}|null
+     */
+    public static function frystNaa(array $medlem, ?string $idag = null): ?array
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        $pause = (string) ($medlem['status'] ?? '') === 'pause';
+        if ($id <= 0) {
+            return null;
+        }
+        if (!self::klar()) {
+            return $pause ? ['til' => null] : null;
+        }
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        $til = DB::verdi(
+            "SELECT MAX(til_dato) FROM medlem_frys
+              WHERE member_id = :m AND status = 'godkjent'
+                AND fra_dato <= :d1 AND til_dato >= :d2",
+            ['m' => $id, 'd1' => $idag, 'd2' => $idag]
+        );
+        if ($til !== null && $til !== false && (string) $til !== '') {
+            return ['til' => substr((string) $til, 0, 10)];
+        }
+        if (!$pause) {
+            return null;
+        }
+        $harFrys = DB::verdi(
+            "SELECT COUNT(*) FROM medlem_frys WHERE member_id = :m AND status IN ('godkjent', 'avsluttet')",
+            ['m' => $id]
+        );
+        return (int) $harFrys === 0 ? ['til' => null] : null;
+    }
+
     /** @return list<array<string,mixed>> */
     public static function forMedlem(int $medlemId): array
     {

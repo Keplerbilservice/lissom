@@ -8,6 +8,10 @@
       "erAdmin": false,
       "erMedlem": true,
       "erRegnskap": false,
+      "fryst": {
+        "til": "<dato>",
+        "tilTekst": "<dato>"
+      },
       "innlogget": true,
       "internInfo": {},
       "kanSelge": true,
@@ -334,9 +338,9 @@
         "fra": "<dato>",
         "fraIso": "<dato>",
         "id": "<number>",
-        "merke": "Venter på svar",
+        "merke": "Godkjent",
         "sokt": "<dato>",
-        "status": "sokt",
+        "status": "godkjent",
         "svar": "",
         "til": "<dato>",
         "tilIso": "<dato>"
@@ -350,9 +354,9 @@
           "fra": "<dato>",
           "fraIso": "<dato>",
           "id": "<number>",
-          "merke": "Venter på svar",
+          "merke": "Godkjent",
           "sokt": "<dato>",
-          "status": "sokt",
+          "status": "godkjent",
           "svar": "",
           "til": "<dato>",
           "tilIso": "<dato>"

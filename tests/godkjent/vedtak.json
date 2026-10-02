@@ -3091,6 +3091,61 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "fryst-medlem-ingen-tilgang",
+            "dato": "2026-10-02",
+            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag kan ikke stemple inn eller booke medlemstid, selv med betalt periode. Min side viser «Fryst til <dato>» i stedet for «Aktivt», og «Stemple inn» er skjult. Stemple ut, frys-statusen, kjøp og kurs betalt for seg virker som før, og perioden etter frysen er urørt.",
+            "hvor": "Min side (stempelkortet), api/stempling.php, api/book.php (Kun for medlemmer)",
+            "kode": [
+                {
+                    "fil": "app/lib/frys.php",
+                    "finnes": [
+                        "public static function frystNaa(array $medlem, ?string $idag = null): ?array",
+                        "WHERE member_id = :m AND status = 'godkjent'"
+                    ]
+                },
+                {
+                    "fil": "app/lib/auth.php",
+                    "finnes": [
+                        "function krev_ikke_fryst(array $medlem, string $hva): void"
+                    ]
+                },
+                {
+                    "fil": "api/stempling.php",
+                    "finnes": [
+                        "krev_ikke_fryst($medlem, 'stemple inn');"
+                    ]
+                },
+                {
+                    "fil": "api/book.php",
+                    "finnes": [
+                        "krev_ikke_fryst($medlem, 'melde deg på medlemstid');"
+                    ]
+                },
+                {
+                    "fil": "api/meg.php",
+                    "finnes": [
+                        "Frys::frystNaa($m)"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "fryst: d.fryst || null,",
+                        "aboBadge: fryst ? (fryst.tilTekst ? 'Fryst til ' + fryst.tilTekst : 'Fryst')",
+                        "const somMedlem = this.medlemsvisning() && !fryst;"
+                    ]
+                },
+                {
+                    "fil": "tests/frys-tilgang.php",
+                    "finnes": [
+                        "fryst: «Stemple inn» avvises med 403",
+                        "fryst: medlemstid avvises med 403",
+                        "frysen er over (status fortsatt «pause»): stempler inn som foer"
+                    ]
+                }
+            ]
         }
     ]
 }

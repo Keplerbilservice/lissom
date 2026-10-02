@@ -46,6 +46,30 @@ function er_aktivt_medlem(array $medlem): bool
 }
 
 /**
+ * Stopper et fryst medlem fra aa stemple inn eller booke medlemstid.
+ *
+ * Eieren, 2. oktober 2026: en betalt periode skal ikke slippe inn den som har
+ * fryst medlemskapet. Bare innstempling og medlemstid sperres — resten av
+ * Min side (frys-statusen, kjoep, kurs betalt for seg) virker som foer, og
+ * perioden etter frysen er urort (se Frys::frystNaa()).
+ *
+ * @param array<string,mixed> $medlem
+ */
+function krev_ikke_fryst(array $medlem, string $hva): void
+{
+    if ((string) ($medlem['rolle'] ?? '') === 'admin') {
+        return;
+    }
+    $fryst = Frys::frystNaa($medlem);
+    if ($fryst === null) {
+        return;
+    }
+    $naar = $fryst['til'] !== null ? ' til ' . Booking::norskDatoKort($fryst['til']) : '';
+    Svar::feil('Medlemskapet ditt er fryst' . $naar . '. Du kan ' . $hva . ' igjen når frysen er over.', 403,
+        ['fryst' => true, 'frystTil' => $fryst['til']]);
+}
+
+/**
  * @return array<string,mixed>
  *
  * Merk: 404 og ikke 403 når en innlogget ikke-admin prøver seg. Da røper vi

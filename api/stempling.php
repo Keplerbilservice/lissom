@@ -46,6 +46,9 @@ if (Foresporsel::metode() === 'POST') {
 
     $handling = Foresporsel::tekst('handling');
     if ($handling === 'inn') {
+        // Fryst medlemskap: ingen innstempling, selv med betalt periode
+        // (eieren, 2. oktober 2026). Ut og «feil tid» er aldri sperret.
+        krev_ikke_fryst($medlem, 'stemple inn');
         // Hva medlemmet skal bruke. Eieren, 30. august: «kunne det voere
         // lost om de booker inn og velger dreieskive, eller verkstedplass».
         // Uten valget gjetter regnestykket at de staar ved en skive.

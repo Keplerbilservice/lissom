@@ -36178,6 +36178,9 @@ class Component extends DCLogic {
           // medlemskapet er noe verkstedet godkjenner.
           erMedlemBruker: !!d.erMedlem,
           betalingMangler: !!d.betalingMangler,
+          // Fryst medlemskap (eieren, 2. oktober 2026): { til, tilTekst }
+          // naar serveren sier at medlemmet er fryst i dag, ellers null.
+          fryst: d.fryst || null,
           // 20 % paa kurs for aktive medlemmer. Serveren avgjor (api/meg.php
           // og Booking::faarMedlemsrabatt); skjermen viser bare det samme tallet.
           medlemsrabatt: Number(d.medlemsrabatt) || 0,
@@ -58412,6 +58415,7 @@ class Component extends DCLogic {
       ...(() => {
         const a = this.state.minAvtale;
         const oppsagt = this.harSagtOpp();
+        const fryst = this.state.fryst || null;
         const status = a
           ? ({
               aktiv:   a.nesteTrekk ? 'Trekkes automatisk i Vipps' : 'Aktiv',
@@ -58458,13 +58462,16 @@ class Component extends DCLogic {
             : (a.bundetTil ? 'Bundet til ' + a.bundetTil : 'Ingen bindingstid')),
           aboHarHindring: !!(a && a.hindring && !a.slutter),
           aboHindring: (a && a.hindring) || '',
-          aboBadge: a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
+          // Fryst medlemskap: «Fryst til <dato>» i stedet for «Aktivt»
+          // (eieren, 2. oktober 2026). Serveren avgjør (api/meg.php).
+          aboBadge: fryst ? (fryst.tilTekst ? 'Fryst til ' + fryst.tilTekst : 'Fryst')
+                      : a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
                       : (oppsagt ? 'Sagt opp' : 'Aktivt'),
           aboBadgeStil: {
             fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
             padding: '3px 10px', borderRadius: 999,
-            background: oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
-            color: oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
+            background: fryst ? 'var(--lissom-yellow)' : oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
+            color: fryst ? 'var(--lissom-brown)' : oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
           },
           // Beloepet som faktisk trekkes, ikke det planen koster.
           //
@@ -67571,7 +67578,12 @@ class Component extends DCLogic {
         // Stemplingsknappen hoerer til medlemsdelen. Den sto utenfor
         // sperren, saa en kursdeltaker med timer i basen fikk tilbud om aa
         // stemple inn i et verksted hen ikke har nokkel til.
-        const somMedlem = this.medlemsvisning();
+        //
+        // Fryst medlemskap: stempelknappen skjules (eieren, 2. oktober 2026).
+        // Står medlemmet inne, beholdes «Stemple ut» — utstempling er aldri
+        // sperret.
+        const fryst = !!this.state.fryst && !this.erInne();
+        const somMedlem = this.medlemsvisning() && !fryst;
         if (!st) return {
           harTimer: somMedlem && !this.erPublisert() && (t.igjen === 'Fritt' || t.igjen > 0 || this.erInne()),
           erTom: somMedlem && !this.erPublisert() && t.igjen === 0 && !this.erInne(),

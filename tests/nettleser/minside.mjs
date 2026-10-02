@@ -129,7 +129,10 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
       DB::settInn('timepakker', ['member_id' => $id, 'timer' => ${timepakke}, 'pris_ore' => 80000, 'status' => 'betalt', 'betalt_at' => gmdate('Y-m-d H:i:s')]);
     }
     if (${frys ? 1 : 0}) {
-      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() + 86400 * 20), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 50), 'status' => 'sokt', 'begrunnelse' => 'Reise']);
+      // Godkjent frys som dekker i dag (eieren, 2. oktober 2026): medlemmet
+      // er fryst, med en betalt periode. Foer laa det en soknad fram i tid her,
+      // og det frosne medlemmet sto som «Aktivt» med «Stemple inn».
+      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 5), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 25), 'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
     }
     if (${plasser ? 1 : 0}) {
       DB::settInn('bookings', ['course_id' => ${S.kurs}, 'course_session_id' => ${S.okter.a}, 'member_id' => $id, 'antall' => 1, 'belop_ore' => 280000, 'status' => 'betalt']);
@@ -272,6 +275,32 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
     sjekk(`${hva}: Dugnad`, await synlig(p, 'Send forespørsel'));
     sjekk(`${hva}: Vervepremie`, await synlig(p, 'Kopier personlig lenke'));
     sjekk(`${hva}: Skisser`, await synlig(p, 'Skisser', true));
+    const bred = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
+    sjekk(`${hva}: ingen sidelengs rulling`, !bred);
+    await p.context().close();
+  });
+}
+
+// ── 1b. Fryst medlem: «Fryst til <dato>», ingen «Stemple inn» ───────────
+//
+// Eieren, 2. oktober 2026: det frosne medlemmet med betalt periode sto som
+// «AKTIVT» med «Stemple inn» øverst, og serveren slapp det inn.
+for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
+  await flyt(`Fryst medlem, hjem (${hva})`, async () => {
+    const p = await side('frosset', bredde, hoyde);
+    await gaa(p, '/min-side');
+    await lukkVinduer(p);
+    await dump(p, 'fryst-' + hva);
+    const til = String(verdi("SELECT til_dato FROM medlem_frys WHERE member_id = :m AND status = 'godkjent'", { m: brukere.frosset.id }));
+    const tekst = php(`return Booking::norskDatoKort('${til}');`);
+    const merke = p.locator('.ms-o-stempel span').filter({ hasText: /^Fryst til / }).filter({ visible: true }).first();
+    sjekk(`${hva}: «Fryst til ${tekst}» øverst`, await merke.isVisible().catch(() => false)
+      && (await merke.innerText()).trim().toLowerCase() === ('Fryst til ' + tekst).toLowerCase());
+    sjekk(`${hva}: ikke «Aktivt»`, !(await p.locator('.ms-o-stempel span').filter({ hasText: /^Aktivt$/i }).filter({ visible: true }).count()));
+    sjekk(`${hva}: «Stemple inn» er skjult`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
+    const r = await api(p, '/api/stempling.php', { handling: 'inn' });
+    sjekk(`${hva}: serveren avviser innstempling (403)`, r.status === 403 && r.d?.fryst === true, JSON.stringify(r));
+    sjekk(`${hva}: ingen økt lagret`, Number(verdi('SELECT COUNT(*) FROM check_ins WHERE member_id = :m', { m: brukere.frosset.id })) === 0);
     const bred = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     sjekk(`${hva}: ingen sidelengs rulling`, !bred);
     await p.context().close();

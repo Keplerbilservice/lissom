@@ -125,6 +125,17 @@ try {
     sjekk('… plass 2 sitt uttak paa 20000 staar urort', (int) DB::verdi(
         "SELECT belop_ore FROM gift_card_uses WHERE gift_card_id = :k AND ref_type = 'booking' AND ref_id = :b", ['k' => $k, 'b' => $b2]) === 20000);
     sjekk('annullering av plass 2 gir sine 20000 (saldo 100000)', Booking::angreGavekort($p2) === 20000 && saldo($k) === 100000);
+    // Codex, runde 2: plass 2 registreres paa nytt med samme kort. Den nye
+    // betalingen skal trekkes, selv om den annullerte sitt uttak staar paa 0.
+    $p3 = DB::settInn('payments', ['member_id' => $mid, 'vipps_reference' => 'AVBG-' . bin2hex(random_bytes(8)), 'type' => 'manuell',
+        'formal' => 'booking', 'belop_ore' => 0, 'status' => 'betalt', 'idempotency_key' => bin2hex(random_bytes(18)),
+        'gavekort_id' => $k, 'gavekort_ore' => 20000, 'booking_id' => $b2]);
+    $payments[] = $p3;
+    Booking::trekkGavekort($p3);
+    sjekk('ny betaling paa samme plass etter annullering trekkes (saldo 80000)', saldo($k) === 80000, (string) saldo($k));
+    Booking::trekkGavekort($p3);
+    sjekk('… men bare én gang (saldo 80000)', saldo($k) === 80000);
+    sjekk('… og den gamle annullerte gir fortsatt 0', Booking::angreGavekort($p2) === 0 && saldo($k) === 80000);
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getLine());
 } finally {

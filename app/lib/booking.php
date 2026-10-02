@@ -2036,7 +2036,24 @@ final class Booking
         // Allerede trukket? Da staar bruken der fra for, og vi gjor ingenting.
         // Webhooken og returen kan begge komme, og begge kan komme flere
         // ganger.
-        if (DB::harTabell('gift_card_uses') && $refId > 0) {
+        //
+        // Sperren gjelder betalingen (migrasjon 245, «payment_id»): en ny
+        // betaling paa samme booking — registrert paa nytt etter at den forrige
+        // ble annullert — skal trekkes. Eldre rader uten betaling sperrer som
+        // foer, saa lenge de fortsatt staar med et beloep.
+        if (DB::harTabell('gift_card_uses') && self::harBetalingsspor()) {
+            if (DB::verdi('SELECT id FROM gift_card_uses WHERE payment_id = :p LIMIT 1', ['p' => $paymentId]) !== null) {
+                return;
+            }
+            if ($refId > 0 && DB::verdi(
+                'SELECT id FROM gift_card_uses
+                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r
+                    AND payment_id IS NULL AND belop_ore > 0 LIMIT 1',
+                ['k' => $kortId, 't' => $refType, 'r' => $refId]
+            ) !== null) {
+                return;
+            }
+        } elseif (DB::harTabell('gift_card_uses') && $refId > 0) {
             $alt = DB::en(
                 'SELECT id FROM gift_card_uses
                   WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r',
@@ -2058,12 +2075,16 @@ final class Booking
         }
 
         if (DB::harTabell('gift_card_uses') && $refId > 0) {
-            DB::settInn('gift_card_uses', [
+            $uttak = [
                 'gift_card_id' => $kortId,
                 'belop_ore'    => $belop,
                 'ref_type'     => $refType,
                 'ref_id'       => $refId,
-            ]);
+            ];
+            if (self::harBetalingsspor()) {
+                $uttak['payment_id'] = $paymentId;
+            }
+            DB::settInn('gift_card_uses', $uttak);
         }
 
         // Tomt kort er brukt opp. Da skal det ikke ligge og se gyldig ut.
@@ -2098,30 +2119,32 @@ final class Booking
             return 0;
         }
 
-        // Betalingens egen uttaksrad foerst (gavekortSpor()). Den kan alt vaere
-        // satt ned av en avbestilling (gavekortTilbake()); da gis bare resten
+        // Betalingens egne uttak foerst (egneUttak()). De kan alt vaere satt
+        // ned av en avbestilling (gavekortTilbake()); da gis bare resten
         // tilbake — aldri en annen betalings uttak paa samme kort og beloep
         // (Codex, 2. oktober 2026: ellers dobbel kreditering). Raden blir
-        // staaende med 0, saa sporet og sperren mot nytt trekk beholdes.
+        // staaende med 0 og betalingens id, saa en ny betaling paa samme
+        // booking trekkes som vanlig (sperren i trekkGavekort() gjelder
+        // betalingen).
         if (DB::harTabell('gift_card_uses')) {
-            [$refType, $refId] = self::gavekortSpor($paymentId);
-            if ($refId > 0 && DB::verdi(
-                'SELECT id FROM gift_card_uses
-                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r LIMIT 1',
-                ['k' => $kortId, 't' => $refType, 'r' => $refId]
+            $eget = self::egneUttak($paymentId, $kortId);
+            if ($eget !== null && DB::verdi(
+                'SELECT id FROM gift_card_uses WHERE ' . $eget[0] . ' LIMIT 1', $eget[1]
             ) !== null) {
                 return self::gavekortTilbake($paymentId);
             }
         }
 
-        // Eldre rader uten eget spor: soeket paa kort og beloep, som foer.
+        // Eldre rader uten eget spor: soeket paa kort og beloep, som foer —
+        // men aldri en rad som tilhoerer en annen betaling.
         // Aldri trukket? Da er det ingenting aa legge tilbake. Uten denne
         // ville en betaling som ble annullert for pengene kom inn — der
         // trekket aldri skjedde — gitt kunden beloepet i gave.
         if (DB::harTabell('gift_card_uses')) {
             $bruk = DB::en(
                 'SELECT id FROM gift_card_uses
-                  WHERE gift_card_id = :k AND belop_ore = :b
+                  WHERE gift_card_id = :k AND belop_ore = :b'
+                . (self::harBetalingsspor() ? ' AND payment_id IS NULL' : '') . '
                   ORDER BY id DESC LIMIT 1',
                 ['k' => $kortId, 'b' => $belop]
             );
@@ -2147,6 +2170,37 @@ final class Booking
         return $belop;
     }
 
+    /** Har «gift_card_uses» kolonnen «payment_id» (migrasjon 245)? */
+    private static function harBetalingsspor(): bool
+    {
+        return DB::harTabell('gift_card_uses') && DB::harKolonne('gift_card_uses', 'payment_id');
+    }
+
+    /**
+     * SQL-vilkaar for betalingens EGNE uttak paa kortet, eller null.
+     *
+     * Med migrasjon 245 staar betalingen paa raden: radene med denne
+     * betalingens id. I tillegg rader fra foer det (uten betaling) paa samme
+     * spor — gavekortSpor(). En rad som tilhoerer en annen betaling, tas
+     * aldri.
+     *
+     * @return array{0:string,1:array<string,mixed>}|null
+     */
+    private static function egneUttak(int $paymentId, int $kortId): ?array
+    {
+        [$refType, $refId] = self::gavekortSpor($paymentId);
+        if (self::harBetalingsspor()) {
+            return ['gift_card_id = :k AND (payment_id = :p
+                      OR (payment_id IS NULL AND ref_type = :t AND ref_id = :r))',
+                    ['k' => $kortId, 'p' => $paymentId, 't' => $refType, 'r' => $refId]];
+        }
+        if ($refId <= 0) {
+            return null;
+        }
+        return ['gift_card_id = :k AND ref_type = :t AND ref_id = :r',
+                ['k' => $kortId, 't' => $refType, 'r' => $refId]];
+    }
+
     /**
      * Gir gavekortdelen av EN betaling tilbake til kortet — hele eller en del.
      *
@@ -2155,11 +2209,11 @@ final class Booking
      * tilbake, og en plass betalt helt med gavekort fikk «Ingenting var
      * belastet».
      *
-     * Raden i «gift_card_uses» er fasiten: den som hoerer til akkurat denne
-     * betalingen (gavekortSpor()), ikke et soek paa kort og beloep. Beloepet
-     * paa raden settes ned med det som gis tilbake, saa raden alltid viser
-     * hva som fortsatt er brukt — og mer enn det kan aldri gis tilbake, uansett
-     * hvor mange ganger dette kalles. Betalingen og kortet laases foerst.
+     * Betalingens egen rad i «gift_card_uses» er fasiten (egneUttak()), ikke
+     * et soek paa kort og beloep. Beloepet paa raden settes ned med det som
+     * gis tilbake, saa raden alltid viser hva som fortsatt er brukt — og mer
+     * enn det kan aldri gis tilbake, uansett hvor mange ganger dette kalles.
+     * Betalingen og kortet laases foerst.
      *
      * Kalles inne i en transaksjon naar den som kaller har en, ellers i sin egen.
      *
@@ -2179,21 +2233,21 @@ final class Booking
             if ($kortId <= 0) {
                 return 0;
             }
-            [$refType, $refId] = self::gavekortSpor($paymentId);
-            if ($refId <= 0) {
+            if (DB::verdi('SELECT id FROM gift_cards WHERE id = :k FOR UPDATE', ['k' => $kortId]) === null) {
                 return 0;
             }
-            if (DB::verdi('SELECT id FROM gift_cards WHERE id = :k FOR UPDATE', ['k' => $kortId]) === null) {
+            $eget = self::egneUttak($paymentId, $kortId);
+            if ($eget === null) {
                 return 0;
             }
             $bruk = DB::en(
                 'SELECT id, belop_ore FROM gift_card_uses
-                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r AND belop_ore > 0
+                  WHERE ' . $eget[0] . ' AND belop_ore > 0
                   ORDER BY id LIMIT 1 FOR UPDATE',
-                ['k' => $kortId, 't' => $refType, 'r' => $refId]
+                $eget[1]
             );
             if ($bruk === null) {
-                return 0; // aldri trukket: ingenting aa gi tilbake
+                return 0; // aldri trukket, eller alt gitt tilbake
             }
             $brukt = (int) $bruk['belop_ore'];
             $belop = $onsket > 0 ? min($onsket, $brukt) : $brukt;
@@ -2206,6 +2260,12 @@ final class Booking
             )->rowCount();
             if ($n !== 1) {
                 return 0;
+            }
+            // En eldre rad uten betaling faar betalingen sin naa, saa den
+            // ikke kan forveksles med en annen betalings uttak senere.
+            if (self::harBetalingsspor()) {
+                DB::kjor('UPDATE gift_card_uses SET payment_id = :p WHERE id = :i AND payment_id IS NULL',
+                    ['p' => $paymentId, 'i' => (int) $bruk['id']]);
             }
             DB::kjor(
                 'UPDATE gift_cards SET saldo_ore = saldo_ore + :b WHERE id = :i',
@@ -2227,7 +2287,7 @@ final class Booking
 
     /**
      * Oere som fortsatt er trukket fra gavekortet for denne betalingen — fra
-     * betalingens egen rad i «gift_card_uses». 0 naar kortet aldri ble trukket.
+     * betalingens egne rader i «gift_card_uses». 0 naar kortet aldri ble trukket.
      */
     public static function gavekortBrukt(int $paymentId): int
     {
@@ -2238,14 +2298,13 @@ final class Booking
         if ($kortId <= 0) {
             return 0;
         }
-        [$refType, $refId] = self::gavekortSpor($paymentId);
-        if ($refId <= 0) {
+        $eget = self::egneUttak($paymentId, $kortId);
+        if ($eget === null) {
             return 0;
         }
         return (int) DB::verdi(
-            'SELECT COALESCE(SUM(belop_ore), 0) FROM gift_card_uses
-              WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r',
-            ['k' => $kortId, 't' => $refType, 'r' => $refId]
+            'SELECT COALESCE(SUM(belop_ore), 0) FROM gift_card_uses WHERE ' . $eget[0],
+            $eget[1]
         );
     }
 

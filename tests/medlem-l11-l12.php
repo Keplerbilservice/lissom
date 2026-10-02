@@ -147,6 +147,10 @@ try {
     $tekst = (string) ($svar[0][1]['feil'] ?? $svar[0][1]['melding'] ?? json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
     sjekk("teksten sier perioden ($denneTekst)", str_contains($tekst, 'allerede betalt medlemskapet for ' . $denneTekst), $tekst);
     sjekk('fortsatt én rad', count(rader($a)) === 1, (string) count(rader($a)));
+    // Annullert feilregistrering («Angre feilregistrering») sperrer ikke.
+    DB::oppdater('payments', ['annullert_at' => gmdate('Y-m-d H:i:s')], ['id' => (int) rader($a)[0]['id']]);
+    $svar = kall([[$porter[0], $API, $kontant($a), $token]]);
+    sjekk('etter annullering kan perioden registreres på nytt (200)', $svar[0][0] === 200, (string) $svar[0][0]);
 
     echo "\n── L-12.3: dobbelttrykk (to samtidige) ──\n";
     foreach ([1, 2, 3] as $runde) {

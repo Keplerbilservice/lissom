@@ -261,6 +261,78 @@ $fra = $loggLengde();
 $ut = Medlemskap::trekk($avtaleRad($avt), '2034-03-29');
 sjekk("april trekkes som vanlig (svar: $ut)", str_starts_with($ut, 'bedt om trekk til 2034-04-01') && $bestillinger($agr, $fra) === 1);
 
+// ── (k) betalingen er paa vei naar nattrunden kjoerer ───────────────────
+echo "\n── (k) betaling «opprettet» naar runden kjoerer: vent 30 min ─\n";
+// Betaling, 2. oktober 2026: ingen dobbel betaling. Holder medlemmet paa aa
+// betale maaneden selv, venter runden; etter 30 minutter bestilles trekket.
+$m = $medlem('aktiv', $plan);
+$agr = 'agr_frysK_' . $tag;
+$avt = $avtale($m, $agr, '2035-03-01');
+$betalt($m, $avt, '2035-02-01');
+$frys($m, '2035-03-05', '2035-03-12');
+file_put_contents($feiler, 'ja');
+try { Medlemskap::trekk($avtaleRad($avt), '2035-02-26'); } catch (RuntimeException $e) {}
+@unlink($feiler);
+Medlemskap::fornyPeriodePaa($rad($m), $avtaleRad($avt), '2035-03-08');
+$egen = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'epayment' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+DB::oppdater('payments', ['status' => 'opprettet'], ['id' => (int) $egen['id']]);   // medlemmet er i Vipps naa
+sjekk('medlemmets betaling for mars staar «opprettet»', (string) $egen['gjelder_fra'] === '2035-03-01');
+$fra = $loggLengde();
+$ut = Medlemskap::trekk($avtaleRad($avt), '2035-03-09');
+sjekk("nattrunden venter: null bestillinger (svar: $ut)", $ut === 'bestilles alt' && $bestillinger($agr, $fra) === 0
+    && (string) $avtaleRad($avt)['neste_trekk'] === '2035-03-01');
+DB::oppdater('payments', ['status' => 'venter'], ['id' => (int) $egen['id']]);
+$ut = Medlemskap::trekk($avtaleRad($avt), '2035-03-09');
+sjekk("… ogsaa naar den staar «venter» (svar: $ut)", $ut === 'bestilles alt' && $bestillinger($agr, $fra) === 0);
+// 30 minutter uten fullfoert betaling.
+DB::kjor('UPDATE payments SET created_at = (UTC_TIMESTAMP() - INTERVAL 31 MINUTE) WHERE id = :i', ['i' => (int) $egen['id']]);
+$ut = Medlemskap::trekk($avtaleRad($avt), '2035-03-09');
+sjekk("etter 30 minutter uten fullfoert betaling: trekket bestilles (svar: $ut)", $bestillinger($agr, $fra) === 1);
+
+// ── (l) oktobertrekket henger paa «venter» etter fristen ────────────────
+echo "\n── (l) trekk henger paa «venter», frysen dekker oktober ─────\n";
+// Kontrolloeren, 2. oktober 2026: maaneden skyldes, og trekket avlyses hos
+// Vipps foer medlemmet betaler selv. Ingen dobbel betaling.
+$lagL = static function (string $suffiks) use ($medlem, $plan, $avtale, $betalt, $frys, $avtaleRad, $tag, $rader): array {
+    $m = $medlem('aktiv', $plan);
+    $agr = 'agr_frysL' . $suffiks . '_' . $tag;
+    $avt = $avtale($m, $agr, '2036-10-01');
+    $betalt($m, $avt, '2036-09-01');
+    $ut = Medlemskap::trekk($avtaleRad($avt), '2036-09-28');   // bestilt foer frysen
+    $frys($m, '2036-10-01', '2036-10-31');                     // godkjent etterpaa
+    $t = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'recurring_charge' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+    return [$m, $agr, $avt, $ut, $t];
+};
+[$m, $agr, $avt, $ut, $t] = $lagL('A');
+sjekk("oktobertrekket er bestilt og venter hos Vipps (svar: $ut)", $t !== null && (string) $t['status'] === 'venter' && !empty($t['vipps_psp_ref']),
+    json_encode([$t['status'] ?? null, $t['vipps_psp_ref'] ?? null]));
+$bs = Medlemskap::betalingsstatusFor($rad($m), '2036-10-15');
+sjekk('15. oktober (etter fristen): forfalt, og stengt ute av frysen', $bs['forfalt'] && Frys::frystNaa($rad($m), '2036-10-15') === ['til' => '2036-10-31'], json_encode($bs));
+sjekk('… skyldig maaned er oktober', Medlemskap::skyldigMaaned($rad($m), '2036-10-15') === '2036-10-01');
+$fraLogg = $loggLengde();
+Medlemskap::fornyPeriodePaa($rad($m), $avtaleRad($avt), '2036-10-15');
+$slettet = 0;
+foreach (array_slice(is_file($logg) ? file($logg) : [], $fraLogg) as $l) {
+    $k = json_decode($l, true);
+    if (($k['metode'] ?? '') === 'DELETE' && str_contains((string) ($k['sti'] ?? ''), $agr . '/charges/' . $t['vipps_psp_ref'])) { $slettet++; }
+}
+$ny = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'epayment' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+sjekk('Vipps-trekket er avlyst hos Vipps, og raden staar «avbrutt»', $slettet === 1
+    && (string) DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => (int) $t['id']]) === 'avbrutt');
+sjekk('… betalingen gjelder oktober', $ny !== null && (string) $ny['gjelder_fra'] === '2036-10-01');
+DB::oppdater('payments', ['status' => 'betalt'], ['id' => (int) $ny['id']]);
+sjekk('… oktober er betalt én gang (ingen dobbel betaling)',
+    (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND status IN ('betalt','venter','opprettet') AND gjelder_fra BETWEEN '2036-10-01' AND '2036-10-31'", ['s' => $avt]) === 1);
+// Vipps sier nei til aa avlyse: da avvises betalingen.
+[$m, $agr, $avt, $ut, $t] = $lagL('B');
+file_put_contents(__DIR__ . '/.trekk-slett-nei', 'ja');
+$melding = '';
+try { Medlemskap::fornyPeriodePaa($rad($m), $avtaleRad($avt), '2036-10-15'); } catch (RuntimeException $e) { $melding = $e->getMessage(); }
+@unlink(__DIR__ . '/.trekk-slett-nei');
+sjekk("Vipps avlyser ikke: betalingen avvises («$melding»)", $melding === 'Vipps stoppet ikke trekket.'
+    && (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND type = 'epayment'", ['s' => $avt]) === 0
+    && (string) DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => (int) $t['id']]) === 'venter');
+
 // ── (g) restdagene etter frysen i en overhoppet maaned ──────────────────
 echo "\n── (g) restdager etter frys i overhoppet maaned ────────────\n";
 $m = $medlem('aktiv', $plan);

@@ -761,10 +761,15 @@ final class Medlemskap
             return null;
         }
         $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
-        $a = DB::en('SELECT id FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $id]);
+        $a = DB::en('SELECT id, siste_trekk FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $id]);
         if ($a !== null) {
             $t = self::sisteTrekk([(int) $a['id']])[(int) $a['id']] ?? null;
-            if ($t !== null && in_array((string) $t['status'], ['feilet', 'avbrutt'], true)) {
+            // Et trekk som henger paa «venter» etter forfall + retryDays er
+            // forfalt (betalingsstatus()), og maaneden skyldes (kontrolloeren,
+            // 2. oktober 2026).
+            $henger = $t !== null && (string) $t['status'] === 'venter'
+                && $idag > self::trekkFrist($t + ['siste_trekk' => $a['siste_trekk'] ?? null])['frist'];
+            if ($t !== null && (in_array((string) $t['status'], ['feilet', 'avbrutt'], true) || $henger)) {
                 $fra = trim((string) ($t['gjelder_fra'] ?? ''));
                 if ($fra === '') {
                     $fra = (new DateTimeImmutable((string) $t['created_at'], new DateTimeZone('UTC')))
@@ -987,6 +992,43 @@ final class Medlemskap
     }
 
     /**
+     * Foer et fryst medlem betaler maaneden som skyldes selv: et trekk for den
+     * samme maaneden som fortsatt staar «opprettet» eller «venter» hos Vipps,
+     * avlyses der, saa det ikke kan trekkes etterpaa (kontrolloeren, 2. oktober
+     * 2026). Gaar ikke det — trekket har ingen charge-id ennaa, eller Vipps
+     * sier nei — avvises betalingen heller enn aa risikere dobbel betaling.
+     *
+     * @param array<string,mixed> $avtale
+     */
+    private static function avlysVentendeTrekk(array $avtale, string $maanedStart): void
+    {
+        $slutt = (new DateTimeImmutable($maanedStart))->modify('last day of this month')->format('Y-m-d');
+        $rader = DB::alle(
+            "SELECT id, vipps_psp_ref FROM payments
+              WHERE subscription_id = :s AND type = 'recurring_charge' AND formal = 'medlemskap'
+                AND status IN ('opprettet', 'venter') AND annullert_at IS NULL
+                AND gjelder_fra BETWEEN :fra AND :til",
+            ['s' => (int) $avtale['id'], 'fra' => $maanedStart, 'til' => $slutt]
+        );
+        if ($rader === []) {
+            return;
+        }
+        $agr = trim((string) ($avtale['vipps_agreement_id'] ?? ''));
+        foreach ($rader as $r) {
+            $charge = trim((string) ($r['vipps_psp_ref'] ?? ''));
+            if ($agr === '' || $charge === '') {
+                throw new RuntimeException('Vipps stoppet ikke trekket.');
+            }
+            // Kaster «Vipps stoppet ikke trekket.» naar Vipps sier nei.
+            Vipps::avlysTrekk($agr, $charge);
+            DB::oppdater('payments', ['status' => 'avbrutt'], ['id' => (int) $r['id']]);
+            logg('Trekk avlyst foer egen betaling av maaneden (fryst)', [
+                'avtale' => (int) $avtale['id'], 'betaling' => (int) $r['id'], 'maaned' => $maanedStart,
+            ]);
+        }
+    }
+
+    /**
      * «Forny» paa et medlemskap som gjores opp selv: én betaling i Vipps for
      * neste periode, paa avtalen som alt loeper. Ingen ny avtale.
      *
@@ -1049,6 +1091,7 @@ final class Medlemskap
         }
         if ($skyldig !== null) {
             $gjelderFra = $skyldig;
+            self::avlysVentendeTrekk($avtale, $skyldig);
         }
 
         $pris = (int) $plan['pris_ore'];
@@ -3408,6 +3451,29 @@ final class Medlemskap
     {
         $maaned = (new DateTimeImmutable((string) $avtale['neste_trekk']))->format('Y-m');
         $nokkel = substr(hash('sha256', 'trekk:' . $avtale['id'] . ':' . $maaned), 0, 36);
+
+        // Medlemmet holder paa aa betale maaneden selv («Forny og betal» paa
+        // Min side, fryst med et feilet trekk): en betaling for samme avtale
+        // og maaned som er «opprettet» eller «venter» og yngre enn 30
+        // minutter. Da venter runden, saa det ikke blir dobbel betaling
+        // (betaling, 2. oktober 2026). Etter 30 minutter uten fullfoert
+        // betaling bestilles trekket som vanlig.
+        if (DB::harKolonne('payments', 'gjelder_fra')) {
+            $mStart = (new DateTimeImmutable((string) $avtale['neste_trekk']))->modify('first day of this month')->format('Y-m-d');
+            $mSlutt = (new DateTimeImmutable((string) $avtale['neste_trekk']))->modify('last day of this month')->format('Y-m-d');
+            $paagaar = DB::verdi(
+                "SELECT id FROM payments
+                  WHERE subscription_id = :s AND formal = 'medlemskap' AND idempotency_key <> :k
+                    AND status IN ('opprettet', 'venter') AND annullert_at IS NULL
+                    AND gjelder_fra BETWEEN :fra AND :til
+                    AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
+                  LIMIT 1",
+                ['s' => (int) $avtale['id'], 'k' => $nokkel, 'fra' => $mStart, 'til' => $mSlutt]
+            );
+            if ($paagaar !== null) {
+                return 'bestilles alt';
+            }
+        }
 
         // Er trekket alt fort, gjor vi ikke noe mer. Uten denne kunne en
         // halvveis kjoring gitt to rader i payments for samme maaned.

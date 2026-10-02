@@ -1214,7 +1214,7 @@ switch ($handling) {
         }
 
         if (array_key_exists('samlinger', $kropp) && is_array($kropp['samlinger'])) {
-            $foer =array_map(static fn(array $sa): string => (string) $sa['dato'], Samlinger::forOkt($oktId));
+            $foer = array_map(static fn(array $sa): string => (string) $sa['dato'], Samlinger::forOkt($oktId));
             $nyeTider = [];
             foreach (array_slice(array_values($kropp['samlinger']), 1) as $sa) {
                 $d = trim((string) (is_array($sa) ? ($sa['dato'] ?? '') : ''));

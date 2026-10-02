@@ -89,6 +89,33 @@ try{
   r=fixture('inspect',s);assert.deepEqual(r.samlinger.map(x=>x[0]),[d0,s.ferie],'kurs.php lagret ingenting');
   console.log(`${width} px: feil rekkefølge avvist i skjemaet og i kurs.php`);
 
+  // Start og slutt paa ulike dager i et kurs med samlinger avvises.
+  await trykk(await aapneDag(s.ferie));
+  await trykk(p.getByRole('dialog').getByRole('button',{name:'Flytt tidspunkt',exact:true}));
+  const sd=p.getByRole('dialog',{name:'Flytt kursdato'});await sd.getByLabel('Starter').fill(`${s.ferie}T17:00`);await sd.getByLabel('Slutter').fill(`${nesteDag(s.ferie)}T20:00`);
+  await trykk(sd.getByRole('button',{name:'Lagre',exact:true}));await sd.getByText('Start og slutt må være samme dag.').waitFor();
+  assert.equal(await p.getByRole('dialog',{name:'Flytte datoen?'}).count(),0,'ingen bekreftelse når start og slutt er ulike dager');
+  await lukkFlytt(sd);
+  r=fixture('inspect',s);assert.deepEqual(r.samlinger[1],[s.ferie,'18:00','21:00','Dag to'],'ulike dager lagrer ingenting');
+  console.log(`${width} px: start og slutt på ulike dager avvist`);
+
+  // Samlingseditoren i kurslista: samme ferieadvarsel med «Legg til likevel».
+  const naar=await p.evaluate(async oktId=>{const d=await (await fetch('/api/admin/kurs.php',{credentials:'same-origin'})).json();for(const k of d.kurs)for(const o of k.datoer)if(o.oktId===oktId)return o.naar;},s.okt);
+  await p.goto(`${ADR}/admin-ny.html#kurs`);await p.getByRole('heading',{name:'Kurs',exact:true}).waitFor();
+  await p.getByRole('searchbox').last().fill(s.tag);
+  await trykk(p.locator('article',{hasText:s.tag}).first().getByRole('button',{name:'Datoer',exact:true}));
+  const datoark=p.getByRole('dialog',{name:`${s.tag} Dreiekurs`});await datoark.waitFor();
+  await trykk(datoark.locator('article',{hasText:naar}).getByRole('button',{name:'Samlinger',exact:true}));
+  const se=p.getByRole('dialog',{name:'Samlinger i flerdagerskurs'});await se.waitFor();
+  await se.getByLabel('Samling 2 · Dato',{exact:true}).fill(s.ferie2);
+  await trykk(se.getByRole('button',{name:'Lagre',exact:true}));
+  await trykk(p.getByRole('dialog',{name:'Lagre samlingene?'}).getByRole('button',{name:'Lagre samlinger',exact:true}));
+  const fe=p.getByRole('dialog',{name:'Kurs på stengt dag?'});await fe.waitFor();assert.match(await fe.textContent(),/er ferie/);
+  await trykk(fe.getByRole('button',{name:'Legg til likevel',exact:true}));await se.waitFor({state:'detached'});
+  r=await vent(()=>{const v=fixture('inspect',s);return {...v,ok:v.samlinger[1]?.[0]===s.ferie2};});
+  assert.equal(r.samlinger[1][0],s.ferie2,'samlingseditoren lagret etter «Legg til likevel»');assert.equal(r.varsler,0);
+  console.log(`${width} px: samlingseditoren gir ferieadvarsel og lagrer etter «Legg til likevel»`);
+
   // ── 2. «Rediger påmelding» aapner akkurat den paameldingen ─────────
   await trykk(await aapneDag(d0));
   await trykk(p.getByRole('dialog').getByRole('button',{name:'Se deltakerne',exact:true}));

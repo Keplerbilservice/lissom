@@ -3095,7 +3095,7 @@
         {
             "id": "nyadmin-samling-og-ingen-forhandsvalg",
             "dato": "2026-10-02",
-            "hva": "Nytt admin: «Flytt tidspunkt» på samling 2 (eller senere) flytter bare den samlingen, samme vei som gamle admin (endredato + dato med hele samlingslista); «Rediger påmelding» åpner akkurat den påmeldingen (?booking=, også eldre enn lista); ingen forhåndsvalg i Ny påmelding, Flytt til annen dato, Ny kursdato og Gi medlemsgave — bare kommende datoer, og Lagre er grå til noe er valgt; samling 2 eller senere som flyttes til en stengt feriedag gir samme ferieadvarsel som dag 1; Flytt på en eldre påmelding åpnet via ?booking= viser kommende datoer på samme kurs; Flytt-skjemaet fylles fra samlingen som flyttes (dag 1 viser sin egen sluttid), og dagene må ligge i rekkefølge — avvises i skjemaet og i kurs.php",
+            "hva": "Nytt admin: «Flytt tidspunkt» på samling 2 (eller senere) flytter bare den samlingen, samme vei som gamle admin (endredato + dato med hele samlingslista); «Rediger påmelding» åpner akkurat den påmeldingen (?booking=, også eldre enn lista); ingen forhåndsvalg i Ny påmelding, Flytt til annen dato, Ny kursdato og Gi medlemsgave — bare kommende datoer, og Lagre er grå til noe er valgt; samling 2 eller senere som flyttes til en stengt feriedag gir samme ferieadvarsel som dag 1; Flytt på en eldre påmelding åpnet via ?booking= viser kommende datoer på samme kurs; Flytt-skjemaet fylles fra samlingen som flyttes (dag 1 viser sin egen sluttid), og dagene må ligge i rekkefølge — avvises i skjemaet og i kurs.php; samlingseditoren i kurslista gir samme ferieadvarsel med «Legg til likevel»; start og slutt må være samme dag når kurset har samlinger",
             "hvor": "admin-ny › Kalender › Flytt tidspunkt · Påmeldte › Ny påmelding / Flytt til annen dato · Kalender › Ny kursdato · Medlemsgaver › Gi gave",
             "kode": [
                 {
@@ -3105,7 +3105,8 @@
                         "field('kursId','Kurs','number',{velg:true,",
                         "await courseMutation({handling:'dato',oktId,samlinger:l})",
                         "const kilde=samlinger.length?samlinger[nr?nr-1:0]:null;",
-                        "if(!iRekkefolge(l))throw Error('Dagene må ligge i rekkefølge.');"
+                        "if(!iRekkefolge(l))throw Error('Dagene må ligge i rekkefølge.');",
+                        "throw Error('Start og slutt må være samme dag.')"
                     ]
                 },
                 {
@@ -3113,7 +3114,8 @@
                     "finnes": [
                         "f.velg?el('option',{value:'',text:f.label,disabled:true}):null",
                         "submit.disabled=fields.some(f=>f.velg&&",
-                        "export const upcoming="
+                        "export const upcoming=",
+                        "export async function courseMutation(body)"
                     ]
                 },
                 {
@@ -3150,7 +3152,9 @@
                         "advarselen sier at dagen er ferie",
                         "gammel påmelding: kommende dato på samme kurs vises",
                         "Slutter fylt fra samlingen, ikke siste dag",
-                        "kurs.php avviser feil rekkefølge"
+                        "kurs.php avviser feil rekkefølge",
+                        "samlingseditoren lagret etter «Legg til likevel»",
+                        "ulike dager lagrer ingenting"
                     ]
                 },
                 {
@@ -3158,6 +3162,12 @@
                     "finnes": [
                         "if ($nyeTider !== [] && $ferieVakt($nyeTider) && Ferie::harUnntak()) {",
                         "Svar::feil('Dagene må ligge i rekkefølge.');"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursdetaljer.js",
+                    "finnes": [
+                        "const save=async body=>{await courseMutation(body);refresh();};"
                     ]
                 }
             ]

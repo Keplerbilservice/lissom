@@ -54,14 +54,18 @@ if ($mode === 'seed') {
         'gjest_telefon' => '+4790000001', 'antall' => 1, 'belop_ore' => 100000, 'status' => 'betalt']);
 
     // En stengt feriedag om fjorten dager, til ferieadvarselen paa samling 2.
+    // Og en til om seksten dager, til samlingseditoren i kurslista.
     $ferie = $dag(14);
-    if (DB::en('SELECT id FROM apningstider WHERE dato = :d', ['d' => $ferie]) !== null) {
-        throw new RuntimeException('Datoen for feriedagen er alt satt opp i testbasen.');
+    $ferie2 = $dag(16);
+    foreach ([$ferie, $ferie2] as $fd) {
+        if (DB::en('SELECT id FROM apningstider WHERE dato = :d', ['d' => $fd]) !== null) {
+            throw new RuntimeException('Datoen for feriedagen er alt satt opp i testbasen.');
+        }
+        DB::settInn('apningstider', ['dato' => $fd, 'stengt' => 1, 'merknad' => $tag]);
     }
-    DB::settInn('apningstider', ['dato' => $ferie, 'stengt' => 1, 'merknad' => $tag]);
 
     echo json_encode(compact('tag', 'admin', 'token', 'kurs', 'okt', 'passert', 'kommende', 'gammel',
-        'booking', 'gammelBooking', 'd1', 'd2', 'ferie')); exit;
+        'booking', 'gammelBooking', 'd1', 'd2', 'ferie', 'ferie2')); exit;
 }
 
 $s = json_decode($argv[2] ?? '{}', true);
@@ -93,8 +97,10 @@ if ($mode === 'inspect') {
 }
 
 if ($mode === 'cleanup') {
-    if (isset($s['ferie'])) {
-        DB::kjor('DELETE FROM apningstider WHERE dato = :d AND merknad = :t', ['d' => $s['ferie'], 't' => $s['tag']]);
+    foreach (['ferie', 'ferie2'] as $n) {
+        if (isset($s[$n])) {
+            DB::kjor('DELETE FROM apningstider WHERE dato = :d AND merknad = :t', ['d' => $s[$n], 't' => $s['tag']]);
+        }
     }
     DB::kjor("DELETE FROM notifications WHERE ref_type = 'booking' AND ref_id IN ({$bookinger})");
     DB::kjor("DELETE FROM bookings WHERE course_id = :k", ['k' => $s['kurs']]);

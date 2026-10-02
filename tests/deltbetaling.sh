@@ -119,6 +119,16 @@ SVAR=$(post kursbetaling.php "{\"handling\":\"delt\",\"bookingId\":$BOOKING,\"de
 sjekk "mer enn saldoen paa kortet avvises" "false" "$(echo "$SVAR" | felt ok)"
 sjekk "… og kortet er urort" "100000" "$(sql "SELECT saldo_ore FROM gift_cards WHERE kode = 'DELT-TEST-A'")"
 
+# Kontrolloeren, 2. oktober 2026: et kort som er sperret mens kjoepet av det
+# refunderes («annullert», saldoen staar til Vipps har bekreftet), avvises.
+php -r 'require "'"$ROT"'/app/bootstrap.php";
+  DB::settInn("gift_cards", ["kode" => "DELT-TEST-C", "opprinnelig_ore" => 50000, "saldo_ore" => 50000,
+    "gyldig_til" => gmdate("Y-m-d", time() + 86400 * 365), "status" => "annullert", "opprinnelse" => "gitt"]);'
+SVAR=$(post kursbetaling.php "{\"handling\":\"delt\",\"bookingId\":$BOOKING,\"deler\":[{\"maate\":\"Gavekort\",\"belop\":\"500\",\"kode\":\"DELT-TEST-C\"},{\"maate\":\"Kontant\",\"belop\":\"2300\"}]}")
+sjekk "sperret kort avvises i kassa" "false" "$(echo "$SVAR" | felt ok)"
+sjekk "… saldoen 50000 er urort" "50000" "$(sql "SELECT saldo_ore FROM gift_cards WHERE kode = 'DELT-TEST-C'")"
+sjekk "… og ingenting er lagret" "0" "$(sql "SELECT COUNT(*) FROM payments WHERE booking_id = $BOOKING")"
+
 SVAR=$(post kursbetaling.php "{\"handling\":\"delt\",\"bookingId\":$BOOKING,\"deler\":[{\"maate\":\"Gavekort\",\"belop\":\"1000\",\"kode\":\"DELT-TEST-A\"},{\"maate\":\"Kontant\",\"belop\":\"800\"},{\"maate\":\"Vipps\",\"belop\":\"1000\"}]}")
 sjekk "delt betaling godtas" "true" "$(echo "$SVAR" | felt ok)"
 sjekk "plassen er betalt" "betalt" "$(sql "SELECT status FROM bookings WHERE id = $BOOKING")"

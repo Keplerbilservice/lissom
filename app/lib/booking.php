@@ -1458,6 +1458,20 @@ final class Booking
                 ['k' => (int) $k['id']]
             ) !== null;
         }
+        if (!$brukt && self::harBetalingsspor()) {
+            // En betaling i kassa staar som betalt foer kortet trekkes (trekket
+            // skjer like etter). Er den der og ikke trukket ennaa, er kortet i
+            // bruk — samme vindu.
+            $brukt = DB::verdi(
+                "SELECT p.id FROM payments p
+                  WHERE p.gavekort_id = :k AND p.gavekort_ore > 0
+                    AND p.status = 'betalt' AND p.annullert_at IS NULL
+                    AND p.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 MINUTE)
+                    AND NOT EXISTS (SELECT 1 FROM gift_card_uses u WHERE u.payment_id = p.id)
+                  LIMIT 1",
+                ['k' => (int) $k['id']]
+            ) !== null;
+        }
         if ($brukt && $nekt) {
             throw new RuntimeException(
                 'Gavekortet ' . $k['kode'] . ' er brukt (' . self::kroner($saldo) . ' igjen av '
@@ -1893,10 +1907,14 @@ final class Booking
         if ($kortId <= 0 || $belop <= 0) {
             return true;
         }
-        $saldo = DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i FOR UPDATE', ['i' => $kortId]);
-        if ($saldo === null) {
+        $kort = DB::en('SELECT saldo_ore, status FROM gift_cards WHERE id = :i FOR UPDATE', ['i' => $kortId]);
+        // Bare et aktivt kort dekker noe. Et kort som er sperret mens det
+        // refunderes («annullert», saldoen staar til Vipps har bekreftet),
+        // skal ikke kunne brukes i vinduet (kontrolloeren, 2. oktober 2026).
+        if ($kort === null || (string) $kort['status'] !== 'aktivt') {
             return false;
         }
+        $saldo = $kort['saldo_ore'];
         $bundet = 0;
         if (DB::harKolonne('payments', 'gavekort_id')) {
             $bundet = (int) DB::verdi(
@@ -2057,10 +2075,10 @@ final class Booking
         return [$refType, $refId];
     }
 
-    public static function trekkGavekort(int $paymentId): void
+    public static function trekkGavekort(int $paymentId): bool
     {
         if (!DB::harKolonne('payments', 'gavekort_id')) {
-            return;
+            return true;
         }
         $b = DB::en(
             'SELECT id, gavekort_id, gavekort_ore FROM payments WHERE id = :i',
@@ -2069,7 +2087,7 @@ final class Booking
         $kortId = (int) ($b['gavekort_id'] ?? 0);
         $belop  = (int) ($b['gavekort_ore'] ?? 0);
         if ($kortId <= 0 || $belop <= 0) {
-            return;
+            return true;
         }
         [$refType, $refId] = self::gavekortSpor($paymentId);
 
@@ -2083,7 +2101,7 @@ final class Booking
         // foer, saa lenge de fortsatt staar med et beloep.
         if (DB::harTabell('gift_card_uses') && self::harBetalingsspor()) {
             if (DB::verdi('SELECT id FROM gift_card_uses WHERE payment_id = :p LIMIT 1', ['p' => $paymentId]) !== null) {
-                return;
+                return true;
             }
             if ($refId > 0 && DB::verdi(
                 'SELECT id FROM gift_card_uses
@@ -2091,7 +2109,7 @@ final class Booking
                     AND payment_id IS NULL AND belop_ore > 0 LIMIT 1',
                 ['k' => $kortId, 't' => $refType, 'r' => $refId]
             ) !== null) {
-                return;
+                return true;
             }
         } elseif (DB::harTabell('gift_card_uses') && $refId > 0) {
             $alt = DB::en(
@@ -2100,18 +2118,27 @@ final class Booking
                 ['k' => $kortId, 't' => $refType, 'r' => $refId]
             );
             if ($alt !== null) {
-                return;
+                return true;
             }
         }
 
+        // Bare et aktivt kort trekkes — samme betingelse som gavekortDekker(),
+        // i selve oppdateringen, saa et kort som sperres for refusjon ikke kan
+        // trekkes i mellomtida.
         $rader = DB::kjor(
-            'UPDATE gift_cards SET saldo_ore = saldo_ore - :b
-              WHERE id = :i AND saldo_ore >= :b2',
+            "UPDATE gift_cards SET saldo_ore = saldo_ore - :b
+              WHERE id = :i AND saldo_ore >= :b2 AND status = 'aktivt'",
             ['b' => $belop, 'i' => $kortId, 'b2' => $belop]
         )->rowCount();
         if ($rader === 0) {
-            logg('Gavekort hadde ikke daekning ved trekk', ['kort' => $kortId, 'belop' => $belop]);
-            return;
+            $status = (string) DB::verdi('SELECT status FROM gift_cards WHERE id = :i', ['i' => $kortId]);
+            if ($status !== 'aktivt') {
+                logg_feil('Gavekort ' . $kortId . ' er ' . $status . ' og ble ikke trukket for betaling '
+                    . $paymentId . ' (' . $belop . ' oere). Gjør opp for hånd.');
+            } else {
+                logg('Gavekort hadde ikke daekning ved trekk', ['kort' => $kortId, 'belop' => $belop]);
+            }
+            return false;
         }
 
         if (DB::harTabell('gift_card_uses') && $refId > 0) {
@@ -2129,6 +2156,7 @@ final class Booking
 
         // Tomt kort er brukt opp. Da skal det ikke ligge og se gyldig ut.
         DB::kjor("UPDATE gift_cards SET status = 'brukt' WHERE id = :i AND saldo_ore <= 0", ['i' => $kortId]);
+        return true;
     }
 
     /**

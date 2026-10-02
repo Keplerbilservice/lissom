@@ -296,6 +296,34 @@ try {
     Booking::gjorOppFullRefusjon($p);
     sjekk('delvis portalrefusjon (10000 av 50000): kortet urort', $rad('gift_cards', $k)['status'] === 'aktivt'
         && (int) $rad('gift_cards', $k)['saldo_ore'] === 50000);
+
+    // ── Kontrolloeren: sperret kort kan ikke brukes ────────────────────
+    echo "\n── Kontrolloeren: kort sperret for refusjon ──────────────────\n";
+    $p = $betaling(['formal' => 'gavekort', 'belop_ore' => 50000]);
+    $k = $kort($p, 50000);
+    Vipps::$feiler = true;
+    try { Booking::refunderBetaling($p); } catch (RuntimeException $e) { /* venter paa nytt forsoek */ }
+    Vipps::$feiler = false;
+    sjekk('kort 50000 sperret mens refusjonen venter (saldo staar)', $rad('gift_cards', $k)['status'] === 'annullert'
+        && (int) $rad('gift_cards', $k)['saldo_ore'] === 50000);
+    sjekk('… gavekortDekker() sier nei til 10000 (kjoep paa nettsida avvises)', Booking::gavekortDekker($k, 10000) === false);
+    $kjop = $betaling(['formal' => 'booking', 'belop_ore' => 0, 'gavekort_id' => $k, 'gavekort_ore' => 10000]);
+    sjekk('… trekket for en betaling avvises (svarer false)', Booking::trekkGavekort($kjop) === false);
+    sjekk('… saldoen 50000 urort, ingen uttaksrad', (int) $rad('gift_cards', $k)['saldo_ore'] === 50000
+        && DB::verdi('SELECT id FROM gift_card_uses WHERE gift_card_id = :k', ['k' => $k]) === null);
+    DB::oppdater('payments', ['status' => 'avbrutt'], ['id' => $kjop]);
+    $r = Booking::refunderBetaling($p);
+    sjekk('… nytt refusjonsforsoek fullfoerer: saldo 0', $r['gjenstaar'] === 0 && (int) $rad('gift_cards', $k)['saldo_ore'] === 0);
+
+    // Motsatt rekkefoelge: kassa har registrert en betalt gavekortdel som
+    // ikke er trukket ennaa. Da nektes full refusjon av kortet.
+    $p = $betaling(['formal' => 'gavekort', 'belop_ore' => 50000]);
+    $k = $kort($p, 50000);
+    $betaling(['formal' => 'booking', 'type' => 'manuell', 'belop_ore' => 0, 'gavekort_id' => $k, 'gavekort_ore' => 20000]);
+    $melding = '';
+    try { Booking::refunderBetaling($p); } catch (RuntimeException $e) { $melding = $e->getMessage(); }
+    sjekk('kassa-del betalt, ikke trukket ennaa: full refusjon av kortet nektes', str_contains($melding, 'på vei')
+        && $rad('gift_cards', $k)['status'] === 'aktivt' && (int) $rad('gift_cards', $k)['saldo_ore'] === 50000, $melding);
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 } finally {

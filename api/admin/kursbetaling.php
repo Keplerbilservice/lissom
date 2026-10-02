@@ -289,7 +289,16 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
 
         $medlemId = $b['member_id'] !== null ? (int) $b['member_id'] : null;
         $adminId  = (int) $admin['id'];
+        try {
         [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $bookingId, $medlemId, $adminId, $kort): array {
+            // Kortet laases og sjekkes paa nytt her: det kan vaere sperret for
+            // refusjon (eller brukt) siden koden ble slaatt opp over.
+            foreach ($deler as $d) {
+                if ($d['maate'] === 'Gavekort' && !Booking::gavekortDekker((int) $kort['id'], (int) $d['ore'])) {
+                    throw new RuntimeException('Gavekortet er sperret eller har ikke nok saldo. '
+                        . 'Ingenting er registrert. Velg en annen betalingsmåte.', 409);
+                }
+            }
             $ider = [];
             $gaveRad = null;
             foreach ($deler as $d) {
@@ -321,6 +330,12 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
             }
             return [$ider, $gaveRad];
         });
+        } catch (RuntimeException $e) {
+            if ($e->getCode() !== 409) {
+                throw $e;
+            }
+            Svar::feil($e->getMessage(), 409);
+        }
 
         if ($gaveRad !== null) {
             Booking::trekkGavekort((int) $gaveRad);

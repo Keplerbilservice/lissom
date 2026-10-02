@@ -2692,6 +2692,47 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "vakt-datasjekk-regler",
+            "dato": "2026-10-02",
+            "hva": "Daglig datasjekk (eieren ja 2. oktober): vakta kjører reglene L4–L13 på medlemmer, trekk, betalinger, påmeldinger og gavekort. Bare lesing; funnene har bare navn, intern id, beløp, dato og regel. «avvik» er uendret, de nye kommer i «funn». Bryter vakt_data_paa (av = 409).",
+            "hvor": "api/vakt-data.php og Vaktdata",
+            "kode": [
+                {
+                    "fil": "app/lib/vaktdata.php",
+                    "finnes": [
+                        "'status_uenig'",
+                        "'forste_betaling_kort_periode'",
+                        "'prove_utlopt'",
+                        "'trekk_henger'",
+                        "'dobbel_betaling_periode'",
+                        "'betalt_ikke_aktiv'",
+                        "'mangler_avtale'",
+                        "'autorisert_ikke_trukket'",
+                        "'booking_betaling_uenig'",
+                        "'gavekort_saldo'",
+                        "'funn'      => self::regler(),"
+                    ]
+                },
+                {
+                    "fil": "api/vakt-data.php",
+                    "finnes": [
+                        "HTTP_X_VAKT_NOKKEL",
+                        "Config::hent('vakt_data_paa', true)",
+                        "Svar::feil('Datasjekken er slått av.', 409);"
+                    ]
+                },
+                {
+                    "fil": "tests/vaktdata-regler.php",
+                    "finnes": [
+                        "L5 forste_betaling_kort_periode",
+                        "L6 prove_utlopt: utløpt Prøv Lissom (betalt)",
+                        "L7 trekk_henger",
+                        "ingen e-post eller telefon i funnene"
+                    ]
+                }
+            ]
         }
     ]
 }

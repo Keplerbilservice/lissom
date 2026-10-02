@@ -61,6 +61,7 @@ kjor "verving"       php tests/verving.php
 kjor "prøv lissom"   php tests/prove.php
 kjor "timepakke"     php tests/timepakke.php
 kjor "planbytte"     php tests/planbytte.php
+kjor "vakt, datasjekk" php tests/vaktdata-regler.php
 kjor "anmeldelser"   php tests/anmeldelser.php
 kjor "galleri"       php tests/galleri.php
 kjor "lager"         php tests/lager.php

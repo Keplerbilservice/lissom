@@ -187,7 +187,7 @@ if ($oktId <= 0) {
     $utvalg =
         "SELECT b.id, b.antall, b.status, b.belop_ore, b.folge_medlem,
                 b.betalt_maate, b.notat, b.lagt_inn_av, {$bevisKol} {$allergiKol}
-                b.member_id, b.course_session_id,
+                b.member_id, b.course_session_id, b.course_id,
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
                 COALESCE(m.telefon, b.gjest_telefon) AS telefon,
@@ -220,6 +220,9 @@ if ($oktId <= 0) {
             // samme, og en gjest har ingen konto i det hele tatt.
             'medlemId' => $d['member_id'] !== null ? (int) $d['member_id'] : null,
             'oktId'    => $d['course_session_id'] !== null ? (int) $d['course_session_id'] : null,
+            // Kurset paameldingen hoerer til. «Flytt» paa en paamelding som
+            // er eldre enn lista (via ?booking=) fant ikke kurset i «okter».
+            'kursId'   => (int) $d['course_id'],
             'navn'    => $d['navn'],
             'epost'   => $d['epost'],
             'tlf'     => $d['telefon'],

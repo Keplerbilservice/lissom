@@ -53,6 +53,22 @@ try{
   assert.equal(r.varsler,0,'ingen SMS eller e-post lagt i koen');
   console.log(`${width} px: dag 1 flyttet, samling 2 urørt, ingen varsler`);
 
+  // Samling 2 til en stengt feriedag: samme ferieadvarsel som dag 1 faar.
+  await trykk(await aapneDag(d3));
+  await trykk(p.getByRole('dialog').getByRole('button',{name:'Flytt tidspunkt',exact:true}));
+  const fskjema=p.getByRole('dialog',{name:'Flytt kursdato'});await fskjema.getByLabel('Starter').fill(`${s.ferie}T18:00`);await fskjema.getByLabel('Slutter').fill(`${s.ferie}T21:00`);
+  const lagreFlytt=async()=>{await trykk(fskjema.getByRole('button',{name:'Lagre',exact:true}));await trykk(p.getByRole('dialog',{name:'Flytte datoen?'}).getByRole('button',{name:'Flytt dato',exact:true}));};
+  await lagreFlytt();let ferie=p.getByRole('dialog',{name:'Kurs på stengt dag?'});await ferie.waitFor();
+  assert.match(await ferie.textContent(),/er ferie/,'advarselen sier at dagen er ferie');
+  await trykk(ferie.getByRole('button',{name:'Avbryt',exact:true}));await fskjema.getByText('Avbrutt.').waitFor();
+  r=fixture('inspect',s);assert.equal(r.samlinger[1][0],d3,'avbrutt: samling 2 er ikke flyttet');
+  await lagreFlytt();ferie=p.getByRole('dialog',{name:'Kurs på stengt dag?'});await ferie.waitFor();
+  await trykk(ferie.getByRole('button',{name:'Legg til likevel',exact:true}));await fskjema.waitFor({state:'detached'});
+  r=await vent(()=>{const v=fixture('inspect',s);return {...v,ok:v.samlinger[1]?.[0]===s.ferie};});
+  assert.deepEqual(r.samlinger,[[d0,'16:00','19:00','Dag en'],[s.ferie,'18:00','21:00','Dag to']],'samling 2 lagt paa feriedagen etter ja');
+  assert.equal(r.ferieOk,1,'okta merket som ferieunntak');assert.equal(r.varsler,0);
+  console.log(`${width} px: samling 2 på feriedag gir advarsel, avbryt lagrer ikke, «Legg til likevel» lagrer`);
+
   // ── 2. «Rediger påmelding» aapner akkurat den paameldingen ─────────
   await trykk(await aapneDag(d0));
   await trykk(p.getByRole('dialog').getByRole('button',{name:'Se deltakerne',exact:true}));
@@ -60,7 +76,14 @@ try{
   await p.getByRole('dialog',{name:`${s.tag} Framover`}).waitFor();
   assert.equal(await p.getByRole('dialog').count(),1,'bare paameldingen er aapen');
   await p.goto(`${ADR}/admin-ny.html#idag`);await p.goto(`${ADR}/admin-ny.html#pameldte?booking=${s.gammelBooking}`);
-  await p.getByRole('dialog',{name:`${s.tag} Gammel`}).waitFor();
+  const gml=p.getByRole('dialog',{name:`${s.tag} Gammel`});await gml.waitFor();
+  await trykk(gml.getByRole('button',{name:'Flytt til annen dato',exact:true}));
+  const gflytt=p.getByRole('dialog',{name:'Flytt påmelding'});await gflytt.waitFor();
+  const gv=await gflytt.getByLabel('Kursdato',{exact:true}).evaluate(x=>[...x.options].map(o=>o.value));
+  assert.ok(gv.includes(String(s.kommende)),'gammel påmelding: kommende dato på samme kurs vises');
+  assert.ok(!gv.includes(String(s.passert))&&!gv.includes(String(s.gammel)),'gammel påmelding: ingen passerte datoer');
+  assert.equal(await gflytt.getByLabel('Kursdato',{exact:true}).evaluate(x=>x.selectedIndex),0,'gammel påmelding: ingenting valgt');
+  await trykk(gflytt.getByRole('button',{name:'Avbryt',exact:true}));await gflytt.waitFor({state:'detached'});
   console.log(`${width} px: «Rediger påmelding» åpner riktig påmelding, også eldre enn lista`);
 
   // ── 3. Ingen forhaandsvalg ─────────────────────────────────────────

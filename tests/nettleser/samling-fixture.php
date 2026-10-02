@@ -53,8 +53,15 @@ if ($mode === 'seed') {
     $gammelBooking = DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $gammel, 'gjest_navn' => $tag . ' Gammel',
         'gjest_telefon' => '+4790000001', 'antall' => 1, 'belop_ore' => 100000, 'status' => 'betalt']);
 
+    // En stengt feriedag om fjorten dager, til ferieadvarselen paa samling 2.
+    $ferie = $dag(14);
+    if (DB::en('SELECT id FROM apningstider WHERE dato = :d', ['d' => $ferie]) !== null) {
+        throw new RuntimeException('Datoen for feriedagen er alt satt opp i testbasen.');
+    }
+    DB::settInn('apningstider', ['dato' => $ferie, 'stengt' => 1, 'merknad' => $tag]);
+
     echo json_encode(compact('tag', 'admin', 'token', 'kurs', 'okt', 'passert', 'kommende', 'gammel',
-        'booking', 'gammelBooking', 'd1', 'd2')); exit;
+        'booking', 'gammelBooking', 'd1', 'd2', 'ferie')); exit;
 }
 
 $s = json_decode($argv[2] ?? '{}', true);
@@ -70,12 +77,13 @@ $inn = implode(',', $okter);
 $bookinger = (string) (int) $s['booking'] . ',' . (int) $s['gammelBooking'];
 
 if ($mode === 'inspect') {
-    $o = DB::en('SELECT start_tid, slutt_tid FROM course_sessions WHERE id = :i', ['i' => $s['okt']]);
+    $o = DB::en('SELECT start_tid, slutt_tid, ferie_ok FROM course_sessions WHERE id = :i', ['i' => $s['okt']]);
     $iOslo = static fn(?string $u): ?string => $u === null ? null
         : (new DateTimeImmutable($u, $utc))->setTimezone($oslo)->format('Y-m-d H:i');
     echo json_encode([
         'start' => $iOslo($o['start_tid']),
         'slutt' => $iOslo($o['slutt_tid']),
+        'ferieOk' => (int) $o['ferie_ok'],
         'samlinger' => array_map(static fn($r) => [$r['dato'], substr((string) $r['fra'], 0, 5), substr((string) $r['til'], 0, 5), $r['overskrift']],
             DB::alle('SELECT dato, fra, til, overskrift FROM okt_samlinger WHERE session_id = :i ORDER BY nummer', ['i' => $s['okt']])),
         // Ingen SMS eller e-post skal legges i koen av noe testen gjor.
@@ -85,6 +93,9 @@ if ($mode === 'inspect') {
 }
 
 if ($mode === 'cleanup') {
+    if (isset($s['ferie'])) {
+        DB::kjor('DELETE FROM apningstider WHERE dato = :d AND merknad = :t', ['d' => $s['ferie'], 't' => $s['tag']]);
+    }
     DB::kjor("DELETE FROM notifications WHERE ref_type = 'booking' AND ref_id IN ({$bookinger})");
     DB::kjor("DELETE FROM bookings WHERE course_id = :k", ['k' => $s['kurs']]);
     if (DB::harTabell('okt_samlinger')) DB::kjor("DELETE FROM okt_samlinger WHERE session_id IN ({$inn})");

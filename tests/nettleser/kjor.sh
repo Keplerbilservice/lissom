@@ -67,7 +67,7 @@ done
 
 SEED=$(php tests/nettleser/seed.php) || { echo "Fikk ikke laget testdata."; exit 1; }
 if [ "${1:-}" = "admin-ny" ]; then
-  for fil in admin-ny regnskapsforer-nyadmin nyadmin-regnskap-innlogging nyadmin-medlemsbetaling nyadmin-kursbetaling nyadmin-refusjon-ui nyadmin-avsluttende nyadmin-butikk nyadmin-utkast nyadmin-samling nyadmin-kalender-mobil ubetalt-medlem minside-moduler-ut trekkplan trekk-l5-l6-l10; do
+  for fil in admin-ny regnskapsforer-nyadmin nyadmin-regnskap-innlogging nyadmin-medlemsbetaling nyadmin-kursbetaling nyadmin-refusjon-ui nyadmin-avsluttende nyadmin-butikk nyadmin-utkast nyadmin-samling nyadmin-kalender-mobil nyadmin-kalender-pc ubetalt-medlem minside-moduler-ut trekkplan trekk-l5-l6-l10; do
     node "tests/$fil.mjs"
   done
   HENTING_TEST_URL="http://127.0.0.1:$PORT" HENTING_TEST_ORIGIN="$E2E_ADRESSE" node tests/henting.mjs

@@ -15,7 +15,7 @@ const vent=async(f,ms=8000)=>{const slutt=Date.now()+ms;let siste;while(Date.now
 const browser=await chromium.launch({args:['--host-resolver-rules=MAP lokal.lissom.no 127.0.0.1']});
 let s;
 try{
- for(const width of [390,1280]){
+ for(const width of [390,900,1280]){
   s=fixture('seed');const mobil=width<500;
   const c=await browser.newContext({viewport:{width,height:900},hasTouch:mobil,isMobile:mobil});
   await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
@@ -27,7 +27,7 @@ try{
    await p.goto(`${ADR}/admin-ny.html#kalender`);if(mobil)await p.locator(".kalm").waitFor();await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
    // Mobil (K3): datoen velges bak søkeikonet, og timekortene er .kalm-kort.
    if(mobil){const ikon=p.getByRole('button',{name:'Søk i kalender',exact:true});if(await ikon.getAttribute('aria-expanded')!=='true')await trykk(ikon);await p.getByLabel('Velg dato').fill(dag);}
-   else{await p.getByLabel('Kalendervisning').selectOption('dag');await p.getByLabel('Velg dato').fill(dag);}
+   else{const dagKnapp=p.getByRole('group',{name:'Kalendervisning'}).getByRole('button',{name:'Dag',exact:true});if(await dagKnapp.getAttribute('aria-pressed')!=='true')await trykk(dagKnapp);/* PC (K4): segmentpille Dag · Uke · Måned */await p.getByLabel('Velg dato').fill(dag);}
    const brikke=p.locator(mobil?'button.kalm-kort':'button.event',{hasText:s.tag});await brikke.first().waitFor();return brikke.first();
   };
   const flytt=async(dag,start,slutt,forvent)=>{

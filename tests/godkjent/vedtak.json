@@ -3285,7 +3285,6 @@
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
                         "export function kalenderOppsett(h){({title,item,details,href,act,refresh}=h);}",
-                        "import './kalender-pc.js';",
                         "export {calendar,participants,newDate};",
                         "async function calendar(){",
                         "async function moveDate(e){"
@@ -3326,11 +3325,54 @@
                     "finnes": [
                         "<link rel=\"stylesheet\" href=\"/admin-ny/design.css\"><link rel=\"stylesheet\" href=\"/admin-ny/kalender.css\">"
                     ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-k4-pc",
+            "dato": "2026-10-02",
+            "hva": "Ny kalender i admin-ny, bit K4 (eieren godkjente ny PC-kalender 2. oktober 2026): på bred skjerm (min-width 1101px) tegner kalender.js uke og dag med kalender-pc.js. Uke med tidsakse (klokkeslett til venstre, 30-minuttersrader) er standard; dag har én kolonne per kursholder (standard kursholder alltid, de andre når de har noe, «Ikke tildelt» bare når noe mangler kursholder); måned er som før. Segmentpille Dag · Uke · Måned erstatter nedtrekkslista på PC. Hver time er en brikke; hele brikka åpner hendelsesarket (eventDetails). Overlappende brikker ligger side om side. Cellene har data-dato, data-akse og data-kol (slippmål for K5, dra og slipp er ikke bygd). Samling 2 og 3 har data-låst. Søk og typefilter beholdes. Mobil (smal skjerm) er uendret.",
+            "hvor": "admin-ny › Kalender (#kalender), PC 1280 px",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "import {kalenderPc,segment,erBred,PC_BRED} from './kalender-pc.js';",
+                        "const view=bred?segment(calendarMode,v=>{calendarMode=v;draw();}):el('select',",
+                        "if(bred&&calendarMode!=='maaned'){const pc=kalenderPc(",
+                        "let calendarDay=today(),calendarMode='uke'"
+                    ]
                 },
                 {
                     "fil": "admin-ny/kalender-pc.js",
                     "finnes": [
-                        "export {};"
+                        "export const PC_BRED='(min-width:1101px)';",
+                        "[['dag','Dag'],['uke','Uke'],['maaned','Måned']]",
+                        "role:'group','aria-label':'Kalendervisning'",
+                        "'data-akse':klokke(fra+i*RAD_MIN),'data-kol':k.kol",
+                        "if(laast)attr['data-låst']=true;",
+                        "onclick:()=>apne(e)",
+                        "function sideOmSide(liste)",
+                        "const RAD_MIN=30"
+                    ],
+                    "ikkeFinnes": [
+                        "Åpne",
+                        "→"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".kp-segment{",
+                        ".kp-celle{height:26px;",
+                        ".kp-brikke.event{position:absolute;"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-pc.mjs",
+                    "finnes": [
+                        "'data-låst'",
+                        "'Dag','Uke','Måned'"
                     ]
                 }
             ]

@@ -151,6 +151,10 @@ $halvBetalt = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gj
 $betal(['formal' => 'booking', 'booking_id' => $halvBetalt, 'type' => 'manuell', 'belop_ore' => 50000]);
 $betal(['formal' => 'booking', 'booking_id' => $halvBetalt, 'type' => 'manuell', 'belop_ore' => 50000,
     'annullert_at' => gmdate('Y-m-d H:i:s')]);
+// Riktig: Vipps avbrutt, saa betalt kontant i verkstedet uten egen rad.
+$vippsAvbrutt = $betal(['formal' => 'booking', 'status' => 'avbrutt']);
+$kontant = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Kontant ' . $tag,
+    'antall' => 1, 'belop_ore' => 100000, 'status' => 'betalt', 'payment_id' => $vippsAvbrutt, 'betalt_maate' => 'Kontant']);
 // Riktig: delbetalt plass er med rette fortsatt reservert.
 $delbetalt = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Delbetalt ' . $tag,
     'antall' => 1, 'belop_ore' => 100000, 'status' => 'reservert']);
@@ -213,6 +217,7 @@ sjekk('bytte til en annen plan samme måned er ikke dobbel betaling', !$omId($by
 sjekk('Kort Periode er ikke dobbelt betalt', !$omId($kort, ['dobbel_betaling_periode']), $vis);
 sjekk('betalt påmelding med betalt betaling', !$omId($riktigBooking, ['booking_betaling_uenig']), $vis);
 sjekk('delbetalt påmelding som står som reservert', !$omId($delbetalt, ['booking_betaling_uenig']), $vis);
+sjekk('betalt kontant i verkstedet etter avbrutt Vipps', !$omId($kontant, ['booking_betaling_uenig']), $vis);
 sjekk('gavekort med uttak som går opp', !$omId($kortRiktig, ['gavekort_saldo']), $vis);
 
 echo "\n── Personvern og form ───────────────────────────────────────\n";

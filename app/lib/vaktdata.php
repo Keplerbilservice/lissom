@@ -491,7 +491,13 @@ final class Vaktdata
                FROM bookings b
                LEFT JOIN members m ON m.id = b.member_id
               WHERE b.status = 'betalt' AND b.belop_ore > 0
-                AND EXISTS (SELECT 1 FROM payments p WHERE p.id = b.payment_id OR p.booking_id = b.id)"
+                AND EXISTS (SELECT 1 FROM payments p WHERE p.id = b.payment_id OR p.booking_id = b.id)
+                -- Gjort opp for haand i verkstedet (betalt_maate) uten egen
+                -- betalingsrad, f.eks. kontant etter et avbrutt Vipps-forsoek:
+                -- da er det ingen rad aa summere, og det er i orden (Codex 2.10).
+                AND NOT (COALESCE(TRIM(b.betalt_maate), '') <> ''
+                         AND NOT EXISTS (SELECT 1 FROM payments pm
+                                          WHERE pm.booking_id = b.id AND pm.type = 'manuell'))"
         ) as $b) {
             $sum = Booking::betalingerFor((int) $b['id'])['sum'];
             if ($sum >= (int) $b['belop_ore']) {

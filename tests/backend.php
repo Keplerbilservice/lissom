@@ -14800,6 +14800,13 @@ try {
     sjekk('… et trekk som er paa vei i dag heter «Trekk på vei»',
         $tdBs2['tilstand'] === 'bestilt' && $tdBs2['tekst'] === 'Trekk på vei · forfall ' . Booking::norskDatoKort($tdNaa . ' 12:00:00'),
         $tdBs2['tekst']);
+    // Codex P2: fristen gjelder over maanedsskiftet (forfall 31. oktober,
+    // Vipps proever til og med 5. november).
+    $tdKropp31 = Vipps::trekkKropp(259000, 'Medlemskap Årsmedlemskap · Trekkdato', '2026-10-31');
+    DB::oppdater('payments', ['trekk_foresporsel' => json_encode(['forsok' => [['nokkel' => 'k', 'kropp' => $tdKropp31]]])], ['id' => $tdPay]);
+    sjekk('… forfall 31. oktober: tilgang 5. november, ikke 6. november',
+        Medlemskap::harBetaltPeriode($tdM, '2026-11-05') && !Medlemskap::harBetaltPeriode($tdM, '2026-11-06'));
+    DB::oppdater('payments', ['trekk_foresporsel' => json_encode(['forsok' => [['nokkel' => 'k', 'kropp' => $tdKropp]]])], ['id' => $tdPay]);
     DB::oppdater('payments', ['status' => 'betalt'], ['id' => $tdPay]);
     sjekk('… CHARGED: betalt, tilgang ut maaneden', Medlemskap::harBetaltPeriode($tdM, '2026-10-20'));
     DB::oppdater('payments', ['status' => 'feilet'], ['id' => $tdPay]);

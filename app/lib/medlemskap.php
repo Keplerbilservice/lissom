@@ -450,7 +450,9 @@ final class Medlemskap
                 : (new DateTimeImmutable((string) $rad['created_at'], new DateTimeZone('UTC')))
                     ->setTimezone(new DateTimeZone('Europe/Oslo'))->modify('first day of this month')->format('Y-m-d');
             $f = self::trekkFrist($rad);
-            if ($start <= $idag && $idag < self::dekkerTil(['gjelder_fra' => $start]) && $idag <= $f['frist']) {
+            // Fristen gjelder ogsaa over et maanedsskifte: Vipps proever et
+            // trekk med forfall 31. oktober til og med 5. november.
+            if ($start <= $idag && $idag <= $f['frist']) {
                 return $f + ['betaling' => (int) $rad['id']];
             }
         }

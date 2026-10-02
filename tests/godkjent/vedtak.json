@@ -3091,6 +3091,45 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "booking-plan-lenke",
+            "dato": "2026-10-02",
+            "hva": "Eieren (godkjent 2. oktober 2026): /booking?plan=<navn> åpnet direkte (annonse, delt lenke, ny innlasting) viser medlemskapet med riktig pris, også med æøå og mellomrom i navnet. Ukjent plan gir lista over medlemskapene, aldri et kurs. Ingen forhåndsvalg utover planen lenken peker på.",
+            "hvor": "Nettsida › /booking?plan=",
+            "kode": [
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "if (rute.planNavn) {",
+                        "if (plan) return { sti, side: 'booking', planNavn: plan };",
+                        "if (this._ventendePlan) return null;",
+                        "aapnePlanFraAdresse() {",
+                        "try { history.replaceState(history.state, '', '/medlemskap'); } catch (e) { /* adressen blir staaende */ }"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108-uten-admin.html",
+                    "finnes": [
+                        "aapnePlanFraAdresse"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/booking-plan-lenke.mjs",
+                    "finnes": [
+                        "ukjent plan: medlemskapslista vises",
+                        "ny innlasting"
+                    ]
+                }
+            ],
+            "live": [
+                {
+                    "sti": "/booking?plan=%C3%85rsmedlemskap",
+                    "selektorer": [
+                        "[data-screen-label=\"Booking\"] h1:has-text(\"Årsmedlemskap\")"
+                    ]
+                }
+            ]
         }
     ]
 }

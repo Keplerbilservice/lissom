@@ -33893,6 +33893,8 @@ class Component extends DCLogic {
     // som den er. Ellers ville den blitt skrevet om til /kurs i mellomtiden,
     // og den som delte lenken hadde sendt folk til feil sted.
     if (this._ventendeSlug) return null;
+    // Og for et medlemskap fra /booking?plan= som venter paa planene.
+    if (this._ventendePlan) return null;
     // Samme for en artikkel som hentes: /nyheter/<adresse> ble skrevet om til
     // /nyheter mens den lastet, og saa til artikkelen igjen — to steg, og
     // tilbake havnet paa /nyheter med artikkelen fortsatt aapen, som straks
@@ -34004,6 +34006,21 @@ class Component extends DCLogic {
       sti = '/';
     }
 
+    // Et medlemskap paa bookingskjermen: /booking?plan=<navn>.
+    //
+    // Eieren, 2. oktober 2026: aapnet fra en annonse, en delt lenke eller
+    // en ny innlasting viste /booking?plan=Prøv Lissom «Nybegynner
+    // dreiekurs» og «se pris». Adressen skrives slik naar medlemskortet
+    // aapnes inne i appen (synkAdresse beholder ?plan=), men ved oppstart
+    // ble ?plan= aldri lest — skjermen sto uten kort og falt tilbake paa
+    // det foerste kurset. Naa aapnes planen naar planene er hentet; finnes
+    // den ikke, kommer lista over medlemskapene. Se folgRute().
+    if (sti === '/booking') {
+      let plan = '';
+      try { plan = (new URLSearchParams(window.location.search).get('plan') || '').trim(); } catch (e) { /* ingen sporring */ }
+      if (plan) return { sti, side: 'booking', planNavn: plan };
+    }
+
     const treff = Component.STIER.find(r => r.sti === sti);
     if (treff) return treff;
 
@@ -34072,6 +34089,20 @@ class Component extends DCLogic {
       // naa, og et bytte dit ville lastet /kurs og mistet adressen.)
       this._ventendeSlug = rute.kursSlug;
       this.setState({ side: 'laster' });
+      return;
+    }
+
+    if (rute.planNavn) {
+      // Planene kommer fra serveren. Er de alt her, aapnes kortet med det
+      // samme; ellers staar den tomme venteskjermen til hentMedlemskap()
+      // har svart og aapnePlanFraAdresse() tar over.
+      this._ventendePlan = rute.planNavn;
+      if ((this.state.planListe || []).length || !this.erPublisert()) {
+        this.aapnePlanFraAdresse();
+        return;
+      }
+      this.setState({ side: 'laster' });
+      this.hentMedlemskap();
       return;
     }
 
@@ -46951,12 +46982,58 @@ class Component extends DCLogic {
           try { navn = new URLSearchParams(window.location.search).get('plan') || ''; } catch (e) { /* ingen */ }
           if (navn && !this._planAapnet) {
             this._planAapnet = true;
-            const pl = this.planer().find(p => p.navn === navn);
+            const pl = this.finnPlan(navn);
             if (pl) this.apneMedlemskort(Object.assign({}, pl, { mork: !!pl.fremhevet, merke: pl.merke || (pl.engangs ? 'Prøveperiode' : '') }));
           }
         }
+        // /booking?plan=<navn>, aapnet direkte (se ruteFraAdresse()).
+        // Kom det ikke noe svar, gaar aapnePlanFraAdresse() til lista.
+        if (this._ventendePlan) this.aapnePlanFraAdresse();
       })
-      .catch(() => { this._medlemskapHentes = false; });
+      .catch(() => {
+        this._medlemskapHentes = false;
+        if (this._ventendePlan) this.aapnePlanFraAdresse();
+      });
+  }
+
+  /**
+   * Planen med dette navnet, slik adressen skriver det.
+   *
+   * Navnet kommer fra en lenke — en annonse, en delt adresse — og kan ha
+   * andre store/smaa bokstaver, doble mellomrom eller æøå skrevet paa en
+   * annen maate (NFC/NFD) enn i basen. Det skal fortsatt treffe.
+   */
+  finnPlan(navn) {
+    const norm = (s) => String(s || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+    const n = norm(navn);
+    // Bare planene fra serveren. planer() faller ellers tilbake paa
+    // designlista med priser som ikke er verkstedets.
+    if (!n || !(this.state.planListe || []).length) return null;
+    return this.planer().find(p => norm(p.navn) === n) || null;
+  }
+
+  /**
+   * Aapner medlemskapet /booking?plan=<navn> peker paa.
+   *
+   * Finnes planen, aapnes det samme kortet som et trykk paa den gir
+   * (apneMedlemskort), og adressen blir staaende — en ny innlasting
+   * aapner den igjen. Finnes den ikke (feil navn, en plan som er tatt
+   * bort), kommer lista over medlemskapene, aldri et kurs. ?plan= tas da
+   * bort, saa tilbake ikke gaar i ring.
+   */
+  aapnePlanFraAdresse() {
+    const navn = this._ventendePlan;
+    if (!navn) return;
+    this._ventendePlan = null;
+    const pl = this.finnPlan(navn);
+    if (pl) {
+      this.apneMedlemskort(Object.assign({}, pl, { mork: !!pl.fremhevet, merke: pl.merke || (pl.engangs ? 'Prøveperiode' : '') }));
+      return;
+    }
+    try { history.replaceState(history.state, '', '/medlemskap'); } catch (e) { /* adressen blir staaende */ }
+    this._planAapnet = true;
+    this.setState({ side: 'medlemskap' });
+    window.scrollTo(0, 0);
   }
 
   /**

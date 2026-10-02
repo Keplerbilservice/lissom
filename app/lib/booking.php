@@ -1524,6 +1524,14 @@ final class Booking
                     ['p' => $paymentId, 'p2' => $paymentId]
                 );
                 foreach ($andre as $b) {
+                    // Staar ingen betaling igjen, er plassen refundert og ledig
+                    // — som naar Vipps-raden var den eneste (Codex, runde 3).
+                    if (self::betalingerFor((int) $b['id'])['sum'] === 0) {
+                        DB::kjor("UPDATE bookings SET status = 'refundert' WHERE id = :b", ['b' => (int) $b['id']]);
+                        self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
+                            ['betaling' => $paymentId, 'status' => 'refundert', 'sum' => 0]);
+                        continue;
+                    }
                     $etter = self::settBetaltStatus((int) $b['id']);
                     self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
                         ['betaling' => $paymentId] + $etter);

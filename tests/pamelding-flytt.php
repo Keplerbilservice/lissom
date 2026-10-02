@@ -285,6 +285,16 @@ try {
     sjekk('delt: Vipps-delen refundert i portalen → reservert, skyldig 50000 (20000 kontant staar)',
         $rad($b)['status'] === 'reservert' && max(0, 70000 - $bet['sum']) === 50000 && $bet['sum'] === 20000,
         "status {$rad($b)['status']}, sum {$bet['sum']}");
+
+    // Vipps-raden naas bare gjennom booking_id (payment_id tom), og ingen
+    // annen betaling staar: plassen refunderes og frigis.
+    $oG = $nyOkt($kE, 1, 41);
+    $b = $plass($oG, $kE, ['belop_ore' => 50000]);
+    $p = $betaling($b, ['belop_ore' => 50000]);
+    $ref = (string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]);
+    Vipps::anvendTilstand($ref, $refusjon, true);
+    sjekk('bare booking_id, ingen annen betaling: refundert og ledig', $rad($b)['status'] === 'refundert'
+        && Booking::ledigePlasser($oG) === 1, (string) $rad($b)['status']);
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 } finally {

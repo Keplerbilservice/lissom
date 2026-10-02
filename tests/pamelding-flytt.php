@@ -138,7 +138,7 @@ try {
         json_encode($svar, JSON_UNESCAPED_UNICODE));
 
     // d) Medlemsrabatt 40000 (betalt i Kasse) → 70000: 56000, skyldig 16000.
-    $b = $plass($oA, $kA, ['belop_ore' => 40000, 'betalt_maate' => 'Kontant']);
+    $b = $plass($oA, $kA, ['belop_ore' => 40000, 'rabatt_prosent' => 20, 'betalt_maate' => 'Kontant']);
     $p = Booking::manuellBetaling($b, 40000, 'Kontant');
     Booking::settBetaltStatus($b);
     [$kode, $svar] = $flytt($b, $oB);
@@ -146,6 +146,27 @@ try {
     sjekk('d) medlemsrabatt 40000 → kurs 70000: beloep 56000 (rabatten foelger), skyldig 16000',
         $kode === 200 && (int) $r['belop_ore'] === 56000 && $r['status'] === 'reservert' && ($svar['skyldigOre'] ?? null) === 16000,
         "beloep {$r['belop_ore']}, status {$r['status']} " . json_encode($svar, JSON_UNESCAPED_UNICODE));
+
+    // d2) Kursprisen er hevet etter kjoepet (500 → 600). Rabatten paa plassen
+    //     (20 %) gjelder, ikke forholdet til dagens pris: 70000 × 0,8 = 56000.
+    $kF = $nyttKurs('F', 50000); $oF = $nyOkt($kF, 10, 14);
+    $b = $plass($oF, $kF, ['belop_ore' => 40000, 'rabatt_prosent' => 20]);
+    $p = $betaling($b, ['belop_ore' => 40000]);
+    DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+    DB::oppdater('courses', ['pris_ore' => 60000], ['id' => $kF]);
+    [$kode, $svar] = $flytt($b, $oB);
+    $r = $rad($b);
+    sjekk('d2) kursprisen hevet etter kjoepet: 20 % av 70000 → 56000, skyldig 16000',
+        $kode === 200 && (int) $r['belop_ore'] === 56000 && ($svar['skyldigOre'] ?? null) === 16000, "beloep {$r['belop_ore']}");
+
+    // d3) Beloep satt for haand (30000 paa et kurs til 50000, ingen rabatt
+    //     lagret): samme forhold, 30000 × 70000 / 50000 = 42000.
+    $b = $plass($oA, $kA, ['belop_ore' => 30000, 'status' => 'reservert', 'betalt_maate' => 'Ikke betalt']);
+    [$kode, $svar] = $flytt($b, $oB);
+    $r = $rad($b);
+    sjekk('d3) for haand 30000 av 50000 → 42000 av 70000, fortsatt reservert, skyldig 42000',
+        $kode === 200 && (int) $r['belop_ore'] === 42000 && $r['status'] === 'reservert' && ($svar['skyldigOre'] ?? null) === 42000,
+        "beloep {$r['belop_ore']}");
 
     // e) Kontant lagt inn for haand, uten bilag → 70000. Omsetningen bakover
     //    i tid skal ikke endre seg.

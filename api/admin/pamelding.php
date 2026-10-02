@@ -225,6 +225,7 @@ if ($handling === 'flytt') {
     $b = DB::en(
         'SELECT b.id, b.antall, b.course_id, b.course_session_id, b.status,
                 b.belop_ore, b.member_id, b.payment_id, b.betalt_maate, b.created_at,
+                ' . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0 AS rabatt_prosent') . ',
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
                 fra.start_tid AS fra_tid, frak.tittel AS fra_kurs,
@@ -270,21 +271,35 @@ if ($handling === 'flytt') {
     // veien sto kr 200 for mye betalt uten at noe sa det.
     //
     // Samme pris: beloepet staar som det er, som foer. Annen pris: beloepet
-    // foelger prisen, og rabatten foelger med — medlemsrabatt, grupperabatt
-    // eller et beloep satt for haand regnes i samme forhold (500 → 700 er
-    // ×1,4, saa en plass til 400 med medlemsrabatt blir 560). Betalt status
-    // regnes saa paa nytt av Booking::settBetaltStatus(), samme regel som
-    // Kasse bruker: skyldig staar under «Ikke betalt», for mye sies fra om.
+    // foelger prisen paa den nye datoen, og rabatten foelger med:
+    //
+    //   rabatten er lagret paa plassen (kjoept paa nettsida: medlemsrabatt,
+    //   grupperabatt — «rabatt_prosent» er den samlede) → ny pris × antall
+    //   minus den samme rabatten. Uavhengig av om kursprisen er endret
+    //   siden kjoepet (Codex, 2. oktober 2026).
+    //   ingen rabatt, og beloepet er full pris → full pris paa det nye.
+    //   ellers (et beloep satt for haand) → samme forhold: 300 av 500 blir
+    //   420 av 700.
+    //
+    // Betalt status regnes saa paa nytt av Booking::settBetaltStatus(), samme
+    // regel som Kasse bruker: skyldig staar under «Ikke betalt», for mye
+    // sies fra om.
     $fraEnhet = (int) ($b['fra_enhet'] ?? 0);
     $tilEnhet = (int) ($okt['pris_ore'] ?? 0);
     $gammeltBelop = (int) $b['belop_ore'];
+    $antall = max(1, (int) $b['antall']);
+    $rabatt = (float) ($b['rabatt_prosent'] ?? 0);
     $nyPris = $fraEnhet !== $tilEnhet
         && (string) $b['status'] !== 'avbestilt'
         // En gratis plass er gratis ogsaa paa den nye datoen.
         && (string) ($b['betalt_maate'] ?? '') !== 'Gratis';
     $nyttBelop = $gammeltBelop;
     if ($nyPris) {
-        if ($fraEnhet > 0) {
+        if ($rabatt > 0) {
+            $nyttBelop = (int) round($tilEnhet * $antall * (1 - $rabatt / 100));
+        } elseif ($gammeltBelop === $fraEnhet * $antall) {
+            $nyttBelop = $tilEnhet * $antall;
+        } elseif ($fraEnhet > 0) {
             $nyttBelop = (int) round($gammeltBelop * $tilEnhet / $fraEnhet);
         } else {
             // Fra et gratis kurs: ingen pris aa regne forholdet av. Full pris

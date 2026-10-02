@@ -2178,14 +2178,17 @@
         {
             "id": "codex-vipps-trekk-og-headere",
             "dato": "2026-10-02",
-            "hva": "Codex-funn, eieren sa ja til alle tre: et nytt forsøk på et månedstrekk sender nøyaktig samme innhold (forfall, beløp, tekst) som første gang, lagret på betalingen (migrasjon 243), så Vipps ikke avviser samme Idempotency-Key; webhooken henter x-ms-date og x-ms-content-sha256 fra getallheaders() som Authorization; første ikke-tomme Authorization brukes.",
+            "hva": "Codex-funn, eieren sa ja til alle tre: et nytt forsøk på et månedstrekk sender nøyaktig samme innhold (forfall, beløp, tekst) som første gang, lagret på betalingen (migrasjon 243), så Vipps ikke avviser samme Idempotency-Key. Avviser Vipps gjentakelsen (f.eks. utløpt forfall etter nettbrudd), sjekkes trekklisten først: finnes trekket, brukes det; ellers ny nøkkel og nytt gyldig forfall — aldri to trekk for samme periode; webhooken henter x-ms-date og x-ms-content-sha256 fra getallheaders() som Authorization; første ikke-tomme Authorization brukes.",
             "hvor": "Betaling (Vipps): medlemstrekk og webhook",
             "kode": [
                 {
                     "fil": "app/lib/medlemskap.php",
                     "finnes": [
-                        "$kropp = self::trekkForesporsel($avtale, $tidligere, $idag);",
-                        "['trekk_foresporsel' => json_encode($kropp, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)]"
+                        "$forsok = self::trekkForsok($avtale, $tidligere, $nokkel, $idag);",
+                        "$lagre = $harKolonne ? ['trekk_foresporsel' => self::trekkForsokJson($forsok)] : [];",
+                        "} catch (VippsAvvisteTrekk $e) {",
+                        "$liste = Vipps::trekkPaaAvtale($avtaleId, true);",
+                        "$funnet = self::trekkSomFinnes($liste, $forsok, $kjente);"
                     ],
                     "ikkeFinnes": [
                         "$forfall = self::trekkForfall($avtale);"

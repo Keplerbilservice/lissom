@@ -2158,26 +2158,143 @@ final class Medlemskap
      */
     public static function trekkForesporsel(array $avtale, ?array $tidligere = null, ?string $idag = null): array
     {
-        if ($tidligere !== null) {
-            $lagret = json_decode((string) ($tidligere['trekk_foresporsel'] ?? ''), true);
-            if (is_array($lagret) && isset($lagret['amount'], $lagret['description'], $lagret['due'])) {
-                return $lagret;
-            }
-            // created_at er UTC (DB setter time_zone +00:00); forfallet ble
-            // regnet ut fra datoen i Oslo.
-            $forsteDag = (new DateTimeImmutable((string) $tidligere['created_at'], new DateTimeZone('UTC')))
-                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
-            return Vipps::trekkKropp(
-                (int) $tidligere['belop_ore'],
+        $forsok = self::trekkForsok($avtale, $tidligere, '', $idag);
+        return $forsok[count($forsok) - 1]['kropp'];
+    }
+
+    /** Flest noekler vi bruker paa ett trekk foer et menneske maa se paa det. */
+    public const TREKK_MAKS_NOKLER = 5;
+
+    /**
+     * Alle forsoekene paa et trekk, eldste foerst: noekkelen og innholdet
+     * som ble sendt med den. Det siste er det som gjelder naa.
+     *
+     * Lagres som {"forsok":[{"nokkel":…,"kropp":…},…]} i
+     * payments.trekk_foresporsel. Et bart innhold (uten «forsok») og en rad
+     * uten noe lagret gjelder grunnnoekkelen.
+     *
+     * @param array<string,mixed>|null $tidligere
+     * @return list<array{nokkel:string,kropp:array<string,mixed>}>
+     */
+    public static function trekkForsok(array $avtale, ?array $tidligere, string $grunnNokkel, ?string $idag = null): array
+    {
+        if ($tidligere === null) {
+            return [['nokkel' => $grunnNokkel, 'kropp' => Vipps::trekkKropp(
+                (int) $avtale['pris_ore'],
                 self::trekkBeskrivelse($avtale),
-                self::trekkForfall($avtale, $forsteDag)
-            );
+                self::trekkForfall($avtale, $idag)
+            )]];
         }
-        return Vipps::trekkKropp(
-            (int) $avtale['pris_ore'],
+        $lagret = json_decode((string) ($tidligere['trekk_foresporsel'] ?? ''), true);
+        if (is_array($lagret) && isset($lagret['forsok']) && is_array($lagret['forsok']) && $lagret['forsok'] !== []) {
+            $ut = [];
+            foreach ($lagret['forsok'] as $f) {
+                if (is_array($f) && isset($f['nokkel'], $f['kropp']['amount'], $f['kropp']['due']) && is_array($f['kropp'])) {
+                    $ut[] = ['nokkel' => (string) $f['nokkel'], 'kropp' => $f['kropp']];
+                }
+            }
+            if ($ut !== []) {
+                return $ut;
+            }
+        }
+        if (is_array($lagret) && isset($lagret['amount'], $lagret['description'], $lagret['due'])) {
+            return [['nokkel' => $grunnNokkel, 'kropp' => $lagret]];
+        }
+        // Rad fra foer kolonnen fantes. created_at er UTC (DB setter
+        // time_zone +00:00); forfallet ble regnet ut fra datoen i Oslo.
+        $forsteDag = (new DateTimeImmutable((string) $tidligere['created_at'], new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+        return [['nokkel' => $grunnNokkel, 'kropp' => Vipps::trekkKropp(
+            (int) $tidligere['belop_ore'],
             self::trekkBeskrivelse($avtale),
-            self::trekkForfall($avtale, $idag)
-        );
+            self::trekkForfall($avtale, $forsteDag)
+        )]];
+    }
+
+    /**
+     * Finnes et av forsoekene alt som trekk hos Vipps?
+     *
+     * Et trekk er vaart naar forfall og beloep er det samme som i ett av
+     * forsoekene vi sendte, og id-en ikke alt hoerer til en annen betaling
+     * (et forsinket trekk for forrige maaned kan ha samme forfall og beloep).
+     *
+     * @param list<array<string,mixed>> $trekkListe fra Vipps::trekkPaaAvtale()
+     * @param list<array{nokkel:string,kropp:array<string,mixed>}> $forsok
+     * @param list<string> $kjenteIder trekk-id-er som alt staar paa andre betalinger
+     * @return array<string,mixed>|null
+     */
+    public static function trekkSomFinnes(array $trekkListe, array $forsok, array $kjenteIder): ?array
+    {
+        foreach ($trekkListe as $t) {
+            $id = (string) ($t['id'] ?? '');
+            if ($id === '' || in_array($id, $kjenteIder, true)) {
+                continue;
+            }
+            foreach ($forsok as $f) {
+                if ((string) ($t['due'] ?? '') === (string) $f['kropp']['due']
+                    && (int) ($t['amount'] ?? -1) === (int) $f['kropp']['amount']) {
+                    return $t;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Vipps avviste et nytt forsoek med det lagrede innholdet.
+     *
+     * Hadde Vipps laget trekket foerste gang, ville samme noekkel og samme
+     * innhold gitt det samme svaret tilbake. Et nei betyr derfor trolig at
+     * trekket aldri ble laget — men det sjekkes hos Vipps foer noe nytt bes
+     * om: finnes trekket, brukes det. Finnes det ikke, bes det om med en ny
+     * noekkel og et gyldig forfall (minst én dag fram). Aldri to trekk for
+     * samme periode.
+     *
+     * @param list<array{nokkel:string,kropp:array<string,mixed>}> $forsok
+     * @return array{0:string,1:list<array{nokkel:string,kropp:array<string,mixed>}>,2:string} [trekk-id, forsoek, forfall]
+     */
+    private static function trekkEtterAvvisning(array $avtale, array $forsok, string $maaned, int $betalingId, ?string $idag): array
+    {
+        $avtaleId = (string) $avtale['vipps_agreement_id'];
+        // Kaster hvis oppslaget feiler: et tomt svar fordi Vipps ikke svarte,
+        // er ikke det samme som «ingen trekk».
+        $liste = Vipps::trekkPaaAvtale($avtaleId, true);
+        $kjente = array_map('strval', array_column(DB::alle(
+            'SELECT vipps_psp_ref FROM payments
+              WHERE subscription_id = :s AND id <> :b AND vipps_psp_ref IS NOT NULL',
+            ['s' => (int) $avtale['id'], 'b' => $betalingId]
+        ), 'vipps_psp_ref'));
+
+        $funnet = self::trekkSomFinnes($liste, $forsok, $kjente);
+        if ($funnet !== null) {
+            logg('Trekket fantes alt hos Vipps; det brukes, ikke et nytt', [
+                'avtale' => (int) $avtale['id'], 'trekk' => (string) $funnet['id'], 'status' => (string) ($funnet['status'] ?? ''),
+            ]);
+            return [(string) $funnet['id'], $forsok, (string) $funnet['due']];
+        }
+
+        if (count($forsok) >= self::TREKK_MAKS_NOKLER) {
+            throw new RuntimeException('Trekket for avtale ' . $avtale['id'] . ' ble avvist ' . count($forsok)
+                . ' ganger. Det maa sees paa for haand.');
+        }
+
+        $siste = $forsok[count($forsok) - 1]['kropp'];
+        $ny = [
+            'nokkel' => substr(hash('sha256', 'trekk:' . $avtale['id'] . ':' . $maaned . ':' . (count($forsok) + 1)), 0, 36),
+            'kropp'  => Vipps::trekkKropp((int) $siste['amount'], (string) $siste['description'], self::trekkForfall($avtale, $idag)),
+        ];
+        $forsok[] = $ny;
+        // Lagres FOER kallet, saa et nytt tapt svar proeves med denne noekkelen.
+        DB::oppdater('payments', ['trekk_foresporsel' => self::trekkForsokJson($forsok)], ['id' => $betalingId]);
+
+        $trekkId = Vipps::belastAvtale($avtaleId, $ny['kropp'], $ny['nokkel']);
+        return [$trekkId, $forsok, (string) $ny['kropp']['due']];
+    }
+
+    /** @param list<array{nokkel:string,kropp:array<string,mixed>}> $forsok */
+    private static function trekkForsokJson(array $forsok): string
+    {
+        return json_encode(['forsok' => $forsok], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -2219,16 +2336,17 @@ final class Medlemskap
         }
 
         // Samme noekkel = samme innhold. Et nytt forsoek sender det som ble
-        // sendt foerste gang, ikke et forfall regnet ut paa nytt i dag.
-        $kropp = self::trekkForesporsel($avtale, $tidligere, $idag);
-        $forfall = (string) $kropp['due'];
+        // sendt sist, med samme noekkel — ikke et forfall regnet ut paa nytt i dag.
+        $forsok = self::trekkForsok($avtale, $tidligere, $nokkel, $idag);
+        $gjeldende = $forsok[count($forsok) - 1];
+        $kropp = $gjeldende['kropp'];
         $periodeFra = (new DateTimeImmutable((string) $avtale['neste_trekk']))
             ->modify('first day of this month')->format('Y-m-d');
         // Kolonnen kommer med migrasjon 243. Foer den er kjoert, utledes
-        // innholdet av raden (se trekkForesporsel()).
-        $lagre = DB::harKolonne('payments', 'trekk_foresporsel')
-            ? ['trekk_foresporsel' => json_encode($kropp, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)]
-            : [];
+        // innholdet av raden (se trekkForsok()), og en ny noekkel tas aldri
+        // i bruk — den kunne ikke blitt husket til neste natt.
+        $harKolonne = DB::harKolonne('payments', 'trekk_foresporsel');
+        $lagre = $harKolonne ? ['trekk_foresporsel' => self::trekkForsokJson($forsok)] : [];
 
         if ($paaNytt !== null) {
             $betalingId = $paaNytt;
@@ -2248,11 +2366,20 @@ final class Medlemskap
         }
 
         try {
-            $trekkId = Vipps::belastAvtale(
-                (string) $avtale['vipps_agreement_id'],
-                $kropp,
-                $nokkel
-            );
+            try {
+                $trekkId = Vipps::belastAvtale(
+                    (string) $avtale['vipps_agreement_id'],
+                    $kropp,
+                    $gjeldende['nokkel']
+                );
+                $forfall = (string) $kropp['due'];
+            } catch (VippsAvvisteTrekk $e) {
+                // Bare et nytt forsoek kan ha et trekk fra foer hos Vipps.
+                if ($tidligere === null || !$harKolonne) {
+                    throw $e;
+                }
+                [$trekkId, $forsok, $forfall] = self::trekkEtterAvvisning($avtale, $forsok, $maaned, $betalingId, $idag);
+            }
         } catch (Throwable $e) {
             DB::oppdater('payments', ['status' => 'feilet'], ['id' => $betalingId]);
             logg_feil('Trekk feilet for avtale ' . $avtale['id'], $e);

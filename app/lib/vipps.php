@@ -802,7 +802,7 @@ final class Vipps
      *
      * @return array<int,array<string,mixed>>
      */
-    public static function trekkPaaAvtale(string $avtaleId): array
+    public static function trekkPaaAvtale(string $avtaleId, bool $kastVedFeil = false): array
     {
         $svar = http_get_json(
             Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId) . '/charges',
@@ -812,6 +812,11 @@ final class Vipps
         if ($svar['status'] !== 200 || !is_array($svar['json'])) {
             logg_feil('Fikk ikke hentet trekkene paa avtale ' . $avtaleId
                 . ': HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            // Skal svaret avgjoere om et nytt trekk bes om, er «fikk ikke
+            // svar» ikke det samme som «ingen trekk».
+            if ($kastVedFeil) {
+                throw new RuntimeException('Fikk ikke hentet trekkene paa avtalen fra Vipps.');
+            }
             return [];
         }
         return array_values(array_filter($svar['json'], 'is_array'));
@@ -855,6 +860,12 @@ final class Vipps
 
         if ($svar['status'] !== 201 || !is_array($svar['json'])) {
             logg_feil('Kunne ikke belaste Vipps-avtale: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            // Vipps svarte og sa nei til innholdet (ugyldig forfall,
+            // valideringsfeil, idempotency-conflict). Skilles fra nettfeil og
+            // 5xx, der vi ikke vet om trekket ble laget.
+            if (in_array($svar['status'], [400, 409, 422], true)) {
+                throw new VippsAvvisteTrekk($svar['status'], 'Trekket gikk ikke gjennom.');
+            }
             throw new RuntimeException('Trekket gikk ikke gjennom.');
         }
 
@@ -1277,5 +1288,20 @@ final class Vipps
         $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
         $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($b), 4));
+    }
+}
+
+/**
+ * Vipps svarte og avviste et trekk (400/409/422). Ikke en nettfeil: Vipps
+ * tok imot forespoerselen og sa nei til innholdet.
+ */
+final class VippsAvvisteTrekk extends RuntimeException
+{
+    public int $httpStatus;
+
+    public function __construct(int $httpStatus, string $melding)
+    {
+        parent::__construct($melding);
+        $this->httpStatus = $httpStatus;
     }
 }

@@ -112,8 +112,11 @@ http.createServer((req, res) => {
     if (p.endsWith('/charges') && req.method === 'GET') {
       const id = p.split('/')[4];
       const ut = [];
+      // Med .trekk-idempotens paa: bare avtalens egne trekk, som hos Vipps.
+      const egne = styrt('.trekk-idempotens', '') === 'ja';
       for (const [tid, t] of trekk) {
         if (t.agreementId && t.agreementId !== id) continue;
+        if (egne && !t.agreementId) continue;
         ut.push({ id: tid, amount: t.amount ?? 0,
                   status: t.init ? styrt('.init-status', 'CHARGED') : 'PENDING',
                   due: t.init ? '2000-01-01' : (t.due || '2099-01-01'),
@@ -166,7 +169,9 @@ http.createServer((req, res) => {
       const nokkel = String(req.headers['idempotency-key'] || '');
       const tekst = JSON.stringify(kropp);
       const idempotens = styrt('.trekk-idempotens', '') === 'ja';
-      if (idempotens && nokkel && nokler.has(nokkel)) {
+      // .glem-nokler later som Vipps har glemt noeklene (utloept), saa et
+      // nytt forsoek ikke faar det gamle svaret tilbake.
+      if (idempotens && nokkel && nokler.has(nokkel) && styrt('.glem-nokler', '') !== 'ja') {
         const f = nokler.get(nokkel);
         if (f.tekst !== tekst) {
           return svar(res, 409, { type: 'idempotency-conflict', title: 'idempotency-conflict',
@@ -174,8 +179,17 @@ http.createServer((req, res) => {
         }
         return svar(res, 201, f.svar);
       }
+      // «due» maa vaere minst én dag fram (Vipps sitt krav). «I dag» settes
+      // med .idag (YYYY-MM-DD), saa testen kan late som det er neste natt.
+      const idag = styrt('.idag', '');
+      if (idag && !(String(kropp?.due || '') > idag)) {
+        return svar(res, 400, { type: 'validation-error', title: 'Bad Request',
+          detail: 'due must be at least one day in the future' });
+      }
       const tid = 'chg_' + Date.now().toString(36) + '_' + (trekk.size + 1);
-      trekk.set(tid, kropp);
+      // Med idempotens paa knyttes trekket til avtalen, saa listen per avtale
+      // bare viser dens egne trekk (som hos Vipps).
+      trekk.set(tid, idempotens ? Object.assign({}, kropp, { agreementId: p.split('/')[4] }) : kropp);
       // «201 uten chargeId» er tilfellet der trekket trolig finnes hos Vipps,
       // men vi ikke har noe aa foelge det opp med. Styres med .trekk-uten-id.
       const ut = styrt('.trekk-uten-id', '') === 'ja' ? {} : { chargeId: tid };

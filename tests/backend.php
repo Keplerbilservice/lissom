@@ -5510,7 +5510,7 @@ sjekk('Vipps blir bedt om aa trekke ved godkjenning',
 // Trekket er Vipps sitt: vi ber aldri om det, og faar ingen id tilbake. Uten
 // dette laa pengene der uten aa staa i Kassa eller i regnskapet.
 sjekk('… og trekket hentes og foeres hos oss',
-    str_contains($vFilInit, 'public static function trekkPaaAvtale(string $avtaleId): array')
+    str_contains($vFilInit, 'public static function trekkPaaAvtale(string $avtaleId, bool $kastVedFeil = false): array')
     && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale): void')
     && str_contains($mlib, "'vipps_psp_ref'   => \$trekkId,"));
 // Det farligste her: staar «neste_trekk» paa i dag, ber runden om et trekk
@@ -14677,10 +14677,48 @@ sjekk('… en rad fra foer kolonnen fantes faar samme innhold utledet',
         ['trekk_foresporsel' => null, 'created_at' => '2026-09-30 22:30:00', 'belop_ore' => 259000], '2026-10-05') === $tfForste);
 $mlTf = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('… og trekk() bruker det lagrede innholdet ved nytt forsoek',
-    str_contains($mlTf, '$kropp = self::trekkForesporsel($avtale, $tidligere, $idag);')
+    str_contains($mlTf, '$forsok = self::trekkForsok($avtale, $tidligere, $nokkel, $idag);')
     && str_contains($mlTf, "\$tidligere = \$fra;")
-    && str_contains($mlTf, "['trekk_foresporsel' => json_encode(\$kropp, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)]")
-    && preg_match('/Vipps::belastAvtale\(\s*\(string\) \$avtale\[\'vipps_agreement_id\'\],\s*\$kropp,\s*\$nokkel\s*\)/', $mlTf) === 1);
+    && str_contains($mlTf, "\$lagre = \$harKolonne ? ['trekk_foresporsel' => self::trekkForsokJson(\$forsok)] : [];")
+    && preg_match('/Vipps::belastAvtale\(\s*\(string\) \$avtale\[\'vipps_agreement_id\'\],\s*\$kropp,\s*\$gjeldende\[\'nokkel\'\]\s*\)/', $mlTf) === 1);
+// Codex 02.10.2026, P1 nr. 2: et forsoek Vipps aldri fikk (nettbrudd), har
+// et forfall som er ugyldig neste natt. Avviser Vipps gjentakelsen, sjekkes
+// trekklisten foerst; finnes trekket ikke, bes det om med ny noekkel og nytt
+// forfall. Aldri to trekk for samme periode.
+$tfForsok2 = ['forsok' => [['nokkel' => 'n1', 'kropp' => $tfForste],
+    ['nokkel' => 'n2', 'kropp' => ['due' => '2026-10-03'] + $tfForste]]];
+$tfListe = Medlemskap::trekkForsok($tfAvtale, ['trekk_foresporsel' => json_encode($tfForsok2), 'created_at' => '2026-09-30 22:30:00', 'belop_ore' => 259000], 'grunn');
+sjekk('trekk: lagrede forsoek leses tilbake i rekkefoelge, siste gjelder',
+    count($tfListe) === 2 && $tfListe[1]['nokkel'] === 'n2' && $tfListe[1]['kropp']['due'] === '2026-10-03'
+    && Medlemskap::trekkForesporsel($tfAvtale, ['trekk_foresporsel' => json_encode($tfForsok2), 'created_at' => '2026-09-30 22:30:00', 'belop_ore' => 259000])['due'] === '2026-10-03');
+sjekk('… et bart innhold gjelder grunnnoekkelen',
+    Medlemskap::trekkForsok($tfAvtale, $tfRad, 'grunn') === [['nokkel' => 'grunn', 'kropp' => $tfForste]]);
+$tfVipps = [
+    ['id' => 'sept', 'due' => '2026-10-02', 'amount' => 259000, 'status' => 'CHARGED'],   // forsinket september, alt hos oss
+    ['id' => 'init', 'due' => '2026-08-01', 'amount' => 259000, 'status' => 'CHARGED'],
+];
+sjekk('… trekk med samme forfall og beloep som et forsoek finnes',
+    (Medlemskap::trekkSomFinnes($tfVipps, $tfListe, [])['id'] ?? null) === 'sept');
+sjekk('… men ikke et som alt hoerer til en annen betaling',
+    Medlemskap::trekkSomFinnes($tfVipps, $tfListe, ['sept']) === null);
+sjekk('… og ikke med annet beloep',
+    Medlemskap::trekkSomFinnes([['id' => 'x', 'due' => '2026-10-02', 'amount' => 1]], $tfListe, []) === null);
+sjekk('… og et senere forsoek gjenkjennes ogsaa',
+    (Medlemskap::trekkSomFinnes([['id' => 'n2t', 'due' => '2026-10-03', 'amount' => 259000]], $tfListe, [])['id'] ?? null) === 'n2t');
+$vTf = les_testfil(dirname(__DIR__) . '/app/lib/vipps.php');
+sjekk('… og bare et nei fra Vipps (400/409/422) aapner for ny noekkel',
+    str_contains($vTf, 'if (in_array($svar[\'status\'], [400, 409, 422], true)) {')
+    && str_contains($mlTf, '} catch (VippsAvvisteTrekk $e) {')
+    && str_contains($mlTf, 'if ($tidligere === null || !$harKolonne) {'));
+sjekk('… og trekklisten maa svare foer noe nytt bes om',
+    str_contains($mlTf, '$liste = Vipps::trekkPaaAvtale($avtaleId, true);')
+    && str_contains($vTf, 'if ($kastVedFeil) {'));
+sjekk('… og de nye forsoekene lagres foer kallet, med et tak',
+    str_contains($mlTf, '$trekkId = Vipps::belastAvtale($avtaleId, $ny[\'kropp\'], $ny[\'nokkel\']);')
+    && str_contains($mlTf, "DB::oppdater('payments', ['trekk_foresporsel' => self::trekkForsokJson(\$forsok)], ['id' => \$betalingId]);")
+    && (int) strpos($mlTf, "DB::oppdater('payments', ['trekk_foresporsel' => self::trekkForsokJson(\$forsok)], ['id' => \$betalingId]);")
+        < strpos($mlTf, '$trekkId = Vipps::belastAvtale($avtaleId, $ny[\'kropp\'], $ny[\'nokkel\']);')
+    && str_contains($mlTf, 'if (count($forsok) >= self::TREKK_MAKS_NOKLER) {'));
 $m243 = les_testfil(dirname(__DIR__) . '/db/migrations/243_trekk_foresporsel.sql');
 sjekk('… og kolonnen legges til uten DROP, trygg aa kjoere to ganger',
     str_contains($m243, 'ADD COLUMN IF NOT EXISTS trekk_foresporsel') && stripos($m243, 'DROP') === false);

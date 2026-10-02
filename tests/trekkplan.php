@@ -33,24 +33,59 @@ try{
  // proeves det igjen med samme Idempotency-Key. Da maa innholdet vaere det samme,
  // ellers avviser Vipps det («idempotency-conflict»). Den falske Vippsen haandhever
  // det her (.trekk-idempotens).
- $styr=__DIR__.'/';$idag=(new DateTimeImmutable('now',$oslo))->format('Y-m-d');$dagEtter=(new DateTimeImmutable($idag))->modify('+1 day')->format('Y-m-d');
- $agr2='agr_TEST2_'.$s['tag'];
- $id2=DB::settInn('subscriptions',['member_id'=>$s['admin'],'plan'=>$plan,'pris_ore'=>199000,'status'=>'aktiv','vipps_agreement_id'=>$agr2,'neste_trekk'=>$imorgen]);
- $a2=DB::en('SELECT * FROM subscriptions WHERE id=:i',['i'=>$id2]);$a2['epost']='';
- $loggFra=is_file($styr.'.falsk-vipps.jsonl')?count(file($styr.'.falsk-vipps.jsonl')):0;
- $foer=count(Vipps::trekkPaaAvtale($agr2));
- file_put_contents($styr.'.trekk-idempotens','ja');file_put_contents($styr.'.trekk-svar-tapt','ja');
+ // .idag lar den falske Vippsen avvise et forfall som ikke er minst én dag fram.
+ $styr=__DIR__.'/';$idag=(new DateTimeImmutable('now',$oslo))->format('Y-m-d');$dagEtter=(new DateTimeImmutable($idag))->modify('+1 day')->format('Y-m-d');$toDager=(new DateTimeImmutable($idag))->modify('+2 day')->format('Y-m-d');
+ $styrfil=static function(string $n,string $v)use($styr):void{if($v==='')@unlink($styr.$n);else file_put_contents($styr.$n,$v);};
+ $nyAvtale=static function(string $agr)use($s,$plan,$imorgen):array{$i=DB::settInn('subscriptions',['member_id'=>$s['admin'],'plan'=>$plan,'pris_ore'=>199000,'status'=>'aktiv','vipps_agreement_id'=>$agr,'neste_trekk'=>$imorgen]);$a=DB::en('SELECT * FROM subscriptions WHERE id=:i',['i'=>$i]);$a['epost']='';return $a;};
+ $rad=static fn(array $a):array=>DB::en('SELECT * FROM payments WHERE subscription_id=:s',['s'=>(int)$a['id']]);
+ $forsokPaa=static fn(array $p):array=>json_decode((string)$p['trekk_foresporsel'],true)['forsok']??[];
+ $poster=static function(string $agr,int $fra)use($styr):array{$ut=[];foreach(array_slice(file($styr.'.falsk-vipps.jsonl'),$fra) as $l){$k=json_decode($l,true);if(($k['metode']??'')==='POST'&&str_contains((string)($k['sti']??''),$agr.'/charges'))$ut[]=$k['kropp'];}return $ut;};
+ $loggLengde=static fn():int=>is_file($styr.'.falsk-vipps.jsonl')?count(file($styr.'.falsk-vipps.jsonl')):0;
+ $styrfil('.trekk-idempotens','ja');$styrfil('.idag',$idag);
+ $nye=[];
+ // A. Vipps laget trekket, men svaret ble borte.
+ $a2=$nyAvtale('agr_TEST2_'.$s['tag']);$nye[]=(int)$a2['id'];$fra2=$loggLengde();
+ $styrfil('.trekk-svar-tapt','ja');
  $kastet=false;try{Medlemskap::trekk($a2,$idag);}catch(RuntimeException){$kastet=true;}
- @unlink($styr.'.trekk-svar-tapt');
+ $styrfil('.trekk-svar-tapt','');
  $sjekk($kastet,'Tapt svar fra Vipps gir feil i første forsøk');
- $p2=DB::en('SELECT * FROM payments WHERE subscription_id=:s',['s'=>$id2]);
- $sjekk($p2['status']==='feilet'&&$p2['vipps_psp_ref']===null&&(json_decode((string)$p2['trekk_foresporsel'],true)['due']??null)===$imorgen,'Raden er feilet uten trekk-id, og innholdet er lagret');
+ $p2=$rad($a2);
+ $sjekk($p2['status']==='feilet'&&$p2['vipps_psp_ref']===null&&($forsokPaa($p2)[0]['kropp']['due']??null)===$imorgen,'Raden er feilet uten trekk-id, og innholdet er lagret');
  $sjekk(Medlemskap::trekkForesporsel($a2,null,$dagEtter)['due']!==$imorgen,'Et forfall regnet ut på nytt dagen etter ville vært et annet');
- $sjekk(Medlemskap::trekk($a2,$dagEtter)==='bedt om trekk til '.$imorgen,'Nytt forsøk dagen etter sender samme forfall og godtas');
- $p2=DB::en('SELECT * FROM payments WHERE subscription_id=:s',['s'=>$id2]);
- $sjekk($p2['status']==='venter'&&!empty($p2['vipps_psp_ref'])&&(int)DB::verdi('SELECT COUNT(*) FROM payments WHERE subscription_id=:s',['s'=>$id2])===1,'Samme rad får trekk-id-en fra Vipps');
- $sjekk(count(Vipps::trekkPaaAvtale($agr2))-$foer===1,'Vipps har ett trekk, ikke to');
- $poster=[];foreach(array_slice(file($styr.'.falsk-vipps.jsonl'),$loggFra) as $l){$k=json_decode($l,true);if(($k['metode']??'')==='POST'&&str_contains((string)($k['sti']??''),$agr2.'/charges'))$poster[]=json_encode($k['kropp']);}
- $sjekk(count($poster)===2&&$poster[0]===$poster[1],'Begge forsøkene sendte nøyaktig samme innhold');
-}finally{@unlink(__DIR__.'/.trekk-idempotens');@unlink(__DIR__.'/.trekk-svar-tapt');if(isset($id2)){DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$id2]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$id2]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$id2]);}DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$id]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$id]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$id]);}
+ $styrfil('.idag',$dagEtter);
+ $sjekk(Medlemskap::trekk($a2,$dagEtter)==='bedt om trekk til '.$imorgen,'Nytt forsøk dagen etter sender samme forfall og får det første svaret');
+ $p2=$rad($a2);
+ $sjekk($p2['status']==='venter'&&!empty($p2['vipps_psp_ref'])&&(int)DB::verdi('SELECT COUNT(*) FROM payments WHERE subscription_id=:s',['s'=>(int)$a2['id']])===1,'Samme rad får trekk-id-en fra Vipps');
+ $sjekk(count(Vipps::trekkPaaAvtale($a2['vipps_agreement_id']))===1,'Vipps har ett trekk, ikke to');
+ $pA=$poster($a2['vipps_agreement_id'],$fra2);
+ $sjekk(count($pA)===2&&$pA[0]===$pA[1],'Begge forsøkene sendte nøyaktig samme innhold');
+ // B. Nettbrudd FØR Vipps laget trekket. Neste natt er gårsdagens forfall ugyldig.
+ $styrfil('.idag',$idag);
+ $a3=$nyAvtale('agr_TEST3_'.$s['tag']);$nye[]=(int)$a3['id'];$fra3=$loggLengde();
+ $styrfil('.trekk-feiler','ja');
+ $kastet=false;try{Medlemskap::trekk($a3,$idag);}catch(RuntimeException){$kastet=true;}
+ $styrfil('.trekk-feiler','');
+ $sjekk($kastet&&$rad($a3)['status']==='feilet'&&count(Vipps::trekkPaaAvtale($a3['vipps_agreement_id']))===0,'Nettbrudd: raden er feilet, og Vipps har ikke noe trekk');
+ $styrfil('.idag',$dagEtter);
+ $sjekk(Medlemskap::trekk($a3,$dagEtter)==='bedt om trekk til '.$toDager,'Neste natt: avvist forfall gir nytt trekk med gyldig forfall');
+ $p3=$rad($a3);$f3=$forsokPaa($p3);
+ $sjekk($p3['status']==='venter'&&!empty($p3['vipps_psp_ref'])&&(int)DB::verdi('SELECT COUNT(*) FROM payments WHERE subscription_id=:s',['s'=>(int)$a3['id']])===1,'… på samme rad, med trekk-id');
+ $sjekk(count($f3)===2&&$f3[0]['nokkel']!==$f3[1]['nokkel']&&$f3[1]['kropp']['due']===$toDager&&$f3[1]['kropp']['amount']===$f3[0]['kropp']['amount'],'… med ny nøkkel, samme beløp, og begge forsøkene lagret');
+ $sjekk(count(Vipps::trekkPaaAvtale($a3['vipps_agreement_id']))===1,'… og Vipps har ett trekk');
+ $pB=$poster($a3['vipps_agreement_id'],$fra3);
+ $sjekk(count($pB)===3&&$pB[0]===$pB[1]&&$pB[2]['due']===$toDager,'… etter nettbrudd, avvist gjentakelse og nytt trekk');
+ $sjekk(Medlemskap::trekk($a3,$dagEtter)==='alt fort','… og en runde til gir ikke et trekk til');
+ // C. Vipps har glemt nøkkelen og avviser, men trekket finnes. Det brukes.
+ $styrfil('.idag',$idag);
+ $a4=$nyAvtale('agr_TEST4_'.$s['tag']);$nye[]=(int)$a4['id'];
+ $styrfil('.trekk-svar-tapt','ja');
+ try{Medlemskap::trekk($a4,$idag);}catch(RuntimeException){}
+ $styrfil('.trekk-svar-tapt','');
+ $hos=Vipps::trekkPaaAvtale($a4['vipps_agreement_id']);
+ $styrfil('.glem-nokler','ja');$styrfil('.idag',$dagEtter);
+ $sjekk(Medlemskap::trekk($a4,$dagEtter)==='bedt om trekk til '.$imorgen,'Avvist gjentakelse: trekket som finnes hos Vipps brukes');
+ $styrfil('.glem-nokler','');
+ $p4=$rad($a4);
+ $sjekk(count($hos)===1&&$p4['status']==='venter'&&$p4['vipps_psp_ref']===(string)$hos[0]['id']&&count(Vipps::trekkPaaAvtale($a4['vipps_agreement_id']))===1&&count($forsokPaa($p4))===1,'… med samme trekk-id, uten nytt trekk eller ny nøkkel');
+}finally{foreach(['.trekk-idempotens','.trekk-svar-tapt','.trekk-feiler','.idag','.glem-nokler'] as $f)@unlink(__DIR__.'/'.$f);foreach($nye??[] as $sid){DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$sid]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$sid]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$sid]);}DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$id]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$id]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$id]);}
 echo "$n trekkplankontroller bestått\n";

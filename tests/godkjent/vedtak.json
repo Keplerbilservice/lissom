@@ -3144,7 +3144,7 @@
             "hvor": "admin-ny › Kalender › Flytt tidspunkt · Påmeldte › Ny påmelding / Flytt til annen dato · Kalender › Ny kursdato · Medlemsgaver › Gi gave",
             "kode": [
                 {
-                    "fil": "admin-ny/app.js",
+                    "fil": "admin-ny/kalender.js",
                     "finnes": [
                         "const nr=String(e.id).startsWith('saml-')",
                         "field('kursId','Kurs','number',{velg:true,",
@@ -3271,6 +3271,73 @@
                         "flere enn 50 nye i dag: alle 55 står med",
                         "planbytte står ikke i Nye påmeldinger",
                         "avbrutt fast trekk, så engangs: står som ny"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-k0-egen-fil",
+            "dato": "2026-10-02",
+            "hva": "Ny kalender i admin-ny, bit K0 (eieren godkjente del 2, 2. oktober 2026): kalenderkoden (calendar, kalendernotat, hendelsesarket, deltakere, ny kursdato og Flytt tidspunkt) er flyttet uendret fra admin-ny/app.js til admin-ny/kalender.js, kalenderstilen uendret fra design.css til kalender.css (lenket i admin-ny.html etter design.css), og kalender-mobil.js og kalender-pc.js er tomme stubber som kalender.js importerer, så K3 og K4 kan bygges hver for seg. Ingen ny atferd; courseMutation hentes fra ui.js, ingen kopi.",
+            "hvor": "admin-ny › Kalender (#kalender) · Kurs › Deltakere / Ny kursdato",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "export function kalenderOppsett(h){({title,item,details,href,act,refresh}=h);}",
+                        "import './kalender-mobil.js';",
+                        "import './kalender-pc.js';",
+                        "export {calendar,participants,newDate};",
+                        "async function calendar(){",
+                        "async function moveDate(e){"
+                    ],
+                    "ikkeFinnes": [
+                        "export async function courseMutation"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "import {calendar,participants,newDate,kalenderOppsett} from './kalender.js';",
+                        "kalenderOppsett({title,item,details,href,act,refresh});",
+                        "kalender:calendar"
+                    ],
+                    "ikkeFinnes": [
+                        "async function calendar(){",
+                        "async function moveDate(e){",
+                        "let calendarDay="
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        ".calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}",
+                        ".event.cancelled{opacity:.65;border-color:var(--red)}"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/design.css",
+                    "ikkeFinnes": [
+                        ".calendar{display:grid;",
+                        ".event{width:100%;"
+                    ]
+                },
+                {
+                    "fil": "admin-ny.html",
+                    "finnes": [
+                        "<link rel=\"stylesheet\" href=\"/admin-ny/design.css\"><link rel=\"stylesheet\" href=\"/admin-ny/kalender.css\">"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-mobil.js",
+                    "finnes": [
+                        "export {};"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-pc.js",
+                    "finnes": [
+                        "export {};"
                     ]
                 }
             ]

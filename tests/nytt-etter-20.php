@@ -328,9 +328,9 @@ sjekk('et loepende medlem uten betaling mangler fortsatt betaling',
     Medlemskap::betalingMangler($mUb, er_aktivt_medlem($mUb)) === true
     && Medlemskap::betalingsstatus($mUb, null, null)['utestaaende'] === true);
 
-// ── 7. Migrasjon 243 ──────────────────────────────────────────────────────
-echo "\n== Migrasjon 243 ==\n";
-$mig = file_get_contents(dirname(__DIR__) . '/db/migrations/243_nytt_medlemskap_etter_20.sql');
+// ── 7. Migrasjon 244 ──────────────────────────────────────────────────────
+echo "\n== Migrasjon 244 ==\n";
+$mig = file_get_contents(dirname(__DIR__) . '/db/migrations/244_nytt_medlemskap_etter_20.sql');
 $mm = [];
 $lag = static function (string $hva, string $plan, string $laget, ?string $fra = null, string $status = 'betalt') use ($nyttMedlem, $betaling, &$mm): int {
     $m = $nyttMedlem($plan);

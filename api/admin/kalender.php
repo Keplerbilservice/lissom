@@ -65,7 +65,7 @@ $iOslo = static function (string $utcTid, string $format) use ($oslo, $utc): str
 // ── Oektene ─────────────────────────────────────────────────────────────
 $harAuto   = DB::harKolonne('course_sessions', 'fra_apningstid');
 $harHolder = DB::harKolonne('course_sessions', 'kursholder_id');
-$holderKol = $harHolder ? ', h.navn AS holder' : ", '' AS holder";
+$holderKol = $harHolder ? ', h.navn AS holder, h.id AS holder_id' : ", '' AS holder, NULL AS holder_id";
 $autoKol   = ($harAuto ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
 ;
 // Kolonna kom med oppdatering 137. Kjores den ikke, staar ingen dato som
@@ -549,6 +549,8 @@ foreach ($okter as $o) {
         'tittel' => (string) $o['tittel'],
         'type'   => $typeFor($o),
         'holder' => (string) ($o['holder'] ?? ''),
+        // Kursholderens id, saa dagsvisningen paa PC kobler kolonnene paa id, ikke navn.
+        'kursholderId' => isset($o['holder_id']) ? (int) $o['holder_id'] : null,
         'kap'    => (int) $o['kapasitet'],
         'pameldt'=> $pameldt,
         'deltakere' => $rader,

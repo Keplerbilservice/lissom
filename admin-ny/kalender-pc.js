@@ -4,10 +4,10 @@
 // Samling 2 og 3 har data-låst på brikka: dagene flyttes fra kursets dato, ikke hver for seg (se kalender.php).
 import {el,badge,today,date,shift} from './ui.js';
 
-export const PC_BRED='(min-width:1101px)';
+export const PC_BRED='(min-width:761px)';
 export const erBred=()=>typeof matchMedia==='function'&&matchMedia(PC_BRED).matches;
 
-const RAD_MIN=30,RAD_PX=26;
+const RAD_MIN=30,RAD_PX=26,MIN_PX=24;
 const minutter=t=>{const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?Number(m[1])*60+Number(m[2]):null;};
 const klokke=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 function tidsrom(e){const s=minutter(e.tid);if(s===null)return null;let sl=minutter(e.slutt);if(sl===null||sl<=s)sl=Math.min(1440,s+60);return {s,sl};}
@@ -31,11 +31,17 @@ function brikke(e,apne,plass){
  const attr={type:'button',class:`event kp-brikke ${e.avlyst?'cancelled':''}`,'data-id':String(e.id),title:e.tittel,onclick:()=>apne(e)};
  if(laast)attr['data-låst']=true;
  if(plass)attr.style=`top:${plass.top}px;height:${plass.hoyde}px;left:calc(${plass.bane/plass.av*100}% + 3px);width:calc(${100/plass.av}% - 6px)`;
+ if(plass?.baand)attr.class+=' kp-baand';
  return el('button',attr,el('small',{text:`${e.tid||''}${e.slutt?'–'+e.slutt:''}`}),el('strong',{text:e.tittel}),el('span',{text:[e.holder,e.samling,e.avlyst?'Avlyst':null,e.kap?`${e.pameldt||0}/${e.kap} påmeldt`:e.type].filter(Boolean).join(' · ')}));
 }
 
+// Plassen en brikke tegnes på (px fra toppen). Høyden er minst MIN_PX, og banene regnes fra det som tegnes,
+// så korte hendelser som ligger tett ikke dekker hverandre.
+function tegnet(e,fra,til){const t=tidsrom(e);if(!t)return null;const s=Math.max(t.s,fra),sl=Math.min(t.sl,til);const top=(s-fra)/RAD_MIN*RAD_PX+1,hoyde=Math.max(MIN_PX,(sl-s)/RAD_MIN*RAD_PX-2);return {e,top,hoyde,s:top,sl:top+hoyde+2};}
+
 // Én tavle: tidsakse til venstre og én kolonne per «kol» ({dato, kol, hode, hendelser, idag}).
-function tavle(kolonner,fra,til,apne){
+// baand: hendelser som legges som bånd over alle kolonnene (notater og annet uten kursholder i dagsvisningen).
+function tavle(kolonner,fra,til,apne,baand=[]){
  const rader=(til-fra)/RAD_MIN,hoyde=rader*RAD_PX;
  const akse=el('div',{class:'kp-akse',style:`height:${hoyde}px`,'aria-hidden':true});
  for(let m=fra;m<til;m+=60)akse.append(el('span',{class:m===fra?'forst':null,style:`top:${(m-fra)/RAD_MIN*RAD_PX}px`,text:klokke(m)}));
@@ -46,10 +52,12 @@ function tavle(kolonner,fra,til,apne){
   hode.append(el('div',{class:`kp-kolhode ${k.idag?'today':''}`,'data-dato':k.dato,'data-kol':k.kol},k.hode,utenTid.map(e=>brikke(e,apne,null))));
   const kol=el('div',{class:`kp-kol ${k.idag?'today':''}`,style:`height:${hoyde}px`});
   for(let i=0;i<rader;i++)kol.append(el('div',{class:'kp-celle','data-dato':k.dato,'data-akse':klokke(fra+i*RAD_MIN),'data-kol':k.kol}));
-  const plassert=sideOmSide(k.hendelser.map(e=>({e,...tidsrom(e)})).filter(p=>p.s!==undefined&&p.s!==null));
-  for(const p of plassert){const s=Math.max(p.s,fra),sl=Math.min(p.sl,til);kol.append(brikke(p.e,apne,{top:(s-fra)/RAD_MIN*RAD_PX+1,hoyde:Math.max(RAD_PX-2,(sl-s)/RAD_MIN*RAD_PX-2),bane:p.bane,av:p.av}));}
+  const plassert=sideOmSide(k.hendelser.map(e=>tegnet(e,fra,til)).filter(Boolean));
+  for(const p of plassert)kol.append(brikke(p.e,apne,{top:p.top,hoyde:p.hoyde,bane:p.bane,av:p.av}));
   kropp.append(kol);
  }
+ const baandTid=sideOmSide(baand.map(e=>tegnet(e,fra,til)).filter(Boolean));
+ if(baandTid.length)kropp.append(el('div',{class:'kp-baandlag',style:`height:${hoyde}px`},baandTid.map(p=>brikke(p.e,apne,{top:p.top,hoyde:p.hoyde,bane:p.bane,av:p.av,baand:true}))));
  return el('div',{class:'kp-tavle',style:`--kp-n:${kolonner.length}`},hode,kropp);
 }
 
@@ -61,21 +69,29 @@ function ramme(hendelser){
 
 const dagHode=(dag,stengte,lang)=>[el('h3',{text:date(dag).toLocaleDateString('nb-NO',{weekday:lang?'long':'short',day:'numeric',month:lang?'long':'short'})}),Object.hasOwn(stengte,dag)?badge('Stengt','warn'):null];
 
+// Kurs, Paint on Pots og eventer (øktene). Alt annet (notater, brenninger, innsjekk) er ikke kurs.
+const erKurs=e=>['kurs','pop','event'].includes(e.type);
+// Kursholderen en hendelse hører til: id fra kalender.php (kursholderId). Mangler id-en, brukes navnet.
+const holderNokkel=e=>e.kursholderId!=null&&e.kursholderId!==''?String(e.kursholderId):e.holder?'navn:'+e.holder:'';
+
 // Kolonnene i dagsvisningen: den som vanligvis holder kursene (standard), og de andre når de har noe denne dagen.
-// Det som ikke har kursholder (notater, brenninger, kurs uten tildelt holder) står i en egen kolonne «Ikke tildelt», bare når det finnes.
+// Kolonnene kobles på kursholderens id, ikke navnet. «Ikke tildelt» står bare når et kurs mangler kursholder.
+// Notater og annet uten kursholder som ikke er kurs, legges som bånd over alle kolonnene (se kalenderPc), som i gamle admin.
 function holderKolonner(dag,hendelser,kursholdere){
- const navn=new Set(hendelser.map(e=>e.holder).filter(Boolean));
- const kol=kursholdere.filter(h=>h.standard||navn.has(h.navn)).map(h=>({id:String(h.id),navn:h.navn}));
- for(const n of navn)if(!kol.some(k=>k.navn===n))kol.push({id:'',navn:n});
- if(hendelser.some(e=>!e.holder)||!kol.length)kol.push({id:'0',navn:'Ikke tildelt',uten:true});
- return kol.map(k=>({dato:dag,kol:k.id,idag:false,hode:el('h3',{text:k.navn}),hendelser:hendelser.filter(e=>k.uten?!e.holder:e.holder===k.navn)}));
+ const iKol=hendelser.filter(e=>holderNokkel(e)||erKurs(e));
+ const nokler=new Set(iKol.map(holderNokkel).filter(Boolean));
+ const kol=kursholdere.filter(h=>h.standard||nokler.has(String(h.id))).map(h=>({id:String(h.id),nokkel:String(h.id),navn:h.navn}));
+ for(const e of iKol){const n=holderNokkel(e);if(n&&!kol.some(k=>k.nokkel===n))kol.push({id:n.startsWith('navn:')?'':n,nokkel:n,navn:e.holder||''});}
+ if(iKol.some(e=>!holderNokkel(e))||!kol.length)kol.push({id:'0',nokkel:'',navn:'Ikke tildelt',uten:true});
+ return kol.map(k=>({dato:dag,kol:k.id,idag:false,hode:el('h3',{text:k.navn}),hendelser:iKol.filter(e=>holderNokkel(e)===k.nokkel)}));
 }
 
 // modus: 'uke' | 'dag'. start: første dag. hendelser: allerede filtrert på søk og type i kalender.js.
 export function kalenderPc({modus,start,hendelser,stengte={},kursholdere=[],apne}){
  if(modus==='dag'){
   const dagens=hendelser.filter(e=>e.dato===start);const [fra,til]=ramme(dagens);
-  const el1=el('div',{class:'kp',  'data-visning':'dag'},el('div',{class:`kp-dagtittel ${start===today()?'today':''}`},dagHode(start,stengte,true)),tavle(holderKolonner(start,dagens,kursholdere),fra,til,apne));
+  const baand=dagens.filter(e=>!holderNokkel(e)&&!erKurs(e));const baandUtenTid=baand.filter(e=>!tidsrom(e));
+  const el1=el('div',{class:'kp',  'data-visning':'dag'},el('div',{class:`kp-dagtittel ${start===today()?'today':''}`},dagHode(start,stengte,true)),baandUtenTid.length?el('div',{class:'kp-baandtopp'},baandUtenTid.map(e=>brikke(e,apne,null))):null,tavle(holderKolonner(start,dagens,kursholdere),fra,til,apne,baand));
   return {el:el1,antall:dagens.length};
  }
  const dager=Array.from({length:7},(_,i)=>shift(start,i));const uka=hendelser.filter(e=>dager.includes(e.dato));const [fra,til]=ramme(uka);

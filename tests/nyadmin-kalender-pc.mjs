@@ -1,7 +1,11 @@
 // PC-kalenderen i admin-ny, bit K4 (eieren godkjente 2. oktober 2026).
 // 1280 px: uke med tidsakse er standard, segmentpille Dag · Uke · Måned, 30-minuttersrader med data-dato/data-akse/data-kol,
 // overlappende brikker side om side, hele brikka åpner arket, samling 2 har data-låst, dag har én kolonne per kursholder,
-// måned er som før, søk og typefilter virker. 390 px: mobil er uendret (select, gammel rute). Skriver ingenting, sender ingenting.
+// måned er som før, søk og typefilter virker. Skriver ingenting, sender ingenting.
+// Samlet kalender (2. oktober 2026): mobil til og med 760 px (kalender-mobil.js), tidsakse fra 761 px, også på nettbrett (900 px).
+// Dagsvisningen: korte kurs dekker ikke hverandre, kolonnene kobles på kursholderens id (to med samme navn),
+// notater ligger som bånd over alle kolonnene, og «Ikke tildelt» står bare for kurs uten kursholder.
+// Krysses bredden mens dataene lastes, tegnes riktig visning når de kommer.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
@@ -12,7 +16,9 @@ const BILDER=process.env.KALENDER_PC_BILDER||'';if(BILDER)mkdirSync(BILDER,{recu
 const fixture=(mode,s)=>JSON.parse(execFileSync('php',['tests/nettleser/kalender-pc-fixture.php',mode,JSON.stringify(s||{})],{encoding:'utf8'}));
 const browser=await chromium.launch({args:['--host-resolver-rules=MAP lokal.lissom.no 127.0.0.1']});
 const s=fixture('seed');
-const bilde=async(p,navn)=>{if(BILDER)await p.screenshot({path:`${BILDER}/${navn}.png`,fullPage:true});};
+// Hele siden uten fullPage: fullPage i Chromium endrer bredden et øyeblikk, og da tegnes kalenderen på nytt (og et åpent ark lukkes).
+// Her økes bare høyden, så bredden og visningen står.
+const bilde=async(p,navn)=>{if(!BILDER)return;const v=p.viewportSize();const h=await p.evaluate(()=>document.documentElement.scrollHeight);if(h>v.height)await p.setViewportSize({width:v.width,height:h});await p.screenshot({path:`${BILDER}/${navn}.png`});if(h>v.height)await p.setViewportSize(v);};
 try{
  // ── 1280 px ───────────────────────────────────────────────────────
  {
@@ -69,31 +75,73 @@ try{
   assert.match(await s2.innerText(),/Samling 2 av 2/);
   await p.getByLabel('Velg dato').fill(s.d1);await p.locator(`.kp[data-visning="dag"] .kp-celle[data-dato="${s.d1}"]`).first().waitFor();
   assert.equal(await p.locator('.kp button.kp-brikke',{hasText:`${s.tag} Delta`}).evaluate(b=>b.hasAttribute('data-låst')),false,'dag 1 er ikke låst');
+  // Dag med korte kurs, to kursholdere med samme navn og et notat.
+  await p.getByLabel('Velg dato').fill(s.e);await p.locator(`.kp[data-visning="dag"] .kp-celle[data-dato="${s.e}"]`).first().waitFor();
+  const dagE=p.locator('.kp[data-visning="dag"]');
+  const [E,F]=[await dagE.locator('button.kp-brikke',{hasText:`${s.tag} Echo`}).boundingBox(),await dagE.locator('button.kp-brikke',{hasText:`${s.tag} Foxtrot`}).boundingBox()];
+  assert.ok(E.height>=24&&F.height>=24,'korte kurs er minst 24 px høye');
+  assert.ok(E.x+E.width<=F.x+1||F.x+F.width<=E.x+1||E.y+E.height<=F.y+1||F.y+F.height<=E.y+1,'korte kurs som ligger tett dekker ikke hverandre');
+  const hodeE=await dagE.locator('.kp-kolhode').evaluateAll(h=>h.map(x=>[x.textContent,x.getAttribute('data-kol')]));
+  assert.deepEqual(hodeE.filter(h=>h[0]===`${s.tag} H1`).map(h=>h[1]).sort(),[String(s.h1),String(s.h3)].sort(),'to kursholdere med samme navn får hver sin kolonne (id)');
+  assert.ok(!hodeE.some(h=>h[0]==='Ikke tildelt'),'ingen «Ikke tildelt» når bare notatet mangler kursholder');
+  const kolId=id=>dagE.locator('.kp-kol').nth(hodeE.findIndex(h=>h[1]===String(id)));
+  assert.equal(await kolId(s.h3).locator('button.kp-brikke',{hasText:`${s.tag} Golf`}).count(),1,'G står hos H3 (id), ikke hos H1');
+  assert.equal(await kolId(s.h1).locator('button.kp-brikke',{hasText:`${s.tag} Golf`}).count(),0);
+  assert.equal(await kolId(s.h1).locator('button.kp-brikke',{hasText:s.tag}).count(),2,'E og F hos H1');
+  const notat=dagE.locator('.kp-baandlag button.kp-brikke',{hasText:`${s.tag} Notat`});assert.equal(await notat.count(),1,'notatet er et bånd');
+  assert.equal(await dagE.locator('.kp-kol button.kp-brikke',{hasText:`${s.tag} Notat`}).count(),0,'notatet står ikke i en kolonne');
+  const nb=await notat.boundingBox();const kb=await dagE.locator('.kp-kol').evaluateAll(k=>k.map(x=>{const r=x.getBoundingClientRect();return[r.left,r.right];}));
+  assert.ok(nb.x<=kb[0][0]+4&&nb.x+nb.width>=kb[kb.length-1][1]-4,'båndet går over alle kolonnene');
+  await bilde(p,'dag-notat-1280');
+  await notat.click();const notatArk=p.getByRole('dialog',{name:`${s.tag} Notat`});await notatArk.waitFor();await notatArk.getByRole('button',{name:'Endre notat',exact:true}).waitFor();await notatArk.locator('.close').click();await notatArk.waitFor({state:'detached'});
+  console.log('1280 px dag: korte kurs side om side, kolonner på id, notat som bånd over alle kolonnene');
   // Måned er som før.
   await pille.getByRole('button',{name:'Måned'}).click();await p.locator('.calendar').waitFor();
   assert.equal(await p.locator('.kp').count(),0,'måned tegnes av den gamle visningen');
   assert.ok(await p.locator('.calendar button.event',{hasText:`${s.tag} Alfa`}).count(),'brikkene står i måneden');
   await bilde(p,'maaned-1280');
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'ingen sideveis rulling');
-  // Krysses bredden, tegnes kalenderen på nytt (mobil får den gamle).
-  await p.setViewportSize({width:390,height:900});await p.getByRole('combobox',{name:'Kalendervisning'}).waitFor();
-  assert.equal(await p.locator('.kp-segment').count(),0,'smal skjerm: ingen segmentpille');
+  // Krysses bredden, tegnes kalenderen på nytt: til og med 760 px mobilkalenderen, fra 761 px tidsaksen.
+  await p.setViewportSize({width:760,height:900});await p.locator('.kalm').waitFor();
+  assert.equal(await p.locator('.kp-segment, .kp').count(),0,'760 px: mobilkalenderen');
+  await p.setViewportSize({width:761,height:900});await p.locator('.kp-segment').waitFor();
+  assert.equal(await p.locator('.kalm').count(),0,'761 px: PC-kalenderen');
   assert.equal(poster,0,'kalenderen skrev ingenting');assert.deepEqual(feil,[]);await c.close();
   console.log('1280 px: uke med tidsakse, segmentpille, side om side, ark, låst samling 2, dag per kursholder, måned som før');
  }
- // ── 390 px: mobil uendret ─────────────────────────────────────────
+ // ── 900 px (nettbrett): tidsakse, ikke mobil ─────────────────────
  {
-  const c=await browser.newContext({viewport:{width:390,height:900},hasTouch:true,isMobile:true});
+  const c=await browser.newContext({viewport:{width:900,height:1000},hasTouch:true});
   await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
   const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));
   await p.goto(`${ADR}/admin-ny.html#kalender`);await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
-  const valg=p.getByRole('combobox',{name:'Kalendervisning'});await valg.waitFor();
-  assert.equal(await valg.inputValue(),'uke');assert.equal(await p.locator('.kp, .kp-segment').count(),0,'ingen PC-visning på mobil');
-  await p.getByLabel('Velg dato').fill(s.d);await p.locator('.calendar button.event',{hasText:`${s.tag} Alfa`}).waitFor();
-  await bilde(p,'mobil-390');
-  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  const pille=p.getByRole('group',{name:'Kalendervisning'});await pille.waitFor();assert.equal(await p.locator('.kalm').count(),0,'900 px: ikke mobilkalenderen');
+  await p.getByLabel('Velg dato').fill(s.d);const uke=p.locator('.kp[data-visning="uke"]');await uke.locator(`.kp-celle[data-dato="${s.d}"]`).first().waitFor();
+  assert.equal(await uke.locator('.kp-kolhode').count(),7,'900 px: uke med tidsakse og sju dager');
+  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'900 px: ingen sideveis rulling i uka');
+  await bilde(p,'uke-900');
+  await pille.getByRole('button',{name:'Dag'}).click();await p.locator('.kp[data-visning="dag"]').waitFor();
+  assert.ok(await p.locator('.kp[data-visning="dag"] .kp-kolhode',{hasText:'Ikke tildelt'}).count(),'900 px: dag per kursholder');
+  await bilde(p,'dag-900');
+  await pille.getByRole('button',{name:'Måned'}).click();await p.locator('.calendar').waitFor();
+  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'900 px: ingen sideveis rulling i måneden');
+  await bilde(p,'maaned-900');
   assert.deepEqual(feil,[]);await c.close();
-  console.log('390 px: mobilvisningen er uendret');
+  console.log('900 px: tidsakse i uke og dag, måned som før');
+ }
+ // ── Bredden krysses mens dataene lastes ──────────────────────────
+ for(const [fra,til,venter] of [[1280,390,'.kalm'],[390,1280,'.kp']]){
+  const c=await browser.newContext({viewport:{width:fra,height:900}});
+  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
+  const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));
+  let slipp;const holdt=new Promise(r=>slipp=r);let forste=true;
+  await p.route('**/api/admin/kalender.php*',async rute=>{if(forste){forste=false;await holdt;}await rute.continue();});
+  await p.goto(`${ADR}/admin-ny.html#kalender`);await p.waitForTimeout(800);
+  await p.setViewportSize({width:til,height:900});await p.waitForTimeout(300);slipp();
+  await p.locator(venter).first().waitFor();await p.waitForTimeout(500);
+  assert.equal(await p.locator(venter==='.kp'?'.kalm':'.kp, .kp-segment').count(),0,`${fra}→${til} px under lasting: riktig visning når dataene kommer`);
+  assert.deepEqual(feil,[]);await c.close();
+  console.log(`${fra} → ${til} px mens dataene lastes: riktig visning tegnes`);
  }
  assert.equal(fixture('inspect',s).varsler,0,'ingen SMS eller e-post');
 }finally{await browser.close();fixture('cleanup',s);}

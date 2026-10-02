@@ -8,6 +8,9 @@
  * Om tolv dager: Alfa (A) 17–20 og Bravo (B) 18–19 hos samme kursholder (overlapper), C 17–20
  * uten kursholder. Dagen etter: et todagerskurs D med samling 2 dagen etter
  * der igjen. To kursholdere: H1 holder A og B, H2 er standard og har ingenting.
+ * Om seksten dager (samlet kalender, 2. oktober 2026): to korte kurs E 10:00–10:10 og F 10:15–10:25 hos H1
+ * (skal ikke dekke hverandre), kurs G 12:00–13:00 hos H3 som heter det samme som H1 (kolonnene kobles på id),
+ * og et kalendernotat 11:00–11:30 (bånd over alle kolonnene, ikke i «Ikke tildelt»).
  * Alt merkes «KalPcTest-», og oppryddingen tar bare det. Ingen varsler lages.
  */
 declare(strict_types=1);
@@ -30,18 +33,21 @@ if ($mode === 'seed') {
         'expires_at' => gmdate('Y-m-d H:i:s', time() + 7200)]);
     $h1 = DB::settInn('kursholdere', ['navn' => $tag . ' H1', 'aktiv' => 1, 'standard' => 0]);
     $h2 = DB::settInn('kursholdere', ['navn' => $tag . ' H2', 'aktiv' => 1, 'standard' => 1]);
-    $d = $dag(12); $d1 = $dag(13); $d2 = $dag(14);
+    $h3 = DB::settInn('kursholdere', ['navn' => $tag . ' H1', 'aktiv' => 1, 'standard' => 0]);
+    $d = $dag(12); $d1 = $dag(13); $d2 = $dag(14); $e = $dag(16);
     $kurs = []; $okt = [];
     foreach (['A' => ["$d 17:00", "$d 20:00", $h1], 'B' => ["$d 18:00", "$d 19:00", $h1], 'C' => ["$d 17:00", "$d 20:00", null],
-              'D' => ["$d1 10:00", "$d2 13:00", $h1]] as $n => [$fra, $til, $h]) {
-        $kurs[$n] = DB::settInn('courses', ['slug' => strtolower($tag . '-' . $n), 'tittel' => "$tag " . ['A' => 'Alfa', 'B' => 'Bravo', 'C' => 'Charlie', 'D' => 'Delta'][$n], 'type' => 'kurs',
+              'D' => ["$d1 10:00", "$d2 13:00", $h1],
+              'E' => ["$e 10:00", "$e 10:10", $h1], 'F' => ["$e 10:15", "$e 10:25", $h1], 'G' => ["$e 12:00", "$e 13:00", $h3]] as $n => [$fra, $til, $h]) {
+        $kurs[$n] = DB::settInn('courses', ['slug' => strtolower($tag . '-' . $n), 'tittel' => "$tag " . ['A' => 'Alfa', 'B' => 'Bravo', 'C' => 'Charlie', 'D' => 'Delta', 'E' => 'Echo', 'F' => 'Foxtrot', 'G' => 'Golf'][$n], 'type' => 'kurs',
             'pris_ore' => 50000, 'kapasitet' => 6, 'status' => 'publisert']);
         $okt[$n] = DB::settInn('course_sessions', ['course_id' => $kurs[$n], 'start_tid' => $iUtc($fra), 'slutt_tid' => $iUtc($til),
             'kapasitet' => 6, 'kursholder_id' => $h]);
     }
     DB::settInn('okt_samlinger', ['session_id' => $okt['D'], 'nummer' => 1, 'dato' => $d1, 'fra' => '10:00:00', 'til' => '13:00:00', 'overskrift' => 'Dag en']);
     DB::settInn('okt_samlinger', ['session_id' => $okt['D'], 'nummer' => 2, 'dato' => $d2, 'fra' => '10:00:00', 'til' => '13:00:00', 'overskrift' => 'Dag to']);
-    echo json_encode(compact('tag', 'admin', 'token', 'h1', 'h2', 'kurs', 'okt', 'd', 'd1', 'd2')); exit;
+    $notat = DB::settInn('kalender_notater', ['dato' => $e, 'fra' => '11:00:00', 'til' => '11:30:00', 'tekst' => $tag . ' Notat']);
+    echo json_encode(compact('tag', 'admin', 'token', 'h1', 'h2', 'h3', 'kurs', 'okt', 'd', 'd1', 'd2', 'e', 'notat')); exit;
 }
 
 $s = json_decode($argv[2] ?? '{}', true);
@@ -68,6 +74,7 @@ if ($mode === 'cleanup') {
     }
     foreach ($kursIder as $k) DB::kjor('DELETE FROM courses WHERE id = :k AND tittel LIKE :t', ['k' => $k, 't' => $s['tag'] . '%']);
     DB::kjor('DELETE FROM kursholdere WHERE navn LIKE :t', ['t' => $s['tag'] . ' H%']);
+    DB::kjor('DELETE FROM kalender_notater WHERE tekst = :t', ['t' => $s['tag'] . ' Notat']);
     if (DB::harTabell('admin_kortbruk')) DB::kjor('DELETE FROM admin_kortbruk WHERE member_id = :i', ['i' => $s['admin']]);
     DB::kjor('DELETE FROM sessions WHERE member_id = :i', ['i' => $s['admin']]);
     DB::kjor('DELETE FROM members WHERE id = :i AND navn = :t', ['i' => $s['admin'], 't' => $s['tag']]);

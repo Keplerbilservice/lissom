@@ -11,6 +11,7 @@
 .kalm{display:grid;gap:var(--space-3)}
 .kalm .kalm-hode{margin-bottom:var(--space-1)}
 .kalm .kalm-hode .muted:empty,.kalm .kalm-hode .actions:empty{display:none}
+.kalm-naboks{display:contents}
 .kalm-na{display:grid;gap:2px;width:100%;min-height:44px;text-align:left;justify-content:stretch;align-items:start;padding:var(--space-4);border-radius:16px;border:1px solid var(--border-subtle,var(--clay-200));background:var(--surface-card,#fff);color:var(--text-heading,var(--lissom-brown));font-weight:400}
 .kalm-na.gaar{background:var(--lissom-brown);border-color:var(--lissom-brown);color:var(--clay-100)}
 .kalm-na-e{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta-600)}
@@ -69,3 +70,5 @@
 .kp-akse{position:relative}.kp-akse span{position:absolute;right:8px;font-size:13px;color:var(--muted);transform:translateY(-50%)}.kp-akse span.forst{transform:translateY(3px)}
 .kp-kol{position:relative;min-width:0;border-left:1px solid var(--line)}.kp-kol.today{background:#ffcf3812}.kp-celle{height:26px;border-top:1px solid var(--line)}.kp-celle:first-child{border-top:0}.kp-celle[data-akse$=":30"]{border-top:1px dashed #e5d7c699}
 .kp-brikke.event{position:absolute;display:flex;flex-direction:column;justify-content:flex-start;margin:0;padding:4px 7px;font-size:14px;line-height:1.25;overflow:hidden;z-index:1;box-shadow:0 1px 3px #4d1d1218}.kp-kolhode .kp-brikke.event{position:static;width:100%}.kp-brikke small{font-size:13px}.kp-brikke>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;max-width:100%}.kp-brikke:hover,.kp-brikke:focus-visible{z-index:3;box-shadow:0 4px 14px #4d1d1230}.kp-brikke[data-låst]{border-left-style:dashed}
+/* Dagsvisningen: notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene (som i gamle admin). Laget begynner der kolonnene begynner, etter tidsaksen. */
+.kp-kropp{position:relative}.kp-baandlag{position:absolute;top:0;left:58px;right:0;pointer-events:none;z-index:2}.kp-baandlag .kp-brikke.event{pointer-events:auto}.kp-baandtopp{display:grid;gap:6px;margin:0 0 12px}.kp-baandtopp .kp-brikke.event{position:static;width:100%}

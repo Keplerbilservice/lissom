@@ -2,7 +2,9 @@
 // «Går nå» og «Neste» øverst, Dag · Uke · Måned, ukestripe man sveiper mellom ukene,
 // «I dag»-pille, timekort som åpner hendelsesarket, søk og type bak ett søkeikon.
 // Kjøres på 390 px med ekte berøring (CDP-touch: sveip sidelengs mot loddrett rulling)
-// og på 1280 px, der PC-kalenderen skal være som før. Sender aldri SMS eller e-post.
+// og på 900 og 1280 px, der PC-kalenderen med tidsakse (K4) tegnes. Mobil gjelder til og med 760 px. Sender aldri SMS eller e-post.
+// Samlet kalender (2. oktober 2026): «Går nå» regner kurs over midnatt riktig, «Går nå» og «Neste» oppdateres hvert minutt,
+// og «Neste» letes etter høyst seks måneder fram. De tre sjekkes med egne kalenderdata (page.route) og styrt klokke.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
@@ -139,24 +141,72 @@ try{
   assert.deepEqual(feil,[]);await c.close();
  }
 
- // ── 1280 px: PC-kalenderen som før, og bytte ved smal skjerm ──────
- {
-  const c=await browser.newContext({viewport:{width:1280,height:900}});
+ // ── 900 og 1280 px: PC-kalenderen med tidsakse (K4), og bytte ved 760/761 px ──
+ for(const width of [900,1280]){
+  const c=await browser.newContext({viewport:{width,height:900}});
   await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
   const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));await p.clock.setFixedTime(naa);
   await p.goto(`${ADR}/admin-ny.html#kalender`);await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
-  await p.locator('.calendar').waitFor();assert.equal(await p.locator('.kalm').count(),0,'mobilvisningen tegnes ikke på PC');
+  await p.locator('.kp[data-visning="uke"]').waitFor();assert.equal(await p.locator('.kalm').count(),0,`mobilvisningen tegnes ikke på ${width} px`);
   for(const n of ['← Forrige','I dag','Neste →','Ny kursdato','Nytt kalendernotat','Abonner på kalenderen'])await p.getByRole('button',{name:n,exact:true}).waitFor();
-  await p.getByRole('combobox',{name:'Kalendervisning'}).waitFor();await p.getByRole('searchbox',{name:'Søk i kalender'}).waitFor();
-  assert.equal(await p.locator('.calendar .day').count(),7,'uke med sju dager som før');
-  if(BILDER)await p.screenshot({path:`${BILDER}/1280-pc.png`});
+  await p.getByRole('group',{name:'Kalendervisning'}).waitFor();await p.getByRole('searchbox',{name:'Søk i kalender'}).waitFor();
+  assert.equal(await p.locator('.kp[data-visning="uke"] .kp-kolhode').count(),7,'uke med sju dager og tidsakse');
+  if(BILDER)await p.screenshot({path:`${BILDER}/${width}-pc.png`});
   await p.getByRole('button',{name:'Abonner på kalenderen',exact:true}).click();await p.getByRole('dialog',{name:'Abonner på verkstedkalenderen'}).waitFor();await p.locator('dialog .close').click();
-  console.log('1280 px: PC-kalenderen som før (rutenett, piler, nedtrekk, abonner)');
-  await p.setViewportSize({width:390,height:800});await p.locator('.kalm').waitFor();assert.equal(await p.locator('.calendar').count(),0);
-  await p.setViewportSize({width:1280,height:900});await p.locator('.calendar').waitFor();
-  console.log('Skjermbredden krysser 760 px: visningen bytter av seg selv');
+  console.log(`${width} px: PC-kalenderen med tidsakse (piler, segmentpille, abonner)`);
+  await p.setViewportSize({width:760,height:800});await p.locator('.kalm').waitFor();assert.equal(await p.locator('.kp').count(),0,'760 px: mobil');
+  await p.setViewportSize({width:761,height:800});await p.locator('.kp').waitFor();assert.equal(await p.locator('.kalm').count(),0,'761 px: tidsakse');
+  await p.setViewportSize({width:390,height:800});await p.locator('.kalm').waitFor();
+  await p.setViewportSize({width,height:900});await p.locator('.kp').waitFor();
+  console.log('Skjermbredden krysser 760/761 px: visningen bytter av seg selv');
   assert.deepEqual(feil,[]);await c.close();
  }
+
+ // ── «Går nå» og «Neste» med egne kalenderdata og styrt klokke (390 px) ──
+ // Oslo er UTC+1 i november. «I dag» er tirsdag 10. november 2026.
+ const hendelse=(id,dato,tid,slutt,tittel)=>({id,oktId:id,dato,tid,slutt,tittel:`${s.tag} ${tittel}`,type:'kurs',holder:'',kap:8,pameldt:2,deltakere:[],venteliste:[],avlyst:false});
+ const medData=async(hendelser,tid,hver)=>{
+  const c=await browser.newContext({viewport:{width:390,height:800},hasTouch:true,isMobile:true});
+  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
+  const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));const maaneder=[];
+  await p.route('**/api/admin/kalender.php*',async rute=>{const u=new URL(rute.request().url());const fra=u.searchParams.get('fra'),til=u.searchParams.get('til');maaneder.push(fra);
+   await rute.fulfill({contentType:'application/json',body:JSON.stringify({hendelser:hendelser.filter(e=>e.dato>=fra&&e.dato<=til),stengte:{},kursholdere:[]})});});
+  await p.clock.install({time:new Date(tid)});
+  await p.goto(`${ADR}/admin-ny.html#kalender`);await p.locator('.kalm').waitFor();
+  try{await hver(p,maaneder);}finally{assert.deepEqual(feil,[]);await c.close();}
+ };
+ // Over midnatt: kurset startet i går 22:00 og slutter 01:00. Klokka er 00:30.
+ await medData([hendelse(9001,'2026-11-09','22:00','01:00','Nattkurs')],'2026-11-09T23:30:00Z',async p=>{
+  const g=p.locator('.kalm-na.gaar');await g.waitFor();assert.ok((await g.innerText()).includes(`${s.tag} Nattkurs`),'kurs over midnatt går nå');
+  if(BILDER)await p.screenshot({path:`${BILDER}/390-over-midnatt.png`});
+ });
+ await medData([hendelse(9002,'2026-11-10','22:00','01:00','Kveldskurs')],'2026-11-10T22:30:00Z',async p=>{
+  const g=p.locator('.kalm-na.gaar');await g.waitFor();assert.ok((await g.innerText()).includes(`${s.tag} Kveldskurs`),'kurs som slutter etter midnatt går nå 23:30 samme dag');
+ });
+ console.log('390 px: «Går nå» regner kurs over midnatt riktig (før og etter midnatt)');
+ // Hvert minutt: 10:29 går kurset 10:00–10:30; to minutter senere er det slutt, og «Neste» står.
+ await medData([hendelse(9003,'2026-11-10','10:00','10:30','Formiddag'),hendelse(9004,'2026-11-10','14:00','16:00','Ettermiddag')],'2026-11-10T09:29:00Z',async p=>{
+  await p.locator('.kalm-na.gaar',{hasText:'Formiddag'}).waitFor();assert.ok((await p.locator('.kalm-na.neste').innerText()).includes('Ettermiddag'));
+  await p.clock.runFor(125000);
+  await p.locator('.kalm-na.gaar').waitFor({state:'detached',timeout:5000});
+  assert.ok((await p.locator('.kalm-na.neste').innerText()).includes('Ettermiddag'),'«Neste» står etter oppdateringen');
+  assert.equal(await p.locator('.kalm-na').count(),1);
+  // Når kalenderen ikke vises, stopper timeren: ingen nye kall og ingen feil.
+  await p.evaluate(()=>{location.hash='idag';});await p.locator('.kalm').waitFor({state:'detached'});
+  await p.clock.runFor(180000);
+ });
+ console.log('390 px: «Går nå» og «Neste» oppdateres hvert minutt');
+ // Neste fire måneder fram: hentes. Bare åtte måneder fram: ingen «Neste», og ingenting hentes lenger fram enn seks måneder.
+ await medData([hendelse(9005,'2027-03-15','18:00','20:00','Vårkurs')],'2026-11-10T09:00:00Z',async p=>{
+  const n=p.locator('.kalm-na.neste');await n.waitFor();assert.ok((await n.innerText()).includes(`${s.tag} Vårkurs`),'«Neste» fire måneder fram');
+ });
+ await medData([hendelse(9006,'2027-07-15','18:00','20:00','Sommerkurs')],'2026-11-10T09:00:00Z',async(p,maaneder)=>{
+  await p.locator('.kalm-styr').waitFor();await p.waitForTimeout(500);
+  assert.equal(await p.locator('.kalm-na.neste').count(),0,'ingen «Neste» lenger fram enn seks måneder');
+  assert.ok(maaneder.length&&maaneder.every(f=>f<'2027-06-01'),`hentet ikke lenger fram enn mai 2027: ${maaneder.join(', ')}`);
+  assert.ok(maaneder.includes('2027-05-01'),'letet til og med seks måneder fram');
+ });
+ console.log('390 px: «Neste» letes etter høyst seks måneder fram');
  assert.equal(fixture('inspect',s).varsler,0,'ingen SMS eller e-post');
  console.log('Ingen varsler lagt i køen.');
 }finally{await browser.close();if(s)fixture('cleanup',s);}

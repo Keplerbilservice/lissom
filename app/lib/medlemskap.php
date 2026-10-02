@@ -901,7 +901,7 @@ final class Medlemskap
      *   venter      meldt inn, men foerste betaling er ikke kommet enda
      *   ingen       ikke medlem — ingenting aa betale for
      */
-    public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null): array
+    public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null, ?string $idagFor = null): array
     {
         // To forskjellige spoersmaal, og de ble blandet:
         //
@@ -932,7 +932,8 @@ final class Medlemskap
             return $ut('ingen', '');
         }
 
-        $idag = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        // $idagFor er bare for testene.
+        $idag = $idagFor ?? (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $kort = static fn(string $d): string => Booking::norskDatoKort($d . ' 12:00:00');
 
         // ── Fast trekk i Vipps ──────────────────────────────────────────
@@ -1126,8 +1127,13 @@ final class Medlemskap
         }
         $inn = implode(',', array_map('intval', $abonnementIder));
         $ut = [];
+        // Forfallet og fristen i betalingsstatus() skal vaere de samme som
+        // tilgangen og Vipps bruker: det lagrede innholdet (migrasjon 243)
+        // og perioden (migrasjon 235), naar kolonnene finnes.
+        $ekstra = (DB::harKolonne('payments', 'gjelder_fra') ? ', p.gjelder_fra' : '')
+            . (DB::harKolonne('payments', 'trekk_foresporsel') ? ', p.trekk_foresporsel' : '');
         foreach (DB::alle(
-            "SELECT p.subscription_id, p.status, p.created_at, p.belop_ore
+            "SELECT p.subscription_id, p.status, p.created_at, p.belop_ore{$ekstra}
                FROM payments p
                JOIN (SELECT subscription_id, MAX(id) AS siste
                        FROM payments

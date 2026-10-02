@@ -14806,6 +14806,27 @@ try {
     DB::oppdater('payments', ['trekk_foresporsel' => json_encode(['forsok' => [['nokkel' => 'k', 'kropp' => $tdKropp31]]])], ['id' => $tdPay]);
     sjekk('… forfall 31. oktober: tilgang 5. november, ikke 6. november',
         Medlemskap::harBetaltPeriode($tdM, '2026-11-05') && !Medlemskap::harBetaltPeriode($tdM, '2026-11-06'));
+    // Kontrolloer, funn 1: admin leste ikke det lagrede innholdet (sisteTrekk()
+    // hentet ikke kolonnene) og regnet forfall paa nytt — «Trekket gikk ikke»
+    // en dag for tidlig etter et nytt forsoek. Nytt forsoek med forfall 4.10:
+    // admin sier «Trekk på vei» til og med 9.10, som tilgangen og Vipps.
+    DB::oppdater('payments', ['created_at' => '2026-09-30 22:10:00', 'trekk_foresporsel' => json_encode(['forsok' => [
+        ['nokkel' => 'k1', 'kropp' => $tdKropp],
+        ['nokkel' => 'k2', 'kropp' => Vipps::trekkKropp(259000, 'Medlemskap Årsmedlemskap · Trekkdato', '2026-10-04')],
+    ]])], ['id' => $tdPay]);
+    $tdAvt = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $tdSub]);
+    $tdSiste = Medlemskap::sisteTrekk([$tdSub])[$tdSub] ?? [];
+    $tdAdm = static fn(string $d): array => Medlemskap::betalingsstatus($tdM, $tdAvt, null, $tdSiste, $d);
+    sjekk('admin: sisteTrekk() tar med det lagrede innholdet og perioden',
+        isset($tdSiste['trekk_foresporsel'], $tdSiste['gjelder_fra']));
+    sjekk('… nytt forsoek med forfall 4.10: «Trekk på vei» 8.10 og 9.10',
+        $tdAdm('2026-10-08')['tilstand'] === 'bestilt' && $tdAdm('2026-10-09')['tilstand'] === 'bestilt'
+        && str_contains($tdAdm('2026-10-09')['tekst'], Booking::norskDatoKort('2026-10-04 12:00:00')),
+        $tdAdm('2026-10-08')['tekst']);
+    sjekk('… og «Trekket gikk ikke» foerst 10.10', $tdAdm('2026-10-10')['tilstand'] === 'forfalt'
+        && str_starts_with($tdAdm('2026-10-10')['tekst'], 'Trekket gikk ikke · forfall '));
+    sjekk('… samme frist som tilgangen', Medlemskap::harBetaltPeriode($tdM, '2026-10-09')
+        && !Medlemskap::harBetaltPeriode($tdM, '2026-10-10'));
     DB::oppdater('payments', ['trekk_foresporsel' => json_encode(['forsok' => [['nokkel' => 'k', 'kropp' => $tdKropp]]])], ['id' => $tdPay]);
     DB::oppdater('payments', ['status' => 'betalt'], ['id' => $tdPay]);
     sjekk('… CHARGED: betalt, tilgang ut maaneden', Medlemskap::harBetaltPeriode($tdM, '2026-10-20'));

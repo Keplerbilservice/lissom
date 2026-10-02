@@ -124,7 +124,7 @@ try {
     echo "\n── L-3: gavekortkjop_refundert ───────────────────────────────\n";
     $kort = static function (int $pid, int $saldo, int $verdi = 50000) use ($tag, &$rydd): int {
         $id = DB::settInn('gift_cards', ['kode' => strtoupper($tag) . '-' . bin2hex(random_bytes(3)), 'opprinnelig_ore' => $verdi,
-            'saldo_ore' => $saldo, 'gyldig_til' => gmdate('Y-m-d', time() + 365 * 86400), 'payment_id' => $pid,
+            'saldo_ore' => $saldo, 'gyldig_til' => gmdate('Y-m-d', time() + 365 * 86400), 'payment_id' => $pid > 0 ? $pid : null,
             'status' => $saldo > 0 ? 'aktivt' : 'brukt']);
         $rydd['gift_cards'][] = $id; return $id;
     };
@@ -213,6 +213,41 @@ try {
     Booking::refunderBetaling($p);
     sjekk('fornyelse 179000 oere refundert: avtalen stoppes ikke av seg selv', $rad('subscriptions', $s)['status'] === 'aktiv');
     sjekk('… men den flagges i loggen', $logget('medlemskap_refundert_flagg', 'member', $m));
+
+    // ── Codex runde 3 ──────────────────────────────────────────────────
+    echo "\n── Codex runde 3: barnetillegg og eldre uttak ────────────────\n";
+    // «Ta med barn»-ordre 20000 oere, tillegget aktivt. Full refusjon.
+    $m = $medlem('Barnetillegg', 'aktiv', $liten);
+    $p = $betaling(['formal' => 'ordre', 'member_id' => $m, 'belop_ore' => 20000]);
+    $o = DB::settInn('orders', ['ordrenr' => 'T-' . strtoupper(bin2hex(random_bytes(4))), 'member_id' => $m, 'kunde_navn' => 'Kunde',
+        'sum_ore' => 20000, 'status' => 'betalt', 'payment_id' => $p]);
+    $rydd['orders'][] = $o;
+    $t = DB::settInn('medlem_tillegg', ['member_id' => $m, 'maaned' => gmdate('Y-m'), 'pris_ore' => 20000, 'order_id' => $o,
+        'status' => 'aktiv', 'vilkaar_akseptert_at' => gmdate('Y-m-d H:i:s'), 'betalt_at' => gmdate('Y-m-d H:i:s')]);
+    Booking::refunderBetaling($p);
+    sjekk('barnetillegg 20000 refundert fullt: tillegget er avbrutt',
+        DB::verdi('SELECT status FROM medlem_tillegg WHERE id = :i', ['i' => $t]) === 'avbrutt');
+    DB::kjor('DELETE FROM medlem_tillegg WHERE id = :i', ['i' => $t]);
+
+    // To perioder paa samme avtale, begge 30000 fra samme kort, uttakene fra
+    // foer migrasjon 245 (uten betaling). Den andre refunderes fullt: ingen
+    // av de gamle uttakene kan knyttes til den, saa ingenting gis tilbake.
+    $m = $medlem('To perioder', 'aktiv', $liten);
+    $s = DB::settInn('subscriptions', ['member_id' => $m, 'plan' => $liten, 'pris_ore' => 179000, 'status' => 'aktiv']);
+    $rydd['subscriptions'][] = $s;
+    $k = $kort(0, 40000, 100000);
+    $p1 = $betaling(['formal' => 'medlemskap', 'member_id' => $m, 'subscription_id' => $s, 'belop_ore' => 149000,
+        'gavekort_id' => $k, 'gavekort_ore' => 30000]);
+    $p2 = $betaling(['formal' => 'medlemskap', 'member_id' => $m, 'subscription_id' => $s, 'belop_ore' => 149000,
+        'gavekort_id' => $k, 'gavekort_ore' => 30000]);
+    foreach ([1, 2] as $_) {
+        DB::settInn('gift_card_uses', ['gift_card_id' => $k, 'belop_ore' => 30000, 'ref_type' => 'medlemskap', 'ref_id' => $s]);
+    }
+    Booking::refunderBetaling($p2);
+    sjekk('eldre uttak paa samme avtale gis ikke tilbake for feil periode (saldo 40000)',
+        (int) $rad('gift_cards', $k)['saldo_ore'] === 40000, (string) $rad('gift_cards', $k)['saldo_ore']);
+    sjekk('… begge de gamle uttakene staar paa 30000', (int) DB::verdi(
+        'SELECT COUNT(*) FROM gift_card_uses WHERE gift_card_id = :k AND belop_ore = 30000', ['k' => $k]) === 2);
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 } finally {

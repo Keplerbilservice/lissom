@@ -1515,8 +1515,15 @@ final class Booking
                 if ($lager) {
                     self::leggTilbakeLager((int) $o['id']);
                 }
+                // «Ta med barn» (migrasjon 192) ble aktivt da ordren ble betalt
+                // (Tillegg::aktiverForOrdre()). Pengene er tilbake: tillegget
+                // gjelder ikke lenger.
+                $tillegg = DB::harTabell('medlem_tillegg') ? DB::kjor(
+                    "UPDATE medlem_tillegg SET status = 'avbrutt' WHERE order_id = :o AND status IN ('aktiv','venter')",
+                    ['o' => (int) $o['id']]
+                )->rowCount() : 0;
                 self::revisjon('ordre_refundert', 'ordre', (int) $o['id'],
-                    ['betaling' => $paymentId, 'lager_tilbake' => $lager]);
+                    ['betaling' => $paymentId, 'lager_tilbake' => $lager, 'tillegg_avbrutt' => $tillegg]);
             }
         }
 
@@ -2189,16 +2196,44 @@ final class Booking
     private static function egneUttak(int $paymentId, int $kortId): ?array
     {
         [$refType, $refId] = self::gavekortSpor($paymentId);
+        $entydig = $refId > 0 && self::entydigSpor($paymentId, $kortId, $refType, $refId);
         if (self::harBetalingsspor()) {
-            return ['gift_card_id = :k AND (payment_id = :p
+            // Eldre rader bare naar ingen annen betaling med samme kort har
+            // samme spor (Codex runde 3: et medlemskap har mange perioder paa
+            // samme avtale, og en eldre periodes uttak skal ikke gis tilbake
+            // naar en annen periode refunderes).
+            return $entydig
+                ? ['gift_card_id = :k AND (payment_id = :p
                       OR (payment_id IS NULL AND ref_type = :t AND ref_id = :r))',
-                    ['k' => $kortId, 'p' => $paymentId, 't' => $refType, 'r' => $refId]];
+                   ['k' => $kortId, 'p' => $paymentId, 't' => $refType, 'r' => $refId]]
+                : ['gift_card_id = :k AND payment_id = :p', ['k' => $kortId, 'p' => $paymentId]];
         }
-        if ($refId <= 0) {
+        if (!$entydig) {
             return null;
         }
         return ['gift_card_id = :k AND ref_type = :t AND ref_id = :r',
                 ['k' => $kortId, 't' => $refType, 'r' => $refId]];
+    }
+
+    /**
+     * Er sporet (ref_type, ref_id) bare denne betalingens? Nei naar en annen
+     * betaling med det samme kortet peker paa samme booking, ordre eller
+     * avtale — da kan en eldre rad uten betaling ikke knyttes til én av dem.
+     */
+    private static function entydigSpor(int $paymentId, int $kortId, string $refType, int $refId): bool
+    {
+        if ($refType === 'betaling') {
+            return $refId === $paymentId;
+        }
+        foreach (DB::alle(
+            'SELECT id FROM payments WHERE gavekort_id = :k AND id <> :p AND gavekort_ore > 0',
+            ['k' => $kortId, 'p' => $paymentId]
+        ) as $annen) {
+            if (self::gavekortSpor((int) $annen['id']) === [$refType, $refId]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

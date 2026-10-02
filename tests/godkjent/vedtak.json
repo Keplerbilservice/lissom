@@ -2692,6 +2692,64 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nytt-medlemskap-etter-20",
+            "dato": "2026-10-02",
+            "hva": "Et NYTT medlemskap (ikke Prøv Lissom, ikke «Forny» eller oppgradering) kjøpt den 21. eller senere (norsk tid) gjelder neste kalendermåned. Tilgang gis med en gang (resten av måneden er gratis), og månedstimene telles for neste måned. Fast trekk: første trekk gjelder neste måned, og neste trekk er måneden etter den. Migrasjon 243 retter Johanna og andre slike første betalinger.",
+            "hvor": "Innmelding (Vipps, fast trekk, Kassa), medlemstilgang, månedstimer",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public const NYTT_SISTE_DAG = 20;",
+                        "$gjelderFra = self::gjelderFraNytt((int) $medlem['id'], $planNavn);",
+                        "self::foerForsteTrekk($avtale, $forsteFra);",
+                        "if ($fra > $idag && self::erForskuttert($betaling)) {"
+                    ]
+                },
+                {
+                    "fil": "app/lib/stempling.php",
+                    "finnes": [
+                        "$fra = Medlemskap::timerTellesFra($medlemId, self::manedStart());"
+                    ]
+                },
+                {
+                    "fil": "tests/nytt-etter-20.php",
+                    "finnes": [
+                        "Johanna: kjoept 29. september gjelder fra 1. oktober",
+                        "neste trekk er 25. november — ikke 25. oktober",
+                        "«Forny» uendret: bare timene denne maaneden teller (én time)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "prov-lissom-sluttet",
+            "dato": "2026-10-02",
+            "hva": "Prøv Lissom som er over vises som «Prøv Lissom sluttet <dato>» (egen status «over»), ikke «Betalt» og ikke «Venter på betaling». Den er ute av «Ikke betalt» i Kassa og tellingen, purres ikke, og Min side tilbyr medlemskap.",
+            "hvor": "Admin medlemmer, Oversikt/Kassa, Min side",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public static function proveSluttet(array $medlem, ?string $idag = null): ?string",
+                        "return $ut('over', $pNavn . ' sluttet ' . $kort($sluttet), false, false);"
+                    ]
+                },
+                {
+                    "fil": "api/meg.php",
+                    "finnes": [
+                        "$betalingMangler = Medlemskap::betalingMangler($m, $harTilgang);"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "forfalt: 'Forfalt', venter: 'Ikke betalt', over: 'Sluttet' };"
+                    ]
+                }
+            ]
         }
     ]
 }

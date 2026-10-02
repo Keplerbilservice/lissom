@@ -327,6 +327,248 @@ final class Medlemskap
             ->modify('first day of next month')->format('Y-m-d');
     }
 
+    // ── Nytt medlemskap kjoept etter den 20. ────────────────────────────
+    //
+    // Eieren, 2. oktober 2026 (Johanna, Mini 15 kjoept 29. september): et
+    // NYTT medlemskap som kjoepes den 21. eller senere, gjelder NESTE
+    // kalendermaaned. Tilgangen gis med en gang — resten av maaneden er
+    // gratis — og maanedstimene telles for neste maaned. Engangsplanen
+    // (Prøv Lissom) gjelder fortsatt kjoepsmaaneden, og «Forny» og
+    // oppgradering er ikke nye medlemskap.
+
+    /** Siste dag i maaneden et nytt medlemskap teller for kjoepsmaaneden. */
+    public const NYTT_SISTE_DAG = 20;
+
+    /**
+     * gjelder_fra for den foerste betalingen paa et NYTT medlemskap, eller
+     * null naar betalingen skal telle som foer (kjoepsmaaneden).
+     *
+     * @param string|null $kjopt kjoepstidspunktet i UTC (databasens klokke);
+     *                           null = naa
+     * @param string|null $naa   naa i UTC, for testene; null = klokka
+     */
+    public static function gjelderFraNytt(int $medlemId, string $planNavn, ?string $kjopt = null, ?string $naa = null): ?string
+    {
+        $plan = self::planUansett(trim($planNavn));
+        if ($plan === null || (int) ($plan['engangs'] ?? 0) === 1) {
+            return null;
+        }
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc  = new DateTimeZone('UTC');
+        $kjop = ($kjopt === null || trim($kjopt) === '')
+            ? new DateTimeImmutable($naa ?? 'now', $utc)
+            : new DateTimeImmutable($kjopt, $utc);
+        $kjopUtc = $kjop->setTimezone($utc)->format('Y-m-d H:i:s');
+        $kjop = $kjop->setTimezone($oslo);
+        if ((int) $kjop->format('j') <= self::NYTT_SISTE_DAG) {
+            return null;
+        }
+        $fra = $kjop->modify('first day of next month')->format('Y-m-d');
+
+        // Kommer den foerste betalingen foerst etter at den nye maaneden er
+        // over, teller den maaneden den betales i — som foer.
+        $idag = (new DateTimeImmutable($naa ?? 'now', $utc))->setTimezone($oslo)->format('Y-m-d');
+        if ($idag >= self::dekkerTil(['gjelder_fra' => $fra])) {
+            return null;
+        }
+
+        // Har hen alt en betalt periode som loeper (oppgradering, bytte), er
+        // det ikke et nytt medlemskap. Proeveperioden teller ikke.
+        if ($medlemId > 0 && self::harLoependePeriode($medlemId, $kjop->format('Y-m-d'), 0, $kjopUtc)) {
+            return null;
+        }
+        return $fra;
+    }
+
+    /**
+     * Har medlemmet en betalt periode paa et loepende medlemskap (ikke
+     * engangsplan) som dekker $dato (Y-m-d, Oslo)?
+     */
+    private static function harLoependePeriode(int $medlemId, string $dato, int $utenId = 0, ?string $foer = null): bool
+    {
+        $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
+        // Bare betalinger som fantes da (foer kjoepet): en senere «Forny»
+        // gjoer ikke et nytt medlemskap til et gammelt i ettertid.
+        $foerSql = $foer !== null ? 'AND p.created_at < :f' : '';
+        $param = ['m' => $medlemId, 'u' => $utenId];
+        if ($foer !== null) {
+            $param['f'] = $foer;
+        }
+        $rader = DB::alle(
+            "SELECT p.created_at, {$fraKol}, mp.engangs
+               FROM payments p
+          LEFT JOIN subscriptions s ON s.id = p.subscription_id
+          LEFT JOIN membership_plans mp ON mp.navn = s.plan
+              WHERE p.member_id = :m AND p.formal = 'medlemskap' AND p.id <> :u
+                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                {$foerSql}
+                {$utenTimepakke}",
+            $param
+        );
+        foreach ($rader as $r) {
+            if ((int) ($r['engangs'] ?? 0) === 1) {
+                continue;
+            }
+            if (self::dekkerTil($r) > $dato) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Er betalingen den foerste paa et nytt medlemskap kjoept etter den 20.?
+     * Da gjelder den neste maaned (gjelder_fra), men gir tilgang fra
+     * kjoepsdagen. Kjennes paa formen: gjelder_fra er den 1. i maaneden
+     * etter betalingsdagen, og betalingsdagen er etter den 20. (Oslo).
+     *
+     * @param array<string,mixed> $betaling created_at + gjelder_fra
+     */
+    public static function erForskuttert(array $betaling): bool
+    {
+        $fra = trim((string) ($betaling['gjelder_fra'] ?? ''));
+        $laget = trim((string) ($betaling['created_at'] ?? ''));
+        if ($fra === '' || $laget === '') {
+            return false;
+        }
+        $dag = (new DateTimeImmutable($laget, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'));
+        return (int) $dag->format('j') > self::NYTT_SISTE_DAG
+            && $dag->modify('first day of next month')->format('Y-m-d') === substr($fra, 0, 10);
+    }
+
+    /**
+     * Fra naar (UTC) maanedstimene skal telles denne maaneden. Normalt den
+     * 1. i norsk tid; har medlemmet et nytt medlemskap kjoept etter den 20.
+     * forrige maaned, telles timene fra kjoepet — de hoerer til denne
+     * maaneden, ikke til en ekstra.
+     */
+    public static function timerTellesFra(int $medlemId, string $manedStart): string
+    {
+        if ($medlemId <= 0 || !DB::harKolonne('payments', 'gjelder_fra')) {
+            return $manedStart;
+        }
+        $denne = (new DateTimeImmutable($manedStart, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+        $rader = DB::alle(
+            "SELECT id, created_at, gjelder_fra FROM payments
+              WHERE member_id = :m AND formal = 'medlemskap'
+                AND status IN ('betalt','delvis_refundert') AND annullert_at IS NULL
+                AND gjelder_fra = :fra AND created_at < :start",
+            ['m' => $medlemId, 'fra' => $denne, 'start' => $manedStart]
+        );
+        $fra = $manedStart;
+        foreach ($rader as $r) {
+            if (!self::erForskuttert($r) || (string) $r['created_at'] >= $fra) {
+                continue;
+            }
+            // Bare et NYTT medlemskap. En «Forny» betalt foer maanedsskiftet
+            // har samme form, men da var forrige maaned alt betalt — og
+            // timene der hoerer til den.
+            $kjopt = (new DateTimeImmutable((string) $r['created_at'], new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+            if (self::harLoependePeriode($medlemId, $kjopt, (int) $r['id'], (string) $r['created_at'])) {
+                continue;
+            }
+            $fra = (string) $r['created_at'];
+        }
+        return $fra;
+    }
+
+    /**
+     * gjelder_fra for en betaling verkstedet registrerer for haand (Kassa,
+     * «Ta betalt»): bare naar det er den foerste betalingen paa et nytt
+     * medlemskap. Kjoepet er avtalen (startIVerkstedet) eller innmeldingen.
+     */
+    public static function gjelderFraForsteBetaling(int $medlemId): ?string
+    {
+        $m = DB::en('SELECT medlemskap_type, start_dato FROM members WHERE id = :i', ['i' => $medlemId]);
+        if ($m === null) {
+            return null;
+        }
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
+        $avtale = DB::en(
+            "SELECT id, plan, created_at FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
+            ['m' => $medlemId]
+        );
+        if ($avtale !== null) {
+            $for = (int) DB::verdi(
+                "SELECT COUNT(*) FROM payments p
+                  WHERE p.subscription_id = :s AND p.formal = 'medlemskap'
+                    AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                    {$utenTimepakke}",
+                ['s' => (int) $avtale['id']]
+            );
+            return $for > 0 ? null
+                : self::gjelderFraNytt($medlemId, (string) $avtale['plan'], (string) $avtale['created_at']);
+        }
+        $start = trim((string) ($m['start_dato'] ?? ''));
+        if ($start === '') {
+            return null;
+        }
+        $for = (int) DB::verdi(
+            "SELECT COUNT(*) FROM payments p
+              WHERE p.member_id = :m AND p.formal = 'medlemskap'
+                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                AND p.created_at >= :start
+                {$utenTimepakke}",
+            ['m' => $medlemId, 'start' => substr($start, 0, 10) . ' 00:00:00']
+        );
+        return $for > 0 ? null
+            : self::gjelderFraNytt($medlemId, (string) ($m['medlemskap_type'] ?? ''), substr($start, 0, 10) . ' 12:00:00');
+    }
+
+    // ── Prøv Lissom som er over ──────────────────────────────────────
+    //
+    // Eieren, 2. oktober 2026 (Ida, Prøv Lissom kjoept 7. september): en
+    // proeveperiode som er over, er verken «Betalt» eller «Venter paa
+    // betaling». Den skal staa som sluttet, ikke i lista over dem som skylder,
+    // og ikke purres. Min side tilbyr medlemskap som for en som ikke er medlem.
+
+    /**
+     * Siste dag i proeveperioden (Y-m-d) naar medlemmet staar paa en
+     * engangsplan som er over; ellers null.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function proveSluttet(array $medlem, ?string $idag = null): ?string
+    {
+        if (!in_array((string) ($medlem['status'] ?? ''), ['prove', 'aktiv', 'pause'], true)) {
+            return null;
+        }
+        if (!self::erEngangs((string) ($medlem['medlemskap_type'] ?? ''))) {
+            return null;
+        }
+        $slutt = trim((string) ($medlem['slutt_dato'] ?? ''));
+        if ($slutt === '') {
+            $start = trim((string) ($medlem['start_dato'] ?? ''));
+            if ($start === '') {
+                return null;
+            }
+            $slutt = self::proveSlutt($start);
+        }
+        $slutt = substr($slutt, 0, 10);
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        return $idag > $slutt ? $slutt : null;
+    }
+
+    /**
+     * Mangler medlemmet betaling? Nei for en proeveperiode som er over — den
+     * er ferdig, ikke ubetalt. Samme regel for admin, Kassa og Min side.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function betalingMangler(array $medlem, bool $harTilgang): bool
+    {
+        return !$harTilgang
+            && in_array((string) ($medlem['status'] ?? ''), ['prove', 'aktiv', 'pause'], true)
+            && self::proveSluttet($medlem) === null;
+    }
+
     /** Betalt tilgang, uavhengig av om avtalen fortsatt står som aktiv. */
     public static function harBetaltPeriode(array $medlem, ?string $idag = null): bool
     {
@@ -360,6 +602,17 @@ final class Medlemskap
             }
             if ((int) ($plan['engangs'] ?? 0) !== 1) {
                 $fra = (new DateTimeImmutable($fra))->modify('first day of this month')->format('Y-m-d');
+                // Nytt medlemskap kjoept etter den 20.: perioden er neste
+                // maaned, men tilgangen gjelder fra kjoepsdagen (eieren,
+                // 2. oktober 2026). Bare den formen — en annen betaling
+                // fram i tid dekker fortsatt ikke et hull naa.
+                if ($fra > $idag && self::erForskuttert($betaling)) {
+                    $kjopt = (new DateTimeImmutable((string) $betaling['created_at'], new DateTimeZone('UTC')))
+                        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+                    if ($kjopt <= $idag) {
+                        return true;
+                    }
+                }
             }
             if ($fra > $idag) continue;
             if ((int) ($plan['engangs'] ?? 0) === 1) {
@@ -899,6 +1152,7 @@ final class Medlemskap
      *               — Vipps krever forvarsel, saa det tar noen dager
      *   forfalt     perioden er ute og det er ikke betalt
      *   venter      meldt inn, men foerste betaling er ikke kommet enda
+     *   over        proeveperioden (engangsplan) er over — ingenting skyldes
      *   ingen       ikke medlem — ingenting aa betale for
      */
     public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null, ?string $idagFor = null): array
@@ -935,6 +1189,18 @@ final class Medlemskap
         // $idagFor er bare for testene.
         $idag = $idagFor ?? (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $kort = static fn(string $d): string => Booking::norskDatoKort($d . ' 12:00:00');
+
+        // ── Proeveperioden er over ──────────────────────────────────────
+        //
+        // Eieren, 2. oktober 2026 (Ida): ikke «Betalt», ikke «Venter paa
+        // betaling», men at den er sluttet. Ikke utestaaende — da staar hun
+        // ikke i «Ikke betalt» i Kassa, og telles ikke som ubetalt.
+        $sluttet = self::proveSluttet($medlem, $idag);
+        if ($sluttet !== null) {
+            $pNavn = (string) (self::planUansett((string) ($medlem['medlemskap_type'] ?? ''))['navn']
+                ?? $medlem['medlemskap_type']);
+            return $ut('over', $pNavn . ' sluttet ' . $kort($sluttet), false, false);
+        }
 
         // ── Fast trekk i Vipps ──────────────────────────────────────────
         //
@@ -1540,7 +1806,7 @@ final class Medlemskap
         ]);
 
         $referanse = Vipps::nyReferanse('MED');
-        $betalingId = DB::settInn('payments', [
+        $forsteRad = [
             'vipps_reference' => $referanse,
             'type'            => 'epayment',
             'formal'          => 'medlemskap',
@@ -1556,7 +1822,14 @@ final class Medlemskap
             // oppretter en betaling setter noekkelen; dette var det ene som
             // ikke gjorde det.
             'idempotency_key' => Vipps::uuid(),
-        ]);
+        ];
+        // Nytt medlemskap kjoept etter den 20.: betalingen gjelder neste
+        // maaned (eieren, 2. oktober 2026). Se gjelderFraNytt().
+        $gjelderFra = self::gjelderFraNytt((int) $medlem['id'], $planNavn);
+        if ($gjelderFra !== null && DB::harKolonne('payments', 'gjelder_fra')) {
+            $forsteRad['gjelder_fra'] = $gjelderFra;
+        }
+        $betalingId = DB::settInn('payments', $forsteRad);
 
         try {
             $betaling = Vipps::opprettBetaling(
@@ -1746,8 +2019,9 @@ final class Medlemskap
      * Kalles bade naar kunden kommer tilbake og fra cron. Den er trygg aa
      * kjore flere ganger.
      */
-    public static function oppdaterFraVipps(array $avtale): string
+    public static function oppdaterFraVipps(array $avtale, ?string $naa = null): string
     {
+        // $naa (UTC, 'Y-m-d H:i:s') er bare for testene; ellers klokka.
         $id = (string) $avtale['vipps_agreement_id'];
         if ($id === '') {
             return (string) $avtale['status'];
@@ -1796,11 +2070,24 @@ final class Medlemskap
         // Neste trekk er derfor en maaned fram, regnet av samme regel som
         // resten: dagen huskes, saa den 31. blir 28. i februar og 31. igjen
         // i mars.
+        //
+        // Nytt medlemskap kjoept etter den 20. (eieren, 2. oktober 2026):
+        // foerste trekk gjelder neste maaned, saa neste trekk er maaneden
+        // etter den — ellers ble den samme maaneden betalt to ganger.
+        // Kjoepet er da avtalen ble opprettet, ikke da den ble godkjent.
+        $forsteFra = null;
         if ($ny === 'aktiv' && $avtale['neste_trekk'] === null) {
-            $endring['neste_trekk'] = self::nesteTrekkdato(
-                (new DateTimeImmutable('now'))->format('Y-m-d'),
-                $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null
+            $forsteFra = self::gjelderFraNytt(
+                (int) $avtale['member_id'],
+                (string) $avtale['plan'],
+                isset($avtale['created_at']) ? (string) $avtale['created_at'] : null,
+                $naa
             );
+            $idagDato = (new DateTimeImmutable($naa ?? 'now'))->format('Y-m-d');
+            $dag = $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;
+            $endring['neste_trekk'] = $forsteFra !== null
+                ? self::nesteTrekkdato($forsteFra, $dag ?? (int) substr($idagDato, 8, 2))
+                : self::nesteTrekkdato($idagDato, $dag);
         }
         if ($ny !== 'aktiv') {
             $endring['neste_trekk'] = null;
@@ -1817,7 +2104,7 @@ final class Medlemskap
         // Kjores runden to ganger, skal raden bare bli til én: noekkelen er
         // trekkets egen id hos Vipps.
         if ($ny === 'aktiv' && $avtale['neste_trekk'] === null) {
-            self::foerForsteTrekk($avtale);
+            self::foerForsteTrekk($avtale, $forsteFra);
         }
 
         // Medlemsstatusen folger avtalen. Uten dette ville noen betalt uten aa
@@ -1873,7 +2160,7 @@ final class Medlemskap
      * Noekkelen er charge-id-en fra Vipps. Kjorer dette to ganger — to faner,
      * to runder — blir det likevel én rad.
      */
-    private static function foerForsteTrekk(array $avtale): void
+    private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): void
     {
         $avtaleId = (string) ($avtale['vipps_agreement_id'] ?? '');
         if ($avtaleId === '') {
@@ -1913,7 +2200,7 @@ final class Medlemskap
             default                    => 'venter',
         };
 
-        DB::settInn('payments', [
+        $rad = [
             'vipps_reference' => Vipps::nyReferanse('MED'),
             'vipps_psp_ref'   => $trekkId,
             'type'            => 'recurring_charge',
@@ -1923,7 +2210,12 @@ final class Medlemskap
             'belop_ore'       => (int) ($forste['amount'] ?? $avtale['pris_ore']),
             'status'          => $vaar,
             'idempotency_key' => $nokkel,
-        ]);
+        ];
+        // Nytt medlemskap kjoept etter den 20.: trekket gjelder neste maaned.
+        if ($gjelderFra !== null && DB::harKolonne('payments', 'gjelder_fra')) {
+            $rad['gjelder_fra'] = $gjelderFra;
+        }
+        DB::settInn('payments', $rad);
     }
 
     public static function slippForsteTrekk(int $medlemId): array

@@ -1337,7 +1337,11 @@ if (Foresporsel::metode() === 'POST') {
             ['m' => $id]
         );
         $adminId = (int) $jeg['id'];
-        [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $id, $avtale, $kort, $adminId): array {
+        // Foerste betaling paa et nytt medlemskap kjoept etter den 20.
+        // gjelder neste maaned (eieren, 2. oktober 2026).
+        $gjelderFra = DB::harKolonne('payments', 'gjelder_fra')
+            ? Medlemskap::gjelderFraForsteBetaling($id) : null;
+        [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $id, $avtale, $kort, $adminId, $gjelderFra): array {
             $ider = [];
             $gaveRad = null;
             foreach ($deler as $i => $d) {
@@ -1364,6 +1368,9 @@ if (Foresporsel::metode() === 'POST') {
                 }
                 if (DB::harKolonne('payments', 'registrert_av')) {
                     $felt['registrert_av'] = $adminId;
+                }
+                if ($gjelderFra !== null) {
+                    $felt['gjelder_fra'] = $gjelderFra;
                 }
                 $bid = DB::settInn('payments', $felt);
                 $ider[] = $bid;
@@ -1509,6 +1516,12 @@ if (Foresporsel::metode() === 'POST') {
         }
         if (DB::harKolonne('payments', 'kommentar')) {
             $felt['kommentar'] = mb_substr(trim(Foresporsel::tekst('kommentar')), 0, 300) ?: null;
+        }
+        // Foerste betaling paa et nytt medlemskap kjoept etter den 20.
+        // gjelder neste maaned (eieren, 2. oktober 2026).
+        if (DB::harKolonne('payments', 'gjelder_fra')
+            && ($gjelderFra = Medlemskap::gjelderFraForsteBetaling($id)) !== null) {
+            $felt['gjelder_fra'] = $gjelderFra;
         }
         $betalingId = DB::settInn('payments', $felt);
 
@@ -2087,7 +2100,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 return $ore > 0 ? Booking::kroner($ore) : '';
             })(),
             'status'     => $m['status'],
-    'betalingMangler' => !er_aktivt_medlem($m) && in_array((string) $m['status'], ['prove','aktiv','pause'], true),
+    'betalingMangler' => Medlemskap::betalingMangler($m, er_aktivt_medlem($m)),
             // Uten konto er det ingen Min side aa vise, ingen medlemskap aa
             // endre, og notatet hoerer til paameldingen. Skjermen maa vite
             // det — ellers tilbyr den ting som ikke finnes.
@@ -2425,7 +2438,7 @@ $betalerKol .= DB::harKolonne('members', 'ser_dugnad') ? ', ser_dugnad' : ', 0 A
 
 $medlemmer = DB::alle(
     "SELECT id, navn, epost, telefon, rolle, medlemskap_type, status,
-            start_dato, timer_per_mnd, created_at, {$betalerKol}
+            start_dato, slutt_dato, timer_per_mnd, created_at, {$betalerKol}
        FROM members
       WHERE {$hvor}
       ORDER BY navn
@@ -2462,6 +2475,25 @@ foreach (DB::alle(
 ) as $r) {
     $mid = (int) $r['member_id'];
     $brukt[$mid] = max(0, ($brukt[$mid] ?? 0) - Stempling::proveFradrag($mid));
+}
+// Nytt medlemskap kjoept etter den 20. forrige maaned: timene fra kjoepet
+// teller paa denne maaneden, samme regel som Min side — se
+// Medlemskap::timerTellesFra(). Bare de faa det gjelder.
+if (DB::harKolonne('payments', 'gjelder_fra')) {
+    $denneMnd = (new DateTimeImmutable($fra, new DateTimeZone('UTC')))
+        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+    foreach (DB::alle(
+        "SELECT DISTINCT member_id FROM payments
+          WHERE formal = 'medlemskap' AND status IN ('betalt','delvis_refundert')
+            AND annullert_at IS NULL AND gjelder_fra = :g AND created_at < :fra
+            AND member_id IS NOT NULL",
+        ['g' => $denneMnd, 'fra' => $fra]
+    ) as $r) {
+        $mid = (int) $r['member_id'];
+        if (Medlemskap::timerTellesFra($mid, $fra) < $fra) {
+            $brukt[$mid] = Stempling::minutterDenneManeden($mid);
+        }
+    }
 }
 
 // «Ta med barn» (migrasjon 192): aktivt tillegg denne maaneden, per medlem.
@@ -2620,7 +2652,7 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     // medlemmer saa admin ser dette».
     'barn'       => isset($tilleggBarn[(int) $m['id']]) ? Tillegg::ut($tilleggBarn[(int) $m['id']]) : null,
     'status'     => $m['status'],
-    'betalingMangler' => !er_aktivt_medlem($m) && in_array((string) $m['status'], ['prove','aktiv','pause'], true),
+    'betalingMangler' => Medlemskap::betalingMangler($m, er_aktivt_medlem($m)),
     'startDato'  => $m['start_dato'],
     // Planen bestemmer timetallet, medlemsraden overstyrer. «timer_per_mnd»
     // alene sto tom for alle — se Medlemskap::timerFor().

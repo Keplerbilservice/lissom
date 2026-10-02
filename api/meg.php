@@ -31,7 +31,10 @@ $soknad = DB::en(
 // eller den ekte koden aapent i kildekoden til nettsiden.
 $internInfo = [];
 $harTilgang = er_aktivt_medlem($m);
-$betalingMangler = !$harTilgang && in_array((string) $m['status'], ['prove', 'aktiv', 'pause'], true);
+// En proeveperiode som er over, mangler ikke betaling — den er ferdig, og
+// Min side tilbyr medlemskap som for alle som ikke er medlem. Se
+// Medlemskap::betalingMangler() (eieren, 2. oktober 2026).
+$betalingMangler = Medlemskap::betalingMangler($m, $harTilgang);
 if (er_aktivt_medlem($m)) {
     foreach (DB::alle("SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'Privat/%'") as $r) {
         $internInfo[substr((string) $r['nokkel'], 7)] = (string) $r['verdi'];

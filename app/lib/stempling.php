@@ -190,7 +190,10 @@ final class Stempling
     /** Brukte minutter denne maaneden, inkludert okta som paagaar naa. */
     public static function minutterDenneManeden(int $medlemId): int
     {
-        $fra = self::manedStart();
+        // Nytt medlemskap kjoept etter den 20. forrige maaned: timene fra
+        // kjoepet teller paa denne maaneden, saa de ikke dobles (eieren,
+        // 2. oktober 2026). Se Medlemskap::timerTellesFra().
+        $fra = Medlemskap::timerTellesFra($medlemId, self::manedStart());
 
         $ferdige = (int) DB::verdi(
             'SELECT COALESCE(SUM(minutter), 0) FROM check_ins

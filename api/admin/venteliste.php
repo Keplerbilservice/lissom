@@ -289,8 +289,15 @@ switch (Foresporsel::tekst('handling')) {
     case 'gi-plass':
         $oktId = Foresporsel::heltall('oktId');
 
+        // Prisen paa datoen gaar foran prisen paa kurset — samme uttrykk som
+        // en paamelding lagt inn for haand. Her sto bare kursets pris.
+        $prisKol = DB::harKolonne('course_sessions', 'pris_ore')
+            ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
+        $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa')
+            ? 'c.gjenstand_i_kassa' : '0 AS gjenstand_i_kassa';
         $okt = DB::en(
-            "SELECT cs.id, cs.course_id, cs.start_tid, cs.status, c.tittel, c.pris_ore
+            "SELECT cs.id, cs.course_id, cs.start_tid, cs.status, c.tittel, c.tema, c.slug,
+                    {$kassaFelt}, {$prisKol} AS pris_ore
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.id = :o",
@@ -308,32 +315,73 @@ switch (Foresporsel::tekst('handling')) {
             Svar::feil('Den datoen er avlyst.');
         }
 
+        // ── L-8: medlemmet beholder medlemsrabatten ─────────────────────
+        //
+        // Ventelista har ingen medlemskobling. Bookinga ble derfor alltid en
+        // gjest til full pris — ogsaa naar det var et medlem som ga fra seg
+        // plassen og fikk den tilbake. Passer e-posten eller telefonen til
+        // nøyaktig ett medlem, hoerer plassen til det medlemmet, med
+        // medlemsrabatten om hen har den (Booking::faarMedlemsrabatt()).
+        $medlem = null;
+        $epost = trim((string) ($rad['epost'] ?? ''));
+        $tlf = normaliser_telefon((string) ($rad['telefon'] ?? ''));
+        if ($epost !== '' || $tlf !== '') {
+            $treff = DB::alle(
+                'SELECT * FROM members
+                  WHERE anonymisert_at IS NULL
+                    AND ((:e1 <> \'\' AND epost = :e2) OR (:t1 <> \'\' AND telefon = :t2))
+                  LIMIT 2',
+                ['e1' => $epost, 'e2' => $epost, 't1' => $tlf, 't2' => $tlf]
+            );
+            $medlem = count($treff) === 1 ? $treff[0] : null;
+        }
+        $pris = Booking::belopFor($okt, 1, Booking::faarMedlemsrabatt($medlem));
+
         // Plassen maa finnes. Uten sjekken kunne to fra lista faa den samme
         // stolen, og det oppdages foerst den kvelden.
-        if (Booking::ledigePlasser($oktId) < 1) {
-            Svar::feil('Den datoen er full nå. Velg en annen, eller varsle i stedet.');
+        //
+        // L-8: sjekken staar i transaksjonen, under laas paa okta — samme
+        // laaser som et kjoep paa nettsida tar. Uten den leste to samtidige
+        // «gi plass» det samme bildet, og begge fikk den siste stolen.
+        try {
+            $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $rad, $id, $medlem, $pris): int {
+                if (Booking::ledigePlasser($oktId, true) < 1) {
+                    throw new RuntimeException('Den datoen er full nå. Velg en annen, eller varsle i stedet.', 409);
+                }
+                // Samme person to ganger (dobbelttrykk): bare den foerste.
+                $status = DB::verdi('SELECT status FROM waitlist WHERE id = :i FOR UPDATE', ['i' => $id]);
+                if (!in_array((string) $status, ['venter', 'varslet'], true)) {
+                    throw new RuntimeException($rad['navn'] . ' står ikke lenger på ventelista.', 409);
+                }
+                $felt = [
+                    'course_id'         => (int) $okt['course_id'],
+                    'course_session_id' => $oktId,
+                    'member_id'         => $medlem !== null ? (int) $medlem['id'] : null,
+                    'gjest_navn'        => $rad['navn'],
+                    'gjest_epost'       => $rad['epost'] ?: null,
+                    'gjest_telefon'     => $rad['telefon'] ?: null,
+                    'antall'            => 1,
+                    'belop_ore'         => (int) $pris['netto'],
+                    // Ikke betalt enda. «Betalt» her ville satt et beloep i
+                    // regnskapet for penger som ikke har kommet.
+                    'status'            => 'reservert',
+                    'betalt_maate'      => 'Betaler ved oppmøte',
+                    'notat'             => 'Fra ventelista',
+                    'reservert_til'     => null,
+                ];
+                if (DB::harKolonne('bookings', 'rabatt_prosent')) {
+                    $felt['rabatt_prosent'] = $pris['rabatt'];
+                }
+                $bookingId = DB::settInn('bookings', $felt);
+                DB::oppdater('waitlist', ['status' => 'booket'], ['id' => $id]);
+                return $bookingId;
+            });
+        } catch (RuntimeException $e) {
+            if ($e->getCode() !== 409) {
+                throw $e;
+            }
+            Svar::feil($e->getMessage(), 409);
         }
-
-        $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $rad): int {
-            return DB::settInn('bookings', [
-                'course_id'         => (int) $okt['course_id'],
-                'course_session_id' => $oktId,
-                'member_id'         => null,
-                'gjest_navn'        => $rad['navn'],
-                'gjest_epost'       => $rad['epost'] ?: null,
-                'gjest_telefon'     => $rad['telefon'] ?: null,
-                'antall'            => 1,
-                'belop_ore'         => (int) $okt['pris_ore'],
-                // Ikke betalt enda. «Betalt» her ville satt et beloep i
-                // regnskapet for penger som ikke har kommet.
-                'status'            => 'reservert',
-                'betalt_maate'      => 'Betaler ved oppmøte',
-                'notat'             => 'Fra ventelista',
-                'reservert_til'     => null,
-            ]);
-        });
-
-        DB::oppdater('waitlist', ['status' => 'booket'], ['id' => $id]);
 
         // Hen skal vite det. En plass ingen har fortalt om, er ingen plass.
         $varslet = false;
@@ -364,6 +412,8 @@ switch (Foresporsel::tekst('handling')) {
             'booking' => $bookingId,
             'okt'     => $oktId,
             'kurs'    => $okt['tittel'],
+            'medlem'  => $medlem !== null ? (int) $medlem['id'] : null,
+            'belop_ore' => (int) $pris['netto'],
             // Sto hun paa lista til noe annet, skal det staa hva.
             'ventet_paa' => (int) $okt['course_id'] === (int) $rad['course_id']
                 ? null : $rad['tittel'],

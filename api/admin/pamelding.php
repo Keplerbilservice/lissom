@@ -217,11 +217,19 @@ if ($handling === 'til-venteliste') {
 if ($handling === 'flytt') {
     $tilOkt = Foresporsel::heltall('oktId');
 
+    // Prisen paa datoen gaar foran prisen paa kurset — samme uttrykk som
+    // «legg til» og Booking::reserverOgBetal().
+    $prisKol = static fn (string $cs, string $c): string => DB::harKolonne('course_sessions', 'pris_ore')
+        ? "COALESCE({$cs}.pris_ore, {$c}.pris_ore)" : "{$c}.pris_ore";
+
     $b = DB::en(
         'SELECT b.id, b.antall, b.course_id, b.course_session_id, b.status,
+                b.belop_ore, b.member_id, b.payment_id, b.betalt_maate, b.created_at,
+                ' . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'b.rabatt_prosent' : '0 AS rabatt_prosent') . ',
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
-                fra.start_tid AS fra_tid, frak.tittel AS fra_kurs
+                fra.start_tid AS fra_tid, frak.tittel AS fra_kurs,
+                ' . $prisKol('fra', 'frak') . ' AS fra_enhet
            FROM bookings b
       LEFT JOIN members m ON m.id = b.member_id
       LEFT JOIN course_sessions fra ON fra.id = b.course_session_id
@@ -236,8 +244,11 @@ if ($handling === 'flytt') {
         Svar::feil('Denne er avbestilt. Legg personen til på nytt i stedet.');
     }
 
+    $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa')
+        ? 'c.gjenstand_i_kassa' : '0 AS gjenstand_i_kassa';
     $okt = DB::en(
-        'SELECT cs.id, cs.course_id, cs.start_tid, cs.status, c.tittel
+        'SELECT cs.id, cs.course_id, cs.start_tid, cs.status, c.tittel,
+                c.tema, c.slug, ' . $kassaFelt . ', ' . $prisKol('cs', 'c') . ' AS pris_ore
            FROM course_sessions cs
            JOIN courses c ON c.id = cs.course_id
           WHERE cs.id = :o',
@@ -253,28 +264,182 @@ if ($handling === 'flytt') {
         Svar::feil('Personen står allerede på den datoen.');
     }
 
-    // Plassen maa finnes. Uten sjekken kunne man flytte fem personer inn paa
-    // en kveld med to plasser, og verkstedet oppdaget det den kvelden.
-    $ledige = Booking::ledigePlasser($tilOkt);
-    $trenger = max(1, (int) $b['antall']);
-    if ($ledige < $trenger) {
-        Svar::feil($ledige <= 0
-            ? 'Den datoen er full.'
-            : 'Det er bare ' . $ledige . ' plass' . ($ledige === 1 ? '' : 'er')
-              . ' igjen, og denne påmeldingen trenger ' . $trenger . '.');
+    // ── L-7: ny dato med en annen pris ─────────────────────────────────
+    //
+    // Flyttingen beholdt beloepet. En plass kjoept til kr 500 og flyttet til
+    // et kurs til kr 700 sto som betalt, og ingen krevde inn de 200. Andre
+    // veien sto kr 200 for mye betalt uten at noe sa det.
+    //
+    // Samme pris: beloepet staar som det er, som foer. Annen pris: beloepet
+    // foelger prisen paa den nye datoen, og rabatten foelger med:
+    //
+    //   rabatten er lagret paa plassen (kjoept paa nettsida: medlemsrabatt,
+    //   grupperabatt — «rabatt_prosent» er den samlede) → ny pris × antall
+    //   minus den samme rabatten. Uavhengig av om kursprisen er endret
+    //   siden kjoepet (Codex, 2. oktober 2026).
+    //   ingen rabatt, og beloepet er full pris → full pris paa det nye.
+    //   ellers (et beloep satt for haand) → samme forhold: 300 av 500 blir
+    //   420 av 700.
+    //
+    // Betalt status regnes saa paa nytt av Booking::settBetaltStatus(), samme
+    // regel som Kasse bruker: skyldig staar under «Ikke betalt», for mye
+    // sies fra om.
+    $fraEnhet = (int) ($b['fra_enhet'] ?? 0);
+    $tilEnhet = (int) ($okt['pris_ore'] ?? 0);
+    $gammeltBelop = (int) $b['belop_ore'];
+    $antall = max(1, (int) $b['antall']);
+    $rabatt = (float) ($b['rabatt_prosent'] ?? 0);
+    $nyPris = $fraEnhet !== $tilEnhet
+        && (string) $b['status'] !== 'avbestilt'
+        // En gratis plass er gratis ogsaa paa den nye datoen.
+        && (string) ($b['betalt_maate'] ?? '') !== 'Gratis';
+    $nyttBelop = $gammeltBelop;
+    $nyRabatt = null;
+    if ($nyPris) {
+        if ($rabatt > 0) {
+            $nyttBelop = (int) round($tilEnhet * $antall * (1 - $rabatt / 100));
+        } elseif ($fraEnhet > 0 && $gammeltBelop === $fraEnhet * $antall) {
+            $nyttBelop = $tilEnhet * $antall;
+        } elseif ($fraEnhet > 0) {
+            $nyttBelop = (int) round($gammeltBelop * $tilEnhet / $fraEnhet);
+        } else {
+            // Fra et gratis kurs: ingen pris aa regne forholdet av. Full pris
+            // paa det nye, med medlemsrabatten om medlemmet har den.
+            $medlem = $b['member_id'] !== null
+                ? DB::en('SELECT * FROM members WHERE id = :m', ['m' => (int) $b['member_id']]) : null;
+            $pris = Booking::belopFor($okt, max(1, (int) $b['antall']),
+                Booking::faarMedlemsrabatt($medlem));
+            $nyttBelop = $pris['netto'];
+            // Rabatten lagres med beloepet, saa en senere flytting regner av den.
+            $nyRabatt = (float) $pris['rabatt'];
+        }
+        $nyPris = $nyttBelop !== $gammeltBelop;
     }
 
-    // Kurset foelger datoen. Flyttes noen til et annet kurs, skal
-    // paameldingen hore til det kurset — ellers staar den i feil liste.
-    DB::oppdater('bookings', [
-        'course_session_id' => $tilOkt,
-        'course_id'         => (int) $okt['course_id'],
-    ], ['id' => $id]);
+    // En betaling som er paa vei i Vipps ble startet med det gamle beloepet,
+    // og Booking::markerBetalt() gjoer plassen betalt naar den kommer inn.
+    // Sjekkes foer (raskt svar) og paa nytt i transaksjonen, med laas
+    // (kontrolloeren, 2. oktober 2026). Laasen tas foer paameldingen, i
+    // samme rekkefoelge som markerBetalt() (betaling, saa paamelding).
+    $harBookingId = DB::harKolonne('payments', 'booking_id');
+    $paaVei = static function (bool $laas) use ($id, $harBookingId): bool {
+        return DB::verdi(
+            "SELECT p.id FROM payments p
+              WHERE (p.id = (SELECT payment_id FROM bookings WHERE id = :b1)"
+                . ($harBookingId ? ' OR p.booking_id = :b2' : '') . ")
+                AND p.status IN ('opprettet', 'venter')
+              LIMIT 1" . ($laas ? ' FOR UPDATE' : ''),
+            $harBookingId ? ['b1' => $id, 'b2' => $id] : ['b1' => $id]
+        ) !== null;
+    };
+    if ($nyPris && $paaVei(false)) {
+        Svar::feil('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
+    }
 
+    // Plassen maa finnes. Uten sjekken kunne man flytte fem personer inn paa
+    // en kveld med to plasser, og verkstedet oppdaget det den kvelden.
+    //
+    // L-8: sjekken staar i transaksjonen, under laas paa okta (samme laaser
+    // som et kjoep paa nettsida tar). Uten laasen kunne to flyttinger — eller
+    // en flytting og et kjoep — begge se den siste plassen ledig.
+    $trenger = max(1, (int) $b['antall']);
+    try {
+        $etter = DB::iTransaksjon(static function () use ($id, $b, $okt, $tilOkt, $trenger, $nyPris, $nyttBelop, $nyRabatt, $gammeltBelop, $admin, $paaVei): ?array {
+            // Laaserekkefoelge som Booking::markerBetalt(): betaling, saa
+            // paamelding, saa okt/kurs/ressurs (ledigePlasser). Kontrolloeren,
+            // 2. oktober 2026. Blir det vranglaas likevel, svarer vi 409 under.
+            if ($nyPris && $paaVei(true)) {
+                throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
+            }
+            // Alt prisen og plassbehovet ble regnet av, maa staa som da det
+            // ble lest. Endret noen antall, beloep, rabatt eller status i
+            // mellomtiden, avvises flyttingen heller enn aa skrive over det.
+            $naa = DB::en(
+                'SELECT status, course_session_id, antall, belop_ore, payment_id, betalt_maate,
+                        ' . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'rabatt_prosent' : '0 AS rabatt_prosent') . '
+                   FROM bookings WHERE id = :i FOR UPDATE',
+                ['i' => $id]
+            );
+            if ($naa === null || (string) $naa['status'] === 'avbestilt'
+                || (string) $naa['status'] !== (string) $b['status']
+                || (int) $naa['course_session_id'] !== (int) $b['course_session_id']
+                || (int) $naa['antall'] !== (int) $b['antall']
+                || (int) $naa['belop_ore'] !== (int) $b['belop_ore']
+                || (int) ($naa['payment_id'] ?? 0) !== (int) ($b['payment_id'] ?? 0)
+                || (string) ($naa['betalt_maate'] ?? '') !== (string) ($b['betalt_maate'] ?? '')
+                || (float) $naa['rabatt_prosent'] !== (float) $b['rabatt_prosent']) {
+                throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
+            }
+            $ledige = Booking::ledigePlasser($tilOkt, true);
+            if ($ledige < $trenger) {
+                throw new RuntimeException($ledige <= 0
+                    ? 'Den datoen er full.'
+                    : 'Det er bare ' . $ledige . ' plass' . ($ledige === 1 ? '' : 'er')
+                      . ' igjen, og denne påmeldingen trenger ' . $trenger . '.', 409);
+            }
+
+            // Kurset foelger datoen. Flyttes noen til et annet kurs, skal
+            // paameldingen hore til det kurset — ellers staar den i feil liste.
+            $felt = [
+                'course_session_id' => $tilOkt,
+                'course_id'         => (int) $okt['course_id'],
+            ];
+            if (!$nyPris) {
+                DB::oppdater('bookings', $felt, ['id' => $id]);
+                return null;
+            }
+
+            // Betalt for haand foer betalingene ble foert (ingen rad i
+            // payments): Omsetning teller da beloepet paa plassen. Endres det,
+            // endres inntekten bakover i tid. Det som ble betalt, foeres derfor
+            // som en betaling med samme dato og beloep — summen i hver periode
+            // er den samme — og saa regnes resten som for alle andre.
+            $bet = Booking::betalingerFor($id);
+            if ((string) $b['status'] === 'betalt' && $bet['rader'] === [] && $gammeltBelop > 0) {
+                $maate = trim((string) ($b['betalt_maate'] ?? ''));
+                if ($maate !== '' && !Booking::maateGirPenger($maate)) {
+                    throw new RuntimeException('Prisen er ulik, og betalingen er ikke registrert. Registrer den i Kasse først.', 409);
+                }
+                $pid = Booking::manuellBetaling($id, $gammeltBelop, $maate !== '' ? $maate : 'Kontant',
+                    $b['member_id'] !== null ? (int) $b['member_id'] : null, (int) $admin['id'],
+                    'Betalt før flytting');
+                DB::oppdater('payments', ['created_at' => (string) $b['created_at']], ['id' => $pid]);
+            }
+
+            $felt['belop_ore'] = $nyttBelop;
+            if ($nyRabatt !== null && DB::harKolonne('bookings', 'rabatt_prosent')) {
+                $felt['rabatt_prosent'] = $nyRabatt;
+            }
+            DB::oppdater('bookings', $felt, ['id' => $id]);
+            return Booking::settBetaltStatus($id);
+        });
+    } catch (PDOException $e) {
+        // Vranglaas (1213) eller laas som ikke ble ledig (1205): ingenting er
+        // lagret — transaksjonen er rullet tilbake. Samme svar som en endring
+        // i mellomtiden.
+        if (!in_array((int) ($e->errorInfo[1] ?? 0), [1213, 1205], true)) {
+            throw $e;
+        }
+        Svar::feil('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
+    } catch (RuntimeException $e) {
+        if ($e->getCode() !== 409) {
+            throw $e;
+        }
+        Svar::feil($e->getMessage(), 409);
+    }
+
+    $forMye = $etter !== null ? max(0, $etter['sum'] - $nyttBelop) : 0;
     revider('pamelding_flyttet', 'booking', $id, [
         'fra' => (int) $b['course_session_id'],
         'til' => $tilOkt,
-    ]);
+    ] + ($etter !== null ? [
+        'belop_for'   => $gammeltBelop,
+        'belop_naa'   => $nyttBelop,
+        'betalt'      => $etter['sum'],
+        'skyldig'     => $etter['skyldig'],
+        'for_mye'     => $forMye,
+        'status'      => $etter['status'],
+    ] : []));
 
     // ── Deltakeren skal vite det ────────────────────────────────────────
     //
@@ -299,9 +464,22 @@ if ($handling === 'flytt') {
         $varslet = true;
     }
 
+    // Prisen er endret: si hva som staar igjen, begge veier.
+    $prisTekst = '';
+    if ($etter !== null) {
+        $prisTekst = ' Prisen er endret fra ' . Booking::kroner($gammeltBelop)
+                   . ' til ' . Booking::kroner($nyttBelop) . '.'
+                   . ($etter['skyldig'] > 0 ? ' Skyldig: ' . Booking::kroner($etter['skyldig']) . '.' : '')
+                   . ($forMye > 0 ? ' Betalt ' . Booking::kroner($forMye) . ' for mye — refunder differansen.' : '');
+    }
+
     Svar::ok(['beskjed' => ($b['navn'] ?: 'Påmeldingen') . ' er flyttet til '
                          . $okt['tittel'] . ' ' . $tilTekst . '. '
-                         . ($varslet ? 'Beskjeden er sendt.' : 'Husk å gi beskjed.')]);
+                         . ($varslet ? 'Beskjeden er sendt.' : 'Husk å gi beskjed.')
+                         . $prisTekst,
+              'belopOre'   => $nyttBelop,
+              'skyldigOre' => $etter['skyldig'] ?? null,
+              'forMyeOre'  => $etter !== null ? $forMye : null]);
 }
 
 // ---------------------------------------------------------- endre status

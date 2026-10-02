@@ -239,11 +239,12 @@ $maks = $belop + $resultat['gjenstaar'];
 // inntil sju dager for) ville da satt plassen som refundert: deltakeren falt
 // ut av lista, og stolen ble ledig igjen — selv om hen fortsatt skulle komme.
 // Det er delrefusjonens hele poeng at plassen ikke gis fra seg gratis.
+//
+// Kontrolloeren, 2. oktober 2026: samme vei som portalrefusjonen, saa ogsaa
+// en plass der betalingen bare naas gjennom «payments.booking_id» (delt
+// betaling) faar riktig status. Trygg aa kalle igjen etter refunderBetaling().
 if ($nyRefundert >= (int) $betaling['belop_ore']) {
-    DB::kjor(
-        "UPDATE bookings SET status = 'refundert' WHERE payment_id = :p",
-        ['p' => $betaling['id']]
-    );
+    Booking::gjorOppFullRefusjon((int) $betaling['id']);
 }
 
 revider('refusjon', 'payment', (int) $betaling['id'], ['belop_ore' => $belop]);

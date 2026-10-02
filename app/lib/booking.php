@@ -1366,9 +1366,16 @@ final class Booking
                         'status' => $rest === 0 ? 'refundert' : 'delvis_refundert'], ['id' => $paymentId]);
                     DB::oppdater('payment_refunds', ['status' => 'done', 'completed_at' => gmdate('Y-m-d H:i:s'),
                         'result_refunded_ore' => $refundert, 'result_remaining_ore' => $rest], ['id' => $op['id']]);
+                    // Delrefusjon der plassen beholdes er et prisavslag. Bare
+                    // det denne runden hevet «refundert_ore» med — har webhooken
+                    // alt gjort det, er differansen 0 og ingenting trekkes to ganger.
+                    if ($rest > 0) {
+                        self::prisavslagEtterDelrefusjon($paymentId, (int) $p['refundert_ore'], $refundert);
+                    }
                 }
                 if ($rest === 0) {
-                    DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+                    // Samme vei som portalrefusjonen (gjorOppFullRefusjon).
+                    self::plasserEtterFullRefusjon($paymentId);
                 }
                 // L-3: hele beloepet tilbake = kjoepet gjores opp. En
                 // delrefusjon roerer ikke formaalet; den logges.
@@ -1506,10 +1513,130 @@ final class Booking
             if ($status !== 'refundert') {
                 return;
             }
-            DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+            self::plasserEtterFullRefusjon($paymentId);
             self::gjorOppFormal($paymentId);
         };
         DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);
+    }
+
+    /**
+     * Delrefusjon der plassen beholdes: beloepet senkes med den delen av
+     * refusjonen (fra $foerOre til $etterOre i «refundert_ore») som ikke
+     * dekker en overbetaling. Portalen
+     * (Vipps::anvendTilstand, REFUNDED) og admin (refunderBetaling) gaar begge hit.
+     */
+    public static function prisavslagEtterDelrefusjon(int $paymentId, int $foerOre, int $etterOre): void
+    {
+        // Kontrolloeren, 2. oktober 2026 (regel valgt for eieren): en
+        // delrefusjon der plassen beholdes er et prisavslag. Beloepet paa
+        // plassen senkes med det som ble refundert, saa netto betalt = beloep
+        // og plassen staar betalt — ingen «skyldig» i Kasse, ingen funn i
+        // datasjekken (L12).
+        //
+        // Bare den delen som ikke dekker en overbetaling er et avslag
+        // (kontrolloeren, 2. oktober 2026): betalt 700, flyttet til 500 («200
+        // for mye»), 200 refundert → beloepet staar paa 500. Altsaa:
+        //   avslag = max(0, refusjon − max(0, netto betalt foer − beloep))
+        //
+        // Trygt aa kalle igjen: bare oekningen i «refundert_ore» teller, saa
+        // samme hendelse to ganger, eller webhooken etter admins egen
+        // refusjon, gir 0. Hvert avslag logges i «booking_prisavslag»
+        // (migrasjon 248) naar tabellen finnes.
+        //
+        // Kalles i transaksjonen, med betalingen laast (betaling foer plass,
+        // som markerBetalt()), og etter at «refundert_ore» er oppdatert.
+        // En avbestilt eller refundert plass roeres ikke.
+        $delta = $etterOre - $foerOre;
+        if ($delta <= 0) {
+            return;
+        }
+        $logg = DB::harTabell('booking_prisavslag');
+        $harRabatt = DB::harKolonne('bookings', 'rabatt_prosent');
+        $plasser = DB::alle(
+            'SELECT id, belop_ore, ' . ($harRabatt ? 'rabatt_prosent' : '0 AS rabatt_prosent') . "
+               FROM bookings
+              WHERE (payment_id = :p
+                     OR id = (SELECT booking_id FROM payments WHERE id = :p2))
+                AND status IN ('betalt', 'reservert')
+                FOR UPDATE",
+            ['p' => $paymentId, 'p2' => $paymentId]
+        );
+        foreach ($plasser as $b) {
+            $foer = (int) $b['belop_ore'];
+            // Netto betalt naa er etter refusjonen; foer den var det $delta mer.
+            $nettoFoer = self::betalingerFor((int) $b['id'])['sum'] + $delta;
+            $avslag = max(0, $delta - max(0, $nettoFoer - $foer));
+            if ($avslag === 0) {
+                // Refusjonen dekket bare en overbetaling. Beloepet staar.
+                self::settBetaltStatus((int) $b['id']);
+                self::revisjon('refusjon_dekket_overbetaling', 'booking', (int) $b['id'],
+                    ['betaling' => $paymentId, 'refundert_ore' => $delta, 'belop' => $foer]);
+                continue;
+            }
+            $ny = max(0, $foer - $avslag);
+            $felt = ['belop_ore' => $ny];
+            // Rabatten foelger avslaget, saa en senere flytting (som regner av
+            // rabatten) ikke gir avslaget tilbake.
+            $r = (float) $b['rabatt_prosent'];
+            if ($harRabatt && $r > 0 && $r < 100 && $foer > 0) {
+                $brutto = $foer / (1 - $r / 100);
+                $felt['rabatt_prosent'] = max(0.0, min(100.0, round((1 - $ny / $brutto) * 100, 2)));
+            }
+            DB::oppdater('bookings', $felt, ['id' => (int) $b['id']]);
+            if ($logg) {
+                DB::kjor(
+                    "INSERT INTO booking_prisavslag (booking_id, payment_id, avslag_ore, kilde)
+                     VALUES (:b, :p, :d, 'refusjon')
+                     ON DUPLICATE KEY UPDATE avslag_ore = avslag_ore + VALUES(avslag_ore)",
+                    ['b' => (int) $b['id'], 'p' => $paymentId, 'd' => $foer - $ny]
+                );
+            }
+            self::settBetaltStatus((int) $b['id']);
+            self::revisjon('prisavslag_ved_delrefusjon', 'booking', (int) $b['id'],
+                ['betaling' => $paymentId, 'belop_for' => $foer, 'belop_naa' => $ny]);
+        }
+    }
+
+    /**
+     * Plassene etter at én betaling er refundert helt. Portalen (REFUNDED,
+     * gjorOppFullRefusjon) og admin (refunderBetaling) gaar begge hit, saa de
+     * to ikke kan svare forskjellig (kontrolloeren, 2. oktober 2026).
+     * Kalles i transaksjonen, med betalingen laast. Trygg aa kalle flere ganger.
+     */
+    private static function plasserEtterFullRefusjon(int $paymentId): void
+    {
+        DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+        // L-9: plassen kan ha flere betalinger (Vipps + kontant i Kasse).
+        // Da peker «payment_id» paa den siste manuelle, og Vipps-raden
+        // naas bare gjennom «payments.booking_id». Sto ikke paameldingen
+        // over, og ble staaende betalt for penger som er gitt tilbake.
+        // Det som fortsatt staar, avgjoer: settBetaltStatus() gir
+        // «reservert» og skyldig beloep i Kasse naar resten ikke dekker.
+        if (!DB::harKolonne('payments', 'booking_id')) {
+            return;
+        }
+        $andre = DB::alle(
+            "SELECT b.id FROM payments p
+               JOIN bookings b ON b.id = p.booking_id
+              WHERE p.id = :p
+                AND (b.payment_id IS NULL OR b.payment_id <> :p2)
+                AND b.status IN ('betalt', 'reservert')
+                FOR UPDATE",
+            ['p' => $paymentId, 'p2' => $paymentId]
+        );
+        foreach ($andre as $b) {
+            // Staar ingen betaling igjen, er plassen refundert og ledig
+            // — som naar Vipps-raden var den eneste (Codex, runde 3).
+            if (self::betalingerFor((int) $b['id'])['sum'] === 0) {
+                DB::kjor("UPDATE bookings SET status = 'refundert' WHERE id = :b", ['b' => (int) $b['id']]);
+                self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
+                    ['betaling' => $paymentId, 'status' => 'refundert', 'sum' => 0]);
+                continue;
+            }
+            $etter = self::settBetaltStatus((int) $b['id']);
+            self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
+                ['betaling' => $paymentId] + $etter);
+        }
     }
 
     /**
@@ -2975,6 +3102,7 @@ final class Booking
             ? 'COALESCE(p.gavekort_ore, 0) AS gavekort_ore' : '0 AS gavekort_ore';
         $rader = DB::alle(
             'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, ' . $gaveFelt . ', p.status, p.maate,
+                    COALESCE(p.refundert_ore, 0) AS refundert_ore,
                     p.kommentar, p.annullert_at, p.created_at,
                     p.registrert_av, m.navn AS registrert_navn
                FROM payments p
@@ -2989,7 +3117,10 @@ final class Booking
         foreach ($rader as $r) {
             if ($r['annullert_at'] === null
                 && in_array((string) $r['status'], ['betalt', 'autorisert', 'delvis_refundert'], true)) {
-                $sum += (int) $r['belop_ore'] + (int) $r['gavekort_ore'];
+                // Netto: det som er refundert av en delvis refundert betaling
+                // er ikke betalt lenger. Samme regnestykke som Omsetning::perFormal()
+                // (kontrolloeren, 2. oktober 2026: 500 betalt, 200 refundert er 300).
+                $sum += max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore'];
             }
         }
 

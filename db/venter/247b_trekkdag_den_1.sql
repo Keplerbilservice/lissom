@@ -1,8 +1,8 @@
--- 247: trekkdag den 1. for avtaler som alt loeper.
+-- 247b: trekkdag den 1. for avtaler som alt loeper.
 --
 -- VENTER PAA EIERENS JA. Ligger i db/venter/, ikke i db/migrations/, saa
 -- «Kjoer oppdateringer» tar den ikke. Naar eieren sier ja: flytt fila til
--- db/migrations/247_trekkdag_den_1.sql (247 er holdt av til denne).
+-- db/migrations/247b_trekkdag_den_1.sql (247 er kolonnen forste_trekk_sjekket).
 --
 -- Eieren, 2. oktober 2026: alle faste trekk den 1. Nye avtaler faar det i
 -- koden (Medlemskap::TREKK_DAG). Denne gjelder dem som alt loeper med en

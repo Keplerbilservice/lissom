@@ -2899,14 +2899,17 @@
         {
             "id": "trekk-l5-l6-l10-trekkdag",
             "dato": "2026-10-02",
-            "hva": "Revisjonens L-5, L-6, L-10 og trekkdag (eieren sa ja 2. oktober): et trekk som står «opprettet» uten charge-id i over 15 minutter, prøves igjen med samme nøkkel og samme innhold, og charge-id og neste_trekk lagres i samme transaksjon; aktiv avtale uten første trekk (oppslaget feilet) føres i neste trekkrunde, én gang; trekk som faller i en godkjent pause hoppes over og fortsetter etter pausen, aldri dobbelt; nye avtaler trekkes den 1. (trekk_dag = 1). Eksisterende avtaler endres ikke før eieren sier ja (db/venter/247).",
-            "hvor": "Medlemskap: faste trekk (Vipps Recurring)",
+            "hva": "Revisjonens L-5, L-6, L-10 og trekkdag (eieren sa ja 2. oktober): et trekk som står «opprettet» uten charge-id i over 15 minutter, prøves igjen med samme nøkkel og samme innhold, og charge-id og neste_trekk lagres i samme transaksjon; aktiv avtale uten første trekk (oppslaget feilet) føres i neste trekkrunde, én gang, og avtalen merkes avklart (subscriptions.forste_trekk_sjekket, migrasjon 247) så den ikke slås opp hver natt; avtaler fra før første trekk ved godkjenning (8. september 2026) slås aldri opp; nye avtaler trekkes den 1. (trekk_dag = 1). PAUSE (L-10): Vipps-avtalen stoppes ikke. Månedens trekk hoppes over bare når en godkjent frys dekker minst 15 dager av den kalendermåneden (regel valgt av koordinator etter kontrollor 2. oktober): frys 31.10–1.11 gir ikke gratis november, frys 2.11–30.11 gir gratis november. Én måned om gangen; det som hoppes over, tas aldri igjen, så ingen trekkes dobbelt. Verkstedet får beskjeden «Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.» Eksisterende avtaler får trekkdag 1 først når eieren sier ja (db/venter/247b).",
+            "hvor": "Medlemskap: faste trekk (Vipps Recurring) og frys",
             "kode": [
                 {
                     "fil": "app/lib/medlemskap.php",
                     "finnes": [
                         "public const TREKK_DAG = 1;",
                         "public const TREKK_HENGER_MIN = 15;",
+                        "public const PAUSE_MIN_DAGER = 15;",
+                        "if (self::pauseDager((int) $avtale['member_id'], $gammel) < self::PAUSE_MIN_DAGER) {",
+                        "self::merkForsteTrekkSjekket((int) $avtale['id']);",
                         "$endring['neste_trekk'] = self::nesteTrekkdato($forsteFra ?? $idagDato, self::TREKK_DAG);",
                         "$etterPause = self::hoppOverPause($avtale);",
                         "DB::iTransaksjon(static function () use ($betalingId, $trekkId, $avtale, $nesteTrekk): void {",
@@ -2919,9 +2922,26 @@
                     "finnes": [
                         "hengende trekk proeves igjen",
                         "neste trekkrunde foerer foerste trekk",
-                        "1. desember ogsaa i pausen: hoppes over, neste trekk 1. januar",
+                        "frys 31.10–1.11 (1 dag av november): november trekkes",
+                        "februar med 15 pausedager hoppes over; april med 14 trekkes",
                         "pause avbrutt etter at november var hoppet over: desember trekkes",
+                        "neste natt slaas den avklarte avtalen ikke opp hos Vipps",
                         "neste trekk 1. oktober, ikke 15. oktober"
+                    ]
+                },
+                {
+                    "fil": "api/admin/frys.php",
+                    "finnes": [
+                        "' Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.'"
+                    ],
+                    "ikkeFinnes": [
+                        "den må stoppes, og medlemmet setter opp en ny når det kommer tilbake"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/247_forste_trekk_sjekket.sql",
+                    "finnes": [
+                        "ADD COLUMN IF NOT EXISTS forste_trekk_sjekket DATETIME NULL DEFAULT NULL"
                     ]
                 }
             ]

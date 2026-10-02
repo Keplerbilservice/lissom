@@ -8,11 +8,9 @@
  * artiklene publiseres naar noen ber om dem: en linje i cPanel som ingen har
  * lagt inn, er en funksjon som ikke virker.
  *
- * Trekket stoppes ikke herfra. Vipps' avtaler kan ikke settes paa pause; de
- * kan bare stoppes, og da maa medlemmet godkjenne en ny avtale naar det
- * kommer tilbake. Det er verkstedets valg om de vil det, og derfor staar det
- * som en beskjed til den som godkjenner — ikke som noe koden gjor bak ryggen
- * paa noen.
+ * Vipps-avtalen stoppes ikke herfra. Trekkrunden hopper over en maaned en
+ * godkjent frys dekker minst 15 dager av (Medlemskap::hoppOverPause), og
+ * trekkene fortsetter av seg selv etterpaa (L-10, 2. oktober 2026).
  */
 
 declare(strict_types=1);

@@ -8,9 +8,9 @@
  *   POST handling=avslutt   { id }   avbryt en frys som loper
  *
  * Godkjenning setter medlemmet i pause og aapner det igjen naar perioden er
- * over. Trekket roeres ikke: Vipps kan ikke sette en avtale paa pause, bare
- * stoppe den. Svaret sier derfor fra naar det ligger en loepende avtale, slik
- * at verkstedet vet at pengene fortsetter aa gaa til noen tar tak i det.
+ * over. Vipps-avtalen stoppes ikke: trekkrunden hopper over en maaned en
+ * godkjent frys dekker minst 15 dager av (Medlemskap::hoppOverPause), og
+ * trekkene fortsetter av seg selv etterpaa (L-10, 2. oktober 2026).
  */
 
 declare(strict_types=1);
@@ -112,10 +112,10 @@ if ($handling === 'godkjenn') {
         : ' er fryst fra ' . Booking::norskDatoKort((string) $f['fra_dato']) . ' til ';
     Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . $naar
         . Booking::norskDatoKort((string) $f['til_dato']) . '. Medlemskapet åpner seg igjen av seg selv.'
+        // L-10 (2. oktober 2026): avtalen skal IKKE stoppes. Trekkrunden
+        // hopper over maaneden pausen dekker (Medlemskap::hoppOverPause).
         . ($avtale !== null
-            ? ' Merk: det løper en Vipps-avtale på denne personen. Vipps kan ikke sette en avtale på pause '
-            . '— den må stoppes, og medlemmet setter opp en ny når det kommer tilbake. '
-            . 'Gjør du ingenting, fortsetter trekket.'
+            ? ' Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.'
             : '')]);
 }
 

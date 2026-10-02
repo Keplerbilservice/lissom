@@ -2284,6 +2284,8 @@ final class Medlemskap
               LIMIT 1',
             ['k' => $nokkel, 's' => (int) $avtale['id'], 't' => $trekkId]
         ) !== null) {
+            // Avklart: trekket staar alt hos oss. Ikke slaa det opp igjen.
+            self::merkForsteTrekkSjekket((int) $avtale['id']);
             return false;
         }
 
@@ -2317,26 +2319,53 @@ final class Medlemskap
             $rad['created_at'] = $betaltTid;
         }
         DB::settInn('payments', $rad);
+        self::merkForsteTrekkSjekket((int) $avtale['id']);
         return true;
     }
+
+    /**
+     * L-6: foerste trekk er avklart (foert, eller staar alt paa en annen
+     * rad). Da tas avtalen ut av utenForsteTrekk(), saa den ikke slaas opp
+     * hver natt. Kolonnen kommer med migrasjon 247; foer den er kjoert, gjoer
+     * dette ingenting.
+     */
+    private static function merkForsteTrekkSjekket(int $avtaleId): void
+    {
+        if (DB::harKolonne('subscriptions', 'forste_trekk_sjekket')) {
+            DB::oppdater('subscriptions', ['forste_trekk_sjekket' => gmdate('Y-m-d H:i:s')], ['id' => $avtaleId]);
+        }
+    }
+
+    /**
+     * Foerste trekk ved godkjenning («initialCharge») kom med bc3162e,
+     * 8. september 2026 kl. 01.03 norsk tid. Avtaler fra foer det fikk aldri
+     * et init-trekk, og skal ikke slaas opp.
+     */
+    public const FORSTE_TREKK_VED_GODKJENNING_FRA = '2026-09-07 23:00:00';
 
     /**
      * L-6: aktive avtaler der foerste trekk (det Vipps tok ved godkjenning)
      * ikke staar hos oss. Skjer naar oppslaget feilet i oppdaterFraVipps():
      * da var neste_trekk alt satt, og ingen proevde igjen.
      *
-     * Bare avtaler fra de siste 90 dagene, med avtale-id, og uten noen
-     * recurring_charge-rad i det hele tatt.
+     * Bare avtaler fra de siste 90 dagene, laget etter at foerste trekk ble
+     * tatt ved godkjenning, med avtale-id, uten init-rad, og som ikke er
+     * merket avklart (forste_trekk_sjekket, migrasjon 247). Eldste foerst og
+     * uten grense: de avklarte faller ut, saa lista er kort.
      *
      * @return list<array<string,mixed>>
      */
     public static function utenForsteTrekk(): array
     {
+        $ikkeSjekket = DB::harKolonne('subscriptions', 'forste_trekk_sjekket')
+            ? 'AND s.forste_trekk_sjekket IS NULL' : '';
         return DB::alle(
             "SELECT s.* FROM subscriptions s
               WHERE s.status = 'aktiv'
                 AND COALESCE(s.vipps_agreement_id, '') <> ''
                 AND s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)
+                AND s.created_at >= :innfort
+                {$ikkeSjekket}
                 -- Foerste trekk er foert med init-noekkelen (foerForsteTrekk).
                 -- En senere, ordinaer trekkrad betyr ikke at det er foert.
                 AND NOT EXISTS (SELECT 1 FROM payments p
@@ -2349,11 +2378,8 @@ final class Medlemskap
                                  WHERE p.subscription_id = s.id
                                    AND p.type = 'recurring_charge'
                                    AND p.vipps_psp_ref IS NULL)
-           -- Nyeste foerst, og romslig grense: avtaler som ikke kan foeres
-           -- (Vipps svarer ikke, eller trekket staar alt uten init-noekkel)
-           -- skal ikke stenge for nye (Codex 02.10).
-           ORDER BY s.id DESC
-              LIMIT 200"
+           ORDER BY s.id",
+            ['innfort' => self::FORSTE_TREKK_VED_GODKJENNING_FRA]
         );
     }
 
@@ -2763,58 +2789,69 @@ final class Medlemskap
      */
     public const TREKK_HENGER_MIN = 15;
 
+    /** L-10: saa mange dager av kalendermaaneden en frys maa dekke for at trekket hoppes over. */
+    public const PAUSE_MIN_DAGER = 15;
+
     /**
-     * L-10: til_dato for en godkjent frys som dekker $dato, ellers null.
-     * Er flere, gjelder den som varer lengst.
+     * L-10: hvor mange dager av kalendermaaneden $dato ligger i, som er
+     * dekket av en godkjent frys. Flere fryser telles sammen, uten dobbelt.
      *
      * En frys som er over, har Frys::gjenapneForfalte() satt til
-     * «avsluttet» — etter til_dato. Den teller fortsatt for datoer i
-     * perioden, saa en forsinket runde ikke tar etterbetaling for pausen
-     * (Codex 02.10). En frys verkstedet avbrot underveis gjaldt bare fram
-     * til dagen foer den ble avsluttet (api/admin/frys.php beholder
-     * til_dato, men updated_at er avslutningen).
+     * «avsluttet» — etter til_dato. Den teller fortsatt, saa en forsinket
+     * runde ikke tar etterbetaling for pausen (Codex 02.10). En frys
+     * verkstedet avbrot underveis gjaldt bare til og med dagen foer den ble
+     * avsluttet, i norsk dato (api/admin/frys.php beholder til_dato, men
+     * updated_at er avslutningen).
      */
-    public static function pauseTil(int $medlemId, string $dato): ?string
+    public static function pauseDager(int $medlemId, string $dato): int
     {
         if (!Frys::klar()) {
-            return null;
+            return 0;
         }
+        $d = new DateTimeImmutable($dato);
+        $start = $d->modify('first day of this month')->format('Y-m-d');
+        $slutt = $d->modify('last day of this month')->format('Y-m-d');
         $rader = DB::alle(
-            "SELECT status, til_dato, updated_at FROM medlem_frys
+            "SELECT status, fra_dato, til_dato, updated_at FROM medlem_frys
               WHERE member_id = :m AND status IN ('godkjent', 'avsluttet')
-                AND fra_dato <= :d AND til_dato >= :d2",
-            ['m' => $medlemId, 'd' => $dato, 'd2' => $dato]
+                AND fra_dato <= :slutt AND til_dato >= :start",
+            ['m' => $medlemId, 'slutt' => $slutt, 'start' => $start]
         );
-        $til = null;
+        $dager = [];
         foreach ($rader as $r) {
-            $slutt = (string) $r['til_dato'];
+            $til = (string) $r['til_dato'];
             if ((string) $r['status'] === 'avsluttet') {
                 // updated_at er UTC; dagen avslutningen skjedde regnes i
                 // norsk tid. Pausen varte til og med dagen foer.
                 $avsluttet = (new DateTimeImmutable((string) $r['updated_at'], new DateTimeZone('UTC')))
                     ->setTimezone(new DateTimeZone('Europe/Oslo'))->modify('-1 day')->format('Y-m-d');
-                $slutt = min($slutt, $avsluttet);
+                $til = min($til, $avsluttet);
             }
-            if ($slutt >= $dato && ($til === null || $slutt > $til)) {
-                $til = $slutt;
+            $fra = max((string) $r['fra_dato'], $start);
+            $til = min($til, $slutt);
+            for ($x = new DateTimeImmutable($fra); $x->format('Y-m-d') <= $til; $x = $x->modify('+1 day')) {
+                $dager[$x->format('Y-m-d')] = true;
             }
         }
-        return $til;
+        return count($dager);
     }
 
     /**
-     * L-10 (eieren, 2. oktober 2026): et trekk som faller i en pause, hoppes
-     * over. Bare trekket som behandles naa: neste trekk flyttes én maaned,
-     * og den maaneden sjekkes mot pausen naar den kommer — avbrytes pausen
-     * i mellomtiden, trekkes den som vanlig (Codex 02.10). Det som hoppes
-     * over, tas aldri igjen etterpaa, saa ingen trekkes dobbelt.
+     * L-10 (eieren, 2. oktober 2026; 15-dagersregelen valgt av koordinator
+     * etter kontrollor samme dag): maaneden trekket gjelder, hoppes over naar
+     * en godkjent frys dekker minst PAUSE_MIN_DAGER dager av den. Frys
+     * 31.10–1.11 gir altsaa ikke gratis november; frys 2.11–30.11 gjoer det.
+     * Bare trekket som behandles naa: neste trekk flyttes én maaned, og den
+     * maaneden sjekkes naar den kommer — avbrytes pausen i mellomtiden,
+     * trekkes den som vanlig (Codex 02.10). Det som hoppes over, tas aldri
+     * igjen etterpaa, saa ingen trekkes dobbelt.
      *
-     * @return string|null ny trekkdato, eller null naar trekket ikke er i en pause
+     * @return string|null ny trekkdato, eller null naar trekket ikke hoppes over
      */
     private static function hoppOverPause(array $avtale): ?string
     {
         $gammel = (string) $avtale['neste_trekk'];
-        if (self::pauseTil((int) $avtale['member_id'], $gammel) === null) {
+        if (self::pauseDager((int) $avtale['member_id'], $gammel) < self::PAUSE_MIN_DAGER) {
             return null;
         }
         $dag = isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;

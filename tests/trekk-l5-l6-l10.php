@@ -151,6 +151,39 @@ try {
         $sjekk($init !== null && (int) $init['belop_ore'] === 199000 && $init['gjelder_fra'] === '2026-09-10'
             && count($rader($id2)) === 2 && $init['created_at'] === '2026-09-10 10:00:00',
             'senere trekk finnes: foerste trekk foeres likevel, 199000 oere for september (gjelder_fra ' . ($init['gjelder_fra'] ?? '-') . ')');
+
+        // Kontrollor 02.10: avklarte avtaler slaas ikke opp hver natt.
+        $sjekket = static fn(int $sid): ?string => DB::verdi('SELECT forste_trekk_sjekket FROM subscriptions WHERE id = :i', ['i' => $sid]);
+        $sjekk($sjekket($id) !== null && $sjekket($id2) !== null, 'avtaler der foerste trekk ble foert, merkes avklart');
+        // Foerste trekk staar alt paa en ordinaer rad (samme charge-id).
+        $v3 = Vipps::opprettAvtale($plan, $PRIS, 'Medlemskap test', 'http://127.0.0.1/retur', null, 'maaned');
+        $initId = (string) (Vipps::trekkPaaAvtale($v3['avtaleId'])[0]['id'] ?? '');
+        $id3 = DB::settInn('subscriptions', ['member_id' => $s['admin'], 'plan' => $plan, 'pris_ore' => $PRIS,
+            'status' => 'aktiv', 'vipps_agreement_id' => $v3['avtaleId'], 'created_at' => '2026-09-20 10:00:00',
+            'neste_trekk' => '2026-11-01', 'trekk_dag' => 1]);
+        $GLOBALS['l6c_id'] = $id3;
+        DB::settInn('payments', ['vipps_reference' => Vipps::nyReferanse('MED'), 'vipps_psp_ref' => $initId,
+            'type' => 'recurring_charge', 'formal' => 'medlemskap', 'member_id' => $s['admin'], 'subscription_id' => $id3,
+            'belop_ore' => $PRIS, 'status' => 'betalt', 'idempotency_key' => 'ordinaer-' . $id3, 'gjelder_fra' => '2026-09-01']);
+        Medlemskap::foerManglendeForsteTrekk();
+        $sjekk($initId !== '' && count($rader($id3)) === 1 && $sjekket($id3) !== null,
+            'foerste trekk staar alt paa en ordinaer rad: ingen ny rad, avtalen merkes avklart');
+        $logg = __DIR__ . '/.falsk-vipps.jsonl';
+        $fraLinje = count(file($logg));
+        Medlemskap::foerManglendeForsteTrekk();
+        $oppslag = 0;
+        foreach (array_slice(file($logg), $fraLinje) as $l) {
+            $k = json_decode($l, true);
+            if (($k['metode'] ?? '') === 'GET' && str_contains((string) ($k['sti'] ?? ''), $v3['avtaleId'] . '/charges')) { $oppslag++; }
+        }
+        $sjekk($oppslag === 0, 'neste natt slaas den avklarte avtalen ikke opp hos Vipps');
+        // Avtale fra foer foerste trekk ved godkjenning (8. september) er aldri kandidat.
+        $id4 = DB::settInn('subscriptions', ['member_id' => $s['admin'], 'plan' => $plan, 'pris_ore' => $PRIS,
+            'status' => 'aktiv', 'vipps_agreement_id' => 'agr_GAMMEL_' . $s['tag'], 'created_at' => '2026-09-05 10:00:00',
+            'neste_trekk' => '2026-11-05']);
+        $GLOBALS['l6d_id'] = $id4;
+        $sjekk(!in_array($id4, array_map('intval', array_column(Medlemskap::utenForsteTrekk(), 'id')), true),
+            'avtale fra 5. september (foer initialCharge) slaas ikke opp');
     });
 
     // ────────────────────────────────────────────────────────────────────
@@ -184,18 +217,16 @@ try {
             "1. november i pausen: ingen rad og ingen bestilling hos Vipps (svar: $ut)");
         $sjekk($etter['neste_trekk'] === '2026-12-01',
             "bare november hoppes over naa; desember sjekkes naar den kommer (fikk {$etter['neste_trekk']})");
+        // 15-dagersregelen: frysen dekker bare 1.–10. desember (10 dager).
         $etter['epost'] = ''; $etter['navn'] = $s['tag'];
         $utDes = Medlemskap::trekk($etter, '2026-11-28');
         $etter = $avtaleNaa((int) $a['id']);
-        $sjekk($rader((int) $a['id']) === [] && $etter['neste_trekk'] === '2027-01-01',
-            "1. desember ogsaa i pausen: hoppes over, neste trekk 1. januar (svar: $utDes)");
-        $etter['epost'] = ''; $etter['navn'] = $s['tag'];
-        $ut2 = Medlemskap::trekk($etter, '2026-12-29');
         $p = $rader((int) $a['id']);
-        $sjekk($ut2 === 'bedt om trekk til 2027-01-01' && count($p) === 1 && (int) $p[0]['belop_ore'] === 199000
-            && $p[0]['gjelder_fra'] === '2027-01-01', 'etter pausen: ett trekk 1. januar paa 199000 oere');
+        $sjekk($utDes === 'bedt om trekk til 2026-12-01' && count($p) === 1 && (int) $p[0]['belop_ore'] === 199000
+            && $p[0]['gjelder_fra'] === '2026-12-01' && $etter['neste_trekk'] === '2027-01-01',
+            "frys dekker 10 dager av desember (< 15): desember trekkes, 199000 oere (svar: $utDes)");
         $sjekk((int) DB::verdi('SELECT COALESCE(SUM(belop_ore),0) FROM payments WHERE subscription_id = :s', ['s' => (int) $a['id']]) === 199000,
-            'sum for november–januar er 199000 oere — ingen etterbetaling for pausen');
+            'sum for november–desember er 199000 oere — november gratis, ingen etterbetaling');
 
         // En frys som bare er soekt om, stopper ikke trekket.
         $frys2 = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2027-03-01',
@@ -224,13 +255,13 @@ try {
         $sjekk($ut5 === 'bedt om trekk til 2027-08-01' && count($rader((int) $d['id'])) === 1,
             'pause avbrutt 25.07: trekket 1. august gaar som vanlig');
 
-        // Avbrutt midt i: 1. november laa i pausen, 1. desember ikke.
+        // Avbrutt midt i: 1.–19. november (19 dager) laa i pausen, desember ikke.
         $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2027-10-20',
-            'til_dato' => '2027-12-10', 'status' => 'avsluttet', 'updated_at' => '2027-11-15 10:00:00']);
+            'til_dato' => '2027-12-10', 'status' => 'avsluttet', 'updated_at' => '2027-11-20 10:00:00']);
         $e = $nyAvtale('agr_L10E_' . $s['tag'], '2027-11-01');
-        $ut6 = Medlemskap::trekk($e, '2027-11-16');
+        $ut6 = Medlemskap::trekk($e, '2027-11-21');
         $sjekk($rader((int) $e['id']) === [] && $avtaleNaa((int) $e['id'])['neste_trekk'] === '2027-12-01',
-            "pause avbrutt 15.11, forsinket runde: 1. november hoppes over (svar: $ut6)");
+            "pause avbrutt 20.11, forsinket runde: november (19 dager) hoppes over (svar: $ut6)");
         $e2 = $avtaleNaa((int) $e['id']) + ['epost' => '', 'navn' => $s['tag']];
         $ut7 = Medlemskap::trekk($e2, '2027-11-28');
         $sjekk($ut7 === 'bedt om trekk til 2027-12-01' && count($rader((int) $e['id'])) === 1,
@@ -252,13 +283,57 @@ try {
         // pausedag er 30. september, ikke 29.
         $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2028-09-01',
             'til_dato' => '2028-10-31', 'status' => 'avsluttet', 'updated_at' => '2028-09-30 22:30:00']);
-        $sjekk(Medlemskap::pauseTil((int) $s['admin'], '2028-09-30') === '2028-09-30'
-            && Medlemskap::pauseTil((int) $s['admin'], '2028-10-01') === null,
+        $sjekk(Medlemskap::pauseDager((int) $s['admin'], '2028-09-01') === 30
+            && Medlemskap::pauseDager((int) $s['admin'], '2028-10-01') === 0,
             'avslutning like etter midnatt: pausen gjelder til og med 30. september (norsk dato)');
+
+        // Kontrollor 02.10, 15-dagersregelen.
+        $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2030-10-31',
+            'til_dato' => '2030-11-01', 'status' => 'godkjent']);
+        $g = $nyAvtale('agr_L10G_' . $s['tag'], '2030-11-01');
+        $ut9 = Medlemskap::trekk($g, '2030-10-29');
+        $sjekk($ut9 === 'bedt om trekk til 2030-11-01' && count($rader((int) $g['id'])) === 1
+            && (int) $rader((int) $g['id'])[0]['belop_ore'] === 199000,
+            "frys 31.10–1.11 (1 dag av november): november trekkes, 199000 oere (svar: $ut9)");
+        $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2030-12-02',
+            'til_dato' => '2030-12-30', 'status' => 'godkjent']);
+        $h = $nyAvtale('agr_L10H_' . $s['tag'], '2030-12-01');
+        $ut10 = Medlemskap::trekk($h, '2030-11-28');
+        $sjekk($rader((int) $h['id']) === [] && $avtaleNaa((int) $h['id'])['neste_trekk'] === '2031-01-01',
+            "frys 2.12–30.12 (29 dager), selv om 1. desember er utenfor: desember gratis (svar: $ut10)");
+        // Grensen: 15 dager hoppes over, 14 trekkes.
+        $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2031-02-01',
+            'til_dato' => '2031-02-15', 'status' => 'godkjent']);
+        $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2031-04-01',
+            'til_dato' => '2031-04-14', 'status' => 'godkjent']);
+        $sjekk(Medlemskap::pauseDager((int) $s['admin'], '2031-02-01') === 15
+            && Medlemskap::pauseDager((int) $s['admin'], '2031-04-01') === 14,
+            'grensen: 15 dager (hoppes over) og 14 dager (trekkes) telles riktig');
+        $i = $nyAvtale('agr_L10I_' . $s['tag'], '2031-02-01');
+        $j = $nyAvtale('agr_L10J_' . $s['tag'], '2031-04-01');
+        Medlemskap::trekk($i, '2031-01-29');
+        Medlemskap::trekk($j, '2031-03-29');
+        $sjekk($rader((int) $i['id']) === [] && count($rader((int) $j['id'])) === 1,
+            'februar med 15 pausedager hoppes over; april med 14 trekkes');
+    });
+
+    // ────────────────────────────────────────────────────────────────────
+    $del('Frys-beskjeden til verkstedet: avtalen stoppes ikke', function () use ($sjekk): void {
+        $ny = 'Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.';
+        $rot = dirname(__DIR__);
+        foreach (['api/admin/frys.php', 'admin-ny/administrasjon.js', 'lissom-2108.html'] as $fil) {
+            $t = (string) file_get_contents($rot . '/' . $fil);
+            $sjekk(str_contains($t, $ny)
+                && !str_contains($t, 'den må stoppes, og medlemmet setter opp en ny')
+                && !str_contains($t, 'Frys stopper ikke Vipps-trekk')
+                && !str_contains($t, 'Vipps-trekk må følges opp separat')
+                && !str_contains($t, 'Trekket stopper ikke av seg selv'),
+                "$fil: sier at trekket i pausen hoppes over, ikke at avtalen maa stoppes");
+        }
     });
 } finally {
     foreach (['.trekk-idempotens', '.trekkliste-feiler', '.avtale-status', '.idag'] as $f) { @unlink($styr . $f); }
-    $alle = array_merge($nye, array_map('intval', array_filter([$GLOBALS['l6_id'] ?? null, $GLOBALS['l6b_id'] ?? null, $GLOBALS['dag_id'] ?? null])));
+    $alle = array_merge($nye, array_map('intval', array_filter([$GLOBALS['l6_id'] ?? null, $GLOBALS['l6b_id'] ?? null, $GLOBALS['l6c_id'] ?? null, $GLOBALS['l6d_id'] ?? null, $GLOBALS['dag_id'] ?? null])));
     foreach ($alle as $sid) {
         DB::kjor("DELETE FROM notifications WHERE ref_type = 'medlemskap' AND ref_id IN (SELECT id FROM payments WHERE subscription_id = :s)", ['s' => $sid]);
         DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $sid]);

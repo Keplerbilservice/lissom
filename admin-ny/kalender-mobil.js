@@ -62,11 +62,13 @@ export async function kalenderMobil({title,eventDetails,handlinger}){
  const naBoks=el('div',{class:'kalm-naboks'});
  async function oppdaterNa(){
   const idag=today(),n=naaMin();
-  const finnNeste=async()=>[...(await alleLastet()).hendelser.filter(erKurs)].filter(e=>e.dato>idag||(e.dato===idag&&minutter(e.tid)>n)).sort((a,b)=>`${a.dato}T${a.tid}`.localeCompare(`${b.dato}T${b.tid}`))[0]||null;
-  await sikre([shift(idag,-1),idag,nesteMnd(mnd(idag))+'-01']);
+  // Første kommende kurs i én måned. Månedene letes gjennom i rekkefølge fra i dag, så en måned som er lastet
+  // fordi den er valgt i kalenderen (f.eks. mars), ikke kan hoppe over månedene i mellom.
+  const forsteI=d=>d.hendelser.filter(erKurs).filter(e=>e.dato>idag||(e.dato===idag&&minutter(e.tid)>n)).sort((a,b)=>`${a.dato}T${a.tid}`.localeCompare(`${b.dato}T${b.tid}`))[0]||null;
+  await sikre([shift(idag,-1),idag]);
   const gaar=sortert((await alleLastet()).hendelser.filter(e=>erKurs(e)&&gaarNaa(e,idag,n)))[0]||null;
-  let neste=await finnNeste();
-  try{for(let i=2,ym=nesteMnd(nesteMnd(mnd(idag)));!neste&&i<=SOK_MND;i++,ym=nesteMnd(ym)){await hentMnd(ym);neste=await finnNeste();}}catch{}
+  let neste=null;
+  try{for(let i=0,ym=mnd(idag);!neste&&i<=SOK_MND;i++,ym=nesteMnd(ym))neste=forsteI(await hentMnd(ym));}catch{}
   naBoks.replaceChildren(...[gaar?kort(gaar,'Går nå','gaar'):null,neste?kort(neste,'Neste','neste'):null].filter(Boolean));
  }
  const kort=(e,merke,klasse)=>{const idag=today();const fyll=e.kap?Math.min(100,Math.round((e.pameldt||0)/e.kap*100)):0;const naar=e.dato===idag?tidsrom(e):`${dagNavn(e.dato,{weekday:'short',day:'numeric',month:'short'})} · ${tidsrom(e)}`;

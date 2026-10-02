@@ -83,6 +83,10 @@ try{
   for(const n of ['Echo','Foxtrot']){const lav=await dagE.locator('button.kp-brikke',{hasText:`${s.tag} ${n}`}).evaluate(b=>{const [t1,t2]=[...b.children].map(c=>c.getBoundingClientRect());return{lav:b.classList.contains('kp-lav'),barn:b.children.length,enLinje:Math.abs(t1.top-t2.top)<2,ellipse:getComputedStyle(b.children[1]).textOverflow};});
    assert.deepEqual(lav,{lav:true,barn:2,enLinje:true,ellipse:'ellipsis'},`${n}: lav brikke viser bare tid og tittel på én linje med ellipse`);}
   assert.equal(await dagE.locator('button.kp-brikke.kp-lav',{hasText:`${s.tag} Golf`}).count(),0,'en time høy brikke er ikke lav');
+  // Over midnatt: 22:00–01:00 vises til dagens slutt (to timer = fire rader), ikke én time.
+  const H=dagE.locator('button.kp-brikke',{hasText:`${s.tag} Hotel`});const hb=await H.boundingBox();
+  assert.ok(Math.abs(hb.height-(4*26-2))<=2,`kurs over midnatt er to timer høyt (fikk ${hb.height} px)`);
+  const kolBunn=await H.evaluate(b=>{const k=b.parentElement.getBoundingClientRect(),r=b.getBoundingClientRect();return k.bottom-r.bottom;});assert.ok(kolBunn>=0&&kolBunn<=4,'kurset over midnatt slutter ved dagens slutt');
   assert.ok(E.x+E.width<=F.x+1||F.x+F.width<=E.x+1||E.y+E.height<=F.y+1||F.y+F.height<=E.y+1,'korte kurs som ligger tett dekker ikke hverandre');
   const hodeE=await dagE.locator('.kp-kolhode').evaluateAll(h=>h.map(x=>[x.textContent,x.getAttribute('data-kol')]));
   assert.deepEqual(hodeE.filter(h=>h[0]===`${s.tag} H1`).map(h=>h[1]).sort(),[String(s.h1),String(s.h3)].sort(),'to kursholdere med samme navn får hver sin kolonne (id)');

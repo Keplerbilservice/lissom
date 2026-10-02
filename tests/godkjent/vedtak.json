@@ -3435,7 +3435,7 @@
         {
             "id": "nyadmin-kalender-samlet",
             "dato": "2026-10-02",
-            "hva": "Ny kalender i admin-ny samlet (K0 + K3 + K4, alle godkjent av kontrolløren 2. oktober 2026; eieren ga fullmakt til anbefalt valg). Bredde: mobilkalenderen (K3) til og med 760 px, PC-kalenderen med tidsakse (K4) fra 761 px, også nettbrett. kalender.js har K3-linja først (if(erSmal())return kalenderMobil(...)), K4 etter. Én lytter på (max-width:760px): krysser bredden mens kalenderen vises, tegnes den på nytt; krysser den mens dataene lastes, tegnes riktig visning når de kommer. Kontrollørfunn rettet: PC-banene for korte hendelser regnes fra tegnet høyde (minst 24 px), så de ikke dekker hverandre; dagkolonnene kobles på kursholderens id (kalender.php gir kursholderId, bare lagt til); notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene i dagsvisningen som i gamle admin, og «Ikke tildelt» står bare for kurs uten kursholder. Mobil: kurs over midnatt (slutt før start) regnes riktig i «Går nå» (også kurs som startet i går), «Går nå» og «Neste» regnes på nytt hvert minutt med én timer som stoppes når kalenderen ikke vises, og «Neste» letes etter høyst seks måneder fram. Ingen nye tekster. Etter kontrollen (samme dag): måned har sju kolonner fra 761 px (1100-px-regelen for kalenderen fjernet); brikker under 40 px viser bare tid og tittel på én linje med ellipse; krysser bredden mens et ark står åpent, tegnes kalenderen på nytt først når arket lukkes; nyadmin-avsluttende prøver kalenderen på 390 px (mobil) og 1280 px (PC). På mobil foreslår «Nytt kalendernotat» og «Ny kursdato» dagen som er valgt i mobilkalenderen (valgtDag), ikke PC-kalenderens dag; PC er uendret.",
+            "hva": "Ny kalender i admin-ny samlet (K0 + K3 + K4, alle godkjent av kontrolløren 2. oktober 2026; eieren ga fullmakt til anbefalt valg). Bredde: mobilkalenderen (K3) til og med 760 px, PC-kalenderen med tidsakse (K4) fra 761 px, også nettbrett. kalender.js har K3-linja først (if(erSmal())return kalenderMobil(...)), K4 etter. Én lytter på (max-width:760px): krysser bredden mens kalenderen vises, tegnes den på nytt; krysser den mens dataene lastes, tegnes riktig visning når de kommer. Kontrollørfunn rettet: PC-banene for korte hendelser regnes fra tegnet høyde (minst 24 px), så de ikke dekker hverandre; dagkolonnene kobles på kursholderens id (kalender.php gir kursholderId, bare lagt til); notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene i dagsvisningen som i gamle admin, og «Ikke tildelt» står bare for kurs uten kursholder. Mobil: kurs over midnatt (slutt før start) regnes riktig i «Går nå» (også kurs som startet i går), «Går nå» og «Neste» regnes på nytt hvert minutt med én timer som stoppes når kalenderen ikke vises, og «Neste» letes etter høyst seks måneder fram. Ingen nye tekster. Etter kontrollen (samme dag): måned har sju kolonner fra 761 px (1100-px-regelen for kalenderen fjernet); brikker under 40 px viser bare tid og tittel på én linje med ellipse; krysser bredden mens et ark står åpent, tegnes kalenderen på nytt først når arket lukkes; nyadmin-avsluttende prøver kalenderen på 390 px (mobil) og 1280 px (PC). På mobil foreslår «Nytt kalendernotat» og «Ny kursdato» dagen som er valgt i mobilkalenderen (valgtDag), ikke PC-kalenderens dag; PC er uendret. Etter godkjent kontroll: «Neste» på mobil er alltid første kommende kurs fra nå (månedene letes i rekkefølge, en valgt senere måned hopper ikke over noen); på PC regnes kurs over midnatt (slutt før start) som +24 t og vises til dagens slutt i uke og dag.",
             "hvor": "admin-ny › Kalender (#kalender) på 390, 900 og 1280 px",
             "kode": [
                 {
@@ -3462,7 +3462,8 @@
                         "nokler.has(String(h.id))",
                         "const baand=dagens.filter(e=>!holderNokkel(e)&&!erKurs(e));",
                         "class:'kp-baandlag'",
-                        "if(plass&&plass.hoyde<LAV_PX){attr.class+=' kp-lav';return el('button',attr,el('small',{text:e.tid||''}),el('strong',{text:e.tittel}));}"
+                        "if(plass&&plass.hoyde<LAV_PX){attr.class+=' kp-lav';return el('button',attr,el('small',{text:e.tid||''}),el('strong',{text:e.tittel}));}",
+                        "else if(sl<s)sl+=1440;return {s,sl:Math.min(1440,sl)};"
                     ],
                     "ikkeFinnes": [
                         "min-width:1101px",
@@ -3477,7 +3478,8 @@
                         "e.dato===shift(idag,-1)?n+1440-s",
                         "const SOK_MND=6;",
                         "naTimer=setInterval(()=>{if(!rot.isConnected){clearInterval(naTimer);return;}",
-                        "export const valgtDag=()=>valgt;"
+                        "export const valgtDag=()=>valgt;",
+                        "try{for(let i=0,ym=mnd(idag);!neste&&i<=SOK_MND;i++,ym=nesteMnd(ym))neste=forsteI(await hentMnd(ym));}catch{}"
                     ]
                 },
                 {
@@ -3505,7 +3507,8 @@
                         "to kursholdere med samme navn får hver sin kolonne (id)",
                         "båndet går over alle kolonnene",
                         "mens dataene lastes: riktig visning tegnes",
-                        "900 px: uke med tidsakse og sju dager"
+                        "900 px: uke med tidsakse og sju dager",
+                        "kurset over midnatt slutter ved dagens slutt"
                     ]
                 },
                 {
@@ -3515,7 +3518,8 @@
                         "«Går nå» og «Neste» oppdateres hvert minutt",
                         "ingen «Neste» lenger fram enn seks måneder",
                         "Nytt kalendernotat foreslår valgt dag",
-                        "Ny kursdato foreslår valgt dag"
+                        "Ny kursdato foreslår valgt dag",
+                        "«Neste» er januar, ikke den valgte måneden"
                     ]
                 },
                 {

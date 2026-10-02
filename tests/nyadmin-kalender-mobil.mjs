@@ -218,6 +218,16 @@ try{
   assert.ok(maaneder.includes('2027-05-01'),'letet til og med seks måneder fram');
  });
  console.log('390 px: «Neste» letes etter høyst seks måneder fram');
+ // Mars er valgt i kalenderen (lastet), men neste kurs er i januar: «Neste» viser januar.
+ await medData([hendelse(9007,'2027-01-20','18:00','20:00','Januarkurs'),hendelse(9008,'2027-03-15','18:00','20:00','Marskurs')],'2026-11-10T09:00:00Z',async p=>{
+  await p.getByRole('button',{name:'Søk i kalender',exact:true}).tap();await p.getByLabel('Velg dato').fill('2027-03-15');
+  await p.locator('.kalm-ukedag[aria-pressed="true"][aria-label*="15. mars"]').waitFor();
+  await p.evaluate(()=>{location.hash='idag';});await p.locator('.kalm').waitFor({state:'detached'});
+  await p.evaluate(()=>{location.hash='kalender';});await p.locator('.kalm').waitFor();
+  assert.ok(await p.locator('button.kalm-kort',{hasText:'Marskurs'}).count(),'mars står fortsatt valgt');
+  const n=p.locator('.kalm-na.neste');await n.waitFor();assert.ok((await n.innerText()).includes(`${s.tag} Januarkurs`),'«Neste» er januar, ikke den valgte måneden');
+ });
+ console.log('390 px: «Neste» er første kommende kurs fra nå, også når en senere måned er valgt');
  assert.equal(fixture('inspect',s).varsler,0,'ingen SMS eller e-post');
  console.log('Ingen varsler lagt i køen.');
 }finally{await browser.close();if(s)fixture('cleanup',s);}

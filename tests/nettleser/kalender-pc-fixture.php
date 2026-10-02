@@ -11,6 +11,7 @@
  * Om seksten dager (samlet kalender, 2. oktober 2026): to korte kurs E 10:00–10:10 og F 10:15–10:25 hos H1
  * (skal ikke dekke hverandre), kurs G 12:00–13:00 hos H3 som heter det samme som H1 (kolonnene kobles på id),
  * og et kalendernotat 11:00–11:30 (bånd over alle kolonnene, ikke i «Ikke tildelt»).
+ * Kurs H 22:00–01:00 samme dag hos H2 går over midnatt: vises til dagens slutt (to timer), ikke én time.
  * Alt merkes «KalPcTest-», og oppryddingen tar bare det. Ingen varsler lages.
  */
 declare(strict_types=1);
@@ -38,8 +39,8 @@ if ($mode === 'seed') {
     $kurs = []; $okt = [];
     foreach (['A' => ["$d 17:00", "$d 20:00", $h1], 'B' => ["$d 18:00", "$d 19:00", $h1], 'C' => ["$d 17:00", "$d 20:00", null],
               'D' => ["$d1 10:00", "$d2 13:00", $h1],
-              'E' => ["$e 10:00", "$e 10:10", $h1], 'F' => ["$e 10:15", "$e 10:25", $h1], 'G' => ["$e 12:00", "$e 13:00", $h3]] as $n => [$fra, $til, $h]) {
-        $kurs[$n] = DB::settInn('courses', ['slug' => strtolower($tag . '-' . $n), 'tittel' => "$tag " . ['A' => 'Alfa', 'B' => 'Bravo', 'C' => 'Charlie', 'D' => 'Delta', 'E' => 'Echo', 'F' => 'Foxtrot', 'G' => 'Golf'][$n], 'type' => 'kurs',
+              'E' => ["$e 10:00", "$e 10:10", $h1], 'F' => ["$e 10:15", "$e 10:25", $h1], 'G' => ["$e 12:00", "$e 13:00", $h3], 'H' => ["$e 22:00", $dag(17) . ' 01:00', $h2]] as $n => [$fra, $til, $h]) {
+        $kurs[$n] = DB::settInn('courses', ['slug' => strtolower($tag . '-' . $n), 'tittel' => "$tag " . ['A' => 'Alfa', 'B' => 'Bravo', 'C' => 'Charlie', 'D' => 'Delta', 'E' => 'Echo', 'F' => 'Foxtrot', 'G' => 'Golf', 'H' => 'Hotel'][$n], 'type' => 'kurs',
             'pris_ore' => 50000, 'kapasitet' => 6, 'status' => 'publisert']);
         $okt[$n] = DB::settInn('course_sessions', ['course_id' => $kurs[$n], 'start_tid' => $iUtc($fra), 'slutt_tid' => $iUtc($til),
             'kapasitet' => 6, 'kursholder_id' => $h]);

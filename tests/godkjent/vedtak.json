@@ -3105,7 +3105,9 @@
                         "'uke'            => $dag->modify('+6 days')->format('Y-m-d'),",
                         "'maaned', 'time' => $dag->format('Y-m-t'),",
                         "UPDATE tildelinger SET trukket_at = :n, trukket_av = :a WHERE id = :i AND trukket_at IS NULL",
-                        "new DateTimeZone('Europe/Oslo')"
+                        "new DateTimeZone('Europe/Oslo')",
+                        "'til' => $til, 'av' => $gittAv]",
+                        "['tildeling' => $id, 'av' => $trukketAv]"
                     ],
                     "ikkeFinnes": [
                         "DELETE FROM tildelinger"
@@ -3116,7 +3118,18 @@
                     "finnes": [
                         "CREATE TABLE IF NOT EXISTS tildelinger (",
                         "type        ENUM('time','uke','maaned') NOT NULL,",
-                        "KEY ix_tildeling_medlem_til (member_id, til),"
+                        "KEY ix_tildeling_medlem_til (member_id, til),",
+                        "REFERENCES members (id) ON DELETE RESTRICT"
+                    ],
+                    "ikkeFinnes": [
+                        "ON DELETE CASCADE"
+                    ]
+                },
+                {
+                    "fil": "tests/tildeling.php",
+                    "finnes": [
+                        "medlemmet med tildeling er IKKE slettet (raden finnes)",
+                        "revisjonen sier hvem som trakk (av = 42)"
                     ]
                 },
                 {

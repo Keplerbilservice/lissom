@@ -124,7 +124,7 @@ final class Tildeling
             'til'       => $til,
             'gitt_av'   => $gittAv,
         ]);
-        revider('tildeling_gitt', 'member', $memberId, ['tildeling' => $id, 'type' => $type, 'til' => $til]);
+        revider('tildeling_gitt', 'member', $memberId, ['tildeling' => $id, 'type' => $type, 'til' => $til, 'av' => $gittAv]);
         return $id;
     }
 
@@ -148,7 +148,7 @@ final class Tildeling
         if ($endret === 0) {
             return false;
         }
-        revider('tildeling_trukket', 'member', (int) $rad['member_id'], ['tildeling' => $id]);
+        revider('tildeling_trukket', 'member', (int) $rad['member_id'], ['tildeling' => $id, 'av' => $trukketAv]);
         return true;
     }
 }

@@ -4,6 +4,10 @@
 -- tildeling. En tildeling slettes aldri — den trekkes (trukket_at/trukket_av),
 -- saa det staar igjen hvem som ga og hvem som trakk.
 --
+-- ON DELETE RESTRICT: et medlem som har faatt tid, slettes ikke helt. Basen
+-- sier nei, og «Slett» i admin anonymiserer i stedet (api/admin/medlemmer.php),
+-- saa tildelingene staar igjen.
+--
 --   type = time    timer = 1, gjelder ut maaneden (til = siste dag i maaneden)
 --   type = uke     tilgang dag 1–7 (til = fra + 6 dager)
 --   type = maaned  tilgang ut maaneden (til = siste dag i maaneden)
@@ -28,5 +32,5 @@ CREATE TABLE IF NOT EXISTS tildelinger (
     PRIMARY KEY (id),
     KEY ix_tildeling_medlem_til (member_id, til),
     CONSTRAINT fk_tildeling_medlem FOREIGN KEY (member_id)
-        REFERENCES members (id) ON DELETE CASCADE
+        REFERENCES members (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

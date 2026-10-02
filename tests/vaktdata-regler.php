@@ -145,6 +145,10 @@ $betal(['formal' => 'booking', 'booking_id' => $reservert]);
 $avbrutt = $betal(['formal' => 'booking', 'status' => 'avbrutt']);
 $betaltUten = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Betalt ' . $tag,
     'antall' => 1, 'belop_ore' => 100000, 'status' => 'betalt', 'payment_id' => $avbrutt]);
+// Riktig: delbetalt plass er med rette fortsatt reservert.
+$delbetalt = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Delbetalt ' . $tag,
+    'antall' => 1, 'belop_ore' => 100000, 'status' => 'reservert']);
+$betal(['formal' => 'booking', 'booking_id' => $delbetalt, 'type' => 'manuell', 'belop_ore' => 50000]);
 // Riktig: betalt paamelding med betalt betaling.
 $riktigBet = $betal(['formal' => 'booking']);
 $riktigBooking = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Riktig ' . $tag,
@@ -201,6 +205,7 @@ sjekk('oppsagt der den betalte perioden er over', !$omId($avsluttet, ['betalt_ik
 sjekk('bytte til en annen plan samme måned er ikke dobbel betaling', !$omId($bytte, ['dobbel_betaling_periode']), $vis);
 sjekk('Kort Periode er ikke dobbelt betalt', !$omId($kort, ['dobbel_betaling_periode']), $vis);
 sjekk('betalt påmelding med betalt betaling', !$omId($riktigBooking, ['booking_betaling_uenig']), $vis);
+sjekk('delbetalt påmelding som står som reservert', !$omId($delbetalt, ['booking_betaling_uenig']), $vis);
 sjekk('gavekort med uttak som går opp', !$omId($kortRiktig, ['gavekort_saldo']), $vis);
 
 echo "\n── Personvern og form ───────────────────────────────────────\n";

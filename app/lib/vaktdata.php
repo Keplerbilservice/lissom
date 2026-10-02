@@ -460,10 +460,12 @@ final class Vaktdata
 
     // ── L12 booking_betaling_uenig ───────────────────────────────────────
     //
-    // Betalingen er betalt, men paameldingen staar fortsatt som reservert —
-    // eller paameldingen staar som betalt, men ingen betaling paa den er
-    // betalt. En paamelding kan ha flere betalinger (delt betaling); det
-    // holder at én er betalt. Manuelle paameldinger uten betaling er utenfor.
+    // Betalingene dekker hele beloepet, men paameldingen staar fortsatt som
+    // reservert — eller paameldingen staar som betalt, men ingen betaling paa
+    // den er betalt. Summen regnes som Booking::settBetaltStatus() gjor
+    // (Booking::betalingerFor(), med gavekort og delt betaling), saa en
+    // delbetalt plass som med rette er reservert ikke gir funn (Codex 2.10).
+    // Manuelle paameldinger uten betaling er utenfor.
     private static function bookingBetalingUenig(): array
     {
         $ut = [];
@@ -476,9 +478,13 @@ final class Vaktdata
               WHERE b.status = 'reservert' AND p.formal = 'booking'
                 AND p.status IN ({$ok}) AND p.annullert_at IS NULL"
         ) as $b) {
+            $sum = Booking::betalingerFor((int) $b['id'])['sum'];
+            if ($sum <= 0 || $sum < (int) $b['belop_ore']) {
+                continue;
+            }
             $ut[] = self::funn('booking_betaling_uenig', (int) $b['id'], (string) ($b['navn'] ?? $b['gjest_navn'] ?? ''),
                 'Påmelding ' . $b['id'] . ' (' . Booking::kroner((int) $b['belop_ore'])
-                . ') står som reservert, men betalingen er betalt');
+                . ') står som reservert, men ' . Booking::kroner($sum) . ' er betalt');
         }
         foreach (DB::alle(
             "SELECT b.id, b.gjest_navn, b.belop_ore, m.navn

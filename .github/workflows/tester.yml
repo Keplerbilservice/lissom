@@ -10,8 +10,36 @@ on:
     branches-ignore: [main]
 
 jobs:
-  tester:
+  # Eieren, 2. oktober 2026: testene tok ~30 min i én jobb. Naa deles de i
+  # grupper (tests/alle.sh, «gruppe»-linjene) som kjorer parallelt, hver med
+  # egen base. «plan» leser gruppelisten fra alle.sh og feiler hvis et
+  # testsett staar uten gruppe — saa ingen test kan falle ut av sperren.
+  # Publiseringen venter paa hele workflowen: faller en gruppe, legges ingenting ut.
+  plan:
     runs-on: ubuntu-latest
+    outputs:
+      grupper: ${{ steps.g.outputs.grupper }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Finn gruppene og sjekk at alle testsett har en
+        id: g
+        run: |
+          ALLE_TORR=1 bash tests/alle.sh | tee /tmp/torr.txt
+          # Hver gruppe maa ha minst ett testsett.
+          for g in $(bash tests/alle.sh --grupper); do
+            grep -q "^$g"$'\t' /tmp/torr.txt || { echo "Gruppen $g er tom"; exit 1; }
+          done
+          echo "grupper=$(bash tests/alle.sh --grupper | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+  tester:
+    needs: plan
+    name: tester (${{ matrix.gruppe }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        gruppe: ${{ fromJSON(needs.plan.outputs.grupper) }}
     services:
       db:
         image: mariadb:10.11
@@ -36,6 +64,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      # Nettleseren (~150 MB) hentes bare naar hurtigbufferen mangler.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/ms-playwright
+          key: tester-npm-pw-${{ runner.os }}-${{ hashFiles('.github/workflows/tester.yml') }}
+          restore-keys: tester-npm-pw-${{ runner.os }}-
 
       - name: Sett opp testoppsett og database
         run: |
@@ -74,8 +111,10 @@ jobs:
       # grenene leses resultatet av den som jobber («Gikk/Feilet» i loggen),
       # saa der stopper ikke en feil kjoringen. Foer publisering (workflow_call
       # fra «Publiser til lissom.no») stopper den som foer — og varsler.
-      - name: Kjor alle testene
+      - name: Kjor testene i gruppen ${{ matrix.gruppe }}
         continue-on-error: ${{ github.ref != 'refs/heads/main' }}
+        env:
+          ALLE_GRUPPE: ${{ matrix.gruppe }}
         run: |
           php tests/nettleser/testdatabase-test.php
           bash tests/alle.sh

@@ -2725,6 +2725,28 @@
             ]
         },
         {
+            "id": "prove-til-medlem-etter-20",
+            "dato": "2026-10-02",
+            "hva": "Johanna skal rettes til oktober (eieren 2. oktober): migrasjon 246 gir gjelder_fra = 1. oktober på første vanlige medlemskapsbetaling 21.–30. september 2026 når medlemmet før bare har betalt Prøv Lissom — samme regel som koden (Prøv Lissom → vanlig er nytt). Ikke fast trekk, og ikke den som har betalt igjen.",
+            "hvor": "Migrasjon 246",
+            "kode": [
+                {
+                    "fil": "db/migrations/246_prove_til_medlem_etter_20.sql",
+                    "finnes": [
+                        "JOIN membership_plans ep ON ep.navn = es.plan AND ep.engangs = 1",
+                        "WHERE p.gjelder_fra IS NULL;"
+                    ]
+                },
+                {
+                    "fil": "tests/nytt-etter-20.php",
+                    "finnes": [
+                        "246: Johanna (Prøv 2.9 + Mini 15 29.9) gjelder fra 1. oktober",
+                        "246 treffer ikke et medlem med tidligere vanlig betaling"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "prov-lissom-sluttet",
             "dato": "2026-10-02",
             "hva": "Prøv Lissom som er over vises som «Prøv Lissom sluttet <dato>» (egen status «over»), ikke «Betalt» og ikke «Venter på betaling». Den er ute av «Ikke betalt» i Kassa og tellingen, purres ikke, og Min side tilbyr medlemskap.",

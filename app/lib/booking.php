@@ -1281,14 +1281,18 @@ final class Booking
      * $onsket = 0 betyr hele restbeloepet.
      * @return array{belop:int,refundert:int,gjenstaar:int}
      */
-    public static function refunderBetaling(int $paymentId, int $onsket = 0, ?string $operasjonId = null, ?callable $claim = null): array
+    public static function refunderBetaling(int $paymentId, int $onsket = 0, ?string $operasjonId = null, ?callable $claim = null, array $laasKort = []): array
     {
         $laas = 'lissom-refund-' . $paymentId;
         if ((int) DB::verdi('SELECT GET_LOCK(:n, 0)', ['n' => $laas]) !== 1) {
             throw new RuntimeException('Refusjon behandles allerede.');
         }
         try {
-            $op = DB::iTransaksjon(static function () use ($paymentId, $onsket, $operasjonId, $claim): array {
+            $op = DB::iTransaksjon(static function () use ($paymentId, $onsket, $operasjonId, $claim, $laasKort): array {
+                // Samme laaserekkefoelge overalt: gavekortene foer betalingene
+                // (som gavekortDekker()), ellers kan to oppgjoer laase hverandre.
+                // $laasKort er kort den som kaller roerer i $claim.
+                self::laasKort(array_merge($laasKort, self::kortFor($paymentId)));
                 $p = DB::en('SELECT * FROM payments WHERE id = :i FOR UPDATE', ['i' => $paymentId]);
                 if ($claim !== null) { $claim(); }
                 if ($operasjonId !== null) {
@@ -1352,6 +1356,7 @@ final class Booking
                 }
             }
             return DB::iTransaksjon(static function () use ($paymentId, $op): array {
+                self::laasKort(self::kortFor($paymentId));
                 $p = DB::en('SELECT * FROM payments WHERE id = :i FOR UPDATE', ['i' => $paymentId]);
                 // Webhook kan ha bekreftet samme aggregate mens kallet gikk.
                 $refundert = max((int) $p['refundert_ore'], (int) $op['before_ore'] + (int) $op['amount_ore']);
@@ -1496,6 +1501,7 @@ final class Booking
     public static function gjorOppFullRefusjon(int $paymentId): void
     {
         $arbeid = static function () use ($paymentId): void {
+            self::laasKort(self::kortFor($paymentId));
             $status = DB::verdi('SELECT status FROM payments WHERE id = :p FOR UPDATE', ['p' => $paymentId]);
             if ($status !== 'refundert') {
                 return;
@@ -2345,14 +2351,16 @@ final class Booking
             return 0;
         }
         $arbeid = static function () use ($paymentId, $onsket): int {
-            $kortId = (int) DB::verdi(
-                'SELECT gavekort_id FROM payments WHERE id = :i FOR UPDATE',
-                ['i' => $paymentId]
-            );
+            // Kortet laases foer betalingen — samme rekkefoelge som
+            // gavekortDekker() og refunderBetaling().
+            $kortId = (int) DB::verdi('SELECT gavekort_id FROM payments WHERE id = :i', ['i' => $paymentId]);
             if ($kortId <= 0) {
                 return 0;
             }
             if (DB::verdi('SELECT id FROM gift_cards WHERE id = :k FOR UPDATE', ['k' => $kortId]) === null) {
+                return 0;
+            }
+            if ((int) DB::verdi('SELECT gavekort_id FROM payments WHERE id = :i FOR UPDATE', ['i' => $paymentId]) !== $kortId) {
                 return 0;
             }
             $eget = self::egneUttak($paymentId, $kortId);
@@ -2425,6 +2433,45 @@ final class Booking
             'SELECT COALESCE(SUM(belop_ore), 0) FROM gift_card_uses WHERE ' . $eget[0],
             $eget[1]
         );
+    }
+
+    /**
+     * Gavekortene en betaling roerer: kortet den ble betalt med, og kortet
+     * den kjoepte. Til laaserekkefoelgen (laasKort()).
+     *
+     * @return list<int>
+     */
+    public static function kortFor(int $paymentId): array
+    {
+        if (!DB::harTabell('gift_cards')) {
+            return [];
+        }
+        $ider = array_map('intval', array_column(
+            DB::alle('SELECT id FROM gift_cards WHERE payment_id = :p', ['p' => $paymentId]), 'id'));
+        if (DB::harKolonne('payments', 'gavekort_id')) {
+            $k = (int) DB::verdi('SELECT gavekort_id FROM payments WHERE id = :p', ['p' => $paymentId]);
+            if ($k > 0) {
+                $ider[] = $k;
+            }
+        }
+        return $ider;
+    }
+
+    /**
+     * Laaser gavekortene, i id-rekkefoelge, foer betalingene laases.
+     * Kontrolloeren, 2. oktober 2026: samme rekkefoelge overalt (kort, saa
+     * betaling — som gavekortDekker()), saa to oppgjoer ikke vranglaaser.
+     *
+     * @param list<int> $ider
+     */
+    public static function laasKort(array $ider): void
+    {
+        $ider = array_values(array_unique(array_filter(array_map('intval', $ider), static fn(int $i): bool => $i > 0)));
+        if ($ider === [] || !DB::harTabell('gift_cards')) {
+            return;
+        }
+        sort($ider);
+        DB::alle('SELECT id FROM gift_cards WHERE id IN (' . implode(',', $ider) . ') ORDER BY id FOR UPDATE');
     }
 
     /** revider() naar den er lastet (testene som bare laster denne fila har den ikke). */

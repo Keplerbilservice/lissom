@@ -429,7 +429,12 @@ if ($handling === 'status') {
         // tilbake og plassen staar som foer.
         try {
             DB::iTransaksjon(static function () use ($felt, $id, $kort, $bok): void {
-                DB::oppdater('bookings', $felt, ['id' => $id]);
+                // Dobbelttrykk (kontrolloeren, 2. oktober 2026): sjekken over
+                // leser foer laasen. Plassen tas her, betinget paa at den ikke
+                // har en betaling — det andre trykket faar 0 rader og 409, og
+                // betalingsraden det laget rulles tilbake. payment_id gaar fra
+                // NULL til en verdi, saa en rad som ble tatt telles alltid.
+                Booking::laasKort([(int) $kort['id']]);
                 $betalingId = DB::settInn('payments', [
                     'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
                     'type'            => 'manuell',
@@ -441,7 +446,19 @@ if ($handling === 'status') {
                     'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $id : null,
                     'idempotency_key' => Vipps::uuid(),
                 ]);
-                DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $id]);
+                $sett = ['payment_id = :pid'];
+                $verdier = ['i' => $id, 'pid' => $betalingId];
+                foreach ($felt as $k => $v) {
+                    $sett[] = "{$k} = :f_{$k}";
+                    $verdier['f_' . $k] = $v;
+                }
+                $tatt = DB::kjor(
+                    'UPDATE bookings SET ' . implode(', ', $sett) . ' WHERE id = :i AND payment_id IS NULL',
+                    $verdier
+                )->rowCount();
+                if ($tatt !== 1) {
+                    throw new RuntimeException('Plassen har alt en betaling. Fjern den først, eller ta den på en annen måte.', 409);
+                }
                 Booking::trekkGavekortEllerAvbryt($betalingId);
             });
         } catch (RuntimeException $e) {

@@ -101,6 +101,24 @@ try {
         sjekk('nøyaktig én påmelding lykkes', $lyktes === 1, json_encode(array_column($svar, 0)) . ' ' . json_encode(array_column($svar, 1), JSON_UNESCAPED_UNICODE));
         sjekk('saldo 0, aldri negativ; én betaling; én plass lagt inn', $saldo === 0 && $bet === 1 && $plasser === 1, "saldo $saldo, betalinger $bet, plasser $plasser");
     }
+
+    foreach ([1, 2, 3] as $runde) {
+        echo "\n── Påmelding, dobbelttrykk $runde: «betalt med gavekort» to ganger på én plass ──\n";
+        // Kortet har 100000, plassen koster 50000: saldoen alene stopper ikke
+        // et dobbelt trekk — det maa sperren paa plassen gjore.
+        $kode = $tag . '-D' . $runde;
+        $k = nyttKort($kode);
+        DB::oppdater('gift_cards', ['opprinnelig_ore' => 100000, 'saldo_ore' => 100000], ['id' => $k]);
+        $bid = DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $okt, 'gjest_navn' => "Dobbel $runde",
+            'antall' => 1, 'belop_ore' => 50000, 'status' => 'reservert']);
+        $kropp = ['handling' => 'status', 'id' => $bid, 'status' => 'betalt', 'maate' => 'Gavekort', 'kode' => $kode];
+        $svar = parallelt([[$porter[0], '/api/admin/pamelding.php', $kropp, $token], [$porter[1], '/api/admin/pamelding.php', $kropp, $token]]);
+        $lyktes = count(array_filter($svar, static fn($s) => $s[0] === 200 && ($s[1]['ok'] ?? false) === true));
+        $saldo = (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :k', ['k' => $k]);
+        $bet = (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE gavekort_id = :k', ['k' => $k]);
+        sjekk('nøyaktig ett trykk lykkes', $lyktes === 1, json_encode(array_column($svar, 0)) . ' ' . json_encode(array_column($svar, 1), JSON_UNESCAPED_UNICODE));
+        sjekk('ett trekk: saldo 50000, én betaling', $saldo === 50000 && $bet === 1, "saldo $saldo, betalinger $bet");
+    }
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getLine());
 } finally {

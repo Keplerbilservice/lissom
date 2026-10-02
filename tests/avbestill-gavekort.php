@@ -113,6 +113,45 @@ try {
     sjekk('ett doegn foer: avbestilt, ingenting tilbake (saldo 30000)', $r[0] === 200 && saldo($k) === 30000
         && (int) ($r[1]['gavekortTilbakeOre'] ?? -1) === 0);
 
+    // Kontrolloeren: delt oppgjoer i Ta betalt — kontant 30000 + gavekort
+    // 20000 paa en plass til 50000, i begge rekkefoelger. bookings.payment_id
+    // peker paa den SISTE raden (som settBetaltStatus() gjor).
+    foreach (['kontant foerst' => ['kontant', 'gave'], 'gavekort foerst' => ['gave', 'kontant']] as $navn => $rekke) {
+        echo "\n── avbestill_delt_kontant_gavekort, $navn ─────────────────\n";
+        $okt = DB::settInn('course_sessions', ['course_id' => $course, 'start_tid' => gmdate('Y-m-d H:i:s', time() + 240 * 3600 + count($okter) * 60)]);
+        $okter[] = $okt;
+        $k = DB::settInn('gift_cards', ['kode' => 'AVBG-' . strtoupper(bin2hex(random_bytes(4))), 'opprinnelig_ore' => 50000,
+            'saldo_ore' => 50000, 'gyldig_til' => gmdate('Y-m-d', time() + 365 * 86400), 'status' => 'aktivt']);
+        $kortene[] = $k;
+        $b = DB::settInn('bookings', ['member_id' => $mid, 'course_id' => $course, 'course_session_id' => $okt,
+            'antall' => 1, 'belop_ore' => 50000, 'status' => 'betalt']);
+        $bookings[] = $b;
+        $siste = 0;
+        foreach ($rekke as $del) {
+            $felt = ['member_id' => $mid, 'vipps_reference' => 'DELT-' . bin2hex(random_bytes(6)), 'type' => 'manuell',
+                'formal' => 'booking', 'status' => 'betalt', 'idempotency_key' => bin2hex(random_bytes(18)), 'booking_id' => $b];
+            $felt += $del === 'kontant'
+                ? ['belop_ore' => 30000, 'maate' => 'Kontant']
+                : ['belop_ore' => 0, 'maate' => 'Gavekort', 'gavekort_id' => $k, 'gavekort_ore' => 20000];
+            $siste = DB::settInn('payments', $felt);
+            $payments[] = $siste;
+            if ($del === 'gave') {
+                Booking::trekkGavekort($siste);
+            }
+        }
+        DB::oppdater('bookings', ['payment_id' => $siste], ['id' => $b]);
+        sjekk('foer: kortet trukket 20000 (saldo 30000)', saldo($k) === 30000);
+        $foer = vippsKall();
+        $r = kall(['bookingId' => $b], $token);
+        sjekk('avbestilt ti dager foer', $r[0] === 200, json_encode($r[1], JSON_UNESCAPED_UNICODE));
+        sjekk('… gavekortdelen 20000 tilbake (saldo 50000)', saldo($k) === 50000 && (int) ($r[1]['gavekortTilbakeOre'] ?? -1) === 20000,
+            (string) saldo($k));
+        sjekk('… kontantdelen 30000 merkes manuelt (kr 300 tilbake for haand)', ($r[1]['manuelt'] ?? false) === true
+            && str_contains((string) ($r[1]['refunderes'] ?? ''), '300'), json_encode($r[1], JSON_UNESCAPED_UNICODE));
+        sjekk('… ingen Vipps-kall, plassen avbestilt', vippsKall() === $foer
+            && DB::verdi('SELECT status FROM bookings WHERE id = :b', ['b' => $b]) === 'avbestilt');
+    }
+
     echo "\n── avbestilt, saa annullert (Codex P1) ───────────────────────\n";
     // Samme kort paa to plasser, samme beloep: 20000 hver fra et kort paa 100000.
     [$b1, $p1, $k] = plass($mid, 20000, 20000, 100000, 240);

@@ -58,8 +58,9 @@
                 {
                     "fil": "api/avbestill.php",
                     "finnes": [
-                        "$gavekort = $b['pid'] !== null ? Booking::gavekortBrukt((int) $b['pid']) : 0;",
-                        "$gaveGitt = Booking::gavekortTilbake((int) $b['pid'], $gaveTilbake);"
+                        "$ider = array_map(static fn(array $r): int => (int) $r['id'], Booking::betalingerFor($bookingId)['rader']);",
+                        "$gave = Booking::gavekortBrukt((int) $p['id']);",
+                        "$gaveGitt += Booking::gavekortTilbake((int) $pid, $tilbake);"
                     ]
                 },
                 {

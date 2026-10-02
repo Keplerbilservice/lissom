@@ -50,11 +50,54 @@ if ($b['status'] === 'avbestilt' || $b['status'] === 'refundert') {
     Svar::feil('Denne plassen er allerede avbestilt.', 409);
 }
 
+// --- Betalingene paa plassen ----------------------------------------------
+//
+// Kontrolloeren, 2. oktober 2026: etter et delt oppgjoer (kontant + gavekort
+// i Ta betalt) peker «bookings.payment_id» paa den siste manuelle raden. Da
+// ble bare den lest, og gavekortdelen paa den andre raden ble aldri gitt
+// tilbake. Alle betalingene paa plassen leses (Booking::betalingerFor()).
+$ider = array_map(static fn(array $r): int => (int) $r['id'], Booking::betalingerFor($bookingId)['rader']);
+if ($ider === [] && $b['pid'] !== null) {
+    $ider = [(int) $b['pid']];
+}
+$rader = $ider === [] ? [] : DB::alle(
+    'SELECT * FROM payments WHERE id IN (' . implode(',', array_unique($ider)) . ') ORDER BY id'
+);
+
+$vippsRader = [];   // betalt i Vipps: refunderes dit
+$manuellOre = 0;    // kontant / Vipps i verkstedet: tilbake for haand
+$uavklartOre = 0;   // betaling som ikke er bekreftet: ordnes for haand
+$gavedeler = [];    // betaling-id => oere trukket fra kortet
+$kortIder = [];
+foreach ($rader as $p) {
+    if ($p['annullert_at'] !== null) {
+        continue;
+    }
+    // L-2: gavekortdelen er betalt, den ogsaa — det som faktisk ble trukket
+    // fra kortet for akkurat denne betalingen.
+    $gave = Booking::gavekortBrukt((int) $p['id']);
+    if ($gave > 0) {
+        $gavedeler[(int) $p['id']] = $gave;
+        $kortIder[] = (int) $p['gavekort_id'];
+    }
+    $penger = (int) $p['belop_ore'];
+    if ($penger <= 0) {
+        continue;
+    }
+    $st = (string) $p['status'];
+    if ((string) $p['type'] !== 'manuell' && trim((string) $p['vipps_reference']) !== ''
+        && in_array($st, ['betalt', 'delvis_refundert'], true)) {
+        $vippsRader[] = $p;
+    } elseif ((string) $p['type'] === 'manuell' && $st === 'betalt') {
+        $manuellOre += $penger;
+    } elseif (in_array($st, ['opprettet', 'venter', 'autorisert'], true)) {
+        $uavklartOre += $penger;
+    }
+}
+
 // --- Hvor mye skal tilbake? ----------------------------------------------
-$betalt = (int) ($b['betalt_ore'] ?? 0);
-// L-2 (eieren, 2. oktober 2026): gavekortdelen er betalt, den ogsaa. Den
-// telles av det som faktisk ble trukket fra kortet for denne betalingen.
-$gavekort = $b['pid'] !== null ? Booking::gavekortBrukt((int) $b['pid']) : 0;
+$betalt = $manuellOre + $uavklartOre + array_sum(array_map(static fn(array $p): int => (int) $p['belop_ore'], $vippsRader));
+$gavekort = array_sum($gavedeler);
 $timerIgjen = $b['start_tid'] ? (strtotime((string) $b['start_tid']) - time()) / 3600 : null;
 
 if ($betalt === 0 && $gavekort === 0) {
@@ -69,15 +112,15 @@ if ($betalt === 0 && $gavekort === 0) {
     $regel = $r['regel'];
 }
 
-$refunderes = (int) round($betalt * $andel);
-// Gavekortdelen etter samme regel, tilbake paa kortet.
-$gaveTilbake = (int) round($gavekort * $andel);
+// Kontant og ubekreftet etter samme regel, men tilbake for haand.
+$forHaand = (int) round($manuellOre * $andel) + (int) round($uavklartOre * $andel);
+$refunderes = $forHaand;
 $gaveGitt = 0;
 $refundert = false;
-$manuelt = false;
+$manuelt = $forHaand > 0;
 
 $harClaim = false;
-$claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gaveTilbake, &$gaveGitt): void {
+$claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gavedeler, $andel, &$gaveGitt): void {
     $endret = DB::kjor(
     "UPDATE bookings SET status = 'avbestilt', avbestilt_at = UTC_TIMESTAMP()
       WHERE id = :i AND member_id = :m AND status = :s AND avbestilt_at IS NULL",
@@ -87,53 +130,72 @@ $claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gaveTilba
         throw new RuntimeException('Denne plassen er allerede avbestilt.', 409);
     }
     // I samme transaksjon som avbestillingen: den som faar plassen avbestilt,
-    // er den eneste som gir gavekortdelen tilbake, og bare én gang.
-    if ($gaveTilbake > 0) {
-        $gaveGitt = Booking::gavekortTilbake((int) $b['pid'], $gaveTilbake);
+    // er den eneste som gir gavekortdelene tilbake, og bare én gang.
+    foreach ($gavedeler as $pid => $gave) {
+        $tilbake = (int) round($gave * $andel);
+        if ($tilbake > 0) {
+            $gaveGitt += Booking::gavekortTilbake((int) $pid, $tilbake);
+        }
     }
     $harClaim = true;
 };
 
 // --- Selve refusjonen -----------------------------------------------------
-$viaVipps = $refunderes > 0 && $b['vipps_reference']
-    && in_array($b['betalingsstatus'], ['betalt', 'delvis_refundert'], true);
-if ($viaVipps) {
+$vippsGitt = 0;
+$vippsFull = $vippsRader !== [];
+foreach ($vippsRader as $p) {
+    $onsket = (int) round((int) $p['belop_ore'] * $andel);
+    if ($onsket <= 0) {
+        $vippsFull = false;
+        continue;
+    }
+    $medClaim = !$harClaim;
     try {
-        // Bookingclaim og varig refusjonsintent committes i samme transaksjon.
-        $resultat = Booking::refunderBetaling((int) $b['pid'], $refunderes, null, $claim);
-        $refunderes = $resultat['belop'];
-        $refundert = $resultat['gjenstaar'] === 0;
-        $manuelt = !$refundert;
+        // Bookingclaim, gavekortdelene og varig refusjonsintent committes i
+        // samme transaksjon (den foerste refusjonen). Kortene laases foerst.
+        $resultat = Booking::refunderBetaling((int) $p['id'], $onsket, null,
+            $medClaim ? $claim : null, $medClaim ? $kortIder : []);
+        $vippsGitt += $resultat['belop'];
+        if ($resultat['gjenstaar'] !== 0) {
+            $vippsFull = false;
+            $manuelt = true;
+        }
     } catch (Throwable $e) {
-        if (!$harClaim && $e instanceof RuntimeException && $e->getMessage() === 'Refusjon behandles allerede.') {
+        if ($medClaim && !$harClaim && $e instanceof RuntimeException && $e->getMessage() === 'Refusjon behandles allerede.') {
             Svar::feil('Noe gikk galt. Prøv igjen, eller ta kontakt med oss.', 409);
         }
-        if ($e->getCode() === 409) {
+        if ($medClaim && $e->getCode() === 409) {
             Svar::feil('Denne plassen er allerede avbestilt.', 409);
         }
-        if (!$harClaim) { throw $e; }
+        if ($medClaim && !$harClaim) { throw $e; }
         $avbestilt = DB::verdi('SELECT avbestilt_at FROM bookings WHERE id = :i', ['i' => $bookingId]);
         if ($avbestilt === null) { throw $e; }
         // Avbestillingen staar uansett. Pengene ordnes for haand framfor aa
         // late som ingenting skjedde — kunden har jo mistet plassen.
         logg_feil('Refusjon feilet ved avbestilling av booking ' . $bookingId, $e);
+        $refunderes += $onsket;
+        $vippsFull = false;
         $manuelt = true;
     }
-} elseif ($refunderes > 0) {
-    // Ingen bekreftet Vipps-refusjon: bruk den eksisterende manuell-teksten.
-    $manuelt = true;
 }
-if (!$viaVipps) {
-    try { DB::iTransaksjon(static function () use ($claim): void { $claim(); }); }
-    catch (RuntimeException $e) { Svar::feil('Denne plassen er allerede avbestilt.', 409); }
+$refunderes += $vippsGitt;
+if (!$harClaim) {
+    try {
+        DB::iTransaksjon(static function () use ($claim, $kortIder): void {
+            Booking::laasKort($kortIder);
+            $claim();
+        });
+    } catch (RuntimeException $e) { Svar::feil('Denne plassen er allerede avbestilt.', 409); }
 }
+$refundert = $vippsFull && $vippsGitt > 0 && !$manuelt;
 
 if ($refundert) {
     DB::oppdater('bookings', ['status' => 'refundert'], ['id' => $bookingId]);
 }
 
 revider('avbestilling', 'booking', $bookingId, [
-    'refundert_ore' => $refundert ? $refunderes : 0,
+    'refundert_ore' => $vippsGitt,
+    'for_haand_ore' => $refunderes - $vippsGitt,
     'gavekort_tilbake_ore' => $gaveGitt,
     'manuelt'       => $manuelt,
 ]);

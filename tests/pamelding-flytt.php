@@ -113,6 +113,13 @@ try {
         "beloep {$r['belop_ore']}, status {$r['status']}");
     sjekk('a) … Vipps-betalingen urort (50000, betalt), plassen holdes', (int) DB::verdi('SELECT belop_ore FROM payments WHERE id = :p', ['p' => $p]) === 50000
         && $r['reservert_til'] === null && (int) $r['payment_id'] === $p);
+    // Resten tas inn fra «Ikke betalt»-kortet (status betalt + maate).
+    [$kode, $svar] = parallelt([[$porter[0], '/api/admin/pamelding.php',
+        ['handling' => 'status', 'id' => $b, 'status' => 'betalt', 'maate' => 'Kontant'], $token]])[0];
+    $rest = DB::alle("SELECT belop_ore FROM payments WHERE booking_id = :b AND type = 'manuell'", ['b' => $b]);
+    sjekk('a) … resten tatt inn i «Ikke betalt»: én kontant-rad 20000, plassen betalt',
+        $kode === 200 && count($rest) === 1 && (int) $rest[0]['belop_ore'] === 20000 && $rad($b)['status'] === 'betalt',
+        json_encode([$kode, $rest, $rad($b)['status']]));
 
     // b) Vipps-betalt 50000 → kurs til 30000: 20000 for mye.
     $b = $plass($oA, $kA, ['belop_ore' => 50000]);

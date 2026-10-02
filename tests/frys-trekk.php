@@ -333,6 +333,92 @@ sjekk("Vipps avlyser ikke: betalingen avvises («$melding»)", $melding === 'Vip
     && (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND type = 'epayment'", ['s' => $avt]) === 0
     && (string) DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => (int) $t['id']]) === 'venter');
 
+// ── (m) kappløpet: egenbetaling og trekkrunde samtidig ──────────────────
+echo "\n── (m) kappløp: to tilkoblinger, aldri to betalinger ───────\n";
+// Kontrolloeren, 2. oktober 2026 (funnet av Codex): fornyPeriodePaa() og
+// trekk() tar den samme medlemslaasen. Her holder én tilkobling laasen mens en
+// annen prosess kjoerer den andre siden; den maa vente, og ser det den
+// foerste gjorde. Uansett rekkefoelge: aldri to betalinger for samme maaned.
+$s = require dirname(__DIR__) . '/app/secrets.php';
+$annen = new PDO(sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $s['db_vert'], (int) ($s['db_port'] ?? 3306), $s['db_navn']),
+    $s['db_bruker'], $s['db_passord'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$rotM = dirname(__DIR__);
+$barn = static function (string $kode) use ($rotM) {
+    $p = proc_open([PHP_BINARY, '-r', 'require "app/bootstrap.php"; ' . $kode], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $ror, $rotM);
+    return [$p, $ror];
+};
+$vent = static function ($p, array $ror): string {
+    $ut = stream_get_contents($ror[1]);
+    stream_get_contents($ror[2]);
+    proc_close($p);
+    return trim((string) $ut);
+};
+$lever = static fn($p): bool => (bool) (proc_get_status($p)['running'] ?? false);
+$lagM = static function (string $suffiks, string $mnd) use ($medlem, $plan, $avtale, $betalt, $frys, $avtaleRad, $tag, $feiler): array {
+    $m = $medlem('aktiv', $plan);
+    $agr = 'agr_frysM' . $suffiks . '_' . $tag;
+    $forrige = (new DateTimeImmutable($mnd))->modify('first day of previous month')->format('Y-m-d');
+    $avt = $avtale($m, $agr, $mnd);
+    $betalt($m, $avt, $forrige);
+    $frys($m, substr($mnd, 0, 8) . '05', substr($mnd, 0, 8) . '12');   // 8 dager: maaneden trekkes
+    file_put_contents($feiler, 'ja');
+    try { Medlemskap::trekk($avtaleRad($avt), (new DateTimeImmutable($mnd))->modify('-3 days')->format('Y-m-d')); } catch (RuntimeException $e) {}
+    @unlink($feiler);
+    $t = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'recurring_charge' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+    return [$m, $agr, $avt, $t];
+};
+$betalinger = static fn(int $avt, string $mnd): int => (int) DB::verdi(
+    "SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND status IN ('betalt','venter','opprettet')
+       AND gjelder_fra BETWEEN :f AND LAST_DAY(:g)", ['s' => $avt, 'f' => $mnd, 'g' => $mnd]);
+
+// 1) Trekkrunden holder laasen og tar maaneden; egenbetalingen venter, og
+//    avvises naar den slipper til (trekket har ingen charge-id ennaa).
+[$m, $agr, $avt, $t] = $lagM('A', '2037-03-01');
+$annen->beginTransaction();
+$annen->prepare('SELECT id FROM members WHERE id = ? FOR UPDATE')->execute([$m]);
+[$p, $ror] = $barn('try { Medlemskap::fornyPeriodePaa(DB::en("SELECT * FROM members WHERE id = ' . $m . '"), DB::en("SELECT * FROM subscriptions WHERE id = ' . $avt . '"), "2037-03-08"); echo "BETALING"; } catch (Throwable $e) { echo "AVVIST:" . $e->getMessage(); }');
+usleep(1500000);
+sjekk('egenbetalingen venter paa laasen', $lever($p));
+$annen->prepare("UPDATE payments SET status = 'opprettet' WHERE id = ?")->execute([(int) $t['id']]);   // runden tar forsoeket
+$annen->commit();
+$svar = $vent($p, $ror);
+sjekk("… og avvises naar den slipper til ($svar)", $svar === 'AVVIST:Vipps stoppet ikke trekket.'
+    && (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND type = 'epayment'", ['s' => $avt]) === 0);
+sjekk('… høyst én betaling for mars', $betalinger($avt, '2037-03-01') <= 1);
+
+// 2) Egenbetalingen holder laasen og setter inn raden sin; trekkrunden
+//    venter, og bestiller ikke naar den slipper til.
+[$m, $agr, $avt, $t] = $lagM('B', '2037-05-01');
+$annen->beginTransaction();
+$annen->prepare('SELECT id FROM members WHERE id = ? FOR UPDATE')->execute([$m]);
+$annen->prepare("INSERT INTO payments (vipps_reference, type, formal, member_id, subscription_id, belop_ore, status, idempotency_key, gjelder_fra)
+    VALUES (?, 'epayment', 'medlemskap', ?, ?, ?, 'opprettet', ?, '2037-05-01')")
+    ->execute(['TEST-' . bin2hex(random_bytes(10)), $m, $avt, $pris, Vipps::uuid()]);
+$fra = $loggLengde();
+[$p, $ror] = $barn('$a = DB::en("SELECT * FROM subscriptions WHERE id = ' . $avt . '"); $a["epost"] = ""; $a["navn"] = "Frystrekk"; try { echo Medlemskap::trekk($a, "2037-05-02"); } catch (Throwable $e) { echo "FEIL:" . $e->getMessage(); }');
+usleep(1500000);
+sjekk('trekkrunden venter paa laasen', $lever($p));
+$annen->commit();
+$svar = $vent($p, $ror);
+sjekk("… og bestiller ikke naar den slipper til ($svar)", $svar === 'bestilles alt' && $bestillinger($agr, $fra) === 0);
+sjekk('… én betaling for mai (medlemmets egen)', $betalinger($avt, '2037-05-01') === 1,
+    json_encode(DB::alle('SELECT type, status, gjelder_fra, vipps_psp_ref FROM payments WHERE subscription_id = :s ORDER BY id', ['s' => $avt])));
+
+// 3) Trekket gaar gjennom mens egenbetalingen venter paa laasen: maaneden er
+//    betalt naar den slipper til, og egenbetalingen avvises.
+[$m, $agr, $avt, $t] = $lagM('C', '2037-07-01');
+$annen->beginTransaction();
+$annen->prepare('SELECT id FROM members WHERE id = ? FOR UPDATE')->execute([$m]);
+[$p, $ror] = $barn('try { Medlemskap::fornyPeriodePaa(DB::en("SELECT * FROM members WHERE id = ' . $m . '"), DB::en("SELECT * FROM subscriptions WHERE id = ' . $avt . '"), "2037-07-08"); echo "BETALING"; } catch (Throwable $e) { echo "AVVIST:" . $e->getMessage(); }');
+usleep(1500000);
+sjekk('egenbetalingen venter paa laasen', $lever($p));
+$annen->prepare("UPDATE payments SET status = 'betalt', vipps_psp_ref = ? WHERE id = ?")->execute(['chr_test_' . $tag, (int) $t['id']]);
+$annen->commit();
+$svar = $vent($p, $ror);
+sjekk("trekket gikk foerst: egenbetalingen avvises ($svar)", str_starts_with($svar, 'AVVIST:')
+    && (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND type = 'epayment'", ['s' => $avt]) === 0
+    && $betalinger($avt, '2037-07-01') === 1);
+
 // ── (g) restdagene etter frysen i en overhoppet maaned ──────────────────
 echo "\n── (g) restdager etter frys i overhoppet maaned ────────────\n";
 $m = $medlem('aktiv', $plan);

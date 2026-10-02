@@ -992,17 +992,52 @@ final class Medlemskap
     }
 
     /**
+     * Holder medlemmet paa aa betale trekkmaaneden selv («Forny og betal» paa
+     * Min side, fryst med et feilet trekk)? En annen betaling for samme avtale
+     * og maaned som er «opprettet» eller «venter» og yngre enn 30 minutter.
+     * Da venter trekkrunden, saa det ikke blir dobbel betaling (betaling og
+     * kontrolloeren, 2. oktober 2026). Etter 30 minutter uten fullfoert
+     * betaling bestilles trekket som vanlig.
+     *
+     * @param array<string,mixed> $avtale
+     */
+    private static function egenBetalingPaagaar(array $avtale, string $nokkel): bool
+    {
+        if (!DB::harKolonne('payments', 'gjelder_fra')) {
+            return false;
+        }
+        $d = new DateTimeImmutable((string) $avtale['neste_trekk']);
+        return DB::verdi(
+            "SELECT id FROM payments
+              WHERE subscription_id = :s AND formal = 'medlemskap' AND idempotency_key <> :k
+                AND status IN ('opprettet', 'venter') AND annullert_at IS NULL
+                AND gjelder_fra BETWEEN :fra AND :til
+                AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
+              LIMIT 1",
+            ['s' => (int) $avtale['id'], 'k' => $nokkel,
+             'fra' => $d->modify('first day of this month')->format('Y-m-d'),
+             'til' => $d->modify('last day of this month')->format('Y-m-d')]
+        ) !== null;
+    }
+
+    /**
      * Foer et fryst medlem betaler maaneden som skyldes selv: et trekk for den
      * samme maaneden som fortsatt staar «opprettet» eller «venter» hos Vipps,
      * avlyses der, saa det ikke kan trekkes etterpaa (kontrolloeren, 2. oktober
      * 2026). Gaar ikke det — trekket har ingen charge-id ennaa, eller Vipps
      * sier nei — avvises betalingen heller enn aa risikere dobbel betaling.
+     * Kalles under medlemslaasen (fornyPeriodePaa()).
      *
      * @param array<string,mixed> $avtale
      */
     private static function avlysVentendeTrekk(array $avtale, string $maanedStart): void
     {
         $slutt = (new DateTimeImmutable($maanedStart))->modify('last day of this month')->format('Y-m-d');
+        // Er maaneden alt betalt (trekket gikk mens medlemmet var inne paa
+        // Min side), skal den ikke betales én gang til.
+        if (self::betalingForMaaned((int) $avtale['member_id'], substr($maanedStart, 0, 7)) !== null) {
+            throw new RuntimeException('Vipps stoppet ikke trekket.');
+        }
         $rader = DB::alle(
             "SELECT id, vipps_psp_ref FROM payments
               WHERE subscription_id = :s AND type = 'recurring_charge' AND formal = 'medlemskap'
@@ -1066,20 +1101,6 @@ final class Medlemskap
             throw new RuntimeException('Ukjent medlemskap.');
         }
 
-        // Samme forsoek to ganger skal gi den samme betalingen, ikke to.
-        $igjen = DB::en(
-            "SELECT id FROM payments
-              WHERE subscription_id = :s AND formal = 'medlemskap' AND status IN ('opprettet','venter')
-                AND type = 'epayment'
-                AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
-              ORDER BY id DESC LIMIT 1",
-            ['s' => $avtaleId]
-        );
-        $url = trim((string) (DB::verdi('SELECT vipps_url FROM subscriptions WHERE id = :i', ['i' => $avtaleId]) ?? ''));
-        if ($igjen !== null && $url !== '') {
-            return ['url' => $url, 'id' => $avtaleId, 'gjentakelse' => true];
-        }
-
         $idag = $idagFor ?? (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $siste = self::sisteBetalinger([$medlemId])[$medlemId] ?? null;
         $gjelderFra = $idag;
@@ -1091,7 +1112,6 @@ final class Medlemskap
         }
         if ($skyldig !== null) {
             $gjelderFra = $skyldig;
-            self::avlysVentendeTrekk($avtale, $skyldig);
         }
 
         $pris = (int) $plan['pris_ore'];
@@ -1109,7 +1129,36 @@ final class Medlemskap
         if (DB::harKolonne('payments', 'gjelder_fra')) {
             $rad['gjelder_fra'] = $gjelderFra;
         }
-        $betalingId = DB::settInn('payments', $rad);
+        // ── Under medlemslaasen (kontrolloeren, 2. oktober 2026) ─────────
+        //
+        // Samme laas som trekkrunden tar (trekk()). Sjekken av et forsoek fra
+        // foer, avlysningen av et ventende trekk for maaneden og raden for
+        // egenbetalingen skjer mens den holdes. Raden staar «opprettet» foer
+        // Vipps kontaktes, og trekkrunden venter paa den (30 minutter). Da kan
+        // de to aldri begge gaa: uansett rekkefoelge blir det én betaling.
+        $url = trim((string) (DB::verdi('SELECT vipps_url FROM subscriptions WHERE id = :i', ['i' => $avtaleId]) ?? ''));
+        $betalingId = DB::iTransaksjon(static function () use ($medlemId, $avtaleId, $avtale, $skyldig, $rad, $url): int {
+            DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $medlemId]);
+            // Samme forsoek to ganger skal gi den samme betalingen, ikke to.
+            $igjen = DB::en(
+                "SELECT id FROM payments
+                  WHERE subscription_id = :s AND formal = 'medlemskap' AND status IN ('opprettet','venter')
+                    AND type = 'epayment'
+                    AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
+                  ORDER BY id DESC LIMIT 1",
+                ['s' => $avtaleId]
+            );
+            if ($igjen !== null && $url !== '') {
+                return 0;
+            }
+            if ($skyldig !== null) {
+                self::avlysVentendeTrekk($avtale, $skyldig);
+            }
+            return DB::settInn('payments', $rad);
+        });
+        if ($betalingId === 0) {
+            return ['url' => $url, 'id' => $avtaleId, 'gjentakelse' => true];
+        }
 
         try {
             $betaling = Vipps::opprettBetaling(
@@ -3452,27 +3501,10 @@ final class Medlemskap
         $maaned = (new DateTimeImmutable((string) $avtale['neste_trekk']))->format('Y-m');
         $nokkel = substr(hash('sha256', 'trekk:' . $avtale['id'] . ':' . $maaned), 0, 36);
 
-        // Medlemmet holder paa aa betale maaneden selv («Forny og betal» paa
-        // Min side, fryst med et feilet trekk): en betaling for samme avtale
-        // og maaned som er «opprettet» eller «venter» og yngre enn 30
-        // minutter. Da venter runden, saa det ikke blir dobbel betaling
-        // (betaling, 2. oktober 2026). Etter 30 minutter uten fullfoert
-        // betaling bestilles trekket som vanlig.
-        if (DB::harKolonne('payments', 'gjelder_fra')) {
-            $mStart = (new DateTimeImmutable((string) $avtale['neste_trekk']))->modify('first day of this month')->format('Y-m-d');
-            $mSlutt = (new DateTimeImmutable((string) $avtale['neste_trekk']))->modify('last day of this month')->format('Y-m-d');
-            $paagaar = DB::verdi(
-                "SELECT id FROM payments
-                  WHERE subscription_id = :s AND formal = 'medlemskap' AND idempotency_key <> :k
-                    AND status IN ('opprettet', 'venter') AND annullert_at IS NULL
-                    AND gjelder_fra BETWEEN :fra AND :til
-                    AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
-                  LIMIT 1",
-                ['s' => (int) $avtale['id'], 'k' => $nokkel, 'fra' => $mStart, 'til' => $mSlutt]
-            );
-            if ($paagaar !== null) {
-                return 'bestilles alt';
-            }
+        // Medlemmet holder paa aa betale maaneden selv: runden venter. Sjekkes
+        // her (raskt) og paa nytt under medlemslaasen under.
+        if (self::egenBetalingPaagaar($avtale, $nokkel)) {
+            return 'bestilles alt';
         }
 
         // Er trekket alt fort, gjor vi ikke noe mer. Uten denne kunne en
@@ -3563,10 +3595,23 @@ final class Medlemskap
         // Hoppet gjelder bare et NYTT trekk. Finnes et forsoek fra foer
         // (opprettet/feilet uten charge-id), kan det ligge hos Vipps: det
         // avklares under (GET, ingen ny bestilling) foer noe hoppes over.
+        $forStatus = $paaNytt !== null && $tidligere !== null ? (string) $tidligere['status'] : null;
         [$utfall, $betalingId] = DB::iTransaksjon(static function () use (
-            $avtale, $maaned, $tidligere, $paaNytt, $periodeFra, $lagre, $kropp, $nokkel
+            $avtale, $maaned, $tidligere, $paaNytt, $periodeFra, $lagre, $kropp, $nokkel, $forStatus
         ): array {
             DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => (int) $avtale['member_id']]);
+            // Under laasen: medlemmet holder paa aa betale maaneden selv
+            // (fornyPeriodePaa() setter raden inn under den samme laasen).
+            // Da venter runden (kontrolloeren, 2. oktober 2026).
+            if (self::egenBetalingPaagaar($avtale, $nokkel)) {
+                // Forsoeket vi tok over (taForsok), legges tilbake slik det
+                // sto, saa det ikke ser ut som et trekk paa vei.
+                if ($paaNytt !== null && $forStatus !== null) {
+                    DB::kjor("UPDATE payments SET status = :s WHERE id = :i AND status = 'opprettet' AND vipps_psp_ref IS NULL",
+                        ['s' => $forStatus, 'i' => $paaNytt]);
+                }
+                return ['paagaar', 0];
+            }
             $betaltFraFoer = self::betalingForMaaned((int) $avtale['member_id'], $maaned, true) !== null;
             if ($betaltFraFoer && $tidligere === null) {
                 self::flyttForbiBetaltMaaned($avtale);
@@ -3588,6 +3633,9 @@ final class Medlemskap
                 'gjelder_fra'     => $periodeFra,
             ] + $lagre)];
         });
+        if ($utfall === 'paagaar') {
+            return 'bestilles alt';
+        }
         if ($utfall === 'betalt') {
             logg('Trekk hoppet over: maaneden er alt betalt', ['avtale' => (int) $avtale['id'], 'maaned' => $maaned]);
             return 'betalt fra foer';

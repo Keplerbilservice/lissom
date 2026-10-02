@@ -50,9 +50,21 @@ if (er_aktivt_medlem($m) && $fryst === null) {
 // 2026). Sendes bare naar det finnes en slik frys.
 $starter = $fryst === null && (string) ($m['rolle'] ?? '') !== 'admin' ? Frys::frysStarter($m) : null;
 
+// Fryst med fast trekk og noe utestaaende (eieren, 2. oktober 2026): det
+// betales i verkstedet, ikke paa Min side. Min side viser det utestaaende med
+// den samme betalingsteksten som admin bruker, og ingen «Forny og betal».
+$fastTrekk = $fryst !== null && Medlemskap::harFastTrekk((int) $m['id']);
+$skyldigTekst = null;
+if ($fryst !== null && $betalingMangler) {
+    $bs = Medlemskap::betalingsstatusFor($m);
+    $skyldigTekst = $bs['utestaaende'] ? $bs['tekst'] : null;
+}
+
 Svar::json(($fryst !== null ? ['fryst' => [
-    'til'      => $fryst['til'],
-    'tilTekst' => $fryst['til'] !== null ? Booking::norskDatoKort($fryst['til']) : null,
+    'til'          => $fryst['til'],
+    'tilTekst'     => $fryst['til'] !== null ? Booking::norskDatoKort($fryst['til']) : null,
+    'fastTrekk'    => $fastTrekk,
+    'skyldigTekst' => $skyldigTekst,
 ]] : []) + ($starter !== null ? ['frysStarter' => [
     'fra'      => $starter['fra'],
     'fraTekst' => Booking::norskDatoKort($starter['fra']),

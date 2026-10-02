@@ -332,12 +332,26 @@ sjekk('… staar forfalt og utestaaende, ikke «Fryst»', $bs['tilstand'] === 'f
 sjekk('… betalingMangler() er ja', Medlemskap::betalingMangler($rad($ub), er_aktivt_medlem($rad($ub))));
 $sperr = new ReflectionMethod(Medlemskap::class, 'sperrFryst');
 $sperr->setAccessible(true);
-sjekk('… og kan betales: sperrFryst() slipper gjennom', $feilFra(fn() => $sperr->invoke(null, $rad($ub), false)) === '');
-sjekk('… og betalingen gjelder maaneden som skyldes', $sperr->invoke(null, $rad($ub), false) === $denneMnd);
-sjekk('… men et nytt medlemskap/ny avtale sperres fortsatt', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($ub), true)), 'fryst til'));
+// Eieren, 2. oktober 2026 (forenkling): med fast trekk betales det
+// utestaaende i verkstedet, ikke paa Min side.
+sjekk('… fast trekk: kan ikke betale selv (sperrFryst sperrer)', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($ub), false)), 'fryst til'));
+sjekk('… og et nytt medlemskap/ny avtale sperres ogsaa', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($ub), true)), 'fryst til'));
 sjekk('… mens den som ikke skylder noe, sperres', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($c), false)), 'fryst til'));
 $r = $kall('/api/meg.php', $token($ub));
-sjekk('… meg.php: fryst og betalingMangler (Min side viser «Forny og betal»)', isset($r['d']['fryst']) && ($r['d']['betalingMangler'] ?? null) === true);
+sjekk('… meg.php: fryst, fast trekk, betalingMangler og betalingsteksten (ingen «Forny og betal»)', isset($r['d']['fryst'])
+    && ($r['d']['betalingMangler'] ?? null) === true && ($r['d']['fryst']['fastTrekk'] ?? null) === true
+    && ($r['d']['fryst']['skyldigTekst'] ?? '') === $bs['tekst'], json_encode($r['d']['fryst'] ?? null));
+// Gjør opp selv (ingen Vipps-avtale): kan betale selv, for maaneden som skyldes.
+$selv = $nytt('pause', false);
+$selvAvt = DB::settInn('subscriptions', ['member_id' => $selv, 'plan' => $plan, 'pris_ore' => $pris, 'status' => 'aktiv']);
+DB::kjor('UPDATE payments SET subscription_id = :s WHERE member_id = :m', ['s' => $selvAvt, 'm' => $selv]);
+$frys($selv, $dag(-2), $dag(4));
+sjekk('gjør opp selv: fryst og utestaaende', Frys::frystNaa($rad($selv)) !== null && Medlemskap::betalingsstatusFor($rad($selv))['utestaaende']);
+sjekk('… sperrFryst slipper gjennom, for maaneden som skyldes', $sperr->invoke(null, $rad($selv), false) === $denneMnd);
+sjekk('… men ny periode sperres', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($selv), true)), 'fryst til'));
+$r = $kall('/api/meg.php', $token($selv));
+sjekk('… meg.php: ikke fast trekk (Min side viser «Forny og betal»)', ($r['d']['fryst']['fastTrekk'] ?? null) === false
+    && ($r['d']['betalingMangler'] ?? null) === true);
 // Admin ser det ubetalte i soknaden og ved godkjenning.
 $tAdmin = $token($admin);
 $sok = $frys($ub, $dag(30), $dag(40), 'sokt');

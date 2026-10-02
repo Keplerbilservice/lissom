@@ -5411,7 +5411,8 @@ window.__resources = {
 <section class="ms-o-stempel" style="background:var(--surface-card);border:2px solid var(--terracotta-600);border-radius:var(--radius-lg);padding:var(--space-6);">
 <sc-if value="{{ ubetaltFryst }}" hint-placeholder-val="{{ false }}"><h2>{{ frystTittel }}</h2></sc-if>
 <sc-if value="{{ ubetaltIkkeFryst }}" hint-placeholder-val="{{ true }}"><h2>Medlemskapet venter på betaling</h2><p>Perioden er ikke betalt. Medlemstilgang og nye timer åpnes når betalingen er registrert.</p></sc-if>
-<sc-if value="{{ ubetaltIkkeFryst }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ goMedlemskap }}">Forny og betal medlemskap</button></sc-if>
+<sc-if value="{{ ubetaltHarSkyldig }}" hint-placeholder-val="{{ false }}"><p>{{ ubetaltSkyldigTekst }}</p></sc-if>
+<sc-if value="{{ ubetaltKanForny }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ goMedlemskap }}">Forny og betal medlemskap</button></sc-if>
 <sc-if value="{{ ubetaltKanStempleUt }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ ubetaltStempleUt }}">Stemple ut</button></sc-if>
 </section></sc-if>
 <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
@@ -75808,6 +75809,13 @@ class Component extends DCLogic {
       // det kan betales (kontrolloeren, 2. oktober 2026).
       ubetaltFryst: !!this.state.fryst && !this.state.betalingMangler,
       ubetaltIkkeFryst: !this.state.fryst || !!this.state.betalingMangler,
+      // Fryst med fast trekk og noe utestaaende (eieren, 2. oktober 2026):
+      // det betales i verkstedet. Ingen «Forny og betal»; det utestaaende
+      // vises med den samme betalingsteksten som admin bruker.
+      ubetaltKanForny: (!this.state.fryst || !!this.state.betalingMangler)
+        && !(this.state.fryst && this.state.fryst.fastTrekk),
+      ubetaltHarSkyldig: !!(this.state.fryst && this.state.fryst.skyldigTekst),
+      ubetaltSkyldigTekst: (this.state.fryst && this.state.fryst.skyldigTekst) || '',
       frystTittel: this.frystTekst(),
       ubetaltKanStempleUt: (!!this.state.betalingMangler || !!this.state.fryst) && this.erInne(),
       ubetaltStempleUt: () => { if (this.erInne()) this.vekslStempling(); },

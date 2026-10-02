@@ -3278,7 +3278,7 @@
         {
             "id": "fryst-medlem-ingen-tilgang",
             "dato": "2026-10-02",
-            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag stenges ute — men først når den betalte perioden er over (eieren samme dag: dager som er betalt for, har medlemmet alltid tilgang i, også med godkjent frys; samme periodelogikk som harBetaltPeriode, gratismedlem er fryst med en gang). Stengt ute betyr: ingen innstempling, ingen medlemstid, ingen dørkode og wifi (meg.php og «Dørkode» i toppen), ingen «Kun for medlemmer»-banner, Bordplass/Dreieskive eller knapp på /stemple. Min side og /stemple viser «Fryst til <dato>» (ja fra eieren) i stedet for «venter på betaling»/«Aktivt». Stemple ut, kjøp og kurs betalt for seg virker som før. «pause» satt for hånd uten godkjent frys er ikke fryst. «Flytt medlemskap» tar med frys-rader som er søkt/godkjent, og avsluttede som fortsatt kan hoppe over et trekk (til_dato fra denne måneden eller avtalens neste trekk), med avslutningsdagen urørt. Eieren (samme dag, ordrett): når frysen er godkjent, men den betalte perioden ikke er over, viser Min side merket «Fryst fra <dato>» og linja «Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter <dato>.». Et medlem som er stengt ute ser frysen sin og kan trekke en søknad (api/medlem-frys.php slipper inn prove/aktiv/pause), står ikke som «venter på betaling» (betalingMangler og betalingsstatus unntar fryst: «Fryst til <dato>», ikke utestående), får ikke «Forny og betal» og kan ikke starte fornyelse eller betaling (startEngangs, startAvtale, startIVerkstedet, fornyPeriode avviser). Admin-teksten ved godkjenning: «Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.» Kontrolløren og betalingseksperten (STOPP 2. oktober 2026) og eierens valg samme dag: «stengt ute» og «fritatt for betaling» er to ting. «Fryst»/«Fryst til <dato>» (godkjent av eieren) og fritak vises bare når det ikke står noe ubetalt; et trekk som feilet, eller en måned frysen dekker under 15 dager av, står fortsatt som forfalt/utestående og kan betales (sperrFryst sperrer bare ny periode og fornyelse når ingenting skyldes). En måned frysen dekker minst 15 dager av er fritatt: trekket hoppes over, og dagene frysen ikke dekker har medlemmet gratis tilgang i (frys 20.2–25.3 gir tilgang 26.–31.3, trekket fortsetter 1.4) — i periodelogikken (harBetaltPeriode/fritattTilgang), så stempling, Min side, Kassa og admin er enige. Admin ser «Står ubetalt: …» i frys-søknaden og får en advarsel ved godkjenning. Eieren godkjente advarselstekstene ordrett: «Står ubetalt: <betalingsteksten>» og «<navn> har noe ubetalt: <betalingsteksten>. Frysen fjerner det ikke.». Betalingseksperten (samme dag): betaler et fryst medlem noe utestående, gjelder betalingen måneden som skyldes (skyldigMaaned), ikke den fryste; bare fornyPeriode slipper gjennom, ny avtale/nytt medlemskap sperres under frys. At trekkrunden hoppet over en måned, lagres som faktum i audit_log på avtalen («trekk_hoppet_over_frys», ingen migrasjon), så måneden er fritatt også om frysen avsluttes tidlig. Eieren (samme dag): et fryst medlem med fast trekk og et feilet trekk betaler via «Forny og betal» BARE måneden som skyldes, med én engangsbetaling på avtalen som løper (fornyPeriode, gjelder_fra = skyldigMaaned); avtalen beholdes, og trekkrunden bestiller ikke samme måned på nytt (L-12). Betaling (samme dag): står en betaling for samme avtale og måned som «opprettet» eller «venter» og er yngre enn 30 minutter, venter trekkrunden («bestilles alt») og bestiller ikke hos Vipps; etter 30 minutter uten fullført betaling bestilles trekket. Kontrolløren (samme dag): et trekk som henger på «venter» etter forfall + retryDays er skyldig måned; før medlemmet betaler den selv, avlyses trekket hos Vipps (raden «avbrutt»). Går ikke det, avvises betalingen med «Vipps stoppet ikke trekket.». Kontrolløren (STOPP, funnet av Codex): fornyPeriodePaa tar den samme medlemslåsen som trekk() (SELECT … FROM members … FOR UPDATE); sjekken av et forsøk fra før, avlysningen av ventende trekk, sjekken av at måneden ikke alt er betalt og raden for egenbetalingen skjer under låsen, og trekk() sjekker 30-minuttersvernet på nytt under låsen. Uansett rekkefølge blir det aldri to betalinger for samme måned. Eieren (ordrett): er måneden alt betalt når egenbetalingen slipper til, avvises den med «Måneden er alt betalt.»; «Vipps stoppet ikke trekket.» brukes bare når avlysningen hos Vipps feiler. Kontrolløren (STOPP): trekkrunden venter på enhver egenbetaling for samme avtale og måned som står «opprettet» eller «venter», uansett alder, og slår opp status hos Vipps under låsen (Vipps::synkroniser): betalt → markeres betalt og måneden hoppes over; avbrutt/utløpt → markeres og trekket bestilles; åpen → «bestilles alt». To samtidige «Forny»: sperren slår til på raden alene, adressen leses under låsen fra betalingens egen rad (aldri avtalens gamle URL), og et trykk mens adressen mangler får «Betalingen er startet. Vent litt, og prøv igjen.» (foreslått, ikke godkjent ennå). DB::iTransaksjon blir en del av den ytre transaksjonen når den kalles inne i en.",
+            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag stenges ute — men først når den betalte perioden er over (eieren samme dag: dager som er betalt for, har medlemmet alltid tilgang i, også med godkjent frys; samme periodelogikk som harBetaltPeriode, gratismedlem er fryst med en gang). Stengt ute betyr: ingen innstempling, ingen medlemstid, ingen dørkode og wifi (meg.php og «Dørkode» i toppen), ingen «Kun for medlemmer»-banner, Bordplass/Dreieskive eller knapp på /stemple. Min side og /stemple viser «Fryst til <dato>» (ja fra eieren) i stedet for «venter på betaling»/«Aktivt». Stemple ut, kjøp og kurs betalt for seg virker som før. «pause» satt for hånd uten godkjent frys er ikke fryst. «Flytt medlemskap» tar med frys-rader som er søkt/godkjent, og avsluttede som fortsatt kan hoppe over et trekk (til_dato fra denne måneden eller avtalens neste trekk), med avslutningsdagen urørt. Eieren (samme dag, ordrett): når frysen er godkjent, men den betalte perioden ikke er over, viser Min side merket «Fryst fra <dato>» og linja «Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter <dato>.». Et medlem som er stengt ute ser frysen sin og kan trekke en søknad (api/medlem-frys.php slipper inn prove/aktiv/pause), står ikke som «venter på betaling» (betalingMangler og betalingsstatus unntar fryst: «Fryst til <dato>», ikke utestående), får ikke «Forny og betal» og kan ikke starte fornyelse eller betaling (startEngangs, startAvtale, startIVerkstedet, fornyPeriode avviser). Admin-teksten ved godkjenning: «Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.» Kontrolløren og betalingseksperten (STOPP 2. oktober 2026) og eierens valg samme dag: «stengt ute» og «fritatt for betaling» er to ting. «Fryst»/«Fryst til <dato>» (godkjent av eieren) og fritak vises bare når det ikke står noe ubetalt; et trekk som feilet, eller en måned frysen dekker under 15 dager av, står fortsatt som forfalt/utestående og kan betales (sperrFryst sperrer bare ny periode og fornyelse når ingenting skyldes). En måned frysen dekker minst 15 dager av er fritatt: trekket hoppes over, og dagene frysen ikke dekker har medlemmet gratis tilgang i (frys 20.2–25.3 gir tilgang 26.–31.3, trekket fortsetter 1.4) — i periodelogikken (harBetaltPeriode/fritattTilgang), så stempling, Min side, Kassa og admin er enige. Admin ser «Står ubetalt: …» i frys-søknaden og får en advarsel ved godkjenning. Eieren godkjente advarselstekstene ordrett: «Står ubetalt: <betalingsteksten>» og «<navn> har noe ubetalt: <betalingsteksten>. Frysen fjerner det ikke.». Betalingseksperten (samme dag): betaler et fryst medlem noe utestående, gjelder betalingen måneden som skyldes (skyldigMaaned), ikke den fryste; bare fornyPeriode slipper gjennom, ny avtale/nytt medlemskap sperres under frys. At trekkrunden hoppet over en måned, lagres som faktum i audit_log på avtalen («trekk_hoppet_over_frys», ingen migrasjon), så måneden er fritatt også om frysen avsluttes tidlig. Eieren (samme dag): et fryst medlem med fast trekk og et feilet trekk betaler via «Forny og betal» BARE måneden som skyldes, med én engangsbetaling på avtalen som løper (fornyPeriode, gjelder_fra = skyldigMaaned); avtalen beholdes, og trekkrunden bestiller ikke samme måned på nytt (L-12). Betaling (samme dag): står en betaling for samme avtale og måned som «opprettet» eller «venter» og er yngre enn 30 minutter, venter trekkrunden («bestilles alt») og bestiller ikke hos Vipps; etter 30 minutter uten fullført betaling bestilles trekket. Kontrolløren (samme dag): et trekk som henger på «venter» etter forfall + retryDays er skyldig måned; før medlemmet betaler den selv, avlyses trekket hos Vipps (raden «avbrutt»). Går ikke det, avvises betalingen med «Vipps stoppet ikke trekket.». Kontrolløren (STOPP, funnet av Codex): fornyPeriodePaa tar den samme medlemslåsen som trekk() (SELECT … FROM members … FOR UPDATE); sjekken av et forsøk fra før, avlysningen av ventende trekk, sjekken av at måneden ikke alt er betalt og raden for egenbetalingen skjer under låsen, og trekk() sjekker 30-minuttersvernet på nytt under låsen. Uansett rekkefølge blir det aldri to betalinger for samme måned. Eieren (ordrett): er måneden alt betalt når egenbetalingen slipper til, avvises den med «Måneden er alt betalt.»; «Vipps stoppet ikke trekket.» brukes bare når avlysningen hos Vipps feiler. Kontrolløren (STOPP): trekkrunden venter på enhver egenbetaling for samme avtale og måned som står «opprettet» eller «venter», uansett alder, og slår opp status hos Vipps under låsen (Vipps::synkroniser): betalt → markeres betalt og måneden hoppes over; avbrutt/utløpt → markeres og trekket bestilles; åpen → «bestilles alt». To samtidige «Forny»: sperren slår til på raden alene, adressen leses under låsen fra betalingens egen rad (aldri avtalens gamle URL), og et trykk mens adressen mangler får «Betalingen er startet. Vent litt, og prøv igjen.» (foreslått, ikke godkjent ennå). DB::iTransaksjon blir en del av den ytre transaksjonen når den kalles inne i en. Eieren (2. oktober 2026) valgte så å FORENKLE etter kontrollørens STOPP: et fryst medlem med FAST TREKK som skylder, kan ikke betale selv på Min side. Det utestående betales i verkstedet (Kassa/admin registrerer den skyldige måneden, og trekkrunden trekker den ikke igjen, L-12) eller tas av Vipps sitt nye forsøk. Min side viser da ingen «Forny og betal», men det utestående med samme betalingstekst som admin. Medlemmer uten fast trekk (engangs eller gjør opp selv) betaler fortsatt måneden som skyldes selv. Egenbetalingsveien for fast trekk (avlysning av ventende trekk, 30-minuttersvern, Vipps-oppslag i trekkrunden, nestede transaksjoner) er fjernet, og trekk() er som på main pluss frys-overhoppet. Tekstene «Måneden er alt betalt.» og «Betalingen er startet. Vent litt, og prøv igjen.» brukes ikke lenger.",
             "hvor": "Min side (toppen, stempelkortet, ubetalt-ruta, medlemstid), /stemple, api/stempling.php, api/book.php (Kun for medlemmer), api/meg.php, Admin › Flytt medlemskap",
             "kode": [
                 {
@@ -3316,14 +3316,17 @@
                     "finnes": [
                         "Frys::frystNaa($m)",
                         "if (er_aktivt_medlem($m) && $fryst === null) {",
-                        "]] : []) + ($starter !== null ? ['frysStarter' => ["
+                        "]] : []) + ($starter !== null ? ['frysStarter' => [",
+                        "'fastTrekk'    => $fastTrekk,",
+                        "'skyldigTekst' => $skyldigTekst,"
                     ]
                 },
                 {
                     "fil": "api/admin/medlemmer.php",
                     "finnes": [
                         "\"UPDATE medlem_frys SET member_id = :ny, updated_at = updated_at",
-                        "OR (status = 'avsluttet' AND til_dato >= :grense))\","
+                        "OR (status = 'avsluttet' AND til_dato >= :grense))\",",
+                        "$fra = Medlemskap::skyldigMaaned($mRad) ?? $fra;"
                     ]
                 },
                 {
@@ -3342,11 +3345,13 @@
                         "<sc-if value=\"{{ ubetaltFryst }}\" hint-placeholder-val=\"{{ false }}\"><h2>{{ frystTittel }}</h2></sc-if>",
                         "'Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter ' + starter.fraTekst + '.'",
                         ": starter ? 'Fryst fra ' + starter.fraTekst",
-                        "<sc-if value=\"{{ ubetaltIkkeFryst }}\" hint-placeholder-val=\"{{ true }}\"><button type=\"button\" onClick=\"{{ goMedlemskap }}\">Forny og betal medlemskap</button></sc-if>",
                         "frysVis: this.bryterPaa('medlemfrys') && (this.medlemsvisning() || !!this.state.fryst),",
                         "visUbetaltMedlemskap: this.erPublisert() && (!!this.state.betalingMangler || !!this.state.fryst),",
                         "Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.",
-                        "ubetaltFryst: !!this.state.fryst && !this.state.betalingMangler,"
+                        "ubetaltFryst: !!this.state.fryst && !this.state.betalingMangler,",
+                        "<sc-if value=\"{{ ubetaltKanForny }}\" hint-placeholder-val=\"{{ true }}\"><button type=\"button\" onClick=\"{{ goMedlemskap }}\">Forny og betal medlemskap</button></sc-if>",
+                        "<sc-if value=\"{{ ubetaltHarSkyldig }}\" hint-placeholder-val=\"{{ false }}\"><p>{{ ubetaltSkyldigTekst }}</p></sc-if>",
+                        "&& !(this.state.fryst && this.state.fryst.fastTrekk),"
                     ]
                 },
                 {
@@ -3361,8 +3366,9 @@
                         "admin/Kassa: «Fryst til <dato>», ikke utestaaende",
                         "… og «Forny» paa Min side avvises av serveren",
                         "betalt med frys: frysen starter den dagen perioden er over",
-                        "… og kan betales: sperrFryst() slipper gjennom",
-                        "admin: godkjenning gir advarsel om det ubetalte"
+                        "admin: godkjenning gir advarsel om det ubetalte",
+                        "… fast trekk: kan ikke betale selv (sperrFryst sperrer)",
+                        "… sperrFryst slipper gjennom, for maaneden som skyldes"
                     ]
                 },
                 {
@@ -3375,20 +3381,12 @@
                         "(e) feilet trekk, frys under 15 dager: forfalt",
                         "staar fortsatt ubetalt (forfalt)",
                         "gratis tilgang, ikke fryst, og skylder ingenting",
-                        "betalingen 5.12 gjelder november",
                         "(h) frys avsluttet 10.3 etter at mars er hoppet over",
-                        "trekkrunden bestiller ikke mars paa nytt",
-                        "knappen gir én betaling i Vipps (fornyelse, ikke ny avtale)",
-                        "nattrunden venter: null bestillinger",
-                        "Vipps-trekket er avlyst hos Vipps, og raden staar «avbrutt»",
-                        "Vipps avlyser ikke: betalingen avvises",
-                        "(m) kappløp: to tilkoblinger, aldri to betalinger",
-                        "… og bestiller ikke naar den slipper til",
-                        "trekket gikk foerst: egenbetalingen avvises",
-                        "$svar === 'AVVIST:Måneden er alt betalt.'",
-                        "(n) egenbetaling betalt hos Vipps, «venter» i basen",
-                        "to samtidige trykk: én Vipps-betaling og én rad",
-                        "aapen etter 40 minutter: runden venter fortsatt"
+                        "… fast trekk: egenbetalingen avvises",
+                        "gjør opp selv: betaler selv, og betalingen gjelder mars",
+                        "Min side: serveren avviser betalingsstart",
+                        "Kassa: betalingen registreres for maaneden som skyldes",
+                        "trekkrunden trekker ikke maaneden igjen"
                     ]
                 },
                 {
@@ -3407,22 +3405,18 @@
                         "public static function betalingsstatusFor(array $medlem, ?string $idag = null): array",
                         "return $ut('fryst', $til !== '' ? 'Fryst til ' . $kort($til) : 'Fryst', false, false);",
                         "private static function sperrFryst(array $medlem, bool $nyPeriode, ?string $idag = null): ?string",
-                        "if (!$nyPeriode && self::betalingsstatusFor($rad, $idag)['utestaaende']) {",
                         "public static function skyldigMaaned(array $medlem, ?string $idag = null): ?string",
                         "public const HOPPET_OVER = 'trekk_hoppet_over_frys';",
                         "return self::hoppetOver($avtaler, (new DateTimeImmutable(substr($dato, 0, 10)))->format('Y-m'));",
                         "'handling'    => self::HOPPET_OVER,",
-                        "AND type = 'epayment'",
-                        "private static function avlysVentendeTrekk(array $avtale, string $maanedStart): void",
-                        "return ['paagaar', 0];",
-                        "self::avlysVentendeTrekk($avtale, $skyldig);",
-                        "throw new RuntimeException('Måneden er alt betalt.');",
-                        "private static function egenBetalingAvklar(array $avtale, string $nokkel): string",
-                        "if (self::egenBetalingAvklar($avtale, $nokkel) === 'vent') {",
-                        "$tilstand = Vipps::synkroniser((string) $r['vipps_reference']);",
-                        "throw new RuntimeException('Betalingen er startet. Vent litt, og prøv igjen.');",
-                        "JSON_UNQUOTE(JSON_EXTRACT(siste_payload, '$.redirectUrl')) AS url",
-                        "WHERE subscription_id = :s AND formal = 'medlemskap' AND type = 'epayment'"
+                        "public static function harFastTrekk(int $medlemId): bool",
+                        "if (!$nyPeriode && !self::harFastTrekk((int) ($rad['id'] ?? 0))"
+                    ],
+                    "ikkeFinnes": [
+                        "egenBetalingAvklar",
+                        "avlysVentendeTrekk",
+                        "'Betalingen er startet. Vent litt, og prøv igjen.'",
+                        "'Måneden er alt betalt.'"
                     ]
                 },
                 {
@@ -3447,15 +3441,24 @@
                     ]
                 },
                 {
-                    "fil": "api/medlemskap.php",
-                    "finnes": [
-                        "if ($naa !== null && $naa['status'] === 'aktiv' && Frys::frystNaa($medlem) !== null"
+                    "fil": "app/lib/db.php",
+                    "finnes": [],
+                    "ikkeFinnes": [
+                        "Allerede inne i en transaksjon: arbeidet blir en del av den ytre."
                     ]
                 },
                 {
-                    "fil": "app/lib/db.php",
+                    "fil": "api/medlemskap.php",
+                    "finnes": [],
+                    "ikkeFinnes": [
+                        "Frys::frystNaa($medlem)"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/minside.mjs",
                     "finnes": [
-                        "if ($pdo->inTransaction()) {"
+                        "fast trekk + fryst + utestående — meg.php har betalingsteksten",
+                        "… ingen «Forny og betal medlemskap»"
                     ]
                 }
             ]

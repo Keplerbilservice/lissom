@@ -1366,6 +1366,13 @@ if (Foresporsel::metode() === 'POST') {
         }
         $fra = Medlemskap::gjelderFraForsteBetaling($id)
             ?? (new DateTimeImmutable('now', $oslo))->modify('first day of this month')->format('Y-m-d');
+        // Fryst og skylder (eieren, 2. oktober 2026): betalingen i verkstedet
+        // gjelder maaneden som skyldes, ikke den fryste maaneden. Medlemmer
+        // med fast trekk betaler det utestaaende her, ikke paa Min side.
+        $mRad = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
+        if ($mRad !== null && Frys::frystNaa($mRad) !== null) {
+            $fra = Medlemskap::skyldigMaaned($mRad) ?? $fra;
+        }
         $maaned = substr($fra, 0, 7);
         $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
                 'august', 'september', 'oktober', 'november', 'desember'];

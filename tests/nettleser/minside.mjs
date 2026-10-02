@@ -170,6 +170,27 @@ lagPerson('frosset', 'Minside Frosset', { status: 'pause', plan: MINI, frys: tru
 // Fryst og stengt ute: den betalte perioden er over (eieren, 2. oktober 2026).
 // Ikke med i fasiten over — den er laget for de aatte under.
 lagPerson('fryststengt', 'Minside Fryststengt', { status: 'pause', plan: MINI, frys: true, betaltForrige: true });
+// Fryst med fast trekk og et feilet trekk for denne maaneden (eieren, 2. oktober
+// 2026): det betales i verkstedet, ikke paa Min side.
+brukere.trekkstengt = php(`
+  $pl = Medlemskap::plan('${MINI}');
+  $denne = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('first day of this month')->format('Y-m-d');
+  $forrige = (new DateTimeImmutable($denne))->modify('first day of previous month')->format('Y-m-d');
+  $neste = (new DateTimeImmutable($denne))->modify('first day of next month')->format('Y-m-d');
+  $id = DB::settInn('members', ['navn' => 'Minside Trekkstengt', 'epost' => 'minside-trekkstengt-' . '${S.tag}' . '@e2e.lissom.test',
+    'telefon' => '+4791777777', 'rolle' => 'medlem', 'status' => 'pause', 'medlemskap_type' => '${MINI}', 'start_dato' => $forrige]);
+  $a = DB::settInn('subscriptions', ['member_id' => $id, 'plan' => '${MINI}', 'pris_ore' => (int) $pl['pris_ore'], 'status' => 'aktiv',
+    'vipps_agreement_id' => 'agr_e2e_' . bin2hex(random_bytes(4)), 'neste_trekk' => $neste]);
+  DB::settInn('payments', ['member_id' => $id, 'subscription_id' => $a, 'formal' => 'medlemskap', 'type' => 'recurring_charge', 'status' => 'betalt',
+    'belop_ore' => (int) $pl['pris_ore'], 'gjelder_fra' => $forrige, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(10)), 'idempotency_key' => Vipps::uuid()]);
+  DB::settInn('payments', ['member_id' => $id, 'subscription_id' => $a, 'formal' => 'medlemskap', 'type' => 'recurring_charge', 'status' => 'feilet',
+    'belop_ore' => (int) $pl['pris_ore'], 'gjelder_fra' => $denne, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(10)),
+    'vipps_psp_ref' => 'chr_e2e_' . bin2hex(random_bytes(4)), 'idempotency_key' => Vipps::uuid()]);
+  DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 2), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 4),
+    'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
+  $t = bin2hex(random_bytes(32));
+  DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 7200)]);
+  return ['id' => $id, 'token' => $t, 'forventetSiste' => null, 'retteTil' => null];`);
 lagPerson('betalerikke', 'Minside Betalerikke', { plan: MINI, betalerIkke: true });
 lagPerson('deltaker', 'Minside Deltaker', { status: 'ingen' });
 
@@ -344,6 +365,21 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     const fornyP = await api(p, '/api/medlemskap.php', { handling: 'start', plan: MINI });
     sjekk(`${hva}: serveren avviser fornyelse mens frysen gjelder`, fornyP.status >= 400 && /fryst til/i.test(fornyP.d?.feil || ''), JSON.stringify(fornyP));
     await p.context().close();
+    // Fast trekk, fryst og utestaaende (eieren, 2. oktober 2026): ingen
+    // «Forny og betal»; det utestaaende vises med betalingsteksten fra admin.
+    const t = await side('trekkstengt', bredde, hoyde);
+    await gaa(t, '/min-side');
+    await lukkVinduer(t);
+    await dump(t, 'fryst-trekk-' + hva);
+    const megT = await api(t, '/api/meg.php');
+    const tekstT = megT.d?.fryst?.skyldigTekst || '';
+    sjekk(`${hva}: fast trekk + fryst + utestående — meg.php har betalingsteksten`, megT.d?.fryst?.fastTrekk === true && tekstT !== '', JSON.stringify(megT.d?.fryst));
+    sjekk(`${hva}: … ingen «Forny og betal medlemskap»`, !(await t.getByRole('button', { name: 'Forny og betal medlemskap' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: … betalingsteksten står på siden («${tekstT}»)`, tekstT !== '' && await synlig(t, tekstT, true));
+    sjekk(`${hva}: … «Medlemskapet venter på betaling»`, await synlig(t, 'Medlemskapet venter på betaling'));
+    const startT = await api(t, '/api/medlemskap.php', { handling: 'start', plan: MINI });
+    sjekk(`${hva}: … serveren avviser betalingsstart`, startT.status >= 400 && /fryst til/i.test(startT.d?.feil || ''), JSON.stringify(startT));
+    await t.context().close();
     // Kontroll: godkjent frys, men den betalte perioden er ikke over. Eieren,
     // 2. oktober 2026: dager som er betalt for, har medlemmet alltid tilgang i.
     const q = await side('frosset', bredde, hoyde);

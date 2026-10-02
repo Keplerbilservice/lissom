@@ -1034,6 +1034,17 @@ final class Vipps
                       WHERE vipps_reference = :r",
                     ['s' => $refundert, 'b' => $refundert, 'r' => $referanse]
                 );
+                // L-3: hele beloepet tilbake — ogsaa naar det ble gjort i
+                // Vipps-portalen — gjor opp kjoepet (gavekort, timepakke,
+                // ordre, medlemskap). Trygt aa kalle flere ganger.
+                $pid = DB::verdi(
+                    "SELECT id FROM payments WHERE vipps_reference = :r AND status = 'refundert'",
+                    ['r' => $referanse]
+                );
+                // (method_exists: testene for Vipps alene har en stubbet Booking.)
+                if ($pid !== null && method_exists('Booking', 'gjorOppFullRefusjon')) {
+                    Booking::gjorOppFullRefusjon((int) $pid);
+                }
             }
         } catch (Throwable $e) {
             logg_feil('Kunne ikke gjore opp betaling ' . $referanse, $e);

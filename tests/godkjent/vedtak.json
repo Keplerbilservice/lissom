@@ -67,7 +67,14 @@
                     "finnes": [
                         "self::annullerRefundertGavekort($paymentId);",
                         "self::gjorOppFormal($paymentId);",
-                        "public static function gavekortTilbake(int $paymentId, int $onsket = 0): int"
+                        "public static function gavekortTilbake(int $paymentId, int $onsket = 0): int",
+                        "public static function gjorOppFullRefusjon(int $paymentId): void"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vipps.php",
+                    "finnes": [
+                        "Booking::gjorOppFullRefusjon((int) $pid);"
                     ]
                 },
                 {

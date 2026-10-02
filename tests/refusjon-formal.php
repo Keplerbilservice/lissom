@@ -26,8 +26,13 @@ final class Vipps
     public static array $kall = [];
     /** @var array<string,string> avtale-id => status Vipps svarer */
     public static array $avtaler = [];
+    public static bool $feiler = false;
     public static function refunder(string $ref, int $belop, string $op): array
-    { self::$kall[] = ['refunder', $ref, $belop, $op]; return ['ok' => true]; }
+    {
+        self::$kall[] = ['refunder', $ref, $belop, $op];
+        if (self::$feiler) { throw new RuntimeException('Falsk Vipps: refusjonen avvist'); }
+        return ['ok' => true];
+    }
     public static function refunderTrekk(string $a, string $t, int $belop, string $ref, string $op): array
     { self::$kall[] = ['refunderTrekk', $a, $t, $belop, $op]; return ['ok' => true]; }
     public static function hentAvtale(string $id): array
@@ -248,6 +253,43 @@ try {
         (int) $rad('gift_cards', $k)['saldo_ore'] === 40000, (string) $rad('gift_cards', $k)['saldo_ore']);
     sjekk('… begge de gamle uttakene staar paa 30000', (int) DB::verdi(
         'SELECT COUNT(*) FROM gift_card_uses WHERE gift_card_id = :k AND belop_ore = 30000', ['k' => $k]) === 2);
+
+    // ── Codex runde 4 ──────────────────────────────────────────────────
+    echo "\n── Codex runde 4: Vipps avviser, og refusjon fra portalen ────\n";
+    $p = $betaling(['formal' => 'gavekort', 'belop_ore' => 50000]);
+    $k = $kort($p, 50000);
+    Vipps::$feiler = true;
+    $melding = '';
+    try { Booking::refunderBetaling($p); } catch (RuntimeException $e) { $melding = $e->getMessage(); }
+    Vipps::$feiler = false;
+    sjekk('Vipps avviser refusjonen av kortet: feilen kommer fram', str_contains($melding, 'avvist'), $melding);
+    sjekk('… kortet er sperret, men verdien 50000 staar (kan aapnes igjen)',
+        $rad('gift_cards', $k)['status'] === 'annullert' && (int) $rad('gift_cards', $k)['saldo_ore'] === 50000
+        && Booking::finnGavekort((string) $rad('gift_cards', $k)['kode']) === null);
+    $r = Booking::refunderBetaling($p);
+    sjekk('nytt forsoek gaar gjennom: 50000 refundert, saldo 0', $r['gjenstaar'] === 0
+        && (int) $rad('gift_cards', $k)['saldo_ore'] === 0);
+
+    // Refundert i Vipps-portalen (REFUNDED-hendelse): betalingen er alt
+    // «refundert» naar vi faar vite det. Kortet var brukt — det sperres likevel.
+    $p = $betaling(['formal' => 'gavekort', 'belop_ore' => 50000, 'status' => 'refundert', 'refundert_ore' => 50000]);
+    $k = $kort($p, 20000);
+    Booking::gjorOppFullRefusjon($p);
+    sjekk('portalrefusjon av brukt kort (20000 igjen): sperret og saldo 0',
+        $rad('gift_cards', $k)['status'] === 'annullert' && (int) $rad('gift_cards', $k)['saldo_ore'] === 0);
+    $m = $medlem('Portal timepakke', 'aktiv', $liten);
+    $p = $betaling(['formal' => 'medlemskap', 'member_id' => $m, 'belop_ore' => 80000, 'status' => 'refundert', 'refundert_ore' => 80000]);
+    $tp = DB::settInn('timepakker', ['member_id' => $m, 'timer' => 6, 'pris_ore' => 80000, 'status' => 'betalt',
+        'payment_id' => $p, 'betalt_at' => gmdate('Y-m-d H:i:s')]);
+    $rydd['timepakker'][] = $tp;
+    Booking::gjorOppFullRefusjon($p);
+    sjekk('portalrefusjon av timepakke 80000: pakken refundert, 0 minutter', $rad('timepakker', $tp)['status'] === 'refundert'
+        && Timepakke::tilgodeMin($m) === 0);
+    $p = $betaling(['formal' => 'gavekort', 'belop_ore' => 50000, 'status' => 'delvis_refundert', 'refundert_ore' => 10000]);
+    $k = $kort($p, 50000);
+    Booking::gjorOppFullRefusjon($p);
+    sjekk('delvis portalrefusjon (10000 av 50000): kortet urort', $rad('gift_cards', $k)['status'] === 'aktivt'
+        && (int) $rad('gift_cards', $k)['saldo_ore'] === 50000);
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 } finally {

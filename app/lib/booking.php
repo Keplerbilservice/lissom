@@ -1367,15 +1367,15 @@ final class Booking
                 }
                 // L-3: hele beloepet tilbake = kjoepet gjores opp. En
                 // delrefusjon roerer ikke formaalet; den logges.
-                if ((int) $op['id'] > 0) {
-                    if ($rest === 0) {
-                        self::gjorOppFormal($paymentId);
-                    } else {
-                        self::revisjon('refusjon_delvis_formal_uendret', 'payment', $paymentId, [
-                            'formal' => self::formalFor($paymentId),
-                            'refundert_ore' => $refundert, 'gjenstaar_ore' => $rest,
-                        ]);
-                    }
+                // Ogsaa naar alt var refundert foer dette kallet (portalen,
+                // en tidligere runde): oppgjoeret er trygt aa kjoere igjen.
+                if ($rest === 0 && ((int) $op['id'] > 0 || (string) $p['status'] === 'refundert')) {
+                    self::gjorOppFormal($paymentId);
+                } elseif ((int) $op['id'] > 0) {
+                    self::revisjon('refusjon_delvis_formal_uendret', 'payment', $paymentId, [
+                        'formal' => self::formalFor($paymentId),
+                        'refundert_ore' => $refundert, 'gjenstaar_ore' => $rest,
+                    ]);
                 }
                 return ['belop' => (int) $op['amount_ore'], 'refundert' => $refundert, 'gjenstaar' => $rest];
             });
@@ -1412,20 +1412,22 @@ final class Booking
     }
 
     /**
-     * L-3: et gavekortkjoep som refunderes helt, annulleres — saldo 0 — i
+     * L-3: et gavekortkjoep som refunderes helt, sperres («annullert») i
      * samme transaksjon som refusjonen journalfoeres, FOER Vipps-kallet.
+     * Saldoen staar til Vipps har bekreftet refusjonen; foerst da settes den
+     * til 0 (gjorOppFormal()). Avviser Vipps refusjonen for godt, er verdien
+     * altsaa ikke borte — kortet kan aapnes igjen med den saldoen det hadde.
      *
      * Er kortet brukt (saldoen er gaatt ned, det har uttak, eller et kjoep med
      * det er paa vei i Vipps), nektes refusjonen: da ville kunden faatt
-     * pengene tilbake og beholdt det som ble kjoept for kortet.
+     * pengene tilbake og beholdt det som ble kjoept for kortet. Med $nekt =
+     * false (refusjonen er alt gjort, f.eks. i Vipps-portalen) sperres kortet
+     * likevel, og at det var brukt, staar i loggen.
      *
      * Kortraden laases; samme laas som Booking::gavekortDekker() tar naar
      * kortet brukes i et kjoep, saa de to kan ikke skje samtidig.
-     *
-     * Feiler Vipps etterpaa, staar operasjonen som «pending» og fullfoeres paa
-     * neste forsoek — kortet er allerede sperret, og blir det.
      */
-    private static function annullerRefundertGavekort(int $paymentId): void
+    private static function annullerRefundertGavekort(int $paymentId, bool $nekt = true): void
     {
         if (!DB::harTabell('gift_cards')) {
             return;
@@ -1456,7 +1458,7 @@ final class Booking
                 ['k' => (int) $k['id']]
             ) !== null;
         }
-        if ($brukt) {
+        if ($brukt && $nekt) {
             throw new RuntimeException(
                 'Gavekortet ' . $k['kode'] . ' er brukt (' . self::kroner($saldo) . ' igjen av '
                 . self::kroner((int) $k['opprinnelig_ore']) . '), eller et kjøp med det er på vei. '
@@ -1465,28 +1467,59 @@ final class Booking
             );
         }
         DB::kjor(
-            "UPDATE gift_cards SET status = 'annullert', saldo_ore = 0 WHERE id = :i",
+            "UPDATE gift_cards SET status = 'annullert' WHERE id = :i",
             ['i' => (int) $k['id']]
         );
         self::revisjon('gavekort_annullert_ved_refusjon', 'payment', $paymentId,
-            ['gavekort' => (int) $k['id'], 'saldo_ore' => $saldo]);
+            ['gavekort' => (int) $k['id'], 'saldo_ore' => $saldo, 'brukt' => $brukt]);
+    }
+
+    /**
+     * L-3: hele betalingen er bekreftet refundert — ogsaa naar det skjedde i
+     * Vipps-portalen og kom hit som en REFUNDED-hendelse (Vipps::anvendTilstand()).
+     * Gjor opp kjoepet som refunderBetaling() gjor. Trygg aa kalle flere ganger.
+     */
+    public static function gjorOppFullRefusjon(int $paymentId): void
+    {
+        $arbeid = static function () use ($paymentId): void {
+            $status = DB::verdi('SELECT status FROM payments WHERE id = :p FOR UPDATE', ['p' => $paymentId]);
+            if ($status !== 'refundert') {
+                return;
+            }
+            DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+            self::gjorOppFormal($paymentId);
+        };
+        DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);
     }
 
     /**
      * L-3: hele betalingen er refundert — kjoepet gjores opp.
      *
+     *   gavekortkjop kortet sperret (om ikke alt gjort) og saldoen satt til 0
      *   timepakke    pakken settes refundert, timene teller ikke lenger
-     *   nettordre    ordren refundert, varene (B-) tilbake paa lager
+     *   nettordre    ordren refundert, varene (B-) tilbake paa lager,
+     *                barnetillegget avbrutt
      *   gavekortdel  det som ble betalt med gavekort, tilbake paa kortet
      *   medlemskap   en engangsbetaling stopper medlemskapet; en fornyelse
      *                eller et trekk flagges (Medlemskap::stoppEtterRefusjon)
      *
-     * Gavekortkjoepet er alt annullert i annullerRefundertGavekort(), og en
-     * booking settes refundert av refunderBetaling(). Alt her er betinget paa
+     * En booking settes refundert av den som kaller. Alt her er betinget paa
      * status, saa et nytt kall gjor ingenting to ganger.
      */
     private static function gjorOppFormal(int $paymentId): void
     {
+        if (DB::harTabell('gift_cards')) {
+            self::annullerRefundertGavekort($paymentId, false);
+            $kort = DB::en(
+                "SELECT id, saldo_ore FROM gift_cards WHERE payment_id = :p AND status = 'annullert' AND saldo_ore > 0 FOR UPDATE",
+                ['p' => $paymentId]
+            );
+            if ($kort !== null) {
+                DB::kjor('UPDATE gift_cards SET saldo_ore = 0 WHERE id = :i', ['i' => (int) $kort['id']]);
+                self::revisjon('gavekort_nullstilt_ved_refusjon', 'payment', $paymentId,
+                    ['gavekort' => (int) $kort['id'], 'saldo_ore' => (int) $kort['saldo_ore']]);
+            }
+        }
         if (DB::harTabell('timepakker')) {
             $tp = DB::en('SELECT id, member_id FROM timepakker WHERE payment_id = :p FOR UPDATE', ['p' => $paymentId]);
             if ($tp !== null) {

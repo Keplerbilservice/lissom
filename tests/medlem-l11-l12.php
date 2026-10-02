@@ -197,6 +197,61 @@ try {
         'idempotency_key' => $tag . '-forsk', 'created_at' => $kjopt21]);
     $svar = kall([[$porter[0], $API, $kontant($e), $token]]);
     sjekk('ny betaling i kjøpsmåneden nektes (409)', $svar[0][0] === 409, json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+    sjekk("… og meldingen gjelder måneden som skulle betales ($denneTekst)",
+        str_contains((string) ($svar[0][1]['feil'] ?? ''), 'for ' . $denneTekst . '.'), (string) ($svar[0][1]['feil'] ?? ''));
+
+    echo "\n── Punkt 4: «Forny» etter den 20. sperrer ikke kjøpsmåneden ──\n";
+    // Samme form som et nytt kjøp etter den 20., men ikke den første
+    // betalingen på avtalen: den dekker bare sin egen måned.
+    [$fo, $foS] = nyttMedlem($plan, 'L12 Forny etter 20');
+    $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-FO1', 'type' => 'epayment', 'formal' => 'medlemskap',
+        'member_id' => $fo, 'subscription_id' => $foS, 'belop_ore' => 50000, 'status' => 'betalt', 'gjelder_fra' => $forrige,
+        'idempotency_key' => $tag . '-fo1', 'created_at' => (new DateTimeImmutable($forrige . ' 12:00', $oslo))->setTimezone($utc)->format('Y-m-d H:i:s')]);
+    $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-FO2', 'type' => 'epayment', 'formal' => 'medlemskap',
+        'member_id' => $fo, 'subscription_id' => $foS, 'belop_ore' => 50000, 'status' => 'betalt', 'gjelder_fra' => $neste,
+        'idempotency_key' => $tag . '-fo2', 'created_at' => $kjopt21]);
+    $svar = kall([[$porter[0], $API, $kontant($fo), $token]]);
+    sjekk("denne måneden ($denneTekst) kan betales (200)", $svar[0][0] === 200, json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+    sjekk("… raden gjelder $denne, 50000 øre", count(array_filter(rader($fo), static fn($x) => $x['gjelder_fra'] === $denne && (int) $x['belop_ore'] === 50000)) === 1,
+        json_encode(rader($fo)));
+
+    echo "\n── Punkt 2: fast trekk underveis i Vipps ──\n";
+    foreach (['venter', 'opprettet'] as $st) {
+        [$tv, $tvS] = nyttMedlem($plan, "L12 Trekk $st", 'agr-' . $st . '-' . strtolower($tag));
+        $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-TV-' . $st, 'type' => 'recurring_charge', 'formal' => 'medlemskap',
+            'member_id' => $tv, 'subscription_id' => $tvS, 'belop_ore' => 50000, 'status' => $st, 'gjelder_fra' => $denne,
+            'idempotency_key' => $tag . '-tv-' . $st]);
+        $svar = kall([[$porter[0], $API, $kontant($tv), $token]]);
+        sjekk("trekk «{$st}» for $denneTekst: manuell betaling nektes (409)", $svar[0][0] === 409, json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+        sjekk('… med norsk tekst om trekket', str_contains((string) ($svar[0][1]['feil'] ?? ''), 'fast trekk i Vipps for ' . $denneTekst . ' er underveis'),
+            (string) ($svar[0][1]['feil'] ?? ''));
+        sjekk('… og ingen manuell rad', count(rader($tv)) === 1);
+    }
+    [$tf, $tfS] = nyttMedlem($plan, 'L12 Trekk feilet', 'agr-feilet-' . strtolower($tag));
+    $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-TF', 'type' => 'recurring_charge', 'formal' => 'medlemskap',
+        'member_id' => $tf, 'subscription_id' => $tfS, 'belop_ore' => 50000, 'status' => 'feilet', 'gjelder_fra' => $denne,
+        'idempotency_key' => $tag . '-tf']);
+    $svar = kall([[$porter[0], $API, $kontant($tf), $token]]);
+    sjekk('feilet trekk: manuell betaling godtas (200)', $svar[0][0] === 200, json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+
+    echo "\n── Punkt 3: trekk() hopper over en måned som er betalt i verkstedet ──\n";
+    [$tr, $trS] = nyttMedlem($plan, 'L12 Trekk betalt manuelt', 'agr-man-' . strtolower($tag));
+    $trekkDag = (new DateTimeImmutable($denne))->modify('+24 days')->format('Y-m-d');
+    DB::oppdater('subscriptions', ['neste_trekk' => $trekkDag, 'trekk_dag' => 25], ['id' => $trS]);
+    $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-TRM', 'type' => 'manuell', 'formal' => 'medlemskap',
+        'member_id' => $tr, 'subscription_id' => $trS, 'belop_ore' => 50000, 'status' => 'betalt', 'gjelder_fra' => $denne,
+        'idempotency_key' => $tag . '-trm']);
+    $fikk = '';
+    try {
+        $fikk = Medlemskap::trekk(DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $trS]));
+    } catch (Throwable $ex) {
+        $fikk = 'kastet: ' . $ex->getMessage();
+    }
+    $nesteTrekk = (string) DB::verdi('SELECT neste_trekk FROM subscriptions WHERE id = :i', ['i' => $trS]);
+    sjekk('trekket bestilles ikke (ingen Vipps-kall)', $fikk === 'betalt fra foer', $fikk);
+    sjekk('… ingen trekkrad; bare den manuelle (50000 øre)', count(rader($tr)) === 1 && rader($tr)[0]['type'] === 'manuell', json_encode(rader($tr)));
+    sjekk('… neste trekk flyttet en måned (' . (new DateTimeImmutable($neste))->modify('+24 days')->format('Y-m-d') . ')',
+        $nesteTrekk === (new DateTimeImmutable($neste))->modify('+24 days')->format('Y-m-d'), $nesteTrekk);
 
     echo "\n── L-12.7: forrige måned betalt, denne ikke ──\n";
     [$f, $fS] = nyttMedlem($plan, 'L12 Forrige');

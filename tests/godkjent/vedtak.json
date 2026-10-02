@@ -2899,7 +2899,7 @@
         {
             "id": "medlem-l11-l12",
             "dato": "2026-10-02",
-            "hva": "Pengeflyt L-11/L-12 (eieren ja 2. oktober): avtalen stoppes dagen ETTER «slutter» (norsk tid) — tilgang ut siste dag, «oppsagt» bare når ingen annen avtale løper. Manuell medlemsbetaling i admin får gjelder_fra (kalendermåneden, neste måned for nytt kjøp etter den 20.), nektes med 409 for en periode som alt er betalt, låser medlemmet i transaksjonen (dobbelttrykk = én betaling), og sier fra om fast trekk i Vipps. markerBetalt låser gavekortet før betalingen.",
+            "hva": "Pengeflyt L-11/L-12 (eieren ja 2. oktober): avtalen stoppes dagen ETTER «slutter» (norsk tid) — tilgang ut siste dag, «oppsagt» bare når ingen annen avtale løper. Manuell medlemsbetaling i admin får gjelder_fra (kalendermåneden, neste måned for nytt kjøp etter den 20.), nektes med 409 for en periode som alt er betalt, låser medlemmet i transaksjonen (dobbelttrykk = én betaling), og sier fra om fast trekk i Vipps. markerBetalt låser gavekortet før betalingen. Tillegg samme dag (eieren: «vi har ikke noen delbetalt måned»): streng sperre; 409 også når et fast trekk for måneden er underveis (opprettet/venter); trekk() trekker ikke en måned som alt er betalt utenom trekket, men flytter neste_trekk; «Forny» etter den 20. sperrer ikke kjøpsmåneden, og meldingen nevner måneden som skulle betales.",
             "hvor": "Medlemskap::tilAvslutning, api/admin/medlemmer.php (handling=betaling), Booking::markerBetalt",
             "kode": [
                 {
@@ -2918,7 +2918,21 @@
                         "DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $id]);",
                         "' har allerede betalt medlemskapet for ' . $periode",
                         "$gjelderFra = $medlemsperiode($id, $avtale, $navn);",
-                        "'advarsel' => $advarsel,"
+                        "'advarsel' => $advarsel,",
+                        "if (Medlemskap::betalingForMaaned($id, $maaned) !== null) {",
+                        "' er underveis for ' . $navn"
+                    ],
+                    "ikkeFinnes": [
+                        "en avtalt delbetaling"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public static function betalingForMaaned(int $medlemId, string $maaned, bool $utenTrekk = false): ?array",
+                        "|| ($forste && self::erForskuttert($r) && substr($kjopt, 0, 7) === $maaned)) {",
+                        "if (self::betalingForMaaned((int) $avtale['member_id'], $maaned, true) !== null) {",
+                        "return 'betalt fra foer';"
                     ]
                 },
                 {

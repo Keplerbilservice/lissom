@@ -1299,31 +1299,29 @@ if (Foresporsel::metode() === 'POST') {
     //  - perioden er kalendermaaneden betalingen gjelder (gjelder_fra = den
     //    1.); et nytt medlemskap kjoept etter den 20. gjelder neste maaned
     //    (Medlemskap::gjelderFraForsteBetaling()), og
-    //  - er perioden alt betalt, nektes betalingen (409).
+    //  - er perioden alt betalt, eller er et fast trekk for den underveis i
+    //    Vipps, nektes betalingen (409). Det finnes ingen delbetalt maaned
+    //    (eieren, 2. oktober 2026): én betaling, eller «Delt medlemsbetaling»
+    //    på én gang.
     // En engangsplan (Prøv Lissom) betales én gang per avtale.
     //
     // @return string|null gjelder_fra, eller null for en engangsplan
     $medlemsperiode = static function (int $id, ?array $avtale, string $navn): ?string {
         DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $id]);
         $oslo = new DateTimeZone('Europe/Oslo');
-        $utc  = new DateTimeZone('UTC');
         $planNavn = $avtale !== null ? (string) $avtale['plan']
             : (string) DB::verdi('SELECT medlemskap_type FROM members WHERE id = :i', ['i' => $id]);
         $engangs = trim($planNavn) !== '' && Medlemskap::erEngangs($planNavn);
-        $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
-        $utenTimepakke = DB::harTabell('timepakker')
-            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
-        $betalt = DB::alle(
-            "SELECT p.id, p.subscription_id, p.created_at, {$fraKol}, mp.engangs
-               FROM payments p
-          LEFT JOIN subscriptions s ON s.id = p.subscription_id
-          LEFT JOIN membership_plans mp ON mp.navn = s.plan
-              WHERE p.member_id = :m AND p.formal = 'medlemskap'
-                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
-                {$utenTimepakke}",
-            ['m' => $id]
-        );
         if ($engangs) {
+            $utenTimepakke = DB::harTabell('timepakker')
+                ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
+            $betalt = DB::alle(
+                "SELECT p.id, p.subscription_id, p.created_at FROM payments p
+                  WHERE p.member_id = :m AND p.formal = 'medlemskap'
+                    AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                    {$utenTimepakke}",
+                ['m' => $id]
+            );
             // Uten avtalerad (meldt inn for haand): en engangsbetaling uten
             // avtale siden innmeldingen teller (Codex, 2. oktober 2026).
             $start = substr(trim((string) DB::verdi('SELECT start_dato FROM members WHERE id = :i', ['i' => $id])), 0, 10);
@@ -1341,24 +1339,29 @@ if (Foresporsel::metode() === 'POST') {
         $fra = Medlemskap::gjelderFraForsteBetaling($id)
             ?? (new DateTimeImmutable('now', $oslo))->modify('first day of this month')->format('Y-m-d');
         $maaned = substr($fra, 0, 7);
-        foreach ($betalt as $r) {
-            // Proeveperioden er ikke en maaned i medlemskapet (som
-            // Medlemskap::harLoependePeriode()).
-            if ((int) ($r['engangs'] ?? 0) === 1) {
-                continue;
-            }
-            $kjopt = (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('Y-m-d');
-            $start = trim((string) ($r['gjelder_fra'] ?? '')) ?: $kjopt;
-            // Et nytt medlemskap kjoept etter den 20. betaler ogsaa resten av
-            // kjoepsmaaneden (tilgang med en gang, eieren 2. oktober 2026).
-            if (substr($start, 0, 7) === $maaned
-                || (Medlemskap::erForskuttert($r) && substr($kjopt, 0, 7) === $maaned)) {
-                $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
-                        'august', 'september', 'oktober', 'november', 'desember'];
-                $periode = $mnd[(int) substr($start, 5, 2) - 1] . ' ' . substr($start, 0, 4);
-                throw new RuntimeException($navn . ' har allerede betalt medlemskapet for ' . $periode
-                    . '. Betalingen er ikke registrert på nytt.', 409);
-            }
+        $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                'august', 'september', 'oktober', 'november', 'desember'];
+        // Meldingen gjelder maaneden som skulle betales (ikke betalingen som
+        // dekker den — en «Forny» etter den 20. har en annen maaned).
+        $periode = $mnd[(int) substr($fra, 5, 2) - 1] . ' ' . substr($fra, 0, 4);
+        // Betalt alt: maaneden selv, eller kjoepsmaaneden til et nytt
+        // medlemskap kjoept etter den 20. Se Medlemskap::betalingForMaaned().
+        if (Medlemskap::betalingForMaaned($id, $maaned) !== null) {
+            throw new RuntimeException($navn . ' har allerede betalt medlemskapet for ' . $periode
+                . '. Betalingen er ikke registrert på nytt.', 409);
+        }
+        // Et fast trekk for maaneden er bestilt i Vipps og ikke avgjort: da
+        // ville den samme maaneden blitt betalt to ganger (L-12, 2. oktober 2026).
+        if (DB::harKolonne('payments', 'gjelder_fra') && DB::verdi(
+            "SELECT id FROM payments
+              WHERE member_id = :m AND formal = 'medlemskap' AND type = 'recurring_charge'
+                AND status IN ('opprettet','venter') AND annullert_at IS NULL
+                AND gjelder_fra >= :fra AND gjelder_fra < :til LIMIT 1",
+            ['m' => $id, 'fra' => $maaned . '-01',
+             'til' => (new DateTimeImmutable($maaned . '-01'))->modify('first day of next month')->format('Y-m-d')]
+        ) !== null) {
+            throw new RuntimeException('Et fast trekk i Vipps for ' . $periode . ' er underveis for ' . $navn
+                . '. Betalingen er ikke registrert.', 409);
         }
         return $fra;
     };
@@ -1532,9 +1535,10 @@ if (Foresporsel::metode() === 'POST') {
             ['m' => $id]
         );
 
-        // Beloepet kan overstyres: en avtalt delbetaling, eller et medlemskap
-        // uten avtale. Staar feltet tomt, er det avtalen eller planen som
-        // gjelder.
+        // Beloepet kan overstyres, for et medlemskap uten avtale. Staar feltet
+        // tomt, er det avtalen eller planen som gjelder. Det finnes ingen
+        // delbetalt maaned (eieren, 2. oktober 2026): én betaling dekker
+        // maaneden, og en ny for samme maaned nektes (L-12).
         $skrevet = trim(Foresporsel::tekst('belop'));
         if ($skrevet !== '') {
             $raa = str_replace([' ', "\u{a0}", 'kr', ',-'], '', $skrevet);

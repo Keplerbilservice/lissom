@@ -419,6 +419,60 @@ final class Medlemskap
     }
 
     /**
+     * L-12 (pengeflyt-revisjonen, eieren 2. oktober 2026): betalingen som alt
+     * dekker kalendermaaneden $maaned (Y-m) for medlemmet, eller null.
+     *
+     * Teller betalte, ikke annullerte medlemsbetalinger (ikke timepakker, ikke
+     * proeveperioden). En maaned er dekket naar betalingens periode er den
+     * maaneden — eller naar den er kjoepsmaaneden til et NYTT medlemskap
+     * kjoept etter den 20. (den foerste betalingen paa avtalen; resten av
+     * maaneden er med). En «Forny» etter den 20. har samme form, men er ikke
+     * den foerste paa avtalen, og dekker bare sin egen maaned.
+     *
+     * @param bool $utenTrekk true = bare betalinger utenom faste trekk
+     *                        (verkstedet, «Forny»), til trekk()
+     * @return array<string,mixed>|null
+     */
+    public static function betalingForMaaned(int $medlemId, string $maaned, bool $utenTrekk = false): ?array
+    {
+        $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
+        $rader = DB::alle(
+            "SELECT p.id, p.type, p.subscription_id, p.created_at, {$fraKol}, mp.engangs
+               FROM payments p
+          LEFT JOIN subscriptions s ON s.id = p.subscription_id
+          LEFT JOIN membership_plans mp ON mp.navn = s.plan
+              WHERE p.member_id = :m AND p.formal = 'medlemskap'
+                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                {$utenTimepakke}
+              ORDER BY p.created_at, p.id",
+            ['m' => $medlemId]
+        );
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc  = new DateTimeZone('UTC');
+        $sett = [];
+        foreach ($rader as $r) {
+            if ((int) ($r['engangs'] ?? 0) === 1) {
+                continue;
+            }
+            $avtale = (int) ($r['subscription_id'] ?? 0);
+            $forste = !isset($sett[$avtale]);
+            $sett[$avtale] = true;
+            if ($utenTrekk && (string) $r['type'] === 'recurring_charge') {
+                continue;
+            }
+            $kjopt = (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('Y-m-d');
+            $start = trim((string) ($r['gjelder_fra'] ?? '')) ?: $kjopt;
+            if (substr($start, 0, 7) === $maaned
+                || ($forste && self::erForskuttert($r) && substr($kjopt, 0, 7) === $maaned)) {
+                return $r;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Er betalingen den foerste paa et nytt medlemskap kjoept etter den 20.?
      * Da gjelder den neste maaned (gjelder_fra), men gir tilgang fra
      * kjoepsdagen. Kjennes paa formen: gjelder_fra er den 1. i maaneden
@@ -2821,6 +2875,23 @@ final class Medlemskap
         }
         if ($fra !== null) {
             return 'alt fort';
+        }
+
+        // L-12: maaneden er alt betalt utenom trekket (i verkstedet, «Forny»).
+        // Da trekkes den ikke; neste trekk flyttes en maaned fram.
+        if (self::betalingForMaaned((int) $avtale['member_id'], $maaned, true) !== null) {
+            DB::oppdater('subscriptions', [
+                'neste_trekk' => self::erEngangs((string) $avtale['plan']) ? null : self::nesteTrekkdato(
+                    (string) $avtale['neste_trekk'],
+                    isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null
+                ),
+            ], ['id' => (int) $avtale['id']]);
+            if ($tidligere !== null) {
+                logg_feil('Trekk for avtale ' . $avtale['id'] . ' (' . $maaned . ') ble ikke proevd igjen: maaneden er betalt '
+                    . 'utenom trekket. Sjekk i Vipps at det feilede forsoeket ikke ble trukket.');
+            }
+            logg('Trekk hoppet over: maaneden er alt betalt', ['avtale' => (int) $avtale['id'], 'maaned' => $maaned]);
+            return 'betalt fra foer';
         }
 
         // Samme noekkel = samme innhold. Et nytt forsoek sender det som ble

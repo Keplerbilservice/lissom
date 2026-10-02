@@ -124,6 +124,7 @@ kjor "kjopslaas"     php tests/kjopslaas.php
 kjor "verving"       php tests/verving.php
 kjor "prøv lissom"   php tests/prove.php
 kjor "timepakke"     php tests/timepakke.php
+kjor "gi tid (tildeling)" php tests/tildeling.php
 kjor "planbytte"     php tests/planbytte.php
 kjor "nytt etter 20"  php tests/nytt-etter-20.php
 kjor "vakt, datasjekk" php tests/vaktdata-regler.php

@@ -113,6 +113,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Stempling' => 'stempling.php',
         'Svar' => 'http.php',
         'Tikk' => 'tikk.php',
+        'Tildeling' => 'tildeling.php',
         'Tillegg' => 'tillegg.php',
         'Timepakke' => 'timepakke.php',
         'Utsending' => 'varsler.php',

@@ -3091,6 +3091,41 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "gi-tid-t1",
+            "dato": "2026-10-02",
+            "hva": "«Gi tid» bit T1 (eieren ja 2. oktober): medlemmer kan få 1 time, tilgang én uke eller tilgang ut måneden fra admin. Lagres i tabellen tildelinger (migrasjon 249). Sluttdatoer i norsk tid: uke = i dag + 6 dager (dag 1–7), måned = siste dag i måneden, time = gjelder ut måneden. Trekk tilbake setter trukket_at/trukket_av, raden slettes aldri; trukket og utløpt teller ikke. Bryteren Vis/tildeling er AV når raden mangler, og av gir null/0. T1 er ikke koblet til timer, admin eller Min side ennå.",
+            "hvor": "app/lib/tildeling.php (Tildeling), db/migrations/249_tildelinger.sql",
+            "kode": [
+                {
+                    "fil": "app/lib/tildeling.php",
+                    "finnes": [
+                        "nokkel = 'Vis/tildeling'\") === 'ja';",
+                        "'uke'            => $dag->modify('+6 days')->format('Y-m-d'),",
+                        "'maaned', 'time' => $dag->format('Y-m-t'),",
+                        "UPDATE tildelinger SET trukket_at = :n, trukket_av = :a WHERE id = :i AND trukket_at IS NULL",
+                        "new DateTimeZone('Europe/Oslo')"
+                    ],
+                    "ikkeFinnes": [
+                        "DELETE FROM tildelinger"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/249_tildelinger.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS tildelinger (",
+                        "type        ENUM('time','uke','maaned') NOT NULL,",
+                        "KEY ix_tildeling_medlem_til (member_id, til),"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/tildeling.php"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -358,6 +358,7 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     // betaling», og frysen sin ser hen fortsatt.
     await gaa(p, '/min-side', 3000);
     sjekk(`${hva}: ingen «Forny og betal medlemskap»`, !(await p.getByRole('button', { name: 'Forny og betal medlemskap' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: skylder ingenting — ingen «betaler du i verkstedet»`, !(await synlig(p, 'Det som står ubetalt, betaler du i verkstedet.', true)));
     sjekk(`${hva}: ingen «Bli medlem»-tilbud`, !(await p.locator('#bli-medlem').filter({ visible: true }).count()));
     sjekk(`${hva}: frysen står på Min side («Frys av medlemskap», Godkjent)`, await synlig(p, /Frys av medlemskap/i) && await synlig(p, 'Godkjent', true));
     const megP = await api(p, '/api/meg.php');
@@ -377,6 +378,7 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     sjekk(`${hva}: … ingen «Forny og betal medlemskap»`, !(await t.getByRole('button', { name: 'Forny og betal medlemskap' }).filter({ visible: true }).count()));
     sjekk(`${hva}: … betalingsteksten står på siden («${tekstT}»)`, tekstT !== '' && await synlig(t, tekstT, true));
     sjekk(`${hva}: … «Medlemskapet venter på betaling»`, await synlig(t, 'Medlemskapet venter på betaling'));
+    sjekk(`${hva}: … «Det som står ubetalt, betaler du i verkstedet.»`, await synlig(t, 'Det som står ubetalt, betaler du i verkstedet.', true));
     const startT = await api(t, '/api/medlemskap.php', { handling: 'start', plan: MINI });
     sjekk(`${hva}: … serveren avviser betalingsstart`, startT.status >= 400 && /fryst til/i.test(startT.d?.feil || ''), JSON.stringify(startT));
     await t.context().close();

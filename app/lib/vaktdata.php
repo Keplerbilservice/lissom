@@ -461,8 +461,8 @@ final class Vaktdata
     // ── L12 booking_betaling_uenig ───────────────────────────────────────
     //
     // Betalingene dekker hele beloepet, men paameldingen staar fortsatt som
-    // reservert — eller paameldingen staar som betalt, men ingen betaling paa
-    // den er betalt. Summen regnes som Booking::settBetaltStatus() gjor
+    // reservert — eller paameldingen staar som betalt, men betalingene paa
+    // den dekker ikke beloepet. Summen regnes som Booking::settBetaltStatus() gjor
     // (Booking::betalingerFor(), med gavekort og delt betaling), saa en
     // delbetalt plass som med rette er reservert ikke gir funn (Codex 2.10).
     // Manuelle paameldinger uten betaling er utenfor.
@@ -490,14 +490,16 @@ final class Vaktdata
             "SELECT b.id, b.gjest_navn, b.belop_ore, m.navn
                FROM bookings b
                LEFT JOIN members m ON m.id = b.member_id
-              WHERE b.status = 'betalt' AND b.payment_id IS NOT NULL AND b.belop_ore > 0
-                AND NOT EXISTS (SELECT 1 FROM payments p
-                                 WHERE (p.id = b.payment_id OR p.booking_id = b.id)
-                                   AND p.status IN ({$ok}) AND p.annullert_at IS NULL)"
+              WHERE b.status = 'betalt' AND b.belop_ore > 0
+                AND EXISTS (SELECT 1 FROM payments p WHERE p.id = b.payment_id OR p.booking_id = b.id)"
         ) as $b) {
+            $sum = Booking::betalingerFor((int) $b['id'])['sum'];
+            if ($sum >= (int) $b['belop_ore']) {
+                continue;
+            }
             $ut[] = self::funn('booking_betaling_uenig', (int) $b['id'], (string) ($b['navn'] ?? $b['gjest_navn'] ?? ''),
-                'Påmelding ' . $b['id'] . ' (' . Booking::kroner((int) $b['belop_ore'])
-                . ') står som betalt, men ingen betaling på den er betalt');
+                'Påmelding ' . $b['id'] . ' (' . Booking::kroner((int) $b['belop_ore']) . ') står som betalt, men '
+                . ($sum > 0 ? 'bare ' . Booking::kroner($sum) . ' er betalt' : 'ingen betaling på den er betalt'));
         }
         return $ut;
     }

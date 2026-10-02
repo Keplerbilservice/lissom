@@ -145,6 +145,12 @@ $betal(['formal' => 'booking', 'booking_id' => $reservert]);
 $avbrutt = $betal(['formal' => 'booking', 'status' => 'avbrutt']);
 $betaltUten = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Betalt ' . $tag,
     'antall' => 1, 'belop_ore' => 100000, 'status' => 'betalt', 'payment_id' => $avbrutt]);
+// Feil: staar som betalt, men én av to betalinger er annullert.
+$halvBetalt = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Halvt ' . $tag,
+    'antall' => 1, 'belop_ore' => 100000, 'status' => 'betalt']);
+$betal(['formal' => 'booking', 'booking_id' => $halvBetalt, 'type' => 'manuell', 'belop_ore' => 50000]);
+$betal(['formal' => 'booking', 'booking_id' => $halvBetalt, 'type' => 'manuell', 'belop_ore' => 50000,
+    'annullert_at' => gmdate('Y-m-d H:i:s')]);
 // Riktig: delbetalt plass er med rette fortsatt reservert.
 $delbetalt = DB::settInn('bookings', ['course_id' => $kurs, 'gjest_navn' => 'Gjest Delbetalt ' . $tag,
     'antall' => 1, 'belop_ore' => 100000, 'status' => 'reservert']);
@@ -191,6 +197,7 @@ sjekk('L10 mangler_avtale: ' . $fast['navn'] . ' uten Vipps-avtale', $har('mangl
 sjekk('L11 autorisert_ikke_trukket: autorisert for ti dager siden', $har('autorisert_ikke_trukket', $autorisert), $vis);
 sjekk('L12 booking_betaling_uenig: betalt betaling, reservert påmelding', $har('booking_betaling_uenig', $reservert), $vis);
 sjekk('L12 booking_betaling_uenig: betalt påmelding, avbrutt betaling', $har('booking_betaling_uenig', $betaltUten), $vis);
+sjekk('L12 booking_betaling_uenig: betalt påmelding, bare halve beløpet dekket', $har('booking_betaling_uenig', $halvBetalt), $vis);
 sjekk('L13 gavekort_saldo: saldo går ikke opp', $har('gavekort_saldo', $kortSaldo), $vis);
 sjekk('L13 gavekort_saldo: aktivt kort med ubetalt betaling', $har('gavekort_saldo', $kortUbetalt), $vis);
 

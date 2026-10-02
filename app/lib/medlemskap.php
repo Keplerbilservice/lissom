@@ -1236,6 +1236,77 @@ final class Medlemskap
     }
 
     /**
+     * Setter medlemmet «oppsagt» — men bare naar ingen avtale loeper lenger.
+     *
+     * L-1 (pengeflyt-revisjonen, eieren 2. oktober 2026): et forlatt
+     * oppgraderings- eller bytteforsoek gikk ut hos Vipps (EXPIRED etter ti
+     * minutter), og medlemmet ble satt «oppsagt» selv om det gamle
+     * medlemskapet fortsatt loep og ble trukket. Medlemsstatusen skal foelge
+     * avtalen som faktisk loeper (loepende()), ikke et forsoek.
+     *
+     * @return bool om medlemmet ble satt «oppsagt»
+     */
+    private static function oppsagtOmIngenLoeper(int $medlemId): bool
+    {
+        if (self::loepende($medlemId) !== null) {
+            return false;
+        }
+        DB::oppdater('members', ['status' => 'oppsagt'], ['id' => $medlemId]);
+        return true;
+    }
+
+    /**
+     * L-3: en medlemsbetaling er refundert i sin helhet.
+     *
+     * Var den den eneste betalingen paa en engangsavtale (Prøv Lissom, eller
+     * første periode av et medlemskap uten fast trekk), stoppes avtalen i dag,
+     * og medlemmet settes «oppsagt» om ingenting annet loeper. En fornyelse,
+     * et trekk eller en avtale med fast trekk stoppes IKKE av seg selv — det
+     * flagges i loggen, og perioden staar ubetalt (harBetaltPeriode() teller
+     * ikke refunderte betalinger).
+     *
+     * @return string stoppet | flagget | uendret
+     */
+    public static function stoppEtterRefusjon(int $abonnementId, int $betalingId): string
+    {
+        $a = DB::en('SELECT * FROM subscriptions WHERE id = :i FOR UPDATE', ['i' => $abonnementId]);
+        if ($a === null) {
+            return 'uendret';
+        }
+        $type = (string) DB::verdi('SELECT type FROM payments WHERE id = :p', ['p' => $betalingId]);
+        $andre = (int) DB::verdi(
+            "SELECT COUNT(*) FROM payments
+              WHERE subscription_id = :s AND id <> :p
+                AND status IN ('betalt','delvis_refundert') AND annullert_at IS NULL",
+            ['s' => $abonnementId, 'p' => $betalingId]
+        );
+        $harAvtale = trim((string) ($a['vipps_agreement_id'] ?? '')) !== '';
+        if ($type === 'recurring_charge' || $harAvtale || $andre > 0) {
+            revider('medlemskap_refundert_flagg', 'member', (int) $a['member_id'], [
+                'avtale' => $abonnementId, 'betaling' => $betalingId, 'plan' => (string) $a['plan'],
+                'grunn' => $type === 'recurring_charge' ? 'trekk' : ($harAvtale ? 'fast_trekk' : 'fornyelse'),
+            ]);
+            return 'flagget';
+        }
+        $n = DB::kjor(
+            "UPDATE subscriptions
+                SET status = 'stoppet', sagt_opp_at = UTC_TIMESTAMP(),
+                    slutter = CURDATE(), neste_trekk = NULL
+              WHERE id = :i AND status IN ('aktiv','venter')",
+            ['i' => $abonnementId]
+        )->rowCount();
+        if ($n !== 1) {
+            return 'uendret';
+        }
+        $ut = self::oppsagtOmIngenLoeper((int) $a['member_id']);
+        revider('medlemskap_stoppet_ved_refusjon', 'member', (int) $a['member_id'], [
+            'avtale' => $abonnementId, 'betaling' => $betalingId, 'plan' => (string) $a['plan'],
+            'oppsagt' => $ut,
+        ]);
+        return 'stoppet';
+    }
+
+    /**
      * Starter en avtale i Vipps og lagrer den som «venter».
      *
      * Den blir ikke aktiv her. Det skjer forst naar kunden har godkjent i
@@ -1832,8 +1903,11 @@ final class Medlemskap
                 'start_dato'      => DB::verdi('SELECT start_dato FROM members WHERE id = :m', ['m' => $avtale['member_id']])
                                       ?: gmdate('Y-m-d'),
             ], ['id' => (int) $avtale['member_id']]);
-        } elseif (in_array($ny, ['stoppet', 'utlopt'], true)) {
-            DB::oppdater('members', ['status' => 'oppsagt'], ['id' => (int) $avtale['member_id']]);
+        } elseif (in_array($ny, ['stoppet', 'utlopt'], true) && (string) $avtale['status'] === 'aktiv') {
+            // L-1: bare avtalen som loep, kan ta medlemskapet med seg — og
+            // bare naar ingen annen loeper. Et forsoek som aldri ble godkjent
+            // (EXPIRED, eller avslaatt i appen) endrer bare sin egen rad over.
+            self::oppsagtOmIngenLoeper((int) $avtale['member_id']);
         }
 
         // Vervepremien. Avtalen er aktiv og foerste trekk tatt — kom vennen
@@ -2161,7 +2235,8 @@ final class Medlemskap
             'status'      => 'stoppet',
             'neste_trekk' => null,
         ], ['id' => (int) $avtale['id']]);
-        DB::oppdater('members', ['status' => 'oppsagt'], ['id' => (int) $avtale['member_id']]);
+        // L-1: loeper en annen avtale (et nytt medlemskap), er hun ikke oppsagt.
+        self::oppsagtOmIngenLoeper((int) $avtale['member_id']);
     }
 
     /**

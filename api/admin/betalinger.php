@@ -221,6 +221,11 @@ try {
     $resultat = Booking::refunderBetaling((int) $betaling['id'], $onsket, $operasjonId);
     $belop = $resultat['belop'];
 } catch (Throwable $e) {
+    // L-3: et brukt gavekort kan ikke refunderes helt. Da er det ikke Vipps
+    // som sa nei, og beskjeden skal si hvorfor.
+    if ($e instanceof RuntimeException && $e->getCode() === 422) {
+        Svar::feil($e->getMessage(), 409);
+    }
     logg_feil('Refusjon feilet for ' . $referanse, $e);
     Svar::feil('Vipps godtok ikke refusjonen. Prøv igjen, eller sjekk i portalen.', 502);
 }
@@ -249,4 +254,9 @@ Svar::ok([
     // Raa tall ogsaa: skjermen skal ikke maatte sammenligne «kr. 0,-» som
     // tekst for aa vite om det staar noe igjen.
     'gjenstaarOre' => $maks - $belop,
+    // L-3: en delrefusjon gjor ikke opp kjoepet (gavekort, timepakke, ordre,
+    // medlemskap). Det staar i loggen, og her, saa admin kan ta det selv.
+    'merknad' => $resultat['gjenstaar'] > 0 && Booking::formalFor((int) $betaling['id']) !== 'booking'
+        ? 'Delvis refusjon: kjøpet er ikke endret. Gjør det for hånd om det trengs.'
+        : '',
 ]);

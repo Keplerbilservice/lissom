@@ -42,6 +42,53 @@
             ]
         },
         {
+            "id": "pengeflyt-kritiske-l1-l3",
+            "dato": "2026-10-02",
+            "hva": "Eieren (JA 2. oktober 2026), pengeflyt-revisjonen: L-1 et forlatt/avslått avtaleforsøk gjør ikke medlemmet oppsagt, og avslutt() gjør det ikke når en annen avtale løper. L-2 gavekortdelen gis tilbake ved avbestilling etter samme regel, koblet til betalingens egen uttaksrad. L-3 full refusjon gjør opp kjøpet: gavekort annulleres (nektes når det er brukt), timepakke refunderes, nettordre legger varene tilbake, engangsbetaling for medlemskap stopper det; delrefusjon logges.",
+            "hvor": "Vipps-avtaler, avbestilling, refusjon i Økonomi",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "private static function oppsagtOmIngenLoeper(int $medlemId): bool",
+                        "} elseif (in_array($ny, ['stoppet', 'utlopt'], true) && (string) $avtale['status'] === 'aktiv') {",
+                        "public static function stoppEtterRefusjon(int $abonnementId, int $betalingId): string"
+                    ]
+                },
+                {
+                    "fil": "api/avbestill.php",
+                    "finnes": [
+                        "$gavekort = $b['pid'] !== null ? Booking::gavekortBrukt((int) $b['pid']) : 0;",
+                        "$gaveGitt = Booking::gavekortTilbake((int) $b['pid'], $gaveTilbake);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "self::annullerRefundertGavekort($paymentId);",
+                        "self::gjorOppFormal($paymentId);",
+                        "public static function gavekortTilbake(int $paymentId, int $onsket = 0): int"
+                    ]
+                },
+                {
+                    "fil": "tests/refusjon-formal.php",
+                    "finnes": [
+                        "oppgradering_forlatt",
+                        "avslutt_med_annen_aktiv",
+                        "gavekortkjop_refundert",
+                        "timepakke_refundert"
+                    ]
+                },
+                {
+                    "fil": "tests/avbestill-gavekort.php",
+                    "finnes": [
+                        "avbestill_gavekort_delt",
+                        "avbestill_kun_gavekort"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "vervepremie",
             "dato": "2026-09-27",
             "hva": "Vervepremie som banner på Min side, timer settes i admin, godkjente tekster",

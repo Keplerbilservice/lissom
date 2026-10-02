@@ -52,9 +52,12 @@ if ($b['status'] === 'avbestilt' || $b['status'] === 'refundert') {
 
 // --- Hvor mye skal tilbake? ----------------------------------------------
 $betalt = (int) ($b['betalt_ore'] ?? 0);
+// L-2 (eieren, 2. oktober 2026): gavekortdelen er betalt, den ogsaa. Den
+// telles av det som faktisk ble trukket fra kortet for denne betalingen.
+$gavekort = $b['pid'] !== null ? Booking::gavekortBrukt((int) $b['pid']) : 0;
 $timerIgjen = $b['start_tid'] ? (strtotime((string) $b['start_tid']) - time()) / 3600 : null;
 
-if ($betalt === 0) {
+if ($betalt === 0 && $gavekort === 0) {
     $andel = 0.0;
     $regel = 'Ingenting var belastet.';
 } else {
@@ -67,11 +70,14 @@ if ($betalt === 0) {
 }
 
 $refunderes = (int) round($betalt * $andel);
+// Gavekortdelen etter samme regel, tilbake paa kortet.
+$gaveTilbake = (int) round($gavekort * $andel);
+$gaveGitt = 0;
 $refundert = false;
 $manuelt = false;
 
 $harClaim = false;
-$claim = static function () use ($bookingId, $medlem, $b, &$harClaim): void {
+$claim = static function () use ($bookingId, $medlem, $b, &$harClaim, $gaveTilbake, &$gaveGitt): void {
     $endret = DB::kjor(
     "UPDATE bookings SET status = 'avbestilt', avbestilt_at = UTC_TIMESTAMP()
       WHERE id = :i AND member_id = :m AND status = :s AND avbestilt_at IS NULL",
@@ -79,6 +85,11 @@ $claim = static function () use ($bookingId, $medlem, $b, &$harClaim): void {
     )->rowCount();
     if ($endret !== 1) {
         throw new RuntimeException('Denne plassen er allerede avbestilt.', 409);
+    }
+    // I samme transaksjon som avbestillingen: den som faar plassen avbestilt,
+    // er den eneste som gir gavekortdelen tilbake, og bare én gang.
+    if ($gaveTilbake > 0) {
+        $gaveGitt = Booking::gavekortTilbake((int) $b['pid'], $gaveTilbake);
     }
     $harClaim = true;
 };
@@ -113,7 +124,7 @@ if ($viaVipps) {
     $manuelt = true;
 }
 if (!$viaVipps) {
-    try { $claim(); }
+    try { DB::iTransaksjon(static function () use ($claim): void { $claim(); }); }
     catch (RuntimeException $e) { Svar::feil('Denne plassen er allerede avbestilt.', 409); }
 }
 
@@ -123,6 +134,7 @@ if ($refundert) {
 
 revider('avbestilling', 'booking', $bookingId, [
     'refundert_ore' => $refundert ? $refunderes : 0,
+    'gavekort_tilbake_ore' => $gaveGitt,
     'manuelt'       => $manuelt,
 ]);
 
@@ -144,6 +156,8 @@ Varsel::mal('avbestilling', [
 Svar::ok([
     'regel'      => $regel,
     'refunderes' => Booking::kroner($refunderes),
+    // Tall, ingen ny tekst: kundeteksten om gavekortet venter paa eieren.
+    'gavekortTilbakeOre' => $gaveGitt,
     'manuelt'    => $manuelt,
     'beskjed'    => $manuelt
         ? 'Plassen er avbestilt. Refusjonen måtte vi ta manuelt — du hører fra oss i løpet av kort tid.'

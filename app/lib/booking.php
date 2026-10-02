@@ -1330,6 +1330,12 @@ final class Booking
                 if ($belop <= 0) {
                     return ['id' => 0, 'amount_ore' => 0, 'before_ore' => $foer] + $rute;
                 }
+                // L-3: refunderes et gavekortkjoep helt, sperres kortet her,
+                // foer pengene sendes — ellers kunne det brukes mens Vipps
+                // svarer. Er det brukt, stopper refusjonen.
+                if ($foer + $belop >= (int) $p['belop_ore']) {
+                    self::annullerRefundertGavekort($paymentId);
+                }
                 $id = DB::settInn('payment_refunds', ['payment_id' => $paymentId, 'before_ore' => $foer, 'amount_ore' => $belop,
                     'client_operation_id' => $operasjonId, 'requested_ore' => $onsket]);
                 return ['id' => $id, 'amount_ore' => $belop, 'before_ore' => $foer] + $rute;
@@ -1359,11 +1365,185 @@ final class Booking
                 if ($rest === 0) {
                     DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
                 }
+                // L-3: hele beloepet tilbake = kjoepet gjores opp. En
+                // delrefusjon roerer ikke formaalet; den logges.
+                if ((int) $op['id'] > 0) {
+                    if ($rest === 0) {
+                        self::gjorOppFormal($paymentId);
+                    } else {
+                        self::revisjon('refusjon_delvis_formal_uendret', 'payment', $paymentId, [
+                            'formal' => self::formalFor($paymentId),
+                            'refundert_ore' => $refundert, 'gjenstaar_ore' => $rest,
+                        ]);
+                    }
+                }
                 return ['belop' => (int) $op['amount_ore'], 'refundert' => $refundert, 'gjenstaar' => $rest];
             });
         } finally {
             DB::verdi('SELECT RELEASE_LOCK(:n)', ['n' => $laas]);
         }
+    }
+
+    /**
+     * Hva betalingen kjoepte: gavekortkjop, timepakke, ordre, booking,
+     * medlemskap eller ukjent. Til loggen naar en delrefusjon ikke gjor opp
+     * formaalet.
+     */
+    public static function formalFor(int $paymentId): string
+    {
+        if (DB::harTabell('gift_cards')
+            && DB::verdi('SELECT id FROM gift_cards WHERE payment_id = :p LIMIT 1', ['p' => $paymentId]) !== null) {
+            return 'gavekortkjop';
+        }
+        if (DB::harTabell('timepakker')
+            && DB::verdi('SELECT id FROM timepakker WHERE payment_id = :p LIMIT 1', ['p' => $paymentId]) !== null) {
+            return 'timepakke';
+        }
+        if (DB::verdi('SELECT id FROM orders WHERE payment_id = :p LIMIT 1', ['p' => $paymentId]) !== null) {
+            return 'ordre';
+        }
+        if (DB::verdi('SELECT id FROM bookings WHERE payment_id = :p LIMIT 1', ['p' => $paymentId]) !== null) {
+            return 'booking';
+        }
+        if (DB::verdi('SELECT subscription_id FROM payments WHERE id = :p', ['p' => $paymentId]) !== null) {
+            return 'medlemskap';
+        }
+        return 'ukjent';
+    }
+
+    /**
+     * L-3: et gavekortkjoep som refunderes helt, annulleres — saldo 0 — i
+     * samme transaksjon som refusjonen journalfoeres, FOER Vipps-kallet.
+     *
+     * Er kortet brukt (saldoen er gaatt ned, det har uttak, eller et kjoep med
+     * det er paa vei i Vipps), nektes refusjonen: da ville kunden faatt
+     * pengene tilbake og beholdt det som ble kjoept for kortet.
+     *
+     * Kortraden laases; samme laas som Booking::gavekortDekker() tar naar
+     * kortet brukes i et kjoep, saa de to kan ikke skje samtidig.
+     *
+     * Feiler Vipps etterpaa, staar operasjonen som «pending» og fullfoeres paa
+     * neste forsoek — kortet er allerede sperret, og blir det.
+     */
+    private static function annullerRefundertGavekort(int $paymentId): void
+    {
+        if (!DB::harTabell('gift_cards')) {
+            return;
+        }
+        $k = DB::en(
+            'SELECT id, kode, saldo_ore, opprinnelig_ore, status FROM gift_cards WHERE payment_id = :p FOR UPDATE',
+            ['p' => $paymentId]
+        );
+        if ($k === null || (string) $k['status'] === 'annullert') {
+            return;
+        }
+        $saldo = (int) $k['saldo_ore'];
+        $brukt = $saldo < (int) $k['opprinnelig_ore'];
+        if (!$brukt && DB::harTabell('gift_card_uses')) {
+            $brukt = (int) DB::verdi(
+                'SELECT COALESCE(SUM(belop_ore), 0) FROM gift_card_uses WHERE gift_card_id = :k',
+                ['k' => (int) $k['id']]
+            ) > 0;
+        }
+        if (!$brukt && DB::harKolonne('payments', 'gavekort_id')) {
+            // Samme vindu som gavekortDekker(): et kjoep som er paa vei.
+            $brukt = DB::verdi(
+                "SELECT id FROM payments
+                  WHERE gavekort_id = :k AND gavekort_ore > 0
+                    AND status IN ('opprettet','venter','autorisert')
+                    AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 MINUTE)
+                  LIMIT 1 FOR UPDATE",
+                ['k' => (int) $k['id']]
+            ) !== null;
+        }
+        if ($brukt) {
+            throw new RuntimeException(
+                'Gavekortet ' . $k['kode'] . ' er brukt (' . self::kroner($saldo) . ' igjen av '
+                . self::kroner((int) $k['opprinnelig_ore']) . '), eller et kjøp med det er på vei. '
+                . 'Hele kjøpet kan ikke refunderes.',
+                422
+            );
+        }
+        DB::kjor(
+            "UPDATE gift_cards SET status = 'annullert', saldo_ore = 0 WHERE id = :i",
+            ['i' => (int) $k['id']]
+        );
+        self::revisjon('gavekort_annullert_ved_refusjon', 'payment', $paymentId,
+            ['gavekort' => (int) $k['id'], 'saldo_ore' => $saldo]);
+    }
+
+    /**
+     * L-3: hele betalingen er refundert — kjoepet gjores opp.
+     *
+     *   timepakke    pakken settes refundert, timene teller ikke lenger
+     *   nettordre    ordren refundert, varene (B-) tilbake paa lager
+     *   gavekortdel  det som ble betalt med gavekort, tilbake paa kortet
+     *   medlemskap   en engangsbetaling stopper medlemskapet; en fornyelse
+     *                eller et trekk flagges (Medlemskap::stoppEtterRefusjon)
+     *
+     * Gavekortkjoepet er alt annullert i annullerRefundertGavekort(), og en
+     * booking settes refundert av refunderBetaling(). Alt her er betinget paa
+     * status, saa et nytt kall gjor ingenting to ganger.
+     */
+    private static function gjorOppFormal(int $paymentId): void
+    {
+        if (DB::harTabell('timepakker')) {
+            $tp = DB::en('SELECT id, member_id FROM timepakker WHERE payment_id = :p FOR UPDATE', ['p' => $paymentId]);
+            if ($tp !== null) {
+                $ny = self::timepakkeHarRefundert() ? 'refundert' : 'avbrutt';
+                $n = DB::kjor(
+                    "UPDATE timepakker SET status = :s WHERE id = :i AND status = 'betalt'",
+                    ['s' => $ny, 'i' => (int) $tp['id']]
+                )->rowCount();
+                if ($n === 1) {
+                    self::revisjon('timepakke_refundert', 'member', (int) $tp['member_id'],
+                        ['timepakke' => (int) $tp['id'], 'betaling' => $paymentId, 'status' => $ny]);
+                }
+            }
+        }
+
+        $o = DB::en('SELECT id, ordrenr FROM orders WHERE payment_id = :p FOR UPDATE', ['p' => $paymentId]);
+        if ($o !== null) {
+            $n = DB::kjor(
+                "UPDATE orders SET status = 'refundert'
+                  WHERE id = :i AND status NOT IN ('refundert', 'kansellert')",
+                ['i' => (int) $o['id']]
+            )->rowCount();
+            if ($n === 1) {
+                // Bare nettbutikken (B-) trakk lageret i markerBetalt().
+                $lager = str_starts_with((string) $o['ordrenr'], 'B-');
+                if ($lager) {
+                    self::leggTilbakeLager((int) $o['id']);
+                }
+                self::revisjon('ordre_refundert', 'ordre', (int) $o['id'],
+                    ['betaling' => $paymentId, 'lager_tilbake' => $lager]);
+            }
+        }
+
+        self::gavekortTilbake($paymentId);
+
+        $ab = DB::verdi(
+            "SELECT subscription_id FROM payments WHERE id = :p AND formal = 'medlemskap'",
+            ['p' => $paymentId]
+        );
+        if ($ab !== null && (int) $ab > 0 && class_exists('Medlemskap')) {
+            Medlemskap::stoppEtterRefusjon((int) $ab, $paymentId);
+        }
+    }
+
+    /** Har «timepakker.status» verdien «refundert» (migrasjon 245)? */
+    private static function timepakkeHarRefundert(): bool
+    {
+        static $svar = null;
+        if ($svar !== null) {
+            return $svar;
+        }
+        $type = (string) DB::verdi(
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'timepakker'
+                AND COLUMN_NAME = 'status'"
+        );
+        return $svar = str_contains($type, "'refundert'");
     }
 
     public static function markerBetalt(string $referanse): bool
@@ -1750,20 +1930,17 @@ final class Booking
         return $svar = str_contains($type, "'betaling'");
     }
 
-    public static function trekkGavekort(int $paymentId): void
+    /**
+     * Hva gavekorttrekket paa en betaling peker paa i «gift_card_uses»:
+     * [ref_type, ref_id]. Det samme svaret brukes naar trekket gjores og
+     * naar det gis tilbake (gavekortTilbake()), saa en refusjon finner
+     * akkurat denne betalingens rad — ikke en annen rad paa samme kort med
+     * samme beloep.
+     *
+     * @return array{0:string,1:int}
+     */
+    private static function gavekortSpor(int $paymentId): array
     {
-        if (!DB::harKolonne('payments', 'gavekort_id')) {
-            return;
-        }
-        $b = DB::en(
-            'SELECT id, gavekort_id, gavekort_ore FROM payments WHERE id = :i',
-            ['i' => $paymentId]
-        );
-        $kortId = (int) ($b['gavekort_id'] ?? 0);
-        $belop  = (int) ($b['gavekort_ore'] ?? 0);
-        if ($kortId <= 0 || $belop <= 0) {
-            return;
-        }
         // Hva ble kortet brukt paa? Sporet skal si det — «betaling nr. 7»
         // hjelper ingen som leter etter en ordre. ref_type er en enum fra
         // 001_init med akkurat disse tre verdiene.
@@ -1836,6 +2013,25 @@ final class Booking
             $refType = 'betaling';
             $refId = $paymentId;
         }
+
+        return [$refType, $refId];
+    }
+
+    public static function trekkGavekort(int $paymentId): void
+    {
+        if (!DB::harKolonne('payments', 'gavekort_id')) {
+            return;
+        }
+        $b = DB::en(
+            'SELECT id, gavekort_id, gavekort_ore FROM payments WHERE id = :i',
+            ['i' => $paymentId]
+        );
+        $kortId = (int) ($b['gavekort_id'] ?? 0);
+        $belop  = (int) ($b['gavekort_ore'] ?? 0);
+        if ($kortId <= 0 || $belop <= 0) {
+            return;
+        }
+        [$refType, $refId] = self::gavekortSpor($paymentId);
 
         // Allerede trukket? Da staar bruken der fra for, og vi gjor ingenting.
         // Webhooken og returen kan begge komme, og begge kan komme flere
@@ -1932,6 +2128,116 @@ final class Booking
         );
 
         return $belop;
+    }
+
+    /**
+     * Gir gavekortdelen av EN betaling tilbake til kortet — hele eller en del.
+     *
+     * L-2 (pengeflyt-revisjonen, eieren 2. oktober 2026): en avbestilt plass
+     * regnet refusjonen bare av Vipps-delen. Gavekortdelen ble aldri gitt
+     * tilbake, og en plass betalt helt med gavekort fikk «Ingenting var
+     * belastet».
+     *
+     * Raden i «gift_card_uses» er fasiten: den som hoerer til akkurat denne
+     * betalingen (gavekortSpor()), ikke et soek paa kort og beloep. Beloepet
+     * paa raden settes ned med det som gis tilbake, saa raden alltid viser
+     * hva som fortsatt er brukt — og mer enn det kan aldri gis tilbake, uansett
+     * hvor mange ganger dette kalles. Betalingen og kortet laases foerst.
+     *
+     * Kalles inne i en transaksjon naar den som kaller har en, ellers i sin egen.
+     *
+     * @param int $onsket Oere aa gi tilbake. 0 = alt som fortsatt er brukt.
+     * @return int Oere lagt tilbake paa kortet.
+     */
+    public static function gavekortTilbake(int $paymentId, int $onsket = 0): int
+    {
+        if (!DB::harKolonne('payments', 'gavekort_id') || !DB::harTabell('gift_card_uses')) {
+            return 0;
+        }
+        $arbeid = static function () use ($paymentId, $onsket): int {
+            $kortId = (int) DB::verdi(
+                'SELECT gavekort_id FROM payments WHERE id = :i FOR UPDATE',
+                ['i' => $paymentId]
+            );
+            if ($kortId <= 0) {
+                return 0;
+            }
+            [$refType, $refId] = self::gavekortSpor($paymentId);
+            if ($refId <= 0) {
+                return 0;
+            }
+            if (DB::verdi('SELECT id FROM gift_cards WHERE id = :k FOR UPDATE', ['k' => $kortId]) === null) {
+                return 0;
+            }
+            $bruk = DB::en(
+                'SELECT id, belop_ore FROM gift_card_uses
+                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r
+                  ORDER BY id LIMIT 1 FOR UPDATE',
+                ['k' => $kortId, 't' => $refType, 'r' => $refId]
+            );
+            if ($bruk === null) {
+                return 0; // aldri trukket: ingenting aa gi tilbake
+            }
+            $brukt = (int) $bruk['belop_ore'];
+            $belop = $onsket > 0 ? min($onsket, $brukt) : $brukt;
+            if ($belop <= 0) {
+                return 0;
+            }
+            $n = DB::kjor(
+                'UPDATE gift_card_uses SET belop_ore = belop_ore - :b WHERE id = :i AND belop_ore >= :b2',
+                ['b' => $belop, 'i' => (int) $bruk['id'], 'b2' => $belop]
+            )->rowCount();
+            if ($n !== 1) {
+                return 0;
+            }
+            DB::kjor(
+                'UPDATE gift_cards SET saldo_ore = saldo_ore + :b WHERE id = :i',
+                ['b' => $belop, 'i' => $kortId]
+            );
+            // Samme regel som angreGavekort(): et tomt kort som faar saldo
+            // igjen, virker igjen — men ikke et som er annullert eller utloept.
+            DB::kjor(
+                "UPDATE gift_cards SET status = 'aktivt'
+                  WHERE id = :i AND status = 'brukt' AND saldo_ore > 0",
+                ['i' => $kortId]
+            );
+            self::revisjon('gavekort_gitt_tilbake', 'payment', $paymentId,
+                ['gavekort' => $kortId, 'belop_ore' => $belop, 'igjen_brukt_ore' => $brukt - $belop]);
+            return $belop;
+        };
+        return DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);
+    }
+
+    /**
+     * Oere som fortsatt er trukket fra gavekortet for denne betalingen — fra
+     * betalingens egen rad i «gift_card_uses». 0 naar kortet aldri ble trukket.
+     */
+    public static function gavekortBrukt(int $paymentId): int
+    {
+        if (!DB::harKolonne('payments', 'gavekort_id') || !DB::harTabell('gift_card_uses')) {
+            return 0;
+        }
+        $kortId = (int) DB::verdi('SELECT gavekort_id FROM payments WHERE id = :i', ['i' => $paymentId]);
+        if ($kortId <= 0) {
+            return 0;
+        }
+        [$refType, $refId] = self::gavekortSpor($paymentId);
+        if ($refId <= 0) {
+            return 0;
+        }
+        return (int) DB::verdi(
+            'SELECT COALESCE(SUM(belop_ore), 0) FROM gift_card_uses
+              WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r',
+            ['k' => $kortId, 't' => $refType, 'r' => $refId]
+        );
+    }
+
+    /** revider() naar den er lastet (testene som bare laster denne fila har den ikke). */
+    private static function revisjon(string $handling, string $type, int $id, array $detaljer): void
+    {
+        if (function_exists('revider')) {
+            revider($handling, $type, $id, $detaljer);
+        }
     }
 
     /**

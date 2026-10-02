@@ -82,6 +82,20 @@ foreach (DB::alle('SELECT id FROM payments WHERE member_id = :m', ['m' => $rikti
 $oppsagt = $nytt('Oppsagt Med Tid', 'oppsagt', $vanlig['navn']);
 $betal(['member_id' => $oppsagt, 'gjelder_fra' => $idag, 'created_at' => $dagerSiden(1)]);
 
+// Sa opp, og perioden de betalte for er over: vanlig avslutning, ikke L9.
+$avsluttet = $nytt('Oppsagt Avsluttet', 'oppsagt', $vanlig['navn']);
+$betal(['member_id' => $avsluttet, 'created_at' => $utc((new DateTimeImmutable($mndStart))->modify('-20 days')->format('Y-m-d') . ' 12:00:00'),
+    'gjelder_fra' => (new DateTimeImmutable($mndStart))->modify('-1 month')->format('Y-m-d')]);
+
+// Byttet til en annen plan samme maaned: to betalinger, men ikke L8.
+$bytte = $nytt('Byttet Plan', 'aktiv', $fast['navn']);
+$gammel = DB::settInn('subscriptions', ['member_id' => $bytte, 'plan' => $vanlig['navn'],
+    'pris_ore' => (int) $vanlig['pris_ore'], 'status' => 'stoppet']);
+$nyAvtale = DB::settInn('subscriptions', ['member_id' => $bytte, 'plan' => $fast['navn'],
+    'pris_ore' => (int) $fast['pris_ore'], 'status' => 'aktiv', 'vipps_agreement_id' => 'TEST-' . $tag . '-bytte']);
+$betal(['member_id' => $bytte, 'subscription_id' => $gammel, 'gjelder_fra' => $mndStart, 'created_at' => $dagerSiden(1)]);
+$betal(['member_id' => $bytte, 'subscription_id' => $nyAvtale, 'gjelder_fra' => $idag]);
+
 // ── Konstruerte feil, én per regel ───────────────────────────────────
 // L4 + L6: Prøv Lissom utloept, betalt, staar fortsatt som prove (kjent sak).
 $proveUte = $nytt('Prove Utlopt', 'prove', $engangs['navn'], [
@@ -183,6 +197,8 @@ $medlemsregler = ['status_uenig', 'forste_betaling_kort_periode', 'prove_utlopt'
     'betalt_ikke_aktiv', 'mangler_avtale'];
 sjekk('medlem som har betalt for måneden', !$omId($riktig, $medlemsregler), $vis);
 sjekk('oppsagt med betalt tid igjen', !$omId($oppsagt, ['betalt_ikke_aktiv']), $vis);
+sjekk('oppsagt der den betalte perioden er over', !$omId($avsluttet, ['betalt_ikke_aktiv']), $vis);
+sjekk('bytte til en annen plan samme måned er ikke dobbel betaling', !$omId($bytte, ['dobbel_betaling_periode']), $vis);
 sjekk('Kort Periode er ikke dobbelt betalt', !$omId($kort, ['dobbel_betaling_periode']), $vis);
 sjekk('betalt påmelding med betalt betaling', !$omId($riktigBooking, ['booking_betaling_uenig']), $vis);
 sjekk('gavekort med uttak som går opp', !$omId($kortRiktig, ['gavekort_saldo']), $vis);

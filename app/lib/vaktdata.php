@@ -344,7 +344,9 @@ final class Vaktdata
     // To betalte medlemskapsbetalinger for samme medlem og samme maaned.
     // Timepakker er utenfor, og det er Prøv Lissom ogsaa: et nytt medlemskap
     // erstatter den og gjelder alt samme maaned (Medlemskap::erstattProve).
-    // Bare de siste 90 dagene.
+    // Et bytte til en annen plan samme maaned er ogsaa i orden (den gamle
+    // avtalen stoppes uten refusjon) — derfor telles bare betalinger paa
+    // samme plan (Codex 2.10). Bare de siste 90 dagene.
     private static function dobbelBetalingPeriode(): array
     {
         $grupper = [];
@@ -364,7 +366,8 @@ final class Vaktdata
             }
             $fra = trim((string) ($p['gjelder_fra'] ?? ''));
             $mnd = substr($fra !== '' ? $fra : self::osloDato((string) $p['created_at']), 0, 7);
-            $grupper[(int) $p['member_id'] . '|' . $mnd][] = $p;
+            $plan = trim((string) ($p['plan'] ?? $p['medlemskap_type'] ?? ''));
+            $grupper[(int) $p['member_id'] . '|' . $mnd . '|' . $plan][] = $p;
         }
         $ut = [];
         foreach ($grupper as $nokkel => $rader) {
@@ -383,23 +386,21 @@ final class Vaktdata
     // ── L9 betalt_ikke_aktiv ─────────────────────────────────────────────
     //
     // Betalt de siste 35 dagene, men medlemmet staar ikke som prove, aktiv
-    // eller pause. En som har sagt opp og fortsatt har betalt tid igjen, er
-    // i orden.
+    // eller pause. Oppsagte er utenfor: har de betalt tid igjen, er det i
+    // orden (eierens regel), og er perioden de betalte for over, er det en
+    // vanlig avslutning — Medlemskap setter selv «oppsagt» da (Codex 2.10).
     private static function betaltIkkeAktiv(): array
     {
-        $idag = self::idag();
         $ut = [];
         $sett = [];
         foreach (DB::alle(
-            "SELECT p.id, p.member_id, p.belop_ore, p.created_at, " . self::gjelderFra() . ",
-                    m.navn, m.status, m.slutt_dato, s.plan
+            "SELECT p.id, p.member_id, p.belop_ore, p.created_at, m.navn, m.status
                FROM payments p
                JOIN members m ON m.id = p.member_id AND m.anonymisert_at IS NULL
-               LEFT JOIN subscriptions s ON s.id = p.subscription_id
               WHERE p.formal = 'medlemskap' AND p.status IN ('betalt','delvis_refundert')
                 AND p.annullert_at IS NULL " . self::utenTimepakke() . "
                 AND p.created_at >= UTC_TIMESTAMP() - INTERVAL 35 DAY
-                AND m.status NOT IN ('prove','aktiv','pause')
+                AND m.status NOT IN ('prove','aktiv','pause','oppsagt')
               ORDER BY p.id DESC"
         ) as $p) {
             $id = (int) $p['member_id'];
@@ -407,16 +408,6 @@ final class Vaktdata
                 continue;
             }
             $sett[$id] = true;
-            if ((string) $p['status'] === 'oppsagt') {
-                $til = self::erEngangsPlan($p['plan'] ?? null)
-                    ? (trim((string) ($p['slutt_dato'] ?? '')) ?: Medlemskap::proveSlutt(self::osloDato((string) $p['created_at'])))
-                    : Medlemskap::dekkerTil($p);
-                // dekkerTil er foerste dag ETTER perioden; proveSlutt er siste dag I den.
-                $igjen = self::erEngangsPlan($p['plan'] ?? null) ? $til >= $idag : $til > $idag;
-                if ($igjen) {
-                    continue;
-                }
-            }
             $ut[] = self::funn('betalt_ikke_aktiv', $id, (string) $p['navn'],
                 'Betalt ' . Booking::kroner((int) $p['belop_ore']) . ' ' . self::osloDato((string) $p['created_at'])
                 . ' (betaling ' . $p['id'] . '), men står som «' . $p['status'] . '»');

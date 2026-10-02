@@ -36,14 +36,17 @@ function vippsKall(): int
 { global $styrFil; return is_file($styrFil . '.calls') ? count(file($styrFil . '.calls')) : 0; }
 function saldo(int $k): int { return (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :k', ['k' => $k]); }
 /** Et kort med $saldo, og en plass til $pris der $gave tas fra kortet og resten i Vipps. Trekket gjores som i markerBetalt(). */
-function plass(int $mid, int $pris, int $gave, int $saldo, int $timerFram): array
+function plass(int $mid, int $pris, int $gave, int $saldo, int $timerFram, int $kort = 0): array
 {
     global $payments, $bookings, $kortene, $course, $okter;
     $okt = DB::settInn('course_sessions', ['course_id' => $course, 'start_tid' => gmdate('Y-m-d H:i:s', time() + $timerFram * 3600 + count($okter) * 60)]);
     $okter[] = $okt;
-    $k = DB::settInn('gift_cards', ['kode' => 'AVBG-' . strtoupper(bin2hex(random_bytes(4))), 'opprinnelig_ore' => $saldo,
-        'saldo_ore' => $saldo, 'gyldig_til' => gmdate('Y-m-d', time() + 365 * 86400), 'status' => 'aktivt']);
-    $kortene[] = $k;
+    $k = $kort;
+    if ($k === 0) {
+        $k = DB::settInn('gift_cards', ['kode' => 'AVBG-' . strtoupper(bin2hex(random_bytes(4))), 'opprinnelig_ore' => $saldo,
+            'saldo_ore' => $saldo, 'gyldig_til' => gmdate('Y-m-d', time() + 365 * 86400), 'status' => 'aktivt']);
+        $kortene[] = $k;
+    }
     $pid = DB::settInn('payments', ['member_id' => $mid, 'vipps_reference' => 'AVBG-' . bin2hex(random_bytes(8)), 'type' => 'epayment',
         'formal' => 'booking', 'belop_ore' => $pris - $gave, 'status' => 'betalt', 'idempotency_key' => bin2hex(random_bytes(18)),
         'gavekort_id' => $k, 'gavekort_ore' => $gave]);
@@ -109,6 +112,19 @@ try {
     $r = kall(['bookingId' => $b], $token);
     sjekk('ett doegn foer: avbestilt, ingenting tilbake (saldo 30000)', $r[0] === 200 && saldo($k) === 30000
         && (int) ($r[1]['gavekortTilbakeOre'] ?? -1) === 0);
+
+    echo "\n── avbestilt, saa annullert (Codex P1) ───────────────────────\n";
+    // Samme kort paa to plasser, samme beloep: 20000 hver fra et kort paa 100000.
+    [$b1, $p1, $k] = plass($mid, 20000, 20000, 100000, 240);
+    [$b2, $p2] = plass($mid, 20000, 20000, 100000, 240, $k);
+    sjekk('foer: to uttak paa 20000 (saldo 60000)', saldo($k) === 60000);
+    $r = kall(['bookingId' => $b1], $token);
+    sjekk('plass 1 avbestilt: 20000 tilbake (saldo 80000)', $r[0] === 200 && saldo($k) === 80000);
+    sjekk('annullering av samme betaling etterpaa gir 0 (ikke plass 2 sitt uttak)', Booking::angreGavekort($p1) === 0
+        && saldo($k) === 80000);
+    sjekk('… plass 2 sitt uttak paa 20000 staar urort', (int) DB::verdi(
+        "SELECT belop_ore FROM gift_card_uses WHERE gift_card_id = :k AND ref_type = 'booking' AND ref_id = :b", ['k' => $k, 'b' => $b2]) === 20000);
+    sjekk('annullering av plass 2 gir sine 20000 (saldo 100000)', Booking::angreGavekort($p2) === 20000 && saldo($k) === 100000);
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getLine());
 } finally {

@@ -2098,6 +2098,23 @@ final class Booking
             return 0;
         }
 
+        // Betalingens egen uttaksrad foerst (gavekortSpor()). Den kan alt vaere
+        // satt ned av en avbestilling (gavekortTilbake()); da gis bare resten
+        // tilbake — aldri en annen betalings uttak paa samme kort og beloep
+        // (Codex, 2. oktober 2026: ellers dobbel kreditering). Raden blir
+        // staaende med 0, saa sporet og sperren mot nytt trekk beholdes.
+        if (DB::harTabell('gift_card_uses')) {
+            [$refType, $refId] = self::gavekortSpor($paymentId);
+            if ($refId > 0 && DB::verdi(
+                'SELECT id FROM gift_card_uses
+                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r LIMIT 1',
+                ['k' => $kortId, 't' => $refType, 'r' => $refId]
+            ) !== null) {
+                return self::gavekortTilbake($paymentId);
+            }
+        }
+
+        // Eldre rader uten eget spor: soeket paa kort og beloep, som foer.
         // Aldri trukket? Da er det ingenting aa legge tilbake. Uten denne
         // ville en betaling som ble annullert for pengene kom inn — der
         // trekket aldri skjedde — gitt kunden beloepet i gave.
@@ -2171,7 +2188,7 @@ final class Booking
             }
             $bruk = DB::en(
                 'SELECT id, belop_ore FROM gift_card_uses
-                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r
+                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r AND belop_ore > 0
                   ORDER BY id LIMIT 1 FOR UPDATE',
                 ['k' => $kortId, 't' => $refType, 'r' => $refId]
             );

@@ -2240,7 +2240,7 @@ final class Medlemskap
      * Noekkelen er charge-id-en fra Vipps. Kjorer dette to ganger — to faner,
      * to runder — blir det likevel én rad.
      */
-    private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): bool
+    private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null, ?string $betaltTid = null): bool
     {
         $avtaleId = (string) ($avtale['vipps_agreement_id'] ?? '');
         if ($avtaleId === '') {
@@ -2312,6 +2312,10 @@ final class Medlemskap
         if ($gjelderFra !== null && DB::harKolonne('payments', 'gjelder_fra')) {
             $rad['gjelder_fra'] = $gjelderFra;
         }
+        // Etterfoert (L-6): betalingstiden er godkjenningen, ikke i dag.
+        if ($betaltTid !== null && trim($betaltTid) !== '') {
+            $rad['created_at'] = $betaltTid;
+        }
         DB::settInn('payments', $rad);
         return true;
     }
@@ -2360,7 +2364,10 @@ final class Medlemskap
     {
         $foert = 0;
         foreach (self::utenForsteTrekk() as $a) {
-            if (self::foerForsteTrekk($a, self::forstePeriode($a))) {
+            // Betalingstiden er da avtalen ble godkjent (innen 10 minutter
+            // etter opprettelsen), ikke dagen det etterfoeres: timerTellesFra()
+            // og erForskuttert() leser created_at.
+            if (self::foerForsteTrekk($a, self::forstePeriode($a), $a['created_at'] ?? null)) {
                 $foert++;
             }
             usleep(200_000);
@@ -2794,22 +2801,21 @@ final class Medlemskap
 
     /**
      * L-10 (eieren, 2. oktober 2026): et trekk som faller i en pause, hoppes
-     * over. Neste trekk flyttes én maaned om gangen til det ligger etter
-     * pausen — det tas aldri igjen etterpaa, saa ingen trekkes dobbelt.
+     * over. Bare trekket som behandles naa: neste trekk flyttes én maaned,
+     * og den maaneden sjekkes mot pausen naar den kommer — avbrytes pausen
+     * i mellomtiden, trekkes den som vanlig (Codex 02.10). Det som hoppes
+     * over, tas aldri igjen etterpaa, saa ingen trekkes dobbelt.
      *
      * @return string|null ny trekkdato, eller null naar trekket ikke er i en pause
      */
     private static function hoppOverPause(array $avtale): ?string
     {
         $gammel = (string) $avtale['neste_trekk'];
-        $dag = isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;
-        $ny = $gammel;
-        for ($i = 0; $i < 24 && self::pauseTil((int) $avtale['member_id'], $ny) !== null; $i++) {
-            $ny = self::nesteTrekkdato($ny, $dag);
-        }
-        if ($ny === $gammel) {
+        if (self::pauseTil((int) $avtale['member_id'], $gammel) === null) {
             return null;
         }
+        $dag = isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;
+        $ny = self::nesteTrekkdato($gammel, $dag);
         // Bare om ingen andre har flyttet den i mellomtiden.
         DB::kjor(
             'UPDATE subscriptions SET neste_trekk = :ny WHERE id = :i AND neste_trekk = :gammel',

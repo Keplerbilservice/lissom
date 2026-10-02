@@ -5513,7 +5513,7 @@ sjekk('Vipps blir bedt om aa trekke ved godkjenning',
 // dette laa pengene der uten aa staa i Kassa eller i regnskapet.
 sjekk('… og trekket hentes og foeres hos oss',
     str_contains($vFilInit, 'public static function trekkPaaAvtale(string $avtaleId, bool $kastVedFeil = false): array')
-    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): bool')
+    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null, ?string $betaltTid = null): bool')
     && str_contains($mlib, "'vipps_psp_ref'   => \$trekkId,"));
 // Det farligste her: staar «neste_trekk» paa i dag, ber runden om et trekk
 // til samme natt, og hun er trukket to ganger. Kjoept etter den 20. gjelder

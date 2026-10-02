@@ -149,7 +149,7 @@ try {
         Medlemskap::foerManglendeForsteTrekk();
         $init = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND idempotency_key LIKE 'init:%'", ['s' => $id2]);
         $sjekk($init !== null && (int) $init['belop_ore'] === 199000 && $init['gjelder_fra'] === '2026-09-10'
-            && count($rader($id2)) === 2,
+            && count($rader($id2)) === 2 && $init['created_at'] === '2026-09-10 10:00:00',
             'senere trekk finnes: foerste trekk foeres likevel, 199000 oere for september (gjelder_fra ' . ($init['gjelder_fra'] ?? '-') . ')');
     });
 
@@ -182,8 +182,13 @@ try {
         $etter = $avtaleNaa((int) $a['id']);
         $sjekk($rader((int) $a['id']) === [] && $poster((string) $a['vipps_agreement_id'], $fra) === [],
             "1. november i pausen: ingen rad og ingen bestilling hos Vipps (svar: $ut)");
-        $sjekk($etter['neste_trekk'] === '2027-01-01',
-            "1. november og 1. desember hoppes over; neste trekk 1. januar (fikk {$etter['neste_trekk']})");
+        $sjekk($etter['neste_trekk'] === '2026-12-01',
+            "bare november hoppes over naa; desember sjekkes naar den kommer (fikk {$etter['neste_trekk']})");
+        $etter['epost'] = ''; $etter['navn'] = $s['tag'];
+        $utDes = Medlemskap::trekk($etter, '2026-11-28');
+        $etter = $avtaleNaa((int) $a['id']);
+        $sjekk($rader((int) $a['id']) === [] && $etter['neste_trekk'] === '2027-01-01',
+            "1. desember ogsaa i pausen: hoppes over, neste trekk 1. januar (svar: $utDes)");
         $etter['epost'] = ''; $etter['navn'] = $s['tag'];
         $ut2 = Medlemskap::trekk($etter, '2026-12-29');
         $p = $rader((int) $a['id']);
@@ -225,7 +230,23 @@ try {
         $e = $nyAvtale('agr_L10E_' . $s['tag'], '2027-11-01');
         $ut6 = Medlemskap::trekk($e, '2027-11-16');
         $sjekk($rader((int) $e['id']) === [] && $avtaleNaa((int) $e['id'])['neste_trekk'] === '2027-12-01',
-            "pause avbrutt 15.11, forsinket runde: 1. november hoppes over, 1. desember trekkes (svar: $ut6)");
+            "pause avbrutt 15.11, forsinket runde: 1. november hoppes over (svar: $ut6)");
+        $e2 = $avtaleNaa((int) $e['id']) + ['epost' => '', 'navn' => $s['tag']];
+        $ut7 = Medlemskap::trekk($e2, '2027-11-28');
+        $sjekk($ut7 === 'bedt om trekk til 2027-12-01' && count($rader((int) $e['id'])) === 1,
+            "… og 1. desember trekkes som vanlig (svar: $ut7)");
+
+        // Codex 02.10: november hoppet over i oktober; pausen avbrytes 15.11
+        // FOER desember behandles. Desember skal trekkes.
+        $GLOBALS['l10_frys'][] = $fF = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2029-10-20',
+            'til_dato' => '2029-12-10', 'status' => 'godkjent']);
+        $f = $nyAvtale('agr_L10F_' . $s['tag'], '2029-11-01');
+        Medlemskap::trekk($f, '2029-10-29');
+        DB::kjor("UPDATE medlem_frys SET status = 'avsluttet', updated_at = '2029-11-15 09:00:00' WHERE id = :i", ['i' => $fF]);
+        $f2 = $avtaleNaa((int) $f['id']) + ['epost' => '', 'navn' => $s['tag']];
+        $ut8 = Medlemskap::trekk($f2, '2029-11-28');
+        $sjekk($f2['neste_trekk'] === '2029-12-01' && $ut8 === 'bedt om trekk til 2029-12-01' && count($rader((int) $f['id'])) === 1,
+            "pause avbrutt etter at november var hoppet over: desember trekkes (svar: $ut8)");
 
         // Avsluttet 1. oktober kl. 00.30 norsk tid (30.09 22.30 UTC): siste
         // pausedag er 30. september, ikke 29.

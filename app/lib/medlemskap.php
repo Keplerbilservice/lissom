@@ -1028,6 +1028,7 @@ final class Medlemskap
         $igjen = DB::en(
             "SELECT id FROM payments
               WHERE subscription_id = :s AND formal = 'medlemskap' AND status IN ('opprettet','venter')
+                AND type = 'epayment'
                 AND created_at > (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
               ORDER BY id DESC LIMIT 1",
             ['s' => $avtaleId]

@@ -223,6 +223,44 @@ foreach (['2031-03-10', '2031-03-20', '2031-03-31'] as $dagen) {
 }
 sjekk('1. april er ikke fritatt', !Medlemskap::fritattMaaned($m, '2031-04-01'));
 
+// ── (i) fast trekk feilet, fryst: «Forny og betal» betaler bare maaneden ──
+echo "\n── (i) fast trekk feilet under frys: betal maaneden, ikke dobbelt ─\n";
+// Eieren, 2. oktober 2026: knappen paa Min side betaler BARE maaneden som
+// skyldes, med én betaling paa avtalen som loeper. Vipps skal ikke trekke den
+// samme maaneden igjen etterpaa.
+$m = $medlem('aktiv', $plan);
+$agr = 'agr_frysI_' . $tag;
+$avt = $avtale($m, $agr, '2034-03-01');
+$betalt($m, $avt, '2034-02-01');
+$frys($m, '2034-03-05', '2034-03-12');   // 8 dager: mars trekkes
+$feiler = __DIR__ . '/.trekk-feiler';
+file_put_contents($feiler, 'ja');        // nettbrudd: trekket kom aldri til Vipps
+try { Medlemskap::trekk($avtaleRad($avt), '2034-02-26'); } catch (RuntimeException $e) {}
+@unlink($feiler);
+$feilet = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'recurring_charge' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+sjekk('mars-trekket feilet uten charge-id', $feilet !== null && (string) $feilet['status'] === 'feilet' && empty($feilet['vipps_psp_ref'])
+    && (string) $avtaleRad($avt)['neste_trekk'] === '2034-03-01', json_encode([$feilet['status'] ?? null, $avtaleRad($avt)['neste_trekk']]));
+sjekk('8. mars: stengt ute, og mars staar forfalt', Frys::frystNaa($rad($m), '2034-03-08') === ['til' => '2034-03-12']
+    && Medlemskap::betalingsstatusFor($rad($m), '2034-03-08')['forfalt']);
+$forny = Medlemskap::fornyPeriodePaa($rad($m), $avtaleRad($avt), '2034-03-08');
+$ny = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'epayment' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+sjekk('«Forny og betal»: én engangsbetaling for mars, paa den samme avtalen', $ny !== null
+    && (string) $ny['gjelder_fra'] === '2034-03-01' && (int) $ny['belop_ore'] === $pris
+    && (string) $avtaleRad($avt)['status'] === 'aktiv' && (string) $avtaleRad($avt)['vipps_agreement_id'] === $agr);
+DB::oppdater('payments', ['status' => 'betalt'], ['id' => (int) $ny['id']]);   // betalt i Vipps
+// Neste trekkrunde: mars er betalt, og skal ikke bestilles hos Vipps paa nytt.
+$fra = $loggLengde();
+$ut = Medlemskap::trekk($avtaleRad($avt), '2034-03-09');
+sjekk("trekkrunden bestiller ikke mars paa nytt (svar: $ut)", $bestillinger($agr, $fra) === 0
+    && (string) $avtaleRad($avt)['neste_trekk'] === '2034-04-01');
+sjekk('… mars er betalt én gang',
+    (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND status IN ('betalt','venter') AND gjelder_fra BETWEEN '2034-03-01' AND '2034-03-31'", ['s' => $avt]) === 1);
+$bs = Medlemskap::betalingsstatusFor($rad($m), '2034-03-10');
+sjekk('… og ingenting staar utestaaende', $bs['utestaaende'] === false && $bs['forfalt'] === false, json_encode($bs));
+$fra = $loggLengde();
+$ut = Medlemskap::trekk($avtaleRad($avt), '2034-03-29');
+sjekk("april trekkes som vanlig (svar: $ut)", str_starts_with($ut, 'bedt om trekk til 2034-04-01') && $bestillinger($agr, $fra) === 1);
+
 // ── (g) restdagene etter frysen i en overhoppet maaned ──────────────────
 echo "\n── (g) restdager etter frys i overhoppet maaned ────────────\n";
 $m = $medlem('aktiv', $plan);
@@ -297,6 +335,35 @@ $fra = $loggLengde();
 $ut = Medlemskap::trekk($avtaleRad($avt), '2028-12-29');
 $p = $rader($avt);
 sjekk("januar trekkes som vanlig (svar: $ut)", count($p) === 2 && (string) $p[1]['gjelder_fra'] === '2029-01-01' && $bestillinger($agr, $fra) === 1);
+
+// ── (j) «Forny og betal» paa Min side, i dag: samme vei som (i) ─────────
+echo "\n── (j) Min side-knappen for fryst medlem med feilet trekk ──\n";
+$oslo = new DateTimeZone('Europe/Oslo');
+$idag = (new DateTimeImmutable('now', $oslo))->format('Y-m-d');
+$denne = (new DateTimeImmutable($idag))->modify('first day of this month')->format('Y-m-d');
+$forrige = (new DateTimeImmutable($idag))->modify('first day of previous month')->format('Y-m-d');
+$m = $medlem('pause', $plan);
+$agr = 'agr_frysJ_' . $tag;
+$avt = $avtale($m, $agr, (new DateTimeImmutable($denne))->modify('first day of next month')->format('Y-m-d'));
+$betalt($m, $avt, $forrige);
+DB::settInn('payments', ['member_id' => $m, 'subscription_id' => $avt, 'formal' => 'medlemskap', 'type' => 'recurring_charge',
+    'status' => 'feilet', 'belop_ore' => $pris, 'gjelder_fra' => $denne, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(12)),
+    'idempotency_key' => Vipps::uuid()]);
+$frys($m, (new DateTimeImmutable($idag))->modify('-2 days')->format('Y-m-d'), (new DateTimeImmutable($idag))->modify('+4 days')->format('Y-m-d'));
+$tokM = bin2hex(random_bytes(32));
+DB::settInn('sessions', ['token_hash' => hash('sha256', $tokM), 'member_id' => $m, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 3600)]);
+$avtalerFoer = (int) DB::verdi('SELECT COUNT(*) FROM subscriptions WHERE member_id = :m', ['m' => $m]);
+$svar = @file_get_contents("http://127.0.0.1:$port/api/medlemskap.php", false, stream_context_create(['http' => [
+    'method' => 'POST', 'ignore_errors' => true, 'timeout' => 20,
+    'header' => 'Cookie: ' . Sesjon::COOKIE . "=$tokM\r\nContent-Type: application/json\r\nAccept: application/json\r\n",
+    'content' => json_encode(['handling' => 'start', 'plan' => $plan]),
+]]));
+$d = json_decode((string) $svar, true);
+$ny = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'epayment' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+sjekk('knappen gir én betaling i Vipps (fornyelse, ikke ny avtale)', is_array($d) && !empty($d['url']) && ($d['fornyelse'] ?? false) === true, (string) $svar);
+sjekk('… for maaneden som skyldes', $ny !== null && (string) $ny['gjelder_fra'] === $denne, json_encode($ny['gjelder_fra'] ?? null));
+sjekk('… paa den samme avtalen, som beholdes', (int) DB::verdi('SELECT COUNT(*) FROM subscriptions WHERE member_id = :m', ['m' => $m]) === $avtalerFoer
+    && (string) $avtaleRad($avt)['status'] === 'aktiv' && (string) $avtaleRad($avt)['vipps_agreement_id'] === $agr);
 
 echo "\n$ok av " . ($ok + $feil) . " frys-trekk-kontroller bestått\n";
 $ferdig = true;

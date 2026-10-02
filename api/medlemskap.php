@@ -300,6 +300,22 @@ switch (Foresporsel::tekst('handling')) {
         // fornyes med én betaling for neste periode paa avtalen som alt
         // loeper — ingen ny avtale, og ingen ny innmeldings-e-post.
         $naa = Medlemskap::avtale((int) $medlem['id']);
+        // ── Fryst, med noe utestaaende ─────────────────────────────────
+        //
+        // Eieren, 2. oktober 2026: et fryst medlem med et feilet trekk betaler
+        // BARE maaneden som skyldes — én betaling paa avtalen som loeper, ogsaa
+        // med fast trekk. Avtalen beholdes; ingen ny avtale. fornyPeriode()
+        // setter gjelder_fra til maaneden som skyldes, og trekkrunden ser at
+        // maaneden er betalt og bestiller den ikke paa nytt (L-12).
+        if ($naa !== null && $naa['status'] === 'aktiv' && Frys::frystNaa($medlem) !== null
+            && Medlemskap::betalingsstatusFor($medlem)['utestaaende']) {
+            try {
+                $ut = Medlemskap::fornyPeriode($medlem, $naa);
+            } catch (RuntimeException $e) {
+                Svar::feil($e->getMessage());
+            }
+            Svar::ok(['url' => $ut['url'], 'maaGodkjennes' => false, 'plan' => (string) $naa['plan'], 'fornyelse' => true]);
+        }
         if ($naa !== null && $naa['status'] === 'aktiv' && (string) $naa['plan'] === $planNavn
             && !Medlemskap::erEngangs($planNavn)
             && trim((string) ($naa['vipps_agreement_id'] ?? '')) === '') {

@@ -2731,6 +2731,13 @@
                         "L7 trekk_henger",
                         "ingen e-post eller telefon i funnene"
                     ]
+                },
+                {
+                    "fil": "bin/vakt.mjs",
+                    "finnes": [
+                        "Array.isArray(j.funn) ? j.funn : []",
+                        "avvik.push(`Datasjekk: ${linje}`);"
+                    ]
                 }
             ]
         }

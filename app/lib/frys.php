@@ -124,21 +124,18 @@ final class Frys
      * om members.status alt er satt til «pause» (startForfalte() kjoeres
      * bare der frys leses). Er frysen over, er medlemmet ikke fryst, selv om
      * statusen ikke er satt tilbake ennaa: perioden etter frysen skal virke
-     * som foer. «pause» uten noen frys bak seg (satt for haand) teller som
-     * fryst, uten sluttdato.
+     * som foer. «pause» satt for haand, uten en godkjent frys bak seg, er
+     * ikke fryst og beholder oppfoerselen fra foer (kontrolloeren, 2. oktober
+     * 2026).
      *
      * @param array<string,mixed> $medlem
-     * @return array{til:?string}|null
+     * @return array{til:string}|null
      */
     public static function frystNaa(array $medlem, ?string $idag = null): ?array
     {
         $id = (int) ($medlem['id'] ?? 0);
-        $pause = (string) ($medlem['status'] ?? '') === 'pause';
-        if ($id <= 0) {
+        if ($id <= 0 || !self::klar()) {
             return null;
-        }
-        if (!self::klar()) {
-            return $pause ? ['til' => null] : null;
         }
         $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $til = DB::verdi(
@@ -147,17 +144,10 @@ final class Frys
                 AND fra_dato <= :d1 AND til_dato >= :d2",
             ['m' => $id, 'd1' => $idag, 'd2' => $idag]
         );
-        if ($til !== null && $til !== false && (string) $til !== '') {
-            return ['til' => substr((string) $til, 0, 10)];
-        }
-        if (!$pause) {
+        if ($til === null || (string) $til === '') {
             return null;
         }
-        $harFrys = DB::verdi(
-            "SELECT COUNT(*) FROM medlem_frys WHERE member_id = :m AND status IN ('godkjent', 'avsluttet')",
-            ['m' => $id]
-        );
-        return (int) $harFrys === 0 ? ['til' => null] : null;
+        return ['til' => substr((string) $til, 0, 10)];
     }
 
     /** @return list<array<string,mixed>> */

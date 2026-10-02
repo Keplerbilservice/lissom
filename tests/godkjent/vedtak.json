@@ -3095,14 +3095,17 @@
         {
             "id": "fryst-medlem-ingen-tilgang",
             "dato": "2026-10-02",
-            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag kan ikke stemple inn eller booke medlemstid, selv med betalt periode. Min side viser «Fryst til <dato>» i stedet for «Aktivt», og «Stemple inn» er skjult. Stemple ut, frys-statusen, kjøp og kurs betalt for seg virker som før, og perioden etter frysen er urørt.",
-            "hvor": "Min side (stempelkortet), api/stempling.php, api/book.php (Kun for medlemmer)",
+            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag kan ikke stemple inn eller booke medlemstid, selv med betalt periode. Min side viser «Fryst til <dato>» i stedet for «Aktivt», og «Stemple inn» er skjult. Mens frysen gjelder får medlemmet heller ikke dørkode og wifi (meg.php og «Dørkode» i toppen), og ser ikke «Kun for medlemmer»-banneret, Bordplass/Dreieskive eller knappen på /stemple. Stemple ut, frys-statusen, kjøp og kurs betalt for seg virker som før, og perioden etter frysen er urørt. Kontrolløren (samme dag): «pause» satt for hånd uten godkjent frys er ikke fryst, og «Flytt medlemskap» tar med frysen (sokt/godkjent) til det nye medlemmet.",
+            "hvor": "Min side (toppen, stempelkortet, medlemstid), /stemple, api/stempling.php, api/book.php (Kun for medlemmer), api/meg.php, Admin › Flytt medlemskap",
             "kode": [
                 {
                     "fil": "app/lib/frys.php",
                     "finnes": [
                         "public static function frystNaa(array $medlem, ?string $idag = null): ?array",
                         "WHERE member_id = :m AND status = 'godkjent'"
+                    ],
+                    "ikkeFinnes": [
+                        "return $pause ? ['til' => null] : null;"
                     ]
                 },
                 {
@@ -3126,7 +3129,15 @@
                 {
                     "fil": "api/meg.php",
                     "finnes": [
-                        "Frys::frystNaa($m)"
+                        "Frys::frystNaa($m)",
+                        "if (er_aktivt_medlem($m) && $fryst === null) {"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "\"UPDATE medlem_frys SET member_id = :ny",
+                        "WHERE member_id = :gml AND status IN ('sokt', 'godkjent')\","
                     ]
                 },
                 {
@@ -3134,7 +3145,12 @@
                     "finnes": [
                         "fryst: d.fryst || null,",
                         "aboBadge: fryst ? (fryst.tilTekst ? 'Fryst til ' + fryst.tilTekst : 'Fryst')",
-                        "const somMedlem = this.medlemsvisning() && !fryst;"
+                        "const somMedlem = this.medlemsvisning() && !fryst;",
+                        "<sc-if value=\"{{ msVisDorkode }}\" hint-placeholder-val=\"{{ true }}\">",
+                        "msVisDorkode: this.medlemsvisning() && !this.state.fryst,",
+                        "harMedlemskurs: this.medlemsvisning() && !this.state.fryst",
+                        "const alle = (this.state.fryst && !inne) ? [] : (st.ressurser || []);",
+                        "stKanStemple: this.state.innlogget && medlem && (!this.state.fryst || inne),"
                     ]
                 },
                 {
@@ -3142,7 +3158,9 @@
                     "finnes": [
                         "fryst: «Stemple inn» avvises med 403",
                         "fryst: medlemstid avvises med 403",
-                        "frysen er over (status fortsatt «pause»): stempler inn som foer"
+                        "fryst: ingen dørkode eller wifi i meg.php",
+                        "«pause» for haand uten frys: stempler inn som foer",
+                        "… og er fryst til samme dato"
                     ]
                 }
             ]

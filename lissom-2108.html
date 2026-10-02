@@ -5295,7 +5295,7 @@ window.__resources = {
             </sc-for>
           </div>
           <div class="ms-tl-hoyre">
-            <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ msVisDorkode }}" hint-placeholder-val="{{ true }}">
               <button type="button" class="ms-tl-pille" onClick="{{ msTilNyttig }}">Dørkode <b>{{ dorkode }}</b></button>
             </sc-if>
             <button type="button" class="ms-tl-pille ms-tl-meny" aria-expanded="{{ msTlMenyAria }}" onClick="{{ msTlMenyVeksle }}">{{ msTlMenyTekst }}</button>
@@ -58687,7 +58687,8 @@ class Component extends DCLogic {
       })),
       // Tom seksjon er verre enn ingen seksjon: et medlem som ser overskriften
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
-      harMedlemskurs: this.medlemsvisning()
+      // Fryst medlem: ingen medlemstid å melde seg på (eieren, 2. oktober 2026).
+      harMedlemskurs: this.medlemsvisning() && !this.state.fryst
         && this.bryterPaa('internkurs')
         && (!this.erPublisert() || (this.state.katalog || []).some(k => (k.tema || '') === 'Kun for medlemmer')),
       // Bryteren maa vaere paa, og det maa finnes noe aa selge.
@@ -67840,8 +67841,10 @@ class Component extends DCLogic {
       // og knappen sier «Stemple ut».
       ...(() => {
         const st = this.state.stempling || {};
-        const alle = st.ressurser || [];
         const inne = this.erInne();
+        // Fryst og ikke inne: ingen Bordplass/Dreieskive å velge (eieren,
+        // 2. oktober 2026). Uten ressurser skjules hele valget.
+        const alle = (this.state.fryst && !inne) ? [] : (st.ressurser || []);
         // Valget staar i state naar man har trykket, ellers det serveren sa.
         // Har man ikke valgt noe, foreslaas den forste — det vanligste er aa
         // sette seg ved en skive, og et valg man maa ta for man kommer inn
@@ -68362,6 +68365,9 @@ class Component extends DCLogic {
         };
       })(),
       dorkode: this.dorkodeNaa() || (this.erPublisert() ? 'Ikke satt' : '4 7 1 2'),
+      // Fryst medlem ser ikke dørkoden (eieren, 2. oktober 2026). Serveren
+      // sender den heller ikke (api/meg.php).
+      msVisDorkode: this.medlemsvisning() && !this.state.fryst,
       // Hvem som er i verkstedet naa, fra innstemplingene. Initialene bygges
       // av navnet — serveren sender bare navn og klokkeslett.
       inne: (this.state.stempling
@@ -69317,7 +69323,9 @@ class Component extends DCLogic {
             : !st ? 'Henter timene dine …'
             : fri ? 'Fri tilgang — ingen timebegrensning.'
             : String(st.timer.igjen).replace('.', ',') + ' av ' + st.timer.perMnd + ' timer igjen denne måneden.',
-          stKanStemple: this.state.innlogget && medlem,
+          // Fryst medlem: ingen knapp her, med mindre hen står inne og skal
+          // stemple ut (eieren, 2. oktober 2026).
+          stKanStemple: this.state.innlogget && medlem && (!this.state.fryst || inne),
           stMaaLoggeInn: !this.state.innlogget,
           stIkkeMedlem: this.state.innlogget && !medlem,
           stKnapp: inne ? 'Stemple ut' : 'Stemple inn',

@@ -35,16 +35,16 @@ $harTilgang = er_aktivt_medlem($m);
 // Min side tilbyr medlemskap som for alle som ikke er medlem. Se
 // Medlemskap::betalingMangler() (eieren, 2. oktober 2026).
 $betalingMangler = Medlemskap::betalingMangler($m, $harTilgang);
-if (er_aktivt_medlem($m)) {
+// Fryst medlemskap (eieren, 2. oktober 2026): Min side viser «Fryst til
+// <dato>» og skjuler «Stemple inn». Feltet sendes bare naar medlemmet er
+// fryst, saa svaret for alle andre er som foer. Et fryst medlem faar heller
+// ikke dorkoden og wifi-passordet.
+$fryst = (string) ($m['rolle'] ?? '') !== 'admin' ? Frys::frystNaa($m) : null;
+if (er_aktivt_medlem($m) && $fryst === null) {
     foreach (DB::alle("SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'Privat/%'") as $r) {
         $internInfo[substr((string) $r['nokkel'], 7)] = (string) $r['verdi'];
     }
 }
-
-// Fryst medlemskap (eieren, 2. oktober 2026): Min side viser «Fryst til
-// <dato>» og skjuler «Stemple inn». Feltet sendes bare naar medlemmet er
-// fryst, saa svaret for alle andre er som foer.
-$fryst = (string) ($m['rolle'] ?? '') !== 'admin' ? Frys::frystNaa($m) : null;
 
 Svar::json(($fryst !== null ? ['fryst' => [
     'til'      => $fryst['til'],

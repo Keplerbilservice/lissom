@@ -812,6 +812,20 @@ if (Foresporsel::metode() === 'POST') {
                 DB::oppdater('members', $til, ['id' => $tilId]);
                 DB::oppdater('members', $tom, ['id' => $fraId]);
 
+                // Frysen foelger medlemskapet (kontrolloeren, 2. oktober 2026).
+                // Statusen «pause» flyttes over; ble frysen staaende igjen,
+                // ville det nye medlemmet ikke vaert fryst, og ingen frys
+                // ville aapnet det igjen. Bare den som venter paa svar eller
+                // er godkjent — avsluttede, avslaatte og trukne er den forrige
+                // eierens egen historikk.
+                if (Frys::klar()) {
+                    DB::kjor(
+                        "UPDATE medlem_frys SET member_id = :ny
+                          WHERE member_id = :gml AND status IN ('sokt', 'godkjent')",
+                        ['ny' => $tilId, 'gml' => $fraId]
+                    );
+                }
+
                 if ($avtaleId === 0) {
                     return [0, 0];
                 }

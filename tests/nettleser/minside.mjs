@@ -285,7 +285,16 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
 //
 // Eieren, 2. oktober 2026: det frosne medlemmet med betalt periode sto som
 // «AKTIVT» med «Stemple inn» øverst, og serveren slapp det inn.
+// Dørkode og wifi settes bare i denne flyten (og fjernes etterpå, om de ikke
+// fantes fra før): meg.php-fasiten over leser formen på internInfo.
+const DORKODE = 'E2E-8264#';
+const WIFI = 'E2E-wifi-passord';
 for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
+  const privatFoer = db("SELECT nokkel FROM content_blocks WHERE nokkel IN ('Privat/dorkode', 'Privat/wifi')").map(r => r.nokkel);
+  const privatOrig = Object.fromEntries(db("SELECT nokkel, verdi FROM content_blocks WHERE nokkel IN ('Privat/dorkode', 'Privat/wifi')").map(r => [r.nokkel, r.verdi]));
+  for (const [k, v] of [['Privat/dorkode', DORKODE], ['Privat/wifi', WIFI]]) {
+    db('INSERT INTO content_blocks (nokkel, verdi) VALUES (:k, :v) ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)', { k, v });
+  }
   await flyt(`Fryst medlem, hjem (${hva})`, async () => {
     const p = await side('frosset', bredde, hoyde);
     await gaa(p, '/min-side');
@@ -303,8 +312,37 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     sjekk(`${hva}: ingen økt lagret`, Number(verdi('SELECT COUNT(*) FROM check_ins WHERE member_id = :m', { m: brukere.frosset.id })) === 0);
     const bred = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     sjekk(`${hva}: ingen sidelengs rulling`, !bred);
+    // Eieren, 2. oktober 2026: heller ingen dørkode, wifi, medlemstid eller
+    // Bordplass/Dreieskive mens frysen gjelder.
+    const meg = await api(p, '/api/meg.php');
+    sjekk(`${hva}: ingen dørkode eller wifi i meg.php`, JSON.stringify(meg.d?.internInfo) === '{}', JSON.stringify(meg.d?.internInfo));
+    const kropp = await p.evaluate(() => document.body.innerText);
+    sjekk(`${hva}: ingen «Dørkode» i toppen`, !(await p.locator('.ms-tl-pille').filter({ hasText: 'Dørkode' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: dørkoden og wifi står ikke på siden`, !kropp.includes(DORKODE) && !kropp.includes(WIFI));
+    sjekk(`${hva}: ingen «Kun for medlemmer» med «Meld meg på»`, !(await p.locator('#minside-internkurs').filter({ visible: true }).count()));
+    sjekk(`${hva}: ingen Bordplass/Dreieskive`, !(await p.getByRole('button', { name: /Bordplass|Dreieskive/ }).filter({ visible: true }).count()));
+    await gaa(p, '/stemple', 2500);
+    await dump(p, 'fryst-stemple-' + hva);
+    sjekk(`${hva}: /stemple har ingen «Stemple inn»`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
     await p.context().close();
+    // Kontroll: et vanlig medlem ser alt dette på samme skjerm, saa sjekkene
+    // over maaler noe.
+    const q = await side('mini', bredde, hoyde);
+    await gaa(q, '/min-side');
+    await lukkVinduer(q);
+    const megQ = await api(q, '/api/meg.php');
+    sjekk(`${hva}: kontroll — vanlig medlem får dørkoden`, megQ.d?.internInfo?.dorkode === DORKODE);
+    sjekk(`${hva}: kontroll — vanlig medlem ser «Dørkode ${DORKODE}» i toppen`, await q.locator('.ms-tl-pille').filter({ hasText: DORKODE }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: kontroll — vanlig medlem ser medlemstid og Bordplass`, await q.locator('#minside-internkurs').filter({ visible: true }).count() > 0
+      && await q.getByRole('button', { name: /Bordplass/ }).filter({ visible: true }).count() > 0);
+    await gaa(q, '/stemple', 2500);
+    sjekk(`${hva}: kontroll — vanlig medlem har «Stemple inn» på /stemple`, await q.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count() > 0);
+    await q.context().close();
   });
+  for (const k of ['Privat/dorkode', 'Privat/wifi']) {
+    if (privatFoer.includes(k)) db('UPDATE content_blocks SET verdi = :v WHERE nokkel = :k', { k, v: privatOrig[k] });
+    else db('DELETE FROM content_blocks WHERE nokkel = :k', { k });
+  }
 }
 
 // ── 2. Stemple inn, stemple ut og «Feil tid» ─────────────────────────

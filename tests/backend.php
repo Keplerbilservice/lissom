@@ -15147,9 +15147,8 @@ sjekk('… og timene leses av den, ikke av salgslista',
     str_contains($mlP, '$plan = self::planUansett($type);'),
     'ellers gir en avslaatt plan ubegrensede timer');
 sjekk('… og det samme gjor binding, oppsigelse og engangsregelen',
-    // Fire: bindingTil() kom til 28. september 2026. Fem: forstePeriode()
-    // (L-6, 2. oktober 2026).
-    substr_count($mlP, "self::planUansett((string) \$avtale['plan']);") === 5);
+    // Fire: bindingTil() kom til 28. september 2026.
+    substr_count($mlP, "self::planUansett((string) \$avtale['plan']);") === 4);
 sjekk('… mens innmelding og kjop fortsatt krever en plan som selges',
     // startIVerkstedet() kom til med 804be43 (#193).
     substr_count($mlP, 'self::plan($planNavn);') === 3,

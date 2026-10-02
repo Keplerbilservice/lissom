@@ -2372,34 +2372,25 @@ final class Medlemskap
      * gjelder_fra for et etterfoert foerste trekk: perioden trekket ble tatt
      * for, ikke dagen det etterfoeres (Codex 02.10).
      *
-     * Da avtalen ble aktiv, ble neste trekk satt til maaneden ETTER den
-     * foerste perioden (oppdaterFraVipps). Den foerste perioden er derfor
-     * maaneden foer det foerste ordinaere trekket — eller foer neste_trekk,
-     * naar det ikke er tatt noe ordinaert trekk enda. Det gir samme svar som
-     * ved aktiveringen, ogsaa for kjoep etter den 20. og for avtaler godkjent
-     * en senere maaned enn de ble opprettet.
+     * Regnes av det som ikke endrer seg: da avtalen ble opprettet. Vipps
+     * lar en avtale staa «PENDING» i høyst 10 minutter (developer.
+     * vippsmobilepay.com, Recurring API-guiden), og foerste trekk tas i det
+     * kunden godkjenner — altsaa innen 10 minutter etter opprettelsen.
+     * neste_trekk og senere rader kan flyttes av pauser og kan ikke brukes.
      *
-     * Prøv Lissom (engangs) teller fra dagen, ikke maaneden: der brukes
-     * dagen avtalen ble opprettet.
+     * Kjoept etter den 20.: samme regel som ved aktiveringen (neste maaned).
+     * Ellers kjoepsdagen; dekkerTil() gir da kjoepsmaaneden, og Prøv Lissom
+     * (engangs) teller fra dagen, som foer.
      */
     private static function forstePeriode(array $avtale): ?string
     {
-        $plan = self::planUansett((string) $avtale['plan']);
-        $engangs = $plan !== null && (int) ($plan['engangs'] ?? 0) === 1;
-        $etter = DB::verdi(
-            "SELECT MIN(gjelder_fra) FROM payments
-              WHERE subscription_id = :s AND type = 'recurring_charge'
-                AND idempotency_key NOT LIKE 'init:%' AND gjelder_fra IS NOT NULL",
-            ['s' => (int) $avtale['id']]
-        );
-        $etter = ($etter !== null && $etter !== '') ? (string) $etter : (string) ($avtale['neste_trekk'] ?? '');
-        if (!$engangs && $etter !== '') {
-            return (new DateTimeImmutable($etter))->modify('first day of this month')
-                ->modify('-1 month')->format('Y-m-d');
-        }
         $kjopt = trim((string) ($avtale['created_at'] ?? ''));
-        return $kjopt === '' ? null : (new DateTimeImmutable($kjopt, new DateTimeZone('UTC')))
-            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+        if ($kjopt === '') {
+            return null;
+        }
+        return self::gjelderFraNytt((int) $avtale['member_id'], (string) $avtale['plan'], $kjopt, $kjopt)
+            ?? (new DateTimeImmutable($kjopt, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
     }
 
     public static function slippForsteTrekk(int $medlemId): array
@@ -2778,19 +2769,27 @@ final class Medlemskap
         if (!Frys::klar()) {
             return null;
         }
-        $til = DB::verdi(
-            "SELECT MAX(slutt) FROM (
-                SELECT CASE WHEN status = 'avsluttet'
-                            THEN LEAST(til_dato, DATE_SUB(DATE(updated_at), INTERVAL 1 DAY))
-                            ELSE til_dato END AS slutt
-                  FROM medlem_frys
-                 WHERE member_id = :m AND status IN ('godkjent', 'avsluttet')
-                   AND fra_dato <= :d
-             ) f
-             WHERE slutt >= :d2",
+        $rader = DB::alle(
+            "SELECT status, til_dato, updated_at FROM medlem_frys
+              WHERE member_id = :m AND status IN ('godkjent', 'avsluttet')
+                AND fra_dato <= :d AND til_dato >= :d2",
             ['m' => $medlemId, 'd' => $dato, 'd2' => $dato]
         );
-        return $til !== null && $til !== '' ? (string) $til : null;
+        $til = null;
+        foreach ($rader as $r) {
+            $slutt = (string) $r['til_dato'];
+            if ((string) $r['status'] === 'avsluttet') {
+                // updated_at er UTC; dagen avslutningen skjedde regnes i
+                // norsk tid. Pausen varte til og med dagen foer.
+                $avsluttet = (new DateTimeImmutable((string) $r['updated_at'], new DateTimeZone('UTC')))
+                    ->setTimezone(new DateTimeZone('Europe/Oslo'))->modify('-1 day')->format('Y-m-d');
+                $slutt = min($slutt, $avsluttet);
+            }
+            if ($slutt >= $dato && ($til === null || $slutt > $til)) {
+                $til = $slutt;
+            }
+        }
+        return $til;
     }
 
     /**

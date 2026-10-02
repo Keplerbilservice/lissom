@@ -148,7 +148,7 @@ try {
             'belop_ore' => $PRIS, 'status' => 'venter', 'idempotency_key' => 'okt-' . $id2, 'gjelder_fra' => '2026-10-01']);
         Medlemskap::foerManglendeForsteTrekk();
         $init = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND idempotency_key LIKE 'init:%'", ['s' => $id2]);
-        $sjekk($init !== null && (int) $init['belop_ore'] === 199000 && $init['gjelder_fra'] === '2026-09-01'
+        $sjekk($init !== null && (int) $init['belop_ore'] === 199000 && $init['gjelder_fra'] === '2026-09-10'
             && count($rader($id2)) === 2,
             'senere trekk finnes: foerste trekk foeres likevel, 199000 oere for september (gjelder_fra ' . ($init['gjelder_fra'] ?? '-') . ')');
     });
@@ -226,6 +226,14 @@ try {
         $ut6 = Medlemskap::trekk($e, '2027-11-16');
         $sjekk($rader((int) $e['id']) === [] && $avtaleNaa((int) $e['id'])['neste_trekk'] === '2027-12-01',
             "pause avbrutt 15.11, forsinket runde: 1. november hoppes over, 1. desember trekkes (svar: $ut6)");
+
+        // Avsluttet 1. oktober kl. 00.30 norsk tid (30.09 22.30 UTC): siste
+        // pausedag er 30. september, ikke 29.
+        $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2028-09-01',
+            'til_dato' => '2028-10-31', 'status' => 'avsluttet', 'updated_at' => '2028-09-30 22:30:00']);
+        $sjekk(Medlemskap::pauseTil((int) $s['admin'], '2028-09-30') === '2028-09-30'
+            && Medlemskap::pauseTil((int) $s['admin'], '2028-10-01') === null,
+            'avslutning like etter midnatt: pausen gjelder til og med 30. september (norsk dato)');
     });
 } finally {
     foreach (['.trekk-idempotens', '.trekkliste-feiler', '.avtale-status', '.idag'] as $f) { @unlink($styr . $f); }

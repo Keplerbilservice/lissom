@@ -120,7 +120,9 @@ final class Timepakke
             'belop_ore'       => $pris,
             'status'          => 'opprettet',
             'idempotency_key' => Vipps::uuid(),
-        ]);
+        ] + (DB::harKolonne('payments', 'sporing')
+            ? ['sporing' => Maaling::sporingFraNettleser() ?: null] // annonsen som førte hit (2. okt 2026)
+            : []));
         $id = DB::settInn('timepakker', [
             'member_id'  => $mid,
             'timer'      => $timer,

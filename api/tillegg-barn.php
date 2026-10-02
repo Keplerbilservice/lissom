@@ -70,7 +70,9 @@ if (Foresporsel::metode() === 'POST') {
             'belop_ore'       => $prisOre,
             'status'          => 'opprettet',
             'idempotency_key' => Vipps::uuid(),
-        ]);
+        ] + (DB::harKolonne('payments', 'sporing')
+            ? ['sporing' => Maaling::sporingFraNettleser() ?: null] // annonsen som førte hit (2. okt 2026)
+            : []));
         $ordreId = DB::settInn('orders', [
             'ordrenr'       => $ordrenr,
             'member_id'     => $id,

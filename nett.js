@@ -349,6 +349,76 @@
   // 68 oekter med kilde «api.vipps.no / referral» — annonsen eller soeket
   // som brakte kunden, mistet kjoepet.
   function fraVipps() { return /^https?:\/\/([^\/]*\.)?(vipps\.no|vippsmobilepay\.com|mobilepay\.(dk|fi))(\/|$)/i.test(d.referrer || ''); }
+  // Retur fra Vipps: api/betaling-retur.php sender kunden til «/#betaling=ok
+  // &kjop=…&belop=…&slag=…» naar serveren har bekreftet at det er betalt.
+  // Forsida ble serverside 21. september 2026, og da talte ingen kjoepet i
+  // nettleseren lenger — maalKjop() i appen kjoerte aldri. Annonsene fikk
+  // ikke vite om ett eneste salg (gjennomgang 2. oktober 2026). Hashen tas
+  // vare paa og strykes fra adressen som i appen, saa beloepet ikke foelger
+  // med en lenke som deles.
+  var kjopHash = '';
+  (function () {
+    var h = String(window.location.hash || '');
+    if (!/betaling=ok/.test(h) || !/kjop=A?\d+/.test(h)) return;
+    kjopHash = h;
+    try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+  })();
+  // Samme som maalKjop() i appen (lissom-2108.html): «purchase» med
+  // transaction_id L<id>, Ads-navnet ved siden av, og Metas «Purchase» med
+  // samme eventID som serveren sender (app/lib/maaling.php) — da slaar Meta
+  // de to sammen. Hvem som kjoepte: det appen la igjen i sessionStorage
+  // foer turen til Vipps (huskKjoper()). Talt én gang, også om sida lastes
+  // paa nytt: samme liste («lissom-kjop») som appen.
+  function maalKjop(ga, gtm, meta) {
+    var h = kjopHash;
+    var id = (h.match(/kjop=(A?\d+)/) || [])[1];
+    if (!id) return;
+    var talt = [];
+    try { talt = (localStorage.getItem('lissom-kjop') || '').split(',').filter(Boolean); } catch (e) { talt = []; }
+    if (talt.indexOf(id) !== -1) { kjopHash = ''; return; }
+    var belop = Number((h.match(/belop=([\d.]+)/) || [])[1] || 0);
+    var slag = (h.match(/slag=([a-z_]+)/) || [])[1] || 'kjop';
+    var NAVN = { booking: 'Kurs eller event', gavekort: 'Gavekort', ordre: 'Butikk', medlemskap: 'Medlemskap' };
+    var ADS = { booking: 'booking_fullfort', gavekort: 'gavekort_kjopt', medlemskap: 'medlemskap_startet' };
+    var vare = { item_id: slag, item_name: NAVN[slag] || slag, price: belop, quantity: 1 };
+    var kjop = { transaction_id: 'L' + id, value: belop, currency: 'NOK', items: [vare] };
+    var hvem = null;
+    try { hvem = JSON.parse(sessionStorage.getItem('lissom_kjoper') || 'null'); } catch (e) { hvem = null; }
+    var epost = String((hvem && hvem.epost) || '').trim().toLowerCase();
+    var tlf = String((hvem && hvem.telefon) || '').replace(/[^\d+]/g, '');
+    if (tlf.indexOf('00') === 0) tlf = '+' + tlf.slice(2);
+    if (/^\d{8}$/.test(tlf)) tlf = '+47' + tlf;
+    if (/^47\d{8}$/.test(tlf)) tlf = '+' + tlf;
+    if (!/^\+\d{8,15}$/.test(tlf)) tlf = '';
+    var gikk = false;
+    try {
+      if (ga && typeof window.gtag === 'function') {
+        var ud = {};
+        if (epost.indexOf('@') > 0) ud.email = epost;
+        if (tlf) ud.phone_number = tlf;
+        if (ud.email || ud.phone_number) window.gtag('set', 'user_data', ud);
+        window.gtag('event', 'purchase', kjop);
+        if (ADS[slag]) window.gtag('event', ADS[slag], { value: belop, currency: 'NOK', transaction_id: 'L' + id });
+        gikk = true;
+      }
+      if (gtm && window.dataLayer) {
+        window.dataLayer.push({ event: 'purchase', transaction_id: 'L' + id, value: belop, currency: 'NOK', items: [vare] });
+        gikk = true;
+      }
+      if (meta && typeof window.fbq === 'function') {
+        var md = {};
+        if (epost.indexOf('@') > 0) md.em = epost;
+        if (tlf) md.ph = tlf.slice(1);
+        if (md.em || md.ph) window.fbq('init', meta, md);
+        window.fbq('track', 'Purchase', { value: belop, currency: 'NOK', content_ids: [slag], content_type: 'product', content_name: vare.item_name }, { eventID: 'L' + id });
+        gikk = true;
+      }
+    } catch (e) {}
+    if (!gikk) return;
+    kjopHash = '';
+    try { localStorage.setItem('lissom-kjop', talt.concat(id).slice(-30).join(',')); } catch (e) {}
+    try { sessionStorage.removeItem('lissom_kjoper'); } catch (e) {}
+  }
   function maal() {
     var m = window.lissomMaal || {};
     var ga = /^G-[A-Z0-9]{6,20}$/i.test(m.ga || '') ? m.ga : '';
@@ -365,6 +435,7 @@
       window.gtag('consent', 'update', sett('granted'));
       try { window['ga-disable-' + ga] = false; } catch (e) {}
       try { if (meta && typeof window.fbq === 'function') window.fbq('consent', 'grant'); } catch (e) {}
+      if (kjopHash) maalKjop(ga, gtm, meta);
       return;
     }
     samtykkeSendt = true;
@@ -419,6 +490,7 @@
         }
       } catch (e) {}
     }
+    if (kjopHash) maalKjop(ga, gtm, meta);
   }
   // Personvern: «Ditt svar paa besoeksmaaling» — staar bare naar noen har
   // svart, og sier hva de svarte. «Endre svaret mitt» nullstiller, som

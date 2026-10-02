@@ -58,9 +58,16 @@ final class Maaling
         if (preg_match('~^GA1\.\d\.(\d+\.\d+)$~', (string) ($c['_ga'] ?? ''), $m) === 1) {
             $ut['cid'] = $m[1];
         }
-        // _ga_<måle-id uten G-> = GS1.1.<session_id>.<antall>.…
+        // _ga_<måle-id uten G-> = GS1.1.<session_id>.<antall>.… (gammelt)
+        // eller GS2.1.s<session_id>$o<antall>$g…$t… (Google byttet format i
+        // 2025). Bare det gamle ble lest: da fikk kjøpet fra serveren ingen
+        // økt, og GA4 la det under «(not set)» — 39 økter med 7 kjøp på
+        // 28 dager, uten kilde (gjennomgang 2. oktober 2026).
         foreach ($c as $navn => $verdi) {
-            if (str_starts_with((string) $navn, '_ga_') && preg_match('~^GS\d\.\d\.(\d+)\.~', (string) $verdi, $m) === 1) {
+            if (!str_starts_with((string) $navn, '_ga_')) {
+                continue;
+            }
+            if (preg_match('~^GS\d\.\d\.s?(\d+)(?:[.$]|$)~', (string) $verdi, $m) === 1) {
                 $ut['sid'] = $m[1];
                 break;
             }

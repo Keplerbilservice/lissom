@@ -426,6 +426,11 @@ final class Medlemskap
         if (DB::harKolonne('payments', 'gjelder_fra')) {
             $rad['gjelder_fra'] = $gjelderFra;
         }
+        // Det som knytter kjøpet til besøket (annonsen) — som booking,
+        // butikk og gavekort. Tom uten samtykke. Manglet her (2. okt 2026).
+        if (DB::harKolonne('payments', 'sporing')) {
+            $rad['sporing'] = Maaling::sporingFraNettleser() ?: null;
+        }
         $betalingId = DB::settInn('payments', $rad);
 
         try {
@@ -1450,7 +1455,9 @@ final class Medlemskap
             // oppretter en betaling setter noekkelen; dette var det ene som
             // ikke gjorde det.
             'idempotency_key' => Vipps::uuid(),
-        ]);
+        ] + (DB::harKolonne('payments', 'sporing')
+            ? ['sporing' => Maaling::sporingFraNettleser() ?: null] // annonsen som førte hit (2. okt 2026)
+            : []));
 
         try {
             $betaling = Vipps::opprettBetaling(

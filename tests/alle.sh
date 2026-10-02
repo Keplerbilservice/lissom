@@ -56,6 +56,8 @@ kjor "refusjonsklient" node tests/refusjon-klient.mjs
 kjor "backend"       php -d memory_limit=-1 tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php
 kjor "gavekortspor"  php tests/gavekortspor.php
+kjor "salgsmaling ved Vipps-retur" node tests/salgsmaling-retur.mjs
+kjor "maaling okt-id (GS1/GS2)" php tests/maaling-okt-id.php
 kjor "kjopslaas"     php tests/kjopslaas.php
 kjor "verving"       php tests/verving.php
 kjor "prøv lissom"   php tests/prove.php

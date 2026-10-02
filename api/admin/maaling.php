@@ -82,6 +82,11 @@ if (Foresporsel::metode() === 'POST') {
 function status(): array
 {
     $harSporing = DB::harKolonne('payments', 'sporing');
+    // Bare kjøp kunden gjør selv på nett kan ha samtykke og cookies. Kassa
+    // og QR (BET-), handlelister (HL-), uttak (QR-), manuelle (MANUELL-) og
+    // faste trekk talte med før, og ga «1 av 23» (gjennomgang 2. okt 2026).
+    $nett = "type = 'epayment' AND vipps_reference NOT LIKE 'BET%' AND vipps_reference NOT LIKE 'HL%'
+             AND vipps_reference NOT LIKE 'QR%' AND vipps_reference NOT LIKE 'MANUELL-%'";
     return [
         'gaId'         => trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/GA-id'")),
         'metaId'       => trim((string) DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Marked/Meta-piksel'")),
@@ -92,10 +97,10 @@ function status(): array
         // Hvor mange betalinger siste 30 dager som hadde samtykke (sporing)
         // — de som kunne maales fra serveren — mot alle betalte.
         'betalte30'    => (int) DB::verdi(
-            "SELECT COUNT(*) FROM payments WHERE status = 'betalt' AND created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY"
+            "SELECT COUNT(*) FROM payments WHERE status = 'betalt' AND $nett AND created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY"
         ),
         'medSporing30' => $harSporing ? (int) DB::verdi(
-            "SELECT COUNT(*) FROM payments WHERE status = 'betalt' AND sporing IS NOT NULL AND sporing <> ''
+            "SELECT COUNT(*) FROM payments WHERE status = 'betalt' AND $nett AND sporing IS NOT NULL AND sporing <> ''
               AND created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY"
         ) : 0,
     ];

@@ -2632,6 +2632,65 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "salgsmaling-vipps-retur-20261002",
+            "dato": "2026-10-02",
+            "hva": "Kjøp telles igjen når kunden kommer tilbake fra Vipps til forsida: nett.js leser #betaling=ok og sender purchase, Ads-navnet (booking_fullfort/gavekort_kjopt/medlemskap_startet) og Meta Purchase med eventID L<id>, én gang per kjøp. Kjøpet fra serveren leser økt-ID fra både GS1- og GS2-cookien. Sporing lagres også på medlemskap, timepakke og «Ta med barn». Admin-telleren «med samtykke» teller bare nettkjøp. Eieren GO 2. oktober 2026 etter markedsteamets gjennomgang (0 kjøp registrert i Google Ads og Meta).",
+            "hvor": "Besøksmåling (nett.js, app/lib/maaling.php, betalinger)",
+            "kode": [
+                {
+                    "fil": "nett.js",
+                    "finnes": [
+                        "function maalKjop(ga, gtm, meta)",
+                        "if (kjopHash) maalKjop(ga, gtm, meta);",
+                        "{ eventID: 'L' + id }"
+                    ]
+                },
+                {
+                    "fil": "app/lib/maaling.php",
+                    "finnes": [
+                        "~^GS\\d\\.\\d\\.s?(\\d+)(?:[.$]|$)~"
+                    ]
+                },
+                {
+                    "fil": "app/lib/timepakke.php",
+                    "finnes": [
+                        "['sporing' => Maaling::sporingFraNettleser() ?: null]"
+                    ]
+                },
+                {
+                    "fil": "api/tillegg-barn.php",
+                    "finnes": [
+                        "['sporing' => Maaling::sporingFraNettleser() ?: null]"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "$rad['sporing'] = Maaling::sporingFraNettleser() ?: null;"
+                    ]
+                },
+                {
+                    "fil": "api/admin/maaling.php",
+                    "finnes": [
+                        "vipps_reference NOT LIKE 'MANUELL-%'"
+                    ]
+                },
+                {
+                    "fil": "tests/salgsmaling-retur.mjs",
+                    "finnes": [
+                        "Meta Purchase med eventID L123"
+                    ]
+                },
+                {
+                    "fil": "tests/maaling-okt-id.php",
+                    "finnes": [
+                        "GS2 (nytt format) gir økt-ID"
+                    ]
+                }
+            ],
+            "kontroll": "tests/salgsmaling-retur.mjs 12/12 grønne (9 feil mot gammel nett.js). tests/maaling-okt-id.php 5/5 grønne (2 feil mot gammel kode). Et ekte kjøp gjennom Vipps er ikke målt ennå; det krever et testkjøp eieren gjør."
         }
     ]
 }

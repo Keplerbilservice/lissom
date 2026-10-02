@@ -3095,7 +3095,7 @@
         {
             "id": "booking-plan-lenke",
             "dato": "2026-10-02",
-            "hva": "Eieren (godkjent 2. oktober 2026): /booking?plan=<navn> åpnet direkte (annonse, delt lenke, ny innlasting) viser medlemskapet med riktig pris, også med æøå og mellomrom i navnet. Ukjent plan gir lista over medlemskapene, aldri et kurs. Ingen forhåndsvalg utover planen lenken peker på.",
+            "hva": "Eieren (godkjent 2. oktober 2026): /booking?plan=<navn> åpnet direkte (annonse, delt lenke, ny innlasting) viser medlemskapet med riktig pris, også med æøå og mellomrom i navnet. Ukjent plan gir lista over medlemskapene, aldri et kurs. Ingen forhåndsvalg utover planen lenken peker på. Går hun videre før svaret kommer, kastes hun ikke tilbake til bookingen (gjelder også /kurs/<slug>).",
             "hvor": "Nettsida › /booking?plan=",
             "kode": [
                 {
@@ -3103,22 +3103,28 @@
                     "finnes": [
                         "if (rute.planNavn) {",
                         "if (plan) return { sti, side: 'booking', planNavn: plan };",
-                        "if (this._ventendePlan) return null;",
+                        "if (this.state.side !== 'laster') { this._ventendePlan = null; return; }",
                         "aapnePlanFraAdresse() {",
-                        "try { history.replaceState(history.state, '', '/medlemskap'); } catch (e) { /* adressen blir staaende */ }"
+                        "try { history.replaceState(history.state, '', '/medlemskap'); } catch (e) { /* adressen blir staaende */ }",
+                        "if (!rute.planNavn) this._ventendePlan = null;",
+                        "if (!rute.kursSlug) this._ventendeSlug = null;",
+                        "planEtterVenting() {"
                     ]
                 },
                 {
                     "fil": "lissom-2108-uten-admin.html",
                     "finnes": [
-                        "aapnePlanFraAdresse"
+                        "aapnePlanFraAdresse",
+                        "planEtterVenting"
                     ]
                 },
                 {
                     "fil": "tests/nettleser/booking-plan-lenke.mjs",
                     "finnes": [
                         "ukjent plan: medlemskapslista vises",
-                        "ny innlasting"
+                        "ny innlasting",
+                        "treg plan + gikk videre",
+                        "treg katalog + gikk videre"
                     ]
                 }
             ],

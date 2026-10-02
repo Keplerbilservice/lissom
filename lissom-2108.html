@@ -33892,9 +33892,19 @@ class Component extends DCLogic {
     // Venter vi paa katalogen for aa aapne /kurs/<slug>, skal adressen staa
     // som den er. Ellers ville den blitt skrevet om til /kurs i mellomtiden,
     // og den som delte lenken hadde sendt folk til feil sted.
-    if (this._ventendeSlug) return null;
+    //
+    // Bare saa lenge venteskjermen staar. Har hun trykket seg videre i
+    // menyen, gjelder ikke ventingen lenger: den glemmes, og adressen
+    // foelger skjermen hun er paa.
+    if (this._ventendeSlug) {
+      if (this.state.side === 'laster') return null;
+      this._ventendeSlug = null;
+    }
     // Og for et medlemskap fra /booking?plan= som venter paa planene.
-    if (this._ventendePlan) return null;
+    if (this._ventendePlan) {
+      if (this.state.side === 'laster') return null;
+      this._ventendePlan = null;
+    }
     // Samme for en artikkel som hentes: /nyheter/<adresse> ble skrevet om til
     // /nyheter mens den lastet, og saa til artikkelen igjen — to steg, og
     // tilbake havnet paa /nyheter med artikkelen fortsatt aapen, som straks
@@ -34077,6 +34087,13 @@ class Component extends DCLogic {
   /** Tar brukeren dit adressen peker. */
   folgRute(rute) {
     if (!rute) return;
+
+    // En ny rute avlyser det som ventet paa den forrige. Gikk hun videre
+    // (tilbake, en annen lenke) foer katalogen eller planene kom, skulle
+    // svaret ellers kastet henne tilbake til bookingen (Codex, 2. oktober
+    // 2026).
+    if (!rute.kursSlug) this._ventendeSlug = null;
+    if (!rute.planNavn) this._ventendePlan = null;
 
     if (rute.kursSlug) {
       if (this.aapneKursSlug(rute.kursSlug)) {
@@ -42000,6 +42017,8 @@ class Component extends DCLogic {
           const slug = this._ventendeSlug;
           setTimeout(() => {
             if (this._ventendeSlug !== slug) return;
+            // Gikk hun videre i menyen imens, staar hun der hun gikk.
+            if (this.state.side !== 'laster') { this._ventendeSlug = null; return; }
             this._ventendeSlug = null;
             if (!this.aapneKursSlug(slug)) {
               // Kurset finnes ikke lenger. Da skal adressen si fra, ikke
@@ -46988,11 +47007,11 @@ class Component extends DCLogic {
         }
         // /booking?plan=<navn>, aapnet direkte (se ruteFraAdresse()).
         // Kom det ikke noe svar, gaar aapnePlanFraAdresse() til lista.
-        if (this._ventendePlan) this.aapnePlanFraAdresse();
+        if (this._ventendePlan) this.planEtterVenting();
       })
       .catch(() => {
         this._medlemskapHentes = false;
-        if (this._ventendePlan) this.aapnePlanFraAdresse();
+        if (this._ventendePlan) this.planEtterVenting();
       });
   }
 
@@ -47010,6 +47029,16 @@ class Component extends DCLogic {
     // designlista med priser som ikke er verkstedets.
     if (!n || !(this.state.planListe || []).length) return null;
     return this.planer().find(p => norm(p.navn) === n) || null;
+  }
+
+  /**
+   * Svaret paa planene kom mens /booking?plan= ventet. Staar venteskjermen
+   * fortsatt, aapnes planen; har hun gaatt videre imens, glemmes den — hun
+   * skal ikke kastes tilbake til bookingen (Codex, 2. oktober 2026).
+   */
+  planEtterVenting() {
+    if (this.state.side !== 'laster') { this._ventendePlan = null; return; }
+    this.aapnePlanFraAdresse();
   }
 
   /**

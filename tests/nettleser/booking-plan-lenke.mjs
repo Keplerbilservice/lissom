@@ -84,6 +84,44 @@ try {
     const booking = await p.locator('[data-screen-label="Booking"]').count();
     sjekk(`${bredde} px ukjent plan: ingen bookingskjerm`, () => assert.equal(booking, 0));
 
+    // Treg API: hun går videre (tilbake/annen adresse) før svaret kommer.
+    // Svaret skal ikke kaste henne tilbake til bookingen (Codex, 2. oktober
+    // 2026). Svaret holdes igjen i 4 s; ny rute følges via popstate, som
+    // tilbakeknappen gjør.
+    const vent = (ms) => new Promise((r) => setTimeout(r, ms));
+    const treg = (mønster) => p.route(mønster, async (rute) => { await vent(4000); await rute.continue(); });
+    const gaaVidere = (sti) => p.evaluate((s) => {
+      history.pushState({}, '', s);
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+    }, sti);
+
+    await treg('**/api/medlemskap.php');
+    await p.goto(BASE + '/booking?plan=' + encodeURIComponent(planer[0].navn), { waitUntil: 'domcontentloaded' });
+    await p.locator('[data-screen-label="Henter kurset"]').first().waitFor({ timeout: 30000 });
+    await gaaVidere('/kontakt');
+    await vent(6000);
+    sjekk(`${bredde} px treg plan + gikk videre: blir på /kontakt`, () => assert.equal(new URL(p.url()).pathname, '/kontakt'));
+    const bookingEtterPlan = await p.locator('[data-screen-label="Booking"]').count();
+    sjekk(`${bredde} px treg plan + gikk videre: ingen bookingskjerm`, () => assert.equal(bookingEtterPlan, 0));
+    await p.unroute('**/api/medlemskap.php');
+
+    // Samme for /kurs/<slug> som venter på katalogen.
+    const katalog = await (await p.goto(BASE + '/api/kurs.php')).json().catch(() => ({}));
+    const slug = ((katalog.kurs || []).find((k) => k && k.slug) || {}).slug;
+    if (slug) {
+      await treg('**/api/kurs.php');
+      await p.goto(BASE + '/kurs/' + slug + '?dag=x', { waitUntil: 'domcontentloaded' });
+      await p.locator('[data-screen-label="Henter kurset"]').first().waitFor({ timeout: 30000 });
+      await gaaVidere('/kontakt');
+      await vent(6000);
+      sjekk(`${bredde} px treg katalog + gikk videre: blir på /kontakt`, () => assert.equal(new URL(p.url()).pathname, '/kontakt'));
+      const bookingEtterKurs = await p.locator('[data-screen-label="Booking"]').count();
+      sjekk(`${bredde} px treg katalog + gikk videre: ingen bookingskjerm`, () => assert.equal(bookingEtterKurs, 0));
+      await p.unroute('**/api/kurs.php');
+    } else {
+      console.log(`  --    ${bredde} px: ingen kurs med slug i testbasen, kurs-tilfellet hoppet over`);
+    }
+
     sjekk(`${bredde} px: ingen skriptfeil`, () => assert.deepEqual(feil, []));
     await kontekst.close();
   }

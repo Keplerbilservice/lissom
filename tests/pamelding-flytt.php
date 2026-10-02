@@ -440,19 +440,51 @@ try {
         && DB::verdi('SELECT status FROM payments WHERE id = :p', ['p' => $p]) === 'delvis_refundert',
         json_encode([$r['belop_ore'], $r['status'], $avslag($b)]));
 
-    // Migrasjon 248 paa en plass som alt var delvis refundert, kjoert to ganger.
+    // Overbetaling: betalt 70000, flyttet til 50000 («20000 for mye»), admin
+    // refunderer de 20000 → beloepet staar paa 50000, betalt, ikke noe nytt «for mye».
+    $oA3 = $nyOkt($kA, 10, 17);
+    $b = $plass($oB, $kB, ['belop_ore' => 70000]);
+    $p = $betaling($b, ['belop_ore' => 70000]);
+    DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+    [$kode, $svar] = $flytt($b, $oA3);
+    sjekk('betalt 70000, flyttet til 50000: 20000 for mye', $kode === 200 && (int) $rad($b)['belop_ore'] === 50000
+        && ($svar['forMyeOre'] ?? null) === 20000, json_encode($svar, JSON_UNESCAPED_UNICODE));
+    [$kode, $svar] = parallelt([[$porter[0], '/api/admin/betalinger.php',
+        ['referanse' => (string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]), 'belop' => '200',
+         'operasjonId' => 'test-' . bin2hex(random_bytes(8))], $token]])[0];
+    $r = $rad($b);
+    $netto = Booking::betalingerFor($b)['sum'];
+    sjekk('… admin refunderer 20000: beloepet staar paa 50000, betalt, netto 50000, ikke noe for mye, intet avslag',
+        $kode === 200 && (int) $r['belop_ore'] === 50000 && $r['status'] === 'betalt' && $netto === 50000 && $avslag($b) === 0,
+        json_encode([$kode, $r['belop_ore'], $r['status'], $netto, $avslag($b)]));
+    // Samme hendelse fra portalen etterpaa: ingen endring.
+    Vipps::anvendTilstand((string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]), $del, true);
+    sjekk('… webhooken etterpaa: fortsatt 50000', (int) $rad($b)['belop_ore'] === 50000);
+
+    // Delvis overbetaling: betalt 70000, beloep 60000 (10000 for mye), 20000
+    // refunderes → 10000 dekker overbetalingen, 10000 er avslag → 50000.
+    $b = $plass($oB, $kB, ['belop_ore' => 60000]);
+    $p = $betaling($b, ['belop_ore' => 70000]);
+    DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+    Vipps::anvendTilstand((string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]), $del, true);
+    sjekk('betalt 70000 paa 60000, 20000 refundert → beloep 50000, betalt, avslag 10000',
+        (int) $rad($b)['belop_ore'] === 50000 && $rad($b)['status'] === 'betalt' && $avslag($b) === 10000 && $skyldigNaa($b) === 0,
+        json_encode([$rad($b)['belop_ore'], $avslag($b)]));
+
+    // Migrasjon 248 er bare tabellen: en plass som alt var delvis refundert
+    // roeres ikke (L12 fanger den), og to kjoeringer gaar fint.
     $b = $plass($oB, $kB, ['belop_ore' => 70000]);
     $p = $betaling($b, ['belop_ore' => 70000, 'status' => 'delvis_refundert', 'refundert_ore' => 20000]);
     DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
     $mig = (string) file_get_contents($rot . '/db/migrations/248_prisavslag_ved_delrefusjon.sql');
     DB::kobling()->exec($mig);
-    $etterEn = (int) $rad($b)['belop_ore'];
     DB::kobling()->exec($mig);
-    sjekk('migrasjon 248 to ganger = én justering: 70000 → 50000, avslag 20000',
-        $etterEn === 50000 && (int) $rad($b)['belop_ore'] === 50000 && $avslag($b) === 20000
-        && (int) DB::verdi('SELECT COALESCE(SUM(venter_ore),0) FROM booking_prisavslag') === 0,
-        json_encode([$etterEn, $rad($b)['belop_ore'], $avslag($b)]));
-    sjekk('… plassen staar betalt uten skyldig (ingen funn i datasjekken L12)', $rad($b)['status'] === 'betalt' && $skyldigNaa($b) === 0);
+    sjekk('migrasjon 248 to ganger: tabellen finnes, eksisterende plass urort (70000)',
+        DB::harTabell('booking_prisavslag') && (int) $rad($b)['belop_ore'] === 70000 && $avslag($b) === 0,
+        json_encode([$rad($b)['belop_ore'], $avslag($b)]));
+    $funn = array_filter(Vaktdata::regler(), static fn($f) => ($f['regel'] ?? '') === 'booking_betaling_uenig'
+        && (int) ($f['id'] ?? 0) === $b);
+    sjekk('… og datasjekken L12 melder den (betalt, men bare 50000 netto)', count($funn) === 1, json_encode(array_values($funn), JSON_UNESCAPED_UNICODE));
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 } finally {

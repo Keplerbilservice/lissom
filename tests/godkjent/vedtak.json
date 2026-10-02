@@ -2899,8 +2899,8 @@
         {
             "id": "pamelding-flytt-pris-plasslaas",
             "dato": "2026-10-02",
-            "hva": "L-7–L-9 (eieren ja 2. oktober): flyttes en påmelding til en dato med annen pris, følger beløpet prisen (rabatten i samme forhold) og betalt status regnes på nytt — skyldig i Kasse, eller «for mye» i svaret. Samme pris: urørt. Gi plass fra ventelista og flytting sjekker plassen under lås i transaksjonen; et medlem på ventelista (samme e-post/telefon) får plassen som medlem med medlemsrabatt. Full refusjon fra Vipps-portalen frigjør plassen, og en plass med flere betalinger får status etter det som fortsatt står.",
-            "hvor": "Admin påmelding (flytt), ventelista (gi plass), Vipps REFUNDED",
+            "hva": "L-7–L-9 (eieren ja 2. oktober): flyttes en påmelding til en dato med annen pris, følger beløpet prisen (rabatten i samme forhold) og betalt status regnes på nytt — skyldig i Kasse, eller «for mye» i svaret. Samme pris: urørt. Gi plass fra ventelista og flytting sjekker plassen under lås i transaksjonen; et medlem på ventelista (samme e-post/telefon) får plassen som medlem med medlemsrabatt. Full refusjon fra Vipps-portalen frigjør plassen, og en plass med flere betalinger får status etter det som fortsatt står. Kontrolløren 2. oktober: delvis refundert teller netto; full refusjon fra admin går samme vei som portalen; en delrefusjon der plassen beholdes er et prisavslag — beløpet senkes med den delen som ikke dekker en overbetaling (betalt 700, flyttet til 500, 200 refundert → 500), logget i booking_prisavslag. Migrasjon 248 lager bare tabellen; eksisterende delvis refunderte plasser endres ikke, de fanges av den daglige datasjekken (L12 booking_betaling_uenig) og rettes for hånd ved behov.",
+            "hvor": "Admin påmelding (flytt), ventelista (gi plass), Vipps REFUNDED, admin refusjon",
             "kode": [
                 {
                     "fil": "api/admin/pamelding.php",
@@ -2943,7 +2943,7 @@
                     "fil": "db/migrations/248_prisavslag_ved_delrefusjon.sql",
                     "finnes": [
                         "CREATE TABLE IF NOT EXISTS booking_prisavslag (",
-                        "ON DUPLICATE KEY UPDATE venter_ore = GREATEST(0, VALUES(venter_ore) - avslag_ore);"
+                        "Eksisterende delvis refunderte plasser endres IKKE her"
                     ]
                 },
                 {

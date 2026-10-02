@@ -1520,8 +1520,9 @@ final class Booking
     }
 
     /**
-     * Delrefusjon der plassen beholdes: beloepet senkes med det som ble
-     * refundert (fra $foerOre til $etterOre i «refundert_ore»). Portalen
+     * Delrefusjon der plassen beholdes: beloepet senkes med den delen av
+     * refusjonen (fra $foerOre til $etterOre i «refundert_ore») som ikke
+     * dekker en overbetaling. Portalen
      * (Vipps::anvendTilstand, REFUNDED) og admin (refunderBetaling) gaar begge hit.
      */
     public static function prisavslagEtterDelrefusjon(int $paymentId, int $foerOre, int $etterOre): void
@@ -1532,17 +1533,24 @@ final class Booking
         // og plassen staar betalt — ingen «skyldig» i Kasse, ingen funn i
         // datasjekken (L12).
         //
-        // Hvert avslag foeres i «booking_prisavslag» (migrasjon 248), og det
-        // er den som gjoer det trygt aa kjoere igjen: migrasjonen trekker bare
-        // det som ikke alt er foert. Finnes ikke tabellen enda, trekkes
-        // ingenting her — migrasjonen tar det naar den kjoeres.
+        // Bare den delen som ikke dekker en overbetaling er et avslag
+        // (kontrolloeren, 2. oktober 2026): betalt 700, flyttet til 500 («200
+        // for mye»), 200 refundert → beloepet staar paa 500. Altsaa:
+        //   avslag = max(0, refusjon − max(0, netto betalt foer − beloep))
+        //
+        // Trygt aa kalle igjen: bare oekningen i «refundert_ore» teller, saa
+        // samme hendelse to ganger, eller webhooken etter admins egen
+        // refusjon, gir 0. Hvert avslag logges i «booking_prisavslag»
+        // (migrasjon 248) naar tabellen finnes.
         //
         // Kalles i transaksjonen, med betalingen laast (betaling foer plass,
-        // som markerBetalt()). En avbestilt eller refundert plass roeres ikke.
+        // som markerBetalt()), og etter at «refundert_ore» er oppdatert.
+        // En avbestilt eller refundert plass roeres ikke.
         $delta = $etterOre - $foerOre;
-        if ($delta <= 0 || !DB::harTabell('booking_prisavslag')) {
+        if ($delta <= 0) {
             return;
         }
+        $logg = DB::harTabell('booking_prisavslag');
         $harRabatt = DB::harKolonne('bookings', 'rabatt_prosent');
         $plasser = DB::alle(
             'SELECT id, belop_ore, ' . ($harRabatt ? 'rabatt_prosent' : '0 AS rabatt_prosent') . "
@@ -1555,7 +1563,17 @@ final class Booking
         );
         foreach ($plasser as $b) {
             $foer = (int) $b['belop_ore'];
-            $ny = max(0, $foer - $delta);
+            // Netto betalt naa er etter refusjonen; foer den var det $delta mer.
+            $nettoFoer = self::betalingerFor((int) $b['id'])['sum'] + $delta;
+            $avslag = max(0, $delta - max(0, $nettoFoer - $foer));
+            if ($avslag === 0) {
+                // Refusjonen dekket bare en overbetaling. Beloepet staar.
+                self::settBetaltStatus((int) $b['id']);
+                self::revisjon('refusjon_dekket_overbetaling', 'booking', (int) $b['id'],
+                    ['betaling' => $paymentId, 'refundert_ore' => $delta, 'belop' => $foer]);
+                continue;
+            }
+            $ny = max(0, $foer - $avslag);
             $felt = ['belop_ore' => $ny];
             // Rabatten foelger avslaget, saa en senere flytting (som regner av
             // rabatten) ikke gir avslaget tilbake.
@@ -1565,14 +1583,14 @@ final class Booking
                 $felt['rabatt_prosent'] = max(0.0, min(100.0, round((1 - $ny / $brutto) * 100, 2)));
             }
             DB::oppdater('bookings', $felt, ['id' => (int) $b['id']]);
-            DB::kjor(
-                "INSERT INTO booking_prisavslag (booking_id, payment_id, avslag_ore, kilde)
-                 VALUES (:b, :p, :d, 'refusjon')
-                 ON DUPLICATE KEY UPDATE avslag_ore = avslag_ore + VALUES(avslag_ore)",
-                // Hele differansen foeres, ogsaa naar beloepet stoppet paa 0,
-                // saa migrasjonen ikke trekker resten senere.
-                ['b' => (int) $b['id'], 'p' => $paymentId, 'd' => $delta]
-            );
+            if ($logg) {
+                DB::kjor(
+                    "INSERT INTO booking_prisavslag (booking_id, payment_id, avslag_ore, kilde)
+                     VALUES (:b, :p, :d, 'refusjon')
+                     ON DUPLICATE KEY UPDATE avslag_ore = avslag_ore + VALUES(avslag_ore)",
+                    ['b' => (int) $b['id'], 'p' => $paymentId, 'd' => $foer - $ny]
+                );
+            }
             self::settBetaltStatus((int) $b['id']);
             self::revisjon('prisavslag_ved_delrefusjon', 'booking', (int) $b['id'],
                 ['betaling' => $paymentId, 'belop_for' => $foer, 'belop_naa' => $ny]);

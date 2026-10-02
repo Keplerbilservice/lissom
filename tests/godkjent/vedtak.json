@@ -3091,6 +3091,54 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nye-pameldinger-medlemskap",
+            "dato": "2026-10-02",
+            "hva": "«det meldte seg på et nytt medlem, men det vises ikke under nye påmeldinger» — nye medlemskap (betalt, Prøv Lissom, betal i verkstedet og lagt inn i admin) står i «Nye påmeldinger» med plannavnet der kursnavnet står, i de samme tre dagene og med samme regel for avbrutt/feilet Vipps; telleren tar dem med; trykk åpner medlemmet; «Dagens bestillinger» tar dem med fra samme kilde",
+            "hvor": "Admin › Oversikt › Nye påmeldinger og Dagens bestillinger (gamle admin, admin-ny og nyadmin)",
+            "kode": [
+                {
+                    "fil": "api/admin/oversikt.php",
+                    "finnes": [
+                        "$nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {",
+                        "WHERE a.handling = 'medlem_meldt_inn' AND a.objekt_type = 'member'",
+                        "AND p.status IN ('avbrutt','feilet'))))",
+                        "'nyeste' => $blandNye(array_map($paameldingRad = static fn($b) => [",
+                        "foreach ($nyeMedlemskap($dagStart) as $m) {"
+                    ],
+                    "ikkeFinnes": [
+                        "WHERE o.opprettet >= :fra AND o.status = 'fullfort'"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "hvaNaar: n.slag === 'medlemskap' ? n.hva",
+                        ".map(n => (n.slag === 'medlemskap' && n.medlemId ? Object.assign({}, n, {"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "card('Nye påmeldinger',",
+                        "href:n.slag==='medlemskap'?'#folk?person='+n.medlemId:'#pameldte?booking='+n.id"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "r==='pameldte'&&(d.nyeste||[]).length?[' ',badge(String(d.nyeste.length),'warn')]:null"
+                    ]
+                },
+                {
+                    "fil": "tests/nye-pameldinger-medlem.sh",
+                    "finnes": [
+                        "avbrutt i Vipps står ikke med",
+                        "nytt betalt medlemskap står med"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -446,7 +446,7 @@ $medlemsstatus = (static function (): array {
     }
 
     $mndStart = gmdate('Y-m-01');
-    $ut = ['ubetalte' => 0, 'fri' => 0, 'nye' => 0, 'nyeUbet' => 0, 'rader' => []];
+    $ut = ['ubetalte' => 0, 'fri' => 0, 'nye' => 0, 'nyeUbet' => 0, 'rader' => [], 'tilstand' => []];
 
     foreach ($aktive as $m) {
         $a = $avtaler[(int) $m['id']] ?? null;
@@ -456,6 +456,9 @@ $medlemsstatus = (static function (): array {
             $siste[(int) $m['id']] ?? null,
             $a === null ? null : ($trekkene[(int) $a['id']] ?? null)
         );
+        // Betalingspilla paa «Nye paameldinger» og «Dagens bestillinger»
+        // (nye medlemskap) — den samme regelen, ikke en til.
+        $ut['tilstand'][(int) $m['id']] = (string) $b['tilstand'];
 
         // ── Den som har sagt opp, men ikke gjort opp ────────────────────
         //
@@ -538,6 +541,93 @@ $medlemsstatus = (static function (): array {
     return $ut;
 })();
 
+// ── Nye medlemskap ──────────────────────────────────────────────────────
+//
+// Eieren, 2. oktober 2026: «det meldte seg på et nytt medlem, men det vises
+// ikke under nye påmeldinger». Lista tok bare kursplasser. Her er
+// medlemskapene, fra kildene alle veiene inn skriver til:
+//
+//   - nettsida og innmeldingslenka (betalt, fast trekk, Prøv Lissom og
+//     «betal i verkstedet») — en rad i «subscriptions»
+//   - lagt inn i admin — ingen avtale, men «medlem_meldt_inn» i revisjonen
+//
+// Samme regel for avbrutt Vipps som kursplassene: en avtale som er godkjent
+// eller gjort opp står med. En som venter på Vipps står bare like lenge som
+// en reservasjon holder plassen (20 minutter, Booking::RESERVASJON_MINUTTER),
+// og bare så lenge betalingen ikke er avbrutt eller feilet. Avslått og
+// utløpt står aldri med.
+//
+// Én rad per medlem — den nyeste. Pilla er den samme som medlemslista
+// (Medlemskap::betalingsstatus).
+$nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {
+    $MERKE = ['betalt' => 'Betalt', 'bestilt' => 'Bestilt', 'forfalt' => 'Forfalt',
+              'fri' => 'Fri', 'over' => 'Sluttet'];
+    $pille = static fn(int $id): string
+        => $MERKE[$medlemsstatus['tilstand'][$id] ?? ''] ?? 'Ikke betalt';
+    $rader = [];
+
+    foreach (DB::alle(
+        "SELECT s.member_id, s.plan, s.pris_ore, s.created_at, m.navn, m.epost
+           FROM subscriptions s
+           JOIN members m ON m.id = s.member_id
+          WHERE s.created_at >= :fra
+            AND m.anonymisert_at IS NULL
+            AND (s.status = 'aktiv'
+                 -- IN og ikke likhetstegn: tests/backend.php leter etter det i
+                 -- denne fila for ventelista (waitlist). Dette er avtalen.
+                 OR (s.status IN ('venter')
+                     AND s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 20 MINUTE)
+                     AND NOT EXISTS (SELECT 1 FROM payments p
+                                      WHERE p.subscription_id = s.id
+                                        AND p.status IN ('avbrutt','feilet'))))
+          ORDER BY s.created_at DESC, s.id DESC
+          LIMIT 50",
+        ['fra' => $fra]
+    ) as $s) {
+        $mid = (int) $s['member_id'];
+        if (isset($rader[$mid])) {
+            continue;
+        }
+        $rader[$mid] = [
+            'medlemId' => $mid, 'navn' => (string) $s['navn'], 'epost' => $s['epost'],
+            'plan' => (string) $s['plan'], 'ore' => (int) $s['pris_ore'],
+            'naar' => (string) $s['created_at'], 'status' => $pille($mid),
+        ];
+    }
+
+    $planpris = [];
+    foreach (DB::alle('SELECT navn, pris_ore FROM membership_plans') as $p) {
+        $planpris[(string) $p['navn']] = (int) $p['pris_ore'];
+    }
+    foreach (DB::alle(
+        "SELECT a.objekt_id AS member_id, MAX(a.created_at) AS naar,
+                m.navn, m.epost, m.medlemskap_type
+           FROM audit_log a
+           JOIN members m ON m.id = a.objekt_id
+          WHERE a.handling = 'medlem_meldt_inn' AND a.objekt_type = 'member'
+            AND a.created_at >= :fra
+            AND m.status IN ('prove','aktiv') AND m.anonymisert_at IS NULL
+          GROUP BY a.objekt_id, m.navn, m.epost, m.medlemskap_type
+          ORDER BY naar DESC
+          LIMIT 50",
+        ['fra' => $fra]
+    ) as $a) {
+        $mid = (int) $a['member_id'];
+        if (isset($rader[$mid])) {
+            continue;
+        }
+        $plan = (string) ($a['medlemskap_type'] ?? '');
+        $rader[$mid] = [
+            'medlemId' => $mid, 'navn' => (string) $a['navn'], 'epost' => $a['epost'],
+            'plan' => $plan, 'ore' => $planpris[$plan] ?? 0,
+            'naar' => (string) $a['naar'], 'status' => $pille($mid),
+        ];
+    }
+
+    $rader = array_values($rader);
+    usort($rader, static fn(array $x, array $y): int => strcmp($y['naar'], $x['naar']));
+    return $rader;
+};
 
 // ── Dagens bestillinger ─────────────────────────────────────────────────
 //
@@ -550,7 +640,7 @@ $medlemsstatus = (static function (): array {
 // eller reservasjonen har gått ut) — det er ingen bestilling. Samme regel som
 // «Nye påmeldinger» over. Betal ved oppmøte og det som er lagt inn i admin har
 // ingen Vipps-betaling, og står med.
-$dagensBestillinger = (static function () use ($dagStart): array {
+$dagensBestillinger = (static function () use ($dagStart, $nyeMedlemskap): array {
     $oslo = new DateTimeZone('Europe/Oslo');
     $klokke = static fn(string $utc): string
         => (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone($oslo)->format('H:i');
@@ -624,29 +714,53 @@ $dagensBestillinger = (static function () use ($dagStart): array {
         ];
     }
 
-    if (DB::harTabell('medlemsordrer')) {
-        foreach (DB::alle(
-            "SELECT o.id, o.medlem_id, o.navn, o.plan, o.pris_ore, o.opprettet, o.betaling
-               FROM medlemsordrer o
-              WHERE o.opprettet >= :fra AND o.status = 'fullfort'",
-            ['fra' => $dagStart]
-        ) as $m) {
-            $rader[] = [
-                'slag'   => 'medlemskap', 'id' => (int) $m['id'],
-                'medlemId' => $m['medlem_id'] !== null ? (int) $m['medlem_id'] : null,
-                'naar'   => (string) $m['opprettet'], 'kl' => $klokke((string) $m['opprettet']),
-                'hva'    => 'Medlemskap · ' . (string) $m['plan'],
-                'belop'  => Booking::kroner((int) $m['pris_ore']),
-                'navn'   => (string) $m['navn'],
-                // «Betal i verkstedet» er meldt inn, men ikke betalt enda.
-                'status' => (string) $m['betaling'] === 'verksted' ? 'Ikke betalt' : 'Betalt',
-            ];
-        }
+    // Medlemskapene. Her sto bare «medlemsordrer» — innmeldingslenka. Et
+    // medlemskap kjøpt på nettsida, Prøv Lissom eller et medlem lagt inn i
+    // admin kom aldri med (eieren, 2. oktober 2026). Samme kilde som «Nye
+    // påmeldinger» nå: se $nyeMedlemskap.
+    foreach ($nyeMedlemskap($dagStart) as $m) {
+        $rader[] = [
+            'slag'   => 'medlemskap', 'id' => $m['medlemId'], 'medlemId' => $m['medlemId'],
+            'naar'   => $m['naar'], 'kl' => $klokke($m['naar']),
+            'hva'    => 'Medlemskap · ' . $m['plan'],
+            'belop'  => Booking::kroner($m['ore']),
+            'navn'   => $m['navn'],
+            'status' => $m['status'],
+        ];
     }
 
     usort($rader, static fn(array $a, array $b): int => strcmp($b['naar'], $a['naar']));
     return $rader;
 })();
+
+// «Nye paameldinger»: kursplassene og de nye medlemskapene i én liste, nyeste
+// foerst. Samme tre dager som kursplassene (se $nyeste). Medlemskapet har
+// plannavnet der kursnavnet ellers staar, og «slag» sier hva raden er, saa
+// skjermene kan aapne medlemmet i stedet for paameldingen.
+$blandNye = static function (array $kursRader, array $raa) use ($nyeMedlemskap): array {
+    $alle = [];
+    foreach ($kursRader as $i => $r) {
+        $alle[] = [(string) ($raa[$i]['created_at'] ?? ''), ['slag' => 'kurs'] + $r];
+    }
+    $tre = gmdate('Y-m-d H:i:s', time() - 3 * 86400);
+    foreach (array_slice($nyeMedlemskap($tre), 0, 12) as $m) {
+        $alle[] = [$m['naar'], [
+            'slag'      => 'medlemskap',
+            'id'        => 0,
+            'medlemId'  => $m['medlemId'],
+            'navn'      => $m['navn'],
+            'epost'     => $m['epost'],
+            'hva'       => $m['plan'],
+            'naar'      => '',
+            'tid'       => Booking::norskDato($m['naar']),
+            'belop'     => Booking::kroner($m['ore']),
+            'status'    => $m['status'],
+            'referanse' => null,
+        ]];
+    }
+    usort($alle, static fn(array $x, array $y): int => strcmp($y[0], $x[0]));
+    return array_map(static fn(array $x): array => $x[1], $alle);
+};
 
 Svar::json([
     'dagensBestillinger' => $dagensBestillinger,
@@ -658,7 +772,7 @@ Svar::json([
     'kanaler' => [
         'sms' => Varsel::smsMulig(),
     ],
-    'nyeste' => array_map($paameldingRad = static fn($b) => [
+    'nyeste' => $blandNye(array_map($paameldingRad = static fn($b) => [
         // Uten id-en kunne raden aapnes, men ikke gjores noe med. En
         // paamelding til et kurs uten dato ble staaende her for alltid: den
         // har ingen dato aa finne den igjen paa under Paameldte heller.
@@ -674,7 +788,7 @@ Svar::json([
         // og da het den samme tilstanden to ting paa to skjermer.
         'status'    => $b['status'] === 'betalt' ? 'Betalt' : 'Ikke betalt',
         'referanse' => $b['vipps_reference'],
-    ], $nyeste),
+    ], $nyeste), $nyeste),
     'sisteUkeListe' => array_map($paameldingRad, $sisteUkeListe),
     'omsetning' => [
         'idag'       => $kroner($betaltIdag),

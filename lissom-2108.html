@@ -72207,7 +72207,11 @@ class Component extends DCLogic {
           //
           // Kursdatoen laa i svaret fra serveren hele tida, men bare inne i
           // ruta man faar ved aa trykke. Naa staar den paa raden.
-          hvaNaar: n.hva + (n.naar ? ' · ' + n.naar : ' · dato ikke satt'),
+          //
+          // Et nytt medlemskap har plannavnet her, og ingen kursdato
+          // (eieren, 2. oktober 2026: nye medlemmer skal staa i lista).
+          hvaNaar: n.slag === 'medlemskap' ? n.hva
+            : n.hva + (n.naar ? ' · ' + n.naar : ' · dato ikke satt'),
         })),
         // Raden kunne aapnes, og saa var det ingenting aa gjore. En
         // paamelding til et kurs uten dato blir staaende her for alltid —
@@ -72230,7 +72234,15 @@ class Component extends DCLogic {
                      ? 'Plassen blir ledig igjen. Beløpet må refunderes i Vipps.'
                      : 'Ingenting er betalt, så det er ingenting å refundere. Plassen blir ledig igjen.'))) return;
              this.pameldingKall({ handling: 'fjern', id: n.id });
-           } : null]),
+           } : null])
+        // Et nytt medlemskap aapner medlemmet — den samme personruta som
+        // medlemslista aapner. Det er ingen paamelding aa avbestille.
+        .map(n => (n.slag === 'medlemskap' && n.medlemId ? Object.assign({}, n, {
+          velg: () => {
+            this.gaaAdmin('adminmedlem', {});
+            this.apnePerson(n.medlemId, 0);
+          },
+        }) : n)),
       erAdminOkonomi: side === 'adminokonomi',
       // ── Dagsoppgjor ──────────────────────────────────────────────────
       //

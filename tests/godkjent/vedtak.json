@@ -109,11 +109,40 @@
                         "WHERE id = :i AND saldo_ore >= :b2 AND status = 'aktivt'"
                     ]
                 },
-                {"fil": "api/admin/uttak.php", "finnes": ["Booking::trekkGavekortEllerAvbryt((int) $gavekortRad);", "Booking::trekkGavekortEllerAvbryt($gaveRad);", "Booking::trekkGavekortEllerAvbryt($betalingId);"]},
-                {"fil": "api/admin/pamelding.php", "finnes": ["Booking::trekkGavekortEllerAvbryt($betalingId);"]},
-                {"fil": "api/admin/medlemmer.php", "finnes": ["Booking::trekkGavekortEllerAvbryt((int) $bid);", "Booking::trekkGavekortEllerAvbryt($bid);"]},
-                {"fil": "api/admin/kursbetaling.php", "finnes": ["Booking::trekkGavekortEllerAvbryt((int) $gaveRad);"]},
-                {"fil": "tests/gavekort-samtidig.php", "finnes": ["nøyaktig ett salg lykkes", "nøyaktig én påmelding lykkes"]}
+                {
+                    "fil": "api/admin/uttak.php",
+                    "finnes": [
+                        "Booking::trekkGavekortEllerAvbryt((int) $gavekortRad);",
+                        "Booking::trekkGavekortEllerAvbryt($gaveRad);",
+                        "Booking::trekkGavekortEllerAvbryt($betalingId);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "Booking::trekkGavekortEllerAvbryt($betalingId);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "Booking::trekkGavekortEllerAvbryt((int) $bid);",
+                        "Booking::trekkGavekortEllerAvbryt($bid);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursbetaling.php",
+                    "finnes": [
+                        "Booking::trekkGavekortEllerAvbryt((int) $gaveRad);"
+                    ]
+                },
+                {
+                    "fil": "tests/gavekort-samtidig.php",
+                    "finnes": [
+                        "nøyaktig ett salg lykkes",
+                        "nøyaktig én påmelding lykkes"
+                    ]
+                }
             ]
         },
         {
@@ -2899,7 +2928,7 @@
         {
             "id": "trekk-l5-l6-l10-trekkdag",
             "dato": "2026-10-02",
-            "hva": "Revisjonens L-5, L-6, L-10 og trekkdag (eieren sa ja 2. oktober): et trekk som står «opprettet» uten charge-id i over 15 minutter, prøves igjen med samme nøkkel og samme innhold, og charge-id og neste_trekk lagres i samme transaksjon; aktiv avtale uten første trekk (oppslaget feilet) føres i neste trekkrunde, én gang, og avtalen merkes avklart (subscriptions.forste_trekk_sjekket, migrasjon 247) så den ikke slås opp hver natt; avtaler fra før første trekk ved godkjenning (8. september 2026) slås aldri opp; nye avtaler trekkes den 1. (trekk_dag = 1). PAUSE (L-10): Vipps-avtalen stoppes ikke. Månedens trekk hoppes over bare når en godkjent frys dekker minst 15 dager av den kalendermåneden (regel valgt av koordinator etter kontrollor 2. oktober): frys 31.10–1.11 gir ikke gratis november, frys 2.11–30.11 gir gratis november. Én måned om gangen; det som hoppes over, tas aldri igjen, så ingen trekkes dobbelt. Verkstedet får beskjeden «Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.» Eksisterende avtaler får trekkdag 1 først når eieren sier ja (db/venter/247b).",
+            "hva": "Revisjonens L-5, L-6, L-10 og trekkdag (eieren sa ja 2. oktober): et trekk som står «opprettet» uten charge-id i over 15 minutter, prøves igjen med samme nøkkel og samme innhold, og charge-id og neste_trekk lagres i samme transaksjon; aktiv avtale uten første trekk (oppslaget feilet) føres i neste trekkrunde, én gang, og avtalen merkes avklart (subscriptions.forste_trekk_sjekket, migrasjon 247) så den ikke slås opp hver natt; avtaler fra før første trekk ved godkjenning (8. september 2026) slås aldri opp; nye avtaler trekkes den 1. (trekk_dag = 1). PAUSE (L-10): Vipps-avtalen stoppes ikke. Månedens trekk hoppes over bare når en godkjent frys dekker minst 15 dager av den kalendermåneden (regel valgt av koordinator etter kontrollor 2. oktober): frys 31.10–1.11 gir ikke gratis november, frys 2.11–30.11 gir gratis november. Én måned om gangen; det som hoppes over, tas aldri igjen, så ingen trekkes dobbelt. Verkstedet får beskjeden «Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.» Eksisterende avtaler får trekkdag 1 først når eieren sier ja (db/venter/247b). FLETTET MED L-12 (kontrollor 2. oktober): rekkefølgen i trekk() er alt fort → tidligere forsøk gjenfinnes → pause → «betalt fra før» (bare uten tidligere forsøk) → bestill. Finnes et forsøk (opprettet/feilet uten charge-id) for en måned som er betalt utenom trekket, bestilles ikke noe nytt: forsøket slås opp hos Vipps; finnes det ikke (eller er FAILED/CANCELLED), hoppes måneden over; finnes det, føres det og feilloggen ber om at det ene gjøres opp. Medlemmet låses (FOR UPDATE) fra sjekken til trekkraden er satt inn, samme lås som manuell betaling i admin.",
             "hvor": "Medlemskap: faste trekk (Vipps Recurring) og frys",
             "kode": [
                 {
@@ -2914,7 +2943,10 @@
                         "$etterPause = self::hoppOverPause($avtale);",
                         "DB::iTransaksjon(static function () use ($betalingId, $trekkId, $avtale, $nesteTrekk): void {",
                         "$forsteFoert = self::foerManglendeForsteTrekk();",
-                        "$trekk = Vipps::trekkPaaAvtale($avtaleId, true);"
+                        "$trekk = Vipps::trekkPaaAvtale($avtaleId, true);",
+                        "DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => (int) $avtale['member_id']]);",
+                        "if ($betaltFraFoer && $tidligere === null) {",
+                        "$funnet = self::forsokHosVipps($avtale, $forsok, $betalingId);"
                     ]
                 },
                 {
@@ -2926,7 +2958,9 @@
                         "februar med 15 pausedager hoppes over; april med 14 trekkes",
                         "pause avbrutt etter at november var hoppet over: desember trekkes",
                         "neste natt slaas den avklarte avtalen ikke opp hos Vipps",
-                        "neste trekk 1. oktober, ikke 15. oktober"
+                        "neste trekk 1. oktober, ikke 15. oktober",
+                        "feilet uten charge-id + manuell betaling, ikke hos Vipps: ingen ny bestilling",
+                        "feilet uten charge-id + manuell betaling, trekket finnes hos Vipps: foeres, ikke nytt"
                     ]
                 },
                 {
@@ -2942,6 +2976,59 @@
                     "fil": "db/migrations/247_forste_trekk_sjekket.sql",
                     "finnes": [
                         "ADD COLUMN IF NOT EXISTS forste_trekk_sjekket DATETIME NULL DEFAULT NULL"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "medlem-l11-l12",
+            "dato": "2026-10-02",
+            "hva": "Pengeflyt L-11/L-12 (eieren ja 2. oktober): avtalen stoppes dagen ETTER «slutter» (norsk tid) — tilgang ut siste dag, «oppsagt» bare når ingen annen avtale løper. Manuell medlemsbetaling i admin får gjelder_fra (kalendermåneden, neste måned for nytt kjøp etter den 20.), nektes med 409 for en periode som alt er betalt, låser medlemmet i transaksjonen (dobbelttrykk = én betaling), og sier fra om fast trekk i Vipps. markerBetalt låser gavekortet før betalingen. Tillegg samme dag (eieren: «vi har ikke noen delbetalt måned»): streng sperre; 409 også når et fast trekk for måneden er underveis (opprettet/venter); trekk() trekker ikke en måned som alt er betalt utenom trekket, men flytter neste_trekk; «Forny» etter den 20. sperrer ikke kjøpsmåneden, og meldingen nevner måneden som skulle betales.",
+            "hvor": "Medlemskap::tilAvslutning, api/admin/medlemmer.php (handling=betaling), Booking::markerBetalt",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "WHERE slutter IS NOT NULL AND slutter < :idag",
+                        "self::oppsagtOmIngenLoeper((int) $avtale['member_id']);"
+                    ],
+                    "ikkeFinnes": [
+                        "slutter <= CURDATE()"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $id]);",
+                        "' har allerede betalt medlemskapet for ' . $periode",
+                        "$gjelderFra = $medlemsperiode($id, $avtale, $navn);",
+                        "'advarsel' => $advarsel,",
+                        "if (Medlemskap::betalingForMaaned($id, $maaned) !== null) {",
+                        "' er underveis for ' . $navn"
+                    ],
+                    "ikkeFinnes": [
+                        "en avtalt delbetaling"
+                    ]
+                },
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public static function betalingForMaaned(int $medlemId, string $maaned, bool $utenTrekk = false): ?array",
+                        "|| ($forste && self::erForskuttert($r) && substr($kjopt, 0, 7) === $maaned)) {",
+                        "$betaltFraFoer = self::betalingForMaaned((int) $avtale['member_id'], $maaned, true) !== null;",
+                        "return 'betalt fra foer';"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "$kortene = $forst !== null ? self::kortFor((int) $forst) : [];"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/medlem-l11-l12.php"
                     ]
                 }
             ]

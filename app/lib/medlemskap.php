@@ -419,6 +419,66 @@ final class Medlemskap
     }
 
     /**
+     * L-12 (pengeflyt-revisjonen, eieren 2. oktober 2026): betalingen som alt
+     * dekker kalendermaaneden $maaned (Y-m) for medlemmet, eller null.
+     *
+     * Teller betalte, ikke annullerte medlemsbetalinger (ikke timepakker, ikke
+     * proeveperioden). En maaned er dekket naar betalingens periode er den
+     * maaneden — eller naar den er kjoepsmaaneden til et NYTT medlemskap
+     * kjoept etter den 20. (den foerste betalingen paa avtalen; resten av
+     * maaneden er med). En «Forny» etter den 20. har samme form, men er ikke
+     * den foerste paa avtalen, og dekker bare sin egen maaned.
+     *
+     * @param bool $utenTrekk true = bare betalinger utenom faste trekk
+     *                        (verkstedet, «Forny»), til trekk()
+     * @return array<string,mixed>|null
+     */
+    public static function betalingForMaaned(int $medlemId, string $maaned, bool $utenTrekk = false): ?array
+    {
+        $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
+        $rader = DB::alle(
+            // Plantypen fra avtalen; mangler avtaleraden (meldt inn for haand,
+            // betalt i verkstedet), fra medlemmets plan — saa Prøv Lissom uten
+            // avtale ikke telles som en vanlig maaned (kontrolloeren, 2. oktober 2026).
+            "SELECT p.id, p.type, p.subscription_id, p.created_at, {$fraKol},
+                    CASE WHEN s.id IS NULL THEN mm.engangs ELSE mp.engangs END AS engangs
+               FROM payments p
+          LEFT JOIN subscriptions s ON s.id = p.subscription_id
+          LEFT JOIN membership_plans mp ON mp.navn = s.plan
+          LEFT JOIN members m ON m.id = p.member_id
+          LEFT JOIN membership_plans mm ON mm.navn = m.medlemskap_type
+              WHERE p.member_id = :m AND p.formal = 'medlemskap'
+                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                {$utenTimepakke}
+              ORDER BY p.created_at, p.id",
+            ['m' => $medlemId]
+        );
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc  = new DateTimeZone('UTC');
+        $sett = [];
+        foreach ($rader as $r) {
+            if ((int) ($r['engangs'] ?? 0) === 1) {
+                continue;
+            }
+            $avtale = (int) ($r['subscription_id'] ?? 0);
+            $forste = !isset($sett[$avtale]);
+            $sett[$avtale] = true;
+            if ($utenTrekk && (string) $r['type'] === 'recurring_charge') {
+                continue;
+            }
+            $kjopt = (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('Y-m-d');
+            $start = trim((string) ($r['gjelder_fra'] ?? '')) ?: $kjopt;
+            if (substr($start, 0, 7) === $maaned
+                || ($forste && self::erForskuttert($r) && substr($kjopt, 0, 7) === $maaned)) {
+                return $r;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Er betalingen den foerste paa et nytt medlemskap kjoept etter den 20.?
      * Da gjelder den neste maaned (gjelder_fra), men gir tilgang fra
      * kjoepsdagen. Kjennes paa formen: gjelder_fra er den 1. i maaneden
@@ -2639,14 +2699,23 @@ final class Medlemskap
     /**
      * Medlemskap der oppsigelsestida er ute. Kjores av cron.
      *
+     * L-11 (pengeflyt-revisjonen, eieren 2. oktober 2026): «slutter» er den
+     * siste dagen medlemmet har betalt for, og tilgangen gjelder ut den
+     * dagen. Foer ble avtalen stoppet PAA sluttdagen (til og med dagens dato
+     * i UTC) — medlemmet mistet den siste betalte dagen. Naa
+     * stoppes den foerst dagen etter, regnet i norsk tid.
+     *
+     * @param string|null $idag Y-m-d i Oslo, for testene; null = i dag
      * @return list<array<string,mixed>>
      */
-    public static function tilAvslutning(): array
+    public static function tilAvslutning(?string $idag = null): array
     {
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         return DB::alle(
             "SELECT * FROM subscriptions
-              WHERE slutter IS NOT NULL AND slutter <= CURDATE()
-                AND status <> 'stoppet'"
+              WHERE slutter IS NOT NULL AND slutter < :idag
+                AND status <> 'stoppet'",
+            ['idag' => $idag]
         );
     }
 
@@ -3007,6 +3076,36 @@ final class Medlemskap
         return [$trekkId, $forsok, (string) $ny['kropp']['due'], ''];
     }
 
+    /**
+     * L-12: et tidligere forsoek paa trekket (samme forfall og beloep som
+     * sendt), slik det ligger hos Vipps — eller null. Kaster hvis Vipps ikke
+     * svarer: «fikk ikke svar» er ikke «finnes ikke».
+     *
+     * @param list<array{nokkel:string,kropp:array<string,mixed>}> $forsok
+     * @return array<string,mixed>|null
+     */
+    private static function forsokHosVipps(array $avtale, array $forsok, int $betalingId): ?array
+    {
+        $liste = Vipps::trekkPaaAvtale((string) $avtale['vipps_agreement_id'], true);
+        $kjente = array_map('strval', array_column(DB::alle(
+            'SELECT vipps_psp_ref FROM payments
+              WHERE subscription_id = :s AND id <> :b AND vipps_psp_ref IS NOT NULL',
+            ['s' => (int) $avtale['id'], 'b' => $betalingId]
+        ), 'vipps_psp_ref'));
+        return self::trekkSomFinnes($liste, $forsok, $kjente);
+    }
+
+    /** L-12: maaneden er betalt utenom trekket; neste trekk flyttes én maaned fram. */
+    private static function flyttForbiBetaltMaaned(array $avtale): void
+    {
+        DB::oppdater('subscriptions', [
+            'neste_trekk' => self::erEngangs((string) $avtale['plan']) ? null : self::nesteTrekkdato(
+                (string) $avtale['neste_trekk'],
+                isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null
+            ),
+        ], ['id' => (int) $avtale['id']]);
+    }
+
     /** @param list<array{nokkel:string,kropp:array<string,mixed>}> $forsok */
     private static function trekkForsokJson(array $forsok): string
     {
@@ -3073,10 +3172,10 @@ final class Medlemskap
             return 'alt fort';
         }
 
-        // L-10: faller trekket i en godkjent pause, hoppes det over. Bare et
-        // trekk som ikke er bestilt: et forsoek som alt er sendt til Vipps,
-        // proeves ferdig med samme noekkel (over), saa det ikke blir et
-        // trekk hos Vipps som vi ikke foelger.
+        // L-10: maaneden hoppes over naar en godkjent frys dekker minst
+        // PAUSE_MIN_DAGER dager av den. Bare et trekk som ikke er bestilt: et
+        // forsoek som alt er sendt til Vipps, avklares ferdig (over og under),
+        // saa det ikke blir et trekk hos Vipps som vi ikke foelger.
         if ($tidligere === null) {
             $etterPause = self::hoppOverPause($avtale);
             if ($etterPause !== null) {
@@ -3106,11 +3205,29 @@ final class Medlemskap
         $harKolonne = DB::harKolonne('payments', 'trekk_foresporsel');
         $lagre = $harKolonne ? ['trekk_foresporsel' => self::trekkForsokJson($forsok)] : [];
 
-        if ($paaNytt !== null) {
-            $betalingId = $paaNytt;
-            DB::oppdater('payments', ['status' => 'opprettet', 'gjelder_fra' => $periodeFra] + $lagre, ['id' => $betalingId]);
-        } else {
-            $betalingId = DB::settInn('payments', [
+        // L-12: maaneden er alt betalt utenom trekket (i verkstedet, «Forny»).
+        // Medlemmet laases fra sjekken til trekkraden er satt inn — samme laas
+        // som manuell medlemsbetaling i admin tar, og admin nekter naar et
+        // trekk for maaneden er underveis. Da kan ingen av dem smette inn
+        // mellom sjekken og raden (kontrolloeren, 2. oktober 2026).
+        //
+        // Hoppet gjelder bare et NYTT trekk. Finnes et forsoek fra foer
+        // (opprettet/feilet uten charge-id), kan det ligge hos Vipps: det
+        // avklares under (GET, ingen ny bestilling) foer noe hoppes over.
+        [$utfall, $betalingId] = DB::iTransaksjon(static function () use (
+            $avtale, $maaned, $tidligere, $paaNytt, $periodeFra, $lagre, $kropp, $nokkel
+        ): array {
+            DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => (int) $avtale['member_id']]);
+            $betaltFraFoer = self::betalingForMaaned((int) $avtale['member_id'], $maaned, true) !== null;
+            if ($betaltFraFoer && $tidligere === null) {
+                self::flyttForbiBetaltMaaned($avtale);
+                return ['betalt', 0];
+            }
+            if ($paaNytt !== null) {
+                DB::oppdater('payments', ['status' => 'opprettet', 'gjelder_fra' => $periodeFra] + $lagre, ['id' => $paaNytt]);
+                return [$betaltFraFoer ? 'avklar' : 'bestill', $paaNytt];
+            }
+            return ['bestill', DB::settInn('payments', [
                 'vipps_reference' => Vipps::nyReferanse('MED'),
                 'type'            => 'recurring_charge',
                 'formal'          => 'medlemskap',
@@ -3120,18 +3237,54 @@ final class Medlemskap
                 'status'          => 'opprettet',
                 'idempotency_key' => $nokkel,
                 'gjelder_fra'     => $periodeFra,
-            ] + $lagre);
+            ] + $lagre)];
+        });
+        if ($utfall === 'betalt') {
+            logg('Trekk hoppet over: maaneden er alt betalt', ['avtale' => (int) $avtale['id'], 'maaned' => $maaned]);
+            return 'betalt fra foer';
         }
+        $betalingId = (int) $betalingId;
 
         $funnetStatus = '';
         try {
             try {
-                $trekkId = Vipps::belastAvtale(
-                    (string) $avtale['vipps_agreement_id'],
-                    $kropp,
-                    $gjeldende['nokkel']
-                );
-                $forfall = (string) $kropp['due'];
+                if ($utfall === 'avklar') {
+                    // L-12 med et forsoek fra foer: maaneden er betalt utenom
+                    // trekket. Ingen ny bestilling — bare sjekk om forsoeket
+                    // ligger hos Vipps (samme forfall og beloep som sendt).
+                    $funnet = self::forsokHosVipps($avtale, $forsok, $betalingId);
+                    $aapent = $funnet !== null
+                        && !in_array(strtoupper((string) ($funnet['status'] ?? '')), ['FAILED', 'CANCELLED'], true);
+                    if (!$aapent) {
+                        // Ikke hos Vipps, eller der men ikke trukket: hopp over.
+                        DB::oppdater('payments', [
+                            'status'        => 'avbrutt',
+                            'vipps_psp_ref' => $funnet !== null ? (string) $funnet['id'] : null,
+                        ], ['id' => $betalingId]);
+                        self::flyttForbiBetaltMaaned($avtale);
+                        logg('Trekk hoppet over: maaneden er alt betalt, forsoeket er avklart hos Vipps', [
+                            'avtale' => (int) $avtale['id'], 'maaned' => $maaned,
+                            'trekk' => $funnet['id'] ?? null, 'status' => $funnet['status'] ?? 'finnes ikke',
+                        ]);
+                        return 'betalt fra foer (forsoeket er ikke trukket hos Vipps)';
+                    }
+                    // Forsoeket finnes og er (eller blir) trukket: det foeres —
+                    // aldri et nytt — og maaneden er da betalt to ganger. Det maa
+                    // gjoeres opp for haand.
+                    logg_feil('Maaned ' . $maaned . ' for avtale ' . $avtale['id'] . ' er betalt utenom trekket, '
+                        . 'og et tidligere trekk ligger ogsaa hos Vipps (' . $funnet['id'] . ', '
+                        . ($funnet['status'] ?? '') . '). Avlys eller refunder det ene.');
+                    $trekkId = (string) $funnet['id'];
+                    $forfall = (string) ($funnet['due'] ?? $kropp['due']);
+                    $funnetStatus = (string) ($funnet['status'] ?? '');
+                } else {
+                    $trekkId = Vipps::belastAvtale(
+                        (string) $avtale['vipps_agreement_id'],
+                        $kropp,
+                        $gjeldende['nokkel']
+                    );
+                    $forfall = (string) $kropp['due'];
+                }
             } catch (VippsAvvisteTrekk $e) {
                 // Bare et nytt forsoek kan ha et trekk fra foer hos Vipps.
                 if ($tidligere === null || !$harKolonne) {

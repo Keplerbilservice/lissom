@@ -318,6 +318,47 @@ try {
     });
 
     // ────────────────────────────────────────────────────────────────────
+    $del('L-12 + L-5: feilet uten charge-id + manuell betaling → ingen dobbel', function () use ($sjekk, $nyAvtale, $avtaleNaa, $rader, $s, $PRIS, $styrfil, $loggLengde, $poster): void {
+        $manuell = static fn(array $a, string $fra = '2032-11-01') => DB::settInn('payments', ['vipps_reference' => 'MAN-' . $a['id'], 'type' => 'epayment',
+            'formal' => 'medlemskap', 'member_id' => $s['admin'], 'subscription_id' => (int) $a['id'], 'belop_ore' => $PRIS,
+            'status' => 'betalt', 'idempotency_key' => 'man-' . $a['id'], 'gjelder_fra' => $fra]);
+        $antallHos = static fn(array $a): int => count(Vipps::trekkPaaAvtale((string) $a['vipps_agreement_id']));
+
+        // a) Nettbrudd: trekket kom aldri til Vipps. November betales saa i
+        //    verkstedet. Neste runde: ingen ny bestilling, maaneden hoppes over.
+        $a = $nyAvtale('agr_L12A_' . $s['tag'], '2032-11-01');
+        $styrfil('.trekk-feiler', 'ja');
+        try { Medlemskap::trekk($a, '2032-10-29'); } catch (RuntimeException) {}
+        $styrfil('.trekk-feiler', '');
+        $manuell($a);
+        $fra = $loggLengde();
+        $ut = Medlemskap::trekk($a, '2032-10-30');
+        $r = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'recurring_charge'", ['s' => (int) $a['id']]);
+        $sjekk(str_starts_with($ut, 'betalt fra foer') && $poster((string) $a['vipps_agreement_id'], $fra) === []
+            && $antallHos($a) === 0 && $r['status'] === 'avbrutt'
+            && $avtaleNaa((int) $a['id'])['neste_trekk'] === '2032-12-01',
+            "feilet uten charge-id + manuell betaling, ikke hos Vipps: ingen ny bestilling (svar: $ut)");
+        $sjekk((int) DB::verdi("SELECT COALESCE(SUM(belop_ore),0) FROM payments WHERE subscription_id = :s AND status IN ('betalt','venter')",
+            ['s' => (int) $a['id']]) === 199000, '… november koster 199000 oere, én gang');
+
+        // b) Svaret ble borte: trekket LIGGER hos Vipps. November betales saa
+        //    i verkstedet. Neste runde skal finne trekket (ikke hoppe over det
+        //    og la pengene ligge ufoert) og aldri bestille et nytt.
+        $b = $nyAvtale('agr_L12B_' . $s['tag'], '2033-11-01');
+        $styrfil('.trekk-svar-tapt', 'ja');
+        try { Medlemskap::trekk($b, '2033-10-29'); } catch (RuntimeException) {}
+        $styrfil('.trekk-svar-tapt', '');
+        $hos = Vipps::trekkPaaAvtale((string) $b['vipps_agreement_id']);
+        $manuell($b, '2033-11-01');
+        $fra = $loggLengde();
+        $ut2 = Medlemskap::trekk($b, '2033-10-30');
+        $r2 = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'recurring_charge'", ['s' => (int) $b['id']]);
+        $sjekk(count($hos) === 1 && $poster((string) $b['vipps_agreement_id'], $fra) === [] && $antallHos($b) === 1
+            && $r2['vipps_psp_ref'] === (string) $hos[0]['id'] && $r2['status'] === 'venter',
+            "feilet uten charge-id + manuell betaling, trekket finnes hos Vipps: foeres, ikke nytt (svar: $ut2)");
+    });
+
+    // ────────────────────────────────────────────────────────────────────
     $del('Frys-beskjeden til verkstedet: avtalen stoppes ikke', function () use ($sjekk): void {
         $ny = 'Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.';
         $rot = dirname(__DIR__);

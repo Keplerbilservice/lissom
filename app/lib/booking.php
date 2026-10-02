@@ -1610,10 +1610,22 @@ final class Booking
     {
         $betaltId = 0;
         $ok = (bool) DB::iTransaksjon(static function () use ($referanse, &$betaltId): bool {
+            // Samme laaserekkefoelge som ellers: gavekortene foer betalingen
+            // (laasKort()). Her ble betalingen laast foerst og kortet i
+            // trekkGavekort() — motsatt av refusjon og oppgjoer i admin, saa
+            // to samtidige kunne vranglaase (pengeflyt-revisjonen, 2. oktober 2026).
+            $forst = DB::verdi('SELECT id FROM payments WHERE vipps_reference = :r', ['r' => $referanse]);
+            $kortene = $forst !== null ? self::kortFor((int) $forst) : [];
+            self::laasKort($kortene);
             $betaling = DB::en(
                 'SELECT id, status, belop_ore FROM payments WHERE vipps_reference = :r FOR UPDATE',
                 ['r' => $referanse]
             );
+            // Byttet kortet mens vi ventet paa laasen (skal ikke skje), laases
+            // det nye ogsaa foer noe trekkes.
+            if ($betaling !== null && array_diff(self::kortFor((int) $betaling['id']), $kortene) !== []) {
+                self::laasKort(self::kortFor((int) $betaling['id']));
+            }
             if ($betaling === null || in_array($betaling['status'], ['betalt', 'delvis_refundert', 'refundert'], true)) {
                 return false; // ukjent, eller allerede håndtert
             }

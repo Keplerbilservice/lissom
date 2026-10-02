@@ -442,7 +442,7 @@ if (Foresporsel::metode() === 'POST') {
     // Eieren, 7. september 2026: «kan det vaere sendt et feil trekk til lene,
     // naa mister jeg kunder paa grunn av rot altsaa».
     //
-    // Et trekk bes om én dag foer forfall (Medlemskap::VARSEL_DAGER). I det
+    // Et trekk bes om noen dager foer forfall (Medlemskap::BESTILL_DAGER_FOR). I det
     // vinduet kan det slettes hos Vipps, og ingen penger flytter seg. Fram
     // til naa fantes ingen vei ut av det fra admin — det maatte gjores i
     // Vipps-portalen, og da haster det.

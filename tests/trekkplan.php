@@ -16,8 +16,12 @@ $id=DB::settInn('subscriptions',['member_id'=>$s['admin'],'plan'=>$plan,'pris_or
 try{
  $mine=static fn():bool=>in_array($id,array_map('intval',array_column(Medlemskap::tilTrekk(),'id')),true);
  $sjekk($mine(),'Morgendagens trekk velges i dagens runde');
- DB::oppdater('subscriptions',['neste_trekk'=>(new DateTimeImmutable($imorgen))->modify('+1 day')->format('Y-m-d')],['id'=>$id]);
- $sjekk(!$mine(),'Trekk senere enn i morgen bestilles ikke ennå');
+ // Eieren, 2. oktober 2026: bestilles BESTILL_DAGER_FOR (3) dager før trekkdatoen.
+ $omDager=static fn(int $d):string=>(new DateTimeImmutable('now',$oslo))->modify('+'.$d.' days')->format('Y-m-d');
+ DB::oppdater('subscriptions',['neste_trekk'=>$omDager(Medlemskap::BESTILL_DAGER_FOR)],['id'=>$id]);
+ $sjekk($mine(),'Trekk om tre dager bestilles i dag');
+ DB::oppdater('subscriptions',['neste_trekk'=>$omDager(Medlemskap::BESTILL_DAGER_FOR+1)],['id'=>$id]);
+ $sjekk(!$mine(),'Trekk om fire dager bestilles ikke ennå');
  DB::oppdater('subscriptions',['neste_trekk'=>$imorgen],['id'=>$id]);
  $a=DB::en('SELECT * FROM subscriptions WHERE id=:i',['i'=>$id]);$a['epost']='';
  $sjekk(Medlemskap::trekk($a)==='bedt om trekk til '.$imorgen,'Falsk Vipps mottar bestillingen til riktig dato');

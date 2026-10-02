@@ -49,6 +49,14 @@ final class Medlemskap
     private const VARSEL_DAGER = 1;
 
     /**
+     * Hvor mange dager foer trekkdatoen trekket bestilles hos Vipps. Vipps
+     * krever minst én dag (VARSEL_DAGER) og viser kommende trekk i appen
+     * opptil 35 dager foer. Tre dager gir forfall PAA trekkdatoen selv om
+     * runden skulle staa over en natt eller to.
+     */
+    public const BESTILL_DAGER_FOR = 3;
+
+    /**
      * Hvilken utgave av medlemsvilkaarene som gjelder naa.
      *
      * Lagres sammen med samtykket ved innmelding. Uten den vet vi at noen
@@ -362,7 +370,91 @@ final class Medlemskap
                 return true;
             }
         }
-        return false;
+        // Fast trekk som er bestilt og venter paa Vipps: medlemmet beholder
+        // tilgangen til forfall + retryDays er passert (eieren, 2. oktober
+        // 2026). Sperres naar Vipps sier FAILED, eller fristen gaar ut uten
+        // CHARGED. Gjelder bare den som faktisk har et bestilt trekk.
+        return self::trekkPaaVei($medlem, $idag) !== null;
+    }
+
+    /**
+     * Forfallet og siste dag Vipps proever et trekk (forfall + retryDays).
+     *
+     * Leses fra det som ble sendt (payments.trekk_foresporsel). En rad fra
+     * foer det ble lagret, faar forfallet utledet som da: tidligst dagen
+     * etter at trekket ble bestilt, og ikke foer trekkdatoen paa avtalen
+     * (subscriptions.siste_trekk, satt da trekket ble bestilt).
+     *
+     * @param array<string,mixed> $rad payments-raden, gjerne med siste_trekk fra avtalen
+     * @return array{due:string,frist:string}
+     */
+    public static function trekkFrist(array $rad): array
+    {
+        $lagret = json_decode((string) ($rad['trekk_foresporsel'] ?? ''), true);
+        $kropp = null;
+        if (is_array($lagret) && isset($lagret['forsok']) && is_array($lagret['forsok']) && $lagret['forsok'] !== []) {
+            $siste = end($lagret['forsok']);
+            $kropp = is_array($siste) ? ($siste['kropp'] ?? null) : null;
+        } elseif (is_array($lagret) && isset($lagret['due'])) {
+            $kropp = $lagret;
+        }
+        $oslo = new DateTimeZone('Europe/Oslo');
+        if (is_array($kropp) && isset($kropp['due'])) {
+            $due = (string) $kropp['due'];
+            $retry = (int) ($kropp['retryDays'] ?? 5);
+        } else {
+            $bestilt = (new DateTimeImmutable((string) $rad['created_at'], new DateTimeZone('UTC')))
+                ->setTimezone($oslo)->modify('+' . self::VARSEL_DAGER . ' days')->format('Y-m-d');
+            $sisteTrekk = trim((string) ($rad['siste_trekk'] ?? ''));
+            $fra = trim((string) ($rad['gjelder_fra'] ?? ''));
+            $trekkdag = ($sisteTrekk !== '' && ($fra === '' || substr($sisteTrekk, 0, 7) === substr($fra, 0, 7)))
+                ? $sisteTrekk : $fra;
+            $due = max($bestilt, $trekkdag);
+            $retry = (int) Vipps::trekkKropp(0, '', $due)['retryDays'];
+        }
+        $frist = (new DateTimeImmutable($due, $oslo))->modify('+' . $retry . ' days')->format('Y-m-d');
+        return ['due' => $due, 'frist' => $frist];
+    }
+
+    /**
+     * Et bestilt trekk som dekker perioden som loeper, og der Vipps
+     * fortsatt kan trekke (i dag <= forfall + retryDays). Ellers null.
+     *
+     * @param array<string,mixed> $medlem
+     * @return array{due:string,frist:string,betaling:int}|null
+     */
+    public static function trekkPaaVei(array $medlem, ?string $idag = null): ?array
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        if ($id <= 0 || !DB::harKolonne('payments', 'gjelder_fra')) {
+            return null;
+        }
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        $lagret = DB::harKolonne('payments', 'trekk_foresporsel') ? 'p.trekk_foresporsel' : 'NULL AS trekk_foresporsel';
+        // De nyeste: et trekk for neste maaned kan alt vaere bestilt mens
+        // trekket for denne fortsatt proeves.
+        $rader = DB::alle(
+            "SELECT p.id, p.created_at, p.gjelder_fra, {$lagret}, s.siste_trekk
+               FROM payments p
+               JOIN subscriptions s ON s.id = p.subscription_id
+              WHERE p.member_id = :m AND p.formal = 'medlemskap' AND p.type = 'recurring_charge'
+                AND p.status = 'venter' AND p.annullert_at IS NULL
+                AND s.status = 'aktiv' AND COALESCE(s.vipps_agreement_id, '') <> ''
+           ORDER BY p.id DESC LIMIT 3",
+            ['m' => $id]
+        );
+        foreach ($rader as $rad) {
+            $fra = trim((string) ($rad['gjelder_fra'] ?? ''));
+            $start = $fra !== ''
+                ? (new DateTimeImmutable($fra))->modify('first day of this month')->format('Y-m-d')
+                : (new DateTimeImmutable((string) $rad['created_at'], new DateTimeZone('UTC')))
+                    ->setTimezone(new DateTimeZone('Europe/Oslo'))->modify('first day of this month')->format('Y-m-d');
+            $f = self::trekkFrist($rad);
+            if ($start <= $idag && $idag < self::dekkerTil(['gjelder_fra' => $start]) && $idag <= $f['frist']) {
+                return $f + ['betaling' => (int) $rad['id']];
+            }
+        }
+        return null;
     }
 
     /**
@@ -872,9 +964,15 @@ final class Medlemskap
                     . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
             }
             if ($tstatus === 'opprettet' || $tstatus === 'venter') {
-                return $ut('bestilt', 'Trekket er bestilt '
-                    . $kort(substr((string) $trekk['created_at'], 0, 10))
-                    . ' · venter på Vipps', false, true);
+                // Eieren, 2. oktober 2026: medlemmet har tilgang mens trekket
+                // er paa vei (se trekkPaaVei()), og skjermen skal si det —
+                // ikke «sperret». Er fristen (forfall + retryDays) ute uten
+                // svar, er det forfalt.
+                $f = self::trekkFrist($trekk + ['siste_trekk' => $sist]);
+                if ($tstatus === 'venter' && $idag > $f['frist']) {
+                    return $ut('forfalt', 'Trekket gikk ikke · forfall ' . $kort($f['due']), true);
+                }
+                return $ut('bestilt', 'Trekk på vei · forfall ' . $kort($f['due']), false, true);
             }
             if ($tstatus === 'betalt' || $tstatus === 'delvis_refundert') {
                 $betaltTil = self::dekkerTil($siste ?? $trekk);
@@ -2097,10 +2195,13 @@ final class Medlemskap
      *
      * @return list<array<string,mixed>>
      */
-    public static function tilTrekk(): array
+    public static function tilTrekk(?string $idag = null): array
     {
-        $senest = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
-            ->modify('+' . self::VARSEL_DAGER . ' days')->format('Y-m-d');
+        // Bestilles BESTILL_DAGER_FOR dager foer trekkdatoen, saa forfallet
+        // kan vaere selve trekkdatoen (eieren, 2. oktober 2026: trekket skal
+        // gaa PAA neste_trekk, ikke dagen etter). Vipps krever minst én dag.
+        $senest = (new DateTimeImmutable($idag ?? 'now', new DateTimeZone('Europe/Oslo')))
+            ->modify('+' . self::BESTILL_DAGER_FOR . ' days')->format('Y-m-d');
         return DB::alle(
             "SELECT s.*, m.navn, m.epost, m.telefon
                FROM subscriptions s
@@ -2340,6 +2441,15 @@ final class Medlemskap
         $forsok = self::trekkForsok($avtale, $tidligere, $nokkel, $idag);
         $gjeldende = $forsok[count($forsok) - 1];
         $kropp = $gjeldende['kropp'];
+        // Runden skal bestille trekket foer trekkdatoen (tilTrekk()). Er den
+        // for sent ute — sto den over i flere netter — blir forfallet i
+        // morgen, og det skal synes i loggen.
+        if ($tidligere === null && (string) $kropp['due'] > (string) $avtale['neste_trekk']) {
+            logg('Trekket ble bestilt for sent; forfall flyttet', [
+                'avtale' => (int) $avtale['id'], 'trekkdato' => (string) $avtale['neste_trekk'],
+                'forfall' => (string) $kropp['due'],
+            ]);
+        }
         $periodeFra = (new DateTimeImmutable((string) $avtale['neste_trekk']))
             ->modify('first day of this month')->format('Y-m-d');
         // Kolonnen kommer med migrasjon 243. Foer den er kjoert, utledes

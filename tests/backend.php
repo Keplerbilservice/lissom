@@ -14741,6 +14741,82 @@ try {
     DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $tfSub]);
     DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $tfMedlem]);
 }
+
+// Eieren, 2. oktober 2026: trekket skal gaa PAA trekkdatoen. Det bestilles
+// tre dager foer (BESTILL_DAGER_FOR), med forfall = trekkdatoen. Er runden
+// for sent ute, blir forfallet i morgen.
+sjekk('trekk: bestilles tre dager foer trekkdatoen', Medlemskap::BESTILL_DAGER_FOR === 3);
+sjekk('… neste_trekk 1. november bestilt 29. oktober gir forfall 1. november',
+    Medlemskap::trekkForfall(['neste_trekk' => '2026-11-01'], '2026-10-29') === '2026-11-01');
+sjekk('… bestilt 26. februar 2027 gir forfall 1. mars',
+    Medlemskap::trekkForfall(['neste_trekk' => '2027-03-01'], '2027-02-26') === '2027-03-01');
+sjekk('… runden var nede til 3. oktober: forfall i morgen (4. oktober)',
+    Medlemskap::trekkForfall(['neste_trekk' => '2026-10-01'], '2026-10-03') === '2026-10-04');
+sjekk('… og det logges naar forfallet flyttes',
+    str_contains($mlTf, "logg('Trekket ble bestilt for sent; forfall flyttet', ["));
+$tdMedlem = DB::settInn('members', ['navn' => 'Trekkdato', 'epost' => 'trekkdato@test.local', 'status' => 'aktiv',
+    'medlemskap_type' => 'Årsmedlemskap']);
+$tdSub = DB::settInn('subscriptions', ['member_id' => $tdMedlem, 'plan' => 'Årsmedlemskap', 'pris_ore' => 259000,
+    'vipps_agreement_id' => 'agr_td_' . bin2hex(random_bytes(4)), 'status' => 'aktiv', 'neste_trekk' => '2026-11-01']);
+$tdMed = static fn(string $idag): bool
+    => in_array($tdSub, array_map('intval', array_column(Medlemskap::tilTrekk($idag), 'id')), true);
+try {
+    sjekk('… runden 28. oktober bestiller ikke trekket for 1. november ennaa', !$tdMed('2026-10-28'));
+    sjekk('… runden 29. oktober gjor det', $tdMed('2026-10-29'));
+    DB::oppdater('subscriptions', ['neste_trekk' => '2027-03-01'], ['id' => $tdSub]);
+    sjekk('… februar: 25. februar ikke, 26. februar ja (1. mars)', !$tdMed('2027-02-25') && $tdMed('2027-02-26'));
+    DB::oppdater('subscriptions', ['neste_trekk' => '2028-03-01'], ['id' => $tdSub]);
+    sjekk('… skuddaar: 26. februar ikke, 27. februar ja (1. mars 2028)', !$tdMed('2028-02-26') && $tdMed('2028-02-27'));
+    DB::oppdater('subscriptions', ['neste_trekk' => '2026-10-01'], ['id' => $tdSub]);
+    sjekk('… en runde som var nede, tar trekket naar den kommer tilbake', $tdMed('2026-10-03'));
+
+    // Tilgang mens trekket er paa vei (eieren, 2. oktober 2026): fra trekket
+    // er bestilt til forfall + retryDays. Sperres ved FAILED eller naar
+    // fristen er ute uten CHARGED.
+    $tdM = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $tdMedlem]);
+    sjekk('tilgang: aktivt medlem med avtale, men uten bestilt trekk, er ikke innenfor',
+        !Medlemskap::harBetaltPeriode($tdM, '2026-10-02'));
+    $tdKropp = Vipps::trekkKropp(259000, 'Medlemskap Årsmedlemskap · Trekkdato', '2026-10-02');
+    $tdPay = DB::settInn('payments', ['vipps_reference' => 'MED-TD-' . bin2hex(random_bytes(4)), 'type' => 'recurring_charge',
+        'formal' => 'medlemskap', 'member_id' => $tdMedlem, 'subscription_id' => $tdSub, 'belop_ore' => 259000,
+        'status' => 'venter', 'vipps_psp_ref' => 'chg_td', 'gjelder_fra' => '2026-10-01',
+        'idempotency_key' => substr(hash('sha256', 'td:' . $tdSub), 0, 36),
+        'trekk_foresporsel' => json_encode(['forsok' => [['nokkel' => 'k', 'kropp' => $tdKropp]]])]);
+    DB::oppdater('subscriptions', ['siste_trekk' => '2026-10-01', 'neste_trekk' => '2026-11-01'], ['id' => $tdSub]);
+    sjekk('… bestilt og venter: tilgang paa forfallsdagen', Medlemskap::harBetaltPeriode($tdM, '2026-10-02'));
+    sjekk('… og siste dag Vipps proever (forfall + 5)', Medlemskap::harBetaltPeriode($tdM, '2026-10-07'));
+    sjekk('… men ikke dagen etter fristen uten svar', !Medlemskap::harBetaltPeriode($tdM, '2026-10-08'));
+    sjekk('… og ikke foer perioden begynner (trekket for november gir ikke tilgang i september)',
+        Medlemskap::trekkPaaVei($tdM, '2026-09-30') === null);
+    $tdBs = Medlemskap::betalingsstatus($tdM, DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $tdSub]), null,
+        DB::en('SELECT * FROM payments WHERE id = :i', ['i' => $tdPay]));
+    sjekk('… og skjermen sier «Trekk på vei · forfall …» (ikke sperret) — eller forfalt naar fristen er ute',
+        ($tdBs['tilstand'] === 'forfalt' && str_starts_with($tdBs['tekst'], 'Trekket gikk ikke · forfall '))
+        || ($tdBs['tilstand'] === 'bestilt' && str_starts_with($tdBs['tekst'], 'Trekk på vei · forfall ')), $tdBs['tekst']);
+    $tdNaa = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+    $tdBs2 = Medlemskap::betalingsstatus($tdM, ['vipps_agreement_id' => 'agr', 'status' => 'aktiv', 'neste_trekk' => $tdNaa,
+        'siste_trekk' => $tdNaa], null, ['status' => 'venter', 'created_at' => gmdate('Y-m-d H:i:s'), 'gjelder_fra' => $tdNaa,
+        'trekk_foresporsel' => json_encode(['forsok' => [['nokkel' => 'k', 'kropp' => Vipps::trekkKropp(1, 'x', $tdNaa)]]])]);
+    sjekk('… et trekk som er paa vei i dag heter «Trekk på vei»',
+        $tdBs2['tilstand'] === 'bestilt' && $tdBs2['tekst'] === 'Trekk på vei · forfall ' . Booking::norskDatoKort($tdNaa . ' 12:00:00'),
+        $tdBs2['tekst']);
+    DB::oppdater('payments', ['status' => 'betalt'], ['id' => $tdPay]);
+    sjekk('… CHARGED: betalt, tilgang ut maaneden', Medlemskap::harBetaltPeriode($tdM, '2026-10-20'));
+    DB::oppdater('payments', ['status' => 'feilet'], ['id' => $tdPay]);
+    sjekk('… FAILED: sperret', !Medlemskap::harBetaltPeriode($tdM, '2026-10-03'));
+    // Rad fra foer innholdet ble lagret (Eirin og Lene): bestilt 1. oktober
+    // 00:10, trekkdato 1. oktober. Forfallet var 2. oktober.
+    sjekk('… gammel rad: forfall og frist utledes (bestilt 1. okt → forfall 2. okt, frist 7. okt)',
+        Medlemskap::trekkFrist(['created_at' => '2026-09-30 22:10:00', 'gjelder_fra' => '2026-10-01',
+            'siste_trekk' => '2026-10-01', 'trekk_foresporsel' => null]) === ['due' => '2026-10-02', 'frist' => '2026-10-07']);
+    sjekk('… og er_aktivt_medlem() bruker regelen (én regel for sperren)',
+        str_contains(les_testfil(dirname(__DIR__) . '/app/lib/auth.php'), 'return Medlemskap::harBetaltPeriode($medlem);')
+        && str_contains($mlTf, 'return self::trekkPaaVei($medlem, $idag) !== null;'));
+} finally {
+    DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $tdSub]);
+    DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $tdSub]);
+    DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $tdMedlem]);
+}
 // Operasjonsloggen avstemmer delvis/fullt oppgjoer. Hendelsens tilstand
 // beholdes, saa en CAPTURED aldri blir til AUTHORIZED og starter nytt trekk.
 sjekk('webhook avstemmer oppgjoer uten aa endre hendelsens tilstand',

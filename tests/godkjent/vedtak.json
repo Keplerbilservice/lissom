@@ -2218,6 +2218,24 @@
             ]
         },
         {
+            "id": "fast-trekk-tilgang-og-trekkdato",
+            "dato": "2026-10-02",
+            "hva": "Eieren: et medlem med fast trekk beholder tilgangen fra trekket er bestilt til forfall + retryDays er passert; sperres først når Vipps sier FAILED eller fristen er ute uten CHARGED. Skjermen sier «Trekk på vei · forfall …», ikke sperret. Trekket bestilles tre dager før trekkdatoen, med forfall = trekkdatoen; er runden for sent ute, blir forfallet i morgen og det logges.",
+            "hvor": "Medlemstilgang (er_aktivt_medlem), betalingsstatus og trekkrunden",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "return self::trekkPaaVei($medlem, $idag) !== null;",
+                        "public const BESTILL_DAGER_FOR = 3;",
+                        "->modify('+' . self::BESTILL_DAGER_FOR . ' days')->format('Y-m-d');",
+                        "return $ut('bestilt', 'Trekk på vei · forfall ' . $kort($f['due']), false, true);",
+                        "logg('Trekket ble bestilt for sent; forfall flyttet', ["
+                    ]
+                }
+            ]
+        },
+        {
             "id": "codex-kjop-en-gang",
             "dato": "2026-09-30",
             "hva": "«Sjekk og rett de høye» (Codex-gjennomgangen): gavekort, siste plass, delt ressurs og siste vare selges én gang — også når to kjøp kommer samtidig eller betalingen kommer sent. Kommer betalingen etter at plassen er solgt: ingen automatisk refusjon, verkstedet får beskjed og refunderer for hånd (eieren valgte «Bare varsle, refunder for hånd»)",

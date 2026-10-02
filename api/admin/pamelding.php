@@ -345,7 +345,9 @@ if ($handling === 'flytt') {
     $trenger = max(1, (int) $b['antall']);
     try {
         $etter = DB::iTransaksjon(static function () use ($id, $b, $okt, $tilOkt, $trenger, $nyPris, $nyttBelop, $nyRabatt, $gammeltBelop, $admin, $paaVei): ?array {
-            $ledige = Booking::ledigePlasser($tilOkt, true);
+            // Laaserekkefoelge som Booking::markerBetalt(): betaling, saa
+            // paamelding, saa okt/kurs/ressurs (ledigePlasser). Kontrolloeren,
+            // 2. oktober 2026. Blir det vranglaas likevel, svarer vi 409 under.
             if ($nyPris && $paaVei(true)) {
                 throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
             }
@@ -368,6 +370,7 @@ if ($handling === 'flytt') {
                 || (float) $naa['rabatt_prosent'] !== (float) $b['rabatt_prosent']) {
                 throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
             }
+            $ledige = Booking::ledigePlasser($tilOkt, true);
             if ($ledige < $trenger) {
                 throw new RuntimeException($ledige <= 0
                     ? 'Den datoen er full.'
@@ -410,6 +413,14 @@ if ($handling === 'flytt') {
             DB::oppdater('bookings', $felt, ['id' => $id]);
             return Booking::settBetaltStatus($id);
         });
+    } catch (PDOException $e) {
+        // Vranglaas (1213) eller laas som ikke ble ledig (1205): ingenting er
+        // lagret — transaksjonen er rullet tilbake. Samme svar som en endring
+        // i mellomtiden.
+        if (!in_array((int) ($e->errorInfo[1] ?? 0), [1213, 1205], true)) {
+            throw $e;
+        }
+        Svar::feil('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
     } catch (RuntimeException $e) {
         if ($e->getCode() !== 409) {
             throw $e;

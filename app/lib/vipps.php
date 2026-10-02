@@ -1026,14 +1026,31 @@ final class Vipps
                 if ($refundert <= 0 || $refundert < (int) ($status['hendelsesbelop_ore'] ?? 0)) {
                     throw new RuntimeException('Refusjonen er ennå ikke avstemt.');
                 }
-                DB::kjor(
-                    "UPDATE payments
-                        SET status = CASE WHEN GREATEST(refundert_ore, :s) >= belop_ore
-                                          THEN 'refundert' ELSE 'delvis_refundert' END,
-                            refundert_ore = GREATEST(refundert_ore, :b)
-                      WHERE vipps_reference = :r",
-                    ['s' => $refundert, 'b' => $refundert, 'r' => $referanse]
-                );
+                // Laast, saa det denne hendelsen hever «refundert_ore» med er
+                // kjent: en delrefusjon der plassen beholdes, senker beloepet
+                // paa plassen med akkurat det (Booking::prisavslagEtterDelrefusjon,
+                // kontrolloeren 2. oktober 2026). Samme hendelse to ganger, eller
+                // etter admins egen refusjon, gir 0 i differanse.
+                $oppdater = static function () use ($referanse, $refundert): void {
+                    $foer = DB::en('SELECT id, refundert_ore FROM payments WHERE vipps_reference = :r FOR UPDATE',
+                        ['r' => $referanse]);
+                    DB::kjor(
+                        "UPDATE payments
+                            SET status = CASE WHEN GREATEST(refundert_ore, :s) >= belop_ore
+                                              THEN 'refundert' ELSE 'delvis_refundert' END,
+                                refundert_ore = GREATEST(refundert_ore, :b)
+                          WHERE vipps_reference = :r",
+                        ['s' => $refundert, 'b' => $refundert, 'r' => $referanse]
+                    );
+                    if ($foer !== null && method_exists('Booking', 'prisavslagEtterDelrefusjon')) {
+                        $etter = DB::en('SELECT status, refundert_ore FROM payments WHERE id = :i', ['i' => (int) $foer['id']]);
+                        if ($etter !== null && (string) $etter['status'] === 'delvis_refundert') {
+                            Booking::prisavslagEtterDelrefusjon((int) $foer['id'], (int) $foer['refundert_ore'],
+                                (int) $etter['refundert_ore']);
+                        }
+                    }
+                };
+                DB::kobling()->inTransaction() ? $oppdater() : DB::iTransaksjon($oppdater);
                 // L-3: hele beloepet tilbake — ogsaa naar det ble gjort i
                 // Vipps-portalen — gjor opp kjoepet (gavekort, timepakke,
                 // ordre, medlemskap). Trygt aa kalle flere ganger.

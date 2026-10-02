@@ -2922,6 +2922,8 @@
                     "finnes": [
                         "self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],",
                         "private static function plasserEtterFullRefusjon(int $paymentId): void",
+                        "public static function prisavslagEtterDelrefusjon(int $paymentId, int $foerOre, int $etterOre): void",
+                        "self::prisavslagEtterDelrefusjon($paymentId, (int) $p['refundert_ore'], $refundert);",
                         "$sum += max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore'];"
                     ]
                 },
@@ -2929,6 +2931,19 @@
                     "fil": "api/admin/betalinger.php",
                     "finnes": [
                         "Booking::gjorOppFullRefusjon((int) $betaling['id']);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vipps.php",
+                    "finnes": [
+                        "Booking::prisavslagEtterDelrefusjon((int) $foer['id'], (int) $foer['refundert_ore'],"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/248_prisavslag_ved_delrefusjon.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS booking_prisavslag (",
+                        "ON DUPLICATE KEY UPDATE venter_ore = GREATEST(0, VALUES(venter_ore) - avslag_ore);"
                     ]
                 },
                 {

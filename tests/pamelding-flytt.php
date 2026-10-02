@@ -394,6 +394,65 @@ try {
     sjekk('admin: bare booking_id, refundert helt → plassen refundert og ledig',
         $kode === 200 && $rad($b)['status'] === 'refundert' && Booking::ledigePlasser($oK) === 1,
         json_encode([$kode, $svar, $rad($b)['status']], JSON_UNESCAPED_UNICODE));
+
+    // ── Kontrolloeren runde 2: delrefusjon = prisavslag ────────────────
+    echo "\n── Kontrolloeren: delrefusjon der plassen beholdes ───────────\n";
+    $avslag = static fn(int $b): int => (int) DB::verdi('SELECT COALESCE(SUM(avslag_ore), 0) FROM booking_prisavslag WHERE booking_id = :b', ['b' => $b]);
+    $skyldigNaa = static fn(int $b): int => max(0, (int) $rad($b)['belop_ore'] - Booking::betalingerFor($b)['sum']);
+    // Admin refunderer 200 av 700.
+    $b = $plass($oB, $kB, ['belop_ore' => 70000]);
+    $p = $betaling($b, ['belop_ore' => 70000]);
+    DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+    [$kode, $svar] = parallelt([[$porter[0], '/api/admin/betalinger.php',
+        ['referanse' => (string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]), 'belop' => '200',
+         'operasjonId' => 'test-' . bin2hex(random_bytes(8))], $token]])[0];
+    $r = $rad($b);
+    sjekk('admin delrefusjon 20000 av 70000 → beloep 50000, betalt, ingen skyldig',
+        $kode === 200 && (int) $r['belop_ore'] === 50000 && $r['status'] === 'betalt' && $skyldigNaa($b) === 0
+        && Booking::betalingerFor($b)['sum'] === 50000 && $avslag($b) === 20000,
+        json_encode([$kode, $svar, $r['belop_ore'], $r['status'], $avslag($b)], JSON_UNESCAPED_UNICODE));
+    // Vipps sender REFUNDED-hendelsen for den samme refusjonen etterpaa.
+    $ref = (string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]);
+    $del = ['state' => 'REFUNDED', 'aggregate' => ['refundedAmount' => ['value' => 20000]], 'hendelsesbelop_ore' => 20000];
+    Vipps::anvendTilstand($ref, $del, true);
+    sjekk('… webhooken for den samme refusjonen trekker ikke en gang til (50000)',
+        (int) $rad($b)['belop_ore'] === 50000 && $avslag($b) === 20000, (string) $rad($b)['belop_ore']);
+    // Flytting etterpaa: samme pris → urort; billigere → i samme forhold.
+    $oB3 = $nyOkt($kB, 10, 16);
+    [$kode, $svar] = $flytt($b, $oB3);
+    sjekk('… flytting til samme pris (70000): 50000, betalt, ingen skyldig',
+        $kode === 200 && (int) $rad($b)['belop_ore'] === 50000 && $rad($b)['status'] === 'betalt' && $skyldigNaa($b) === 0);
+    [$kode, $svar] = $flytt($b, $oC);
+    sjekk('… flytting til 30000: 50000 × 3/7 = 21429, betalt, 28571 for mye',
+        $kode === 200 && (int) $rad($b)['belop_ore'] === 21429 && $rad($b)['status'] === 'betalt' && ($svar['forMyeOre'] ?? null) === 28571,
+        json_encode([$kode, $rad($b)['belop_ore'], $svar], JSON_UNESCAPED_UNICODE));
+
+    // Portalen refunderer 200 av 700 (REFUNDED, delvis), to ganger.
+    $b = $plass($oB, $kB, ['belop_ore' => 70000]);
+    $p = $betaling($b, ['belop_ore' => 70000]);
+    DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+    $ref = (string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]);
+    Vipps::anvendTilstand($ref, $del, true);
+    Vipps::anvendTilstand($ref, $del, true);
+    $r = $rad($b);
+    sjekk('portal delrefusjon 20000 av 70000 (to ganger) → 50000, betalt, ingen skyldig, ett avslag',
+        (int) $r['belop_ore'] === 50000 && $r['status'] === 'betalt' && $skyldigNaa($b) === 0 && $avslag($b) === 20000
+        && DB::verdi('SELECT status FROM payments WHERE id = :p', ['p' => $p]) === 'delvis_refundert',
+        json_encode([$r['belop_ore'], $r['status'], $avslag($b)]));
+
+    // Migrasjon 248 paa en plass som alt var delvis refundert, kjoert to ganger.
+    $b = $plass($oB, $kB, ['belop_ore' => 70000]);
+    $p = $betaling($b, ['belop_ore' => 70000, 'status' => 'delvis_refundert', 'refundert_ore' => 20000]);
+    DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+    $mig = (string) file_get_contents($rot . '/db/migrations/248_prisavslag_ved_delrefusjon.sql');
+    DB::kobling()->exec($mig);
+    $etterEn = (int) $rad($b)['belop_ore'];
+    DB::kobling()->exec($mig);
+    sjekk('migrasjon 248 to ganger = én justering: 70000 → 50000, avslag 20000',
+        $etterEn === 50000 && (int) $rad($b)['belop_ore'] === 50000 && $avslag($b) === 20000
+        && (int) DB::verdi('SELECT COALESCE(SUM(venter_ore),0) FROM booking_prisavslag') === 0,
+        json_encode([$etterEn, $rad($b)['belop_ore'], $avslag($b)]));
+    sjekk('… plassen staar betalt uten skyldig (ingen funn i datasjekken L12)', $rad($b)['status'] === 'betalt' && $skyldigNaa($b) === 0);
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 } finally {
@@ -402,6 +461,9 @@ try {
         foreach (array_column(DB::alle('SELECT id FROM bookings WHERE course_session_id = :o', ['o' => $o]), 'id') as $b) {
             DB::kjor('UPDATE bookings SET payment_id = NULL WHERE id = :b', ['b' => $b]);
             DB::kjor('DELETE FROM payment_refunds WHERE payment_id IN (SELECT id FROM payments WHERE booking_id = :b)', ['b' => $b]);
+            if (DB::harTabell('booking_prisavslag')) {
+                DB::kjor('DELETE FROM booking_prisavslag WHERE booking_id = :b', ['b' => $b]);
+            }
             DB::kjor("DELETE FROM audit_log WHERE objekt_type = 'payment' AND objekt_id IN (SELECT id FROM payments WHERE booking_id = :b)", ['b' => $b]);
             DB::kjor('DELETE FROM payments WHERE booking_id = :b', ['b' => $b]);
             DB::kjor("DELETE FROM audit_log WHERE objekt_type = 'booking' AND objekt_id = :b", ['b' => $b]);

@@ -297,7 +297,7 @@ if ($handling === 'flytt') {
     if ($nyPris) {
         if ($rabatt > 0) {
             $nyttBelop = (int) round($tilEnhet * $antall * (1 - $rabatt / 100));
-        } elseif ($gammeltBelop === $fraEnhet * $antall) {
+        } elseif ($fraEnhet > 0 && $gammeltBelop === $fraEnhet * $antall) {
             $nyttBelop = $tilEnhet * $antall;
         } elseif ($fraEnhet > 0) {
             $nyttBelop = (int) round($gammeltBelop * $tilEnhet / $fraEnhet);

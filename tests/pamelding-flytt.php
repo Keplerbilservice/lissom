@@ -247,6 +247,16 @@ try {
     sjekk('medlem (samme e-post) faar plassen som medlem: member_id satt, 40000 (20 % av 50000)',
         $kode === 200 && $r !== null && (int) $r['member_id'] === $m && (int) $r['belop_ore'] === 40000,
         json_encode([$kode, $r['member_id'] ?? null, $r['belop_ore'] ?? null]));
+    // L-7 h) Medlem paa et gratis kurs flyttes til kurs til 70000: full pris
+    //        med medlemsrabatt, 56000, skyldig 56000.
+    $kH = $nyttKurs('H', 0); $oH = $nyOkt($kH, 10, 15);
+    $b = $plass($oH, $kH, ['belop_ore' => 0, 'member_id' => $m]);
+    [$kode, $svar] = $flytt($b, $oB);
+    $r = $rad($b);
+    sjekk('h) medlem fra gratis kurs → 70000: 56000 med medlemsrabatt, reservert, skyldig 56000',
+        $kode === 200 && (int) $r['belop_ore'] === 56000 && $r['status'] === 'reservert' && ($svar['skyldigOre'] ?? null) === 56000,
+        "beloep {$r['belop_ore']}, status {$r['status']}");
+
     // Gjest uten treff: full pris, ingen kobling.
     $w = DB::settInn('waitlist', ['course_id' => $kA, 'course_session_id' => $oA, 'navn' => 'Flytt Gjest',
         'epost' => strtolower($tag) . '-gjest@lissom.test', 'posisjon' => 2]);

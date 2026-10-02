@@ -3386,7 +3386,7 @@
                 {
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
-                        "import {kalenderMobil,erSmal,SMAL} from './kalender-mobil.js';",
+                        "import {kalenderMobil,erSmal,SMAL,valgtDag} from './kalender-mobil.js';",
                         "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
                         "button('Abonner på kalenderen',abonner)"
                     ]
@@ -3435,18 +3435,21 @@
         {
             "id": "nyadmin-kalender-samlet",
             "dato": "2026-10-02",
-            "hva": "Ny kalender i admin-ny samlet (K0 + K3 + K4, alle godkjent av kontrolløren 2. oktober 2026; eieren ga fullmakt til anbefalt valg). Bredde: mobilkalenderen (K3) til og med 760 px, PC-kalenderen med tidsakse (K4) fra 761 px, også nettbrett. kalender.js har K3-linja først (if(erSmal())return kalenderMobil(...)), K4 etter. Én lytter på (max-width:760px): krysser bredden mens kalenderen vises, tegnes den på nytt; krysser den mens dataene lastes, tegnes riktig visning når de kommer. Kontrollørfunn rettet: PC-banene for korte hendelser regnes fra tegnet høyde (minst 24 px), så de ikke dekker hverandre; dagkolonnene kobles på kursholderens id (kalender.php gir kursholderId, bare lagt til); notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene i dagsvisningen som i gamle admin, og «Ikke tildelt» står bare for kurs uten kursholder. Mobil: kurs over midnatt (slutt før start) regnes riktig i «Går nå» (også kurs som startet i går), «Går nå» og «Neste» regnes på nytt hvert minutt med én timer som stoppes når kalenderen ikke vises, og «Neste» letes etter høyst seks måneder fram. Ingen nye tekster. Etter kontrollen (samme dag): måned har sju kolonner fra 761 px (1100-px-regelen for kalenderen fjernet); brikker under 40 px viser bare tid og tittel på én linje med ellipse; krysser bredden mens et ark står åpent, tegnes kalenderen på nytt først når arket lukkes; nyadmin-avsluttende prøver kalenderen på 390 px (mobil) og 1280 px (PC).",
+            "hva": "Ny kalender i admin-ny samlet (K0 + K3 + K4, alle godkjent av kontrolløren 2. oktober 2026; eieren ga fullmakt til anbefalt valg). Bredde: mobilkalenderen (K3) til og med 760 px, PC-kalenderen med tidsakse (K4) fra 761 px, også nettbrett. kalender.js har K3-linja først (if(erSmal())return kalenderMobil(...)), K4 etter. Én lytter på (max-width:760px): krysser bredden mens kalenderen vises, tegnes den på nytt; krysser den mens dataene lastes, tegnes riktig visning når de kommer. Kontrollørfunn rettet: PC-banene for korte hendelser regnes fra tegnet høyde (minst 24 px), så de ikke dekker hverandre; dagkolonnene kobles på kursholderens id (kalender.php gir kursholderId, bare lagt til); notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene i dagsvisningen som i gamle admin, og «Ikke tildelt» står bare for kurs uten kursholder. Mobil: kurs over midnatt (slutt før start) regnes riktig i «Går nå» (også kurs som startet i går), «Går nå» og «Neste» regnes på nytt hvert minutt med én timer som stoppes når kalenderen ikke vises, og «Neste» letes etter høyst seks måneder fram. Ingen nye tekster. Etter kontrollen (samme dag): måned har sju kolonner fra 761 px (1100-px-regelen for kalenderen fjernet); brikker under 40 px viser bare tid og tittel på én linje med ellipse; krysser bredden mens et ark står åpent, tegnes kalenderen på nytt først når arket lukkes; nyadmin-avsluttende prøver kalenderen på 390 px (mobil) og 1280 px (PC). På mobil foreslår «Nytt kalendernotat» og «Ny kursdato» dagen som er valgt i mobilkalenderen (valgtDag), ikke PC-kalenderens dag; PC er uendret.",
             "hvor": "admin-ny › Kalender (#kalender) på 390, 900 og 1280 px",
             "kode": [
                 {
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
-                        "import {kalenderMobil,erSmal,SMAL} from './kalender-mobil.js';",
+                        "import {kalenderMobil,erSmal,SMAL,valgtDag} from './kalender-mobil.js';",
                         "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
                         ".then(m=>erSmal()?vist(m,true):calendar());",
                         "if(erSmal())return calendar();const events=data.hendelser||[];",
                         "matchMedia(SMAL).addEventListener('change',byttVisning);",
-                        "if(document.querySelector('dialog[open]')){if(!ventendeBytte)ventendeBytte=setInterval("
+                        "if(document.querySelector('dialog[open]')){if(!ventendeBytte)ventendeBytte=setInterval(",
+                        "button('Ny kursdato',()=>newDate(0,valgtDag()),'primary'),button('Nytt kalendernotat',()=>calendarNote({},valgtDag()))",
+                        "function calendarNote(e={},dag=calendarDay){",
+                        "async function newDate(courseId=0,dag=calendarDay){"
                     ]
                 },
                 {
@@ -3473,7 +3476,8 @@
                         "if(sl<s)sl+=1440;",
                         "e.dato===shift(idag,-1)?n+1440-s",
                         "const SOK_MND=6;",
-                        "naTimer=setInterval(()=>{if(!rot.isConnected){clearInterval(naTimer);return;}"
+                        "naTimer=setInterval(()=>{if(!rot.isConnected){clearInterval(naTimer);return;}",
+                        "export const valgtDag=()=>valgt;"
                     ]
                 },
                 {
@@ -3509,7 +3513,9 @@
                     "finnes": [
                         "kurs over midnatt går nå",
                         "«Går nå» og «Neste» oppdateres hvert minutt",
-                        "ingen «Neste» lenger fram enn seks måneder"
+                        "ingen «Neste» lenger fram enn seks måneder",
+                        "Nytt kalendernotat foreslår valgt dag",
+                        "Ny kursdato foreslår valgt dag"
                     ]
                 },
                 {

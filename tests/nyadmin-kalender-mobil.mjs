@@ -136,6 +136,17 @@ try{
   await p.getByLabel('Velg dato').fill(s.d2);await p.locator('.kalm-ukedag[aria-pressed="true"]').waitFor();
   assert.ok((await p.locator('.kalm-ukedag[aria-pressed="true"]').getAttribute('aria-label')).includes(String(Number(s.d2.slice(8)))));
   await ikon.tap();assert.equal(await p.locator('.kalm-panel').isVisible(),false);
+  // Nytt kalendernotat og Ny kursdato foreslår dagen som er valgt i mobilkalenderen (ikke PC-kalenderens dag). Ingenting lagres.
+  await p.locator('.kalm-handlinger').getByRole('button',{name:'Nytt kalendernotat',exact:true}).tap();
+  const notatArk=p.getByRole('dialog',{name:'Nytt kalendernotat'});await notatArk.waitFor();
+  assert.equal(await notatArk.getByLabel('Dato',{exact:true}).inputValue(),s.d2,'Nytt kalendernotat foreslår valgt dag');
+  await notatArk.locator('.close').tap();await notatArk.waitFor({state:'detached'});
+  await p.locator('.kalm-handlinger').getByRole('button',{name:'Ny kursdato',exact:true}).tap();
+  const datoArk=p.getByRole('dialog',{name:'Ny kursdato'});await datoArk.waitFor();
+  assert.equal(await datoArk.getByLabel('Starter',{exact:true}).inputValue(),`${s.d2}T18:00`,'Ny kursdato foreslår valgt dag');
+  assert.equal(await datoArk.getByLabel('Slutter',{exact:true}).inputValue(),`${s.d2}T20:00`);
+  await datoArk.locator('.close').tap();await datoArk.waitFor({state:'detached'});
+  console.log('390 px: Nytt kalendernotat og Ny kursdato foreslår dagen som er valgt i mobilkalenderen');
 
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'ingen sideveis rulling');
   assert.deepEqual(feil,[]);await c.close();

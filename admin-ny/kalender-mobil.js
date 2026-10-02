@@ -7,6 +7,8 @@ import {el,api,badge,today,date,iso,shift} from './ui.js';
 
 export const SMAL='(max-width:760px)';
 export const erSmal=()=>matchMedia(SMAL).matches;
+// Dagen som er valgt i mobilkalenderen. Ny kursdato og Nytt kalendernotat foreslår den (kalender.js).
+export const valgtDag=()=>valgt;
 
 // Visningen husker seg selv mellom oppfriskninger (et ark som lagrer, kaller refresh()).
 let modus='dag',valgt=today(),sok='',sokApen=false;const typer=new Set();

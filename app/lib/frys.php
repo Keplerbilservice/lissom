@@ -115,6 +115,118 @@ final class Frys
         );
     }
 
+    /**
+     * Er medlemmet fryst i dag? Gir ['til' => Y-m-d|null], ellers null.
+     *
+     * Eieren, 2. oktober 2026: et fryst medlem med en betalt periode kom inn
+     * og kunne stemple inn og booke medlemstid, fordi tilgangen bare sjekket
+     * betalingen. Fryst er en godkjent frys som dekker dagen i dag — uansett
+     * om members.status alt er satt til «pause» (startForfalte() kjoeres
+     * bare der frys leses). Er frysen over, er medlemmet ikke fryst, selv om
+     * statusen ikke er satt tilbake ennaa: perioden etter frysen skal virke
+     * som foer. Og: stengingen starter foerst naar den betalte perioden er
+     * over (se under). «pause» satt for haand, uten en godkjent frys bak seg, er
+     * ikke fryst og beholder oppfoerselen fra foer (kontrolloeren, 2. oktober
+     * 2026).
+     *
+     * @param array<string,mixed> $medlem
+     * @return array{til:string}|null
+     */
+    public static function frystNaa(array $medlem, ?string $idag = null): ?array
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        if ($id <= 0 || !self::klar()) {
+            return null;
+        }
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        $til = DB::verdi(
+            "SELECT MAX(til_dato) FROM medlem_frys
+              WHERE member_id = :m AND status = 'godkjent'
+                AND fra_dato <= :d1 AND til_dato >= :d2",
+            ['m' => $id, 'd1' => $idag, 'd2' => $idag]
+        );
+        if ($til === null || (string) $til === '') {
+            return null;
+        }
+        // Eieren, 2. oktober 2026: stengingen starter foerst naar den betalte
+        // perioden er over. Dager medlemmet har betalt for, har det alltid
+        // tilgang i — ogsaa med en godkjent frys. Samme periodelogikk som
+        // tilgangen (Medlemskap::harBetaltPeriode). Et gratismedlem
+        // (betaler_ikke) har ikke betalt for noen dager, og er fryst.
+        $betalt = $medlem;
+        $betalt['betaler_ikke'] = 0;
+        if (Medlemskap::harBetaltPeriode($betalt, $idag)) {
+            return null;
+        }
+        return ['til' => substr((string) $til, 0, 10)];
+    }
+
+    /**
+     * Naar starter en godkjent frys for et medlem som har betalt for i dag?
+     * Gir ['fra' => Y-m-d, 'til' => Y-m-d] — den foerste dagen medlemmet blir
+     * stengt ute (Frys::frystNaa) — ellers null. Null ogsaa naar medlemmet alt
+     * er stengt ute, og naar den betalte perioden dekker hele frysen.
+     *
+     * Eieren, 2. oktober 2026: Min side viser «Fryst fra <dato>» og «Frysen er
+     * godkjent. Du har tilgang ut den betalte perioden, og frysen starter
+     * <dato>.» Tilgangen endrer seg bare paa noen faa dager — fra-datoen,
+     * den 1. i hver maaned (perioden), dagen etter en proeveperiodes slutt og
+     * dagen etter fristen for et trekk paa vei — saa bare de sjekkes.
+     *
+     * @param array<string,mixed> $medlem
+     * @return array{fra:string,til:string}|null
+     */
+    public static function frysStarter(array $medlem, ?string $idag = null): ?array
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        if ($id <= 0 || !self::klar()) {
+            return null;
+        }
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        if (self::frystNaa($medlem, $idag) !== null) {
+            return null;
+        }
+        $rader = DB::alle(
+            "SELECT fra_dato, til_dato FROM medlem_frys
+              WHERE member_id = :m AND status = 'godkjent' AND til_dato >= :d
+           ORDER BY fra_dato",
+            ['m' => $id, 'd' => $idag]
+        );
+        $ekstra = [];
+        $slutt = trim((string) ($medlem['slutt_dato'] ?? ''));
+        if ($slutt !== '') {
+            $ekstra[] = (new DateTimeImmutable(substr($slutt, 0, 10)))->modify('+1 day')->format('Y-m-d');
+        }
+        $trekk = Medlemskap::trekkPaaVei($medlem, $idag);
+        if ($trekk !== null && !empty($trekk['frist'])) {
+            $ekstra[] = (new DateTimeImmutable((string) $trekk['frist']))->modify('+1 day')->format('Y-m-d');
+        }
+        foreach ($rader as $r) {
+            $fra = max((string) $r['fra_dato'], $idag);
+            $til = (string) $r['til_dato'];
+            $dager = [$fra];
+            for ($d = (new DateTimeImmutable($fra))->modify('first day of next month'); $d->format('Y-m-d') <= $til; $d = $d->modify('first day of next month')) {
+                $dager[] = $d->format('Y-m-d');
+            }
+            foreach ($ekstra as $e) {
+                if ($e > $fra && $e <= $til) {
+                    $dager[] = $e;
+                }
+            }
+            $dager = array_unique($dager);
+            sort($dager);
+            foreach ($dager as $d) {
+                if ($d === $idag) {
+                    continue;
+                }
+                if (self::frystNaa($medlem, $d) !== null) {
+                    return ['fra' => $d, 'til' => $til];
+                }
+            }
+        }
+        return null;
+    }
+
     /** @return list<array<string,mixed>> */
     public static function forMedlem(int $medlemId): array
     {

@@ -8,6 +8,10 @@
       "erAdmin": false,
       "erMedlem": true,
       "erRegnskap": false,
+      "frysStarter": {
+        "fra": "<dato>",
+        "fraTekst": "<dato>"
+      },
       "innlogget": true,
       "internInfo": {},
       "kanSelge": true,
@@ -330,13 +334,13 @@
     "svar": {
       "gjeldende": {
         "begrunnelse": "Reise",
-        "dager": 31,
+        "dager": 101,
         "fra": "<dato>",
         "fraIso": "<dato>",
         "id": "<number>",
-        "merke": "Venter på svar",
+        "merke": "Godkjent",
         "sokt": "<dato>",
-        "status": "sokt",
+        "status": "godkjent",
         "svar": "",
         "til": "<dato>",
         "tilIso": "<dato>"
@@ -346,13 +350,13 @@
       "mine": [
         {
           "begrunnelse": "Reise",
-          "dager": 31,
+          "dager": 101,
           "fra": "<dato>",
           "fraIso": "<dato>",
           "id": "<number>",
-          "merke": "Venter på svar",
+          "merke": "Godkjent",
           "sokt": "<dato>",
-          "status": "sokt",
+          "status": "godkjent",
           "svar": "",
           "til": "<dato>",
           "tilIso": "<dato>"

@@ -624,9 +624,14 @@ final class Medlemskap
      */
     public static function betalingMangler(array $medlem, bool $harTilgang): bool
     {
+        // Fryst og stengt ute etter den betalte perioden: ikke ubetalt — trekket
+        // for frysen hoppes over (eieren, 2. oktober 2026). Men bare naar det
+        // ikke staar noe ubetalt: et trekk som feilet, eller en maaned frysen
+        // dekker under 15 dager av, mangler fortsatt (kontrolloeren, samme dag).
         return !$harTilgang
             && in_array((string) ($medlem['status'] ?? ''), ['prove', 'aktiv', 'pause'], true)
-            && self::proveSluttet($medlem) === null;
+            && self::proveSluttet($medlem) === null
+            && (Frys::frystNaa($medlem) === null || self::betalingsstatusFor($medlem)['utestaaende']);
     }
 
     /** Betalt tilgang, uavhengig av om avtalen fortsatt står som aktiv. */
@@ -683,11 +688,188 @@ final class Medlemskap
                 return true;
             }
         }
+        // Maaneden er fritatt av en frys (eieren, 2. oktober 2026): trekket
+        // for en maaned frysen dekker minst 15 dager av, hoppes over, og
+        // dagene i den maaneden som frysen ikke dekker, har medlemmet gratis
+        // tilgang i. Frys 20.2–25.3: mars hoppes over, tilgang 26.–31.3.
+        if (self::fritattTilgang($medlem, $idag)) {
+            return true;
+        }
         // Fast trekk som er bestilt og venter paa Vipps: medlemmet beholder
         // tilgangen til forfall + retryDays er passert (eieren, 2. oktober
         // 2026). Sperres naar Vipps sier FAILED, eller fristen gaar ut uten
         // CHARGED. Gjelder bare den som faktisk har et bestilt trekk.
         return self::trekkPaaVei($medlem, $idag) !== null;
+    }
+
+    /**
+     * Er kalendermaaneden $dato ligger i fritatt av en frys? Samme regel som
+     * trekkrunden (hoppOverPause): en godkjent — eller senere avsluttet —
+     * frys dekker minst PAUSE_MIN_DAGER dager av den. Da trekkes den ikke,
+     * og medlemmet skylder ingenting for den (eieren, 2. oktober 2026).
+     */
+    public static function fritattMaaned(int $medlemId, string $dato): bool
+    {
+        if ($medlemId <= 0) {
+            return false;
+        }
+        if (self::pauseDager($medlemId, $dato) >= self::PAUSE_MIN_DAGER) {
+            return true;
+        }
+        // Trekket for maaneden ble hoppet over av en frys som senere ble
+        // avsluttet tidlig: maaneden er fortsatt fritatt (betalingseksperten,
+        // 2. oktober 2026). Faktumet staar paa avtalen, saa det foelger med
+        // naar medlemskapet flyttes.
+        $avtaler = array_map('intval', array_column(
+            DB::alle('SELECT id FROM subscriptions WHERE member_id = :m', ['m' => $medlemId]), 'id'));
+        return self::hoppetOver($avtaler, (new DateTimeImmutable(substr($dato, 0, 10)))->format('Y-m'));
+    }
+
+    /** Handlingen i audit_log naar trekkrunden hopper over en maaned for en frys. */
+    public const HOPPET_OVER = 'trekk_hoppet_over_frys';
+
+    /**
+     * Hoppet trekkrunden over maaneden $maaned (Y-m) paa en av avtalene?
+     *
+     * @param list<int> $avtaler
+     */
+    private static function hoppetOver(array $avtaler, string $maaned): bool
+    {
+        if ($avtaler === []) {
+            return false;
+        }
+        $inn = implode(',', array_map('intval', $avtaler));
+        return (int) DB::verdi(
+            "SELECT COUNT(*) FROM audit_log
+              WHERE handling = :h AND objekt_type = 'subscription' AND objekt_id IN ({$inn})
+                AND JSON_UNQUOTE(JSON_EXTRACT(detaljer, '$.maaned')) = :mnd",
+            ['h' => self::HOPPET_OVER, 'mnd' => $maaned]
+        ) > 0;
+    }
+
+    /**
+     * Foerste dag i maaneden som skyldes, eller null (betalingseksperten,
+     * 2. oktober 2026). Et trekk som feilet gjelder sin maaned; ellers den
+     * foerste maaneden etter siste betaling som ikke er fritatt av en frys.
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function skyldigMaaned(array $medlem, ?string $idag = null): ?string
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        $a = DB::en('SELECT id, siste_trekk FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $id]);
+        if ($a !== null) {
+            $t = self::sisteTrekk([(int) $a['id']])[(int) $a['id']] ?? null;
+            // Et trekk som henger paa «venter» etter forfall + retryDays er
+            // forfalt (betalingsstatus()), og maaneden skyldes (kontrolloeren,
+            // 2. oktober 2026).
+            $henger = $t !== null && (string) $t['status'] === 'venter'
+                && $idag > self::trekkFrist($t + ['siste_trekk' => $a['siste_trekk'] ?? null])['frist'];
+            if ($t !== null && (in_array((string) $t['status'], ['feilet', 'avbrutt'], true) || $henger)) {
+                $fra = trim((string) ($t['gjelder_fra'] ?? ''));
+                if ($fra === '') {
+                    $fra = (new DateTimeImmutable((string) $t['created_at'], new DateTimeZone('UTC')))
+                        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+                }
+                return (new DateTimeImmutable(substr($fra, 0, 10)))->modify('first day of this month')->format('Y-m-d');
+            }
+        }
+        $siste = self::sisteBetalinger([$id])[$id] ?? null;
+        if ($siste === null) {
+            return null;
+        }
+        $d = (new DateTimeImmutable(self::dekkerTil($siste)))->modify('first day of this month');
+        for ($n = 0; $d->format('Y-m-d') <= $idag && $n < 24; $d = $d->modify('first day of next month'), $n++) {
+            if (!self::fritattMaaned($id, $d->format('Y-m-d'))) {
+                return $d->format('Y-m-d');
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gratis tilgang i en fritatt maaned, paa dagene frysen ikke dekker
+     * (foer den starter og etter den er over). Ikke paa en engangsplan (den
+     * har sin egen periode), og ikke naar et trekk for maaneden feilet —
+     * da staar maaneden ubetalt (kontrolloeren, 2. oktober 2026).
+     *
+     * @param array<string,mixed> $medlem
+     */
+    public static function fritattTilgang(array $medlem, string $idag): bool
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        if ($id <= 0 || !Frys::klar() || !self::fritattMaaned($id, $idag)) {
+            return false;
+        }
+        $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
+        if ($plan === null || (int) ($plan['engangs'] ?? 0) === 1) {
+            return false;
+        }
+        $dekket = (int) DB::verdi(
+            "SELECT COUNT(*) FROM medlem_frys
+              WHERE member_id = :m AND status = 'godkjent' AND fra_dato <= :d1 AND til_dato >= :d2",
+            ['m' => $id, 'd1' => $idag, 'd2' => $idag]
+        );
+        if ($dekket > 0) {
+            return false;
+        }
+        if (DB::harKolonne('payments', 'gjelder_fra')) {
+            $start = (new DateTimeImmutable($idag))->modify('first day of this month')->format('Y-m-d');
+            $slutt = (new DateTimeImmutable($idag))->modify('last day of this month')->format('Y-m-d');
+            $feilet = (int) DB::verdi(
+                "SELECT COUNT(*) FROM payments
+                  WHERE member_id = :m AND formal = 'medlemskap' AND status IN ('feilet', 'avbrutt')
+                    AND annullert_at IS NULL AND gjelder_fra BETWEEN :s AND :e",
+                ['m' => $id, 's' => $start, 'e' => $slutt]
+            );
+            if ($feilet > 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Er alle kalendermaaneder fra $fra til og med maaneden $idag ligger i,
+     * fritatt av en frys? Da skyldes ingenting for dem (betalingsstatus).
+     */
+    private static function alleFritatt(int $medlemId, string $fra, string $idag): bool
+    {
+        $d = (new DateTimeImmutable(substr($fra, 0, 10)))->modify('first day of this month');
+        $slutt = (new DateTimeImmutable($idag))->modify('first day of this month');
+        if ($d > $slutt) {
+            return false;
+        }
+        for ($n = 0; $d <= $slutt && $n < 24; $d = $d->modify('first day of next month'), $n++) {
+            if (!self::fritattMaaned($medlemId, $d->format('Y-m-d'))) {
+                return false;
+            }
+        }
+        return $d > $slutt;
+    }
+
+    /**
+     * Betalingsstatusen for ett medlem, med det oppslaget medlemsruta i admin
+     * bruker: den nyeste avtalen, den siste betalingen og det siste trekket.
+     *
+     * @param array<string,mixed> $medlem
+     * @return array{tilstand:string,tekst:string,forfalt:bool,utestaaende:bool}
+     */
+    public static function betalingsstatusFor(array $medlem, ?string $idag = null): array
+    {
+        $id = (int) ($medlem['id'] ?? 0);
+        $a = $id > 0 ? DB::en('SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1', ['m' => $id]) : null;
+        return self::betalingsstatus(
+            $medlem,
+            $a,
+            $id > 0 ? (self::sisteBetalinger([$id])[$id] ?? null) : null,
+            $a === null ? null : (self::sisteTrekk([(int) $a['id']])[(int) $a['id']] ?? null),
+            $idag
+        );
     }
 
     /**
@@ -773,6 +955,60 @@ final class Medlemskap
     }
 
     /**
+     * Ingen ny periode eller fornyelse for en frosset periode (eieren, 2. oktober
+     * 2026). Gjelder den som er stengt ute av en frys (Frys::frystNaa); har
+     * medlemmet betalt for i dag, er det ikke stengt, og kan fornye som foer.
+     *
+     * Staar det noe ubetalt — et trekk som feilet, eller en maaned frysen
+     * dekker under 15 dager av — kan det fortsatt betales (kontrolloeren og
+     * betalingseksperten, 2. oktober 2026). Bare det som ikke skyldes, sperres.
+     * Da gjelder betalingen maaneden som skyldes, ikke den fryste maaneden:
+     * svaret er foerste dag i den maaneden.
+     *
+     * $nyPeriode: et nytt medlemskap eller en ny avtale (startAvtale,
+     * startEngangs, startIVerkstedet) sperres alltid mens frysen stenger
+     * medlemmet ute. Bare betaling av det utestaaende paa avtalen som alt
+     * loeper (fornyPeriode) slipper gjennom.
+     *
+     * Fast trekk: eieren (2. oktober 2026) valgte aa forenkle. Et fryst
+     * medlem med fast trekk betaler ikke det utestaaende selv — det betales i
+     * verkstedet (Kassa/admin) eller tas av Vipps sitt nye forsoek. Da kan
+     * egenbetalingen aldri kollidere med et trekk for den samme maaneden.
+     *
+     * @param array<string,mixed> $medlem
+     * @return string|null gjelder_fra for det utestaaende, eller null naar medlemmet ikke er fryst
+     */
+    private static function sperrFryst(array $medlem, bool $nyPeriode, ?string $idag = null): ?string
+    {
+        $rad = isset($medlem['status']) ? $medlem
+            : (DB::en('SELECT * FROM members WHERE id = :i', ['i' => (int) ($medlem['id'] ?? 0)]) ?? $medlem);
+        $fryst = Frys::frystNaa($rad, $idag);
+        if ($fryst === null) {
+            return null;
+        }
+        if (!$nyPeriode && !self::harFastTrekk((int) ($rad['id'] ?? 0))
+            && self::betalingsstatusFor($rad, $idag)['utestaaende']) {
+            $skyldig = self::skyldigMaaned($rad, $idag);
+            if ($skyldig !== null) {
+                return $skyldig;
+            }
+        }
+        throw new RuntimeException('Medlemskapet ditt er fryst til ' . Booking::norskDatoKort($fryst['til'])
+            . '. Du kan forny medlemskapet igjen når frysen er over.');
+    }
+
+    /** Har medlemmet en loepende avtale med fast trekk i Vipps? */
+    public static function harFastTrekk(int $medlemId): bool
+    {
+        return $medlemId > 0 && DB::verdi(
+            "SELECT id FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv'
+                AND vipps_agreement_id IS NOT NULL AND vipps_agreement_id <> '' LIMIT 1",
+            ['m' => $medlemId]
+        ) !== null;
+    }
+
+    /**
      * «Forny» paa et medlemskap som gjores opp selv: én betaling i Vipps for
      * neste periode, paa avtalen som alt loeper. Ingen ny avtale.
      *
@@ -787,6 +1023,21 @@ final class Medlemskap
      */
     public static function fornyPeriode(array $medlem, array $avtale): array
     {
+        return self::fornyPeriodePaa($medlem, $avtale, null);
+    }
+
+    /**
+     * Som fornyPeriode(), med dagen satt. $idagFor er bare for testene
+     * (tests/frys-trekk.php); null er i dag.
+     *
+     * @param array<string,mixed> $medlem
+     * @param array<string,mixed> $avtale
+     * @return array{url:string,id:int,gjentakelse:bool}
+     */
+    public static function fornyPeriodePaa(array $medlem, array $avtale, ?string $idagFor): array
+    {
+        // Fryst med noe utestaaende: betalingen gjelder maaneden som skyldes.
+        $skyldig = self::sperrFryst($medlem, false, $idagFor);
         $medlemId = (int) $medlem['id'];
         $avtaleId = (int) $avtale['id'];
         $planNavn = (string) $avtale['plan'];
@@ -808,7 +1059,7 @@ final class Medlemskap
             return ['url' => $url, 'id' => $avtaleId, 'gjentakelse' => true];
         }
 
-        $idag = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+        $idag = $idagFor ?? (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         $siste = self::sisteBetalinger([$medlemId])[$medlemId] ?? null;
         $gjelderFra = $idag;
         if ($siste !== null) {
@@ -816,6 +1067,9 @@ final class Medlemskap
             if ($slutt > $idag) {
                 $gjelderFra = $slutt;
             }
+        }
+        if ($skyldig !== null) {
+            $gjelderFra = $skyldig;
         }
 
         $pris = (int) $plan['pris_ore'];
@@ -1262,6 +1516,29 @@ final class Medlemskap
             return $ut('over', $pNavn . ' sluttet ' . $kort($sluttet), false, false);
         }
 
+        // ── Fritatt av en frys ──────────────────────────────────────────
+        //
+        // Eieren, 2. oktober 2026: maaneder en frys dekker minst 15 dager av,
+        // trekkes ikke, og skyldes ikke. Er det ubetalte BARE slike maaneder,
+        // staar medlemmet som «Fryst til <dato>», ikke forfalt og ikke
+        // utestaaende. Alt annet — et trekk som feilet, en maaned frysen
+        // dekker under 15 dager av — staar som foer, forfalt og betalbart
+        // (kontrolloeren og betalingseksperten, samme dag). Kalles bare fra
+        // grenene der noe ellers ville staatt ubetalt fra og med $fra.
+        $medlemId = (int) ($medlem['id'] ?? 0);
+        $fritak = static function (string $fra) use ($medlem, $medlemId, $idag, $ut, $kort): ?array {
+            if ($medlemId <= 0 || !Frys::klar() || !self::alleFritatt($medlemId, $fra, $idag)) {
+                return null;
+            }
+            $fryst = Frys::frystNaa($medlem, $idag);
+            $til = $fryst !== null ? $fryst['til'] : (string) DB::verdi(
+                "SELECT MAX(til_dato) FROM medlem_frys
+                  WHERE member_id = :m AND status IN ('godkjent', 'avsluttet') AND fra_dato <= :d",
+                ['m' => $medlemId, 'd' => $idag]
+            );
+            return $ut('fryst', $til !== '' ? 'Fryst til ' . $kort($til) : 'Fryst', false, false);
+        };
+
         // ── Fast trekk i Vipps ──────────────────────────────────────────
         //
         // Her er det Vipps som trekker, og «neste_trekk» er fasiten paa om
@@ -1306,6 +1583,9 @@ final class Medlemskap
             if ($tstatus === 'betalt' || $tstatus === 'delvis_refundert') {
                 $betaltTil = self::dekkerTil($siste ?? $trekk);
                 if ($betaltTil <= $idag) {
+                    if (($f = $fritak($betaltTil)) !== null) {
+                        return $f;
+                    }
                     return $ut('forfalt', 'Inneværende måned er ikke betalt · sist trukket '
                         . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
                 }
@@ -1322,6 +1602,9 @@ final class Medlemskap
                 if ($siste !== null && self::dekkerTil($siste) > $idag) {
                     return $ut('betalt', 'Betalt ' . $kort(substr((string) $siste['created_at'], 0, 10))
                         . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
+                }
+                if ($siste !== null && ($f = $fritak(self::dekkerTil($siste))) !== null) {
+                    return $f;
                 }
                 return $ut('venter', 'Ingen mottatt betaling for inneværende måned', true, true);
             }
@@ -1424,6 +1707,9 @@ final class Medlemskap
         // før månedsskiftet gjelder neste måned, uten å overføre månedstimer.
         $dekkerTil = self::dekkerTil($siste);
         if ($dekkerTil <= $idag) {
+            if (($f = $fritak($dekkerTil)) !== null) {
+                return $f;
+            }
             return $ut('forfalt', 'Forfalt ' . $kort($dekkerTil)
                 . ' · sist betalt ' . $kort($betaltDen), true);
         }
@@ -1807,6 +2093,7 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Ukjent medlemskap.');
         }
+        self::sperrFryst($medlem, true);   // ny periode: alltid sperret under frys
 
         // Har medlemmet en avtale fra for, skal den ikke bli staaende ved
         // siden av den nye. Da ville de blitt trukket to ganger.
@@ -1888,6 +2175,7 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Ukjent medlemskap.');
         }
+        self::sperrFryst($medlem, true);   // ny periode: alltid sperret under frys
         self::sperrProveIgjen((int) $medlem['id'], $plan);
         $fra = self::avtale((int) $medlem['id']);
         if (self::hindrerNytt($fra, $planNavn)) {
@@ -2018,6 +2306,7 @@ final class Medlemskap
         if ($plan === null) {
             throw new RuntimeException('Fant ikke medlemskapet.');
         }
+        self::sperrFryst($medlem, true);   // ny periode: alltid sperret under frys
         self::sperrProveIgjen((int) $medlem['id'], $plan);
         if (self::kreverFastTrekk($plan)) {
             throw new RuntimeException('Dette medlemskapet krever fast trekk i Vipps.');
@@ -2925,11 +3214,33 @@ final class Medlemskap
         }
         $dag = isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;
         $ny = self::nesteTrekkdato($gammel, $dag);
-        // Bare om ingen andre har flyttet den i mellomtiden.
-        DB::kjor(
-            'UPDATE subscriptions SET neste_trekk = :ny WHERE id = :i AND neste_trekk = :gammel',
-            ['ny' => $ny, 'i' => (int) $avtale['id'], 'gammel' => $gammel]
-        );
+        // Flyttingen og raden om at maaneden ble hoppet over skjer sammen,
+        // i én transaksjon (kontrolloeren, 2. oktober 2026). Kalles den inne
+        // i en annen, blir den en del av den — samme moenster som
+        // Booking::gjorOppFullRefusjon().
+        $arbeid = static function () use ($avtale, $gammel, $ny): void {
+            // Bare om ingen andre har flyttet den i mellomtiden.
+            $flyttet = DB::kjor(
+                'UPDATE subscriptions SET neste_trekk = :ny WHERE id = :i AND neste_trekk = :gammel',
+                ['ny' => $ny, 'i' => (int) $avtale['id'], 'gammel' => $gammel]
+            )->rowCount();
+            // At maaneden ble hoppet over, er et faktum (betalingseksperten,
+            // 2. oktober 2026): avsluttes frysen tidlig etterpaa, er maaneden
+            // fortsatt fritatt. Staar i revisjonsloggen paa avtalen (ingen ny
+            // tabell), og leses av fritattMaaned(). Én rad per avtale og maaned.
+            $maaned = (new DateTimeImmutable($gammel))->format('Y-m');
+            if ($flyttet > 0 && !self::hoppetOver([(int) $avtale['id']], $maaned)) {
+                DB::settInn('audit_log', [
+                    'member_id'   => null,
+                    'handling'    => self::HOPPET_OVER,
+                    'objekt_type' => 'subscription',
+                    'objekt_id'   => (int) $avtale['id'],
+                    'detaljer'    => json_encode(['maaned' => $maaned, 'trekkdato' => $gammel, 'neste_trekk' => $ny,
+                        'medlem' => (int) $avtale['member_id']], JSON_UNESCAPED_UNICODE),
+                ]);
+            }
+        };
+        DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);
         logg('Trekk hoppet over: medlemskapet er satt paa pause', [
             'avtale' => (int) $avtale['id'], 'trekkdato' => $gammel, 'neste_trekk' => $ny,
         ]);

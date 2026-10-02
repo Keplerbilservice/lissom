@@ -360,7 +360,7 @@ try {
 
     // ────────────────────────────────────────────────────────────────────
     $del('Frys-beskjeden til verkstedet: avtalen stoppes ikke', function () use ($sjekk): void {
-        $ny = 'Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.';
+        $ny = 'Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.';
         $rot = dirname(__DIR__);
         foreach (['api/admin/frys.php', 'admin-ny/administrasjon.js', 'lissom-2108.html'] as $fil) {
             $t = (string) file_get_contents($rot . '/' . $fil);

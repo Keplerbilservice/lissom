@@ -436,6 +436,11 @@ final class Vaktdata
     }
 
     // ── L11 autorisert_ikke_trukket ──────────────────────────────────────
+    //
+    // Basen har ikke tidspunktet for autorisasjonen, bare created_at (og
+    // updated_at, som flyttes ved hver statusoppdatering og kunne skjult
+    // saken). Vipps-betalinger autoriseres i samme oekt som de opprettes,
+    // saa created_at regnes fra — teksten sier «opprettet», ikke mer.
     private static function autorisertIkkeTrukket(): array
     {
         $ut = [];
@@ -451,7 +456,7 @@ final class Vaktdata
             if ($dager > 3) {
                 $ut[] = self::funn('autorisert_ikke_trukket', (int) $p['id'], (string) $p['navn'],
                     'Betaling ' . $p['id'] . ' (' . $p['formal'] . ', ' . Booking::kroner((int) $p['belop_ore'])
-                    . ') autorisert ' . self::osloDato((string) $p['created_at']) . ', ikke trukket etter '
+                    . ') opprettet ' . self::osloDato((string) $p['created_at']) . ', står som autorisert og er ikke trukket etter '
                     . $dager . ' virkedager');
             }
         }

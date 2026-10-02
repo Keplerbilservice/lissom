@@ -190,7 +190,9 @@ $vis = implode(' | ', array_map(static fn(array $f): string => $f['regel'] . '#'
 
 sjekk('ingen regel krasjet', !array_filter($funn, static fn(array $f): bool => $f['tekst'] === 'Regelen kunne ikke kjøres'),
     implode(' | ', array_column(array_filter($funn, static fn($f) => $f['id'] === 0), 'regel')));
-sjekk('L4 status_uenig: utløpt Prøv Lissom som admin kaller betalt', $har('status_uenig', $proveUte), $vis);
+// Etter Ida-rettingen (02.10) sier admin «Prøv Lissom sluttet» og tilgangen er stengt,
+// saa admin og tilgang er enige: L4 skal IKKE slaa ut her (L6 fanger den utløpte prøven).
+sjekk('L4 status_uenig: utløpt Prøv Lissom gir ikke lenger uenighet (Ida-rettingen)', !$har('status_uenig', $proveUte), $vis);
 sjekk('L5 forste_betaling_kort_periode: nytt medlemskap ' . $kortDag . ' telt for den måneden', $har('forste_betaling_kort_periode', $kort), $vis);
 sjekk('L6 prove_utlopt: utløpt Prøv Lissom (betalt)', $har('prove_utlopt', $proveUte), $vis);
 sjekk('L6 prove_utlopt: utløpt prøve uten betaling', $har('prove_utlopt', $proveUbetalt), $vis);

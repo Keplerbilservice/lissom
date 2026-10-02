@@ -2507,8 +2507,8 @@ final class Medlemskap
      *
      * L-11 (pengeflyt-revisjonen, eieren 2. oktober 2026): «slutter» er den
      * siste dagen medlemmet har betalt for, og tilgangen gjelder ut den
-     * dagen. Foer ble avtalen stoppet PAA sluttdagen (slutter <= CURDATE(),
-     * og CURDATE() er UTC) — medlemmet mistet den siste betalte dagen. Naa
+     * dagen. Foer ble avtalen stoppet PAA sluttdagen (til og med dagens dato
+     * i UTC) — medlemmet mistet den siste betalte dagen. Naa
      * stoppes den foerst dagen etter, regnet i norsk tid.
      *
      * @param string|null $idag Y-m-d i Oslo, for testene; null = i dag

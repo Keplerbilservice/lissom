@@ -3415,7 +3415,8 @@
                         "return self::hoppetOver($avtaler, (new DateTimeImmutable(substr($dato, 0, 10)))->format('Y-m'));",
                         "'handling'    => self::HOPPET_OVER,",
                         "public static function harFastTrekk(int $medlemId): bool",
-                        "if (!$nyPeriode && !self::harFastTrekk((int) ($rad['id'] ?? 0))"
+                        "if (!$nyPeriode && !self::harFastTrekk((int) ($rad['id'] ?? 0))",
+                        "DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);"
                     ],
                     "ikkeFinnes": [
                         "egenBetalingAvklar",

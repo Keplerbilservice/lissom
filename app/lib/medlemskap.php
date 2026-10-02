@@ -3214,26 +3214,33 @@ final class Medlemskap
         }
         $dag = isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;
         $ny = self::nesteTrekkdato($gammel, $dag);
-        // Bare om ingen andre har flyttet den i mellomtiden.
-        $flyttet = DB::kjor(
-            'UPDATE subscriptions SET neste_trekk = :ny WHERE id = :i AND neste_trekk = :gammel',
-            ['ny' => $ny, 'i' => (int) $avtale['id'], 'gammel' => $gammel]
-        )->rowCount();
-        // At maaneden ble hoppet over, er et faktum (betalingseksperten,
-        // 2. oktober 2026): avsluttes frysen tidlig etterpaa, er maaneden
-        // fortsatt fritatt. Staar i revisjonsloggen paa avtalen (ingen ny
-        // tabell), og leses av fritattMaaned(). Én rad per avtale og maaned.
-        $maaned = (new DateTimeImmutable($gammel))->format('Y-m');
-        if ($flyttet > 0 && !self::hoppetOver([(int) $avtale['id']], $maaned)) {
-            DB::settInn('audit_log', [
-                'member_id'   => null,
-                'handling'    => self::HOPPET_OVER,
-                'objekt_type' => 'subscription',
-                'objekt_id'   => (int) $avtale['id'],
-                'detaljer'    => json_encode(['maaned' => $maaned, 'trekkdato' => $gammel, 'neste_trekk' => $ny,
-                    'medlem' => (int) $avtale['member_id']], JSON_UNESCAPED_UNICODE),
-            ]);
-        }
+        // Flyttingen og raden om at maaneden ble hoppet over skjer sammen,
+        // i én transaksjon (kontrolloeren, 2. oktober 2026). Kalles den inne
+        // i en annen, blir den en del av den — samme moenster som
+        // Booking::gjorOppFullRefusjon().
+        $arbeid = static function () use ($avtale, $gammel, $ny): void {
+            // Bare om ingen andre har flyttet den i mellomtiden.
+            $flyttet = DB::kjor(
+                'UPDATE subscriptions SET neste_trekk = :ny WHERE id = :i AND neste_trekk = :gammel',
+                ['ny' => $ny, 'i' => (int) $avtale['id'], 'gammel' => $gammel]
+            )->rowCount();
+            // At maaneden ble hoppet over, er et faktum (betalingseksperten,
+            // 2. oktober 2026): avsluttes frysen tidlig etterpaa, er maaneden
+            // fortsatt fritatt. Staar i revisjonsloggen paa avtalen (ingen ny
+            // tabell), og leses av fritattMaaned(). Én rad per avtale og maaned.
+            $maaned = (new DateTimeImmutable($gammel))->format('Y-m');
+            if ($flyttet > 0 && !self::hoppetOver([(int) $avtale['id']], $maaned)) {
+                DB::settInn('audit_log', [
+                    'member_id'   => null,
+                    'handling'    => self::HOPPET_OVER,
+                    'objekt_type' => 'subscription',
+                    'objekt_id'   => (int) $avtale['id'],
+                    'detaljer'    => json_encode(['maaned' => $maaned, 'trekkdato' => $gammel, 'neste_trekk' => $ny,
+                        'medlem' => (int) $avtale['member_id']], JSON_UNESCAPED_UNICODE),
+                ]);
+            }
+        };
+        DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);
         logg('Trekk hoppet over: medlemskapet er satt paa pause', [
             'avtale' => (int) $avtale['id'], 'trekkdato' => $gammel, 'neste_trekk' => $ny,
         ]);

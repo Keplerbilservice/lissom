@@ -256,6 +256,7 @@ try {
     sjekk('h) medlem fra gratis kurs → 70000: 56000 med medlemsrabatt, reservert, skyldig 56000',
         $kode === 200 && (int) $r['belop_ore'] === 56000 && $r['status'] === 'reservert' && ($svar['skyldigOre'] ?? null) === 56000,
         "beloep {$r['belop_ore']}, status {$r['status']}");
+    sjekk('h) … rabatten (20 %) lagret med beloepet', abs((float) $r['rabatt_prosent'] - 20.0) < 0.01, (string) $r['rabatt_prosent']);
 
     // Gjest uten treff: full pris, ingen kobling.
     $w = DB::settInn('waitlist', ['course_id' => $kA, 'course_session_id' => $oA, 'navn' => 'Flytt Gjest',

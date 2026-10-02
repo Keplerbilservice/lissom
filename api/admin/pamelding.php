@@ -294,6 +294,7 @@ if ($handling === 'flytt') {
         // En gratis plass er gratis ogsaa paa den nye datoen.
         && (string) ($b['betalt_maate'] ?? '') !== 'Gratis';
     $nyttBelop = $gammeltBelop;
+    $nyRabatt = null;
     if ($nyPris) {
         if ($rabatt > 0) {
             $nyttBelop = (int) round($tilEnhet * $antall * (1 - $rabatt / 100));
@@ -306,8 +307,11 @@ if ($handling === 'flytt') {
             // paa det nye, med medlemsrabatten om medlemmet har den.
             $medlem = $b['member_id'] !== null
                 ? DB::en('SELECT * FROM members WHERE id = :m', ['m' => (int) $b['member_id']]) : null;
-            $nyttBelop = Booking::belopFor($okt, max(1, (int) $b['antall']),
-                Booking::faarMedlemsrabatt($medlem))['netto'];
+            $pris = Booking::belopFor($okt, max(1, (int) $b['antall']),
+                Booking::faarMedlemsrabatt($medlem));
+            $nyttBelop = $pris['netto'];
+            // Rabatten lagres med beloepet, saa en senere flytting regner av den.
+            $nyRabatt = (float) $pris['rabatt'];
         }
         $nyPris = $nyttBelop !== $gammeltBelop;
     }
@@ -337,7 +341,7 @@ if ($handling === 'flytt') {
     // en flytting og et kjoep — begge se den siste plassen ledig.
     $trenger = max(1, (int) $b['antall']);
     try {
-        $etter = DB::iTransaksjon(static function () use ($id, $b, $okt, $tilOkt, $trenger, $nyPris, $nyttBelop, $gammeltBelop, $admin): ?array {
+        $etter = DB::iTransaksjon(static function () use ($id, $b, $okt, $tilOkt, $trenger, $nyPris, $nyttBelop, $nyRabatt, $gammeltBelop, $admin): ?array {
             $ledige = Booking::ledigePlasser($tilOkt, true);
             // Alt prisen og plassbehovet ble regnet av, maa staa som da det
             // ble lest. Endret noen antall, beloep, rabatt eller status i
@@ -394,6 +398,9 @@ if ($handling === 'flytt') {
             }
 
             $felt['belop_ore'] = $nyttBelop;
+            if ($nyRabatt !== null && DB::harKolonne('bookings', 'rabatt_prosent')) {
+                $felt['rabatt_prosent'] = $nyRabatt;
+            }
             DB::oppdater('bookings', $felt, ['id' => $id]);
             return Booking::settBetaltStatus($id);
         });

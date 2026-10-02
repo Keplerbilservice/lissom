@@ -223,14 +223,14 @@ $fastScenario = static function (string $kjopt) use ($nyttMedlem, $fast): array 
 sjekk('avtalen er aktiv etter godkjenning', $stF === 'aktiv');
 sjekk('foerste trekk (ved godkjenning 25. september) gjelder oktober',
     $forsteF !== null && (string) $forsteF['gjelder_fra'] === '2026-10-01', (string) ($forsteF['gjelder_fra'] ?? 'mangler'));
-sjekk('neste trekk er 25. november — ikke 25. oktober', (string) $aF['neste_trekk'] === '2026-11-25', (string) $aF['neste_trekk']);
+sjekk('neste trekk er 1. november — trekkdag den 1. (eieren 2.10), ikke oktober', (string) $aF['neste_trekk'] === '2026-11-01', (string) $aF['neste_trekk']);
 sjekk('tilgang med en gang', Medlemskap::harBetaltPeriode(DB::en('SELECT * FROM members WHERE id = :i', ['i' => $mF['id']]), '2026-09-25'));
 // Trekkrunden ber om november — og bare én gang.
 $aT = $aF + ['navn' => (string) $mF['navn'], 'epost' => '', 'telefon' => ''];
 Medlemskap::trekk($aT);
 $nov = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'recurring_charge' AND idempotency_key NOT LIKE 'init:%'",
     ['s' => (int) $aF['id']]);
-sjekk('trekket 25. november gjelder november', $nov !== null && (string) $nov['gjelder_fra'] === '2026-11-01',
+sjekk('trekket 1. november gjelder november', $nov !== null && (string) $nov['gjelder_fra'] === '2026-11-01',
     (string) ($nov['gjelder_fra'] ?? 'mangler'));
 sjekk('… med samme beloep som avtalen (' . Booking::kroner((int) $fast['pris_ore']) . ')',
     $nov !== null && (int) $nov['belop_ore'] === (int) $aF['pris_ore']);
@@ -242,12 +242,12 @@ sjekk('ingen maaned er betalt to ganger', count($maaneder) === count(array_uniqu
 [$mF20, $aF20, $forsteF20] = $fastScenario('2026-09-20 08:00:00');
 sjekk('kjoept 20. september: foerste trekk teller september (som foer)',
     $forsteF20 !== null && $forsteF20['gjelder_fra'] === null);
-sjekk('… og neste trekk er 20. oktober (som foer)', (string) $aF20['neste_trekk'] === '2026-10-20', (string) $aF20['neste_trekk']);
+sjekk('… og neste trekk er 1. oktober (trekkdag den 1.)', (string) $aF20['neste_trekk'] === '2026-10-01', (string) $aF20['neste_trekk']);
 
 [$mFDes, $aFDes, $forsteFDes] = $fastScenario('2026-12-28 09:00:00');
-sjekk('desember → januar: trekk 28. desember gjelder januar, neste 28. februar',
+sjekk('desember → januar: trekk 28. desember gjelder januar, neste 1. februar',
     $forsteFDes !== null && (string) $forsteFDes['gjelder_fra'] === '2027-01-01'
-    && (string) $aFDes['neste_trekk'] === '2027-02-28', ($forsteFDes['gjelder_fra'] ?? '-') . ' / ' . $aFDes['neste_trekk']);
+    && (string) $aFDes['neste_trekk'] === '2027-02-01', ($forsteFDes['gjelder_fra'] ?? '-') . ' / ' . $aFDes['neste_trekk']);
 @unlink($avtaleStyr);
 
 // ── 4. Registrert i Kassa (meldt inn i verkstedet) ────────────────────────

@@ -5513,20 +5513,20 @@ sjekk('Vipps blir bedt om aa trekke ved godkjenning',
 // dette laa pengene der uten aa staa i Kassa eller i regnskapet.
 sjekk('… og trekket hentes og foeres hos oss',
     str_contains($vFilInit, 'public static function trekkPaaAvtale(string $avtaleId, bool $kastVedFeil = false): array')
-    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): void')
+    && str_contains($mlib, 'private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): bool')
     && str_contains($mlib, "'vipps_psp_ref'   => \$trekkId,"));
 // Det farligste her: staar «neste_trekk» paa i dag, ber runden om et trekk
 // til samme natt, og hun er trukket to ganger. Kjoept etter den 20. gjelder
 // foerste trekk neste maaned, og da er neste trekk maaneden etter den
 // (eieren, 2. oktober 2026).
 sjekk('… og neste trekk staar en maaned fram, ikke i dag',
-    str_contains($mlib, "? self::nesteTrekkdato(\$forsteFra, \$dag ?? (int) substr(\$idagDato, 8, 2))")
-    && str_contains($mlib, ": self::nesteTrekkdato(\$idagDato, \$dag);")
+    // Trekkdag den 1. (eieren, 2. oktober 2026).
+    str_contains($mlib, "\$endring['neste_trekk'] = self::nesteTrekkdato(\$forsteFra ?? \$idagDato, self::TREKK_DAG);")
     && !str_contains($mlib, "\$endring['neste_trekk'] = (new DateTimeImmutable('now'))->format('Y-m-d');"));
 // Noekkelen er trekkets egen id hos Vipps. To runder gir én rad.
 sjekk('… og to runder gir én rad',
     str_contains($mlib, "\$nokkel = substr('init:' . \$trekkId, 0, 64);")
-    && str_contains($mlib, "DB::en('SELECT id FROM payments WHERE idempotency_key = :k', ['k' => \$nokkel]) !== null"));
+    && str_contains($mlib, "OR (subscription_id = :s AND vipps_psp_ref = :t)"));
 sjekk('serveren nekter to avtaler ved siden av hverandre',
     str_contains($mlib, "throw new RuntimeException('Du har alt et medlemskap."));
 

@@ -2245,7 +2245,7 @@
                 {
                     "fil": "app/lib/medlemskap.php",
                     "finnes": [
-                        "if ($fra !== null && (string) $fra['status'] === 'feilet' && ($fra['vipps_psp_ref'] ?? null) === null) {"
+                        "&& in_array((string) $fra['status'], ['feilet', 'opprettet'], true)) {"
                     ]
                 }
             ]
@@ -2793,7 +2793,7 @@
                     "fil": "tests/nytt-etter-20.php",
                     "finnes": [
                         "Johanna: kjoept 29. september gjelder fra 1. oktober",
-                        "neste trekk er 25. november — ikke 25. oktober",
+                        "neste trekk er 1. november — trekkdag den 1. (eieren 2.10), ikke oktober",
                         "«Forny» uendret: bare timene denne maaneden teller (én time)"
                     ]
                 }
@@ -2892,6 +2892,35 @@
                     "finnes": [
                         "Array.isArray(j.funn) ? j.funn : []",
                         "avvik.push(`Datasjekk: ${linje}`);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "trekk-l5-l6-l10-trekkdag",
+            "dato": "2026-10-02",
+            "hva": "Revisjonens L-5, L-6, L-10 og trekkdag (eieren sa ja 2. oktober): et trekk som står «opprettet» uten charge-id i over 15 minutter, prøves igjen med samme nøkkel og samme innhold, og charge-id og neste_trekk lagres i samme transaksjon; aktiv avtale uten første trekk (oppslaget feilet) føres i neste trekkrunde, én gang; trekk som faller i en godkjent pause hoppes over og fortsetter etter pausen, aldri dobbelt; nye avtaler trekkes den 1. (trekk_dag = 1). Eksisterende avtaler endres ikke før eieren sier ja (db/venter/247).",
+            "hvor": "Medlemskap: faste trekk (Vipps Recurring)",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "public const TREKK_DAG = 1;",
+                        "public const TREKK_HENGER_MIN = 15;",
+                        "$endring['neste_trekk'] = self::nesteTrekkdato($forsteFra ?? $idagDato, self::TREKK_DAG);",
+                        "$etterPause = self::hoppOverPause($avtale);",
+                        "DB::iTransaksjon(static function () use ($betalingId, $trekkId, $avtale, $nesteTrekk): void {",
+                        "$forsteFoert = self::foerManglendeForsteTrekk();",
+                        "$trekk = Vipps::trekkPaaAvtale($avtaleId, true);"
+                    ]
+                },
+                {
+                    "fil": "tests/trekk-l5-l6-l10.php",
+                    "finnes": [
+                        "hengende trekk proeves igjen",
+                        "neste trekkrunde foerer foerste trekk",
+                        "1. november og 1. desember hoppes over; neste trekk 1. januar",
+                        "neste trekk 1. oktober, ikke 15. oktober"
                     ]
                 }
             ]

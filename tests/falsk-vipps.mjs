@@ -110,6 +110,8 @@ http.createServer((req, res) => {
     // Alle trekkene paa én avtale. Det eldste er det Vipps tok ved
     // godkjenning. «.init-status» styrer hva det staar som.
     if (p.endsWith('/charges') && req.method === 'GET') {
+      // Oppslaget feiler (L-6). Styres med .trekkliste-feiler.
+      if (styrt('.trekkliste-feiler', '') === 'ja') { return svar(res, 500, { detail: 'falsk feil i trekklista' }); }
       const id = p.split('/')[4];
       const ut = [];
       // Med .trekk-idempotens paa: bare avtalens egne trekk, som hos Vipps.

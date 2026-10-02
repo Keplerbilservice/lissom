@@ -2158,10 +2158,13 @@ final class Medlemskap
                 $naa
             );
             $idagDato = (new DateTimeImmutable($naa ?? 'now'))->format('Y-m-d');
-            $dag = $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;
-            $endring['neste_trekk'] = $forsteFra !== null
-                ? self::nesteTrekkdato($forsteFra, $dag ?? (int) substr($idagDato, 8, 2))
-                : self::nesteTrekkdato($idagDato, $dag);
+            // Trekkdag (eieren, 2. oktober 2026): alle faste trekk den 1. En
+            // ny avtale faar trekkdag 1, og neste trekk er den 1. i maaneden
+            // etter perioden foerste trekk dekker.
+            $endring['neste_trekk'] = self::nesteTrekkdato($forsteFra ?? $idagDato, self::TREKK_DAG);
+            if (DB::harKolonne('subscriptions', 'trekk_dag')) {
+                $endring['trekk_dag'] = self::TREKK_DAG;
+            }
         }
         if ($ny !== 'aktiv') {
             $endring['neste_trekk'] = null;
@@ -2237,18 +2240,27 @@ final class Medlemskap
      * Noekkelen er charge-id-en fra Vipps. Kjorer dette to ganger — to faner,
      * to runder — blir det likevel én rad.
      */
-    private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): void
+    private static function foerForsteTrekk(array $avtale, ?string $gjelderFra = null): bool
     {
         $avtaleId = (string) ($avtale['vipps_agreement_id'] ?? '');
         if ($avtaleId === '') {
-            return;
+            return false;
         }
 
-        $trekk = Vipps::trekkPaaAvtale($avtaleId);
+        // L-6: feiler oppslaget, proeves det igjen i trekkrunden
+        // (foerManglendeForsteTrekk). Foer ble det bare logget, og siden
+        // neste_trekk alt var satt, ble foerste betaling aldri foert.
+        try {
+            $trekk = Vipps::trekkPaaAvtale($avtaleId, true);
+        } catch (Throwable $e) {
+            logg_feil('Fikk ikke hentet foerste trekk paa avtale ' . $avtaleId
+                . '. Proeves igjen i neste trekkrunde.', $e);
+            return false;
+        }
         if ($trekk === []) {
             logg_feil('Fant ingen trekk paa avtale ' . $avtaleId
                 . ' da den ble aktiv. Foerste betaling staar ikke fort hos oss.');
-            return;
+            return false;
         }
 
         // Det eldste er det Vipps tok ved godkjenning.
@@ -2259,12 +2271,20 @@ final class Medlemskap
         $trekkId = trim((string) ($forste['id'] ?? ''));
         if ($trekkId === '') {
             logg_feil('Trekket paa avtale ' . $avtaleId . ' kom uten id.');
-            return;
+            return false;
         }
 
         $nokkel = substr('init:' . $trekkId, 0, 64);
-        if (DB::en('SELECT id FROM payments WHERE idempotency_key = :k', ['k' => $nokkel]) !== null) {
-            return;
+        // Staar trekket alt hos oss — med init-noekkelen, eller med samme
+        // trekk-id paa en annen rad paa avtalen — foeres det ikke to ganger.
+        if (DB::en(
+            'SELECT id FROM payments
+              WHERE idempotency_key = :k
+                 OR (subscription_id = :s AND vipps_psp_ref = :t)
+              LIMIT 1',
+            ['k' => $nokkel, 's' => (int) $avtale['id'], 't' => $trekkId]
+        ) !== null) {
+            return true;
         }
 
         // Statusen er Vipps sin. «CHARGED» betyr at pengene er inne;
@@ -2293,6 +2313,59 @@ final class Medlemskap
             $rad['gjelder_fra'] = $gjelderFra;
         }
         DB::settInn('payments', $rad);
+        return true;
+    }
+
+    /**
+     * L-6: aktive avtaler der foerste trekk (det Vipps tok ved godkjenning)
+     * ikke staar hos oss. Skjer naar oppslaget feilet i oppdaterFraVipps():
+     * da var neste_trekk alt satt, og ingen proevde igjen.
+     *
+     * Bare avtaler fra de siste 90 dagene, med avtale-id, og uten noen
+     * recurring_charge-rad i det hele tatt.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function utenForsteTrekk(): array
+    {
+        return DB::alle(
+            "SELECT s.* FROM subscriptions s
+              WHERE s.status = 'aktiv'
+                AND COALESCE(s.vipps_agreement_id, '') <> ''
+                AND s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)
+                AND NOT EXISTS (SELECT 1 FROM payments p
+                                 WHERE p.subscription_id = s.id
+                                   AND p.type = 'recurring_charge')
+           ORDER BY s.id
+              LIMIT 50"
+        );
+    }
+
+    /**
+     * Foerer foerste trekk paa avtalene fra utenForsteTrekk(). Trygg aa
+     * kjoere flere ganger: noekkelen er trekkets id hos Vipps.
+     *
+     * @param string|null $naa UTC, bare for testene
+     * @return int hvor mange som ble foert
+     */
+    public static function foerManglendeForsteTrekk(?string $naa = null): int
+    {
+        $foert = 0;
+        foreach (self::utenForsteTrekk() as $a) {
+            // Kjoept etter den 20.: samme regel som da avtalen ble aktiv,
+            // regnet av da avtalen ble opprettet.
+            $fra = self::gjelderFraNytt(
+                (int) $a['member_id'],
+                (string) $a['plan'],
+                isset($a['created_at']) ? (string) $a['created_at'] : null,
+                $naa
+            );
+            if (self::foerForsteTrekk($a, $fra)) {
+                $foert++;
+            }
+            usleep(200_000);
+        }
+        return $foert;
     }
 
     public static function slippForsteTrekk(int $medlemId): array
@@ -2644,6 +2717,78 @@ final class Medlemskap
     /** Flest noekler vi bruker paa ett trekk foer et menneske maa se paa det. */
     public const TREKK_MAKS_NOKLER = 5;
 
+    /** Trekkdagen for alle faste trekk (eieren, 2. oktober 2026: den 1.). */
+    public const TREKK_DAG = 1;
+
+    /**
+     * L-5: et trekk som har staatt paa «opprettet» uten charge-id saa lenge,
+     * henger — kjoeringen som bestilte det, doede underveis. Det proeves
+     * igjen med samme noekkel. Kortere enn dette kan en annen kjoering vaere
+     * midt i kallet til Vipps.
+     */
+    public const TREKK_HENGER_MIN = 15;
+
+    /**
+     * L-10: til_dato for en godkjent frys som dekker $dato, ellers null.
+     * Er flere, gjelder den som varer lengst.
+     */
+    public static function pauseTil(int $medlemId, string $dato): ?string
+    {
+        if (!class_exists('Frys') || !Frys::klar()) {
+            return null;
+        }
+        $til = DB::verdi(
+            "SELECT MAX(til_dato) FROM medlem_frys
+              WHERE member_id = :m AND status = 'godkjent'
+                AND fra_dato <= :d AND til_dato >= :d2",
+            ['m' => $medlemId, 'd' => $dato, 'd2' => $dato]
+        );
+        return $til !== null && $til !== '' ? (string) $til : null;
+    }
+
+    /**
+     * L-10 (eieren, 2. oktober 2026): et trekk som faller i en pause, hoppes
+     * over. Neste trekk flyttes én maaned om gangen til det ligger etter
+     * pausen — det tas aldri igjen etterpaa, saa ingen trekkes dobbelt.
+     *
+     * @return string|null ny trekkdato, eller null naar trekket ikke er i en pause
+     */
+    private static function hoppOverPause(array $avtale): ?string
+    {
+        $gammel = (string) $avtale['neste_trekk'];
+        $dag = isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null ? (int) $avtale['trekk_dag'] : null;
+        $ny = $gammel;
+        for ($i = 0; $i < 24 && self::pauseTil((int) $avtale['member_id'], $ny) !== null; $i++) {
+            $ny = self::nesteTrekkdato($ny, $dag);
+        }
+        if ($ny === $gammel) {
+            return null;
+        }
+        // Bare om ingen andre har flyttet den i mellomtiden.
+        DB::kjor(
+            'UPDATE subscriptions SET neste_trekk = :ny WHERE id = :i AND neste_trekk = :gammel',
+            ['ny' => $ny, 'i' => (int) $avtale['id'], 'gammel' => $gammel]
+        );
+        logg('Trekk hoppet over: medlemskapet er satt paa pause', [
+            'avtale' => (int) $avtale['id'], 'trekkdato' => $gammel, 'neste_trekk' => $ny,
+        ]);
+        return $ny;
+    }
+
+    /**
+     * L-5: tar et trekk som skal proeves paa nytt. Bare én kjoering faar det:
+     * raden flyttes til «opprettet» bare om den fortsatt staar slik den ble
+     * lest, uten charge-id.
+     */
+    private static function taForsok(array $rad): bool
+    {
+        return DB::kjor(
+            "UPDATE payments SET status = 'opprettet', updated_at = UTC_TIMESTAMP()
+              WHERE id = :i AND status = :s AND vipps_psp_ref IS NULL AND updated_at = :u",
+            ['i' => (int) $rad['id'], 's' => (string) $rad['status'], 'u' => (string) $rad['updated_at']]
+        )->rowCount() === 1;
+    }
+
     /**
      * Alle forsoekene paa et trekk, eldste foerst: noekkelen og innholdet
      * som ble sendt med den. Det siste er det som gjelder naa.
@@ -2803,15 +2948,48 @@ final class Medlemskap
         // aldri flyttet: maaneden ble aldri krevd inn. Raden gjenbrukes med
         // samme noekkel, saa kom trekket likevel fram hos Vipps forrige gang,
         // gir Vipps det samme trekket tilbake — ikke et nytt.
+        //
+        // L-5: det samme gjelder en rad som ble staaende paa «opprettet» uten
+        // charge-id — kjoeringen doede mellom raden og svaret fra Vipps. Foer
+        // sa den «alt fort» hver natt, og runden hang paa den maaneden for
+        // alltid. Etter TREKK_HENGER_MIN minutter proeves den igjen med samme
+        // noekkel og samme innhold; er den nyere, kan en annen kjoering vaere
+        // midt i kallet, og da venter vi.
         $paaNytt = null;
         $tidligere = null;
-        if ($fra !== null && (string) $fra['status'] === 'feilet' && ($fra['vipps_psp_ref'] ?? null) === null) {
+        if ($fra !== null && ($fra['vipps_psp_ref'] ?? null) === null
+            && in_array((string) $fra['status'], ['feilet', 'opprettet'], true)) {
+            if ((string) $fra['status'] === 'opprettet') {
+                $gammel = DB::verdi(
+                    'SELECT updated_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ' . self::TREKK_HENGER_MIN . ' MINUTE)
+                       FROM payments WHERE id = :i',
+                    ['i' => (int) $fra['id']]
+                );
+                if ((int) $gammel !== 1) {
+                    return 'bestilles alt';
+                }
+            }
+            // Bare én kjoering faar proeve igjen.
+            if (!self::taForsok($fra)) {
+                return 'bestilles alt';
+            }
             $paaNytt = (int) $fra['id'];
             $tidligere = $fra;
             $fra = null;
         }
         if ($fra !== null) {
             return 'alt fort';
+        }
+
+        // L-10: faller trekket i en godkjent pause, hoppes det over. Bare et
+        // trekk som ikke er bestilt: et forsoek som alt er sendt til Vipps,
+        // proeves ferdig med samme noekkel (over), saa det ikke blir et
+        // trekk hos Vipps som vi ikke foelger.
+        if ($tidligere === null) {
+            $etterPause = self::hoppOverPause($avtale);
+            if ($etterPause !== null) {
+                return 'hoppet over (pause), neste trekk ' . $etterPause;
+            }
         }
 
         // Samme noekkel = samme innhold. Et nytt forsoek sender det som ble
@@ -2870,7 +3048,12 @@ final class Medlemskap
                 [$trekkId, $forsok, $forfall, $funnetStatus] = self::trekkEtterAvvisning($avtale, $forsok, $maaned, $betalingId, $idag);
             }
         } catch (Throwable $e) {
-            DB::oppdater('payments', ['status' => 'feilet'], ['id' => $betalingId]);
+            // Bare en rad uten charge-id blir «feilet»: har en annen kjoering
+            // alt lagret trekket, skal den ikke merkes som feilet over den.
+            DB::kjor(
+                "UPDATE payments SET status = 'feilet' WHERE id = :i AND vipps_psp_ref IS NULL",
+                ['i' => $betalingId]
+            );
             logg_feil('Trekk feilet for avtale ' . $avtale['id'], $e);
             throw $e;
         }
@@ -2896,24 +3079,29 @@ final class Medlemskap
                 . ', betaling ' . $betalingId . '). Den kan ikke foelges opp automatisk.');
         }
 
-        DB::oppdater('payments', [
-            'status'        => 'venter',
-            'vipps_psp_ref' => $trekkId !== '' ? $trekkId : null,
-        ], ['id' => $betalingId]);
-
         // Neste trekk en maaned fram. Er avtalen en proveperiode, er dette
         // det eneste trekket — da stopper vi den etterpaa.
         $plan = self::planUansett((string) $avtale['plan']);
         $engangs = $plan !== null && (int) $plan['engangs'] === 1;
+        $nesteTrekk = $engangs ? null : self::nesteTrekkdato(
+            (string) $avtale['neste_trekk'],
+            isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null
+                ? (int) $avtale['trekk_dag'] : null
+        );
 
-        DB::oppdater('subscriptions', [
-            'siste_trekk' => (string) $avtale['neste_trekk'],
-            'neste_trekk' => $engangs ? null : self::nesteTrekkdato(
-                (string) $avtale['neste_trekk'],
-                isset($avtale['trekk_dag']) && $avtale['trekk_dag'] !== null
-                    ? (int) $avtale['trekk_dag'] : null
-            ),
-        ], ['id' => (int) $avtale['id']]);
+        // L-5: charge-id og neste_trekk i samme transaksjon. Doede kjoeringen
+        // mellom dem, sto trekket med id men neste_trekk uflyttet — eller
+        // omvendt: da hang runden paa den maaneden.
+        DB::iTransaksjon(static function () use ($betalingId, $trekkId, $avtale, $nesteTrekk): void {
+            DB::oppdater('payments', [
+                'status'        => 'venter',
+                'vipps_psp_ref' => $trekkId !== '' ? $trekkId : null,
+            ], ['id' => $betalingId]);
+            DB::oppdater('subscriptions', [
+                'siste_trekk' => (string) $avtale['neste_trekk'],
+                'neste_trekk' => $nesteTrekk,
+            ], ['id' => (int) $avtale['id']]);
+        });
 
         // Et gjenfunnet trekk kan alt vaere avgjort hos Vipps (CHARGED,
         // FAILED, CANCELLED). Da faar raden den statusen med det samme —
@@ -3101,7 +3289,7 @@ final class Medlemskap
      *
      * @param  ?callable $si  Skriver en linje per rad. Cron gir en; trafikken
      *                        gir ingen, for der er det ingen som ser paa.
-     * @return array{sjekket:int,paaminnet:int,trukket:int,feilet:int,avsluttet:int,gjort_opp:int}
+     * @return array{sjekket:int,paaminnet:int,trukket:int,feilet:int,avsluttet:int,gjort_opp:int,forste_foert:int}
      */
     public static function kjorTrekkrunde(?callable $si = null): array
     {
@@ -3126,6 +3314,18 @@ final class Medlemskap
         foreach ($venter as $a) {
             self::oppdaterFraVipps($a);
             usleep(200_000);
+        }
+
+        // L-6: foerste trekk som ikke ble foert fordi oppslaget feilet da
+        // avtalen ble aktiv, proeves igjen her.
+        $forsteFoert = 0;
+        try {
+            $forsteFoert = self::foerManglendeForsteTrekk();
+            if ($forsteFoert > 0) {
+                $skriv('  foerste trekk foert paa nytt: ' . $forsteFoert);
+            }
+        } catch (Throwable $e) {
+            logg_feil('Foerte ikke manglende foerste trekk', $e);
         }
 
         // ── Paaminnelsen: avtalen venter paa deg ────────────────────────
@@ -3176,9 +3376,9 @@ final class Medlemskap
         // betalingen» ble aldri sendt til noen.
         $svart = self::sjekkAlleTrekk(50, $skriv);
 
-        if ($gjort > 0 || $feilet > 0 || $avsluttet > 0 || $svart > 0) {
+        if ($gjort > 0 || $feilet > 0 || $avsluttet > 0 || $svart > 0 || $forsteFoert > 0) {
             logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet,
-                                        'avsluttet' => $avsluttet, 'gjort_opp' => $svart]);
+                                        'avsluttet' => $avsluttet, 'gjort_opp' => $svart, 'forste_foert' => $forsteFoert]);
         }
 
         return [
@@ -3188,6 +3388,7 @@ final class Medlemskap
             'feilet'    => $feilet,
             'avsluttet' => $avsluttet,
             'gjort_opp' => $svart,
+            'forste_foert' => $forsteFoert,
         ];
     }
 

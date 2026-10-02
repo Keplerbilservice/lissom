@@ -3136,6 +3136,86 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nyadmin-samling-og-ingen-forhandsvalg",
+            "dato": "2026-10-02",
+            "hva": "Nytt admin: «Flytt tidspunkt» på samling 2 (eller senere) flytter bare den samlingen, samme vei som gamle admin (endredato + dato med hele samlingslista); «Rediger påmelding» åpner akkurat den påmeldingen (?booking=, også eldre enn lista); ingen forhåndsvalg i Ny påmelding, Flytt til annen dato, Ny kursdato og Gi medlemsgave — bare kommende datoer, og Lagre er grå til noe er valgt; samling 2 eller senere som flyttes til en stengt feriedag gir samme ferieadvarsel som dag 1; Flytt på en eldre påmelding åpnet via ?booking= viser kommende datoer på samme kurs; Flytt-skjemaet fylles fra samlingen som flyttes (dag 1 viser sin egen sluttid), og dagene må ligge i rekkefølge — avvises i skjemaet og i kurs.php; samlingseditoren i kurslista gir samme ferieadvarsel med «Legg til likevel»; start og slutt må være samme dag når kurset har samlinger",
+            "hvor": "admin-ny › Kalender › Flytt tidspunkt · Påmeldte › Ny påmelding / Flytt til annen dato · Kalender › Ny kursdato · Medlemsgaver › Gi gave",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "const nr=String(e.id).startsWith('saml-')",
+                        "field('kursId','Kurs','number',{velg:true,",
+                        "await courseMutation({handling:'dato',oktId,samlinger:l})",
+                        "const kilde=samlinger.length?samlinger[nr?nr-1:0]:null;",
+                        "if(!iRekkefolge(l))throw Error('Dagene må ligge i rekkefølge.');",
+                        "throw Error('Start og slutt må være samme dag.')"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ui.js",
+                    "finnes": [
+                        "f.velg?el('option',{value:'',text:f.label,disabled:true}):null",
+                        "submit.disabled=fields.some(f=>f.velg&&",
+                        "export const upcoming=",
+                        "export async function courseMutation(body)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "d.deltakere.find(r=>r.id===bookingId)||d.valgt",
+                        "field('oktId','Kursdato','number',{velg:true,options:d.okter.filter(upcoming)",
+                        "field('betaltMaate','Betaling','text',{velg:true,",
+                        "o.kursId===(r.kursId??d.okter.find(x=>x.oktId===r.oktId)?.kursId)"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/administrasjon.js",
+                    "finnes": [
+                        "field('mottaker','Mottaker','text',{velg:true,",
+                        "{velg:v=>v.mottaker==='Ett medlem',",
+                        "field('type','Gavetype','text',{velg:true,"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pameldte.php",
+                    "finnes": [
+                        "$valgtId = Foresporsel::heltall('booking');",
+                        "'valgt'     => $valgt === null ? null : $rad($valgt),",
+                        "'kursId'   => (int) $d['course_id'],"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-samling.mjs",
+                    "finnes": [
+                        "bare samling 2 er flyttet",
+                        "Send bekreftelse er ikke avkrysset",
+                        "passert dato vises ikke",
+                        "advarselen sier at dagen er ferie",
+                        "gammel påmelding: kommende dato på samme kurs vises",
+                        "Slutter fylt fra samlingen, ikke siste dag",
+                        "kurs.php avviser feil rekkefølge",
+                        "samlingseditoren lagret etter «Legg til likevel»",
+                        "ulike dager lagrer ingenting"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kurs.php",
+                    "finnes": [
+                        "if ($nyeTider !== [] && $ferieVakt($nyeTider) && Ferie::harUnntak()) {",
+                        "Svar::feil('Dagene må ligge i rekkefølge.');"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursdetaljer.js",
+                    "finnes": [
+                        "const save=async body=>{await courseMutation(body);refresh();};"
+                    ]
+                }
+            ]
         }
     ]
 }

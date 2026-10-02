@@ -9401,6 +9401,15 @@ sjekk('migrasjon 244 er trygg aa kjoere to ganger og rorer ikke engangsplanen',
     str_contains($n20Mig, 'WHERE p.gjelder_fra IS NULL;') && str_contains($n20Mig, 'AND mp.engangs = 0')
     && str_contains($n20Mig, "AND COALESCE(s.vipps_agreement_id, '') = ''")
     && !preg_match('/\b(DROP|DELETE|TRUNCATE)\b/i', $n20Mig));
+// Eieren, 2. oktober 2026: Johanna (Prøv Lissom foer Mini 15) ble ikke truffet
+// av 244. 246 tar den som bare har betalt Prøv Lissom foer, som koden gjoer.
+$n20Mig246 = les_testfil(dirname(__DIR__) . '/db/migrations/246_prove_til_medlem_etter_20.sql');
+sjekk('migrasjon 246 tar Prøv Lissom → medlem, er trygg aa kjoere to ganger og rorer ikke fast trekk',
+    str_contains($n20Mig246, 'WHERE p.gjelder_fra IS NULL;')
+    && str_contains($n20Mig246, 'JOIN membership_plans ep ON ep.navn = es.plan AND ep.engangs = 1')
+    && str_contains($n20Mig246, "AND COALESCE(s.vipps_agreement_id, '') = ''")
+    && str_contains($n20Mig246, "AND p2.created_at <  '2026-09-30 22:00:00'")
+    && !preg_match('/\b(DROP|DELETE|TRUNCATE)\b/i', $n20Mig246));
 
 // ── Prøv Lissom som er over ─────────────────────────────────────────────
 //

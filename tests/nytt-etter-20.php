@@ -373,6 +373,64 @@ foreach ($mm as $p) {
     DB::kjor('DELETE FROM payments WHERE id = :i', ['i' => $p]);
 }
 
+// ── 8. Migrasjon 246: fra Prøv Lissom til vanlig medlemskap ──────────────
+//
+// Eieren, 2. oktober 2026: Johanna hadde Prøv Lissom (Vipps 2. september
+// 09.34) foer Mini 15 (Vipps 29. september 11.48). 244 hoppet over henne.
+echo "\n== Migrasjon 246 (Prøv Lissom → medlem) ==\n";
+$mig246 = file_get_contents(dirname(__DIR__) . '/db/migrations/246_prove_til_medlem_etter_20.sql');
+$medProve = static function (string $proveTid, ?string $proveSub = 'ja') use ($nyttMedlem, $betaling, $selv, $prove): array {
+    $m = $nyttMedlem((string) $selv['navn']);
+    $sP = null;
+    if ($proveSub !== null) {
+        $sP = (int) DB::settInn('subscriptions', ['member_id' => $m['id'], 'plan' => $prove['navn'],
+            'pris_ore' => $prove['pris_ore'], 'status' => 'stoppet', 'vipps_agreement_id' => null]);
+    }
+    $betaling((int) $m['id'], $sP, $proveTid, null, (int) $prove['pris_ore']);
+    return $m;
+};
+$medAvtale = static function (array $m, string $tid) use ($betaling, $selv): int {
+    $s = (int) DB::settInn('subscriptions', ['member_id' => $m['id'], 'plan' => $selv['navn'],
+        'pris_ore' => $selv['pris_ore'], 'status' => 'aktiv', 'vipps_agreement_id' => null, 'created_at' => $tid]);
+    return $betaling((int) $m['id'], $s, $tid, null, (int) $selv['pris_ore']);
+};
+// Johanna
+$mJo = $medProve('2026-09-02 07:34:00');
+$pJo = $medAvtale($mJo, '2026-09-29 09:48:00');
+// Kontroller
+$mVanlig = $nyttMedlem((string) $selv['navn']);
+$betaling((int) $mVanlig['id'], null, '2026-08-10 10:00:00', null, (int) $selv['pris_ore']);
+$pVanlig = $medAvtale($mVanlig, '2026-09-25 10:00:00');
+$mUtenAvtale = $medProve('2026-09-03 10:00:00', null);
+$pUtenAvtale = $medAvtale($mUtenAvtale, '2026-09-25 10:00:00');
+$mDag20 = $medProve('2026-09-02 10:00:00');
+$pDag20 = $medAvtale($mDag20, '2026-09-20 21:59:59');
+$mSenere = $medProve('2026-09-02 10:00:00');
+$pSenere = $medAvtale($mSenere, '2026-09-25 10:00:00');
+$betaling((int) $mSenere['id'], null, '2026-10-01 08:00:00', null, (int) $selv['pris_ore']);
+
+DB::kobling()->exec($mig);
+$gf = static fn(int $p) => DB::verdi('SELECT gjelder_fra FROM payments WHERE id = :i', ['i' => $p]);
+sjekk('244 treffer ikke Johanna (hun hadde Prøv Lissom foerst)', $gf($pJo) === null);
+DB::kobling()->exec($mig246);
+sjekk('246: Johanna (Prøv 2.9 + Mini 15 29.9) gjelder fra 1. oktober', $gf($pJo) === '2026-10-01', (string) $gf($pJo));
+sjekk('… det samme som koden gir (gjelderFraNytt: Prøv Lissom → vanlig er nytt)',
+    Medlemskap::gjelderFraNytt((int) $mJo['id'], (string) $selv['navn'], '2026-09-29 09:48:00', '2026-09-29 09:48:00') === $gf($pJo));
+$mJoNaa = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $mJo['id']]);
+sjekk('… tilgang naa (2. oktober) og ut oktober', Medlemskap::harBetaltPeriode($mJoNaa, '2026-10-02')
+    && Medlemskap::harBetaltPeriode($mJoNaa, '2026-10-31'));
+sjekk('… og forfaller 1. november', !Medlemskap::harBetaltPeriode($mJoNaa, '2026-11-01')
+    && Medlemskap::dekkerTil(DB::en('SELECT created_at, gjelder_fra FROM payments WHERE id = :i', ['i' => $pJo])) === '2026-11-01');
+sjekk('… beloepet staar urort (' . Booking::kroner((int) $selv['pris_ore']) . ')',
+    (int) DB::verdi('SELECT belop_ore FROM payments WHERE id = :i', ['i' => $pJo]) === (int) $selv['pris_ore']);
+sjekk('246 treffer ikke et medlem med tidligere vanlig betaling', $gf($pVanlig) === null);
+sjekk('… ikke Prøv Lissom uten avtale (kan ikke kjennes igjen)', $gf($pUtenAvtale) === null);
+sjekk('… ikke kjoep 20. september 23.59', $gf($pDag20) === null);
+sjekk('… og ikke den som alt har betalt igjen', $gf($pSenere) === null);
+$foer = DB::alle('SELECT id, gjelder_fra FROM payments ORDER BY id');
+DB::kobling()->exec($mig246);
+sjekk('246 andre kjoering endrer ingenting', DB::alle('SELECT id, gjelder_fra FROM payments ORDER BY id') === $foer);
+
 $rydd();
 echo str_repeat('─', 46), "\n", $ok, ' av ', $ok + count($feil), " sjekker gikk gjennom\n";
 if ($feil) {

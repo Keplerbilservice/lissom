@@ -96,6 +96,26 @@
             ]
         },
         {
+            "id": "pengeflyt-l4-gavekort-under-laas",
+            "dato": "2026-10-02",
+            "hva": "Eieren (JA 2. oktober 2026), revisjonens L-4: gavekort i admin trekkes under lås i samme transaksjon som betalingen lagres; går trekket ikke (sperret kort eller saldo tatt), avbrytes hele oppgjøret med 409. Ingen betaling kan stå betalt uten at kortet er trukket.",
+            "hvor": "Kassa, påmelding, medlemsbetaling, Ta betalt",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function trekkGavekortEllerAvbryt(int $paymentId): void",
+                        "WHERE id = :i AND saldo_ore >= :b2 AND status = 'aktivt'"
+                    ]
+                },
+                {"fil": "api/admin/uttak.php", "finnes": ["Booking::trekkGavekortEllerAvbryt((int) $gavekortRad);", "Booking::trekkGavekortEllerAvbryt($gaveRad);", "Booking::trekkGavekortEllerAvbryt($betalingId);"]},
+                {"fil": "api/admin/pamelding.php", "finnes": ["Booking::trekkGavekortEllerAvbryt($betalingId);"]},
+                {"fil": "api/admin/medlemmer.php", "finnes": ["Booking::trekkGavekortEllerAvbryt((int) $bid);", "Booking::trekkGavekortEllerAvbryt($bid);"]},
+                {"fil": "api/admin/kursbetaling.php", "finnes": ["Booking::trekkGavekortEllerAvbryt((int) $gaveRad);"]},
+                {"fil": "tests/gavekort-samtidig.php", "finnes": ["nøyaktig ett salg lykkes", "nøyaktig én påmelding lykkes"]}
+            ]
+        },
+        {
             "id": "vervepremie",
             "dato": "2026-09-27",
             "hva": "Vervepremie som banner på Min side, timer settes i admin, godkjente tekster",

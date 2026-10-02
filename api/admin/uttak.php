@@ -328,6 +328,7 @@ if ($handling === 'gjorOpp' && is_array($kropp['deler'] ?? null) && count($kropp
     $adminId = (int) ($admin['id'] ?? 0);
     $maateTekst = mb_substr(implode(' + ', array_column($rene, 'maate')), 0, 32);
 
+    try {
     $gaveRad = DB::iTransaksjon(static function () use ($ordre, $rene, $formal, $kort, $adminId, $maateTekst): ?int {
         $ider = [];
         $pengerad = null;
@@ -365,11 +366,18 @@ if ($handling === 'gjorOpp' && is_array($kropp['deler'] ?? null) && count($kropp
             'betalt_maate' => $maateTekst,
             'payment_id'   => $pengerad ?? $ider[0],
         ], ['id' => (int) $ordre['id']]);
+        // L-4: trukket i samme transaksjon; gaar det ikke, rulles hele
+        // oppgjoeret tilbake.
+        if ($gaveRad !== null) {
+            Booking::trekkGavekortEllerAvbryt($gaveRad);
+        }
         return $gaveRad;
     });
-
-    if ($gaveRad !== null) {
-        Booking::trekkGavekort($gaveRad);
+    } catch (RuntimeException $e) {
+        if ($e->getCode() !== 409) {
+            throw $e;
+        }
+        Svar::feil($e->getMessage(), 409);
     }
 
     revider('uttak_gjort_opp', 'ordre', $ordreId, [
@@ -464,6 +472,7 @@ if ($handling === 'gjorOpp') {
 
     $adminId = (int) ($admin['id'] ?? 0);
     $betalingId = 0;
+    try {
     DB::iTransaksjon(static function () use ($ordre, $sum, $maate, $adminId, $formal, $kort, &$betalingId): void {
         $felt = [
             'vipps_reference' => 'KASSE-' . $ordre['ordrenr'],
@@ -496,12 +505,23 @@ if ($handling === 'gjorOpp') {
         if (DB::harKolonne('payments', 'order_id')) {
             DB::oppdater('payments', ['order_id' => (int) $ordre['id']], ['id' => $betalingId]);
         }
-    });
 
-    // Trekket skjer etter transaksjonen, saa sporet i «gift_card_uses» peker
-    // paa en betaling som staar — den samme veien et kjop paa nettsida gaar.
+        // Trekket skjer etter at raden og ordren finnes, saa sporet i
+        // «gift_card_uses» peker paa ordren — den samme veien et kjop paa
+        // nettsida gaar. L-4: i samme transaksjon; gaar det ikke, rulles hele
+        // oppgjoeret tilbake.
+        if ($kort !== null) {
+            Booking::trekkGavekortEllerAvbryt($betalingId);
+        }
+    });
+    } catch (RuntimeException $e) {
+        if ($e->getCode() !== 409) {
+            throw $e;
+        }
+        Svar::feil($e->getMessage(), 409);
+    }
+
     if ($kort !== null && $betalingId > 0) {
-        Booking::trekkGavekort($betalingId);
         revider('gavekort_brukt', 'ordre', $ordreId,
                 ['kort' => (int) $kort['id'], 'belop' => $sum]);
     }
@@ -1007,6 +1027,7 @@ if ($handling === 'delt') {
     // VARCHAR(32), saa den kappes — den fulle sannheten staar paa radene.
     $maateTekst = mb_substr(implode(' + ', array_column($rene, 'maate')), 0, 32);
 
+    try {
     $laget = DB::iTransaksjon(
         static function () use ($rene, $sum, $kunde, $ordrenr, $formal, $tittel,
                                 $kort, $adminId, $maateTekst): array {
@@ -1076,14 +1097,21 @@ if ($handling === 'delt') {
                 'pris_ore'   => $sum,
             ]);
 
+            // L-4: trekket i samme transaksjon som salget. Gaar det ikke,
+            // registreres ikke salget — det skal aldri staa betalt med et
+            // kort som ikke er trukket.
+            if ($gavekortRad !== null) {
+                Booking::trekkGavekortEllerAvbryt((int) $gavekortRad);
+            }
+
             return ['ordreId' => $ordreId, 'gavekortRad' => $gavekortRad];
         }
     );
-
-    // Trekket skjer etter at salget staar. Gaar det galt her, er salget
-    // registrert og kortet urort — det er den veien som kan rettes for haand.
-    if ($laget['gavekortRad'] !== null) {
-        Booking::trekkGavekort((int) $laget['gavekortRad']);
+    } catch (RuntimeException $e) {
+        if ($e->getCode() !== 409) {
+            throw $e;
+        }
+        Svar::feil($e->getMessage(), 409);
     }
 
     revider('kassesalg_delt', 'ordre', (int) $laget['ordreId'], [

@@ -3382,10 +3382,12 @@ sjekk('gavekortet finnes for plassen legges inn',
     str_contains($pamFil, 'Booking::finnGavekort(Foresporsel::tekst(\'kode\'))'));
 sjekk('… og saldoen maa daekke plassen',
     str_contains($pamFil, "if (\$kort['saldo_ore'] < \$belop) {"));
+// L-4 (2. oktober 2026): trekket skjer i transaksjonen som lagrer plassen, og
+// avbryter oppgjoeret om det ikke gaar.
 sjekk('… og beloepet trekkes fra kortet',
-    str_contains($pamFil, 'Booking::trekkGavekort($betalingId);'));
+    str_contains($pamFil, 'Booking::trekkGavekortEllerAvbryt($betalingId);'));
 sjekk('… uten at det telles som penger inn',
-    str_contains($pamFil, "'belop_ore'       => 0,\n        'gavekort_id'     => \$kort['id'],"));
+    str_contains($pamFil, "'belop_ore'       => 0,\n            'gavekort_id'     => \$kort['id'],"));
 sjekk('knappen sier hva den legger inn',
     str_contains($sida2, "kdKnapp: 'Legg inn deltakeren',"));
 // To felter som het «Navn», og to knapper som het «Legg til», sto i samme
@@ -9969,7 +9971,7 @@ sjekk('… uten aa telle penger som ikke kom inn i dag',
 sjekk('… og gavekortet trekkes, ikke bare noteres',
     str_contains($utFil, "\$kort = Booking::finnGavekort((string) (\$kropp['kode'] ?? ''));")
     && str_contains($utFil, "\$felt['gavekort_id']  = (int) \$kort['id'];")
-    && str_contains($utFil, 'Booking::trekkGavekort($betalingId);'));
+    && str_contains($utFil, 'Booking::trekkGavekortEllerAvbryt($betalingId);'));
 // Et fritt beloep kan vaere kurs, medlemskap eller produkt, og det avgjor
 // kontoen i dagsoppgjoret. Uten betalingsrad var det ingen «formal» aa arve.
 sjekk('… paa den kontoen salget hoerer til',

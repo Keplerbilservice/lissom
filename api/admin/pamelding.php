@@ -372,7 +372,11 @@ if ($handling === 'status') {
         }
     }
 
-    DB::oppdater('bookings', $felt, ['id' => $id]);
+    // Med gavekort settes statusen i samme transaksjon som trekket, lenger
+    // nede (L-4). Gaar ikke trekket, endres ingenting.
+    if ($kort === null) {
+        DB::oppdater('bookings', $felt, ['id' => $id]);
+    }
 
     // ── Bilaget for pengene som kom inn ──────────────────────────────
     //
@@ -420,19 +424,32 @@ if ($handling === 'status') {
     // «manuell» og null kroner i penger: det kom ingen penger inn i dag,
     // kortet ble brukt.
     if ($kort !== null) {
-        $betalingId = DB::settInn('payments', [
-            'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
-            'type'            => 'manuell',
-            'formal'          => 'booking',
-            'belop_ore'       => 0,
-            'gavekort_id'     => $kort['id'],
-            'gavekort_ore'    => (int) $bok['belop_ore'],
-            'status'          => 'betalt',
-            'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $id : null,
-            'idempotency_key' => Vipps::uuid(),
-        ]);
-        DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $id]);
-        Booking::trekkGavekort($betalingId);
+        // L-4: status, betaling og trekk i én transaksjon. Gaar trekket ikke
+        // (sperret kort, eller et samtidig oppgjoer tok saldoen), rulles alt
+        // tilbake og plassen staar som foer.
+        try {
+            DB::iTransaksjon(static function () use ($felt, $id, $kort, $bok): void {
+                DB::oppdater('bookings', $felt, ['id' => $id]);
+                $betalingId = DB::settInn('payments', [
+                    'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
+                    'type'            => 'manuell',
+                    'formal'          => 'booking',
+                    'belop_ore'       => 0,
+                    'gavekort_id'     => $kort['id'],
+                    'gavekort_ore'    => (int) $bok['belop_ore'],
+                    'status'          => 'betalt',
+                    'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $id : null,
+                    'idempotency_key' => Vipps::uuid(),
+                ]);
+                DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $id]);
+                Booking::trekkGavekortEllerAvbryt($betalingId);
+            });
+        } catch (RuntimeException $e) {
+            if ($e->getCode() !== 409) {
+                throw $e;
+            }
+            Svar::feil($e->getMessage(), 409);
+        }
         revider('gavekort_brukt', 'booking', $id,
                 ['kort' => $kort['id'], 'belop' => (int) $bok['belop_ore']]);
     }
@@ -934,8 +951,9 @@ if ($fra !== null) {
 
 $ledige = Booking::ledigePlasser($oktId);
 
-$bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epost, $telefon, $antall, $belop, $status, $maate, $admin, $medlemId): int {
-    return DB::settInn('bookings', [
+try {
+$bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epost, $telefon, $antall, $belop, $status, $maate, $admin, $medlemId, $kort): int {
+    $bookingId = DB::settInn('bookings', [
         'course_id'         => (int) $okt['course_id'],
         'course_session_id' => $oktId,
         'member_id'         => $medlemId > 0 ? $medlemId : null,
@@ -950,28 +968,42 @@ $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epos
         'notat'             => mb_substr(Foresporsel::tekst('notat'), 0, 255) ?: null,
         'reservert_til'     => null,
     ]);
-});
 
-// ── Trekket fra gavekortet ───────────────────────────────────────────
-//
-// Beloepet henges paa en betalingsrad slik en nettbetaling gjor, saa
-// Booking::trekkGavekort() kan gjore jobben sin — den samme som ved et kjop
-// paa nettsida, med det samme sporet i «gift_card_uses». Raden er «manuell»
-// og null kroner i penger: det kom ingen penger inn i dag, kortet ble brukt.
+    // ── Trekket fra gavekortet ───────────────────────────────────────
+    //
+    // Beloepet henges paa en betalingsrad slik en nettbetaling gjor, saa
+    // Booking::trekkGavekort() kan gjore jobben sin — den samme som ved et
+    // kjop paa nettsida, med det samme sporet i «gift_card_uses». Raden er
+    // «manuell» og null kroner i penger: det kom ingen penger inn i dag,
+    // kortet ble brukt.
+    //
+    // L-4: i samme transaksjon som plassen. Gaar trekket ikke, legges
+    // plassen ikke inn.
+    if ($maate === 'Gavekort' && $kort !== null) {
+        $betalingId = DB::settInn('payments', [
+            'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
+            'type'            => 'manuell',
+            'formal'          => 'booking',
+            'belop_ore'       => 0,
+            'gavekort_id'     => $kort['id'],
+            'gavekort_ore'    => $belop,
+            'status'          => 'betalt',
+            'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $bookingId : null,
+            'idempotency_key' => Vipps::uuid(),
+        ]);
+        DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $bookingId]);
+        Booking::trekkGavekortEllerAvbryt($betalingId);
+    }
+    return $bookingId;
+});
+} catch (RuntimeException $e) {
+    if ($e->getCode() !== 409) {
+        throw $e;
+    }
+    Svar::feil($e->getMessage(), 409);
+}
+
 if ($maate === 'Gavekort' && $kort !== null) {
-    $betalingId = DB::settInn('payments', [
-        'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
-        'type'            => 'manuell',
-        'formal'          => 'booking',
-        'belop_ore'       => 0,
-        'gavekort_id'     => $kort['id'],
-        'gavekort_ore'    => $belop,
-        'status'          => 'betalt',
-        'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $bookingId : null,
-        'idempotency_key' => Vipps::uuid(),
-    ]);
-    DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $bookingId]);
-    Booking::trekkGavekort($betalingId);
     revider('gavekort_brukt', 'booking', $bookingId,
             ['kort' => $kort['id'], 'belop' => $belop]);
 }

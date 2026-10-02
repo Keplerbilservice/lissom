@@ -295,8 +295,7 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
             // refusjon (eller brukt) siden koden ble slaatt opp over.
             foreach ($deler as $d) {
                 if ($d['maate'] === 'Gavekort' && !Booking::gavekortDekker((int) $kort['id'], (int) $d['ore'])) {
-                    throw new RuntimeException('Gavekortet er sperret eller har ikke nok saldo. '
-                        . 'Ingenting er registrert. Velg en annen betalingsmåte.', 409);
+                    throw new RuntimeException(Booking::GAVEKORT_AVVIST, 409);
                 }
             }
             $ider = [];
@@ -307,7 +306,7 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
                     continue;
                 }
                 // Gavekortet: null kroner inn i dag, beloepet i «gavekort_ore»,
-                // og trekket etter transaksjonen — samme vei som naar hele
+                // og trekket i transaksjonen under — samme vei som naar hele
                 // plassen tas med kort (api/admin/pamelding.php).
                 $felt = [
                     'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
@@ -327,6 +326,9 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
                 }
                 $gaveRad = DB::settInn('payments', $felt);
                 $ider[] = $gaveRad;
+                // L-4: trukket her, i samme transaksjon. Gaar det ikke, rulles
+                // hele oppgjoeret tilbake.
+                Booking::trekkGavekortEllerAvbryt((int) $gaveRad);
             }
             return [$ider, $gaveRad];
         });
@@ -337,9 +339,6 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
             Svar::feil($e->getMessage(), 409);
         }
 
-        if ($gaveRad !== null) {
-            Booking::trekkGavekort((int) $gaveRad);
-        }
         $etter = Booking::settBetaltStatus($bookingId);
 
         revider('betaling_delt', 'booking', $bookingId, [

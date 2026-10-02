@@ -1337,6 +1337,7 @@ if (Foresporsel::metode() === 'POST') {
             ['m' => $id]
         );
         $adminId = (int) $jeg['id'];
+        try {
         [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $id, $avtale, $kort, $adminId): array {
             $ider = [];
             $gaveRad = null;
@@ -1369,13 +1370,21 @@ if (Foresporsel::metode() === 'POST') {
                 $ider[] = $bid;
                 if ($erGavekort) {
                     $gaveRad = $bid;
+                    // L-4: trukket i samme transaksjon; gaar det ikke, rulles
+                    // hele oppgjoeret tilbake.
+                    Booking::trekkGavekortEllerAvbryt((int) $bid);
                 }
             }
             return [$ider, $gaveRad];
         });
+        } catch (RuntimeException $e) {
+            if ($e->getCode() !== 409) {
+                throw $e;
+            }
+            Svar::feil($e->getMessage(), 409);
+        }
 
         if ($gaveRad !== null) {
-            Booking::trekkGavekort((int) $gaveRad);
             revider('gavekort_brukt', 'member', $id, ['kort' => (int) $kort['id']]);
         }
         revider('medlem_betaling_registrert', 'member', $id, [
@@ -1510,12 +1519,25 @@ if (Foresporsel::metode() === 'POST') {
         if (DB::harKolonne('payments', 'kommentar')) {
             $felt['kommentar'] = mb_substr(trim(Foresporsel::tekst('kommentar')), 0, 300) ?: null;
         }
-        $betalingId = DB::settInn('payments', $felt);
-
         // Trekket skjer etter at raden finnes, saa sporet i «gift_card_uses»
         // peker paa en betaling — den samme veien et kjop paa nettsida gaar.
+        // L-4: i samme transaksjon; gaar trekket ikke, lagres ingenting.
+        try {
+            $betalingId = DB::iTransaksjon(static function () use ($felt, $kort): int {
+                $bid = DB::settInn('payments', $felt);
+                if ($kort !== null) {
+                    Booking::trekkGavekortEllerAvbryt($bid);
+                }
+                return $bid;
+            });
+        } catch (RuntimeException $e) {
+            if ($e->getCode() !== 409) {
+                throw $e;
+            }
+            Svar::feil($e->getMessage(), 409);
+        }
+
         if ($kort !== null) {
-            Booking::trekkGavekort($betalingId);
             revider('gavekort_brukt', 'member', $id,
                     ['kort' => (int) $kort['id'], 'belop' => $ore]);
         }

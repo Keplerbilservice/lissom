@@ -2075,6 +2075,29 @@ final class Booking
         return [$refType, $refId];
     }
 
+    /** Admin-teksten naar et gavekort ikke kan trekkes i et oppgjoer i admin. */
+    public const GAVEKORT_AVVIST = 'Gavekortet er sperret eller har ikke nok saldo. '
+        . 'Ingenting er registrert. Velg en annen betalingsmåte.';
+
+    /**
+     * L-4 (pengeflyt-revisjonen, eieren 2. oktober 2026): trekker kortet INNE
+     * i transaksjonen der betalingen lagres. Gaar trekket ikke (kortet er
+     * sperret, brukt opp, eller et samtidig oppgjoer tok saldoen), kastes en
+     * feil med kode 409, og hele oppgjoeret rulles tilbake — ingen betaling
+     * kan staa betalt uten at kortet er trukket. Trekket er betinget i selve
+     * UPDATE-en (saldo >= beloep, status aktivt), saa to samtidige oppgjoer
+     * kan aldri ta mer enn saldoen.
+     */
+    public static function trekkGavekortEllerAvbryt(int $paymentId): void
+    {
+        if (!DB::kobling()->inTransaction()) {
+            throw new LogicException('trekkGavekortEllerAvbryt() maa kalles i transaksjonen som lagrer betalingen.');
+        }
+        if (!self::trekkGavekort($paymentId)) {
+            throw new RuntimeException(self::GAVEKORT_AVVIST, 409);
+        }
+    }
+
     public static function trekkGavekort(int $paymentId): bool
     {
         if (!DB::harKolonne('payments', 'gavekort_id')) {

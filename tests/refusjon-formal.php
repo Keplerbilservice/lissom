@@ -322,6 +322,23 @@ try {
     $betaling(['formal' => 'booking', 'type' => 'manuell', 'belop_ore' => 0, 'gavekort_id' => $k, 'gavekort_ore' => 20000]);
     $melding = '';
     try { Booking::refunderBetaling($p); } catch (RuntimeException $e) { $melding = $e->getMessage(); }
+    // L-4: trekket i samme transaksjon som betalingen. Sperret kort → 409, og
+    // betalingsraden rulles tilbake.
+    $sperret = $kort(0, 50000);
+    DB::oppdater('gift_cards', ['status' => 'annullert'], ['id' => $sperret]);
+    $kode = 0; $radId = 0;
+    try {
+        DB::iTransaksjon(static function () use ($sperret, &$radId): void {
+            $radId = DB::settInn('payments', ['vipps_reference' => Vipps::nyReferanse('T'), 'type' => 'manuell',
+                'formal' => 'booking', 'belop_ore' => 0, 'status' => 'betalt', 'idempotency_key' => Vipps::uuid(),
+                'gavekort_id' => $sperret, 'gavekort_ore' => 20000]);
+            Booking::trekkGavekortEllerAvbryt($radId);
+        });
+    } catch (RuntimeException $e) { $kode = $e->getCode(); }
+    sjekk('L-4: sperret kort i et admin-oppgjoer gir 409, og betalingen rulles tilbake', $kode === 409
+        && $radId > 0 && DB::verdi('SELECT id FROM payments WHERE id = :p', ['p' => $radId]) === null
+        && (int) $rad('gift_cards', $sperret)['saldo_ore'] === 50000);
+
     sjekk('kassa-del betalt, ikke trukket ennaa: full refusjon av kortet nektes', str_contains($melding, 'på vei')
         && $rad('gift_cards', $k)['status'] === 'aktivt' && (int) $rad('gift_cards', $k)['saldo_ore'] === 50000, $melding);
 } catch (Throwable $e) {

@@ -4,7 +4,6 @@
 /* Kalenderen i arbeidsrommet (#kalender). Flyttet uendret fra design.css (K0, 2. oktober 2026). */
 .calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}.day{border:1px solid var(--line);background:var(--paper);border-radius:12px;min-height:160px;padding:10px;min-width:0}.day.today{border:2px solid #a2502b}.day h3{font-family:'Alegreya Sans',sans-serif;font-size:16px;letter-spacing:0;text-transform:capitalize}.event{width:100%;text-align:left;display:block;background:var(--ground);border:0;border-left:3px solid #a2502b;border-radius:7px;padding:9px;margin:8px 0;overflow-wrap:anywhere;font-size:15px}.event strong,.event span{display:block}.event.cancelled{opacity:.65;border-color:var(--red)}.calendar.single{grid-template-columns:1fr}
 @media(min-width:1500px){.day{min-height:190px}}
-@media(max-width:1100px){.calendar{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.calendar{grid-template-columns:1fr}.calendar .day{min-height:0;padding:15px}.calendar .day.blank{display:none}.event{padding:13px;font-size:17px}}
 /* ── Kalenderen på mobil (K3, 2. oktober 2026). Bare tegnet på smal skjerm av kalender-mobil.js. ──
    Alt som kan trykkes er minst 44 px. Pilleknapper som resten av drakten. */
@@ -72,3 +71,5 @@
 .kp-brikke.event{position:absolute;display:flex;flex-direction:column;justify-content:flex-start;margin:0;padding:4px 7px;font-size:14px;line-height:1.25;overflow:hidden;z-index:1;box-shadow:0 1px 3px #4d1d1218}.kp-kolhode .kp-brikke.event{position:static;width:100%}.kp-brikke small{font-size:13px}.kp-brikke>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;max-width:100%}.kp-brikke:hover,.kp-brikke:focus-visible{z-index:3;box-shadow:0 4px 14px #4d1d1230}.kp-brikke[data-låst]{border-left-style:dashed}
 /* Dagsvisningen: notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene (som i gamle admin). Laget begynner der kolonnene begynner, etter tidsaksen. */
 .kp-kropp{position:relative}.kp-baandlag{position:absolute;top:0;left:58px;right:0;pointer-events:none;z-index:2}.kp-baandlag .kp-brikke.event{pointer-events:auto}.kp-baandtopp{display:grid;gap:6px;margin:0 0 12px}.kp-baandtopp .kp-brikke.event{position:static;width:100%}
+/* Lave brikker (under 40 px): tid og tittel på én linje, med ellipse. */
+.kp-brikke.event.kp-lav{flex-direction:row;align-items:center;gap:6px;padding:0 7px;white-space:nowrap}.kp-lav>small{flex:none}.kp-lav>strong{flex:1;min-width:0}

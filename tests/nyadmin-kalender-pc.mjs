@@ -80,6 +80,9 @@ try{
   const dagE=p.locator('.kp[data-visning="dag"]');
   const [E,F]=[await dagE.locator('button.kp-brikke',{hasText:`${s.tag} Echo`}).boundingBox(),await dagE.locator('button.kp-brikke',{hasText:`${s.tag} Foxtrot`}).boundingBox()];
   assert.ok(E.height>=24&&F.height>=24,'korte kurs er minst 24 px høye');
+  for(const n of ['Echo','Foxtrot']){const lav=await dagE.locator('button.kp-brikke',{hasText:`${s.tag} ${n}`}).evaluate(b=>{const [t1,t2]=[...b.children].map(c=>c.getBoundingClientRect());return{lav:b.classList.contains('kp-lav'),barn:b.children.length,enLinje:Math.abs(t1.top-t2.top)<2,ellipse:getComputedStyle(b.children[1]).textOverflow};});
+   assert.deepEqual(lav,{lav:true,barn:2,enLinje:true,ellipse:'ellipsis'},`${n}: lav brikke viser bare tid og tittel på én linje med ellipse`);}
+  assert.equal(await dagE.locator('button.kp-brikke.kp-lav',{hasText:`${s.tag} Golf`}).count(),0,'en time høy brikke er ikke lav');
   assert.ok(E.x+E.width<=F.x+1||F.x+F.width<=E.x+1||E.y+E.height<=F.y+1||F.y+F.height<=E.y+1,'korte kurs som ligger tett dekker ikke hverandre');
   const hodeE=await dagE.locator('.kp-kolhode').evaluateAll(h=>h.map(x=>[x.textContent,x.getAttribute('data-kol')]));
   assert.deepEqual(hodeE.filter(h=>h[0]===`${s.tag} H1`).map(h=>h[1]).sort(),[String(s.h1),String(s.h3)].sort(),'to kursholdere med samme navn får hver sin kolonne (id)');
@@ -124,10 +127,26 @@ try{
   assert.ok(await p.locator('.kp[data-visning="dag"] .kp-kolhode',{hasText:'Ikke tildelt'}).count(),'900 px: dag per kursholder');
   await bilde(p,'dag-900');
   await pille.getByRole('button',{name:'Måned'}).click();await p.locator('.calendar').waitFor();
+  assert.equal(await p.locator('.calendar').evaluate(g=>getComputedStyle(g).gridTemplateColumns.split(' ').length),7,'900 px: måned har sju kolonner');
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'900 px: ingen sideveis rulling i måneden');
   await bilde(p,'maaned-900');
   assert.deepEqual(feil,[]);await c.close();
   console.log('900 px: tidsakse i uke og dag, måned som før');
+ }
+ // ── Bredden krysses mens et ark står åpent: arket blir stående, kalenderen byttes når arket lukkes ──
+ {
+  const c=await browser.newContext({viewport:{width:1280,height:900}});
+  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
+  const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));
+  await p.goto(`${ADR}/admin-ny.html#kalender`);await p.getByLabel('Velg dato').fill(s.d);
+  await p.locator('.kp button.kp-brikke',{hasText:`${s.tag} Bravo`}).click();const ark=p.getByRole('dialog',{name:`${s.tag} Bravo`});await ark.waitFor();
+  await p.setViewportSize({width:390,height:900});await p.waitForTimeout(800);
+  assert.equal(await ark.isVisible(),true,'arket står åpent når bredden krysses');
+  assert.equal(await p.locator('.kalm').count(),0,'kalenderen tegnes ikke på nytt mens arket er åpent');
+  await ark.locator('.close').click();await ark.waitFor({state:'detached'});
+  await p.locator('.kalm').waitFor();assert.equal(await p.locator('.kp').count(),0,'når arket lukkes, tegnes mobilkalenderen');
+  assert.deepEqual(feil,[]);await c.close();
+  console.log('1280 → 390 px med åpent ark: arket blir stående, kalenderen byttes når det lukkes');
  }
  // ── Bredden krysses mens dataene lastes ──────────────────────────
  for(const [fra,til,venter] of [[1280,390,'.kalm'],[390,1280,'.kp']]){

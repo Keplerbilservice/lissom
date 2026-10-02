@@ -3435,7 +3435,7 @@
         {
             "id": "nyadmin-kalender-samlet",
             "dato": "2026-10-02",
-            "hva": "Ny kalender i admin-ny samlet (K0 + K3 + K4, alle godkjent av kontrolløren 2. oktober 2026; eieren ga fullmakt til anbefalt valg). Bredde: mobilkalenderen (K3) til og med 760 px, PC-kalenderen med tidsakse (K4) fra 761 px, også nettbrett. kalender.js har K3-linja først (if(erSmal())return kalenderMobil(...)), K4 etter. Én lytter på (max-width:760px): krysser bredden mens kalenderen vises, tegnes den på nytt; krysser den mens dataene lastes, tegnes riktig visning når de kommer. Kontrollørfunn rettet: PC-banene for korte hendelser regnes fra tegnet høyde (minst 24 px), så de ikke dekker hverandre; dagkolonnene kobles på kursholderens id (kalender.php gir kursholderId, bare lagt til); notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene i dagsvisningen som i gamle admin, og «Ikke tildelt» står bare for kurs uten kursholder. Mobil: kurs over midnatt (slutt før start) regnes riktig i «Går nå» (også kurs som startet i går), «Går nå» og «Neste» regnes på nytt hvert minutt med én timer som stoppes når kalenderen ikke vises, og «Neste» letes etter høyst seks måneder fram. Ingen nye tekster.",
+            "hva": "Ny kalender i admin-ny samlet (K0 + K3 + K4, alle godkjent av kontrolløren 2. oktober 2026; eieren ga fullmakt til anbefalt valg). Bredde: mobilkalenderen (K3) til og med 760 px, PC-kalenderen med tidsakse (K4) fra 761 px, også nettbrett. kalender.js har K3-linja først (if(erSmal())return kalenderMobil(...)), K4 etter. Én lytter på (max-width:760px): krysser bredden mens kalenderen vises, tegnes den på nytt; krysser den mens dataene lastes, tegnes riktig visning når de kommer. Kontrollørfunn rettet: PC-banene for korte hendelser regnes fra tegnet høyde (minst 24 px), så de ikke dekker hverandre; dagkolonnene kobles på kursholderens id (kalender.php gir kursholderId, bare lagt til); notater og annet uten kursholder som ikke er kurs, ligger som bånd over alle kolonnene i dagsvisningen som i gamle admin, og «Ikke tildelt» står bare for kurs uten kursholder. Mobil: kurs over midnatt (slutt før start) regnes riktig i «Går nå» (også kurs som startet i går), «Går nå» og «Neste» regnes på nytt hvert minutt med én timer som stoppes når kalenderen ikke vises, og «Neste» letes etter høyst seks måneder fram. Ingen nye tekster. Etter kontrollen (samme dag): måned har sju kolonner fra 761 px (1100-px-regelen for kalenderen fjernet); brikker under 40 px viser bare tid og tittel på én linje med ellipse; krysser bredden mens et ark står åpent, tegnes kalenderen på nytt først når arket lukkes; nyadmin-avsluttende prøver kalenderen på 390 px (mobil) og 1280 px (PC).",
             "hvor": "admin-ny › Kalender (#kalender) på 390, 900 og 1280 px",
             "kode": [
                 {
@@ -3445,19 +3445,21 @@
                         "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
                         ".then(m=>erSmal()?vist(m,true):calendar());",
                         "if(erSmal())return calendar();const events=data.hendelser||[];",
-                        "matchMedia(SMAL).addEventListener('change',()=>{if(kalenderVist?.isConnected&&erSmal()!==kalenderSmal)refresh();});"
+                        "matchMedia(SMAL).addEventListener('change',byttVisning);",
+                        "if(document.querySelector('dialog[open]')){if(!ventendeBytte)ventendeBytte=setInterval("
                     ]
                 },
                 {
                     "fil": "admin-ny/kalender-pc.js",
                     "finnes": [
                         "export const PC_BRED='(min-width:761px)';",
-                        "const RAD_MIN=30,RAD_PX=26,MIN_PX=24;",
+                        "const RAD_MIN=30,RAD_PX=26,MIN_PX=24,LAV_PX=40;",
                         "hoyde=Math.max(MIN_PX,(sl-s)/RAD_MIN*RAD_PX-2);return {e,top,hoyde,s:top,sl:top+hoyde+2};",
                         "const holderNokkel=e=>e.kursholderId!=null",
                         "nokler.has(String(h.id))",
                         "const baand=dagens.filter(e=>!holderNokkel(e)&&!erKurs(e));",
-                        "class:'kp-baandlag'"
+                        "class:'kp-baandlag'",
+                        "if(plass&&plass.hoyde<LAV_PX){attr.class+=' kp-lav';return el('button',attr,el('small',{text:e.tid||''}),el('strong',{text:e.tittel}));}"
                     ],
                     "ikkeFinnes": [
                         "min-width:1101px",
@@ -3478,7 +3480,11 @@
                     "fil": "admin-ny/kalender.css",
                     "finnes": [
                         ".kalm-naboks{display:contents}",
-                        ".kp-baandlag{position:absolute;"
+                        ".kp-baandlag{position:absolute;",
+                        ".kp-brikke.event.kp-lav{flex-direction:row;"
+                    ],
+                    "ikkeFinnes": [
+                        "@media(max-width:1100px){.calendar{"
                     ]
                 },
                 {
@@ -3504,6 +3510,16 @@
                         "kurs over midnatt går nå",
                         "«Går nå» og «Neste» oppdateres hvert minutt",
                         "ingen «Neste» lenger fram enn seks måneder"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-avsluttende.mjs",
+                    "finnes": [
+                        "Kalender ${width} px: uke over månedsskifte",
+                        "button.kalm-kort"
+                    ],
+                    "ikkeFinnes": [
+                        "getByLabel('Kalendervisning').selectOption"
                     ]
                 }
             ]

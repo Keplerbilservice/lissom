@@ -8,22 +8,42 @@ try {
  const c=await browser.newContext({viewport:{width:390,height:900}});
  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
  const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
- await p.goto('http://lokal.lissom.no:8140/admin-ny#kalender');
- await p.getByLabel('Kalendervisning').selectOption('uke');
- await p.getByLabel('Velg dato').fill('2026-11-01');
- await p.waitForResponse(r=>r.url().includes('kalender.php?fra=2026-10-26'));
- assert.equal(await p.locator('.calendar .day').count(),7);
- assert.match(await p.locator('.calendar .day').first().innerText(),/26/);
- await p.getByRole('button',{name:'Nytt kalendernotat',exact:true}).click();
- await p.getByRole('textbox',{name:'Notat',exact:true}).fill(s.tag+' kalender');
- await p.getByRole('button',{name:'Lagre',exact:true}).click();
- await p.getByRole('dialog',{name:'Nytt kalendernotat',exact:true}).waitFor({state:'detached'});
- const event=p.locator('.event').filter({hasText:s.tag+' kalender'});await event.waitFor();await event.click();
- assert.equal(await p.getByRole('button',{name:'Start kurset',exact:true}).count(),0);
- await p.getByRole('button',{name:'Slett notat',exact:true}).click();
- await p.getByRole('dialog',{name:'Slett notat',exact:true}).getByRole('button',{name:'Slett notat',exact:true}).click();
- await event.waitFor({state:'detached'});
- console.log('Kalender: uke over månedsskifte, lagring av notat, riktig hendelsestype og sletting bestått.');
+ // Kalenderen (samlet 2. oktober 2026): mobilkalenderen til og med 760 px, PC med tidsakse fra 761 px. Begge prøves.
+ for(const width of [390,1280]){
+  const mobil=width<500;
+  const k=await browser.newContext({viewport:{width,height:900},hasTouch:mobil,isMobile:mobil});
+  await k.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
+  const q=await k.newPage(),kfeil=[];q.on('pageerror',e=>kfeil.push(e.message));
+  const trykk=l=>mobil?l.tap():l.click();
+  await q.goto('http://lokal.lissom.no:8140/admin-ny#kalender');await q.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
+  if(mobil){
+   // Mobil: datoen velges bak søkeikonet; ukestripa går over månedsskiftet (mandag 26. oktober).
+   await q.locator('.kalm').waitFor();
+   await trykk(q.getByRole('button',{name:'Søk i kalender',exact:true}));
+   await q.getByLabel('Velg dato').fill('2026-11-01');
+   await q.locator('.kalm-ukedag[aria-pressed="true"][aria-label*="1. november"]').waitFor();
+   assert.equal(await q.locator('.kalm-uke .kalm-ukedag').count(),7);
+   assert.match(await q.locator('.kalm-uke .kalm-ukedag').first().getAttribute('aria-label'),/26/);
+  }else{
+   // PC: segmentpille Uke, uke med tidsakse over månedsskiftet.
+   const uke=q.getByRole('group',{name:'Kalendervisning'}).getByRole('button',{name:'Uke',exact:true});if(await uke.getAttribute('aria-pressed')!=='true')await uke.click();
+   await Promise.all([q.waitForResponse(r=>r.url().includes('kalender.php?fra=2026-10-26')),q.getByLabel('Velg dato').fill('2026-11-01')]);
+   await q.locator('.kp[data-visning="uke"] .kp-kolhode[data-dato="2026-10-26"]').waitFor();
+   assert.equal(await q.locator('.kp[data-visning="uke"] .kp-kolhode').count(),7);
+  }
+  await trykk(q.getByRole('button',{name:'Nytt kalendernotat',exact:true}));
+  if(mobil)await q.getByLabel('Dato',{exact:true}).fill('2026-11-01');
+  await q.getByRole('textbox',{name:'Notat',exact:true}).fill(s.tag+' kalender');
+  await trykk(q.getByRole('button',{name:'Lagre',exact:true}));
+  await q.getByRole('dialog',{name:'Nytt kalendernotat',exact:true}).waitFor({state:'detached'});
+  const event=q.locator(mobil?'button.kalm-kort':'.kp button.kp-brikke').filter({hasText:s.tag+' kalender'});await event.waitFor();await trykk(event);
+  assert.equal(await q.getByRole('button',{name:'Start kurset',exact:true}).count(),0);
+  await trykk(q.getByRole('button',{name:'Slett notat',exact:true}));
+  await trykk(q.getByRole('dialog',{name:'Slett notat',exact:true}).getByRole('button',{name:'Slett notat',exact:true}));
+  await event.waitFor({state:'detached'});
+  assert.deepEqual(kfeil,[]);await k.close();
+  console.log(`Kalender ${width} px: uke over månedsskifte, lagring av notat, riktig hendelsestype og sletting bestått.`);
+ }
  await p.goto('http://lokal.lissom.no:8140/admin-ny#idag');
  await p.locator('.row-link').filter({hasText:'Dugnad'}).click();
  await p.getByRole('heading',{name:'Dugnad',exact:true}).waitFor();

@@ -7,7 +7,7 @@ import {el,badge,today,date,shift} from './ui.js';
 export const PC_BRED='(min-width:761px)';
 export const erBred=()=>typeof matchMedia==='function'&&matchMedia(PC_BRED).matches;
 
-const RAD_MIN=30,RAD_PX=26,MIN_PX=24;
+const RAD_MIN=30,RAD_PX=26,MIN_PX=24,LAV_PX=40;
 const minutter=t=>{const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?Number(m[1])*60+Number(m[2]):null;};
 const klokke=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 function tidsrom(e){const s=minutter(e.tid);if(s===null)return null;let sl=minutter(e.slutt);if(sl===null||sl<=s)sl=Math.min(1440,s+60);return {s,sl};}
@@ -32,6 +32,8 @@ function brikke(e,apne,plass){
  if(laast)attr['data-låst']=true;
  if(plass)attr.style=`top:${plass.top}px;height:${plass.hoyde}px;left:calc(${plass.bane/plass.av*100}% + 3px);width:calc(${100/plass.av}% - 6px)`;
  if(plass?.baand)attr.class+=' kp-baand';
+ // Lav brikke (under LAV_PX): bare tid og tittel på én linje, med ellipse.
+ if(plass&&plass.hoyde<LAV_PX){attr.class+=' kp-lav';return el('button',attr,el('small',{text:e.tid||''}),el('strong',{text:e.tittel}));}
  return el('button',attr,el('small',{text:`${e.tid||''}${e.slutt?'–'+e.slutt:''}`}),el('strong',{text:e.tittel}),el('span',{text:[e.holder,e.samling,e.avlyst?'Avlyst':null,e.kap?`${e.pameldt||0}/${e.kap} påmeldt`:e.type].filter(Boolean).join(' · ')}));
 }
 

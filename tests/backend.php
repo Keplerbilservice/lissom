@@ -9397,6 +9397,7 @@ sjekk('maanedstimene telles fra kjoepet, saa de ikke dobles',
 $n20Mig = les_testfil(dirname(__DIR__) . '/db/migrations/243_nytt_medlemskap_etter_20.sql');
 sjekk('migrasjon 243 er trygg aa kjoere to ganger og rorer ikke engangsplanen',
     str_contains($n20Mig, 'WHERE p.gjelder_fra IS NULL;') && str_contains($n20Mig, 'AND mp.engangs = 0')
+    && str_contains($n20Mig, "AND COALESCE(s.vipps_agreement_id, '') = ''")
     && !preg_match('/\b(DROP|DELETE|TRUNCATE)\b/i', $n20Mig));
 
 // ── Prøv Lissom som er over ─────────────────────────────────────────────

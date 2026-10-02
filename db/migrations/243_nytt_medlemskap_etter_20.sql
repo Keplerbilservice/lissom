@@ -15,6 +15,10 @@
 --   * og ingen betalt medlemskapsbetaling etter den — har hen alt betalt
 --     igjen (f.eks. «Forny» etter «Forfalt»), maa den sees paa for haand,
 --     ellers ville den samme maaneden staatt betalt to ganger
+--   * IKKE fast trekk i Vipps (avtale med vipps_agreement_id eller et
+--     recurring_charge). Der staar neste trekk alt for maaneden etter
+--     kjoepet; flyttes foerste betaling, ville den maaneden blitt trukket to
+--     ganger. De sees paa for haand.
 --
 -- gjelder_fra = den 1. i maaneden etter betalingsdagen (norsk tid).
 --
@@ -45,6 +49,8 @@ JOIN (
            AND p2.status IN ('betalt', 'delvis_refundert')
            AND p2.annullert_at IS NULL
            AND mp.engangs = 0
+           AND p2.type <> 'recurring_charge'
+           AND COALESCE(s.vipps_agreement_id, '') = ''
            AND p2.created_at >= '2026-09-20 22:00:00'
            AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p2.id)
            AND NOT EXISTS (

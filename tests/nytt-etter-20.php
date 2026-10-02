@@ -344,6 +344,14 @@ $lag('dag20_2359', (string) $selv['navn'], '2026-09-20 21:59:59');
 $lag('prove', (string) $prove['navn'], '2026-09-25 10:00:00');
 $lag('har_fra', (string) $selv['navn'], '2026-09-25 10:00:00', '2026-10-01');
 $lag('okt_05', (string) $selv['navn'], '2026-10-05 10:00:00');
+// Fast trekk kjoept 25. september: neste trekk staar alt paa oktober, saa
+// foerste trekk skal ikke flyttes (da ville oktober blitt trukket to ganger).
+$mVa = $nyttMedlem((string) $fast['navn']);
+$sVa = (int) DB::settInn('subscriptions', ['member_id' => $mVa['id'], 'plan' => $fast['navn'], 'pris_ore' => $fast['pris_ore'],
+    'status' => 'aktiv', 'vipps_agreement_id' => 'agr_nytt20_' . bin2hex(random_bytes(4)), 'neste_trekk' => '2026-10-25',
+    'created_at' => '2026-09-25 08:00:00']);
+$mm['fast_trekk'] = $betaling((int) $mVa['id'], $sVa, '2026-09-25 08:05:00', null, 100);
+DB::oppdater('payments', ['type' => 'recurring_charge'], ['id' => $mm['fast_trekk']]);
 $mTo = $nyttMedlem((string) $selv['navn']);
 $mm['to_betalinger'] = $betaling((int) $mTo['id'], null, '2026-09-25 10:00:00', null, 100);
 $betaling((int) $mTo['id'], null, '2026-10-01 10:00:00', null, 100);
@@ -356,6 +364,8 @@ sjekk('… ikke Prøv Lissom', $etter('prove') === null);
 sjekk('… ikke en rad som alt har gjelder_fra', $etter('har_fra') === '2026-10-01');
 sjekk('… ikke dag 5', $etter('okt_05') === null);
 sjekk('… og ikke et medlem som alt har betalt igjen (sees paa for haand)', $etter('to_betalinger') === null);
+sjekk('… og ikke fast trekk, der neste trekk alt er satt (ingen dobbel oktober)', $etter('fast_trekk') === null
+    && DB::verdi('SELECT neste_trekk FROM subscriptions WHERE id = :i', ['i' => $sVa]) === '2026-10-25');
 $foer = DB::alle('SELECT id, gjelder_fra FROM payments ORDER BY id');
 DB::kobling()->exec($mig);
 sjekk('andre kjoering endrer ingenting', DB::alle('SELECT id, gjelder_fra FROM payments ORDER BY id') === $foer);

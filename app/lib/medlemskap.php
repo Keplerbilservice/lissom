@@ -1034,9 +1034,10 @@ final class Medlemskap
     {
         $slutt = (new DateTimeImmutable($maanedStart))->modify('last day of this month')->format('Y-m-d');
         // Er maaneden alt betalt (trekket gikk mens medlemmet var inne paa
-        // Min side), skal den ikke betales én gang til.
+        // Min side), skal den ikke betales én gang til. Teksten er eierens
+        // (2. oktober 2026, ordrett).
         if (self::betalingForMaaned((int) $avtale['member_id'], substr($maanedStart, 0, 7)) !== null) {
-            throw new RuntimeException('Vipps stoppet ikke trekket.');
+            throw new RuntimeException('Måneden er alt betalt.');
         }
         $rader = DB::alle(
             "SELECT id, vipps_psp_ref FROM payments

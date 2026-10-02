@@ -415,7 +415,7 @@ sjekk('egenbetalingen venter paa laasen', $lever($p));
 $annen->prepare("UPDATE payments SET status = 'betalt', vipps_psp_ref = ? WHERE id = ?")->execute(['chr_test_' . $tag, (int) $t['id']]);
 $annen->commit();
 $svar = $vent($p, $ror);
-sjekk("trekket gikk foerst: egenbetalingen avvises ($svar)", str_starts_with($svar, 'AVVIST:')
+sjekk("trekket gikk foerst: egenbetalingen avvises ($svar)", $svar === 'AVVIST:Måneden er alt betalt.'
     && (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND type = 'epayment'", ['s' => $avt]) === 0
     && $betalinger($avt, '2037-07-01') === 1);
 

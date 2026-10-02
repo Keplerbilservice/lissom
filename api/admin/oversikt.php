@@ -588,7 +588,14 @@ $nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {
             -- lagt inn i admin foer avtalen kom.
             AND NOT EXISTS (SELECT 1 FROM subscriptions s0
                              WHERE s0.member_id = s.member_id AND s0.id < s.id
-                               AND s0.status IN ('aktiv','stoppet'))
+                               -- Bare en avtale som har vaert godkjent eller betalt teller.
+                               -- Et avbrutt forsoek staar ogsaa som «stoppet» (avlysForsok),
+                               -- og den kunden er fortsatt ny (kontrolloeren 02.10).
+                               AND (s0.status = 'aktiv'
+                                    OR s0.siste_trekk IS NOT NULL OR s0.neste_trekk IS NOT NULL
+                                    OR EXISTS (SELECT 1 FROM payments p0
+                                                WHERE p0.subscription_id = s0.id
+                                                  AND p0.status IN ('betalt','delvis_refundert','refundert'))))
             AND NOT EXISTS (SELECT 1 FROM audit_log a0
                              WHERE a0.handling = 'medlem_meldt_inn' AND a0.objekt_type = 'member'
                                AND a0.objekt_id = s.member_id AND a0.created_at < s.created_at)
@@ -629,7 +636,14 @@ $nyeMedlemskap = static function (string $fra) use ($medlemsstatus): array {
                                AND a0.objekt_id = n.member_id AND a0.created_at < :fra2)
             AND NOT EXISTS (SELECT 1 FROM subscriptions s0
                              WHERE s0.member_id = n.member_id AND s0.created_at < n.naar
-                               AND s0.status IN ('aktiv','stoppet'))
+                               -- Bare en avtale som har vaert godkjent eller betalt teller.
+                               -- Et avbrutt forsoek staar ogsaa som «stoppet» (avlysForsok),
+                               -- og den kunden er fortsatt ny (kontrolloeren 02.10).
+                               AND (s0.status = 'aktiv'
+                                    OR s0.siste_trekk IS NOT NULL OR s0.neste_trekk IS NOT NULL
+                                    OR EXISTS (SELECT 1 FROM payments p0
+                                                WHERE p0.subscription_id = s0.id
+                                                  AND p0.status IN ('betalt','delvis_refundert','refundert'))))
           ORDER BY n.naar DESC",
         ['fra' => $fra, 'fra2' => $fra]
     ) as $a) {

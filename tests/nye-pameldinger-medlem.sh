@@ -128,8 +128,20 @@ foreach ([[300, $plan], [200, $plan], [90, $prove]] as [$sek, $pl]) {
 
 // Planbytte: medlem siden forrige måned (avtalen stoppet), ny plan i dag.
 $b = $medlem("Planbytte Medl", "aktiv", $prove);
-DB::settInn("subscriptions", ["member_id" => $b, "plan" => $plan, "pris_ore" => 259000, "status" => "stoppet",
-    "created_at" => gmdate("Y-m-d H:i:s", time() - 30 * 86400)]);
+$sb = DB::settInn("subscriptions", ["member_id" => $b, "plan" => $plan, "pris_ore" => 259000, "status" => "stoppet",
+    "siste_trekk" => gmdate("Y-m-d", time() - 25 * 86400), "created_at" => gmdate("Y-m-d H:i:s", time() - 30 * 86400)]);
+DB::settInn("payments", ["type" => "recurring_charge", "formal" => "medlemskap", "member_id" => $b, "subscription_id" => $sb,
+    "vipps_reference" => "NYEMEDLEM-" . $r(), "idempotency_key" => $uuid(), "belop_ore" => 259000, "status" => "betalt",
+    "created_at" => gmdate("Y-m-d H:i:s", time() - 25 * 86400)]);
+
+// Avbrutt Trekk: ny kunde starter fast trekk, avbryter (avlysForsok setter
+// «stoppet»), og betaler så engangs. Hun er ny (kontrolløren 02.10).
+$at = $medlem("Avbrutt Trekk", "aktiv", $plan);
+DB::settInn("subscriptions", ["member_id" => $at, "plan" => $plan, "pris_ore" => 259000, "status" => "stoppet",
+    "vipps_agreement_id" => "agr-nyemedlem-" . $r(), "created_at" => gmdate("Y-m-d H:i:s", time() - 300)]);
+$se = DB::settInn("subscriptions", ["member_id" => $at, "plan" => $plan, "pris_ore" => 259000, "status" => "aktiv", "created_at" => $naa]);
+DB::settInn("payments", ["type" => "epayment", "formal" => "medlemskap", "member_id" => $at, "subscription_id" => $se,
+    "vipps_reference" => "NYEMEDLEM-" . $r(), "idempotency_key" => $uuid(), "belop_ore" => 259000, "status" => "betalt", "created_at" => $naa]);
 DB::settInn("subscriptions", ["member_id" => $b, "plan" => $prove, "pris_ore" => 99000, "status" => "aktiv", "created_at" => $naa]);
 
 // Sendt Avtale: lagt inn i admin for ti dager siden, avtalen sendt og godkjent i dag.
@@ -202,6 +214,8 @@ sjekk "… og ikke i Dagens bestillinger" "" "$(rad dagensBestillinger 'Planbytt
 sjekk "avtale sendt til et medlem lagt inn før står ikke" "" "$(rad nyeste 'Sendt Avtale' hva)"
 sjekk "… og ikke i Dagens bestillinger" "" "$(rad dagensBestillinger 'Sendt Avtale' hva)"
 sjekk "lagt inn i admin på nytt står ikke" "" "$(rad nyeste 'Admin Igjen' hva)"
+sjekk "avbrutt fast trekk, så engangs: står som ny" "$PLAN" "$(rad nyeste 'Avbrutt Trekk' hva)"
+sjekk "… og i Dagens bestillinger" "Medlemskap · $PLAN" "$(rad dagensBestillinger 'Avbrutt Trekk' hva)"
 sjekk "tredagerslista er fortsatt begrenset (høyst 12 medlemskap)" "ja" "$(echo "$O" | felt 'count(array_filter($d["nyeste"], fn($r) => ($r["slag"] ?? "") === "medlemskap")) <= 12')"
 
 echo

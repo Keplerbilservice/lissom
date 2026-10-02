@@ -1193,8 +1193,28 @@ switch ($handling) {
         // Bare dager som faktisk er endret sjekkes — en samling som alt er
         // lagt paa en feriedag med eierens ja, skal ikke spoerre paa nytt.
         // Dag 1 er okta selv og sjekkes av «endredato».
+        // Dagene i rekkefolge. Ble dag 2 flyttet til for dag 1, eller dag N
+        // forbi dag N+1, regnet speilOkt() spennet fra feil ende og kurset
+        // fikk start etter slutt (Codex-funn, 2. oktober 2026). Rader uten
+        // dato er tomme skjemarader og hoppes over, som i Samlinger::lagre.
         if (array_key_exists('samlinger', $kropp) && is_array($kropp['samlinger'])) {
-            $foer = array_map(static fn(array $sa): string => (string) $sa['dato'], Samlinger::forOkt($oktId));
+            $forrige = '';
+            foreach ($kropp['samlinger'] as $sa) {
+                $d = trim((string) (is_array($sa) ? ($sa['dato'] ?? '') : ''));
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) !== 1) {
+                    continue;
+                }
+                $fra = trim((string) ($sa['fra'] ?? ''));
+                $naar = $d . ' ' . (preg_match('/^\d{2}:\d{2}$/', $fra) === 1 ? $fra : '00:00');
+                if ($forrige !== '' && $naar <= $forrige) {
+                    Svar::feil('Dagene må ligge i rekkefølge.');
+                }
+                $forrige = $naar;
+            }
+        }
+
+        if (array_key_exists('samlinger', $kropp) && is_array($kropp['samlinger'])) {
+            $foer =array_map(static fn(array $sa): string => (string) $sa['dato'], Samlinger::forOkt($oktId));
             $nyeTider = [];
             foreach (array_slice(array_values($kropp['samlinger']), 1) as $sa) {
                 $d = trim((string) (is_array($sa) ? ($sa['dato'] ?? '') : ''));

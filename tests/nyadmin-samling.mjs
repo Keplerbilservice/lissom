@@ -26,10 +26,12 @@ try{
    await p.getByLabel('Kalendervisning').selectOption('dag');await p.getByLabel('Velg dato').fill(dag);
    const brikke=p.locator('button.event',{hasText:s.tag});await brikke.first().waitFor();return brikke.first();
   };
-  const flytt=async(dag,start,slutt)=>{
+  const flytt=async(dag,start,slutt,forvent)=>{
    await trykk(await aapneDag(dag));
    await trykk(p.getByRole('dialog').getByRole('button',{name:'Flytt tidspunkt',exact:true}));
-   const skjema=p.getByRole('dialog',{name:'Flytt kursdato'});await skjema.getByLabel('Starter').fill(start);await skjema.getByLabel('Slutter').fill(slutt);
+   const skjema=p.getByRole('dialog',{name:'Flytt kursdato'});
+   if(forvent){assert.equal(await skjema.getByLabel('Starter').inputValue(),forvent[0],'Starter fylt fra samlingen');assert.equal(await skjema.getByLabel('Slutter').inputValue(),forvent[1],'Slutter fylt fra samlingen, ikke siste dag');}
+   await skjema.getByLabel('Starter').fill(start);await skjema.getByLabel('Slutter').fill(slutt);
    await trykk(skjema.getByRole('button',{name:'Lagre',exact:true}));
    await trykk(p.getByRole('dialog',{name:'Flytte datoen?'}).getByRole('button',{name:'Flytt dato',exact:true}));
    await skjema.waitFor({state:'detached'});
@@ -37,7 +39,7 @@ try{
 
   // ── 1. Samling 2 flyttes alene ─────────────────────────────────────
   const d3=nesteDag(s.d2);
-  await flytt(s.d2,`${d3}T18:00`,`${d3}T21:00`);
+  await flytt(s.d2,`${d3}T18:00`,`${d3}T21:00`,[`${s.d2}T17:00`,`${s.d2}T20:00`]);
   let r=await vent(()=>{const v=fixture('inspect',s);return {...v,ok:v.samlinger[1]?.[0]===d3};});
   assert.deepEqual(r.samlinger,[[s.d1,'17:00','20:00','Dag en'],[d3,'18:00','21:00','Dag to']],'bare samling 2 er flyttet');
   assert.equal(r.start,`${s.d1} 17:00`,'okta starter fortsatt paa dag 1');
@@ -46,7 +48,8 @@ try{
 
   // Dag 1 (hovedbrikka) flyttes: samling 2 blir staaende.
   const d0=nesteDag(s.d1,-1);
-  await flytt(s.d1,`${d0}T16:00`,`${d0}T19:00`);
+  // Brikka for dag 1 har slutt 21:00 (siste dag); skjemaet skal vise dag 1 sin 20:00.
+  await flytt(s.d1,`${d0}T16:00`,`${d0}T19:00`,[`${s.d1}T17:00`,`${s.d1}T20:00`]);
   r=await vent(()=>{const v=fixture('inspect',s);return {...v,ok:v.samlinger[0]?.[0]===d0};});
   assert.deepEqual(r.samlinger,[[d0,'16:00','19:00','Dag en'],[d3,'18:00','21:00','Dag to']],'dag 1 flyttet, samling 2 urørt');
   assert.equal(r.start,`${d0} 16:00`);assert.equal(r.slutt,`${d3} 21:00`,'todagerskurset er fortsatt to dager');
@@ -68,6 +71,23 @@ try{
   assert.deepEqual(r.samlinger,[[d0,'16:00','19:00','Dag en'],[s.ferie,'18:00','21:00','Dag to']],'samling 2 lagt paa feriedagen etter ja');
   assert.equal(r.ferieOk,1,'okta merket som ferieunntak');assert.equal(r.varsler,0);
   console.log(`${width} px: samling 2 på feriedag gir advarsel, avbryt lagrer ikke, «Legg til likevel» lagrer`);
+
+  // Rekkefølgen: samling 2 før dag 1, og dag 1 forbi samling 2, avvises i skjemaet uten å spørre eller lagre.
+  const lukkFlytt=async dlg=>{await trykk(dlg.getByRole('button',{name:'Avbryt',exact:true}));const f=p.getByRole('dialog',{name:'Forkaste endringene?'});if(await f.count())await trykk(f.getByRole('button',{name:'Forkast',exact:true}));await dlg.waitFor({state:'detached'});};
+  for(const [fraDag,til] of [[s.ferie,nesteDag(d0,-1)],[d0,nesteDag(s.ferie,1)]]){
+   await trykk(await aapneDag(fraDag));
+   await trykk(p.getByRole('dialog').getByRole('button',{name:'Flytt tidspunkt',exact:true}));
+   const rs=p.getByRole('dialog',{name:'Flytt kursdato'});await rs.getByLabel('Starter').fill(`${til}T17:00`);await rs.getByLabel('Slutter').fill(`${til}T20:00`);
+   await trykk(rs.getByRole('button',{name:'Lagre',exact:true}));await rs.getByText('Dagene må ligge i rekkefølge.').waitFor();
+   assert.equal(await p.getByRole('dialog',{name:'Flytte datoen?'}).count(),0,'ingen bekreftelse når rekkefølgen er feil');
+   await lukkFlytt(rs);
+  }
+  r=fixture('inspect',s);assert.deepEqual(r.samlinger.map(x=>x[0]),[d0,s.ferie],'feil rekkefølge lagrer ingenting');
+  // Samme sperre i kurs.php.
+  const svar=await p.evaluate(async([oktId,a,b])=>{const res=await fetch('/api/admin/kurs.php',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'dato',oktId,samlinger:[{dato:a,fra:'17:00',til:'20:00'},{dato:b,fra:'17:00',til:'20:00'}]})});return {status:res.status,d:await res.json()};},[s.okt,s.ferie,d0]);
+  assert.ok(svar.status>=400,'kurs.php avviser feil rekkefølge');assert.equal(svar.d.feil,'Dagene må ligge i rekkefølge.');
+  r=fixture('inspect',s);assert.deepEqual(r.samlinger.map(x=>x[0]),[d0,s.ferie],'kurs.php lagret ingenting');
+  console.log(`${width} px: feil rekkefølge avvist i skjemaet og i kurs.php`);
 
   // ── 2. «Rediger påmelding» aapner akkurat den paameldingen ─────────
   await trykk(await aapneDag(d0));

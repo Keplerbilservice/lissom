@@ -3095,16 +3095,17 @@
         {
             "id": "nyadmin-samling-og-ingen-forhandsvalg",
             "dato": "2026-10-02",
-            "hva": "Nytt admin: «Flytt tidspunkt» på samling 2 (eller senere) flytter bare den samlingen, samme vei som gamle admin (endredato + dato med hele samlingslista); «Rediger påmelding» åpner akkurat den påmeldingen (?booking=, også eldre enn lista); ingen forhåndsvalg i Ny påmelding, Flytt til annen dato, Ny kursdato og Gi medlemsgave — bare kommende datoer, og Lagre er grå til noe er valgt; samling 2 eller senere som flyttes til en stengt feriedag gir samme ferieadvarsel som dag 1; Flytt på en eldre påmelding åpnet via ?booking= viser kommende datoer på samme kurs",
+            "hva": "Nytt admin: «Flytt tidspunkt» på samling 2 (eller senere) flytter bare den samlingen, samme vei som gamle admin (endredato + dato med hele samlingslista); «Rediger påmelding» åpner akkurat den påmeldingen (?booking=, også eldre enn lista); ingen forhåndsvalg i Ny påmelding, Flytt til annen dato, Ny kursdato og Gi medlemsgave — bare kommende datoer, og Lagre er grå til noe er valgt; samling 2 eller senere som flyttes til en stengt feriedag gir samme ferieadvarsel som dag 1; Flytt på en eldre påmelding åpnet via ?booking= viser kommende datoer på samme kurs; Flytt-skjemaet fylles fra samlingen som flyttes (dag 1 viser sin egen sluttid), og dagene må ligge i rekkefølge — avvises i skjemaet og i kurs.php",
             "hvor": "admin-ny › Kalender › Flytt tidspunkt · Påmeldte › Ny påmelding / Flytt til annen dato · Kalender › Ny kursdato · Medlemsgaver › Gi gave",
             "kode": [
                 {
                     "fil": "admin-ny/app.js",
                     "finnes": [
                         "const nr=String(e.id).startsWith('saml-')",
-                        "if(nr){const l=liste();l[nr-1]={...l[nr-1],dato:dag,fra,til};await courseMutation({handling:'dato',oktId,samlinger:l});}",
                         "field('kursId','Kurs','number',{velg:true,",
-                        "await courseMutation({handling:'dato',oktId,samlinger:l})"
+                        "await courseMutation({handling:'dato',oktId,samlinger:l})",
+                        "const kilde=samlinger.length?samlinger[nr?nr-1:0]:null;",
+                        "if(!iRekkefolge(l))throw Error('Dagene må ligge i rekkefølge.');"
                     ]
                 },
                 {
@@ -3147,13 +3148,16 @@
                         "Send bekreftelse er ikke avkrysset",
                         "passert dato vises ikke",
                         "advarselen sier at dagen er ferie",
-                        "gammel påmelding: kommende dato på samme kurs vises"
+                        "gammel påmelding: kommende dato på samme kurs vises",
+                        "Slutter fylt fra samlingen, ikke siste dag",
+                        "kurs.php avviser feil rekkefølge"
                     ]
                 },
                 {
                     "fil": "api/admin/kurs.php",
                     "finnes": [
-                        "if ($nyeTider !== [] && $ferieVakt($nyeTider) && Ferie::harUnntak()) {"
+                        "if ($nyeTider !== [] && $ferieVakt($nyeTider) && Ferie::harUnntak()) {",
+                        "Svar::feil('Dagene må ligge i rekkefølge.');"
                     ]
                 }
             ]

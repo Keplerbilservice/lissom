@@ -262,9 +262,13 @@ $ut = Medlemskap::trekk($avtaleRad($avt), '2034-03-29');
 sjekk("april trekkes som vanlig (svar: $ut)", str_starts_with($ut, 'bedt om trekk til 2034-04-01') && $bestillinger($agr, $fra) === 1);
 
 // ── (k) betalingen er paa vei naar nattrunden kjoerer ───────────────────
-echo "\n── (k) betaling «opprettet» naar runden kjoerer: vent 30 min ─\n";
-// Betaling, 2. oktober 2026: ingen dobbel betaling. Holder medlemmet paa aa
-// betale maaneden selv, venter runden; etter 30 minutter bestilles trekket.
+echo "\n── (k) betaling aapen naar runden kjoerer: runden venter ────\n";
+// Betaling og kontrolloeren, 2. oktober 2026: ingen dobbel betaling. Holder
+// medlemmet paa aa betale maaneden selv, slaar runden opp status hos Vipps og
+// venter saa lenge betalingen er aapen — uansett alder. Avbrytes den, bestilles
+// trekket.
+$betStatus = __DIR__ . '/.betaling-status';
+file_put_contents($betStatus, 'CREATED');   // Vipps: kunden har ikke svart ennaa
 $m = $medlem('aktiv', $plan);
 $agr = 'agr_frysK_' . $tag;
 $avt = $avtale($m, $agr, '2035-03-01');
@@ -284,10 +288,87 @@ sjekk("nattrunden venter: null bestillinger (svar: $ut)", $ut === 'bestilles alt
 DB::oppdater('payments', ['status' => 'venter'], ['id' => (int) $egen['id']]);
 $ut = Medlemskap::trekk($avtaleRad($avt), '2035-03-09');
 sjekk("… ogsaa naar den staar «venter» (svar: $ut)", $ut === 'bestilles alt' && $bestillinger($agr, $fra) === 0);
-// 30 minutter uten fullfoert betaling.
-DB::kjor('UPDATE payments SET created_at = (UTC_TIMESTAMP() - INTERVAL 31 MINUTE) WHERE id = :i', ['i' => (int) $egen['id']]);
+// Fortsatt aapen etter 40 minutter: runden venter fortsatt.
+DB::kjor('UPDATE payments SET created_at = (UTC_TIMESTAMP() - INTERVAL 40 MINUTE) WHERE id = :i', ['i' => (int) $egen['id']]);
 $ut = Medlemskap::trekk($avtaleRad($avt), '2035-03-09');
-sjekk("etter 30 minutter uten fullfoert betaling: trekket bestilles (svar: $ut)", $bestillinger($agr, $fra) === 1);
+sjekk("aapen etter 40 minutter: runden venter fortsatt (svar: $ut)", $ut === 'bestilles alt' && $bestillinger($agr, $fra) === 0);
+// Kunden avbrot i Vipps: betalingen markeres avbrutt, og trekket bestilles.
+file_put_contents($betStatus, 'ABORTED');
+$ut = Medlemskap::trekk($avtaleRad($avt), '2035-03-09');
+sjekk("avbrutt hos Vipps: egenbetalingen markeres avbrutt, og trekket bestilles (svar: $ut)", $bestillinger($agr, $fra) === 1
+    && (string) DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => (int) $egen['id']]) === 'avbrutt');
+@unlink($betStatus);
+
+// ── (n) egenbetalingen er gjennomfoert hos Vipps, men «venter» i basen ──
+echo "\n── (n) egenbetaling betalt hos Vipps, «venter» i basen ──────\n";
+// Webhooken kom aldri. Etter 40 minutter: runden slaar opp, markerer den
+// betalt, og bestiller ikke trekket. Én betaling.
+$m = $medlem('aktiv', $plan);
+$agr = 'agr_frysN_' . $tag;
+$avt = $avtale($m, $agr, '2035-06-01');
+$betalt($m, $avt, '2035-05-01');
+$frys($m, '2035-06-05', '2035-06-12');
+file_put_contents($feiler, 'ja');
+try { Medlemskap::trekk($avtaleRad($avt), '2035-05-29'); } catch (RuntimeException $e) {}
+@unlink($feiler);
+Medlemskap::fornyPeriodePaa($rad($m), $avtaleRad($avt), '2035-06-08');
+$egen = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'epayment' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+DB::kjor('UPDATE payments SET created_at = (UTC_TIMESTAMP() - INTERVAL 40 MINUTE) WHERE id = :i', ['i' => (int) $egen['id']]);
+sjekk('egenbetalingen for juni staar «venter» i basen', (string) $egen['status'] === 'venter' && (string) $egen['gjelder_fra'] === '2035-06-01');
+file_put_contents($betStatus, 'AUTHORIZED');   // Vipps: godkjent av kunden (runden trekker og markerer betalt)
+$fra = $loggLengde();
+$ut = Medlemskap::trekk($avtaleRad($avt), '2035-06-09');
+@unlink($betStatus);
+sjekk("trekkrunden bestiller ikke (svar: $ut)", $bestillinger($agr, $fra) === 0 && str_starts_with($ut, 'betalt fra foer'));
+sjekk('… egenbetalingen er markert betalt', (string) DB::verdi('SELECT status FROM payments WHERE id = :i', ['i' => (int) $egen['id']]) === 'betalt');
+sjekk('… og juni er betalt én gang',
+    (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND status IN ('betalt','venter','opprettet') AND gjelder_fra BETWEEN '2035-06-01' AND '2035-06-30'", ['s' => $avt]) === 1);
+
+// ── (o) to samtidige «Forny» ───────────────────────────────────────────
+echo "\n── (o) to samtidige «Forny»: én Vipps-betaling ─────────────\n";
+$m = $medlem('aktiv', $plan);
+$avt = DB::settInn('subscriptions', ['member_id' => $m, 'plan' => $plan, 'pris_ore' => $pris, 'status' => 'aktiv',
+    'vipps_url' => 'https://falsk.vipps/gammel-avtale-url']);   // en gammel avtale-URL skal aldri komme tilbake
+$betalt($m, $avt, '2035-05-01');
+$s2 = require dirname(__DIR__) . '/app/secrets.php';
+$laas = new PDO(sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $s2['db_vert'], (int) ($s2['db_port'] ?? 3306), $s2['db_navn']),
+    $s2['db_bruker'], $s2['db_passord'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$kode = 'try { $r = Medlemskap::fornyPeriode(DB::en("SELECT * FROM members WHERE id = ' . $m . '"), DB::en("SELECT * FROM subscriptions WHERE id = ' . $avt . '")); echo ($r["gjentakelse"] ? "SAMME:" : "NY:") . $r["url"]; } catch (Throwable $e) { echo "AVVIST:" . $e->getMessage(); }';
+$fraLogg = $loggLengde();
+$laas->beginTransaction();
+$laas->prepare('SELECT id FROM members WHERE id = ? FOR UPDATE')->execute([$m]);
+$rotO = dirname(__DIR__);
+$barnO = [];
+foreach ([1, 2] as $_) {
+    $p = proc_open([PHP_BINARY, '-r', 'require "app/bootstrap.php"; ' . $kode], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $ror, $rotO);
+    $barnO[] = [$p, $ror];
+}
+usleep(1500000);
+$laas->commit();   // begge slipper til, én om gangen
+$svarO = [];
+foreach ($barnO as [$p, $ror]) {
+    $svarO[] = trim((string) stream_get_contents($ror[1]));
+    stream_get_contents($ror[2]);
+    proc_close($p);
+}
+sort($svarO);
+$vippsBetalinger = 0;
+foreach (array_slice(is_file($logg) ? file($logg) : [], $fraLogg) as $l) {
+    $k = json_decode($l, true);
+    if (($k['metode'] ?? '') === 'POST' && rtrim((string) ($k['sti'] ?? ''), '/') === '/epayment/v1/payments') { $vippsBetalinger++; }
+}
+$nye = (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE subscription_id = :s AND type = 'epayment' AND status IN ('opprettet','venter')", ['s' => $avt]);
+sjekk('to samtidige trykk: én Vipps-betaling og én rad', $vippsBetalinger === 1 && $nye === 1, json_encode([$vippsBetalinger, $nye, $svarO]));
+$nyOK = count(array_filter($svarO, static fn($x) => str_starts_with($x, 'NY:'))) === 1;
+$andre = array_values(array_filter($svarO, static fn($x) => !str_starts_with($x, 'NY:')))[0] ?? '';
+sjekk('… det ene trykket faar betalingen, det andre den samme adressen eller «vent litt»', $nyOK
+    && ($andre === 'AVVIST:Betalingen er startet. Vent litt, og prøv igjen.' || (str_starts_with($andre, 'SAMME:') && $andre !== 'SAMME:https://falsk.vipps/gammel-avtale-url')),
+    json_encode($svarO));
+// Et nytt trykk etter at adressen er lagret: samme adresse, aldri avtalens gamle.
+$r3 = Medlemskap::fornyPeriode($rad($m), (array) DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $avt]));
+$egenUrl = (string) DB::verdi("SELECT JSON_UNQUOTE(JSON_EXTRACT(siste_payload, '$.redirectUrl')) FROM payments WHERE subscription_id = :s AND type = 'epayment' AND status = 'venter'", ['s' => $avt]);
+sjekk('… et tredje trykk faar betalingens egen adresse, ikke en gammel avtale-URL', $r3['gjentakelse'] === true
+    && $r3['url'] === $egenUrl && $egenUrl !== '' && $r3['url'] !== 'https://falsk.vipps/gammel-avtale-url', json_encode($r3));
 
 // ── (l) oktobertrekket henger paa «venter» etter fristen ────────────────
 echo "\n── (l) trekk henger paa «venter», frysen dekker oktober ─────\n";
@@ -395,11 +476,13 @@ $annen->prepare("INSERT INTO payments (vipps_reference, type, formal, member_id,
     VALUES (?, 'epayment', 'medlemskap', ?, ?, ?, 'opprettet', ?, '2037-05-01')")
     ->execute(['TEST-' . bin2hex(random_bytes(10)), $m, $avt, $pris, Vipps::uuid()]);
 $fra = $loggLengde();
+file_put_contents($betStatus, 'CREATED');   // egenbetalingen er aapen hos Vipps
 [$p, $ror] = $barn('$a = DB::en("SELECT * FROM subscriptions WHERE id = ' . $avt . '"); $a["epost"] = ""; $a["navn"] = "Frystrekk"; try { echo Medlemskap::trekk($a, "2037-05-02"); } catch (Throwable $e) { echo "FEIL:" . $e->getMessage(); }');
 usleep(1500000);
 sjekk('trekkrunden venter paa laasen', $lever($p));
 $annen->commit();
 $svar = $vent($p, $ror);
+@unlink($betStatus);
 sjekk("… og bestiller ikke naar den slipper til ($svar)", $svar === 'bestilles alt' && $bestillinger($agr, $fra) === 0);
 sjekk('… én betaling for mai (medlemmets egen)', $betalinger($avt, '2037-05-01') === 1,
     json_encode(DB::alle('SELECT type, status, gjelder_fra, vipps_psp_ref FROM payments WHERE subscription_id = :s ORDER BY id', ['s' => $avt])));

@@ -207,6 +207,14 @@ final class DB
     public static function iTransaksjon(callable $arbeid): mixed
     {
         $pdo = self::kobling();
+        // Allerede inne i en transaksjon: arbeidet blir en del av den ytre.
+        // MariaDB har ingen nestede transaksjoner, og beginTransaction() kastet
+        // her foer — saa ingen kode har kunnet bruke dette til noe annet.
+        // Trekkrunden avstemmer en egenbetaling hos Vipps under medlemslaasen
+        // (Booking::markerBetalt), kontrolloeren 2. oktober 2026.
+        if ($pdo->inTransaction()) {
+            return $arbeid($pdo);
+        }
         $pdo->beginTransaction();
         try {
             $resultat = $arbeid($pdo);

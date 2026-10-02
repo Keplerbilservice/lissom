@@ -1535,10 +1535,16 @@ sjekk('… og det kan ikke sies opp to ganger',
 sjekk('… og det staar ikke til avslutning ennaa',
     !in_array((int) $fri['id'], array_map('intval', array_column(Medlemskap::tilAvslutning(), 'id')), true));
 
-// Sluttdagen: da stoppes det.
-DB::oppdater('subscriptions', ['slutter' => gmdate('Y-m-d')], ['id' => (int) $fri['id']]);
+// Sluttdagen er siste dag med tilgang (L-11, eieren 2. oktober 2026): den
+// dagen staar det fortsatt, dagen etter stoppes det.
+$osloIdag = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
+DB::oppdater('subscriptions', ['slutter' => $osloIdag], ['id' => (int) $fri['id']]);
+sjekk('paa sluttdagen staar det IKKE til avslutning (tilgang ut dagen)',
+    !in_array((int) $fri['id'], array_map('intval', array_column(Medlemskap::tilAvslutning(), 'id')), true));
+DB::oppdater('subscriptions', ['slutter' => (new DateTimeImmutable($osloIdag))->modify('-1 day')->format('Y-m-d')],
+    ['id' => (int) $fri['id']]);
 $forfalt = array_map('intval', array_column(Medlemskap::tilAvslutning(), 'id'));
-sjekk('paa sluttdagen staar det til avslutning', in_array((int) $fri['id'], $forfalt, true));
+sjekk('dagen etter sluttdagen staar det til avslutning', in_array((int) $fri['id'], $forfalt, true));
 Medlemskap::avslutt(DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => (int) $fri['id']]));
 sjekk('… og da stoppes medlemskapet',
     DB::verdi('SELECT status FROM subscriptions WHERE id = :i', ['i' => (int) $fri['id']]) === 'stoppet');
@@ -9391,7 +9397,9 @@ $n20Adm = les_testfil(dirname(__DIR__) . '/api/admin/medlemmer.php');
 sjekk('én regel, brukt i startEngangs(), foerste trekk og Kassa',
     str_contains($n20Lib, '$gjelderFra = self::gjelderFraNytt((int) $medlem[\'id\'], $planNavn);')
     && str_contains($n20Lib, 'self::foerForsteTrekk($avtale, $forsteFra);')
-    && substr_count($n20Adm, 'Medlemskap::gjelderFraForsteBetaling($id)') === 2);
+    // L-12: én hjelper ($medlemsperiode) for begge veiene i admin.
+    && substr_count($n20Adm, 'Medlemskap::gjelderFraForsteBetaling($id)') === 1
+    && substr_count($n20Adm, '$gjelderFra = $medlemsperiode($id, $avtale, $navn);') === 2);
 sjekk('«Forny» bruker ikke regelen', !preg_match('/function fornyPeriode\(.*?gjelderFraNytt.*?function erstattProve/s', $n20Lib));
 sjekk('maanedstimene telles fra kjoepet, saa de ikke dobles',
     str_contains(les_testfil(dirname(__DIR__) . '/app/lib/stempling.php'),

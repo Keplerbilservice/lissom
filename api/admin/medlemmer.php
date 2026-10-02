@@ -1287,6 +1287,82 @@ if (Foresporsel::metode() === 'POST') {
     // del, alle i én transaksjon, samme felter som ett beloep under.
     //
     //   POST handling=betaling { medlemId, deler: [{ maate, belop, kode? }] }
+    //
+    // ── L-12: perioden betalingen gjelder, én gang ───────────────────
+    //
+    // Pengeflyt-revisjonen (eieren, 2. oktober 2026): «Registrer mottatt
+    // betaling» la inn en ny rad hver gang. To trykk, eller en betaling for
+    // en maaned som alt var trukket i Vipps, ga to betalinger for samme
+    // periode. Naa, i samme transaksjon som raden lagres:
+    //  - medlemmet laases (etter gavekortet — samme rekkefoelge som ellers),
+    //    saa et dobbelttrykk ikke slipper gjennom to ganger,
+    //  - perioden er kalendermaaneden betalingen gjelder (gjelder_fra = den
+    //    1.); et nytt medlemskap kjoept etter den 20. gjelder neste maaned
+    //    (Medlemskap::gjelderFraForsteBetaling()), og
+    //  - er perioden alt betalt, nektes betalingen (409).
+    // En engangsplan (Prøv Lissom) betales én gang per avtale.
+    //
+    // @return string|null gjelder_fra, eller null for en engangsplan
+    $medlemsperiode = static function (int $id, ?array $avtale, string $navn): ?string {
+        DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $id]);
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $utc  = new DateTimeZone('UTC');
+        $planNavn = $avtale !== null ? (string) $avtale['plan']
+            : (string) DB::verdi('SELECT medlemskap_type FROM members WHERE id = :i', ['i' => $id]);
+        $engangs = trim($planNavn) !== '' && Medlemskap::erEngangs($planNavn);
+        $fraKol = DB::harKolonne('payments', 'gjelder_fra') ? 'p.gjelder_fra' : 'NULL AS gjelder_fra';
+        $utenTimepakke = DB::harTabell('timepakker')
+            ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
+        $betalt = DB::alle(
+            "SELECT p.id, p.subscription_id, p.created_at, {$fraKol}, mp.engangs
+               FROM payments p
+          LEFT JOIN subscriptions s ON s.id = p.subscription_id
+          LEFT JOIN membership_plans mp ON mp.navn = s.plan
+              WHERE p.member_id = :m AND p.formal = 'medlemskap'
+                AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
+                {$utenTimepakke}",
+            ['m' => $id]
+        );
+        if ($engangs) {
+            foreach ($betalt as $r) {
+                if ($avtale !== null && (int) ($r['subscription_id'] ?? 0) === (int) $avtale['id']) {
+                    throw new RuntimeException($navn . ' har allerede betalt ' . $planNavn
+                        . '. Betalingen er ikke registrert på nytt.', 409);
+                }
+            }
+            return null;
+        }
+        $fra = Medlemskap::gjelderFraForsteBetaling($id)
+            ?? (new DateTimeImmutable('now', $oslo))->modify('first day of this month')->format('Y-m-d');
+        $maaned = substr($fra, 0, 7);
+        foreach ($betalt as $r) {
+            // Proeveperioden er ikke en maaned i medlemskapet (som
+            // Medlemskap::harLoependePeriode()).
+            if ((int) ($r['engangs'] ?? 0) === 1) {
+                continue;
+            }
+            $kjopt = (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('Y-m-d');
+            $start = trim((string) ($r['gjelder_fra'] ?? '')) ?: $kjopt;
+            // Et nytt medlemskap kjoept etter den 20. betaler ogsaa resten av
+            // kjoepsmaaneden (tilgang med en gang, eieren 2. oktober 2026).
+            if (substr($start, 0, 7) === $maaned
+                || (Medlemskap::erForskuttert($r) && substr($kjopt, 0, 7) === $maaned)) {
+                $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                        'august', 'september', 'oktober', 'november', 'desember'];
+                $periode = $mnd[(int) substr($start, 5, 2) - 1] . ' ' . substr($start, 0, 4);
+                throw new RuntimeException($navn . ' har allerede betalt medlemskapet for ' . $periode
+                    . '. Betalingen er ikke registrert på nytt.', 409);
+            }
+        }
+        return $fra;
+    };
+    // Fast trekk i Vipps: betalingen registreres, men svaret sier fra, saa
+    // samme periode ikke ogsaa blir trukket.
+    $vippsAdvarsel = static fn(?array $avtale): ?string
+        => $avtale !== null && trim((string) ($avtale['vipps_agreement_id'] ?? '')) !== ''
+            ? 'Merk: medlemmet har fast trekk i Vipps. Sjekk at samme periode ikke også blir trukket.'
+            : null;
+
     $raaDeler = $handling === 'betaling' ? (Foresporsel::kropp()['deler'] ?? null) : null;
     if (is_array($raaDeler) && count($raaDeler) >= 2) {
         $id = Foresporsel::heltall('medlemId');
@@ -1332,20 +1408,24 @@ if (Foresporsel::metode() === 'POST') {
         }
 
         $avtale = DB::en(
-            "SELECT id FROM subscriptions
+            "SELECT id, plan, vipps_agreement_id FROM subscriptions
               WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
             ['m' => $id]
         );
         $adminId = (int) $jeg['id'];
-        // Foerste betaling paa et nytt medlemskap kjoept etter den 20.
-        // gjelder neste maaned (eieren, 2. oktober 2026).
-        $gjelderFra = DB::harKolonne('payments', 'gjelder_fra')
-            ? Medlemskap::gjelderFraForsteBetaling($id) : null;
+        $navn = (string) $medlem['navn'];
         try {
-        [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $id, $avtale, $kort, $adminId, $gjelderFra): array {
+        [$ider, $gaveRad] = DB::iTransaksjon(static function () use ($deler, $id, $avtale, $kort, $adminId, $navn, $medlemsperiode): array {
             // Samme laaserekkefoelge som ellers: kortet foer betalingene.
             if ($kort !== null) {
                 Booking::laasKort([(int) $kort['id']]);
+            }
+            // L-12: medlemmet laases, og perioden kan bare betales én gang.
+            // Foerste betaling paa et nytt medlemskap kjoept etter den 20.
+            // gjelder neste maaned (eieren, 2. oktober 2026).
+            $gjelderFra = $medlemsperiode($id, $avtale, $navn);
+            if (!DB::harKolonne('payments', 'gjelder_fra')) {
+                $gjelderFra = null;
             }
             $ider = [];
             $gaveRad = null;
@@ -1402,12 +1482,15 @@ if (Foresporsel::metode() === 'POST') {
             'betalinger' => $ider, 'belop' => $sum, 'deler' => $deler,
         ]);
 
+        $advarsel = $vippsAdvarsel($avtale);
         Svar::ok([
             'beskjed' => $medlem['navn'] . ' er registrert betalt ' . Booking::kroner($sum) . ' — '
                        . implode(', ', array_map(
                            static fn(array $d): string => mb_strtolower($d['maate']) . ' ' . Booking::kroner($d['ore']),
                            $deler))
-                       . '. Det er med i regnskapet.',
+                       . '. Det er med i regnskapet.'
+                       . ($advarsel !== null ? ' ' . $advarsel : ''),
+            'advarsel' => $advarsel,
         ]);
     }
 
@@ -1438,7 +1521,7 @@ if (Foresporsel::metode() === 'POST') {
         // godkjent i Vipps, og skal verken sette beloepet eller faa
         // betalingen hengt paa seg. Se Medlemskap::loepende().
         $avtale = DB::en(
-            "SELECT id, plan, pris_ore FROM subscriptions
+            "SELECT id, plan, pris_ore, vipps_agreement_id FROM subscriptions
               WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
             ['m' => $id]
         );
@@ -1530,20 +1613,21 @@ if (Foresporsel::metode() === 'POST') {
         if (DB::harKolonne('payments', 'kommentar')) {
             $felt['kommentar'] = mb_substr(trim(Foresporsel::tekst('kommentar')), 0, 300) ?: null;
         }
-        // Foerste betaling paa et nytt medlemskap kjoept etter den 20.
-        // gjelder neste maaned (eieren, 2. oktober 2026).
-        if (DB::harKolonne('payments', 'gjelder_fra')
-            && ($gjelderFra = Medlemskap::gjelderFraForsteBetaling($id)) !== null) {
-            $felt['gjelder_fra'] = $gjelderFra;
-        }
-
         // Trekket skjer etter at raden finnes, saa sporet i «gift_card_uses»
         // peker paa en betaling — den samme veien et kjop paa nettsida gaar.
         // L-4: i samme transaksjon; gaar trekket ikke, lagres ingenting.
+        $navn = (string) $medlem['navn'];
         try {
-            $betalingId = DB::iTransaksjon(static function () use ($felt, $kort): int {
+            $betalingId = DB::iTransaksjon(static function () use ($felt, $kort, $id, $avtale, $navn, $medlemsperiode): int {
                 if ($kort !== null) {
                     Booking::laasKort([(int) $kort['id']]);
+                }
+                // L-12: medlemmet laases, og perioden kan bare betales én
+                // gang. Foerste betaling paa et nytt medlemskap kjoept etter
+                // den 20. gjelder neste maaned (eieren, 2. oktober 2026).
+                $gjelderFra = $medlemsperiode($id, $avtale, $navn);
+                if ($gjelderFra !== null && DB::harKolonne('payments', 'gjelder_fra')) {
+                    $felt['gjelder_fra'] = $gjelderFra;
                 }
                 $bid = DB::settInn('payments', $felt);
                 if ($kort !== null) {
@@ -1569,12 +1653,15 @@ if (Foresporsel::metode() === 'POST') {
             'maate'    => $maate,
         ]);
 
+        $advarsel = $vippsAdvarsel($avtale);
         Svar::ok([
-            'beskjed' => $maate === 'Gratis'
+            'beskjed' => ($maate === 'Gratis'
                 ? $medlem['navn'] . ' står som gjort opp. Ingen sum føres på medlemskapet.'
                 : $medlem['navn'] . ' er registrert betalt '
                   . Booking::kroner($ore) . ' med ' . mb_strtolower($maate)
-                  . '. Det er med i regnskapet.',
+                  . '. Det er med i regnskapet.')
+                . ($advarsel !== null ? ' ' . $advarsel : ''),
+            'advarsel' => $advarsel,
         ]);
     }
 

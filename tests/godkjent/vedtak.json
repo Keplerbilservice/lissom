@@ -2895,6 +2895,45 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "medlem-l11-l12",
+            "dato": "2026-10-02",
+            "hva": "Pengeflyt L-11/L-12 (eieren ja 2. oktober): avtalen stoppes dagen ETTER «slutter» (norsk tid) — tilgang ut siste dag, «oppsagt» bare når ingen annen avtale løper. Manuell medlemsbetaling i admin får gjelder_fra (kalendermåneden, neste måned for nytt kjøp etter den 20.), nektes med 409 for en periode som alt er betalt, låser medlemmet i transaksjonen (dobbelttrykk = én betaling), og sier fra om fast trekk i Vipps. markerBetalt låser gavekortet før betalingen.",
+            "hvor": "Medlemskap::tilAvslutning, api/admin/medlemmer.php (handling=betaling), Booking::markerBetalt",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "WHERE slutter IS NOT NULL AND slutter < :idag",
+                        "self::oppsagtOmIngenLoeper((int) $avtale['member_id']);"
+                    ],
+                    "ikkeFinnes": [
+                        "slutter <= CURDATE()"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "DB::en('SELECT id FROM members WHERE id = :i FOR UPDATE', ['i' => $id]);",
+                        "' har allerede betalt medlemskapet for ' . $periode",
+                        "$gjelderFra = $medlemsperiode($id, $avtale, $navn);",
+                        "'advarsel' => $advarsel,"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "$kortene = $forst !== null ? self::kortFor((int) $forst) : [];"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "php tests/medlem-l11-l12.php"
+                    ]
+                }
+            ]
         }
     ]
 }

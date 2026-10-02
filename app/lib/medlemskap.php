@@ -2505,14 +2505,23 @@ final class Medlemskap
     /**
      * Medlemskap der oppsigelsestida er ute. Kjores av cron.
      *
+     * L-11 (pengeflyt-revisjonen, eieren 2. oktober 2026): «slutter» er den
+     * siste dagen medlemmet har betalt for, og tilgangen gjelder ut den
+     * dagen. Foer ble avtalen stoppet PAA sluttdagen (slutter <= CURDATE(),
+     * og CURDATE() er UTC) — medlemmet mistet den siste betalte dagen. Naa
+     * stoppes den foerst dagen etter, regnet i norsk tid.
+     *
+     * @param string|null $idag Y-m-d i Oslo, for testene; null = i dag
      * @return list<array<string,mixed>>
      */
-    public static function tilAvslutning(): array
+    public static function tilAvslutning(?string $idag = null): array
     {
+        $idag ??= (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->format('Y-m-d');
         return DB::alle(
             "SELECT * FROM subscriptions
-              WHERE slutter IS NOT NULL AND slutter <= CURDATE()
-                AND status <> 'stoppet'"
+              WHERE slutter IS NOT NULL AND slutter < :idag
+                AND status <> 'stoppet'",
+            ['idag' => $idag]
         );
     }
 

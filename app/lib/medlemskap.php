@@ -2349,8 +2349,11 @@ final class Medlemskap
                                  WHERE p.subscription_id = s.id
                                    AND p.type = 'recurring_charge'
                                    AND p.vipps_psp_ref IS NULL)
-           ORDER BY s.id
-              LIMIT 50"
+           -- Nyeste foerst, og romslig grense: avtaler som ikke kan foeres
+           -- (Vipps svarer ikke, eller trekket staar alt uten init-noekkel)
+           -- skal ikke stenge for nye (Codex 02.10).
+           ORDER BY s.id DESC
+              LIMIT 200"
         );
     }
 

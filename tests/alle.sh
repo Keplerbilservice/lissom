@@ -55,6 +55,7 @@ kjor "avbestillingsrefusjon" php tests/avbestill-refusjon.php
 kjor "avbestilling med gavekort (L-2)" php tests/avbestill-gavekort.php
 kjor "refusjon gjør opp kjøpet (L-1, L-3)" php tests/refusjon-formal.php
 kjor "gavekort samtidig (L-4)" php tests/gavekort-samtidig.php
+kjor "flytting, venteliste, portalrefusjon (L-7–L-9)" php tests/pamelding-flytt.php
 kjor "refusjonsklient" node tests/refusjon-klient.mjs
 kjor "backend"       php -d memory_limit=-1 tests/backend.php
 kjor "cronvakt"      php tests/cronvakt.php

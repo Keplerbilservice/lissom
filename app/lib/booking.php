@@ -1507,6 +1507,28 @@ final class Booking
                 return;
             }
             DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+            // L-9: plassen kan ha flere betalinger (Vipps + kontant i Kasse).
+            // Da peker «payment_id» paa den siste manuelle, og Vipps-raden
+            // naas bare gjennom «payments.booking_id». Sto ikke paameldingen
+            // over, og ble staaende betalt for penger som er gitt tilbake.
+            // Det som fortsatt staar, avgjoer: settBetaltStatus() gir
+            // «reservert» og skyldig beloep i Kasse naar resten ikke dekker.
+            if (DB::harKolonne('payments', 'booking_id')) {
+                $andre = DB::alle(
+                    "SELECT b.id FROM payments p
+                       JOIN bookings b ON b.id = p.booking_id
+                      WHERE p.id = :p
+                        AND (b.payment_id IS NULL OR b.payment_id <> :p2)
+                        AND b.status IN ('betalt', 'reservert')
+                        FOR UPDATE",
+                    ['p' => $paymentId, 'p2' => $paymentId]
+                );
+                foreach ($andre as $b) {
+                    $etter = self::settBetaltStatus((int) $b['id']);
+                    self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
+                        ['betaling' => $paymentId] + $etter);
+                }
+            }
             self::gjorOppFormal($paymentId);
         };
         DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);

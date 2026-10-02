@@ -2895,6 +2895,42 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "pamelding-flytt-pris-plasslaas",
+            "dato": "2026-10-02",
+            "hva": "L-7–L-9 (eieren ja 2. oktober): flyttes en påmelding til en dato med annen pris, følger beløpet prisen (rabatten i samme forhold) og betalt status regnes på nytt — skyldig i Kasse, eller «for mye» i svaret. Samme pris: urørt. Gi plass fra ventelista og flytting sjekker plassen under lås i transaksjonen; et medlem på ventelista (samme e-post/telefon) får plassen som medlem med medlemsrabatt. Full refusjon fra Vipps-portalen frigjør plassen, og en plass med flere betalinger får status etter det som fortsatt står.",
+            "hvor": "Admin påmelding (flytt), ventelista (gi plass), Vipps REFUNDED",
+            "kode": [
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "$ledige = Booking::ledigePlasser($tilOkt, true);",
+                        "return Booking::settBetaltStatus($id);",
+                        "$nyttBelop = (int) round($gammeltBelop * $tilEnhet / $fraEnhet);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/venteliste.php",
+                    "finnes": [
+                        "if (Booking::ledigePlasser($oktId, true) < 1) {",
+                        "$pris = Booking::belopFor($okt, 1, Booking::faarMedlemsrabatt($medlem));"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],"
+                    ]
+                },
+                {
+                    "fil": "tests/pamelding-flytt.php",
+                    "finnes": [
+                        "to samtidige «gi plass» paa siste plass → én booking",
+                        "omsetningen den dagen er uendret"
+                    ]
+                }
+            ]
         }
     ]
 }

@@ -30,6 +30,7 @@ const PORT  = Number(process.env.FALSK_VIPPS_PORT || 8125);
 const avtaler = new Map();
 const betalinger = new Map();
 const trekk = new Map();
+const nokler = new Map();   // Idempotency-Key -> { tekst, svar } for trekk
 
 /** Leser en styrefil, eller gir standarden. */
 const styrt = (navn, standard) => {
@@ -158,12 +159,31 @@ http.createServer((req, res) => {
     if (p.endsWith('/charges') && req.method === 'POST') {
       // Vipps er nede: trekket blir aldri laget. Styres med .trekk-feiler.
       if (styrt('.trekk-feiler', '') === 'ja') { return svar(res, 500, { detail: 'falsk feil' }); }
+      // Idempotens slik Vipps gjor det, slaatt paa med .trekk-idempotens:
+      // samme Idempotency-Key og samme innhold gir samme svar; samme noekkel
+      // med annet innhold avvises («idempotency-conflict»). Av som standard,
+      // fordi eldre scenarioer sletter radene og gjenbruker noekkelen.
+      const nokkel = String(req.headers['idempotency-key'] || '');
+      const tekst = JSON.stringify(kropp);
+      const idempotens = styrt('.trekk-idempotens', '') === 'ja';
+      if (idempotens && nokkel && nokler.has(nokkel)) {
+        const f = nokler.get(nokkel);
+        if (f.tekst !== tekst) {
+          return svar(res, 409, { type: 'idempotency-conflict', title: 'idempotency-conflict',
+            detail: 'The specified idempotency-key has previously been used in a different context.' });
+        }
+        return svar(res, 201, f.svar);
+      }
       const tid = 'chg_' + Date.now().toString(36) + '_' + (trekk.size + 1);
       trekk.set(tid, kropp);
       // «201 uten chargeId» er tilfellet der trekket trolig finnes hos Vipps,
       // men vi ikke har noe aa foelge det opp med. Styres med .trekk-uten-id.
-      if (styrt('.trekk-uten-id', '') === 'ja') { return svar(res, 201, {}); }
-      return svar(res, 201, { chargeId: tid });
+      const ut = styrt('.trekk-uten-id', '') === 'ja' ? {} : { chargeId: tid };
+      if (nokkel) { nokler.set(nokkel, { tekst, svar: ut }); }
+      // Trekket ER laget, men svaret kommer aldri fram (nett brudd paa vei
+      // tilbake). Styres med .trekk-svar-tapt.
+      if (styrt('.trekk-svar-tapt', '') === 'ja') { return svar(res, 500, { detail: 'svaret ble borte' }); }
+      return svar(res, 201, ut);
     }
     if (p.startsWith('/recurring/v3/agreements/') && req.method === 'GET') {
       const id = p.split('/')[4];

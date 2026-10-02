@@ -2176,6 +2176,45 @@
             ]
         },
         {
+            "id": "codex-vipps-trekk-og-headere",
+            "dato": "2026-10-02",
+            "hva": "Codex-funn, eieren sa ja til alle tre: et nytt forsøk på et månedstrekk sender nøyaktig samme innhold (forfall, beløp, tekst) som første gang, lagret på betalingen (migrasjon 243), så Vipps ikke avviser samme Idempotency-Key; webhooken henter x-ms-date og x-ms-content-sha256 fra getallheaders() som Authorization; første ikke-tomme Authorization brukes.",
+            "hvor": "Betaling (Vipps): medlemstrekk og webhook",
+            "kode": [
+                {
+                    "fil": "app/lib/medlemskap.php",
+                    "finnes": [
+                        "$kropp = self::trekkForesporsel($avtale, $tidligere, $idag);",
+                        "['trekk_foresporsel' => json_encode($kropp, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)]"
+                    ],
+                    "ikkeFinnes": [
+                        "$forfall = self::trekkForfall($avtale);"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vipps.php",
+                    "finnes": [
+                        "public static function belastAvtale(string $avtaleId, array $kropp, string $idempotensnokkel): string",
+                        "$autorisasjon = self::forsteVerdi($server, 'HTTP_AUTHORIZATION');",
+                        "public static function webhookHoder(array $server, array $hoder): array"
+                    ]
+                },
+                {
+                    "fil": "api/vipps-webhook.php",
+                    "finnes": [
+                        "$server = Vipps::webhookHoder($server, (array) getallheaders());",
+                        "$signert = Vipps::webhookSignert($raa, $hemmelighet, $server);"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/243_trekk_foresporsel.sql",
+                    "finnes": [
+                        "ADD COLUMN IF NOT EXISTS trekk_foresporsel"
+                    ]
+                }
+            ]
+        },
+        {
             "id": "codex-kjop-en-gang",
             "dato": "2026-09-30",
             "hva": "«Sjekk og rett de høye» (Codex-gjennomgangen): gavekort, siste plass, delt ressurs og siste vare selges én gang — også når to kjøp kommer samtidig eller betalingen kommer sent. Kommer betalingen etter at plassen er solgt: ingen automatisk refusjon, verkstedet får beskjed og refunderer for hånd (eieren valgte «Bare varsle, refunder for hånd»)",

@@ -817,21 +817,34 @@ final class Vipps
         return array_values(array_filter($svar['json'], 'is_array'));
     }
 
-    public static function belastAvtale(
-        string $avtaleId,
-        int $belopOre,
-        string $beskrivelse,
-        string $forfall,
-        string $idempotensnokkel
-    ): string {
-        $kropp = [
+    /**
+     * Innholdet i et trekk, bygd ett sted.
+     *
+     * Lagres paa betalingen foer kallet (payments.trekk_foresporsel), saa et
+     * nytt forsoek med samme Idempotency-Key sender NOEYAKTIG det samme. Vipps
+     * avviser samme noekkel med annet innhold («idempotency-conflict»).
+     *
+     * @return array{amount:int,description:string,due:string,retryDays:int,transactionType:string}
+     */
+    public static function trekkKropp(int $belopOre, string $beskrivelse, string $forfall): array
+    {
+        return [
             'amount'          => $belopOre,
             'description'     => mb_substr($beskrivelse, 0, 45),
             'due'             => $forfall,          // YYYY-MM-DD
             'retryDays'       => 5,
             'transactionType' => 'DIRECT_CAPTURE',
         ];
+    }
 
+    /**
+     * Ber Vipps om ett trekk paa avtalen.
+     *
+     * @param array<string,mixed> $kropp fra trekkKropp(), eller den lagrede fra foerste forsoek
+     * @return string charge-ID-en
+     */
+    public static function belastAvtale(string $avtaleId, array $kropp, string $idempotensnokkel): string
+    {
         $svar = http_post_json(
             Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId) . '/charges',
             $kropp,
@@ -1123,9 +1136,11 @@ final class Vipps
         if ($hemmelighet === '') {
             return false;
         }
-        $autorisasjon = (string) ($server['HTTP_AUTHORIZATION'] ?? $server['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
-        $dato   = (string) ($server['HTTP_X_MS_DATE'] ?? '');
-        $hash   = (string) ($server['HTTP_X_MS_CONTENT_SHA256'] ?? '');
+        // Foerste IKKE-tomme verdi: en tom HTTP_AUTHORIZATION fra webhotellet
+        // skal ikke skygge for en gyldig REDIRECT_HTTP_AUTHORIZATION.
+        $autorisasjon = self::forsteVerdi($server, 'HTTP_AUTHORIZATION');
+        $dato   = self::forsteVerdi($server, 'HTTP_X_MS_DATE');
+        $hash   = self::forsteVerdi($server, 'HTTP_X_MS_CONTENT_SHA256');
         $vert   = (string) ($server['HTTP_HOST'] ?? '');
         $sti    = (string) ($server['REQUEST_URI'] ?? '');
         $metode = strtoupper((string) ($server['REQUEST_METHOD'] ?? 'POST'));
@@ -1142,6 +1157,45 @@ final class Vipps
         $ventet = 'HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature='
             . base64_encode(hash_hmac('sha256', $streng, $hemmelighet, true));
         return hash_equals($ventet, $autorisasjon);
+    }
+
+    /** Foerste ikke-tomme av $server[$navn] og $server['REDIRECT_' . $navn]. */
+    private static function forsteVerdi(array $server, string $navn): string
+    {
+        foreach ([$navn, 'REDIRECT_' . $navn] as $n) {
+            $v = trim((string) ($server[$n] ?? ''));
+            if ($v !== '') {
+                return $v;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Fyller inn signaturhodene fra getallheaders() naar webhotellet ikke la
+     * dem i $_SERVER (eller la dem der tomme). Navnene sammenlignes uten
+     * hensyn til store/smaa bokstaver.
+     *
+     * @param array<string,mixed> $server $_SERVER
+     * @param array<mixed,mixed> $hoder getallheaders()
+     * @return array<string,mixed>
+     */
+    public static function webhookHoder(array $server, array $hoder): array
+    {
+        $smaa = [];
+        foreach ($hoder as $n => $v) {
+            $smaa[strtolower(trim((string) $n))] = (string) $v;
+        }
+        foreach ([
+            'authorization'       => 'HTTP_AUTHORIZATION',
+            'x-ms-date'           => 'HTTP_X_MS_DATE',
+            'x-ms-content-sha256' => 'HTTP_X_MS_CONTENT_SHA256',
+        ] as $hode => $felt) {
+            if (self::forsteVerdi($server, $felt) === '' && trim($smaa[$hode] ?? '') !== '') {
+                $server[$felt] = trim($smaa[$hode]);
+            }
+        }
+        return $server;
     }
 
     /** Adressen Vipps skal melde fra til. Maa vaere https. */

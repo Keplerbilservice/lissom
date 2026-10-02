@@ -14631,6 +14631,78 @@ sjekk('… uten hemmelighet godtas ingenting', !Vipps::webhookSignert($wsKropp, 
 sjekk('… saa webhooken ikke har sin egen utgave lenger',
     !str_contains($wK, "case 'CAPTURED':") && !str_contains($wK, "Booking::markerBetalt(\$referanse);"),
     'switchen er borte');
+// Codex 02.10.2026 (eieren: ja til alle tre): signaturhodene hentes robust,
+// og en tom HTTP_AUTHORIZATION skygger ikke for en gyldig.
+$wsUten = array_diff_key($wsServer, ['HTTP_AUTHORIZATION' => 1, 'HTTP_X_MS_DATE' => 1, 'HTTP_X_MS_CONTENT_SHA256' => 1]);
+sjekk('webhook: tom HTTP_AUTHORIZATION skygger ikke for REDIRECT_HTTP_AUTHORIZATION',
+    Vipps::webhookSignert($wsKropp, 'hemmelig', ['HTTP_AUTHORIZATION' => '',
+        'REDIRECT_HTTP_AUTHORIZATION' => $wsServer['HTTP_AUTHORIZATION']] + $wsServer));
+sjekk('… heller ikke bare mellomrom', Vipps::webhookSignert($wsKropp, 'hemmelig', ['HTTP_AUTHORIZATION' => '  ',
+        'REDIRECT_HTTP_AUTHORIZATION' => $wsServer['HTTP_AUTHORIZATION']] + $wsServer));
+sjekk('… og feil REDIRECT-verdi slipper ikke gjennom', !Vipps::webhookSignert($wsKropp, 'hemmelig',
+    ['HTTP_AUTHORIZATION' => '', 'REDIRECT_HTTP_AUTHORIZATION' => 'HMAC-SHA256 tull'] + $wsServer));
+$wsHoder = ['AUTHORIZATION' => $wsServer['HTTP_AUTHORIZATION'], 'X-Ms-Date' => $wsServer['HTTP_X_MS_DATE'],
+            'x-MS-content-SHA256' => $wsServer['HTTP_X_MS_CONTENT_SHA256'], 'Host' => 'lissom.no'];
+sjekk('webhook: alle tre signaturhodene hentes fra getallheaders() uten hensyn til store/smaa bokstaver',
+    Vipps::webhookSignert($wsKropp, 'hemmelig', Vipps::webhookHoder($wsUten, $wsHoder)));
+sjekk('… ogsaa naar de staar tomme i $_SERVER',
+    Vipps::webhookSignert($wsKropp, 'hemmelig', Vipps::webhookHoder(
+        ['HTTP_AUTHORIZATION' => '', 'HTTP_X_MS_DATE' => '', 'HTTP_X_MS_CONTENT_SHA256' => ''] + $wsUten, $wsHoder)));
+sjekk('… uten hodene avvises den', !Vipps::webhookSignert($wsKropp, 'hemmelig', Vipps::webhookHoder($wsUten, [])));
+sjekk('… og $_SERVER vinner naar den har en verdi',
+    Vipps::webhookHoder($wsServer, ['x-ms-date' => 'Wed, 01 Oct 2026 00:00:00 GMT'])['HTTP_X_MS_DATE'] === $wsServer['HTTP_X_MS_DATE']);
+sjekk('… og endret kropp avvises fortsatt med hodene fra getallheaders()',
+    !Vipps::webhookSignert($wsKropp . ' ', 'hemmelig', Vipps::webhookHoder($wsUten, $wsHoder)));
+sjekk('… og webhooken bruker dem',
+    str_contains($wK, '$server = Vipps::webhookHoder($server, (array) getallheaders());')
+    && strpos($wK, 'Vipps::webhookHoder(') < strpos($wK, 'INSERT INTO vipps_webhook_events'));
+
+// Codex 02.10.2026, P1: et nytt trekkforsoek sender NOEYAKTIG det samme som
+// foerste gang. Vipps avviser samme Idempotency-Key med annet innhold
+// («idempotency-conflict»). Foer ble «due» regnet ut paa nytt neste natt.
+$tfAvtale = ['id' => 1, 'plan' => 'Årsmedlemskap', 'navn' => 'Kari Test', 'pris_ore' => 259000, 'neste_trekk' => '2026-10-01'];
+$tfForste = Medlemskap::trekkForesporsel($tfAvtale, null, '2026-10-01');
+sjekk('trekk: foerste forsoek faar forfall tidligst i morgen', $tfForste['due'] === '2026-10-02' && $tfForste['amount'] === 259000,
+    json_encode($tfForste));
+$tfIDag = Medlemskap::trekkForesporsel(['pris_ore' => 299000] + $tfAvtale, null, '2026-10-02');
+sjekk('… et forsoek regnet ut paa nytt dagen etter ville hatt annet innhold', $tfIDag['due'] !== $tfForste['due']);
+$tfRad = ['trekk_foresporsel' => json_encode($tfForste, JSON_UNESCAPED_UNICODE), 'created_at' => '2026-09-30 22:30:00', 'belop_ore' => 259000];
+sjekk('… men nytt forsoek dagen etter sender det lagrede innholdet uendret (forfall, beloep, tekst)',
+    Medlemskap::trekkForesporsel(['pris_ore' => 299000, 'navn' => 'Kari Nytt-Navn'] + $tfAvtale, $tfRad, '2026-10-02') === $tfForste);
+sjekk('… ogsaa en uke senere', Medlemskap::trekkForesporsel($tfAvtale, $tfRad, '2026-10-09') === $tfForste);
+// Rad fra foer migrasjon 243: forfallet utledes av datoen raden ble skrevet
+// (UTC 22:30 = 00:30 i Oslo dagen etter), beloepet av raden.
+sjekk('… en rad fra foer kolonnen fantes faar samme innhold utledet',
+    Medlemskap::trekkForesporsel(['pris_ore' => 299000] + $tfAvtale,
+        ['trekk_foresporsel' => null, 'created_at' => '2026-09-30 22:30:00', 'belop_ore' => 259000], '2026-10-05') === $tfForste);
+$mlTf = les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('… og trekk() bruker det lagrede innholdet ved nytt forsoek',
+    str_contains($mlTf, '$kropp = self::trekkForesporsel($avtale, $tidligere, $idag);')
+    && str_contains($mlTf, "\$tidligere = \$fra;")
+    && str_contains($mlTf, "['trekk_foresporsel' => json_encode(\$kropp, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)]")
+    && preg_match('/Vipps::belastAvtale\(\s*\(string\) \$avtale\[\'vipps_agreement_id\'\],\s*\$kropp,\s*\$nokkel\s*\)/', $mlTf) === 1);
+$m243 = les_testfil(dirname(__DIR__) . '/db/migrations/243_trekk_foresporsel.sql');
+sjekk('… og kolonnen legges til uten DROP, trygg aa kjoere to ganger',
+    str_contains($m243, 'ADD COLUMN IF NOT EXISTS trekk_foresporsel') && stripos($m243, 'DROP') === false);
+sjekk('… og kolonnen finnes i testbasen', DB::harKolonne('payments', 'trekk_foresporsel'));
+// Mot basen: raden fra foerste forsoek bevarer innholdet, og et nytt forsoek
+// (som trekk() gjoer det) leser det tilbake identisk.
+$tfMedlem = DB::settInn('members', ['navn' => 'Trekkinnhold', 'epost' => 'trekkinnhold@test.local', 'status' => 'ingen']);
+$tfSub = DB::settInn('subscriptions', ['member_id' => $tfMedlem, 'plan' => 'Årsmedlemskap', 'pris_ore' => 259000,
+    'vipps_agreement_id' => 'agr_tf_' . bin2hex(random_bytes(4)), 'status' => 'aktiv', 'neste_trekk' => '2026-10-01']);
+try {
+    $tfPay = DB::settInn('payments', ['vipps_reference' => 'MED-TF-' . bin2hex(random_bytes(4)), 'type' => 'recurring_charge',
+        'formal' => 'medlemskap', 'member_id' => $tfMedlem, 'subscription_id' => $tfSub, 'belop_ore' => 259000,
+        'status' => 'feilet', 'idempotency_key' => substr(hash('sha256', 'tf:' . $tfSub), 0, 36),
+        'trekk_foresporsel' => json_encode($tfForste, JSON_UNESCAPED_UNICODE)]);
+    $tfFraBasen = DB::en('SELECT * FROM payments WHERE id = :i', ['i' => $tfPay]);
+    sjekk('… og innholdet fra basen gir samme trekk dagen etter',
+        Medlemskap::trekkForesporsel(['pris_ore' => 299000] + $tfAvtale, $tfFraBasen, '2026-10-02') === $tfForste);
+} finally {
+    DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $tfSub]);
+    DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $tfSub]);
+    DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $tfMedlem]);
+}
 // Operasjonsloggen avstemmer delvis/fullt oppgjoer. Hendelsens tilstand
 // beholdes, saa en CAPTURED aldri blir til AUTHORIZED og starter nytt trekk.
 sjekk('webhook avstemmer oppgjoer uten aa endre hendelsens tilstand',
@@ -20138,7 +20210,7 @@ sjekk('… og navnet staar ogsaa naar plannavnet er langt',
     mb_strlen($vbTrekkLang) . ' tegn: ' . $vbTrekkLang);
 sjekk('… og trekket henter navnet fra avtalen',
     str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php'),
-        "                    (string) (\$avtale['navn'] ?? '')")
+        "(string) (\$avtale['navn'] ?? '')")
     && str_contains((string) les_testfil(dirname(__DIR__) . '/app/lib/medlemskap.php'),
         'SELECT s.*, m.navn, m.epost, m.telefon'));
 

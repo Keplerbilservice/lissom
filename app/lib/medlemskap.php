@@ -2126,14 +2126,70 @@ final class Medlemskap
         return max($minst, (string) $avtale['neste_trekk']);
     }
 
+    /** Teksten kunden ser paa trekket i Vipps. */
+    private static function trekkBeskrivelse(array $avtale): string
+    {
+        // Navnet med, innenfor Vipps sine 45 tegn paa et trekk.
+        // Uten det sa et maanedlig trekk bare hvilken plan det
+        // gjaldt — og det er nettopp de trekkene det er flest av.
+        return Vipps::beskrivelseInnenfor(
+            Vipps::TREKK_BESKRIVELSE_MAKS,
+            'Medlemskap ' . $avtale['plan'],
+            (string) ($avtale['navn'] ?? '')
+        );
+    }
+
+    /**
+     * Innholdet Vipps faar for trekket.
+     *
+     * Et nytt forsoek bruker samme Idempotency-Key, og da maa innholdet vaere
+     * det samme som foerste gang — ellers avviser Vipps det som
+     * «idempotency-conflict», og et trekk som kanskje gikk, blir staaende
+     * uten id. Foer ble «due» regnet ut paa nytt: proevde vi igjen neste
+     * natt, var forfallet en annen dag.
+     *
+     * $tidligere er betalingsraden fra foerste forsoek. Har den lagret
+     * innholdet, brukes det som det er. En rad fra foer kolonnen fantes faar
+     * innholdet utledet av det som ble lagret da: beloepet paa raden og
+     * forfallet slik det ble regnet ut den dagen raden ble skrevet.
+     *
+     * @param array<string,mixed>|null $tidligere
+     * @return array<string,mixed>
+     */
+    public static function trekkForesporsel(array $avtale, ?array $tidligere = null, ?string $idag = null): array
+    {
+        if ($tidligere !== null) {
+            $lagret = json_decode((string) ($tidligere['trekk_foresporsel'] ?? ''), true);
+            if (is_array($lagret) && isset($lagret['amount'], $lagret['description'], $lagret['due'])) {
+                return $lagret;
+            }
+            // created_at er UTC (DB setter time_zone +00:00); forfallet ble
+            // regnet ut fra datoen i Oslo.
+            $forsteDag = (new DateTimeImmutable((string) $tidligere['created_at'], new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+            return Vipps::trekkKropp(
+                (int) $tidligere['belop_ore'],
+                self::trekkBeskrivelse($avtale),
+                self::trekkForfall($avtale, $forsteDag)
+            );
+        }
+        return Vipps::trekkKropp(
+            (int) $avtale['pris_ore'],
+            self::trekkBeskrivelse($avtale),
+            self::trekkForfall($avtale, $idag)
+        );
+    }
+
     /**
      * Ber Vipps om ett trekk, og fører det som en betaling.
      *
      * Idempotensnokkelen bygges av avtalen og maaneden. Kjorer cron to ganger
      * samme natt, ber vi Vipps om det samme trekket — og Vipps gjor det én
      * gang.
+     *
+     * $idag er bare for testene (forsoek paa en senere dag).
      */
-    public static function trekk(array $avtale): string
+    public static function trekk(array $avtale, ?string $idag = null): string
     {
         $maaned = (new DateTimeImmutable((string) $avtale['neste_trekk']))->format('Y-m');
         $nokkel = substr(hash('sha256', 'trekk:' . $avtale['id'] . ':' . $maaned), 0, 36);
@@ -2141,7 +2197,7 @@ final class Medlemskap
         // Er trekket alt fort, gjor vi ikke noe mer. Uten denne kunne en
         // halvveis kjoring gitt to rader i payments for samme maaned.
         $fra = DB::en(
-            "SELECT id, status, vipps_psp_ref FROM payments WHERE subscription_id = :s AND idempotency_key = :k",
+            "SELECT * FROM payments WHERE subscription_id = :s AND idempotency_key = :k",
             ['s' => (int) $avtale['id'], 'k' => $nokkel]
         );
 
@@ -2152,21 +2208,31 @@ final class Medlemskap
         // samme noekkel, saa kom trekket likevel fram hos Vipps forrige gang,
         // gir Vipps det samme trekket tilbake — ikke et nytt.
         $paaNytt = null;
+        $tidligere = null;
         if ($fra !== null && (string) $fra['status'] === 'feilet' && ($fra['vipps_psp_ref'] ?? null) === null) {
             $paaNytt = (int) $fra['id'];
+            $tidligere = $fra;
             $fra = null;
         }
         if ($fra !== null) {
             return 'alt fort';
         }
 
-        $forfall = self::trekkForfall($avtale);
+        // Samme noekkel = samme innhold. Et nytt forsoek sender det som ble
+        // sendt foerste gang, ikke et forfall regnet ut paa nytt i dag.
+        $kropp = self::trekkForesporsel($avtale, $tidligere, $idag);
+        $forfall = (string) $kropp['due'];
         $periodeFra = (new DateTimeImmutable((string) $avtale['neste_trekk']))
             ->modify('first day of this month')->format('Y-m-d');
+        // Kolonnen kommer med migrasjon 243. Foer den er kjoert, utledes
+        // innholdet av raden (se trekkForesporsel()).
+        $lagre = DB::harKolonne('payments', 'trekk_foresporsel')
+            ? ['trekk_foresporsel' => json_encode($kropp, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)]
+            : [];
 
         if ($paaNytt !== null) {
             $betalingId = $paaNytt;
-            DB::oppdater('payments', ['status' => 'opprettet', 'gjelder_fra' => $periodeFra], ['id' => $betalingId]);
+            DB::oppdater('payments', ['status' => 'opprettet', 'gjelder_fra' => $periodeFra] + $lagre, ['id' => $betalingId]);
         } else {
             $betalingId = DB::settInn('payments', [
                 'vipps_reference' => Vipps::nyReferanse('MED'),
@@ -2174,26 +2240,17 @@ final class Medlemskap
                 'formal'          => 'medlemskap',
                 'member_id'       => (int) $avtale['member_id'],
                 'subscription_id' => (int) $avtale['id'],
-                'belop_ore'       => (int) $avtale['pris_ore'],
+                'belop_ore'       => (int) $kropp['amount'],
                 'status'          => 'opprettet',
                 'idempotency_key' => $nokkel,
                 'gjelder_fra'     => $periodeFra,
-            ]);
+            ] + $lagre);
         }
 
         try {
             $trekkId = Vipps::belastAvtale(
                 (string) $avtale['vipps_agreement_id'],
-                (int) $avtale['pris_ore'],
-                // Navnet med, innenfor Vipps sine 45 tegn paa et trekk.
-                // Uten det sa et maanedlig trekk bare hvilken plan det
-                // gjaldt — og det er nettopp de trekkene det er flest av.
-                Vipps::beskrivelseInnenfor(
-                    Vipps::TREKK_BESKRIVELSE_MAKS,
-                    'Medlemskap ' . $avtale['plan'],
-                    (string) ($avtale['navn'] ?? '')
-                ),
-                $forfall,
+                $kropp,
                 $nokkel
             );
         } catch (Throwable $e) {
@@ -2219,7 +2276,7 @@ final class Medlemskap
         // feilloggen sier hva som mangler saa det kan finnes igjen hos Vipps.
         if ($trekkId === '') {
             logg_feil('Vipps ga ingen charge-id for trekk paa avtale '
-                . $avtale['vipps_agreement_id'] . ' (' . Booking::kroner((int) $avtale['pris_ore'])
+                . $avtale['vipps_agreement_id'] . ' (' . Booking::kroner((int) $kropp['amount'])
                 . ', betaling ' . $betalingId . '). Den kan ikke foelges opp automatisk.');
         }
 
@@ -2246,7 +2303,7 @@ final class Medlemskap
         if (!empty($avtale['epost'])) {
             Varsel::mal('medlemstrekk_varsel', ['epost' => (string) $avtale['epost']], [
                 'navn'  => (string) $avtale['navn'],
-                'belop' => Booking::kroner((int) $avtale['pris_ore']),
+                'belop' => Booking::kroner((int) $kropp['amount']),
                 'plan'  => (string) $avtale['plan'],
                 'dag'   => self::norskDag($forfall),
             ], 'medlemskap', $betalingId);

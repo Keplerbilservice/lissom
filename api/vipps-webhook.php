@@ -32,14 +32,11 @@ if ($hemmelighet === '') {
 
 if ($hemmelighet !== '') {
     // Vipps sitt format — se Vipps::webhookSignert(). Noen webhotell tar
-    // Authorization ut av $_SERVER; da hentes den fra hodene direkte.
+    // Authorization (og i verste fall x-ms-date / x-ms-content-sha256) ut av
+    // $_SERVER; da hentes de fra hodene direkte.
     $server = $_SERVER;
-    if (empty($server['HTTP_AUTHORIZATION']) && function_exists('getallheaders')) {
-        foreach ((array) getallheaders() as $n => $v) {
-            if (strtolower((string) $n) === 'authorization') {
-                $server['HTTP_AUTHORIZATION'] = (string) $v;
-            }
-        }
+    if (function_exists('getallheaders')) {
+        $server = Vipps::webhookHoder($server, (array) getallheaders());
     }
     $signert = Vipps::webhookSignert($raa, $hemmelighet, $server);
 

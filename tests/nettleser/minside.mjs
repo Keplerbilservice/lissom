@@ -95,7 +95,7 @@ async function flyt(navn, fn) {
 // Faste navn, saa fasiten kan sammenlignes fra kjoring til kjoring. Alt har
 // e-post paa @e2e.lissom.test og ryddes av seed.php og til slutt her.
 const FLATE = ['internbutikk', 'medlemssalg', 'handleliste', 'medlemsforslag', 'dugnad', 'medlemfrys', 'verving', 'gaven', 'skisser', 'skissermedlemmer', 'skisserdeltakere', 'tilleggbarn', 'internkurs'];
-const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, bindingMnd = null, betalerIkke = false, frys = false, timepakke = 0, plasser = true } = {}) => {
+const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, bindingMnd = null, betalerIkke = false, frys = false, timepakke = 0, plasser = true, betaltForrige = false } = {}) => {
   const p = php(`
     $plan = ${plan ? `'${plan}'` : 'null'};
     $pl = $plan ? Medlemskap::plan($plan) : null;
@@ -112,6 +112,11 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
     }
     require dirname(__DIR__) . '/betalt-fixture.php';
     test_betalt_medlem($id);
+    if (${betaltForrige ? 1 : 0}) {
+      // Bare forrige maaned er betalt: perioden er over i dag.
+      DB::kjor('UPDATE payments SET gjelder_fra = :f WHERE member_id = :m',
+        ['f' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('first day of previous month')->format('Y-m-d'), 'm' => $id]);
+    }
     if (${minutter} > 0) {
       $m = strtotime(Stempling::manedStart() . ' UTC') + 120;
       $oktId = DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m), 'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);
@@ -162,6 +167,9 @@ lagPerson('aar', 'Minside Aar', { plan: AAR, minutter: 60, bindingMnd: 12 });
 lagPerson('pakke', 'Minside Pakke', { plan: MINI, minutter: MINITIMER * 60 + 30, timepakke: 6 });
 lagPerson('over', 'Minside Over', { plan: MINI, minutter: MINITIMER * 60 + 90 });
 lagPerson('frosset', 'Minside Frosset', { status: 'pause', plan: MINI, frys: true });
+// Fryst og stengt ute: den betalte perioden er over (eieren, 2. oktober 2026).
+// Ikke med i fasiten over — den er laget for de aatte under.
+lagPerson('fryststengt', 'Minside Fryststengt', { status: 'pause', plan: MINI, frys: true, betaltForrige: true });
 lagPerson('betalerikke', 'Minside Betalerikke', { plan: MINI, betalerIkke: true });
 lagPerson('deltaker', 'Minside Deltaker', { status: 'ingen' });
 
@@ -296,25 +304,24 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     db('INSERT INTO content_blocks (nokkel, verdi) VALUES (:k, :v) ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)', { k, v });
   }
   await flyt(`Fryst medlem, hjem (${hva})`, async () => {
-    const p = await side('frosset', bredde, hoyde);
+    // Stengt ute: godkjent frys, og den betalte perioden er over.
+    const p = await side('fryststengt', bredde, hoyde);
     await gaa(p, '/min-side');
     await lukkVinduer(p);
     await dump(p, 'fryst-' + hva);
-    const til = String(verdi("SELECT til_dato FROM medlem_frys WHERE member_id = :m AND status = 'godkjent'", { m: brukere.frosset.id }));
+    const til = String(verdi("SELECT til_dato FROM medlem_frys WHERE member_id = :m AND status = 'godkjent'", { m: brukere.fryststengt.id }));
     const tekst = php(`return Booking::norskDatoKort('${til}');`);
-    const merke = p.locator('.ms-o-stempel span').filter({ hasText: /^Fryst til / }).filter({ visible: true }).first();
-    sjekk(`${hva}: «Fryst til ${tekst}» øverst`, await merke.isVisible().catch(() => false)
-      && (await merke.innerText()).trim().toLowerCase() === ('Fryst til ' + tekst).toLowerCase());
-    sjekk(`${hva}: ikke «Aktivt»`, !(await p.locator('.ms-o-stempel span').filter({ hasText: /^Aktivt$/i }).filter({ visible: true }).count()));
+    sjekk(`${hva}: «Fryst til ${tekst}» øverst`, await p.getByRole('heading', { name: 'Fryst til ' + tekst, exact: true }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: ikke «Medlemskapet venter på betaling»`, !(await synlig(p, 'Medlemskapet venter på betaling')));
     sjekk(`${hva}: «Stemple inn» er skjult`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
     const r = await api(p, '/api/stempling.php', { handling: 'inn' });
-    sjekk(`${hva}: serveren avviser innstempling (403)`, r.status === 403 && r.d?.fryst === true, JSON.stringify(r));
-    sjekk(`${hva}: ingen økt lagret`, Number(verdi('SELECT COUNT(*) FROM check_ins WHERE member_id = :m', { m: brukere.frosset.id })) === 0);
+    sjekk(`${hva}: serveren avviser innstempling som fryst (403)`, r.status === 403 && r.d?.fryst === true, JSON.stringify(r));
+    sjekk(`${hva}: ingen økt lagret`, Number(verdi('SELECT COUNT(*) FROM check_ins WHERE member_id = :m', { m: brukere.fryststengt.id })) === 0);
     const bred = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     sjekk(`${hva}: ingen sidelengs rulling`, !bred);
-    // Eieren, 2. oktober 2026: heller ingen dørkode, wifi, medlemstid eller
-    // Bordplass/Dreieskive mens frysen gjelder.
+    // Heller ingen dørkode, wifi, medlemstid eller Bordplass/Dreieskive.
     const meg = await api(p, '/api/meg.php');
+    sjekk(`${hva}: meg.php sier fryst til ${til}`, meg.d?.fryst?.til === til, JSON.stringify(meg.d?.fryst));
     sjekk(`${hva}: ingen dørkode eller wifi i meg.php`, JSON.stringify(meg.d?.internInfo) === '{}', JSON.stringify(meg.d?.internInfo));
     const kropp = await p.evaluate(() => document.body.innerText);
     sjekk(`${hva}: ingen «Dørkode» i toppen`, !(await p.locator('.ms-tl-pille').filter({ hasText: 'Dørkode' }).filter({ visible: true }).count()));
@@ -323,20 +330,25 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     sjekk(`${hva}: ingen Bordplass/Dreieskive`, !(await p.getByRole('button', { name: /Bordplass|Dreieskive/ }).filter({ visible: true }).count()));
     await gaa(p, '/stemple', 2500);
     await dump(p, 'fryst-stemple-' + hva);
+    sjekk(`${hva}: /stemple viser «Fryst til ${tekst}»`, await synlig(p, 'Fryst til ' + tekst, true));
     sjekk(`${hva}: /stemple har ingen «Stemple inn»`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: /stemple sier ikke «Innstempling er for medlemmer»`, !(await synlig(p, /Innstempling er for medlemmer/)));
     await p.context().close();
-    // Kontroll: et vanlig medlem ser alt dette på samme skjerm, saa sjekkene
-    // over maaler noe.
-    const q = await side('mini', bredde, hoyde);
+    // Kontroll: godkjent frys, men den betalte perioden er ikke over. Eieren,
+    // 2. oktober 2026: dager som er betalt for, har medlemmet alltid tilgang i.
+    const q = await side('frosset', bredde, hoyde);
     await gaa(q, '/min-side');
     await lukkVinduer(q);
+    await dump(q, 'fryst-betalt-' + hva);
     const megQ = await api(q, '/api/meg.php');
-    sjekk(`${hva}: kontroll — vanlig medlem får dørkoden`, megQ.d?.internInfo?.dorkode === DORKODE);
-    sjekk(`${hva}: kontroll — vanlig medlem ser «Dørkode ${DORKODE}» i toppen`, await q.locator('.ms-tl-pille').filter({ hasText: DORKODE }).filter({ visible: true }).count() > 0);
-    sjekk(`${hva}: kontroll — vanlig medlem ser medlemstid og Bordplass`, await q.locator('#minside-internkurs').filter({ visible: true }).count() > 0
+    sjekk(`${hva}: betalt med frys — ikke «fryst», får dørkoden`, megQ.d?.fryst === undefined && megQ.d?.internInfo?.dorkode === DORKODE, JSON.stringify(megQ.d?.fryst));
+    sjekk(`${hva}: betalt med frys — «Dørkode ${DORKODE}» i toppen`, await q.locator('.ms-tl-pille').filter({ hasText: DORKODE }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: betalt med frys — «Stemple inn», medlemstid og Bordplass`, await q.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count() > 0
+      && await q.locator('#minside-internkurs').filter({ visible: true }).count() > 0
       && await q.getByRole('button', { name: /Bordplass/ }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: betalt med frys — ingen «Fryst til»`, !(await synlig(q, /^Fryst til/i)));
     await gaa(q, '/stemple', 2500);
-    sjekk(`${hva}: kontroll — vanlig medlem har «Stemple inn» på /stemple`, await q.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: betalt med frys — «Stemple inn» på /stemple`, await q.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count() > 0);
     await q.context().close();
   });
   for (const k of ['Privat/dorkode', 'Privat/wifi']) {

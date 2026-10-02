@@ -8,10 +8,6 @@
       "erAdmin": false,
       "erMedlem": true,
       "erRegnskap": false,
-      "fryst": {
-        "til": "<dato>",
-        "tilTekst": "<dato>"
-      },
       "innlogget": true,
       "internInfo": {},
       "kanSelge": true,

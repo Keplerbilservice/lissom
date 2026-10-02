@@ -9,7 +9,10 @@
  * Reglene som testes:
  *
  *   1. Fryst = godkjent frys som dekker i dag (Frys::frystNaa), ogsaa foer
- *      members.status er satt til «pause». En frys som er over, en som ikke
+ *      members.status er satt til «pause» — men foerst naar den betalte
+ *      perioden er over (eieren, 2. oktober 2026): dager som er betalt for,
+ *      har medlemmet alltid tilgang i. Et gratismedlem er fryst med en gang.
+ *      En frys som er over, en som ikke
  *      har startet, en som venter paa svar og en som er avsluttet, fryser
  *      ikke. «pause» satt for haand uten frys bak seg er IKKE fryst, og har
  *      tilgang som foer (kontrolloeren, 2. oktober 2026).
@@ -84,7 +87,10 @@ $dag = static fn(int $n): string => (new DateTimeImmutable($idag))->modify(($n >
 
 $plan = (string) DB::verdi("SELECT navn FROM membership_plans WHERE aktiv = 1 AND engangs = 0 AND krever_fast_trekk = 0 AND timer IS NOT NULL ORDER BY timer LIMIT 1");
 $tag = 'frys-' . bin2hex(random_bytes(3));
-$nytt = static function (string $status) use ($tag, $plan, &$rydd): int {
+// Forrige maaned: den betalte perioden er over i dag (1. i denne maaneden
+// er forfall). Eieren, 2. oktober 2026: stengingen starter foerst da.
+$forrigeMnd = (new DateTimeImmutable($idag))->modify('first day of previous month')->format('Y-m-d');
+$nytt = static function (string $status, bool $betaltNaa = true) use ($tag, $plan, &$rydd, $forrigeMnd): int {
     $id = DB::settInn('members', [
         'navn' => 'Frystest ' . $tag, 'epost' => $tag . '-' . bin2hex(random_bytes(3)) . '@lissom.test',
         'telefon' => '+479' . random_int(1000000, 9999999), 'rolle' => 'medlem', 'status' => $status,
@@ -92,6 +98,9 @@ $nytt = static function (string $status) use ($tag, $plan, &$rydd): int {
     ]);
     $rydd[] = $id;
     test_betalt_medlem($id);
+    if (!$betaltNaa) {
+        DB::kjor('UPDATE payments SET gjelder_fra = :f WHERE member_id = :m', ['f' => $forrigeMnd, 'm' => $id]);
+    }
     return $id;
 };
 $frys = static fn(int $m, string $fra, string $til, string $status = 'godkjent'): int => DB::settInn('medlem_frys', [
@@ -107,21 +116,36 @@ $a = $nytt('aktiv');
 sjekk('betalt, ingen frys: ikke fryst', Frys::frystNaa($rad($a)) === null);
 sjekk('… og har tilgang', er_aktivt_medlem($rad($a)));
 
-$b = $nytt('aktiv');
+$p = $nytt('pause');
+$frys($p, $dag(-10), $dag(60));
+sjekk('godkjent frys, men betalt for i dag: IKKE fryst (stengingen venter til perioden er over)',
+    Frys::frystNaa($rad($p)) === null, json_encode(Frys::frystNaa($rad($p))));
+sjekk('… og har tilgang', er_aktivt_medlem($rad($p)));
+$forfall = Medlemskap::dekkerTil(['gjelder_fra' => $idag]);
+$sisteBetalt = (new DateTimeImmutable($forfall))->modify('-1 day')->format('Y-m-d');
+sjekk("… fortsatt ikke fryst siste betalte dag ($sisteBetalt)", Frys::frystNaa($rad($p), $sisteBetalt) === null);
+sjekk("… men fryst fra forfallsdagen ($forfall)", Frys::frystNaa($rad($p), $forfall) === ['til' => $dag(60)]);
+
+$b = $nytt('aktiv', false);
 $frys($b, $dag(-3), $dag(20));
-sjekk('godkjent frys i dag, status ennaa «aktiv»: fryst til sluttdatoen',
+sjekk('godkjent frys i dag, perioden er over, status ennaa «aktiv»: fryst til sluttdatoen',
     Frys::frystNaa($rad($b)) === ['til' => $dag(20)], json_encode(Frys::frystNaa($rad($b))));
 
-$c = $nytt('pause');
+$c = $nytt('pause', false);
 $frys($c, $dag(-10), $dag(15));
-sjekk('status «pause» med godkjent frys: fryst til sluttdatoen', Frys::frystNaa($rad($c)) === ['til' => $dag(15)]);
-sjekk('… har fortsatt en betalt periode (det var feilen)', Medlemskap::harBetaltPeriode($rad($c)));
+sjekk('status «pause», godkjent frys, perioden er over: fryst til sluttdatoen', Frys::frystNaa($rad($c)) === ['til' => $dag(15)]);
+
+$fri = $nytt('pause');
+DB::oppdater('members', ['betaler_ikke' => 1], ['id' => $fri]);
+DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $fri]);
+$frys($fri, $dag(-1), $dag(10));
+sjekk('gratismedlem med godkjent frys: fryst (har ikke betalt for dagene)', Frys::frystNaa($rad($fri)) === ['til' => $dag(10)]);
 
 $d = $nytt('pause');
 $frys($d, $dag(-30), $dag(-1));
 sjekk('frysen var over i gaar, status ikke satt tilbake ennaa: ikke fryst', Frys::frystNaa($rad($d)) === null);
 
-$e = $nytt('aktiv');
+$e = $nytt('aktiv', false);
 $frys($e, $dag(1), $dag(30));
 sjekk('godkjent frys som starter i morgen: ikke fryst i dag', Frys::frystNaa($rad($e)) === null);
 sjekk('… men fryst den dagen den starter', Frys::frystNaa($rad($e), $dag(1)) === ['til' => $dag(30)]);
@@ -188,8 +212,6 @@ sjekk('fryst: meg.php svarer 200 med «fryst» og sluttdatoen', $r['status'] ===
 sjekk('… og datoen som tekst', ($r['d']['fryst']['tilTekst'] ?? '') === Booking::norskDatoKort($dag(15)));
 sjekk('fryst: ingen dørkode eller wifi i meg.php', ((array) ($r['d']['internInfo'] ?? [])) === [],
     json_encode($r['d']['internInfo'] ?? null));
-$r = $kall('/api/medlem-frys.php', $tc);
-sjekk('fryst: frys-statusen paa Min side svarer 200', $r['status'] === 200, (string) $r['status']);
 $r = $kall('/api/mine-plasser.php', $tc);
 sjekk('fryst: kursplassene svarer 200', $r['status'] === 200, (string) $r['status']);
 
@@ -203,6 +225,18 @@ $r = $kall('/api/meg.php', $token($b));
 sjekk('fryst foer statusen er satt: heller ingen dørkode', ((array) ($r['d']['internInfo'] ?? [])) === []);
 $r = $kall('/api/meg.php', $token($d));
 sjekk('frysen er over: dørkoden er tilbake', ($r['d']['internInfo']['dorkode'] ?? null) === $kode);
+
+// Godkjent frys, men betalt for i dag: alt som foer (eieren, 2. oktober 2026).
+$tp = $token($p);
+$r = $kall('/api/meg.php', $tp);
+sjekk('betalt periode med frys: ingen «fryst», dørkoden kommer', !array_key_exists('fryst', (array) $r['d'])
+    && ($r['d']['internInfo']['dorkode'] ?? null) === $kode, json_encode(array_keys((array) $r['d'])));
+$r = $kall('/api/stempling.php', $tp, ['handling' => 'inn']);
+sjekk('… og stempler inn i dagene som er betalt', $r['status'] === 200 && $okter($p) === 1, json_encode($r));
+$kall('/api/stempling.php', $tp, ['handling' => 'ut']);
+// Gratismedlem med frys: stengt
+$r = $kall('/api/stempling.php', $token($fri), ['handling' => 'inn']);
+sjekk('gratismedlem med frys: innstempling avvises (fryst)', $r['status'] === 403 && ($r['d']['fryst'] ?? null) === true, json_encode($r));
 
 // Medlemstid
 $kurs = DB::settInn('courses', ['slug' => "frys-medlem-$tag", 'tittel' => 'Frystest medlemstid', 'type' => 'kurs',
@@ -256,10 +290,13 @@ $rydd[] = $tilM;
 $pris = (int) DB::verdi('SELECT pris_ore FROM membership_plans WHERE navn = :n', ['n' => $plan]);
 $avt = DB::settInn('subscriptions', ['member_id' => $fra, 'plan' => $plan, 'pris_ore' => $pris, 'status' => 'aktiv']);
 DB::settInn('payments', ['member_id' => $fra, 'subscription_id' => $avt, 'formal' => 'medlemskap', 'type' => 'epayment',
-    'status' => 'betalt', 'belop_ore' => $pris, 'gjelder_fra' => $idag, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(12)),
+    'status' => 'betalt', 'belop_ore' => $pris, 'gjelder_fra' => $forrigeMnd, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(12)),
     'idempotency_key' => Vipps::uuid()]);
 $fid = $frys($fra, $dag(-3), $dag(15));
 DB::settInn('medlem_frys', ['member_id' => $fra, 'fra_dato' => $dag(-200), 'til_dato' => $dag(-180), 'status' => 'avsluttet', 'status_for' => 'aktiv']);
+// Avsluttet frys som overlapper denne maaneden: kan fortsatt hoppe over et trekk.
+$denneMnd = (new DateTimeImmutable($idag))->modify('first day of this month')->format('Y-m-d');
+$fidAvsl = DB::settInn('medlem_frys', ['member_id' => $fra, 'fra_dato' => $forrigeMnd, 'til_dato' => $denneMnd, 'status' => 'avsluttet', 'status_for' => 'aktiv']);
 sjekk('foer flyttingen: den gamle raden er fryst', Frys::frystNaa($rad($fra)) === ['til' => $dag(15)]);
 $r = $kall('/api/admin/medlemmer.php', $token($admin), ['handling' => 'flytt-medlemskap', 'fra' => $fra, 'til' => $tilM]);
 sjekk('flyttingen gaar gjennom', $r['status'] === 200, json_encode($r));
@@ -268,6 +305,8 @@ sjekk('… og er fryst til samme dato', Frys::frystNaa($rad($tilM)) === ['til' =
 sjekk('… frysen er flyttet, den gamle historikken ble igjen',
     (int) DB::verdi('SELECT member_id FROM medlem_frys WHERE id = :i', ['i' => $fid]) === $tilM
     && (int) DB::verdi("SELECT COUNT(*) FROM medlem_frys WHERE member_id = :m AND status = 'avsluttet'", ['m' => $fra]) === 1);
+sjekk('… og den avsluttede frysen som overlapper denne maaneden ble med',
+    (int) DB::verdi('SELECT member_id FROM medlem_frys WHERE id = :i', ['i' => $fidAvsl]) === $tilM);
 sjekk('… og den gamle raden er ikke fryst', Frys::frystNaa($rad($fra)) === null);
 $tt = $token($tilM);
 $r = $kall('/api/stempling.php', $tt, ['handling' => 'inn']);
@@ -277,6 +316,11 @@ DB::oppdater('medlem_frys', ['fra_dato' => $dag(-20), 'til_dato' => $dag(-1)], [
 Frys::gjenapneForfalte();
 sjekk('naar frysen er over, aapnes det nye medlemmet igjen («aktiv»)', (string) $rad($tilM)['status'] === 'aktiv');
 sjekk('… frysen staar som avsluttet', (string) DB::verdi('SELECT status FROM medlem_frys WHERE id = :i', ['i' => $fid]) === 'avsluttet');
+sjekk('… og er ikke fryst lenger', Frys::frystNaa($rad($tilM)) === null);
+// Trekket for denne maaneden kommer (som Vipps ville gjort det).
+DB::settInn('payments', ['member_id' => $tilM, 'subscription_id' => $avt, 'formal' => 'medlemskap', 'type' => 'recurring_charge',
+    'status' => 'betalt', 'belop_ore' => $pris, 'gjelder_fra' => $denneMnd, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(12)),
+    'idempotency_key' => Vipps::uuid()]);
 $r = $kall('/api/stempling.php', $tt, ['handling' => 'inn']);
 sjekk('… og stempler inn som foer', $r['status'] === 200 && $okter($tilM) === 1, json_encode($r));
 $kall('/api/stempling.php', $tt, ['handling' => 'ut']);

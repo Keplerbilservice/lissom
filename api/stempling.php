@@ -23,6 +23,12 @@ if (!$harTilgang && !in_array((string) $medlem['status'], ['prove', 'aktiv', 'pa
     && Stempling::apenOkt($id) === null) {
     Svar::feil('Denne delen er for medlemmer.', 403, ['ikkeMedlem' => true]);
 }
+// Fryst medlemskap: ingen innstempling (eieren, 2. oktober 2026). Sjekkes
+// foer betalingen, saa et fryst medlem faar beskjed om frysen og ikke om
+// betaling. Ut og «feil tid» er aldri sperret.
+if (Foresporsel::metode() === 'POST' && Foresporsel::tekst('handling') === 'inn') {
+    krev_ikke_fryst($medlem, 'stemple inn');
+}
 // En utløpt betalingsperiode skal aldri låse en åpen økt inne.
 if (!$harTilgang && Foresporsel::metode() !== 'GET'
     && !in_array(Foresporsel::tekst('handling'), ['ut', 'glemt', 'feiltid'], true)) {
@@ -46,9 +52,6 @@ if (Foresporsel::metode() === 'POST') {
 
     $handling = Foresporsel::tekst('handling');
     if ($handling === 'inn') {
-        // Fryst medlemskap: ingen innstempling, selv med betalt periode
-        // (eieren, 2. oktober 2026). Ut og «feil tid» er aldri sperret.
-        krev_ikke_fryst($medlem, 'stemple inn');
         // Hva medlemmet skal bruke. Eieren, 30. august: «kunne det voere
         // lost om de booker inn og velger dreieskive, eller verkstedplass».
         // Uten valget gjetter regnestykket at de staar ved en skive.

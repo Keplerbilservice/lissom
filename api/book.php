@@ -118,12 +118,13 @@ if ((string) $tema === 'Kun for medlemmer') {
     if ($medlem === null) {
         Svar::feil('Dette arrangementet er for medlemmer. Logg inn for å melde deg på.', 401, ['loggInn' => true]);
     }
+    // Fryst medlemskap: ingen medlemstid etter den betalte perioden (eieren,
+    // 2. oktober 2026). Foer medlemssjekken, saa beskjeden handler om
+    // frysen. Vanlige kurs betalt for seg er ikke rørt.
+    krev_ikke_fryst($medlem, 'melde deg på medlemstid');
     if (!er_aktivt_medlem($medlem)) {
         Svar::feil('Dette arrangementet er for medlemmer. Du melder deg inn fra Min side.', 403, ['ikkeMedlem' => true]);
     }
-    // Fryst medlemskap: ingen medlemstid, selv med betalt periode (eieren,
-    // 2. oktober 2026). Vanlige kurs betalt for seg er ikke rørt.
-    krev_ikke_fryst($medlem, 'melde deg på medlemstid');
 }
 
 try {

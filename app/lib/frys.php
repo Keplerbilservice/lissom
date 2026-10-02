@@ -124,7 +124,8 @@ final class Frys
      * om members.status alt er satt til «pause» (startForfalte() kjoeres
      * bare der frys leses). Er frysen over, er medlemmet ikke fryst, selv om
      * statusen ikke er satt tilbake ennaa: perioden etter frysen skal virke
-     * som foer. «pause» satt for haand, uten en godkjent frys bak seg, er
+     * som foer. Og: stengingen starter foerst naar den betalte perioden er
+     * over (se under). «pause» satt for haand, uten en godkjent frys bak seg, er
      * ikke fryst og beholder oppfoerselen fra foer (kontrolloeren, 2. oktober
      * 2026).
      *
@@ -145,6 +146,16 @@ final class Frys
             ['m' => $id, 'd1' => $idag, 'd2' => $idag]
         );
         if ($til === null || (string) $til === '') {
+            return null;
+        }
+        // Eieren, 2. oktober 2026: stengingen starter foerst naar den betalte
+        // perioden er over. Dager medlemmet har betalt for, har det alltid
+        // tilgang i — ogsaa med en godkjent frys. Samme periodelogikk som
+        // tilgangen (Medlemskap::harBetaltPeriode). Et gratismedlem
+        // (betaler_ikke) har ikke betalt for noen dager, og er fryst.
+        $betalt = $medlem;
+        $betalt['betaler_ikke'] = 0;
+        if (Medlemskap::harBetaltPeriode($betalt, $idag)) {
             return null;
         }
         return ['til' => substr((string) $til, 0, 10)];

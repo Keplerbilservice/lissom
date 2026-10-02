@@ -4853,6 +4853,10 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ stLoggInn }}" hint-size="100%,56px">Logg inn med Vipps</x-import>
             </sc-if>
 
+            <sc-if value="{{ stFryst }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--lissom-brown);">{{ stFrystTekst }}</p>
+            </sc-if>
+
             <sc-if value="{{ stIkkeMedlem }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Innstempling er for medlemmer. Er du på kurs, er du velkommen inn — det er kursholderen som holder styr på tida.</p>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ stTilMinSide }}" hint-size="100%,52px">Til Min side</x-import>
@@ -5405,7 +5409,8 @@ window.__resources = {
                uten at skjermen maa tegnes om. 760 px, som resten av sida. -->
           <sc-if value="{{ visUbetaltMedlemskap }}" hint-placeholder-val="{{ false }}">
 <section class="ms-o-stempel" style="background:var(--surface-card);border:2px solid var(--terracotta-600);border-radius:var(--radius-lg);padding:var(--space-6);">
-<h2>Medlemskapet venter på betaling</h2><p>Perioden er ikke betalt. Medlemstilgang og nye timer åpnes når betalingen er registrert.</p>
+<sc-if value="{{ ubetaltFryst }}" hint-placeholder-val="{{ false }}"><h2>{{ frystTittel }}</h2></sc-if>
+<sc-if value="{{ ubetaltIkkeFryst }}" hint-placeholder-val="{{ true }}"><h2>Medlemskapet venter på betaling</h2><p>Perioden er ikke betalt. Medlemstilgang og nye timer åpnes når betalingen er registrert.</p></sc-if>
 <button type="button" onClick="{{ goMedlemskap }}">Forny og betal medlemskap</button>
 <sc-if value="{{ ubetaltKanStempleUt }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ ubetaltStempleUt }}">Stemple ut</button></sc-if>
 </section></sc-if>
@@ -34559,6 +34564,13 @@ class Component extends DCLogic {
    * de to sidene som tegnes — samme skjerm og samme data, bare rollen er
    * satt for hand. I designverktoyet finnes ingen server, og da vises alt.
    */
+  /** «Fryst til <dato>» naar serveren sier at medlemmet er stengt ute av en frys. */
+  frystTekst() {
+    const f = this.state.fryst;
+    if (!f) return '';
+    return f.tilTekst ? 'Fryst til ' + f.tilTekst : 'Fryst';
+  }
+
   medlemsvisning() {
     const fh = this.state.fhRolle || '';
     if (fh) return fh === 'medlem';
@@ -58464,7 +58476,7 @@ class Component extends DCLogic {
           aboHindring: (a && a.hindring) || '',
           // Fryst medlemskap: «Fryst til <dato>» i stedet for «Aktivt»
           // (eieren, 2. oktober 2026). Serveren avgjør (api/meg.php).
-          aboBadge: fryst ? (fryst.tilTekst ? 'Fryst til ' + fryst.tilTekst : 'Fryst')
+          aboBadge: fryst ? this.frystTekst()
                       : a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
                       : (oppsagt ? 'Sagt opp' : 'Aktivt'),
           aboBadgeStil: {
@@ -69327,7 +69339,11 @@ class Component extends DCLogic {
           // stemple ut (eieren, 2. oktober 2026).
           stKanStemple: this.state.innlogget && medlem && (!this.state.fryst || inne),
           stMaaLoggeInn: !this.state.innlogget,
-          stIkkeMedlem: this.state.innlogget && !medlem,
+          // Stengt ute av en frys: «Fryst til <dato>», samme tekst som paa
+          // Min side (eieren, 2. oktober 2026).
+          stFryst: this.state.innlogget && !!this.state.fryst && !inne,
+          stFrystTekst: this.frystTekst(),
+          stIkkeMedlem: this.state.innlogget && !medlem && !this.state.fryst,
           stKnapp: inne ? 'Stemple ut' : 'Stemple inn',
           stVariant: inne ? 'secondary' : 'primary',
           stHjelp: inne
@@ -75640,6 +75656,11 @@ class Component extends DCLogic {
       tilPassordinnlogging: () => { this.setState({ side: 'adminlogin', liFeil: null }); window.scrollTo(0, 0); },
       erMedlem: this.medlemsvisning(),
       visUbetaltMedlemskap: this.erPublisert() && !!this.state.betalingMangler,
+      // Fryst og stengt ute etter den betalte perioden (eieren, 2. oktober
+      // 2026): «Fryst til <dato>» i stedet for «venter på betaling».
+      ubetaltFryst: !!this.state.fryst,
+      ubetaltIkkeFryst: !this.state.fryst,
+      frystTittel: this.frystTekst(),
       ubetaltKanStempleUt: !!this.state.betalingMangler && this.erInne(),
       ubetaltStempleUt: () => { if (this.erInne()) this.vekslStempling(); },
       visBliMedlem: this.state.fhRolle

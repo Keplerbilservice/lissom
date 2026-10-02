@@ -3095,14 +3095,15 @@
         {
             "id": "fryst-medlem-ingen-tilgang",
             "dato": "2026-10-02",
-            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag kan ikke stemple inn eller booke medlemstid, selv med betalt periode. Min side viser «Fryst til <dato>» i stedet for «Aktivt», og «Stemple inn» er skjult. Mens frysen gjelder får medlemmet heller ikke dørkode og wifi (meg.php og «Dørkode» i toppen), og ser ikke «Kun for medlemmer»-banneret, Bordplass/Dreieskive eller knappen på /stemple. Stemple ut, frys-statusen, kjøp og kurs betalt for seg virker som før, og perioden etter frysen er urørt. Kontrolløren (samme dag): «pause» satt for hånd uten godkjent frys er ikke fryst, og «Flytt medlemskap» tar med frysen (sokt/godkjent) til det nye medlemmet.",
-            "hvor": "Min side (toppen, stempelkortet, medlemstid), /stemple, api/stempling.php, api/book.php (Kun for medlemmer), api/meg.php, Admin › Flytt medlemskap",
+            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag stenges ute — men først når den betalte perioden er over (eieren samme dag: dager som er betalt for, har medlemmet alltid tilgang i, også med godkjent frys; samme periodelogikk som harBetaltPeriode, gratismedlem er fryst med en gang). Stengt ute betyr: ingen innstempling, ingen medlemstid, ingen dørkode og wifi (meg.php og «Dørkode» i toppen), ingen «Kun for medlemmer»-banner, Bordplass/Dreieskive eller knapp på /stemple. Min side og /stemple viser «Fryst til <dato>» (ja fra eieren) i stedet for «venter på betaling»/«Aktivt». Stemple ut, kjøp og kurs betalt for seg virker som før. «pause» satt for hånd uten godkjent frys er ikke fryst. «Flytt medlemskap» tar med frys-rader som er søkt/godkjent, og avsluttede som fortsatt kan hoppe over et trekk (til_dato fra denne måneden eller avtalens neste trekk), med avslutningsdagen urørt.",
+            "hvor": "Min side (toppen, stempelkortet, ubetalt-ruta, medlemstid), /stemple, api/stempling.php, api/book.php (Kun for medlemmer), api/meg.php, Admin › Flytt medlemskap",
             "kode": [
                 {
                     "fil": "app/lib/frys.php",
                     "finnes": [
                         "public static function frystNaa(array $medlem, ?string $idag = null): ?array",
-                        "WHERE member_id = :m AND status = 'godkjent'"
+                        "WHERE member_id = :m AND status = 'godkjent'",
+                        "if (Medlemskap::harBetaltPeriode($betalt, $idag)) {"
                     ],
                     "ikkeFinnes": [
                         "return $pause ? ['til' => null] : null;"
@@ -3136,31 +3137,49 @@
                 {
                     "fil": "api/admin/medlemmer.php",
                     "finnes": [
-                        "\"UPDATE medlem_frys SET member_id = :ny",
-                        "WHERE member_id = :gml AND status IN ('sokt', 'godkjent')\","
+                        "\"UPDATE medlem_frys SET member_id = :ny, updated_at = updated_at",
+                        "OR (status = 'avsluttet' AND til_dato >= :grense))\","
                     ]
                 },
                 {
                     "fil": "lissom-2108.html",
                     "finnes": [
                         "fryst: d.fryst || null,",
-                        "aboBadge: fryst ? (fryst.tilTekst ? 'Fryst til ' + fryst.tilTekst : 'Fryst')",
+                        "aboBadge: fryst ? this.frystTekst()",
+                        "return f.tilTekst ? 'Fryst til ' + f.tilTekst : 'Fryst';",
                         "const somMedlem = this.medlemsvisning() && !fryst;",
                         "<sc-if value=\"{{ msVisDorkode }}\" hint-placeholder-val=\"{{ true }}\">",
                         "msVisDorkode: this.medlemsvisning() && !this.state.fryst,",
                         "harMedlemskurs: this.medlemsvisning() && !this.state.fryst",
                         "const alle = (this.state.fryst && !inne) ? [] : (st.ressurser || []);",
-                        "stKanStemple: this.state.innlogget && medlem && (!this.state.fryst || inne),"
+                        "stKanStemple: this.state.innlogget && medlem && (!this.state.fryst || inne),",
+                        "stFryst: this.state.innlogget && !!this.state.fryst && !inne,",
+                        "<sc-if value=\"{{ ubetaltFryst }}\" hint-placeholder-val=\"{{ false }}\"><h2>{{ frystTittel }}</h2></sc-if>"
                     ]
                 },
                 {
                     "fil": "tests/frys-tilgang.php",
                     "finnes": [
-                        "fryst: «Stemple inn» avvises med 403",
+                        "godkjent frys, men betalt for i dag: IKKE fryst",
                         "fryst: medlemstid avvises med 403",
                         "fryst: ingen dørkode eller wifi i meg.php",
                         "«pause» for haand uten frys: stempler inn som foer",
                         "… og er fryst til samme dato"
+                    ]
+                },
+                {
+                    "fil": "tests/frys-trekk.php",
+                    "finnes": [
+                        "(a) frys over 20 dager",
+                        "(b) frys over 10 dager",
+                        "(c) engangsbetalt",
+                        "desember (avsluttet frys, forsinket runde) hoppes ogsaa over"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/kjor.sh",
+                    "finnes": [
+                        "trekk-l5-l6-l10 frys-trekk; do"
                     ]
                 }
             ]

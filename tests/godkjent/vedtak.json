@@ -3278,14 +3278,13 @@
         {
             "id": "nyadmin-kalender-k0-egen-fil",
             "dato": "2026-10-02",
-            "hva": "Ny kalender i admin-ny, bit K0 (eieren godkjente del 2, 2. oktober 2026): kalenderkoden (calendar, kalendernotat, hendelsesarket, deltakere, ny kursdato og Flytt tidspunkt) er flyttet uendret fra admin-ny/app.js til admin-ny/kalender.js, kalenderstilen uendret fra design.css til kalender.css (lenket i admin-ny.html etter design.css), og kalender-mobil.js og kalender-pc.js er tomme stubber som kalender.js importerer, så K3 og K4 kan bygges hver for seg. Ingen ny atferd; courseMutation hentes fra ui.js, ingen kopi.",
+            "hva": "Ny kalender i admin-ny, bit K0 (eieren godkjente del 2, 2. oktober 2026): kalenderkoden (calendar, kalendernotat, hendelsesarket, deltakere, ny kursdato og Flytt tidspunkt) er flyttet uendret fra admin-ny/app.js til admin-ny/kalender.js, kalenderstilen uendret fra design.css til kalender.css (lenket i admin-ny.html etter design.css), og kalender-mobil.js og kalender-pc.js er tomme stubber som kalender.js importerer, så K3 og K4 kan bygges hver for seg. Ingen ny atferd; courseMutation hentes fra ui.js, ingen kopi. (Stubben kalender-mobil.js er erstattet av K3, 2. oktober 2026; se nyadmin-kalender-k3-mobil.)",
             "hvor": "admin-ny › Kalender (#kalender) · Kurs › Deltakere / Ny kursdato",
             "kode": [
                 {
                     "fil": "admin-ny/kalender.js",
                     "finnes": [
                         "export function kalenderOppsett(h){({title,item,details,href,act,refresh}=h);}",
-                        "import './kalender-mobil.js';",
                         "import './kalender-pc.js';",
                         "export {calendar,participants,newDate};",
                         "async function calendar(){",
@@ -3329,15 +3328,65 @@
                     ]
                 },
                 {
-                    "fil": "admin-ny/kalender-mobil.js",
-                    "finnes": [
-                        "export {};"
-                    ]
-                },
-                {
                     "fil": "admin-ny/kalender-pc.js",
                     "finnes": [
                         "export {};"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "nyadmin-kalender-k3-mobil",
+            "dato": "2026-10-02",
+            "hva": "Ny kalender i admin-ny, bit K3 (eieren godkjente mobilkalenderen 2. oktober 2026, 390 px): på smal skjerm (max-width:760px) tegner kalender.js mobilvisningen fra kalender-mobil.js; PC-visningen er uendret (målt lik DOM og piksler i Uke, Måned, Dag og arket mot K0). Øverst kortene «Går nå» og «Neste» (kurs, påmeldt/plasser, tid; mønster fra gamle admin kalNaa*; vakter, brenning, notater, innsjekk og avlyste teller ikke). Så segmentpille Dag · Uke · Måned, «I dag»-pille og ett søkeikon som åpner søk, «Velg dato» og typefilter (ingen type valgt på forhånd). Ukestripe med sju dager og prikk når det skjer noe; man sveiper sidelengs mellom ukene (touch-action:pan-y, loddrett sveip ruller siden), ingen piler. Valgt dag er timekort; hele kortet åpner hendelsesarket (eventDetails). Uke viser bare dager med noe. Måned er en rute man sveiper mellom månedene. Alle trykkflater minst 44 px. Ny kursdato, Nytt kalendernotat og Abonner på kalenderen står som piller under kalenderen (abonner() er felles for PC og mobil). Lissom-drakten: ds-colors.css og ds-spacing.css importeres i kalender.css.",
+            "hvor": "admin-ny › Kalender (#kalender) på mobil",
+            "kode": [
+                {
+                    "fil": "admin-ny/kalender.js",
+                    "finnes": [
+                        "import {kalenderMobil,erSmal,SMAL} from './kalender-mobil.js';",
+                        "async function calendar(){if(erSmal())return kalenderMobil({title,eventDetails,handlinger:[",
+                        "button('Abonner på kalenderen',abonner)",
+                        "import './kalender-pc.js';"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-mobil.js",
+                    "finnes": [
+                        "export const SMAL='(max-width:760px)';",
+                        "export async function kalenderMobil({title,eventDetails,handlinger}){",
+                        "kort(gaar,'Går nå','gaar')",
+                        "kort(neste,'Neste','neste')",
+                        "[['dag','Dag'],['uke','Uke'],['maaned','Måned']]",
+                        "text:'I dag'",
+                        "'aria-label':'Søk i kalender'",
+                        "'aria-label':'Velg dato'",
+                        "onclick:()=>eventDetails(e)",
+                        "function sveip(node,bla)"
+                    ],
+                    "ikkeFinnes": [
+                        "← Forrige",
+                        "Neste →",
+                        "'Åpne'"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender.css",
+                    "finnes": [
+                        "@import url(\"/ds-colors.css\");",
+                        "@import url(\"/ds-spacing.css\");",
+                        ".kalm-uke,.kalm-mnd-rute{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;touch-action:pan-y;",
+                        ".kalm .kalm-pille{min-height:44px;min-width:44px;border-radius:999px;",
+                        ".calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kalender-mobil.mjs",
+                    "finnes": [
+                        "sveip sidelengs blar uka, loddrett sveip ruller siden",
+                        "alle trykkflater er minst 44 px",
+                        "ingen type valgt på forhånd",
+                        "PC-kalenderen som før"
                     ]
                 }
             ]

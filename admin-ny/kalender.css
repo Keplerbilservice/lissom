@@ -1,5 +1,63 @@
+/* Lissom-drakten: fargene og avstandene fra ds-colors.css og ds-spacing.css (K3). */
+@import url("/ds-colors.css");
+@import url("/ds-spacing.css");
 /* Kalenderen i arbeidsrommet (#kalender). Flyttet uendret fra design.css (K0, 2. oktober 2026). */
 .calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}.day{border:1px solid var(--line);background:var(--paper);border-radius:12px;min-height:160px;padding:10px;min-width:0}.day.today{border:2px solid #a2502b}.day h3{font-family:'Alegreya Sans',sans-serif;font-size:16px;letter-spacing:0;text-transform:capitalize}.event{width:100%;text-align:left;display:block;background:var(--ground);border:0;border-left:3px solid #a2502b;border-radius:7px;padding:9px;margin:8px 0;overflow-wrap:anywhere;font-size:15px}.event strong,.event span{display:block}.event.cancelled{opacity:.65;border-color:var(--red)}.calendar.single{grid-template-columns:1fr}
 @media(min-width:1500px){.day{min-height:190px}}
 @media(max-width:1100px){.calendar{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.calendar{grid-template-columns:1fr}.calendar .day{min-height:0;padding:15px}.calendar .day.blank{display:none}.event{padding:13px;font-size:17px}}
+/* ── Kalenderen på mobil (K3, 2. oktober 2026). Bare tegnet på smal skjerm av kalender-mobil.js. ──
+   Alt som kan trykkes er minst 44 px. Pilleknapper som resten av drakten. */
+.kalm{display:grid;gap:var(--space-3)}
+.kalm .kalm-hode{margin-bottom:var(--space-1)}
+.kalm .kalm-hode .muted:empty,.kalm .kalm-hode .actions:empty{display:none}
+.kalm-na{display:grid;gap:2px;width:100%;min-height:44px;text-align:left;justify-content:stretch;align-items:start;padding:var(--space-4);border-radius:16px;border:1px solid var(--border-subtle,var(--clay-200));background:var(--surface-card,#fff);color:var(--text-heading,var(--lissom-brown));font-weight:400}
+.kalm-na.gaar{background:var(--lissom-brown);border-color:var(--lissom-brown);color:var(--clay-100)}
+.kalm-na-e{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta-600)}
+.kalm-na.gaar .kalm-na-e{color:var(--lissom-yellow)}
+.kalm-na-h{font-family:Bitter,Georgia,serif;font-size:21px;font-weight:800;letter-spacing:-.02em;margin:3px 0 1px;overflow-wrap:anywhere}
+.kalm-na.gaar .kalm-na-h{color:var(--clay-50)}
+.kalm-na-p{font-size:15px;color:var(--clay-600)}
+.kalm-na.gaar .kalm-na-p{color:rgba(244,235,222,.78)}
+.kalm-na-bar{display:block;height:6px;border-radius:99px;background:var(--clay-200);margin:var(--space-2) 0 var(--space-1);overflow:hidden}
+.kalm-na.gaar .kalm-na-bar{background:rgba(244,235,222,.18)}
+.kalm-na-bar>span{display:block;height:100%;border-radius:99px;background:var(--lissom-yellow)}
+.kalm-styr{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2)}
+.kalm-seg{display:flex;flex:1;min-width:0;padding:3px;gap:2px;border-radius:999px;background:var(--clay-100);border:1px solid var(--clay-200)}
+.kalm-seg .kalm-pille{flex:1;border:0;background:transparent;padding:0 var(--space-2)}
+.kalm-seg .kalm-pille[aria-pressed=true]{background:var(--lissom-brown);color:var(--clay-50)}
+.kalm .kalm-pille{min-height:44px;min-width:44px;border-radius:999px;padding:0 var(--space-4);font-size:16px;white-space:nowrap}
+.kalm .kalm-typer .kalm-pille[aria-pressed=true]{background:var(--lissom-yellow);border-color:var(--lissom-yellow)}
+.kalm-ikon{position:relative;width:44px;min-width:44px;height:44px;padding:0;border-radius:999px}
+.kalm-ikon.aktiv::after{content:"";position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--terracotta-600)}
+.kalm-panel{display:grid;gap:var(--space-2);padding:var(--space-3);border-radius:16px;background:var(--surface-card,#fff);border:1px solid var(--clay-200)}
+.kalm-panel[hidden]{display:none}
+.kalm-panel input{min-height:44px;width:100%;border:1px solid var(--clay-200);border-radius:12px;background:var(--clay-100);padding:var(--space-2) var(--space-3)}
+.kalm-typer{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.kalm-innhold{display:grid;gap:var(--space-3)}
+.kalm-mnd{margin:var(--space-1) 0 0;font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--clay-600)}
+.kalm-uke,.kalm-mnd-rute{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;touch-action:pan-y;transition:transform .18s ease}
+.kalm-ukedag,.kalm-celle{display:grid;justify-items:center;align-content:center;gap:1px;min-width:0;min-height:62px;padding:6px 0;border-radius:14px;border:1px solid transparent;background:transparent;font-weight:400}
+.kalm-celle{min-height:48px;padding:4px 0}
+.kalm-ukedag i,.kalm-celle i{font-style:normal;font-size:13px;color:var(--clay-600);text-transform:lowercase}
+.kalm-celle i{display:none}
+.kalm-ukedag b,.kalm-celle b{font-size:18px;font-weight:700}
+.kalm-ukedag.idag,.kalm-celle.idag{border-color:var(--terracotta-600)}
+.kalm-ukedag[aria-pressed=true],.kalm-celle[aria-pressed=true]{background:var(--lissom-brown);border-color:var(--lissom-brown);color:var(--clay-50)}
+.kalm-ukedag[aria-pressed=true] i{color:var(--clay-200)}
+.kalm-prikk{width:6px;height:6px;border-radius:50%;background:var(--terracotta-600)}
+.kalm-prikk.tom{visibility:hidden}
+[aria-pressed=true]>.kalm-prikk{background:var(--lissom-yellow)}
+.kalm-dag{display:grid;gap:var(--space-2)}
+.kalm-dag h2,.kalm-dag h3{margin:var(--space-2) 0 0;font-size:19px}
+.kalm-dag>p{margin:0}
+.kalm-kort{display:flex;align-items:flex-start;justify-content:flex-start;gap:var(--space-3);width:100%;min-height:56px;padding:var(--space-3) var(--space-4);text-align:left;border-radius:14px;border:1px solid var(--clay-200);border-left:4px solid var(--terracotta-600);background:var(--surface-card,#fff);font-weight:400}
+.kalm-kort.avlyst{opacity:.65;border-left-color:var(--red)}
+.kalm-tid{display:grid;flex:0 0 48px}
+.kalm-tid b{font-size:16px}
+.kalm-tid small{font-size:14px}
+.kalm-hva{display:grid;min-width:0;gap:2px}
+.kalm-hva strong{overflow-wrap:anywhere}
+.kalm-hva small{font-size:15px}
+.kalm-handlinger{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-4)}
+.kalm-handlinger .button{border-radius:999px}

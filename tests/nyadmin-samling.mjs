@@ -22,9 +22,13 @@ try{
   const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));
   const trykk=l=>mobil?l.tap():l.click();
   const aapneDag=async dag=>{
-   await p.goto(`${ADR}/admin-ny.html#kalender`);await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
-   await p.getByLabel('Kalendervisning').selectOption('dag');await p.getByLabel('Velg dato').fill(dag);
-   const brikke=p.locator('button.event',{hasText:s.tag});await brikke.first().waitFor();return brikke.first();
+   // Mobil: via #idag, så en oppfriskning som henger etter et lagret skjema ikke tegner over kalenderen vi trykker i.
+   if(mobil){await p.goto(`${ADR}/admin-ny.html#idag`);await p.locator(".kalm").waitFor({state:"detached"});}
+   await p.goto(`${ADR}/admin-ny.html#kalender`);if(mobil)await p.locator(".kalm").waitFor();await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
+   // Mobil (K3): datoen velges bak søkeikonet, og timekortene er .kalm-kort.
+   if(mobil){const ikon=p.getByRole('button',{name:'Søk i kalender',exact:true});if(await ikon.getAttribute('aria-expanded')!=='true')await trykk(ikon);await p.getByLabel('Velg dato').fill(dag);}
+   else{await p.getByLabel('Kalendervisning').selectOption('dag');await p.getByLabel('Velg dato').fill(dag);}
+   const brikke=p.locator(mobil?'button.kalm-kort':'button.event',{hasText:s.tag});await brikke.first().waitFor();return brikke.first();
   };
   const flytt=async(dag,start,slutt,forvent)=>{
    await trykk(await aapneDag(dag));

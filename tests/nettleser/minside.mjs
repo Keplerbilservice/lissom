@@ -327,8 +327,16 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
   await flyt(`Fryst medlem, hjem (${hva})`, async () => {
     // Stengt ute: godkjent frys, og den betalte perioden er over.
     const p = await side('fryststengt', bredde, hoyde);
+    // Brukertesten 2. oktober 2026: Min side kalte medlemsendepunkter som gir
+    // 403 for den som er stengt ute (feil i konsollen).
+    const nektet = [];
+    p.on('response', r => { if (r.status() === 403 && r.url().includes('/api/')) nektet.push(r.url()); });
+    const konsollfeil = [];
+    p.on('console', m => { if (m.type() === 'error') konsollfeil.push(m.text()); });
     await gaa(p, '/min-side');
     await lukkVinduer(p);
+    sjekk(`${hva}: stengt ute — ingen kall til medlemsendepunkter som gir 403`, nektet.length === 0, nektet.join(', '));
+    sjekk(`${hva}: stengt ute — ingen feil i konsollen`, konsollfeil.length === 0, konsollfeil.join(' | '));
     await dump(p, 'fryst-' + hva);
     const til = String(verdi("SELECT til_dato FROM medlem_frys WHERE member_id = :m AND status = 'godkjent'", { m: brukere.fryststengt.id }));
     const tekst = php(`return Booking::norskDatoKort('${til}');`);
@@ -354,6 +362,12 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     sjekk(`${hva}: /stemple viser «Fryst til ${tekst}»`, await synlig(p, 'Fryst til ' + tekst, true));
     sjekk(`${hva}: /stemple har ingen «Stemple inn»`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
     sjekk(`${hva}: /stemple sier ikke «Innstempling er for medlemmer»`, !(await synlig(p, /Innstempling er for medlemmer/)));
+    // Står inne mens frysen stenger ute: «Stemple ut» skal vises (brukertesten,
+    // 2. oktober 2026 — kortet var tomt).
+    const okt = Number(php(`return DB::settInn('check_ins', ['member_id' => ${brukere.fryststengt.id}, 'inn_tid' => gmdate('Y-m-d H:i:s', time() - 1800)]);`));
+    await gaa(p, '/stemple', 2500);
+    sjekk(`${hva}: fryst og står inne — /stemple viser «Stemple ut»`, await p.getByRole('button', { name: 'Stemple ut' }).filter({ visible: true }).count() > 0);
+    db('DELETE FROM check_ins WHERE id = :i', { i: okt });
     // Eieren, 2. oktober 2026: ingen «Forny og betal», ikke «venter på
     // betaling», og frysen sin ser hen fortsatt.
     await gaa(p, '/min-side', 3000);
@@ -411,6 +425,38 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
     else db('DELETE FROM content_blocks WHERE nokkel = :k', { k });
   }
 }
+
+// ── 1c. Frys i admin: «Står ubetalt» og advarselen ved godkjenning ────
+//
+// Brukertesten 2. oktober 2026: i nytt admin ble advarselen overskrevet av
+// «Lagret.», og gamle admin viste ikke det ubetalte.
+await flyt('Frys i admin: advarselen ved godkjenning blir stående', async () => {
+  const sokt = Number(php(`return DB::settInn('medlem_frys', ['member_id' => ${brukere.trekkstengt.id}, 'fra_dato' => gmdate('Y-m-d', time() + 86400 * 30), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 40), 'status' => 'sokt', 'begrunnelse' => 'Reise']);`));
+  // Gamle admin: lista viser «Står ubetalt: …».
+  const g = await side('admin', 1358, 900);
+  await g.goto(ADR + '/admin/godkjenning', { waitUntil: 'load', timeout: 45000 });
+  await g.waitForTimeout(3000);
+  const frysData = await api(g, '/api/admin/frys.php');
+  const raden = (frysData.d?.soknader || []).find(s => Number(s.id) === sokt) || {};
+  sjekk('admin-API: søknaden har «Står ubetalt: …»', String(raden.ubetalt || '').startsWith('Står ubetalt: '), JSON.stringify(raden.ubetalt));
+  sjekk('gamle admin: «Står ubetalt: …» i søknadslisten', await synlig(g, raden.ubetalt || 'mangler', true));
+  await g.context().close();
+  // Nytt admin: godkjenn og les beskjeden som står igjen.
+  const a = await side('admin', 1358, 900);
+  await a.goto(ADR + '/admin-ny.html#frys', { waitUntil: 'load', timeout: 45000 });
+  await a.waitForTimeout(2500);
+  const kort = a.locator('section.card').filter({ hasText: 'Minside Trekkstengt' }).filter({ has: a.getByRole('button', { name: 'Behandle', exact: true }) }).first();
+  sjekk('nytt admin: søknaden har «Står ubetalt: …»', await kort.getByText(/^Står ubetalt: /).isVisible().catch(() => false));
+  await kort.getByRole('button', { name: 'Behandle', exact: true }).click();
+  await a.getByRole('button', { name: 'Lagre', exact: true }).click();
+  await a.getByRole('dialog', { name: 'Behandle søknaden?' }).getByRole('button', { name: 'Bekreft', exact: true }).click();
+  await a.waitForTimeout(2500);
+  const melding = (await a.locator('#meldinger').innerText().catch(() => '')).trim();
+  sjekk('nytt admin: advarselen står igjen etter godkjenning (ikke «Lagret.»)', melding.startsWith('Minside Trekkstengt har noe ubetalt: ')
+    && melding.endsWith('Frysen fjerner det ikke.'), melding);
+  sjekk('… og søknaden er godkjent', String(verdi('SELECT status FROM medlem_frys WHERE id = :i', { i: sokt })) === 'godkjent');
+  await a.context().close();
+});
 
 // ── 2. Stemple inn, stemple ut og «Feil tid» ─────────────────────────
 await flyt('Stempling inn og ut, «Feil tid — si fra»', async () => {

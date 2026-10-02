@@ -9391,6 +9391,7 @@ window.__resources = {
               <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ f.navn }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.linje }}</div>
+                <sc-if value="{{ f.harUbetalt }}" hint-placeholder-val="{{ false }}"><div style="font-size: var(--text-xs); color: var(--terracotta-600); margin-top: 4px;">{{ f.ubetalt }}</div></sc-if>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px;">
                   <button type="button" onClick="{{ f.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
                   <button type="button" onClick="{{ f.avslag }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Ikke godkjenn</button>
@@ -22703,6 +22704,9 @@ window.__resources = {
                     </div>
                     <span style="{{ f.merkeStil }}">{{ f.merke }}</span>
                   </div>
+                  <sc-if value="{{ f.harUbetalt }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--terracotta-600); text-wrap: pretty;">{{ f.ubetalt }}</p>
+                  </sc-if>
                   <sc-if value="{{ f.harGrunn }}" hint-placeholder-val="{{ false }}">
                     <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--text-body); font-style: italic; text-wrap: pretty;">{{ f.grunn }}</p>
                   </sc-if>
@@ -38003,6 +38007,8 @@ class Component extends DCLogic {
   /** Siste toemming, hentet paa nytt hoeyst hvert minutt mens skjermen staar. */
   hentOvn(tving) {
     if (!this.erPublisert() || !this.state.innlogget || this._ovnHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     if (!tving && this._ovnHentet && Date.now() - this._ovnHentet < 60 * 1000) return;
     this._ovnHentes = true;
     fetch('/api/ovn.php', { credentials: 'same-origin', cache: 'no-store' })
@@ -39695,7 +39701,8 @@ class Component extends DCLogic {
           frysAdmin: null,
           frysAdmSvar: '',
           kvittering: 'Svaret er sendt til medlemmet',
-          kvitteringDetalj: d.beskjed || '',
+          // Advarselen om noe ubetalt staar med (kontrolloeren, 2. oktober 2026).
+          kvitteringDetalj: [d.beskjed, d.advarsel].filter(Boolean).join(' '),
         });
         fetch('/api/admin/medlemmer.php', { credentials: 'same-origin', cache: 'no-store' })
           .then(r => (r.ok ? r.json() : null))
@@ -43460,6 +43467,9 @@ class Component extends DCLogic {
    */
   hentChat(forste) {
     if (!this.erPublisert() || this._chatHentes) return;
+    // Bare for den som er medlem naa: for alle andre svarer endepunktet 403,
+    // og det gir feil i konsollen (brukertesten, 2. oktober 2026).
+    if (!this.medlemsvisning()) return;
     this._chatHentes = true;
     const etter = forste ? 0 : (this.state.chatSiste || 0);
     fetch('/api/chat.php' + (etter ? '?etter=' + etter : ''), {
@@ -45052,6 +45062,8 @@ class Component extends DCLogic {
   // tida godkjennes foer den legges til timene. Se app/lib/dugnad.php.
   hentDugnad() {
     if (!this.erPublisert() || this._dugnadHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     this._dugnadHentes = true;
     fetch('/api/dugnad.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -45305,6 +45317,8 @@ class Component extends DCLogic {
   // ── «Ta med barn» ───────────────────────────────────────────────────
   hentTillegg() {
     if (!this.erPublisert() || this._tilleggHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     this._tilleggHentes = true;
     fetch('/api/tillegg-barn.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -51585,6 +51599,8 @@ class Component extends DCLogic {
    */
   minDokHent() {
     if (!this.erPublisert() || this._minDokHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     this._minDokHentes = true;
     fetch('/api/mine-dokumenter.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -63690,6 +63706,9 @@ class Component extends DCLogic {
                   color: f.venter ? 'var(--lissom-brown)'
                        : (f.loper ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)'),
                 },
+                // «Står ubetalt: …» fra api/admin/frys.php (kontrolloeren, 2. oktober 2026).
+                harUbetalt: !!f.ubetalt,
+                ubetalt: f.ubetalt || '',
                 harGrunn: !!f.begrunnelse,
                 grunn: '«' + (f.begrunnelse || '') + '»',
                 harSvar: !!f.svar,
@@ -69470,7 +69489,9 @@ class Component extends DCLogic {
             : String(st.timer.igjen).replace('.', ',') + ' av ' + st.timer.perMnd + ' timer igjen denne måneden.',
           // Fryst medlem: ingen knapp her, med mindre hen står inne og skal
           // stemple ut (eieren, 2. oktober 2026).
-          stKanStemple: this.state.innlogget && medlem && (!this.state.fryst || inne),
+          // Står hen inne mens frysen stenger ute, skal «Stemple ut» vises
+          // uansett medlem-flagget (brukertesten, 2. oktober 2026).
+          stKanStemple: this.state.innlogget && ((medlem && (!this.state.fryst || inne)) || (!!this.state.fryst && inne)),
           stMaaLoggeInn: !this.state.innlogget,
           // Stengt ute av en frys: «Fryst til <dato>», samme tekst som paa
           // Min side (eieren, 2. oktober 2026).

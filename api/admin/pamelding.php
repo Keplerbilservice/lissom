@@ -339,9 +339,23 @@ if ($handling === 'flytt') {
     try {
         $etter = DB::iTransaksjon(static function () use ($id, $b, $okt, $tilOkt, $trenger, $nyPris, $nyttBelop, $gammeltBelop, $admin): ?array {
             $ledige = Booking::ledigePlasser($tilOkt, true);
-            $naa = DB::en('SELECT status, course_session_id FROM bookings WHERE id = :i FOR UPDATE', ['i' => $id]);
+            // Alt prisen og plassbehovet ble regnet av, maa staa som da det
+            // ble lest. Endret noen antall, beloep, rabatt eller status i
+            // mellomtiden, avvises flyttingen heller enn aa skrive over det.
+            $naa = DB::en(
+                'SELECT status, course_session_id, antall, belop_ore, payment_id, betalt_maate,
+                        ' . (DB::harKolonne('bookings', 'rabatt_prosent') ? 'rabatt_prosent' : '0 AS rabatt_prosent') . '
+                   FROM bookings WHERE id = :i FOR UPDATE',
+                ['i' => $id]
+            );
             if ($naa === null || (string) $naa['status'] === 'avbestilt'
-                || (int) $naa['course_session_id'] !== (int) $b['course_session_id']) {
+                || (string) $naa['status'] !== (string) $b['status']
+                || (int) $naa['course_session_id'] !== (int) $b['course_session_id']
+                || (int) $naa['antall'] !== (int) $b['antall']
+                || (int) $naa['belop_ore'] !== (int) $b['belop_ore']
+                || (int) ($naa['payment_id'] ?? 0) !== (int) ($b['payment_id'] ?? 0)
+                || (string) ($naa['betalt_maate'] ?? '') !== (string) ($b['betalt_maate'] ?? '')
+                || (float) $naa['rabatt_prosent'] !== (float) $b['rabatt_prosent']) {
                 throw new RuntimeException('Påmeldingen ble endret i mellomtiden. Last siden på nytt.', 409);
             }
             if ($ledige < $trenger) {

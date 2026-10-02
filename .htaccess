@@ -17,6 +17,10 @@ RewriteRule ^(.*)$ https://%1/$1 [R=301,L,NE]
 RewriteCond %{HTTPS} !=on
 RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 
+# Denne sideruten deler navn med ressursmappen. Omskriv den eksakte
+# adressen før mappesperren, uten å åpne kataloglisting eller andre mapper.
+RewriteRule ^admin-ny/?$ /admin-ny.html [L]
+
 # ── Det som ikke er nettsida, svarer 403 ───────────────────────────────
 #
 # Sikkerhetsskanning 13. september 2026, mot den ekte sida:
@@ -375,7 +379,6 @@ RewriteRule ^nyttig-info/([a-z0-9-]+)/?$ /guide.php?slug=$1 [L,QSA]
 # Det nye admin (eieren, 30. september 2026): bygges ved siden av det
 # gamle, som egen side. Tilgangen sjekkes av API-et (krev_admin).
 RewriteRule ^admin2/?$ /admin2.html [L]
-RewriteRule ^admin-ny/?$ /admin-ny.html [L]
 
 RewriteRule ^$ /side.php [L]
 

@@ -32,6 +32,10 @@ $server = null;
 $rydd = [];
 register_shutdown_function(static function () use (&$ferdig, &$server, &$rydd): void {
     foreach ($rydd as $id) {
+        try {
+            DB::kjor("DELETE FROM audit_log WHERE objekt_type = 'subscription'
+                       AND objekt_id IN (SELECT id FROM subscriptions WHERE member_id = :m)", ['m' => $id]);
+        } catch (Throwable $e) {}
         foreach (['check_ins', 'medlem_frys', 'payments', 'subscriptions', 'sessions'] as $t) {
             try { DB::kjor("DELETE FROM {$t} WHERE member_id = :m", ['m' => $id]); } catch (Throwable $e) {}
         }
@@ -177,6 +181,47 @@ foreach (['2029-11-25', '2029-12-10', '2030-01-15'] as $dagen) {
     $bs = Medlemskap::betalingsstatusFor($rad($m), $dagen);
     sjekk("$dagen: november staar fortsatt ubetalt (forfalt)", $bs['tilstand'] === 'forfalt' && $bs['utestaaende'], json_encode($bs));
 }
+
+// Betalingseksperten (C): medlemmet betaler det utestaaende 5.12. Betalingen
+// gjelder november, desember er fortsatt fritatt, og frysen virker videre.
+$f1 = Frys::frystNaa($rad($m), '2029-12-05');
+sjekk('5. desember: stengt ute av frysen', $f1 === ['til' => '2030-01-31'], json_encode($f1));
+sjekk('… skyldig maaned er november', Medlemskap::skyldigMaaned($rad($m), '2029-12-05') === '2029-11-01');
+$forny = Medlemskap::fornyPeriodePaa($rad($m), $avtaleRad($avt), '2029-12-05');
+$ny = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND type = 'epayment' ORDER BY id DESC LIMIT 1", ['s' => $avt]);
+sjekk('betalingen 5.12 gjelder november', $ny !== null && (string) $ny['gjelder_fra'] === '2029-11-01', json_encode($ny['gjelder_fra'] ?? null));
+DB::oppdater('payments', ['status' => 'betalt'], ['id' => (int) $ny['id']]);   // Vipps: betalt
+$bs = Medlemskap::betalingsstatusFor($rad($m), '2029-12-05');
+sjekk('… november er betalt, desember fritatt: ingenting utestaaende', $bs['tilstand'] === 'fryst' && $bs['utestaaende'] === false, json_encode($bs));
+sjekk('… november gir tilgang naa', Medlemskap::harBetaltPeriode($rad($m), '2029-11-25'));
+sjekk('… og frysen virker videre i desember', Frys::frystNaa($rad($m), '2029-12-10') === ['til' => '2030-01-31']);
+sjekk('… og en ny betaling sperres naa (ingenting skyldes)', (static function () use ($rad, $m, $avtaleRad, $avt): bool {
+    try { Medlemskap::fornyPeriodePaa($rad($m), $avtaleRad($avt), '2029-12-06'); return false; }
+    catch (RuntimeException $e) { return str_contains($e->getMessage(), 'fryst til'); }
+})());
+
+// ── (h) frysen avsluttes tidlig etter at maaneden er hoppet over ────────
+echo "\n── (h) frys avsluttet 10.3 etter at mars er hoppet over ────\n";
+$m = $medlem('aktiv', $plan);
+$agr = 'agr_frysH_' . $tag;
+$avt = $avtale($m, $agr, '2031-03-01');
+$betalt($m, $avt, '2031-02-01');
+$fH = $frys($m, '2031-03-01', '2031-03-31');
+$ut = Medlemskap::trekk($avtaleRad($avt), '2031-02-26');
+sjekk("mars hoppes over (svar: $ut)", count($rader($avt)) === 1 && (string) $avtaleRad($avt)['neste_trekk'] === '2031-04-01');
+$antall = static fn(): int => (int) DB::verdi("SELECT COUNT(*) FROM audit_log WHERE handling = :h AND objekt_type = 'subscription' AND objekt_id = :a",
+    ['h' => Medlemskap::HOPPET_OVER, 'a' => $avt]);
+sjekk('… og det er lagret at mars ble hoppet over (én rad paa avtalen)', $antall() === 1);
+// Verkstedet avslutter frysen 10. mars.
+DB::kjor("UPDATE medlem_frys SET status = 'avsluttet', updated_at = '2031-03-10 09:00:00' WHERE id = :i", ['i' => $fH]);
+sjekk('frysen dekker naa bare 9 dager av mars', Medlemskap::pauseDager($m, '2031-03-15') === 9);
+sjekk('… men mars er fortsatt fritatt', Medlemskap::fritattMaaned($m, '2031-03-15'));
+foreach (['2031-03-10', '2031-03-20', '2031-03-31'] as $dagen) {
+    $bs = Medlemskap::betalingsstatusFor($rad($m), $dagen);
+    sjekk("$dagen: tilgang, ikke fryst, og skylder ingenting", Medlemskap::harBetaltPeriode($rad($m), $dagen)
+        && Frys::frystNaa($rad($m), $dagen) === null && $bs['utestaaende'] === false && $bs['forfalt'] === false, json_encode($bs));
+}
+sjekk('1. april er ikke fritatt', !Medlemskap::fritattMaaned($m, '2031-04-01'));
 
 // ── (g) restdagene etter frysen i en overhoppet maaned ──────────────────
 echo "\n── (g) restdager etter frys i overhoppet maaned ────────────\n";

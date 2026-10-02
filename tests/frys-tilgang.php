@@ -332,8 +332,10 @@ sjekk('… staar forfalt og utestaaende, ikke «Fryst»', $bs['tilstand'] === 'f
 sjekk('… betalingMangler() er ja', Medlemskap::betalingMangler($rad($ub), er_aktivt_medlem($rad($ub))));
 $sperr = new ReflectionMethod(Medlemskap::class, 'sperrFryst');
 $sperr->setAccessible(true);
-sjekk('… og kan betales: sperrFryst() slipper gjennom', $feilFra(fn() => $sperr->invoke(null, $rad($ub))) === '');
-sjekk('… mens den som ikke skylder noe, sperres', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($c))), 'fryst til'));
+sjekk('… og kan betales: sperrFryst() slipper gjennom', $feilFra(fn() => $sperr->invoke(null, $rad($ub), false)) === '');
+sjekk('… og betalingen gjelder maaneden som skyldes', $sperr->invoke(null, $rad($ub), false) === $denneMnd);
+sjekk('… men et nytt medlemskap/ny avtale sperres fortsatt', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($ub), true)), 'fryst til'));
+sjekk('… mens den som ikke skylder noe, sperres', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($c), false)), 'fryst til'));
 $r = $kall('/api/meg.php', $token($ub));
 sjekk('… meg.php: fryst og betalingMangler (Min side viser «Forny og betal»)', isset($r['d']['fryst']) && ($r['d']['betalingMangler'] ?? null) === true);
 // Admin ser det ubetalte i soknaden og ved godkjenning.

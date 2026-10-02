@@ -3220,7 +3220,7 @@
         {
             "id": "fryst-medlem-ingen-tilgang",
             "dato": "2026-10-02",
-            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag stenges ute — men først når den betalte perioden er over (eieren samme dag: dager som er betalt for, har medlemmet alltid tilgang i, også med godkjent frys; samme periodelogikk som harBetaltPeriode, gratismedlem er fryst med en gang). Stengt ute betyr: ingen innstempling, ingen medlemstid, ingen dørkode og wifi (meg.php og «Dørkode» i toppen), ingen «Kun for medlemmer»-banner, Bordplass/Dreieskive eller knapp på /stemple. Min side og /stemple viser «Fryst til <dato>» (ja fra eieren) i stedet for «venter på betaling»/«Aktivt». Stemple ut, kjøp og kurs betalt for seg virker som før. «pause» satt for hånd uten godkjent frys er ikke fryst. «Flytt medlemskap» tar med frys-rader som er søkt/godkjent, og avsluttede som fortsatt kan hoppe over et trekk (til_dato fra denne måneden eller avtalens neste trekk), med avslutningsdagen urørt. Eieren (samme dag, ordrett): når frysen er godkjent, men den betalte perioden ikke er over, viser Min side merket «Fryst fra <dato>» og linja «Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter <dato>.». Et medlem som er stengt ute ser frysen sin og kan trekke en søknad (api/medlem-frys.php slipper inn prove/aktiv/pause), står ikke som «venter på betaling» (betalingMangler og betalingsstatus unntar fryst: «Fryst til <dato>», ikke utestående), får ikke «Forny og betal» og kan ikke starte fornyelse eller betaling (startEngangs, startAvtale, startIVerkstedet, fornyPeriode avviser). Admin-teksten ved godkjenning: «Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.» Kontrolløren og betalingseksperten (STOPP 2. oktober 2026) og eierens valg samme dag: «stengt ute» og «fritatt for betaling» er to ting. «Fryst»/«Fryst til <dato>» (godkjent av eieren) og fritak vises bare når det ikke står noe ubetalt; et trekk som feilet, eller en måned frysen dekker under 15 dager av, står fortsatt som forfalt/utestående og kan betales (sperrFryst sperrer bare ny periode og fornyelse når ingenting skyldes). En måned frysen dekker minst 15 dager av er fritatt: trekket hoppes over, og dagene frysen ikke dekker har medlemmet gratis tilgang i (frys 20.2–25.3 gir tilgang 26.–31.3, trekket fortsetter 1.4) — i periodelogikken (harBetaltPeriode/fritattTilgang), så stempling, Min side, Kassa og admin er enige. Admin ser «Står ubetalt: …» i frys-søknaden og får en advarsel ved godkjenning.",
+            "hva": "Eieren (godkjent 2. oktober 2026, funnet av Codex): et medlem med godkjent frys som dekker i dag stenges ute — men først når den betalte perioden er over (eieren samme dag: dager som er betalt for, har medlemmet alltid tilgang i, også med godkjent frys; samme periodelogikk som harBetaltPeriode, gratismedlem er fryst med en gang). Stengt ute betyr: ingen innstempling, ingen medlemstid, ingen dørkode og wifi (meg.php og «Dørkode» i toppen), ingen «Kun for medlemmer»-banner, Bordplass/Dreieskive eller knapp på /stemple. Min side og /stemple viser «Fryst til <dato>» (ja fra eieren) i stedet for «venter på betaling»/«Aktivt». Stemple ut, kjøp og kurs betalt for seg virker som før. «pause» satt for hånd uten godkjent frys er ikke fryst. «Flytt medlemskap» tar med frys-rader som er søkt/godkjent, og avsluttede som fortsatt kan hoppe over et trekk (til_dato fra denne måneden eller avtalens neste trekk), med avslutningsdagen urørt. Eieren (samme dag, ordrett): når frysen er godkjent, men den betalte perioden ikke er over, viser Min side merket «Fryst fra <dato>» og linja «Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter <dato>.». Et medlem som er stengt ute ser frysen sin og kan trekke en søknad (api/medlem-frys.php slipper inn prove/aktiv/pause), står ikke som «venter på betaling» (betalingMangler og betalingsstatus unntar fryst: «Fryst til <dato>», ikke utestående), får ikke «Forny og betal» og kan ikke starte fornyelse eller betaling (startEngangs, startAvtale, startIVerkstedet, fornyPeriode avviser). Admin-teksten ved godkjenning: «Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.» Kontrolløren og betalingseksperten (STOPP 2. oktober 2026) og eierens valg samme dag: «stengt ute» og «fritatt for betaling» er to ting. «Fryst»/«Fryst til <dato>» (godkjent av eieren) og fritak vises bare når det ikke står noe ubetalt; et trekk som feilet, eller en måned frysen dekker under 15 dager av, står fortsatt som forfalt/utestående og kan betales (sperrFryst sperrer bare ny periode og fornyelse når ingenting skyldes). En måned frysen dekker minst 15 dager av er fritatt: trekket hoppes over, og dagene frysen ikke dekker har medlemmet gratis tilgang i (frys 20.2–25.3 gir tilgang 26.–31.3, trekket fortsetter 1.4) — i periodelogikken (harBetaltPeriode/fritattTilgang), så stempling, Min side, Kassa og admin er enige. Admin ser «Står ubetalt: …» i frys-søknaden og får en advarsel ved godkjenning. Eieren godkjente advarselstekstene ordrett: «Står ubetalt: <betalingsteksten>» og «<navn> har noe ubetalt: <betalingsteksten>. Frysen fjerner det ikke.». Betalingseksperten (samme dag): betaler et fryst medlem noe utestående, gjelder betalingen måneden som skyldes (skyldigMaaned), ikke den fryste; bare fornyPeriode slipper gjennom, ny avtale/nytt medlemskap sperres under frys. At trekkrunden hoppet over en måned, lagres som faktum i audit_log på avtalen («trekk_hoppet_over_frys», ingen migrasjon), så måneden er fritatt også om frysen avsluttes tidlig.",
             "hvor": "Min side (toppen, stempelkortet, ubetalt-ruta, medlemstid), /stemple, api/stempling.php, api/book.php (Kun for medlemmer), api/meg.php, Admin › Flytt medlemskap",
             "kode": [
                 {
@@ -3316,7 +3316,9 @@
                         "desember (avsluttet frys, forsinket runde) hoppes ogsaa over",
                         "(e) feilet trekk, frys under 15 dager: forfalt",
                         "staar fortsatt ubetalt (forfalt)",
-                        "gratis tilgang, ikke fryst, og skylder ingenting"
+                        "gratis tilgang, ikke fryst, og skylder ingenting",
+                        "betalingen 5.12 gjelder november",
+                        "(h) frys avsluttet 10.3 etter at mars er hoppet over"
                     ]
                 },
                 {
@@ -3328,14 +3330,18 @@
                 {
                     "fil": "app/lib/medlemskap.php",
                     "finnes": [
-                        "private static function sperrFryst(array $medlem): void",
                         ". Du kan forny medlemskapet igjen når frysen er over.",
                         "&& (Frys::frystNaa($medlem) === null || self::betalingsstatusFor($medlem)['utestaaende']);",
-                        "if ($fryst === null || self::betalingsstatusFor($rad)['utestaaende']) {",
                         "public static function fritattTilgang(array $medlem, string $idag): bool",
                         "if (self::fritattTilgang($medlem, $idag)) {",
                         "public static function betalingsstatusFor(array $medlem, ?string $idag = null): array",
-                        "return $ut('fryst', $til !== '' ? 'Fryst til ' . $kort($til) : 'Fryst', false, false);"
+                        "return $ut('fryst', $til !== '' ? 'Fryst til ' . $kort($til) : 'Fryst', false, false);",
+                        "private static function sperrFryst(array $medlem, bool $nyPeriode, ?string $idag = null): ?string",
+                        "if (!$nyPeriode && self::betalingsstatusFor($rad, $idag)['utestaaende']) {",
+                        "public static function skyldigMaaned(array $medlem, ?string $idag = null): ?string",
+                        "public const HOPPET_OVER = 'trekk_hoppet_over_frys';",
+                        "return self::hoppetOver($avtaler, (new DateTimeImmutable(substr($dato, 0, 10)))->format('Y-m'));",
+                        "'handling'    => self::HOPPET_OVER,"
                     ]
                 },
                 {

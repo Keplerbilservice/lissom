@@ -120,6 +120,7 @@ spl_autoload_register(static function (string $klasse): void {
         'Veileder' => 'veileder.php',
         'Verving' => 'verving.php',
         'Vipps' => 'vipps.php',
+        'VippsAvvisteTrekk' => 'vipps.php',
     ];
     if (isset($kart[$klasse])) {
         require APP_DIR . '/lib/' . $kart[$klasse];

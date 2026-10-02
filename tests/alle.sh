@@ -178,6 +178,8 @@ gruppe statisk
 kjor "varsler SMTP"    node tests/varsler-smtp.mjs
 gruppe minside
 kjor "varsler og kursbevis" bash tests/nettleser/kjor.sh varsler.mjs
+# /booking?plan=<navn> åpnet direkte (eieren, 2. oktober 2026).
+kjor "booking-plan-lenke" bash tests/nettleser/kjor.sh booking-plan-lenke.mjs
 
 [ $uten_gruppe -eq 0 ] || { echo "$uten_gruppe testsett uten gruppe."; exit 1; }
 [ -z "${ALLE_TORR:-}" ] || exit 0

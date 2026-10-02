@@ -118,7 +118,7 @@ http.createServer((req, res) => {
         if (t.agreementId && t.agreementId !== id) continue;
         if (egne && !t.agreementId) continue;
         ut.push({ id: tid, amount: t.amount ?? 0,
-                  status: t.init ? styrt('.init-status', 'CHARGED') : 'PENDING',
+                  status: t.init ? styrt('.init-status', 'CHARGED') : (egne ? styrt('.trekk-status', 'PENDING') : 'PENDING'),
                   due: t.init ? '2000-01-01' : (t.due || '2099-01-01'),
                   description: t.description || '' });
       }

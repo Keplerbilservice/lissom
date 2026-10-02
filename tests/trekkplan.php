@@ -91,5 +91,17 @@ try{
  $styrfil('.glem-nokler','');
  $p4=$rad($a4);
  $sjekk(count($hos)===1&&$p4['status']==='venter'&&$p4['vipps_psp_ref']===(string)$hos[0]['id']&&count(Vipps::trekkPaaAvtale($a4['vipps_agreement_id']))===1&&count($forsokPaa($p4))===1,'… med samme trekk-id, uten nytt trekk eller ny nøkkel');
-}finally{foreach(['.trekk-idempotens','.trekk-svar-tapt','.trekk-feiler','.idag','.glem-nokler'] as $f)@unlink(__DIR__.'/'.$f);foreach($nye??[] as $sid){DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$sid]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$sid]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$sid]);}DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$id]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$id]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$id]);}
+ // D. Som C, men trekket Vipps har er alt FAILED. Raden skal ikke bli «venter»
+ // (som gir tilgang) til neste statusrunde, men feilet med en gang.
+ $styrfil('.idag',$idag);
+ $a5=$nyAvtale('agr_TEST5_'.$s['tag']);$nye[]=(int)$a5['id'];
+ $styrfil('.trekk-svar-tapt','ja');
+ try{Medlemskap::trekk($a5,$idag);}catch(RuntimeException){}
+ $styrfil('.trekk-svar-tapt','');
+ $styrfil('.glem-nokler','ja');$styrfil('.idag',$dagEtter);$styrfil('.trekk-status','FAILED');
+ $ut5=Medlemskap::trekk($a5,$dagEtter);
+ $styrfil('.glem-nokler','');$styrfil('.trekk-status','');
+ $p5=$rad($a5);
+ $sjekk($ut5==='gjenfunnet trekk: failed'&&$p5['status']==='feilet'&&!empty($p5['vipps_psp_ref'])&&count(Vipps::trekkPaaAvtale($a5['vipps_agreement_id']))===1,'Gjenfunnet trekk som alt er FAILED blir feilet med en gang, uten nytt trekk');
+}finally{foreach(['.trekk-idempotens','.trekk-svar-tapt','.trekk-feiler','.idag','.glem-nokler','.trekk-status'] as $f)@unlink(__DIR__.'/'.$f);foreach($nye??[] as $sid){DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$sid]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$sid]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$sid]);}DB::kjor('DELETE FROM notifications WHERE ref_type=\'medlemskap\' AND ref_id IN (SELECT id FROM payments WHERE subscription_id=:s)',['s'=>$id]);DB::kjor('DELETE FROM payments WHERE subscription_id=:s',['s'=>$id]);DB::kjor('DELETE FROM subscriptions WHERE id=:i',['i'=>$id]);}
 echo "$n trekkplankontroller bestått\n";

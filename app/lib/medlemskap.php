@@ -2352,7 +2352,7 @@ final class Medlemskap
      * samme periode.
      *
      * @param list<array{nokkel:string,kropp:array<string,mixed>}> $forsok
-     * @return array{0:string,1:list<array{nokkel:string,kropp:array<string,mixed>}>,2:string} [trekk-id, forsoek, forfall]
+     * @return array{0:string,1:list<array{nokkel:string,kropp:array<string,mixed>}>,2:string,3:string} [trekk-id, forsoek, forfall, Vipps-status for et gjenfunnet trekk]
      */
     private static function trekkEtterAvvisning(array $avtale, array $forsok, string $maaned, int $betalingId, ?string $idag): array
     {
@@ -2371,7 +2371,7 @@ final class Medlemskap
             logg('Trekket fantes alt hos Vipps; det brukes, ikke et nytt', [
                 'avtale' => (int) $avtale['id'], 'trekk' => (string) $funnet['id'], 'status' => (string) ($funnet['status'] ?? ''),
             ]);
-            return [(string) $funnet['id'], $forsok, (string) $funnet['due']];
+            return [(string) $funnet['id'], $forsok, (string) $funnet['due'], (string) ($funnet['status'] ?? '')];
         }
 
         if (count($forsok) >= self::TREKK_MAKS_NOKLER) {
@@ -2389,7 +2389,7 @@ final class Medlemskap
         DB::oppdater('payments', ['trekk_foresporsel' => self::trekkForsokJson($forsok)], ['id' => $betalingId]);
 
         $trekkId = Vipps::belastAvtale($avtaleId, $ny['kropp'], $ny['nokkel']);
-        return [$trekkId, $forsok, (string) $ny['kropp']['due']];
+        return [$trekkId, $forsok, (string) $ny['kropp']['due'], ''];
     }
 
     /** @param list<array{nokkel:string,kropp:array<string,mixed>}> $forsok */
@@ -2475,6 +2475,7 @@ final class Medlemskap
             ] + $lagre);
         }
 
+        $funnetStatus = '';
         try {
             try {
                 $trekkId = Vipps::belastAvtale(
@@ -2488,7 +2489,7 @@ final class Medlemskap
                 if ($tidligere === null || !$harKolonne) {
                     throw $e;
                 }
-                [$trekkId, $forsok, $forfall] = self::trekkEtterAvvisning($avtale, $forsok, $maaned, $betalingId, $idag);
+                [$trekkId, $forsok, $forfall, $funnetStatus] = self::trekkEtterAvvisning($avtale, $forsok, $maaned, $betalingId, $idag);
             }
         } catch (Throwable $e) {
             DB::oppdater('payments', ['status' => 'feilet'], ['id' => $betalingId]);
@@ -2535,6 +2536,22 @@ final class Medlemskap
                     ? (int) $avtale['trekk_dag'] : null
             ),
         ], ['id' => (int) $avtale['id']]);
+
+        // Et gjenfunnet trekk kan alt vaere avgjort hos Vipps (CHARGED,
+        // FAILED, CANCELLED). Da faar raden den statusen med det samme —
+        // et FAILED-trekk skal ikke gi tilgang til neste statusrunde — og
+        // kunden faar ikke varselet om et trekk som «kommer».
+        if (in_array(strtoupper($funnetStatus), ['CHARGED', 'FAILED', 'CANCELLED'], true) && $trekkId !== '') {
+            return 'gjenfunnet trekk: ' . self::sjekkTrekk([
+                'id'                 => $betalingId,
+                'vipps_psp_ref'      => $trekkId,
+                'vipps_agreement_id' => (string) $avtale['vipps_agreement_id'],
+                'plan'               => (string) $avtale['plan'],
+                'navn'               => (string) ($avtale['navn'] ?? ''),
+                'epost'              => $avtale['epost'] ?? null,
+                'telefon'            => $avtale['telefon'] ?? null,
+            ]);
+        }
 
         // Vipps krever at kunden vet om trekket for det skjer.
         if (!empty($avtale['epost'])) {

@@ -2284,7 +2284,7 @@ final class Medlemskap
               LIMIT 1',
             ['k' => $nokkel, 's' => (int) $avtale['id'], 't' => $trekkId]
         ) !== null) {
-            return true;
+            return false;
         }
 
         // Statusen er Vipps sin. «CHARGED» betyr at pengene er inne;
@@ -2333,9 +2333,18 @@ final class Medlemskap
               WHERE s.status = 'aktiv'
                 AND COALESCE(s.vipps_agreement_id, '') <> ''
                 AND s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)
+                -- Foerste trekk er foert med init-noekkelen (foerForsteTrekk).
+                -- En senere, ordinaer trekkrad betyr ikke at det er foert.
                 AND NOT EXISTS (SELECT 1 FROM payments p
                                  WHERE p.subscription_id = s.id
-                                   AND p.type = 'recurring_charge')
+                                   AND p.type = 'recurring_charge'
+                                   AND p.idempotency_key LIKE 'init:%')
+                -- Et trekk uten charge-id kan vaere det samme trekket; da
+                -- venter vi til det er avklart (L-5), heller enn aa foere to.
+                AND NOT EXISTS (SELECT 1 FROM payments p
+                                 WHERE p.subscription_id = s.id
+                                   AND p.type = 'recurring_charge'
+                                   AND p.vipps_psp_ref IS NULL)
            ORDER BY s.id
               LIMIT 50"
         );
@@ -2345,21 +2354,27 @@ final class Medlemskap
      * Foerer foerste trekk paa avtalene fra utenForsteTrekk(). Trygg aa
      * kjoere flere ganger: noekkelen er trekkets id hos Vipps.
      *
-     * @param string|null $naa UTC, bare for testene
-     * @return int hvor mange som ble foert
+     * @return int hvor mange som ble foert naa
      */
-    public static function foerManglendeForsteTrekk(?string $naa = null): int
+    public static function foerManglendeForsteTrekk(): int
     {
         $foert = 0;
         foreach (self::utenForsteTrekk() as $a) {
-            // Kjoept etter den 20.: samme regel som da avtalen ble aktiv,
-            // regnet av da avtalen ble opprettet.
-            $fra = self::gjelderFraNytt(
+            // Perioden er den trekket ble tatt for, ikke dagen det etterfoeres
+            // (Codex 02.10). Kjoept etter den 20.: samme regel som da avtalen
+            // ble aktiv, regnet paa kjoepstidspunktet. Ellers kjoepsdagen
+            // (dekkerTil() gir kjoepsmaaneden, som foer).
+            $kjopt = trim((string) ($a['created_at'] ?? ''));
+            $fra = $kjopt === '' ? null : self::gjelderFraNytt(
                 (int) $a['member_id'],
                 (string) $a['plan'],
-                isset($a['created_at']) ? (string) $a['created_at'] : null,
-                $naa
+                $kjopt,
+                $kjopt
             );
+            if ($fra === null && $kjopt !== '') {
+                $fra = (new DateTimeImmutable($kjopt, new DateTimeZone('UTC')))
+                    ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+            }
             if (self::foerForsteTrekk($a, $fra)) {
                 $foert++;
             }
@@ -2731,15 +2746,23 @@ final class Medlemskap
     /**
      * L-10: til_dato for en godkjent frys som dekker $dato, ellers null.
      * Er flere, gjelder den som varer lengst.
+     *
+     * En frys som er over, har Frys::gjenapneForfalte() satt til
+     * «avsluttet» — etter til_dato. Den teller fortsatt for datoer i
+     * perioden, saa en forsinket runde ikke tar etterbetaling for pausen
+     * (Codex 02.10). En frys verkstedet avbrot underveis («avsluttet» paa
+     * eller foer til_dato) teller ikke: da ble pausen kortere.
      */
     public static function pauseTil(int $medlemId, string $dato): ?string
     {
-        if (!class_exists('Frys') || !Frys::klar()) {
+        if (!Frys::klar()) {
             return null;
         }
         $til = DB::verdi(
             "SELECT MAX(til_dato) FROM medlem_frys
-              WHERE member_id = :m AND status = 'godkjent'
+              WHERE member_id = :m
+                AND (status = 'godkjent'
+                     OR (status = 'avsluttet' AND DATE(updated_at) > til_dato))
                 AND fra_dato <= :d AND til_dato >= :d2",
             ['m' => $medlemId, 'd' => $dato, 'd2' => $dato]
         );

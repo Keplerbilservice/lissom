@@ -126,14 +126,31 @@ try {
         $sjekk($etter['neste_trekk'] === '2026-11-01' && (int) $etter['trekk_dag'] === 1,
             "trekkdag: ny avtale faar neste trekk 1. november og trekkdag 1 (fikk {$etter['neste_trekk']}, dag {$etter['trekk_dag']})");
 
-        $antall = Medlemskap::foerManglendeForsteTrekk('2026-09-26 09:00:00');
+        $antall = Medlemskap::foerManglendeForsteTrekk();
         $p = $rader($id);
         $sjekk($antall >= 1 && count($p) === 1, 'neste trekkrunde foerer foerste trekk');
         $sjekk(count($p) === 1 && (int) $p[0]['belop_ore'] === 199000 && $p[0]['status'] === 'betalt'
             && $p[0]['type'] === 'recurring_charge', 'beloep 199000 oere, betalt (Vipps: CHARGED)');
         $sjekk(count($p) === 1 && $p[0]['gjelder_fra'] === '2026-10-01', 'kjoept 25.09: trekket gjelder oktober');
-        Medlemskap::foerManglendeForsteTrekk('2026-09-26 09:00:00');
+        Medlemskap::foerManglendeForsteTrekk();
         $sjekk(count($rader($id)) === 1, 'en runde til gir ikke en rad til');
+
+        // Codex 02.10: oppslaget feilet fortsatt da oktobertrekket ble
+        // bestilt. Foerste trekk (kjoept 10. september) foeres likevel, og
+        // paa september — ikke paa dagen det etterfoeres.
+        $v2 = Vipps::opprettAvtale($plan, $PRIS, 'Medlemskap test', 'http://127.0.0.1/retur', null, 'maaned');
+        $id2 = DB::settInn('subscriptions', ['member_id' => $s['admin'], 'plan' => $plan, 'pris_ore' => $PRIS,
+            'status' => 'aktiv', 'vipps_agreement_id' => $v2['avtaleId'], 'created_at' => '2026-09-10 10:00:00',
+            'neste_trekk' => '2026-11-01', 'trekk_dag' => 1]);
+        $GLOBALS['l6b_id'] = $id2;
+        DB::settInn('payments', ['vipps_reference' => Vipps::nyReferanse('MED'), 'vipps_psp_ref' => 'chg_okt_' . $id2,
+            'type' => 'recurring_charge', 'formal' => 'medlemskap', 'member_id' => $s['admin'], 'subscription_id' => $id2,
+            'belop_ore' => $PRIS, 'status' => 'venter', 'idempotency_key' => 'okt-' . $id2, 'gjelder_fra' => '2026-10-01']);
+        Medlemskap::foerManglendeForsteTrekk();
+        $init = DB::en("SELECT * FROM payments WHERE subscription_id = :s AND idempotency_key LIKE 'init:%'", ['s' => $id2]);
+        $sjekk($init !== null && (int) $init['belop_ore'] === 199000 && $init['gjelder_fra'] === '2026-09-10'
+            && count($rader($id2)) === 2,
+            'senere trekk finnes: foerste trekk foeres likevel, 199000 oere for september (gjelder_fra ' . ($init['gjelder_fra'] ?? '-') . ')');
     });
 
     // ────────────────────────────────────────────────────────────────────
@@ -183,10 +200,28 @@ try {
         $ut3 = Medlemskap::trekk($b, '2027-02-26');
         $sjekk($ut3 === 'bedt om trekk til 2027-03-01' && count($rader((int) $b['id'])) === 1,
             'frys som bare er soekt om: trekket gaar som vanlig');
+
+        // Codex 02.10: runden er forsinket, og frysen er alt satt til
+        // «avsluttet» etter at perioden var over. Trekket i pausen hoppes
+        // likevel over.
+        $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2027-05-01',
+            'til_dato' => '2027-05-20', 'status' => 'avsluttet', 'updated_at' => '2027-05-21 03:00:00']);
+        $c = $nyAvtale('agr_L10C_' . $s['tag'], '2027-05-01');
+        $ut4 = Medlemskap::trekk($c, '2027-05-22');
+        $sjekk($rader((int) $c['id']) === [] && $avtaleNaa((int) $c['id'])['neste_trekk'] === '2027-06-01',
+            "forsinket runde etter avsluttet pause: mai hoppes over, neste 1. juni (svar: $ut4)");
+
+        // En frys verkstedet avbrot foer trekkdatoen, stopper ikke trekket.
+        $GLOBALS['l10_frys'][] = DB::settInn('medlem_frys', ['member_id' => $s['admin'], 'fra_dato' => '2027-07-20',
+            'til_dato' => '2027-08-31', 'status' => 'avsluttet', 'updated_at' => '2027-07-25 10:00:00']);
+        $d = $nyAvtale('agr_L10D_' . $s['tag'], '2027-08-01');
+        $ut5 = Medlemskap::trekk($d, '2027-07-29');
+        $sjekk($ut5 === 'bedt om trekk til 2027-08-01' && count($rader((int) $d['id'])) === 1,
+            'pause avbrutt 25.07: trekket 1. august gaar som vanlig');
     });
 } finally {
     foreach (['.trekk-idempotens', '.trekkliste-feiler', '.avtale-status', '.idag'] as $f) { @unlink($styr . $f); }
-    $alle = array_merge($nye, array_map('intval', array_filter([$GLOBALS['l6_id'] ?? null, $GLOBALS['dag_id'] ?? null])));
+    $alle = array_merge($nye, array_map('intval', array_filter([$GLOBALS['l6_id'] ?? null, $GLOBALS['l6b_id'] ?? null, $GLOBALS['dag_id'] ?? null])));
     foreach ($alle as $sid) {
         DB::kjor("DELETE FROM notifications WHERE ref_type = 'medlemskap' AND ref_id IN (SELECT id FROM payments WHERE subscription_id = :s)", ['s' => $sid]);
         DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $sid]);

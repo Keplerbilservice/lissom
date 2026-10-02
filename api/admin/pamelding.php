@@ -316,21 +316,24 @@ if ($handling === 'flytt') {
         $nyPris = $nyttBelop !== $gammeltBelop;
     }
 
-    if ($nyPris) {
-        // En betaling som er paa vei i Vipps ble startet med det gamle
-        // beloepet, og den gjoer plassen betalt naar den kommer inn.
-        $paaVei = DB::verdi(
+    // En betaling som er paa vei i Vipps ble startet med det gamle beloepet,
+    // og Booking::markerBetalt() gjoer plassen betalt naar den kommer inn.
+    // Sjekkes foer (raskt svar) og paa nytt i transaksjonen, med laas
+    // (kontrolloeren, 2. oktober 2026). Laasen tas foer paameldingen, i
+    // samme rekkefoelge som markerBetalt() (betaling, saa paamelding).
+    $harBookingId = DB::harKolonne('payments', 'booking_id');
+    $paaVei = static function (bool $laas) use ($id, $harBookingId): bool {
+        return DB::verdi(
             "SELECT p.id FROM payments p
-              WHERE (p.id = :p OR " . (DB::harKolonne('payments', 'booking_id') ? 'p.booking_id = :b' : '0') . ")
+              WHERE (p.id = (SELECT payment_id FROM bookings WHERE id = :b1)"
+                . ($harBookingId ? ' OR p.booking_id = :b2' : '') . ")
                 AND p.status IN ('opprettet', 'venter')
-              LIMIT 1",
-            DB::harKolonne('payments', 'booking_id')
-                ? ['p' => (int) ($b['payment_id'] ?? 0), 'b' => $id]
-                : ['p' => (int) ($b['payment_id'] ?? 0)]
-        );
-        if ($paaVei !== null) {
-            Svar::feil('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
-        }
+              LIMIT 1" . ($laas ? ' FOR UPDATE' : ''),
+            $harBookingId ? ['b1' => $id, 'b2' => $id] : ['b1' => $id]
+        ) !== null;
+    };
+    if ($nyPris && $paaVei(false)) {
+        Svar::feil('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
     }
 
     // Plassen maa finnes. Uten sjekken kunne man flytte fem personer inn paa
@@ -341,8 +344,11 @@ if ($handling === 'flytt') {
     // en flytting og et kjoep — begge se den siste plassen ledig.
     $trenger = max(1, (int) $b['antall']);
     try {
-        $etter = DB::iTransaksjon(static function () use ($id, $b, $okt, $tilOkt, $trenger, $nyPris, $nyttBelop, $nyRabatt, $gammeltBelop, $admin): ?array {
+        $etter = DB::iTransaksjon(static function () use ($id, $b, $okt, $tilOkt, $trenger, $nyPris, $nyttBelop, $nyRabatt, $gammeltBelop, $admin, $paaVei): ?array {
             $ledige = Booking::ledigePlasser($tilOkt, true);
+            if ($nyPris && $paaVei(true)) {
+                throw new RuntimeException('Betalingen pågår i Vipps. Prøv igjen om litt.', 409);
+            }
             // Alt prisen og plassbehovet ble regnet av, maa staa som da det
             // ble lest. Endret noen antall, beloep, rabatt eller status i
             // mellomtiden, avvises flyttingen heller enn aa skrive over det.

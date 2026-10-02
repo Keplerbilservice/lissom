@@ -24,7 +24,23 @@ declare(strict_types=1);
 require __DIR__ . '/nettleser/testdatabase.php';
 $rot = dirname(__DIR__);
 krev_testdatabase($rot);
+
+// Falsk Vipps (tests/vipps-stub.php) for admin-refusjonen. Ingen kall gaar
+// til Vipps: adressen sjekkes under, og testen stopper om den ikke er den falske.
+$s = stream_socket_server('tcp://127.0.0.1:0'); $adr = stream_socket_get_name($s, false); fclose($s);
+$vippsPort = (int) substr($adr, strrpos($adr, ':') + 1);
+$falskVipps = proc_open([PHP_BINARY, '-S', '127.0.0.1:' . $vippsPort, __DIR__ . '/vipps-stub.php'],
+    [0 => ['pipe', 'r'], 1 => ['file', 'NUL', 'a'], 2 => ['file', 'NUL', 'a']], $vpipes, $rot);
+fclose($vpipes[0]);
+for ($v = 0; $v < 50; $v++) { $f = @fsockopen('127.0.0.1', $vippsPort, $e1, $e2, 0.1); if ($f) { fclose($f); break; } usleep(50000); }
+putenv('LISSOM_VIPPS_BASE=http://127.0.0.1:' . $vippsPort);
+register_shutdown_function(static function () use ($falskVipps): void { if (is_resource($falskVipps)) { proc_terminate($falskVipps); } });
+
 require $rot . '/app/bootstrap.php';
+if (Config::vippsBase() !== 'http://127.0.0.1:' . $vippsPort) {
+    fwrite(STDERR, "Vipps-adressen er ikke den falske. Stopper.\n");
+    exit(1);
+}
 
 $ok = 0; $feil = 0;
 function sjekk(string $n, bool $v, string $mer = ''): void
@@ -34,9 +50,10 @@ $servere = []; $porter = []; $kurs = []; $okter = []; $medlemmer = []; $vente = 
 $tag = 'FLYTT-' . strtoupper(bin2hex(random_bytes(3)));
 $logg = sys_get_temp_dir() . '/lissom-flytt-' . bin2hex(random_bytes(4)) . '.log';
 
-function parallelt(array $kall): array
+function parallelt(array $kall, ?callable $underveis = null): array
 {
     $m = curl_multi_init(); $h = [];
+    $start = microtime(true);
     foreach ($kall as [$port, $sti, $data, $token]) {
         $c = curl_init('http://127.0.0.1:' . $port . $sti);
         curl_setopt_array($c, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($data), CURLOPT_RETURNTRANSFER => true,
@@ -44,7 +61,12 @@ function parallelt(array $kall): array
             'Cookie: lissom_sesjon=' . $token]]);
         curl_multi_add_handle($m, $c); $h[] = $c;
     }
-    do { curl_multi_exec($m, $aktiv); if ($aktiv) { curl_multi_select($m, 0.05); } } while ($aktiv);
+    do {
+        curl_multi_exec($m, $aktiv);
+        if ($aktiv) { curl_multi_select($m, 0.05); }
+        // Kjoeres én gang mens kallet staar og venter (f.eks. paa en laas).
+        if ($underveis !== null && microtime(true) - $start > 0.8) { $underveis(); $underveis = null; }
+    } while ($aktiv);
     $ut = [];
     foreach ($h as $c) {
         $ut[] = [curl_getinfo($c, CURLINFO_RESPONSE_CODE), json_decode((string) curl_multi_getcontent($c), true)];
@@ -207,6 +229,40 @@ try {
     sjekk('g) betaling paa vei i Vipps: flytting med ny pris avvises, plassen urort', $kode === 409 && (int) $r['course_session_id'] === $oA
         && (int) $r['belop_ore'] === 50000, (string) $kode);
 
+    // ── Kontrolloeren 1: delvis refundert teller netto ────────────────
+    echo "\n── Kontrolloeren: 500 betalt, 200 refundert ──────────────────\n";
+    foreach ([[$oB, 70000, 40000, 0, 'reservert'], [$oC, 30000, 0, 0, 'betalt']] as [$til, $pris, $skyldig, $forMye, $status]) {
+        $b = $plass($oA, $kA, ['belop_ore' => 50000]);
+        $p = $betaling($b, ['belop_ore' => 50000, 'status' => 'delvis_refundert', 'refundert_ore' => 20000]);
+        DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+        sjekk("netto betalt 30000 (ikke 50000)", Booking::betalingerFor($b)['sum'] === 30000, (string) Booking::betalingerFor($b)['sum']);
+        [$kode, $svar] = $flytt($b, $til);
+        $r = $rad($b);
+        sjekk("flytt til $pris: skyldig $skyldig, for mye $forMye, $status",
+            $kode === 200 && (int) $r['belop_ore'] === $pris && ($svar['skyldigOre'] ?? null) === $skyldig
+            && ($svar['forMyeOre'] ?? null) === $forMye && $r['status'] === $status,
+            json_encode([$kode, $r['belop_ore'], $r['status'], $svar], JSON_UNESCAPED_UNICODE));
+    }
+
+    // ── Kontrolloeren 3: Vipps-betaling som starter mens flyttingen gaar ──
+    echo "\n── Kontrolloeren: Vipps under vei, sjekket i transaksjonen ───\n";
+    $b = $plass($oA, $kA, ['belop_ore' => 50000, 'status' => 'reservert', 'betalt_maate' => 'Ikke betalt']);
+    $s2 = require $rot . '/app/secrets.php';
+    $annen = new PDO('mysql:host=127.0.0.1;port=' . (int) $s2['db_port'] . ';dbname=' . $s2['db_navn'] . ';charset=utf8mb4',
+        $s2['db_bruker'], $s2['db_passord'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $annen->beginTransaction();
+    $annen->prepare("INSERT INTO payments (vipps_reference, type, formal, belop_ore, status, idempotency_key, booking_id)
+                     VALUES (:r, 'epayment', 'booking', 50000, 'opprettet', :k, :b)")
+        ->execute(['r' => Vipps::nyReferanse('T'), 'k' => Vipps::uuid(), 'b' => $b]);
+    $committet = false;
+    [$kode, $svar] = parallelt([[$porter[0], '/api/admin/pamelding.php', ['handling' => 'flytt', 'id' => $b, 'oktId' => $oB], $token]],
+        static function () use ($annen, &$committet): void { $annen->commit(); $committet = true; })[0];
+    if (!$committet) { $annen->commit(); }
+    $r = $rad($b);
+    sjekk('betaling startet mens flyttingen ventet: 409, plassen og beloepet urort',
+        $kode === 409 && (int) $r['course_session_id'] === $oA && (int) $r['belop_ore'] === 50000,
+        json_encode([$kode, $r['course_session_id'] == $oA, $r['belop_ore']]));
+
     // ── L-8 ────────────────────────────────────────────────────────────
     echo "\n── L-8: siste plass under laas ───────────────────────────────\n";
     for ($runde = 1; $runde <= 3; $runde++) {
@@ -313,6 +369,31 @@ try {
     Vipps::anvendTilstand($ref, $refusjon, true);
     sjekk('bare booking_id, ingen annen betaling: refundert og ledig', $rad($b)['status'] === 'refundert'
         && Booking::ledigePlasser($oG) === 1, (string) $rad($b)['status']);
+
+    // ── Kontrolloeren 2: full refusjon fra admin gaar samme vei ────────
+    echo "\n── Kontrolloeren: full refusjon fra admin (falsk Vipps) ──────\n";
+    $admRef = static fn(int $p): array => parallelt([[$porter[0], '/api/admin/betalinger.php',
+        ['referanse' => (string) DB::verdi('SELECT vipps_reference FROM payments WHERE id = :p', ['p' => $p]), 'belop' => '', 'operasjonId' => 'test-' . bin2hex(random_bytes(8))], $token]])[0];
+    // Delt: 50000 Vipps + 20000 kontant paa 70000, Vipps-delen refunderes.
+    $b = $plass($oB, $kB, ['belop_ore' => 70000]);
+    $p = $betaling($b, ['belop_ore' => 50000]);
+    DB::oppdater('bookings', ['payment_id' => $p], ['id' => $b]);
+    Booking::manuellBetaling($b, 20000, 'Kontant');
+    Booking::settBetaltStatus($b);
+    [$kode, $svar] = $admRef($p);
+    $bet = Booking::betalingerFor($b);
+    sjekk('admin: Vipps 50000 refundert helt → plassen reservert, skyldig 50000 (20000 kontant staar)',
+        $kode === 200 && DB::verdi('SELECT status FROM payments WHERE id = :p', ['p' => $p]) === 'refundert'
+        && $rad($b)['status'] === 'reservert' && $bet['sum'] === 20000,
+        json_encode([$kode, $svar, $rad($b)['status'], $bet['sum']], JSON_UNESCAPED_UNICODE));
+    // Bare booking_id, ingen annen betaling: refundert og ledig.
+    $oK = $nyOkt($kE, 1, 42);
+    $b = $plass($oK, $kE, ['belop_ore' => 50000]);
+    $p = $betaling($b, ['belop_ore' => 50000]);
+    [$kode, $svar] = $admRef($p);
+    sjekk('admin: bare booking_id, refundert helt → plassen refundert og ledig',
+        $kode === 200 && $rad($b)['status'] === 'refundert' && Booking::ledigePlasser($oK) === 1,
+        json_encode([$kode, $svar, $rad($b)['status']], JSON_UNESCAPED_UNICODE));
 } catch (Throwable $e) {
     sjekk('uventet feil', false, $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 } finally {
@@ -320,6 +401,8 @@ try {
     foreach ($okter as $o) {
         foreach (array_column(DB::alle('SELECT id FROM bookings WHERE course_session_id = :o', ['o' => $o]), 'id') as $b) {
             DB::kjor('UPDATE bookings SET payment_id = NULL WHERE id = :b', ['b' => $b]);
+            DB::kjor('DELETE FROM payment_refunds WHERE payment_id IN (SELECT id FROM payments WHERE booking_id = :b)', ['b' => $b]);
+            DB::kjor("DELETE FROM audit_log WHERE objekt_type = 'payment' AND objekt_id IN (SELECT id FROM payments WHERE booking_id = :b)", ['b' => $b]);
             DB::kjor('DELETE FROM payments WHERE booking_id = :b', ['b' => $b]);
             DB::kjor("DELETE FROM audit_log WHERE objekt_type = 'booking' AND objekt_id = :b", ['b' => $b]);
             DB::kjor("DELETE FROM notifications WHERE ref_type = 'booking' AND ref_id = :b", ['b' => $b]);

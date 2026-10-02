@@ -2920,7 +2920,15 @@
                 {
                     "fil": "app/lib/booking.php",
                     "finnes": [
-                        "self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],"
+                        "self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],",
+                        "private static function plasserEtterFullRefusjon(int $paymentId): void",
+                        "$sum += max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore'];"
+                    ]
+                },
+                {
+                    "fil": "api/admin/betalinger.php",
+                    "finnes": [
+                        "Booking::gjorOppFullRefusjon((int) $betaling['id']);"
                     ]
                 },
                 {

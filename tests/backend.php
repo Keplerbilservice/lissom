@@ -21132,7 +21132,8 @@ sjekk('delene sendes i ett kall til riktig endepunkt for hvert slag',
     && str_contains($dbSida, "return this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, deler: deler });")
     && str_contains($dbSida, "return this.medlemKall({ handling: 'betaling', medlemId: u.id, deler: deler });"));
 sjekk('gavekortdelen teller med i det som er betalt paa en plass',
-    str_contains($dbBook, "\$sum += (int) \$r['belop_ore'] + (int) \$r['gavekort_ore'];"));
+    // Netto for delvis refunderte (kontrolloeren, 2. oktober 2026).
+    str_contains($dbBook, "\$sum += max(0, (int) \$r['belop_ore'] - (int) \$r['refundert_ore']) + (int) \$r['gavekort_ore'];"));
 sjekk('kursplassen lagrer alle delene i én transaksjon',
     str_contains($dbKurs, "case 'delt':")
     && str_contains($dbKurs, '[$ider, $gaveRad] = DB::iTransaksjon('));

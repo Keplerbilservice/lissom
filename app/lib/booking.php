@@ -1368,7 +1368,8 @@ final class Booking
                         'result_refunded_ore' => $refundert, 'result_remaining_ore' => $rest], ['id' => $op['id']]);
                 }
                 if ($rest === 0) {
-                    DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+                    // Samme vei som portalrefusjonen (gjorOppFullRefusjon).
+                    self::plasserEtterFullRefusjon($paymentId);
                 }
                 // L-3: hele beloepet tilbake = kjoepet gjores opp. En
                 // delrefusjon roerer ikke formaalet; den logges.
@@ -1506,40 +1507,52 @@ final class Booking
             if ($status !== 'refundert') {
                 return;
             }
-            DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
-            // L-9: plassen kan ha flere betalinger (Vipps + kontant i Kasse).
-            // Da peker «payment_id» paa den siste manuelle, og Vipps-raden
-            // naas bare gjennom «payments.booking_id». Sto ikke paameldingen
-            // over, og ble staaende betalt for penger som er gitt tilbake.
-            // Det som fortsatt staar, avgjoer: settBetaltStatus() gir
-            // «reservert» og skyldig beloep i Kasse naar resten ikke dekker.
-            if (DB::harKolonne('payments', 'booking_id')) {
-                $andre = DB::alle(
-                    "SELECT b.id FROM payments p
-                       JOIN bookings b ON b.id = p.booking_id
-                      WHERE p.id = :p
-                        AND (b.payment_id IS NULL OR b.payment_id <> :p2)
-                        AND b.status IN ('betalt', 'reservert')
-                        FOR UPDATE",
-                    ['p' => $paymentId, 'p2' => $paymentId]
-                );
-                foreach ($andre as $b) {
-                    // Staar ingen betaling igjen, er plassen refundert og ledig
-                    // — som naar Vipps-raden var den eneste (Codex, runde 3).
-                    if (self::betalingerFor((int) $b['id'])['sum'] === 0) {
-                        DB::kjor("UPDATE bookings SET status = 'refundert' WHERE id = :b", ['b' => (int) $b['id']]);
-                        self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
-                            ['betaling' => $paymentId, 'status' => 'refundert', 'sum' => 0]);
-                        continue;
-                    }
-                    $etter = self::settBetaltStatus((int) $b['id']);
-                    self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
-                        ['betaling' => $paymentId] + $etter);
-                }
-            }
+            self::plasserEtterFullRefusjon($paymentId);
             self::gjorOppFormal($paymentId);
         };
         DB::kobling()->inTransaction() ? $arbeid() : DB::iTransaksjon($arbeid);
+    }
+
+    /**
+     * Plassene etter at én betaling er refundert helt. Portalen (REFUNDED,
+     * gjorOppFullRefusjon) og admin (refunderBetaling) gaar begge hit, saa de
+     * to ikke kan svare forskjellig (kontrolloeren, 2. oktober 2026).
+     * Kalles i transaksjonen, med betalingen laast. Trygg aa kalle flere ganger.
+     */
+    private static function plasserEtterFullRefusjon(int $paymentId): void
+    {
+        DB::kjor("UPDATE bookings SET status = 'refundert' WHERE payment_id = :p", ['p' => $paymentId]);
+        // L-9: plassen kan ha flere betalinger (Vipps + kontant i Kasse).
+        // Da peker «payment_id» paa den siste manuelle, og Vipps-raden
+        // naas bare gjennom «payments.booking_id». Sto ikke paameldingen
+        // over, og ble staaende betalt for penger som er gitt tilbake.
+        // Det som fortsatt staar, avgjoer: settBetaltStatus() gir
+        // «reservert» og skyldig beloep i Kasse naar resten ikke dekker.
+        if (!DB::harKolonne('payments', 'booking_id')) {
+            return;
+        }
+        $andre = DB::alle(
+            "SELECT b.id FROM payments p
+               JOIN bookings b ON b.id = p.booking_id
+              WHERE p.id = :p
+                AND (b.payment_id IS NULL OR b.payment_id <> :p2)
+                AND b.status IN ('betalt', 'reservert')
+                FOR UPDATE",
+            ['p' => $paymentId, 'p2' => $paymentId]
+        );
+        foreach ($andre as $b) {
+            // Staar ingen betaling igjen, er plassen refundert og ledig
+            // — som naar Vipps-raden var den eneste (Codex, runde 3).
+            if (self::betalingerFor((int) $b['id'])['sum'] === 0) {
+                DB::kjor("UPDATE bookings SET status = 'refundert' WHERE id = :b", ['b' => (int) $b['id']]);
+                self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
+                    ['betaling' => $paymentId, 'status' => 'refundert', 'sum' => 0]);
+                continue;
+            }
+            $etter = self::settBetaltStatus((int) $b['id']);
+            self::revisjon('booking_etter_full_refusjon', 'booking', (int) $b['id'],
+                ['betaling' => $paymentId] + $etter);
+        }
     }
 
     /**
@@ -2993,6 +3006,7 @@ final class Booking
             ? 'COALESCE(p.gavekort_ore, 0) AS gavekort_ore' : '0 AS gavekort_ore';
         $rader = DB::alle(
             'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, ' . $gaveFelt . ', p.status, p.maate,
+                    COALESCE(p.refundert_ore, 0) AS refundert_ore,
                     p.kommentar, p.annullert_at, p.created_at,
                     p.registrert_av, m.navn AS registrert_navn
                FROM payments p
@@ -3007,7 +3021,10 @@ final class Booking
         foreach ($rader as $r) {
             if ($r['annullert_at'] === null
                 && in_array((string) $r['status'], ['betalt', 'autorisert', 'delvis_refundert'], true)) {
-                $sum += (int) $r['belop_ore'] + (int) $r['gavekort_ore'];
+                // Netto: det som er refundert av en delvis refundert betaling
+                // er ikke betalt lenger. Samme regnestykke som Omsetning::perFormal()
+                // (kontrolloeren, 2. oktober 2026: 500 betalt, 200 refundert er 300).
+                $sum += max(0, (int) $r['belop_ore'] - (int) $r['refundert_ore']) + (int) $r['gavekort_ore'];
             }
         }
 

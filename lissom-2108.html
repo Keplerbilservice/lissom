@@ -75786,8 +75786,11 @@ class Component extends DCLogic {
       visUbetaltMedlemskap: this.erPublisert() && (!!this.state.betalingMangler || !!this.state.fryst),
       // Fryst og stengt ute etter den betalte perioden (eieren, 2. oktober
       // 2026): «Fryst til <dato>» i stedet for «venter på betaling».
-      ubetaltFryst: !!this.state.fryst,
-      ubetaltIkkeFryst: !this.state.fryst,
+      // Staar det noe ubetalt (et trekk som feilet), vises «venter paa
+      // betaling» og «Forny og betal» som foer, ogsaa mens frysen gjelder —
+      // det kan betales (kontrolloeren, 2. oktober 2026).
+      ubetaltFryst: !!this.state.fryst && !this.state.betalingMangler,
+      ubetaltIkkeFryst: !this.state.fryst || !!this.state.betalingMangler,
       frystTittel: this.frystTekst(),
       ubetaltKanStempleUt: (!!this.state.betalingMangler || !!this.state.fryst) && this.erInne(),
       ubetaltStempleUt: () => { if (this.erInne()) this.vekslStempling(); },

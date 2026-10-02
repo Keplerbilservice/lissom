@@ -334,7 +334,7 @@
     "svar": {
       "gjeldende": {
         "begrunnelse": "Reise",
-        "dager": 66,
+        "dager": 101,
         "fra": "<dato>",
         "fraIso": "<dato>",
         "id": "<number>",
@@ -350,7 +350,7 @@
       "mine": [
         {
           "begrunnelse": "Reise",
-          "dager": 66,
+          "dager": 101,
           "fra": "<dato>",
           "fraIso": "<dato>",
           "id": "<number>",

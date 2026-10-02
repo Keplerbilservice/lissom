@@ -132,8 +132,8 @@ sjekk('godkjent frys i dag, perioden er over, status ennaa «aktiv»: fryst til 
     Frys::frystNaa($rad($b)) === ['til' => $dag(20)], json_encode(Frys::frystNaa($rad($b))));
 
 $c = $nytt('pause', false);
-$frys($c, $dag(-10), $dag(15));
-sjekk('status «pause», godkjent frys, perioden er over: fryst til sluttdatoen', Frys::frystNaa($rad($c)) === ['til' => $dag(15)]);
+$frys($c, $dag(-40), $dag(45));   // hele denne maaneden: fritatt, ingenting skyldes
+sjekk('status «pause», godkjent frys, perioden er over: fryst til sluttdatoen', Frys::frystNaa($rad($c)) === ['til' => $dag(45)]);
 
 $fri = $nytt('pause');
 DB::oppdater('members', ['betaler_ikke' => 1], ['id' => $fri]);
@@ -201,15 +201,15 @@ $okter = static fn(int $m): int => (int) DB::verdi('SELECT COUNT(*) FROM check_i
 $tc = $token($c);
 $r = $kall('/api/stempling.php', $tc, ['handling' => 'inn']);
 sjekk('fryst: «Stemple inn» avvises med 403', $r['status'] === 403, json_encode($r));
-sjekk('… merket fryst, med sluttdatoen', ($r['d']['fryst'] ?? null) === true && ($r['d']['frystTil'] ?? null) === $dag(15));
+sjekk('… merket fryst, med sluttdatoen', ($r['d']['fryst'] ?? null) === true && ($r['d']['frystTil'] ?? null) === $dag(45));
 sjekk('… ingen oekt lagret', $okter($c) === 0);
 
 $r = $kall('/api/stempling.php', $tc);
 sjekk('fryst: stemplingsstatusen leses fortsatt (200)', $r['status'] === 200, (string) $r['status']);
 $r = $kall('/api/meg.php', $tc);
-sjekk('fryst: meg.php svarer 200 med «fryst» og sluttdatoen', $r['status'] === 200 && ($r['d']['fryst']['til'] ?? null) === $dag(15),
+sjekk('fryst: meg.php svarer 200 med «fryst» og sluttdatoen', $r['status'] === 200 && ($r['d']['fryst']['til'] ?? null) === $dag(45),
     json_encode($r['d']['fryst'] ?? null));
-sjekk('… og datoen som tekst', ($r['d']['fryst']['tilTekst'] ?? '') === Booking::norskDatoKort($dag(15)));
+sjekk('… og datoen som tekst', ($r['d']['fryst']['tilTekst'] ?? '') === Booking::norskDatoKort($dag(45)));
 sjekk('fryst: ingen dørkode eller wifi i meg.php', ((array) ($r['d']['internInfo'] ?? [])) === [],
     json_encode($r['d']['internInfo'] ?? null));
 // Eieren, 2. oktober 2026: et medlem som er stengt ute ser frysen sin og kan
@@ -227,7 +227,7 @@ sjekk('stengt ute: ikke «betalingMangler», status ikke «venterbetaling»', ($
 sjekk('… betalingMangler() er nei for den som er fryst', !Medlemskap::betalingMangler($rad($c), false));
 $u = $nytt('aktiv', false);
 sjekk('… men ja for den som bare ikke har betalt (som foer)', Medlemskap::betalingMangler($rad($u), er_aktivt_medlem($rad($u))));
-$bs = Medlemskap::betalingsstatus($rad($c), null, null);
+$bs = Medlemskap::betalingsstatusFor($rad($c));
 sjekk('admin/Kassa: «Fryst til <dato>», ikke utestaaende', $bs['tilstand'] === 'fryst' && $bs['utestaaende'] === false
     && $bs['forfalt'] === false && str_starts_with($bs['tekst'], 'Fryst til '), json_encode($bs));
 // Ingen fornyelse eller betaling for en frosset periode.
@@ -308,11 +308,48 @@ $r = $kall('/api/meg.php', $th);
 sjekk('… og faar dørkoden som foer, uten «fryst»', ($r['d']['internInfo']['dorkode'] ?? null) === $kode
     && !array_key_exists('fryst', (array) $r['d']));
 
-// ── 6. Flytt medlemskap tar frysen med ───────────────────────────────────
-echo "\n── Flytt medlemskap ─────────────────────────────────────────\n";
 $admin = DB::settInn('members', ['navn' => 'Frystest admin ' . $tag, 'epost' => $tag . '-admin@lissom.test',
     'telefon' => '+479' . random_int(1000000, 9999999), 'rolle' => 'admin', 'status' => 'ingen']);
 $rydd[] = $admin;
+
+// ── Fryst, men noe staar ubetalt (kontrolloeren, 2. oktober 2026) ────────
+echo "\n── Fryst med noe ubetalt ────────────────────────────────────\n";
+$denneMnd = (new DateTimeImmutable($idag))->modify('first day of this month')->format('Y-m-d');
+$ub = $nytt('pause', false);
+$pris = (int) DB::verdi('SELECT pris_ore FROM membership_plans WHERE navn = :n', ['n' => $plan]);
+$ubAvt = DB::settInn('subscriptions', ['member_id' => $ub, 'plan' => $plan, 'pris_ore' => $pris, 'status' => 'aktiv',
+    'vipps_agreement_id' => 'agr_test_' . $tag, 'neste_trekk' => (new DateTimeImmutable($denneMnd))->modify('first day of next month')->format('Y-m-d')]);
+DB::kjor('UPDATE payments SET subscription_id = :s, type = \'recurring_charge\' WHERE member_id = :m', ['s' => $ubAvt, 'm' => $ub]);
+// Trekket for denne maaneden feilet hos Vipps.
+DB::settInn('payments', ['member_id' => $ub, 'subscription_id' => $ubAvt, 'formal' => 'medlemskap', 'type' => 'recurring_charge',
+    'status' => 'feilet', 'belop_ore' => $pris, 'gjelder_fra' => $denneMnd, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(12)),
+    'idempotency_key' => Vipps::uuid()]);
+// En kort frys (under 15 dager av maaneden).
+$ubFrys = $frys($ub, $dag(-2), $dag(4));
+sjekk('fryst (stengt ute) med et feilet trekk', Frys::frystNaa($rad($ub)) !== null);
+$bs = Medlemskap::betalingsstatusFor($rad($ub));
+sjekk('… staar forfalt og utestaaende, ikke «Fryst»', $bs['tilstand'] === 'forfalt' && $bs['utestaaende'], json_encode($bs));
+sjekk('… betalingMangler() er ja', Medlemskap::betalingMangler($rad($ub), er_aktivt_medlem($rad($ub))));
+$sperr = new ReflectionMethod(Medlemskap::class, 'sperrFryst');
+$sperr->setAccessible(true);
+sjekk('… og kan betales: sperrFryst() slipper gjennom', $feilFra(fn() => $sperr->invoke(null, $rad($ub))) === '');
+sjekk('… mens den som ikke skylder noe, sperres', str_contains($feilFra(fn() => $sperr->invoke(null, $rad($c))), 'fryst til'));
+$r = $kall('/api/meg.php', $token($ub));
+sjekk('… meg.php: fryst og betalingMangler (Min side viser «Forny og betal»)', isset($r['d']['fryst']) && ($r['d']['betalingMangler'] ?? null) === true);
+// Admin ser det ubetalte i soknaden og ved godkjenning.
+$tAdmin = $token($admin);
+$sok = $frys($ub, $dag(30), $dag(40), 'sokt');
+$r = $kall('/api/admin/frys.php', $tAdmin);
+$rad1 = array_values(array_filter((array) ($r['d']['soknader'] ?? []), static fn($s) => (int) $s['id'] === $sok))[0] ?? [];
+sjekk('admin: soknaden sier at noe staar ubetalt', str_starts_with((string) ($rad1['ubetalt'] ?? ''), 'Står ubetalt: '), json_encode($rad1['ubetalt'] ?? null));
+$rad2 = array_values(array_filter((array) ($r['d']['soknader'] ?? []), static fn($s) => (int) $s['medlemId'] === $c && $s['loper']))[0] ?? [];
+sjekk('admin: ingen merknad for den som ikke skylder', ($rad2['ubetalt'] ?? 'mangler') === '', json_encode($rad2['ubetalt'] ?? 'mangler'));
+$r = $kall('/api/admin/frys.php', $tAdmin, ['handling' => 'godkjenn', 'id' => $sok]);
+sjekk('admin: godkjenning gir advarsel om det ubetalte', $r['status'] === 200
+    && str_contains((string) ($r['d']['advarsel'] ?? ''), 'har noe ubetalt: ') && str_ends_with((string) ($r['d']['advarsel'] ?? ''), 'Frysen fjerner det ikke.'), json_encode($r));
+
+// ── 6. Flytt medlemskap tar frysen med ───────────────────────────────────
+echo "\n── Flytt medlemskap ─────────────────────────────────────────\n";
 $fra = DB::settInn('members', ['navn' => 'Frystest fra ' . $tag, 'epost' => $tag . '-fra@lissom.test',
     'telefon' => '+479' . random_int(1000000, 9999999), 'rolle' => 'medlem', 'status' => 'pause',
     'medlemskap_type' => $plan, 'start_dato' => gmdate('Y-m-01')]);

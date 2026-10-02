@@ -137,7 +137,7 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
       // Godkjent frys som dekker i dag (eieren, 2. oktober 2026): medlemmet
       // er fryst, med en betalt periode. Foer laa det en soknad fram i tid her,
       // og det frosne medlemmet sto som «Aktivt» med «Stemple inn».
-      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 5), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 60), 'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
+      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 40), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 60), 'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
     }
     if (${plasser ? 1 : 0}) {
       DB::settInn('bookings', ['course_id' => ${S.kurs}, 'course_session_id' => ${S.okter.a}, 'member_id' => $id, 'antall' => 1, 'belop_ore' => 280000, 'status' => 'betalt']);

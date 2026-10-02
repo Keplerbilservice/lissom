@@ -141,6 +141,68 @@ foreach (['2028-09-15', '2028-09-20', '2028-09-30'] as $dagen) {
 sjekk('1. oktober (perioden er over): fryst til 20. oktober', Frys::frystNaa($rad($m), '2028-10-01') === ['til' => '2028-10-20']);
 sjekk('… og har ikke tilgang', !Medlemskap::harBetaltPeriode($rad($m), '2028-10-01'));
 
+// ── (e) feilet trekk i en maaned med frys under 15 dager ────────────────
+echo "\n── (e) feilet trekk, frys under 15 dager: forfalt ──────────\n";
+$m = $medlem('aktiv', $plan);
+$agr = 'agr_frysE_' . $tag;
+$avt = $avtale($m, $agr, '2029-02-01');
+$betalt($m, $avt, '2029-01-01');
+$frys($m, '2029-02-20', '2029-03-05');
+$ut = Medlemskap::trekk($avtaleRad($avt), '2029-01-29');
+$p = $rader($avt);
+sjekk("februar trekkes (frysen dekker 9 dager) (svar: $ut)", count($p) === 2 && (string) $p[1]['gjelder_fra'] === '2029-02-01');
+DB::oppdater('payments', ['status' => 'feilet'], ['id' => (int) $p[1]['id']]);   // Vipps: FAILED
+$bs = Medlemskap::betalingsstatusFor($rad($m), '2029-02-25');
+sjekk('25. februar: stengt ute av frysen', Frys::frystNaa($rad($m), '2029-02-25') === ['til' => '2029-03-05']);
+sjekk('… men februar staar forfalt og utestaaende (ikke «Fryst»)', $bs['tilstand'] === 'forfalt' && $bs['utestaaende'] === true, json_encode($bs));
+sjekk('… og maaneden er ikke fritatt', !Medlemskap::fritattMaaned($m, '2029-02-25') && !Medlemskap::fritattTilgang($rad($m), '2029-02-10'));
+
+// ── (f) feilet trekk 1.11, frys 20.11–31.01 ─────────────────────────────
+echo "\n── (f) feilet trekk 1.11 + frys 20.11–31.1 ─────────────────\n";
+$m = $medlem('aktiv', $plan);
+$agr = 'agr_frysF_' . $tag;
+$avt = $avtale($m, $agr, '2029-11-01');
+$betalt($m, $avt, '2029-10-01');
+$frys($m, '2029-11-20', '2030-01-31');
+$ut = Medlemskap::trekk($avtaleRad($avt), '2029-10-29');
+$p = $rader($avt);
+sjekk("november trekkes (frysen dekker 11 dager) (svar: $ut)", count($p) === 2 && (string) $p[1]['gjelder_fra'] === '2029-11-01');
+DB::oppdater('payments', ['status' => 'feilet'], ['id' => (int) $p[1]['id']]);
+$fra = $loggLengde();
+$utDes = Medlemskap::trekk($avtaleRad($avt), '2029-11-28');
+$utJan = Medlemskap::trekk($avtaleRad($avt), '2029-12-29');
+sjekk("desember og januar hoppes over ($utDes | $utJan)", count($rader($avt)) === 2 && $bestillinger($agr, $fra) === 0
+    && (string) $avtaleRad($avt)['neste_trekk'] === '2030-02-01');
+foreach (['2029-11-25', '2029-12-10', '2030-01-15'] as $dagen) {
+    $bs = Medlemskap::betalingsstatusFor($rad($m), $dagen);
+    sjekk("$dagen: november staar fortsatt ubetalt (forfalt)", $bs['tilstand'] === 'forfalt' && $bs['utestaaende'], json_encode($bs));
+}
+
+// ── (g) restdagene etter frysen i en overhoppet maaned ──────────────────
+echo "\n── (g) restdager etter frys i overhoppet maaned ────────────\n";
+$m = $medlem('aktiv', $plan);
+$agr = 'agr_frysG_' . $tag;
+$avt = $avtale($m, $agr, '2030-03-01');
+$betalt($m, $avt, '2030-02-01');
+$frys($m, '2030-02-20', '2030-03-25');
+$ut = Medlemskap::trekk($avtaleRad($avt), '2030-02-26');
+sjekk("mars hoppes over (svar: $ut)", count($rader($avt)) === 1 && (string) $avtaleRad($avt)['neste_trekk'] === '2030-04-01');
+sjekk('15. mars (i frysen): stengt ute, ikke tilgang', Frys::frystNaa($rad($m), '2030-03-15') === ['til' => '2030-03-25']
+    && !Medlemskap::harBetaltPeriode($rad($m), '2030-03-15'));
+foreach (['2030-03-26', '2030-03-28', '2030-03-31'] as $dagen) {
+    $bs = Medlemskap::betalingsstatusFor($rad($m), $dagen);
+    sjekk("$dagen: gratis tilgang, ikke fryst, og skylder ingenting",
+        Medlemskap::harBetaltPeriode($rad($m), $dagen) && Frys::frystNaa($rad($m), $dagen) === null
+        && $bs['utestaaende'] === false && $bs['forfalt'] === false, json_encode($bs));
+}
+$bs = Medlemskap::betalingsstatusFor($rad($m), '2030-03-15');
+sjekk('15. mars: «Fryst til 25. mars», ikke utestaaende', $bs['tilstand'] === 'fryst' && $bs['utestaaende'] === false
+    && str_contains($bs['tekst'], '25. mars'), json_encode($bs));
+$fra = $loggLengde();
+$ut = Medlemskap::trekk($avtaleRad($avt), '2030-03-29');
+sjekk("trekket fortsetter 1. april (svar: $ut)", str_starts_with($ut, 'bedt om trekk til 2030-04-01') && $bestillinger($agr, $fra) === 1);
+sjekk('1. april: ikke fritatt (trekket er tatt)', !Medlemskap::fritattMaaned($m, '2030-04-01'));
+
 // ── (d) flytting med avtale og frys ─────────────────────────────────────
 echo "\n── (d) flytting: trekket paa den flyttede avtalen ──────────\n";
 $port = random_int(18200, 18900);

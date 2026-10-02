@@ -1371,7 +1371,13 @@ if (Foresporsel::metode() === 'POST') {
         // med fast trekk betaler det utestaaende her, ikke paa Min side.
         $mRad = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
         if ($mRad !== null && Frys::frystNaa($mRad) !== null) {
-            $fra = Medlemskap::skyldigMaaned($mRad) ?? $fra;
+            $skyldig = Medlemskap::skyldigMaaned($mRad);
+            // Skylder ingenting: da skal det ikke registreres en betaling for
+            // en frosset maaned (betaling, 2. oktober 2026).
+            if ($skyldig === null) {
+                throw new RuntimeException('Medlemmet er fryst og skylder ingenting.', 409);
+            }
+            $fra = $skyldig;
         }
         $maaned = substr($fra, 0, 7);
         $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',

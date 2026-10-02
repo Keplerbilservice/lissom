@@ -363,6 +363,14 @@ sjekk('admin: ingen merknad for den som ikke skylder', ($rad2['ubetalt'] ?? 'man
 $r = $kall('/api/admin/frys.php', $tAdmin, ['handling' => 'godkjenn', 'id' => $sok]);
 sjekk('admin: godkjenning gir advarsel om det ubetalte', $r['status'] === 200
     && str_contains((string) ($r['d']['advarsel'] ?? ''), 'har noe ubetalt: ') && str_ends_with((string) ($r['d']['advarsel'] ?? ''), 'Frysen fjerner det ikke.'), json_encode($r));
+// Kassa: fryst og skylder ingenting → «Registrer betaling» avvises (betaling,
+// 2. oktober 2026). $c er fryst hele denne maaneden (fritatt).
+sjekk('Kassa: $c er fryst og skylder ingenting', Frys::frystNaa($rad($c)) !== null && Medlemskap::skyldigMaaned($rad($c)) === null);
+$manFoer = (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE member_id = :m AND type = 'manuell'", ['m' => $c]);
+$r = $kall('/api/admin/medlemmer.php', $tAdmin, ['handling' => 'betaling', 'medlemId' => $c, 'maate' => 'Kontant']);
+sjekk('Kassa: «Registrer betaling» avvises med «Medlemmet er fryst og skylder ingenting.»', $r['status'] === 409
+    && ($r['d']['feil'] ?? '') === 'Medlemmet er fryst og skylder ingenting.'
+    && (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE member_id = :m AND type = 'manuell'", ['m' => $c]) === $manFoer, json_encode($r));
 
 // ── 6. Flytt medlemskap tar frysen med ───────────────────────────────────
 echo "\n── Flytt medlemskap ─────────────────────────────────────────\n";

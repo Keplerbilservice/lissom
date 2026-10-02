@@ -439,10 +439,16 @@ final class Medlemskap
         $utenTimepakke = DB::harTabell('timepakker')
             ? 'AND NOT EXISTS (SELECT 1 FROM timepakker tp WHERE tp.payment_id = p.id)' : '';
         $rader = DB::alle(
-            "SELECT p.id, p.type, p.subscription_id, p.created_at, {$fraKol}, mp.engangs
+            // Plantypen fra avtalen; mangler avtaleraden (meldt inn for haand,
+            // betalt i verkstedet), fra medlemmets plan — saa Prøv Lissom uten
+            // avtale ikke telles som en vanlig maaned (kontrolloeren, 2. oktober 2026).
+            "SELECT p.id, p.type, p.subscription_id, p.created_at, {$fraKol},
+                    CASE WHEN s.id IS NULL THEN mm.engangs ELSE mp.engangs END AS engangs
                FROM payments p
           LEFT JOIN subscriptions s ON s.id = p.subscription_id
           LEFT JOIN membership_plans mp ON mp.navn = s.plan
+          LEFT JOIN members m ON m.id = p.member_id
+          LEFT JOIN membership_plans mm ON mm.navn = m.medlemskap_type
               WHERE p.member_id = :m AND p.formal = 'medlemskap'
                 AND p.status IN ('betalt','delvis_refundert') AND p.annullert_at IS NULL
                 {$utenTimepakke}

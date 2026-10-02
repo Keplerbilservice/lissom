@@ -227,12 +227,38 @@ try {
             (string) ($svar[0][1]['feil'] ?? ''));
         sjekk('… og ingen manuell rad', count(rader($tv)) === 1);
     }
+    // Feilet MED trekk-id: Vipps har svart at det ikke ble trukket.
     [$tf, $tfS] = nyttMedlem($plan, 'L12 Trekk feilet', 'agr-feilet-' . strtolower($tag));
     $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-TF', 'type' => 'recurring_charge', 'formal' => 'medlemskap',
         'member_id' => $tf, 'subscription_id' => $tfS, 'belop_ore' => 50000, 'status' => 'feilet', 'gjelder_fra' => $denne,
-        'idempotency_key' => $tag . '-tf']);
+        'vipps_psp_ref' => 'chg-' . strtolower($tag), 'idempotency_key' => $tag . '-tf']);
     $svar = kall([[$porter[0], $API, $kontant($tf), $token]]);
-    sjekk('feilet trekk: manuell betaling godtas (200)', $svar[0][0] === 200, json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+    sjekk('feilet trekk med trekk-id: manuell betaling godtas (200)', $svar[0][0] === 200, json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+    sjekk('… én manuell rad på 50000 øre', count(array_filter(rader($tf), static fn($x) => $x['type'] === 'manuell' && (int) $x['belop_ore'] === 50000)) === 1);
+    // Feilet UTEN trekk-id (b): svaret kom aldri, trekket kan ligge hos Vipps.
+    [$tu, $tuS] = nyttMedlem($plan, 'L12 Trekk feilet uten id', 'agr-utenid-' . strtolower($tag));
+    $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-TU', 'type' => 'recurring_charge', 'formal' => 'medlemskap',
+        'member_id' => $tu, 'subscription_id' => $tuS, 'belop_ore' => 50000, 'status' => 'feilet', 'gjelder_fra' => $denne,
+        'idempotency_key' => $tag . '-tu']);
+    $svar = kall([[$porter[0], $API, $kontant($tu), $token]]);
+    sjekk('feilet trekk UTEN trekk-id: manuell betaling nektes (409)', $svar[0][0] === 409
+        && str_contains((string) ($svar[0][1]['feil'] ?? ''), 'fast trekk i Vipps for ' . $denneTekst), json_encode($svar[0][1], JSON_UNESCAPED_UNICODE));
+    sjekk('… og ingen manuell rad', count(rader($tu)) === 1);
+
+    echo "\n── Funn 2: Prøv Lissom uten avtalerad er ikke en vanlig måned ──\n";
+    // Medlemmet betalte Prøv Lissom uten avtale denne måneden, og har nå et
+    // vanlig medlemskap. Betalingen uten avtale leses som Prøv Lissom (planen
+    // på medlemmet) og sperrer ikke den vanlige måneden.
+    [$pv, $pvS] = nyttMedlem($proveplan, 'L12 Prøve uten avtale betalt');
+    DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $pvS]);
+    DB::oppdater('members', ['medlemskap_type' => $proveplan], ['id' => $pv]);
+    $betalinger[] = DB::settInn('payments', ['vipps_reference' => $tag . '-PV', 'type' => 'manuell', 'formal' => 'medlemskap',
+        'member_id' => $pv, 'belop_ore' => 30000, 'status' => 'betalt', 'idempotency_key' => $tag . '-pv']);
+    sjekk('Prøv Lissom-betaling uten avtale teller ikke som vanlig måned',
+        Medlemskap::betalingForMaaned($pv, substr($denne, 0, 7)) === null);
+    DB::oppdater('members', ['medlemskap_type' => $plan], ['id' => $pv]);
+    sjekk('… mens samme betaling teller når medlemmet står på et vanlig medlemskap (ingen avtale)',
+        Medlemskap::betalingForMaaned($pv, substr($denne, 0, 7)) !== null);
 
     echo "\n── Punkt 3: trekk() hopper over en måned som er betalt i verkstedet ──\n";
     [$tr, $trS] = nyttMedlem($plan, 'L12 Trekk betalt manuelt', 'agr-man-' . strtolower($tag));

@@ -1352,10 +1352,14 @@ if (Foresporsel::metode() === 'POST') {
         }
         // Et fast trekk for maaneden er bestilt i Vipps og ikke avgjort: da
         // ville den samme maaneden blitt betalt to ganger (L-12, 2. oktober 2026).
+        // Et «feilet» trekk uten trekk-id kan likevel ligge hos Vipps (svaret
+        // kom aldri), og proeves igjen med samme noekkel — det teller ogsaa.
         if (DB::harKolonne('payments', 'gjelder_fra') && DB::verdi(
             "SELECT id FROM payments
               WHERE member_id = :m AND formal = 'medlemskap' AND type = 'recurring_charge'
-                AND status IN ('opprettet','venter') AND annullert_at IS NULL
+                AND (status IN ('opprettet','venter')
+                     OR (status = 'feilet' AND COALESCE(vipps_psp_ref, '') = ''))
+                AND annullert_at IS NULL
                 AND gjelder_fra >= :fra AND gjelder_fra < :til LIMIT 1",
             ['m' => $id, 'fra' => $maaned . '-01',
              'til' => (new DateTimeImmutable($maaned . '-01'))->modify('first day of next month')->format('Y-m-d')]

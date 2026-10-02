@@ -2360,27 +2360,46 @@ final class Medlemskap
     {
         $foert = 0;
         foreach (self::utenForsteTrekk() as $a) {
-            // Perioden er den trekket ble tatt for, ikke dagen det etterfoeres
-            // (Codex 02.10). Kjoept etter den 20.: samme regel som da avtalen
-            // ble aktiv, regnet paa kjoepstidspunktet. Ellers kjoepsdagen
-            // (dekkerTil() gir kjoepsmaaneden, som foer).
-            $kjopt = trim((string) ($a['created_at'] ?? ''));
-            $fra = $kjopt === '' ? null : self::gjelderFraNytt(
-                (int) $a['member_id'],
-                (string) $a['plan'],
-                $kjopt,
-                $kjopt
-            );
-            if ($fra === null && $kjopt !== '') {
-                $fra = (new DateTimeImmutable($kjopt, new DateTimeZone('UTC')))
-                    ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
-            }
-            if (self::foerForsteTrekk($a, $fra)) {
+            if (self::foerForsteTrekk($a, self::forstePeriode($a))) {
                 $foert++;
             }
             usleep(200_000);
         }
         return $foert;
+    }
+
+    /**
+     * gjelder_fra for et etterfoert foerste trekk: perioden trekket ble tatt
+     * for, ikke dagen det etterfoeres (Codex 02.10).
+     *
+     * Da avtalen ble aktiv, ble neste trekk satt til maaneden ETTER den
+     * foerste perioden (oppdaterFraVipps). Den foerste perioden er derfor
+     * maaneden foer det foerste ordinaere trekket — eller foer neste_trekk,
+     * naar det ikke er tatt noe ordinaert trekk enda. Det gir samme svar som
+     * ved aktiveringen, ogsaa for kjoep etter den 20. og for avtaler godkjent
+     * en senere maaned enn de ble opprettet.
+     *
+     * Prøv Lissom (engangs) teller fra dagen, ikke maaneden: der brukes
+     * dagen avtalen ble opprettet.
+     */
+    private static function forstePeriode(array $avtale): ?string
+    {
+        $plan = self::planUansett((string) $avtale['plan']);
+        $engangs = $plan !== null && (int) ($plan['engangs'] ?? 0) === 1;
+        $etter = DB::verdi(
+            "SELECT MIN(gjelder_fra) FROM payments
+              WHERE subscription_id = :s AND type = 'recurring_charge'
+                AND idempotency_key NOT LIKE 'init:%' AND gjelder_fra IS NOT NULL",
+            ['s' => (int) $avtale['id']]
+        );
+        $etter = ($etter !== null && $etter !== '') ? (string) $etter : (string) ($avtale['neste_trekk'] ?? '');
+        if (!$engangs && $etter !== '') {
+            return (new DateTimeImmutable($etter))->modify('first day of this month')
+                ->modify('-1 month')->format('Y-m-d');
+        }
+        $kjopt = trim((string) ($avtale['created_at'] ?? ''));
+        return $kjopt === '' ? null : (new DateTimeImmutable($kjopt, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
     }
 
     public static function slippForsteTrekk(int $medlemId): array
@@ -2750,8 +2769,9 @@ final class Medlemskap
      * En frys som er over, har Frys::gjenapneForfalte() satt til
      * «avsluttet» — etter til_dato. Den teller fortsatt for datoer i
      * perioden, saa en forsinket runde ikke tar etterbetaling for pausen
-     * (Codex 02.10). En frys verkstedet avbrot underveis («avsluttet» paa
-     * eller foer til_dato) teller ikke: da ble pausen kortere.
+     * (Codex 02.10). En frys verkstedet avbrot underveis gjaldt bare fram
+     * til dagen foer den ble avsluttet (api/admin/frys.php beholder
+     * til_dato, men updated_at er avslutningen).
      */
     public static function pauseTil(int $medlemId, string $dato): ?string
     {
@@ -2759,11 +2779,15 @@ final class Medlemskap
             return null;
         }
         $til = DB::verdi(
-            "SELECT MAX(til_dato) FROM medlem_frys
-              WHERE member_id = :m
-                AND (status = 'godkjent'
-                     OR (status = 'avsluttet' AND DATE(updated_at) > til_dato))
-                AND fra_dato <= :d AND til_dato >= :d2",
+            "SELECT MAX(slutt) FROM (
+                SELECT CASE WHEN status = 'avsluttet'
+                            THEN LEAST(til_dato, DATE_SUB(DATE(updated_at), INTERVAL 1 DAY))
+                            ELSE til_dato END AS slutt
+                  FROM medlem_frys
+                 WHERE member_id = :m AND status IN ('godkjent', 'avsluttet')
+                   AND fra_dato <= :d
+             ) f
+             WHERE slutt >= :d2",
             ['m' => $medlemId, 'd' => $dato, 'd2' => $dato]
         );
         return $til !== null && $til !== '' ? (string) $til : null;

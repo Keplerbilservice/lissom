@@ -23,7 +23,7 @@ try{
   const trykk=l=>mobil?l.tap():l.click();
   const aapneDag=async dag=>{
    await p.goto(`${ADR}/admin-ny.html#kalender`);await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
-   await p.getByLabel('Kalendervisning').selectOption('dag');await p.getByLabel('Velg dato').fill(dag);
+   if(mobil)await p.getByLabel('Kalendervisning').selectOption('dag');else{const dagKnapp=p.getByRole('group',{name:'Kalendervisning'}).getByRole('button',{name:'Dag',exact:true});if(await dagKnapp.getAttribute('aria-pressed')!=='true')await trykk(dagKnapp);}/* PC (K4): segmentpille Dag · Uke · Måned */await p.getByLabel('Velg dato').fill(dag);
    const brikke=p.locator('button.event',{hasText:s.tag});await brikke.first().waitFor();return brikke.first();
   };
   const flytt=async(dag,start,slutt,forvent)=>{

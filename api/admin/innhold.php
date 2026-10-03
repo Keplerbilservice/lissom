@@ -16,6 +16,25 @@ require __DIR__ . '/../_boot.php';
 
 krev_admin();
 
+// GET ?fil=seo-kart | standard — kartene admin-ny trenger.
+//
+// seo-kart.json og innhold-standard.json ligger i webroten, men .htaccess
+// stenger alle .json for nettet (403). Admin-ny hentet dem rett og fikk 403
+// paa SEO, GEO og Tekster i produksjon (eieren 03.10). De leses her, bak
+// krev_admin, i stedet for aa aapne .json for alle.
+$fil = Foresporsel::metode() === 'GET' ? (string) ($_GET['fil'] ?? '') : '';
+if ($fil !== '') {
+    $filer = ['seo-kart' => 'seo-kart.json', 'standard' => 'innhold-standard.json'];
+    if (!isset($filer[$fil])) {
+        Svar::feil('Ukjent fil.', 404);
+    }
+    $data = json_decode((string) @file_get_contents(dirname(__DIR__, 2) . '/' . $filer[$fil]), true);
+    if (!is_array($data)) {
+        Svar::feil('Fant ikke ' . $filer[$fil] . '.', 500);
+    }
+    Svar::json($data);
+}
+
 if (Foresporsel::metode() === 'GET') {
     $rader = DB::alle('SELECT nokkel, verdi FROM content_blocks');
     $ut = [];

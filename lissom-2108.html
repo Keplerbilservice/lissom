@@ -460,6 +460,8 @@ img{max-width:100%;display:block}
 .lx-msalle [data-ms-modul]{min-width:0;box-sizing:border-box;align-self:start;order:30}
 .lx-msalle [data-ms-modul="nyttig"]{grid-column:1 / -1!important}.lx-msalle .ms-o-stempel{order:4}.lx-msalle .ms-o-inne{order:5}.lx-msalle .ms-o-ovn{order:7}.lx-msalle .ms-o-faq{order:8}
 @media(min-width:761px){.lx-msalle [data-ms-modul]{grid-column:span 1!important}.lx-msalle .ms-o-stempel{grid-column:span 2!important}}
+/* Eierens bryter per modul (Vis/minside<id>), se msModulVals. */
+[data-ms-av~="inne"] [data-ms-modul="inne"],[data-ms-av~="faq"] [data-ms-modul="faq"],[data-ms-av~="ovn"] [data-ms-modul="ovn"],[data-ms-av~="stempel"] [data-ms-modul="stempel"],[data-ms-av~="skiver"] [data-ms-modul="skiver"],[data-ms-av~="abonnement"] [data-ms-modul="abonnement"],[data-ms-av~="nyttig"] [data-ms-modul="nyttig"],[data-ms-av~="historikk"] [data-ms-modul="historikk"],[data-ms-av~="beskjeder"] [data-ms-modul="beskjeder"],[data-ms-av~="pameldinger"] [data-ms-modul="pameldinger"],[data-ms-av~="kursbevis"] [data-ms-modul="kursbevis"],[data-ms-av~="chat"] [data-ms-modul="chat"],[data-ms-av~="hms"] [data-ms-modul="hms"]{display:none!important}
 
 </style>
 <!-- ds-css:slutt -->
@@ -5285,7 +5287,7 @@ window.__resources = {
   </sc-if>
 
   <sc-if value="{{ erMinside }}" hint-placeholder-val="{{ true }}">
-    <div role="main" data-screen-label="Min side">
+    <div role="main" data-screen-label="Min side" data-ms-av="{{ msAdminAv }}">
       <!-- Menylinja etter skissen (eieren, 26. september 2026): Min side har
            sin egen linje i Lissom-gult, som admin har sin. Paa telefon blir
            den «☰ Meny»; bunnmenyen er borte. Valgene er de samme som i den
@@ -33133,8 +33135,14 @@ class Component extends DCLogic {
     try { lagret = JSON.parse(localStorage.getItem(nokkel) || '{}') || {}; } catch (e) { /* alle vises */ }
     const valg = this.state.msModulKonto === konto ? (this.state.msModulValg || {}) : lagret;
     const moduler = {};
+    // Eierens bryter per modul (admin-ny → Min side, eieren 3. oktober 2026).
+    // Lagres som de andre i content_blocks: «Vis/minside<id>» = «nei» skjuler
+    // modulen for alle. Modulene som alt har sin egen bryter (Vis/dugnad,
+    // Vis/handleliste osv.) styres av den, ikke av en ny. Standard er paa.
+    const MS_ADMIN = ['inne', 'faq', 'ovn', 'stempel', 'skiver', 'abonnement', 'nyttig', 'historikk', 'beskjeder', 'pameldinger', 'kursbevis', 'chat', 'hms'];
+    const adminAv = MS_ADMIN.filter(id => !this.bryterPaa('minside' + id));
     Object.keys(navne).forEach(id => {
-      const vis = valg[id] !== false;
+      const vis = valg[id] !== false && adminAv.indexOf(id) === -1;
       moduler[id] = { navn: navne[id], vis, skjult: !vis, aria: String(vis), tekst: vis ? 'Skjul' : 'Vis',
         veksle: ev => {
           if (ev && ev.stopPropagation) ev.stopPropagation();
@@ -33143,7 +33151,7 @@ class Component extends DCLogic {
           this.setState({ msModulKonto: konto, msModulValg: ny });
         } };
     });
-    return { msModuler: moduler };
+    return { msModuler: moduler, msAdminAv: adminAv.join(' ') };
   }
 
   msNyVals() {
@@ -33992,6 +34000,10 @@ class Component extends DCLogic {
       innboks:     () => this.gaaAdmin('adminmarked', { mkFane: 'innboks' }),
       dugnad:      () => { this.gaaAdmin('adminubesvarte', {}); setTimeout(() => this.rullTil(document.getElementById('admin-dugnad')), 400); },
       synlighet:   () => this.synlighetVals().synAapne(),
+      // «Se som medlem» i admin-ny → Min side: den samme forhaandsvisningen
+      // som kortet «Hva medlemmene ser». Adminbrukerens egne tall, ingen
+      // andres opplysninger (se fhBandTekst).
+      fhmedlem:    () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' }),
       verktoy:     () => this.setState({ verktoyApen: true }),
       vakter:      () => this.gaaAdmin('adminoppskrifter', { vstFane: 'vakter' }),
       brenninger:  () => this.gaaAdmin('adminoppskrifter', { vstFane: 'brenning' }),
@@ -34008,7 +34020,7 @@ class Component extends DCLogic {
     // Handlingene trenger admin-dataene. Vent paa dem, i hoyst 15 sekunder.
     let forsok = 0;
     const prov = () => {
-      const klar = this.state.erAdminBruker && (hva === 'maaned' || hva === 'kalenderdag' || this.state.adminData)
+      const klar = this.state.erAdminBruker && (hva === 'maaned' || hva === 'kalenderdag' || hva === 'fhmedlem' || this.state.adminData)
         && (hva !== 'dagsoppgjor' || this._aDagsoppgjor);
       if (klar) { try { HANDLING[hva](); } catch (e) { /* knappen i det gamle admin virker fortsatt */ } return; }
       if (++forsok < 60) setTimeout(prov, 250);

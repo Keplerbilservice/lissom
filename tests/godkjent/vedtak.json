@@ -4465,6 +4465,61 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "admin-json-bak-krev-admin",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: SEO, GEO og Tekster i admin-ny fikk 403 i produksjon fordi .htaccess stenger alle .json. seo-kart.json og innhold-standard.json hentes nå via api/admin/innhold.php?fil=seo-kart|standard bak krev_admin; .json forblir stengt for nettet.",
+            "hvor": "admin-ny › SEO, GEO, Tekster",
+            "kode": [
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "api('innhold.php?fil=seo-kart')",
+                        "api('innhold.php?fil=standard')"
+                    ],
+                    "ikkeFinnes": [
+                        "fetch('/seo-kart.json')",
+                        "fetch('/innhold-standard.json')"
+                    ]
+                },
+                {
+                    "fil": "api/admin/innhold.php",
+                    "finnes": [
+                        "'seo-kart' => 'seo-kart.json', 'standard' => 'innhold-standard.json'"
+                    ]
+                },
+                {
+                    "fil": ".htaccess",
+                    "finnes": [
+                        "json|lock|example"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "admin-ny-min-side-brytere",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: admin-ny har siden «Min side» (#minside) med av/på per modul (content_blocks Vis/…; moduler uten egen bryter får Vis/minside<id>, standard på) og «Se som medlem» = den eksisterende forhåndsvisningen (fhRolle medlem, adminbrukerens egne tall, aldri et ekte medlem). Ingen endring på Min side når alle står på.",
+            "hvor": "admin-ny › Innhold › Min side for medlemmer; Min side",
+            "kode": [
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['#minside','minside']",
+                        "src:'/admin?apne=fhmedlem'",
+                        "['Medlemschat','Vis/minsidechat']"
+                    ]
+                },
+                {
+                    "fil": "lissom-2108.html",
+                    "finnes": [
+                        "fhmedlem:    () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })",
+                        "data-ms-av=\"{{ msAdminAv }}\"",
+                        "!this.bryterPaa('minside' + id)"
+                    ]
+                }
+            ]
         }
     ]
 }

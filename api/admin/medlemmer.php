@@ -792,16 +792,25 @@ if (Foresporsel::metode() === 'POST') {
         // «subscription_id» (migrasjon 022) — ikke gjennom «alle
         // medlemsbetalinger paa raden», som er det samme hullet en gang til.
         $avtale = DB::en(
-            "SELECT id FROM subscriptions
+            "SELECT id, neste_trekk FROM subscriptions
               WHERE member_id = :m AND status = 'aktiv'
            ORDER BY id DESC LIMIT 1",
             ['m' => $fraId]
         );
         $avtaleId = $avtale === null ? 0 : (int) $avtale['id'];
         $harSubKol = DB::harKolonne('payments', 'subscription_id');
+        // Fra hvilken maaned en avsluttet frys fortsatt kan hoppe over et
+        // trekk: denne maaneden, eller maaneden avtalens neste trekk gjelder
+        // om den ligger foer (en forsinket runde).
+        $frysGrense = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+            ->modify('first day of this month')->format('Y-m-d');
+        if ($avtale !== null && !empty($avtale['neste_trekk'])) {
+            $frysGrense = min($frysGrense, (new DateTimeImmutable((string) $avtale['neste_trekk']))
+                ->modify('first day of this month')->format('Y-m-d'));
+        }
 
         [$avtaler, $betalinger] = DB::iTransaksjon(
-            static function () use ($fraId, $tilId, $fraM, $felter, $avtaleId, $harSubKol): array {
+            static function () use ($fraId, $tilId, $fraM, $felter, $avtaleId, $harSubKol, $frysGrense): array {
                 $til = [];
                 $tom = [];
                 foreach ($felter as $f) {
@@ -811,6 +820,25 @@ if (Foresporsel::metode() === 'POST') {
                 }
                 DB::oppdater('members', $til, ['id' => $tilId]);
                 DB::oppdater('members', $tom, ['id' => $fraId]);
+
+                // Frysen foelger medlemskapet (kontrolloeren, 2. oktober 2026).
+                // Statusen «pause» flyttes over; ble frysen staaende igjen,
+                // ville det nye medlemmet ikke vaert fryst, og ingen frys
+                // ville aapnet det igjen. Den som venter paa svar eller er
+                // godkjent, og en avsluttet frys som fortsatt kan hoppe over et
+                // trekk (betaling, 2. oktober 2026: Medlemskap::pauseDager()
+                // leser frysene paa avtalens medlem). Eldre avsluttede,
+                // avslaatte og trukne er den forrige eierens egen historikk.
+                if (Frys::klar()) {
+                    DB::kjor(
+                        // updated_at beholdes: for en avsluttet frys er den
+                        // dagen frysen ble avsluttet (pauseDager()).
+                        "UPDATE medlem_frys SET member_id = :ny, updated_at = updated_at
+                          WHERE member_id = :gml AND (status IN ('sokt', 'godkjent')
+                                OR (status = 'avsluttet' AND til_dato >= :grense))",
+                        ['ny' => $tilId, 'gml' => $fraId, 'grense' => $frysGrense]
+                    );
+                }
 
                 if ($avtaleId === 0) {
                     return [0, 0];
@@ -1338,6 +1366,19 @@ if (Foresporsel::metode() === 'POST') {
         }
         $fra = Medlemskap::gjelderFraForsteBetaling($id)
             ?? (new DateTimeImmutable('now', $oslo))->modify('first day of this month')->format('Y-m-d');
+        // Fryst og skylder (eieren, 2. oktober 2026): betalingen i verkstedet
+        // gjelder maaneden som skyldes, ikke den fryste maaneden. Medlemmer
+        // med fast trekk betaler det utestaaende her, ikke paa Min side.
+        $mRad = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
+        if ($mRad !== null && Frys::frystNaa($mRad) !== null) {
+            $skyldig = Medlemskap::skyldigMaaned($mRad);
+            // Skylder ingenting: da skal det ikke registreres en betaling for
+            // en frosset maaned (betaling, 2. oktober 2026).
+            if ($skyldig === null) {
+                throw new RuntimeException('Medlemmet er fryst og skylder ingenting.', 409);
+            }
+            $fra = $skyldig;
+        }
         $maaned = substr($fra, 0, 7);
         $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
                 'august', 'september', 'oktober', 'november', 'desember'];

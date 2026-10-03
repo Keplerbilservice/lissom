@@ -95,7 +95,7 @@ async function flyt(navn, fn) {
 // Faste navn, saa fasiten kan sammenlignes fra kjoring til kjoring. Alt har
 // e-post paa @e2e.lissom.test og ryddes av seed.php og til slutt her.
 const FLATE = ['internbutikk', 'medlemssalg', 'handleliste', 'medlemsforslag', 'dugnad', 'medlemfrys', 'verving', 'gaven', 'skisser', 'skissermedlemmer', 'skisserdeltakere', 'tilleggbarn', 'internkurs'];
-const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, bindingMnd = null, betalerIkke = false, frys = false, timepakke = 0, plasser = true } = {}) => {
+const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, bindingMnd = null, betalerIkke = false, frys = false, timepakke = 0, plasser = true, betaltForrige = false } = {}) => {
   const p = php(`
     $plan = ${plan ? `'${plan}'` : 'null'};
     $pl = $plan ? Medlemskap::plan($plan) : null;
@@ -112,6 +112,11 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
     }
     require dirname(__DIR__) . '/betalt-fixture.php';
     test_betalt_medlem($id);
+    if (${betaltForrige ? 1 : 0}) {
+      // Bare forrige maaned er betalt: perioden er over i dag.
+      DB::kjor('UPDATE payments SET gjelder_fra = :f WHERE member_id = :m',
+        ['f' => (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('first day of previous month')->format('Y-m-d'), 'm' => $id]);
+    }
     if (${minutter} > 0) {
       $m = strtotime(Stempling::manedStart() . ' UTC') + 120;
       $oktId = DB::settInn('check_ins', ['member_id' => $id, 'inn_tid' => gmdate('Y-m-d H:i:s', $m), 'ut_tid' => gmdate('Y-m-d H:i:s', $m + ${minutter} * 60), 'minutter' => ${minutter}]);
@@ -129,7 +134,10 @@ const lagPerson = (nokkel, navn, { status = 'aktiv', plan = null, minutter = 0, 
       DB::settInn('timepakker', ['member_id' => $id, 'timer' => ${timepakke}, 'pris_ore' => 80000, 'status' => 'betalt', 'betalt_at' => gmdate('Y-m-d H:i:s')]);
     }
     if (${frys ? 1 : 0}) {
-      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() + 86400 * 20), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 50), 'status' => 'sokt', 'begrunnelse' => 'Reise']);
+      // Godkjent frys som dekker i dag (eieren, 2. oktober 2026): medlemmet
+      // er fryst, med en betalt periode. Foer laa det en soknad fram i tid her,
+      // og det frosne medlemmet sto som «Aktivt» med «Stemple inn».
+      DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 40), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 60), 'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
     }
     if (${plasser ? 1 : 0}) {
       DB::settInn('bookings', ['course_id' => ${S.kurs}, 'course_session_id' => ${S.okter.a}, 'member_id' => $id, 'antall' => 1, 'belop_ore' => 280000, 'status' => 'betalt']);
@@ -159,6 +167,30 @@ lagPerson('aar', 'Minside Aar', { plan: AAR, minutter: 60, bindingMnd: 12 });
 lagPerson('pakke', 'Minside Pakke', { plan: MINI, minutter: MINITIMER * 60 + 30, timepakke: 6 });
 lagPerson('over', 'Minside Over', { plan: MINI, minutter: MINITIMER * 60 + 90 });
 lagPerson('frosset', 'Minside Frosset', { status: 'pause', plan: MINI, frys: true });
+// Fryst og stengt ute: den betalte perioden er over (eieren, 2. oktober 2026).
+// Ikke med i fasiten over — den er laget for de aatte under.
+lagPerson('fryststengt', 'Minside Fryststengt', { status: 'pause', plan: MINI, frys: true, betaltForrige: true });
+// Fryst med fast trekk og et feilet trekk for denne maaneden (eieren, 2. oktober
+// 2026): det betales i verkstedet, ikke paa Min side.
+brukere.trekkstengt = php(`
+  $pl = Medlemskap::plan('${MINI}');
+  $denne = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))->modify('first day of this month')->format('Y-m-d');
+  $forrige = (new DateTimeImmutable($denne))->modify('first day of previous month')->format('Y-m-d');
+  $neste = (new DateTimeImmutable($denne))->modify('first day of next month')->format('Y-m-d');
+  $id = DB::settInn('members', ['navn' => 'Minside Trekkstengt', 'epost' => 'minside-trekkstengt-' . '${S.tag}' . '@e2e.lissom.test',
+    'telefon' => '+4791777777', 'rolle' => 'medlem', 'status' => 'pause', 'medlemskap_type' => '${MINI}', 'start_dato' => $forrige]);
+  $a = DB::settInn('subscriptions', ['member_id' => $id, 'plan' => '${MINI}', 'pris_ore' => (int) $pl['pris_ore'], 'status' => 'aktiv',
+    'vipps_agreement_id' => 'agr_e2e_' . bin2hex(random_bytes(4)), 'neste_trekk' => $neste]);
+  DB::settInn('payments', ['member_id' => $id, 'subscription_id' => $a, 'formal' => 'medlemskap', 'type' => 'recurring_charge', 'status' => 'betalt',
+    'belop_ore' => (int) $pl['pris_ore'], 'gjelder_fra' => $forrige, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(10)), 'idempotency_key' => Vipps::uuid()]);
+  DB::settInn('payments', ['member_id' => $id, 'subscription_id' => $a, 'formal' => 'medlemskap', 'type' => 'recurring_charge', 'status' => 'feilet',
+    'belop_ore' => (int) $pl['pris_ore'], 'gjelder_fra' => $denne, 'vipps_reference' => 'TEST-' . bin2hex(random_bytes(10)),
+    'vipps_psp_ref' => 'chr_e2e_' . bin2hex(random_bytes(4)), 'idempotency_key' => Vipps::uuid()]);
+  DB::settInn('medlem_frys', ['member_id' => $id, 'fra_dato' => gmdate('Y-m-d', time() - 86400 * 2), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 4),
+    'status' => 'godkjent', 'status_for' => 'aktiv', 'begrunnelse' => 'Reise']);
+  $t = bin2hex(random_bytes(32));
+  DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 7200)]);
+  return ['id' => $id, 'token' => $t, 'forventetSiste' => null, 'retteTil' => null];`);
 lagPerson('betalerikke', 'Minside Betalerikke', { plan: MINI, betalerIkke: true });
 lagPerson('deltaker', 'Minside Deltaker', { status: 'ingen' });
 
@@ -277,6 +309,154 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
     await p.context().close();
   });
 }
+
+// ── 1b. Fryst medlem: «Fryst til <dato>», ingen «Stemple inn» ───────────
+//
+// Eieren, 2. oktober 2026: det frosne medlemmet med betalt periode sto som
+// «AKTIVT» med «Stemple inn» øverst, og serveren slapp det inn.
+// Dørkode og wifi settes bare i denne flyten (og fjernes etterpå, om de ikke
+// fantes fra før): meg.php-fasiten over leser formen på internInfo.
+const DORKODE = 'E2E-8264#';
+const WIFI = 'E2E-wifi-passord';
+for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
+  const privatFoer = db("SELECT nokkel FROM content_blocks WHERE nokkel IN ('Privat/dorkode', 'Privat/wifi')").map(r => r.nokkel);
+  const privatOrig = Object.fromEntries(db("SELECT nokkel, verdi FROM content_blocks WHERE nokkel IN ('Privat/dorkode', 'Privat/wifi')").map(r => [r.nokkel, r.verdi]));
+  for (const [k, v] of [['Privat/dorkode', DORKODE], ['Privat/wifi', WIFI]]) {
+    db('INSERT INTO content_blocks (nokkel, verdi) VALUES (:k, :v) ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)', { k, v });
+  }
+  await flyt(`Fryst medlem, hjem (${hva})`, async () => {
+    // Stengt ute: godkjent frys, og den betalte perioden er over.
+    const p = await side('fryststengt', bredde, hoyde);
+    // Brukertesten 2. oktober 2026: Min side kalte medlemsendepunkter som gir
+    // 403 for den som er stengt ute (feil i konsollen).
+    const nektet = [];
+    p.on('response', r => { if (r.status() === 403 && r.url().includes('/api/')) nektet.push(r.url()); });
+    const konsollfeil = [];
+    p.on('console', m => { if (m.type() === 'error') konsollfeil.push(m.text()); });
+    await gaa(p, '/min-side');
+    await lukkVinduer(p);
+    sjekk(`${hva}: stengt ute — ingen kall til medlemsendepunkter som gir 403`, nektet.length === 0, nektet.join(', '));
+    sjekk(`${hva}: stengt ute — ingen feil i konsollen`, konsollfeil.length === 0, konsollfeil.join(' | '));
+    await dump(p, 'fryst-' + hva);
+    const til = String(verdi("SELECT til_dato FROM medlem_frys WHERE member_id = :m AND status = 'godkjent'", { m: brukere.fryststengt.id }));
+    const tekst = php(`return Booking::norskDatoKort('${til}');`);
+    sjekk(`${hva}: «Fryst til ${tekst}» øverst`, await p.getByRole('heading', { name: 'Fryst til ' + tekst, exact: true }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: ikke «Medlemskapet venter på betaling»`, !(await synlig(p, 'Medlemskapet venter på betaling')));
+    sjekk(`${hva}: «Stemple inn» er skjult`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
+    const r = await api(p, '/api/stempling.php', { handling: 'inn' });
+    sjekk(`${hva}: serveren avviser innstempling som fryst (403)`, r.status === 403 && r.d?.fryst === true, JSON.stringify(r));
+    sjekk(`${hva}: ingen økt lagret`, Number(verdi('SELECT COUNT(*) FROM check_ins WHERE member_id = :m', { m: brukere.fryststengt.id })) === 0);
+    const bred = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
+    sjekk(`${hva}: ingen sidelengs rulling`, !bred);
+    // Heller ingen dørkode, wifi, medlemstid eller Bordplass/Dreieskive.
+    const meg = await api(p, '/api/meg.php');
+    sjekk(`${hva}: meg.php sier fryst til ${til}`, meg.d?.fryst?.til === til, JSON.stringify(meg.d?.fryst));
+    sjekk(`${hva}: ingen dørkode eller wifi i meg.php`, JSON.stringify(meg.d?.internInfo) === '{}', JSON.stringify(meg.d?.internInfo));
+    const kropp = await p.evaluate(() => document.body.innerText);
+    sjekk(`${hva}: ingen «Dørkode» i toppen`, !(await p.locator('.ms-tl-pille').filter({ hasText: 'Dørkode' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: dørkoden og wifi står ikke på siden`, !kropp.includes(DORKODE) && !kropp.includes(WIFI));
+    sjekk(`${hva}: ingen «Kun for medlemmer» med «Meld meg på»`, !(await p.locator('#minside-internkurs').filter({ visible: true }).count()));
+    sjekk(`${hva}: ingen Bordplass/Dreieskive`, !(await p.getByRole('button', { name: /Bordplass|Dreieskive/ }).filter({ visible: true }).count()));
+    await gaa(p, '/stemple', 2500);
+    await dump(p, 'fryst-stemple-' + hva);
+    sjekk(`${hva}: /stemple viser «Fryst til ${tekst}»`, await synlig(p, 'Fryst til ' + tekst, true));
+    sjekk(`${hva}: /stemple har ingen «Stemple inn»`, !(await p.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: /stemple sier ikke «Innstempling er for medlemmer»`, !(await synlig(p, /Innstempling er for medlemmer/)));
+    // Står inne mens frysen stenger ute: «Stemple ut» skal vises (brukertesten,
+    // 2. oktober 2026 — kortet var tomt).
+    const okt = Number(php(`return DB::settInn('check_ins', ['member_id' => ${brukere.fryststengt.id}, 'inn_tid' => gmdate('Y-m-d H:i:s', time() - 1800)]);`));
+    await gaa(p, '/stemple', 2500);
+    sjekk(`${hva}: fryst og står inne — /stemple viser «Stemple ut»`, await p.getByRole('button', { name: 'Stemple ut' }).filter({ visible: true }).count() > 0);
+    db('DELETE FROM check_ins WHERE id = :i', { i: okt });
+    // Eieren, 2. oktober 2026: ingen «Forny og betal», ikke «venter på
+    // betaling», og frysen sin ser hen fortsatt.
+    await gaa(p, '/min-side', 3000);
+    sjekk(`${hva}: ingen «Forny og betal medlemskap»`, !(await p.getByRole('button', { name: 'Forny og betal medlemskap' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: skylder ingenting — ingen «betaler du i verkstedet»`, !(await synlig(p, 'Det som står ubetalt, betaler du i verkstedet.', true)));
+    sjekk(`${hva}: ingen «Bli medlem»-tilbud`, !(await p.locator('#bli-medlem').filter({ visible: true }).count()));
+    sjekk(`${hva}: frysen står på Min side («Frys av medlemskap», Godkjent)`, await synlig(p, /Frys av medlemskap/i) && await synlig(p, 'Godkjent', true));
+    const megP = await api(p, '/api/meg.php');
+    sjekk(`${hva}: meg.php — ikke «betalingMangler», status ikke «venterbetaling»`, megP.d?.betalingMangler === false && megP.d?.medlem?.status !== 'venterbetaling', JSON.stringify({ b: megP.d?.betalingMangler, s: megP.d?.medlem?.status }));
+    const fornyP = await api(p, '/api/medlemskap.php', { handling: 'start', plan: MINI });
+    sjekk(`${hva}: serveren avviser fornyelse mens frysen gjelder`, fornyP.status >= 400 && /fryst til/i.test(fornyP.d?.feil || ''), JSON.stringify(fornyP));
+    await p.context().close();
+    // Fast trekk, fryst og utestaaende (eieren, 2. oktober 2026): ingen
+    // «Forny og betal»; det utestaaende vises med betalingsteksten fra admin.
+    const t = await side('trekkstengt', bredde, hoyde);
+    await gaa(t, '/min-side');
+    await lukkVinduer(t);
+    await dump(t, 'fryst-trekk-' + hva);
+    const megT = await api(t, '/api/meg.php');
+    const tekstT = megT.d?.fryst?.skyldigTekst || '';
+    sjekk(`${hva}: fast trekk + fryst + utestående — meg.php har betalingsteksten`, megT.d?.fryst?.fastTrekk === true && tekstT !== '', JSON.stringify(megT.d?.fryst));
+    sjekk(`${hva}: … ingen «Forny og betal medlemskap»`, !(await t.getByRole('button', { name: 'Forny og betal medlemskap' }).filter({ visible: true }).count()));
+    sjekk(`${hva}: … betalingsteksten står på siden («${tekstT}»)`, tekstT !== '' && await synlig(t, tekstT, true));
+    sjekk(`${hva}: … «Medlemskapet venter på betaling»`, await synlig(t, 'Medlemskapet venter på betaling'));
+    sjekk(`${hva}: … «Det som står ubetalt, betaler du i verkstedet.»`, await synlig(t, 'Det som står ubetalt, betaler du i verkstedet.', true));
+    const startT = await api(t, '/api/medlemskap.php', { handling: 'start', plan: MINI });
+    sjekk(`${hva}: … serveren avviser betalingsstart`, startT.status >= 400 && /fryst til/i.test(startT.d?.feil || ''), JSON.stringify(startT));
+    await t.context().close();
+    // Kontroll: godkjent frys, men den betalte perioden er ikke over. Eieren,
+    // 2. oktober 2026: dager som er betalt for, har medlemmet alltid tilgang i.
+    const q = await side('frosset', bredde, hoyde);
+    await gaa(q, '/min-side');
+    await lukkVinduer(q);
+    await dump(q, 'fryst-betalt-' + hva);
+    const megQ = await api(q, '/api/meg.php');
+    sjekk(`${hva}: betalt med frys — ikke «fryst», får dørkoden`, megQ.d?.fryst === undefined && megQ.d?.internInfo?.dorkode === DORKODE, JSON.stringify(megQ.d?.fryst));
+    sjekk(`${hva}: betalt med frys — «Dørkode ${DORKODE}» i toppen`, await q.locator('.ms-tl-pille').filter({ hasText: DORKODE }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: betalt med frys — «Stemple inn», medlemstid og Bordplass`, await q.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count() > 0
+      && await q.locator('#minside-internkurs').filter({ visible: true }).count() > 0
+      && await q.getByRole('button', { name: /Bordplass/ }).filter({ visible: true }).count() > 0);
+    sjekk(`${hva}: betalt med frys — ingen «Fryst til»`, !(await synlig(q, /^Fryst til/i)));
+    // Eieren, 2. oktober 2026 (ordrett): «Fryst fra <dato>» og linja under.
+    const fra = megQ.d?.frysStarter?.fraTekst || '';
+    sjekk(`${hva}: betalt med frys — meg.php sier når frysen starter`, fra !== '', JSON.stringify(megQ.d?.frysStarter));
+    const fraMerke = q.locator('.ms-o-stempel span').filter({ hasText: /^Fryst fra / }).filter({ visible: true }).first();
+    sjekk(`${hva}: betalt med frys — «Fryst fra ${fra}» øverst`, await fraMerke.isVisible().catch(() => false)
+      && (await fraMerke.innerText()).trim().toLowerCase() === ('Fryst fra ' + fra).toLowerCase());
+    sjekk(`${hva}: betalt med frys — linja under merket`, await synlig(q, `Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter ${fra}.`, true));
+    await gaa(q, '/stemple', 2500);
+    sjekk(`${hva}: betalt med frys — «Stemple inn» på /stemple`, await q.getByRole('button', { name: 'Stemple inn' }).filter({ visible: true }).count() > 0);
+    await q.context().close();
+  });
+  for (const k of ['Privat/dorkode', 'Privat/wifi']) {
+    if (privatFoer.includes(k)) db('UPDATE content_blocks SET verdi = :v WHERE nokkel = :k', { k, v: privatOrig[k] });
+    else db('DELETE FROM content_blocks WHERE nokkel = :k', { k });
+  }
+}
+
+// ── 1c. Frys i admin: «Står ubetalt» og advarselen ved godkjenning ────
+//
+// Brukertesten 2. oktober 2026: i nytt admin ble advarselen overskrevet av
+// «Lagret.», og gamle admin viste ikke det ubetalte.
+await flyt('Frys i admin: advarselen ved godkjenning blir stående', async () => {
+  const sokt = Number(php(`return DB::settInn('medlem_frys', ['member_id' => ${brukere.trekkstengt.id}, 'fra_dato' => gmdate('Y-m-d', time() + 86400 * 30), 'til_dato' => gmdate('Y-m-d', time() + 86400 * 40), 'status' => 'sokt', 'begrunnelse' => 'Reise']);`));
+  // Gamle admin: lista viser «Står ubetalt: …».
+  const g = await side('admin', 1358, 900);
+  await g.goto(ADR + '/admin/godkjenning', { waitUntil: 'load', timeout: 45000 });
+  await g.waitForTimeout(3000);
+  const frysData = await api(g, '/api/admin/frys.php');
+  const raden = (frysData.d?.soknader || []).find(s => Number(s.id) === sokt) || {};
+  sjekk('admin-API: søknaden har «Står ubetalt: …»', String(raden.ubetalt || '').startsWith('Står ubetalt: '), JSON.stringify(raden.ubetalt));
+  sjekk('gamle admin: «Står ubetalt: …» i søknadslisten', await synlig(g, raden.ubetalt || 'mangler', true));
+  await g.context().close();
+  // Nytt admin: godkjenn og les beskjeden som står igjen.
+  const a = await side('admin', 1358, 900);
+  await a.goto(ADR + '/admin-ny.html#frys', { waitUntil: 'load', timeout: 45000 });
+  await a.waitForTimeout(2500);
+  const kort = a.locator('section.card').filter({ hasText: 'Minside Trekkstengt' }).filter({ has: a.getByRole('button', { name: 'Behandle', exact: true }) }).first();
+  sjekk('nytt admin: søknaden har «Står ubetalt: …»', await kort.getByText(/^Står ubetalt: /).isVisible().catch(() => false));
+  await kort.getByRole('button', { name: 'Behandle', exact: true }).click();
+  await a.getByRole('button', { name: 'Lagre', exact: true }).click();
+  await a.getByRole('dialog', { name: 'Behandle søknaden?' }).getByRole('button', { name: 'Bekreft', exact: true }).click();
+  await a.waitForTimeout(2500);
+  const melding = (await a.locator('#meldinger').innerText().catch(() => '')).trim();
+  sjekk('nytt admin: advarselen står igjen etter godkjenning (ikke «Lagret.»)', melding.startsWith('Minside Trekkstengt har noe ubetalt: ')
+    && melding.endsWith('Frysen fjerner det ikke.'), melding);
+  sjekk('… og søknaden er godkjent', String(verdi('SELECT status FROM medlem_frys WHERE id = :i', { i: sokt })) === 'godkjent');
+  await a.context().close();
+});
 
 // ── 2. Stemple inn, stemple ut og «Feil tid» ─────────────────────────
 await flyt('Stempling inn og ut, «Feil tid — si fra»', async () => {

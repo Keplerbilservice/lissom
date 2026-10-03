@@ -48,6 +48,16 @@ if (Foresporsel::metode() === 'GET') {
                     ['i' => (int) $f['behandlet_av']]) ?: '') : '';
             $ut['behandletAt'] = $f['behandlet_at']
                 ? Booking::norskDatoKort((string) $f['behandlet_at']) : '';
+            // Staar det noe ubetalt, skal verkstedet se det i soknaden: frysen
+            // fjerner ikke det som alt skyldes (kontrolloeren, 2. oktober 2026).
+            $ut['ubetalt'] = '';
+            if ($ut['venter'] || $ut['loper']) {
+                $mRad = DB::en('SELECT * FROM members WHERE id = :i', ['i' => (int) $f['member_id']]);
+                $b = $mRad !== null ? Medlemskap::betalingsstatusFor($mRad) : null;
+                if ($b !== null && $b['utestaaende']) {
+                    $ut['ubetalt'] = 'Står ubetalt: ' . $b['tekst'];
+                }
+            }
             return $ut;
         }, $rader),
         'venter' => (int) DB::verdi("SELECT COUNT(*) FROM medlem_frys WHERE status = 'sokt'"),
@@ -107,6 +117,13 @@ if ($handling === 'godkjenn') {
     });
 
     revider('frys_godkjent', 'member', $medlemId, ['frys' => $id]);
+    // Varsel naar det staar noe ubetalt (kontrolloeren, 2. oktober 2026).
+    // admin-ny viser «advarsel» som en toast, som andre advarsler.
+    $mRad = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $medlemId]);
+    $bStatus = $mRad !== null ? Medlemskap::betalingsstatusFor($mRad) : null;
+    $advarsel = $bStatus !== null && $bStatus['utestaaende']
+        ? ($m['navn'] ?: 'Medlemmet') . ' har noe ubetalt: ' . $bStatus['tekst'] . '. Frysen fjerner det ikke.'
+        : null;
     $naar = (string) $f['fra_dato'] <= date('Y-m-d')
         ? ' står nå som fryst til '
         : ' er fryst fra ' . Booking::norskDatoKort((string) $f['fra_dato']) . ' til ';
@@ -115,8 +132,10 @@ if ($handling === 'godkjenn') {
         // L-10 (2. oktober 2026): avtalen skal IKKE stoppes. Trekkrunden
         // hopper over maaneden pausen dekker (Medlemskap::hoppOverPause).
         . ($avtale !== null
-            ? ' Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.'
-            : '')]);
+            // Eieren, 2. oktober 2026 (ordrett), i takt med 15-dagersregelen
+            // i Medlemskap::hoppOverPause().
+            ? ' Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.'
+            : '')] + ($advarsel !== null ? ['advarsel' => $advarsel] : []));
 }
 
 if ($handling === 'avslag') {

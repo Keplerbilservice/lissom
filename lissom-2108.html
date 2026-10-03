@@ -4853,6 +4853,10 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ stLoggInn }}" hint-size="100%,56px">Logg inn med Vipps</x-import>
             </sc-if>
 
+            <sc-if value="{{ stFryst }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--lissom-brown);">{{ stFrystTekst }}</p>
+            </sc-if>
+
             <sc-if value="{{ stIkkeMedlem }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Innstempling er for medlemmer. Er du på kurs, er du velkommen inn — det er kursholderen som holder styr på tida.</p>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ stTilMinSide }}" hint-size="100%,52px">Til Min side</x-import>
@@ -5295,7 +5299,7 @@ window.__resources = {
             </sc-for>
           </div>
           <div class="ms-tl-hoyre">
-            <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ msVisDorkode }}" hint-placeholder-val="{{ true }}">
               <button type="button" class="ms-tl-pille" onClick="{{ msTilNyttig }}">Dørkode <b>{{ dorkode }}</b></button>
             </sc-if>
             <button type="button" class="ms-tl-pille ms-tl-meny" aria-expanded="{{ msTlMenyAria }}" onClick="{{ msTlMenyVeksle }}">{{ msTlMenyTekst }}</button>
@@ -5405,8 +5409,11 @@ window.__resources = {
                uten at skjermen maa tegnes om. 760 px, som resten av sida. -->
           <sc-if value="{{ visUbetaltMedlemskap }}" hint-placeholder-val="{{ false }}">
 <section class="ms-o-stempel" style="background:var(--surface-card);border:2px solid var(--terracotta-600);border-radius:var(--radius-lg);padding:var(--space-6);">
-<h2>Medlemskapet venter på betaling</h2><p>Perioden er ikke betalt. Medlemstilgang og nye timer åpnes når betalingen er registrert.</p>
-<button type="button" onClick="{{ goMedlemskap }}">Forny og betal medlemskap</button>
+<sc-if value="{{ ubetaltFryst }}" hint-placeholder-val="{{ false }}"><h2>{{ frystTittel }}</h2></sc-if>
+<sc-if value="{{ ubetaltIkkeFryst }}" hint-placeholder-val="{{ true }}"><h2>Medlemskapet venter på betaling</h2><p>Perioden er ikke betalt. Medlemstilgang og nye timer åpnes når betalingen er registrert.</p></sc-if>
+<sc-if value="{{ ubetaltHarSkyldig }}" hint-placeholder-val="{{ false }}"><p>{{ ubetaltSkyldigTekst }}</p></sc-if>
+<sc-if value="{{ ubetaltIVerkstedet }}" hint-placeholder-val="{{ false }}"><p>Det som står ubetalt, betaler du i verkstedet.</p></sc-if>
+<sc-if value="{{ ubetaltKanForny }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ goMedlemskap }}">Forny og betal medlemskap</button></sc-if>
 <sc-if value="{{ ubetaltKanStempleUt }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ ubetaltStempleUt }}">Stemple ut</button></sc-if>
 </section></sc-if>
 <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
@@ -5605,6 +5612,9 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Stemple inn og timene dine</div>
               <span style="{{ aboBadgeStil }}">{{ aboBadge }}</span>
             </div>
+            <sc-if value="{{ frysStarterVis }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ frysStarterTekst }}</p>
+            </sc-if>
 
             <!-- Bare stemplingsknappen staar her.
                  «Logg ut» sto ved siden av den. Eieren, 5. september, med
@@ -9381,6 +9391,7 @@ window.__resources = {
               <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ f.navn }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.linje }}</div>
+                <sc-if value="{{ f.harUbetalt }}" hint-placeholder-val="{{ false }}"><div style="font-size: var(--text-xs); color: var(--terracotta-600); margin-top: 4px;">{{ f.ubetalt }}</div></sc-if>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px;">
                   <button type="button" onClick="{{ f.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
                   <button type="button" onClick="{{ f.avslag }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Ikke godkjenn</button>
@@ -22693,6 +22704,9 @@ window.__resources = {
                     </div>
                     <span style="{{ f.merkeStil }}">{{ f.merke }}</span>
                   </div>
+                  <sc-if value="{{ f.harUbetalt }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--terracotta-600); text-wrap: pretty;">{{ f.ubetalt }}</p>
+                  </sc-if>
                   <sc-if value="{{ f.harGrunn }}" hint-placeholder-val="{{ false }}">
                     <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--text-body); font-style: italic; text-wrap: pretty;">{{ f.grunn }}</p>
                   </sc-if>
@@ -22716,7 +22730,7 @@ window.__resources = {
                 </div>
               </sc-for>
             </div>
-            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Godkjenner du, settes medlemmet i pause og åpnes igjen av seg selv når perioden er over. Trekket i pausen hoppes over, og trekkene fortsetter av seg selv etterpå.</p>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Godkjenner du, settes medlemmet i pause og åpnes igjen av seg selv når perioden er over. Måneder frysen dekker minst 15 dager av, trekkes ikke. Medlemmet har tilgang ut den betalte perioden, og trekkene fortsetter av seg selv etterpå.</p>
           </div>
         </sc-if>
 
@@ -34607,6 +34621,13 @@ class Component extends DCLogic {
    * de to sidene som tegnes — samme skjerm og samme data, bare rollen er
    * satt for hand. I designverktoyet finnes ingen server, og da vises alt.
    */
+  /** «Fryst til <dato>» naar serveren sier at medlemmet er stengt ute av en frys. */
+  frystTekst() {
+    const f = this.state.fryst;
+    if (!f) return '';
+    return f.tilTekst ? 'Fryst til ' + f.tilTekst : 'Fryst';
+  }
+
   medlemsvisning() {
     const fh = this.state.fhRolle || '';
     if (fh) return fh === 'medlem';
@@ -36226,6 +36247,12 @@ class Component extends DCLogic {
           // medlemskapet er noe verkstedet godkjenner.
           erMedlemBruker: !!d.erMedlem,
           betalingMangler: !!d.betalingMangler,
+          // Fryst medlemskap (eieren, 2. oktober 2026): { til, tilTekst }
+          // naar serveren sier at medlemmet er fryst i dag, ellers null.
+          fryst: d.fryst || null,
+          // Godkjent frys, men betalt for i dag: { fra, fraTekst } — dagen
+          // medlemmet blir stengt ute. Ellers null.
+          frysStarter: d.frysStarter || null,
           // 20 % paa kurs for aktive medlemmer. Serveren avgjor (api/meg.php
           // og Booking::faarMedlemsrabatt); skjermen viser bare det samme tallet.
           medlemsrabatt: Number(d.medlemsrabatt) || 0,
@@ -37980,6 +38007,8 @@ class Component extends DCLogic {
   /** Siste toemming, hentet paa nytt hoeyst hvert minutt mens skjermen staar. */
   hentOvn(tving) {
     if (!this.erPublisert() || !this.state.innlogget || this._ovnHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     if (!tving && this._ovnHentet && Date.now() - this._ovnHentet < 60 * 1000) return;
     this._ovnHentes = true;
     fetch('/api/ovn.php', { credentials: 'same-origin', cache: 'no-store' })
@@ -39672,7 +39701,8 @@ class Component extends DCLogic {
           frysAdmin: null,
           frysAdmSvar: '',
           kvittering: 'Svaret er sendt til medlemmet',
-          kvitteringDetalj: d.beskjed || '',
+          // Advarselen om noe ubetalt staar med (kontrolloeren, 2. oktober 2026).
+          kvitteringDetalj: [d.beskjed, d.advarsel].filter(Boolean).join(' '),
         });
         fetch('/api/admin/medlemmer.php', { credentials: 'same-origin', cache: 'no-store' })
           .then(r => (r.ok ? r.json() : null))
@@ -43437,6 +43467,9 @@ class Component extends DCLogic {
    */
   hentChat(forste) {
     if (!this.erPublisert() || this._chatHentes) return;
+    // Bare for den som er medlem naa: for alle andre svarer endepunktet 403,
+    // og det gir feil i konsollen (brukertesten, 2. oktober 2026).
+    if (!this.medlemsvisning()) return;
     this._chatHentes = true;
     const etter = forste ? 0 : (this.state.chatSiste || 0);
     fetch('/api/chat.php' + (etter ? '?etter=' + etter : ''), {
@@ -45029,6 +45062,8 @@ class Component extends DCLogic {
   // tida godkjennes foer den legges til timene. Se app/lib/dugnad.php.
   hentDugnad() {
     if (!this.erPublisert() || this._dugnadHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     this._dugnadHentes = true;
     fetch('/api/dugnad.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -45282,6 +45317,8 @@ class Component extends DCLogic {
   // ── «Ta med barn» ───────────────────────────────────────────────────
   hentTillegg() {
     if (!this.erPublisert() || this._tilleggHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     this._tilleggHentes = true;
     fetch('/api/tillegg-barn.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -49165,12 +49202,16 @@ class Component extends DCLogic {
     // naar den sluttet.
     const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
                     forfalt: 'Forfalt', venter: 'Ikke betalt', over: 'Sluttet' };
+    // Stengt ute av en frys (eieren, 2. oktober 2026): ikke ubetalt.
+    MERKE.fryst = 'Fryst';
     // «Bestilt» er sitt eget svar: trekket er bedt om, men Vipps krever
     // forvarsel, saa pengene har ikke flyttet seg enda. Sto det «Betalt»
     // her, ville verkstedet trodd noe var gjort opp som ikke var det.
     const F = {
       fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
       over:    ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+      // Stengt ute av en frys (eieren, 2. oktober 2026): ikke ubetalt.
+      fryst:   ['rgba(120,120,120,.16)', 'var(--text-muted)'],
       betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
       bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
       // «Forfalt» og «Ikke betalt» hadde samme farge. To ulike betydninger
@@ -51558,6 +51599,8 @@ class Component extends DCLogic {
    */
   minDokHent() {
     if (!this.erPublisert() || this._minDokHentes) return;
+    // Bare for den som er medlem naa (se hentChat()).
+    if (!this.medlemsvisning()) return;
     this._minDokHentes = true;
     fetch('/api/mine-dokumenter.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -58523,6 +58566,8 @@ class Component extends DCLogic {
       ...(() => {
         const a = this.state.minAvtale;
         const oppsagt = this.harSagtOpp();
+        const fryst = this.state.fryst || null;
+        const starter = !fryst ? (this.state.frysStarter || null) : null;
         const status = a
           ? ({
               aktiv:   a.nesteTrekk ? 'Trekkes automatisk i Vipps' : 'Aktiv',
@@ -58569,14 +58614,24 @@ class Component extends DCLogic {
             : (a.bundetTil ? 'Bundet til ' + a.bundetTil : 'Ingen bindingstid')),
           aboHarHindring: !!(a && a.hindring && !a.slutter),
           aboHindring: (a && a.hindring) || '',
-          aboBadge: a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
+          // Fryst medlemskap: «Fryst til <dato>» i stedet for «Aktivt»
+          // (eieren, 2. oktober 2026). Serveren avgjør (api/meg.php).
+          aboBadge: fryst ? this.frystTekst()
+                      : starter ? 'Fryst fra ' + starter.fraTekst
+                      : a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
                       : (oppsagt ? 'Sagt opp' : 'Aktivt'),
           aboBadgeStil: {
             fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
             padding: '3px 10px', borderRadius: 999,
-            background: oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
-            color: oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
+            background: (fryst || starter) ? 'var(--lissom-yellow)' : oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
+            color: (fryst || starter) ? 'var(--lissom-brown)' : oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
           },
+          // Eieren, 2. oktober 2026 (ordrett): linja under merket naar frysen
+          // er godkjent, men den betalte perioden ikke er over.
+          frysStarterVis: !!starter,
+          frysStarterTekst: starter
+            ? 'Frysen er godkjent. Du har tilgang ut den betalte perioden, og frysen starter ' + starter.fraTekst + '.'
+            : '',
           // Beloepet som faktisk trekkes, ikke det planen koster.
           //
           // «a.pris» er prisen paa medlemskapet medlemmet staar paa. Er
@@ -58791,7 +58846,8 @@ class Component extends DCLogic {
       })),
       // Tom seksjon er verre enn ingen seksjon: et medlem som ser overskriften
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
-      harMedlemskurs: this.medlemsvisning()
+      // Fryst medlem: ingen medlemstid å melde seg på (eieren, 2. oktober 2026).
+      harMedlemskurs: this.medlemsvisning() && !this.state.fryst
         && this.bryterPaa('internkurs')
         && (!this.erPublisert() || (this.state.katalog || []).some(k => (k.tema || '') === 'Kun for medlemmer')),
       // Bryteren maa vaere paa, og det maa finnes noe aa selge.
@@ -63650,6 +63706,9 @@ class Component extends DCLogic {
                   color: f.venter ? 'var(--lissom-brown)'
                        : (f.loper ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)'),
                 },
+                // «Står ubetalt: …» fra api/admin/frys.php (kontrolloeren, 2. oktober 2026).
+                harUbetalt: !!f.ubetalt,
+                ubetalt: f.ubetalt || '',
                 harGrunn: !!f.begrunnelse,
                 grunn: '«' + (f.begrunnelse || '') + '»',
                 harSvar: !!f.svar,
@@ -67682,7 +67741,12 @@ class Component extends DCLogic {
         // Stemplingsknappen hoerer til medlemsdelen. Den sto utenfor
         // sperren, saa en kursdeltaker med timer i basen fikk tilbud om aa
         // stemple inn i et verksted hen ikke har nokkel til.
-        const somMedlem = this.medlemsvisning();
+        //
+        // Fryst medlemskap: stempelknappen skjules (eieren, 2. oktober 2026).
+        // Står medlemmet inne, beholdes «Stemple ut» — utstempling er aldri
+        // sperret.
+        const fryst = !!this.state.fryst && !this.erInne();
+        const somMedlem = this.medlemsvisning() && !fryst;
         if (!st) return {
           harTimer: somMedlem && !this.erPublisert() && (t.igjen === 'Fritt' || t.igjen > 0 || this.erInne()),
           erTom: somMedlem && !this.erPublisert() && t.igjen === 0 && !this.erInne(),
@@ -67939,8 +68003,10 @@ class Component extends DCLogic {
       // og knappen sier «Stemple ut».
       ...(() => {
         const st = this.state.stempling || {};
-        const alle = st.ressurser || [];
         const inne = this.erInne();
+        // Fryst og ikke inne: ingen Bordplass/Dreieskive å velge (eieren,
+        // 2. oktober 2026). Uten ressurser skjules hele valget.
+        const alle = (this.state.fryst && !inne) ? [] : (st.ressurser || []);
         // Valget staar i state naar man har trykket, ellers det serveren sa.
         // Har man ikke valgt noe, foreslaas den forste — det vanligste er aa
         // sette seg ved en skive, og et valg man maa ta for man kommer inn
@@ -68096,7 +68162,9 @@ class Component extends DCLogic {
         };
         const venter = naa && naa.status === 'sokt';
         return {
-          frysVis: this.bryterPaa('medlemfrys') && this.medlemsvisning(),
+          // Ogsaa for den som er stengt ute av frysen: hen skal se den
+          // (eieren, 2. oktober 2026).
+          frysVis: this.bryterPaa('medlemfrys') && (this.medlemsvisning() || !!this.state.fryst),
           frysHarNaa: !!naa,
           frysKanSoke: !naa,
           frysHarMerke: !!naa,
@@ -68461,6 +68529,9 @@ class Component extends DCLogic {
         };
       })(),
       dorkode: this.dorkodeNaa() || (this.erPublisert() ? 'Ikke satt' : '4 7 1 2'),
+      // Fryst medlem ser ikke dørkoden (eieren, 2. oktober 2026). Serveren
+      // sender den heller ikke (api/meg.php).
+      msVisDorkode: this.medlemsvisning() && !this.state.fryst,
       // Hvem som er i verkstedet naa, fra innstemplingene. Initialene bygges
       // av navnet — serveren sender bare navn og klokkeslett.
       inne: (this.state.stempling
@@ -69416,9 +69487,17 @@ class Component extends DCLogic {
             : !st ? 'Henter timene dine …'
             : fri ? 'Fri tilgang — ingen timebegrensning.'
             : String(st.timer.igjen).replace('.', ',') + ' av ' + st.timer.perMnd + ' timer igjen denne måneden.',
-          stKanStemple: this.state.innlogget && medlem,
+          // Fryst medlem: ingen knapp her, med mindre hen står inne og skal
+          // stemple ut (eieren, 2. oktober 2026).
+          // Står hen inne mens frysen stenger ute, skal «Stemple ut» vises
+          // uansett medlem-flagget (brukertesten, 2. oktober 2026).
+          stKanStemple: this.state.innlogget && ((medlem && (!this.state.fryst || inne)) || (!!this.state.fryst && inne)),
           stMaaLoggeInn: !this.state.innlogget,
-          stIkkeMedlem: this.state.innlogget && !medlem,
+          // Stengt ute av en frys: «Fryst til <dato>», samme tekst som paa
+          // Min side (eieren, 2. oktober 2026).
+          stFryst: this.state.innlogget && !!this.state.fryst && !inne,
+          stFrystTekst: this.frystTekst(),
+          stIkkeMedlem: this.state.innlogget && !medlem && !this.state.fryst,
           stKnapp: inne ? 'Stemple ut' : 'Stemple inn',
           stVariant: inne ? 'secondary' : 'primary',
           stHjelp: inne
@@ -75742,12 +75821,31 @@ class Component extends DCLogic {
       visAdminUtenPassord: this.erPublisert() && !!this.state.adminUtenPassord,
       tilPassordinnlogging: () => { this.setState({ side: 'adminlogin', liFeil: null }); window.scrollTo(0, 0); },
       erMedlem: this.medlemsvisning(),
-      visUbetaltMedlemskap: this.erPublisert() && !!this.state.betalingMangler,
-      ubetaltKanStempleUt: !!this.state.betalingMangler && this.erInne(),
+      // Et medlem som er stengt ute av en frys mangler ikke betaling
+      // (Medlemskap::betalingMangler), men faar den samme ruta med «Fryst til».
+      visUbetaltMedlemskap: this.erPublisert() && (!!this.state.betalingMangler || !!this.state.fryst),
+      // Fryst og stengt ute etter den betalte perioden (eieren, 2. oktober
+      // 2026): «Fryst til <dato>» i stedet for «venter på betaling».
+      // Staar det noe ubetalt (et trekk som feilet), vises «venter paa
+      // betaling» og «Forny og betal» som foer, ogsaa mens frysen gjelder —
+      // det kan betales (kontrolloeren, 2. oktober 2026).
+      ubetaltFryst: !!this.state.fryst && !this.state.betalingMangler,
+      ubetaltIkkeFryst: !this.state.fryst || !!this.state.betalingMangler,
+      // Fryst med fast trekk og noe utestaaende (eieren, 2. oktober 2026):
+      // det betales i verkstedet. Ingen «Forny og betal»; det utestaaende
+      // vises med den samme betalingsteksten som admin bruker.
+      ubetaltKanForny: (!this.state.fryst || !!this.state.betalingMangler)
+        && !(this.state.fryst && this.state.fryst.fastTrekk),
+      ubetaltHarSkyldig: !!(this.state.fryst && this.state.fryst.skyldigTekst),
+      ubetaltSkyldigTekst: (this.state.fryst && this.state.fryst.skyldigTekst) || '',
+      // Eieren, 2. oktober 2026 (ordrett): fryst, fast trekk og noe ubetalt.
+      ubetaltIVerkstedet: !!(this.state.fryst && this.state.fryst.fastTrekk && this.state.fryst.skyldigTekst),
+      frystTittel: this.frystTekst(),
+      ubetaltKanStempleUt: (!!this.state.betalingMangler || !!this.state.fryst) && this.erInne(),
       ubetaltStempleUt: () => { if (this.erInne()) this.vekslStempling(); },
       visBliMedlem: this.state.fhRolle
         ? this.state.fhRolle === 'deltaker'
-        : (this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker && !this.state.betalingMangler),
+        : (this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker && !this.state.betalingMangler && !this.state.fryst),
 
       // Forhandsvisningen fra admin.
       //

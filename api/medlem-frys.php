@@ -15,7 +15,13 @@ declare(strict_types=1);
 
 require __DIR__ . '/_boot.php';
 
-$meg = krev_aktivt_medlem();
+// Medlemmer med status prove, aktiv eller pause slipper inn, ogsaa naar den
+// betalte perioden er over: et medlem som er stengt ute av en frys skal se
+// frysen sin og kunne trekke en soknad (eieren, 2. oktober 2026).
+$meg = krev_medlem();
+if (!er_aktivt_medlem($meg) && !in_array((string) ($meg['status'] ?? ''), ['prove', 'aktiv', 'pause'], true)) {
+    Svar::feil('Denne delen er for medlemmer. Du melder deg inn fra Min side.', 403, ['ikkeMedlem' => true]);
+}
 $medlemId = (int) $meg['id'];
 
 if (!Frys::klar()) {

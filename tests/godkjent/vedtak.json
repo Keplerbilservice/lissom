@@ -1751,8 +1751,17 @@
                     "finnes": [
                         "rad('Svar automatisk på kommentarer', (this.state.innholdLagret || {})['Vis/autosvar'] === 'ja',"
                     ]
+                },
+                {
+                    "fil": "app/lib/meta.php",
+                    "ikkeFinnes": [
+                        "public static function autosvar(",
+                        "self::AUTOSVAR[crc32("
+                    ]
                 }
-            ]
+            ],
+            "endret": "2026-10-03",
+            "tillegg": "Erstattet av «ai-kommentarsvar»: de fire faste svarene sendes ikke lenger, AI-en liker, svarer kort eller lager forslag som venter. Listen beholdes bare så innboksen merker de gamle svarene «Automatisk». Bryteren Vis/autosvar og timeslinja anmeldelser er de samme."
         },
         {
             "id": "innboks-viser-svar",
@@ -1782,7 +1791,9 @@
                         "'innboksVenter' => (int)"
                     ]
                 }
-            ]
+            ],
+            "endret": "2026-10-03",
+            "tillegg": "Innboks i admin-ny viser i tillegg merkene «♥ Liker», «Svart» og «Venter på deg» per kommentar, og pillen «Venter på deg (n)». Tallet på Innboks-fana (meta_ubesvart) er nå forslagene som venter pluss nye kommentarer jobben ikke har sett på ennå."
         },
         {
             "id": "utstempling-aldri-sperret",
@@ -3741,6 +3752,100 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "ai-kommentarsvar",
+            "dato": "2026-10-03",
+            "hva": "AI svarer på kommentarer (skisse JPBhkwBjN9aKWEDFWdR2Um): bare emoji/tagging/«dytt»/kort reaksjon → kommentaren likes; ros med ord → ett kort svar (1–2 setninger, du-form, høyst én emoji, ingen hashtags, aldri «Takk for din kommentar», aldri likt et nylig sendt svar); spørsmål, klager og negative → forslag som venter på Monica, ingenting sendes. Priser og datoer bare fra kurssiden og medlemskapene; ellers «Send oss en melding, så finner vi ut av det!». Høyst 20 i timen, siste 14 dager, aldri der noen alt har svart. AI nede: ingenting sendes, ingen faste svar, varsel i innboksen. Instagram-liker uten tillatelse: ingen reaksjon. Admin-UI bare i admin-ny (Innboks): pillen «Venter på deg (n)», merker, «Forslag fra AI», knappene Svar / Nytt forslag / Ikke svar.",
+            "hvor": "app/lib/kommentarsvar.php, app/lib/meta.php (kandidater, likKommentar), bin/cron.php kommentarsvar (timeslinja anmeldelser, bryter Vis/autosvar), api/admin/meta.php (nyttForslag, ikkeSvar), admin-ny/marked.js inbox(), migrasjon 250",
+            "kode": [
+                {
+                    "fil": "app/lib/kommentarsvar.php",
+                    "finnes": [
+                        "public const STANDARD = 'Send oss en melding, så finner vi ut av det!';",
+                        "public const AI_STILLE = 'AI-svarene står stille: AI svarer ikke nå. Kommentarene venter til det virker igjen.';",
+                        "public const MAKS = 20;",
+                        "public const MAKS_FORSOK = 3;",
+                        "$svar = AI::sporJson($system, $bruker, 'Kommentarsvar', 600);",
+                        "$kurs = Robottekst::kurs();",
+                        "$planer = Robottekst::medlemskap();",
+                        "if (!self::faktaHolder($tekst, $kurs, $planer)) {",
+                        "AND updated_at < NOW() - INTERVAL 1 HOUR",
+                        "if (!self::klar()) {",
+                        "public static function trygtSvar(string $tekst): bool",
+                        "if (!self::trygtSvar($tekst)) {",
+                        "er DATA fra",
+                        "if (!Meta::autosvarPaa()) {",
+                        "WHERE kommentar_id = :id AND status = 'venter'",
+                        "SET klasse = :k, forslag = :f,",
+                        "'sept' => 9, 'sep' => 9, 'okt' => 10, 'nov' => 11, 'des' => 12",
+                        "|| preg_match('/\\p{Lu}{4,}/u', $tekst)",
+                        "|| preg_match('/\\bkoden?\\b/iu', $tekst)",
+                        "if ($lagret->rowCount() === 1) {",
+                        "$utenPriser = (string) preg_replace("
+                    ]
+                },
+                {
+                    "fil": "app/lib/meta.php",
+                    "finnes": [
+                        "public const KANDIDAT_DAGER = 14;",
+                        "self::kall('POST', self::igId() . '/likes', ['comment_id' => $kommentarId])",
+                        "self::kall('POST', $kommentarId . '/likes', [], self::sideToken())"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "$paa = Meta::autosvarPaa();",
+                        "$r = Kommentarsvar::kjor($paa);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/meta.php",
+                    "finnes": [
+                        "$admin = krev_admin();",
+                        "case 'nyttForslag':",
+                        "case 'ikkeSvar':",
+                        "revider('kommentar_ikke_svar'",
+                        "revider('kommentar_nytt_forslag'",
+                        "foreach (Kommentarsvar::ventende() as $v) {",
+                        "$k['autosvarPaa'] = Meta::autosvarPaa();"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/marked.js",
+                    "finnes": [
+                        "text:`Venter på deg (${waiting.length})`",
+                        "badge('♥ Liker','good')",
+                        "badge('Venter på deg','warn')",
+                        "badge('Svart')",
+                        "el('span',{text:'Forslag fra AI'})",
+                        "aiPaa?button('Nytt forslag',",
+                        "button('Ikke svar',",
+                        "if(!await confirm('Publiser svar?',`Legg svaret ut på ${c.kanal}.`,'Publiser svar'))return;",
+                        "text:'AI-svarene står stille: AI svarer ikke nå. Kommentarene venter til det virker igjen.'",
+                        "aiPaa=r.autosvarPaa!==false;",
+                        "aiPaa&&r.aiFeil?el('p'",
+                        "answered?null:button('Svar',",
+                        "if(min<48*60)return 'for '+Math.round(min/60)+' timer siden';",
+                        "c.paa?'På: '+c.paa:''",
+                        "el('div',{class:'list'},el('div',{class:'grid'},card('Instagram'"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/250_meta_kommentarsvar.sql",
+                    "finnes": [
+                        "CREATE TABLE IF NOT EXISTS meta_kommentarer"
+                    ]
+                },
+                {
+                    "fil": "tests/alle.sh",
+                    "finnes": [
+                        "kjor \"AI-kommentarsvar\" php tests/autosvar.php"
+                    ]
+                }
+            ],
+            "tillegg": "Kontrolløren (STOPP 3. oktober 2026), rettet samme dag: fast filter etter AI-en gjør «svar» om til «venter» ved sifre, lenke/domene, @, «gratis», «%», «rabatt» eller over 150 tegn; kommentaren står merket som data i prompten; faktavakta sjekker også årstall, øre, ISO-datoer og forkortelser («12 nov»); «Nytt forslag» bare når kommentaren venter og aldri med bryteren av; klasse og tekst lagres i samme UPDATE; innboksen viser alle som venter fra tabellen. Andre runde (STOPP på f46328f), samme dag: filteret stopper alt som ligner en adresse uansett toppdomene (ord.ord, «lissom . no», «dot», «punktum»), koder med fire store bokstaver på rad og «kode/koden»; et tall ved «kr»/«,-» er pris, ikke årstall; ingenting sendes hvis raden er endret (f.eks. «Ikke svar») mens AI-en tenker. Etter brukertesten (GULT på 460c37d), samme dag: kortene viser kanal, «for X timer siden» (samme regel som gamle admin) og «På: …»; besvarte kort har ikke «Svar» (bare «Skjul»), «♥ Liker»-kort beholder Svar og Skjul; luft over pillen; med bryteren av vises verken «Nytt forslag» eller AI-varselet."
         },
         {
             "id": "nyadmin-kalender-b1",

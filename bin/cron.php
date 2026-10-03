@@ -145,19 +145,24 @@ $si = static function (string $t) use ($tilSkjerm, $ut): void {
  * faste priser i teksten.
  */
 /**
- * Faste takkesvar paa nye kommentarer. Eieren, 30. september 2026: «svar
- * paa alle kommentarer automatisk», «hold det mye enklere». Gaar i
- * timeslinja «anmeldelser» — ingen ny linje i cPanel.
+ * Svar paa nye kommentarer. Eieren, 30. september 2026: «svar paa alle
+ * kommentarer automatisk». Fra 3. oktober 2026 med AI (Kommentarsvar):
+ * liker, kort svar, eller forslag som venter paa Monica. Gaar i timeslinja
+ * «anmeldelser» — ingen ny linje i cPanel.
  */
 function kommentarsvar(callable $si): void
 {
-    // Telles ogsaa naar bryteren staar av: tallet paa Innboks-fana
-    // (innstillinger.meta_ubesvart) viser hvor mange som venter.
+    // Bryteren av: ingen AI-kall og ingenting sendt, bare tellingen.
+    // Tallet paa Innboks-fana (innstillinger.meta_ubesvart) er det som venter.
     $paa = Meta::autosvarPaa();
-    $r = Meta::autosvar($paa);
+    $r = Kommentarsvar::kjor($paa);
+    if (!$r['klar']) {
+        $si('Svar på kommentarer: databasen er ikke oppdatert (migrasjon 250). Ingenting gjort.');
+        return;
+    }
     DB::kjor("INSERT INTO innstillinger (nokkel, verdi) VALUES ('meta_ubesvart', :v)
               ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)", ['v' => (string) $r['igjen']]);
-    $si('Svar på kommentarer: ' . ($paa ? $r['svart'] . ' svart' : 'står av (Synlighet)')
+    $si('Svar på kommentarer: ' . ($paa ? $r['liket'] . ' likt, ' . $r['svart'] . ' svart' : 'står av (Synlighet)')
         . ', ' . $r['igjen'] . ' venter.'
         . ($r['feil'] === [] ? '' : ' Feil: ' . implode(' | ', $r['feil'])));
     if ($r['feil'] !== []) {

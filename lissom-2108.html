@@ -5379,9 +5379,28 @@ window.__resources = {
                navnet, og aapner Nyttig info naar man trykker paa den. -->
           <div class="ms-o-topp" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
             <div style="display: grid; gap: 6px; min-width: 0;">
+              <sc-if value="{{ msIkkeVelkomst }}" hint-placeholder-val="{{ true }}">
               <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
               <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
                 <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Her finner du kursene dine, kursbevisene og beskjeder fra verkstedet.</p>
+              </sc-if>
+              </sc-if>
+              <!-- Velkomsten for den som er ny (eieren, 3. oktober 2026, teksten
+                   ordrett): innlogget, men verken kurs eller medlemskap — naa
+                   eller foer. Forsvinner av seg selv naar det finnes en
+                   paamelding eller et medlemskap. Se msVelkomst. -->
+              <sc-if value="{{ msVelkomst }}" hint-placeholder-val="{{ false }}">
+              <div data-ms-velkomst style="display: grid; gap: var(--space-3); max-width: 62ch;">
+                <h1 style="margin: 0; font-size: var(--text-4xl);">{{ msVelkomstTittel }}</h1>
+                <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Her samles kursene og medlemskapet ditt når du har booket noe hos oss.</p>
+                <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Har du lyst til å prøve leire? Finn et kurs som passer deg, eller bli medlem og bruk verkstedet når det passer deg.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-2);">
+                  <button type="button" onClick="{{ msVelkomstKurs }}" style="{{ msVelkomstPille }}">Se kurs og datoer</button>
+                  <button type="button" onClick="{{ msVelkomstMedlem }}" style="{{ msVelkomstPille }}">Bli medlem</button>
+                  <button type="button" onClick="{{ msVelkomstKontakt }}" style="{{ msVelkomstPille }}">Ta kontakt</button>
+                </div>
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Lurer du på noe? Skriv til oss, så svarer vi som regel samme dag.</p>
+              </div>
               </sc-if>
             </div>
             <!-- Neste kurs ved hilsenen, for kursdeltakere (skissen, 26. september 2026). -->
@@ -33198,6 +33217,31 @@ class Component extends DCLogic {
     return {
       msHjemKlasse: hjem ? (medlem ? 'lx-mshjem lx-msalle' : 'lx-mshjem lx-msalle lx-msdeltaker') + (this.state.msApne ? ' ms-vis-' + this.state.msApne : '') : '',
       msErDeltaker: !medlem,
+      // Velkomsten for den som er ny (eieren, 3. oktober 2026): innlogget,
+      // ingen paamelding (mine-plasser er hentet og tom) og verken medlem
+      // naa eller foer. Ikke i forhaandsvisningen fra admin.
+      ...(() => {
+        const vis = this.erPublisert() && !!this.state.innlogget && !this.state.fhRolle
+          && !this.state.erMedlemBruker && !this.state.harHattMedlemskap
+          && !this.state.betalingMangler && !this.state.fryst
+          && Array.isArray(this.state.minePlasser) && this.state.minePlasser.length === 0;
+        const fornavn = ((this.state.vippsNavn || '').trim().split(' ')[0]) || '';
+        return {
+          msVelkomst: vis,
+          msIkkeVelkomst: !vis,
+          msVelkomstTittel: 'Velkommen til Lissom' + (fornavn ? ', ' + fornavn : '') + '!',
+          // Samme pille som raden paa Min side (minsidePiller), i hvilestilen.
+          msVelkomstPille: this.minsidePiller().chat.stil,
+          msVelkomstKurs: this.go('kurs'),
+          // Innmeldingsskjemaet staar paa Min side (#bli-medlem), samme vei
+          // som meldInnPlan() bruker.
+          msVelkomstMedlem: () => {
+            this.setState({ msFane: 'hjem' });
+            setTimeout(() => { const el = document.getElementById('bli-medlem'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+          },
+          msVelkomstKontakt: this.go('kontakt'),
+        };
+      })(),
       ...(() => {
         const pl = this.minsidePiller();
         const lukk = (fn) => () => { this.setState({ msTlMeny: false }); fn(); };
@@ -36277,6 +36321,11 @@ class Component extends DCLogic {
           // ingen leser, og et felt uten leser er en felle for den neste som
           // tror det betyr noe.
           medlemKanSelge: !!d.kanSelge,
+          // Har eller har hatt medlemskap: en plan, en startdato eller en
+          // annen status enn «ingen» paa kontoen. Brukes bare av velkomsten
+          // paa Min side (eieren, 3. oktober 2026) — se msVelkomst.
+          harHattMedlemskap: !!(d.medlem && (d.medlem.medlemskap || d.medlem.startDato
+            || (d.medlem.status && d.medlem.status !== 'ingen'))),
           // Vervepremien (api/meg.php): timetallet og den personlige lenka,
           // eller null naar banneret ikke skal staa.
           verving: d.verving || null,

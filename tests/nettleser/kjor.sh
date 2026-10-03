@@ -53,6 +53,8 @@ $s["nettsted"] = getenv("E2E_ADRESSE");
 $s["tillatte_opphav"] = array_values(array_unique(array_merge((array) ($s["tillatte_opphav"] ?? []), [getenv("E2E_ADRESSE")])));
 $s["vipps_base"] = "http://127.0.0.1:'"$PORT_VIPPS"'";
 foreach (["vipps_msn", "vipps_client_id", "vipps_client_secret", "vipps_sub_key"] as $n) { if (empty($s[$n])) $s[$n] = "test"; }
+// Webhooken avviser alt uten hemmelighet. Testene signerer med denne (tests/kursstart-krav.php).
+if (empty($s["vipps_webhook_secret"])) $s["vipps_webhook_secret"] = "e2e-webhook-hemmelighet";
 file_put_contents("app/secrets.php", "<?php return " . var_export($s, true) . ";");
 '
 
@@ -67,7 +69,7 @@ done
 
 SEED=$(php tests/nettleser/seed.php) || { echo "Fikk ikke laget testdata."; exit 1; }
 if [ "${1:-}" = "admin-ny" ]; then
-  for fil in admin-ny regnskapsforer-nyadmin nyadmin-regnskap-innlogging nyadmin-medlemsbetaling nyadmin-kursbetaling nyadmin-refusjon-ui nyadmin-avsluttende nyadmin-butikk nyadmin-utkast nyadmin-samling nyadmin-kalender-mobil nyadmin-kalender-pc nyadmin-kalender-ark ubetalt-medlem minside-moduler-ut trekkplan trekk-l5-l6-l10 frys-trekk; do
+  for fil in admin-ny regnskapsforer-nyadmin nyadmin-regnskap-innlogging nyadmin-medlemsbetaling nyadmin-kursbetaling nyadmin-refusjon-ui nyadmin-avsluttende nyadmin-butikk nyadmin-utkast nyadmin-samling nyadmin-kalender-mobil nyadmin-kalender-pc nyadmin-kalender-ark nyadmin-kursstart kursstart-krav ubetalt-medlem minside-moduler-ut trekkplan trekk-l5-l6-l10 frys-trekk; do
     node "tests/$fil.mjs"
   done
   HENTING_TEST_URL="http://127.0.0.1:$PORT" HENTING_TEST_ORIGIN="$E2E_ADRESSE" node tests/henting.mjs

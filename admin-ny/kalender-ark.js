@@ -4,12 +4,15 @@
 // Arket lager ingen nye veier: alt går til endepunktene som finnes (pamelding.php, venteliste.php, beskjed.php, ferdigbrent.php, kursholdere.php, kurs.php).
 import {el,api,button,link,badge,date,sheet,form,field,confirm,toast,courseMutation} from './ui.js';
 import {bookingPayments,courseStart} from './kursstart-og-betaling.js';
+import {startKurs} from './kursstart3.js';
 
 // ── Bryteren ─────────────────────────────────────────────────────────
 let brytere={},holdere=[];
 // Fra hvert svar fra kalender.php: bryterne, og kursholderne til «Rediger» i arket.
 export const settBrytere=(b,kh)=>{if(b&&typeof b==='object')brytere=b;if(Array.isArray(kh))holdere=kh;};
 export const arkPaa=()=>brytere.kalenderark===true;
+// «Vis/kursstart3» (bølge 2): «Start kurset» i tre steg med Vipps-krav. Av = kursstarten som før.
+export const kursstartPaa=()=>brytere.kursstart3===true;
 export const kursholdere=()=>holdere;
 
 // ── Typene og fargene (som klTypeInfo i gamle admin) ────────────────
@@ -112,7 +115,7 @@ export function oktArk(e,o){
   el('span',{class:`kal-m kal-type-pille ${typeKlasse(e)}`,text:typeNavn(e.type)}),
   el('p',{class:'muted',text:[naar(e),e.samling,e.holder||'Ikke tildelt'].filter(Boolean).join(' · ')}),
   e.kap?el('div',{class:'kal-merker'},merker(e)):null,
-  e.kap&&!e.avlyst?button('▶ Start kurset',()=>{s.close();courseStart(id,o.refresh);},'primary'):null,
+  e.kap&&!e.avlyst?button('▶ Start kurset',()=>{s.close();kursstartPaa()?startKurs(e,{...o,naar:naar(e)}):courseStart(id,o.refresh);},'primary'):null,
   faneRad);
  const s=sheet(e.tittel,el('div',{},hode,panel));s.dlg.classList.add('kal-ark');
  // Etter en handling: lukk arket, hent kalenderen på nytt og si hva som skjedde.
@@ -137,7 +140,7 @@ export function oktArk(e,o){
    const forTimer=()=>foert>0?sporOgKjor('Er du sikker?',`Det er alt ført ${tall(foert)} t på ${e.holder} for ${e.tittel} ${e.dato}. Før ${tall(t)} t til?`,'Før timer','kursholdere.php',{handling:'timer',id:e.kursholderId,dato:e.dato,timer:Math.round(t*100)/100,hva:e.tittel})
     :sporOgKjor('Før arbeidstimer',`Før ${tall(t)} timer på ${e.holder} for ${e.tittel} ${e.dato}.`,'Før timer','kursholdere.php',{handling:'timer',id:e.kursholderId,dato:e.dato,timer:Math.round(t*100)/100,hva:e.tittel});
    return el('div',{class:'kal-verktoy'},
-   e.kap&&!e.avlyst?button('▶ Start kurset',()=>{s.close();courseStart(id,o.refresh);},'primary'):null,
+   e.kap&&!e.avlyst?button('▶ Start kurset',()=>{s.close();kursstartPaa()?startKurs(e,{...o,naar:naar(e)}):courseStart(id,o.refresh);},'primary'):null,
    betalte()?button('Send beskjed til alle',beskjed):null,
    deltakere.length?button('Meld keramikken klar for henting',()=>sporOgKjor('Meld keramikken klar',`De ${deltakere.length} deltakerne får e-post om at keramikken kan hentes.`,'Send','ferdigbrent.php',{handling:'meld-alle',oktId:id})):null,
    e.kursholderId&&t>0&&foert>0?el('p',{class:'muted kal-foert',text:`Ført ${tall(foert)} t ${date(e.dato).toLocaleDateString('nb-NO',{day:'numeric',month:'short'})}`}):null,

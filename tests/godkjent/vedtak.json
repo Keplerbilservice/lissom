@@ -3963,6 +3963,111 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "nyadmin-kalender-b2-kursstart",
+            "dato": "2026-10-03",
+            "hva": "Kalenderen, bølge 2: «Start kurset» som veileder for kursholderen i tre steg (Velkommen · Praktisk · Etter kurset), åpnet fra økt-arket (gul knapp i arkhodet og Kursdagen-fanen), mobil og PC, etter skissen lissom-kalender-skisse.html (startKurs, .ks-*). Bak bryteren «Vis/kursstart3» (content_blocks, mangler raden = av; Synlighet). Av: kursstarten som før (courseStart), og api/admin/kursstart3.php (deltakere, e-poststatus, POST handling=krav) svarer 403; tekstene leses fortsatt fra kursstart.php, som ikke rører penger. Steg 1: hilsen + kort 2-teksten, deltakerne med betalt/ubetalt; per ubetalt deltaker «Send Vipps-krav» og «Kontant». EIEREN 03.10: Vipps-krav er aktivert hos Vipps igjen og skal brukes her (opphever «vippskrav skal slettes» 06.09 for kursstart). Kravet går gjennom app/lib/vipps.php (opprettBetaling, PUSH_MESSAGE) via KursstartKrav: betalingsrad KS-… (epayment, booking, booking_id = påmeldingen), beløp = det som står igjen, idempotensnøkkelen på raden brukes ved nytt forsøk, én påmelding har høyst ett krav som venter (GET_LOCK per påmelding), status hentes fra Vipps før et nytt krav. Webhook/cron/oppslaget i veilederen → Vipps::anvendTilstand → Booking::markerBetalt (KS-grenen: settBetaltStatus, ingen ny bekreftelse). Kontant (kursbetaling.php registrer/delt) stopper først et krav som venter (cancelTransactionOnly, så GET); har kunden alt godkjent, nektes kontanten. En godkjenning for et krav når plassen alt er gjort opp eller ikke er aktiv, slippes i stedet for å trekkes (KursstartKrav::ikkeTrekk). 400 fra Vipps: kravet slettes, tydelig feilmelding, Kontant virker. Steg 2: linjene i kort 1 som avkrysning (bare i nettleseren) og kort 3. Steg 3: kort 4 og 5, og bare status for e-postene (påminnelse dagen før, Google-anmeldelse «Sendes neste dag kl. 10», medlemstilbud N dager etter, keramikken er klar ca. 3 uker · e-post og Min side), ingen send-knapper; «Kurset er ferdig» lukker. Ingen migrasjon. Kundeteksten i Vipps «Kurs — Lissom Keramikk · {kurs} {dato}» er TIL GODKJENNING hos eieren.",
+            "hvor": "admin-ny › Kalender › økt-arket › ▶ Start kurset (390 og 1280 px), admin-ny › Synlighet; Vipps-appen (kravet)",
+            "kode": [
+                {
+                    "fil": "app/lib/kursstartkrav.php",
+                    "finnes": [
+                        "public const TEKST = 'Kurs — Lissom Keramikk';",
+                        "Vipps::opprettBetaling(",
+                        "public static function ikkeTrekk(string $referanse): bool"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vipps.php",
+                    "finnes": [
+                        "&& class_exists('KursstartKrav') && KursstartKrav::ikkeTrekk($referanse)) {",
+                        "['cancelTransactionOnly' => true]",
+                        "$idempotens = $idempotensNokkel !== null && $idempotensNokkel !== '' ? $idempotensNokkel : self::uuid();"
+                    ]
+                },
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "if ($booking !== null && $erKrav) {"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursbetaling.php",
+                    "finnes": [
+                        "$stopp = KursstartKrav::stoppVentende($bookingId);"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart3.php",
+                    "finnes": [
+                        "if (!KursstartKrav::paa()) {",
+                        "['navn' => 'Google-anmeldelse', 'naar' => 'Sendes neste dag kl. 10']"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kalender.php",
+                    "finnes": [
+                        "$ut['kursstart3'] = KursstartKrav::paa();"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kalender-ark.js",
+                    "finnes": [
+                        "kursstartPaa()?startKurs(e,{...o,naar:naar(e)}):courseStart(id,o.refresh);"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursstart3.js",
+                    "finnes": [
+                        "const STEG=['Velkommen','Praktisk','Etter kurset'];",
+                        "text:'Send Vipps-krav'",
+                        "text:'Kontant'",
+                        "text:'Kurset er ferdig'"
+                    ],
+                    "ikkeFinnes": [
+                        "localStorage"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/innhold-og-kurs.js",
+                    "finnes": [
+                        "['Vis/kursstart3','Start kurset i tre steg, med Vipps-krav',false]"
+                    ]
+                },
+                {
+                    "fil": "tests/nettleser/kjor.sh",
+                    "finnes": [
+                        "nyadmin-kalender-ark nyadmin-kursstart kursstart-krav"
+                    ]
+                },
+                {
+                    "fil": "tests/kursstart-krav.php",
+                    "finnes": [
+                        "kontanten nektes med tydelig beskjed",
+                        "to samtidige forespørsler: én KS-rad",
+                        "sen godkjenning: ingen trekk",
+                        "ingen ny bekreftelse til kunden eller verkstedet"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kursstart.mjs",
+                    "finnes": [
+                        "390: dobbeltklikk gir ett krav på 500 kr",
+                        "390: tydelig feilmelding ved 400",
+                        "390: betalt 500 kr, ikke 1 000",
+                        "390: ingen send-knapper i steg 3",
+                        "av: krav nektes"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart.php",
+                    "ikkeFinnes": [
+                        "KursstartKrav",
+                        "payments"
+                    ]
+                }
+            ]
         }
     ]
 }

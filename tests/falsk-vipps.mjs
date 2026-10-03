@@ -13,6 +13,12 @@
  *   tests/.avtale-status    ACTIVE | PENDING | STOPPED | EXPIRED
  *   tests/.trekk-status     CHARGED | FAILED | PENDING
  *   tests/.betaling-status  AUTHORIZED | CAPTURED | ABORTED | EXPIRED
+ *   tests/.krav-400         ja = et Vipps-krav (PUSH_MESSAGE) avvises med 400,
+ *                           som naar salgsenheten ikke har lov (ErrorCode 5080)
+ *
+ * Kursstart-kravet (bølge 2) avbryter med «cancelTransactionOnly». Da husker
+ * den falske at betalingen er TERMINATED, saa oppslaget etterpaa svarer det —
+ * med mindre .betaling-status sier AUTHORIZED/CAPTURED (kunden rakk aa betale).
  */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -31,6 +37,7 @@ const avtaler = new Map();
 const betalinger = new Map();
 const trekk = new Map();
 const nokler = new Map();   // Idempotency-Key -> { tekst, svar } for trekk
+const stoppet = new Set();  // betalinger avbrutt med cancelTransactionOnly
 
 /** Leser en styrefil, eller gir standarden. */
 const styrt = (navn, standard) => {
@@ -55,6 +62,7 @@ http.createServer((req, res) => {
     try { kropp = raa ? JSON.parse(raa) : null; } catch { kropp = raa; }
     fs.appendFileSync(LOGG, JSON.stringify({
       tid: new Date().toISOString(), metode: req.method, sti: u.pathname, kropp,
+      nokkel: String(req.headers['idempotency-key'] || ''),
     }) + '\n');
 
     const p = u.pathname;
@@ -69,10 +77,18 @@ http.createServer((req, res) => {
     // ── ePayment: kurs, varer, gavekort, engangs medlemskap ─────────────
     if (p === '/epayment/v1/payments' && req.method === 'POST') {
       const ref = kropp?.reference || 'ukjent';
+      if (kropp?.userFlow === 'PUSH_MESSAGE' && styrt('.krav-400', '') === 'ja') {
+        return svar(res, 400, { title: 'Bad Request',
+          detail: 'ErrorCode 5080 — The sales unit with MSN 123456 is not allowed to use PUSH_MESSAGE flow.' });
+      }
       betalinger.set(ref, kropp);
       return svar(res, 201, { reference: ref, redirectUrl: 'https://falsk.vipps/betal/' + ref });
     }
     if (p.startsWith('/epayment/v1/payments/') && p.endsWith('/cancel')) {
+      if (kropp?.cancelTransactionOnly === true
+          && !['AUTHORIZED', 'CAPTURED'].includes(styrt('.betaling-status', 'AUTHORIZED'))) {
+        stoppet.add(p.split('/')[4]);
+      }
       return svar(res, 200, { state: 'TERMINATED' });
     }
     if (p.startsWith('/epayment/v1/payments/') && p.endsWith('/capture')) {
@@ -87,7 +103,7 @@ http.createServer((req, res) => {
       const belop = b?.amount?.value ?? 0;
       return svar(res, 200, {
         reference: ref,
-        state: styrt('.betaling-status', 'AUTHORIZED'),
+        state: stoppet.has(ref) ? 'TERMINATED' : styrt('.betaling-status', 'AUTHORIZED'),
         aggregate: { authorizedAmount: { value: belop, currency: 'NOK' } },
         amount: b?.amount ?? { value: belop, currency: 'NOK' },
       });

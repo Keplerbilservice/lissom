@@ -184,6 +184,14 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
 
         $kommentar = mb_substr(trim(Foresporsel::tekst('kommentar')), 0, 300);
 
+        // Et Vipps-krav fra «Start kurset» som venter, stoppes foer pengene
+        // registreres her — ellers kunne kunden betalt begge veier
+        // (KursstartKrav). Har kunden alt godkjent kravet, nektes registreringen.
+        $stopp = KursstartKrav::stoppVentende($bookingId);
+        if ($stopp !== null) {
+            Svar::feil($stopp, 409);
+        }
+
         // Selve raden staar i Booking::manuellBetaling(). «Ikke betalt»-kortet
         // i Kassa gaar den samme veien, saa de to kan ikke komme i utakt.
         $betalingId = DB::iTransaksjon(static function () use ($b, $bookingId, $belop, $maate, $kommentar, $admin): int {
@@ -285,6 +293,14 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
         if ($sum !== $skyldig) {
             Svar::feil('Delene er til sammen ' . Booking::kroner($sum) . ', men det står '
                      . Booking::kroner($skyldig) . ' igjen å betale.');
+        }
+
+        // Et Vipps-krav fra «Start kurset» som venter, stoppes foer pengene
+        // registreres her — ellers kunne kunden betalt begge veier
+        // (KursstartKrav). Har kunden alt godkjent kravet, nektes registreringen.
+        $stopp = KursstartKrav::stoppVentende($bookingId);
+        if ($stopp !== null) {
+            Svar::feil($stopp, 409);
         }
 
         $medlemId = $b['member_id'] !== null ? (int) $b['member_id'] : null;

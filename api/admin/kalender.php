@@ -671,6 +671,9 @@ Svar::json([
             $v = DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => 'Vis/' . $navn]);
             $ut[$navn] = $v !== null && $v !== false && (string) $v === 'ja';
         }
+        // «kursstart3» (bolge 2): «Start kurset» i tre steg med Vipps-krav. Samme regel
+        // (content_blocks «Vis/kursstart3», mangler raden = av), lest ett sted.
+        $ut['kursstart3'] = KursstartKrav::paa();
         return $ut;
     })(),
 ]);

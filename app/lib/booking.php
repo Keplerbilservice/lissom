@@ -1767,6 +1767,22 @@ final class Booking
                 ['p' => $betaling['id']]
             );
 
+            // Et Vipps-krav fra «Start kurset» (KursstartKrav, KS-) peker paa
+            // paameldingen med payments.booking_id, ikke bookings.payment_id:
+            // pekeren paa en eldre betaling skal staa urort. Kravet er resten
+            // av en plass deltakeren alt har fatt bekreftelse paa, saa ingen
+            // ny bekreftelse sendes. Status regnes av betalingene som staar.
+            $erKrav = $booking === null && str_starts_with($referanse, 'KS-')
+                && DB::harKolonne('payments', 'booking_id');
+            if ($erKrav) {
+                $booking = DB::en(
+                    'SELECT b.id, b.status, b.reservert_til, b.avbestilt_at, b.course_session_id, b.antall
+                       FROM bookings b JOIN payments p ON p.booking_id = b.id
+                      WHERE p.id = :p FOR UPDATE',
+                    ['p' => $betaling['id']]
+                );
+            }
+
             // Kommer pengene etter at plassen er sluppet, skal ikke bookingen
             // vekkes til live uten at plassen fortsatt er der. For ble den satt
             // til betalt uansett — ogsaa naar plassen i mellomtiden var solgt
@@ -1787,6 +1803,11 @@ final class Booking
             // Gavekortet trekkes her, ikke naar ordren ble opprettet. En
             // handlekurv som blir forlatt i Vipps skal ikke spise av saldoen.
             self::trekkGavekort((int) $betaling['id']);
+
+            if ($booking !== null && $erKrav) {
+                self::settBetaltStatus((int) $booking['id']);
+                return true;
+            }
 
             if ($booking !== null) {
                 DB::oppdater('bookings', [

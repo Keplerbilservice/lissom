@@ -152,3 +152,32 @@
 .kp-brikke[class*=" kal-t-"]>*{flex:none}
 /* 390 px: fanene får plass på én linje; blir det for trangt, rulles de sidelengs. */
 @media(max-width:420px){.kal-faner button{padding:6px 8px;font-size:16px}}
+/* ── «Start kurset» i tre steg (bølge 2, 3. oktober 2026). Fra skissen (.ks-*), i admin-drakten. Bak bryteren «Vis/kursstart3». ── */
+.sheet.ks{width:min(600px,calc(100% - 32px))}
+.ks .sheet-head{margin-bottom:2px}
+.ks-naar{margin:0;font-size:15px}
+.ks-steg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:14px 0 12px}
+.ks-steg button{border:0;border-bottom:3px solid var(--line);background:none;min-height:44px;padding:6px 2px 8px;font-weight:700;font-size:15px;display:flex;gap:6px;align-items:center;justify-content:center;color:var(--muted)}
+.ks-steg button span{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--ground);font-size:13px;flex:none}
+.ks-steg button[aria-current=step]{border-color:var(--ink);color:var(--ink)}
+.ks-steg button[aria-current=step] span{background:var(--yellow)}
+.ks-steg button.ferdig{border-color:var(--green);color:var(--green)}
+.ks-steg button.ferdig span{background:#dcebe1}
+.ks-innhold{min-height:300px;display:grid;gap:8px;align-content:start}
+.ks-si{font-size:19px;font-weight:600;margin:0 0 4px}
+.ks-si-2{font-weight:400;font-size:17px}
+.ks-topp{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0 2px}
+.ks-liste,.ks-punkter,.ks-eposter{display:grid;gap:8px}
+.ks-betal{flex-wrap:wrap;justify-content:flex-end}
+.ks-punkt{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;cursor:pointer;min-height:44px}
+.ks-punkt input{width:22px;height:22px;margin:2px 0 0}
+.ks-punkt.ok{background:#eef5f0;border-color:#b9d4c3}
+.ks-kort{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.ks-kort p{margin:4px 0 0;white-space:pre-wrap}
+.ks-h{font-size:17px;margin:10px 0 0}
+.ks-epost{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border-bottom:1px dashed var(--line);padding:6px 0}
+.ks-epost span{min-width:0}.ks-epost b,.ks-epost small{display:block}.ks-epost small{font-size:14px;color:var(--muted)}
+.ks-feil{margin:0 0 10px}
+.ks-fot{display:flex;justify-content:space-between;gap:8px;margin-top:16px;position:sticky;bottom:0;background:var(--paper);padding-top:12px}
+.button.ks-ferdig{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+@media(max-width:760px){.sheet.ks{width:100%;max-width:100%;margin-bottom:0;border-radius:22px 22px 0 0}.ks-steg button{font-size:14px}.ks-steg button span{width:22px;height:22px}}

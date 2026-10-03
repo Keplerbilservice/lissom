@@ -502,7 +502,8 @@ final class Vipps
         string $beskrivelse,
         string $returUrl,
         ?string $telefon = null,
-        bool $push = false
+        bool $push = false,
+        ?string $idempotensNokkel = null
     ): array {
         // Fanges her framfor aa la Vipps svare med noe som peker feil vei.
         // Er beloepet null, skal det ikke innom Vipps i det hele tatt — det
@@ -514,7 +515,10 @@ final class Vipps
                 : 'Vipps godtar ikke beløp under én krone.');
         }
 
-        $idempotens = self::uuid();
+        // Kursstart-kravet (KursstartKrav) sender noekkelen som staar paa
+        // betalingsraden, saa et nytt forsoek etter et tapt svar er den samme
+        // opprettelsen hos Vipps. De andre kallerne faar en ny, som foer.
+        $idempotens = $idempotensNokkel !== null && $idempotensNokkel !== '' ? $idempotensNokkel : self::uuid();
 
         // To maater aa be om penger paa.
         //
@@ -557,7 +561,9 @@ final class Vipps
 
         if ($svar['status'] !== 201 || !is_array($svar['json'])) {
             logg_feil('Kunne ikke opprette Vipps-betaling: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
-            throw new RuntimeException(self::grunn($svar));
+            // Koden er HTTP-statusen (0 = ikke noe svar). Et 4xx er et klart
+            // nei fra Vipps; uten svar vet vi ikke om betalingen ble laget.
+            throw new RuntimeException(self::grunn($svar), (int) $svar['status']);
         }
 
         return [
@@ -991,6 +997,13 @@ final class Vipps
         $tilstand = strtoupper((string) ($status['state'] ?? ''));
 
         try {
+            // Et kursstart-krav (KS-) som er blitt overfloedig — plassen er
+            // gjort opp paa annen maate mens kravet ventet — skal ikke trekkes.
+            // Reservasjonen slippes i stedet. Se KursstartKrav::ikkeTrekk().
+            if ($tilstand === 'AUTHORIZED' && str_starts_with($referanse, 'KS-')
+                && class_exists('KursstartKrav') && KursstartKrav::ikkeTrekk($referanse)) {
+                return $tilstand;
+            }
             if ($tilstand === 'AUTHORIZED') {
                 // ePayment staar paa AUTHORIZED ogsaa etter at pengene er
                 // trukket — det som er trukket, staar i aggregate. Foer ble
@@ -1128,6 +1141,30 @@ final class Vipps
             [],
             self::headere(self::uuid())
         );
+    }
+
+    /**
+     * Stopper en betaling som kunden ennaa ikke har godkjent.
+     *
+     * «cancelTransactionOnly»: bare en transaksjon som ikke er autorisert
+     * avbrytes. Har kunden alt sagt ja i appen, staar reservasjonen urort
+     * (Vipps ePayment API, CancelModificationRequest). Svaret sier ikke
+     * sikkert hva som skjedde, saa kalleren henter statusen etterpaa
+     * (hentBetaling) og stoler paa den.
+     *
+     * @return array{status:int, json:mixed}
+     */
+    public static function avbrytHvisIkkeGodkjent(string $referanse): array
+    {
+        $svar = http_post_json(
+            Config::vippsBase() . '/epayment/v1/payments/' . rawurlencode($referanse) . '/cancel',
+            ['cancelTransactionOnly' => true],
+            self::headere(self::operasjonsnokkel($referanse, 'cancel-ikke-godkjent'))
+        );
+        if ((int) $svar['status'] >= 300) {
+            logg_feil('Avbrudd feilet for ' . $referanse . ': HTTP ' . $svar['status'] . ' ' . ($svar['kropp'] ?? ''));
+        }
+        return ['status' => (int) $svar['status'], 'json' => $svar['json'] ?? null];
     }
 
     // -----------------------------------------------------------------------

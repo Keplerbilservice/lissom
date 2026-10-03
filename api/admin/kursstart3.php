@@ -5,14 +5,18 @@
  *
  *   GET  ?okt=7                deltakerne med det som står igjen og Vipps-kravet,
  *                              og statusen til e-postene etter kurset (bare lesing)
- *   POST handling=krav         { bookingId } Vipps-krav til deltakeren (KursstartKrav)
+ *   POST handling=qr           { bookingId } QR-kode for det som står igjen (KursstartKrav::visQr)
+ *   POST handling=krav         avvist: «Send Vipps-krav» er slått av (eieren, 3. oktober 2026)
  *
  * Tekstene (de fem kortene) leses fortsatt fra api/admin/kursstart.php, som
  * ikke rører penger. Alt her står bak bryteren «Vis/kursstart3» (content_blocks,
  * mangler raden = av). Kontant går som før til api/admin/kursbetaling.php.
  *
- * Eieren, 3. oktober 2026: Vipps-krav er aktivert hos Vipps igjen og skal
- * brukes i kursstarten. Pengelogikken står i app/lib/kursstartkrav.php.
+ * Eieren, 3. oktober 2026: Vipps nekter salgsenheten å sende krav
+ * (PUSH_MESSAGE). Kravet er slått av her; i stedet «Vis QR-kode» per
+ * deltaker (ePayment med userFlow QR). Krav som alt finnes, følges fortsatt
+ * opp (statusen under, stopp ved kontant, webhooken). Pengelogikken står i
+ * app/lib/kursstartkrav.php.
  */
 
 declare(strict_types=1);
@@ -27,7 +31,11 @@ if (!KursstartKrav::paa()) {
 
 if (Foresporsel::metode() === 'POST') {
     Foresporsel::krevSammeOpphav();
-    if (Foresporsel::tekst('handling') !== 'krav') {
+    $handling = Foresporsel::tekst('handling');
+    if ($handling === 'krav') {
+        Svar::feil('«Send Vipps-krav» er slått av. Bruk «Vis QR-kode» eller kontant.', 409);
+    }
+    if ($handling !== 'qr') {
         Svar::feil('Ukjent handling.');
     }
     $bookingId = Foresporsel::heltall('bookingId');
@@ -35,7 +43,7 @@ if (Foresporsel::metode() === 'POST') {
         Svar::feil('Mangler påmeldingen.');
     }
     try {
-        $r = KursstartKrav::send($bookingId);
+        $r = KursstartKrav::visQr($bookingId);
     } catch (RuntimeException $e) {
         $kode = (int) $e->getCode();
         // Vipps sa nei eller svarte ikke: et svar, ikke en feil hos oss.
@@ -117,6 +125,8 @@ foreach ($rader as $r) {
         'harTlf'     => KursstartKrav::telefon((string) ($r['telefon'] ?? '')) !== null,
         // «venter» = kravet ligger i Vipps-appen og er ikke betalt ennå.
         'krav'       => $krav[$id]['status'] ?? '',
+        // «qr» = QR-koden fra «Vis QR-kode», «krav» = et gammelt Vipps-krav.
+        'kravFlyt'   => $krav[$id]['flyt'] ?? '',
     ];
 }
 

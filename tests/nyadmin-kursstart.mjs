@@ -1,9 +1,10 @@
 // «Start kurset» i tre steg (kalenderplanen, bølge 2), bak bryteren «Vis/kursstart3».
 // Åpnes fra økt-arket: den gule knappen i arkhodet (390 px med berøring) og Kursdagen-fanen (1280 px).
-// Steg 1: hilsen og deltakerne med betalt/ubetalt; «Send Vipps-krav» (dobbeltklikk gir ett krav), 400 fra Vipps gir
-// tydelig feil og Kontant virker, kontant mens kravet venter avbryter kravet. Steg 2: punktene fra kursstart-kortet
-// som avkrysning (bare i nettleseren). Steg 3: bare status for e-postene, ingen send-knapper; «Kurset er ferdig» lukker.
-// 1280: kravet blir «Betalt» av seg selv når Vipps sier godkjent. Bryteren av: kursstarten som før, og krav nektes.
+// Steg 1: hilsen og deltakerne med betalt/ubetalt; «Vis QR-kode» (dobbeltklikk gir én QR-kode, vist stort), 400 fra Vipps
+// gir tydelig feil og Kontant virker, kontant mens QR-koden venter stopper den. «Send Vipps-krav» finnes ikke (slått av
+// 3. oktober 2026). Steg 2: punktene fra kursstart-kortet som avkrysning (bare i nettleseren). Steg 3: bare status for
+// e-postene, ingen send-knapper; «Kurset er ferdig» lukker.
+// 1280: QR-vinduet bytter fra «Venter på Vipps» til «Betalt» av seg selv. Bryteren av: kursstarten som før, og QR nektes.
 // Alt går mot den falske Vippsen (tests/falsk-vipps.mjs); ingen ekte Vipps, e-post eller SMS. Til slutt: ingen varsler i kø.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
@@ -25,6 +26,7 @@ const ark=p=>p.locator('dialog.kal-ark[open]');
 const ks=p=>p.locator('dialog.ks[open]');
 const rad=(p,navn)=>ks(p).locator('.kal-delt',{hasText:navn});
 const se=()=>fixture('inspect',s);
+const qrVindu=p=>p.locator('dialog.sheet[open]',{has:p.locator('.ks-qr')});
 async function kontant(p,navn,trykk){
  await trykk(rad(p,navn).getByRole('button',{name:'Kontant',exact:true}));
  const d=p.getByRole('dialog',{name:'Registrer betalingen?',exact:true});await d.waitFor();
@@ -52,9 +54,9 @@ try{
   assert.match(await ks(p).locator('.ks-topp').innerText(),/5 påmeldt[\s\S]*4 har ikke betalt/,'390: påmeldt og ubetalt');
   assert.match(await rad(p,'Ingrid Berg').innerText(),/Betalt/,'390: Ingrid er betalt');
   assert.equal(await rad(p,'Ingrid Berg').getByRole('button').count(),0,'390: ingen betalingsknapper hos den som har betalt');
-  // Uten mobil: grunnen står synlig, ingen krav-knapp, og raden brytes så ingenting legger seg over navnet.
-  assert.equal(await rad(p,'Nils Utennummer').getByRole('button',{name:'Send Vipps-krav'}).count(),0,'390: uten mobil: ingen krav-knapp');
-  assert.ok(await rad(p,'Nils Utennummer').getByText('Mangler mobilnummer',{exact:true}).isVisible(),'390: «Mangler mobilnummer» står synlig');
+  // «Send Vipps-krav» er slått av: ingen slik knapp. QR-koden trenger ikke mobilnummer, så Nils har den også.
+  assert.equal(await ks(p).getByRole('button',{name:'Send Vipps-krav'}).count(),0,'390: ingen «Send Vipps-krav»');
+  assert.equal(await rad(p,'Nils Utennummer').getByRole('button',{name:'Vis QR-kode'}).count(),1,'390: uten mobil: «Vis QR-kode»');
   for(const navn of ['Nils Utennummer','Marte Sol']){const nb=await rad(p,navn).locator('.kal-info b').boundingBox();
    for(const k of await rad(p,navn).locator('.ks-betal > *').all()){const kb=await k.boundingBox();
     const over=!(kb.x>=nb.x+nb.width||kb.x+kb.width<=nb.x||kb.y>=nb.y+nb.height||kb.y+kb.height<=nb.y);
@@ -65,19 +67,25 @@ try{
   assert.ok(hoyder.every(h=>h>=44),'390: alt som kan trykkes er minst 44 px '+JSON.stringify(hoyder));
   const bredde=await p.evaluate(()=>({side:document.documentElement.scrollWidth,ark:document.querySelector('dialog.ks').getBoundingClientRect().width}));
   assert.ok(bredde.side<=390&&bredde.ark<=390,'390: veilederen og siden er innenfor skjermen');
-  // Vipps-krav med dobbeltklikk: ett krav.
-  await rad(p,'Marte Sol').getByRole('button',{name:'Send Vipps-krav'}).dblclick();
-  await rad(p,'Marte Sol').getByText('Venter på Vipps').waitFor();
+  // «Vis QR-kode» med dobbeltklikk: én QR-kode, vist stort, med beløpet og «Venter på Vipps».
+  await rad(p,'Marte Sol').getByRole('button',{name:'Vis QR-kode'}).dblclick();
+  const qv=qrVindu(p);await qv.waitFor();
+  assert.match(await qv.locator('img').getAttribute('src'),/^data:image\/svg\+xml;base64,/,'390: QR-bildet vises');
+  const qb=await qv.locator('img').boundingBox();assert.ok(qb.width>=300,'390: QR-koden er stor ('+qb.width+')');
+  assert.match(await qv.innerText(),/500[\s\S]*Venter på Vipps/,'390: beløpet og «Venter på Vipps»');
   let i=se();
-  assert.deepEqual(i.b.marte.krav,[{status:'venter',belop:50000}],'390: dobbeltklikk gir ett krav på 500 kr');
+  assert.deepEqual(i.b.marte.krav,[{status:'venter',belop:50000}],'390: dobbeltklikk gir én QR-betaling på 500 kr');
   assert.equal(i.b.marte.status,'reservert','390: Marte er ikke betalt ennå');
+  await qv.locator('.close').tap();await qv.waitFor({state:'detached'});
+  await rad(p,'Marte Sol').getByText('Venter på Vipps').waitFor();
   // 400 fra Vipps: tydelig feil, og Kontant virker.
   fixture('vipps',s,'CREATED','ja');
-  await rad(p,'Olga Feil').getByRole('button',{name:'Send Vipps-krav'}).tap();
+  await rad(p,'Olga Feil').getByRole('button',{name:'Vis QR-kode'}).tap();
   const feilBoks=ks(p).locator('.ks-feil');await feilBoks.waitFor({state:'visible'});
-  assert.match(await feilBoks.innerText(),/Fikk ikke sendt Vipps-kravet[\s\S]*Salgsenheten har ikke lov[\s\S]*kontant/,'390: tydelig feilmelding ved 400');
-  assert.doesNotMatch(await feilBoks.innerText(),/ErrorCode|MSN|sales unit/,'390: bare den norske teksten');
-  assert.equal(se().b.olga.krav.length,0,'390: ingen krav lagret etter 400');
+  assert.match(await feilBoks.innerText(),/Fikk ikke laget QR-koden[\s\S]*kontant/,'390: tydelig feilmelding ved 400');
+  assert.doesNotMatch(await feilBoks.innerText(),/Falsk|Bad Request/,'390: bare den norske teksten');
+  assert.equal(await qrVindu(p).count(),0,'390: ingen QR-kode ved 400');
+  assert.equal(se().b.olga.krav.length,0,'390: ingen betaling lagret etter 400');
   // Dobbelttrykk på «Registrer»: én betaling, og ingen dialog blir stående.
   await rad(p,'Olga Feil').getByRole('button',{name:'Kontant',exact:true}).tap();
   const reg=p.getByRole('dialog',{name:'Registrer betalingen?',exact:true});await reg.waitFor();
@@ -95,11 +103,11 @@ try{
   assert.equal(await p.locator('dialog[open]',{hasText:'Registrer bare penger'}).count(),0,'390: dobbelttrykk: ingen dialog blir stående');
   i=se();assert.equal(i.b.olga.status,'betalt','390: Olga betalt kontant');assert.equal(i.b.olga.sum,50000);assert.equal(i.b.olga.kontant,1,'390: dobbelttrykk gir én betaling');
   fixture('vipps',s,'CREATED','nei');
-  // Kontant mens kravet venter: kravet avbrytes, ingen dobbel betaling.
+  // Kontant mens QR-koden venter: den stoppes, ingen dobbel betaling.
   await kontant(p,'Marte Sol',tap);
   await rad(p,'Marte Sol').getByText('Betalt',{exact:true}).waitFor();
   i=se();
-  assert.deepEqual(i.b.marte.krav,[{status:'avbrutt',belop:50000}],'390: kravet er avbrutt');
+  assert.deepEqual(i.b.marte.krav,[{status:'avbrutt',belop:50000}],'390: QR-betalingen er stoppet');
   assert.equal(i.b.marte.kontant,1,'390: én kontantbetaling');assert.equal(i.b.marte.sum,50000,'390: betalt 500 kr, ikke 1 000');
   assert.match(await ks(p).locator('.ks-topp').innerText(),/2 har ikke betalt/,'390: telleren følger med');
   // «+ Noen kom uten påmelding»: Legg til deltaker fra økt-arket, og den nye står med «ny».
@@ -144,18 +152,22 @@ try{
   await ark(p).locator('.kal-verktoy').getByRole('button',{name:'▶ Start kurset'}).click();
   await ks(p).waitFor();
   const w=await ks(p).evaluate(d=>d.getBoundingClientRect().width);assert.ok(w>=500&&w<=620,'1280: veilederen er et vindu midt på ('+w+')');
-  await rad(p,'Per Vipps').getByRole('button',{name:'Send Vipps-krav'}).click();
-  await rad(p,'Per Vipps').getByText('Venter på Vipps').waitFor();
+  await rad(p,'Per Vipps').getByRole('button',{name:'Vis QR-kode'}).click();
+  const qv=qrVindu(p);await qv.waitFor();
+  await qv.getByText('Venter på Vipps').waitFor();
   fixture('vipps',s,'AUTHORIZED','nei');
+  // Kunden skanner og betaler: vinduet bytter til «Betalt» og lukker seg, og raden står betalt.
+  await qv.getByText('Betalt',{exact:true}).waitFor({timeout:30000});
+  await qv.waitFor({state:'detached',timeout:10000});
   await rad(p,'Per Vipps').getByText('Betalt',{exact:true}).waitFor({timeout:30000});
   const i=se();
-  assert.deepEqual(i.b.per.krav,[{status:'betalt',belop:50000}],'1280: kravet er betalt');
+  assert.deepEqual(i.b.per.krav,[{status:'betalt',belop:50000}],'1280: QR-betalingen er betalt');
   assert.equal(i.b.per.status,'betalt','1280: Per er betalt');assert.equal(i.b.per.sum,50000);
   fixture('vipps',s,'CREATED','nei');
   // Sveip/tilbake-knappen: Tilbake er skjult på steg 1.
   assert.equal(await ks(p).locator('.ks-fot button',{hasText:'Tilbake'}).evaluate(b=>getComputedStyle(b).visibility),'hidden','1280: ingen Tilbake på steg 1');
   await ks(p).locator('.close').click();await ks(p).waitFor({state:'detached'});
-  // Bryteren av: kursstarten som før, og krav nektes av serveren.
+  // Bryteren av: kursstarten som før, og QR-koden nektes av serveren.
   fixture('bryter',s,'nei');
   await p.reload();await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
   await p.getByRole('searchbox',{name:'Søk i kalender'}).fill(s.tag);await p.getByLabel('Velg dato').fill(s.d);
@@ -163,8 +175,8 @@ try{
   await ark(p).locator('.kal-ark-hode').getByRole('button',{name:'▶ Start kurset'}).click();
   await p.locator('dialog.sheet[open]',{hasText:'Kort 1 av'}).waitFor();
   assert.equal(await ks(p).count(),0,'av: den gamle kursstarten');
-  const nei=await p.evaluate(async b=>{const r=await fetch('/api/admin/kursstart3.php',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'krav',bookingId:b})});return r.status;},s.b.nils);
-  assert.equal(nei,403,'av: krav nektes');
+  const nei=await p.evaluate(async b=>{const r=await fetch('/api/admin/kursstart3.php',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'qr',bookingId:b})});return r.status;},s.b.nils);
+  assert.equal(nei,403,'av: QR nektes');
   // Den 403-en er med vilje: den skal ikke telle som en rød linje.
   feil.splice(0,feil.length,...feil.filter(x=>!x.startsWith('HTTP 403 ')));
   assert.deepEqual(feil,[],'1280: ingen feil i siden');

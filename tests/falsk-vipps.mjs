@@ -16,6 +16,11 @@
  *   tests/.avbryt-nei       ja = hel avbestilling av et KS-krav svarer 500 (ikke sluppet)
  *   tests/.krav-400         ja = et Vipps-krav (PUSH_MESSAGE) avvises med 400,
  *                           som naar salgsenheten ikke har lov (ErrorCode 5080)
+ *   tests/.qr-400           ja = en QR-betaling (userFlow QR) avvises med 400
+ *
+ * QR (kursstarten, 3. oktober 2026): userFlow QR svarer med redirectUrl til
+ * et SVG-bilde her (/qr/<referanse>.svg), og GET-oppslaget har samme
+ * redirectUrl, slik ePayment-dokumentasjonen beskriver.
  *
  * Kursstart-kravet (bølge 2) avbryter med «cancelTransactionOnly». Da husker
  * den falske at betalingen er TERMINATED, saa oppslaget etterpaa svarer det —
@@ -49,6 +54,11 @@ const styrt = (navn, standard) => {
     return v || standard;
   } catch { return standard; }
 };
+
+/** redirectUrl: QR-bildet her for userFlow QR, ellers en betalingslenke. */
+const lenke = (ref, kropp) => kropp?.userFlow === 'QR'
+  ? 'http://127.0.0.1:' + PORT + '/qr/' + encodeURIComponent(ref) + '.svg'
+  : 'https://falsk.vipps/betal/' + ref;
 
 const svar = (res, kode, kropp) => {
   const s = JSON.stringify(kropp);
@@ -84,8 +94,19 @@ http.createServer((req, res) => {
         return svar(res, 400, { title: 'Bad Request',
           detail: 'ErrorCode 5080 — The sales unit with MSN 123456 is not allowed to use PUSH_MESSAGE flow.' });
       }
+      if (kropp?.userFlow === 'QR' && styrt('.qr-400', '') === 'ja') {
+        return svar(res, 400, { title: 'Bad Request', detail: 'Falsk nei til QR.' });
+      }
       betalinger.set(ref, kropp);
-      return svar(res, 201, { reference: ref, redirectUrl: 'https://falsk.vipps/betal/' + ref });
+      return svar(res, 201, { reference: ref, redirectUrl: lenke(ref, kropp) });
+    }
+    if (p.startsWith('/qr/') && p.endsWith('.svg') && req.method === 'GET') {
+      const qref = decodeURIComponent(p.slice(4, -4));
+      if (betalinger.get(qref)?.userFlow !== 'QR') { return svar(res, 404, { detail: 'ukjent QR' }); }
+      const svg = '<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" data-ref="'
+        + qref + '"><rect width="21" height="21" fill="#fff"/><rect x="1" y="1" width="7" height="7"/><rect x="13" y="1" width="7" height="7"/><rect x="1" y="13" width="7" height="7"/></svg>';
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Content-Length': Buffer.byteLength(svg) });
+      return res.end(svg);
     }
     if (p.startsWith('/epayment/v1/payments/') && p.endsWith('/cancel')) {
       if (kropp?.cancelTransactionOnly === true
@@ -124,6 +145,7 @@ http.createServer((req, res) => {
               refundedAmount: { value: 0, currency: 'NOK' } }
           : { authorizedAmount: { value: belop, currency: 'NOK' } },
         amount: b?.amount ?? { value: belop, currency: 'NOK' },
+        ...(b?.userFlow === 'QR' ? { redirectUrl: lenke(ref, b) } : {}),
       });
     }
 

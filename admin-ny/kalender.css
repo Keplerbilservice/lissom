@@ -169,6 +169,11 @@
 .ks-topp{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0 2px}
 .ks-liste,.ks-punkter,.ks-eposter{display:grid;gap:8px}
 .ks-betal{flex-wrap:wrap;justify-content:flex-end}
+/* «Vis QR-kode» (3. oktober 2026): koden stort, på hvit bunn så telefonen leser den. */
+.ks-qr{display:grid;justify-items:center;gap:8px;text-align:center}
+.ks-qr .stat{margin:0}
+.ks-qr img{display:block;width:min(100%,420px);aspect-ratio:1;background:#fff;padding:12px;border-radius:12px;box-sizing:border-box}
+.ks-qr-status{min-height:32px}
 .ks-punkt{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;cursor:pointer;min-height:44px}
 .ks-punkt input{width:22px;height:22px;margin:2px 0 0}
 .ks-punkt.ok{background:#eef5f0;border-color:#b9d4c3}

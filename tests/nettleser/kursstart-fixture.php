@@ -4,7 +4,7 @@
  *
  *   php tests/nettleser/kursstart-fixture.php seed
  *   php tests/nettleser/kursstart-fixture.php bryter '<json fra seed>' ja|nei
- *   php tests/nettleser/kursstart-fixture.php vipps '<json fra seed>' <betaling-status> [ja|nei for 400]
+ *   php tests/nettleser/kursstart-fixture.php vipps '<json fra seed>' <betaling-status> [ja|nei for 400 på krav og QR]
  *   php tests/nettleser/kursstart-fixture.php inspect '<json fra seed>'
  *   php tests/nettleser/kursstart-fixture.php cleanup '<json fra seed>'
  *
@@ -20,7 +20,7 @@ krev_testdatabase(dirname(__DIR__, 2));
 require dirname(__DIR__, 2) . '/app/bootstrap.php';
 
 $BRYTERE = ['Vis/kalenderark', 'Vis/kursstart3'];
-$STYR = ['.betaling-status', '.krav-400'];
+$STYR = ['.betaling-status', '.krav-400', '.qr-400'];
 $styrFil = static fn(string $n): string => dirname(__DIR__) . '/' . $n;
 $bryter = static function (string $nokkel, ?string $verdi): void {
     if ($verdi === null) {
@@ -63,6 +63,7 @@ if ($mode === 'seed') {
     foreach ($BRYTERE as $n) { $bryter($n, 'ja'); }
     file_put_contents($styrFil('.betaling-status'), 'CREATED');
     @unlink($styrFil('.krav-400'));
+    @unlink($styrFil('.qr-400'));
     echo json_encode(compact('tag', 'for', 'styrFor', 'admin', 'token', 'kurs', 'okt', 'b', 'd')); exit;
 }
 
@@ -81,7 +82,10 @@ if ($mode === 'bryter') {
 }
 if ($mode === 'vipps') {
     file_put_contents($styrFil('.betaling-status'), (string) ($argv[3] ?? 'CREATED'));
-    if (($argv[4] ?? 'nei') === 'ja') { file_put_contents($styrFil('.krav-400'), 'ja'); } else { @unlink($styrFil('.krav-400')); }
+    // «ja» = Vipps sier 400 både til krav og til QR-koden.
+    foreach (['.krav-400', '.qr-400'] as $n) {
+        if (($argv[4] ?? 'nei') === 'ja') { file_put_contents($styrFil($n), 'ja'); } else { @unlink($styrFil($n)); }
+    }
     echo json_encode(['ok' => true]); exit;
 }
 if ($mode === 'inspect') {

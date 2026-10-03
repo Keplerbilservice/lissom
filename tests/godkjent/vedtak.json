@@ -4031,10 +4031,8 @@
                     "fil": "admin-ny/kursstart3.js",
                     "finnes": [
                         "const STEG=['Velkommen','Praktisk','Etter kurset'];",
-                        "text:'Send Vipps-krav'",
                         "text:'Kontant'",
                         "text:'Kurset er ferdig'",
-                        "text:'Mangler mobilnummer'",
                         "text:'+ Noen kom uten påmelding'",
                         "async function kontant(p,knapp){if(opptatt)return;opptatt=true;"
                     ],
@@ -4074,13 +4072,10 @@
                 {
                     "fil": "tests/nyadmin-kursstart.mjs",
                     "finnes": [
-                        "390: dobbeltklikk gir ett krav på 500 kr",
                         "390: tydelig feilmelding ved 400",
                         "390: betalt 500 kr, ikke 1 000",
                         "390: ingen send-knapper i steg 3",
-                        "av: krav nektes",
                         "390: et ekstra trykk mens betalingen lagres åpner ingen ny dialog",
-                        "390: «Mangler mobilnummer» står synlig",
                         "390: den nye har «ny»-pillen",
                         "390: bare den norske teksten"
                     ]
@@ -4096,6 +4091,77 @@
                     "fil": "api/admin/pamelding.php",
                     "finnes": [
                         "$stopp = KursstartKrav::stoppVentende($id);"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "kursstart-qr",
+            "dato": "2026-10-03",
+            "hva": "EIEREN 03.10: Vipps nekter salgsenhet 1143163 PUSH_MESSAGE. «Send Vipps-krav» er slått AV i «Start kurset»: knappen er borte, og api/admin/kursstart3.php avviser handling=krav (409, «Send Vipps-krav» er slått av. Bruk «Vis QR-kode» eller kontant.). Krav som alt finnes følges fortsatt opp (stopp ved kontant, ikkeTrekk, webhook, oppslaget i veilederen). I stedet per ubetalt deltaker «Vis QR-kode» og «Kontant». «Vis QR-kode» (handling=qr → KursstartKrav::visQr) lager en ePayment-betaling via app/lib/vipps.php (opprettBetaling med qr=true: userFlow QR, qrFormat IMAGE/SVG+XML, customerInteraction CUSTOMER_PRESENT, uten telefonnummer, etter Vipps sin dokumentasjon «One-time payment QR») for det som står igjen, på samme rad/lås/idempotens/sperrer som kravet, med referansen KS-QR-… (begynner med KS-, så anvendTilstand/ikkeTrekk/markerBetalt gjelder). Venter en QR-kode (Vipps sier CREATED og GET-svaret har redirectUrl) vises den samme igjen; et dobbelttrykk lager ikke en ny. Venter et gammelt krav, stoppes det hos Vipps (cancelTransactionOnly + GET) før QR-koden lages, så krav og QR aldri venter samtidig; godkjennes begge likevel, trekkes bare den første og den andre slippes. QR-bildet hentes på serveren (Vipps::qrBilde, bare https/SVG/PNG, ingen nøkler) og vises som data-adresse stort på skjermen med beløpet og «Venter på Vipps»; statusen hentes hvert 3. sekund, og vinduet bytter til «Betalt» og lukker seg. Utløpt kode (10 min): «QR-koden er utløpt. Trykk «Vis QR-kode» på nytt.» 400 på QR: «Fikk ikke laget QR-koden (Vipps svarte …). Ta betalt med kontant i stedet.», ingen rad. Ingen migrasjon. Bak bryteren «Vis/kursstart3».",
+            "hvor": "admin-ny › Kalender › økt-arket › ▶ Start kurset › steg 1 (390 og 1280 px); Vipps-appen (skanning)",
+            "kode": [
+                {
+                    "fil": "app/lib/kursstartkrav.php",
+                    "finnes": [
+                        "public const PREFIKS_QR = 'KS-QR';",
+                        "public static function visQr(int $bookingId): array",
+                        "private static function stopp(int $bookingId, array $v): string",
+                        "$sammeSlag = self::erQr($ref) === $qr;",
+                        "'Fikk ikke laget QR-koden (Vipps svarte '"
+                    ]
+                },
+                {
+                    "fil": "app/lib/vipps.php",
+                    "finnes": [
+                        "$kropp['qrFormat'] = ['format' => 'IMAGE/SVG+XML'];",
+                        "$kropp['customerInteraction'] = 'CUSTOMER_PRESENT';",
+                        "public static function qrBilde(string $url): string"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart3.php",
+                    "finnes": [
+                        "Svar::feil('«Send Vipps-krav» er slått av. Bruk «Vis QR-kode» eller kontant.', 409);",
+                        "$r = KursstartKrav::visQr($bookingId);"
+                    ],
+                    "ikkeFinnes": [
+                        "KursstartKrav::send("
+                    ]
+                },
+                {
+                    "fil": "admin-ny/kursstart3.js",
+                    "finnes": [
+                        "text:'Vis QR-kode'",
+                        "badge('Venter på Vipps','warn')",
+                        "badge('Betalt','good')",
+                        "handling:'qr'"
+                    ],
+                    "ikkeFinnes": [
+                        "Send Vipps-krav'",
+                        "handling:'krav'"
+                    ]
+                },
+                {
+                    "fil": "tests/kursstart-krav.php",
+                    "finnes": [
+                        "userFlow QR, qrFormat IMAGE/SVG+XML, CUSTOMER_PRESENT, uten telefonnummer",
+                        "andre trykk: ingen ny opprettelse, samme QR-kode",
+                        "QR-betalingen og påmeldingen er betalt, 500 kr",
+                        "sen skanning: ingen trekk, betalt sum = 500 kr (bare kontanten)",
+                        "begge godkjent: bare QR-koden trekkes, kravet trekkes ikke",
+                        "to ventende godkjent samtidig: ett trekk, den andre sluppet",
+                        "handling=krav avvises (409) med norsk tekst, ingen rad, ingen kall til Vipps"
+                    ]
+                },
+                {
+                    "fil": "tests/nyadmin-kursstart.mjs",
+                    "finnes": [
+                        "390: ingen «Send Vipps-krav»",
+                        "390: dobbeltklikk gir én QR-betaling på 500 kr",
+                        "390: QR-koden er stor (",
+                        "1280: QR-betalingen er betalt",
+                        "av: QR nektes"
                     ]
                 }
             ]

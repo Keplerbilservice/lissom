@@ -1,7 +1,7 @@
 // «Start kurset» i tre steg (kalenderplanen, bølge 2; skissen godkjent 3. oktober 2026): Velkommen · Praktisk · Etter kurset.
 // Åpnes fra økt-arket (gul knapp i arkhodet og Kursdagen-fanen) når bryteren «Vis/kursstart3» står på. Av = kursstarten som før.
 // Tekstene er de fem kortene under «Rediger kursstart» (api/admin/kursstart.php). Endepunktene:
-// Deltakerne, Vipps-kravet og e-poststatusen: kursstart3.php (KursstartKrav). Kontant = kursbetaling.php handling=registrer, som før.
+// Deltakerne, QR-koden og e-poststatusen: kursstart3.php (KursstartKrav). Kontant = kursbetaling.php handling=registrer, som før.
 // Avkrysningene i steg 2 lagres ikke: de lever bare i nettleseren mens siden er åpen.
 import {el,api,button,badge,sheet,confirm,toast} from './ui.js';
 
@@ -36,10 +36,26 @@ export async function startKurs(e,o){
  // Én betaling om gangen: et ekstra trykk (dobbelttrykk på «Registrer» havnet på «Kontant» i raden under) åpner ingenting nytt
  // før den første er ferdig og lista er tegnet på nytt (brukertesten 3. oktober 2026).
  let opptatt=false;
- async function krav(p,knapp){if(opptatt)return;opptatt=true;knapp.disabled=true;visFeil('');
-  try{const r=await api('kursstart3.php',{handling:'krav',bookingId:p.bookingId});endret=true;toast(r.beskjed);}
+ // «Vis QR-kode» (eieren, 3. oktober 2026): en Vipps-betaling med QR for det som står igjen, stort på skjermen. Kunden skanner.
+ // Venter det alt en QR-kode, vises den samme. Mens koden vises, hentes statusen hvert tredje sekund; «Betalt» kommer av seg selv.
+ async function qr(p,knapp){if(opptatt)return;opptatt=true;knapp.disabled=true;visFeil('');let r=null;
+  try{r=await api('kursstart3.php',{handling:'qr',bookingId:p.bookingId});endret=true;}
   catch(err){visFeil(err.message);}
-  await hent();opptatt=false;tegn();folgMed();}
+  await hent();opptatt=false;tegn();folgMed();
+  if(r?.qr)visQr(p,r);}
+ function visQr(p,r){
+  const tilstand=el('div',{class:'ks-qr-status','aria-live':'polite'},badge('Venter på Vipps','warn'));
+  const v=sheet(p.navn,el('div',{class:'ks-qr'},el('p',{class:'stat',text:r.belop}),
+   el('img',{src:r.qr,alt:'QR-kode for betaling med Vipps'}),tilstand));
+  let ferdig=false,t=null;
+  const stopp=()=>{ferdig=true;clearTimeout(t);};
+  v.dlg.addEventListener('close',stopp);
+  async function sjekk(){if(ferdig||lukket||!v.dlg.isConnected)return;await hent();if(ferdig)return;tegn();
+   const n=d.deltakere.find(x=>x.bookingId===p.bookingId);
+   if(!n||n.status==='Betalt'||n.skyldigOre===0){stopp();tilstand.replaceChildren(badge('Betalt','good'));t=setTimeout(()=>{if(v.dlg.isConnected)v.close();},1500);return;}
+   if(n.krav!=='venter'&&n.krav!=='opprettet'){stopp();tilstand.replaceChildren(el('p',{class:'muted',text:'QR-koden er utløpt. Trykk «Vis QR-kode» på nytt.'}));return;}
+   t=setTimeout(sjekk,3000);}
+  t=setTimeout(sjekk,3000);}
  async function kontant(p,knapp){if(opptatt)return;opptatt=true;knapp.disabled=true;visFeil('');
   try{
    if(!await confirm('Registrer betalingen?','Registrer bare penger som faktisk er mottatt. Dette føres i regnskapet og oppdaterer påmeldingens betalingsstatus.','Registrer')){knapp.disabled=false;return;}
@@ -57,9 +73,10 @@ export async function startKurs(e,o){
   if(p.status==='Betalt'||(p.status==='Ikke betalt'&&p.skyldigOre===0))hoyre=badge('Betalt','good');
   else if(p.status!=='Ikke betalt')hoyre=badge(p.status);
   else{const kontantKnapp=el('button',{type:'button',class:'button kal-liten',text:'Kontant',onclick:ev=>kontant(p,ev.currentTarget)});
+   // «Send Vipps-krav» er slått av (eieren, 3. oktober 2026): bare «Vis QR-kode» og «Kontant». QR-koden trenger ikke mobilnummer.
    hoyre=el('div',{class:'kal-rad ks-betal'},
-    venter?badge('Venter på Vipps','warn'):p.harTlf?el('button',{type:'button',class:'button primary kal-liten',text:'Send Vipps-krav',onclick:ev=>krav(p,ev.currentTarget)})
-     :el('small',{class:'ks-uten-tlf',text:'Mangler mobilnummer'}),
+    venter?badge('Venter på Vipps','warn'):null,
+    el('button',{type:'button',class:'button primary kal-liten',text:'Vis QR-kode',onclick:ev=>qr(p,ev.currentTarget)}),
     kontantKnapp);}
   return el('div',{class:'kal-delt','data-booking':p.bookingId},
    el('div',{class:'kal-info'},el('b',{},p.navn,p.ny?el('span',{class:'kal-m kal-m-ny',text:'ny'}):null),el('small',{text:[p.merknad?'✎ '+p.merknad:'',p.antall>1?`${p.antall} plasser`:'',p.status==='Ikke betalt'&&p.skyldigOre>0?p.skyldig:''].filter(Boolean).join(' · ')})),

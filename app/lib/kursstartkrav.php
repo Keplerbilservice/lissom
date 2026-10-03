@@ -23,6 +23,16 @@
  *   ikkeTrekk()     Siste sperre: kommer en godkjenning for et krav når
  *                   plassen alt er gjort opp på annen måte, slippes
  *                   reservasjonen i stedet for å trekkes.
+ *   visQr()         «Vis QR-kode» (eieren, 3. oktober 2026): samme rad, lås,
+ *                   nøkkel og sperrer som send(), men userFlow QR og
+ *                   referansen KS-QR-…. Kunden skanner koden på skjermen.
+ *                   Krav og QR venter aldri samtidig: det som venter stoppes
+ *                   hos Vipps (og statusen sjekkes) før det andre lages.
+ *
+ * Eieren, 3. oktober 2026 (senere samme dag): «Send Vipps-krav» er slått av
+ * i kursstarten — Vipps nekter salgsenheten PUSH_MESSAGE. kursstart3.php
+ * avviser handling=krav. send() står igjen, og stopp, ikkeTrekk og webhooken
+ * virker for krav som alt finnes. Bare «Vis QR-kode» og «Kontant» i skjermen.
  *
  * Bak bryteren «Vis/kursstart3» (content_blocks; mangler raden = av).
  * Ingen migrasjon: krever payments.booking_id (migrasjon 084), ellers svarer
@@ -35,6 +45,9 @@ final class KursstartKrav
 {
     /** Referansen begynner med dette. Vipps::anvendTilstand() kjenner den igjen. */
     public const PREFIKS = 'KS';
+
+    /** QR-koden fra «Vis QR-kode». Begynner også med «KS-», så alt for kravet gjelder den. */
+    public const PREFIKS_QR = 'KS-QR';
 
     /** Kundeteksten i Vipps. Til godkjenning hos eieren (3. oktober 2026). */
     public const TEKST = 'Kurs — Lissom Keramikk';
@@ -50,8 +63,11 @@ final class KursstartKrav
      * Teksten verkstedet ser når Vipps avviser kravet: bare norsk. Vipps sin
      * engelske tekst og MSN står i feilloggen (Vipps::opprettBetaling).
      */
-    public static function avvistTekst(int $kode, string $vippsTekst): string
+    public static function avvistTekst(int $kode, string $vippsTekst, bool $qr = false): string
     {
+        if ($qr) {
+            return 'Fikk ikke laget QR-koden (Vipps svarte ' . $kode . '). Ta betalt med kontant i stedet.';
+        }
         if (str_contains($vippsTekst, 'PUSH_MESSAGE') || str_contains($vippsTekst, '5080')) {
             return 'Fikk ikke sendt Vipps-kravet. Salgsenheten har ikke lov til å sende betalingskrav. Ta betalt med kontant i stedet.';
         }
@@ -70,6 +86,11 @@ final class KursstartKrav
     public static function erKrav(string $referanse): bool
     {
         return str_starts_with($referanse, self::PREFIKS . '-');
+    }
+
+    public static function erQr(string $referanse): bool
+    {
+        return str_starts_with($referanse, self::PREFIKS_QR . '-');
     }
 
     /**
@@ -160,7 +181,7 @@ final class KursstartKrav
      * Kravet for hver påmelding, til skjermen: det nyeste som venter eller er betalt.
      *
      * @param list<int> $bookingIder
-     * @return array<int, array{status:string, belop:string}>
+     * @return array<int, array{status:string, belop:string, flyt:string}>
      */
     public static function statusFor(array $bookingIder): array
     {
@@ -170,13 +191,14 @@ final class KursstartKrav
         }
         $ut = [];
         foreach (DB::alle(
-            "SELECT booking_id, status, belop_ore FROM payments
+            "SELECT booking_id, vipps_reference, status, belop_ore FROM payments
               WHERE booking_id IN (" . implode(',', $ider) . ")
                 AND type = 'epayment' AND vipps_reference LIKE 'KS-%'
                 AND status IN ('opprettet', 'venter', 'autorisert', 'betalt')
            ORDER BY id"
         ) as $r) {
-            $ut[(int) $r['booking_id']] = ['status' => (string) $r['status'], 'belop' => Booking::kroner((int) $r['belop_ore'])];
+            $ut[(int) $r['booking_id']] = ['status' => (string) $r['status'], 'belop' => Booking::kroner((int) $r['belop_ore']),
+                'flyt' => self::erQr((string) $r['vipps_reference']) ? 'qr' : 'krav'];
         }
         return $ut;
     }
@@ -188,6 +210,24 @@ final class KursstartKrav
      * @return array{beskjed:string, status:string, ny:bool}
      */
     public static function send(int $bookingId): array
+    {
+        return self::opprett($bookingId, false);
+    }
+
+    /**
+     * «Vis QR-kode»: en betaling med userFlow QR på det som står igjen. Samme
+     * regler som send(). Venter en QR-kode alt (og Vipps sier CREATED), vises
+     * den samme igjen — et dobbelttrykk lager ikke en ny.
+     *
+     * @return array{beskjed:string, status:string, ny:bool, qr?:string, belop?:string}
+     */
+    public static function visQr(int $bookingId): array
+    {
+        return self::opprett($bookingId, true);
+    }
+
+    /** @return array{beskjed:string, status:string, ny:bool, qr?:string, belop?:string} */
+    private static function opprett(int $bookingId, bool $qr): array
     {
         if (!DB::harKolonne('payments', 'booking_id')) {
             throw new RuntimeException('Dette krever en oppdatering av databasen. Ta kontant inntil videre.', 503);
@@ -214,25 +254,49 @@ final class KursstartKrav
                 throw new RuntimeException('Påmeldingen er ikke aktiv. Det sendes ikke krav.', 409);
             }
 
-            // Et krav som alt er sendt: statusen hentes fra Vipps før noe nytt.
+            // Et krav eller en QR-kode som alt er laget: statusen hentes fra
+            // Vipps før noe nytt. Det samme slaget vises/gjenbrukes; det andre
+            // slaget stoppes hos Vipps først, så krav og QR aldri venter samtidig.
+            $betalt = ['beskjed' => $navn . ' har betalt med Vipps.', 'status' => 'betalt', 'ny' => false];
             $gjenbruk = null;
             foreach (self::ventende($bookingId) as $v) {
                 $ref = (string) $v['vipps_reference'];
+                $sammeSlag = self::erQr($ref) === $qr;
                 if ((string) $v['status'] === 'opprettet') {
-                    // Forrige forsøk fikk ikke svar. Samme referanse og samme
-                    // nøkkel sendes igjen, så Vipps lager ikke et nytt krav.
-                    $gjenbruk = $v;
+                    if ($sammeSlag) {
+                        // Forrige forsøk fikk ikke svar. Samme referanse og samme
+                        // nøkkel sendes igjen, så Vipps lager ikke et nytt krav.
+                        $gjenbruk = $v;
+                        continue;
+                    }
+                    if (self::stopp($bookingId, $v) === 'betalt') {
+                        return $betalt;
+                    }
                     continue;
                 }
                 $tilstand = Vipps::synkroniser($ref);
                 if ($tilstand === '') {
                     throw new RuntimeException('Fikk ikke sjekket kravet som alt er sendt. Prøv igjen om litt.', 502);
                 }
-                if ($tilstand === 'CREATED') {
-                    return ['beskjed' => 'Kravet er alt sendt til ' . $navn . '. Det venter i Vipps-appen.', 'status' => 'venter', 'ny' => false];
-                }
                 if (in_array($tilstand, ['AUTHORIZED', 'CAPTURED'], true)) {
-                    return ['beskjed' => $navn . ' har betalt med Vipps.', 'status' => 'betalt', 'ny' => false];
+                    return $betalt;
+                }
+                if ($tilstand === 'CREATED') {
+                    if ($sammeSlag && !$qr) {
+                        return ['beskjed' => 'Kravet er alt sendt til ' . $navn . '. Det venter i Vipps-appen.', 'status' => 'venter', 'ny' => false];
+                    }
+                    if ($sammeSlag) {
+                        // Samme QR-kode igjen, så lenge beløpet stemmer og
+                        // Vipps oppgir adressen til bildet (GET: redirectUrl).
+                        $url = self::qrAdresse($ref);
+                        $rest = self::skyldig($bookingId, (int) $b['belop_ore'], (string) $b['status']);
+                        if ($url !== '' && (int) $v['belop_ore'] === $rest) {
+                            return self::qrSvar($url, (int) $v['belop_ore'], $navn, false);
+                        }
+                    }
+                    if (self::stopp($bookingId, $v) === 'betalt') {
+                        return $betalt;
+                    }
                 }
                 // ABORTED, EXPIRED, TERMINATED: raden er satt avbrutt. Nytt krav under.
             }
@@ -255,8 +319,9 @@ final class KursstartKrav
             if ($skyldig < Vipps::MINSTE_BELOP_ORE) {
                 throw new RuntimeException('Det som står igjen er under én krone. Ta det som kontant.', 409);
             }
+            // QR-koden trenger ikke nummer: kunden skanner med sin egen telefon.
             $telefon = self::telefon((string) ($b['telefon'] ?? ''));
-            if ($telefon === null) {
+            if ($telefon === null && !$qr) {
                 throw new RuntimeException('Mangler mobilnummer for ' . $navn . '. Ta kontant, eller legg inn nummeret.', 409);
             }
 
@@ -267,7 +332,7 @@ final class KursstartKrav
                 $referanse = (string) $gjenbruk['vipps_reference'];
                 $nokkel = (string) $gjenbruk['idempotency_key'];
             } else {
-                $referanse = Vipps::nyReferanse(self::PREFIKS);
+                $referanse = Vipps::nyReferanse($qr ? self::PREFIKS_QR : self::PREFIKS);
                 $nokkel = Vipps::uuid();
                 DB::settInn('payments', [
                     'vipps_reference' => $referanse,
@@ -281,15 +346,17 @@ final class KursstartKrav
                 ]);
             }
 
+            $hendelse = $qr ? 'kursstart_qr' : 'kursstart_krav';
             try {
-                Vipps::opprettBetaling(
+                $laget = Vipps::opprettBetaling(
                     $referanse,
                     $skyldig,
                     self::beskrivelse((string) $b['tittel'], (string) ($b['start_tid'] ?? '')),
                     Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
-                    $telefon,
-                    true,
-                    $nokkel
+                    $qr ? null : $telefon,
+                    !$qr,
+                    $nokkel,
+                    $qr
                 );
             } catch (Throwable $e) {
                 $kode = (int) $e->getCode();
@@ -299,26 +366,31 @@ final class KursstartKrav
                     // finnes. Raden blir stående «opprettet» — kontant stopper
                     // den (stoppVentende), og en godkjenning uten avklaring
                     // slippes (ikkeTrekk). Kontrolløren 3. oktober 2026.
-                    self::revider('kursstart_krav_avvist', $bookingId, ['referanse' => $referanse, 'http' => $kode, 'gjenbruk' => true]);
-                    throw new RuntimeException(self::avvistTekst($kode, $e->getMessage()), self::VIPPS_NEI);
+                    self::revider($hendelse . '_avvist', $bookingId, ['referanse' => $referanse, 'http' => $kode, 'gjenbruk' => true]);
+                    throw new RuntimeException(self::avvistTekst($kode, $e->getMessage(), $qr), self::VIPPS_NEI);
                 }
                 if ($kode >= 400 && $kode < 500) {
                     // Et klart nei på første forsøk: kravet finnes ikke hos
                     // Vipps. Raden fjernes, så den ikke står som en betaling i
                     // historikken.
                     DB::kjor("DELETE FROM payments WHERE vipps_reference = :r AND status = 'opprettet'", ['r' => $referanse]);
-                    self::revider('kursstart_krav_avvist', $bookingId, ['referanse' => $referanse, 'http' => $kode]);
-                    throw new RuntimeException(self::avvistTekst($kode, $e->getMessage()), self::VIPPS_NEI);
+                    self::revider($hendelse . '_avvist', $bookingId, ['referanse' => $referanse, 'http' => $kode]);
+                    throw new RuntimeException(self::avvistTekst($kode, $e->getMessage(), $qr), self::VIPPS_NEI);
                 }
                 // Ingen svar: vi vet ikke om Vipps laget kravet. Raden blir
                 // stående som «opprettet», og neste trykk sender det samme.
                 logg_feil('Vipps-krav uten svar for booking ' . $bookingId, $e);
-                throw new RuntimeException('Fikk ikke svar fra Vipps. Prøv igjen — kravet sendes ikke to ganger.', self::VIPPS_NEI);
+                throw new RuntimeException($qr
+                    ? 'Fikk ikke svar fra Vipps. Prøv igjen — det lages ikke to betalinger.'
+                    : 'Fikk ikke svar fra Vipps. Prøv igjen — kravet sendes ikke to ganger.', self::VIPPS_NEI);
             }
 
             DB::kjor("UPDATE payments SET status = 'venter' WHERE vipps_reference = :r AND status = 'opprettet'", ['r' => $referanse]);
-            self::revider('kursstart_krav', $bookingId, ['referanse' => $referanse, 'belop_ore' => $skyldig]);
+            self::revider($hendelse, $bookingId, ['referanse' => $referanse, 'belop_ore' => $skyldig]);
 
+            if ($qr) {
+                return self::qrSvar((string) ($laget['url'] ?? ''), $skyldig, $navn, true);
+            }
             return [
                 'beskjed' => 'Vipps-krav på ' . Booking::kroner($skyldig) . ' er sendt til ' . $navn
                            . '. Det står som betalt når det er godkjent.',
@@ -346,32 +418,84 @@ final class KursstartKrav
         self::laas($bookingId);
         try {
             foreach (self::ventende($bookingId) as $v) {
-                $ref = (string) $v['vipps_reference'];
                 try {
-                    $svar = Vipps::avbrytHvisIkkeGodkjent($ref);
-                } catch (Throwable $e) {
-                    logg_feil('Fikk ikke stoppet Vipps-krav ' . $ref, $e);
+                    if (self::stopp($bookingId, $v) === 'betalt') {
+                        return 'Kunden har alt betalt Vipps-kravet. Ikke ta kontant.';
+                    }
+                } catch (RuntimeException $e) {
                     return 'Fikk ikke stoppet Vipps-kravet som venter. Prøv igjen om litt.';
                 }
-                // Et forsøk som aldri kom fram til Vipps finnes ikke der.
-                if ((string) $v['status'] === 'opprettet' && $svar['status'] === 404) {
-                    DB::kjor("UPDATE payments SET status = 'avbrutt' WHERE id = :i AND status = 'opprettet'", ['i' => (int) $v['id']]);
-                    continue;
-                }
-                // Fasiten er statusen fra Vipps, ikke svaret på avbruddet.
-                $tilstand = Vipps::synkroniser($ref);
-                if (in_array($tilstand, ['AUTHORIZED', 'CAPTURED'], true)) {
-                    return 'Kunden har alt betalt Vipps-kravet. Ikke ta kontant.';
-                }
-                if (!in_array($tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)) {
-                    return 'Fikk ikke stoppet Vipps-kravet som venter. Prøv igjen om litt.';
-                }
-                self::revider('kursstart_krav_stoppet', $bookingId, ['referanse' => $ref, 'tilstand' => $tilstand]);
             }
             return null;
         } finally {
             self::slipp($bookingId);
         }
+    }
+
+    /**
+     * Stopper ett krav eller én QR-kode som venter. Kalles med låsen holdt.
+     * Avbrytes bare hvis det ikke er godkjent (cancelTransactionOnly), og
+     * fasiten er statusen fra Vipps etterpå, ikke svaret på avbruddet.
+     *
+     * «stoppet» = avsluttet hos Vipps. «betalt» = kunden rakk å betale (da er
+     * det behandlet som betalt av synkroniser()). Ellers kastes en feil, og
+     * ingenting nytt skal lages eller registreres.
+     *
+     * @param array<string,mixed> $v Raden fra ventende()
+     */
+    private static function stopp(int $bookingId, array $v): string
+    {
+        $ref = (string) $v['vipps_reference'];
+        try {
+            $svar = Vipps::avbrytHvisIkkeGodkjent($ref);
+        } catch (Throwable $e) {
+            logg_feil('Fikk ikke stoppet Vipps-krav ' . $ref, $e);
+            throw new RuntimeException('Fikk ikke stoppet Vipps-betalingen som venter. Prøv igjen om litt.', self::VIPPS_NEI);
+        }
+        // Et forsøk som aldri kom fram til Vipps finnes ikke der.
+        if ((string) $v['status'] === 'opprettet' && $svar['status'] === 404) {
+            DB::kjor("UPDATE payments SET status = 'avbrutt' WHERE id = :i AND status = 'opprettet'", ['i' => (int) $v['id']]);
+            return 'stoppet';
+        }
+        $tilstand = Vipps::synkroniser($ref);
+        if (in_array($tilstand, ['AUTHORIZED', 'CAPTURED'], true)) {
+            return 'betalt';
+        }
+        if (!in_array($tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)) {
+            throw new RuntimeException('Fikk ikke stoppet Vipps-betalingen som venter. Prøv igjen om litt.', self::VIPPS_NEI);
+        }
+        self::revider('kursstart_krav_stoppet', $bookingId, ['referanse' => $ref, 'tilstand' => $tilstand]);
+        return 'stoppet';
+    }
+
+    /**
+     * Adressen til QR-bildet slik Vipps oppga den i siste statusoppslag
+     * (GET-svaret har redirectUrl; synkroniser() la det i «siste_payload»).
+     * Tom når den ikke finnes — da lages en ny QR-kode.
+     */
+    private static function qrAdresse(string $referanse): string
+    {
+        $p = json_decode((string) (DB::verdi('SELECT siste_payload FROM payments WHERE vipps_reference = :r', ['r' => $referanse]) ?? ''), true);
+        return is_array($p) ? trim((string) ($p['redirectUrl'] ?? '')) : '';
+    }
+
+    /** @return array{beskjed:string, status:string, ny:bool, qr:string, belop:string} */
+    private static function qrSvar(string $url, int $belopOre, string $navn, bool $ny): array
+    {
+        try {
+            $bilde = Vipps::qrBilde($url);
+        } catch (Throwable $e) {
+            // Betalingen finnes og venter. Neste trykk henter bildet på nytt.
+            logg_feil('QR-bildet kom ikke fram', $e);
+            throw new RuntimeException('QR-koden er laget, men bildet kom ikke fram. Trykk «Vis QR-kode» igjen.', self::VIPPS_NEI);
+        }
+        return [
+            'beskjed' => 'La ' . $navn . ' skanne QR-koden med Vipps.',
+            'status'  => 'venter',
+            'ny'      => $ny,
+            'qr'      => $bilde,
+            'belop'   => Booking::kroner($belopOre),
+        ];
     }
 
     /**

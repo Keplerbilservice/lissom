@@ -503,8 +503,12 @@ final class Vipps
         string $returUrl,
         ?string $telefon = null,
         bool $push = false,
-        ?string $idempotensNokkel = null
+        ?string $idempotensNokkel = null,
+        bool $qr = false
     ): array {
+        if ($push && $qr) {
+            throw new RuntimeException('Et Vipps-krav kan ikke både sendes og vises som QR-kode.');
+        }
         // Fanges her framfor aa la Vipps svare med noe som peker feil vei.
         // Er beloepet null, skal det ikke innom Vipps i det hele tatt — det
         // er gratis, og da hoerer det hjemme i en bekreftelse, ikke i en kasse.
@@ -541,11 +545,22 @@ final class Vipps
             ],
             'paymentMethod'     => ['type' => 'WALLET'],
             'reference'         => $referanse,
-            'userFlow'          => $push ? 'PUSH_MESSAGE' : 'WEB_REDIRECT',
+            'userFlow'          => $push ? 'PUSH_MESSAGE' : ($qr ? 'QR' : 'WEB_REDIRECT'),
             'paymentDescription'=> mb_substr($beskrivelse, 0, 100),
         ];
         if (!$push) {
             $kropp['returnUrl'] = $returUrl;
+        }
+        if ($qr) {
+            // QR (eieren, 3. oktober 2026: «Vis QR-kode» i kursstarten).
+            // Vipps sin dokumentasjon (ePayment, «One-time payment QR»):
+            // userFlow QR, qrFormat IMAGE/SVG+XML og CUSTOMER_PRESENT —
+            // kunden står foran skjermen og skanner. Svaret har redirectUrl,
+            // som peker på QR-bildet. Ikke noe telefonnummer: kunden skanner
+            // med sin egen telefon. Koden lever i ti minutter.
+            $kropp['qrFormat'] = ['format' => 'IMAGE/SVG+XML'];
+            $kropp['customerInteraction'] = 'CUSTOMER_PRESENT';
+            $telefon = null;
         }
 
         if ($telefon !== null && $telefon !== '') {
@@ -570,6 +585,38 @@ final class Vipps
             'url'       => (string) ($svar['json']['redirectUrl'] ?? ''),
             'referanse' => (string) ($svar['json']['reference'] ?? $referanse),
         ];
+    }
+
+    /**
+     * Henter QR-bildet en QR-betaling peker på (redirectUrl), og gir det
+     * tilbake som data-adresse til admin. Adressen åpnes uendret, slik Vipps
+     * ber om. Bildet hentes her og ikke i nettleseren: sikkerhetsregelen
+     * (img-src i .htaccess) slipper ikke inn bilder fra andre verter.
+     *
+     * Bare https (eller den lokale falske Vippsen i test), ingen omdirigering,
+     * og bare SVG eller PNG under 300 kB. Ingen nøkler sendes med.
+     */
+    public static function qrBilde(string $url): string
+    {
+        $url = trim($url);
+        $lokal = str_starts_with(Config::vippsBase(), 'http://127.0.0.1:')
+            && str_starts_with($url, Config::vippsBase() . '/');
+        if (!$lokal && !str_starts_with($url, 'https://')) {
+            throw new RuntimeException('QR-adressen fra Vipps er ikke https.');
+        }
+        $svar = http_kall($url, 'GET', null, ['Accept: image/svg+xml, image/png'], 15);
+        $kropp = (string) $svar['kropp'];
+        if ($svar['status'] !== 200 || $kropp === '' || strlen($kropp) > 300000) {
+            throw new RuntimeException('Fikk ikke hentet QR-bildet fra Vipps (HTTP ' . $svar['status'] . ').');
+        }
+        if (str_starts_with($kropp, "\x89PNG")) {
+            return 'data:image/png;base64,' . base64_encode($kropp);
+        }
+        $start = ltrim(preg_replace('/^\xEF\xBB\xBF/', '', $kropp) ?? '');
+        if (str_starts_with($start, '<svg') || (str_starts_with($start, '<?xml') && str_contains($kropp, '<svg'))) {
+            return 'data:image/svg+xml;base64,' . base64_encode($kropp);
+        }
+        throw new RuntimeException('Svaret fra Vipps var ikke et QR-bilde.');
     }
 
     // -----------------------------------------------------------------------

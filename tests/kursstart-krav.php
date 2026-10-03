@@ -18,6 +18,10 @@
  *   (i) mangler mobilnummer, og delvis betalt: kravet gjelder det som står igjen
  *   (j)–(r) kontrolløren og brukertesten 3. oktober 2026
  *   (s) bokføringen av et dobbelt trukket krav er én transaksjon (feil midt i)
+ *   (t)–(z) «Vis QR-kode» (eieren, 3. oktober 2026): QR opprettes én gang,
+ *       dobbelttrykk, betalt via webhooken, kontant mens QR venter, QR og et
+ *       gammelt krav samtidig gir aldri to trekk, utløpt QR, 400 på QR, og
+ *       kursstart3.php avviser «Send Vipps-krav»
  *
  * Kjøres av tests/kursstart-krav.mjs via tests/nettleser/kjor.sh (falsk Vipps
  * og testserver på). Alt merkes «KsKravTest-» og ryddes etterpå.
@@ -41,10 +45,12 @@ if (($argv[1] ?? '') === 'hold') {
     exit;
 }
 
-// Barneprosessen i (b): sender ett krav og skriver svaret.
-if (($argv[1] ?? '') === 'send') {
+// Barneprosessen i (b) og (u): sender ett krav / lager én QR-kode og skriver svaret.
+if (in_array($argv[1] ?? '', ['send', 'qr'], true)) {
     try {
-        echo json_encode(KursstartKrav::send((int) $argv[2]), JSON_UNESCAPED_UNICODE);
+        $r = $argv[1] === 'qr' ? KursstartKrav::visQr((int) $argv[2]) : KursstartKrav::send((int) $argv[2]);
+        unset($r['qr']);
+        echo json_encode($r, JSON_UNESCAPED_UNICODE);
     } catch (Throwable $e) {
         echo json_encode(['feil' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
     }
@@ -53,7 +59,7 @@ if (($argv[1] ?? '') === 'send') {
 
 $styr = static fn(string $navn): string => __DIR__ . '/' . $navn;
 $forStyr = [];
-foreach (['.betaling-status', '.krav-400', '.avbryt-nei'] as $n) {
+foreach (['.betaling-status', '.krav-400', '.avbryt-nei', '.qr-400'] as $n) {
     $forStyr[$n] = is_file($styr($n)) ? (string) file_get_contents($styr($n)) : null;
 }
 $sett = static function (string $navn, ?string $verdi) use ($styr): void {
@@ -499,16 +505,33 @@ $sett('.betaling-status', 'AUTHORIZED');
 sjekk('kunden rakk å betale: kortet nektes (409), bare Vipps', $st === 409 && $kontantRader($S) === 0 && $sum($S) === 50000
     && str_contains((string) ($j['feil'] ?? ''), 'alt betalt'), "HTTP $st");
 
-// ── (r) kursstart3.php: 400 fra Vipps gir 200 med ok:false, bare norsk ──
-echo "\n── (r) kursstart3.php: Vipps sier nei → 200 og norsk tekst ──\n";
+// ── (r) kursstart3.php: «Send Vipps-krav» er slått av; 400 på QR gir 200 med ok:false ──
+echo "\n── (r) kursstart3.php: krav avvist, Vipps-nei på QR → 200 ───\n";
 DB::kjor("INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/kursstart3', 'ja') ON DUPLICATE KEY UPDATE verdi = 'ja'");
-$sett('.krav-400', 'ja');
 $T = $b('Tone', '91300017');
+$fra = $lengde();
 [$st, $j] = $adminKall('kursstart3.php', ['handling' => 'krav', 'bookingId' => $T]);
-$sett('.krav-400', null);
-sjekk('HTTP 200 med ok:false (ikke 502)', $st === 200 && ($j['ok'] ?? null) === false, "HTTP $st");
-sjekk('… bare den norske teksten', str_contains((string) ($j['feil'] ?? ''), 'Salgsenheten har ikke lov')
-    && !str_contains((string) ($j['feil'] ?? ''), 'ErrorCode') && !str_contains((string) ($j['feil'] ?? ''), 'MSN'), (string) ($j['feil'] ?? ''));
+sjekk('handling=krav avvises (409) med norsk tekst, ingen rad, ingen kall til Vipps', $st === 409
+    && str_contains((string) ($j['feil'] ?? ''), '«Send Vipps-krav» er slått av') && count($krav($T)) === 0
+    && count(array_filter(array_slice(is_file($logg) ? file($logg) : [], $fra), static fn($l) => str_contains($l, '"metode":"POST"'))) === 0, "HTTP $st");
+$sett('.qr-400', 'ja');
+[$st, $j] = $adminKall('kursstart3.php', ['handling' => 'qr', 'bookingId' => $T]);
+$sett('.qr-400', null);
+sjekk('400 på QR: HTTP 200 med ok:false (ikke 502)', $st === 200 && ($j['ok'] ?? null) === false, "HTTP $st");
+sjekk('… norsk tekst, ingen rad igjen', str_contains((string) ($j['feil'] ?? ''), 'Fikk ikke laget QR-koden')
+    && !str_contains((string) ($j['feil'] ?? ''), 'Falsk nei') && count($krav($T)) === 0, (string) ($j['feil'] ?? ''));
+$sett('.betaling-status', 'CREATED');
+[$st, $j] = $adminKall('kursstart3.php', ['handling' => 'qr', 'bookingId' => $T]);
+sjekk('handling=qr: 200 med QR-bildet og beløpet', $st === 200 && str_starts_with((string) ($j['qr'] ?? ''), 'data:image/svg+xml;base64,')
+    && ($j['belop'] ?? '') === Booking::kroner(50000) && count($krav($T)) === 1, "HTTP $st");
+$c = curl_init($adresse . '/api/admin/kursstart3.php?okt=' . $okt);
+$u0 = parse_url($adresse);
+curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60, CURLOPT_RESOLVE => [$u0['host'] . ':' . $u0['port'] . ':127.0.0.1'],
+    CURLOPT_HTTPHEADER => ['Cookie: lissom_sesjon=' . $token]]);
+$liste = json_decode((string) curl_exec($c), true) ?: [];
+curl_close($c);
+$radT = array_values(array_filter($liste['deltakere'] ?? [], static fn($x) => ($x['bookingId'] ?? 0) === $T))[0] ?? [];
+sjekk('lista viser «venter» og at det er en QR-kode', ($radT['krav'] ?? '') === 'venter' && ($radT['kravFlyt'] ?? '') === 'qr', json_encode($radT));
 
 // ── (s) bokføringen er én transaksjon: feil midt i gir ingen halv lagring ─
 echo "\n── (s) trukket + feil midt i bokføringen: alt eller ingenting ─\n";
@@ -539,6 +562,157 @@ $h = $webhook($refU, 'AUTHORIZED', $idU);
 sjekk('samme hendelse igjen: alt bokført på én gang', $h === 200 && $kravRad($U)['status'] === 'betalt'
     && str_contains((string) $kravRad($U)['kommentar'], 'Må refunderes') && $sum($U) === 100000 && $bStatus($U) === 'betalt',
     $h . ' ' . $kravRad($U)['status'] . ' ' . $sum($U));
+
+// ── «Vis QR-kode» (eieren, 3. oktober 2026) ────────────────────────────
+$qrRef = static fn(string $bilde): string => preg_match('/data-ref="([^"]+)"/', (string) base64_decode(substr($bilde, strlen('data:image/svg+xml;base64,'))), $m) === 1 ? $m[1] : '';
+
+// ── (t) QR opprettes én gang ────────────────────────────────────────────
+echo "\n── (t) QR-koden opprettes én gang ───────────────────────────\n";
+$sett('.betaling-status', 'CREATED');
+$QA = $b('Qrid', null);   // uten mobilnummer: QR trenger det ikke
+$fra = $lengde();
+$r = KursstartKrav::visQr($QA);
+$k = $krav($QA);
+$refQA = (string) ($k[0]['vipps_reference'] ?? '');
+$o = $kall($fra, $refQA, 'opprett');
+sjekk('én KS-QR-rad, venter, 500 kr, knyttet til påmeldingen', count($k) === 1 && str_starts_with($refQA, 'KS-QR-')
+    && $k[0]['status'] === 'venter' && (int) $k[0]['belop_ore'] === 50000 && $k[0]['type'] === 'epayment' && $k[0]['formal'] === 'booking', json_encode($k));
+sjekk('ett opprettelseskall, med radens idempotensnøkkel', count($o) === 1 && ($o[0]['nokkel'] ?? '') === $k[0]['idempotency_key']);
+$kropp = $o[0]['kropp'] ?? [];
+sjekk('userFlow QR, qrFormat IMAGE/SVG+XML, CUSTOMER_PRESENT, uten telefonnummer', ($kropp['userFlow'] ?? '') === 'QR'
+    && ($kropp['qrFormat']['format'] ?? '') === 'IMAGE/SVG+XML' && ($kropp['customerInteraction'] ?? '') === 'CUSTOMER_PRESENT'
+    && !isset($kropp['customer']), json_encode($kropp));
+sjekk('beløpet 50000 øre i NOK, samme kundetekst som kravet', ($kropp['amount']['value'] ?? 0) === 50000 && ($kropp['amount']['currency'] ?? '') === 'NOK'
+    && str_starts_with((string) ($kropp['paymentDescription'] ?? ''), 'Kurs — Lissom Keramikk · '));
+sjekk('svaret har QR-bildet for denne betalingen og beløpet', $r['ny'] === true && $qrRef((string) ($r['qr'] ?? '')) === $refQA
+    && ($r['belop'] ?? '') === Booking::kroner(50000), (string) ($r['beskjed'] ?? ''));
+sjekk('påmeldingen står fortsatt ubetalt', $bStatus($QA) === 'reservert');
+
+// ── (u) dobbelttrykk ────────────────────────────────────────────────────
+echo "\n── (u) dobbelttrykk gir én QR-kode ──────────────────────────\n";
+$fra = $lengde();
+$r2 = KursstartKrav::visQr($QA);
+sjekk('andre trykk: ingen ny opprettelse, samme QR-kode', count($kall($fra, $refQA, 'opprett')) === 0 && $r2['ny'] === false
+    && $qrRef((string) ($r2['qr'] ?? '')) === $refQA && count($krav($QA)) === 1);
+$QB = $b('Qbente', '91300020');
+$fra = $lengde();
+$pr = []; $rr = [];
+foreach ([0, 1] as $i) {
+    $pr[$i] = proc_open([PHP_BINARY, __FILE__, 'qr', (string) $QB], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $rr[$i]);
+}
+$svar = [];
+foreach ($pr as $i => $p) { $svar[] = json_decode((string) stream_get_contents($rr[$i][1]), true); proc_close($p); }
+$kQB = $krav($QB);
+$refQB = (string) ($kQB[0]['vipps_reference'] ?? '');
+sjekk('to samtidige trykk: én rad og ett opprettelseskall', count($kQB) === 1 && count($kall($fra, $refQB, 'opprett')) === 1,
+    json_encode($svar, JSON_UNESCAPED_UNICODE));
+sjekk('… det ene svaret er ny, det andre samme kode', count(array_filter($svar, static fn($s) => ($s['ny'] ?? null) === true)) === 1
+    && count(array_filter($svar, static fn($s) => ($s['ny'] ?? null) === false)) === 1, json_encode($svar, JSON_UNESCAPED_UNICODE));
+
+// ── (v) betalt via webhook ──────────────────────────────────────────────
+echo "\n── (v) QR betalt via webhooken ──────────────────────────────\n";
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$idQ = $eid();
+$h = $webhook($refQA, 'AUTHORIZED', $idQ);
+sjekk('webhooken svarer 200, ett trekk på 50000 øre', $h === 200 && count($kall($fra, $refQA, 'capture')) === 1
+    && ($kall($fra, $refQA, 'capture')[0]['kropp']['modificationAmount']['value'] ?? 0) === 50000, (string) $h);
+sjekk('QR-betalingen og påmeldingen er betalt, 500 kr', $kravRad($QA)['status'] === 'betalt' && $bStatus($QA) === 'betalt' && $sum($QA) === 50000);
+sjekk('ingen ny bekreftelse til kunden eller verkstedet', (int) DB::verdi(
+    "SELECT COUNT(*) FROM notifications WHERE ref_type = 'booking' AND ref_id = :b", ['b' => $QA]) === 0);
+$fra = $lengde();
+$webhook($refQA, 'AUTHORIZED', $idQ);
+sjekk('samme webhook igjen: ingen nytt trekk', count($kall($fra, $refQA, 'capture')) === 0);
+$t = $feilTekst(static fn() => KursstartKrav::visQr($QA));
+sjekk('«Vis QR-kode» etter betaling: nektet, ingen ny', str_contains($t, 'alt gjort opp') && count($krav($QA)) === 1, $t);
+
+// ── (w) kontant mens QR-koden venter ────────────────────────────────────
+echo "\n── (w) kontant mens QR-koden venter: den stoppes ────────────\n";
+$sett('.betaling-status', 'CREATED');
+$QW = $b('Qwenche', '91300021');
+KursstartKrav::visQr($QW);
+$refQW = (string) $kravRad($QW)['vipps_reference'];
+$fra = $lengde();
+$stopp = $kontant($QW);
+$avb = $kall($fra, $refQW, 'cancel');
+sjekk('kontant registrert, QR stoppet med cancelTransactionOnly', $stopp === null && $bStatus($QW) === 'betalt'
+    && count($avb) === 1 && ($avb[0]['kropp']['cancelTransactionOnly'] ?? null) === true && $kravRad($QW)['status'] === 'avbrutt', (string) $stopp);
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$webhook($refQW, 'AUTHORIZED', $eid());
+sjekk('sen skanning: ingen trekk, betalt sum = 500 kr (bare kontanten)', count($kall($fra, $refQW, 'capture')) === 0
+    && $sum($QW) === 50000 && $kravRad($QW)['status'] === 'avbrutt', (string) $sum($QW));
+// Kunden rakk å skanne og betale: kontanten nektes.
+$sett('.betaling-status', 'CREATED');
+$QF = $b('Qfrida', '91300022');
+KursstartKrav::visQr($QF);
+$sett('.betaling-status', 'AUTHORIZED');
+$stopp = $kontant($QF);
+sjekk('kunden rakk å betale QR: kontanten nektes, ett Vipps-trekk på 500 kr', $stopp !== null && str_contains($stopp, 'alt betalt')
+    && $sum($QF) === 50000 && $bStatus($QF) === 'betalt', (string) $stopp);
+
+// ── (x) QR og et gammelt krav samtidig: aldri to trekk ──────────────────
+echo "\n── (x) QR og krav samtidig: aldri to trekk ──────────────────\n";
+$sett('.betaling-status', 'CREATED');
+$QX = $b('Qxenia', '91300023');
+KursstartKrav::send($QX);   // et krav som ble sendt før kravet ble slått av
+$refKX = (string) $kravRad($QX)['vipps_reference'];
+$fra = $lengde();
+$r = KursstartKrav::visQr($QX);
+$rader = $krav($QX);
+$refQX = (string) (end($rader)['vipps_reference'] ?? '');
+sjekk('kravet stoppes hos Vipps før QR-koden lages', count($kall($fra, $refKX, 'cancel')) === 1
+    && $rader[0]['status'] === 'avbrutt' && str_starts_with($refQX, 'KS-QR-') && end($rader)['status'] === 'venter' && $r['ny'] === true);
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$webhook($refKX, 'AUTHORIZED', $eid());
+$webhook($refQX, 'AUTHORIZED', $eid());
+sjekk('begge godkjent: bare QR-koden trekkes, kravet trekkes ikke', count($kall($fra, $refKX, 'capture')) === 0
+    && count($kall($fra, $refQX, 'capture')) === 1);
+sjekk('… betalt sum = 500 kr, påmeldingen betalt', $sum($QX) === 50000 && $bStatus($QX) === 'betalt', (string) $sum($QX));
+// Kappløp forbi sperren (begge venter samtidig, f.eks. fra to skjermer før låsen):
+// den andre godkjenningen slippes (ikkeTrekk), aldri trukket.
+$sett('.betaling-status', 'CREATED');
+$QY = $b('Qyngve', '91300024');
+KursstartKrav::send($QY);
+$refKY = (string) $kravRad($QY)['vipps_reference'];
+$refQY = Vipps::nyReferanse(KursstartKrav::PREFIKS_QR);
+DB::settInn('payments', ['vipps_reference' => $refQY, 'type' => 'epayment', 'formal' => 'booking', 'booking_id' => $QY,
+    'belop_ore' => 50000, 'status' => 'venter', 'idempotency_key' => Vipps::uuid()]);
+Vipps::opprettBetaling($refQY, 50000, 'Test QR', 'http://lokal.invalid', null, false, null, true);
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$webhook($refQY, 'AUTHORIZED', $eid());
+$webhook($refKY, 'AUTHORIZED', $eid());
+$trekkQY = count($kall($fra, $refQY, 'capture')) + count($kall($fra, $refKY, 'capture'));
+sjekk('to ventende godkjent samtidig: ett trekk, den andre sluppet', $trekkQY === 1 && count($kall($fra, $refKY, 'cancel')) === 1
+    && $kravRad($QY)['status'] === 'avbrutt', "trekk $trekkQY");
+sjekk('… betalt sum = 500 kr', $sum($QY) === 50000 && $bStatus($QY) === 'betalt', (string) $sum($QY));
+
+// ── (y) utløpt QR-kode: en ny lages ─────────────────────────────────────
+echo "\n── (y) utløpt QR-kode: ny kode, den gamle står avbrutt ──────\n";
+$sett('.betaling-status', 'CREATED');
+$QZ = $b('Qzara', '91300025');
+KursstartKrav::visQr($QZ);
+$refZ1 = (string) $kravRad($QZ)['vipps_reference'];
+$sett('.betaling-status', 'EXPIRED');
+$fra = $lengde();
+$r = KursstartKrav::visQr($QZ);
+$rader = $krav($QZ);
+sjekk('den gamle står avbrutt, én ny QR-kode laget', count($rader) === 2 && $rader[0]['status'] === 'avbrutt'
+    && $rader[1]['status'] === 'venter' && $r['ny'] === true && $qrRef((string) $r['qr']) === (string) $rader[1]['vipps_reference']
+    && count($kall($fra, $refZ1, 'opprett')) === 0, json_encode(array_column($rader, 'status')));
+
+// ── (z) 400 på QR: ingen rad, og kontant virker ─────────────────────────
+echo "\n── (z) 400 fra Vipps på QR: ingen rad, kontant virker ───────\n";
+$sett('.betaling-status', 'CREATED');
+$sett('.qr-400', 'ja');
+$QN = $b('Qnora', '91300026');
+$t = $feilTekst(static fn() => KursstartKrav::visQr($QN));
+$sett('.qr-400', null);
+sjekk('tydelig norsk feil, ingen rad', str_contains($t, 'Fikk ikke laget QR-koden') && str_contains($t, 'kontant') && count($krav($QN)) === 0, $t);
+$stopp = $kontant($QN);
+sjekk('kontant virker etterpå: 500 kr', $stopp === null && $sum($QN) === 50000 && $bStatus($QN) === 'betalt', (string) $stopp);
 
 $ferdig = true;
 echo "\n  $ok av " . ($ok + $feil) . " kursstart-krav-kontroller bestått\n";

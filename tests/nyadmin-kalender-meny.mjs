@@ -114,7 +114,7 @@ try{
   const alfa=p.locator('.kal-sideliste [data-kurs]',{hasText:`${s.tag} Alfa`});
   // Sidelista tegnes på nytt etter forrige lagring; prøv igjen hvis draget startet mens den ble byttet ut.
   dlg=dialog(p,'Ny kursdato');
-  for(let i=0;i<3&&!(await dlg.count());i++){await dra(p,alfa,celle(p,s.d2,'13:00'));await dlg.waitFor({timeout:5000}).catch(()=>{});}
+  for(let i=0;i<5&&!(await dlg.count());i++){try{await alfa.first().waitFor({state:'visible',timeout:5000});await dra(p,alfa.first(),celle(p,s.d2,'13:00'));}catch{await p.waitForTimeout(500);continue;}await dlg.waitFor({timeout:5000}).catch(()=>{});}
   await dlg.waitFor();
   assert.equal(await dlg.getByLabel('Starter',{exact:true}).inputValue(),`${s.d2}T13:00`);
   assert.equal(await dlg.getByLabel('Kurs',{exact:true}).inputValue(),String(s.kurs.A));

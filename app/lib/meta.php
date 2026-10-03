@@ -331,8 +331,8 @@ final class Meta
     // Alt her LESER, eller svarer paa noe en kunde har skrevet foerst. Et
     // svar fra verkstedet staar offentlig, og det finnes ingen vei hit fra
     // en cron-jobb eller fra Autopilot — samme regel som publisering.
-    // Unntak: de faste takkesvarene i autosvar() under (eieren, 30.
-    // september 2026), bak bryteren Vis/autosvar.
+    // Unntak: kommentarsvarene fra jobben (Kommentarsvar, eieren 30.
+    // september og 3. oktober 2026), bak bryteren Vis/autosvar.
 
     /** Hvor mange innlegg og samtaler vi henter om gangen. */
     public const INNBOKS_ANTALL = 15;
@@ -679,20 +679,20 @@ final class Meta
         return $t === '' ? '' : (mb_strlen($t) > 60 ? mb_substr($t, 0, 60) . ' …' : $t);
     }
 
-    // ── Automatiske svar paa kommentarer ─────────────────────────────
+    // ── Kommentarene jobben svarer paa ───────────────────────────────
     //
-    // Eieren, 30. september 2026: «skulle ikke du svare automatisk da?» —
-    // valgte «svar paa alle kommentarer automatisk», og deretter «hold det
-    // mye enklere»: en fast liste med korte takk, ingen AI. Dette er det
-    // eneste unntaket fra regelen over om at ingenting gaar ut fra en jobb:
-    // eieren har bedt om det, teksten er hans, og bryteren
-    // Vis/autosvar under Synlighet skrur det av.
-    //
-    // Hvilket svar en kommentar faar, avgjoeres av id-en. Da blir det ikke
-    // det samme svaret under hver kommentar, og en kjoering som gjentas
-    // velger det samme.
+    // Eieren, 30. september 2026: «svar paa alle kommentarer automatisk».
+    // Foerst med fire faste takk (AUTOSVAR); fra 3. oktober 2026 (godkjent
+    // skisse) avgjoer AI-en om en kommentar skal likes, faa et kort svar,
+    // eller vente paa Monica — se Kommentarsvar (app/lib/kommentarsvar.php).
+    // Dette er det eneste unntaket fra regelen over om at ingenting gaar ut
+    // fra en jobb, og bryteren Vis/autosvar under Synlighet skrur det av.
 
-    /** De fire svarene eieren godkjente, 30. september 2026. */
+    /**
+     * De fire faste svarene eieren godkjente, 30. september 2026. Sendes ikke
+     * lenger; staar her saa innboksen fortsatt merker de gamle som
+     * «Automatisk».
+     */
     public const AUTOSVAR = [
         'Tusen takk! ❤️',
         'Takk! 😊',
@@ -701,10 +701,7 @@ final class Meta
     ];
 
     /** Aldri lenger tilbake enn dette. Det gamle ble liggende for lenge. */
-    private const AUTOSVAR_DAGER = 14;
-
-    /** Et tak per kjoering, saa en feil ikke blir hundre svar. */
-    private const AUTOSVAR_MAKS = 20;
+    public const KANDIDAT_DAGER = 14;
 
     public static function autosvarPaa(): bool
     {
@@ -714,40 +711,54 @@ final class Meta
     }
 
     /**
-     * Svarer paa alle ubesvarte kommentarer fra de siste to ukene.
+     * Ubesvarte kommentarer fra de siste to ukene, med teksten, hvem som
+     * skrev, og bildeteksten paa innlegget — det AI-en trenger.
      *
      * Hopper over: vaare egne, skjulte (de ordene som er stengt ute paa
      * Facebook-sida — et svar ville bare trukket blikket dit), og alle som
-     * alt har et svar under seg. Annonsene paa Facebook tas med; de ligger
-     * ikke i sidas feed. Instagram-annonser naas ikke av Graph.
+     * alt har et svar under seg. De siste kommer i «besvart», saa et forslag
+     * som venter kan merkes besvart naar noen har svart et annet sted.
+     * Annonsene paa Facebook tas med; de ligger ikke i sidas feed.
+     * Instagram-annonser naas ikke av Graph.
      *
-     * Med $svarOgsaa = false svares det ikke — da telles bare de som
-     * venter, til tallet paa Innboks-fana (bryteren staar av).
-     *
-     * @return array{svart: int, igjen: int, feil: list<string>}
+     * @return array{kandidater: list<array{id:string,kanal:string,tekst:string,fra:string,innlegg:string,tid:string}>,
+     *               besvart: list<string>, feil: list<string>}
      */
-    public static function autosvar(bool $svarOgsaa = true): array
+    public static function kandidater(): array
     {
-        $grense = gmdate('Y-m-d\TH:i:s', time() - self::AUTOSVAR_DAGER * 86400);
+        $grense = gmdate('Y-m-d\TH:i:s', time() - self::KANDIDAT_DAGER * 86400);
         $kandidater = [];
+        $besvart = [];
         $feil = [];
 
         if (self::klarForInstagram()) {
             try {
                 $meg = (string) (self::kall('GET', self::igId(), ['fields' => 'username'])['username'] ?? '');
                 $svar = self::kall('GET', self::igId() . '/media', [
-                    'fields' => 'id,comments.limit(50){id,username,timestamp,hidden,replies{id}}',
+                    'fields' => 'id,caption,comments.limit(50){id,text,username,timestamp,hidden,replies{id}}',
                     'limit'  => (string) self::INNBOKS_ANTALL,
                 ]);
                 foreach ((array) ($svar['data'] ?? []) as $innlegg) {
                     foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
-                        if ((string) ($k['username'] ?? '') === $meg
-                            || !empty($k['hidden'])
-                            || ((array) ($k['replies']['data'] ?? [])) !== []
-                            || substr((string) ($k['timestamp'] ?? ''), 0, 19) < $grense) {
+                        $id = (string) ($k['id'] ?? '');
+                        if ($id === '' || (string) ($k['username'] ?? '') === $meg || !empty($k['hidden'])) {
                             continue;
                         }
-                        $kandidater[] = ['id' => (string) $k['id'], 'kanal' => 'Instagram'];
+                        if (((array) ($k['replies']['data'] ?? [])) !== []) {
+                            $besvart[] = $id;
+                            continue;
+                        }
+                        if (substr((string) ($k['timestamp'] ?? ''), 0, 19) < $grense) {
+                            continue;
+                        }
+                        $kandidater[$id] = [
+                            'id'      => $id,
+                            'kanal'   => 'Instagram',
+                            'tekst'   => (string) ($k['text'] ?? ''),
+                            'fra'     => (string) ($k['username'] ?? ''),
+                            'innlegg' => mb_substr(trim((string) ($innlegg['caption'] ?? '')), 0, 600),
+                            'tid'     => (string) ($k['timestamp'] ?? ''),
+                        ];
                     }
                 }
             } catch (RuntimeException $e) {
@@ -759,18 +770,31 @@ final class Meta
             foreach (['feed', 'ads_posts'] as $kilde) {
                 try {
                     $svar = self::kall('GET', self::sideId() . '/' . $kilde, [
-                        'fields' => 'id,comments.limit(50){id,from,created_time,is_hidden,comments{id}}',
+                        'fields' => 'id,message,comments.limit(50){id,message,from,created_time,is_hidden,comments{id}}',
                         'limit'  => (string) self::INNBOKS_ANTALL,
                     ], self::sideToken());
                     foreach ((array) ($svar['data'] ?? []) as $innlegg) {
                         foreach ((array) ($innlegg['comments']['data'] ?? []) as $k) {
-                            if ((string) ($k['from']['id'] ?? '') === self::sideId()
-                                || !empty($k['is_hidden'])
-                                || ((array) ($k['comments']['data'] ?? [])) !== []
-                                || substr((string) ($k['created_time'] ?? ''), 0, 19) < $grense) {
+                            $id = (string) ($k['id'] ?? '');
+                            if ($id === '' || (string) ($k['from']['id'] ?? '') === self::sideId()
+                                || !empty($k['is_hidden'])) {
                                 continue;
                             }
-                            $kandidater[(string) $k['id']] = ['id' => (string) $k['id'], 'kanal' => 'Facebook'];
+                            if (((array) ($k['comments']['data'] ?? [])) !== []) {
+                                $besvart[] = $id;
+                                continue;
+                            }
+                            if (substr((string) ($k['created_time'] ?? ''), 0, 19) < $grense) {
+                                continue;
+                            }
+                            $kandidater[$id] = [
+                                'id'      => $id,
+                                'kanal'   => 'Facebook',
+                                'tekst'   => (string) ($k['message'] ?? ''),
+                                'fra'     => (string) ($k['from']['name'] ?? ''),
+                                'innlegg' => mb_substr(trim((string) ($innlegg['message'] ?? '')), 0, 600),
+                                'tid'     => (string) ($k['created_time'] ?? ''),
+                            ];
                         }
                     }
                 } catch (RuntimeException $e) {
@@ -779,20 +803,40 @@ final class Meta
             }
         }
 
-        $svart = 0;
-        if ($svarOgsaa) {
-            foreach (array_slice(array_values($kandidater), 0, self::AUTOSVAR_MAKS) as $k) {
-                $tekst = self::AUTOSVAR[crc32($k['id']) % count(self::AUTOSVAR)];
-                try {
-                    self::svarKommentar($k['id'], $tekst, $k['kanal']);
-                    $svart++;
-                } catch (RuntimeException $e) {
-                    $feil[] = $k['kanal'] . ' ' . $k['id'] . ': ' . $e->getMessage();
-                }
-            }
-        }
+        return ['kandidater' => array_values($kandidater), 'besvart' => array_values(array_unique($besvart)), 'feil' => $feil];
+    }
 
-        return ['svart' => $svart, 'igjen' => count($kandidater) - $svart, 'feil' => $feil];
+    /**
+     * Liker en kommentar.
+     *
+     * Facebook: POST /{kommentar}/likes med sidas token. Instagram: POST
+     * /{ig-bruker}/likes med comment_id (krever instagram_manage_engagement).
+     * Feil kastes som RuntimeException; sisteFeilKode() sier om det var en
+     * manglende tillatelse.
+     */
+    public static function likKommentar(string $kommentarId, string $kanal): void
+    {
+        if ($kommentarId === '') {
+            throw new RuntimeException('Vet ikke hvilken kommentar det gjelder.');
+        }
+        $ut = $kanal === 'Instagram'
+            ? self::kall('POST', self::igId() . '/likes', ['comment_id' => $kommentarId])
+            : self::kall('POST', $kommentarId . '/likes', [], self::sideToken());
+        if (($ut['success'] ?? false) !== true) {
+            throw new RuntimeException($kanal . ' tok ikke imot liker-merket.');
+        }
+    }
+
+    /** Metas feilkode fra siste kall som feilet (0 = ingen). */
+    public static function sisteFeilKode(): int
+    {
+        return self::$sisteKode;
+    }
+
+    /** Kode 10 og 200–299 er Metas «tillatelse mangler». */
+    public static function manglerTillatelse(): bool
+    {
+        return self::$sisteKode === 10 || (self::$sisteKode >= 200 && self::$sisteKode < 300);
     }
 
     // ── Selve kallet ─────────────────────────────────────────────────
@@ -806,6 +850,9 @@ final class Meta
      */
     private static string $sisteMetaFeil = '';
 
+    /** Metas feilkode fra siste kall som feilet. Se manglerTillatelse(). */
+    private static int $sisteKode = 0;
+
     /**
      * Ett kall mot Graph API.
      *
@@ -818,6 +865,7 @@ final class Meta
     private static function kall(string $metode, string $sti, array $felter = [], ?string $token = null): array
     {
         $url = self::base() . self::versjon() . '/' . ltrim($sti, '/');
+        self::$sisteKode = 0;
         $kropp = null;
 
         if ($metode === 'GET') {
@@ -840,6 +888,7 @@ final class Meta
             $f = $json['error'] ?? [];
             $melding = (string) ($f['message'] ?? 'Ukjent feil');
             $kode = (int) ($f['code'] ?? 0);
+            self::$sisteKode = $kode;
             self::$sisteMetaFeil = $melding . ' (kode ' . $kode
                 . (isset($f['error_subcode']) ? ', underkode ' . (int) $f['error_subcode'] : '')
                 . ')';

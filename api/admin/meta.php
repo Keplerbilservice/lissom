@@ -10,6 +10,8 @@
  *   POST handling=kommentarer      kommentarene paa de siste innleggene
  *   POST handling=svarKommentar    { id, kanal, tekst }
  *   POST handling=skjulKommentar   { id, kanal }
+ *   POST handling=nyttForslag      { id }          nytt AI-forslag (venter)
+ *   POST handling=ikkeSvar         { id, kanal }   la kommentaren staa
  *   POST handling=samtaler         samtalene i innboksen
  *   POST handling=meldinger        { samtaleId }
  *   POST handling=svarMelding      { hvem, tekst }
@@ -196,8 +198,21 @@ switch ($handling) {
     // kunde har skrevet foerst — og hvert svar er et trykk, som
     // publiseringen. Ingen vei hit fra en jobb eller fra Autopilot.
 
+    // AI-kommentarsvar (eieren, 3. oktober 2026): hver kommentar faar med
+    // raden fra meta_kommentarer — hva AI-en valgte (klasse), hva som skjedde
+    // (status) og forslaget som venter. Uten tabellen (migrasjon 250 ikke
+    // kjoert) er feltene tomme, og innboksen er som foer.
     case 'kommentarer':
-        Svar::ok(Meta::kommentarer());
+        $k = Meta::kommentarer();
+        $rader = Kommentarsvar::rader(array_column($k['poster'], 'id'));
+        foreach ($k['poster'] as $i => $p) {
+            $r = $rader[$p['id']] ?? null;
+            $k['poster'][$i]['klasse']  = $r['klasse'] ?? null;
+            $k['poster'][$i]['status']  = $r['status'] ?? null;
+            $k['poster'][$i]['forslag'] = $r['forslag'] ?? null;
+        }
+        $k['aiFeil'] = Kommentarsvar::klar() && Kommentarsvar::aiFeil();
+        Svar::ok($k);
 
     // ---------------------------------------------------------------------
     case 'svarKommentar':
@@ -208,8 +223,35 @@ switch ($handling) {
             Svar::feil('Velg Instagram eller Facebook.');
         }
         $ut = Meta::svarKommentar($id, $tekst, $kanal);
+        Kommentarsvar::svartManuelt($id, $kanal, $tekst, (int) $admin['id'] ?: null);
         revider('kommentar_svart', 'meta', 0, ['kanal' => $kanal, 'paa' => $id, 'tegn' => mb_strlen($tekst)]);
         Svar::ok(['id' => $ut['id'], 'beskjed' => 'Svaret er lagt ut på ' . $kanal . '.']);
+
+    // ---------------------------------------------------------------------
+    // «Nytt forslag» paa en kommentar som venter. Ett AI-kall; ingenting sendes.
+    case 'nyttForslag':
+        $id = trim((string) ($kropp['id'] ?? ''));
+        $forslag = Kommentarsvar::nyttForslag($id);
+        revider('kommentar_nytt_forslag', 'meta', 0, ['paa' => $id]);
+        Svar::ok(['forslag' => $forslag]);
+
+    // ---------------------------------------------------------------------
+    // «Ikke svar»: kommentaren blir staaende uten svar, og venter ikke lenger.
+    case 'ikkeSvar':
+        $id    = trim((string) ($kropp['id'] ?? ''));
+        $kanal = (string) ($kropp['kanal'] ?? '');
+        if ($id === '') {
+            Svar::feil('Vet ikke hvilken kommentar det gjelder.');
+        }
+        if (!in_array($kanal, ['Instagram', 'Facebook'], true)) {
+            Svar::feil('Velg Instagram eller Facebook.');
+        }
+        if (!Kommentarsvar::klar()) {
+            Svar::feil('Migrasjon 250 er ikke kjørt. Trykk ⚙ Kjør oppdateringer.');
+        }
+        Kommentarsvar::ikkeSvar($id, $kanal, (int) $admin['id'] ?: null);
+        revider('kommentar_ikke_svar', 'meta', 0, ['kanal' => $kanal, 'paa' => $id]);
+        Svar::ok([]);
 
     // ---------------------------------------------------------------------
     // Skjult, ikke slettet: den som skrev ser sin egen kommentar staa, og

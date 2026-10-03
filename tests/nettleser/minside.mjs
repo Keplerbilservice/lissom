@@ -591,6 +591,65 @@ for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1358, 900, 'PC']]) {
     await p.context().close();
   });
 }
+// ── 5a. Velkomsten for den som er ny (eieren, 3. oktober 2026) ────────
+//
+// Innlogget, men verken kurs eller medlemskap: «Velkommen til Lissom, …» med
+// tre piller. Kursdeltakeren (med påmelding) ser den ikke.
+brukere.ny = php(`
+  $id = DB::settInn('members', ['navn' => 'Minside Ny', 'epost' => 'minside-ny-' . '${S.tag}' . '@e2e.lissom.test',
+    'telefon' => '+4791888888', 'rolle' => 'medlem', 'status' => 'ingen']);
+  $t = bin2hex(random_bytes(32));
+  DB::settInn('sessions', ['token_hash' => hash('sha256', $t), 'member_id' => $id, 'expires_at' => gmdate('Y-m-d H:i:s', time() + 7200)]);
+  return ['id' => $id, 'token' => $t, 'forventetSiste' => null, 'retteTil' => null];`);
+const VELKOMST = [
+  'Her samles kursene og medlemskapet ditt når du har booket noe hos oss.',
+  'Har du lyst til å prøve leire? Finn et kurs som passer deg, eller bli medlem og bruk verkstedet når det passer deg.',
+  'Lurer du på noe? Skriv til oss, så svarer vi som regel samme dag.',
+];
+for (const [bredde, hoyde, hva] of [[390, 844, 'mobil'], [1280, 900, 'PC']]) {
+  await flyt(`Velkomst for ny bruker (${hva})`, async () => {
+    const p = await side('ny', bredde, hoyde);
+    await gaa(p, '/min-side');
+    await dump(p, 'velkomst-' + hva);
+    sjekk(`${hva}: «Velkommen til Lissom, Minside!»`, await synlig(p, 'Velkommen til Lissom, Minside!', true));
+    sjekk(`${hva}: ingen «Hei, Minside» ved siden av`, !(await synlig(p, 'Hei, Minside', true)));
+    for (const t of VELKOMST) sjekk(`${hva}: «${t.slice(0, 40)}…»`, await synlig(p, t, true));
+    const piller = p.locator('[data-ms-velkomst] button');
+    sjekk(`${hva}: tre piller i rekkefølge`, JSON.stringify(await piller.allInnerTexts()) === JSON.stringify(['Se kurs og datoer', 'Bli medlem', 'Ta kontakt']),
+      JSON.stringify(await piller.allInnerTexts()));
+    const stil = await piller.first().evaluate(b => { const s = getComputedStyle(b); return s.borderRadius + '|' + s.fontWeight; });
+    sjekk(`${hva}: pillene har pillestilen (runde, fet)`, /^\d{2,}px\|700$/.test(stil) || /9999|999/.test(stil), stil);
+    const bred = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
+    sjekk(`${hva}: ingen sidelengs rulling`, !bred);
+    // «Bli medlem» ruller til innmeldingsskjemaet på Min side.
+    await trykk(piller.nth(1));
+    await p.waitForTimeout(1200);
+    const iSyn = await p.evaluate(() => { const el = document.getElementById('bli-medlem'); if (!el) return false; const r = el.getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; });
+    sjekk(`${hva}: «Bli medlem» viser innmeldingsskjemaet`, iSyn);
+    await trykk(piller.nth(0));
+    await p.waitForTimeout(1500);
+    sjekk(`${hva}: «Se kurs og datoer» går til kurssiden`, /\/kurs/.test(p.url()), p.url());
+    await gaa(p, '/min-side');
+    await trykk(p.locator('[data-ms-velkomst] button').nth(2));
+    await p.waitForTimeout(1500);
+    sjekk(`${hva}: «Ta kontakt» går til kontaktsiden`, /\/kontakt/.test(p.url()), p.url());
+    await p.context().close();
+  });
+  await flyt(`Ingen velkomst for kursdeltaker (${hva})`, async () => {
+    const p = await side('deltaker', bredde, hoyde);
+    await gaa(p, '/min-side');
+    sjekk(`${hva}: kursdeltakeren ser «Hei, Minside»`, await synlig(p, 'Hei, Minside'));
+    sjekk(`${hva}: … og ikke velkomsten`, !(await synlig(p, 'Velkommen til Lissom', false)) && await p.locator('[data-ms-velkomst]').count() === 0);
+    await p.context().close();
+  });
+}
+await flyt('Ingen velkomst for medlem', async () => {
+  const p = await side('basis', 1280, 900);
+  await gaa(p, '/min-side');
+  sjekk('medlemmet ser ikke velkomsten', await p.locator('[data-ms-velkomst]').count() === 0);
+  await p.context().close();
+});
+
 await flyt('Kursdeltaker: mine plasser, mine kjøp, bilder og avbestilling', async () => {
   const p = await side('deltaker', 390, 844);
   await gaa(p, '/min-side');

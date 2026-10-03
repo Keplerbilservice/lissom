@@ -159,6 +159,10 @@ $detaljer = static function (string $fra) use ($FORMAL, $oslo, $utc): array {
         }
     }
     $info = [];
+    // Delbetalinger: payments.order_id (migrasjon 134) kobler alle delene til ordren,
+    // orders.payment_id bare hovedraden. Samme kobling som Omsetning::rader().
+    $ordreVilkaar = DB::harKolonne('payments', 'order_id')
+        ? '(o.id = p.order_id OR o.payment_id = p.id)' : 'o.payment_id = p.id';
     if ($betIder) {
         $plass = implode(',', array_fill(0, count($betIder), '?'));
         foreach (DB::alle(
@@ -168,7 +172,7 @@ $detaljer = static function (string $fra) use ($FORMAL, $oslo, $utc): array {
                     (SELECT COALESCE(mb.navn, b.gjest_navn) FROM bookings b LEFT JOIN members mb ON mb.id = b.member_id
                       WHERE b.payment_id = p.id LIMIT 1) AS deltaker,
                     (SELECT CONCAT('Ordre ', o.ordrenr, IF(o.kunde_navn IS NULL OR o.kunde_navn = '', '', CONCAT(' · ', o.kunde_navn)))
-                       FROM orders o WHERE o.payment_id = p.id LIMIT 1) AS ordre
+                       FROM orders o WHERE {$ordreVilkaar} LIMIT 1) AS ordre
                FROM payments p
           LEFT JOIN members m ON m.id = p.member_id
               WHERE p.id IN ($plass)",

@@ -460,6 +460,10 @@ img{max-width:100%;display:block}
 .lx-msalle [data-ms-modul]{min-width:0;box-sizing:border-box;align-self:start;order:30}
 .lx-msalle [data-ms-modul="nyttig"]{grid-column:1 / -1!important}.lx-msalle .ms-o-stempel{order:4}.lx-msalle .ms-o-inne{order:5}.lx-msalle .ms-o-ovn{order:7}.lx-msalle .ms-o-faq{order:8}
 @media(min-width:761px){.lx-msalle [data-ms-modul]{grid-column:span 1!important}.lx-msalle .ms-o-stempel{grid-column:span 2!important}}
+/* Eierens bryter per modul (Vis/minside<id>), se msModulVals. */
+[data-ms-av~="inne"] [data-ms-modul="inne"],[data-ms-av~="faq"] [data-ms-modul="faq"],[data-ms-av~="stempel"] [data-ms-modul="stempel"],[data-ms-av~="skiver"] [data-ms-modul="skiver"],[data-ms-av~="abonnement"] [data-ms-modul="abonnement"],[data-ms-av~="nyttig"] [data-ms-modul="nyttig"],[data-ms-av~="historikk"] [data-ms-modul="historikk"],[data-ms-av~="beskjeder"] [data-ms-modul="beskjeder"],[data-ms-av~="pameldinger"] [data-ms-modul="pameldinger"],[data-ms-av~="kursbevis"] [data-ms-modul="kursbevis"],[data-ms-av~="chat"] [data-ms-modul="chat"],[data-ms-av~="hms"] [data-ms-modul="hms"]{display:none!important}
+/* Ovnen av: bare ovn-delen forsvinner. «Ta med barn» i samme kort har egen bryter; uten den skjules hele kortet. */
+[data-ms-av~="ovn"] [data-ms-modul="ovn"] > .ms-modulvalg,[data-ms-av~="ovn"] [data-ms-modul="ovn"]:not(:has([data-ms-modul="barn"])){display:none!important}
 
 </style>
 <!-- ds-css:slutt -->
@@ -5285,7 +5289,7 @@ window.__resources = {
   </sc-if>
 
   <sc-if value="{{ erMinside }}" hint-placeholder-val="{{ true }}">
-    <div role="main" data-screen-label="Min side">
+    <div role="main" data-screen-label="Min side" data-ms-av="{{ msAdminAv }}">
       <!-- Menylinja etter skissen (eieren, 26. september 2026): Min side har
            sin egen linje i Lissom-gult, som admin har sin. Paa telefon blir
            den «☰ Meny»; bunnmenyen er borte. Valgene er de samme som i den
@@ -5377,9 +5381,28 @@ window.__resources = {
                navnet, og aapner Nyttig info naar man trykker paa den. -->
           <div class="ms-o-topp" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
             <div style="display: grid; gap: 6px; min-width: 0;">
+              <sc-if value="{{ msIkkeVelkomst }}" hint-placeholder-val="{{ true }}">
               <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
               <sc-if value="{{ msErDeltaker }}" hint-placeholder-val="{{ false }}">
                 <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Her finner du kursene dine, kursbevisene og beskjeder fra verkstedet.</p>
+              </sc-if>
+              </sc-if>
+              <!-- Velkomsten for den som er ny (eieren, 3. oktober 2026, teksten
+                   ordrett): innlogget, men verken kurs eller medlemskap — naa
+                   eller foer. Forsvinner av seg selv naar det finnes en
+                   paamelding eller et medlemskap. Se msVelkomst. -->
+              <sc-if value="{{ msVelkomst }}" hint-placeholder-val="{{ false }}">
+              <div data-ms-velkomst style="display: grid; gap: var(--space-3); max-width: 62ch;">
+                <h1 style="margin: 0; font-size: var(--text-4xl);">{{ msVelkomstTittel }}</h1>
+                <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Her samles kursene og medlemskapet ditt når du har booket noe hos oss.</p>
+                <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Har du lyst til å prøve leire? Finn et kurs som passer deg, eller bli medlem og bruk verkstedet når det passer deg.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-2);">
+                  <button type="button" onClick="{{ msVelkomstKurs }}" style="{{ msVelkomstPille }}">Se kurs og datoer</button>
+                  <button type="button" onClick="{{ msVelkomstMedlem }}" style="{{ msVelkomstPille }}">Bli medlem</button>
+                  <button type="button" onClick="{{ msVelkomstKontakt }}" style="{{ msVelkomstPille }}">Ta kontakt</button>
+                </div>
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Lurer du på noe? Skriv til oss, så svarer vi som regel samme dag.</p>
+              </div>
               </sc-if>
             </div>
             <!-- Neste kurs ved hilsenen, for kursdeltakere (skissen, 26. september 2026). -->
@@ -5573,6 +5596,9 @@ window.__resources = {
               <button type="button" onClick="{{ ovnGlasurNaa }}" style="{{ ovnPilleStil }}">Glasurbrann satt</button>
               <button type="button" onClick="{{ ovnTomtNaa }}" style="{{ ovnPilleStil }}">Ovn er tømt</button>
             </div>
+</sc-if>
+            <!-- «Ta med barn» styres bare av sin egen bryter (eieren 03.10):
+                 ovn-bryteren lukker sc-if-en over, ikke denne. -->
             <sc-if value="{{ barnVis }}" hint-placeholder-val="{{ false }}">
             <div class="ms-o-barn" style="margin-left: auto; min-width: 0; max-width: 460px;" data-ms-modul="barn">
 <div class="ms-modulvalg"><strong>{{ msModuler.barn.navn }}</strong><button type="button" role="switch" aria-label="Ta med barn: vis/skjul" aria-checked="{{ msModuler.barn.aria }}" onClick="{{ msModuler.barn.veksle }}" class="ms-modulbryter">{{ msModuler.barn.tekst }}</button></div>
@@ -5602,7 +5628,6 @@ window.__resources = {
 </sc-if>
 </div>
             </sc-if>
-</sc-if>
 </div>
           <div class="ms-o-stempel" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);" data-ms-modul="stempel">
 <div class="ms-modulvalg"><strong>{{ msModuler.stempel.navn }}</strong><button type="button" role="switch" aria-label="Stemple inn og timene dine: vis/skjul" aria-checked="{{ msModuler.stempel.aria }}" onClick="{{ msModuler.stempel.veksle }}" class="ms-modulbryter">{{ msModuler.stempel.tekst }}</button></div>
@@ -33133,8 +33158,14 @@ class Component extends DCLogic {
     try { lagret = JSON.parse(localStorage.getItem(nokkel) || '{}') || {}; } catch (e) { /* alle vises */ }
     const valg = this.state.msModulKonto === konto ? (this.state.msModulValg || {}) : lagret;
     const moduler = {};
+    // Eierens bryter per modul (admin-ny → Min side, eieren 3. oktober 2026).
+    // Lagres som de andre i content_blocks: «Vis/minside<id>» = «nei» skjuler
+    // modulen for alle. Modulene som alt har sin egen bryter (Vis/dugnad,
+    // Vis/handleliste osv.) styres av den, ikke av en ny. Standard er paa.
+    const MS_ADMIN = ['inne', 'faq', 'ovn', 'stempel', 'skiver', 'abonnement', 'nyttig', 'historikk', 'beskjeder', 'pameldinger', 'kursbevis', 'chat', 'hms'];
+    const adminAv = MS_ADMIN.filter(id => !this.bryterPaa('minside' + id));
     Object.keys(navne).forEach(id => {
-      const vis = valg[id] !== false;
+      const vis = valg[id] !== false && adminAv.indexOf(id) === -1;
       moduler[id] = { navn: navne[id], vis, skjult: !vis, aria: String(vis), tekst: vis ? 'Skjul' : 'Vis',
         veksle: ev => {
           if (ev && ev.stopPropagation) ev.stopPropagation();
@@ -33143,7 +33174,7 @@ class Component extends DCLogic {
           this.setState({ msModulKonto: konto, msModulValg: ny });
         } };
     });
-    return { msModuler: moduler };
+    return { msModuler: moduler, msAdminAv: adminAv.join(' ') };
   }
 
   msNyVals() {
@@ -33190,6 +33221,31 @@ class Component extends DCLogic {
     return {
       msHjemKlasse: hjem ? (medlem ? 'lx-mshjem lx-msalle' : 'lx-mshjem lx-msalle lx-msdeltaker') + (this.state.msApne ? ' ms-vis-' + this.state.msApne : '') : '',
       msErDeltaker: !medlem,
+      // Velkomsten for den som er ny (eieren, 3. oktober 2026): innlogget,
+      // ingen paamelding (mine-plasser er hentet og tom) og verken medlem
+      // naa eller foer. Ikke i forhaandsvisningen fra admin.
+      ...(() => {
+        const vis = this.erPublisert() && !!this.state.innlogget && !this.state.fhRolle
+          && !this.state.erMedlemBruker && !this.state.harHattMedlemskap
+          && !this.state.betalingMangler && !this.state.fryst
+          && Array.isArray(this.state.minePlasser) && this.state.minePlasser.length === 0;
+        const fornavn = ((this.state.vippsNavn || '').trim().split(' ')[0]) || '';
+        return {
+          msVelkomst: vis,
+          msIkkeVelkomst: !vis,
+          msVelkomstTittel: 'Velkommen til Lissom' + (fornavn ? ', ' + fornavn : '') + '!',
+          // Samme pille som raden paa Min side (minsidePiller), i hvilestilen.
+          msVelkomstPille: this.minsidePiller().chat.stil,
+          msVelkomstKurs: this.go('kurs'),
+          // Innmeldingsskjemaet staar paa Min side (#bli-medlem), samme vei
+          // som meldInnPlan() bruker.
+          msVelkomstMedlem: () => {
+            this.setState({ msFane: 'hjem' });
+            setTimeout(() => { const el = document.getElementById('bli-medlem'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+          },
+          msVelkomstKontakt: this.go('kontakt'),
+        };
+      })(),
       ...(() => {
         const pl = this.minsidePiller();
         const lukk = (fn) => () => { this.setState({ msTlMeny: false }); fn(); };
@@ -33992,6 +34048,10 @@ class Component extends DCLogic {
       innboks:     () => this.gaaAdmin('adminmarked', { mkFane: 'innboks' }),
       dugnad:      () => { this.gaaAdmin('adminubesvarte', {}); setTimeout(() => this.rullTil(document.getElementById('admin-dugnad')), 400); },
       synlighet:   () => this.synlighetVals().synAapne(),
+      // «Se som medlem» i admin-ny → Min side: den samme forhaandsvisningen
+      // som kortet «Hva medlemmene ser». Adminbrukerens egne tall, ingen
+      // andres opplysninger (se fhBandTekst).
+      fhmedlem:    () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' }),
       verktoy:     () => this.setState({ verktoyApen: true }),
       vakter:      () => this.gaaAdmin('adminoppskrifter', { vstFane: 'vakter' }),
       brenninger:  () => this.gaaAdmin('adminoppskrifter', { vstFane: 'brenning' }),
@@ -34008,7 +34068,7 @@ class Component extends DCLogic {
     // Handlingene trenger admin-dataene. Vent paa dem, i hoyst 15 sekunder.
     let forsok = 0;
     const prov = () => {
-      const klar = this.state.erAdminBruker && (hva === 'maaned' || hva === 'kalenderdag' || this.state.adminData)
+      const klar = this.state.erAdminBruker && (hva === 'maaned' || hva === 'kalenderdag' || hva === 'fhmedlem' || this.state.adminData)
         && (hva !== 'dagsoppgjor' || this._aDagsoppgjor);
       if (klar) { try { HANDLING[hva](); } catch (e) { /* knappen i det gamle admin virker fortsatt */ } return; }
       if (++forsok < 60) setTimeout(prov, 250);
@@ -36265,6 +36325,11 @@ class Component extends DCLogic {
           // ingen leser, og et felt uten leser er en felle for den neste som
           // tror det betyr noe.
           medlemKanSelge: !!d.kanSelge,
+          // Har eller har hatt medlemskap: en plan, en startdato eller en
+          // annen status enn «ingen» paa kontoen. Brukes bare av velkomsten
+          // paa Min side (eieren, 3. oktober 2026) — se msVelkomst.
+          harHattMedlemskap: !!(d.medlem && (d.medlem.medlemskap || d.medlem.startDato
+            || (d.medlem.status && d.medlem.status !== 'ingen'))),
           // Vervepremien (api/meg.php): timetallet og den personlige lenka,
           // eller null naar banneret ikke skal staa.
           verving: d.verving || null,

@@ -4430,6 +4430,26 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "idag-mva-linjer",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: beløpene på «Omsetning i dag» og «Denne måneden» skal ikke stå i én rotete setning. Stort tall = ekskl. mva, under det egne linjer «Ekskl. mva» / «Bekreftede betalinger, ekskl. mva» og «<beløp> inkl. mva», knappen på egen linje.",
+            "hvor": "admin-ny › I dag",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "el('small',{text:'Bekreftede betalinger, ekskl. mva'})"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/design.css",
+                    "finnes": [
+                        ".stat-sub{display:grid"
+                    ]
+                }
+            ]
         }
     ]
 }

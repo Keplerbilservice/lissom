@@ -5,3 +5,4 @@
 @media(prefers-reduced-motion:no-preference){.sheet{animation:enter .15s ease-out}@keyframes enter{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}}
 
 .card h2,.card strong,.card a{overflow-wrap:anywhere}.card img{max-width:100%}.card input[type=file]{max-width:100%;width:100%;min-width:0}
+.stat-sub{display:grid;gap:2px;margin:0 0 14px}.stat-sub small{display:block;line-height:1.35}

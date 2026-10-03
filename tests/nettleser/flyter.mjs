@@ -411,7 +411,7 @@ await flyt('Tekst maler: én bryter per e-post', async () => {
   if (!lenkeFoer) db("INSERT INTO innstillinger (nokkel, verdi) VALUES ('anmeldelse_lenke', 'https://g.page/r/e2e-test') ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)");
   cron('fortsett'); cron('anmeldelser');
   sjekk('paa: «Vil du fortsette med leire?» gaar til den som var paa kurs for fem dager siden', tilE2e('fortsett') === 1, String(tilE2e('fortsett')));
-  sjekk('paa: «Be om en anmeldelse» gaar til den som var paa kurs i gaar', tilE2e('anmeldelse') === 1, String(tilE2e('anmeldelse')));
+  sjekk('paa: «Be om en anmeldelse» gaar til den som var paa kurs i forgaars', tilE2e('anmeldelse') === 1, String(tilE2e('anmeldelse')));
   cron('fortsett'); cron('anmeldelser');
   sjekk('… og bare én gang', tilE2e('fortsett') === 1 && tilE2e('anmeldelse') === 1);
   for (const r of aktivFoer) db('UPDATE notification_templates SET aktiv = :a WHERE navn = :n', { a: r.aktiv, n: r.navn });
@@ -711,8 +711,11 @@ await flyt('Butikk: betal ved henting uten innlogging', async () => {
       await a.waitForTimeout(2500);
       sjekk('… ordren står som kansellert', verdi('SELECT status FROM orders WHERE kunde_epost = :e', { e: epost }) === 'kansellert');
       sjekk('… varen er tilbake på lager', Number(verdi('SELECT lager FROM products WHERE id = :i', { i: Number(id) })) === lagerFoer + 1);
-      sjekk('… kunden har fått «Bestillingen er annullert» i køen',
-        Number(verdi("SELECT COUNT(*) FROM notifications WHERE mottaker = :e AND mal = 'ordre_annullert'", { e: epost })) === 1);
+      // Malen ordre_annullert ble slått av 3. oktober 2026 (eieren, migrasjon
+      // 251): av = ingen e-post, på = én.
+      sjekk('… «Bestillingen er annullert» i køen bare når malen er på',
+        Number(verdi("SELECT COUNT(*) FROM notifications WHERE mottaker = :e AND mal = 'ordre_annullert'", { e: epost }))
+          === Number(verdi("SELECT aktiv FROM notification_templates WHERE navn = 'ordre_annullert'") ?? 0));
       sjekk('… og raden er borte fra «Ikke betalt»',
         await a.locator('div', { has: a.getByText('TEST Gjest', { exact: true }) }).filter({ has: a.getByRole('button', { name: 'Annuller', exact: true }) }).count() === 0);
     } finally {

@@ -502,7 +502,7 @@ if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
     };
 
     // En okt fra i gaar og en fra forrige uke, begge med en betalt deltaker.
-    $nyOkt = $lagOkt($kursId, 5);
+    $nyOkt = $lagOkt($kursId, 40);
     $gammelOkt = $lagOkt($kursId, 24 * 9);
     foreach ([$nyOkt, $gammelOkt] as $o) {
         DB::settInn('bookings', [
@@ -551,7 +551,7 @@ if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
     // maler — den ene (migrasjon 226).
     DB::kjor("UPDATE notification_templates SET aktiv = 0 WHERE navn = 'anmeldelse'");
     Config::glemBasen();
-    $enda = $lagOkt($kursId, 6);
+    $enda = $lagOkt($kursId, 41);
     exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/cron.php') . ' anmeldelser 2>&1');
     sjekk('med bryteren av skjer ingenting',
         DB::verdi('SELECT anmeldelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $enda]) === null);
@@ -605,8 +605,11 @@ $admMott = array_map(static fn($r) => mb_strtolower((string) $r['mottaker']), $a
 sjekk('… og verkstedet varsles én gang per adresse',
     count($admMott) === count(array_unique($admMott)),
     implode(', ', $admMott));
-sjekk('… og alle adressene fikk den',
-    count(array_unique($admMott)) === count(Varsel::adminEposter()),
+// Malen intern_ny_pamelding ble slaatt av 3. oktober 2026 (eieren, migrasjon
+// 251). Staar den av, faar verkstedet ingenting; staar den paa, alle adressene.
+$nyPamPaa = (int) (DB::verdi("SELECT aktiv FROM notification_templates WHERE navn = 'intern_ny_pamelding'") ?? 0) === 1;
+sjekk($nyPamPaa ? '… og alle adressene fikk den' : '… og verkstedet faar ingenting naar malen er av',
+    count(array_unique($admMott)) === ($nyPamPaa ? count(Varsel::adminEposter()) : 0),
     count(array_unique($admMott)) . ' av ' . count(Varsel::adminEposter()));
 
 echo "\n== Kapasitet teller reservasjoner ==\n";

@@ -136,13 +136,16 @@ sjekk "annulleringen gaar gjennom" "True" "$(echo "$R" | felt '!empty($d["ok"])'
 sjekk "… med kvittering" "True" "$(echo "$R" | felt 'str_contains($d["beskjed"] ?? "", "er annullert. Varene er lagt tilbake på lager, og kunden har fått beskjed.")')"
 sjekk "ordren staar som kansellert" "kansellert" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT status FROM orders WHERE id = :i", ["i" => '"$OID"']);')"
 sjekk "varen er tilbake paa lager (2 → 3)" "3" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT lager FROM products WHERE id = :i", ["i" => '"$VARE"']);')"
-sjekk "kunden faar «Bestillingen er annullert» i koen" "1" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM notifications WHERE mottaker = :e AND mal = \"ordre_annullert\"", ["e" => "'"$EPOST"'"]);')"
+# Malen ordre_annullert ble slaatt av 3. oktober 2026 (eieren, migrasjon 251).
+# Av: ingen e-post. Paa: én.
+ANNULLERT_PAA=$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo (int) (DB::verdi("SELECT aktiv FROM notification_templates WHERE navn = \"ordre_annullert\"") ?? 0);')
+sjekk "kunden faar «Bestillingen er annullert» i koen bare naar malen er paa" "$ANNULLERT_PAA" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM notifications WHERE mottaker = :e AND mal = \"ordre_annullert\"", ["e" => "'"$EPOST"'"]);')"
 sjekk "annulleringen staar i revisjonsloggen" "1" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM audit_log WHERE handling = \"henteordre_annullert\" AND objekt_id = :i", ["i" => '"$OID"']);')"
 
 R=$(admin "{\"handling\":\"annuller\",\"ordreId\":$OID}")
 sjekk "et nytt trykk avvises" "False" "$(echo "$R" | felt '!empty($d["ok"])')"
 sjekk "… og legger ikke varen tilbake en gang til" "3" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT lager FROM products WHERE id = :i", ["i" => '"$VARE"']);')"
-sjekk "… og sender ingen ny e-post" "1" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM notifications WHERE mottaker = :e AND mal = \"ordre_annullert\"", ["e" => "'"$EPOST"'"]);')"
+sjekk "… og sender ingen ny e-post" "$ANNULLERT_PAA" "$(php -r 'require "'"$ROT"'/app/bootstrap.php"; echo DB::verdi("SELECT COUNT(*) FROM notifications WHERE mottaker = :e AND mal = \"ordre_annullert\"", ["e" => "'"$EPOST"'"]);')"
 
 echo
 echo "── En betalt ordre kan ikke annulleres her ──"

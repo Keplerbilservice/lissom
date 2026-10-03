@@ -97,7 +97,7 @@ $kurs = DB::settInn('courses', ['slug' => "e2e-dreie-$tag", 'tittel' => 'E2E Dre
 $annet = DB::settInn('courses', ['slug' => "e2e-annet-$tag", 'tittel' => 'E2E Annet kurs', 'type' => 'kurs',
     'pris_ore' => 90000, 'kapasitet' => 8, 'status' => 'publisert']);
 $okter = [];
-foreach ([-5, -1, 10, 17, 24] as $d) {
+foreach ([-5, -2, 10, 17, 24] as $d) {
     $okter[$d] = DB::settInn('course_sessions', ['course_id' => $kurs, 'start_tid' => $dag($d), 'kapasitet' => 8]);
 }
 $annenOkt = DB::settInn('course_sessions', ['course_id' => $annet, 'start_tid' => $dag(12), 'kapasitet' => 8]);
@@ -110,8 +110,8 @@ $betal = DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $
     'belop_ore' => 280000, 'status' => 'reservert']);
 
 // Kurs som har vaert: den ene fem dager siden («Vil du fortsette med leire?»),
-// den andre i gaar («Be om en anmeldelse»).
-foreach ([-5 => 'fortsett', -1 => 'anmeldelse'] as $d => $hvem) {
+// den andre i forgaars («Be om en anmeldelse», neste dag kl. 10).
+foreach ([-5 => 'fortsett', -2 => 'anmeldelse'] as $d => $hvem) {
     DB::settInn('bookings', ['course_id' => $kurs, 'course_session_id' => $okter[$d], 'antall' => 1,
         'gjest_navn' => 'Tidligere ' . $hvem, 'gjest_epost' => $epost($hvem),
         'belop_ore' => 280000, 'status' => 'betalt']);

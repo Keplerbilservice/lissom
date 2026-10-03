@@ -4099,6 +4099,61 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "meldinger-eier-0310",
+            "dato": "2026-10-03",
+            "hva": "Meldingene, eierens skjema 03.10 (YbLC6SsCPPVP99toBZGLhh): (1) Google-anmeldelsen (mal «anmeldelse», cron «anmeldelser») sendes neste dag kl. 10 norsk tid etter kurset, ikke 3 timer etter. Kursdagen er den norske datoen kurset sluttet; slutter det etter midnatt (før kl. 06), regnes det til kvelden før. Europe/Oslo, så sommer- og vintertid stemmer. Sperren «aldri eldre enn 3 døgn» og én gang per økt (anmeldelse_sendt_at) står. (2) Migrasjon 251 slår AV butikkordre_pakke, intern_dugnad_ferdig, intern_dugnad_sporsmal, intern_gave_lost_inn, intern_gave_pakkes, intern_nytt_medlem, intern_nytt_medlem_sms, intern_ny_foresporsel, intern_ny_pamelding, intern_ny_vare, ordre_annullert og soknad_godkjent_sms (aktiv=0, tekstene står). Maler som er av sendes ikke og gir ingen «Varsel må sendes for hånd». (3) venteliste_satt: «Skulle det bli en ledig plass, kontakter vi deg.» (resten likt). (4) «Start kurset» steg 3 viser «Sendes neste dag kl. 10», som nå stemmer med jobben. SMS uendret.",
+            "hvor": "Cron anmeldelser; Tekst maler; e-posten «Du står på venteliste»; admin-ny › Start kurset › steg 3",
+            "kode": [
+                {
+                    "fil": "app/lib/booking.php",
+                    "finnes": [
+                        "public static function anmeldelseSendetid(string $sluttUtc): DateTimeImmutable",
+                        "if ((int) $lokal->format('G') < 6) {",
+                        "&& $naa < $slutt->modify('+3 days');"
+                    ]
+                },
+                {
+                    "fil": "bin/cron.php",
+                    "finnes": [
+                        "static fn(array $o): bool => Booking::anmeldelseKlar((string) $o['slutt'])));",
+                        "> DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)"
+                    ],
+                    "ikkeFinnes": [
+                        "INTERVAL :t HOUR"
+                    ]
+                },
+                {
+                    "fil": "db/migrations/251_meldinger_av_og_venteliste.sql",
+                    "finnes": [
+                        "-- godkjent av eieren: 2026-10-03",
+                        "'soknad_godkjent_sms'",
+                        "'Skulle det bli en ledig plass, kontakter vi deg.'"
+                    ]
+                },
+                {
+                    "fil": "api/admin/kursstart3.php",
+                    "finnes": [
+                        "['navn' => 'Google-anmeldelse', 'naar' => 'Sendes neste dag kl. 10']"
+                    ]
+                },
+                {
+                    "fil": "app/lib/varsler.php",
+                    "finnes": [
+                        "WHERE navn = :n AND aktiv = 1"
+                    ]
+                },
+                {
+                    "fil": "tests/meldinger-0310.php",
+                    "finnes": [
+                        "slutt 21:00 → sendes 10:00 neste dag",
+                        "ikke 09:59 neste dag",
+                        "andre kjøring endrer ingenting (idempotent)",
+                        "ingen «Varsel må sendes for hånd»"
+                    ]
+                }
+            ]
         }
     ]
 }

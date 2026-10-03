@@ -2880,6 +2880,42 @@ final class Booking
     }
 
     /**
+     * Naar «Be om en anmeldelse» skal gaa: neste dag kl. 10 norsk tid etter
+     * kurset. Eieren, 3. oktober 2026 (skjema YbLC6SsCPPVP99toBZGLhh) —
+     * ikke tre timer etter, som foer.
+     *
+     * Kursdagen er den norske datoen kurset sluttet (slutt_tid, ellers
+     * start_tid). Slutter et kveldskurs etter midnatt (foer kl. 06), regnes
+     * det til dagen foer — da gaar den kl. 10 samme formiddag, ikke et doegn
+     * senere. Klokka regnes i Europe/Oslo, saa sommer- og vintertid stemmer.
+     *
+     * @param string $sluttUtc slutt_tid (eller start_tid) i UTC, «Y-m-d H:i:s»
+     */
+    public static function anmeldelseSendetid(string $sluttUtc): DateTimeImmutable
+    {
+        $oslo  = new DateTimeZone('Europe/Oslo');
+        $lokal = (new DateTimeImmutable($sluttUtc, new DateTimeZone('UTC')))->setTimezone($oslo);
+        $dag   = $lokal->format('Y-m-d');
+        if ((int) $lokal->format('G') < 6) {
+            $dag = $lokal->modify('-1 day')->format('Y-m-d');
+        }
+        $nesteDag = (new DateTimeImmutable($dag . ' 12:00:00', $oslo))->modify('+1 day')->format('Y-m-d');
+        return (new DateTimeImmutable($nesteDag . ' 10:00:00', $oslo))->setTimezone(new DateTimeZone('UTC'));
+    }
+
+    /**
+     * Er det tid for «Be om en anmeldelse» naa? Fra kl. 10 neste dag, og
+     * aldri for et kurs som sluttet for over tre doegn siden.
+     */
+    public static function anmeldelseKlar(string $sluttUtc, ?DateTimeImmutable $naa = null): bool
+    {
+        $naa   = $naa ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $slutt = new DateTimeImmutable($sluttUtc, new DateTimeZone('UTC'));
+        return $naa >= self::anmeldelseSendetid($sluttUtc)
+            && $naa < $slutt->modify('+3 days');
+    }
+
+    /**
      * HTML-utgaven av «Be om en anmeldelse»: knapper i stedet for lange
      * lenker (app/epost/anmeldelse.html). Eieren, 25. september 2026: «jeg
      * vil ha vedlegg, eller fine knapper» — GO paa knappene. Null naar fila

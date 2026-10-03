@@ -27,6 +27,13 @@ if ($sti === '/v1/messages') {
         && str_contains($inn, "<kommentar>\n") ? 'merket' : 'umerket') . "\n", FILE_APPEND);
     $nytt = str_contains($inn, 'Skriv et annet forslag');
     file_put_contents($logg, 'AI ' . ($nytt ? '(nytt) ' : '') . $kommentar . "\n", FILE_APPEND);
+    // Monica trykker «Ikke svar» mens AI-en tenker (kontrolloeren, 3. oktober 2026).
+    foreach ((array) ($sc['ikke_svar_under_ai'] ?? []) as $hendelse) {
+        if (($hendelse['tekst'] ?? null) === $kommentar) {
+            require_once dirname(__DIR__) . '/app/bootstrap.php';
+            Kommentarsvar::ikkeSvar((string) $hendelse['id'], (string) $hendelse['kanal'], null);
+        }
+    }
     if ((int) ($sc['ai_status'] ?? 200) !== 200) {
         http_response_code((int) $sc['ai_status']);
         echo json_encode(['type' => 'error', 'error' => ['type' => 'api_error', 'message' => 'Internal server error']]);

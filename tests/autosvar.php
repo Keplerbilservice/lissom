@@ -254,6 +254,26 @@ $l = $linjer();
 sjekk('neste kjoering tar de fem siste', count($ai($l)) === 5 && $r['liket'] === 5);
 sjekk('eldre enn 14 dager blir aldri sett paa', $rad('ak-ig-gammel') === null);
 
+// ── «Ikke svar» mens AI-en tenker: ingenting sendes ──────────────────
+$sc['ig'][] = $ig('ak-ig-midt', 'Kjempefint verksted!');
+$sc['feed'][] = $fb('ak-fb-midt', '👍👍');
+$sc['ai']['Kjempefint verksted!'] = ['klasse' => 'svar', 'tekst' => 'Så hyggelig å høre!'];
+$sc['ai']['👍👍'] = ['klasse' => 'liker', 'tekst' => ''];
+$sc['ikke_svar_under_ai'] = [
+    ['tekst' => 'Kjempefint verksted!', 'id' => 'ak-ig-midt', 'kanal' => 'Instagram'],
+    ['tekst' => '👍👍', 'id' => 'ak-fb-midt', 'kanal' => 'Facebook'],
+];
+$settSc();
+Kommentarsvar::kjor(true);
+$l = $linjer();
+sjekk('«Ikke svar» midt i behandlingen: AI ble spurt, men ingenting sendt',
+    $har($l, 'AI Kjempefint verksted!') && !$har($post($l), 'ak-ig-midt') && !$har($post($l), 'ak-fb-midt'), implode(' | ', $post($l)));
+sjekk('«Ikke svar» midt i behandlingen: status ikke_svar, ingen forsoek',
+    ($rad('ak-ig-midt')['status'] ?? '') === 'ikke_svar' && (int) ($rad('ak-ig-midt')['forsok'] ?? 9) === 0
+    && ($rad('ak-fb-midt')['status'] ?? '') === 'ikke_svar');
+unset($sc['ikke_svar_under_ai']);
+$settSc();
+
 // ── Innboksen: nytt forslag, ikke svar, svart for haand ──────────────
 $settBryter('nei');
 $melding = '';
@@ -304,9 +324,15 @@ sjekk('svart i Meta Business Suite: ikke lenger ventende', ($rad('ak-fb-spm')['s
 
 // ── Fast filter paa svar som sendes av seg selv ──────────────────────
 sjekk('filter: kort takk slipper gjennom', Kommentarsvar::trygtSvar('Så kjekt! Vi gleder oss til å se deg 🧡'));
+sjekk('filter: vanlige setninger med punktum slipper gjennom', Kommentarsvar::trygtSvar('Tusen takk. Vi ses snart!'));
 foreach (['sifre' => 'Velkommen kl 18', 'URL' => 'Se www.lissom.no', 'http' => 'Se https://x', 'domene' => 'Les mer på lissom.no',
           '@' => 'Takk @kari', 'gratis' => 'Prøv gratis!', '%' => 'Spar mye %', 'rabatt' => 'Du får rabatt',
-          'over 150 tegn' => str_repeat('Så hyggelig ', 14)] as $hva => $t) {
+          'over 150 tegn' => str_repeat('Så hyggelig ', 14),
+          '.xyz' => 'Se lissom.xyz', '.online' => 'Finn oss på lissom.online', '.click' => 'Trykk på lissom.click',
+          '«lissom . no»' => 'Se lissom . no', '«lissom .no»' => 'Se lissom .no', '«lissom. no»' => 'Se lissom. no',
+          '«dot»' => 'Se lissom dot no', '«punktum»' => 'Se lissom punktum no',
+          'kode med store bokstaver' => 'Bruk LISSOMVIP', 'GRATIS' => 'Helt GRATIS', '«koden»' => 'Husk koden',
+          '«kode»' => 'Bruk kode ved kassen'] as $hva => $t) {
     sjekk('filter: ' . $hva . ' → venter', !Kommentarsvar::trygtSvar($t));
 }
 
@@ -319,6 +345,11 @@ sjekk('vakt: oppdiktet pris stoppes', !Kommentarsvar::faktaHolder('Det koster 99
 sjekk('vakt: kjent dato godtas, klokkeslett er ikke dato', Kommentarsvar::faktaHolder('Neste er 12. november kl. 18.00', $kurs, $planer));
 sjekk('vakt: oppdiktet dato stoppes', !Kommentarsvar::faktaHolder('Vi har plass 13. november', $kurs, $planer));
 sjekk('vakt: oppdiktet dato (13.11) stoppes', !Kommentarsvar::faktaHolder('Ledig 13.11', $kurs, $planer));
+$dyr = [['pris_ore' => 199900, 'neste' => null]];
+sjekk('vakt: «kr 1999» er en pris, ikke et aarstall (prisen finnes)', Kommentarsvar::faktaHolder('Det koster kr 1999', $dyr, []));
+sjekk('vakt: «1999 kr» og «1999,-» er priser', Kommentarsvar::faktaHolder('Bare 1999 kr, altså 1999,-', $dyr, []));
+sjekk('vakt: «kr 2027» uten slik pris stoppes', !Kommentarsvar::faktaHolder('Det koster kr 2027', $dyr, []));
+sjekk('vakt: aarstall ved siden av riktig pris stoppes', !Kommentarsvar::faktaHolder('kr 1999 i 2030', $dyr, []));
 sjekk('vakt: riktig aarstall godtas', Kommentarsvar::faktaHolder('Vi ses i november 2026', $kurs, $planer));
 sjekk('vakt: oppdiktet aarstall stoppes', !Kommentarsvar::faktaHolder('Neste runde er i 2027', $kurs, $planer));
 sjekk('vakt: 12.11.2027 stoppes (feil aar)', !Kommentarsvar::faktaHolder('Ledig 12.11.2027', $kurs, $planer));

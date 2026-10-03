@@ -128,12 +128,16 @@ final class Kommentarsvar
                     // Klasse og tekst i ett og samme UPDATE: doer jobben rett
                     // etterpaa, har en rad med klasse alltid teksten sin, og
                     // et nytt forsoek sender aldri et tomt svar.
-                    DB::kjor("UPDATE " . self::TABELL . " SET klasse = :k, forslag = :f,
+                    $lagret = DB::kjor("UPDATE " . self::TABELL . " SET klasse = :k, forslag = :f,
                                      kostnad_ore = kostnad_ore + :o
                                WHERE kommentar_id = :id AND status = 'behandles'",
                              ['k' => $valg['klasse'], 'f' => $valg['klasse'] === 'liker' ? null : $valg['tekst'],
                               'o' => $valg['kostnadOre'], 'id' => $c['id']]);
-                    self::utfor($c['id'], $c['kanal'], $valg['klasse'], $valg['tekst'], $ut);
+                    // Har Monica trykket «Ikke svar» (eller svart) mens AI-en
+                    // tenkte, er raden ikke lenger vaar: ingenting sendes.
+                    if ($lagret->rowCount() === 1) {
+                        self::utfor($c['id'], $c['kanal'], $valg['klasse'], $valg['tekst'], $ut);
+                    }
                     continue;
                 }
 
@@ -319,14 +323,20 @@ final class Kommentarsvar
     private static function utfor(string $id, string $kanal, string $klasse, string $tekst, array &$ut): void
     {
         if ($klasse === 'venter') {
-            DB::kjor("UPDATE " . self::TABELL . " SET status = 'venter', forslag = :f WHERE kommentar_id = :id",
-                     ['f' => $tekst, 'id' => $id]);
-            $ut['venter']++;
+            $r = DB::kjor("UPDATE " . self::TABELL . " SET status = 'venter', forslag = :f
+                            WHERE kommentar_id = :id AND status = 'behandles'", ['f' => $tekst, 'id' => $id]);
+            if ($r->rowCount() === 1) {
+                $ut['venter']++;
+            }
             return;
         }
 
-        DB::kjor("UPDATE " . self::TABELL . " SET forsok = forsok + 1, forslag = :f WHERE kommentar_id = :id",
-                 ['f' => $klasse === 'svar' ? $tekst : null, 'id' => $id]);
+        // Siste sjekk rett foer noe sendes: raden er fortsatt vaar.
+        $r = DB::kjor("UPDATE " . self::TABELL . " SET forsok = forsok + 1
+                        WHERE kommentar_id = :id AND status = 'behandles'", ['id' => $id]);
+        if ($r->rowCount() !== 1) {
+            return;
+        }
         try {
             if ($klasse === 'liker') {
                 Meta::likKommentar($id, $kanal);
@@ -544,8 +554,10 @@ final class Kommentarsvar
                 }
             }
         }
-        // Aarstall som staar alene: «i 2027».
-        if (preg_match_all('/(?<![\d.\/-])\b((?:19|20)\d{2})\b(?![.\/-]\d)/u', $tekst, $m)) {
+        // Aarstall som staar alene: «i 2027». Et tall rett etter «kr» eller
+        // foer «kr»/«kroner»/«,-» er en pris (sjekket over), ikke et aarstall.
+        $utenPriser = (string) preg_replace(['/kr\.?\s*' . $tall . '/iu', '/' . $tall . '\s*(?:kr\b|kroner|,-)/iu'], ' ', $tekst);
+        if (preg_match_all('/(?<![\d.\/-])\b((?:19|20)\d{2})\b(?![.\/-]\d)/u', $utenPriser, $m)) {
             foreach ($m[1] as $t) {
                 $aarFunnet[] = (int) $t;
             }
@@ -572,7 +584,13 @@ final class Kommentarsvar
     {
         if (mb_strlen($tekst) > 150
             || preg_match('/\d/u', $tekst)
-            || preg_match('/https?:|www\.|\b[a-z0-9-]+\.(?:no|com|net|org|io|se|dk|de|uk|eu|info|biz|me|app|shop|ly|co)\b/iu', $tekst)
+            || preg_match('/https?:|www\./iu', $tekst)
+            // Alt som ligner en adresse, uansett toppdomene: «ord.ord»,
+            // «lissom . no», «lissom .no», «lissom. no», «lissom dot no», «punktum no».
+            || preg_match('/\p{L}\.\p{L}|\p{L}\s+\.\s*\p{L}|\.\s+(?:no|com|net|org|se|dk|io|xyz|online|click)\b|\bdot\b|\bpunktum\b/u', $tekst)
+            // Koder: fire store bokstaver paa rad («GRATIS», «LISSOMVIP»), og «kode»/«koden».
+            || preg_match('/\p{Lu}{4,}/u', $tekst)
+            || preg_match('/\bkoden?\b/iu', $tekst)
             || str_contains($tekst, '@')
             || str_contains($tekst, '%')
             || str_contains($tekst, '#')

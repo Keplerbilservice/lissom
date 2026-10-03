@@ -4518,7 +4518,7 @@
         {
             "id": "penger-mva-tabeller",
             "dato": "2026-10-03",
-            "hva": "Eieren, 3. oktober 2026: Penger i admin-ny viser to tabeller, «I dag» og «Denne måneden», med kolonnene Ekskl. mva | Mva | Inkl. mva, én rad per kategori og en Sum-rad. Tallene kommer ferdig delt fra oversikt.php (Omsetning::mvaFor), ingen ny mva-regel. Ekskl. + mva = inkl. På mobil blir hver rad et kort uten sideveis rulling.",
+            "hva": "Eieren, 3. oktober 2026: Penger i admin-ny viser to tabeller, «I dag» og «Denne måneden», med kolonnene Ekskl. mva | Mva | Inkl. mva, én rad per kategori og en Sum-rad. Tallene kommer ferdig delt fra oversikt.php (Omsetning::mvaFor), ingen ny mva-regel. Ekskl. + mva = inkl. På mobil blir hver rad et kort uten sideveis rulling. Er Sum større enn radene (f.eks. dropin), vises differansen som egen rad «Annet», så radene alltid summerer til Sum.",
             "hvor": "admin-ny › Penger",
             "kode": [
                 {
@@ -4526,7 +4526,8 @@
                     "finnes": [
                         "card('I dag',mvaTable(o.linjerIdag,o.idagEksOre,o.idagMvaOre,o.idagOre))",
                         "card('Denne måneden',mvaTable(o.linjerMnd,o.manedEksOre,o.manedMvaOre,o.manedOre))",
-                        "const cols=['Ekskl. mva','Mva','Inkl. mva']"
+                        "const cols=['Ekskl. mva','Mva','Inkl. mva']",
+                        "const rest={navn:'Annet',eks:sE-tot('eks'),mva:sM-tot('mva'),inkl:sI-tot('inkl')};"
                     ]
                 },
                 {

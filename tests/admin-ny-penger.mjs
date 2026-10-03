@@ -34,7 +34,13 @@ try{
    assert.deepEqual(t.hode,['Kategori','Ekskl. mva','Mva','Inkl. mva']);
    const sum=t.rader.at(-1);assert.equal(sum.navn,'Sum');
    const linjer=i===0?api.linjerIdag:api.linjerMnd;
-   assert.deepEqual(t.rader.slice(0,-1).map(r=>r.navn),linjer.map(l=>l.navn));
+   const [e,m,b]=i===0?[api.idagEksOre,api.idagMvaOre,api.idagOre]:[api.manedEksOre,api.manedMvaOre,api.manedOre];
+   // «Annet» = Sum minus radene, og bare når det er en differanse (f.eks. dropin).
+   const sumRad=k=>linjer.reduce((a,l)=>a+(k==='inkl'?l.ore:k==='mva'?(l.mvaOre??0):(l.eksOre??l.ore-(l.mvaOre??0))),0);
+   const rest=[e-sumRad('eks'),m-sumRad('mva'),b-sumRad('inkl')];
+   const harAnnet=rest.some(x=>x!==0);
+   assert.deepEqual(t.rader.slice(0,-1).map(r=>r.navn),[...linjer.map(l=>l.navn),...(harAnnet?['Annet']:[])]);
+   if(harAnnet)assert.deepEqual(t.rader.at(-2).tall.map(kr),rest.map(x=>Math.round(x/100)));
    for(const r of t.rader){
     const [eks,mva,inkl]=r.tall.map(kr);
     assert.equal(eks+mva,inkl,`${t.tittel} ${r.navn}: ekskl. + mva = inkl.`);
@@ -42,9 +48,9 @@ try{
    }
    const kol=k=>t.rader.slice(0,-1).reduce((a,r)=>a+kr(r.tall[k]),0);
    const [sE,sM,sI]=sum.tall.map(kr);
-   // Kronene er avrundet hver for seg; radene kan avvike med høyst 1 kr per rad.
+   // I øre går radene (med «Annet») nøyaktig opp i Sum; kronene er avrundet hver for seg, høyst 1 kr per rad.
+   assert.deepEqual([sumRad('eks')+rest[0],sumRad('mva')+rest[1],sumRad('inkl')+rest[2]],[e,m,b]);
    for(const [k,v] of [[0,sE],[1,sM],[2,sI]])assert.ok(Math.abs(kol(k)-v)<=t.rader.length,`${t.tittel}: radene summerer til Sum`);
-   const [e,m,b]=i===0?[api.idagEksOre,api.idagMvaOre,api.idagOre]:[api.manedEksOre,api.manedMvaOre,api.manedOre];
    assert.equal(e+m,b,`${t.tittel}: API ekskl. + mva = inkl. (øre)`);
    assert.equal(sI,Math.round(b/100));
   }

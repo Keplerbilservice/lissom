@@ -13,6 +13,7 @@
  *   tests/.avtale-status    ACTIVE | PENDING | STOPPED | EXPIRED
  *   tests/.trekk-status     CHARGED | FAILED | PENDING
  *   tests/.betaling-status  AUTHORIZED | CAPTURED | ABORTED | EXPIRED
+ *   tests/.avbryt-nei       ja = hel avbestilling av et KS-krav svarer 500 (ikke sluppet)
  *   tests/.krav-400         ja = et Vipps-krav (PUSH_MESSAGE) avvises med 400,
  *                           som naar salgsenheten ikke har lov (ErrorCode 5080)
  *
@@ -38,6 +39,8 @@ const betalinger = new Map();
 const trekk = new Map();
 const nokler = new Map();   // Idempotency-Key -> { tekst, svar } for trekk
 const stoppet = new Set();  // betalinger avbrutt med cancelTransactionOnly
+const kansellert = new Set();   // KS-krav sluppet med hel avbestilling
+const trukket = new Map();      // KS-krav: trukket beløp
 
 /** Leser en styrefil, eller gir standarden. */
 const styrt = (navn, standard) => {
@@ -89,9 +92,18 @@ http.createServer((req, res) => {
           && !['AUTHORIZED', 'CAPTURED'].includes(styrt('.betaling-status', 'AUTHORIZED'))) {
         stoppet.add(p.split('/')[4]);
       }
+      // KS-krav: en hel avbestilling (uten flagg) slipper det som er godkjent.
+      // «.avbryt-nei» = Vipps svarer 500 og slipper ingenting.
+      const kref = p.split('/')[4];
+      if (kref.startsWith('KS-') && kropp?.cancelTransactionOnly !== true) {
+        if (styrt('.avbryt-nei', '') === 'ja') { return svar(res, 500, { detail: 'falsk feil ved avbrudd' }); }
+        kansellert.add(kref);
+      }
       return svar(res, 200, { state: 'TERMINATED' });
     }
     if (p.startsWith('/epayment/v1/payments/') && p.endsWith('/capture')) {
+      const cref = p.split('/')[4];
+      if (cref.startsWith('KS-')) { trukket.set(cref, (trukket.get(cref) || 0) + (kropp?.modificationAmount?.value ?? 0)); }
       return svar(res, 200, { state: 'CAPTURED' });
     }
     if (p.startsWith('/epayment/v1/payments/') && p.endsWith('/refund')) {
@@ -104,7 +116,13 @@ http.createServer((req, res) => {
       return svar(res, 200, {
         reference: ref,
         state: stoppet.has(ref) ? 'TERMINATED' : styrt('.betaling-status', 'AUTHORIZED'),
-        aggregate: { authorizedAmount: { value: belop, currency: 'NOK' } },
+        // KS-krav (bølge 2) får hele aggregate: det som er trukket og sluppet.
+        aggregate: ref.startsWith('KS-')
+          ? { authorizedAmount: { value: belop, currency: 'NOK' },
+              capturedAmount: { value: trukket.get(ref) || 0, currency: 'NOK' },
+              cancelledAmount: { value: kansellert.has(ref) ? belop - (trukket.get(ref) || 0) : 0, currency: 'NOK' },
+              refundedAmount: { value: 0, currency: 'NOK' } }
+          : { authorizedAmount: { value: belop, currency: 'NOK' } },
         amount: b?.amount ?? { value: belop, currency: 'NOK' },
       });
     }

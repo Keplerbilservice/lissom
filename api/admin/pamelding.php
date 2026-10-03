@@ -488,6 +488,21 @@ if ($handling === 'status') {
     if (!in_array($status, ['betalt', 'reservert', 'ikke_mott'], true)) {
         Svar::feil('Ukjent status.');
     }
+    // «Ikke betalt»-kortet og gavekortet: et Vipps-krav fra «Start kurset»
+    // som venter, stoppes foer plassen settes betalt, og laasen per paamelding
+    // holdes til svaret er sendt (KursstartKrav; kontrolloeren 3. oktober
+    // 2026). Har kunden alt godkjent kravet, nektes endringen.
+    if ($status === 'betalt') {
+        try {
+            KursstartKrav::laas($id);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage(), 409);
+        }
+        $stopp = KursstartKrav::stoppVentende($id);
+        if ($stopp !== null) {
+            Svar::feil($stopp, 409);
+        }
+    }
     $bok = DB::en('SELECT id, belop_ore, payment_id, member_id FROM bookings WHERE id = :i', ['i' => $id]);
     if ($bok === null) {
         Svar::feil('Fant ikke påmeldingen.');

@@ -181,3 +181,7 @@
 .ks-fot{display:flex;justify-content:space-between;gap:8px;margin-top:16px;position:sticky;bottom:0;background:var(--paper);padding-top:12px}
 .button.ks-ferdig{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 @media(max-width:760px){.sheet.ks{width:100%;max-width:100%;margin-bottom:0;border-radius:22px 22px 0 0}.ks-steg button{font-size:14px}.ks-steg button span{width:22px;height:22px}}
+.ks-uten-tlf{color:var(--muted);font-size:14px;align-self:center}
+.ks-leggtil{justify-self:start;margin-top:2px}
+/* Smal skjerm: knappene under navnet, så de aldri legger seg over det (brukertesten 3. oktober 2026). */
+@media(max-width:520px){.ks .kal-delt:has(.ks-betal){grid-template-columns:minmax(0,1fr)}.ks .ks-betal{justify-content:flex-start}}

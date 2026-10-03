@@ -32,3 +32,5 @@ tests/.feillogg
 
 # Nettlesertestene
 app/secrets.php.e2e-kopi
+tests/.krav-400
+tests/.avbryt-nei

@@ -996,13 +996,19 @@ final class Vipps
     {
         $tilstand = strtoupper((string) ($status['state'] ?? ''));
 
+        $ksLaas = null;
         try {
-            // Et kursstart-krav (KS-) som er blitt overfloedig — plassen er
-            // gjort opp paa annen maate mens kravet ventet — skal ikke trekkes.
-            // Reservasjonen slippes i stedet. Se KursstartKrav::ikkeTrekk().
-            if ($tilstand === 'AUTHORIZED' && str_starts_with($referanse, 'KS-')
-                && class_exists('KursstartKrav') && KursstartKrav::ikkeTrekk($referanse)) {
-                return $tilstand;
+            // Et kursstart-krav (KS-): laasen per paamelding holdes gjennom
+            // hele behandlingen, saa kontant ikke kan registreres mellom
+            // sjekken og trekket. Er kravet overfloedig (gjort opp paa annen
+            // maate, stoppet, uten plass, stoerre enn resten eller uten rad),
+            // slippes det — eller bokfoeres hvis pengene alt er trukket.
+            // Se KursstartKrav::ikkeTrekk().
+            if ($tilstand === 'AUTHORIZED' && str_starts_with($referanse, 'KS-') && class_exists('KursstartKrav')) {
+                $ksLaas = KursstartKrav::laasForReferanse($referanse);
+                if (KursstartKrav::ikkeTrekk($referanse, $status)) {
+                    return $tilstand;
+                }
             }
             if ($tilstand === 'AUTHORIZED') {
                 // ePayment staar paa AUTHORIZED ogsaa etter at pengene er
@@ -1080,6 +1086,10 @@ final class Vipps
             logg_feil('Kunne ikke gjore opp betaling ' . $referanse, $e);
             if ($kastFeil) {
                 throw $e;
+            }
+        } finally {
+            if ($ksLaas !== null) {
+                KursstartKrav::slipp($ksLaas);
             }
         }
 
@@ -1160,6 +1170,27 @@ final class Vipps
             Config::vippsBase() . '/epayment/v1/payments/' . rawurlencode($referanse) . '/cancel',
             ['cancelTransactionOnly' => true],
             self::headere(self::operasjonsnokkel($referanse, 'cancel-ikke-godkjent'))
+        );
+        if ((int) $svar['status'] >= 300) {
+            logg_feil('Avbrudd feilet for ' . $referanse . ': HTTP ' . $svar['status'] . ' ' . ($svar['kropp'] ?? ''));
+        }
+        return ['status' => (int) $svar['status'], 'json' => $svar['json'] ?? null];
+    }
+
+    /**
+     * Slipper hele det som ikke er trukket (cancel uten flagg), og gir svaret
+     * tilbake. Som avbrytHvisIkkeGodkjent() er svaret ikke fasiten: kalleren
+     * henter statusen etterpaa (KursstartKrav::slippHosVipps).
+     *
+     * @return array{status:int, json:mixed}
+     */
+    public static function avbrytHelt(string $referanse): array
+    {
+        $harRad = DB::verdi('SELECT 1 FROM payments WHERE vipps_reference = :r', ['r' => $referanse]) !== null;
+        $svar = http_post_json(
+            Config::vippsBase() . '/epayment/v1/payments/' . rawurlencode($referanse) . '/cancel',
+            [],
+            self::headere($harRad ? self::operasjonsnokkel($referanse, 'cancel-helt') : self::uuid())
         );
         if ((int) $svar['status'] >= 300) {
             logg_feil('Avbrudd feilet for ' . $referanse . ': HTTP ' . $svar['status'] . ' ' . ($svar['kropp'] ?? ''));

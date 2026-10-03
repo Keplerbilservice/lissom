@@ -3967,7 +3967,7 @@
         {
             "id": "nyadmin-kalender-b2-kursstart",
             "dato": "2026-10-03",
-            "hva": "Kalenderen, bølge 2: «Start kurset» som veileder for kursholderen i tre steg (Velkommen · Praktisk · Etter kurset), åpnet fra økt-arket (gul knapp i arkhodet og Kursdagen-fanen), mobil og PC, etter skissen lissom-kalender-skisse.html (startKurs, .ks-*). Bak bryteren «Vis/kursstart3» (content_blocks, mangler raden = av; Synlighet). Av: kursstarten som før (courseStart), og api/admin/kursstart3.php (deltakere, e-poststatus, POST handling=krav) svarer 403; tekstene leses fortsatt fra kursstart.php, som ikke rører penger. Steg 1: hilsen + kort 2-teksten, deltakerne med betalt/ubetalt; per ubetalt deltaker «Send Vipps-krav» og «Kontant». EIEREN 03.10: Vipps-krav er aktivert hos Vipps igjen og skal brukes her (opphever «vippskrav skal slettes» 06.09 for kursstart). Kravet går gjennom app/lib/vipps.php (opprettBetaling, PUSH_MESSAGE) via KursstartKrav: betalingsrad KS-… (epayment, booking, booking_id = påmeldingen), beløp = det som står igjen, idempotensnøkkelen på raden brukes ved nytt forsøk, én påmelding har høyst ett krav som venter (GET_LOCK per påmelding), status hentes fra Vipps før et nytt krav. Webhook/cron/oppslaget i veilederen → Vipps::anvendTilstand → Booking::markerBetalt (KS-grenen: settBetaltStatus, ingen ny bekreftelse). Kontant (kursbetaling.php registrer/delt) stopper først et krav som venter (cancelTransactionOnly, så GET); har kunden alt godkjent, nektes kontanten. En godkjenning for et krav når plassen alt er gjort opp eller ikke er aktiv, slippes i stedet for å trekkes (KursstartKrav::ikkeTrekk). 400 fra Vipps: kravet slettes, tydelig feilmelding, Kontant virker. Steg 2: linjene i kort 1 som avkrysning (bare i nettleseren) og kort 3. Steg 3: kort 4 og 5, og bare status for e-postene (påminnelse dagen før, Google-anmeldelse «Sendes neste dag kl. 10», medlemstilbud N dager etter, keramikken er klar ca. 3 uker · e-post og Min side), ingen send-knapper; «Kurset er ferdig» lukker. Ingen migrasjon. Kundeteksten i Vipps «Kurs — Lissom Keramikk · {kurs} {dato}» er TIL GODKJENNING hos eieren.",
+            "hva": "Kalenderen, bølge 2: «Start kurset» som veileder for kursholderen i tre steg (Velkommen · Praktisk · Etter kurset), åpnet fra økt-arket (gul knapp i arkhodet og Kursdagen-fanen), mobil og PC, etter skissen lissom-kalender-skisse.html (startKurs, .ks-*). Bak bryteren «Vis/kursstart3» (content_blocks, mangler raden = av; Synlighet). Av: kursstarten som før (courseStart), og api/admin/kursstart3.php (deltakere, e-poststatus, POST handling=krav) svarer 403; tekstene leses fortsatt fra kursstart.php, som ikke rører penger. Steg 1: hilsen + kort 2-teksten, deltakerne med betalt/ubetalt; per ubetalt deltaker «Send Vipps-krav» og «Kontant». EIEREN 03.10: Vipps-krav er aktivert hos Vipps igjen og skal brukes her (opphever «vippskrav skal slettes» 06.09 for kursstart). Kravet går gjennom app/lib/vipps.php (opprettBetaling, PUSH_MESSAGE) via KursstartKrav: betalingsrad KS-… (epayment, booking, booking_id = påmeldingen), beløp = det som står igjen, idempotensnøkkelen på raden brukes ved nytt forsøk, én påmelding har høyst ett krav som venter (GET_LOCK per påmelding), status hentes fra Vipps før et nytt krav. Webhook/cron/oppslaget i veilederen → Vipps::anvendTilstand → Booking::markerBetalt (KS-grenen: settBetaltStatus, ingen ny bekreftelse). Kontant (kursbetaling.php registrer/delt) stopper først et krav som venter (cancelTransactionOnly, så GET); har kunden alt godkjent, nektes kontanten. En godkjenning for et krav når plassen alt er gjort opp eller ikke er aktiv, slippes i stedet for å trekkes (KursstartKrav::ikkeTrekk). 400 fra Vipps: kravet slettes, tydelig feilmelding, Kontant virker. Steg 2: linjene i kort 1 som avkrysning (bare i nettleseren) og kort 3. Steg 3: kort 4 og 5, og bare status for e-postene (påminnelse dagen før, Google-anmeldelse «Sendes neste dag kl. 10», medlemstilbud N dager etter, keramikken er klar ca. 3 uker · e-post og Min side), ingen send-knapper; «Kurset er ferdig» lukker. Ingen migrasjon. Kundeteksten i Vipps «Kurs — Lissom Keramikk · {kurs} {dato}» er TIL GODKJENNING hos eieren. Retting etter kontrolløren (STOPP på 9a9d2ea) og brukertesten, 3. oktober 2026: (1) en godkjenning for et overflødig krav slippes bare når Vipps bekrefter det (statusen hentes etter avbruddet); er pengene alt trukket (aggregate.capturedAmount), bokføres de som betalt og merkes «Må refunderes» i kommentaren — aldri «slipp»; uten bekreftelse kastes feil (webhook 503) og ingenting trekkes. (2) Låsen per påmelding (kurskrav:<id>) holdes gjennom hele kontantregistreringen i kursbetaling.php og gjennom godkjenningen i Vipps::anvendTilstand; kravet stoppes og Vipps-sjekken og resten regnes under låsen. (3) 4xx på nytt forsøk med samme nøkkel sletter ikke raden; et KS-krav uten rad slippes, trekkes aldri. (4) Et krav større enn det som står igjen slippes. (5) «Ikke betalt»-kortet og gavekortet (pamelding.php status=betalt) stopper kravet først. Brukertesten: «Mangler mobilnummer» som synlig tekst og raden brytes på smal skjerm; bare norsk feiltekst ved 400 (Vipps sin engelske tekst i loggen); Vipps-nei gir HTTP 200 med ok:false fra kursstart3.php; ett trykk om gangen (et ekstra trykk mens en betaling lagres åpner ingen ny dialog); «+ Noen kom uten påmelding» (Legg til deltaker fra økt-arket) og «ny»-pille i steg 1. Ikke «Kort» og ingen send-knapper i steg 3 (eierens valg).",
             "hvor": "admin-ny › Kalender › økt-arket › ▶ Start kurset (390 og 1280 px), admin-ny › Synlighet; Vipps-appen (kravet)",
             "kode": [
                 {
@@ -3975,15 +3975,21 @@
                     "finnes": [
                         "public const TEKST = 'Kurs — Lissom Keramikk';",
                         "Vipps::opprettBetaling(",
-                        "public static function ikkeTrekk(string $referanse): bool"
+                        "public static function ikkeTrekk(string $referanse, array $status = []): bool",
+                        "$trukket = (int) ($status['aggregate']['capturedAmount']['value'] ?? 0);",
+                        "if (!self::slippHosVipps($referanse)) {",
+                        "if ($kode >= 400 && $kode < 500 && $gjenbruk !== null) {",
+                        "((int) $p['belop_ore'] > $skyldig ? 'større enn resten' : '')",
+                        "public const VIPPS_NEI = 299;"
                     ]
                 },
                 {
                     "fil": "app/lib/vipps.php",
                     "finnes": [
-                        "&& class_exists('KursstartKrav') && KursstartKrav::ikkeTrekk($referanse)) {",
                         "['cancelTransactionOnly' => true]",
-                        "$idempotens = $idempotensNokkel !== null && $idempotensNokkel !== '' ? $idempotensNokkel : self::uuid();"
+                        "$idempotens = $idempotensNokkel !== null && $idempotensNokkel !== '' ? $idempotensNokkel : self::uuid();",
+                        "$ksLaas = KursstartKrav::laasForReferanse($referanse);",
+                        "KursstartKrav::slipp($ksLaas);"
                     ]
                 },
                 {
@@ -3995,14 +4001,16 @@
                 {
                     "fil": "api/admin/kursbetaling.php",
                     "finnes": [
-                        "$stopp = KursstartKrav::stoppVentende($bookingId);"
+                        "$stopp = KursstartKrav::stoppVentende($bookingId);",
+                        "KursstartKrav::laas($bookingId);"
                     ]
                 },
                 {
                     "fil": "api/admin/kursstart3.php",
                     "finnes": [
                         "if (!KursstartKrav::paa()) {",
-                        "['navn' => 'Google-anmeldelse', 'naar' => 'Sendes neste dag kl. 10']"
+                        "['navn' => 'Google-anmeldelse', 'naar' => 'Sendes neste dag kl. 10']",
+                        "if ($kode === KursstartKrav::VIPPS_NEI) {"
                     ]
                 },
                 {
@@ -4014,7 +4022,8 @@
                 {
                     "fil": "admin-ny/kalender-ark.js",
                     "finnes": [
-                        "kursstartPaa()?startKurs(e,{...o,naar:naar(e)}):courseStart(id,o.refresh);"
+                        "kursstartPaa()?startKurs(e,{...o,naar:naar(e),leggTil:etter=>leggTilDeltaker(id,etter)}):courseStart(id,o.refresh);",
+                        "export function leggTilDeltaker(id,ferdig){form('Legg til deltaker'"
                     ]
                 },
                 {
@@ -4023,7 +4032,10 @@
                         "const STEG=['Velkommen','Praktisk','Etter kurset'];",
                         "text:'Send Vipps-krav'",
                         "text:'Kontant'",
-                        "text:'Kurset er ferdig'"
+                        "text:'Kurset er ferdig'",
+                        "text:'Mangler mobilnummer'",
+                        "text:'+ Noen kom uten påmelding'",
+                        "async function kontant(p,knapp){if(opptatt)return;opptatt=true;"
                     ],
                     "ikkeFinnes": [
                         "localStorage"
@@ -4047,7 +4059,14 @@
                         "kontanten nektes med tydelig beskjed",
                         "to samtidige forespørsler: én KS-rad",
                         "sen godkjenning: ingen trekk",
-                        "ingen ny bekreftelse til kunden eller verkstedet"
+                        "ingen ny bekreftelse til kunden eller verkstedet",
+                        "kravet er bokført som betalt (pengene er tatt)",
+                        "webhooken svarer 503, så Vipps sender igjen",
+                        "feil til skjermen, og raden står som «opprettet»",
+                        "500 kr-kravet trekkes ikke når 300 kr står igjen",
+                        "kontanten venter til låsen er sluppet, og går så gjennom",
+                        "Gavekort: kravet avbrutt, kortet trukket 500 kr",
+                        "HTTP 200 med ok:false (ikke 502)"
                     ]
                 },
                 {
@@ -4057,7 +4076,11 @@
                         "390: tydelig feilmelding ved 400",
                         "390: betalt 500 kr, ikke 1 000",
                         "390: ingen send-knapper i steg 3",
-                        "av: krav nektes"
+                        "av: krav nektes",
+                        "390: et ekstra trykk mens betalingen lagres åpner ingen ny dialog",
+                        "390: «Mangler mobilnummer» står synlig",
+                        "390: den nye har «ny»-pillen",
+                        "390: bare den norske teksten"
                     ]
                 },
                 {
@@ -4065,6 +4088,12 @@
                     "ikkeFinnes": [
                         "KursstartKrav",
                         "payments"
+                    ]
+                },
+                {
+                    "fil": "api/admin/pamelding.php",
+                    "finnes": [
+                        "$stopp = KursstartKrav::stoppVentende($id);"
                     ]
                 }
             ]

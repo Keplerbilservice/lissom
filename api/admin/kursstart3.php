@@ -38,6 +38,10 @@ if (Foresporsel::metode() === 'POST') {
         $r = KursstartKrav::send($bookingId);
     } catch (RuntimeException $e) {
         $kode = (int) $e->getCode();
+        // Vipps sa nei eller svarte ikke: et svar, ikke en feil hos oss.
+        if ($kode === KursstartKrav::VIPPS_NEI) {
+            Svar::json(['ok' => false, 'feil' => $e->getMessage()]);
+        }
         Svar::feil($e->getMessage(), $kode >= 400 && $kode < 600 ? $kode : 500);
     }
     Svar::ok($r);
@@ -63,7 +67,7 @@ if ($okt === null) {
 
 $allergi = DB::harKolonne('bookings', 'allergier') ? 'b.allergier' : "''";
 $rader = DB::alle(
-    "SELECT b.id, b.status, b.belop_ore, b.antall, {$allergi} AS merknad,
+    "SELECT b.id, b.status, b.belop_ore, b.antall, b.created_at, {$allergi} AS merknad,
             COALESCE(m.navn, b.gjest_navn) AS navn,
             COALESCE(NULLIF(m.telefon, ''), b.gjest_telefon) AS telefon
        FROM bookings b
@@ -88,6 +92,8 @@ if ($rader !== [] && DB::harKolonne('payments', 'booking_id')) {
     }
 }
 $krav = KursstartKrav::statusFor(array_map(static fn($r) => (int) $r['id'], $rader));
+// Samme «ny»-grense som kalender.php: siste døgn, i UTC.
+$nyGrense = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify('-1 day')->format('Y-m-d H:i:s');
 $deltakere = [];
 foreach ($rader as $r) {
     $id = (int) $r['id'];
@@ -104,6 +110,8 @@ foreach ($rader as $r) {
         ][(string) $r['status']] ?? 'Ikke betalt',
         'antall'     => (int) $r['antall'],
         'merknad'    => trim((string) ($r['merknad'] ?? '')),
+    // «ny»: meldt på siste døgn, samme grense som kalenderen (kalender.php).
+    'ny'         => (string) $r['created_at'] >= $nyGrense,
         'skyldigOre' => $skyldig,
         'skyldig'    => Booking::kroner($skyldig),
         'harTlf'     => KursstartKrav::telefon((string) ($r['telefon'] ?? '')) !== null,

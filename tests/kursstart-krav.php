@@ -28,6 +28,17 @@ if (!str_starts_with((string) Config::hent('vipps_base'), 'http://127.0.0.1:')) 
     throw new RuntimeException('Krever lokal falsk Vipps');
 }
 
+// Barneprosessen i (p): holder låsen per påmelding i noen sekunder.
+if (($argv[1] ?? '') === 'hold') {
+    KursstartKrav::laas((int) $argv[2]);
+    echo "låst
+";
+    fflush(STDOUT);
+    sleep((int) $argv[3]);
+    KursstartKrav::slipp((int) $argv[2]);
+    exit;
+}
+
 // Barneprosessen i (b): sender ett krav og skriver svaret.
 if (($argv[1] ?? '') === 'send') {
     try {
@@ -40,7 +51,7 @@ if (($argv[1] ?? '') === 'send') {
 
 $styr = static fn(string $navn): string => __DIR__ . '/' . $navn;
 $forStyr = [];
-foreach (['.betaling-status', '.krav-400'] as $n) {
+foreach (['.betaling-status', '.krav-400', '.avbryt-nei'] as $n) {
     $forStyr[$n] = is_file($styr($n)) ? (string) file_get_contents($styr($n)) : null;
 }
 $sett = static function (string $navn, ?string $verdi) use ($styr): void {
@@ -49,9 +60,15 @@ $sett = static function (string $navn, ?string $verdi) use ($styr): void {
 
 $tag = 'KsKravTest-' . bin2hex(random_bytes(3));
 $ferdig = false;
-$kurs = 0; $okt = 0; $bIder = [];
-register_shutdown_function(static function () use (&$ferdig, &$kurs, &$okt, &$bIder, $forStyr, $sett): void {
+$kurs = 0; $okt = 0; $bIder = []; $admin = 0; $gave = 0;
+$bryterFor = DB::verdi("SELECT verdi FROM content_blocks WHERE nokkel = 'Vis/kursstart3'");
+$bryterFor = $bryterFor === null || $bryterFor === false ? null : (string) $bryterFor;
+register_shutdown_function(static function () use (&$ferdig, &$kurs, &$okt, &$bIder, &$admin, &$gave, $forStyr, $sett, $bryterFor): void {
     foreach ($forStyr as $n => $v) { $sett($n, $v); }
+    try {
+        if ($bryterFor === null) { DB::kjor("DELETE FROM content_blocks WHERE nokkel = 'Vis/kursstart3'"); }
+        else { DB::kjor("UPDATE content_blocks SET verdi = :v WHERE nokkel = 'Vis/kursstart3'", ['v' => $bryterFor]); }
+    } catch (Throwable $e) {}
     $inn = implode(',', array_map('intval', $bIder ?: [0]));
     foreach ([
         "DELETE FROM vipps_webhook_events WHERE referanse IN (SELECT vipps_reference FROM payments WHERE booking_id IN ({$inn}))",
@@ -65,6 +82,9 @@ register_shutdown_function(static function () use (&$ferdig, &$kurs, &$okt, &$bI
     }
     try { DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $okt]); } catch (Throwable $e) {}
     try { DB::kjor('DELETE FROM courses WHERE id = :i', ['i' => $kurs]); } catch (Throwable $e) {}
+    try { DB::kjor('DELETE FROM gift_card_uses WHERE gift_card_id = :g', ['g' => $gave]); } catch (Throwable $e) {}
+    try { DB::kjor('DELETE FROM gift_cards WHERE id = :g', ['g' => $gave]); } catch (Throwable $e) {}
+    try { DB::kjor('DELETE FROM sessions WHERE member_id = :m', ['m' => $admin]); DB::kjor('DELETE FROM audit_log WHERE member_id = :m', ['m' => $admin]); DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $admin]); } catch (Throwable $e) {}
     if (!$ferdig) { echo "\n  FEIL  testen stoppet foer den var ferdig\n"; exit(1); }
 });
 
@@ -284,6 +304,7 @@ $H = $b('Hilde', '91300004');
 $t = $feilTekst(static fn() => KursstartKrav::send($H));
 sjekk('feilmeldingen sier hva som skjedde og hva du gjør', str_contains($t, 'Fikk ikke sendt Vipps-kravet')
     && str_contains($t, 'Salgsenheten har ikke lov') && str_contains($t, 'kontant'), $t);
+sjekk('… bare norsk: ikke Vipps sin engelske tekst eller MSN', !str_contains($t, 'ErrorCode') && !str_contains($t, 'MSN') && !str_contains($t, 'sales unit'), $t);
 sjekk('ingen KS-rad igjen', count($krav($H)) === 0);
 $stopp = $kontant($H);
 sjekk('kontant virker etterpå', $stopp === null && $bStatus($H) === 'betalt' && $sum($H) === 50000, (string) $stopp);
@@ -311,6 +332,181 @@ sjekk('kundeteksten holder seg innenfor 100 tegn og beholder datoen', mb_strlen(
 sjekk('mobilnummer: 8 sifre, +47, 0047 og ugyldig', KursstartKrav::telefon('912 34 567') === '4791234567'
     && KursstartKrav::telefon('+47 912 34 567') === '4791234567' && KursstartKrav::telefon('0047 91234567') === '4791234567'
     && KursstartKrav::telefon('123') === null);
+
+// ── Kontrolløren 3. oktober 2026 (STOPP på 9a9d2ea) og brukertesten ─────
+$eid = static fn(): string => 'ks-' . bin2hex(random_bytes(6));
+$kravRad = static fn(int $booking): array => $krav($booking)[0] ?? [];
+
+// ── (j) pengene er trukket, men plassen var gjort opp: bokføres, aldri slippes
+echo "\n── (j) trukket etter at plassen var gjort opp: bokføres ─────\n";
+$sett('.betaling-status', 'CREATED');
+$K = $b('Kari', '91300006');
+KursstartKrav::send($K);
+$refK = (string) $kravRad($K)['vipps_reference'];
+Vipps::trekk($refK, 50000, 0);   // trukket hos Vipps, svaret kom aldri fram til oss
+DB::iTransaksjon(static fn() => Booking::manuellBetaling($K, 50000, 'Kontant'));
+Booking::settBetaltStatus($K);
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$h = $webhook($refK, 'AUTHORIZED', $eid());
+sjekk('webhooken svarer 200', $h === 200, (string) $h);
+sjekk('ingen nytt trekk, og ingenting «sluppet»', count($kall($fra, $refK, 'capture')) === 0 && count($kall($fra, $refK, 'cancel')) === 0);
+sjekk('kravet er bokført som betalt (pengene er tatt)', $kravRad($K)['status'] === 'betalt');
+sjekk('… og merket «Må refunderes» for verkstedet', str_contains((string) $kravRad($K)['kommentar'], 'Må refunderes'), (string) $kravRad($K)['kommentar']);
+sjekk('summen viser det som faktisk er tatt: 1 000 kr', $sum($K) === 100000, (string) $sum($K));
+
+// ── (k) Vipps bekrefter ikke avbruddet: raden står, ingenting trekkes ────
+echo "\n── (k) avbrudd uten bekreftelse: ikke avbrutt, ikke trukket ─\n";
+$sett('.betaling-status', 'CREATED');
+$L = $b('Lars', '91300007');
+KursstartKrav::send($L);
+$refL = (string) $kravRad($L)['vipps_reference'];
+DB::iTransaksjon(static fn() => Booking::manuellBetaling($L, 50000, 'Kontant'));
+Booking::settBetaltStatus($L);
+$sett('.betaling-status', 'AUTHORIZED');
+$sett('.avbryt-nei', 'ja');
+$idL = $eid();
+$fra = $lengde();
+$h = $webhook($refL, 'AUTHORIZED', $idL);
+sjekk('webhooken svarer 503, så Vipps sender igjen', $h === 503, (string) $h);
+sjekk('… ingen trekk, og raden står fortsatt «venter»', count($kall($fra, $refL, 'capture')) === 0 && $kravRad($L)['status'] === 'venter', (string) $kravRad($L)['status']);
+$sett('.avbryt-nei', null);
+$fra = $lengde();
+$h = $webhook($refL, 'AUTHORIZED', $idL);
+sjekk('samme hendelse igjen: sluppet og bekreftet, raden avbrutt', $h === 200 && $kravRad($L)['status'] === 'avbrutt'
+    && count($kall($fra, $refL, 'capture')) === 0 && $sum($L) === 50000, $h . ' ' . $kravRad($L)['status']);
+
+// ── (l) nytt forsøk med samme nøkkel får 400: raden blir stående ────────
+echo "\n── (l) 400 på nytt forsøk: raden slettes ikke ───────────────\n";
+$M = $b('Mona', '91300008');
+$refM = Vipps::nyReferanse('KS');
+DB::settInn('payments', ['vipps_reference' => $refM, 'type' => 'epayment', 'formal' => 'booking', 'booking_id' => $M,
+    'belop_ore' => 50000, 'status' => 'opprettet', 'idempotency_key' => Vipps::uuid()]);
+$sett('.krav-400', 'ja');
+$t = $feilTekst(static fn() => KursstartKrav::send($M));
+$sett('.krav-400', null);
+sjekk('feil til skjermen, og raden står som «opprettet»', str_contains($t, 'Fikk ikke sendt Vipps-kravet') && count($krav($M)) === 1
+    && $kravRad($M)['status'] === 'opprettet', $t);
+
+// ── (m) KS-krav uten rad hos oss: slippes, trekkes aldri ────────────────
+echo "\n── (m) KS-krav uten rad: slippes ────────────────────────────\n";
+$refX = 'KS-' . gmdate('ymd') . '-X' . strtoupper(bin2hex(random_bytes(4)));
+Vipps::opprettBetaling($refX, 40000, 'Test uten rad', 'http://lokal.invalid', '4791300009', true);
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$h = $webhook($refX, 'AUTHORIZED', $eid());
+sjekk('ingen trekk, sluppet hos Vipps', $h === 200 && count($kall($fra, $refX, 'capture')) === 0 && count($kall($fra, $refX, 'cancel')) === 1, (string) $h);
+DB::kjor('DELETE FROM vipps_webhook_events WHERE referanse = :r', ['r' => $refX]);
+
+// ── (n) kravet er større enn resten (prisen satt ned mens det ventet) ───
+echo "\n── (n) kravet er større enn resten: slippes ─────────────────\n";
+$sett('.betaling-status', 'CREATED');
+$N = $b('Nina', '91300010');
+KursstartKrav::send($N);
+$refN = (string) $kravRad($N)['vipps_reference'];
+DB::kjor('UPDATE bookings SET belop_ore = 30000 WHERE id = :i', ['i' => $N]);   // som pamelding.php «endre»
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$webhook($refN, 'AUTHORIZED', $eid());
+sjekk('500 kr-kravet trekkes ikke når 300 kr står igjen', count($kall($fra, $refN, 'capture')) === 0 && $kravRad($N)['status'] === 'avbrutt');
+sjekk('… påmeldingen står ubetalt med 300 kr igjen', $bStatus($N) === 'reservert'
+    && KursstartKrav::skyldig($N, 30000, 'reservert') === 30000);
+
+// ── Admin over HTTP (kursbetaling.php, pamelding.php, kursstart3.php) ───
+$admin = DB::settInn('members', ['navn' => $tag . ' admin', 'epost' => strtolower($tag) . '.admin@e2e.lissom.test', 'rolle' => 'admin', 'status' => 'aktiv']);
+$token = bin2hex(random_bytes(32));
+DB::settInn('sessions', ['member_id' => $admin, 'token_hash' => hash('sha256', $token), 'expires_at' => gmdate('Y-m-d H:i:s', time() + 7200)]);
+$adminReq = static function (string $fil, array $kropp) use ($adresse, $token) {
+    $u = parse_url($adresse);
+    $vert = $u['host'] . ':' . $u['port'];
+    $c = curl_init($adresse . '/api/admin/' . $fil);
+    curl_setopt_array($c, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($kropp), CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 60, CURLOPT_RESOLVE => [$vert . ':127.0.0.1'],
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Origin: ' . $adresse, 'Cookie: lissom_sesjon=' . $token]]);
+    return $c;
+};
+$adminKall = static function (string $fil, array $kropp) use ($adminReq): array {
+    $c = $adminReq($fil, $kropp);
+    $svar = (string) curl_exec($c);
+    $s = (int) curl_getinfo($c, CURLINFO_RESPONSE_CODE);
+    curl_close($c);
+    return [$s, json_decode($svar, true) ?: []];
+};
+$kontantRader = static fn(int $b): int => (int) DB::verdi(
+    "SELECT COUNT(*) FROM payments WHERE booking_id = :b AND type = 'manuell' AND status = 'betalt'", ['b' => $b]);
+
+// ── (o) kontant og webhook samtidig: én betaling ────────────────────────
+echo "\n── (o) kontant og godkjenning samtidig: bare én betaling ────\n";
+$sett('.betaling-status', 'CREATED');
+$O = $b('Ola', '91300012');
+KursstartKrav::send($O);
+$refO = (string) $kravRad($O)['vipps_reference'];
+$sett('.betaling-status', 'AUTHORIZED');
+$fra = $lengde();
+$mh = curl_multi_init();
+$u = parse_url($adresse); $vert = $u['host'] . ':' . $u['port'];
+$wk = json_encode(['msn' => '123456', 'reference' => $refO, 'name' => 'AUTHORIZED', 'eventId' => $eid(),
+    'pspReference' => 'psp-o', 'amount' => ['currency' => 'NOK', 'value' => 0], 'success' => true]);
+$hash = base64_encode(hash('sha256', $wk, true)); $dato = gmdate('D, d M Y H:i:s') . ' GMT';
+$sig = base64_encode(hash_hmac('sha256', "POST\n/api/vipps-webhook.php\n{$dato};{$vert};{$hash}", $hemmelighet, true));
+$cw = curl_init($adresse . '/api/vipps-webhook.php');
+curl_setopt_array($cw, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $wk, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60,
+    CURLOPT_RESOLVE => [$vert . ':127.0.0.1'], CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-ms-date: ' . $dato,
+    'x-ms-content-sha256: ' . $hash, 'Authorization: HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature=' . $sig]]);
+$ck = $adminReq('kursbetaling.php', ['handling' => 'registrer', 'bookingId' => $O, 'maate' => 'Kontant']);
+curl_multi_add_handle($mh, $ck); curl_multi_add_handle($mh, $cw);
+do { curl_multi_exec($mh, $aktive); curl_multi_select($mh, 1.0); } while ($aktive > 0);
+$sk = (int) curl_getinfo($ck, CURLINFO_RESPONSE_CODE); $sw = (int) curl_getinfo($cw, CURLINFO_RESPONSE_CODE);
+curl_multi_close($mh);
+sjekk('kontanten nektes (400/409), webhooken 200', in_array($sk, [400, 409], true) && $sw === 200, "kontant $sk, webhook $sw");
+sjekk('ett trekk, ingen kontantrad, betalt 500 kr', count($kall($fra, $refO, 'capture')) === 1 && $kontantRader($O) === 0
+    && $sum($O) === 50000 && $bStatus($O) === 'betalt', (string) $sum($O));
+
+// ── (p) kursbetaling.php holder låsen gjennom registreringen ────────────
+echo "\n── (p) kontant venter på låsen per påmelding ────────────────\n";
+$P = $b('Pia', '91300013');
+$holder = proc_open([PHP_BINARY, __FILE__, 'hold', (string) $P, '3'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $hr);
+$linje = trim((string) fgets($hr[1]));
+$t0 = microtime(true);
+[$st] = $adminKall('kursbetaling.php', ['handling' => 'registrer', 'bookingId' => $P, 'maate' => 'Kontant']);
+$tid = microtime(true) - $t0;
+proc_close($holder);
+sjekk('kontanten venter til låsen er sluppet, og går så gjennom', $linje === 'låst' && $tid >= 2.0 && $st === 200
+    && $sum($P) === 50000, sprintf('%s, %.1f s, HTTP %d', $linje, $tid, $st));
+
+// ── (q) «Ikke betalt»-kortet og gavekortet stopper kravet først ─────────
+echo "\n── (q) Ikke betalt-kortet og gavekortet stopper kravet ──────\n";
+$sett('.betaling-status', 'CREATED');
+$Q = $b('Quinn', '91300014');
+KursstartKrav::send($Q);
+[$st] = $adminKall('pamelding.php', ['handling' => 'status', 'id' => $Q, 'status' => 'betalt', 'maate' => 'Kontant']);
+sjekk('Kontant: kravet avbrutt, én betaling på 500 kr', $st === 200 && $kravRad($Q)['status'] === 'avbrutt' && $sum($Q) === 50000
+    && $bStatus($Q) === 'betalt', "HTTP $st, " . $kravRad($Q)['status'] . ', ' . $sum($Q));
+$R = $b('Rita', '91300015');
+KursstartKrav::send($R);
+$kode = 'KSK' . strtoupper(bin2hex(random_bytes(5)));
+$gave = DB::settInn('gift_cards', ['kode' => $kode, 'opprinnelig_ore' => 100000, 'saldo_ore' => 100000,
+    'gyldig_til' => gmdate('Y-m-d', time() + 365 * 86400), 'status' => 'aktivt', 'kjoper_navn' => $tag]);
+[$st] = $adminKall('pamelding.php', ['handling' => 'status', 'id' => $R, 'status' => 'betalt', 'maate' => 'Gavekort', 'kode' => $kode]);
+sjekk('Gavekort: kravet avbrutt, kortet trukket 500 kr', $st === 200 && $kravRad($R)['status'] === 'avbrutt' && $bStatus($R) === 'betalt'
+    && (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :g', ['g' => $gave]) === 50000, "HTTP $st, " . $kravRad($R)['status']);
+$S = $b('Siri', '91300016');
+KursstartKrav::send($S);
+$sett('.betaling-status', 'AUTHORIZED');
+[$st, $j] = $adminKall('pamelding.php', ['handling' => 'status', 'id' => $S, 'status' => 'betalt', 'maate' => 'Kontant']);
+sjekk('kunden rakk å betale: kortet nektes (409), bare Vipps', $st === 409 && $kontantRader($S) === 0 && $sum($S) === 50000
+    && str_contains((string) ($j['feil'] ?? ''), 'alt betalt'), "HTTP $st");
+
+// ── (r) kursstart3.php: 400 fra Vipps gir 200 med ok:false, bare norsk ──
+echo "\n── (r) kursstart3.php: Vipps sier nei → 200 og norsk tekst ──\n";
+DB::kjor("INSERT INTO content_blocks (nokkel, verdi) VALUES ('Vis/kursstart3', 'ja') ON DUPLICATE KEY UPDATE verdi = 'ja'");
+$sett('.krav-400', 'ja');
+$T = $b('Tone', '91300017');
+[$st, $j] = $adminKall('kursstart3.php', ['handling' => 'krav', 'bookingId' => $T]);
+$sett('.krav-400', null);
+sjekk('HTTP 200 med ok:false (ikke 502)', $st === 200 && ($j['ok'] ?? null) === false, "HTTP $st");
+sjekk('… bare den norske teksten', str_contains((string) ($j['feil'] ?? ''), 'Salgsenheten har ikke lov')
+    && !str_contains((string) ($j['feil'] ?? ''), 'ErrorCode') && !str_contains((string) ($j['feil'] ?? ''), 'MSN'), (string) ($j['feil'] ?? ''));
 
 $ferdig = true;
 echo "\n  $ok av " . ($ok + $feil) . " kursstart-krav-kontroller bestått\n";

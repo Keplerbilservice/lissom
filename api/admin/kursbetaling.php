@@ -120,6 +120,22 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
     // -------------------------------------------------------- registrer
     case 'registrer':
         $bookingId = Foresporsel::heltall('bookingId');
+        // Laasen per paamelding holdes gjennom hele registreringen (den slippes
+        // naar svaret er sendt). Et Vipps-krav fra «Start kurset» som venter,
+        // stoppes foerst, og alt under — Vipps-sjekken, restbeloepet og selve
+        // raden — regnes under laasen. Godkjenningen av et krav tar den samme
+        // laasen (Vipps::anvendTilstand), saa de to kan ikke gaa samtidig.
+        // Har kunden alt godkjent kravet, nektes registreringen. (Kontrolloeren
+        // 3. oktober 2026.)
+        try {
+            KursstartKrav::laas($bookingId);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage(), 409);
+        }
+        $stopp = KursstartKrav::stoppVentende($bookingId);
+        if ($stopp !== null) {
+            Svar::feil($stopp, 409);
+        }
         $b = DB::en(
             'SELECT b.id, b.belop_ore, b.status, b.member_id, b.course_id,
                     COALESCE(m.navn, b.gjest_navn) AS navn
@@ -184,14 +200,6 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
 
         $kommentar = mb_substr(trim(Foresporsel::tekst('kommentar')), 0, 300);
 
-        // Et Vipps-krav fra «Start kurset» som venter, stoppes foer pengene
-        // registreres her — ellers kunne kunden betalt begge veier
-        // (KursstartKrav). Har kunden alt godkjent kravet, nektes registreringen.
-        $stopp = KursstartKrav::stoppVentende($bookingId);
-        if ($stopp !== null) {
-            Svar::feil($stopp, 409);
-        }
-
         // Selve raden staar i Booking::manuellBetaling(). «Ikke betalt»-kortet
         // i Kassa gaar den samme veien, saa de to kan ikke komme i utakt.
         $betalingId = DB::iTransaksjon(static function () use ($b, $bookingId, $belop, $maate, $kommentar, $admin): int {
@@ -211,6 +219,7 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
             'betaling' => $betalingId, 'belop_ore' => $belop, 'maate' => $maate,
         ]);
 
+        KursstartKrav::slipp($bookingId);
         $rest = max(0, (int) $b['belop_ore'] - $etter['sum']);
         Svar::ok([
             'betalingId' => $betalingId,
@@ -234,6 +243,22 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
     // Summen maa vaere det som staar igjen paa plassen — ikke mer, ikke mindre.
     case 'delt':
         $bookingId = Foresporsel::heltall('bookingId');
+        // Laasen per paamelding holdes gjennom hele registreringen (den slippes
+        // naar svaret er sendt). Et Vipps-krav fra «Start kurset» som venter,
+        // stoppes foerst, og alt under — Vipps-sjekken, restbeloepet og selve
+        // raden — regnes under laasen. Godkjenningen av et krav tar den samme
+        // laasen (Vipps::anvendTilstand), saa de to kan ikke gaa samtidig.
+        // Har kunden alt godkjent kravet, nektes registreringen. (Kontrolloeren
+        // 3. oktober 2026.)
+        try {
+            KursstartKrav::laas($bookingId);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage(), 409);
+        }
+        $stopp = KursstartKrav::stoppVentende($bookingId);
+        if ($stopp !== null) {
+            Svar::feil($stopp, 409);
+        }
         $b = DB::en(
             'SELECT b.id, b.belop_ore, b.status, b.member_id,
                     COALESCE(m.navn, b.gjest_navn) AS navn
@@ -295,14 +320,6 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
                      . Booking::kroner($skyldig) . ' igjen å betale.');
         }
 
-        // Et Vipps-krav fra «Start kurset» som venter, stoppes foer pengene
-        // registreres her — ellers kunne kunden betalt begge veier
-        // (KursstartKrav). Har kunden alt godkjent kravet, nektes registreringen.
-        $stopp = KursstartKrav::stoppVentende($bookingId);
-        if ($stopp !== null) {
-            Svar::feil($stopp, 409);
-        }
-
         $medlemId = $b['member_id'] !== null ? (int) $b['member_id'] : null;
         $adminId  = (int) $admin['id'];
         try {
@@ -356,6 +373,8 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
         }
 
         $etter = Booking::settBetaltStatus($bookingId);
+
+        KursstartKrav::slipp($bookingId);
 
         revider('betaling_delt', 'booking', $bookingId, [
             'betalinger' => $ider, 'deler' => $deler, 'gavekort' => $kort['kode'] ?? null,

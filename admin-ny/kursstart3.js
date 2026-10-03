@@ -24,7 +24,8 @@ export async function startKurs(e,o){
  s.dlg.classList.add('ks');
  const lukk=()=>{if(lukket)return;lukket=true;clearInterval(teller);if(endret)o.refresh?.();};
  s.dlg.addEventListener('close',lukk);
- const visFeil=t=>{feil.textContent=t||'';feil.hidden=!t;};
+ // Feilen står øverst; på mobil kan knappen du trykket være langt nede, så den rulles fram.
+ const visFeil=t=>{feil.textContent=t||'';feil.hidden=!t;if(t&&feil.scrollIntoView)feil.scrollIntoView({block:'nearest'});};
 
  async function hent(){try{d=await api('kursstart3.php?okt='+id);}catch(err){visFeil(err.message);}}
  const ubetalte=()=>d.deltakere.filter(p=>p.status==='Ikke betalt'&&p.skyldigOre>0);
@@ -32,16 +33,23 @@ export async function startKurs(e,o){
  function folgMed(){clearInterval(teller);if(!d.deltakere.some(p=>p.krav==='venter'||p.krav==='opprettet'))return;
   teller=setInterval(async()=>{if(lukket||steg!==0)return;await hent();tegn();if(!d.deltakere.some(p=>p.krav==='venter'||p.krav==='opprettet'))clearInterval(teller);},6000);}
 
- async function krav(p,knapp){knapp.disabled=true;visFeil('');
+ // Én betaling om gangen: et ekstra trykk (dobbelttrykk på «Registrer» havnet på «Kontant» i raden under) åpner ingenting nytt
+ // før den første er ferdig og lista er tegnet på nytt (brukertesten 3. oktober 2026).
+ let opptatt=false;
+ async function krav(p,knapp){if(opptatt)return;opptatt=true;knapp.disabled=true;visFeil('');
   try{const r=await api('kursstart3.php',{handling:'krav',bookingId:p.bookingId});endret=true;toast(r.beskjed);}
   catch(err){visFeil(err.message);}
-  await hent();tegn();folgMed();}
- async function kontant(p,knapp){visFeil('');
-  if(!await confirm('Registrer betalingen?','Registrer bare penger som faktisk er mottatt. Dette føres i regnskapet og oppdaterer påmeldingens betalingsstatus.','Registrer'))return;
-  knapp.disabled=true;
-  try{const r=await api('kursbetaling.php',{handling:'registrer',bookingId:p.bookingId,maate:'Kontant'});endret=true;toast(r.beskjed||'Registrert.');}
-  catch(err){visFeil(err.message);}
-  await hent();tegn();}
+  await hent();opptatt=false;tegn();folgMed();}
+ async function kontant(p,knapp){if(opptatt)return;opptatt=true;knapp.disabled=true;visFeil('');
+  try{
+   if(!await confirm('Registrer betalingen?','Registrer bare penger som faktisk er mottatt. Dette føres i regnskapet og oppdaterer påmeldingens betalingsstatus.','Registrer')){knapp.disabled=false;return;}
+   try{const r=await api('kursbetaling.php',{handling:'registrer',bookingId:p.bookingId,maate:'Kontant'});endret=true;toast(r.beskjed||'Registrert.');}
+   catch(err){visFeil(err.message);}
+   await hent();
+  }finally{opptatt=false;}
+  tegn();}
+ // «+ Noen kom uten påmelding»: «Legg til deltaker» fra økt-arket (pamelding.php legg-til), og lista hentes på nytt.
+ function leggTil(){if(!o.leggTil)return;o.leggTil(async r=>{endret=true;toast(r?.beskjed||'Lagret.');await hent();tegn();});}
 
  function deltaker(p){
   const venter=p.krav==='venter'||p.krav==='opprettet';
@@ -50,10 +58,11 @@ export async function startKurs(e,o){
   else if(p.status!=='Ikke betalt')hoyre=badge(p.status);
   else{const kontantKnapp=el('button',{type:'button',class:'button kal-liten',text:'Kontant',onclick:ev=>kontant(p,ev.currentTarget)});
    hoyre=el('div',{class:'kal-rad ks-betal'},
-    venter?badge('Venter på Vipps','warn'):el('button',{type:'button',class:'button primary kal-liten',text:'Send Vipps-krav',disabled:!p.harTlf,title:p.harTlf?null:'Mangler mobilnummer',onclick:ev=>krav(p,ev.currentTarget)}),
+    venter?badge('Venter på Vipps','warn'):p.harTlf?el('button',{type:'button',class:'button primary kal-liten',text:'Send Vipps-krav',onclick:ev=>krav(p,ev.currentTarget)})
+     :el('small',{class:'ks-uten-tlf',text:'Mangler mobilnummer'}),
     kontantKnapp);}
   return el('div',{class:'kal-delt','data-booking':p.bookingId},
-   el('div',{class:'kal-info'},el('b',{text:p.navn}),el('small',{text:[p.merknad?'✎ '+p.merknad:'',p.antall>1?`${p.antall} plasser`:'',p.status==='Ikke betalt'&&p.skyldigOre>0?p.skyldig:''].filter(Boolean).join(' · ')})),
+   el('div',{class:'kal-info'},el('b',{},p.navn,p.ny?el('span',{class:'kal-m kal-m-ny',text:'ny'}):null),el('small',{text:[p.merknad?'✎ '+p.merknad:'',p.antall>1?`${p.antall} plasser`:'',p.status==='Ikke betalt'&&p.skyldigOre>0?p.skyldig:''].filter(Boolean).join(' · ')})),
    hoyre);
  }
 
@@ -61,7 +70,8 @@ export async function startKurs(e,o){
   return [el('p',{class:'ks-si',text:`«Hei og velkommen til ${d.okt?.tittel||e.tittel}! Så hyggelig at dere kom.»`}),
    k2?el('p',{class:'ks-si ks-si-2',text:k2.tekst}):null,
    el('div',{class:'ks-topp'},el('b',{text:`${d.deltakere.length} påmeldt`}),u?badge(`${u} har ikke betalt`,'warn'):badge('Alle har betalt','good')),
-   d.deltakere.length?el('div',{class:'ks-liste'},d.deltakere.map(deltaker)):el('p',{class:'muted',text:'Ingen påmeldte ennå.'})];}
+   d.deltakere.length?el('div',{class:'ks-liste'},d.deltakere.map(deltaker)):el('p',{class:'muted',text:'Ingen påmeldte ennå.'}),
+   o.leggTil?el('button',{type:'button',class:'button kal-liten ks-leggtil',text:'+ Noen kom uten påmelding',onclick:leggTil}):null];}
 
  function steg2(){const k1=kort(1),k3=kort(3);
   const linjer=k1?String(k1.tekst||'').split(/\n+/).map(x=>x.trim()).filter(Boolean):[];

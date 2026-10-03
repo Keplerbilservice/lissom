@@ -16,6 +16,8 @@ const s=fixture('seed');
 async function apne(c){
  await c.addCookies([{name:'lissom_sesjon',value:s.token,domain:'lokal.lissom.no',path:'/'}]);
  const p=await c.newPage();const feil=[];p.on('pageerror',e=>feil.push(e.message));
+ // Røde linjer i konsollen fra veilederens endepunkt (brukertesten: 502 ved 400 fra Vipps).
+ p.on('response',r=>{if(r.status()>=400&&r.url().includes('/api/admin/kursstart3.php'))feil.push('HTTP '+r.status()+' '+r.url());});
  await p.goto(`${ADR}/admin-ny.html#kalender`);await p.getByRole('heading',{name:'Kalender',exact:true}).waitFor();
  return {p,feil};
 }
@@ -50,7 +52,13 @@ try{
   assert.match(await ks(p).locator('.ks-topp').innerText(),/5 påmeldt[\s\S]*4 har ikke betalt/,'390: påmeldt og ubetalt');
   assert.match(await rad(p,'Ingrid Berg').innerText(),/Betalt/,'390: Ingrid er betalt');
   assert.equal(await rad(p,'Ingrid Berg').getByRole('button').count(),0,'390: ingen betalingsknapper hos den som har betalt');
-  assert.ok(await rad(p,'Nils Utennummer').getByRole('button',{name:'Send Vipps-krav'}).isDisabled(),'390: uten mobil kan det ikke sendes krav');
+  // Uten mobil: grunnen står synlig, ingen krav-knapp, og raden brytes så ingenting legger seg over navnet.
+  assert.equal(await rad(p,'Nils Utennummer').getByRole('button',{name:'Send Vipps-krav'}).count(),0,'390: uten mobil: ingen krav-knapp');
+  assert.ok(await rad(p,'Nils Utennummer').getByText('Mangler mobilnummer',{exact:true}).isVisible(),'390: «Mangler mobilnummer» står synlig');
+  for(const navn of ['Nils Utennummer','Marte Sol']){const nb=await rad(p,navn).locator('.kal-info b').boundingBox();
+   for(const k of await rad(p,navn).locator('.ks-betal > *').all()){const kb=await k.boundingBox();
+    const over=!(kb.x>=nb.x+nb.width||kb.x+kb.width<=nb.x||kb.y>=nb.y+nb.height||kb.y+kb.height<=nb.y);
+    assert.ok(!over,`390: ingenting ligger over navnet til ${navn}`);}}
   // Målt etter at vinduet har glidd inn (animasjonen «enter»), med et par forsøk mens skriftene lastes.
   await ks(p).evaluate(d=>Promise.all(d.getAnimations({subtree:true}).map(x=>x.finished)));
   let hoyder=[];for(let n=0;n<10;n++){hoyder=await ks(p).locator('.kal-delt button, .ks-fot button, .ks-steg button').evaluateAll(b=>b.map(x=>x.getBoundingClientRect().height));if(hoyder.every(h=>h>=44))break;await p.waitForTimeout(100);}
@@ -68,10 +76,24 @@ try{
   await rad(p,'Olga Feil').getByRole('button',{name:'Send Vipps-krav'}).tap();
   const feilBoks=ks(p).locator('.ks-feil');await feilBoks.waitFor({state:'visible'});
   assert.match(await feilBoks.innerText(),/Fikk ikke sendt Vipps-kravet[\s\S]*Salgsenheten har ikke lov[\s\S]*kontant/,'390: tydelig feilmelding ved 400');
+  assert.doesNotMatch(await feilBoks.innerText(),/ErrorCode|MSN|sales unit/,'390: bare den norske teksten');
   assert.equal(se().b.olga.krav.length,0,'390: ingen krav lagret etter 400');
-  await kontant(p,'Olga Feil',tap);
+  // Dobbelttrykk på «Registrer»: én betaling, og ingen dialog blir stående.
+  await rad(p,'Olga Feil').getByRole('button',{name:'Kontant',exact:true}).tap();
+  const reg=p.getByRole('dialog',{name:'Registrer betalingen?',exact:true});await reg.waitFor();
+  const rb=await reg.getByRole('button',{name:'Registrer',exact:true}).boundingBox();
+  // Det andre trykket havnet på «Kontant» i en annen rad mens det første ble lagret (brukertesten). Lagringen holdes
+  // igjen litt, så trykket garantert kommer mens den pågår.
+  await p.route('**/api/admin/kursbetaling.php',async r=>{await new Promise(x=>setTimeout(x,800));await r.continue();});
+  await p.touchscreen.tap(rb.x+rb.width/2,rb.y+rb.height/2);
+  await rad(p,'Marte Sol').getByRole('button',{name:'Kontant',exact:true}).tap();
+  await p.waitForTimeout(300);
+  assert.equal(await p.locator('dialog[open]',{hasText:'Registrer bare penger'}).count(),0,'390: et ekstra trykk mens betalingen lagres åpner ingen ny dialog');
   await rad(p,'Olga Feil').getByText('Betalt',{exact:true}).waitFor();
-  i=se();assert.equal(i.b.olga.status,'betalt','390: Olga betalt kontant');assert.equal(i.b.olga.sum,50000);
+  await p.unroute('**/api/admin/kursbetaling.php');
+  await p.waitForTimeout(500);
+  assert.equal(await p.locator('dialog[open]',{hasText:'Registrer bare penger'}).count(),0,'390: dobbelttrykk: ingen dialog blir stående');
+  i=se();assert.equal(i.b.olga.status,'betalt','390: Olga betalt kontant');assert.equal(i.b.olga.sum,50000);assert.equal(i.b.olga.kontant,1,'390: dobbelttrykk gir én betaling');
   fixture('vipps',s,'CREATED','nei');
   // Kontant mens kravet venter: kravet avbrytes, ingen dobbel betaling.
   await kontant(p,'Marte Sol',tap);
@@ -80,8 +102,17 @@ try{
   assert.deepEqual(i.b.marte.krav,[{status:'avbrutt',belop:50000}],'390: kravet er avbrutt');
   assert.equal(i.b.marte.kontant,1,'390: én kontantbetaling');assert.equal(i.b.marte.sum,50000,'390: betalt 500 kr, ikke 1 000');
   assert.match(await ks(p).locator('.ks-topp').innerText(),/2 har ikke betalt/,'390: telleren følger med');
+  // «+ Noen kom uten påmelding»: Legg til deltaker fra økt-arket, og den nye står med «ny».
+  await ks(p).getByRole('button',{name:'+ Noen kom uten påmelding'}).tap();
+  const lt=p.getByRole('dialog',{name:'Legg til deltaker'});await lt.waitFor();
+  await lt.getByLabel('Navn').fill('Ulla Uten');await lt.getByLabel('Betaling').selectOption('Ikke betalt');
+  await lt.getByRole('button',{name:'Legg til',exact:true}).tap();await lt.waitFor({state:'detached'});
+  await rad(p,'Ulla Uten').waitFor();
+  assert.equal(await rad(p,'Ulla Uten').locator('.kal-m-ny').innerText(),'ny','390: den nye har «ny»-pillen');
+  assert.match(await ks(p).locator('.ks-topp').innerText(),/6 påmeldt[\s\S]*3 har ikke betalt/,'390: telleren tar med den nye');
+  assert.equal(await ks(p).count(),1,'390: veilederen står åpen etter Legg til');
   // Steg 2: punktene som avkrysning, bare i nettleseren.
-  await ks(p).locator('.ks-fot').getByRole('button',{name:'Videre (2 ubetalt)'}).tap();
+  await ks(p).locator('.ks-fot').getByRole('button',{name:'Videre (3 ubetalt)'}).tap();
   assert.equal(await steg.nth(1).getAttribute('aria-current'),'step','390: steg 2');
   assert.match(await steg.first().getAttribute('class'),/ferdig/,'390: steg 1 er merket ferdig');
   const k=await p.evaluate(async()=>(await (await fetch('/api/admin/kursstart.php',{credentials:'same-origin'})).json()).kort);
@@ -134,6 +165,8 @@ try{
   assert.equal(await ks(p).count(),0,'av: den gamle kursstarten');
   const nei=await p.evaluate(async b=>{const r=await fetch('/api/admin/kursstart3.php',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({handling:'krav',bookingId:b})});return r.status;},s.b.nils);
   assert.equal(nei,403,'av: krav nektes');
+  // Den 403-en er med vilje: den skal ikke telle som en rød linje.
+  feil.splice(0,feil.length,...feil.filter(x=>!x.startsWith('HTTP 403 ')));
   assert.deepEqual(feil,[],'1280: ingen feil i siden');
   await c.close();
  }

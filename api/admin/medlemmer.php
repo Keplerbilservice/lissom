@@ -2686,6 +2686,16 @@ foreach (DB::alle(
     $kurs[(int) $r['member_id']] = (int) $r['antall'];
 }
 
+// Dager siden siste innstempling, for alle (eieren 3. oktober 2026: sortering
+// «Sist aktiv» og «aldri innom» paa Folk). Mangler = aldri innom.
+$sistInn = [];
+$iDagOslo = new DateTimeImmutable('today', new DateTimeZone('Europe/Oslo'));
+foreach (DB::alle('SELECT member_id, MAX(inn_tid) AS sist FROM check_ins GROUP BY member_id') as $r) {
+    if ($r['sist'] !== null) {
+        $sistInn[(int) $r['member_id']] = max(0, (int) (new DateTimeImmutable(substr((string) $r['sist'], 0, 10), new DateTimeZone('Europe/Oslo')))->diff($iDagOslo)->format('%r%a'));
+    }
+}
+
 foreach (DB::alle('SELECT member_id FROM check_ins WHERE ut_tid IS NULL') as $r) {
     $inne[(int) $r['member_id']] = true;
 }
@@ -2814,6 +2824,7 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
     'id'         => (int) $m['id'],
     'lavAktivitet' => isset($lave[(int) $m['id']]),
     'dagerSiden'   => $lave[(int) $m['id']] ?? null,
+    'dagerSidenSist' => $sistInn[(int) $m['id']] ?? null,
     'navn'       => $m['navn'],
     'epost'      => $m['epost'],
     'telefon'    => $m['telefon'],
@@ -2888,7 +2899,17 @@ Svar::json(['lavAktivitetDager' => Aktivitet::dager(), 'medlemmer' => array_map(
             $sisteBetaling[(int) $m['id']] ?? null,
             $a === null ? null : ($sisteTrekk[(int) $a['id']] ?? null)
         );
+        // Siste dag den betalte perioden dekker — samme regel som
+        // betalingsstatus() (dekkerTil = foerste dag etter perioden). Bare
+        // naar status er betalt; ellers vet vi ingen dato.
+        $kilde = $sisteBetaling[(int) $m['id']] ?? ($a === null ? null : ($sisteTrekk[(int) $a['id']] ?? null));
+        $betaltTil = null;
+        if ($b['tilstand'] === 'betalt' && $kilde !== null) {
+            $betaltTil = (new DateTimeImmutable(Medlemskap::dekkerTil($kilde), new DateTimeZone('Europe/Oslo')))
+                ->modify('-1 day')->format('Y-m-d');
+        }
         return ['betaling' => $b['tilstand'], 'betalingTekst' => $b['tekst'],
+                'betaltTil' => $betaltTil === null ? null : Booking::norskDatoKort($betaltTil . ' 12:00:00'),
                 'betalingForfalt' => $b['forfalt'],
                 // «Pengene er ikke inne» — det filteret og kortet teller.
                 'betalingUte' => !empty($b['utestaaende'])];

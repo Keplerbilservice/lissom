@@ -4467,6 +4467,55 @@
             ]
         },
         {
+            "id": "folk-se-person-ryddet",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: «Se person» i admin-ny ryddet uten å fjerne funksjoner: tilgangslinje øverst (Har tilgang til <dato> / Venter på betaling / Ingen tilgang – ikke medlem), kortene Medlemskap, Kontakt og Internt notat, handlinger gruppert under Betaling, Medlemskap og Verksted (røde sist). «Vilkår» vises bare med innhold. Folk-lista har sortering Sist aktiv / Flest kurs / Navn (standard Sist aktiv) og viser antall kurs og «sist innom for X dager siden» når det finnes.",
+            "hvor": "admin-ny › Folk › Se person",
+            "kode": [
+                {
+                    "fil": "admin-ny/app.js",
+                    "finnes": [
+                        "Ingen tilgang – ikke medlem",
+                        "group('Betaling',",
+                        "group('Medlemskap',",
+                        "group('Verksted',",
+                        "p.vilkaar?[['Vilkår',p.vilkaar]]:[]",
+                        "['aktiv','Sorter: Sist aktiv',",
+                        "'sist innom for '+p.dagerSidenSist+' dager siden'",
+                        "'aldri innom'",
+                        "tilDato=summary.betaltTil||summary.slutter||null"
+                    ]
+                },
+                {
+                    "fil": "admin-ny/ui.js",
+                    "finnes": [
+                        "sorts=[]"
+                    ]
+                },
+                {
+                    "fil": "api/admin/medlemmer.php",
+                    "finnes": [
+                        "'dagerSidenSist' => $sistInn[(int) $m['id']] ?? null,",
+                        "'betaltTil' => $betaltTil === null ? null"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "adminny-ingen-ukecache",
+            "dato": "2026-10-03",
+            "hva": "Eieren, 3. oktober 2026: endringer i det nye admin kom ikke fram fordi admin-ny/*.js og *.css ble mellomlagret i en uke. admin-ny/.htaccess setter «no-cache, must-revalidate» (spør først, 304 når uendret), som nyadmin/.htaccess.",
+            "hvor": "admin-ny",
+            "kode": [
+                {
+                    "fil": "admin-ny/.htaccess",
+                    "finnes": [
+                        "Header set Cache-Control \"no-cache, must-revalidate\""
+                    ]
+                }
+            ]
+        },
+        {
             "id": "admin-json-bak-krev-admin",
             "dato": "2026-10-03",
             "hva": "Eieren, 3. oktober 2026: SEO, GEO og Tekster i admin-ny fikk 403 i produksjon fordi .htaccess stenger alle .json. seo-kart.json og innhold-standard.json hentes nå via api/admin/innhold.php?fil=seo-kart|standard bak krev_admin; .json forblir stengt for nettet.",
